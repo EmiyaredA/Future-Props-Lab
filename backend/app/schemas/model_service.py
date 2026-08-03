@@ -4,8 +4,24 @@ from typing import Literal
 
 from pydantic import BaseModel, Field, HttpUrl, field_validator
 
-ProviderKind = Literal["openai", "anthropic"]
-ModelCapability = Literal["chat", "vision", "tools"]
+ProviderKind = Literal["openai", "anthropic", "senseaudio_image", "senseaudio_video"]
+ModelCapability = Literal[
+    "chat",
+    "vision",
+    "tools",
+    "image_generation",
+    "video_generation",
+]
+ModelCategory = Literal[
+    "text_generation",
+    "other_general",
+    "speech_synthesis",
+    "speech_recognition",
+    "music_generation",
+    "video_generation",
+    "image_generation",
+    "end_to_end_speech",
+]
 
 
 class ModelEntryIn(BaseModel):
@@ -14,6 +30,7 @@ class ModelEntryIn(BaseModel):
     label: str = Field(default="", max_length=160)
     description: str = Field(default="", max_length=255)
     capabilities: list[ModelCapability] = Field(default_factory=lambda: ["chat"])
+    categories: list[ModelCategory] = Field(default_factory=list)
     enabled: bool = True
 
 
@@ -24,6 +41,7 @@ class ModelEntryOut(BaseModel):
     label: str
     description: str
     capabilities: list[ModelCapability]
+    categories: list[ModelCategory]
     enabled: bool
 
 
@@ -86,3 +104,14 @@ class ModelMutationOut(BaseModel):
 class DeleteMutationOut(BaseModel):
     deleted: bool
     revision: int
+
+
+class ModelCategoryOut(BaseModel):
+    id: ModelCategory
+    label: str
+    type: Literal["text", "image", "audio", "video"]
+    sub_type: str | None = None
+
+
+class ModelCategoryListOut(BaseModel):
+    items: list[ModelCategoryOut]

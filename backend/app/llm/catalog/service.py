@@ -6,8 +6,16 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.concurrency.revisions import RevisionConflictError
 from app.core.credentials import decrypt_secret, encrypt_secret
-from app.models import ModelCatalogState, ModelEntry, ModelProvider
+from app.models import (
+    ModelCatalogState,
+    ModelEntry,
+    ModelProvider,
+    ModelTestGenerationTask,
+    VisualGenerationTask,
+)
 from app.schemas.model_service import (
+    ModelCategoryListOut,
+    ModelCategoryOut,
     ModelCatalogOut,
     ModelEntryIn,
     ModelEntryOut,
@@ -24,6 +32,13 @@ class DuplicateModelError(Exception):
     pass
 
 
+class CatalogResourceBusyError(Exception):
+    pass
+
+
+ACTIVE_GENERATION_STATUSES = ("queued", "submitting", "pending", "processing")
+
+
 def _key_hint(ciphertext: str) -> str:
     if not ciphertext:
         return ""
@@ -34,6 +49,39 @@ def _key_hint(ciphertext: str) -> str:
     return value[-4:] if len(value) >= 4 else "••••"
 
 
+MODEL_CATEGORIES = (
+    ModelCategoryOut(id="text_generation", label="文本生成", type="text", sub_type="chat"),
+    ModelCategoryOut(id="other_general", label="其他通用模型", type="text"),
+    ModelCategoryOut(
+        id="speech_synthesis", label="语音合成", type="audio", sub_type="text-to-speech"
+    ),
+    ModelCategoryOut(
+        id="speech_recognition", label="语音识别", type="audio", sub_type="speech-to-text"
+    ),
+    ModelCategoryOut(
+        id="music_generation", label="音乐生成", type="audio", sub_type="text-to-music"
+    ),
+    ModelCategoryOut(
+        id="video_generation", label="视频生成", type="video", sub_type="text-to-video"
+    ),
+    ModelCategoryOut(
+        id="image_generation", label="图片生成", type="image", sub_type="text-to-image"
+    ),
+    ModelCategoryOut(
+        id="end_to_end_speech", label="端到端语音模型", type="audio", sub_type="speech-to-speech"
+    ),
+)
+
+
+def _default_categories(row: ModelEntry) -> list[str]:
+    capabilities = list(row.capabilities or [])
+    if "image_generation" in capabilities:
+        return ["image_generation"]
+    if "video_generation" in capabilities:
+        return ["video_generation"]
+    return ["text_generation"]
+
+
 def _model_out(row: ModelEntry) -> ModelEntryOut:
     return ModelEntryOut(
         id=row.id,
@@ -42,6 +90,7 @@ def _model_out(row: ModelEntry) -> ModelEntryOut:
         label=row.label,
         description=row.description,
         capabilities=list(row.capabilities or []),
+        categories=list(row.categories or []) or _default_categories(row),
         enabled=row.enabled,
     )
 
@@ -49,6 +98,9 @@ def _model_out(row: ModelEntry) -> ModelEntryOut:
 class ModelCatalogService:
     def __init__(self, session: AsyncSession) -> None:
         self.session = session
+
+    def categories(self) -> ModelCategoryListOut:
+        return ModelCategoryListOut(items=list(MODEL_CATEGORIES))
 
     async def catalog(self) -> ModelCatalogOut:
         state = await self.session.get(ModelCatalogState, "default")
@@ -141,6 +193,10 @@ class ModelCatalogService:
     async def update_provider(self, provider_id: str, body: ProviderIn) -> tuple[int, ProviderOut]:
         revision = await self._bump(body.expected_catalog_revision)
         row = await self.get_provider(provider_id)
+        if (not body.enabled or body.kind != row.kind) and await self._provider_has_active_tasks(
+            provider_id
+        ):
+            raise CatalogResourceBusyError("供应商仍有进行中的生成任务")
         row.name = body.name.strip()
         row.kind = body.kind
         row.base_url = body.base_url
@@ -166,6 +222,8 @@ class ModelCatalogService:
         self, provider_id: str, enabled: bool, expected: int
     ) -> tuple[int, ProviderOut]:
         row = await self.get_provider(provider_id)
+        if not enabled and await self._provider_has_active_tasks(provider_id):
+            raise CatalogResourceBusyError("供应商仍有进行中的生成任务")
         body = ProviderIn(
             expected_catalog_revision=expected,
             name=row.name,
@@ -176,6 +234,8 @@ class ModelCatalogService:
         return await self.update_provider(provider_id, body)
 
     async def delete_provider(self, provider_id: str, expected: int) -> int:
+        if await self._provider_has_active_tasks(provider_id):
+            raise CatalogResourceBusyError("供应商仍有进行中的生成任务")
         revision = await self._bump(expected)
         row = await self.get_provider(provider_id)
         await self.session.delete(row)
@@ -183,7 +243,7 @@ class ModelCatalogService:
         return revision
 
     async def add_model(self, provider_id: str, body: ModelEntryIn) -> tuple[int, ModelEntryOut]:
-        await self.get_provider(provider_id)
+        provider = await self.get_provider(provider_id)
         revision = await self._bump(body.expected_catalog_revision)
         count = int(
             (
@@ -198,6 +258,8 @@ class ModelCatalogService:
             label=body.label.strip(),
             description=body.description.strip(),
             capabilities=list(dict.fromkeys(body.capabilities)),
+            categories=list(dict.fromkeys(body.categories))
+            or _categories_for_provider_kind(provider.kind),
             enabled=body.enabled,
             sort_order=count,
         )
@@ -213,11 +275,15 @@ class ModelCatalogService:
 
     async def update_model(self, model_id: str, body: ModelEntryIn) -> tuple[int, ModelEntryOut]:
         row = await self.get_model(model_id)
+        provider = await self.get_provider(row.provider_id)
         revision = await self._bump(body.expected_catalog_revision)
         row.slug = body.slug.strip()
         row.label = body.label.strip()
         row.description = body.description.strip()
         row.capabilities = list(dict.fromkeys(body.capabilities))
+        row.categories = list(dict.fromkeys(body.categories)) or _categories_for_provider_kind(
+            provider.kind
+        )
         row.enabled = body.enabled
         try:
             await self.session.flush()
@@ -230,7 +296,44 @@ class ModelCatalogService:
 
     async def delete_model(self, model_id: str, expected: int) -> int:
         await self.get_model(model_id)
+        active = await self.session.scalar(
+            select(func.count(VisualGenerationTask.id)).where(
+                VisualGenerationTask.model_id == model_id,
+                VisualGenerationTask.status.in_(ACTIVE_GENERATION_STATUSES),
+            )
+        )
+        test_active = await self.session.scalar(
+            select(func.count(ModelTestGenerationTask.id)).where(
+                ModelTestGenerationTask.model_id == model_id,
+                ModelTestGenerationTask.status.in_(ACTIVE_GENERATION_STATUSES),
+            )
+        )
+        if active or test_active:
+            raise CatalogResourceBusyError("模型仍有进行中的生成任务")
         revision = await self._bump(expected)
         await self.session.execute(delete(ModelEntry).where(ModelEntry.id == model_id))
         await self.session.commit()
         return revision
+
+    async def _provider_has_active_tasks(self, provider_id: str) -> bool:
+        count = await self.session.scalar(
+            select(func.count(VisualGenerationTask.id)).where(
+                VisualGenerationTask.provider_id == provider_id,
+                VisualGenerationTask.status.in_(ACTIVE_GENERATION_STATUSES),
+            )
+        )
+        test_count = await self.session.scalar(
+            select(func.count(ModelTestGenerationTask.id)).where(
+                ModelTestGenerationTask.provider_id == provider_id,
+                ModelTestGenerationTask.status.in_(ACTIVE_GENERATION_STATUSES),
+            )
+        )
+        return bool(count or test_count)
+
+
+def _categories_for_provider_kind(kind: str) -> list[str]:
+    if kind == "senseaudio_image":
+        return ["image_generation"]
+    if kind == "senseaudio_video":
+        return ["video_generation"]
+    return ["text_generation"]

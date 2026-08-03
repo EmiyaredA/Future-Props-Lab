@@ -9,12 +9,13 @@ import {
   deleteModel,
   deleteProvider,
   getCatalog,
+  getModelCategories,
   setProviderEnabled,
-  testModel,
   updateModel,
   updateProvider,
   type Catalog,
   type ModelEntry,
+  type ModelCategory,
   type ModelInput,
   type Provider,
   type ProviderInput,
@@ -32,11 +33,15 @@ type Modal =
 const providerKindLabel = {
   openai: "OpenAI 兼容",
   anthropic: "Anthropic",
+  senseaudio_image: "SenseAudio 图片",
+  senseaudio_video: "SenseAudio 视频",
 } as const;
 const capabilityLabel = {
   chat: "对话",
   vision: "视觉",
   tools: "工具",
+  image_generation: "图片生成",
+  video_generation: "视频生成",
 } as const;
 
 function ActionIcon({
@@ -88,9 +93,7 @@ function ProviderForm({
   onSave: (input: ProviderInput) => Promise<void>;
 }) {
   const [name, setName] = useState(initial?.name ?? "");
-  const [kind, setKind] = useState<"openai" | "anthropic">(
-    initial?.kind ?? "openai",
-  );
+  const [kind, setKind] = useState<Provider["kind"]>(initial?.kind ?? "openai");
   const [baseUrl, setBaseUrl] = useState(initial?.base_url ?? "");
   const [apiKey, setApiKey] = useState("");
   const [busy, setBusy] = useState(false);
@@ -147,6 +150,8 @@ function ProviderForm({
           options={[
             { value: "openai", label: "OpenAI 兼容" },
             { value: "anthropic", label: "Anthropic" },
+            { value: "senseaudio_image", label: "SenseAudio 图片生成" },
+            { value: "senseaudio_video", label: "SenseAudio 视频生成" },
           ]}
         />
       </label>
@@ -159,7 +164,9 @@ function ProviderForm({
           placeholder={
             kind === "openai"
               ? "https://api.openai.com/v1"
-              : "https://api.anthropic.com/v1"
+              : kind === "anthropic"
+                ? "https://api.anthropic.com/v1"
+                : "https://api.senseaudio.cn/v1"
           }
         />
         <small>留空使用该通道的官方默认地址。</small>
@@ -192,23 +199,34 @@ function ProviderForm({
 
 function ModelForm({
   initial,
+  categoryOptions,
   onCancel,
   onSave,
 }: {
   initial: ModelEntry | null;
+  categoryOptions: ModelCategory[];
   onCancel: () => void;
   onSave: (input: ModelInput) => Promise<void>;
 }) {
   const [slug, setSlug] = useState(initial?.slug ?? "");
   const [label, setLabel] = useState(initial?.label ?? "");
   const [description, setDescription] = useState(initial?.description ?? "");
-  const [capabilities, setCapabilities] = useState<
-    Array<"chat" | "vision" | "tools">
-  >(initial?.capabilities ?? ["chat"]);
+  const [capabilities, setCapabilities] = useState<ModelEntry["capabilities"]>(
+    initial?.capabilities ?? ["chat"],
+  );
+  const [categories, setCategories] = useState<ModelEntry["categories"]>(
+    initial?.categories ?? [],
+  );
   const [enabled, setEnabled] = useState(initial?.enabled ?? true);
   const [busy, setBusy] = useState(false);
-  const toggle = (value: "chat" | "vision" | "tools") =>
+  const toggle = (value: ModelEntry["capabilities"][number]) =>
     setCapabilities((current) =>
+      current.includes(value)
+        ? current.filter((item) => item !== value)
+        : [...current, value],
+    );
+  const toggleCategory = (value: ModelEntry["categories"][number]) =>
+    setCategories((current) =>
       current.includes(value)
         ? current.filter((item) => item !== value)
         : [...current, value],
@@ -222,6 +240,7 @@ function ModelForm({
         label: label.trim(),
         description: description.trim(),
         capabilities,
+        categories,
         enabled,
       });
     } finally {
@@ -276,7 +295,15 @@ function ModelForm({
       <fieldset>
         <legend>能力</legend>
         <div className="capability-picker">
-          {(["chat", "vision", "tools"] as const).map((capability) => (
+          {(
+            [
+              "chat",
+              "vision",
+              "tools",
+              "image_generation",
+              "video_generation",
+            ] as const
+          ).map((capability) => (
             <button
               type="button"
               className={capabilities.includes(capability) ? "active" : ""}
@@ -284,6 +311,24 @@ function ModelForm({
               onClick={() => toggle(capability)}
             >
               {capabilityLabel[capability]}
+            </button>
+          ))}
+        </div>
+      </fieldset>
+      <fieldset>
+        <legend>模型类别</legend>
+        <small className="field-help">
+          类别描述模型用途，可多选；能力描述模型实际接受的输入与调用方式。
+        </small>
+        <div className="capability-picker category-picker">
+          {categoryOptions.map((category) => (
+            <button
+              type="button"
+              className={categories.includes(category.id) ? "active" : ""}
+              key={category.id}
+              onClick={() => toggleCategory(category.id)}
+            >
+              {category.label}
             </button>
           ))}
         </div>
@@ -311,11 +356,15 @@ function ModelForm({
   );
 }
 
-export function ModelServicePage({ onOpenLogs }: { onOpenLogs: () => void }) {
+export function ModelServicePage() {
   const queryClient = useQueryClient();
   const catalogQuery = useQuery({
     queryKey: ["model-catalog"],
     queryFn: getCatalog,
+  });
+  const categoriesQuery = useQuery({
+    queryKey: ["model-categories"],
+    queryFn: getModelCategories,
   });
   const catalog = catalogQuery.data;
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -323,7 +372,6 @@ export function ModelServicePage({ onOpenLogs }: { onOpenLogs: () => void }) {
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [conflict, setConflict] = useState<Conflict | null>(null);
-  const [testingId, setTestingId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!selectedId && catalog?.providers[0])
@@ -393,26 +441,6 @@ export function ModelServicePage({ onOpenLogs }: { onOpenLogs: () => void }) {
       initial ? "模型已更新" : "模型已添加",
     );
   };
-  const runTest = async (model: ModelEntry) => {
-    setTestingId(model.id);
-    setError("");
-    try {
-      const result = await testModel(model.id);
-      setNotice(
-        `测试成功 · ${result.latency_ms} ms · 回复：${result.output || "（空）"}`,
-      );
-      await queryClient.invalidateQueries({ queryKey: ["model-logs"] });
-    } catch (cause) {
-      const logId =
-        cause instanceof ApiError ? cause.problem.log_id : undefined;
-      setError(
-        `${cause instanceof Error ? cause.message : String(cause)}${logId ? ` · 日志 ${logId}` : ""}`,
-      );
-    } finally {
-      setTestingId(null);
-    }
-  };
-
   return (
     <section className="page model-service-page">
       <header className="page-header">
@@ -585,7 +613,7 @@ export function ModelServicePage({ onOpenLogs }: { onOpenLogs: () => void }) {
                   <>
                     <div className="model-table-head" aria-hidden>
                       <span>模型</span>
-                      <span>能力</span>
+                      <span>类别 / 能力</span>
                       <span>状态</span>
                       <span>操作</span>
                     </div>
@@ -606,6 +634,13 @@ export function ModelServicePage({ onOpenLogs }: { onOpenLogs: () => void }) {
                           </div>
                         </div>
                         <div className="capabilities">
+                          {model.categories.map((category) => (
+                            <span className="category-tag" key={category}>
+                              {categoriesQuery.data?.items.find(
+                                (item) => item.id === category,
+                              )?.label ?? category}
+                            </span>
+                          ))}
                           {model.capabilities.map((capability) => (
                             <span key={capability}>
                               {capabilityLabel[capability]}
@@ -618,17 +653,6 @@ export function ModelServicePage({ onOpenLogs }: { onOpenLogs: () => void }) {
                           <i /> {model.enabled ? "已启用" : "已停用"}
                         </span>
                         <div className="model-actions">
-                          <button
-                            className="btn test"
-                            disabled={
-                              testingId === model.id ||
-                              !model.enabled ||
-                              !selected.enabled
-                            }
-                            onClick={() => void runTest(model)}
-                          >
-                            {testingId === model.id ? "测试中…" : "测试调用"}
-                          </button>
                           <button
                             className="row-icon-action"
                             aria-label={`编辑 ${model.label || model.slug}`}
@@ -667,9 +691,6 @@ export function ModelServicePage({ onOpenLogs }: { onOpenLogs: () => void }) {
                   </div>
                 )}
               </div>
-              <button className="logs-shortcut" onClick={onOpenLogs}>
-                查看模型测试产生的调用日志 <span>→</span>
-              </button>
             </>
           ) : (
             <div className="empty-block detail-empty">
@@ -695,6 +716,7 @@ export function ModelServicePage({ onOpenLogs }: { onOpenLogs: () => void }) {
           ) : (
             <ModelForm
               initial={modal.initial}
+              categoryOptions={categoriesQuery.data?.items ?? []}
               onCancel={() => setModal(null)}
               onSave={(input) =>
                 saveModel(modal.providerId, modal.initial, input)

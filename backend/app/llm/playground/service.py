@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 from dataclasses import dataclass
 from uuid import uuid4
 
@@ -7,9 +8,22 @@ from sqlalchemy import delete, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.concurrency.revisions import RevisionConflictError
+from app.core.config import Settings, get_settings
 from app.core.time import iso_utc, utc_now
 from app.llm.catalog.service import ResourceNotFoundError
-from app.models import ModelEntry, ModelProvider, ModelTestConversation, ModelTestMessage
+from app.llm.playground.attachments import (
+    AttachmentError,
+    ModelTestAttachments,
+    attachment_out,
+)
+from app.llm.providers import ChatMessageInput, ImageInput
+from app.models import (
+    ModelEntry,
+    ModelProvider,
+    ModelTestAttachment,
+    ModelTestConversation,
+    ModelTestMessage,
+)
 from app.schemas.model_test import (
     ModelTestConversationCreateIn,
     ModelTestConversationListOut,
@@ -45,12 +59,15 @@ class PreparedGeneration:
     system_prompt: str
     temperature: float
     max_tokens: int
-    messages: list[dict[str, str]]
+    messages: list[ChatMessageInput]
     request_payload: dict
     replaced_message_id: str | None = None
 
 
-def message_out(row: ModelTestMessage) -> ModelTestMessageOut:
+def message_out(
+    row: ModelTestMessage,
+    attachments: list[ModelTestAttachment] | None = None,
+) -> ModelTestMessageOut:
     return ModelTestMessageOut(
         id=row.id,
         turn_id=row.turn_id,
@@ -60,12 +77,15 @@ def message_out(row: ModelTestMessage) -> ModelTestMessageOut:
         status=row.status,
         error_message=row.error_message,
         created_at=iso_utc(row.created_at),
+        attachments=[attachment_out(item) for item in attachments or []],
     )
 
 
 class ModelTestService:
-    def __init__(self, session: AsyncSession) -> None:
+    def __init__(self, session: AsyncSession, settings: Settings | None = None) -> None:
         self.session = session
+        self.settings = settings or get_settings()
+        self.attachments = ModelTestAttachments(session, self.settings)
 
     async def _model_slug(self, model_id: str | None) -> str:
         if not model_id:
@@ -105,9 +125,35 @@ class ModelTestService:
             raise ResourceNotFoundError("对话不存在")
         return row
 
+    async def _attachment_rows(self, conversation_id: str) -> list[ModelTestAttachment]:
+        return list(
+            (
+                await self.session.execute(
+                    select(ModelTestAttachment)
+                    .where(ModelTestAttachment.conversation_id == conversation_id)
+                    .order_by(ModelTestAttachment.position, ModelTestAttachment.created_at)
+                )
+            )
+            .scalars()
+            .all()
+        )
+
+    @staticmethod
+    def _attachments_by_message(
+        rows: list[ModelTestAttachment],
+    ) -> tuple[dict[str, list[ModelTestAttachment]], list[ModelTestAttachment]]:
+        by_message: dict[str, list[ModelTestAttachment]] = {}
+        drafts: list[ModelTestAttachment] = []
+        for attachment in rows:
+            if attachment.message_id is None:
+                drafts.append(attachment)
+            else:
+                by_message.setdefault(attachment.message_id, []).append(attachment)
+        return by_message, drafts
+
     async def get(self, conversation_id: str) -> ModelTestConversationOut:
         row = await self._row(conversation_id)
-        messages = (
+        messages = list(
             (
                 await self.session.execute(
                     select(ModelTestMessage)
@@ -118,13 +164,17 @@ class ModelTestService:
             .scalars()
             .all()
         )
+        by_message, drafts = self._attachments_by_message(
+            await self._attachment_rows(conversation_id)
+        )
         summary = await self._summary(row)
         return ModelTestConversationOut(
             **summary.model_dump(),
             system_prompt=row.system_prompt,
             temperature=row.temperature,
             max_tokens=row.max_tokens,
-            messages=[message_out(message) for message in messages],
+            messages=[message_out(message, by_message.get(message.id)) for message in messages],
+            draft_attachments=[attachment_out(item) for item in drafts],
         )
 
     async def create(self, body: ModelTestConversationCreateIn) -> ModelTestConversationOut:
@@ -177,7 +227,10 @@ class ModelTestService:
         if await self._has_pending(conversation_id):
             raise ConversationBusyError("生成期间不能修改对话设置")
         if body.model_id is not None:
-            await self._available_model(body.model_id)
+            await self._available_model(
+                body.model_id,
+                require_vision=await self._has_completed_image_context(conversation_id),
+            )
         await self._bump(row, body.expected_revision)
         if body.title is not None:
             row.title = body.title.strip()
@@ -196,26 +249,37 @@ class ModelTestService:
         row = await self._row(conversation_id)
         if await self._has_pending(conversation_id):
             raise ConversationBusyError("生成期间不能删除对话")
+        paths = await self.attachments.paths_for_conversation(conversation_id)
         await self._bump(row, expected_revision)
         await self.session.execute(
             delete(ModelTestConversation).where(ModelTestConversation.id == conversation_id)
         )
         await self.session.commit()
+        for path in paths:
+            try:
+                path.unlink(missing_ok=True)
+            except OSError:
+                pass
 
-    async def _available_model(self, model_id: str | None) -> tuple[ModelEntry, ModelProvider]:
+    async def _available_model(
+        self, model_id: str | None, *, require_vision: bool = False
+    ) -> tuple[ModelEntry, ModelProvider]:
         if not model_id:
             raise ModelUnavailableError("请先选择可用的文本模型")
         model = await self.session.get(ModelEntry, model_id)
         if model is None:
             raise ModelUnavailableError("当前模型已被删除，请重新选择")
         provider = await self.session.get(ModelProvider, model.provider_id)
+        capabilities = list(model.capabilities or [])
         if (
             provider is None
             or not provider.enabled
             or not model.enabled
-            or "chat" not in list(model.capabilities or [])
+            or provider.kind not in {"openai", "anthropic"}
         ):
-            raise ModelUnavailableError("当前模型不可用，请重新选择已启用的 chat 模型")
+            raise ModelUnavailableError("当前模型不可用，请重新选择已启用的文本模型")
+        if require_vision and "vision" not in capabilities:
+            raise ModelUnavailableError("当前对话包含图片，请选择支持 vision 的模型")
         return model, provider
 
     async def _position(self, conversation_id: str) -> int:
@@ -228,10 +292,10 @@ class ModelTestService:
         ).scalar_one()
         return int(current if current is not None else -1) + 1
 
-    async def _completed_context(
+    async def _completed_rows(
         self, conversation_id: str, *, excluding_turn: str | None = None
-    ) -> list[dict[str, str]]:
-        rows = (
+    ) -> tuple[list[ModelTestMessage], dict[str, list[ModelTestAttachment]]]:
+        rows = list(
             (
                 await self.session.execute(
                     select(ModelTestMessage)
@@ -249,23 +313,117 @@ class ModelTestService:
             turn_id
             for turn_id, messages in by_turn.items()
             if turn_id != excluding_turn
-            and any(m.role == "user" and m.status == "completed" for m in messages)
-            and any(m.role == "assistant" and m.status == "completed" for m in messages)
+            and any(item.role == "user" and item.status == "completed" for item in messages)
+            and any(item.role == "assistant" and item.status == "completed" for item in messages)
         }
-        return [
-            {"role": row.role, "content": row.content}
-            for row in rows
-            if row.turn_id in complete_turns and row.status == "completed"
+        completed = [
+            item for item in rows if item.turn_id in complete_turns and item.status == "completed"
         ]
+        message_ids = [item.id for item in completed]
+        attachment_rows: list[ModelTestAttachment] = []
+        if message_ids:
+            attachment_rows = list(
+                (
+                    await self.session.execute(
+                        select(ModelTestAttachment)
+                        .where(ModelTestAttachment.message_id.in_(message_ids))
+                        .order_by(ModelTestAttachment.position)
+                    )
+                )
+                .scalars()
+                .all()
+            )
+        by_message, _ = self._attachments_by_message(attachment_rows)
+        return completed, by_message
+
+    async def _has_completed_image_context(self, conversation_id: str) -> bool:
+        rows, by_message = await self._completed_rows(conversation_id)
+        return any(by_message.get(row.id) for row in rows)
+
+    async def _images(self, rows: list[ModelTestAttachment]) -> tuple[ImageInput, ...]:
+        encoded = await asyncio.gather(*(self.attachments.encoded(row) for row in rows))
+        return tuple(
+            ImageInput(
+                mime_type=row.mime_type,
+                data_base64=data,
+                byte_size=row.byte_size,
+            )
+            for row, data in zip(rows, encoded, strict=True)
+        )
+
+    @staticmethod
+    def _log_message(row: ModelTestMessage, rows: list[ModelTestAttachment]) -> dict:
+        return {
+            "role": row.role,
+            "content": row.content,
+            "attachments": [
+                {"mime_type": item.mime_type, "byte_size": item.byte_size} for item in rows
+            ],
+        }
+
+    async def _context(
+        self, conversation_id: str, *, excluding_turn: str | None = None
+    ) -> tuple[list[ChatMessageInput], list[dict], bool]:
+        rows, by_message = await self._completed_rows(
+            conversation_id, excluding_turn=excluding_turn
+        )
+        inputs: list[ChatMessageInput] = []
+        logs: list[dict] = []
+        has_images = False
+        for row in rows:
+            attachments = by_message.get(row.id, [])
+            images = await self._images(attachments)
+            has_images = has_images or bool(images)
+            inputs.append(ChatMessageInput(role=row.role, text=row.content, images=images))
+            logs.append(self._log_message(row, attachments))
+        return inputs, logs, has_images
+
+    async def _drafts(
+        self, conversation_id: str, attachment_ids: list[str]
+    ) -> list[ModelTestAttachment]:
+        if not attachment_ids:
+            return []
+        rows = list(
+            (
+                await self.session.execute(
+                    select(ModelTestAttachment).where(ModelTestAttachment.id.in_(attachment_ids))
+                )
+            )
+            .scalars()
+            .all()
+        )
+        by_id = {row.id: row for row in rows}
+        ordered: list[ModelTestAttachment] = []
+        for attachment_id in attachment_ids:
+            attachment = by_id.get(attachment_id)
+            if (
+                attachment is None
+                or attachment.conversation_id != conversation_id
+                or attachment.message_id is not None
+            ):
+                raise AttachmentError(
+                    "图片附件不存在、已发送或不属于当前对话",
+                    code="attachment_not_available",
+                    status=409,
+                )
+            ordered.append(attachment)
+        return ordered
 
     async def prepare_send(
-        self, conversation_id: str, expected_revision: int, content: str
+        self,
+        conversation_id: str,
+        expected_revision: int,
+        content: str,
+        attachment_ids: list[str] | None = None,
     ) -> PreparedGeneration:
         row = await self._row(conversation_id)
         if await self._has_pending(conversation_id):
             raise ConversationBusyError("当前对话正在生成，请稍候")
-        model, provider = await self._available_model(row.model_id)
-        context = await self._completed_context(conversation_id)
+        context, context_log, context_has_images = await self._context(conversation_id)
+        drafts = await self._drafts(conversation_id, attachment_ids or [])
+        require_vision = context_has_images or bool(drafts)
+        model, provider = await self._available_model(row.model_id, require_vision=require_vision)
+        draft_images = await self._images(drafts)
         revision = await self._bump(row, expected_revision)
         position = await self._position(conversation_id)
         turn_id = str(uuid4())
@@ -286,10 +444,19 @@ class ModelTestService:
             status="pending",
         )
         self.session.add_all([user, assistant])
+        await self.session.flush()
+        for attachment_position, attachment in enumerate(drafts):
+            attachment.message_id = user.id
+            attachment.position = attachment_position
         if position == 0 and row.title == "新对话":
             compact = " ".join(content.strip().split())
-            row.title = compact[:28] + ("…" if len(compact) > 28 else "")
-        request_messages = [*context, {"role": "user", "content": user.content}]
+            if compact:
+                row.title = compact[:28] + ("…" if len(compact) > 28 else "")
+            elif drafts:
+                row.title = drafts[0].original_filename[:120]
+        user_input = ChatMessageInput(role="user", text=user.content, images=draft_images)
+        request_messages = [*context, user_input]
+        user_log = self._log_message(user, drafts)
         await self.session.commit()
         return PreparedGeneration(
             conversation_id=conversation_id,
@@ -306,7 +473,7 @@ class ModelTestService:
             messages=request_messages,
             request_payload={
                 "system": row.system_prompt,
-                "messages": request_messages,
+                "messages": [*context_log, user_log],
                 "temperature": row.temperature,
                 "max_tokens": row.max_tokens,
             },
@@ -318,7 +485,6 @@ class ModelTestService:
         row = await self._row(conversation_id)
         if await self._has_pending(conversation_id):
             raise ConversationBusyError("当前对话正在生成，请稍候")
-        model, provider = await self._available_model(row.model_id)
         old = (
             (
                 await self.session.execute(
@@ -352,7 +518,25 @@ class ModelTestService:
         )
         if user is None:
             raise RegenerateUnavailableError("找不到对应的用户消息")
-        context = await self._completed_context(conversation_id, excluding_turn=old.turn_id)
+        context, context_log, context_has_images = await self._context(
+            conversation_id, excluding_turn=old.turn_id
+        )
+        user_attachments = list(
+            (
+                await self.session.execute(
+                    select(ModelTestAttachment)
+                    .where(ModelTestAttachment.message_id == user.id)
+                    .order_by(ModelTestAttachment.position)
+                )
+            )
+            .scalars()
+            .all()
+        )
+        model, provider = await self._available_model(
+            row.model_id,
+            require_vision=context_has_images or bool(user_attachments),
+        )
+        user_images = await self._images(user_attachments)
         revision = await self._bump(row, expected_revision)
         old.status = "superseded"
         assistant = ModelTestMessage(
@@ -364,7 +548,8 @@ class ModelTestService:
             status="pending",
         )
         self.session.add(assistant)
-        request_messages = [*context, {"role": "user", "content": user.content}]
+        user_input = ChatMessageInput(role="user", text=user.content, images=user_images)
+        request_messages = [*context, user_input]
         await self.session.commit()
         return PreparedGeneration(
             conversation_id=conversation_id,
@@ -381,7 +566,7 @@ class ModelTestService:
             messages=request_messages,
             request_payload={
                 "system": row.system_prompt,
-                "messages": request_messages,
+                "messages": [*context_log, self._log_message(user, user_attachments)],
                 "temperature": row.temperature,
                 "max_tokens": row.max_tokens,
                 "regenerate": True,

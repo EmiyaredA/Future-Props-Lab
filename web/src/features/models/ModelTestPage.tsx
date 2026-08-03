@@ -4,20 +4,26 @@ import {
   useMemo,
   useRef,
   useState,
+  type CSSProperties,
   type ComponentPropsWithoutRef,
   type ReactNode,
 } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  ArrowUp,
   Bot,
   CircleAlert,
   Code2,
   Copy,
+  Info,
+  Image as ImageIcon,
+  LoaderCircle,
   MessageSquareText,
+  Paperclip,
   Plus,
   RotateCcw,
   Search,
+  Send,
+  SlidersHorizontal,
   Sparkles,
   Square,
   Trash2,
@@ -29,17 +35,31 @@ import rehypeHighlight from "rehype-highlight";
 import remarkGfm from "remark-gfm";
 import {
   createModelTestConversation,
+  deleteModelTestAttachment,
   deleteModelTestConversation,
   getCatalog,
   getModelTestConversation,
   getModelTestConversations,
   patchModelTestConversation,
   streamModelTest,
+  uploadModelTestAttachments,
   type ModelStreamEvent,
+  type ModelTestAttachment,
   type ModelTestConversation,
   type ModelTestMessage,
 } from "@features/models/api";
+import { fetchApiBlob } from "@platform/api/client";
 import { CustomSelect, type SelectOption } from "@shared/ui/CustomSelect";
+import { ModelGenerationTestPanel } from "@features/models/ModelGenerationTestPanel";
+
+const MAX_ATTACHMENTS = 5;
+const MAX_ATTACHMENT_BYTES = 8 * 1024 * 1024;
+const ACCEPTED_IMAGE_TYPES = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/gif",
+]);
 
 function extractText(node: ReactNode): string {
   if (typeof node === "string" || typeof node === "number") return String(node);
@@ -137,37 +157,92 @@ function EmptyChat() {
         <Sparkles aria-hidden />
       </span>
       <h2>开始一次模型测试</h2>
-      <p>选择一个已启用的文本模型，输入问题后即可查看流式回复效果。</p>
+      <p>选择一个已启用的模型，输入问题或上传图片后即可查看流式回复效果。</p>
     </div>
   );
 }
 
+function AttachmentImage({
+  conversationId,
+  attachment,
+  onOpen,
+}: {
+  conversationId: string;
+  attachment: ModelTestAttachment;
+  onOpen: (url: string, name: string) => void;
+}) {
+  const [url, setUrl] = useState("");
+  useEffect(() => {
+    let active = true;
+    let objectUrl = "";
+    void fetchApiBlob(
+      `/v1/model-test/conversations/${encodeURIComponent(conversationId)}` +
+        `/attachments/${encodeURIComponent(attachment.id)}/content`,
+    )
+      .then((blob) => {
+        objectUrl = URL.createObjectURL(blob);
+        if (active) setUrl(objectUrl);
+      })
+      .catch(() => undefined);
+    return () => {
+      active = false;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [attachment.id, conversationId]);
+  return (
+    <button
+      type="button"
+      className="attachment-image"
+      aria-label={`查看图片 ${attachment.original_filename}`}
+      disabled={!url}
+      onClick={() => url && onOpen(url, attachment.original_filename)}
+    >
+      {url ? (
+        <img src={url} alt={attachment.original_filename} />
+      ) : (
+        <ImageIcon aria-hidden />
+      )}
+    </button>
+  );
+}
+
 function MessageCard({
+  conversationId,
   message,
   contentOverride,
   isLastAssistant,
   generating,
   onRegenerate,
   onShowError,
+  onPreviewAttachment,
 }: {
+  conversationId: string;
   message: ModelTestMessage;
   contentOverride?: string;
   isLastAssistant: boolean;
   generating: boolean;
   onRegenerate: () => void;
   onShowError: (error: string) => void;
+  onPreviewAttachment: (url: string, name: string) => void;
 }) {
   const content = contentOverride ?? message.content;
   const statusLabel = {
-    pending: "生成中",
+    pending: "",
     completed: "",
     error: "生成失败",
-    cancelled: "已停止",
+    cancelled: "",
     superseded: "已替换",
   }[message.status];
-  const errorInfo = message.error_message
-    ? errorPresentation(message.error_message)
-    : null;
+  const replyStatus =
+    message.role === "assistant" && message.status === "pending"
+      ? { label: "正在回复", tone: "active" }
+      : message.role === "assistant" && message.status === "cancelled"
+        ? { label: "已停止", tone: "interrupt" }
+        : null;
+  const errorInfo =
+    message.status === "error" && message.error_message
+      ? errorPresentation(message.error_message)
+      : null;
   return (
     <article className={`chat-message ${message.role} ${message.status}`}>
       <div className="chat-avatar">
@@ -183,6 +258,18 @@ function MessageCard({
           {message.model_slug ? <span>{message.model_slug}</span> : null}
           {statusLabel ? <em>{statusLabel}</em> : null}
         </div>
+        {message.attachments?.length ? (
+          <div className="message-attachments">
+            {message.attachments.map((attachment) => (
+              <AttachmentImage
+                key={attachment.id}
+                conversationId={conversationId}
+                attachment={attachment}
+                onOpen={onPreviewAttachment}
+              />
+            ))}
+          </div>
+        ) : null}
         {message.role === "assistant" ? (
           content ? (
             <div className="markdown-body">
@@ -197,16 +284,26 @@ function MessageCard({
                 <i className="stream-caret" />
               ) : null}
             </div>
-          ) : (
+          ) : message.status === "pending" ? (
             <div className="typing-indicator" aria-label="正在生成">
               <i />
               <i />
               <i />
             </div>
-          )
-        ) : (
+          ) : null
+        ) : content ? (
           <p className="user-copy">{content}</p>
-        )}
+        ) : null}
+        {replyStatus ? (
+          <div className="reply-status-row" role="status" aria-live="polite">
+            <span className={`reply-status-pill ${replyStatus.tone}`}>
+              {replyStatus.tone === "active" ? (
+                <i className="reply-status-dot" aria-hidden />
+              ) : null}
+              {replyStatus.label}
+            </span>
+          </div>
+        ) : null}
         {errorInfo && message.error_message ? (
           <div className="model-error-card" role="alert">
             <div className="model-error-icon">
@@ -243,17 +340,20 @@ function MessageCard({
             <button
               type="button"
               aria-label="复制原始输出"
+              title="复制原始输出"
               onClick={() => void navigator.clipboard.writeText(content)}
             >
-              <Copy aria-hidden /> 复制原始输出
+              <Copy aria-hidden />
             </button>
             {isLastAssistant && !errorInfo ? (
               <button
                 type="button"
+                aria-label="重新生成"
+                title="重新生成"
                 disabled={generating}
                 onClick={onRegenerate}
               >
-                重新生成
+                <RotateCcw aria-hidden />
               </button>
             ) : null}
           </div>
@@ -278,13 +378,30 @@ export function ModelTestPage() {
   const [error, setError] = useState("");
   const [streamingId, setStreamingId] = useState<string | null>(null);
   const [streamedContent, setStreamedContent] = useState("");
+  const [stoppedPreview, setStoppedPreview] = useState<{
+    messageId: string;
+    content: string;
+  } | null>(null);
   const [conversationSearch, setConversationSearch] = useState("");
   const [errorDetail, setErrorDetail] = useState<string | null>(null);
+  const [attachmentPreview, setAttachmentPreview] = useState<{
+    url: string;
+    name: string;
+  } | null>(null);
+  const [uploadingAttachments, setUploadingAttachments] = useState(false);
+  const [removingAttachmentId, setRemovingAttachmentId] = useState<
+    string | null
+  >(null);
   const [temperatureDraft, setTemperatureDraft] = useState(0.7);
   const [mobilePanel, setMobilePanel] = useState<
     "conversations" | "settings" | null
   >(null);
+  const [generationModelId, setGenerationModelId] = useState<string | null>(
+    null,
+  );
   const abortRef = useRef<AbortController | null>(null);
+  const activeMessageIdRef = useRef<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const autoCreated = useRef(false);
 
   const availableModels = useMemo(
@@ -292,26 +409,48 @@ export function ModelTestPage() {
       (catalogQuery.data?.providers ?? []).flatMap((provider) =>
         provider.enabled
           ? provider.models
-              .filter(
-                (model) => model.enabled && model.capabilities.includes("chat"),
-              )
+              .filter((model) => model.enabled)
               .map((model) => ({
                 value: model.id,
                 label: model.label || model.slug,
                 description: `${provider.name} · ${model.slug}`,
+                capabilities: model.capabilities,
+                providerKind: provider.kind,
               }))
           : [],
       ),
     [catalogQuery.data],
   );
-  const modelOptions: SelectOption[] = availableModels.length
-    ? availableModels
-    : [{ value: "", label: "暂无可用文本模型", disabled: true }];
-
+  const textModels = useMemo(
+    () =>
+      availableModels.filter((model) =>
+        ["openai", "anthropic"].includes(model.providerKind),
+      ),
+    [availableModels],
+  );
   const createMutation = useMutation({
-    mutationFn: () => createModelTestConversation(availableModels[0]?.value),
+    mutationFn: (modelId?: string) =>
+      createModelTestConversation(modelId ?? textModels[0]?.value),
     onSuccess: async (conversation) => {
+      queryClient.setQueryData(
+        ["model-test-conversation", conversation.id],
+        conversation,
+      );
+      queryClient.setQueryData<
+        Awaited<ReturnType<typeof getModelTestConversations>>
+      >(["model-test-conversations"], (current) => ({
+        items: [
+          conversation,
+          ...(current?.items ?? []).filter(
+            (item) => item.id !== conversation.id,
+          ),
+        ],
+      }));
       setActiveId(conversation.id);
+      setInput("");
+      setError("");
+      setConversationSearch("");
+      setMobilePanel(null);
       await queryClient.invalidateQueries({
         queryKey: ["model-test-conversations"],
       });
@@ -330,13 +469,19 @@ export function ModelTestPage() {
       setActiveId(items[0].id);
     } else if (
       !items.length &&
+      textModels.length &&
       !autoCreated.current &&
       !createMutation.isPending
     ) {
       autoCreated.current = true;
-      createMutation.mutate();
+      createMutation.mutate(undefined);
     }
-  }, [activeId, conversationsQuery.data?.items, createMutation]);
+  }, [
+    activeId,
+    conversationsQuery.data?.items,
+    createMutation,
+    textModels.length,
+  ]);
 
   const detailQuery = useQuery({
     queryKey: ["model-test-conversation", activeId],
@@ -344,11 +489,35 @@ export function ModelTestPage() {
     enabled: Boolean(activeId),
   });
   const conversation = detailQuery.data;
+  const draftAttachments = conversation?.draft_attachments ?? [];
+  const selectedModel = textModels.find(
+    (model) => model.value === conversation?.model_id,
+  );
+  const selectedModelSupportsVision = Boolean(
+    selectedModel?.capabilities.includes("vision"),
+  );
 
   useEffect(() => {
     if (conversation && !streamingId)
       setTemperatureDraft(conversation.temperature);
   }, [conversation, streamingId]);
+
+  useEffect(() => {
+    setAttachmentPreview(null);
+    setUploadingAttachments(false);
+    setRemovingAttachmentId(null);
+    setStoppedPreview(null);
+  }, [activeId]);
+
+  useEffect(() => {
+    if (!conversation || !stoppedPreview) return;
+    const stoppedMessage = conversation.messages.find(
+      (message) => message.id === stoppedPreview.messageId,
+    );
+    if (stoppedMessage && stoppedMessage.status !== "pending") {
+      setStoppedPreview(null);
+    }
+  }, [conversation, stoppedPreview]);
 
   const updateLocal = (next: ModelTestConversation) => {
     queryClient.setQueryData(["model-test-conversation", next.id], next);
@@ -393,10 +562,75 @@ export function ModelTestPage() {
     }
   };
 
+  const uploadAttachments = async (files: FileList | null) => {
+    if (!conversation || !files?.length || streamingId) return;
+    const selected = Array.from(files);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+    if (!selectedModelSupportsVision) {
+      setError("当前模型不支持图片，请先选择支持 vision 的模型。");
+      return;
+    }
+    if (draftAttachments.length + selected.length > MAX_ATTACHMENTS) {
+      setError("每条消息最多上传 5 张图片。");
+      return;
+    }
+    const invalidType = selected.find(
+      (file) => file.type && !ACCEPTED_IMAGE_TYPES.has(file.type),
+    );
+    if (invalidType) {
+      setError(`不支持图片「${invalidType.name}」的格式。`);
+      return;
+    }
+    const oversized = selected.find((file) => file.size > MAX_ATTACHMENT_BYTES);
+    if (oversized) {
+      setError(`图片「${oversized.name}」超过 8 MiB。`);
+      return;
+    }
+    setError("");
+    setUploadingAttachments(true);
+    try {
+      await uploadModelTestAttachments(conversation.id, selected);
+      await detailQuery.refetch();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : String(cause));
+    } finally {
+      setUploadingAttachments(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  const removeDraftAttachment = async (attachmentId: string) => {
+    if (!conversation || streamingId || uploadingAttachments) return;
+    setError("");
+    setRemovingAttachmentId(attachmentId);
+    try {
+      await deleteModelTestAttachment(conversation.id, attachmentId);
+      await detailQuery.refetch();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : String(cause));
+    } finally {
+      setRemovingAttachmentId(null);
+    }
+  };
+
   const run = async (regenerate: boolean) => {
-    if (!conversation || streamingId || (!regenerate && !input.trim())) return;
+    const attachmentIds = draftAttachments.map((attachment) => attachment.id);
+    if (
+      !conversation ||
+      streamingId ||
+      uploadingAttachments ||
+      (!regenerate && !input.trim() && !attachmentIds.length)
+    )
+      return;
+    if (!regenerate && attachmentIds.length && !selectedModelSupportsVision) {
+      setError("当前模型不支持图片，请先选择支持 vision 的模型。");
+      return;
+    }
     setError("");
     setStreamedContent("");
+    setStoppedPreview(null);
+    setStreamingId("starting");
+    activeMessageIdRef.current = null;
     const controller = new AbortController();
     abortRef.current = controller;
     try {
@@ -404,13 +638,19 @@ export function ModelTestPage() {
         conversation.id,
         {
           expected_revision: conversation.revision,
-          ...(regenerate ? {} : { content: input.trim() }),
+          ...(regenerate
+            ? {}
+            : { content: input.trim(), attachment_ids: attachmentIds }),
         },
         regenerate,
         controller.signal,
         (event: ModelStreamEvent) => {
           if (event.type === "start") {
-            setStreamingId(String(event.payload.assistant_message_id));
+            const assistantMessageId = String(
+              event.payload.assistant_message_id,
+            );
+            activeMessageIdRef.current = assistantMessageId;
+            setStreamingId(assistantMessageId);
             if (!regenerate) setInput("");
             void detailQuery.refetch();
           } else if (event.type === "delta") {
@@ -432,6 +672,7 @@ export function ModelTestPage() {
       }
     } finally {
       abortRef.current = null;
+      activeMessageIdRef.current = null;
       setStreamingId(null);
       setStreamedContent("");
       await Promise.all([
@@ -444,15 +685,56 @@ export function ModelTestPage() {
     }
   };
 
+  const stopGeneration = () => {
+    const messageId = activeMessageIdRef.current;
+    if (messageId) {
+      setStoppedPreview({ messageId, content: streamedContent });
+    }
+    abortRef.current?.abort();
+  };
+
   const visibleMessages = (conversation?.messages ?? []).filter(
     (message) => message.status !== "superseded",
   );
+  const completedAssistantTurns = new Set(
+    (conversation?.messages ?? [])
+      .filter(
+        (message) =>
+          message.role === "assistant" && message.status === "completed",
+      )
+      .map((message) => message.turn_id),
+  );
+  const hasCompletedImageContext = (conversation?.messages ?? []).some(
+    (message) =>
+      message.role === "user" &&
+      completedAssistantTurns.has(message.turn_id) &&
+      Boolean(message.attachments?.length),
+  );
+  const modelOptions: SelectOption[] = availableModels.length
+    ? availableModels.map((model) => {
+        const supportsVision = model.capabilities.includes("vision");
+        const isTextModel = ["openai", "anthropic"].includes(
+          model.providerKind,
+        );
+        return {
+          value: model.value,
+          label: model.label,
+          description: `${model.description}${supportsVision ? " · 支持图片" : ""}`,
+          disabled: isTextModel && hasCompletedImageContext && !supportsVision,
+        };
+      })
+    : [{ value: "", label: "暂无可用模型", disabled: true }];
   const lastAssistantId = [...visibleMessages]
     .reverse()
     .find((message) => message.role === "assistant")?.id;
-  const selectedModelAvailable = availableModels.some(
+  const selectedModelAvailable = textModels.some(
     (model) => model.value === conversation?.model_id,
   );
+  const canSend =
+    selectedModelAvailable &&
+    !uploadingAttachments &&
+    Boolean(input.trim() || draftAttachments.length) &&
+    (!draftAttachments.length || selectedModelSupportsVision);
   const conversationItems = conversationsQuery.data?.items ?? [];
   const normalizedSearch = conversationSearch.trim().toLowerCase();
   const filteredConversations = normalizedSearch
@@ -462,6 +744,36 @@ export function ModelTestPage() {
           .includes(normalizedSearch),
       )
     : conversationItems;
+
+  const generationModel = availableModels.find(
+    (model) => model.value === generationModelId,
+  );
+  if (
+    generationModel &&
+    ["senseaudio_image", "senseaudio_video"].includes(
+      generationModel.providerKind,
+    )
+  ) {
+    return (
+      <ModelGenerationTestPanel
+        models={availableModels}
+        modelId={generationModel.value}
+        onSelectModel={(modelId) => {
+          const next = availableModels.find((model) => model.value === modelId);
+          if (!next) return;
+          if (
+            ["senseaudio_image", "senseaudio_video"].includes(next.providerKind)
+          ) {
+            setGenerationModelId(next.value);
+            return;
+          }
+          setGenerationModelId(null);
+          if (conversation) void patch({ model_id: next.value });
+          else createMutation.mutate(next.value);
+        }}
+      />
+    );
+  }
 
   return (
     <section className="model-test-page">
@@ -501,8 +813,12 @@ export function ModelTestPage() {
             <button
               type="button"
               className="new-conversation-button"
-              disabled={createMutation.isPending || Boolean(streamingId)}
-              onClick={() => createMutation.mutate()}
+              disabled={
+                createMutation.isPending ||
+                Boolean(streamingId) ||
+                uploadingAttachments
+              }
+              onClick={() => createMutation.mutate(undefined)}
             >
               <Plus aria-hidden /> 新建对话
             </button>
@@ -570,13 +886,18 @@ export function ModelTestPage() {
                     }}
                   />
                   {conversation.model_slug ? (
-                    <span>{conversation.model_slug}</span>
+                    <span
+                      className="chat-model-name"
+                      title={conversation.model_slug}
+                    >
+                      当前模型 · {conversation.model_slug}
+                    </span>
                   ) : null}
                 </div>
                 <button
                   className="chat-delete-button"
                   aria-label="删除当前对话"
-                  disabled={Boolean(streamingId)}
+                  disabled={Boolean(streamingId) || uploadingAttachments}
                   onClick={() => void remove()}
                 >
                   <Trash2 aria-hidden />
@@ -584,19 +905,39 @@ export function ModelTestPage() {
               </div>
               <div className="chat-scroll">
                 {visibleMessages.length ? (
-                  visibleMessages.map((message) => (
-                    <MessageCard
-                      key={message.id}
-                      message={message}
-                      contentOverride={
-                        message.id === streamingId ? streamedContent : undefined
-                      }
-                      isLastAssistant={message.id === lastAssistantId}
-                      generating={Boolean(streamingId)}
-                      onRegenerate={() => void run(true)}
-                      onShowError={setErrorDetail}
-                    />
-                  ))
+                  visibleMessages.map((message) => {
+                    const locallyStopped =
+                      stoppedPreview?.messageId === message.id &&
+                      message.status === "pending";
+                    const displayMessage: ModelTestMessage = locallyStopped
+                      ? {
+                          ...message,
+                          status: "cancelled",
+                          error_message: null,
+                        }
+                      : message;
+                    return (
+                      <MessageCard
+                        key={message.id}
+                        conversationId={conversation.id}
+                        message={displayMessage}
+                        contentOverride={
+                          message.id === streamingId
+                            ? streamedContent
+                            : locallyStopped
+                              ? stoppedPreview.content
+                              : undefined
+                        }
+                        isLastAssistant={message.id === lastAssistantId}
+                        generating={Boolean(streamingId)}
+                        onRegenerate={() => void run(true)}
+                        onShowError={setErrorDetail}
+                        onPreviewAttachment={(url, name) =>
+                          setAttachmentPreview({ url, name })
+                        }
+                      />
+                    );
+                  })
                 ) : (
                   <EmptyChat />
                 )}
@@ -604,10 +945,58 @@ export function ModelTestPage() {
               <div className="composer-wrap">
                 {!selectedModelAvailable ? (
                   <p className="model-warning">
-                    当前模型不可用，请在右侧重新选择已启用的 chat 模型。
+                    当前模型不可用，请在右侧重新选择已启用的文本模型。
+                  </p>
+                ) : null}
+                {selectedModelAvailable &&
+                (draftAttachments.length || hasCompletedImageContext) &&
+                !selectedModelSupportsVision ? (
+                  <p className="model-warning">
+                    当前对话包含图片，请选择支持 vision 的模型。
                   </p>
                 ) : null}
                 <div className="composer">
+                  {draftAttachments.length || uploadingAttachments ? (
+                    <div
+                      className="composer-attachments"
+                      aria-label="待发送图片"
+                    >
+                      {draftAttachments.map((attachment) => (
+                        <div className="draft-attachment" key={attachment.id}>
+                          <AttachmentImage
+                            conversationId={conversation.id}
+                            attachment={attachment}
+                            onOpen={(url, name) =>
+                              setAttachmentPreview({ url, name })
+                            }
+                          />
+                          <button
+                            type="button"
+                            className="remove-attachment"
+                            aria-label={`移除图片 ${attachment.original_filename}`}
+                            disabled={
+                              Boolean(streamingId) ||
+                              removingAttachmentId === attachment.id
+                            }
+                            onClick={() =>
+                              void removeDraftAttachment(attachment.id)
+                            }
+                          >
+                            {removingAttachmentId === attachment.id ? (
+                              <LoaderCircle aria-hidden />
+                            ) : (
+                              <X aria-hidden />
+                            )}
+                          </button>
+                        </div>
+                      ))}
+                      {uploadingAttachments ? (
+                        <div className="attachment-uploading" role="status">
+                          <LoaderCircle aria-hidden /> 上传中
+                        </div>
+                      ) : null}
+                    </div>
+                  ) : null}
                   <textarea
                     value={input}
                     onChange={(event) => setInput(event.target.value)}
@@ -617,9 +1006,43 @@ export function ModelTestPage() {
                         void run(false);
                       }
                     }}
-                    disabled={Boolean(streamingId)}
+                    disabled={Boolean(streamingId) || uploadingAttachments}
                     placeholder="输入要测试的问题"
                     rows={3}
+                  />
+                  <button
+                    type="button"
+                    className="attachment-button"
+                    aria-label="添加图片"
+                    title={
+                      selectedModelSupportsVision
+                        ? "添加图片"
+                        : "当前模型不支持图片"
+                    }
+                    disabled={
+                      Boolean(streamingId) ||
+                      uploadingAttachments ||
+                      !selectedModelAvailable ||
+                      !selectedModelSupportsVision ||
+                      draftAttachments.length >= MAX_ATTACHMENTS
+                    }
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    {uploadingAttachments ? (
+                      <LoaderCircle aria-hidden />
+                    ) : (
+                      <Paperclip aria-hidden />
+                    )}
+                  </button>
+                  <input
+                    ref={fileInputRef}
+                    hidden
+                    multiple
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,image/gif"
+                    onChange={(event) =>
+                      void uploadAttachments(event.target.files)
+                    }
                   />
                   <span className="composer-hint">
                     Enter 发送 · Shift + Enter 换行
@@ -628,7 +1051,7 @@ export function ModelTestPage() {
                     <button
                       className="send-button stop"
                       aria-label="停止生成"
-                      onClick={() => abortRef.current?.abort()}
+                      onClick={stopGeneration}
                     >
                       <Square aria-hidden fill="currentColor" />
                     </button>
@@ -636,10 +1059,10 @@ export function ModelTestPage() {
                     <button
                       className="send-button"
                       aria-label="发送"
-                      disabled={!input.trim() || !selectedModelAvailable}
+                      disabled={!canSend}
                       onClick={() => void run(false)}
                     >
-                      <ArrowUp aria-hidden />
+                      <Send aria-hidden />
                     </button>
                   )}
                 </div>
@@ -653,23 +1076,45 @@ export function ModelTestPage() {
         <aside
           className={`settings-panel${mobilePanel === "settings" ? " mobile-open" : ""}`}
         >
-          <div className="panel-heading">
-            <strong>测试参数</strong>
+          <div className="panel-heading settings-heading">
+            <div className="settings-heading-copy">
+              <span>
+                <SlidersHorizontal aria-hidden />
+                <strong>测试参数</strong>
+              </span>
+              <small>调整当前会话的生成方式</small>
+            </div>
           </div>
           {conversation ? (
             <div className="settings-form">
-              <label>
-                <span>模型</span>
+              <label className="parameter-field">
+                <span className="parameter-label">模型</span>
                 <CustomSelect
                   ariaLabel="测试模型"
                   value={conversation.model_id ?? ""}
                   options={modelOptions}
-                  disabled={Boolean(streamingId)}
-                  onChange={(model_id) => void patch({ model_id })}
+                  disabled={Boolean(streamingId) || uploadingAttachments}
+                  onChange={(model_id) => {
+                    const next = availableModels.find(
+                      (model) => model.value === model_id,
+                    );
+                    if (
+                      next &&
+                      ["senseaudio_image", "senseaudio_video"].includes(
+                        next.providerKind,
+                      )
+                    ) {
+                      setGenerationModelId(next.value);
+                      return;
+                    }
+                    void patch({ model_id });
+                  }}
                 />
               </label>
-              <label>
-                <span>System Prompt</span>
+              <label className="parameter-field">
+                <span className="parameter-label">
+                  系统提示词 <em className="optional-badge">可选</em>
+                </span>
                 <textarea
                   key={`${conversation.id}-system-${conversation.revision}`}
                   defaultValue={conversation.system_prompt}
@@ -682,57 +1127,80 @@ export function ModelTestPage() {
                   }}
                 />
               </label>
-              <label>
-                <span>
-                  Temperature <em>{temperatureDraft}</em>
+              <label className="parameter-field temperature-field">
+                <span className="parameter-label">
+                  Temperature
+                  <output className="temperature-value">
+                    {temperatureDraft.toFixed(1)}
+                  </output>
                 </span>
-                <input
-                  type="range"
-                  min="0"
-                  max="2"
-                  step="0.1"
-                  value={temperatureDraft}
-                  disabled={Boolean(streamingId)}
-                  onChange={(event) =>
-                    setTemperatureDraft(Number(event.target.value))
-                  }
-                  onPointerUp={(event) => {
-                    const value = Number(event.currentTarget.value);
-                    if (value !== conversation.temperature)
-                      void patch({ temperature: value });
-                  }}
-                  onKeyUp={(event) => {
-                    const value = Number(event.currentTarget.value);
-                    if (value !== conversation.temperature)
-                      void patch({ temperature: value });
-                  }}
-                />
-                <small>数值越高，回复越有创造性。</small>
+                <div className="temperature-control">
+                  <input
+                    type="range"
+                    min="0"
+                    max="2"
+                    step="0.1"
+                    value={temperatureDraft}
+                    disabled={Boolean(streamingId)}
+                    style={
+                      {
+                        "--range-progress": `${(temperatureDraft / 2) * 100}%`,
+                      } as CSSProperties
+                    }
+                    onChange={(event) =>
+                      setTemperatureDraft(Number(event.target.value))
+                    }
+                    onPointerUp={(event) => {
+                      const value = Number(event.currentTarget.value);
+                      if (value !== conversation.temperature)
+                        void patch({ temperature: value });
+                    }}
+                    onKeyUp={(event) => {
+                      const value = Number(event.currentTarget.value);
+                      if (value !== conversation.temperature)
+                        void patch({ temperature: value });
+                    }}
+                  />
+                  <div className="range-scale" aria-hidden="true">
+                    <span>精确</span>
+                    <span>平衡</span>
+                    <span>创意</span>
+                  </div>
+                </div>
+                <small className="parameter-help">
+                  较低的值更稳定，较高的值更有创造性。
+                </small>
               </label>
-              <label>
-                <span>最大输出 Token</span>
-                <input
-                  type="number"
-                  min="1"
-                  max="8192"
-                  key={`${conversation.id}-tokens-${conversation.max_tokens}`}
-                  defaultValue={conversation.max_tokens}
-                  disabled={Boolean(streamingId)}
-                  onBlur={(event) => {
-                    const value = Math.min(
-                      8192,
-                      Math.max(1, Number(event.target.value)),
-                    );
-                    if (value !== conversation.max_tokens)
-                      void patch({ max_tokens: value });
-                  }}
-                />
+              <label className="parameter-field">
+                <span className="parameter-label">最大输出</span>
+                <div className="token-input">
+                  <input
+                    type="number"
+                    min="1"
+                    max="8192"
+                    key={`${conversation.id}-tokens-${conversation.max_tokens}`}
+                    defaultValue={conversation.max_tokens}
+                    disabled={Boolean(streamingId)}
+                    onBlur={(event) => {
+                      const value = Math.min(
+                        8192,
+                        Math.max(1, Number(event.target.value)),
+                      );
+                      if (value !== conversation.max_tokens)
+                        void patch({ max_tokens: value });
+                    }}
+                  />
+                  <span>Token</span>
+                </div>
               </label>
               <div className="parameter-note">
-                <strong>上下文策略</strong>
-                <p>
-                  仅已成功完成的轮次会进入下一次请求；失败或停止的回复只保留展示。
-                </p>
+                <Info aria-hidden />
+                <div>
+                  <strong>上下文策略</strong>
+                  <p>
+                    仅已成功完成的轮次及其图片会进入下一次请求；失败或停止的回复只保留展示。
+                  </p>
+                </div>
               </div>
               <button
                 type="button"
@@ -801,6 +1269,40 @@ export function ModelTestPage() {
               >
                 完成
               </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+      {attachmentPreview ? (
+        <div
+          className="modal-backdrop"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget)
+              setAttachmentPreview(null);
+          }}
+        >
+          <div
+            className="modal-card attachment-preview-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-label={`图片预览 ${attachmentPreview.name}`}
+          >
+            <div className="modal-head">
+              <div>
+                <span className="eyebrow">图片附件</span>
+                <h2>{attachmentPreview.name}</h2>
+              </div>
+              <button
+                type="button"
+                className="icon-btn"
+                aria-label="关闭图片预览"
+                onClick={() => setAttachmentPreview(null)}
+              >
+                <X aria-hidden />
+              </button>
+            </div>
+            <div className="attachment-preview-stage">
+              <img src={attachmentPreview.url} alt={attachmentPreview.name} />
             </div>
           </div>
         </div>

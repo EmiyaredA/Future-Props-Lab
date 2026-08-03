@@ -17,6 +17,14 @@ class SeedModel:
     capabilities: tuple[str, ...]
 
 
+def _categories_for_provider(kind: str) -> list[str]:
+    if kind == "senseaudio_image":
+        return ["image_generation"]
+    if kind == "senseaudio_video":
+        return ["video_generation"]
+    return ["text_generation"]
+
+
 @dataclass(frozen=True)
 class SeedProvider:
     id: str
@@ -165,17 +173,71 @@ SAYFLOW_TEXT_CATALOG = (
             ),
         ),
     ),
+    SeedProvider(
+        id="f0000000-0000-4000-8000-000000000003",
+        name="SenseAudio 图片生成",
+        kind="senseaudio_image",
+        base_url="https://api.senseaudio.cn/v1",
+        sort_order=2,
+        models=(
+            SeedModel(
+                id="f2000000-0000-4000-8000-000000000001",
+                slug="senseaudio-image-2.0-260319",
+                label="SenseAudio Image 2.0",
+                description="SenseAudio 高清多比例图片生成模型",
+                capabilities=("image_generation",),
+            ),
+            SeedModel(
+                id="f2000000-0000-4000-8000-000000000002",
+                slug="senseaudio-image-1.0-260319",
+                label="SenseAudio Image 1.0",
+                description="SenseAudio 通用图片生成模型",
+                capabilities=("image_generation",),
+            ),
+            SeedModel(
+                id="f2000000-0000-4000-8000-000000000003",
+                slug="doubao-seedream-5-0-260128",
+                label="Doubao Seedream 5.0 Lite",
+                description="高分辨率图片生成模型",
+                capabilities=("image_generation",),
+            ),
+            SeedModel(
+                id="f2000000-0000-4000-8000-000000000004",
+                slug="sensenova-u1-fast",
+                label="SenseNova U1 Fast",
+                description="面向信息图与高密度版式的图片生成模型",
+                capabilities=("image_generation",),
+            ),
+        ),
+    ),
+    SeedProvider(
+        id="f0000000-0000-4000-8000-000000000004",
+        name="SenseAudio 视频生成",
+        kind="senseaudio_video",
+        base_url="https://api.senseaudio.cn/v1",
+        sort_order=3,
+        models=(
+            SeedModel(
+                id="f2000000-0000-4000-8000-000000000005",
+                slug="doubao-seedance-2-0-260128",
+                label="Doubao Seedance 2.0",
+                description="支持文本、首尾帧与多模态参考素材的视频生成模型",
+                capabilities=("video_generation",),
+            ),
+        ),
+    ),
 )
 
 
 async def seed_sayflow_text_catalog(session: AsyncSession) -> bool:
-    """仅向全新目录播种 Sayflow 文本供应商，不覆盖后续用户配置。"""
+    """仅向全新目录播种内置供应商，不覆盖后续用户配置。"""
     state = await session.get(ModelCatalogState, "default")
     providers = (await session.execute(select(ModelProvider))).scalars().all()
     if state is None or state.revision != 0 or providers:
         await session.rollback()
         return False
 
+    providers_by_id: dict[str, ModelProvider] = {}
     for provider_seed in SAYFLOW_TEXT_CATALOG:
         provider = ModelProvider(
             id=provider_seed.id,
@@ -183,10 +245,15 @@ async def seed_sayflow_text_catalog(session: AsyncSession) -> bool:
             kind=provider_seed.kind,
             base_url=provider_seed.base_url,
             api_key_ciphertext="",
-            enabled=True,
+            enabled=provider_seed.kind in {"openai", "anthropic"},
             sort_order=provider_seed.sort_order,
         )
         session.add(provider)
+        providers_by_id[provider_seed.id] = provider
+    await session.flush()
+
+    for provider_seed in SAYFLOW_TEXT_CATALOG:
+        provider = providers_by_id[provider_seed.id]
         for sort_order, model_seed in enumerate(provider_seed.models):
             session.add(
                 ModelEntry(
@@ -196,6 +263,7 @@ async def seed_sayflow_text_catalog(session: AsyncSession) -> bool:
                     label=model_seed.label,
                     description=model_seed.description,
                     capabilities=list(model_seed.capabilities),
+                    categories=_categories_for_provider(provider_seed.kind),
                     enabled=True,
                     sort_order=sort_order,
                 )

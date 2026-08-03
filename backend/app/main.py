@@ -14,6 +14,7 @@ from app.concurrency.revisions import RevisionConflictError
 from app.core.config import get_settings
 from app.core.db import SessionLocal, engine
 from app.llm.catalog.seed import seed_sayflow_text_catalog
+from app.llm.playground.generation_runner import ModelTestGenerationRunner
 from app.problem_details import (
     http_exception_handler,
     revision_conflict_handler,
@@ -21,6 +22,7 @@ from app.problem_details import (
     validation_exception_handler,
 )
 from app.routes import api_router
+from app.visual_workshop.generation_runner import VisualGenerationRunner
 from db.migrations import apply_migrations
 from db.migrations.registry import LATEST_MIGRATION_ID
 
@@ -32,9 +34,15 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
     apply_migrations(settings.database_path)
     async with SessionLocal() as session:
         await seed_sayflow_text_catalog(session)
+    runner = VisualGenerationRunner()
+    model_test_runner = ModelTestGenerationRunner()
+    await runner.start()
+    await model_test_runner.start()
     try:
         yield
     finally:
+        await model_test_runner.stop()
+        await runner.stop()
         await engine.dispose()
 
 

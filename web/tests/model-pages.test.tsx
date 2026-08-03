@@ -1,14 +1,20 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { vi } from "vitest";
 import { ModelCallLogsPage } from "@features/models/ModelCallLogsPage";
 import { ModelServicePage } from "@features/models/ModelServicePage";
 import { ModelTestPage } from "@features/models/ModelTestPage";
 import {
+  createModelTestConversation,
+  createModelTestGenerationTask,
+  deleteModelTestAttachment,
   getModelTestConversation,
   getModelTestConversations,
   patchModelTestConversation,
+  streamModelTest,
+  uploadModelTestAttachments,
+  type ModelTestConversation,
 } from "@features/models/api";
 
 vi.mock("@features/models/api", async () => {
@@ -35,12 +41,90 @@ vi.mock("@features/models/api", async () => {
               slug: "model-x",
               label: "Model X",
               description: "",
-              capabilities: ["chat"],
+              capabilities: ["chat", "vision"],
+              categories: ["text_generation"],
+              enabled: true,
+            },
+          ],
+        },
+        {
+          id: "p-image",
+          name: "图片供应商",
+          kind: "senseaudio_image",
+          base_url: "https://example.test/v1",
+          enabled: true,
+          has_api_key: true,
+          api_key_hint: "5678",
+          models: [
+            {
+              id: "m-image",
+              provider_id: "p-image",
+              slug: "senseaudio-image-2.0-260319",
+              label: "Image Model",
+              description: "图片生成模型",
+              capabilities: ["image_generation"],
+              categories: ["image_generation"],
               enabled: true,
             },
           ],
         },
       ],
+    }),
+    getModelCategories: vi.fn().mockResolvedValue({
+      items: [
+        {
+          id: "text_generation",
+          label: "文本生成",
+          type: "text",
+          sub_type: "chat",
+        },
+        {
+          id: "image_generation",
+          label: "图片生成",
+          type: "image",
+          sub_type: "text-to-image",
+        },
+      ],
+    }),
+    getModelTestGenerationOptions: vi.fn().mockResolvedValue({
+      items: [
+        {
+          id: "m-image",
+          provider_id: "p-image",
+          provider_name: "图片供应商",
+          kind: "image",
+          slug: "senseaudio-image-2.0-260319",
+          label: "Image Model",
+          description: "图片生成模型",
+          sizes: ["1024x1024"],
+        },
+      ],
+    }),
+    getModelTestGenerationTasks: vi
+      .fn()
+      .mockResolvedValue({ items: [], total: 0 }),
+    createModelTestGenerationTask: vi.fn().mockResolvedValue({
+      id: "task-image",
+      provider_id: "p-image",
+      model_id: "m-image",
+      provider_kind: "senseaudio_image",
+      kind: "image",
+      provider_name: "图片供应商",
+      model_slug: "senseaudio-image-2.0-260319",
+      request_payload: { prompt: "未来城市", size: "1024x1024", seed: null },
+      status: "queued",
+      progress: 0,
+      error_message: null,
+      result_filename: null,
+      result_mime_type: null,
+      result_byte_size: null,
+      result_available: false,
+      can_retry_materialization: false,
+      log_id: null,
+      revision: 0,
+      created_at: "2026-08-03T00:00:00Z",
+      updated_at: "2026-08-03T00:00:00Z",
+      completed_at: null,
     }),
     getLogs: vi
       .fn()
@@ -64,6 +148,7 @@ vi.mock("@features/models/api", async () => {
         },
       ],
     }),
+    createModelTestConversation: vi.fn(),
     getModelTestConversation: vi.fn().mockResolvedValue({
       id: "c1",
       title: "测试对话",
@@ -102,6 +187,9 @@ vi.mock("@features/models/api", async () => {
       max_tokens: 1024,
       messages: [],
     }),
+    uploadModelTestAttachments: vi.fn(),
+    deleteModelTestAttachment: vi.fn().mockResolvedValue({ deleted: true }),
+    streamModelTest: vi.fn().mockResolvedValue(undefined),
   };
 });
 
@@ -114,17 +202,17 @@ function renderWithQuery(ui: React.ReactNode) {
   );
 }
 
-test("shows provider catalog and model diagnostics entry", async () => {
-  const { container } = renderWithQuery(
-    <ModelServicePage onOpenLogs={() => undefined} />,
-  );
+test("shows provider catalog categories without the redundant diagnostics entry", async () => {
+  const { container } = renderWithQuery(<ModelServicePage />);
   expect(await screen.findByText("主模型网关")).toBeInTheDocument();
   expect(await screen.findByText("Model X")).toBeInTheDocument();
   expect(container.querySelector(".model-glyph")).toBeNull();
-  expect(screen.getByText("能力")).toBeInTheDocument();
+  expect(screen.getByText("类别 / 能力")).toBeInTheDocument();
+  expect(screen.getByText("文本生成")).toBeInTheDocument();
   expect(screen.getByText("状态")).toBeInTheDocument();
   expect(screen.getAllByText("已启用")).toHaveLength(2);
-  expect(screen.getByRole("button", { name: "测试调用" })).toBeEnabled();
+  expect(screen.queryByRole("button", { name: "测试调用" })).toBeNull();
+  expect(screen.queryByText("查看模型测试产生的调用日志")).toBeNull();
 });
 
 test("shows a useful empty state for call logs", async () => {
@@ -140,6 +228,10 @@ test("renders persistent model test workspace with safe markdown", async () => {
   const { container } = renderWithQuery(<ModelTestPage />);
   expect(await screen.findByText("测试对话")).toBeInTheDocument();
   expect(await screen.findByText("安全 Markdown")).toBeInTheDocument();
+  expect(screen.getByText("当前模型 · model-x")).toHaveAttribute(
+    "title",
+    "model-x",
+  );
   expect(screen.getByRole("button", { name: "测试模型" })).toBeInTheDocument();
   const copyCodeButton = screen.getByRole("button", { name: "复制代码" });
   expect(copyCodeButton).toBeInTheDocument();
@@ -160,6 +252,26 @@ test("renders persistent model test workspace with safe markdown", async () => {
   });
   expect(container.querySelector("select")).toBeNull();
   expect(container.querySelector("img")).toBeNull();
+});
+
+test("switches the shared model selector to an image generation test", async () => {
+  const user = userEvent.setup();
+  renderWithQuery(<ModelTestPage />);
+  await screen.findByText("测试对话");
+  await user.click(await screen.findByRole("button", { name: "测试模型" }));
+  await user.click(screen.getByRole("option", { name: /Image Model/ }));
+  expect(await screen.findByText("图片测试记录")).toBeInTheDocument();
+  await user.type(screen.getByPlaceholderText("描述要生成的画面…"), "未来城市");
+  await user.click(screen.getByRole("button", { name: "开始测试" }));
+  await waitFor(() =>
+    expect(vi.mocked(createModelTestGenerationTask)).toHaveBeenCalledWith({
+      kind: "image",
+      model_id: "m-image",
+      prompt: "未来城市",
+      size: "1024x1024",
+      seed: null,
+    }),
+  );
 });
 
 test("filters conversations locally", async () => {
@@ -227,4 +339,263 @@ test("keeps raw provider errors inside the detail dialog", async () => {
   expect(screen.queryByText(rawError)).not.toBeInTheDocument();
   await user.click(screen.getByRole("button", { name: "查看详情" }));
   expect(screen.getByRole("dialog")).toHaveTextContent(rawError);
+});
+
+test("uploads, previews, sends and removes private image drafts", async () => {
+  const attachment = {
+    id: "attachment-1",
+    original_filename: "screen.png",
+    mime_type: "image/png" as const,
+    byte_size: 68,
+    width: 4,
+    height: 3,
+    created_at: "2026-08-03T00:00:00Z",
+  };
+  let detail: ModelTestConversation = {
+    id: "c1",
+    title: "测试对话",
+    model_id: "m1",
+    model_slug: "model-x",
+    revision: 2,
+    created_at: "2026-08-03T00:00:00Z",
+    updated_at: "2026-08-03T00:00:00Z",
+    system_prompt: "",
+    temperature: 0.7,
+    max_tokens: 1024,
+    messages: [],
+    draft_attachments: [],
+  };
+  vi.mocked(getModelTestConversation).mockImplementation(async () => detail);
+  vi.mocked(uploadModelTestAttachments).mockImplementation(async () => {
+    detail = { ...detail, draft_attachments: [attachment] };
+    return { items: [attachment] };
+  });
+  vi.mocked(deleteModelTestAttachment).mockImplementation(async () => {
+    detail = { ...detail, draft_attachments: [] };
+    return { deleted: true };
+  });
+  const createObjectUrl = vi.fn(() => "blob:model-test-image");
+  const revokeObjectUrl = vi.fn();
+  Object.defineProperty(URL, "createObjectURL", {
+    configurable: true,
+    value: createObjectUrl,
+  });
+  Object.defineProperty(URL, "revokeObjectURL", {
+    configurable: true,
+    value: revokeObjectUrl,
+  });
+  vi.stubGlobal(
+    "fetch",
+    vi.fn().mockResolvedValue(
+      new Response(new Blob(["image"], { type: "image/png" }), {
+        status: 200,
+      }),
+    ),
+  );
+
+  const user = userEvent.setup();
+  const { container } = renderWithQuery(<ModelTestPage />);
+  const input = await waitFor(() => {
+    const element =
+      container.querySelector<HTMLInputElement>('input[type="file"]');
+    expect(element).not.toBeNull();
+    return element as HTMLInputElement;
+  });
+  await user.upload(
+    input,
+    new File(["image"], "screen.png", { type: "image/png" }),
+  );
+  await waitFor(() =>
+    expect(uploadModelTestAttachments).toHaveBeenCalledWith(
+      "c1",
+      expect.arrayContaining([expect.objectContaining({ name: "screen.png" })]),
+    ),
+  );
+  expect(
+    await screen.findByRole("button", { name: "查看图片 screen.png" }),
+  ).toBeEnabled();
+  expect(screen.getByRole("button", { name: "发送" })).toBeEnabled();
+
+  await user.click(screen.getByRole("button", { name: "发送" }));
+  await waitFor(() =>
+    expect(streamModelTest).toHaveBeenCalledWith(
+      "c1",
+      {
+        expected_revision: 2,
+        content: "",
+        attachment_ids: ["attachment-1"],
+      },
+      false,
+      expect.any(AbortSignal),
+      expect.any(Function),
+    ),
+  );
+
+  await user.click(screen.getByRole("button", { name: "移除图片 screen.png" }));
+  await waitFor(() =>
+    expect(deleteModelTestAttachment).toHaveBeenCalledWith(
+      "c1",
+      "attachment-1",
+    ),
+  );
+  expect(
+    screen.queryByRole("button", { name: "移除图片 screen.png" }),
+  ).not.toBeInTheDocument();
+  vi.unstubAllGlobals();
+});
+
+test("shows a stopped reply as a status bubble without typing or failure UI", async () => {
+  vi.mocked(getModelTestConversation).mockResolvedValue({
+    id: "c1",
+    title: "测试对话",
+    model_id: "m1",
+    model_slug: "model-x",
+    revision: 3,
+    created_at: "2026-08-03T00:00:00Z",
+    updated_at: "2026-08-03T00:00:00Z",
+    system_prompt: "",
+    temperature: 0.7,
+    max_tokens: 1024,
+    messages: [
+      {
+        id: "msg-stopped",
+        turn_id: "t-stopped",
+        role: "assistant",
+        content: "",
+        model_slug: "model-x",
+        status: "cancelled",
+        error_message: "用户停止生成",
+        created_at: "2026-08-03T00:00:00Z",
+      },
+    ],
+  });
+
+  renderWithQuery(<ModelTestPage />);
+
+  expect(await screen.findByText("已停止")).toBeInTheDocument();
+  expect(screen.queryByLabelText("正在生成")).not.toBeInTheDocument();
+  expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  expect(screen.queryByText("模型调用失败")).not.toBeInTheDocument();
+});
+
+test("switches an active reply to stopped immediately when stop is clicked", async () => {
+  let detail: ModelTestConversation = {
+    id: "c1",
+    title: "测试对话",
+    model_id: "m1",
+    model_slug: "model-x",
+    revision: 2,
+    created_at: "2026-08-03T00:00:00Z",
+    updated_at: "2026-08-03T00:00:00Z",
+    system_prompt: "",
+    temperature: 0.7,
+    max_tokens: 1024,
+    messages: [],
+  };
+  vi.mocked(getModelTestConversation).mockImplementation(async () => detail);
+  vi.mocked(streamModelTest).mockImplementation(
+    async (_id, _body, _regenerate, signal, onEvent) => {
+      detail = {
+        ...detail,
+        revision: 3,
+        messages: [
+          {
+            id: "msg-streaming",
+            turn_id: "t-streaming",
+            role: "assistant",
+            content: "",
+            model_slug: "model-x",
+            status: "pending",
+            error_message: null,
+            created_at: "2026-08-03T00:00:00Z",
+          },
+        ],
+      };
+      onEvent({
+        type: "start",
+        schema_version: 2,
+        sequence: 0,
+        payload: { assistant_message_id: "msg-streaming" },
+      });
+      await new Promise<void>((_resolve, reject) => {
+        signal.addEventListener(
+          "abort",
+          () => reject(new DOMException("aborted", "AbortError")),
+          { once: true },
+        );
+      });
+    },
+  );
+  const user = userEvent.setup();
+  renderWithQuery(<ModelTestPage />);
+  const input = await screen.findByPlaceholderText("输入要测试的问题");
+  await user.type(input, "请回复一段内容");
+  await user.click(screen.getByRole("button", { name: "发送" }));
+
+  expect(await screen.findByText("正在回复")).toBeInTheDocument();
+  await user.click(screen.getByRole("button", { name: "停止生成" }));
+
+  await waitFor(() => expect(screen.getByText("已停止")).toBeInTheDocument());
+  expect(screen.queryByText("正在回复")).not.toBeInTheDocument();
+  expect(screen.queryByLabelText("正在生成")).not.toBeInTheDocument();
+  expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+});
+
+test("opens a newly created conversation before the history refresh finishes", async () => {
+  const previousConversation: ModelTestConversation = {
+    id: "c1",
+    title: "原对话",
+    model_id: "m1",
+    model_slug: "model-x",
+    revision: 2,
+    created_at: "2026-08-03T00:00:00Z",
+    updated_at: "2026-08-03T00:00:00Z",
+    system_prompt: "",
+    temperature: 0.7,
+    max_tokens: 1024,
+    messages: [],
+    draft_attachments: [],
+  };
+  const newConversation: ModelTestConversation = {
+    ...previousConversation,
+    id: "c2",
+    title: "新对话",
+    revision: 1,
+    created_at: "2026-08-03T01:00:00Z",
+    updated_at: "2026-08-03T01:00:00Z",
+  };
+  let resolveRefresh: (
+    value: Awaited<ReturnType<typeof getModelTestConversations>>,
+  ) => void = () => undefined;
+  const pendingRefresh = new Promise<
+    Awaited<ReturnType<typeof getModelTestConversations>>
+  >((resolve) => {
+    resolveRefresh = resolve;
+  });
+  const listCallsBeforeRender = vi.mocked(getModelTestConversations).mock.calls
+    .length;
+
+  vi.mocked(getModelTestConversations)
+    .mockResolvedValueOnce({ items: [previousConversation] })
+    .mockReturnValueOnce(pendingRefresh);
+  vi.mocked(createModelTestConversation).mockResolvedValueOnce(newConversation);
+  vi.mocked(getModelTestConversation).mockImplementation(async (id) =>
+    id === newConversation.id ? newConversation : previousConversation,
+  );
+
+  const user = userEvent.setup();
+  renderWithQuery(<ModelTestPage />);
+  expect(await screen.findByDisplayValue("原对话")).toBeInTheDocument();
+
+  await user.click(screen.getByRole("button", { name: "新建对话" }));
+
+  expect(await screen.findByDisplayValue("新对话")).toBeInTheDocument();
+  expect(screen.getByText("开始一次模型测试")).toBeInTheDocument();
+
+  resolveRefresh({ items: [newConversation, previousConversation] });
+  await waitFor(() =>
+    expect(getModelTestConversations).toHaveBeenCalledTimes(
+      listCallsBeforeRender + 2,
+    ),
+  );
 });

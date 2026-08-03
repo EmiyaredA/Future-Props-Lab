@@ -1,5 +1,5 @@
 import type { components } from "@generated/api";
-import { api, unwrap } from "@platform/api/client";
+import { api, fetchApiBlob, unwrap } from "@platform/api/client";
 import { ApiError } from "@platform/api/client";
 import { getStudioToken, notifyAuthRequired } from "@platform/api/studioAuth";
 
@@ -10,6 +10,7 @@ export type ProviderInput = Omit<
   "expected_catalog_revision"
 >;
 export type ModelEntry = components["schemas"]["ModelEntryOut"];
+export type ModelCategory = components["schemas"]["ModelCategoryOut"];
 export type ModelInput = Omit<
   components["schemas"]["ModelEntryIn"],
   "expected_catalog_revision"
@@ -24,9 +25,25 @@ export type ModelTestConversation =
 export type ModelTestConversationSummary =
   components["schemas"]["ModelTestConversationSummaryOut"];
 export type ModelTestMessage = components["schemas"]["ModelTestMessageOut"];
+export type ModelTestAttachment =
+  components["schemas"]["ModelTestAttachmentOut"];
+export type ModelTestGenerationTask =
+  components["schemas"]["ModelTestGenerationTaskOut"];
+export type ModelTestGenerationOption =
+  components["schemas"]["ModelTestGenerationOptionOut"];
+export type ModelTestImageGenerationInput =
+  components["schemas"]["ModelTestImageGenerationIn"];
+export type ModelTestVideoGenerationInput =
+  components["schemas"]["ModelTestVideoGenerationIn"];
+export type ModelTestGenerationInput =
+  ModelTestImageGenerationInput | ModelTestVideoGenerationInput;
 
 export async function getCatalog(): Promise<Catalog> {
   return unwrap(await api.GET("/v1/model-providers"));
+}
+
+export async function getModelCategories() {
+  return unwrap(await api.GET("/v1/model-categories"));
 }
 
 export async function createProvider(body: ProviderInput, revision: number) {
@@ -229,6 +246,102 @@ export async function deleteModelTestConversation(
   );
 }
 
+export async function uploadModelTestAttachments(id: string, files: File[]) {
+  const form = new FormData();
+  for (const file of files) form.append("files", file);
+  const base = String(import.meta.env.VITE_API_BASE || "").replace(/\/$/, "");
+  const token = getStudioToken();
+  const response = await fetch(
+    `${base}/v1/model-test/conversations/${encodeURIComponent(id)}/attachments`,
+    {
+      method: "POST",
+      headers: token ? { "X-Studio-Token": token } : {},
+      body: form,
+    },
+  );
+  if (response.status === 401) notifyAuthRequired();
+  if (!response.ok) {
+    const problem = (await response.json().catch(() => ({}))) as Record<
+      string,
+      unknown
+    >;
+    throw new ApiError(
+      String(problem.detail || "图片上传失败"),
+      problem,
+      response.status,
+    );
+  }
+  return (await response.json()) as components["schemas"]["ModelTestAttachmentListOut"];
+}
+
+export async function deleteModelTestAttachment(
+  conversationId: string,
+  attachmentId: string,
+) {
+  return unwrap(
+    await api.DELETE(
+      "/v1/model-test/conversations/{conversation_id}/attachments/{attachment_id}",
+      {
+        params: {
+          path: {
+            conversation_id: conversationId,
+            attachment_id: attachmentId,
+          },
+        },
+      },
+    ),
+  );
+}
+
+export async function getModelTestGenerationTasks(modelId?: string) {
+  return unwrap(
+    await api.GET("/v1/model-test/generation-tasks", {
+      params: {
+        query: { model_id: modelId, page: 1, page_size: 100 },
+      },
+    }),
+  );
+}
+
+export async function getModelTestGenerationOptions() {
+  return unwrap(await api.GET("/v1/model-test/generation-options"));
+}
+
+export async function createModelTestGenerationTask(
+  body: ModelTestGenerationInput,
+) {
+  return unwrap(await api.POST("/v1/model-test/generation-tasks", { body }));
+}
+
+export async function deleteModelTestGenerationTask(
+  id: string,
+  revision: number,
+) {
+  return unwrap(
+    await api.DELETE("/v1/model-test/generation-tasks/{task_id}", {
+      params: {
+        path: { task_id: id },
+        query: { expected_revision: revision },
+      },
+    }),
+  );
+}
+
+export async function retryModelTestGenerationMaterialization(id: string) {
+  return unwrap(
+    await api.POST(
+      "/v1/model-test/generation-tasks/{task_id}/retry-materialization",
+      { params: { path: { task_id: id } } },
+    ),
+  );
+}
+
+export async function getModelTestGenerationResult(id: string) {
+  return fetchApiBlob(
+    `/v1/model-test/generation-tasks/${encodeURIComponent(id)}/content`,
+  );
+}
+
 export type ModelStreamEvent = {
   type: "start" | "delta" | "done" | "error";
   schema_version: 2;
@@ -238,7 +351,11 @@ export type ModelStreamEvent = {
 
 export async function streamModelTest(
   id: string,
-  body: { expected_revision: number; content?: string },
+  body: {
+    expected_revision: number;
+    content?: string;
+    attachment_ids?: string[];
+  },
   regenerate: boolean,
   signal: AbortSignal,
   onEvent: (event: ModelStreamEvent) => void,

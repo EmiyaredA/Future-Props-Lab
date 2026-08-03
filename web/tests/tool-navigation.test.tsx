@@ -98,10 +98,10 @@ test("persists favorites and renders them in the side panel", async () => {
   expect(screen.getAllByText("JSON 格式化")).toHaveLength(2);
 });
 
-test("opens external and internal tools without waiting for usage persistence", async () => {
+test("opens external tools without waiting for usage persistence", async () => {
   const user = userEvent.setup();
   const open = vi.spyOn(window, "open").mockReturnValue(null);
-  const { onOpenInternal } = renderPage();
+  renderPage();
   await screen.findByText("还没有收藏工具");
 
   await user.click(screen.getByRole("button", { name: "打开接口调试" }));
@@ -111,10 +111,15 @@ test("opens external and internal tools without waiting for usage persistence", 
     "noopener,noreferrer",
   );
   expect(recordToolUse).toHaveBeenCalledWith("api-debugger");
+});
 
-  await user.click(screen.getByRole("button", { name: "打开模型测试" }));
-  expect(onOpenInternal).toHaveBeenCalledWith("/model-test");
-  expect(recordToolUse).toHaveBeenCalledWith("model-test");
+test("does not present first-party features as tool cards", async () => {
+  renderPage();
+  await screen.findByText("还没有收藏工具");
+
+  expect(screen.queryByRole("button", { name: "打开模型测试" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "打开模型服务" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "打开模型调用日志" })).toBeNull();
 });
 
 test("keeps external navigation available when usage persistence fails", async () => {

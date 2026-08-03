@@ -15,6 +15,59 @@
         "title": "BatchDeleteIn",
         "type": "object"
       },
+      "Body_upload_attachments_v1_model_test_conversations__conversation_id__attachments_post": {
+        "properties": {
+          "files": {
+            "items": {
+              "contentMediaType": "application/octet-stream",
+              "type": "string"
+            },
+            "title": "Files",
+            "type": "array"
+          }
+        },
+        "required": [
+          "files"
+        ],
+        "title": "Body_upload_attachments_v1_model_test_conversations__conversation_id__attachments_post",
+        "type": "object"
+      },
+      "Body_upload_file_v1_files_post": {
+        "properties": {
+          "folder_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Folder Id"
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id"
+          },
+          "upload": {
+            "contentMediaType": "application/octet-stream",
+            "title": "Upload",
+            "type": "string"
+          }
+        },
+        "required": [
+          "upload"
+        ],
+        "title": "Body_upload_file_v1_files_post",
+        "type": "object"
+      },
       "CallLogListItem": {
         "properties": {
           "call_source": {
@@ -260,6 +313,259 @@
         "title": "DeleteMutationOut",
         "type": "object"
       },
+      "GenerationModelOptionOut": {
+        "properties": {
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "image",
+              "video"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "provider_id": {
+            "title": "Provider Id",
+            "type": "string"
+          },
+          "provider_name": {
+            "title": "Provider Name",
+            "type": "string"
+          },
+          "sizes": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Sizes",
+            "type": "array"
+          },
+          "slug": {
+            "title": "Slug",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "provider_id",
+          "provider_name",
+          "kind",
+          "slug",
+          "label",
+          "description"
+        ],
+        "title": "GenerationModelOptionOut",
+        "type": "object"
+      },
+      "GenerationOptionsOut": {
+        "properties": {
+          "models": {
+            "items": {
+              "$ref": "#/components/schemas/GenerationModelOptionOut"
+            },
+            "title": "Models",
+            "type": "array"
+          }
+        },
+        "required": [
+          "models"
+        ],
+        "title": "GenerationOptionsOut",
+        "type": "object"
+      },
+      "GenerationTaskListOut": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/GenerationTaskOut"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total"
+        ],
+        "title": "GenerationTaskListOut",
+        "type": "object"
+      },
+      "GenerationTaskOut": {
+        "properties": {
+          "can_retry_materialization": {
+            "title": "Can Retry Materialization",
+            "type": "boolean"
+          },
+          "completed_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completed At"
+          },
+          "created_at": {
+            "title": "Created At",
+            "type": "string"
+          },
+          "error_message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Message"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "image",
+              "video"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "model_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Id"
+          },
+          "model_slug": {
+            "title": "Model Slug",
+            "type": "string"
+          },
+          "progress": {
+            "title": "Progress",
+            "type": "integer"
+          },
+          "project_id": {
+            "title": "Project Id",
+            "type": "string"
+          },
+          "provider_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider Id"
+          },
+          "provider_kind": {
+            "enum": [
+              "senseaudio_image",
+              "senseaudio_video"
+            ],
+            "title": "Provider Kind",
+            "type": "string"
+          },
+          "provider_name": {
+            "title": "Provider Name",
+            "type": "string"
+          },
+          "provider_task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider Task Id"
+          },
+          "request_payload": {
+            "additionalProperties": true,
+            "title": "Request Payload",
+            "type": "object"
+          },
+          "result_asset_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Result Asset Id"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          },
+          "status": {
+            "enum": [
+              "queued",
+              "submitting",
+              "pending",
+              "processing",
+              "completed",
+              "failed"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "updated_at": {
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "project_id",
+          "provider_id",
+          "model_id",
+          "provider_kind",
+          "kind",
+          "provider_name",
+          "model_slug",
+          "request_payload",
+          "provider_task_id",
+          "status",
+          "progress",
+          "error_message",
+          "result_asset_id",
+          "can_retry_materialization",
+          "revision",
+          "created_at",
+          "updated_at",
+          "completed_at"
+        ],
+        "title": "GenerationTaskOut",
+        "type": "object"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -271,6 +577,61 @@
           }
         },
         "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "ImageGenerationTaskCreateIn": {
+        "properties": {
+          "kind": {
+            "const": "image",
+            "title": "Kind",
+            "type": "string"
+          },
+          "model_id": {
+            "title": "Model Id",
+            "type": "string"
+          },
+          "prompt": {
+            "maxLength": 6000,
+            "minLength": 1,
+            "title": "Prompt",
+            "type": "string"
+          },
+          "reference_asset_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reference Asset Id"
+          },
+          "seed": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seed"
+          },
+          "size": {
+            "default": "1024x1024",
+            "maxLength": 32,
+            "title": "Size",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "model_id",
+          "prompt"
+        ],
+        "title": "ImageGenerationTaskCreateIn",
         "type": "object"
       },
       "ModelCatalogOut": {
@@ -294,6 +655,72 @@
         "title": "ModelCatalogOut",
         "type": "object"
       },
+      "ModelCategoryListOut": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ModelCategoryOut"
+            },
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "title": "ModelCategoryListOut",
+        "type": "object"
+      },
+      "ModelCategoryOut": {
+        "properties": {
+          "id": {
+            "enum": [
+              "text_generation",
+              "other_general",
+              "speech_synthesis",
+              "speech_recognition",
+              "music_generation",
+              "video_generation",
+              "image_generation",
+              "end_to_end_speech"
+            ],
+            "title": "Id",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "sub_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sub Type"
+          },
+          "type": {
+            "enum": [
+              "text",
+              "image",
+              "audio",
+              "video"
+            ],
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "label",
+          "type"
+        ],
+        "title": "ModelCategoryOut",
+        "type": "object"
+      },
       "ModelEntryIn": {
         "properties": {
           "capabilities": {
@@ -301,11 +728,30 @@
               "enum": [
                 "chat",
                 "vision",
-                "tools"
+                "tools",
+                "image_generation",
+                "video_generation"
               ],
               "type": "string"
             },
             "title": "Capabilities",
+            "type": "array"
+          },
+          "categories": {
+            "items": {
+              "enum": [
+                "text_generation",
+                "other_general",
+                "speech_synthesis",
+                "speech_recognition",
+                "music_generation",
+                "video_generation",
+                "image_generation",
+                "end_to_end_speech"
+              ],
+              "type": "string"
+            },
+            "title": "Categories",
             "type": "array"
           },
           "description": {
@@ -351,11 +797,30 @@
               "enum": [
                 "chat",
                 "vision",
-                "tools"
+                "tools",
+                "image_generation",
+                "video_generation"
               ],
               "type": "string"
             },
             "title": "Capabilities",
+            "type": "array"
+          },
+          "categories": {
+            "items": {
+              "enum": [
+                "text_generation",
+                "other_general",
+                "speech_synthesis",
+                "speech_recognition",
+                "music_generation",
+                "video_generation",
+                "image_generation",
+                "end_to_end_speech"
+              ],
+              "type": "string"
+            },
+            "title": "Categories",
             "type": "array"
           },
           "description": {
@@ -390,6 +855,7 @@
           "label",
           "description",
           "capabilities",
+          "categories",
           "enabled"
         ],
         "title": "ModelEntryOut",
@@ -410,6 +876,71 @@
           "model"
         ],
         "title": "ModelMutationOut",
+        "type": "object"
+      },
+      "ModelTestAttachmentListOut": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ModelTestAttachmentOut"
+            },
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "title": "ModelTestAttachmentListOut",
+        "type": "object"
+      },
+      "ModelTestAttachmentOut": {
+        "properties": {
+          "byte_size": {
+            "title": "Byte Size",
+            "type": "integer"
+          },
+          "created_at": {
+            "title": "Created At",
+            "type": "string"
+          },
+          "height": {
+            "title": "Height",
+            "type": "integer"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "mime_type": {
+            "enum": [
+              "image/jpeg",
+              "image/png",
+              "image/webp",
+              "image/gif"
+            ],
+            "title": "Mime Type",
+            "type": "string"
+          },
+          "original_filename": {
+            "title": "Original Filename",
+            "type": "string"
+          },
+          "width": {
+            "title": "Width",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "original_filename",
+          "mime_type",
+          "byte_size",
+          "width",
+          "height",
+          "created_at"
+        ],
+        "title": "ModelTestAttachmentOut",
         "type": "object"
       },
       "ModelTestConversationCreateIn": {
@@ -450,6 +981,13 @@
           "created_at": {
             "title": "Created At",
             "type": "string"
+          },
+          "draft_attachments": {
+            "items": {
+              "$ref": "#/components/schemas/ModelTestAttachmentOut"
+            },
+            "title": "Draft Attachments",
+            "type": "array"
           },
           "id": {
             "title": "Id",
@@ -644,8 +1182,336 @@
         "title": "ModelTestConversationSummaryOut",
         "type": "object"
       },
+      "ModelTestGenerationOptionListOut": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ModelTestGenerationOptionOut"
+            },
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "title": "ModelTestGenerationOptionListOut",
+        "type": "object"
+      },
+      "ModelTestGenerationOptionOut": {
+        "properties": {
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "image",
+              "video"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "provider_id": {
+            "title": "Provider Id",
+            "type": "string"
+          },
+          "provider_name": {
+            "title": "Provider Name",
+            "type": "string"
+          },
+          "sizes": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Sizes",
+            "type": "array"
+          },
+          "slug": {
+            "title": "Slug",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "provider_id",
+          "provider_name",
+          "kind",
+          "slug",
+          "label",
+          "description"
+        ],
+        "title": "ModelTestGenerationOptionOut",
+        "type": "object"
+      },
+      "ModelTestGenerationTaskListOut": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ModelTestGenerationTaskOut"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total"
+        ],
+        "title": "ModelTestGenerationTaskListOut",
+        "type": "object"
+      },
+      "ModelTestGenerationTaskOut": {
+        "properties": {
+          "can_retry_materialization": {
+            "title": "Can Retry Materialization",
+            "type": "boolean"
+          },
+          "completed_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completed At"
+          },
+          "created_at": {
+            "title": "Created At",
+            "type": "string"
+          },
+          "error_message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Message"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "image",
+              "video"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "log_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Log Id"
+          },
+          "model_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Id"
+          },
+          "model_slug": {
+            "title": "Model Slug",
+            "type": "string"
+          },
+          "progress": {
+            "title": "Progress",
+            "type": "integer"
+          },
+          "provider_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider Id"
+          },
+          "provider_kind": {
+            "enum": [
+              "senseaudio_image",
+              "senseaudio_video"
+            ],
+            "title": "Provider Kind",
+            "type": "string"
+          },
+          "provider_name": {
+            "title": "Provider Name",
+            "type": "string"
+          },
+          "request_payload": {
+            "additionalProperties": true,
+            "title": "Request Payload",
+            "type": "object"
+          },
+          "result_available": {
+            "title": "Result Available",
+            "type": "boolean"
+          },
+          "result_byte_size": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Result Byte Size"
+          },
+          "result_filename": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Result Filename"
+          },
+          "result_mime_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Result Mime Type"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          },
+          "status": {
+            "enum": [
+              "queued",
+              "submitting",
+              "pending",
+              "processing",
+              "completed",
+              "failed"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "updated_at": {
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "provider_id",
+          "model_id",
+          "provider_kind",
+          "kind",
+          "provider_name",
+          "model_slug",
+          "request_payload",
+          "status",
+          "progress",
+          "error_message",
+          "result_filename",
+          "result_mime_type",
+          "result_byte_size",
+          "result_available",
+          "can_retry_materialization",
+          "log_id",
+          "revision",
+          "created_at",
+          "updated_at",
+          "completed_at"
+        ],
+        "title": "ModelTestGenerationTaskOut",
+        "type": "object"
+      },
+      "ModelTestImageGenerationIn": {
+        "properties": {
+          "kind": {
+            "const": "image",
+            "title": "Kind",
+            "type": "string"
+          },
+          "model_id": {
+            "title": "Model Id",
+            "type": "string"
+          },
+          "prompt": {
+            "maxLength": 6000,
+            "minLength": 1,
+            "title": "Prompt",
+            "type": "string"
+          },
+          "seed": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seed"
+          },
+          "size": {
+            "default": "1024x1024",
+            "maxLength": 32,
+            "title": "Size",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "model_id",
+          "prompt"
+        ],
+        "title": "ModelTestImageGenerationIn",
+        "type": "object"
+      },
       "ModelTestMessageOut": {
         "properties": {
+          "attachments": {
+            "items": {
+              "$ref": "#/components/schemas/ModelTestAttachmentOut"
+            },
+            "title": "Attachments",
+            "type": "array"
+          },
           "content": {
             "title": "Content",
             "type": "string"
@@ -726,9 +1592,17 @@
       },
       "ModelTestSendIn": {
         "properties": {
+          "attachment_ids": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 5,
+            "title": "Attachment Ids",
+            "type": "array"
+          },
           "content": {
+            "default": "",
             "maxLength": 100000,
-            "minLength": 1,
             "title": "Content",
             "type": "string"
           },
@@ -739,10 +1613,74 @@
           }
         },
         "required": [
-          "expected_revision",
-          "content"
+          "expected_revision"
         ],
         "title": "ModelTestSendIn",
+        "type": "object"
+      },
+      "ModelTestVideoGenerationIn": {
+        "properties": {
+          "duration": {
+            "default": 5,
+            "maximum": 15.0,
+            "minimum": 4.0,
+            "title": "Duration",
+            "type": "integer"
+          },
+          "generate_audio": {
+            "default": false,
+            "title": "Generate Audio",
+            "type": "boolean"
+          },
+          "kind": {
+            "const": "video",
+            "title": "Kind",
+            "type": "string"
+          },
+          "model_id": {
+            "title": "Model Id",
+            "type": "string"
+          },
+          "prompt": {
+            "maxLength": 6000,
+            "minLength": 1,
+            "title": "Prompt",
+            "type": "string"
+          },
+          "ratio": {
+            "default": "16:9",
+            "enum": [
+              "16:9",
+              "9:16",
+              "4:3",
+              "3:4",
+              "1:1"
+            ],
+            "title": "Ratio",
+            "type": "string"
+          },
+          "resolution": {
+            "default": "720p",
+            "enum": [
+              "480p",
+              "720p",
+              "1080p"
+            ],
+            "title": "Resolution",
+            "type": "string"
+          },
+          "watermark": {
+            "default": true,
+            "title": "Watermark",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "kind",
+          "model_id",
+          "prompt"
+        ],
+        "title": "ModelTestVideoGenerationIn",
         "type": "object"
       },
       "ProviderEnabledIn": {
@@ -790,7 +1728,9 @@
           "kind": {
             "enum": [
               "openai",
-              "anthropic"
+              "anthropic",
+              "senseaudio_image",
+              "senseaudio_video"
             ],
             "title": "Kind",
             "type": "string"
@@ -852,7 +1792,9 @@
           "kind": {
             "enum": [
               "openai",
-              "anthropic"
+              "anthropic",
+              "senseaudio_image",
+              "senseaudio_video"
             ],
             "title": "Kind",
             "type": "string"
@@ -1038,6 +1980,981 @@
         ],
         "title": "ValidationError",
         "type": "object"
+      },
+      "VideoGenerationTaskCreateIn": {
+        "properties": {
+          "audio_urls": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 3,
+            "title": "Audio Urls",
+            "type": "array"
+          },
+          "duration": {
+            "default": 5,
+            "maximum": 15.0,
+            "minimum": 4.0,
+            "title": "Duration",
+            "type": "integer"
+          },
+          "first_frame_asset_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "First Frame Asset Id"
+          },
+          "generate_audio": {
+            "default": false,
+            "title": "Generate Audio",
+            "type": "boolean"
+          },
+          "kind": {
+            "const": "video",
+            "title": "Kind",
+            "type": "string"
+          },
+          "last_frame_asset_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Frame Asset Id"
+          },
+          "mode": {
+            "default": "text",
+            "enum": [
+              "text",
+              "frames",
+              "reference"
+            ],
+            "title": "Mode",
+            "type": "string"
+          },
+          "model_id": {
+            "title": "Model Id",
+            "type": "string"
+          },
+          "prompt": {
+            "default": "",
+            "maxLength": 6000,
+            "title": "Prompt",
+            "type": "string"
+          },
+          "ratio": {
+            "default": "16:9",
+            "enum": [
+              "16:9",
+              "9:16",
+              "4:3",
+              "3:4",
+              "1:1"
+            ],
+            "title": "Ratio",
+            "type": "string"
+          },
+          "reference_asset_ids": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 9,
+            "title": "Reference Asset Ids",
+            "type": "array"
+          },
+          "resolution": {
+            "default": "720p",
+            "enum": [
+              "480p",
+              "720p",
+              "1080p"
+            ],
+            "title": "Resolution",
+            "type": "string"
+          },
+          "video_urls": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 3,
+            "title": "Video Urls",
+            "type": "array"
+          },
+          "watermark": {
+            "default": true,
+            "title": "Watermark",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "kind",
+          "model_id"
+        ],
+        "title": "VideoGenerationTaskCreateIn",
+        "type": "object"
+      },
+      "VisualAssetFolderCreateIn": {
+        "properties": {
+          "name": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "parent_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Id"
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id"
+          },
+          "scope": {
+            "enum": [
+              "library",
+              "project"
+            ],
+            "title": "Scope",
+            "type": "string"
+          }
+        },
+        "required": [
+          "scope",
+          "name"
+        ],
+        "title": "VisualAssetFolderCreateIn",
+        "type": "object"
+      },
+      "VisualAssetFolderListOut": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/VisualAssetFolderOut"
+            },
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "title": "VisualAssetFolderListOut",
+        "type": "object"
+      },
+      "VisualAssetFolderOut": {
+        "properties": {
+          "created_at": {
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "parent_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Id"
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          },
+          "updated_at": {
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "project_id",
+          "parent_id",
+          "name",
+          "revision",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "VisualAssetFolderOut",
+        "type": "object"
+      },
+      "VisualAssetFolderPatchIn": {
+        "properties": {
+          "expected_revision": {
+            "minimum": 0.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "move_to_root": {
+            "default": false,
+            "title": "Move To Root",
+            "type": "boolean"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "maxLength": 120,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "parent_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Id"
+          }
+        },
+        "required": [
+          "expected_revision"
+        ],
+        "title": "VisualAssetFolderPatchIn",
+        "type": "object"
+      },
+      "VisualAssetListOut": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/VisualAssetOut"
+            },
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "title": "VisualAssetListOut",
+        "type": "object"
+      },
+      "VisualAssetOut": {
+        "properties": {
+          "byte_size": {
+            "title": "Byte Size",
+            "type": "integer"
+          },
+          "created_at": {
+            "title": "Created At",
+            "type": "string"
+          },
+          "display_name": {
+            "title": "Display Name",
+            "type": "string"
+          },
+          "folder_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Folder Id"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "is_reference": {
+            "default": false,
+            "title": "Is Reference",
+            "type": "boolean"
+          },
+          "media_kind": {
+            "enum": [
+              "image",
+              "video",
+              "audio",
+              "document"
+            ],
+            "title": "Media Kind",
+            "type": "string"
+          },
+          "mime_type": {
+            "title": "Mime Type",
+            "type": "string"
+          },
+          "original_filename": {
+            "title": "Original Filename",
+            "type": "string"
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id"
+          },
+          "reference_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reference Id"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          },
+          "source": {
+            "enum": [
+              "library",
+              "project"
+            ],
+            "title": "Source",
+            "type": "string"
+          },
+          "updated_at": {
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "project_id",
+          "folder_id",
+          "original_filename",
+          "display_name",
+          "media_kind",
+          "mime_type",
+          "byte_size",
+          "revision",
+          "created_at",
+          "updated_at",
+          "source"
+        ],
+        "title": "VisualAssetOut",
+        "type": "object"
+      },
+      "VisualAssetPatchIn": {
+        "properties": {
+          "display_name": {
+            "anyOf": [
+              {
+                "maxLength": 255,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Display Name"
+          },
+          "expected_revision": {
+            "minimum": 0.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "folder_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Folder Id"
+          },
+          "move_to_root": {
+            "default": false,
+            "title": "Move To Root",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "expected_revision"
+        ],
+        "title": "VisualAssetPatchIn",
+        "type": "object"
+      },
+      "VisualAssetReferenceCreateIn": {
+        "properties": {
+          "asset_id": {
+            "title": "Asset Id",
+            "type": "string"
+          },
+          "folder_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Folder Id"
+          }
+        },
+        "required": [
+          "asset_id"
+        ],
+        "title": "VisualAssetReferenceCreateIn",
+        "type": "object"
+      },
+      "VisualAssetReferencePatchIn": {
+        "properties": {
+          "display_name": {
+            "anyOf": [
+              {
+                "maxLength": 255,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Display Name"
+          },
+          "expected_revision": {
+            "minimum": 0.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "folder_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Folder Id"
+          },
+          "move_to_root": {
+            "default": false,
+            "title": "Move To Root",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "expected_revision"
+        ],
+        "title": "VisualAssetReferencePatchIn",
+        "type": "object"
+      },
+      "VisualCanvasAudioNode": {
+        "properties": {
+          "asset_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Asset Id"
+          },
+          "id": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "const": "audio",
+            "title": "Kind",
+            "type": "string"
+          },
+          "position": {
+            "$ref": "#/components/schemas/VisualCanvasPosition"
+          },
+          "title": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "position",
+          "kind"
+        ],
+        "title": "VisualCanvasAudioNode",
+        "type": "object"
+      },
+      "VisualCanvasDocumentOut": {
+        "properties": {
+          "nodes": {
+            "items": {
+              "discriminator": {
+                "mapping": {
+                  "audio": "#/components/schemas/VisualCanvasAudioNode",
+                  "image": "#/components/schemas/VisualCanvasImageNode",
+                  "text": "#/components/schemas/VisualCanvasTextNode",
+                  "video": "#/components/schemas/VisualCanvasVideoNode"
+                },
+                "propertyName": "kind"
+              },
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/VisualCanvasTextNode"
+                },
+                {
+                  "$ref": "#/components/schemas/VisualCanvasImageNode"
+                },
+                {
+                  "$ref": "#/components/schemas/VisualCanvasVideoNode"
+                },
+                {
+                  "$ref": "#/components/schemas/VisualCanvasAudioNode"
+                }
+              ]
+            },
+            "title": "Nodes",
+            "type": "array"
+          },
+          "project_id": {
+            "title": "Project Id",
+            "type": "string"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          },
+          "updated_at": {
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "project_id",
+          "nodes",
+          "revision",
+          "updated_at"
+        ],
+        "title": "VisualCanvasDocumentOut",
+        "type": "object"
+      },
+      "VisualCanvasDocumentPutIn": {
+        "properties": {
+          "expected_revision": {
+            "minimum": 0.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "nodes": {
+            "items": {
+              "discriminator": {
+                "mapping": {
+                  "audio": "#/components/schemas/VisualCanvasAudioNode",
+                  "image": "#/components/schemas/VisualCanvasImageNode",
+                  "text": "#/components/schemas/VisualCanvasTextNode",
+                  "video": "#/components/schemas/VisualCanvasVideoNode"
+                },
+                "propertyName": "kind"
+              },
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/VisualCanvasTextNode"
+                },
+                {
+                  "$ref": "#/components/schemas/VisualCanvasImageNode"
+                },
+                {
+                  "$ref": "#/components/schemas/VisualCanvasVideoNode"
+                },
+                {
+                  "$ref": "#/components/schemas/VisualCanvasAudioNode"
+                }
+              ]
+            },
+            "maxItems": 500,
+            "title": "Nodes",
+            "type": "array"
+          }
+        },
+        "required": [
+          "expected_revision"
+        ],
+        "title": "VisualCanvasDocumentPutIn",
+        "type": "object"
+      },
+      "VisualCanvasImageNode": {
+        "properties": {
+          "asset_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Asset Id"
+          },
+          "generation_task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Generation Task Id"
+          },
+          "id": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "const": "image",
+            "title": "Kind",
+            "type": "string"
+          },
+          "position": {
+            "$ref": "#/components/schemas/VisualCanvasPosition"
+          },
+          "title": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "position",
+          "kind"
+        ],
+        "title": "VisualCanvasImageNode",
+        "type": "object"
+      },
+      "VisualCanvasPosition": {
+        "properties": {
+          "x": {
+            "maximum": 1000000.0,
+            "minimum": -1000000.0,
+            "title": "X",
+            "type": "number"
+          },
+          "y": {
+            "maximum": 1000000.0,
+            "minimum": -1000000.0,
+            "title": "Y",
+            "type": "number"
+          }
+        },
+        "required": [
+          "x",
+          "y"
+        ],
+        "title": "VisualCanvasPosition",
+        "type": "object"
+      },
+      "VisualCanvasTextNode": {
+        "properties": {
+          "id": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "const": "text",
+            "title": "Kind",
+            "type": "string"
+          },
+          "position": {
+            "$ref": "#/components/schemas/VisualCanvasPosition"
+          },
+          "text": {
+            "default": "",
+            "maxLength": 20000,
+            "title": "Text",
+            "type": "string"
+          },
+          "title": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "position",
+          "kind"
+        ],
+        "title": "VisualCanvasTextNode",
+        "type": "object"
+      },
+      "VisualCanvasVideoNode": {
+        "properties": {
+          "asset_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Asset Id"
+          },
+          "generation_task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Generation Task Id"
+          },
+          "id": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "const": "video",
+            "title": "Kind",
+            "type": "string"
+          },
+          "position": {
+            "$ref": "#/components/schemas/VisualCanvasPosition"
+          },
+          "title": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "position",
+          "kind"
+        ],
+        "title": "VisualCanvasVideoNode",
+        "type": "object"
+      },
+      "VisualWorkshopProjectCreateIn": {
+        "properties": {
+          "kind": {
+            "enum": [
+              "image",
+              "video",
+              "canvas"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "title": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "title",
+          "kind"
+        ],
+        "title": "VisualWorkshopProjectCreateIn",
+        "type": "object"
+      },
+      "VisualWorkshopProjectListOut": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/VisualWorkshopProjectOut"
+            },
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "title": "VisualWorkshopProjectListOut",
+        "type": "object"
+      },
+      "VisualWorkshopProjectOut": {
+        "properties": {
+          "created_at": {
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "image",
+              "video",
+              "canvas"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          },
+          "status": {
+            "enum": [
+              "draft",
+              "completed"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "updated_at": {
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "kind",
+          "status",
+          "revision",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "VisualWorkshopProjectOut",
+        "type": "object"
+      },
+      "VisualWorkshopProjectPatchIn": {
+        "properties": {
+          "expected_revision": {
+            "minimum": 0.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "kind": {
+            "anyOf": [
+              {
+                "enum": [
+                  "image",
+                  "video",
+                  "canvas"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Kind"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "enum": [
+                  "draft",
+                  "completed"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "maxLength": 120,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          }
+        },
+        "required": [
+          "expected_revision"
+        ],
+        "title": "VisualWorkshopProjectPatchIn",
+        "type": "object"
       }
     }
   },
@@ -1090,6 +3007,711 @@
           }
         },
         "summary": "Ready"
+      }
+    },
+    "/v1/file-folders": {
+      "get": {
+        "operationId": "list_file_folders_v1_file_folders_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "project_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Project Id"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Studio-Token",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Studio-Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VisualAssetFolderListOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List File Folders",
+        "tags": [
+          "file-management"
+        ]
+      },
+      "post": {
+        "operationId": "create_file_folder_v1_file_folders_post",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Studio-Token",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Studio-Token"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VisualAssetFolderCreateIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VisualAssetFolderOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create File Folder",
+        "tags": [
+          "file-management"
+        ]
+      }
+    },
+    "/v1/file-folders/{folder_id}": {
+      "delete": {
+        "operationId": "delete_file_folder_v1_file_folders__folder_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "folder_id",
+            "required": true,
+            "schema": {
+              "title": "Folder Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "expected_revision",
+            "required": true,
+            "schema": {
+              "minimum": 0,
+              "title": "Expected Revision",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Studio-Token",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Studio-Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "boolean"
+                  },
+                  "title": "Response Delete File Folder V1 File Folders  Folder Id  Delete",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete File Folder",
+        "tags": [
+          "file-management"
+        ]
+      },
+      "patch": {
+        "operationId": "patch_file_folder_v1_file_folders__folder_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "folder_id",
+            "required": true,
+            "schema": {
+              "title": "Folder Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Studio-Token",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Studio-Token"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VisualAssetFolderPatchIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VisualAssetFolderOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Patch File Folder",
+        "tags": [
+          "file-management"
+        ]
+      }
+    },
+    "/v1/files": {
+      "get": {
+        "operationId": "list_files_v1_files_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "project_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Project Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "folder_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Folder Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "query",
+            "required": false,
+            "schema": {
+              "default": "",
+              "maxLength": 255,
+              "title": "Query",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "media_kind",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "image",
+                    "video",
+                    "audio",
+                    "document"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Media Kind"
+            }
+          },
+          {
+            "in": "query",
+            "name": "sort",
+            "required": false,
+            "schema": {
+              "default": "updated",
+              "enum": [
+                "updated",
+                "name"
+              ],
+              "title": "Sort",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "include_references",
+            "required": false,
+            "schema": {
+              "default": true,
+              "title": "Include References",
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Studio-Token",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Studio-Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VisualAssetListOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Files",
+        "tags": [
+          "file-management"
+        ]
+      },
+      "post": {
+        "operationId": "upload_file_v1_files_post",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Studio-Token",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Studio-Token"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_upload_file_v1_files_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VisualAssetOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Upload File",
+        "tags": [
+          "file-management"
+        ]
+      }
+    },
+    "/v1/files/{asset_id}": {
+      "delete": {
+        "operationId": "delete_file_v1_files__asset_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "asset_id",
+            "required": true,
+            "schema": {
+              "title": "Asset Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "expected_revision",
+            "required": true,
+            "schema": {
+              "minimum": 0,
+              "title": "Expected Revision",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Studio-Token",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Studio-Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "boolean"
+                  },
+                  "title": "Response Delete File V1 Files  Asset Id  Delete",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete File",
+        "tags": [
+          "file-management"
+        ]
+      },
+      "patch": {
+        "operationId": "patch_file_v1_files__asset_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "asset_id",
+            "required": true,
+            "schema": {
+              "title": "Asset Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Studio-Token",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Studio-Token"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VisualAssetPatchIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VisualAssetOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Patch File",
+        "tags": [
+          "file-management"
+        ]
+      }
+    },
+    "/v1/files/{asset_id}/content": {
+      "get": {
+        "operationId": "preview_file_v1_files__asset_id__content_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "asset_id",
+            "required": true,
+            "schema": {
+              "title": "Asset Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Studio-Token",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Studio-Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Preview File",
+        "tags": [
+          "file-management"
+        ]
+      }
+    },
+    "/v1/files/{asset_id}/download": {
+      "get": {
+        "operationId": "download_file_v1_files__asset_id__download_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "asset_id",
+            "required": true,
+            "schema": {
+              "title": "Asset Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Studio-Token",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Studio-Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Download File",
+        "tags": [
+          "file-management"
+        ]
       }
     },
     "/v1/llm-call-logs": {
@@ -1478,6 +4100,55 @@
         "summary": "Detail",
         "tags": [
           "model-logs"
+        ]
+      }
+    },
+    "/v1/model-categories": {
+      "get": {
+        "operationId": "list_model_categories_v1_model_categories_get",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Studio-Token",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Studio-Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModelCategoryListOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Model Categories",
+        "tags": [
+          "models"
         ]
       }
     },
@@ -2349,6 +5020,210 @@
         ]
       }
     },
+    "/v1/model-test/conversations/{conversation_id}/attachments": {
+      "post": {
+        "operationId": "upload_attachments_v1_model_test_conversations__conversation_id__attachments_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "conversation_id",
+            "required": true,
+            "schema": {
+              "title": "Conversation Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Studio-Token",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Studio-Token"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_upload_attachments_v1_model_test_conversations__conversation_id__attachments_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModelTestAttachmentListOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Upload Attachments",
+        "tags": [
+          "model-test"
+        ]
+      }
+    },
+    "/v1/model-test/conversations/{conversation_id}/attachments/{attachment_id}": {
+      "delete": {
+        "operationId": "delete_attachment_v1_model_test_conversations__conversation_id__attachments__attachment_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "conversation_id",
+            "required": true,
+            "schema": {
+              "title": "Conversation Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "attachment_id",
+            "required": true,
+            "schema": {
+              "title": "Attachment Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Studio-Token",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Studio-Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "boolean"
+                  },
+                  "title": "Response Delete Attachment V1 Model Test Conversations  Conversation Id  Attachments  Attachment Id  Delete",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Attachment",
+        "tags": [
+          "model-test"
+        ]
+      }
+    },
+    "/v1/model-test/conversations/{conversation_id}/attachments/{attachment_id}/content": {
+      "get": {
+        "operationId": "attachment_content_v1_model_test_conversations__conversation_id__attachments__attachment_id__content_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "conversation_id",
+            "required": true,
+            "schema": {
+              "title": "Conversation Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "attachment_id",
+            "required": true,
+            "schema": {
+              "title": "Attachment Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Studio-Token",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Studio-Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Attachment Content",
+        "tags": [
+          "model-test"
+        ]
+      }
+    },
     "/v1/model-test/conversations/{conversation_id}/messages/stream": {
       "post": {
         "operationId": "stream_message_v1_model_test_conversations__conversation_id__messages_stream_post",
@@ -2476,6 +5351,457 @@
           }
         },
         "summary": "Regenerate Message",
+        "tags": [
+          "model-test"
+        ]
+      }
+    },
+    "/v1/model-test/generation-options": {
+      "get": {
+        "operationId": "generation_options_v1_model_test_generation_options_get",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Studio-Token",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Studio-Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModelTestGenerationOptionListOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Generation Options",
+        "tags": [
+          "model-test"
+        ]
+      }
+    },
+    "/v1/model-test/generation-tasks": {
+      "get": {
+        "operationId": "list_generation_tasks_v1_model_test_generation_tasks_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "model_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Model Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 1,
+              "minimum": 1,
+              "title": "Page",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page_size",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Page Size",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Studio-Token",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Studio-Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModelTestGenerationTaskListOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Generation Tasks",
+        "tags": [
+          "model-test"
+        ]
+      },
+      "post": {
+        "operationId": "create_generation_task_v1_model_test_generation_tasks_post",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Studio-Token",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Studio-Token"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "discriminator": {
+                  "mapping": {
+                    "image": "#/components/schemas/ModelTestImageGenerationIn",
+                    "video": "#/components/schemas/ModelTestVideoGenerationIn"
+                  },
+                  "propertyName": "kind"
+                },
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/ModelTestImageGenerationIn"
+                  },
+                  {
+                    "$ref": "#/components/schemas/ModelTestVideoGenerationIn"
+                  }
+                ],
+                "title": "Body"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModelTestGenerationTaskOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Generation Task",
+        "tags": [
+          "model-test"
+        ]
+      }
+    },
+    "/v1/model-test/generation-tasks/{task_id}": {
+      "delete": {
+        "operationId": "delete_generation_task_v1_model_test_generation_tasks__task_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "task_id",
+            "required": true,
+            "schema": {
+              "title": "Task Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "expected_revision",
+            "required": true,
+            "schema": {
+              "minimum": 0,
+              "title": "Expected Revision",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Studio-Token",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Studio-Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "boolean"
+                  },
+                  "title": "Response Delete Generation Task V1 Model Test Generation Tasks  Task Id  Delete",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Generation Task",
+        "tags": [
+          "model-test"
+        ]
+      },
+      "get": {
+        "operationId": "get_generation_task_v1_model_test_generation_tasks__task_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "task_id",
+            "required": true,
+            "schema": {
+              "title": "Task Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Studio-Token",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Studio-Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModelTestGenerationTaskOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Generation Task",
+        "tags": [
+          "model-test"
+        ]
+      }
+    },
+    "/v1/model-test/generation-tasks/{task_id}/content": {
+      "get": {
+        "operationId": "generation_content_v1_model_test_generation_tasks__task_id__content_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "task_id",
+            "required": true,
+            "schema": {
+              "title": "Task Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Studio-Token",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Studio-Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Generation Content",
+        "tags": [
+          "model-test"
+        ]
+      }
+    },
+    "/v1/model-test/generation-tasks/{task_id}/retry-materialization": {
+      "post": {
+        "operationId": "retry_materialization_v1_model_test_generation_tasks__task_id__retry_materialization_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "task_id",
+            "required": true,
+            "schema": {
+              "title": "Task Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Studio-Token",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Studio-Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModelTestGenerationTaskOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Retry Materialization",
         "tags": [
           "model-test"
         ]
@@ -2708,6 +6034,1034 @@
         "summary": "Record Use",
         "tags": [
           "tool-navigation"
+        ]
+      }
+    },
+    "/v1/visual-workshop/generation-options": {
+      "get": {
+        "operationId": "generation_options_v1_visual_workshop_generation_options_get",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Studio-Token",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Studio-Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenerationOptionsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Generation Options",
+        "tags": [
+          "visual-generation"
+        ]
+      }
+    },
+    "/v1/visual-workshop/generation-tasks": {
+      "get": {
+        "operationId": "list_generation_tasks_v1_visual_workshop_generation_tasks_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "project_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Project Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "kind",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "image",
+                    "video"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Kind"
+            }
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "queued",
+                    "submitting",
+                    "pending",
+                    "processing",
+                    "completed",
+                    "failed"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 1,
+              "minimum": 1,
+              "title": "Page",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page_size",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Page Size",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Studio-Token",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Studio-Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenerationTaskListOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Generation Tasks",
+        "tags": [
+          "visual-generation"
+        ]
+      }
+    },
+    "/v1/visual-workshop/generation-tasks/{task_id}": {
+      "get": {
+        "operationId": "get_generation_task_v1_visual_workshop_generation_tasks__task_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "task_id",
+            "required": true,
+            "schema": {
+              "title": "Task Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Studio-Token",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Studio-Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenerationTaskOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Generation Task",
+        "tags": [
+          "visual-generation"
+        ]
+      }
+    },
+    "/v1/visual-workshop/generation-tasks/{task_id}/retry-materialization": {
+      "post": {
+        "operationId": "retry_materialization_v1_visual_workshop_generation_tasks__task_id__retry_materialization_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "task_id",
+            "required": true,
+            "schema": {
+              "title": "Task Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Studio-Token",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Studio-Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenerationTaskOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Retry Materialization",
+        "tags": [
+          "visual-generation"
+        ]
+      }
+    },
+    "/v1/visual-workshop/projects": {
+      "get": {
+        "operationId": "list_projects_v1_visual_workshop_projects_get",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Studio-Token",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Studio-Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VisualWorkshopProjectListOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Projects",
+        "tags": [
+          "visual-workshop"
+        ]
+      },
+      "post": {
+        "operationId": "create_project_v1_visual_workshop_projects_post",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Studio-Token",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Studio-Token"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VisualWorkshopProjectCreateIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VisualWorkshopProjectOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Project",
+        "tags": [
+          "visual-workshop"
+        ]
+      }
+    },
+    "/v1/visual-workshop/projects/{project_id}": {
+      "delete": {
+        "operationId": "delete_project_v1_visual_workshop_projects__project_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "expected_revision",
+            "required": true,
+            "schema": {
+              "minimum": 0,
+              "title": "Expected Revision",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Studio-Token",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Studio-Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "boolean"
+                  },
+                  "title": "Response Delete Project V1 Visual Workshop Projects  Project Id  Delete",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Project",
+        "tags": [
+          "visual-workshop"
+        ]
+      },
+      "get": {
+        "operationId": "get_project_v1_visual_workshop_projects__project_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Studio-Token",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Studio-Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VisualWorkshopProjectOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Project",
+        "tags": [
+          "visual-workshop"
+        ]
+      },
+      "patch": {
+        "operationId": "patch_project_v1_visual_workshop_projects__project_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Studio-Token",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Studio-Token"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VisualWorkshopProjectPatchIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VisualWorkshopProjectOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Patch Project",
+        "tags": [
+          "visual-workshop"
+        ]
+      }
+    },
+    "/v1/visual-workshop/projects/{project_id}/asset-references": {
+      "post": {
+        "operationId": "create_asset_reference_v1_visual_workshop_projects__project_id__asset_references_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Studio-Token",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Studio-Token"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VisualAssetReferenceCreateIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VisualAssetOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Asset Reference",
+        "tags": [
+          "visual-workshop"
+        ]
+      }
+    },
+    "/v1/visual-workshop/projects/{project_id}/asset-references/{reference_id}": {
+      "delete": {
+        "operationId": "delete_asset_reference_v1_visual_workshop_projects__project_id__asset_references__reference_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "reference_id",
+            "required": true,
+            "schema": {
+              "title": "Reference Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "expected_revision",
+            "required": true,
+            "schema": {
+              "minimum": 0,
+              "title": "Expected Revision",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Studio-Token",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Studio-Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "boolean"
+                  },
+                  "title": "Response Delete Asset Reference V1 Visual Workshop Projects  Project Id  Asset References  Reference Id  Delete",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Asset Reference",
+        "tags": [
+          "visual-workshop"
+        ]
+      },
+      "patch": {
+        "operationId": "patch_asset_reference_v1_visual_workshop_projects__project_id__asset_references__reference_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "reference_id",
+            "required": true,
+            "schema": {
+              "title": "Reference Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Studio-Token",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Studio-Token"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VisualAssetReferencePatchIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VisualAssetOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Patch Asset Reference",
+        "tags": [
+          "visual-workshop"
+        ]
+      }
+    },
+    "/v1/visual-workshop/projects/{project_id}/canvas": {
+      "get": {
+        "operationId": "get_canvas_v1_visual_workshop_projects__project_id__canvas_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Studio-Token",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Studio-Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VisualCanvasDocumentOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Canvas",
+        "tags": [
+          "visual-workshop"
+        ]
+      },
+      "put": {
+        "operationId": "put_canvas_v1_visual_workshop_projects__project_id__canvas_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Studio-Token",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Studio-Token"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VisualCanvasDocumentPutIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VisualCanvasDocumentOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Put Canvas",
+        "tags": [
+          "visual-workshop"
+        ]
+      }
+    },
+    "/v1/visual-workshop/projects/{project_id}/generation-tasks": {
+      "post": {
+        "operationId": "create_generation_task_v1_visual_workshop_projects__project_id__generation_tasks_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Studio-Token",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Studio-Token"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "discriminator": {
+                  "mapping": {
+                    "image": "#/components/schemas/ImageGenerationTaskCreateIn",
+                    "video": "#/components/schemas/VideoGenerationTaskCreateIn"
+                  },
+                  "propertyName": "kind"
+                },
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/ImageGenerationTaskCreateIn"
+                  },
+                  {
+                    "$ref": "#/components/schemas/VideoGenerationTaskCreateIn"
+                  }
+                ],
+                "title": "Body"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenerationTaskOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Generation Task",
+        "tags": [
+          "visual-generation"
         ]
       }
     }

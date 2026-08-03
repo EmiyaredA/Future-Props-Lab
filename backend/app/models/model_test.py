@@ -2,7 +2,17 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from sqlalchemy import DateTime, Float, ForeignKey, Index, Integer, String, Text, UniqueConstraint
+from sqlalchemy import (
+    JSON,
+    DateTime,
+    Float,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+)
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.time import utc_now
@@ -48,3 +58,75 @@ class ModelTestMessage(Base):
     error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, onupdate=utc_now)
+
+
+class ModelTestAttachment(Base):
+    __tablename__ = "model_test_attachments"
+    __table_args__ = (
+        UniqueConstraint(
+            "message_id", "position", name="uq_model_test_attachment_message_position"
+        ),
+        Index(
+            "ix_model_test_attachments_conversation",
+            "conversation_id",
+            "message_id",
+            "position",
+        ),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    conversation_id: Mapped[str] = mapped_column(
+        String(36),
+        ForeignKey("model_test_conversations.id", ondelete="CASCADE"),
+        index=True,
+    )
+    message_id: Mapped[str | None] = mapped_column(
+        String(36),
+        ForeignKey("model_test_messages.id", ondelete="CASCADE"),
+        nullable=True,
+    )
+    position: Mapped[int] = mapped_column(Integer)
+    original_filename: Mapped[str] = mapped_column(String(255))
+    storage_key: Mapped[str] = mapped_column(String(64), unique=True)
+    mime_type: Mapped[str] = mapped_column(String(120))
+    byte_size: Mapped[int] = mapped_column(Integer)
+    width: Mapped[int] = mapped_column(Integer)
+    height: Mapped[int] = mapped_column(Integer)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)
+
+
+class ModelTestGenerationTask(Base):
+    __tablename__ = "model_test_generation_tasks"
+    __table_args__ = (
+        Index("ix_model_test_generation_status_updated", "status", "updated_at"),
+        Index("ix_model_test_generation_model_created", "model_id", "created_at"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    provider_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("model_providers.id", ondelete="SET NULL")
+    )
+    model_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("model_entries.id", ondelete="SET NULL")
+    )
+    provider_kind: Mapped[str] = mapped_column(String(24))
+    generation_kind: Mapped[str] = mapped_column(String(16))
+    provider_name: Mapped[str] = mapped_column(String(120))
+    model_slug: Mapped[str] = mapped_column(String(160))
+    request_payload: Mapped[dict] = mapped_column(JSON, default=dict)
+    provider_task_id: Mapped[str | None] = mapped_column(String(255))
+    status: Mapped[str] = mapped_column(String(16), default="queued")
+    progress: Mapped[int] = mapped_column(Integer, default=0)
+    error_message: Mapped[str | None] = mapped_column(Text)
+    result_url: Mapped[str | None] = mapped_column(Text)
+    result_storage_key: Mapped[str | None] = mapped_column(String(64))
+    result_filename: Mapped[str | None] = mapped_column(String(255))
+    result_mime_type: Mapped[str | None] = mapped_column(String(120))
+    result_byte_size: Mapped[int | None] = mapped_column(Integer)
+    log_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("llm_call_logs.id", ondelete="SET NULL")
+    )
+    revision: Mapped[int] = mapped_column(Integer, default=0)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, onupdate=utc_now)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime)

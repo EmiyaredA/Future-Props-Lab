@@ -13,6 +13,7 @@ Future-Props-Lab/
 │   ├── core/          # 配置、数据库、时间与密钥基础设施
 │   ├── llm/           # 模型目录、供应商适配、诊断、测试工作台和调用日志
 │   ├── tool_navigation/ # 工具收藏与最近使用状态规则
+│   ├── visual_workshop/ # 视觉工坊项目、素材、生成任务与单机执行器
 │   ├── models/        # SQLAlchemy 持久化形状
 │   ├── routes/        # `/v1` HTTP/SSE 协议边界
 │   └── schemas/       # Pydantic 请求与响应形状
@@ -23,7 +24,7 @@ Future-Props-Lab/
 ├── web/src/
 │   ├── app/           # Studio 入口、壳与路由
 │   ├── docs/          # 独立空文档中心入口
-│   ├── features/      # 工具导航、模型服务、持久模型测试与调用日志
+│   ├── features/      # 首页、AI 应用、文件管理、视觉工坊、工具导航与模型功能
 │   ├── generated/     # OpenAPI 生成物
 │   ├── platform/      # API 与管理令牌基础设施
 │   └── shared/        # 品牌与主题 UI
@@ -44,6 +45,10 @@ Future-Props-Lab/
   时，按具体业务能力在所属功能包内命名，避免同一职责出现多个事实源。
 - 工具目录由 Web 静态注册表维护；后端 `tool_navigation/` 只持久化稳定工具 ID 对应的收藏与
   最近使用状态，不复制工具名称、分类或外部网址。
+- AI 应用目录同样由 Web 静态注册表维护，应用最近访问记录只保存在浏览器本地。视觉创作工坊
+  使用独立页面壳；后端 `visual_workshop/` 负责真实项目、文件元数据、项目私有素材、公共文件
+  引用、revisioned 节点画布与图片/视频异步生成任务，不预置项目或素材。Studio 一级“文件管理”
+  和项目素材浏览器复用同一文件 API；公共文件被项目引用期间禁止删除。
 - Web 的依赖方向是 `app → features → shared/platform/generated`。`platform/` 与 `shared/`
   不依赖 `features/` 或 `app/`，`features/` 不依赖 `app/`；入口装配留在 `app/`，业务代码不
   放回 `web/src/` 根目录，生成契约不手工修改。
@@ -51,16 +56,20 @@ Future-Props-Lab/
 
 ## 数据与运行边界
 
-数据库是仓库根目录 `.runtime/future-props.db` 下的单机 SQLite 文件。FastAPI 启动时自动创建
+数据库是仓库根目录 `.runtime/future-props.db` 下的单机 SQLite 文件；文件管理内容保存在数据库
+同级的 `visual-workshop/assets/`，模型测试私有图片保存在 `model-test/attachments/`，模型测试
+生成结果保存在 `model-test/generated/`，数据库与这些目录共同构成本机数据真源。FastAPI 启动时自动创建
 目录并执行 `registry.py` 中已登记、带 checksum 的 migration；每个连接启用外键约束、WAL
 与忙等待。迁移历史只追加且不导入运行时 `app`，schema 变化必须同时更新 ORM、注册表、测试
 和文档。
 
-目录配置和模型测试会话使用 revision/CAS 防止静默覆盖；工具单项状态通过幂等更新和原子
-upsert 写入。`AsyncSession` 只能由单个异步任务
-使用；供应商网络调用不占用已经开始写入的事务，流式生成通过独立短事务准备与结算。
+目录配置、模型测试会话与生成任务、视觉工坊项目、节点画布、文件夹、文件和项目引用使用
+revision/CAS 防止静默覆盖；工具单项状态通过幂等更新和原子 upsert 写入。图片/视频生成任务持久化
+供应商/模型快照和规范化参数，FastAPI 生命周期中的单机执行器负责恢复、轮询与安全下载；视觉工坊
+和模型测试共享远端生成并发上限，但分别保存结果。`AsyncSession` 只能由单个异步任务
+使用；每个生成分支使用独立短会话，供应商网络调用和文件下载不占用已开始写入的事务。
 
-模型测试对话是独立的单机调试数据，不参与 Bot 或业务编排。当前工程也刻意不包含 Bot 会话、
+模型测试对话、图片附件及生成结果是独立的单机调试数据，不进入视觉工坊文件管理，也不参与 Bot 或业务编排。当前工程也刻意不包含 Bot 会话、
 知识库、实时语音、浏览器扩展、多租户和用户权限表。
 
 ## 按需扩展

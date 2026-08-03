@@ -1,0 +1,246 @@
+import { expect, test } from "@playwright/test";
+
+test("enters the visual workshop, persists projects, and supports deep navigation", async ({
+  page,
+}) => {
+  let projects: Array<Record<string, unknown>> = [];
+  let generationTasks: Array<Record<string, unknown>> = [];
+  let canvas = {
+    project_id: "e2e-project",
+    nodes: [] as Array<Record<string, unknown>>,
+    revision: 0,
+    updated_at: "2026-08-03T08:00:00Z",
+  };
+  await page.route("**/v1/visual-workshop/projects**", async (route) => {
+    const request = route.request();
+    const url = new URL(request.url());
+    if (url.pathname.endsWith("/canvas")) {
+      if (request.method() === "PUT") {
+        const body = request.postDataJSON() as {
+          nodes: Array<Record<string, unknown>>;
+          expected_revision: number;
+        };
+        canvas = {
+          ...canvas,
+          nodes: body.nodes,
+          revision: body.expected_revision + 1,
+          updated_at: "2026-08-03T08:00:10Z",
+        };
+      }
+      await route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify(canvas),
+      });
+      return;
+    }
+    const id = url.pathname.split("/").at(-1);
+    if (request.method() === "GET") {
+      await route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify(
+          id === "projects"
+            ? { items: projects }
+            : projects.find((project) => project.id === id),
+        ),
+      });
+      return;
+    }
+    if (request.method() === "POST") {
+      const body = request.postDataJSON() as { title: string; kind: string };
+      const project = {
+        id: "e2e-project",
+        ...body,
+        status: "draft",
+        revision: 0,
+        created_at: "2026-08-03T08:00:00Z",
+        updated_at: "2026-08-03T08:00:00Z",
+      };
+      projects = [project];
+      canvas = { ...canvas, nodes: [], revision: 0 };
+      await route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify(project),
+      });
+      return;
+    }
+    if (request.method() === "PATCH") {
+      const body = request.postDataJSON() as Record<string, unknown>;
+      projects = projects.map((project) =>
+        project.id === id
+          ? { ...project, ...body, revision: Number(project.revision) + 1 }
+          : project,
+      );
+      await route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify(projects.find((project) => project.id === id)),
+      });
+      return;
+    }
+    projects = projects.filter((project) => project.id !== id);
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ deleted: true }),
+    });
+  });
+  await page.route("**/v1/file-folders**", async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ items: [] }),
+    });
+  });
+  await page.route("**/v1/files**", async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ items: [] }),
+    });
+  });
+  await page.route(
+    "**/v1/visual-workshop/generation-options",
+    async (route) => {
+      await route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({
+          models: [
+            {
+              id: "e2e-image-model",
+              provider_id: "e2e-image-provider",
+              provider_name: "SenseAudio 图片生成",
+              kind: "image",
+              slug: "senseaudio-image-2.0-260319",
+              label: "SenseAudio Image 2.0",
+              description: "E2E 确定性假供应商",
+              sizes: ["1024x1024"],
+            },
+          ],
+        }),
+      });
+    },
+  );
+  await page.route(
+    "**/v1/visual-workshop/generation-tasks/*",
+    async (route) => {
+      await route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify(generationTasks[0]),
+      });
+    },
+  );
+  await page.route(
+    /\/v1\/visual-workshop\/(?:projects\/[^/]+\/)?generation-tasks(?:\?.*)?$/,
+    async (route) => {
+      if (route.request().method() === "POST") {
+        const body = route.request().postDataJSON() as Record<string, unknown>;
+        const task = {
+          id: "e2e-generation-task",
+          project_id: "e2e-project",
+          provider_id: "e2e-image-provider",
+          model_id: "e2e-image-model",
+          provider_kind: "senseaudio_image",
+          kind: "image",
+          provider_name: "SenseAudio 图片生成",
+          model_slug: "senseaudio-image-2.0-260319",
+          request_payload: body,
+          provider_task_id: "fake-upstream-task",
+          status: "processing",
+          progress: 42,
+          error_message: null,
+          result_asset_id: null,
+          can_retry_materialization: false,
+          revision: 1,
+          created_at: "2026-08-03T08:00:00Z",
+          updated_at: "2026-08-03T08:00:05Z",
+          completed_at: null,
+        };
+        generationTasks = [task];
+        await route.fulfill({
+          contentType: "application/json",
+          body: JSON.stringify(task),
+        });
+        return;
+      }
+      await route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({
+          items: generationTasks,
+          total: generationTasks.length,
+        }),
+      });
+    },
+  );
+
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto("/home");
+  await page.getByRole("button", { name: /浏览应用/ }).click();
+  await expect(page).toHaveURL(/\/apps$/);
+  await page.getByRole("button", { name: "打开视觉创作工坊" }).click();
+  await expect(page).toHaveURL(/\/apps\/visual-workshop$/);
+  await expect(page.locator(".studio-sidebar")).toHaveCount(0);
+  await expect(page.locator(".workshop-brand img")).toHaveAttribute(
+    "src",
+    "/brand/visual-workshop-mark.png",
+  );
+  await expect(page.getByText("浏览全部 AI 应用")).toBeVisible();
+  await expect(page.getByText("还没有创作项目")).toBeVisible();
+
+  await page.getByRole("button", { name: /新建第一个项目/ }).click();
+  await expect(page).toHaveURL(
+    /\/apps\/visual-workshop\/projects\/e2e-project\/canvas$/,
+  );
+  await expect(page.getByText("未命名项目")).toBeVisible();
+  await expect(page.getByText("100%")).toBeVisible();
+  await page.getByRole("button", { name: "放大" }).click();
+  await expect(page.getByText("110%")).toBeVisible();
+  await page.getByRole("button", { name: "素材库" }).click();
+  await expect(
+    page.getByRole("complementary", { name: "项目素材库" }),
+  ).toBeVisible();
+  await page.getByRole("tab", { name: "文件管理" }).click();
+  await expect(page.getByText("文件管理中还没有可导入的文件")).toBeVisible();
+  await page.getByRole("button", { name: "管理素材" }).click();
+  await expect(page).toHaveURL(
+    /\/apps\/visual-workshop\/projects\/e2e-project\/assets$/,
+  );
+  await expect(page.getByRole("heading", { name: "项目素材库" })).toBeVisible();
+  await expect(page.getByRole("tab", { name: /从文件管理导入/ })).toBeVisible();
+  await page.getByRole("button", { name: "返回画布" }).click();
+  await page.reload();
+  await expect(page.getByText("未命名项目")).toBeVisible();
+  const canvasSaved = page.waitForResponse(
+    (response) =>
+      response.url().endsWith("/canvas") &&
+      response.request().method() === "PUT",
+  );
+  await page.locator(".visual-canvas-surface").click({
+    button: "right",
+    position: { x: 620, y: 300 },
+  });
+  await page.getByRole("menuitem", { name: "添加图片节点" }).click();
+  await canvasSaved;
+  await expect(
+    page.getByRole("complementary", { name: "节点检查器" }),
+  ).toBeVisible();
+  await page.reload();
+  await expect(page.getByText("图片1")).toBeVisible();
+  await page.getByText("图片1").click();
+  await page.getByRole("tab", { name: "AI 生成" }).click();
+  await page.getByPlaceholder("描述要生成的画面…").fill("E2E 未来城市海报");
+  await page.getByRole("button", { name: "创建生成任务" }).click();
+  await expect(page.getByText(/任务已提交/)).toBeVisible();
+
+  await page.getByRole("button", { name: "返回项目列表" }).click();
+  await expect(page).toHaveURL(/\/apps\/visual-workshop$/);
+  await expect(page.getByText("未命名项目")).toBeVisible();
+  await page.getByRole("button", { name: /返回应用中心/ }).click();
+  await expect(page).toHaveURL(/\/apps$/);
+  await expect(page.locator(".studio-sidebar")).toBeVisible();
+  await page.getByRole("button", { name: "文件管理" }).click();
+  await expect(page).toHaveURL(/\/files$/);
+  await expect(page.getByRole("heading", { name: "文件管理" })).toBeVisible();
+
+  await page.setViewportSize({ width: 700, height: 800 });
+  await page.goto("/apps/visual-workshop/tasks");
+  await expect(page.getByText("E2E 未来城市海报")).toBeVisible();
+  await expect(page.getByText("42%")).toBeVisible();
+  await page.getByRole("button", { name: "深色" }).click();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+});

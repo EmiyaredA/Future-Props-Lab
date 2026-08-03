@@ -57,7 +57,14 @@ async def validation_exception_handler(
         422,
         "请求参数无效",
         code="validation_error",
-        extra={"errors": exc.errors()},
+        # Validator contexts may contain exception instances, which are useful
+        # for Python debugging but are not JSON serializable protocol data.
+        extra={
+            "errors": [
+                {key: value for key, value in error.items() if key != "ctx"}
+                for error in exc.errors()
+            ]
+        },
     )
 
 

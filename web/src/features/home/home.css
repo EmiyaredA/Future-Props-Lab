@@ -1,0 +1,164 @@
+.home-page {
+  max-width: 1260px;
+}
+.home-header {
+  padding: 42px 0 30px;
+}
+.home-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 12px;
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 750;
+}
+.home-kicker svg {
+  width: 15px;
+  height: 15px;
+}
+.home-header h1 {
+  margin: 0 0 10px;
+  color: var(--text-strong);
+  font-size: 32px;
+  letter-spacing: -0.045em;
+}
+.home-header p {
+  margin: 0;
+  color: var(--muted);
+}
+.home-destinations {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+}
+.home-destinations > button {
+  min-height: 210px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  text-align: left;
+  transition:
+    transform 0.18s ease,
+    border-color 0.18s ease;
+}
+.home-destinations > button:hover {
+  transform: translateY(-3px);
+  border-color: var(--accent-line);
+}
+.home-destination-icon {
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--accent-line);
+  border-radius: 13px;
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.home-destination-icon svg {
+  width: 23px;
+  height: 23px;
+  stroke-width: 1.7;
+}
+.home-destination-copy {
+  min-height: 114px;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  padding-top: 20px;
+}
+.home-destination-copy strong {
+  color: var(--text-strong);
+  font-size: 18px;
+}
+.home-destination-copy small {
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.65;
+}
+.home-destination-copy > span {
+  margin-top: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 700;
+}
+.home-destination-copy > span svg {
+  width: 14px;
+  height: 14px;
+}
+.home-quick-section {
+  margin-top: 34px;
+}
+.home-quick-section > header h2 {
+  margin: 0 0 5px;
+  color: var(--text-strong);
+  font-size: 17px;
+}
+.home-quick-section > header p {
+  margin: 0 0 14px;
+  color: var(--faint);
+  font-size: 12px;
+}
+.home-quick-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+.home-quick-grid button {
+  min-height: 76px;
+  padding: 14px 16px;
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr) 18px;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  text-align: left;
+}
+.home-quick-grid button:hover {
+  border-color: var(--accent-line);
+}
+.home-quick-grid button > svg:first-child {
+  width: 20px;
+  height: 20px;
+  color: var(--accent);
+}
+.home-quick-grid button > svg:last-child {
+  width: 15px;
+  height: 15px;
+  color: var(--faint);
+}
+.home-quick-grid button span {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.home-quick-grid strong {
+  color: var(--text-strong);
+  font-size: 13px;
+}
+.home-quick-grid small {
+  color: var(--faint);
+  font-size: 10px;
+}
+@media (max-width: 980px) {
+  .home-destinations,
+  .home-quick-grid {
+    grid-template-columns: 1fr;
+  }
+  .home-destinations > button {
+    min-height: 150px;
+  }
+}

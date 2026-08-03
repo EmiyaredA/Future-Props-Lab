@@ -2,11 +2,16 @@ from fastapi import APIRouter, HTTPException, Query
 
 from app.deps import SessionDep
 from app.llm.catalog import ModelCatalogService
-from app.llm.catalog.service import DuplicateModelError, ResourceNotFoundError
+from app.llm.catalog.service import (
+    CatalogResourceBusyError,
+    DuplicateModelError,
+    ResourceNotFoundError,
+)
 from app.llm.diagnostics import DiagnosticCallError, test_model
 from app.schemas.model_service import (
     DeleteMutationOut,
     ModelCatalogOut,
+    ModelCategoryListOut,
     ModelEntryIn,
     ModelMutationOut,
     ProviderEnabledIn,
@@ -27,6 +32,11 @@ async def list_providers(session: SessionDep) -> ModelCatalogOut:
     return await ModelCatalogService(session).catalog()
 
 
+@router.get("/model-categories", response_model=ModelCategoryListOut)
+async def list_model_categories(session: SessionDep) -> ModelCategoryListOut:
+    return ModelCatalogService(session).categories()
+
+
 @router.post("/model-providers", response_model=ProviderMutationOut)
 async def create_provider(session: SessionDep, body: ProviderIn) -> ProviderMutationOut:
     revision, provider = await ModelCatalogService(session).create_provider(body)
@@ -41,6 +51,8 @@ async def update_provider(
         revision, provider = await ModelCatalogService(session).update_provider(provider_id, body)
     except ResourceNotFoundError as exc:
         raise _not_found(exc) from None
+    except CatalogResourceBusyError as exc:
+        raise HTTPException(409, {"code": "resource_busy", "message": str(exc)}) from None
     return ProviderMutationOut(revision=revision, provider=provider)
 
 
@@ -54,6 +66,8 @@ async def set_provider_enabled(
         )
     except ResourceNotFoundError as exc:
         raise _not_found(exc) from None
+    except CatalogResourceBusyError as exc:
+        raise HTTPException(409, {"code": "resource_busy", "message": str(exc)}) from None
     return ProviderMutationOut(revision=revision, provider=provider)
 
 
@@ -69,6 +83,8 @@ async def delete_provider(
         )
     except ResourceNotFoundError as exc:
         raise _not_found(exc) from None
+    except CatalogResourceBusyError as exc:
+        raise HTTPException(409, {"code": "resource_busy", "message": str(exc)}) from None
     return DeleteMutationOut(deleted=True, revision=revision)
 
 
@@ -106,6 +122,8 @@ async def delete_model(
         )
     except ResourceNotFoundError as exc:
         raise _not_found(exc) from None
+    except CatalogResourceBusyError as exc:
+        raise HTTPException(409, {"code": "resource_busy", "message": str(exc)}) from None
     return DeleteMutationOut(deleted=True, revision=revision)
 
 

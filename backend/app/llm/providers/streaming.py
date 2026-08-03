@@ -16,6 +16,20 @@ class TextDelta:
     total_tokens: int | None = None
 
 
+@dataclass(frozen=True)
+class ImageInput:
+    mime_type: str
+    data_base64: str
+    byte_size: int
+
+
+@dataclass(frozen=True)
+class ChatMessageInput:
+    role: str
+    text: str
+    images: tuple[ImageInput, ...] = ()
+
+
 def _integer(value: Any) -> int | None:
     return int(value) if isinstance(value, int) else None
 
@@ -42,7 +56,7 @@ async def stream_text_completion(
     api_key: str,
     model: str,
     system_prompt: str,
-    messages: list[dict[str, str]],
+    messages: list[ChatMessageInput],
     temperature: float,
     max_tokens: int,
     transport: httpx.AsyncBaseTransport | None = None,
@@ -54,7 +68,24 @@ async def stream_text_completion(
             headers = {"Content-Type": "application/json"}
             if api_key:
                 headers["Authorization"] = f"Bearer {api_key}"
-            request_messages = list(messages)
+            request_messages: list[dict[str, Any]] = []
+            for message in messages:
+                if not message.images:
+                    request_messages.append({"role": message.role, "content": message.text})
+                    continue
+                content: list[dict[str, Any]] = [
+                    {
+                        "type": "image_url",
+                        "image_url": {
+                            "url": f"data:{image.mime_type};base64,{image.data_base64}",
+                            "detail": "auto",
+                        },
+                    }
+                    for image in message.images
+                ]
+                if message.text:
+                    content.append({"type": "text", "text": message.text})
+                request_messages.append({"role": message.role, "content": content})
             if system_prompt:
                 request_messages.insert(0, {"role": "system", "content": system_prompt})
             async with client.stream(
@@ -93,9 +124,28 @@ async def stream_text_completion(
             "x-api-key": api_key,
             "anthropic-version": "2023-06-01",
         }
+        request_messages: list[dict[str, Any]] = []
+        for message in messages:
+            if not message.images:
+                request_messages.append({"role": message.role, "content": message.text})
+                continue
+            content: list[dict[str, Any]] = [
+                {
+                    "type": "image",
+                    "source": {
+                        "type": "base64",
+                        "media_type": image.mime_type,
+                        "data": image.data_base64,
+                    },
+                }
+                for image in message.images
+            ]
+            if message.text:
+                content.append({"type": "text", "text": message.text})
+            request_messages.append({"role": message.role, "content": content})
         body: dict[str, Any] = {
             "model": model,
-            "messages": messages,
+            "messages": request_messages,
             "temperature": temperature,
             "max_tokens": max_tokens,
             "stream": True,

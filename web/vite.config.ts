@@ -2,6 +2,10 @@ import react from "@vitejs/plugin-react";
 import { resolve } from "node:path";
 import { defineConfig } from "vite";
 
+const apiPort = process.env.FPL_E2E_API_PORT || "9000";
+const webPort = Number(process.env.FPL_E2E_WEB_PORT || "3000");
+const apiTarget = `http://127.0.0.1:${apiPort}`;
+
 export default defineConfig({
   plugins: [react()],
   resolve: {
@@ -23,11 +27,11 @@ export default defineConfig({
     },
   },
   server: {
-    port: 3000,
+    port: webPort,
     proxy: {
-      "/v1": "http://127.0.0.1:9000",
-      "/health": "http://127.0.0.1:9000",
-      "/ready": "http://127.0.0.1:9000",
+      "/v1": apiTarget,
+      "/health": apiTarget,
+      "/ready": apiTarget,
     },
   },
 });

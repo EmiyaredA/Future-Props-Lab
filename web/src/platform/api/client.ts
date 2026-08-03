@@ -24,6 +24,33 @@ export class ApiError extends Error {
 export const api = createClient<paths>({
   baseUrl: import.meta.env.VITE_API_BASE || "",
 });
+
+export async function fetchApiBlob(path: string): Promise<Blob> {
+  const headers = new Headers();
+  const token = getStudioToken();
+  if (token) headers.set("X-Studio-Token", token);
+  const response = await fetch(
+    `${import.meta.env.VITE_API_BASE || ""}${path}`,
+    {
+      headers,
+    },
+  );
+  if (response.status === 401) notifyAuthRequired();
+  if (!response.ok) {
+    let problem: ProblemDetail = {};
+    try {
+      problem = (await response.json()) as ProblemDetail;
+    } catch {
+      // Non-JSON file response failures still receive a useful fallback.
+    }
+    throw new ApiError(
+      String(problem.detail || "文件读取失败"),
+      problem,
+      response.status,
+    );
+  }
+  return response.blob();
+}
 api.use({
   async onRequest({ request }) {
     const token = getStudioToken();

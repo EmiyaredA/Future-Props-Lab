@@ -35,9 +35,15 @@ def _create_database_at_migration(database_path: Path, migration_count: int) -> 
 def test_sqlite_migration_is_repeatable_and_detects_drift(tmp_path: Path) -> None:
     database_path = tmp_path / "nested" / "catalog.db"
 
-    assert apply_migrations(database_path) == ("r0004_expand_senseaudio_text_catalog", True)
-    assert apply_migrations(database_path) == ("r0004_expand_senseaudio_text_catalog", False)
-    assert check_migrations(database_path) == "r0004_expand_senseaudio_text_catalog"
+    assert apply_migrations(database_path) == (
+        "r0010_model_categories_and_test_generation",
+        True,
+    )
+    assert apply_migrations(database_path) == (
+        "r0010_model_categories_and_test_generation",
+        False,
+    )
+    assert check_migrations(database_path) == "r0010_model_categories_and_test_generation"
 
     with connect_database(database_path) as connection:
         connection.execute(
@@ -62,7 +68,10 @@ def test_existing_r0001_database_upgrades_without_rewriting_history(tmp_path: Pa
         )
         connection.commit()
 
-    assert apply_migrations(database_path) == ("r0004_expand_senseaudio_text_catalog", True)
+    assert apply_migrations(database_path) == (
+        "r0010_model_categories_and_test_generation",
+        True,
+    )
     with connect_database(database_path) as connection:
         migrations = connection.execute(
             "SELECT migration_id FROM schema_migrations ORDER BY migration_id"
@@ -72,11 +81,20 @@ def test_existing_r0001_database_upgrades_without_rewriting_history(tmp_path: Pa
             ("r0002_model_test_conversations",),
             ("r0003_tool_navigation_state",),
             ("r0004_expand_senseaudio_text_catalog",),
+            ("r0005_visual_workshop_projects",),
+            ("r0006_file_management",),
+            ("r0007_model_test_attachments",),
+            ("r0008_visual_generation",),
+            ("r0009_visual_canvas_documents",),
+            ("r0010_model_categories_and_test_generation",),
         ]
         assert connection.execute("SELECT COUNT(*) FROM model_test_conversations").fetchone() == (
             0,
         )
         assert connection.execute("SELECT COUNT(*) FROM tool_navigation_items").fetchone() == (0,)
+        assert connection.execute("SELECT COUNT(*) FROM visual_workshop_projects").fetchone() == (
+            0,
+        )
 
 
 def test_existing_default_catalog_is_extended_without_overwriting_user_data(
@@ -144,7 +162,10 @@ def test_existing_default_catalog_is_extended_without_overwriting_user_data(
         connection.execute("UPDATE model_catalog_state SET revision = 7 WHERE id = 'default'")
         connection.commit()
 
-    assert apply_migrations(database_path) == ("r0004_expand_senseaudio_text_catalog", True)
+    assert apply_migrations(database_path) == (
+        "r0010_model_categories_and_test_generation",
+        True,
+    )
 
     with connect_database(database_path) as connection:
         provider = connection.execute(
@@ -182,6 +203,9 @@ def test_existing_default_catalog_is_extended_without_overwriting_user_data(
         revision = connection.execute(
             "SELECT revision FROM model_catalog_state WHERE id = 'default'"
         ).fetchone()
+        stored_categories = {
+            row[0] for row in connection.execute("SELECT categories FROM model_entries").fetchall()
+        }
 
     assert provider == (
         "用户修改的网关",
@@ -224,14 +248,18 @@ def test_existing_default_catalog_is_extended_without_overwriting_user_data(
     ]
     assert "senseaudio-vl-1.0-260319" not in all_slugs
     assert len(all_slugs) == 15
-    assert revision == (8,)
+    assert revision == (9,)
+    assert stored_categories == {"[]"}
 
-    assert apply_migrations(database_path) == ("r0004_expand_senseaudio_text_catalog", False)
+    assert apply_migrations(database_path) == (
+        "r0010_model_categories_and_test_generation",
+        False,
+    )
     with connect_database(database_path) as connection:
         assert connection.execute(
             "SELECT revision FROM model_catalog_state WHERE id = 'default'"
-        ).fetchone() == (8,)
-        assert connection.execute("SELECT COUNT(*) FROM model_entries").fetchone() == (15,)
+        ).fetchone() == (9,)
+        assert connection.execute("SELECT COUNT(*) FROM model_entries").fetchone() == (20,)
 
 
 def test_catalog_upgrade_does_not_recreate_deleted_default_provider(tmp_path: Path) -> None:
@@ -241,13 +269,91 @@ def test_catalog_upgrade_does_not_recreate_deleted_default_provider(tmp_path: Pa
         connection.execute("UPDATE model_catalog_state SET revision = 4 WHERE id = 'default'")
         connection.commit()
 
-    assert apply_migrations(database_path) == ("r0004_expand_senseaudio_text_catalog", True)
+    assert apply_migrations(database_path) == (
+        "r0010_model_categories_and_test_generation",
+        True,
+    )
     with connect_database(database_path) as connection:
         assert connection.execute("SELECT COUNT(*) FROM model_providers").fetchone() == (0,)
         assert connection.execute("SELECT COUNT(*) FROM model_entries").fetchone() == (0,)
         assert connection.execute(
             "SELECT revision FROM model_catalog_state WHERE id = 'default'"
         ).fetchone() == (4,)
+
+
+def test_r0007_upgrade_adds_visual_tasks_and_preserves_provider_credentials(
+    tmp_path: Path,
+) -> None:
+    database_path = tmp_path / "r0007-upgrade.db"
+    _create_database_at_migration(database_path, 7)
+    with connect_database(database_path) as connection:
+        connection.execute(
+            """
+            INSERT INTO model_providers (
+              id, name, kind, base_url, api_key_ciphertext, enabled, sort_order
+            ) VALUES (?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                DEFAULT_OPENAI_PROVIDER_ID,
+                "用户网关",
+                "openai",
+                "https://custom.example/v1",
+                "encrypted-user-key",
+                True,
+                9,
+            ),
+        )
+        connection.commit()
+
+    assert apply_migrations(database_path) == (
+        "r0010_model_categories_and_test_generation",
+        True,
+    )
+    with connect_database(database_path) as connection:
+        preserved = connection.execute(
+            """
+            SELECT name, kind, base_url, api_key_ciphertext, enabled, sort_order
+            FROM model_providers WHERE id = ?
+            """,
+            (DEFAULT_OPENAI_PROVIDER_ID,),
+        ).fetchone()
+        visual_providers = connection.execute(
+            """
+            SELECT kind, base_url, api_key_ciphertext, enabled
+            FROM model_providers
+            WHERE kind IN ('senseaudio_image', 'senseaudio_video')
+            ORDER BY kind
+            """
+        ).fetchall()
+        task_columns = {
+            row[1] for row in connection.execute("PRAGMA table_info(visual_generation_tasks)")
+        }
+        with pytest.raises(sqlite3.IntegrityError):
+            connection.execute(
+                "INSERT INTO model_providers (id, name, kind) VALUES (?, ?, ?)",
+                (str(uuid4()), "无效供应商", "unsupported"),
+            )
+
+    assert preserved == (
+        "用户网关",
+        "openai",
+        "https://custom.example/v1",
+        "encrypted-user-key",
+        1,
+        9,
+    )
+    assert visual_providers == [
+        ("senseaudio_image", "https://api.senseaudio.cn/v1", "", 0),
+        ("senseaudio_video", "https://api.senseaudio.cn/v1", "", 0),
+    ]
+    assert {
+        "project_id",
+        "provider_kind",
+        "generation_kind",
+        "request_payload",
+        "provider_task_id",
+        "result_asset_id",
+    } <= task_columns
 
 
 def test_sqlite_pragmas_json_and_foreign_key_cascade(tmp_path: Path) -> None:

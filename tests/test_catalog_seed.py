@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-from sqlalchemy import select
+from sqlalchemy import event, select
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from app.llm.catalog.seed import seed_sayflow_text_catalog
@@ -55,6 +55,11 @@ async def test_sayflow_text_catalog_seed_is_complete_and_idempotent(tmp_path: Pa
     database_path = tmp_path / "seed.db"
     apply_migrations(database_path)
     engine = create_async_engine(f"sqlite+aiosqlite:///{database_path.as_posix()}")
+
+    @event.listens_for(engine.sync_engine, "connect")
+    def enable_foreign_keys(dbapi_connection, _connection_record) -> None:
+        dbapi_connection.execute("PRAGMA foreign_keys = ON")
+
     sessions = async_sessionmaker(engine, expire_on_commit=False)
 
     try:
@@ -69,8 +74,16 @@ async def test_sayflow_text_catalog_seed_is_complete_and_idempotent(tmp_path: Pa
         assert {(item.name, item.kind) for item in providers} == {
             ("OpenAI 兼容网关", "openai"),
             ("Anthropic", "anthropic"),
+            ("SenseAudio 图片生成", "senseaudio_image"),
+            ("SenseAudio 视频生成", "senseaudio_video"),
         }
         assert all(item.api_key_ciphertext == "" for item in providers)
+        assert {item.kind: item.enabled for item in providers} == {
+            "openai": True,
+            "anthropic": True,
+            "senseaudio_image": False,
+            "senseaudio_video": False,
+        }
         openai_models = sorted(
             (item for item in models if item.provider_id == "f0000000-0000-4000-8000-000000000001"),
             key=lambda item: item.sort_order,
@@ -78,12 +91,43 @@ async def test_sayflow_text_catalog_seed_is_complete_and_idempotent(tmp_path: Pa
         assert [(item.slug, item.capabilities, item.description) for item in openai_models] == list(
             EXPECTED_OPENAI_MODELS
         )
+        assert {tuple(item.categories) for item in openai_models} == {("text_generation",)}
         assert [item.sort_order for item in openai_models] == list(range(16))
         assert {
             (item.slug, tuple(item.capabilities))
             for item in models
             if item.provider_id == "f0000000-0000-4000-8000-000000000002"
         } == {("claude-haiku-4-5-20251001", ("chat", "vision", "tools"))}
+        assert {
+            tuple(item.categories)
+            for item in models
+            if item.provider_id == "f0000000-0000-4000-8000-000000000002"
+        } == {("text_generation",)}
+        assert {
+            (item.slug, tuple(item.capabilities))
+            for item in models
+            if item.provider_id == "f0000000-0000-4000-8000-000000000003"
+        } == {
+            ("senseaudio-image-2.0-260319", ("image_generation",)),
+            ("senseaudio-image-1.0-260319", ("image_generation",)),
+            ("doubao-seedream-5-0-260128", ("image_generation",)),
+            ("sensenova-u1-fast", ("image_generation",)),
+        }
+        assert {
+            tuple(item.categories)
+            for item in models
+            if item.provider_id == "f0000000-0000-4000-8000-000000000003"
+        } == {("image_generation",)}
+        assert {
+            (item.slug, tuple(item.capabilities))
+            for item in models
+            if item.provider_id == "f0000000-0000-4000-8000-000000000004"
+        } == {("doubao-seedance-2-0-260128", ("video_generation",))}
+        assert {
+            tuple(item.categories)
+            for item in models
+            if item.provider_id == "f0000000-0000-4000-8000-000000000004"
+        } == {("video_generation",)}
         assert state is not None and state.revision == 1
     finally:
         await engine.dispose()

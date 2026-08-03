@@ -22,6 +22,7 @@ class Settings(BaseSettings):
     cors_origins: str = "http://127.0.0.1:3000,http://localhost:3000"
     fpl_secrets_key: str = ""
     fpl_studio_token: str = ""
+    fpl_visual_asset_max_bytes: int = 200 * 1024 * 1024
 
     @model_validator(mode="after")
     def validate_security(self) -> Settings:
@@ -31,6 +32,8 @@ class Settings(BaseSettings):
             raise ValueError("FPL_SECRETS_KEY must be a valid Fernet key") from exc
         if self.fpl_studio_token and len(self.fpl_studio_token) < 32:
             raise ValueError("FPL_STUDIO_TOKEN must contain at least 32 characters")
+        if self.fpl_visual_asset_max_bytes < 1:
+            raise ValueError("FPL_VISUAL_ASSET_MAX_BYTES must be positive")
         return self
 
     @property
@@ -46,6 +49,18 @@ class Settings(BaseSettings):
     @property
     def database_url(self) -> str:
         return f"sqlite+aiosqlite:///{self.database_path.as_posix()}"
+
+    @property
+    def visual_asset_path(self) -> Path:
+        return (self.database_path.parent / "visual-workshop" / "assets").resolve()
+
+    @property
+    def model_test_attachment_path(self) -> Path:
+        return (self.database_path.parent / "model-test" / "attachments").resolve()
+
+    @property
+    def model_test_generated_path(self) -> Path:
+        return (self.database_path.parent / "model-test" / "generated").resolve()
 
 
 @lru_cache

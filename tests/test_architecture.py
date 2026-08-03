@@ -172,6 +172,7 @@ def test_documented_core_directories_exist() -> None:
         "backend/app/routes",
         "backend/app/schemas",
         "backend/app/tool_navigation",
+        "backend/app/visual_workshop",
         "db/migrations/versions",
         "docs/architecture",
         "scripts",

@@ -5,13 +5,10 @@ import {
   Calculator,
   Clock3,
   Diff,
-  FlaskConical,
-  History,
   MessageSquareText,
   Palette,
   PlugZap,
   Regex,
-  Server,
 } from "lucide-react";
 
 export type ToolCategory =
@@ -131,33 +128,6 @@ export const TOOLS: ToolDefinition[] = [
     tags: ["Prompt", "模型", "模板"],
     icon: MessageSquareText,
     target: { kind: "external", href: "https://prompts.chat/" },
-  },
-  {
-    id: "model-test",
-    name: "模型测试",
-    description: "在持久化对话中测试模型输出",
-    category: "model",
-    tags: ["模型", "测试", "Prompt", "对话"],
-    icon: FlaskConical,
-    target: { kind: "internal", path: "/model-test" },
-  },
-  {
-    id: "model-service",
-    name: "模型服务",
-    description: "管理供应商、凭证与模型目录",
-    category: "model",
-    tags: ["模型", "供应商", "配置"],
-    icon: Server,
-    target: { kind: "internal", path: "/model-service" },
-  },
-  {
-    id: "model-call-logs",
-    name: "模型调用日志",
-    description: "查看请求、Token 用量与调用耗时",
-    category: "model",
-    tags: ["模型", "日志", "Token", "调用"],
-    icon: History,
-    target: { kind: "internal", path: "/model-call-logs" },
   },
 ];
 

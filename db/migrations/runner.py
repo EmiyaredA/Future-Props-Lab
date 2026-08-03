@@ -104,13 +104,24 @@ def apply_migrations(path: str | Path | None = None) -> tuple[str, bool]:
         for migration in pending:
             checksum = migration_checksum(migration)
             try:
-                connection.executescript(
-                    "BEGIN IMMEDIATE;\n"
-                    + migration.sql
-                    + "\nINSERT INTO schema_migrations (migration_id, checksum) VALUES ("
-                    + f"'{migration.migration_id}', '{checksum}');\nCOMMIT;"
+                if migration.foreign_keys_off:
+                    connection.execute("PRAGMA foreign_keys = OFF")
+                connection.executescript("BEGIN IMMEDIATE;\n" + migration.sql)
+                connection.execute(
+                    "INSERT INTO schema_migrations (migration_id, checksum) VALUES (?, ?)",
+                    (migration.migration_id, checksum),
                 )
+                if migration.foreign_keys_off:
+                    violations = connection.execute("PRAGMA foreign_key_check").fetchall()
+                    if violations:
+                        raise MigrationDriftError(
+                            f"foreign key violations after {migration.migration_id}: {violations}"
+                        )
+                connection.commit()
+                if migration.foreign_keys_off:
+                    connection.execute("PRAGMA foreign_keys = ON")
             except Exception:
                 connection.rollback()
+                connection.execute("PRAGMA foreign_keys = ON")
                 raise
     return LATEST_MIGRATION_ID, True

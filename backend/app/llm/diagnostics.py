@@ -44,6 +44,12 @@ async def test_model(session: AsyncSession, model_id: str) -> TestModelOut:
         raise ResourceNotFoundError("供应商不存在")
     if not provider.enabled or not model.enabled:
         raise DiagnosticCallError(status_code=409, message="供应商或模型尚未启用", log_id="")
+    if "chat" not in list(model.capabilities or []):
+        raise DiagnosticCallError(
+            status_code=409,
+            message="生成模型请在视觉创作工坊中使用",
+            log_id="",
+        )
     key = decrypt_secret(provider.api_key_ciphertext) if provider.api_key_ciphertext else ""
     trace_id = str(uuid4())
     log = LlmCallLog(

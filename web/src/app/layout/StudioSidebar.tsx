@@ -1,15 +1,41 @@
 import { useState } from "react";
 import { BrandMark } from "@shared/ui/BrandMark";
 import { ThemeToggle } from "@shared/ui/ThemeToggle";
+import type { StudioPage } from "@app/routes";
 
-export type StudioPage =
-  "tools" | "model-test" | "model-service" | "model-call-logs";
+function HomeIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden>
+      <path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1V10Z" />
+    </svg>
+  );
+}
+
+function AppsIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden>
+      <rect x="3" y="3" width="7" height="7" rx="2" />
+      <rect x="14" y="3" width="7" height="7" rx="2" />
+      <rect x="3" y="14" width="7" height="7" rx="2" />
+      <path d="M17.5 14v7M14 17.5h7" />
+    </svg>
+  );
+}
 
 function CompassIcon() {
   return (
     <svg viewBox="0 0 24 24" aria-hidden>
       <circle cx="12" cy="12" r="9" />
       <path d="m15.5 8.5-2.2 4.8-4.8 2.2 2.2-4.8 4.8-2.2Z" />
+    </svg>
+  );
+}
+
+function FilesIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden>
+      <path d="M3 6.5h7l2 2h9v9.5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6.5Z" />
+      <path d="M3 9h18" />
     </svg>
   );
 }
@@ -83,6 +109,30 @@ export function StudioSidebar({
       <div className="sidebar-rule" />
       <nav aria-label="主导航">
         <button
+          className={`nav-primary${page === "home" ? " active" : ""}`}
+          aria-current={page === "home" ? "page" : undefined}
+          onClick={() => navigate("home")}
+        >
+          <HomeIcon />
+          <span>首页</span>
+        </button>
+        <button
+          className={`nav-primary${page === "apps" ? " active" : ""}`}
+          aria-current={page === "apps" ? "page" : undefined}
+          onClick={() => navigate("apps")}
+        >
+          <AppsIcon />
+          <span>AI应用</span>
+        </button>
+        <button
+          className={`nav-primary${page === "files" ? " active" : ""}`}
+          aria-current={page === "files" ? "page" : undefined}
+          onClick={() => navigate("files")}
+        >
+          <FilesIcon />
+          <span>文件管理</span>
+        </button>
+        <button
           className={`nav-primary${page === "tools" ? " active" : ""}`}
           aria-current={page === "tools" ? "page" : undefined}
           onClick={() => navigate("tools")}
@@ -137,7 +187,7 @@ export function StudioSidebar({
             window.open("/docs.html", "_blank", "noopener,noreferrer")
           }
         >
-          文档中心 <span>↗</span>
+          文档中心
         </button>
         <ThemeToggle />
       </footer>

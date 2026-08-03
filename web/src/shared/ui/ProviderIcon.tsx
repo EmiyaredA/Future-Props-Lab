@@ -2,9 +2,20 @@ export function ProviderIcon({
   kind,
   size = 20,
 }: {
-  kind: "openai" | "anthropic";
+  kind: "openai" | "anthropic" | "senseaudio_image" | "senseaudio_video";
   size?: number;
 }) {
+  if (kind.startsWith("senseaudio_"))
+    return (
+      <img
+        className="provider-brand-icon"
+        src="/providers/senseaudio-logo.svg"
+        width={size}
+        height={size}
+        alt=""
+        aria-hidden="true"
+      />
+    );
   return (
     <svg
       className="provider-brand-icon"

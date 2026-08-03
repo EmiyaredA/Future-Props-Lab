@@ -7,6 +7,12 @@ from db.migrations.versions import (
     r0002_model_test_conversations,
     r0003_tool_navigation_state,
     r0004_expand_senseaudio_text_catalog,
+    r0005_visual_workshop_projects,
+    r0006_file_management,
+    r0007_model_test_attachments,
+    r0008_visual_generation,
+    r0009_visual_canvas_documents,
+    r0010_model_categories_and_test_generation,
 )
 
 
@@ -14,6 +20,7 @@ from db.migrations.versions import (
 class Migration:
     migration_id: str
     sql: str
+    foreign_keys_off: bool = False
 
 
 MIGRATIONS = (
@@ -29,6 +36,28 @@ MIGRATIONS = (
     Migration(
         r0004_expand_senseaudio_text_catalog.MIGRATION_ID,
         r0004_expand_senseaudio_text_catalog.SQL,
+    ),
+    Migration(
+        r0005_visual_workshop_projects.MIGRATION_ID,
+        r0005_visual_workshop_projects.SQL,
+    ),
+    Migration(r0006_file_management.MIGRATION_ID, r0006_file_management.SQL),
+    Migration(
+        r0007_model_test_attachments.MIGRATION_ID,
+        r0007_model_test_attachments.SQL,
+    ),
+    Migration(
+        r0008_visual_generation.MIGRATION_ID,
+        r0008_visual_generation.SQL,
+        foreign_keys_off=True,
+    ),
+    Migration(
+        r0009_visual_canvas_documents.MIGRATION_ID,
+        r0009_visual_canvas_documents.SQL,
+    ),
+    Migration(
+        r0010_model_categories_and_test_generation.MIGRATION_ID,
+        r0010_model_categories_and_test_generation.SQL,
     ),
 )
 

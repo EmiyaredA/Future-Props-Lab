@@ -32,7 +32,24 @@ async def test_model_catalog_diagnostic_and_logs(monkeypatch: pytest.MonkeyPatch
         assert ready.status_code == 200
         assert ready.json() == {
             "status": "ready",
-            "schema": "r0004_expand_senseaudio_text_catalog",
+            "schema": "r0010_model_categories_and_test_generation",
+        }
+        categories = (await client.get("/v1/model-categories")).json()["items"]
+        assert {item["id"] for item in categories} == {
+            "text_generation",
+            "other_general",
+            "speech_synthesis",
+            "speech_recognition",
+            "music_generation",
+            "video_generation",
+            "image_generation",
+            "end_to_end_speech",
+        }
+        assert next(item for item in categories if item["id"] == "image_generation") == {
+            "id": "image_generation",
+            "label": "图片生成",
+            "type": "image",
+            "sub_type": "text-to-image",
         }
         catalog = (await client.get("/v1/model-providers")).json()
         revision = catalog["revision"]
@@ -76,12 +93,14 @@ async def test_model_catalog_diagnostic_and_logs(monkeypatch: pytest.MonkeyPatch
                 "label": "集成测试模型",
                 "description": "",
                 "capabilities": ["chat"],
+                "categories": ["text_generation", "other_general"],
                 "enabled": True,
             },
         )
         assert model_response.status_code == 200, model_response.text
         model = model_response.json()["model"]
         assert model["capabilities"] == ["chat"]
+        assert model["categories"] == ["text_generation", "other_general"]
         test_response = await client.post(f"/v1/model-entries/{model['id']}/test")
         assert test_response.status_code == 200, test_response.text
         log_id = test_response.json()["log_id"]

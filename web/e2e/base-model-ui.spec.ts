@@ -78,7 +78,8 @@ test("model test workspace keeps panels readable on desktop and narrow screens",
                 slug: "demo-chat",
                 label: "Demo Chat",
                 description: "",
-                capabilities: ["chat"],
+                capabilities: ["chat", "vision"],
+                categories: ["text_generation"],
                 enabled: true,
               },
             ],
@@ -116,6 +117,7 @@ test("model test workspace keeps panels readable on desktop and narrow screens",
   ).toBeVisible();
   await expect(page.getByRole("button", { name: "复制代码" })).toBeVisible();
   await expect(page.locator("code.hljs")).toBeVisible();
+  await expect(page.getByRole("button", { name: "添加图片" })).toBeEnabled();
 
   await page.goto("/model-service");
   await expect(page.locator(".model-table-head")).toBeVisible();
@@ -128,6 +130,7 @@ test("model test workspace keeps panels readable on desktop and narrow screens",
   await page.goto("/model-test");
 
   await page.setViewportSize({ width: 900, height: 760 });
+  await expect(page.getByRole("button", { name: "添加图片" })).toBeVisible();
   await expect(
     page.getByRole("button", { name: "对话", exact: true }),
   ).toBeVisible();

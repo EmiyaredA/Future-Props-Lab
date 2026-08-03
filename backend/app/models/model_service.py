@@ -53,6 +53,7 @@ class ModelEntry(Base):
     label: Mapped[str] = mapped_column(String(160), default="")
     description: Mapped[str] = mapped_column(String(255), default="")
     capabilities: Mapped[list[str]] = mapped_column(JSON, default=list)
+    categories: Mapped[list[str]] = mapped_column(JSON, default=list)
     enabled: Mapped[bool] = mapped_column(Boolean, default=True)
     sort_order: Mapped[int] = mapped_column(Integer, default=0)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)

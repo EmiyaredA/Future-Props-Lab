@@ -22,15 +22,25 @@ test.beforeEach(async ({ page }) => {
   });
 });
 
-test("tools are the default route and stay responsive", async ({ page }) => {
+test("home is the default route and tools stay responsive", async ({
+  page,
+}) => {
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto("/");
+  await expect(page).toHaveURL(/\/home$/);
+  await expect(
+    page.getByRole("heading", { name: "今天想从哪里开始？" }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: /查找工具/ }).click();
   await expect(page).toHaveURL(/\/tools$/);
   await expect(page.getByRole("heading", { name: "工具导航" })).toBeVisible();
 
   const navItems = page.getByRole("navigation").getByRole("button");
-  await expect(navItems.nth(0)).toContainText("工具导航");
-  await expect(navItems.nth(1)).toContainText("基模型");
+  await expect(navItems.nth(0)).toContainText("首页");
+  await expect(navItems.nth(1)).toContainText("AI应用");
+  await expect(navItems.nth(2)).toContainText("文件管理");
+  await expect(navItems.nth(3)).toContainText("工具导航");
+  await expect(navItems.nth(4)).toContainText("基模型");
   await expect(page.locator(".tool-grid")).toHaveCSS(
     "grid-template-columns",
     /\S+px \S+px \S+px/,
@@ -55,7 +65,7 @@ test("tools are the default route and stay responsive", async ({ page }) => {
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
 });
 
-test("filters tools and records internal usage", async ({ page }) => {
+test("filters tools and records external usage", async ({ page }) => {
   await page.goto("/tools");
   await page.getByRole("button", { name: "模型工具" }).click();
   await page.getByRole("button", { name: "Token", exact: true }).click();
@@ -64,15 +74,21 @@ test("filters tools and records internal usage", async ({ page }) => {
   ).toBeVisible();
   await expect(
     page.getByRole("button", { name: "打开模型调用日志" }),
-  ).toBeVisible();
+  ).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "打开模型测试" })).toHaveCount(
+    0,
+  );
+  await expect(page.getByRole("button", { name: "打开模型服务" })).toHaveCount(
+    0,
+  );
   await expect(
     page.getByRole("button", { name: "打开JSON 格式化" }),
   ).toHaveCount(0);
 
   const usage = page.waitForRequest(
-    "**/v1/tool-navigation/tools/model-call-logs/use",
+    "**/v1/tool-navigation/tools/token-estimator/use",
   );
-  await page.getByRole("button", { name: "打开模型调用日志" }).click();
+  await page.getByRole("button", { name: "打开Token 估算" }).click();
   await usage;
-  await expect(page).toHaveURL(/\/model-call-logs$/);
+  await expect(page).toHaveURL(/\/tools$/);
 });
