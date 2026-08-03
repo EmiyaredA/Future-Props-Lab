@@ -1,0 +1,130 @@
+.docs-shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+}
+.docs-header {
+  height: 78px;
+  padding: 0 36px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
+}
+.docs-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-decoration: none;
+}
+.docs-brand div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.docs-brand strong {
+  font-size: 16px;
+  color: var(--text-strong);
+}
+.docs-brand span {
+  color: var(--muted);
+  font-size: 12px;
+}
+.docs-actions {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+}
+.docs-actions > a {
+  color: var(--muted);
+  font-weight: 600;
+  text-decoration: none;
+}
+.docs-actions > a:hover {
+  color: var(--accent);
+}
+.docs-empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 24px 120px;
+  text-align: center;
+}
+.docs-empty h1 {
+  margin: 14px 0 10px;
+  color: var(--text-strong);
+  font-size: clamp(30px, 4vw, 46px);
+  letter-spacing: -0.04em;
+}
+.docs-empty p {
+  max-width: 580px;
+  margin: 0 0 28px;
+  color: var(--muted);
+  font-size: 16px;
+  line-height: 1.8;
+}
+.docs-orbit {
+  position: relative;
+  width: 90px;
+  height: 90px;
+  margin-bottom: 24px;
+  border: 1px solid var(--accent-line);
+  border-radius: 28px;
+  background: var(--accent-soft);
+  transform: rotate(8deg);
+}
+.docs-orbit span {
+  position: absolute;
+  border: 2px solid var(--accent);
+  border-radius: 50%;
+}
+.docs-orbit span:nth-child(1) {
+  width: 48px;
+  height: 24px;
+  left: 20px;
+  top: 32px;
+  transform: rotate(30deg);
+}
+.docs-orbit span:nth-child(2) {
+  width: 48px;
+  height: 24px;
+  left: 20px;
+  top: 32px;
+  transform: rotate(-30deg);
+}
+.docs-orbit span:nth-child(3) {
+  width: 8px;
+  height: 8px;
+  left: 40px;
+  top: 40px;
+  background: var(--accent);
+}
+.docs-footer {
+  height: 58px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-top: 1px solid var(--border);
+  color: var(--faint);
+  font-size: 12px;
+}
+@media (max-width: 700px) {
+  .docs-header {
+    height: auto;
+    padding: 16px;
+    gap: 16px;
+    align-items: flex-start;
+  }
+  .docs-actions {
+    flex-direction: column-reverse;
+    align-items: flex-end;
+    gap: 8px;
+  }
+  .docs-actions .theme-toggle {
+    width: 180px;
+  }
+}

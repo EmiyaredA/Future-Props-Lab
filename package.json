@@ -1,0 +1,24 @@
+{
+  "name": "future-props-lab",
+  "private": true,
+  "description": "未来道具研究所模型基础设施管理台",
+  "workspaces": ["web"],
+  "scripts": {
+    "setup": "uv sync --all-groups && npm install",
+    "dev": "concurrently -k -n api,web -c blue,magenta \"npm run dev:backend\" \"npm run dev:web\"",
+    "dev:backend": "uv run uvicorn app.main:app --app-dir backend --reload --host 127.0.0.1 --port 9000",
+    "dev:web": "npm run dev --workspace web",
+    "db:migrate": "uv run python -m db.migrations --apply",
+    "db:migrate:check": "uv run python -m db.migrations --check",
+    "contracts:generate": "uv run python scripts/export_openapi.py && npm run contracts:generate --workspace web",
+    "contracts:check": "uv run python scripts/export_openapi.py --check && npm run contracts:check --workspace web",
+    "test": "uv run pytest -q && npm run test --workspace web",
+    "lint": "uv run ruff check backend db scripts tests && npm run lint --workspace web",
+    "format": "uv run ruff format backend db scripts tests && npm run format --workspace web",
+    "format:check": "uv run ruff format --check backend db scripts tests && npm run format:check --workspace web",
+    "build": "npm run build --workspace web"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.0"
+  }
+}

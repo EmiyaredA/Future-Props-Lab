@@ -1,0 +1,67 @@
+from __future__ import annotations
+
+from datetime import datetime
+from uuid import uuid4
+
+from sqlalchemy import (
+    JSON,
+    Boolean,
+    DateTime,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+)
+from sqlalchemy.orm import Mapped, mapped_column
+
+from app.core.time import utc_now
+from app.models.base import Base
+
+
+def new_id() -> str:
+    return str(uuid4())
+
+
+class ModelProvider(Base):
+    __tablename__ = "model_providers"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    name: Mapped[str] = mapped_column(String(120))
+    kind: Mapped[str] = mapped_column(String(24))
+    base_url: Mapped[str] = mapped_column(String(512), default="")
+    api_key_ciphertext: Mapped[str] = mapped_column(Text, default="")
+    enabled: Mapped[bool] = mapped_column(Boolean, default=True)
+    sort_order: Mapped[int] = mapped_column(Integer, default=0)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, onupdate=utc_now)
+
+
+class ModelEntry(Base):
+    __tablename__ = "model_entries"
+    __table_args__ = (
+        UniqueConstraint("provider_id", "slug", name="uq_model_entries_provider_slug"),
+        Index("ix_model_entries_provider_order", "provider_id", "sort_order"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    provider_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("model_providers.id", ondelete="CASCADE"), index=True
+    )
+    slug: Mapped[str] = mapped_column(String(160))
+    label: Mapped[str] = mapped_column(String(160), default="")
+    description: Mapped[str] = mapped_column(String(255), default="")
+    capabilities: Mapped[list[str]] = mapped_column(JSON, default=list)
+    enabled: Mapped[bool] = mapped_column(Boolean, default=True)
+    sort_order: Mapped[int] = mapped_column(Integer, default=0)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, onupdate=utc_now)
+
+
+class ModelCatalogState(Base):
+    __tablename__ = "model_catalog_state"
+
+    id: Mapped[str] = mapped_column(String(32), primary_key=True, default="default")
+    revision: Mapped[int] = mapped_column(Integer, default=0)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, onupdate=utc_now)
