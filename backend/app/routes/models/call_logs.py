@@ -31,6 +31,7 @@ def _date(value: str | None, *, end: bool = False) -> datetime | None:
 async def list_logs(
     session: SessionDep,
     q: str = Query("", max_length=200),
+    call_source: str = Query("", pattern="^(|model_diagnostic|model_playground)$"),
     provider_kind: str = Query("", pattern="^(|openai|anthropic)$"),
     model: str = Query("", max_length=160),
     status: str = Query("", pattern="^(|success|error)$"),
@@ -41,6 +42,7 @@ async def list_logs(
 ) -> CallLogListOut:
     return await CallLogService(session).list(
         q=q.strip(),
+        call_source=call_source,
         provider_kind=provider_kind,
         model=model.strip(),
         status=status,

@@ -13,6 +13,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from app.concurrency.revisions import RevisionConflictError
 from app.core.config import get_settings
 from app.core.db import SessionLocal, engine
+from app.llm.catalog.seed import seed_sayflow_text_catalog
 from app.problem_details import (
     http_exception_handler,
     revision_conflict_handler,
@@ -21,6 +22,7 @@ from app.problem_details import (
 )
 from app.routes import api_router
 from db.migrations import apply_migrations
+from db.migrations.registry import LATEST_MIGRATION_ID
 
 settings = get_settings()
 
@@ -28,6 +30,8 @@ settings = get_settings()
 @asynccontextmanager
 async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
     apply_migrations(settings.database_path)
+    async with SessionLocal() as session:
+        await seed_sayflow_text_catalog(session)
     try:
         yield
     finally:
@@ -64,4 +68,4 @@ async def ready() -> dict[str, str]:
     async with SessionLocal() as session:
         await session.execute(text("SELECT 1 FROM schema_migrations LIMIT 1"))
         await session.execute(text("SELECT 1 FROM model_catalog_state WHERE id = 'default'"))
-    return {"status": "ready", "schema": "r0001_initial"}
+    return {"status": "ready", "schema": LATEST_MIGRATION_ID}

@@ -1,6 +1,8 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ApiError } from "@platform/api/client";
+import { CustomSelect } from "@shared/ui/CustomSelect";
+import { ProviderIcon } from "@shared/ui/ProviderIcon";
 import {
   addModel,
   createProvider,
@@ -36,6 +38,28 @@ const capabilityLabel = {
   vision: "视觉",
   tools: "工具",
 } as const;
+
+function ActionIcon({
+  kind,
+}: {
+  kind: "edit" | "delete" | "key" | "revision";
+}) {
+  const paths = {
+    edit: (
+      <path d="M4 16.5V20h3.5L18 9.5 14.5 6 4 16.5ZM13 7.5l3.5 3.5M15.5 5l1.2-1.2a1.4 1.4 0 0 1 2 0l1.5 1.5a1.4 1.4 0 0 1 0 2L19 8.5" />
+    ),
+    delete: <path d="M4 7h16M9 7V4h6v3m3 0-1 13H7L6 7m4 4v5m4-5v5" />,
+    key: (
+      <path d="M14 9a5 5 0 1 1-1.4-3.5A5 5 0 0 1 14 9Zm0 0h7m-3 0v3m-3-3v2" />
+    ),
+    revision: <path d="M4 12a8 8 0 1 0 2.3-5.7L4 8.5M4 4v4.5h4.5M12 8v4l3 2" />,
+  };
+  return (
+    <svg className="ui-action-icon" viewBox="0 0 24 24" aria-hidden>
+      {paths[kind]}
+    </svg>
+  );
+}
 
 function Toggle({ on, onClick }: { on: boolean; onClick: () => void }) {
   return (
@@ -116,13 +140,15 @@ function ProviderForm({
       </label>
       <label>
         <span>通道类型</span>
-        <select
+        <CustomSelect
+          ariaLabel="通道类型"
           value={kind}
-          onChange={(event) => setKind(event.target.value as typeof kind)}
-        >
-          <option value="openai">OpenAI 兼容</option>
-          <option value="anthropic">Anthropic</option>
-        </select>
+          onChange={(value) => setKind(value as typeof kind)}
+          options={[
+            { value: "openai", label: "OpenAI 兼容" },
+            { value: "anthropic", label: "Anthropic" },
+          ]}
+        />
       </label>
       <label>
         <span>Base URL</span>
@@ -391,7 +417,6 @@ export function ModelServicePage({ onOpenLogs }: { onOpenLogs: () => void }) {
     <section className="page model-service-page">
       <header className="page-header">
         <div>
-          <span className="eyebrow">BASE MODELS</span>
           <h1>模型服务</h1>
           <p>统一管理供应商、模型能力与加密凭证。</p>
         </div>
@@ -433,7 +458,7 @@ export function ModelServicePage({ onOpenLogs }: { onOpenLogs: () => void }) {
                   onClick={() => setSelectedId(provider.id)}
                 >
                   <span className="provider-glyph">
-                    {provider.kind === "anthropic" ? "A" : "O"}
+                    <ProviderIcon kind={provider.kind} size={19} />
                   </span>
                   <span className="provider-copy">
                     <strong>{provider.name}</strong>
@@ -471,29 +496,34 @@ export function ModelServicePage({ onOpenLogs }: { onOpenLogs: () => void }) {
           {selected ? (
             <>
               <div className="detail-head">
-                <div>
-                  <div className="title-row">
-                    <h2>{selected.name}</h2>
-                    <span className="pill">
-                      {providerKindLabel[selected.kind]}
-                    </span>
-                    <span className={`pill ${selected.enabled ? "ok" : ""}`}>
-                      {selected.enabled ? "已启用" : "已停用"}
-                    </span>
+                <div className="provider-identity">
+                  <span className="provider-detail-icon">
+                    <ProviderIcon kind={selected.kind} size={26} />
+                  </span>
+                  <div>
+                    <div className="title-row">
+                      <h2>{selected.name}</h2>
+                      <span className="pill">
+                        {providerKindLabel[selected.kind]}
+                      </span>
+                      <span className={`pill ${selected.enabled ? "ok" : ""}`}>
+                        {selected.enabled ? "已启用" : "已停用"}
+                      </span>
+                    </div>
+                    <p>{selected.base_url || "使用官方默认地址"}</p>
                   </div>
-                  <p>{selected.base_url || "使用官方默认地址"}</p>
                 </div>
                 <div className="button-row">
                   <button
-                    className="btn"
+                    className="compact-action"
                     onClick={() =>
                       setModal({ kind: "provider", initial: selected })
                     }
                   >
-                    编辑
+                    <ActionIcon kind="edit" /> 编辑
                   </button>
                   <button
-                    className="btn danger"
+                    className="compact-action danger"
                     onClick={() => {
                       if (
                         confirm(`删除供应商「${selected.name}」及其全部模型？`)
@@ -504,22 +534,32 @@ export function ModelServicePage({ onOpenLogs }: { onOpenLogs: () => void }) {
                         ).catch(() => undefined);
                     }}
                   >
-                    删除
+                    <ActionIcon kind="delete" /> 删除
                   </button>
                 </div>
               </div>
               <div className="credential-strip">
-                <div>
-                  <span>API Key</span>
-                  <strong>
-                    {selected.has_api_key
-                      ? `•••• ${selected.api_key_hint}`
-                      : "未配置"}
-                  </strong>
+                <div className="credential-card">
+                  <span className="credential-icon">
+                    <ActionIcon kind="key" />
+                  </span>
+                  <span className="credential-copy">
+                    <small>API Key</small>
+                    <strong>
+                      {selected.has_api_key
+                        ? `•••• ${selected.api_key_hint}`
+                        : "未配置"}
+                    </strong>
+                  </span>
                 </div>
-                <div>
-                  <span>目录版本</span>
-                  <strong>Revision {catalog?.revision}</strong>
+                <div className="credential-card">
+                  <span className="credential-icon">
+                    <ActionIcon kind="revision" />
+                  </span>
+                  <span className="credential-copy">
+                    <small>目录版本</small>
+                    <strong>Revision {catalog?.revision}</strong>
+                  </span>
                 </div>
               </div>
               <div className="models-head">
@@ -542,20 +582,29 @@ export function ModelServicePage({ onOpenLogs }: { onOpenLogs: () => void }) {
               </div>
               <div className="model-list">
                 {selected.models.length ? (
-                  selected.models.map((model) => (
-                    <article
-                      className={`model-row${model.enabled ? "" : " disabled"}`}
-                      key={model.id}
-                    >
-                      <div className="model-main">
-                        <div className="model-name">
-                          <strong>{model.label || model.slug}</strong>
-                          {!model.enabled ? (
-                            <span className="pill">已停用</span>
-                          ) : null}
+                  <>
+                    <div className="model-table-head" aria-hidden>
+                      <span>模型</span>
+                      <span>能力</span>
+                      <span>状态</span>
+                      <span>操作</span>
+                    </div>
+                    {selected.models.map((model) => (
+                      <article
+                        className={`model-row${model.enabled ? "" : " disabled"}`}
+                        key={model.id}
+                      >
+                        <div className="model-main">
+                          <div className="model-copy">
+                            <div className="model-name">
+                              <strong>{model.label || model.slug}</strong>
+                            </div>
+                            <code>{model.slug}</code>
+                            {model.description ? (
+                              <p>{model.description}</p>
+                            ) : null}
+                          </div>
                         </div>
-                        <code>{model.slug}</code>
-                        {model.description ? <p>{model.description}</p> : null}
                         <div className="capabilities">
                           {model.capabilities.map((capability) => (
                             <span key={capability}>
@@ -563,46 +612,53 @@ export function ModelServicePage({ onOpenLogs }: { onOpenLogs: () => void }) {
                             </span>
                           ))}
                         </div>
-                      </div>
-                      <div className="model-actions">
-                        <button
-                          className="btn test"
-                          disabled={
-                            testingId === model.id ||
-                            !model.enabled ||
-                            !selected.enabled
-                          }
-                          onClick={() => void runTest(model)}
+                        <span
+                          className={`model-status${model.enabled ? " enabled" : ""}`}
                         >
-                          {testingId === model.id ? "测试中…" : "测试调用"}
-                        </button>
-                        <button
-                          className="text-btn"
-                          onClick={() =>
-                            setModal({
-                              kind: "model",
-                              providerId: selected.id,
-                              initial: model,
-                            })
-                          }
-                        >
-                          编辑
-                        </button>
-                        <button
-                          className="text-btn danger-text"
-                          onClick={() => {
-                            if (confirm(`删除模型「${model.slug}」？`))
-                              void mutate(
-                                (revision) => deleteModel(model.id, revision),
-                                "模型已删除",
-                              ).catch(() => undefined);
-                          }}
-                        >
-                          删除
-                        </button>
-                      </div>
-                    </article>
-                  ))
+                          <i /> {model.enabled ? "已启用" : "已停用"}
+                        </span>
+                        <div className="model-actions">
+                          <button
+                            className="btn test"
+                            disabled={
+                              testingId === model.id ||
+                              !model.enabled ||
+                              !selected.enabled
+                            }
+                            onClick={() => void runTest(model)}
+                          >
+                            {testingId === model.id ? "测试中…" : "测试调用"}
+                          </button>
+                          <button
+                            className="row-icon-action"
+                            aria-label={`编辑 ${model.label || model.slug}`}
+                            onClick={() =>
+                              setModal({
+                                kind: "model",
+                                providerId: selected.id,
+                                initial: model,
+                              })
+                            }
+                          >
+                            <ActionIcon kind="edit" />
+                          </button>
+                          <button
+                            className="row-icon-action danger"
+                            aria-label={`删除 ${model.label || model.slug}`}
+                            onClick={() => {
+                              if (confirm(`删除模型「${model.slug}」？`))
+                                void mutate(
+                                  (revision) => deleteModel(model.id, revision),
+                                  "模型已删除",
+                                ).catch(() => undefined);
+                            }}
+                          >
+                            <ActionIcon kind="delete" />
+                          </button>
+                        </div>
+                      </article>
+                    ))}
+                  </>
                 ) : (
                   <div className="empty-block model-empty">
                     <span>＋</span>

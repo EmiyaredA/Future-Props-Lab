@@ -1,0 +1,170 @@
+import type { LucideIcon } from "lucide-react";
+import {
+  Binary,
+  Braces,
+  Calculator,
+  Clock3,
+  Diff,
+  FlaskConical,
+  History,
+  MessageSquareText,
+  Palette,
+  PlugZap,
+  Regex,
+  Server,
+} from "lucide-react";
+
+export type ToolCategory =
+  "development" | "data" | "text" | "model" | "productivity";
+
+export type ToolTarget =
+  { kind: "internal"; path: string } | { kind: "external"; href: string };
+
+export type ToolDefinition = {
+  id: string;
+  name: string;
+  description: string;
+  category: ToolCategory;
+  tags: string[];
+  icon: LucideIcon;
+  target: ToolTarget;
+};
+
+export const TOOL_CATEGORIES: Array<{
+  value: "all" | ToolCategory;
+  label: string;
+}> = [
+  { value: "all", label: "全部" },
+  { value: "development", label: "开发调试" },
+  { value: "data", label: "数据处理" },
+  { value: "text", label: "文本工具" },
+  { value: "model", label: "模型工具" },
+  { value: "productivity", label: "效率工具" },
+];
+
+export const POPULAR_TAGS = ["JSON", "接口", "Token", "编码", "转换"];
+
+export const TOOLS: ToolDefinition[] = [
+  {
+    id: "json-formatter",
+    name: "JSON 格式化",
+    description: "美化、压缩并校验 JSON 数据",
+    category: "data",
+    tags: ["JSON", "格式化", "校验", "转换"],
+    icon: Braces,
+    target: { kind: "external", href: "https://onlinejsonformatter.com/" },
+  },
+  {
+    id: "api-debugger",
+    name: "接口调试",
+    description: "构造 API 请求并检查响应结果",
+    category: "development",
+    tags: ["接口", "API", "HTTP", "调试"],
+    icon: PlugZap,
+    target: { kind: "external", href: "https://hoppscotch.io/" },
+  },
+  {
+    id: "token-estimator",
+    name: "Token 估算",
+    description: "估算文本的 Token 数量",
+    category: "model",
+    tags: ["Token", "模型", "文本"],
+    icon: Calculator,
+    target: { kind: "external", href: "https://platform.openai.com/tokenizer" },
+  },
+  {
+    id: "base64-codec",
+    name: "Base64 编解码",
+    description: "文本与 Base64 内容相互转换",
+    category: "data",
+    tags: ["Base64", "编码", "解码", "转换"],
+    icon: Binary,
+    target: { kind: "external", href: "https://base64.guru/converter" },
+  },
+  {
+    id: "timestamp-converter",
+    name: "时间戳转换",
+    description: "时间戳与日期时间相互转换",
+    category: "data",
+    tags: ["时间戳", "日期", "转换"],
+    icon: Clock3,
+    target: {
+      kind: "external",
+      href: "https://www.unixtimestampconverter.com/",
+    },
+  },
+  {
+    id: "regex-tester",
+    name: "正则表达式测试",
+    description: "在线测试与调试正则表达式",
+    category: "development",
+    tags: ["正则", "Regex", "测试", "调试"],
+    icon: Regex,
+    target: { kind: "external", href: "https://regex101.com/" },
+  },
+  {
+    id: "text-diff",
+    name: "文本对比",
+    description: "并排查看两段文本之间的差异",
+    category: "text",
+    tags: ["文本", "Diff", "对比"],
+    icon: Diff,
+    target: { kind: "external", href: "https://diffchecker.io/" },
+  },
+  {
+    id: "color-converter",
+    name: "颜色格式转换",
+    description: "在 HEX、RGB、HSL 等格式间转换",
+    category: "productivity",
+    tags: ["颜色", "HEX", "RGB", "转换"],
+    icon: Palette,
+    target: {
+      kind: "external",
+      href: "https://www.w3schools.com/tools/tool_color_converter.php",
+    },
+  },
+  {
+    id: "prompt-library",
+    name: "Prompt 模板库",
+    description: "浏览并复用常用 Prompt 模板",
+    category: "model",
+    tags: ["Prompt", "模型", "模板"],
+    icon: MessageSquareText,
+    target: { kind: "external", href: "https://prompts.chat/" },
+  },
+  {
+    id: "model-test",
+    name: "模型测试",
+    description: "在持久化对话中测试模型输出",
+    category: "model",
+    tags: ["模型", "测试", "Prompt", "对话"],
+    icon: FlaskConical,
+    target: { kind: "internal", path: "/model-test" },
+  },
+  {
+    id: "model-service",
+    name: "模型服务",
+    description: "管理供应商、凭证与模型目录",
+    category: "model",
+    tags: ["模型", "供应商", "配置"],
+    icon: Server,
+    target: { kind: "internal", path: "/model-service" },
+  },
+  {
+    id: "model-call-logs",
+    name: "模型调用日志",
+    description: "查看请求、Token 用量与调用耗时",
+    category: "model",
+    tags: ["模型", "日志", "Token", "调用"],
+    icon: History,
+    target: { kind: "internal", path: "/model-call-logs" },
+  },
+];
+
+export const TOOL_BY_ID = new Map(TOOLS.map((tool) => [tool.id, tool]));
+
+export function categoryLabel(category: ToolCategory): string {
+  return (
+    TOOL_CATEGORIES.find((item) => item.value === category)?.label ?? category
+  );
+}

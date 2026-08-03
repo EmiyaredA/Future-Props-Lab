@@ -65,7 +65,7 @@ async def revision_conflict_handler(request: Request, exc: RevisionConflictError
     return problem(
         request,
         409,
-        "模型目录已被其他操作更新",
+        "内容已被其他操作更新",
         code="revision_conflict",
         extra={
             "expected_revision": exc.expected,

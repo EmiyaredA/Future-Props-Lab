@@ -10,6 +10,7 @@ import {
   type CallLogItem,
   type LogFilters,
 } from "@features/models/api";
+import { CustomSelect } from "@shared/ui/CustomSelect";
 
 function formatNumber(value: number | null | undefined): string {
   return value == null ? "—" : new Intl.NumberFormat("zh-CN").format(value);
@@ -62,6 +63,14 @@ function LogDetail({
               <div>
                 <dt>模型</dt>
                 <dd>{log.model}</dd>
+              </div>
+              <div>
+                <dt>调用源</dt>
+                <dd>
+                  {log.call_source === "model_playground"
+                    ? "模型测试"
+                    : "快速诊断"}
+                </dd>
               </div>
               <div>
                 <dt>供应商</dt>
@@ -143,6 +152,7 @@ export function ModelCallLogsPage() {
   const [draftSearch, setDraftSearch] = useState("");
   const [filters, setFilters] = useState<LogFilters>({
     q: "",
+    callSource: "",
     providerKind: "",
     model: "",
     status: "",
@@ -272,36 +282,45 @@ export function ModelCallLogsPage() {
             </button>
           </form>
           <div className="filter-row">
-            <select
-              aria-label="供应商筛选"
+            <CustomSelect
+              ariaLabel="调用源筛选"
+              value={filters.callSource}
+              onChange={(value) => setFilter("callSource", value)}
+              options={[
+                { value: "", label: "全部调用源" },
+                { value: "model_diagnostic", label: "快速诊断" },
+                { value: "model_playground", label: "模型测试" },
+              ]}
+            />
+            <CustomSelect
+              ariaLabel="供应商筛选"
               value={filters.providerKind}
-              onChange={(event) =>
-                setFilter("providerKind", event.target.value)
-              }
-            >
-              <option value="">全部供应商</option>
-              <option value="openai">OpenAI 兼容</option>
-              <option value="anthropic">Anthropic</option>
-            </select>
-            <select
-              aria-label="模型筛选"
+              onChange={(value) => setFilter("providerKind", value)}
+              options={[
+                { value: "", label: "全部供应商" },
+                { value: "openai", label: "OpenAI 兼容" },
+                { value: "anthropic", label: "Anthropic" },
+              ]}
+            />
+            <CustomSelect
+              ariaLabel="模型筛选"
               value={filters.model}
-              onChange={(event) => setFilter("model", event.target.value)}
-            >
-              <option value="">全部模型</option>
-              {models.map((model) => (
-                <option key={model}>{model}</option>
-              ))}
-            </select>
-            <select
-              aria-label="状态筛选"
+              onChange={(value) => setFilter("model", value)}
+              options={[
+                { value: "", label: "全部模型" },
+                ...models.map((model) => ({ value: model, label: model })),
+              ]}
+            />
+            <CustomSelect
+              ariaLabel="状态筛选"
               value={filters.status}
-              onChange={(event) => setFilter("status", event.target.value)}
-            >
-              <option value="">全部状态</option>
-              <option value="success">成功</option>
-              <option value="error">失败</option>
-            </select>
+              onChange={(value) => setFilter("status", value)}
+              options={[
+                { value: "", label: "全部状态" },
+                { value: "success", label: "成功" },
+                { value: "error", label: "失败" },
+              ]}
+            />
             <label className="date-filter">
               <span>从</span>
               <input
@@ -324,6 +343,7 @@ export function ModelCallLogsPage() {
                 setDraftSearch("");
                 setFilters({
                   q: "",
+                  callSource: "",
                   providerKind: "",
                   model: "",
                   status: "",
@@ -374,6 +394,7 @@ export function ModelCallLogsPage() {
                 </th>
                 <th>时间</th>
                 <th>供应商</th>
+                <th>调用源</th>
                 <th>模型</th>
                 <th>Token</th>
                 <th>耗时</th>
@@ -384,7 +405,7 @@ export function ModelCallLogsPage() {
             <tbody>
               {listQuery.isLoading ? (
                 <tr>
-                  <td colSpan={8} className="table-empty">
+                  <td colSpan={9} className="table-empty">
                     加载中…
                   </td>
                 </tr>
@@ -409,6 +430,13 @@ export function ModelCallLogsPage() {
                       {row.provider_kind === "openai"
                         ? "OpenAI 兼容"
                         : "Anthropic"}
+                    </td>
+                    <td>
+                      <span className="source-badge">
+                        {row.call_source === "model_playground"
+                          ? "模型测试"
+                          : "快速诊断"}
+                      </span>
                     </td>
                     <td>
                       <strong>{row.model}</strong>
@@ -443,12 +471,10 @@ export function ModelCallLogsPage() {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={8} className="table-empty">
+                  <td colSpan={9} className="table-empty">
                     <span>◇</span>
                     <strong>暂无调用日志</strong>
-                    <small>
-                      在模型服务页执行测试调用后，结果会显示在这里。
-                    </small>
+                    <small>快速诊断与模型测试产生的结果会显示在这里。</small>
                   </td>
                 </tr>
               )}
@@ -457,16 +483,17 @@ export function ModelCallLogsPage() {
         </div>
         <div className="pagination">
           <span>每页</span>
-          <select
-            value={filters.pageSize}
-            onChange={(event) =>
-              setFilter("pageSize", Number(event.target.value))
-            }
-          >
-            <option value={25}>25</option>
-            <option value={50}>50</option>
-            <option value={100}>100</option>
-          </select>
+          <CustomSelect
+            ariaLabel="每页条数"
+            className="page-size-select"
+            value={String(filters.pageSize)}
+            onChange={(value) => setFilter("pageSize", Number(value))}
+            options={[
+              { value: "25", label: "25" },
+              { value: "50", label: "50" },
+              { value: "100", label: "100" },
+            ]}
+          />
           <button
             className="btn"
             disabled={filters.page <= 1}

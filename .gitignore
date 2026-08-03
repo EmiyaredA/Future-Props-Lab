@@ -160,6 +160,8 @@ venv.bak/
 # Node / Vite
 node_modules/
 web/dist/
+web/test-results/
+web/playwright-report/
 *.tsbuildinfo
 
 # Local runtime state

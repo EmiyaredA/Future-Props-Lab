@@ -9,7 +9,7 @@ from pathlib import Path
 
 from dotenv import dotenv_values
 
-from db.migrations.versions.r0001_initial import MIGRATION_ID, SQL
+from db.migrations.registry import LATEST_MIGRATION_ID, MIGRATIONS, Migration
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 ENV_FILE = REPO_ROOT / "backend" / ".env"
@@ -36,8 +36,9 @@ def resolve_database_path(path: str | Path | None = None) -> Path:
     return resolved.resolve()
 
 
-def migration_checksum() -> str:
-    return hashlib.sha256(SQL.encode("utf-8")).hexdigest()
+def migration_checksum(migration: Migration | None = None) -> str:
+    target = migration or MIGRATIONS[0]
+    return hashlib.sha256(target.sql.encode("utf-8")).hexdigest()
 
 
 @contextmanager
@@ -67,44 +68,49 @@ def ensure_registry(connection: sqlite3.Connection) -> None:
     connection.commit()
 
 
-def migration_state(connection: sqlite3.Connection) -> str:
+def migration_state(connection: sqlite3.Connection) -> tuple[list[Migration], list[Migration]]:
     ensure_registry(connection)
-    row = connection.execute(
-        "SELECT checksum FROM schema_migrations WHERE migration_id = ?", (MIGRATION_ID,)
-    ).fetchone()
-    if row is None:
-        return "missing"
-    if row[0] != migration_checksum():
-        return "drift"
-    return "current"
+    rows = connection.execute(
+        "SELECT migration_id, checksum FROM schema_migrations ORDER BY applied_at, migration_id"
+    ).fetchall()
+    known = {migration.migration_id: migration for migration in MIGRATIONS}
+    applied: list[Migration] = []
+    for migration_id, checksum in rows:
+        migration = known.get(str(migration_id))
+        if migration is None:
+            raise MigrationDriftError(f"unknown migration: {migration_id}")
+        if checksum != migration_checksum(migration):
+            raise MigrationDriftError(f"migration checksum drift: {migration_id}")
+        applied.append(migration)
+    expected_prefix = list(MIGRATIONS[: len(applied)])
+    if applied != expected_prefix:
+        raise MigrationDriftError("migration registry is not an ordered prefix")
+    return applied, list(MIGRATIONS[len(applied) :])
 
 
 def check_migrations(path: str | Path | None = None) -> str:
     with connect_database(path) as connection:
-        state = migration_state(connection)
-    if state == "drift":
-        raise MigrationDriftError(f"migration checksum drift: {MIGRATION_ID}")
-    if state == "missing":
-        raise MigrationPendingError(f"pending migration: {MIGRATION_ID}")
-    return MIGRATION_ID
+        _applied, pending = migration_state(connection)
+    if pending:
+        raise MigrationPendingError(f"pending migration: {pending[0].migration_id}")
+    return LATEST_MIGRATION_ID
 
 
 def apply_migrations(path: str | Path | None = None) -> tuple[str, bool]:
     with connect_database(path) as connection:
-        state = migration_state(connection)
-        if state == "drift":
-            raise MigrationDriftError(f"migration checksum drift: {MIGRATION_ID}")
-        if state == "current":
-            return MIGRATION_ID, False
-        checksum = migration_checksum()
-        try:
-            connection.executescript(
-                "BEGIN IMMEDIATE;\n"
-                + SQL
-                + "\nINSERT INTO schema_migrations (migration_id, checksum) VALUES ("
-                + f"'{MIGRATION_ID}', '{checksum}');\nCOMMIT;"
-            )
-        except Exception:
-            connection.rollback()
-            raise
-    return MIGRATION_ID, True
+        _applied, pending = migration_state(connection)
+        if not pending:
+            return LATEST_MIGRATION_ID, False
+        for migration in pending:
+            checksum = migration_checksum(migration)
+            try:
+                connection.executescript(
+                    "BEGIN IMMEDIATE;\n"
+                    + migration.sql
+                    + "\nINSERT INTO schema_migrations (migration_id, checksum) VALUES ("
+                    + f"'{migration.migration_id}', '{checksum}');\nCOMMIT;"
+                )
+            except Exception:
+                connection.rollback()
+                raise
+    return LATEST_MIGRATION_ID, True

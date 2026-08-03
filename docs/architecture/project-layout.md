@@ -1,27 +1,70 @@
-# 项目结构
+# 项目目录索引
+
+这是 Future Props Lab 目录职责的唯一完整索引。新增、删除目录或改变目录职责时更新本文件；
+各模块文档只补充局部使用方法，不另行定义一套架构。
 
 ```text
 Future-Props-Lab/
 ├── backend/app/
-│   ├── core/          # 配置、数据库与密钥基础设施
-│   ├── llm/           # 模型目录、供应商适配、诊断和调用日志
+│   ├── main.py        # FastAPI 装配、生命周期与健康探针
+│   ├── deps.py        # 请求级会话和 Studio 鉴权依赖
+│   ├── problem_details.py # 统一协议错误映射
+│   ├── concurrency/   # revision/CAS 并发语义
+│   ├── core/          # 配置、数据库、时间与密钥基础设施
+│   ├── llm/           # 模型目录、供应商适配、诊断、测试工作台和调用日志
+│   ├── tool_navigation/ # 工具收藏与最近使用状态规则
 │   ├── models/        # SQLAlchemy 持久化形状
-│   ├── routes/        # `/v1` HTTP 边界
+│   ├── routes/        # `/v1` HTTP/SSE 协议边界
 │   └── schemas/       # Pydantic 请求与响应形状
-├── db/migrations/     # SQLite 追加式迁移真源与校验器
+├── db/migrations/
+│   ├── versions/      # 只追加、不可改写的 SQLite migration
+│   ├── registry.py    # 有序 migration 注册表与最新版本
+│   └── runner.py      # checksum、连续前缀检查和事务应用
 ├── web/src/
 │   ├── app/           # Studio 入口、壳与路由
 │   ├── docs/          # 独立空文档中心入口
-│   ├── features/      # 模型服务与调用日志
+│   ├── features/      # 工具导航、模型服务、持久模型测试与调用日志
 │   ├── generated/     # OpenAPI 生成物
 │   ├── platform/      # API 与管理令牌基础设施
 │   └── shared/        # 品牌与主题 UI
-├── tests/             # 后端单元与 API 集成测试
+├── web/tests/         # Web 组件测试
+├── web/e2e/           # Playwright 浏览器旅程
+├── tests/             # 后端单元、API、存储与架构测试
 └── scripts/           # OpenAPI 契约导出
 ```
 
-前端 `platform` 与 `shared` 不依赖 `features`；业务页面不依赖 `app`。后端路由只负责协议映射，模型目录、供应商调用与日志查询分别保留在自己的能力模块中。
+## 目录与依赖边界
 
-当前工程刻意不包含 Bot、会话、知识库、实时语音、扩展、多租户和用户权限表。
+- 后端采用功能模块优先结构。`main.py` 负责装配，`routes/` 只负责认证、请求校验、调用功能
+  边界和响应映射，不直接导入 SQLAlchemy、ORM 模型或 migration。查询、写入和事务由
+  `llm/catalog/`、`llm/playground/`、`llm/call_logs/` 等所属能力负责。
+- `llm/providers/` 是供应商协议差异的唯一实现边界。模型测试、诊断、REST/SSE 与 Web 消费端
+  只依赖统一结果或事件，不根据供应商原始载荷控制运行行为；供应商管理界面展示配置属于例外。
+- 后端不增加通用 `services/`、`domain/`、`platform/` 或 `product/` 分层。需要拆分大型模块
+  时，按具体业务能力在所属功能包内命名，避免同一职责出现多个事实源。
+- 工具目录由 Web 静态注册表维护；后端 `tool_navigation/` 只持久化稳定工具 ID 对应的收藏与
+  最近使用状态，不复制工具名称、分类或外部网址。
+- Web 的依赖方向是 `app → features → shared/platform/generated`。`platform/` 与 `shared/`
+  不依赖 `features/` 或 `app/`，`features/` 不依赖 `app/`；入口装配留在 `app/`，业务代码不
+  放回 `web/src/` 根目录，生成契约不手工修改。
+- 根 `/health`、`/ready` 是无版本探针，其他业务路由由统一的 `/v1` router 注册。
 
-数据库是仓库根目录 `.runtime/future-props.db` 下的单机 SQLite 文件。FastAPI 启动时自动创建目录、执行带 checksum 的迁移，并为每个连接启用外键约束、WAL 与忙等待；目录 revision/CAS 和级联删除语义保持在存储层内。
+## 数据与运行边界
+
+数据库是仓库根目录 `.runtime/future-props.db` 下的单机 SQLite 文件。FastAPI 启动时自动创建
+目录并执行 `registry.py` 中已登记、带 checksum 的 migration；每个连接启用外键约束、WAL
+与忙等待。迁移历史只追加且不导入运行时 `app`，schema 变化必须同时更新 ORM、注册表、测试
+和文档。
+
+目录配置和模型测试会话使用 revision/CAS 防止静默覆盖；工具单项状态通过幂等更新和原子
+upsert 写入。`AsyncSession` 只能由单个异步任务
+使用；供应商网络调用不占用已经开始写入的事务，流式生成通过独立短事务准备与结算。
+
+模型测试对话是独立的单机调试数据，不参与 Bot 或业务编排。当前工程也刻意不包含 Bot 会话、
+知识库、实时语音、浏览器扩展、多租户和用户权限表。
+
+## 按需扩展
+
+Sayflow 的 PostgreSQL、多实例 worker、扩展、共享 runtime 包、知识库、评测仓和部署体系不属于
+当前架构。只有出现至少两个真实消费者或明确交付需求时，才创建 `packages/`、`extension/`、
+`evals/`、`deploy/` 等目录，并同时补充本索引、运行命令和架构测试。

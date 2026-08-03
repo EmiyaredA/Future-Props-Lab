@@ -212,6 +212,77 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/model-test/conversations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Conversations */
+        get: operations["list_conversations_v1_model_test_conversations_get"];
+        put?: never;
+        /** Create Conversation */
+        post: operations["create_conversation_v1_model_test_conversations_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/model-test/conversations/{conversation_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Conversation */
+        get: operations["get_conversation_v1_model_test_conversations__conversation_id__get"];
+        put?: never;
+        post?: never;
+        /** Delete Conversation */
+        delete: operations["delete_conversation_v1_model_test_conversations__conversation_id__delete"];
+        options?: never;
+        head?: never;
+        /** Patch Conversation */
+        patch: operations["patch_conversation_v1_model_test_conversations__conversation_id__patch"];
+        trace?: never;
+    };
+    "/v1/model-test/conversations/{conversation_id}/messages/stream": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Stream Message */
+        post: operations["stream_message_v1_model_test_conversations__conversation_id__messages_stream_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/model-test/conversations/{conversation_id}/regenerate/stream": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Regenerate Message */
+        post: operations["regenerate_message_v1_model_test_conversations__conversation_id__regenerate_stream_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/studio/auth/check": {
         parameters: {
             query?: never;
@@ -223,6 +294,57 @@ export interface paths {
         get: operations["auth_check_v1_studio_auth_check_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/tool-navigation/state": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get State */
+        get: operations["get_state_v1_tool_navigation_state_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/tool-navigation/tools/{tool_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Set Favorite */
+        patch: operations["set_favorite_v1_tool_navigation_tools__tool_id__patch"];
+        trace?: never;
+    };
+    "/v1/tool-navigation/tools/{tool_id}/use": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Record Use */
+        post: operations["record_use_v1_tool_navigation_tools__tool_id__use_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -382,6 +504,110 @@ export interface components {
             /** Revision */
             revision: number;
         };
+        /** ModelTestConversationCreateIn */
+        ModelTestConversationCreateIn: {
+            /** Model Id */
+            model_id?: string | null;
+        };
+        /** ModelTestConversationListOut */
+        ModelTestConversationListOut: {
+            /** Items */
+            items: components["schemas"]["ModelTestConversationSummaryOut"][];
+        };
+        /** ModelTestConversationOut */
+        ModelTestConversationOut: {
+            /** Created At */
+            created_at: string;
+            /** Id */
+            id: string;
+            /** Max Tokens */
+            max_tokens: number;
+            /** Messages */
+            messages: components["schemas"]["ModelTestMessageOut"][];
+            /** Model Id */
+            model_id: string | null;
+            /** Model Slug */
+            model_slug: string;
+            /** Revision */
+            revision: number;
+            /** System Prompt */
+            system_prompt: string;
+            /** Temperature */
+            temperature: number;
+            /** Title */
+            title: string;
+            /** Updated At */
+            updated_at: string;
+        };
+        /** ModelTestConversationPatchIn */
+        ModelTestConversationPatchIn: {
+            /** Expected Revision */
+            expected_revision: number;
+            /** Max Tokens */
+            max_tokens?: number | null;
+            /** Model Id */
+            model_id?: string | null;
+            /** System Prompt */
+            system_prompt?: string | null;
+            /** Temperature */
+            temperature?: number | null;
+            /** Title */
+            title?: string | null;
+        };
+        /** ModelTestConversationSummaryOut */
+        ModelTestConversationSummaryOut: {
+            /** Created At */
+            created_at: string;
+            /** Id */
+            id: string;
+            /** Model Id */
+            model_id: string | null;
+            /** Model Slug */
+            model_slug: string;
+            /** Revision */
+            revision: number;
+            /** Title */
+            title: string;
+            /** Updated At */
+            updated_at: string;
+        };
+        /** ModelTestMessageOut */
+        ModelTestMessageOut: {
+            /** Content */
+            content: string;
+            /** Created At */
+            created_at: string;
+            /** Error Message */
+            error_message: string | null;
+            /** Id */
+            id: string;
+            /** Model Slug */
+            model_slug: string;
+            /**
+             * Role
+             * @enum {string}
+             */
+            role: "user" | "assistant";
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "pending" | "completed" | "error" | "cancelled" | "superseded";
+            /** Turn Id */
+            turn_id: string;
+        };
+        /** ModelTestRegenerateIn */
+        ModelTestRegenerateIn: {
+            /** Expected Revision */
+            expected_revision: number;
+        };
+        /** ModelTestSendIn */
+        ModelTestSendIn: {
+            /** Content */
+            content: string;
+            /** Expected Revision */
+            expected_revision: number;
+        };
         /** ProviderEnabledIn */
         ProviderEnabledIn: {
             /** Enabled */
@@ -460,6 +686,29 @@ export interface components {
             /** Output */
             output: string;
         };
+        /** ToolFavoriteIn */
+        ToolFavoriteIn: {
+            /** Is Favorite */
+            is_favorite: boolean;
+        };
+        /** ToolNavigationItemOut */
+        ToolNavigationItemOut: {
+            /** Favorite Updated At */
+            favorite_updated_at: string | null;
+            /** Is Favorite */
+            is_favorite: boolean;
+            /** Last Used At */
+            last_used_at: string | null;
+            /** Tool Id */
+            tool_id: string;
+            /** Use Count */
+            use_count: number;
+        };
+        /** ToolNavigationStateOut */
+        ToolNavigationStateOut: {
+            /** Items */
+            items: components["schemas"]["ToolNavigationItemOut"][];
+        };
         /** ValidationError */
         ValidationError: {
             /** Context */
@@ -530,6 +779,7 @@ export interface operations {
         parameters: {
             query?: {
                 q?: string;
+                call_source?: string;
                 provider_kind?: string;
                 model?: string;
                 status?: string;
@@ -1019,6 +1269,253 @@ export interface operations {
             };
         };
     };
+    list_conversations_v1_model_test_conversations_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Studio-Token"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModelTestConversationListOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_conversation_v1_model_test_conversations_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Studio-Token"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ModelTestConversationCreateIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModelTestConversationOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_conversation_v1_model_test_conversations__conversation_id__get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Studio-Token"?: string | null;
+            };
+            path: {
+                conversation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModelTestConversationOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_conversation_v1_model_test_conversations__conversation_id__delete: {
+        parameters: {
+            query: {
+                expected_revision: number;
+            };
+            header?: {
+                "X-Studio-Token"?: string | null;
+            };
+            path: {
+                conversation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: boolean;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    patch_conversation_v1_model_test_conversations__conversation_id__patch: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Studio-Token"?: string | null;
+            };
+            path: {
+                conversation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ModelTestConversationPatchIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModelTestConversationOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    stream_message_v1_model_test_conversations__conversation_id__messages_stream_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Studio-Token"?: string | null;
+            };
+            path: {
+                conversation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ModelTestSendIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    regenerate_message_v1_model_test_conversations__conversation_id__regenerate_stream_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Studio-Token"?: string | null;
+            };
+            path: {
+                conversation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ModelTestRegenerateIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     auth_check_v1_studio_auth_check_get: {
         parameters: {
             query?: never;
@@ -1037,6 +1534,107 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StudioAuthStatus"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_state_v1_tool_navigation_state_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Studio-Token"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ToolNavigationStateOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_favorite_v1_tool_navigation_tools__tool_id__patch: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Studio-Token"?: string | null;
+            };
+            path: {
+                tool_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ToolFavoriteIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ToolNavigationItemOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    record_use_v1_tool_navigation_tools__tool_id__use_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Studio-Token"?: string | null;
+            };
+            path: {
+                tool_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ToolNavigationItemOut"];
                 };
             };
             /** @description Validation Error */

@@ -1,0 +1,473 @@
+.tools-page {
+  --tools-side-width: 286px;
+}
+
+.tools-header {
+  margin-bottom: 22px;
+}
+
+.tools-header h1 {
+  margin: 0 0 8px;
+  color: var(--text-strong);
+  font-size: 30px;
+  letter-spacing: -0.04em;
+}
+
+.tools-header p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.tools-search {
+  width: min(900px, 100%);
+  min-height: 54px;
+  margin-bottom: 18px;
+  padding: 6px 7px 6px 18px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.tools-search > svg {
+  width: 20px;
+  height: 20px;
+  flex: none;
+  color: var(--faint);
+}
+
+.tools-search input {
+  min-width: 0;
+  flex: 1;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--text);
+}
+
+.tools-search input::placeholder {
+  color: var(--faint);
+}
+
+.tools-search button {
+  min-width: 92px;
+  min-height: 40px;
+  border: 0;
+  border-radius: 9px;
+  background: var(--accent);
+  color: white;
+  font-weight: 700;
+}
+
+.tools-search button:hover {
+  background: var(--accent-hover);
+}
+
+.tools-categories {
+  margin-bottom: 15px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+}
+
+.tools-categories button,
+.tools-tags button {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--muted);
+}
+
+.tools-categories button {
+  min-height: 38px;
+  padding: 0 18px;
+  border-radius: 9px;
+  font-weight: 650;
+}
+
+.tools-categories button:hover,
+.tools-tags button:hover {
+  border-color: var(--accent-line);
+  color: var(--accent);
+}
+
+.tools-categories button.active {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: white;
+}
+
+.tools-tags {
+  min-height: 32px;
+  margin-bottom: 22px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.tools-tags > span {
+  margin-right: 3px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.tools-tags > span svg {
+  width: 14px;
+  height: 14px;
+  color: var(--accent);
+}
+
+.tools-tags button {
+  min-height: 28px;
+  padding: 0 11px;
+  border-radius: 999px;
+  font-size: 11px;
+}
+
+.tools-tags button.active {
+  border-color: var(--accent-line);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.tools-notice {
+  margin: -8px 0 16px;
+  padding: 9px 12px;
+  border: 1px solid var(--warning);
+  border-radius: 9px;
+  background: var(--warning-soft);
+  color: var(--warning);
+  font-size: 12px;
+}
+
+.tools-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--tools-side-width);
+  align-items: start;
+  gap: 20px;
+}
+
+.tool-grid {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.tool-card {
+  position: relative;
+  min-width: 0;
+  min-height: 150px;
+  padding: 18px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  transition:
+    transform 0.16s ease,
+    border-color 0.16s ease,
+    box-shadow 0.16s ease;
+}
+
+.tool-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--accent-line);
+  box-shadow: 0 10px 28px rgb(33 30 24 / 8%);
+}
+
+.tool-card-open {
+  width: 100%;
+  padding: 0 30px 34px 0;
+  display: grid;
+  grid-template-columns: 46px minmax(0, 1fr);
+  align-items: start;
+  gap: 13px;
+  border: 0;
+  background: transparent;
+  text-align: left;
+}
+
+.tool-card-icon {
+  width: 46px;
+  height: 46px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--accent-line);
+  border-radius: 11px;
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.tool-card-icon svg {
+  width: 22px;
+  height: 22px;
+  stroke-width: 1.7;
+}
+
+.tool-card-copy {
+  min-width: 0;
+  padding-top: 2px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tool-card-copy strong {
+  overflow: hidden;
+  color: var(--text-strong);
+  font-size: 14px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tool-card-copy small {
+  display: -webkit-box;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.6;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.tool-favorite {
+  position: absolute;
+  z-index: 1;
+  top: 14px;
+  right: 14px;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--faint);
+}
+
+.tool-favorite:hover {
+  background: var(--surface-soft);
+  color: var(--accent);
+}
+
+.tool-favorite svg {
+  width: 18px;
+  height: 18px;
+}
+
+.tool-favorite.active {
+  color: var(--accent);
+}
+
+.tool-favorite.active svg {
+  fill: currentColor;
+}
+
+.tool-category {
+  position: absolute;
+  left: 18px;
+  bottom: 16px;
+  padding: 3px 7px;
+  border-radius: 5px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 9px;
+  font-weight: 650;
+}
+
+.tool-external {
+  position: absolute;
+  right: 18px;
+  bottom: 18px;
+  color: var(--faint);
+}
+
+.tool-external svg {
+  width: 14px;
+  height: 14px;
+}
+
+.tools-side {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.tool-side-card {
+  padding: 15px 16px 10px;
+}
+
+.tool-side-card > header {
+  min-height: 35px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+}
+
+.tool-side-card h2 {
+  margin: 0;
+  color: var(--text-strong);
+  font-size: 14px;
+}
+
+.tool-side-card > header svg {
+  width: 17px;
+  height: 17px;
+  color: var(--accent);
+}
+
+.tool-side-item {
+  width: 100%;
+  min-height: 64px;
+  padding: 9px 0;
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr) 14px;
+  align-items: center;
+  gap: 10px;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  background: transparent;
+  text-align: left;
+}
+
+.tool-side-item:hover strong {
+  color: var(--accent);
+}
+
+.tool-side-icon {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--accent-line);
+  border-radius: 9px;
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.tool-side-icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+.tool-side-item > span:nth-child(2) {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.tool-side-item strong,
+.tool-side-item small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tool-side-item strong {
+  color: var(--text);
+  font-size: 12px;
+}
+
+.tool-side-item small {
+  color: var(--faint);
+  font-size: 10px;
+}
+
+.tool-side-item > svg {
+  width: 13px;
+  height: 13px;
+  color: var(--faint);
+}
+
+.tools-empty {
+  min-height: 130px;
+  padding: 22px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 8px;
+  color: var(--faint);
+  text-align: center;
+}
+
+.tools-empty > svg {
+  width: 24px;
+  height: 24px;
+  stroke-width: 1.5;
+}
+
+.tools-empty strong {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.tools-empty span {
+  max-width: 210px;
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.tools-empty button {
+  padding: 5px 10px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--surface);
+  color: var(--accent);
+  font-size: 10px;
+}
+
+.tools-empty-grid {
+  min-height: 220px;
+  grid-column: 1 / -1;
+  border: 1px dashed var(--border-strong);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+@media (max-width: 1240px) {
+  .tool-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 1020px) {
+  .tools-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .tools-side {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .tools-header h1 {
+    font-size: 26px;
+  }
+
+  .tools-search {
+    min-height: 50px;
+  }
+
+  .tools-search button {
+    min-width: 72px;
+  }
+
+  .tool-grid,
+  .tools-side {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

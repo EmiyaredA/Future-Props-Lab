@@ -2,7 +2,17 @@ import { useState } from "react";
 import { BrandMark } from "@shared/ui/BrandMark";
 import { ThemeToggle } from "@shared/ui/ThemeToggle";
 
-export type StudioPage = "model-service" | "model-call-logs";
+export type StudioPage =
+  "tools" | "model-test" | "model-service" | "model-call-logs";
+
+function CompassIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden>
+      <circle cx="12" cy="12" r="9" />
+      <path d="m15.5 8.5-2.2 4.8-4.8 2.2 2.2-4.8 4.8-2.2Z" />
+    </svg>
+  );
+}
 
 function CubeIcon() {
   return (
@@ -21,6 +31,25 @@ function ServiceIcon() {
       <rect x="3" y="14" width="18" height="5" rx="2" />
       <path d="M7 7.5h.01M7 16.5h.01M12 7.5h6M12 16.5h6" />
     </svg>
+  );
+}
+
+function TestIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden>
+      <path d="M9 3h6M10 3v5l-5 9a2 2 0 0 0 1.8 3h10.4a2 2 0 0 0 1.8-3l-5-9V3" />
+      <path d="M8 15h8" />
+    </svg>
+  );
+}
+
+function Chevron({ open }: { open: boolean }) {
+  return (
+    <span className={`nav-chevron${open ? " open" : ""}`}>
+      <svg viewBox="0 0 24 24" aria-hidden>
+        <path d="m9 18 6-6-6-6" />
+      </svg>
+    </span>
   );
 }
 
@@ -45,7 +74,7 @@ export function StudioSidebar({
   return (
     <aside className="studio-sidebar">
       <div className="sidebar-brand">
-        <BrandMark />
+        <BrandMark size={36} />
         <div>
           <strong>未来道具研究所</strong>
           <span>Future Props Lab</span>
@@ -54,6 +83,14 @@ export function StudioSidebar({
       <div className="sidebar-rule" />
       <nav aria-label="主导航">
         <button
+          className={`nav-primary${page === "tools" ? " active" : ""}`}
+          aria-current={page === "tools" ? "page" : undefined}
+          onClick={() => navigate("tools")}
+        >
+          <CompassIcon />
+          <span>工具导航</span>
+        </button>
+        <button
           className="nav-group"
           aria-label="基模型"
           aria-expanded={expanded}
@@ -61,10 +98,18 @@ export function StudioSidebar({
         >
           <CubeIcon />
           <span>基模型</span>
-          <i className={expanded ? "open" : ""}>⌄</i>
+          <Chevron open={expanded} />
         </button>
         {expanded ? (
           <div className="nav-sub" role="group" aria-label="基模型子菜单">
+            <button
+              className={page === "model-test" ? "active" : ""}
+              aria-current={page === "model-test" ? "page" : undefined}
+              onClick={() => navigate("model-test")}
+            >
+              <TestIcon />
+              <span>模型测试</span>
+            </button>
             <button
               className={page === "model-service" ? "active" : ""}
               aria-current={page === "model-service" ? "page" : undefined}

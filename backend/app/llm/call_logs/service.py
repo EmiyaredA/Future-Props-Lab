@@ -42,6 +42,7 @@ class CallLogService:
         self,
         *,
         q: str,
+        call_source: str,
         provider_kind: str,
         model: str,
         status: str,
@@ -60,6 +61,8 @@ class CallLogService:
                     LlmCallLog.model.ilike(pattern),
                 )
             )
+        if call_source:
+            filters.append(LlmCallLog.call_source == call_source)
         if provider_kind:
             filters.append(LlmCallLog.provider_kind == provider_kind)
         if model:

@@ -30,7 +30,10 @@ async def test_model_catalog_diagnostic_and_logs(monkeypatch: pytest.MonkeyPatch
         assert (await client.get("/health")).status_code == 200
         ready = await client.get("/ready")
         assert ready.status_code == 200
-        assert ready.json() == {"status": "ready", "schema": "r0001_initial"}
+        assert ready.json() == {
+            "status": "ready",
+            "schema": "r0004_expand_senseaudio_text_catalog",
+        }
         catalog = (await client.get("/v1/model-providers")).json()
         revision = catalog["revision"]
         provider_response = await client.post(
