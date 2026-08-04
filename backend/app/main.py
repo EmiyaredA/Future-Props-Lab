@@ -23,6 +23,7 @@ from app.problem_details import (
 )
 from app.routes import api_router
 from app.visual_workshop.generation_runner import VisualGenerationRunner
+from app.visual_workshop.assistant_actions import recover_interrupted_visual_assistant_runs
 from db.migrations import apply_migrations
 from db.migrations.registry import LATEST_MIGRATION_ID
 
@@ -34,6 +35,7 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
     apply_migrations(settings.database_path)
     async with SessionLocal() as session:
         await seed_sayflow_text_catalog(session)
+    await recover_interrupted_visual_assistant_runs()
     runner = VisualGenerationRunner()
     model_test_runner = ModelTestGenerationRunner()
     await runner.start()

@@ -6,6 +6,7 @@ import pytest
 from sqlalchemy import delete
 
 import app.deps as deps
+from app.core.config import get_settings
 from app.core.credentials import encrypt_secret
 from app.core.db import SessionLocal
 from app.main import app
@@ -419,20 +420,21 @@ async def test_visual_generation_options_creation_filters_and_active_provider_gu
                 "model_id": model.id,
                 "prompt": "跟随音乐",
                 "mode": "reference",
-                "audio_urls": ["https://media.example/music.mp3"],
+                "audio_asset_ids": ["audio-only"],
             },
         )
         assert invalid_video_mode.status_code == 422
-        private_video_url = await client.post(
+        duplicate_reference = await client.post(
             f"/v1/visual-workshop/projects/{project['id']}/generation-tasks",
             json={
                 "kind": "video",
                 "model_id": model.id,
                 "mode": "reference",
-                "video_urls": ["https://127.0.0.1/reference.mp4"],
+                "reference_asset_ids": ["duplicate"],
+                "video_asset_ids": ["duplicate"],
             },
         )
-        assert private_video_url.status_code == 422
+        assert duplicate_reference.status_code == 422
 
     async with SessionLocal() as session:
         await session.execute(
@@ -445,3 +447,146 @@ async def test_visual_generation_options_creation_filters_and_active_provider_gu
         if stored_provider:
             await session.delete(stored_provider)
         await session.commit()
+
+
+@pytest.mark.asyncio
+async def test_visual_video_generation_uses_scoped_media_asset_ids() -> None:
+    provider = ModelProvider(
+        id=str(uuid4()),
+        name="SenseAudio 视频素材测试通道",
+        kind="senseaudio_video",
+        base_url="https://api.senseaudio.cn/v1",
+        api_key_ciphertext=encrypt_secret("test-only-secret"),
+        enabled=True,
+        sort_order=91,
+    )
+    model = ModelEntry(
+        id=str(uuid4()),
+        provider_id=provider.id,
+        slug="doubao-seedance-2-0-260128",
+        label="SenseAudio Video Reference Test",
+        description="确定性测试模型",
+        capabilities=["video_generation"],
+        enabled=True,
+        sort_order=0,
+    )
+    async with SessionLocal() as session:
+        session.add(provider)
+        await session.commit()
+    async with SessionLocal() as session:
+        session.add(model)
+        await session.commit()
+
+    storage_keys: list[str] = []
+    project_ids: list[str] = []
+    transport = httpx.ASGITransport(app=app)
+    try:
+        async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+            for title in ("视频素材项目", "其他项目"):
+                response = await client.post(
+                    "/v1/visual-workshop/projects",
+                    json={"title": title, "kind": "video"},
+                )
+                assert response.status_code == 200, response.text
+                project_ids.append(response.json()["id"])
+
+            async def upload(project_id: str, filename: str, content: bytes, mime: str) -> dict:
+                response = await client.post(
+                    "/v1/files",
+                    data={"project_id": project_id},
+                    files={"upload": (filename, content, mime)},
+                )
+                assert response.status_code == 200, response.text
+                return response.json()
+
+            image = await upload(
+                project_ids[0],
+                "reference.png",
+                b"\x89PNG\r\n\x1a\nreference",
+                "image/png",
+            )
+            audio = await upload(project_ids[0], "reference.mp3", b"ID3reference", "audio/mpeg")
+            video = await upload(
+                project_ids[0],
+                "reference.mp4",
+                b"\x00\x00\x00\x18ftypisomreference",
+                "video/mp4",
+            )
+            other_video = await upload(
+                project_ids[1],
+                "other.mp4",
+                b"\x00\x00\x00\x18ftypisomother",
+                "video/mp4",
+            )
+
+            created = await client.post(
+                f"/v1/visual-workshop/projects/{project_ids[0]}/generation-tasks",
+                json={
+                    "kind": "video",
+                    "model_id": model.id,
+                    "prompt": "跟随参考素材",
+                    "mode": "reference",
+                    "reference_asset_ids": [image["id"]],
+                    "audio_asset_ids": [audio["id"]],
+                    "video_asset_ids": [video["id"]],
+                },
+            )
+            assert created.status_code == 200, created.text
+            payload = created.json()["request_payload"]
+            assert payload["reference_asset_ids"] == [image["id"]]
+            assert payload["audio_asset_ids"] == [audio["id"]]
+            assert payload["video_asset_ids"] == [video["id"]]
+            assert "temp.sh" not in created.text
+            assert "data:" not in created.text
+
+            scope_mismatch = await client.post(
+                f"/v1/visual-workshop/projects/{project_ids[0]}/generation-tasks",
+                json={
+                    "kind": "video",
+                    "model_id": model.id,
+                    "mode": "reference",
+                    "video_asset_ids": [other_video["id"]],
+                },
+            )
+            assert scope_mismatch.status_code == 422
+            assert scope_mismatch.json()["code"] == "scope_mismatch"
+
+            wrong_type = await client.post(
+                f"/v1/visual-workshop/projects/{project_ids[0]}/generation-tasks",
+                json={
+                    "kind": "video",
+                    "model_id": model.id,
+                    "mode": "reference",
+                    "video_asset_ids": [audio["id"]],
+                },
+            )
+            assert wrong_type.status_code == 422
+            assert wrong_type.json()["code"] == "invalid_reference"
+    finally:
+        async with SessionLocal() as session:
+            assets = list(
+                (
+                    await session.execute(
+                        VisualAsset.__table__.select().where(
+                            VisualAsset.project_id.in_(project_ids)
+                        )
+                    )
+                )
+                .mappings()
+                .all()
+            )
+            storage_keys.extend(str(asset["storage_key"]) for asset in assets)
+            await session.execute(
+                delete(VisualGenerationTask).where(VisualGenerationTask.provider_id == provider.id)
+            )
+            if project_ids:
+                await session.execute(
+                    delete(VisualAsset).where(VisualAsset.project_id.in_(project_ids))
+                )
+                await session.execute(
+                    delete(VisualWorkshopProject).where(VisualWorkshopProject.id.in_(project_ids))
+                )
+            await session.execute(delete(ModelProvider).where(ModelProvider.id == provider.id))
+            await session.commit()
+        for storage_key in storage_keys:
+            (get_settings().visual_asset_path / storage_key).unlink(missing_ok=True)

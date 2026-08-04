@@ -31,6 +31,7 @@ export type ModelTestGenerationTask =
   components["schemas"]["ModelTestGenerationTaskOut"];
 export type ModelTestGenerationOption =
   components["schemas"]["ModelTestGenerationOptionOut"];
+export type ModelTestReferenceAsset = components["schemas"]["VisualAssetOut"];
 export type ModelTestImageGenerationInput =
   components["schemas"]["ModelTestImageGenerationIn"];
 export type ModelTestVideoGenerationInput =
@@ -311,6 +312,32 @@ export async function createModelTestGenerationTask(
   body: ModelTestGenerationInput,
 ) {
   return unwrap(await api.POST("/v1/model-test/generation-tasks", { body }));
+}
+
+export async function uploadModelTestReferenceAsset(file: File) {
+  return unwrap(
+    await api.POST("/v1/files", {
+      body: { upload: file as unknown as string },
+      bodySerializer() {
+        const form = new FormData();
+        form.set("upload", file);
+        return form;
+      },
+    }),
+  );
+}
+
+export async function deleteModelTestReferenceAsset(
+  asset: ModelTestReferenceAsset,
+) {
+  return unwrap(
+    await api.DELETE("/v1/files/{asset_id}", {
+      params: {
+        path: { asset_id: asset.id },
+        query: { expected_revision: asset.revision },
+      },
+    }),
+  );
 }
 
 export async function deleteModelTestGenerationTask(

@@ -1,9 +1,8 @@
 from __future__ import annotations
 
-import ipaddress
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, Field, HttpUrl, TypeAdapter, field_validator, model_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 VisualWorkshopProjectKind = Literal["image", "video", "canvas"]
 VisualWorkshopProjectStatus = Literal["draft", "completed"]
@@ -126,6 +125,132 @@ class VisualCanvasDocumentOut(BaseModel):
     nodes: list[VisualCanvasNode]
     revision: int
     updated_at: str
+
+
+VisualAssistantMessageStatus = Literal["pending", "completed", "error", "cancelled"]
+VisualAssistantActionStatus = Literal[
+    "proposed",
+    "waiting_approval",
+    "running",
+    "completed",
+    "rejected",
+    "failed",
+    "cancelled",
+]
+
+
+class VisualAssistantAssetOut(BaseModel):
+    id: str
+    display_name: str
+    mime_type: str
+    byte_size: int
+
+
+class VisualAssistantActionOut(BaseModel):
+    id: str
+    action_id: str
+    run_id: str
+    approval_group_id: str | None
+    position: int
+    tool_name: str
+    effect: Literal["read", "write", "external"]
+    status: VisualAssistantActionStatus
+    display_payload: dict
+    result_payload: dict
+    error_message: str | None
+    duration_ms: int | None
+    canvas_revision: int | None
+    generation_task_id: str | None
+    created_at: str
+    updated_at: str
+
+
+class VisualAssistantMessageOut(BaseModel):
+    id: str
+    turn_id: str
+    role: Literal["user", "assistant"]
+    content: str
+    model_slug: str
+    status: VisualAssistantMessageStatus
+    error_message: str | None
+    created_at: str
+    assets: list[VisualAssistantAssetOut] = Field(default_factory=list)
+    actions: list[VisualAssistantActionOut] = Field(default_factory=list)
+
+
+class VisualAssistantConversationSummaryOut(BaseModel):
+    id: str
+    project_id: str
+    title: str
+    model_id: str | None
+    model_slug: str
+    revision: int
+    created_at: str
+    updated_at: str
+
+
+class VisualAssistantConversationOut(VisualAssistantConversationSummaryOut):
+    messages: list[VisualAssistantMessageOut] = Field(default_factory=list)
+
+
+class VisualAssistantConversationListOut(BaseModel):
+    items: list[VisualAssistantConversationSummaryOut]
+
+
+class VisualAssistantModelOptionOut(BaseModel):
+    id: str
+    provider_id: str
+    provider_name: str
+    slug: str
+    label: str
+    description: str
+    capabilities: list[str]
+
+
+class VisualAssistantModelOptionListOut(BaseModel):
+    items: list[VisualAssistantModelOptionOut]
+
+
+class VisualAssistantConversationPatchIn(BaseModel):
+    expected_revision: int = Field(ge=0)
+    title: str | None = Field(default=None, min_length=1, max_length=120)
+    model_id: str | None = None
+
+    @field_validator("title")
+    @classmethod
+    def title_is_not_blank(cls, value: str | None) -> str | None:
+        return _clean_title(value) if value is not None else None
+
+    @model_validator(mode="after")
+    def has_change(self) -> VisualAssistantConversationPatchIn:
+        if self.title is None and "model_id" not in self.model_fields_set:
+            raise ValueError("至少需要提供标题或模型")
+        return self
+
+
+class VisualAssistantSendIn(BaseModel):
+    expected_revision: int = Field(ge=0)
+    canvas_revision: int = Field(ge=0)
+    content: str = Field(default="", max_length=100_000)
+    asset_ids: list[str] = Field(default_factory=list, max_length=5)
+
+    @model_validator(mode="after")
+    def has_content(self) -> VisualAssistantSendIn:
+        self.content = self.content.strip()
+        if not self.content and not self.asset_ids:
+            raise ValueError("消息文本和图片不能同时为空")
+        if len(set(self.asset_ids)) != len(self.asset_ids):
+            raise ValueError("图片不能重复")
+        return self
+
+
+class VisualAssistantApprovalIn(BaseModel):
+    decision: Literal["approve", "reject"]
+    canvas_revision: int = Field(ge=0)
+
+
+class VisualAssistantApprovalOut(BaseModel):
+    accepted: bool = True
 
 
 class VisualAssetFolderOut(BaseModel):
@@ -275,37 +400,29 @@ class VideoGenerationTaskCreateIn(BaseModel):
     first_frame_asset_id: str | None = None
     last_frame_asset_id: str | None = None
     reference_asset_ids: list[str] = Field(default_factory=list, max_length=9)
-    audio_urls: list[str] = Field(default_factory=list, max_length=3)
-    video_urls: list[str] = Field(default_factory=list, max_length=3)
+    audio_asset_ids: list[str] = Field(default_factory=list, max_length=3)
+    video_asset_ids: list[str] = Field(default_factory=list, max_length=3)
 
     @field_validator("prompt")
     @classmethod
     def clean_prompt(cls, value: str) -> str:
         return value.strip()
 
-    @field_validator("audio_urls", "video_urls")
-    @classmethod
-    def https_urls(cls, values: list[str]) -> list[str]:
-        result: list[str] = []
-        for value in values:
-            parsed = TypeAdapter(HttpUrl).validate_python(value.strip())
-            if parsed.scheme != "https":
-                raise ValueError("参考音频和视频必须使用 HTTPS 地址")
-            hostname = (parsed.host or "").rstrip(".").lower()
-            if hostname == "localhost" or hostname.endswith((".local", ".internal")):
-                raise ValueError("参考音频和视频必须使用公网 HTTPS 地址")
-            try:
-                address = ipaddress.ip_address(hostname)
-            except ValueError:
-                pass
-            else:
-                if not address.is_global:
-                    raise ValueError("参考音频和视频必须使用公网 HTTPS 地址")
-            result.append(str(parsed))
-        return result
-
     @model_validator(mode="after")
     def valid_content_mode(self) -> VideoGenerationTaskCreateIn:
+        asset_ids = [
+            item
+            for item in (
+                self.first_frame_asset_id,
+                self.last_frame_asset_id,
+                *self.reference_asset_ids,
+                *self.audio_asset_ids,
+                *self.video_asset_ids,
+            )
+            if item
+        ]
+        if len(asset_ids) != len(set(asset_ids)):
+            raise ValueError("参考素材不能重复")
         if self.mode == "text":
             if not self.prompt:
                 raise ValueError("纯文本模式必须填写提示词")
@@ -314,21 +431,23 @@ class VideoGenerationTaskCreateIn(BaseModel):
                     self.first_frame_asset_id,
                     self.last_frame_asset_id,
                     self.reference_asset_ids,
-                    self.audio_urls,
-                    self.video_urls,
+                    self.audio_asset_ids,
+                    self.video_asset_ids,
                 )
             ):
                 raise ValueError("纯文本模式不能携带参考素材")
         elif self.mode == "frames":
             if not self.first_frame_asset_id:
                 raise ValueError("首尾帧模式必须选择首帧")
-            if self.reference_asset_ids or self.audio_urls or self.video_urls:
+            if self.reference_asset_ids or self.audio_asset_ids or self.video_asset_ids:
                 raise ValueError("首尾帧模式不能与参考素材模式混用")
         else:
             if self.first_frame_asset_id or self.last_frame_asset_id:
                 raise ValueError("参考素材模式不能携带首尾帧")
-            if not self.reference_asset_ids and not self.video_urls:
+            if not self.reference_asset_ids and not self.video_asset_ids:
                 raise ValueError("参考素材模式至少需要图片或视频")
+            if self.audio_asset_ids and not (self.reference_asset_ids or self.video_asset_ids):
+                raise ValueError("参考音频必须搭配参考图片或视频")
         return self
 
 

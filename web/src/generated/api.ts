@@ -770,6 +770,77 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/visual-workshop/projects/{project_id}/conversations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Conversations */
+        get: operations["list_conversations_v1_visual_workshop_projects__project_id__conversations_get"];
+        put?: never;
+        /** Create Conversation */
+        post: operations["create_conversation_v1_visual_workshop_projects__project_id__conversations_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/visual-workshop/projects/{project_id}/conversations/models": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Models */
+        get: operations["list_models_v1_visual_workshop_projects__project_id__conversations_models_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/visual-workshop/projects/{project_id}/conversations/{conversation_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Conversation */
+        get: operations["get_conversation_v1_visual_workshop_projects__project_id__conversations__conversation_id__get"];
+        put?: never;
+        post?: never;
+        /** Delete Conversation */
+        delete: operations["delete_conversation_v1_visual_workshop_projects__project_id__conversations__conversation_id__delete"];
+        options?: never;
+        head?: never;
+        /** Patch Conversation */
+        patch: operations["patch_conversation_v1_visual_workshop_projects__project_id__conversations__conversation_id__patch"];
+        trace?: never;
+    };
+    "/v1/visual-workshop/projects/{project_id}/conversations/{conversation_id}/messages/stream": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Stream Message */
+        post: operations["stream_message_v1_visual_workshop_projects__project_id__conversations__conversation_id__messages_stream_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/visual-workshop/projects/{project_id}/generation-tasks": {
         parameters: {
             query?: never;
@@ -1336,6 +1407,8 @@ export interface components {
         };
         /** ModelTestVideoGenerationIn */
         ModelTestVideoGenerationIn: {
+            /** Audio Asset Ids */
+            audio_asset_ids?: string[];
             /**
              * Duration
              * @default 5
@@ -1361,12 +1434,16 @@ export interface components {
              * @enum {string}
              */
             ratio: "16:9" | "9:16" | "4:3" | "3:4" | "1:1";
+            /** Reference Asset Ids */
+            reference_asset_ids?: string[];
             /**
              * Resolution
              * @default 720p
              * @enum {string}
              */
             resolution: "480p" | "720p" | "1080p";
+            /** Video Asset Ids */
+            video_asset_ids?: string[];
             /**
              * Watermark
              * @default true
@@ -1489,8 +1566,8 @@ export interface components {
         };
         /** VideoGenerationTaskCreateIn */
         VideoGenerationTaskCreateIn: {
-            /** Audio Urls */
-            audio_urls?: string[];
+            /** Audio Asset Ids */
+            audio_asset_ids?: string[];
             /**
              * Duration
              * @default 5
@@ -1537,8 +1614,8 @@ export interface components {
              * @enum {string}
              */
             resolution: "480p" | "720p" | "1080p";
-            /** Video Urls */
-            video_urls?: string[];
+            /** Video Asset Ids */
+            video_asset_ids?: string[];
             /**
              * Watermark
              * @default true
@@ -1674,6 +1751,132 @@ export interface components {
              * @default false
              */
             move_to_root: boolean;
+        };
+        /** VisualAssistantAssetOut */
+        VisualAssistantAssetOut: {
+            /** Byte Size */
+            byte_size: number;
+            /** Display Name */
+            display_name: string;
+            /** Id */
+            id: string;
+            /** Mime Type */
+            mime_type: string;
+        };
+        /** VisualAssistantConversationListOut */
+        VisualAssistantConversationListOut: {
+            /** Items */
+            items: components["schemas"]["VisualAssistantConversationSummaryOut"][];
+        };
+        /** VisualAssistantConversationOut */
+        VisualAssistantConversationOut: {
+            /** Created At */
+            created_at: string;
+            /** Id */
+            id: string;
+            /** Messages */
+            messages?: components["schemas"]["VisualAssistantMessageOut"][];
+            /** Model Id */
+            model_id: string | null;
+            /** Model Slug */
+            model_slug: string;
+            /** Project Id */
+            project_id: string;
+            /** Revision */
+            revision: number;
+            /** Title */
+            title: string;
+            /** Updated At */
+            updated_at: string;
+        };
+        /** VisualAssistantConversationPatchIn */
+        VisualAssistantConversationPatchIn: {
+            /** Expected Revision */
+            expected_revision: number;
+            /** Model Id */
+            model_id?: string | null;
+            /** Title */
+            title?: string | null;
+        };
+        /** VisualAssistantConversationSummaryOut */
+        VisualAssistantConversationSummaryOut: {
+            /** Created At */
+            created_at: string;
+            /** Id */
+            id: string;
+            /** Model Id */
+            model_id: string | null;
+            /** Model Slug */
+            model_slug: string;
+            /** Project Id */
+            project_id: string;
+            /** Revision */
+            revision: number;
+            /** Title */
+            title: string;
+            /** Updated At */
+            updated_at: string;
+        };
+        /** VisualAssistantMessageOut */
+        VisualAssistantMessageOut: {
+            /** Assets */
+            assets?: components["schemas"]["VisualAssistantAssetOut"][];
+            /** Content */
+            content: string;
+            /** Created At */
+            created_at: string;
+            /** Error Message */
+            error_message: string | null;
+            /** Id */
+            id: string;
+            /** Model Slug */
+            model_slug: string;
+            /**
+             * Role
+             * @enum {string}
+             */
+            role: "user" | "assistant";
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "pending" | "completed" | "error" | "cancelled";
+            /** Turn Id */
+            turn_id: string;
+        };
+        /** VisualAssistantModelOptionListOut */
+        VisualAssistantModelOptionListOut: {
+            /** Items */
+            items: components["schemas"]["VisualAssistantModelOptionOut"][];
+        };
+        /** VisualAssistantModelOptionOut */
+        VisualAssistantModelOptionOut: {
+            /** Capabilities */
+            capabilities: string[];
+            /** Description */
+            description: string;
+            /** Id */
+            id: string;
+            /** Label */
+            label: string;
+            /** Provider Id */
+            provider_id: string;
+            /** Provider Name */
+            provider_name: string;
+            /** Slug */
+            slug: string;
+        };
+        /** VisualAssistantSendIn */
+        VisualAssistantSendIn: {
+            /** Asset Ids */
+            asset_ids?: string[];
+            /**
+             * Content
+             * @default
+             */
+            content: string;
+            /** Expected Revision */
+            expected_revision: number;
         };
         /** VisualCanvasAudioNode */
         VisualCanvasAudioNode: {
@@ -3949,6 +4152,253 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["VisualCanvasDocumentOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_conversations_v1_visual_workshop_projects__project_id__conversations_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Studio-Token"?: string | null;
+            };
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VisualAssistantConversationListOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_conversation_v1_visual_workshop_projects__project_id__conversations_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Studio-Token"?: string | null;
+            };
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VisualAssistantConversationOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_models_v1_visual_workshop_projects__project_id__conversations_models_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Studio-Token"?: string | null;
+            };
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VisualAssistantModelOptionListOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_conversation_v1_visual_workshop_projects__project_id__conversations__conversation_id__get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Studio-Token"?: string | null;
+            };
+            path: {
+                project_id: string;
+                conversation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VisualAssistantConversationOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_conversation_v1_visual_workshop_projects__project_id__conversations__conversation_id__delete: {
+        parameters: {
+            query: {
+                expected_revision: number;
+            };
+            header?: {
+                "X-Studio-Token"?: string | null;
+            };
+            path: {
+                project_id: string;
+                conversation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: boolean;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    patch_conversation_v1_visual_workshop_projects__project_id__conversations__conversation_id__patch: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Studio-Token"?: string | null;
+            };
+            path: {
+                project_id: string;
+                conversation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VisualAssistantConversationPatchIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VisualAssistantConversationOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    stream_message_v1_visual_workshop_projects__project_id__conversations__conversation_id__messages_stream_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Studio-Token"?: string | null;
+            };
+            path: {
+                project_id: string;
+                conversation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VisualAssistantSendIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */

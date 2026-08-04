@@ -17,17 +17,18 @@ from app.core.config import Settings, get_settings
 from app.core.credentials import decrypt_secret
 from app.core.db import SessionLocal
 from app.core.time import utc_now
+from app.llm.generation_runtime import generation_semaphore
 from app.llm.providers import (
     create_image_task,
     create_video_task,
     get_image_task,
     get_video_task,
 )
-from app.llm.generation_runtime import generation_semaphore
 from app.llm.providers._senseaudio import (
     SenseAudioProviderError,
     sanitize_provider_message,
 )
+from app.llm.providers.temporary_media import TemporaryMediaError, upload_temporary_media
 from app.models import ModelProvider, VisualAsset, VisualGenerationTask
 from app.visual_workshop.generation import ACTIVE_TASK_STATUSES
 
@@ -41,6 +42,8 @@ class MaterializationError(Exception):
 
 
 def _safe_task_error(exc: Exception) -> str:
+    if isinstance(exc, TemporaryMediaError):
+        return "参考素材临时上传失败，请重新生成"
     if isinstance(exc, (MaterializationError, SenseAudioProviderError, ValueError)):
         return sanitize_provider_message(str(exc))
     if isinstance(exc, httpx.TimeoutException):
@@ -103,10 +106,12 @@ class VisualGenerationRunner:
         session_factory: async_sessionmaker[AsyncSession] = SessionLocal,
         settings: Settings | None = None,
         download_transport: httpx.AsyncBaseTransport | None = None,
+        temporary_media_transport: httpx.AsyncBaseTransport | None = None,
     ) -> None:
         self.session_factory = session_factory
         self.settings = settings or get_settings()
         self.download_transport = download_transport
+        self.temporary_media_transport = temporary_media_transport
         self._stop = asyncio.Event()
         self._task: asyncio.Task[None] | None = None
 
@@ -294,6 +299,20 @@ class VisualGenerationRunner:
         data = await asyncio.to_thread(path.read_bytes)
         return f"data:{mime_type};base64,{base64.b64encode(data).decode('ascii')}"
 
+    async def _temporary_asset_url(self, asset_id: str, expected_kind: str) -> str:
+        async with self.session_factory() as session:
+            asset = await session.get(VisualAsset, asset_id)
+            if asset is None or asset.media_kind != expected_kind:
+                raise TemporaryMediaError("参考素材已不存在或类型不匹配")
+            path = self.settings.visual_asset_path / asset.storage_key
+            mime_type = asset.mime_type
+        return await upload_temporary_media(
+            path=path,
+            mime_type=mime_type,
+            upload_url=self.settings.fpl_temp_media_upload_url,
+            transport=self.temporary_media_transport,
+        )
+
     async def _submit(
         self,
         *,
@@ -345,6 +364,21 @@ class VisualGenerationRunner:
                         "role": "reference",
                     }
                 )
+            for asset_id in payload.get("audio_asset_ids", []):
+                content.append(
+                    {
+                        "type": "audio",
+                        "audio_url": await self._temporary_asset_url(str(asset_id), "audio"),
+                    }
+                )
+            for asset_id in payload.get("video_asset_ids", []):
+                content.append(
+                    {
+                        "type": "video",
+                        "video_url": await self._temporary_asset_url(str(asset_id), "video"),
+                    }
+                )
+            # Compatibility for tasks queued before asset-ID based references were introduced.
             content.extend(
                 {"type": "audio", "audio_url": url} for url in payload.get("audio_urls", [])
             )

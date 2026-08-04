@@ -3,7 +3,9 @@ from __future__ import annotations
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import Settings, get_settings
 from app.core.time import iso_utc, utc_now
+from app.llm.providers.senseaudio_image import IMAGE_MODEL_SIZES
 from app.models import (
     ModelEntry,
     ModelProvider,
@@ -21,9 +23,13 @@ from app.schemas.visual_workshop import (
     ImageGenerationTaskCreateIn,
     VideoGenerationTaskCreateIn,
 )
-from app.llm.providers.senseaudio_image import IMAGE_MODEL_SIZES
 
 ACTIVE_TASK_STATUSES = ("queued", "submitting", "pending", "processing")
+REFERENCE_MIME_TYPES = {
+    "image": {"image/jpeg", "image/png", "image/webp", "image/gif"},
+    "audio": {"audio/mpeg", "audio/wav", "audio/x-wav", "audio/mp4", "audio/x-m4a", "audio/ogg"},
+    "video": {"video/mp4", "video/quicktime", "video/webm"},
+}
 
 
 class GenerationError(Exception):
@@ -70,8 +76,9 @@ async def has_active_generation_tasks(
 
 
 class VisualGeneration:
-    def __init__(self, session: AsyncSession) -> None:
+    def __init__(self, session: AsyncSession, settings: Settings | None = None) -> None:
         self.session = session
+        self.settings = settings or get_settings()
 
     async def options(self) -> GenerationOptionsOut:
         rows = (
@@ -127,13 +134,20 @@ class VisualGeneration:
             raise GenerationError("供应商尚未配置 API Key", code="missing_api_key", status=409)
         return model, provider
 
-    async def _image_asset(self, project_id: str, asset_id: str) -> VisualAsset:
+    async def _reference_asset(
+        self, project_id: str, asset_id: str, expected_kind: str
+    ) -> VisualAsset:
         asset = await self.session.get(VisualAsset, asset_id)
-        if asset is None or asset.media_kind != "image":
-            raise GenerationError("参考图片不存在或格式不受支持", code="invalid_reference")
-        if asset.project_id == project_id:
-            return asset
-        if asset.project_id is None:
+        label = {"image": "参考图片", "audio": "参考音频", "video": "参考视频"}[expected_kind]
+        if asset is None:
+            raise GenerationError(f"{label}不存在", code="invalid_reference", status=404)
+        if (
+            asset.media_kind != expected_kind
+            or asset.mime_type not in REFERENCE_MIME_TYPES[expected_kind]
+        ):
+            raise GenerationError(f"{label}格式不受支持", code="invalid_reference")
+        in_scope = asset.project_id == project_id
+        if not in_scope and asset.project_id is None:
             reference = await self.session.scalar(
                 select(VisualProjectAssetReference.id).where(
                     VisualProjectAssetReference.project_id == project_id,
@@ -141,10 +155,23 @@ class VisualGeneration:
                 )
             )
             if reference:
-                return asset
-        raise GenerationError("参考图片不属于当前项目", code="scope_mismatch")
+                in_scope = True
+        if not in_scope:
+            raise GenerationError(f"{label}不属于当前项目", code="scope_mismatch")
+        path = self.settings.visual_asset_path / asset.storage_key
+        if not path.is_file():
+            raise GenerationError(f"{label}文件已不存在", code="invalid_reference", status=404)
+        if expected_kind == "image" and asset.byte_size > 30 * 1024 * 1024:
+            raise GenerationError("单张参考图片不能超过 30 MB", code="reference_too_large")
+        if expected_kind == "audio" and asset.byte_size > 15 * 1024 * 1024:
+            raise GenerationError("单个参考音频不能超过 15 MB", code="reference_too_large")
+        if expected_kind == "video" and asset.byte_size > self.settings.fpl_visual_asset_max_bytes:
+            raise GenerationError("单个参考视频超过项目文件上限", code="reference_too_large")
+        return asset
 
-    async def create(self, project_id: str, body: GenerationTaskCreateIn) -> GenerationTaskOut:
+    async def prepare_create(
+        self, project_id: str, body: GenerationTaskCreateIn
+    ) -> VisualGenerationTask:
         await self._project(project_id)
         model, provider = await self._model(body.model_id, body.kind)
         payload = body.model_dump(mode="json")
@@ -159,9 +186,9 @@ class VisualGeneration:
                     code="prompt_too_long",
                 )
             if body.reference_asset_id:
-                await self._image_asset(project_id, body.reference_asset_id)
+                await self._reference_asset(project_id, body.reference_asset_id, "image")
         elif isinstance(body, VideoGenerationTaskCreateIn):
-            asset_ids = [
+            image_ids = [
                 item
                 for item in (
                     body.first_frame_asset_id,
@@ -170,10 +197,12 @@ class VisualGeneration:
                 )
                 if item
             ]
-            if len(set(asset_ids)) != len(asset_ids):
-                raise GenerationError("同一张参考图片不能重复选择", code="duplicate_reference")
-            for asset_id in asset_ids:
-                await self._image_asset(project_id, asset_id)
+            for asset_id in image_ids:
+                await self._reference_asset(project_id, asset_id, "image")
+            for asset_id in body.audio_asset_ids:
+                await self._reference_asset(project_id, asset_id, "audio")
+            for asset_id in body.video_asset_ids:
+                await self._reference_asset(project_id, asset_id, "video")
         row = VisualGenerationTask(
             project_id=project_id,
             provider_id=provider.id,
@@ -186,6 +215,11 @@ class VisualGeneration:
             status="queued",
         )
         self.session.add(row)
+        await self.session.flush()
+        return row
+
+    async def create(self, project_id: str, body: GenerationTaskCreateIn) -> GenerationTaskOut:
+        row = await self.prepare_create(project_id, body)
         await self.session.commit()
         await self.session.refresh(row)
         return generation_task_out(row)

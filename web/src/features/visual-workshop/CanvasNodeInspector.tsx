@@ -76,15 +76,21 @@ export function CanvasNodeInspector({
   node,
   onClose,
   onPatch,
+  embedded = false,
+  initialTab,
 }: {
   projectId: string;
   node: MediaNode;
   onClose: () => void;
   onPatch: (patch: Partial<MediaNode>, immediate?: boolean) => void;
+  embedded?: boolean;
+  initialTab?: "content" | "generate";
 }) {
   const client = useQueryClient();
   const input = useRef<HTMLInputElement>(null);
-  const [tab, setTab] = useState<"content" | "generate">("content");
+  const preferredTab =
+    initialTab ?? (embedded && node.kind === "video" ? "generate" : "content");
+  const [tab, setTab] = useState<"content" | "generate">(preferredTab);
   const { files, loading } = useProjectMedia(projectId, node.kind);
   const selected = files.find((file) => file.id === node.asset_id);
   const upload = useMutation({
@@ -112,6 +118,10 @@ export function CanvasNodeInspector({
   });
 
   useEffect(() => {
+    setTab(preferredTab);
+  }, [node.id, preferredTab]);
+
+  useEffect(() => {
     if (
       task.data?.status === "completed" &&
       task.data.result_asset_id &&
@@ -122,27 +132,35 @@ export function CanvasNodeInspector({
   }, [node.asset_id, onPatch, task.data]);
 
   const Icon = mediaIcon(node.kind);
+  const isVideoComposer =
+    embedded && node.kind === "video" && tab === "generate";
   return (
-    <aside className="canvas-node-inspector" aria-label="节点检查器">
-      <header>
-        <div>
-          <Icon aria-hidden />
-          <span>
-            <strong>{node.title}</strong>
-            <small>
-              {node.kind === "image"
-                ? "图片节点"
-                : node.kind === "video"
-                  ? "视频节点"
-                  : "音频节点"}
-            </small>
-          </span>
-        </div>
-        <button aria-label="关闭节点检查器" onClick={onClose}>
-          <X aria-hidden />
-        </button>
-      </header>
-      {node.kind !== "audio" ? (
+    <aside
+      className={`canvas-node-inspector${embedded ? " is-embedded" : ""}`}
+      aria-label="节点检查器"
+      onClick={(event) => event.stopPropagation()}
+    >
+      {!isVideoComposer ? (
+        <header>
+          <div>
+            <Icon aria-hidden />
+            <span>
+              <strong>{node.title}</strong>
+              <small>
+                {node.kind === "image"
+                  ? "图片节点"
+                  : node.kind === "video"
+                    ? "视频节点"
+                    : "音频节点"}
+              </small>
+            </span>
+          </div>
+          <button aria-label="关闭节点检查器" onClick={onClose}>
+            <X aria-hidden />
+          </button>
+        </header>
+      ) : null}
+      {node.kind !== "audio" && !isVideoComposer ? (
         <nav className="canvas-inspector-tabs" role="tablist">
           <button
             className={tab === "content" ? "active" : ""}
@@ -167,7 +185,7 @@ export function CanvasNodeInspector({
           compact
           projectId={projectId}
           lockedKind={node.kind}
-          onClose={() => setTab("content")}
+          onClose={isVideoComposer ? onClose : () => setTab("content")}
           onTaskCreated={(created) =>
             onPatch({ generation_task_id: created.id, asset_id: null }, true)
           }

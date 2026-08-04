@@ -119,7 +119,7 @@ class ModelTestImageGenerationIn(BaseModel):
     seed: int | None = Field(default=None, ge=0)
 
     @model_validator(mode="after")
-    def clean_prompt(self) -> "ModelTestImageGenerationIn":
+    def clean_prompt(self) -> ModelTestImageGenerationIn:
         self.prompt = self.prompt.strip()
         if not self.prompt:
             raise ValueError("提示词不能为空")
@@ -135,12 +135,24 @@ class ModelTestVideoGenerationIn(BaseModel):
     ratio: Literal["16:9", "9:16", "4:3", "3:4", "1:1"] = "16:9"
     watermark: bool = True
     generate_audio: bool = False
+    reference_asset_ids: list[str] = Field(default_factory=list, max_length=9)
+    audio_asset_ids: list[str] = Field(default_factory=list, max_length=3)
+    video_asset_ids: list[str] = Field(default_factory=list, max_length=3)
 
     @model_validator(mode="after")
-    def clean_prompt(self) -> "ModelTestVideoGenerationIn":
+    def clean_prompt(self) -> ModelTestVideoGenerationIn:
         self.prompt = self.prompt.strip()
         if not self.prompt:
             raise ValueError("提示词不能为空")
+        all_asset_ids = [
+            *self.reference_asset_ids,
+            *self.audio_asset_ids,
+            *self.video_asset_ids,
+        ]
+        if len(all_asset_ids) != len(set(all_asset_ids)):
+            raise ValueError("参考素材不能重复")
+        if self.audio_asset_ids and not (self.reference_asset_ids or self.video_asset_ids):
+            raise ValueError("参考音频必须搭配参考图片或视频")
         return self
 
 

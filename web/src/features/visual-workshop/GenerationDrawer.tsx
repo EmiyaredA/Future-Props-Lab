@@ -1,49 +1,123 @@
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import {
+  type CSSProperties,
+  FormEvent,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   useMutation,
   useQueries,
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import { Check, Image, LoaderCircle, Sparkles, Video, X } from "lucide-react";
-import { getFiles, getFolders, type ManagedFile } from "@features/files/api";
+import {
+  ArrowUp,
+  Check,
+  ChevronDown,
+  Image,
+  LoaderCircle,
+  Maximize2,
+  Minimize2,
+  Music,
+  Settings2,
+  Sparkles,
+  Upload,
+  Video,
+  X,
+} from "lucide-react";
+import {
+  getFiles,
+  getFolders,
+  uploadManagedFile,
+  type ManagedFile,
+  type MediaKind,
+} from "@features/files/api";
 import {
   createGenerationTask,
   getGenerationOptions,
   type GenerationTaskInput,
 } from "@features/visual-workshop/api";
-import { ApiError } from "@platform/api/client";
+import { ApiError, fetchApiBlob } from "@platform/api/client";
+import { CustomSelect, type SelectOption } from "@shared/ui/CustomSelect";
 
 type GenerationKind = "image" | "video";
-type VideoMode = "text" | "frames" | "reference";
+type VideoMode = "text" | "image" | "frames" | "reference";
 
 function errorMessage(error: unknown) {
   if (error instanceof ApiError) return error.problem.detail || error.message;
   return error instanceof Error ? error.message : "创建任务失败，请稍后重试。";
 }
 
-function parseUrls(value: string) {
-  return value
-    .split(/[\n,]/)
-    .map((item) => item.trim())
-    .filter(Boolean);
+const MEDIA_ACCEPT: Record<"image" | "video" | "audio", string> = {
+  image: "image/jpeg,image/png,image/webp,image/gif",
+  video: "video/mp4,video/webm,video/quicktime",
+  audio: "audio/mpeg,audio/wav,audio/mp4,audio/ogg",
+};
+
+const VIDEO_RATIO_OPTIONS: SelectOption[] = [
+  "16:9",
+  "9:16",
+  "4:3",
+  "3:4",
+  "1:1",
+].map((value) => ({ value, label: value }));
+const VIDEO_RESOLUTION_OPTIONS: SelectOption[] = ["480p", "720p", "1080p"].map(
+  (value) => ({ value, label: value.toUpperCase() }),
+);
+
+function MediaPreview({ file }: { file: ManagedFile }) {
+  const [source, setSource] = useState("");
+  useEffect(() => {
+    if (file.media_kind === "audio") return;
+    let active = true;
+    let objectUrl = "";
+    void fetchApiBlob(`/v1/files/${file.id}/content`)
+      .then((blob) => {
+        if (!active) return;
+        objectUrl = URL.createObjectURL(blob);
+        setSource(objectUrl);
+      })
+      .catch(() => undefined);
+    return () => {
+      active = false;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [file.id, file.media_kind]);
+  if (file.media_kind === "image" && source) return <img src={source} alt="" />;
+  if (file.media_kind === "video" && source)
+    return <video src={source} muted preload="metadata" aria-hidden />;
+  const Icon =
+    file.media_kind === "video"
+      ? Video
+      : file.media_kind === "audio"
+        ? Music
+        : Image;
+  return <Icon aria-hidden />;
 }
 
-function ProjectImagePicker({
+function ProjectMediaPicker({
   projectId,
   label,
+  kind = "image",
   value,
   multiple = false,
   max = 1,
+  minimal = false,
   onChange,
 }: {
   projectId: string;
   label: string;
+  kind?: Extract<MediaKind, "image" | "video" | "audio">;
   value: string[];
   multiple?: boolean;
   max?: number;
+  minimal?: boolean;
   onChange: (value: string[]) => void;
 }) {
+  const client = useQueryClient();
+  const uploadInput = useRef<HTMLInputElement>(null);
   const folders = useQuery({
     queryKey: ["file-folders", projectId],
     queryFn: () => getFolders(projectId),
@@ -54,12 +128,12 @@ function ProjectImagePicker({
   );
   const fileQueries = useQueries({
     queries: folderIds.map((folderId) => ({
-      queryKey: ["files", projectId, folderId ?? "root", "image", true],
+      queryKey: ["files", projectId, folderId ?? "root", kind, true],
       queryFn: () =>
         getFiles({
           projectId,
           folderId,
-          mediaKind: "image",
+          mediaKind: kind,
           includeReferences: true,
         }),
       enabled: !folders.isLoading,
@@ -74,25 +148,89 @@ function ProjectImagePicker({
       left.display_name.localeCompare(right.display_name, "zh-CN"),
     );
   }, [fileQueries]);
+  const upload = useMutation({
+    mutationFn: async (selected: File[]) => {
+      const uploaded: ManagedFile[] = [];
+      for (const file of selected)
+        uploaded.push(await uploadManagedFile(file, projectId));
+      return uploaded;
+    },
+    onSuccess: (uploaded) => {
+      void client.invalidateQueries({ queryKey: ["files", projectId] });
+      const ids = uploaded
+        .filter((file) => file.media_kind === kind)
+        .map((file) => file.id);
+      onChange(
+        multiple
+          ? [...new Set([...value, ...ids])].slice(0, max)
+          : ids.slice(-1),
+      );
+    },
+  });
   const loading =
     folders.isLoading || fileQueries.some((query) => query.isLoading);
+  const visibleFiles = minimal
+    ? files.filter((file) => value.includes(file.id))
+    : files;
+  const UploadIcon =
+    kind === "video" ? Video : kind === "audio" ? Music : Image;
 
   return (
-    <fieldset className="generation-image-picker">
-      <legend>{label}</legend>
+    <fieldset
+      className={`generation-image-picker${minimal ? " is-minimal" : ""}`}
+    >
+      <legend className={minimal ? "sr-only" : undefined}>{label}</legend>
+      <input
+        ref={uploadInput}
+        hidden
+        type="file"
+        multiple={multiple}
+        accept={MEDIA_ACCEPT[kind]}
+        onChange={(event) => {
+          const remaining = Math.max(0, max - (multiple ? value.length : 0));
+          const selected = [...(event.target.files ?? [])].slice(
+            0,
+            multiple ? remaining : 1,
+          );
+          if (selected.length) upload.mutate(selected);
+          event.currentTarget.value = "";
+        }}
+      />
       {loading ? (
         <span className="generation-picker-state">
-          <LoaderCircle className="spinning" aria-hidden /> 正在读取项目图片…
+          <LoaderCircle className="spinning" aria-hidden />
+          {minimal ? null : "正在读取项目素材…"}
         </span>
-      ) : files.length ? (
+      ) : (
         <div className="generation-image-options">
-          {files.map((file) => {
+          <button
+            type="button"
+            className="generation-media-upload"
+            aria-label={`上传${label}`}
+            title={`上传${label}`}
+            disabled={upload.isPending || (multiple && value.length >= max)}
+            onClick={() => uploadInput.current?.click()}
+          >
+            {upload.isPending ? (
+              <LoaderCircle className="spinning" aria-hidden />
+            ) : minimal ? (
+              <UploadIcon aria-hidden />
+            ) : (
+              <Upload aria-hidden />
+            )}
+            <span className={minimal ? "sr-only" : undefined}>
+              {upload.isPending ? "上传中" : "上传"}
+            </span>
+          </button>
+          {visibleFiles.map((file) => {
             const selected = value.includes(file.id);
             return (
               <button
                 type="button"
                 className={selected ? "selected" : ""}
                 aria-pressed={selected}
+                aria-label={file.display_name}
+                title={file.display_name}
                 key={file.id}
                 onClick={() => {
                   if (!multiple) {
@@ -104,19 +242,24 @@ function ProjectImagePicker({
                   else if (value.length < max) onChange([...value, file.id]);
                 }}
               >
-                <Image aria-hidden />
-                <span>{file.display_name}</span>
-                {selected ? <Check aria-hidden /> : null}
+                <span className="generation-media-preview">
+                  <MediaPreview file={file} />
+                </span>
+                {minimal ? null : <span>{file.display_name}</span>}
+                {!minimal && selected ? <Check aria-hidden /> : null}
               </button>
             );
           })}
         </div>
-      ) : (
-        <span className="generation-picker-state">项目素材库中暂无图片</span>
       )}
-      {multiple ? (
+      {multiple && !minimal ? (
         <small>
-          已选 {value.length}/{max} 张
+          已选 {value.length}/{max}
+        </small>
+      ) : null}
+      {upload.isError ? (
+        <small className="generation-picker-error" role="alert">
+          {errorMessage(upload.error)}
         </small>
       ) : null}
     </fieldset>
@@ -158,9 +301,11 @@ export function GenerationDrawer({
   const [firstFrame, setFirstFrame] = useState<string[]>([]);
   const [lastFrame, setLastFrame] = useState<string[]>([]);
   const [references, setReferences] = useState<string[]>([]);
-  const [audioUrls, setAudioUrls] = useState("");
-  const [videoUrls, setVideoUrls] = useState("");
+  const [audioReferences, setAudioReferences] = useState<string[]>([]);
+  const [videoReferences, setVideoReferences] = useState<string[]>([]);
+  const [composerExpanded, setComposerExpanded] = useState(false);
   const [notice, setNotice] = useState("");
+  const modelMenuRef = useRef<HTMLDetailsElement>(null);
   const options = useQuery({
     queryKey: ["visual-generation-options"],
     queryFn: getGenerationOptions,
@@ -211,6 +356,16 @@ export function GenerationDrawer({
       setNotice("请先在模型服务中启用对应的 SenseAudio 供应商和模型。");
       return;
     }
+    if (
+      kind === "video" &&
+      videoMode === "reference" &&
+      audioReferences.length > 0 &&
+      references.length === 0 &&
+      videoReferences.length === 0
+    ) {
+      setNotice("参考音频需要搭配至少一张图片或一个视频。");
+      return;
+    }
     if (kind === "image") {
       createMutation.mutate({
         kind: "image",
@@ -226,21 +381,292 @@ export function GenerationDrawer({
       kind: "video",
       model_id: modelId,
       prompt,
-      mode: videoMode,
+      mode: videoMode === "image" ? "frames" : videoMode,
       duration,
       resolution,
       ratio,
       watermark,
       generate_audio: generateAudio,
       first_frame_asset_id:
-        videoMode === "frames" ? (firstFrame[0] ?? null) : null,
+        videoMode === "frames" || videoMode === "image"
+          ? (firstFrame[0] ?? null)
+          : null,
       last_frame_asset_id:
         videoMode === "frames" ? (lastFrame[0] ?? null) : null,
       reference_asset_ids: videoMode === "reference" ? references : [],
-      audio_urls: videoMode === "reference" ? parseUrls(audioUrls) : [],
-      video_urls: videoMode === "reference" ? parseUrls(videoUrls) : [],
+      audio_asset_ids: videoMode === "reference" ? audioReferences : [],
+      video_asset_ids: videoMode === "reference" ? videoReferences : [],
     });
   };
+
+  if (compact && lockedKind === "video") {
+    const modeLabels: Array<{ value: VideoMode; label: string }> = [
+      { value: "text", label: "文生视频" },
+      { value: "image", label: "图生视频" },
+      { value: "frames", label: "首尾帧" },
+      { value: "reference", label: "全能参考" },
+    ];
+    return (
+      <aside
+        className={`canvas-generation-drawer is-compact video-node-composer${composerExpanded ? " is-expanded" : ""}`}
+        aria-label="节点 AI 生成"
+      >
+        <form className="video-node-composer-form" onSubmit={submit}>
+          <header className="video-composer-header">
+            <nav aria-label="视频生成方式">
+              {modeLabels.map((mode) => (
+                <button
+                  type="button"
+                  className={videoMode === mode.value ? "active" : ""}
+                  aria-pressed={videoMode === mode.value}
+                  key={mode.value}
+                  onClick={() => setVideoMode(mode.value)}
+                >
+                  {mode.label}
+                </button>
+              ))}
+            </nav>
+            <button
+              type="button"
+              className="video-composer-close"
+              aria-label={
+                composerExpanded ? "收起视频生成器" : "展开视频生成器"
+              }
+              title={composerExpanded ? "收起" : "展开"}
+              onClick={() => setComposerExpanded((current) => !current)}
+            >
+              {composerExpanded ? (
+                <Minimize2 aria-hidden />
+              ) : (
+                <Maximize2 aria-hidden />
+              )}
+            </button>
+          </header>
+
+          <div className="video-composer-body">
+            {videoMode !== "text" ? (
+              <div className="video-composer-reference">
+                {videoMode === "image" ? (
+                  <ProjectMediaPicker
+                    projectId={projectId}
+                    label="选择起始画面"
+                    minimal
+                    value={firstFrame}
+                    onChange={setFirstFrame}
+                  />
+                ) : null}
+                {videoMode === "frames" ? (
+                  <>
+                    <ProjectMediaPicker
+                      projectId={projectId}
+                      label="首帧"
+                      minimal
+                      value={firstFrame}
+                      onChange={setFirstFrame}
+                    />
+                    <ProjectMediaPicker
+                      projectId={projectId}
+                      label="尾帧（可选）"
+                      minimal
+                      value={lastFrame}
+                      onChange={setLastFrame}
+                    />
+                  </>
+                ) : null}
+                {videoMode === "reference" ? (
+                  <>
+                    <ProjectMediaPicker
+                      projectId={projectId}
+                      label="参考图片"
+                      minimal
+                      value={references}
+                      multiple
+                      max={9}
+                      onChange={setReferences}
+                    />
+                    <ProjectMediaPicker
+                      projectId={projectId}
+                      label="参考视频"
+                      kind="video"
+                      minimal
+                      value={videoReferences}
+                      multiple
+                      max={3}
+                      onChange={setVideoReferences}
+                    />
+                    <ProjectMediaPicker
+                      projectId={projectId}
+                      label="参考音频"
+                      kind="audio"
+                      minimal
+                      value={audioReferences}
+                      multiple
+                      max={3}
+                      onChange={setAudioReferences}
+                    />
+                  </>
+                ) : null}
+              </div>
+            ) : null}
+            <label className="video-composer-prompt">
+              <span className="sr-only">视频提示词</span>
+              <textarea
+                required={videoMode === "text"}
+                maxLength={6000}
+                placeholder="描述您的修改或生成需求…"
+                value={prompt}
+                onChange={(event) => setPrompt(event.target.value)}
+              />
+              <small>{prompt.length}/6000</small>
+            </label>
+          </div>
+
+          {notice ? (
+            <div
+              className="generation-notice video-composer-notice"
+              role="status"
+            >
+              {notice}
+            </div>
+          ) : null}
+
+          <footer className="video-composer-footer">
+            <span className="video-composer-kind">
+              <Video aria-hidden />
+              视频生成
+            </span>
+            <details
+              className="video-composer-model"
+              ref={modelMenuRef}
+              onBlur={(event) => {
+                if (!event.currentTarget.contains(event.relatedTarget))
+                  event.currentTarget.removeAttribute("open");
+              }}
+            >
+              <summary
+                role="button"
+                aria-label="生成模型"
+                aria-disabled={options.isLoading || models.length === 0}
+                onClick={(event) => {
+                  if (options.isLoading || models.length === 0)
+                    event.preventDefault();
+                }}
+              >
+                <span>{selectedModel?.label ?? "暂无可用模型"}</span>
+                <ChevronDown aria-hidden />
+              </summary>
+              <div className="video-model-menu" role="listbox">
+                {models.map((model) => (
+                  <button
+                    type="button"
+                    role="option"
+                    aria-selected={model.id === modelId}
+                    key={model.id}
+                    onClick={() => {
+                      setModelId(model.id);
+                      modelMenuRef.current?.removeAttribute("open");
+                    }}
+                  >
+                    {model.id === modelId ? <Check aria-hidden /> : <span />}
+                    {model.label}
+                  </button>
+                ))}
+              </div>
+            </details>
+            <details className="video-composer-parameters">
+              <summary>
+                <Settings2 aria-hidden />
+                {ratio} · {duration}S · {resolution.toUpperCase()}
+                <ChevronDown aria-hidden />
+              </summary>
+              <div className="video-parameter-popover">
+                <label className="video-duration-control">
+                  <span className="video-duration-head">
+                    <span>时长</span>
+                    <output>{duration} 秒</output>
+                  </span>
+                  <input
+                    type="range"
+                    aria-label="时长"
+                    min="4"
+                    max="15"
+                    step="1"
+                    value={duration}
+                    style={
+                      {
+                        "--video-duration-progress": `${((duration - 4) / 11) * 100}%`,
+                      } as CSSProperties
+                    }
+                    onChange={(event) =>
+                      setDuration(Number(event.target.value))
+                    }
+                  />
+                  <span className="video-duration-limits" aria-hidden="true">
+                    <span>4 秒</span>
+                    <span>15 秒</span>
+                  </span>
+                </label>
+                <label>
+                  <span>画面比例</span>
+                  <CustomSelect
+                    ariaLabel="画面比例"
+                    className="video-parameter-select"
+                    value={ratio}
+                    options={VIDEO_RATIO_OPTIONS}
+                    onChange={(value) => setRatio(value as typeof ratio)}
+                  />
+                </label>
+                <label>
+                  <span>清晰度</span>
+                  <CustomSelect
+                    ariaLabel="清晰度"
+                    className="video-parameter-select"
+                    value={resolution}
+                    options={VIDEO_RESOLUTION_OPTIONS}
+                    onChange={(value) =>
+                      setResolution(value as typeof resolution)
+                    }
+                  />
+                </label>
+                <div className="video-parameter-switches">
+                  <label>
+                    <input
+                      type="checkbox"
+                      checked={generateAudio}
+                      onChange={(event) =>
+                        setGenerateAudio(event.target.checked)
+                      }
+                    />
+                    生成音频
+                  </label>
+                  <label>
+                    <input
+                      type="checkbox"
+                      checked={watermark}
+                      onChange={(event) => setWatermark(event.target.checked)}
+                    />
+                    保留水印
+                  </label>
+                </div>
+              </div>
+            </details>
+            <button
+              className="video-composer-submit"
+              disabled={createMutation.isPending || !modelId}
+              type="submit"
+              aria-label={createMutation.isPending ? "正在提交" : "生成视频"}
+            >
+              {createMutation.isPending ? (
+                <LoaderCircle className="spinning" aria-hidden />
+              ) : (
+                <ArrowUp aria-hidden />
+              )}
+            </button>
+          </footer>
+        </form>
+      </aside>
+    );
+  }
 
   return (
     <aside
@@ -338,7 +764,7 @@ export function GenerationDrawer({
                 />
               </label>
             </div>
-            <ProjectImagePicker
+            <ProjectMediaPicker
               projectId={projectId}
               label="参考图片（可选）"
               value={imageReference}
@@ -396,31 +822,43 @@ export function GenerationDrawer({
             </div>
             <fieldset className="generation-mode-options">
               <legend>输入方式</legend>
-              {(["text", "frames", "reference"] as const).map((value) => (
-                <button
-                  type="button"
-                  className={videoMode === value ? "selected" : ""}
-                  aria-pressed={videoMode === value}
-                  key={value}
-                  onClick={() => setVideoMode(value)}
-                >
-                  {value === "text"
-                    ? "纯文本"
-                    : value === "frames"
-                      ? "首尾帧"
-                      : "参考素材"}
-                </button>
-              ))}
+              {(["text", "image", "frames", "reference"] as const).map(
+                (value) => (
+                  <button
+                    type="button"
+                    className={videoMode === value ? "selected" : ""}
+                    aria-pressed={videoMode === value}
+                    key={value}
+                    onClick={() => setVideoMode(value)}
+                  >
+                    {value === "text"
+                      ? "纯文本"
+                      : value === "image"
+                        ? "图生视频"
+                        : value === "frames"
+                          ? "首尾帧"
+                          : "参考素材"}
+                  </button>
+                ),
+              )}
             </fieldset>
+            {videoMode === "image" ? (
+              <ProjectMediaPicker
+                projectId={projectId}
+                label="起始画面（必选）"
+                value={firstFrame}
+                onChange={setFirstFrame}
+              />
+            ) : null}
             {videoMode === "frames" ? (
               <>
-                <ProjectImagePicker
+                <ProjectMediaPicker
                   projectId={projectId}
                   label="首帧（必选）"
                   value={firstFrame}
                   onChange={setFirstFrame}
                 />
-                <ProjectImagePicker
+                <ProjectMediaPicker
                   projectId={projectId}
                   label="尾帧（可选）"
                   value={lastFrame}
@@ -430,7 +868,7 @@ export function GenerationDrawer({
             ) : null}
             {videoMode === "reference" ? (
               <>
-                <ProjectImagePicker
+                <ProjectMediaPicker
                   projectId={projectId}
                   label="参考图片"
                   value={references}
@@ -438,24 +876,24 @@ export function GenerationDrawer({
                   max={9}
                   onChange={setReferences}
                 />
-                <label>
-                  <span>参考音频 HTTPS URL（最多 3 个）</span>
-                  <textarea
-                    rows={2}
-                    value={audioUrls}
-                    onChange={(event) => setAudioUrls(event.target.value)}
-                    placeholder="每行一个公网 HTTPS 地址"
-                  />
-                </label>
-                <label>
-                  <span>参考视频 HTTPS URL（最多 3 个）</span>
-                  <textarea
-                    rows={2}
-                    value={videoUrls}
-                    onChange={(event) => setVideoUrls(event.target.value)}
-                    placeholder="每行一个公网 HTTPS 地址"
-                  />
-                </label>
+                <ProjectMediaPicker
+                  projectId={projectId}
+                  label="参考视频"
+                  kind="video"
+                  value={videoReferences}
+                  multiple
+                  max={3}
+                  onChange={setVideoReferences}
+                />
+                <ProjectMediaPicker
+                  projectId={projectId}
+                  label="参考音频"
+                  kind="audio"
+                  value={audioReferences}
+                  multiple
+                  max={3}
+                  onChange={setAudioReferences}
+                />
               </>
             ) : null}
             <div className="generation-switches">

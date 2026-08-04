@@ -203,9 +203,6 @@ export function VisualWorkshopProjectsPage({
                 onClick={() => onOpenProject(project.id)}
               >
                 <span className="workshop-project-cover-content">
-                  <span className="workshop-project-cover-icon">
-                    <Maximize2 aria-hidden />
-                  </span>
                   <span className="workshop-project-cover-label">
                     <strong>创作画布</strong>
                     <small>点击进入项目</small>

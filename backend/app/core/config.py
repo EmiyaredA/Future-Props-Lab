@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from functools import lru_cache
 from pathlib import Path
+from urllib.parse import urlsplit
 
 from cryptography.fernet import Fernet
 from pydantic import model_validator
@@ -23,6 +24,7 @@ class Settings(BaseSettings):
     fpl_secrets_key: str = ""
     fpl_studio_token: str = ""
     fpl_visual_asset_max_bytes: int = 200 * 1024 * 1024
+    fpl_temp_media_upload_url: str = "https://temp.sh/upload"
 
     @model_validator(mode="after")
     def validate_security(self) -> Settings:
@@ -34,6 +36,14 @@ class Settings(BaseSettings):
             raise ValueError("FPL_STUDIO_TOKEN must contain at least 32 characters")
         if self.fpl_visual_asset_max_bytes < 1:
             raise ValueError("FPL_VISUAL_ASSET_MAX_BYTES must be positive")
+        parsed_upload_url = urlsplit(self.fpl_temp_media_upload_url)
+        if (
+            parsed_upload_url.scheme != "https"
+            or not parsed_upload_url.hostname
+            or parsed_upload_url.username
+            or parsed_upload_url.password
+        ):
+            raise ValueError("FPL_TEMP_MEDIA_UPLOAD_URL must be an unauthenticated HTTPS URL")
         return self
 
     @property

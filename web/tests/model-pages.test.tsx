@@ -8,12 +8,19 @@ import { ModelTestPage } from "@features/models/ModelTestPage";
 import {
   createModelTestConversation,
   createModelTestGenerationTask,
+  deleteModelTestGenerationTask,
+  deleteModelTestReferenceAsset,
   deleteModelTestAttachment,
+  getLog,
+  getLogs,
   getModelTestConversation,
   getModelTestConversations,
+  getModelTestGenerationResult,
+  getModelTestGenerationTasks,
   patchModelTestConversation,
   streamModelTest,
   uploadModelTestAttachments,
+  uploadModelTestReferenceAsset,
   type ModelTestConversation,
 } from "@features/models/api";
 
@@ -68,6 +75,27 @@ vi.mock("@features/models/api", async () => {
             },
           ],
         },
+        {
+          id: "p-video",
+          name: "视频供应商",
+          kind: "senseaudio_video",
+          base_url: "https://example.test/v1",
+          enabled: true,
+          has_api_key: true,
+          api_key_hint: "9012",
+          models: [
+            {
+              id: "m-video",
+              provider_id: "p-video",
+              slug: "senseaudio-video-1.0",
+              label: "Video Model",
+              description: "视频生成模型",
+              capabilities: ["video_generation"],
+              categories: ["video_generation"],
+              enabled: true,
+            },
+          ],
+        },
       ],
     }),
     getModelCategories: vi.fn().mockResolvedValue({
@@ -84,6 +112,12 @@ vi.mock("@features/models/api", async () => {
           type: "image",
           sub_type: "text-to-image",
         },
+        {
+          id: "video_generation",
+          label: "视频生成",
+          type: "video",
+          sub_type: "text-to-video",
+        },
       ],
     }),
     getModelTestGenerationOptions: vi.fn().mockResolvedValue({
@@ -97,6 +131,16 @@ vi.mock("@features/models/api", async () => {
           label: "Image Model",
           description: "图片生成模型",
           sizes: ["1024x1024"],
+        },
+        {
+          id: "m-video",
+          provider_id: "p-video",
+          provider_name: "视频供应商",
+          kind: "video",
+          slug: "senseaudio-video-1.0",
+          label: "Video Model",
+          description: "视频生成模型",
+          sizes: [],
         },
       ],
     }),
@@ -126,9 +170,15 @@ vi.mock("@features/models/api", async () => {
       updated_at: "2026-08-03T00:00:00Z",
       completed_at: null,
     }),
+    getModelTestGenerationResult: vi
+      .fn()
+      .mockResolvedValue(new Blob(["result"], { type: "image/png" })),
+    deleteModelTestGenerationTask: vi.fn().mockResolvedValue({ deleted: true }),
+    retryModelTestGenerationMaterialization: vi.fn(),
     getLogs: vi
       .fn()
       .mockResolvedValue({ items: [], total: 0, page: 1, page_size: 25 }),
+    getLog: vi.fn(),
     getLogStats: vi.fn().mockResolvedValue({
       calls_today: 0,
       total_tokens_today: 0,
@@ -188,6 +238,8 @@ vi.mock("@features/models/api", async () => {
       messages: [],
     }),
     uploadModelTestAttachments: vi.fn(),
+    uploadModelTestReferenceAsset: vi.fn(),
+    deleteModelTestReferenceAsset: vi.fn().mockResolvedValue({ deleted: true }),
     deleteModelTestAttachment: vi.fn().mockResolvedValue({ deleted: true }),
     streamModelTest: vi.fn().mockResolvedValue(undefined),
   };
@@ -215,11 +267,86 @@ test("shows provider catalog categories without the redundant diagnostics entry"
   expect(screen.queryByText("查看模型测试产生的调用日志")).toBeNull();
 });
 
+test("does not repeat a capability that is already shown as a category", async () => {
+  const user = userEvent.setup();
+  renderWithQuery(<ModelServicePage />);
+  await user.click(await screen.findByRole("button", { name: /图片供应商/ }));
+  expect(screen.getAllByText("图片生成")).toHaveLength(1);
+});
+
 test("shows a useful empty state for call logs", async () => {
   renderWithQuery(<ModelCallLogsPage />);
   expect(await screen.findByText("暂无调用日志")).toBeInTheDocument();
   expect(
-    screen.getByText("快速诊断与模型测试产生的结果会显示在这里。"),
+    screen.getByText("快速诊断、模型测试与视觉助手产生的结果会显示在这里。"),
+  ).toBeInTheDocument();
+});
+
+test("renders call log payloads as a readable role-based message trace", async () => {
+  const user = userEvent.setup();
+  vi.mocked(getLogs).mockResolvedValueOnce({
+    items: [
+      {
+        id: "log-1",
+        call_source: "model_playground",
+        provider_kind: "openai",
+        model: "model-x",
+        trace_id: "trace-1",
+        total_tokens: 41,
+        latency_ms: 820,
+        status: "success",
+        created_at: "2026-08-04T07:43:52Z",
+      },
+    ],
+    total: 1,
+    page: 1,
+    page_size: 25,
+  });
+  vi.mocked(getLog).mockResolvedValueOnce({
+    id: "log-1",
+    call_source: "model_playground",
+    provider_kind: "openai",
+    model: "model-x",
+    trace_id: "trace-1",
+    request_payload: {
+      system: "回答要简洁准确。",
+      messages: [{ role: "user", content: "如何查询 API 的请求参数？" }],
+      temperature: 0.7,
+    },
+    response_payload: {
+      content: "请先查看接口文档中的参数表。",
+      status: "completed",
+    },
+    prompt_tokens: 29,
+    completion_tokens: 12,
+    total_tokens: 41,
+    latency_ms: 820,
+    status: "success",
+    error_message: null,
+    created_at: "2026-08-04T07:43:52Z",
+  });
+
+  const { container } = renderWithQuery(<ModelCallLogsPage />);
+  await user.click(await screen.findByRole("button", { name: "详情" }));
+
+  expect(
+    await screen.findByRole("dialog", { name: "调用详情" }),
+  ).toBeInTheDocument();
+  expect(screen.getByText("系统指令")).toBeInTheDocument();
+  expect(screen.getByText("回答要简洁准确。")).toBeInTheDocument();
+  expect(screen.getByText("如何查询 API 的请求参数？")).toBeInTheDocument();
+  expect(screen.getByText("请先查看接口文档中的参数表。")).toBeInTheDocument();
+  expect(screen.getByText("3 条消息")).toBeInTheDocument();
+  expect(screen.getByText("输入 Token").nextElementSibling).toHaveTextContent(
+    "29",
+  );
+  expect(screen.getByText("输出 Token").nextElementSibling).toHaveTextContent(
+    "12",
+  );
+  expect(screen.getByText("原始数据")).toBeInTheDocument();
+  expect(container.querySelectorAll(".trace-message")).toHaveLength(3);
+  expect(
+    screen.getByRole("button", { name: "复制 Trace ID" }),
   ).toBeInTheDocument();
 });
 
@@ -256,11 +383,16 @@ test("renders persistent model test workspace with safe markdown", async () => {
 
 test("switches the shared model selector to an image generation test", async () => {
   const user = userEvent.setup();
-  renderWithQuery(<ModelTestPage />);
+  const { container } = renderWithQuery(<ModelTestPage />);
   await screen.findByText("测试对话");
-  await user.click(await screen.findByRole("button", { name: "测试模型" }));
-  await user.click(screen.getByRole("option", { name: /Image Model/ }));
-  expect(await screen.findByText("图片测试记录")).toBeInTheDocument();
+  await user.click(screen.getByRole("tab", { name: "图片生成" }));
+  expect(await screen.findByText("最近任务")).toBeInTheDocument();
+  expect(screen.getByRole("tab", { name: "图片生成" })).toHaveAttribute(
+    "aria-selected",
+    "true",
+  );
+  expect(screen.getByRole("tab", { name: /音频生成/ })).toBeDisabled();
+  expect(container.querySelector("select")).toBeNull();
   await user.type(screen.getByPlaceholderText("描述要生成的画面…"), "未来城市");
   await user.click(screen.getByRole("button", { name: "开始测试" }));
   await waitFor(() =>
@@ -272,6 +404,188 @@ test("switches the shared model selector to an image generation test", async () 
       seed: null,
     }),
   );
+});
+
+test("switches the unified workspace to video and submits custom controls", async () => {
+  const user = userEvent.setup();
+  const { container } = renderWithQuery(<ModelTestPage />);
+  await screen.findByText("测试对话");
+
+  await user.click(screen.getByRole("tab", { name: "视频生成" }));
+  expect(
+    await screen.findByPlaceholderText("描述镜头、动作和氛围…"),
+  ).toBeInTheDocument();
+  await user.click(screen.getByRole("button", { name: "时长" }));
+  await user.click(screen.getByRole("option", { name: "8 秒" }));
+  await user.click(screen.getByRole("button", { name: "1080p" }));
+  await user.click(screen.getByRole("button", { name: "9:16" }));
+  await user.click(screen.getByRole("checkbox", { name: /生成音频/ }));
+  await user.click(screen.getByRole("checkbox", { name: /保留水印/ }));
+  await user.type(
+    screen.getByPlaceholderText("描述镜头、动作和氛围…"),
+    "海边公路上的复古汽车",
+  );
+  await user.click(screen.getByRole("button", { name: "开始测试" }));
+
+  await waitFor(() =>
+    expect(vi.mocked(createModelTestGenerationTask)).toHaveBeenLastCalledWith({
+      kind: "video",
+      model_id: "m-video",
+      prompt: "海边公路上的复古汽车",
+      duration: 8,
+      resolution: "1080p",
+      ratio: "9:16",
+      watermark: false,
+      generate_audio: true,
+      reference_asset_ids: [],
+      audio_asset_ids: [],
+      video_asset_ids: [],
+    }),
+  );
+  expect(container.querySelector("select")).toBeNull();
+});
+
+test("uploads reference audio and video with the video generation task", async () => {
+  const createUrl = vi.fn((file: Blob) => `blob:${file.type}`);
+  const revokeUrl = vi.fn();
+  Object.defineProperty(URL, "createObjectURL", {
+    configurable: true,
+    value: createUrl,
+  });
+  Object.defineProperty(URL, "revokeObjectURL", {
+    configurable: true,
+    value: revokeUrl,
+  });
+  vi.mocked(uploadModelTestReferenceAsset).mockImplementation(
+    async (file) =>
+      ({
+        id: file.type.startsWith("audio/") ? "asset-audio" : "asset-video",
+        project_id: null,
+        folder_id: null,
+        original_filename: file.name,
+        display_name: file.name,
+        media_kind: file.type.startsWith("audio/") ? "audio" : "video",
+        mime_type: file.type,
+        byte_size: file.size,
+        revision: 0,
+        created_at: "2026-08-03T00:00:00Z",
+        updated_at: "2026-08-03T00:00:00Z",
+        source: "library",
+        is_reference: false,
+        reference_id: null,
+      }) as never,
+  );
+  const user = userEvent.setup();
+  renderWithQuery(<ModelTestPage />);
+  await screen.findByText("测试对话");
+  await user.click(screen.getByRole("tab", { name: "视频生成" }));
+
+  const input = screen.getByLabelText("上传参考图片、音频或视频");
+  const video = new File(["video"], "motion.mp4", { type: "video/mp4" });
+  const audio = new File(["audio"], "rhythm.mp3", { type: "audio/mpeg" });
+  await user.upload(input, [video, audio]);
+  expect(screen.getByText("motion.mp4")).toBeInTheDocument();
+  expect(screen.getByText("rhythm.mp3")).toBeInTheDocument();
+  await user.type(
+    screen.getByPlaceholderText("描述镜头、动作和氛围…"),
+    "使用参考运镜和音乐节奏",
+  );
+  await user.click(screen.getByRole("button", { name: "开始测试" }));
+
+  await waitFor(() =>
+    expect(vi.mocked(createModelTestGenerationTask)).toHaveBeenLastCalledWith({
+      kind: "video",
+      model_id: "m-video",
+      prompt: "使用参考运镜和音乐节奏",
+      duration: 5,
+      resolution: "720p",
+      ratio: "16:9",
+      watermark: true,
+      generate_audio: false,
+      reference_asset_ids: [],
+      audio_asset_ids: ["asset-audio"],
+      video_asset_ids: ["asset-video"],
+    }),
+  );
+  expect(uploadModelTestReferenceAsset).toHaveBeenCalledTimes(2);
+  expect(deleteModelTestReferenceAsset).not.toHaveBeenCalled();
+  expect(revokeUrl).toHaveBeenCalledWith("blob:video/mp4");
+  expect(revokeUrl).toHaveBeenCalledWith("blob:audio/mpeg");
+});
+
+test("filters generation history and releases result object URLs", async () => {
+  const task = {
+    id: "task-completed",
+    provider_id: "p-image",
+    model_id: "m-image",
+    provider_kind: "senseaudio_image" as const,
+    kind: "image" as const,
+    provider_name: "图片供应商",
+    model_slug: "senseaudio-image-2.0-260319",
+    request_payload: { prompt: "日落海岸", size: "1024x1024", seed: null },
+    status: "completed" as const,
+    progress: 100,
+    error_message: null,
+    result_filename: "sunset.png",
+    result_mime_type: "image/png",
+    result_byte_size: 6,
+    result_available: true,
+    can_retry_materialization: false,
+    log_id: "log-1",
+    revision: 1,
+    created_at: "2026-08-03T00:00:00Z",
+    updated_at: "2026-08-03T00:00:08Z",
+    completed_at: "2026-08-03T00:00:08Z",
+  };
+  vi.mocked(getModelTestGenerationTasks).mockResolvedValueOnce({
+    items: [task],
+    total: 1,
+  });
+  vi.mocked(getModelTestGenerationResult).mockResolvedValue(
+    new Blob(["image"], { type: "image/png" }),
+  );
+  const createObjectUrl = vi
+    .fn()
+    .mockReturnValueOnce("blob:active-result")
+    .mockReturnValueOnce("blob:history-thumbnail");
+  const revokeObjectUrl = vi.fn();
+  Object.defineProperty(URL, "createObjectURL", {
+    configurable: true,
+    value: createObjectUrl,
+  });
+  Object.defineProperty(URL, "revokeObjectURL", {
+    configurable: true,
+    value: revokeObjectUrl,
+  });
+
+  const user = userEvent.setup();
+  const view = renderWithQuery(<ModelTestPage />);
+  await screen.findByText("测试对话");
+  await user.click(screen.getByRole("tab", { name: "图片生成" }));
+  expect(
+    await screen.findByRole("button", { name: /日落海岸/ }),
+  ).toBeInTheDocument();
+  expect(
+    await screen.findByRole("link", { name: "下载生成结果" }),
+  ).toHaveAttribute("download", "sunset.png");
+
+  await user.type(
+    screen.getByRole("searchbox", { name: "搜索生成任务" }),
+    "雨夜",
+  );
+  expect(screen.queryByRole("button", { name: /日落海岸/ })).toBeNull();
+  expect(screen.getByText("没有匹配的任务")).toBeInTheDocument();
+
+  await user.clear(screen.getByRole("searchbox", { name: "搜索生成任务" }));
+  await user.click(screen.getByRole("button", { name: "删除测试记录" }));
+  await waitFor(() =>
+    expect(vi.mocked(deleteModelTestGenerationTask)).toHaveBeenCalledWith(
+      "task-completed",
+      1,
+    ),
+  );
+  view.unmount();
+  expect(revokeObjectUrl).toHaveBeenCalled();
 });
 
 test("filters conversations locally", async () => {

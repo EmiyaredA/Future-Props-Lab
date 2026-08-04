@@ -1,16 +1,16 @@
 from __future__ import annotations
 
 import asyncio
+import base64
 import ipaddress
 import os
 import socket
-import time
 from pathlib import Path
 from urllib.parse import urljoin, urlsplit
 from uuid import uuid4
 
 import httpx
-from sqlalchemy import select, update
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.core.config import Settings, get_settings
@@ -21,7 +21,8 @@ from app.llm.generation_runtime import generation_semaphore
 from app.llm.playground.generation import ACTIVE_GENERATION_STATUSES
 from app.llm.providers import create_image_task, create_video_task, get_image_task, get_video_task
 from app.llm.providers._senseaudio import SenseAudioProviderError, sanitize_provider_message
-from app.models import LlmCallLog, ModelProvider, ModelTestGenerationTask
+from app.llm.providers.temporary_media import TemporaryMediaError, upload_temporary_media
+from app.models import LlmCallLog, ModelProvider, ModelTestGenerationTask, VisualAsset
 
 POLL_INTERVAL_SECONDS = 5
 MAX_REDIRECTS = 4
@@ -32,6 +33,8 @@ class ModelTestMaterializationError(Exception):
 
 
 def _safe_error(exc: Exception) -> str:
+    if isinstance(exc, TemporaryMediaError):
+        return "参考素材临时上传失败，请重新生成"
     if isinstance(exc, (ModelTestMaterializationError, SenseAudioProviderError, ValueError)):
         return sanitize_provider_message(str(exc))
     if isinstance(exc, httpx.TimeoutException):
@@ -88,10 +91,12 @@ class ModelTestGenerationRunner:
         session_factory: async_sessionmaker[AsyncSession] = SessionLocal,
         settings: Settings | None = None,
         download_transport: httpx.AsyncBaseTransport | None = None,
+        temporary_media_transport: httpx.AsyncBaseTransport | None = None,
     ) -> None:
         self.session_factory = session_factory
         self.settings = settings or get_settings()
         self.download_transport = download_transport
+        self.temporary_media_transport = temporary_media_transport
         self._stop = asyncio.Event()
         self._task: asyncio.Task[None] | None = None
 
@@ -203,11 +208,42 @@ class ModelTestGenerationRunner:
                         seed=payload.get("seed"),
                     )
                 else:
+                    content: list[dict[str, object]] = [
+                        {"type": "text", "text": str(payload["prompt"])}
+                    ]
+                    for asset_id in payload.get("reference_asset_ids", []):
+                        content.append(
+                            {
+                                "type": "image",
+                                "url": await self._asset_data_uri(str(asset_id), "image"),
+                                "role": "reference",
+                            }
+                        )
+                    for asset_id in payload.get("audio_asset_ids", []):
+                        content.append(
+                            {
+                                "type": "audio",
+                                "audio_url": await self._temporary_asset_url(
+                                    str(asset_id), "audio"
+                                ),
+                            }
+                        )
+                    for asset_id in payload.get("video_asset_ids", []):
+                        content.append(
+                            {
+                                "type": "video",
+                                "video_url": await self._temporary_asset_url(
+                                    str(asset_id), "video"
+                                ),
+                            }
+                        )
+                    if len(str(content).encode("utf-8")) > 64 * 1024 * 1024:
+                        raise ValueError("参考素材请求体超过 SenseAudio 的 64 MB 限制")
                     provider_task_id = await create_video_task(
                         base_url=base_url,
                         api_key=api_key,
                         model=model_slug,
-                        content=[{"type": "text", "text": str(payload["prompt"])}],
+                        content=content,
                         duration=int(payload["duration"]),
                         resolution=str(payload["resolution"]),
                         ratio=str(payload["ratio"]),
@@ -273,6 +309,32 @@ class ModelTestGenerationRunner:
             raise
         except Exception as exc:
             await self._fail(task_id, _safe_error(exc))
+
+    async def _asset_data_uri(self, asset_id: str, expected_kind: str) -> str:
+        async with self.session_factory() as session:
+            asset = await session.get(VisualAsset, asset_id)
+            if asset is None or asset.media_kind != expected_kind:
+                raise ValueError("参考素材已不存在或类型不匹配")
+            path = self.settings.visual_asset_path / asset.storage_key
+            mime_type = asset.mime_type
+        if not path.is_file():
+            raise ValueError("参考素材文件已不存在")
+        data = await asyncio.to_thread(path.read_bytes)
+        return f"data:{mime_type};base64,{base64.b64encode(data).decode('ascii')}"
+
+    async def _temporary_asset_url(self, asset_id: str, expected_kind: str) -> str:
+        async with self.session_factory() as session:
+            asset = await session.get(VisualAsset, asset_id)
+            if asset is None or asset.media_kind != expected_kind:
+                raise TemporaryMediaError("参考素材已不存在或类型不匹配")
+            path = self.settings.visual_asset_path / asset.storage_key
+            mime_type = asset.mime_type
+        return await upload_temporary_media(
+            path=path,
+            mime_type=mime_type,
+            upload_url=self.settings.fpl_temp_media_upload_url,
+            transport=self.temporary_media_transport,
+        )
 
     async def _fail(self, task_id: str, message: str, *, result_url: str = "") -> None:
         async with self.session_factory() as session:

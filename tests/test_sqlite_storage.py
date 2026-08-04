@@ -36,14 +36,14 @@ def test_sqlite_migration_is_repeatable_and_detects_drift(tmp_path: Path) -> Non
     database_path = tmp_path / "nested" / "catalog.db"
 
     assert apply_migrations(database_path) == (
-        "r0010_model_categories_and_test_generation",
+        "r0011_visual_assistant_conversations",
         True,
     )
     assert apply_migrations(database_path) == (
-        "r0010_model_categories_and_test_generation",
+        "r0011_visual_assistant_conversations",
         False,
     )
-    assert check_migrations(database_path) == "r0010_model_categories_and_test_generation"
+    assert check_migrations(database_path) == "r0011_visual_assistant_conversations"
 
     with connect_database(database_path) as connection:
         connection.execute(
@@ -69,7 +69,7 @@ def test_existing_r0001_database_upgrades_without_rewriting_history(tmp_path: Pa
         connection.commit()
 
     assert apply_migrations(database_path) == (
-        "r0010_model_categories_and_test_generation",
+        "r0011_visual_assistant_conversations",
         True,
     )
     with connect_database(database_path) as connection:
@@ -87,6 +87,7 @@ def test_existing_r0001_database_upgrades_without_rewriting_history(tmp_path: Pa
             ("r0008_visual_generation",),
             ("r0009_visual_canvas_documents",),
             ("r0010_model_categories_and_test_generation",),
+            ("r0011_visual_assistant_conversations",),
         ]
         assert connection.execute("SELECT COUNT(*) FROM model_test_conversations").fetchone() == (
             0,
@@ -163,7 +164,7 @@ def test_existing_default_catalog_is_extended_without_overwriting_user_data(
         connection.commit()
 
     assert apply_migrations(database_path) == (
-        "r0010_model_categories_and_test_generation",
+        "r0011_visual_assistant_conversations",
         True,
     )
 
@@ -252,7 +253,7 @@ def test_existing_default_catalog_is_extended_without_overwriting_user_data(
     assert stored_categories == {"[]"}
 
     assert apply_migrations(database_path) == (
-        "r0010_model_categories_and_test_generation",
+        "r0011_visual_assistant_conversations",
         False,
     )
     with connect_database(database_path) as connection:
@@ -270,7 +271,7 @@ def test_catalog_upgrade_does_not_recreate_deleted_default_provider(tmp_path: Pa
         connection.commit()
 
     assert apply_migrations(database_path) == (
-        "r0010_model_categories_and_test_generation",
+        "r0011_visual_assistant_conversations",
         True,
     )
     with connect_database(database_path) as connection:
@@ -306,7 +307,7 @@ def test_r0007_upgrade_adds_visual_tasks_and_preserves_provider_credentials(
         connection.commit()
 
     assert apply_migrations(database_path) == (
-        "r0010_model_categories_and_test_generation",
+        "r0011_visual_assistant_conversations",
         True,
     )
     with connect_database(database_path) as connection:

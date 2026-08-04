@@ -15,6 +15,7 @@ from app.core.time import iso_utc, utc_now
 from app.models import (
     VisualAsset,
     VisualAssetFolder,
+    VisualAssistantMessageAsset,
     VisualProjectAssetReference,
     VisualWorkshopProject,
 )
@@ -306,6 +307,19 @@ class VisualAssets:
             .scalars()
             .all()
         )
+        asset_ids = [item.id for item in assets]
+        if asset_ids:
+            conversation_reference = await self.session.scalar(
+                select(VisualAssistantMessageAsset.id)
+                .where(VisualAssistantMessageAsset.asset_id.in_(asset_ids))
+                .limit(1)
+            )
+            if conversation_reference:
+                raise AssetError(
+                    "文件夹内有文件正在被项目对话使用，请先删除相关对话",
+                    code="asset_in_use",
+                    status=409,
+                )
         global_ids = [item.id for item in assets if item.project_id is None]
         if global_ids:
             referenced = await self.session.scalar(
@@ -495,6 +509,17 @@ class VisualAssets:
 
     async def delete_asset(self, asset_id: str, expected_revision: int) -> None:
         row = await self._asset(asset_id)
+        conversation_reference = await self.session.scalar(
+            select(VisualAssistantMessageAsset.id)
+            .where(VisualAssistantMessageAsset.asset_id == asset_id)
+            .limit(1)
+        )
+        if conversation_reference:
+            raise AssetError(
+                "文件正在被项目对话使用，请先删除相关对话",
+                code="asset_in_use",
+                status=409,
+            )
         if row.project_id is None:
             reference = await self.session.scalar(
                 select(VisualProjectAssetReference.id)

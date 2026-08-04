@@ -9,7 +9,7 @@ from app.concurrency.revisions import RevisionConflictError
 from app.core.config import Settings, get_settings
 from app.core.time import iso_utc, utc_now
 from app.llm.providers.senseaudio_image import IMAGE_MODEL_SIZES
-from app.models import ModelEntry, ModelProvider, ModelTestGenerationTask
+from app.models import ModelEntry, ModelProvider, ModelTestGenerationTask, VisualAsset
 from app.schemas.model_test import (
     ModelTestGenerationCreateIn,
     ModelTestGenerationOptionListOut,
@@ -17,9 +17,16 @@ from app.schemas.model_test import (
     ModelTestGenerationTaskListOut,
     ModelTestGenerationTaskOut,
     ModelTestImageGenerationIn,
+    ModelTestVideoGenerationIn,
 )
 
 ACTIVE_GENERATION_STATUSES = ("queued", "submitting", "pending", "processing")
+MAX_INLINE_REFERENCE_BYTES = 45 * 1024 * 1024
+REFERENCE_MIME_TYPES = {
+    "image": {"image/jpeg", "image/png", "image/webp", "image/gif"},
+    "audio": {"audio/mpeg", "audio/wav", "audio/x-wav"},
+    "video": {"video/mp4", "video/quicktime"},
+}
 
 
 class ModelTestGenerationError(Exception):
@@ -125,6 +132,8 @@ class ModelTestGeneration:
                     f"当前模型提示词最多支持 {prompt_limit} 个字符",
                     code="prompt_too_long",
                 )
+        elif isinstance(body, ModelTestVideoGenerationIn):
+            await self._validate_video_assets(body)
         row = ModelTestGenerationTask(
             provider_id=provider.id,
             model_id=model.id,
@@ -140,6 +149,65 @@ class ModelTestGeneration:
         await self.session.commit()
         await self.session.refresh(row)
         return generation_task_out(row)
+
+    async def _validate_video_assets(self, body: ModelTestVideoGenerationIn) -> None:
+        groups = (
+            (body.reference_asset_ids, "image", "参考图片"),
+            (body.audio_asset_ids, "audio", "参考音频"),
+            (body.video_asset_ids, "video", "参考视频"),
+        )
+        asset_ids = [asset_id for ids, _, _ in groups for asset_id in ids]
+        if not asset_ids:
+            return
+        rows = list(
+            (await self.session.execute(select(VisualAsset).where(VisualAsset.id.in_(asset_ids))))
+            .scalars()
+            .all()
+        )
+        by_id = {row.id: row for row in rows}
+        inline_image_bytes = 0
+        for ids, expected_kind, label in groups:
+            for asset_id in ids:
+                asset = by_id.get(asset_id)
+                if asset is None:
+                    raise ModelTestGenerationError(
+                        f"{label}已不存在", code="reference_asset_missing", status=404
+                    )
+                if (
+                    asset.media_kind != expected_kind
+                    or asset.mime_type not in REFERENCE_MIME_TYPES[expected_kind]
+                ):
+                    raise ModelTestGenerationError(
+                        f"{label}格式不受支持", code="unsupported_reference_type"
+                    )
+                path = self.settings.visual_asset_path / asset.storage_key
+                if not path.is_file():
+                    raise ModelTestGenerationError(
+                        f"{label}文件已不存在", code="reference_asset_missing", status=404
+                    )
+                if expected_kind == "audio" and asset.byte_size > 15 * 1024 * 1024:
+                    raise ModelTestGenerationError(
+                        "单个参考音频不能超过 15 MB", code="reference_too_large"
+                    )
+                if expected_kind == "image" and asset.byte_size > 30 * 1024 * 1024:
+                    raise ModelTestGenerationError(
+                        "单张参考图片不能超过 30 MB", code="reference_too_large"
+                    )
+                if (
+                    expected_kind == "video"
+                    and asset.byte_size > self.settings.fpl_visual_asset_max_bytes
+                ):
+                    raise ModelTestGenerationError(
+                        "单个参考视频超过项目文件上限", code="reference_too_large"
+                    )
+                if expected_kind == "image":
+                    inline_image_bytes += asset.byte_size
+        if inline_image_bytes > MAX_INLINE_REFERENCE_BYTES:
+            raise ModelTestGenerationError(
+                "内联参考图片总大小不能超过 45 MB",
+                code="reference_payload_too_large",
+                status=413,
+            )
 
     async def list(
         self, *, model_id: str | None, page: int, page_size: int

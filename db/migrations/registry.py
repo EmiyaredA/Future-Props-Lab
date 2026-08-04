@@ -13,6 +13,8 @@ from db.migrations.versions import (
     r0008_visual_generation,
     r0009_visual_canvas_documents,
     r0010_model_categories_and_test_generation,
+    r0011_visual_assistant_conversations,
+    r0012_visual_assistant_actions,
 )
 
 
@@ -58,6 +60,14 @@ MIGRATIONS = (
     Migration(
         r0010_model_categories_and_test_generation.MIGRATION_ID,
         r0010_model_categories_and_test_generation.SQL,
+    ),
+    Migration(
+        r0011_visual_assistant_conversations.MIGRATION_ID,
+        r0011_visual_assistant_conversations.SQL,
+    ),
+    Migration(
+        r0012_visual_assistant_actions.MIGRATION_ID,
+        r0012_visual_assistant_actions.SQL,
     ),
 )
 

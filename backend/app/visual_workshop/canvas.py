@@ -128,7 +128,7 @@ class VisualCanvasDocuments:
             if task.project_id != project_id or task.generation_kind != kind:
                 raise VisualCanvasError("节点生成任务不属于当前项目", code="scope_mismatch")
 
-    async def put(
+    async def replace(
         self,
         project_id: str,
         body: VisualCanvasDocumentPutIn,
@@ -157,5 +157,13 @@ class VisualCanvasDocuments:
                 current.revision,
                 current.model_dump(mode="json"),
             )
-        await self.session.commit()
         return await self.get(project_id)
+
+    async def put(
+        self,
+        project_id: str,
+        body: VisualCanvasDocumentPutIn,
+    ) -> VisualCanvasDocumentOut:
+        result = await self.replace(project_id, body)
+        await self.session.commit()
+        return result

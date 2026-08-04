@@ -4,9 +4,14 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, vi } from "vitest";
 import { AssetBrowser } from "@features/files/AssetBrowser";
 import {
+  createFolder,
+  deleteFolder,
+  deleteManagedFile,
   getFiles,
   getFolders,
   importFile,
+  patchFolder,
+  patchManagedFile,
   uploadManagedFile,
 } from "@features/files/api";
 
@@ -16,9 +21,14 @@ vi.mock("@features/files/api", async () => {
   );
   return {
     ...actual,
+    createFolder: vi.fn(),
+    deleteFolder: vi.fn(),
+    deleteManagedFile: vi.fn(),
     getFiles: vi.fn(),
     getFolders: vi.fn(),
     importFile: vi.fn(),
+    patchFolder: vi.fn(),
+    patchManagedFile: vi.fn(),
     uploadManagedFile: vi.fn(),
   };
 });
@@ -38,6 +48,24 @@ const libraryFile = {
   source: "library" as const,
   is_reference: false,
   reference_id: null,
+};
+
+const folderA = {
+  id: "folder-a",
+  project_id: null,
+  parent_id: null,
+  name: "A 文件夹",
+  revision: 0,
+  created_at: "2026-08-01T08:00:00Z",
+  updated_at: "2026-08-01T08:00:00Z",
+};
+
+const folderB = {
+  ...folderA,
+  id: "folder-b",
+  name: "B 文件夹",
+  created_at: "2026-08-03T08:00:00Z",
+  updated_at: "2026-08-03T08:00:00Z",
 };
 
 function renderBrowser() {
@@ -62,11 +90,47 @@ function renderLibraryBrowser() {
   );
 }
 
+function renderProjectBrowser(compact = false) {
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+  });
+  return render(
+    <QueryClientProvider client={client}>
+      <AssetBrowser projectId="project-1" compact={compact} />
+    </QueryClientProvider>,
+  );
+}
+
 beforeEach(() => {
   vi.clearAllMocks();
   window.localStorage.clear();
   vi.mocked(getFolders).mockResolvedValue({ items: [] });
   vi.mocked(getFiles).mockResolvedValue({ items: [libraryFile] });
+  vi.mocked(createFolder).mockResolvedValue(folderA);
+  vi.mocked(patchFolder).mockImplementation(async (folder, changes) => ({
+    ...folder,
+    name: changes.name ?? folder.name,
+    parent_id:
+      changes.move_to_root === true
+        ? null
+        : changes.parent_id === undefined
+          ? folder.parent_id
+          : changes.parent_id,
+    revision: folder.revision + 1,
+  }));
+  vi.mocked(deleteFolder).mockResolvedValue({ deleted: true });
+  vi.mocked(patchManagedFile).mockImplementation(async (file, changes) => ({
+    ...file,
+    display_name: changes.display_name ?? file.display_name,
+    folder_id:
+      changes.move_to_root === true
+        ? null
+        : changes.folder_id === undefined
+          ? file.folder_id
+          : changes.folder_id,
+    revision: file.revision + 1,
+  }));
+  vi.mocked(deleteManagedFile).mockResolvedValue({ deleted: true });
   vi.mocked(importFile).mockResolvedValue({
     ...libraryFile,
     project_id: "project-1",
@@ -76,10 +140,11 @@ beforeEach(() => {
   vi.mocked(uploadManagedFile).mockResolvedValue(libraryFile);
 });
 
-test("uses styled filters and shows file upload success feedback", async () => {
+test("uses styled filters and keeps successful upload feedback concise", async () => {
   const user = userEvent.setup();
-  renderLibraryBrowser();
+  const { container } = renderLibraryBrowser();
   expect(await screen.findByText("故事说明.md")).toBeInTheDocument();
+  expect(container.querySelector(".file-upload-card")).toBeInTheDocument();
 
   await user.click(screen.getByRole("button", { name: "文件类型" }));
   await user.click(screen.getByRole("option", { name: "图片" }));
@@ -95,7 +160,29 @@ test("uses styled filters and shows file upload success feedback", async () => {
     expect(uploadManagedFile).toHaveBeenCalledWith(image, undefined, undefined),
   );
   expect(await screen.findByText("已成功上传 1 个文件")).toBeInTheDocument();
-  expect(screen.getByText("上传成功")).toBeInTheDocument();
+  expect(screen.queryByRole("region", { name: "上传状态" })).toBeNull();
+});
+
+test("filters and sorts folders alongside files", async () => {
+  const user = userEvent.setup();
+  vi.mocked(getFolders).mockResolvedValue({ items: [folderA, folderB] });
+  vi.mocked(getFiles).mockResolvedValue({ items: [] });
+  const { container } = renderLibraryBrowser();
+
+  expect(await screen.findByText("A 文件夹")).toBeInTheDocument();
+  const folderNames = () =>
+    Array.from(
+      container.querySelectorAll(".file-folder-item .file-item-copy > strong"),
+    ).map((item) => item.textContent);
+  expect(folderNames()).toEqual(["B 文件夹", "A 文件夹"]);
+
+  await user.click(screen.getByRole("button", { name: "文件排序" }));
+  await user.click(screen.getByRole("option", { name: "按名称" }));
+  await waitFor(() => expect(folderNames()).toEqual(["A 文件夹", "B 文件夹"]));
+
+  await user.type(screen.getByLabelText("搜索文件或文件夹"), "A");
+  expect(screen.getByText("A 文件夹")).toBeInTheDocument();
+  expect(screen.queryByText("B 文件夹")).toBeNull();
 });
 
 test("keeps uploading remaining files and explains a failed video upload", async () => {
@@ -113,7 +200,9 @@ test("keeps uploading remaining files and explains a failed video upload", async
   expect(
     await screen.findByText("已上传 1 个文件，1 个失败"),
   ).toBeInTheDocument();
+  expect(screen.getByText("失败详情")).toBeInTheDocument();
   expect(screen.getByText("文件内容与声明的类型不匹配")).toBeInTheDocument();
+  expect(screen.queryByText("上传成功")).toBeNull();
   expect(uploadManagedFile).toHaveBeenCalledTimes(2);
 });
 
@@ -131,4 +220,122 @@ test("switches file layouts, remembers the choice, and imports a library file", 
     expect(importFile).toHaveBeenCalledWith("project-1", "file-1"),
   );
   expect(await screen.findByText("已导入当前项目")).toBeInTheDocument();
+});
+
+test("uses custom dialogs for creating, renaming, moving, and deleting folders", async () => {
+  const user = userEvent.setup();
+  const promptSpy = vi.spyOn(window, "prompt");
+  const confirmSpy = vi.spyOn(window, "confirm");
+  vi.mocked(getFolders).mockResolvedValue({ items: [folderA, folderB] });
+  vi.mocked(getFiles).mockResolvedValue({ items: [] });
+  renderLibraryBrowser();
+  expect(await screen.findByText("A 文件夹")).toBeInTheDocument();
+
+  await user.click(screen.getByRole("button", { name: "新建文件夹" }));
+  expect(
+    screen.getByRole("dialog", { name: "新建文件夹" }),
+  ).toBeInTheDocument();
+  await user.type(
+    screen.getByRole("textbox", { name: "文件夹名称" }),
+    "灵感素材",
+  );
+  await user.click(screen.getByRole("button", { name: "创建文件夹" }));
+  await waitFor(() =>
+    expect(createFolder).toHaveBeenCalledWith("灵感素材", undefined, undefined),
+  );
+
+  await user.click(screen.getByRole("button", { name: "更多操作 A 文件夹" }));
+  await user.click(screen.getByRole("menuitem", { name: "重命名" }));
+  const renameInput = screen.getByRole("textbox", { name: "新名称" });
+  await user.clear(renameInput);
+  await user.type(renameInput, "归档素材");
+  await user.click(screen.getByRole("button", { name: "保存名称" }));
+  await waitFor(() =>
+    expect(patchFolder).toHaveBeenCalledWith(folderA, { name: "归档素材" }),
+  );
+
+  await user.click(screen.getByRole("button", { name: "更多操作 A 文件夹" }));
+  await user.click(screen.getByRole("menuitem", { name: "移动到" }));
+  await user.click(screen.getByRole("button", { name: "目标文件夹" }));
+  await user.click(screen.getByRole("option", { name: "B 文件夹" }));
+  await user.click(screen.getByRole("button", { name: "确认移动" }));
+  await waitFor(() =>
+    expect(patchFolder).toHaveBeenCalledWith(folderA, {
+      parent_id: "folder-b",
+    }),
+  );
+
+  await user.click(screen.getByRole("button", { name: "更多操作 A 文件夹" }));
+  await user.click(screen.getByRole("menuitem", { name: "删除" }));
+  expect(
+    screen.getByText(/其中全部文件和子文件夹后将无法恢复/),
+  ).toBeInTheDocument();
+  await user.click(screen.getByRole("button", { name: "确认删除" }));
+  await waitFor(() => expect(deleteFolder).toHaveBeenCalledWith(folderA));
+
+  expect(promptSpy).not.toHaveBeenCalled();
+  expect(confirmSpy).not.toHaveBeenCalled();
+  promptSpy.mockRestore();
+  confirmSpy.mockRestore();
+});
+
+test("keeps file download visible and moves secondary actions into a dismissible menu", async () => {
+  const user = userEvent.setup();
+  renderLibraryBrowser();
+  expect(await screen.findByText("故事说明.md")).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "下载" })).toBeInTheDocument();
+
+  await user.click(
+    screen.getByRole("button", { name: "更多操作 故事说明.md" }),
+  );
+  expect(screen.getByRole("menu")).toBeInTheDocument();
+  await user.keyboard("{Escape}");
+  expect(screen.queryByRole("menu")).toBeNull();
+
+  await user.click(
+    screen.getByRole("button", { name: "更多操作 故事说明.md" }),
+  );
+  await user.click(screen.getByRole("menuitem", { name: "删除" }));
+  expect(
+    screen.getByText("删除“故事说明.md”后将无法恢复。"),
+  ).toBeInTheDocument();
+  await user.click(screen.getByRole("button", { name: "确认删除" }));
+  await waitFor(() =>
+    expect(deleteManagedFile).toHaveBeenCalledWith(libraryFile),
+  );
+});
+
+test("explains reference removal without implying the source file is deleted", async () => {
+  const user = userEvent.setup();
+  const referenceFile = {
+    ...libraryFile,
+    project_id: "project-1",
+    source: "library" as const,
+    is_reference: true,
+    reference_id: "reference-1",
+  };
+  vi.mocked(getFiles).mockResolvedValue({ items: [referenceFile] });
+  renderProjectBrowser();
+  expect(await screen.findByText("故事说明.md")).toBeInTheDocument();
+
+  await user.click(
+    screen.getByRole("button", { name: "更多操作 故事说明.md" }),
+  );
+  await user.click(screen.getByRole("menuitem", { name: "移除引用" }));
+  expect(
+    screen.getByText(
+      "只会从当前项目移除引用，文件管理中的源文件不会受到影响。",
+    ),
+  ).toBeInTheDocument();
+  await user.click(screen.getByRole("button", { name: "移除引用" }));
+  await waitFor(() =>
+    expect(deleteManagedFile).toHaveBeenCalledWith(referenceFile),
+  );
+});
+
+test("keeps the compact drawer layout and its toolbar upload entry", async () => {
+  const { container } = renderProjectBrowser(true);
+  expect(await screen.findByText("故事说明.md")).toBeInTheDocument();
+  expect(container.querySelector(".file-upload-card")).toBeNull();
+  expect(screen.getByRole("button", { name: "上传文件" })).toBeInTheDocument();
 });

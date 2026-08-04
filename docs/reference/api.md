@@ -52,7 +52,7 @@
 
 模型测试页按供应商协议自适应：OpenAI/Anthropic 模型进入多轮对话，SenseAudio 图片/视频模型进入
 独立异步生成测试。图片测试支持提示词、尺寸和种子；视频测试支持提示词、时长、分辨率、比例、
-水印和生成音频。任务结果下载到 `model-test/generated/`，不创建视觉工坊项目或素材。任务与模型
+水印、生成音频，以及从本机素材库选择最多 9 张图片、3 个音频和 3 个视频。任务结果下载到 `model-test/generated/`，不创建视觉工坊项目或素材。任务与模型
 目录都通过 `/v1` API 管理，活动任务不可删除或随模型一起停用；终态删除使用 revision/CAS。
 
 ## 工具导航
@@ -71,6 +71,10 @@
 - `GET/PUT /v1/visual-workshop/projects/{project_id}/canvas`：读取或以 CAS 保存完整节点画布。
 - `POST /v1/visual-workshop/projects/{project_id}/asset-references`：把文件管理中的文件引用到项目。
 - `PATCH/DELETE /v1/visual-workshop/projects/{project_id}/asset-references/{reference_id}`：整理或移除项目引用。
+- `GET/POST /v1/visual-workshop/projects/{project_id}/conversations`：读取或新建项目对话。
+- `GET /v1/visual-workshop/projects/{project_id}/conversations/models`：返回当前已启用且支持对话的模型选项。
+- `GET/PATCH/DELETE /v1/visual-workshop/projects/{project_id}/conversations/{conversation_id}`：读取、改名或删除对话。
+- `POST /v1/visual-workshop/projects/{project_id}/conversations/{conversation_id}/messages/stream`：发送消息并接收 SSE 流。
 
 项目类型为 `image / video / canvas`，状态为 `draft / completed`，标题长度为 1–120 字。
 修改和删除必须携带项目的 `expected_revision`；冲突返回 `409 revision_conflict` 以及服务器
@@ -79,6 +83,17 @@
 素材/生成任务引用与世界坐标，并使用独立于项目元数据的 `revision`。`PUT` 必须携带
 `expected_revision`；冲突返回服务器画布快照，Web 不会静默覆盖。图片/视频节点创建生成任务后
 保存任务 ID，任务完成时把结果素材回填到原节点。视口缩放和平移仍属于浏览器本地偏好。
+
+项目对话标题和所选模型使用独立会话 revision 做 CAS；Web 可按供应商浏览并切换当前已启用的
+`chat` 模型，生成期间禁止切换。发送准备与流式结算分别使用短事务，供应商网络等待不占用
+写事务。发送时自动读取最新画布，把项目标题、节点 ID、类型、标题、位置、素材元数据和受限文本
+上下文提供给助手，但不会暴露任何画布写入工具。只有已完成轮次进入后续上下文。系统自动选择首个
+已启用的 `chat` 模型；附图时要求模型同时支持 `vision`，原模型失效会自动回退并通过 SSE `start`
+事件提示。项目对话图片最多 5 张，单张最多 8 MiB，仅支持 JPEG、PNG、WebP 与 GIF；被消息引用的
+素材返回 `409 asset_in_use`，必须先删除对应对话。SSE 使用 v2 `start / delta / done / error` 包络。
+调用日志来源为 `visual_workshop_assistant`，记录系统指令、脱敏后的文本消息链、消息数量、画布摘要、
+素材 ID 和文本回复，便于按角色检查实际模型上下文；附件只记录 MIME 与大小，不保存图片 Base64、
+临时链接、磁盘路径、密钥或供应商原始事件。
 
 ## 图片与视频生成
 
@@ -94,9 +109,12 @@ MIME 与文件签名校验并原子写入项目素材后才进入 `completed`。
 `can_retry_materialization=true` 的失败任务才能安全重试本地保存。任务与日志不保存 API Key、
 Data URI 或素材内容。
 
-图片任务可携带一张项目图片作为参考。视频支持纯文本、首尾帧或参考素材三种互斥模式；时长
-4–15 秒，参考模式最多 9 张项目图片、3 个音频 HTTPS URL 和 3 个视频 HTTPS URL，且不能仅
-提供音频。视觉模型不进入模型服务页的固定 `OK` 快速诊断，但可在模型测试页执行真实生成测试。
+图片任务可携带一张项目图片作为参考。视频界面提供文生视频、图生视频、首尾帧和全能参考；API
+以纯文本、首尾帧或参考素材三种互斥模式表达，其中图生视频使用只有首帧的首尾帧模式。时长
+4–15 秒，参考模式最多 9 张项目图片、3 个音频素材 ID 和 3 个视频素材 ID，且不能仅提供音频。
+图片以 Data URI 发送；音频和视频由后端临时托管后再提交，临时 URL 不进入任务快照或日志。
+执行器仍兼容升级前已排队任务中的旧 URL 字段。视觉模型不进入模型服务页的固定 `OK` 快速诊断，
+但可在模型测试页执行真实生成测试。
 
 ## 文件管理与项目素材
 

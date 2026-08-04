@@ -49,8 +49,12 @@ import {
   type ModelTestMessage,
 } from "@features/models/api";
 import { fetchApiBlob } from "@platform/api/client";
-import { CustomSelect, type SelectOption } from "@shared/ui/CustomSelect";
+import type { SelectOption } from "@shared/ui/CustomSelect";
 import { ModelGenerationTestPanel } from "@features/models/ModelGenerationTestPanel";
+import {
+  ModelTestWorkspaceHeader,
+  type ModelTestMode,
+} from "@features/models/ModelTestWorkspaceHeader";
 
 const MAX_ATTACHMENTS = 5;
 const MAX_ATTACHMENT_BYTES = 8 * 1024 * 1024;
@@ -399,6 +403,9 @@ export function ModelTestPage() {
   const [generationModelId, setGenerationModelId] = useState<string | null>(
     null,
   );
+  const lastGenerationModelByMode = useRef<
+    Partial<Record<"image" | "video", string>>
+  >({});
   const abortRef = useRef<AbortController | null>(null);
   const activeMessageIdRef = useRef<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -710,17 +717,14 @@ export function ModelTestPage() {
       completedAssistantTurns.has(message.turn_id) &&
       Boolean(message.attachments?.length),
   );
-  const modelOptions: SelectOption[] = availableModels.length
-    ? availableModels.map((model) => {
+  const modelOptions: SelectOption[] = textModels.length
+    ? textModels.map((model) => {
         const supportsVision = model.capabilities.includes("vision");
-        const isTextModel = ["openai", "anthropic"].includes(
-          model.providerKind,
-        );
         return {
           value: model.value,
           label: model.label,
           description: `${model.description}${supportsVision ? " · 支持图片" : ""}`,
-          disabled: isTextModel && hasCompletedImageContext && !supportsVision,
+          disabled: hasCompletedImageContext && !supportsVision,
         };
       })
     : [{ value: "", label: "暂无可用模型", disabled: true }];
@@ -748,6 +752,34 @@ export function ModelTestPage() {
   const generationModel = availableModels.find(
     (model) => model.value === generationModelId,
   );
+  const availableModes: Record<ModelTestMode, boolean> = {
+    chat: Boolean(textModels.length),
+    image: availableModels.some(
+      (model) => model.providerKind === "senseaudio_image",
+    ),
+    video: availableModels.some(
+      (model) => model.providerKind === "senseaudio_video",
+    ),
+    audio: false,
+  };
+  const selectMode = (mode: ModelTestMode) => {
+    if (mode === "chat") {
+      setGenerationModelId(null);
+      return;
+    }
+    if (mode === "audio") return;
+    const providerKind =
+      mode === "image" ? "senseaudio_image" : "senseaudio_video";
+    const candidates = availableModels.filter(
+      (model) => model.providerKind === providerKind,
+    );
+    const remembered = lastGenerationModelByMode.current[mode];
+    const next =
+      candidates.find((model) => model.value === remembered) ?? candidates[0];
+    if (!next) return;
+    lastGenerationModelByMode.current[mode] = next.value;
+    setGenerationModelId(next.value);
+  };
   if (
     generationModel &&
     ["senseaudio_image", "senseaudio_video"].includes(
@@ -758,18 +790,18 @@ export function ModelTestPage() {
       <ModelGenerationTestPanel
         models={availableModels}
         modelId={generationModel.value}
+        onSelectMode={selectMode}
         onSelectModel={(modelId) => {
           const next = availableModels.find((model) => model.value === modelId);
           if (!next) return;
           if (
             ["senseaudio_image", "senseaudio_video"].includes(next.providerKind)
           ) {
+            const mode =
+              next.providerKind === "senseaudio_image" ? "image" : "video";
+            lastGenerationModelByMode.current[mode] = next.value;
             setGenerationModelId(next.value);
-            return;
           }
-          setGenerationModelId(null);
-          if (conversation) void patch({ model_id: next.value });
-          else createMutation.mutate(next.value);
         }}
       />
     );
@@ -777,23 +809,31 @@ export function ModelTestPage() {
 
   return (
     <section className="model-test-page">
-      <header className="playground-header">
-        <div>
-          <h1>模型测试</h1>
-          <p>通过多轮对话测试模型连通性与回复效果。</p>
-        </div>
-        <div className="mobile-panel-actions">
-          <button
-            className="btn"
-            onClick={() => setMobilePanel("conversations")}
-          >
-            对话
-          </button>
-          <button className="btn" onClick={() => setMobilePanel("settings")}>
-            参数
-          </button>
-        </div>
-      </header>
+      <ModelTestWorkspaceHeader
+        activeMode="chat"
+        availableModes={availableModes}
+        onSelectMode={selectMode}
+        modelId={conversation?.model_id ?? textModels[0]?.value ?? ""}
+        modelOptions={modelOptions}
+        modelDisabled={Boolean(streamingId) || uploadingAttachments}
+        onSelectModel={(model_id) => {
+          if (conversation) void patch({ model_id });
+          else createMutation.mutate(model_id);
+        }}
+        actions={
+          <div className="mobile-panel-actions">
+            <button
+              className="btn"
+              onClick={() => setMobilePanel("conversations")}
+            >
+              对话
+            </button>
+            <button className="btn" onClick={() => setMobilePanel("settings")}>
+              参数
+            </button>
+          </div>
+        }
+      />
       {error ? (
         <div className="inline-alert danger playground-alert" role="alert">
           {error}
@@ -1087,30 +1127,6 @@ export function ModelTestPage() {
           </div>
           {conversation ? (
             <div className="settings-form">
-              <label className="parameter-field">
-                <span className="parameter-label">模型</span>
-                <CustomSelect
-                  ariaLabel="测试模型"
-                  value={conversation.model_id ?? ""}
-                  options={modelOptions}
-                  disabled={Boolean(streamingId) || uploadingAttachments}
-                  onChange={(model_id) => {
-                    const next = availableModels.find(
-                      (model) => model.value === model_id,
-                    );
-                    if (
-                      next &&
-                      ["senseaudio_image", "senseaudio_video"].includes(
-                        next.providerKind,
-                      )
-                    ) {
-                      setGenerationModelId(next.value);
-                      return;
-                    }
-                    void patch({ model_id });
-                  }}
-                />
-              </label>
               <label className="parameter-field">
                 <span className="parameter-label">
                   系统提示词 <em className="optional-badge">可选</em>

@@ -11,9 +11,159 @@ test("enters the visual workshop, persists projects, and supports deep navigatio
     revision: 0,
     updated_at: "2026-08-03T08:00:00Z",
   };
+  let assistantConversation: Record<string, unknown> | undefined;
   await page.route("**/v1/visual-workshop/projects**", async (route) => {
     const request = route.request();
     const url = new URL(request.url());
+    if (url.pathname.includes("/conversations")) {
+      if (url.pathname.endsWith("/conversations/models")) {
+        await route.fulfill({
+          contentType: "application/json",
+          body: JSON.stringify({
+            items: [
+              {
+                id: "e2e-chat-model",
+                provider_id: "e2e-openai",
+                provider_name: "OpenAI 兼容网关",
+                slug: "e2e-chat-model",
+                label: "E2E Chat",
+                description: "确定性文本模型",
+                capabilities: ["chat", "tools"],
+              },
+              {
+                id: "e2e-vision-model",
+                provider_id: "e2e-anthropic",
+                provider_name: "Anthropic",
+                slug: "e2e-vision-model",
+                label: "E2E Vision",
+                description: "确定性视觉模型",
+                capabilities: ["chat", "vision"],
+              },
+            ],
+          }),
+        });
+        return;
+      }
+      if (url.pathname.endsWith("/messages/stream")) {
+        const body = request.postDataJSON() as { content: string };
+        assistantConversation = {
+          ...assistantConversation,
+          title: body.content.slice(0, 24),
+          revision: 2,
+          updated_at: "2026-08-03T08:01:10Z",
+          messages: [
+            {
+              id: "e2e-user-message",
+              turn_id: "e2e-turn",
+              role: "user",
+              content: body.content,
+              model_slug: "",
+              status: "completed",
+              error_message: null,
+              created_at: "2026-08-03T08:01:00Z",
+              assets: [],
+            },
+            {
+              id: "e2e-assistant-message",
+              turn_id: "e2e-turn",
+              role: "assistant",
+              content: "E2E 助手建议：先完善主视觉，再统一素材色调。",
+              model_slug: "e2e-chat-model",
+              status: "completed",
+              error_message: null,
+              created_at: "2026-08-03T08:01:01Z",
+              assets: [],
+            },
+          ],
+        };
+        const events = [
+          {
+            type: "start",
+            schema_version: 2,
+            sequence: 0,
+            payload: {
+              assistant_message_id: "e2e-assistant-message",
+              model: String(
+                assistantConversation?.model_slug || "e2e-chat-model",
+              ),
+              model_changed_from: null,
+              revision: 1,
+            },
+          },
+          {
+            type: "delta",
+            schema_version: 2,
+            sequence: 1,
+            payload: { text: "E2E 助手建议：先完善主视觉，再统一素材色调。" },
+          },
+          {
+            type: "done",
+            schema_version: 2,
+            sequence: 2,
+            payload: { revision: 2 },
+          },
+        ];
+        await route.fulfill({
+          contentType: "text/event-stream",
+          body: events
+            .map((event) => `data: ${JSON.stringify(event)}\n\n`)
+            .join(""),
+        });
+        return;
+      }
+      if (url.pathname.endsWith("/conversations")) {
+        if (request.method() === "POST") {
+          assistantConversation = {
+            id: "e2e-conversation",
+            project_id: "e2e-project",
+            title: "AI 助手对话",
+            model_id: null,
+            model_slug: "",
+            revision: 0,
+            created_at: "2026-08-03T08:00:30Z",
+            updated_at: "2026-08-03T08:00:30Z",
+            messages: [],
+          };
+          await route.fulfill({
+            contentType: "application/json",
+            body: JSON.stringify(assistantConversation),
+          });
+          return;
+        }
+        const summary = Object.fromEntries(
+          Object.entries(assistantConversation ?? {}).filter(
+            ([key]) => key !== "messages",
+          ),
+        );
+        await route.fulfill({
+          contentType: "application/json",
+          body: JSON.stringify({
+            items: assistantConversation ? [summary] : [],
+          }),
+        });
+        return;
+      }
+      if (request.method() === "PATCH" && assistantConversation) {
+        const body = request.postDataJSON() as { model_id?: string | null };
+        assistantConversation = {
+          ...assistantConversation,
+          model_id: body.model_id,
+          model_slug:
+            body.model_id === "e2e-vision-model" ? "e2e-vision-model" : "",
+          revision: Number(assistantConversation.revision) + 1,
+        };
+        await route.fulfill({
+          contentType: "application/json",
+          body: JSON.stringify(assistantConversation),
+        });
+        return;
+      }
+      await route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify(assistantConversation),
+      });
+      return;
+    }
     if (url.pathname.endsWith("/canvas")) {
       if (request.method() === "PUT") {
         const body = request.postDataJSON() as {
@@ -226,6 +376,33 @@ test("enters the visual workshop, persists projects, and supports deep navigatio
   await page.getByPlaceholder("描述要生成的画面…").fill("E2E 未来城市海报");
   await page.getByRole("button", { name: "创建生成任务" }).click();
   await expect(page.getByText(/任务已提交/)).toBeVisible();
+
+  await page.getByRole("button", { name: "对话" }).click();
+  const assistantPanel = page.locator(".project-assistant-panel");
+  await expect(assistantPanel).toHaveClass(/is-open/);
+  await expect(assistantPanel).toHaveCSS("width", "418px");
+  await page.getByRole("button", { name: "选择模型" }).click();
+  await expect(
+    page.getByRole("dialog", { name: "选择对话模型" }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: /Anthropic/ }).click();
+  await page.getByRole("button", { name: /E2E Vision/ }).click();
+  await expect(page.getByRole("dialog", { name: "选择对话模型" })).toHaveCount(
+    0,
+  );
+  await page.getByRole("button", { name: "总结当前画布内容" }).click();
+  await expect(
+    page.getByPlaceholder("输入创意想法，询问当前画布…"),
+  ).toHaveValue("总结当前画布内容");
+  await page.getByRole("button", { name: "发送" }).click();
+  await expect(page.getByText(/E2E 助手建议/)).toBeVisible();
+
+  await page.setViewportSize({ width: 700, height: 800 });
+  await expect(assistantPanel).toHaveCSS("left", "10px");
+  await expect(assistantPanel).toHaveCSS("right", "10px");
+  await page.getByRole("button", { name: "收起对话" }).click();
+  await expect(assistantPanel).not.toHaveClass(/is-open/);
+  await page.setViewportSize({ width: 1440, height: 900 });
 
   await page.getByRole("button", { name: "返回项目列表" }).click();
   await expect(page).toHaveURL(/\/apps\/visual-workshop$/);

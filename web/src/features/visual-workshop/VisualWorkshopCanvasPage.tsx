@@ -10,12 +10,14 @@ import {
   Hand,
   Image,
   Maximize,
+  MessageSquareText,
   Minimize,
   Minus,
   MousePointer2,
   Music,
   Pencil,
   Plus,
+  RefreshCw,
   Save,
   Trash2,
   Type,
@@ -26,6 +28,7 @@ import {
 import { uploadManagedFile } from "@features/files/api";
 import { AssetBrowser } from "@features/files/AssetBrowser";
 import { CanvasNodeInspector } from "@features/visual-workshop/CanvasNodeInspector";
+import { ProjectAssistantPanel } from "@features/visual-workshop/ProjectAssistantPanel";
 import {
   getVisualCanvas,
   getVisualWorkshopProject,
@@ -35,6 +38,7 @@ import {
   type VisualCanvasNode,
 } from "@features/visual-workshop/api";
 import { ApiError, fetchApiBlob } from "@platform/api/client";
+import { ThemeToggle } from "@shared/ui/ThemeToggle";
 import "@features/visual-workshop/visual-workshop.css";
 
 type Viewport = { x: number; y: number; zoom: number };
@@ -51,9 +55,22 @@ const DEFAULT_VIEWPORT: Viewport = { x: 0, y: 0, zoom: 1 };
 const NODE_SIZE: Record<NodeKind, { width: number; height: number }> = {
   text: { width: 300, height: 180 },
   image: { width: 320, height: 230 },
-  video: { width: 340, height: 235 },
+  video: { width: 480, height: 304 },
   audio: { width: 320, height: 150 },
 };
+const NODE_DRAG_BLOCKER_SELECTOR = [
+  "a",
+  "button",
+  "input",
+  "textarea",
+  "select",
+  "video",
+  "audio",
+  "[contenteditable='true']",
+  ".canvas-node-port",
+  ".canvas-node-inspector",
+  ".project-assistant-panel",
+].join(",");
 
 function readViewport(projectId: string): Viewport {
   try {
@@ -123,7 +140,8 @@ function CanvasMediaPreview({ node }: { node: MediaNode }) {
     };
   }, [node.asset_id]);
 
-  if (url && node.kind === "image") return <img src={url} alt="" />;
+  if (url && node.kind === "image")
+    return <img src={url} alt="" draggable={false} />;
   if (url && node.kind === "video") return <video src={url} controls />;
   if (url && node.kind === "audio") return <audio src={url} controls />;
   const Icon =
@@ -155,7 +173,15 @@ export function VisualWorkshopCanvasPage({
     { x: number; y: number; originX: number; originY: number } | undefined
   >(undefined);
   const nodeDrag = useRef<
-    | { id: string; x: number; y: number; originX: number; originY: number }
+    | {
+        id: string;
+        kind: VisualCanvasNode["kind"];
+        x: number;
+        y: number;
+        originX: number;
+        originY: number;
+        moved: boolean;
+      }
     | undefined
   >(undefined);
   const revisionRef = useRef(0);
@@ -169,8 +195,12 @@ export function VisualWorkshopCanvasPage({
   const [viewport, setViewport] = useState(() => readViewport(projectId));
   const [nodes, setNodes] = useState<VisualCanvasNode[]>([]);
   const [selectedId, setSelectedId] = useState<string>();
+  const [videoEditorTab, setVideoEditorTab] = useState<"content" | "generate">(
+    "generate",
+  );
   const [contextMenu, setContextMenu] = useState<ContextMenuState>();
   const [assetsOpen, setAssetsOpen] = useState(false);
+  const [assistantOpen, setAssistantOpen] = useState(false);
   const [assetTab, setAssetTab] = useState<"project" | "library">("project");
   const [editingTitle, setEditingTitle] = useState(false);
   const [title, setTitle] = useState("");
@@ -189,6 +219,7 @@ export function VisualWorkshopCanvasPage({
     queryKey: ["visual-workshop-canvas", projectId],
     queryFn: () => getVisualCanvas(projectId),
   });
+  const canvasReady = projectQuery.isSuccess && canvasQuery.isSuccess;
 
   useEffect(() => {
     if (projectQuery.data) setTitle(projectQuery.data.title);
@@ -290,6 +321,7 @@ export function VisualWorkshopCanvasPage({
   );
 
   useEffect(() => {
+    if (!canvasReady) return;
     const element = surface.current;
     if (!element) return;
     const handleWheel = (event: globalThis.WheelEvent) => {
@@ -330,7 +362,7 @@ export function VisualWorkshopCanvasPage({
       element.removeEventListener("gesturechange", preventGestureZoom);
       element.removeEventListener("gestureend", preventGestureZoom);
     };
-  }, []);
+  }, [canvasReady]);
 
   useEffect(() => {
     const sync = () => {
@@ -458,39 +490,83 @@ export function VisualWorkshopCanvasPage({
     },
     [replaceNodes],
   );
-  const fitView = useCallback(() => {
-    const bounds = surface.current?.getBoundingClientRect();
-    if (!bounds || !nodesRef.current.length) {
-      setViewport(DEFAULT_VIEWPORT);
-      return;
-    }
-    const padding = 120;
-    const minX = Math.min(...nodesRef.current.map((node) => node.position.x));
-    const minY = Math.min(...nodesRef.current.map((node) => node.position.y));
-    const maxX = Math.max(
-      ...nodesRef.current.map(
-        (node) => node.position.x + NODE_SIZE[node.kind].width,
-      ),
-    );
-    const maxY = Math.max(
-      ...nodesRef.current.map(
-        (node) => node.position.y + NODE_SIZE[node.kind].height,
-      ),
-    );
-    const zoom = clampZoom(
-      Math.min(
-        1.4,
-        (bounds.width - padding * 2) / Math.max(1, maxX - minX),
-        (bounds.height - padding * 2) / Math.max(1, maxY - minY),
-      ),
-    );
-    setViewport({
-      zoom,
-      x: bounds.width / 2 - ((minX + maxX) / 2) * zoom,
-      y: bounds.height / 2 - ((minY + maxY) / 2) * zoom,
-    });
-    setContextMenu(undefined);
-  }, []);
+  const fitView = useCallback(
+    (expandedVideoId?: string) => {
+      const bounds = surface.current?.getBoundingClientRect();
+      if (!bounds || !nodesRef.current.length) {
+        setViewport(DEFAULT_VIEWPORT);
+        return;
+      }
+      const panel = surface.current?.parentElement?.querySelector<HTMLElement>(
+        ".canvas-node-inspector:not(.is-embedded), .canvas-assets-drawer, .project-assistant-panel.is-open",
+      );
+      const panelBounds = panel?.getBoundingClientRect();
+      let availableLeft = 0;
+      let availableRight = bounds.width;
+      if (panelBounds) {
+        if (panelBounds.left < bounds.left + bounds.width / 2) {
+          availableLeft = Math.min(
+            bounds.width,
+            Math.max(0, panelBounds.right - bounds.left + 24),
+          );
+        } else {
+          availableRight = Math.max(
+            0,
+            Math.min(bounds.width, panelBounds.left - bounds.left - 24),
+          );
+        }
+      }
+      const availableWidth = Math.max(1, availableRight - availableLeft);
+      const padding = 120;
+      const expandedId = expandedVideoId ?? selectedId;
+      const videoEditorWidth = 760;
+      const videoEditorHeight = 460;
+      const videoEditorGap = 22;
+      const minX = Math.min(
+        ...nodesRef.current.map((node) =>
+          node.kind === "video" && node.id === expandedId
+            ? node.position.x -
+              Math.max(0, (videoEditorWidth - NODE_SIZE.video.width) / 2)
+            : node.position.x,
+        ),
+      );
+      const minY = Math.min(...nodesRef.current.map((node) => node.position.y));
+      const maxX = Math.max(
+        ...nodesRef.current.map(
+          (node) =>
+            node.position.x +
+            NODE_SIZE[node.kind].width +
+            (node.kind === "video" && node.id === expandedId
+              ? Math.max(0, (videoEditorWidth - NODE_SIZE.video.width) / 2)
+              : 0),
+        ),
+      );
+      const maxY = Math.max(
+        ...nodesRef.current.map(
+          (node) =>
+            node.position.y +
+            NODE_SIZE[node.kind].height +
+            (node.kind === "video" && node.id === expandedId
+              ? videoEditorGap + videoEditorHeight
+              : 0),
+        ),
+      );
+      const zoom = clampZoom(
+        Math.min(
+          1.4,
+          (availableWidth - padding * 2) / Math.max(1, maxX - minX),
+          (bounds.height - padding * 2) / Math.max(1, maxY - minY),
+        ),
+      );
+      setViewport({
+        zoom,
+        x: availableLeft + availableWidth / 2 - ((minX + maxX) / 2) * zoom,
+        y: bounds.height / 2 - ((minY + maxY) / 2) * zoom,
+      });
+      setContextMenu(undefined);
+    },
+    [selectedId],
+  );
 
   useEffect(() => {
     const handleKeys = (event: KeyboardEvent) => {
@@ -535,11 +611,14 @@ export function VisualWorkshopCanvasPage({
   };
   const onSurfacePointerMove = (event: PointerEvent<HTMLDivElement>) => {
     lastPointer.current = screenToWorld(event.clientX, event.clientY);
-    if (!pan.current) return;
+    const activePan = pan.current;
+    if (!activePan) return;
+    const nextX = activePan.originX + event.clientX - activePan.x;
+    const nextY = activePan.originY + event.clientY - activePan.y;
     setViewport((current) => ({
       ...current,
-      x: pan.current!.originX + event.clientX - pan.current!.x,
-      y: pan.current!.originY + event.clientY - pan.current!.y,
+      x: nextX,
+      y: nextY,
     }));
   };
   const stopPan = () => {
@@ -549,7 +628,13 @@ export function VisualWorkshopCanvasPage({
     event: PointerEvent<HTMLElement>,
     node: VisualCanvasNode,
   ) => {
-    if (event.button !== 0) return;
+    const target = event.target;
+    if (
+      event.button !== 0 ||
+      (target instanceof Element && target.closest(NODE_DRAG_BLOCKER_SELECTOR))
+    )
+      return;
+    event.preventDefault();
     event.stopPropagation();
     event.currentTarget.setPointerCapture(event.pointerId);
     setSelectedId(node.id);
@@ -557,15 +642,22 @@ export function VisualWorkshopCanvasPage({
     setContextMenu(undefined);
     nodeDrag.current = {
       id: node.id,
+      kind: node.kind,
       x: event.clientX,
       y: event.clientY,
       originX: node.position.x,
       originY: node.position.y,
+      moved: false,
     };
   };
   const moveNode = (event: PointerEvent<HTMLElement>) => {
     if (!nodeDrag.current) return;
     const current = nodeDrag.current;
+    if (
+      Math.abs(event.clientX - current.x) > 3 ||
+      Math.abs(event.clientY - current.y) > 3
+    )
+      current.moved = true;
     patchNode(current.id, {
       position: {
         x: current.originX + (event.clientX - current.x) / viewport.zoom,
@@ -575,9 +667,14 @@ export function VisualWorkshopCanvasPage({
   };
   const stopNodeDrag = () => {
     if (!nodeDrag.current) return;
+    const completed = nodeDrag.current;
     nodeDrag.current = undefined;
     if (autoSave.current) clearTimeout(autoSave.current);
     enqueueSave(nodesRef.current);
+    if (!completed.moved && completed.kind === "video") {
+      setVideoEditorTab("generate");
+      requestAnimationFrame(() => fitView(completed.id));
+    }
   };
   const openContextMenu = (event: React.MouseEvent<HTMLDivElement>) => {
     event.preventDefault();
@@ -639,7 +736,7 @@ export function VisualWorkshopCanvasPage({
   return (
     <div
       ref={root}
-      className={`visual-canvas${immersiveFallback ? " is-immersive" : ""}`}
+      className={`visual-canvas${immersiveFallback ? " is-immersive" : ""}${assistantOpen ? " has-assistant" : ""}`}
     >
       <header className="visual-canvas-topbar">
         <div className="canvas-project-identity">
@@ -691,6 +788,20 @@ export function VisualWorkshopCanvasPage({
           </span>
         </div>
         <div className="canvas-top-actions">
+          <ThemeToggle />
+          <button
+            className={
+              assistantOpen
+                ? "active canvas-assistant-trigger"
+                : "canvas-assistant-trigger"
+            }
+            aria-label="对话"
+            aria-expanded={assistantOpen}
+            onClick={() => setAssistantOpen((value) => !value)}
+          >
+            <MessageSquareText aria-hidden />
+            对话
+          </button>
           <button
             aria-label={isFullscreen ? "退出全屏" : "进入全屏"}
             onClick={() => void toggleFullscreen()}
@@ -743,18 +854,23 @@ export function VisualWorkshopCanvasPage({
                 style={{ left: node.position.x, top: node.position.y }}
                 data-node-id={node.id}
                 key={node.id}
+                onPointerDown={(event) => startNodeDrag(event, node)}
+                onPointerMove={moveNode}
+                onPointerUp={stopNodeDrag}
+                onPointerCancel={stopNodeDrag}
                 onClick={(event) => {
                   event.stopPropagation();
                   setSelectedId(node.id);
                   setAssetsOpen(false);
+                  if (node.kind === "video" && selectedId !== node.id) {
+                    setVideoEditorTab("generate");
+                  }
                 }}
               >
-                <header
-                  onPointerDown={(event) => startNodeDrag(event, node)}
-                  onPointerMove={moveNode}
-                  onPointerUp={stopNodeDrag}
-                  onPointerCancel={stopNodeDrag}
-                >
+                <header>
+                  {node.kind === "video" ? (
+                    <Video className="canvas-node-kind-icon" aria-hidden />
+                  ) : null}
                   {selected ? (
                     <input
                       aria-label="节点标题"
@@ -772,6 +888,9 @@ export function VisualWorkshopCanvasPage({
                   ) : (
                     <strong>{node.title}</strong>
                   )}
+                  {!selected && node.kind === "video" ? (
+                    <Pencil className="canvas-node-title-edit" aria-hidden />
+                  ) : null}
                   {selected ? (
                     <span className="canvas-node-actions">
                       <button
@@ -817,8 +936,56 @@ export function VisualWorkshopCanvasPage({
                 ) : (
                   <div className="canvas-node-media">
                     <CanvasMediaPreview node={node} />
+                    {node.kind === "video" ? (
+                      <button
+                        type="button"
+                        className="canvas-video-replace"
+                        aria-label={
+                          node.asset_id ? "替换视频素材" : "选择视频素材"
+                        }
+                        onPointerDown={(event) => event.stopPropagation()}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          setSelectedId(node.id);
+                          setVideoEditorTab("content");
+                          setAssetsOpen(false);
+                          requestAnimationFrame(() => fitView(node.id));
+                        }}
+                      >
+                        <RefreshCw aria-hidden />
+                        {node.asset_id ? "替换" : "选择素材"}
+                      </button>
+                    ) : null}
                   </div>
                 )}
+                {node.kind === "video" ? (
+                  <>
+                    <span
+                      className="canvas-node-port is-input"
+                      aria-hidden="true"
+                    >
+                      <Plus />
+                    </span>
+                    <span
+                      className="canvas-node-port is-output"
+                      aria-hidden="true"
+                    >
+                      <Plus />
+                    </span>
+                  </>
+                ) : null}
+                {selected && node.kind === "video" ? (
+                  <CanvasNodeInspector
+                    embedded
+                    initialTab={videoEditorTab}
+                    projectId={projectId}
+                    node={node}
+                    onClose={() => setSelectedId(undefined)}
+                    onPatch={(patch, immediate) =>
+                      patchNode(node.id, patch, immediate)
+                    }
+                  />
+                ) : null}
               </article>
             );
           })}
@@ -900,7 +1067,7 @@ export function VisualWorkshopCanvasPage({
           >
             <Music aria-hidden /> 添加音频节点
           </button>
-          <button role="menuitem" onClick={fitView}>
+          <button role="menuitem" onClick={() => fitView()}>
             <Focus aria-hidden /> 适应屏幕
           </button>
           <i aria-hidden />
@@ -956,7 +1123,7 @@ export function VisualWorkshopCanvasPage({
           )}
         </aside>
       ) : null}
-      {selectedMedia ? (
+      {selectedMedia && selectedMedia.kind !== "video" ? (
         <CanvasNodeInspector
           projectId={projectId}
           node={selectedMedia}
@@ -966,6 +1133,11 @@ export function VisualWorkshopCanvasPage({
           }
         />
       ) : null}
+      <ProjectAssistantPanel
+        projectId={projectId}
+        open={assistantOpen}
+        onClose={() => setAssistantOpen(false)}
+      />
       {conflict ? (
         <div className="canvas-conflict" role="alert">
           <span>
@@ -1001,7 +1173,11 @@ export function VisualWorkshopCanvasPage({
         <div className="canvas-save-error">{saveMessage}</div>
       ) : null}
       <div
-        className={`canvas-controls${assetsOpen || selectedMedia ? " with-assets" : ""}`}
+        className={`canvas-controls${
+          assetsOpen || (selectedMedia && selectedMedia.kind !== "video")
+            ? " with-assets"
+            : ""
+        }`}
         aria-label="画布视图控制"
       >
         <div className="canvas-control-mode" aria-hidden>
@@ -1026,7 +1202,11 @@ export function VisualWorkshopCanvasPage({
           <Plus aria-hidden />
         </button>
         <i aria-hidden />
-        <button aria-label="适配视图" title="适配视图" onClick={fitView}>
+        <button
+          aria-label="适配视图"
+          title="适配视图"
+          onClick={() => fitView()}
+        >
           <Focus aria-hidden />
         </button>
       </div>

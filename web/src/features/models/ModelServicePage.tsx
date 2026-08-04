@@ -44,6 +44,13 @@ const capabilityLabel = {
   video_generation: "视频生成",
 } as const;
 
+function visibleCapabilities(model: ModelEntry) {
+  const categoryIds = new Set<string>(model.categories);
+  return model.capabilities.filter(
+    (capability) => !categoryIds.has(capability),
+  );
+}
+
 function ActionIcon({
   kind,
 }: {
@@ -641,7 +648,7 @@ export function ModelServicePage() {
                               )?.label ?? category}
                             </span>
                           ))}
-                          {model.capabilities.map((capability) => (
+                          {visibleCapabilities(model).map((capability) => (
                             <span key={capability}>
                               {capabilityLabel[capability]}
                             </span>

@@ -14,9 +14,9 @@ from app.models import (
     VisualGenerationTask,
 )
 from app.schemas.model_service import (
+    ModelCatalogOut,
     ModelCategoryListOut,
     ModelCategoryOut,
-    ModelCatalogOut,
     ModelEntryIn,
     ModelEntryOut,
     ProviderIn,

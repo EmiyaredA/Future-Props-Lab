@@ -1,5 +1,6 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Braces, Copy, X } from "lucide-react";
 import {
   batchDeleteLogs,
   deleteLog,
@@ -16,6 +17,249 @@ function formatNumber(value: number | null | undefined): string {
   return value == null ? "—" : new Intl.NumberFormat("zh-CN").format(value);
 }
 
+type JsonRecord = Record<string, unknown>;
+type TraceRole = "system" | "user" | "assistant" | "tool";
+
+type TraceMessage = {
+  id: string;
+  role: TraceRole;
+  label: string;
+  content: string;
+  attachments?: JsonRecord[];
+};
+
+const sourceLabels: Record<string, string> = {
+  model_diagnostic: "快速诊断",
+  model_playground: "模型测试",
+  visual_workshop_assistant: "视觉助手",
+  visual_workshop_generation: "视觉生成",
+};
+
+const providerLabels: Record<string, string> = {
+  openai: "OpenAI 兼容",
+  anthropic: "Anthropic",
+  senseaudio_image: "SenseAudio 图片",
+  senseaudio_video: "SenseAudio 视频",
+};
+
+const roleLabels: Record<TraceRole, string> = {
+  system: "系统指令",
+  user: "用户",
+  assistant: "助手",
+  tool: "工具",
+};
+
+function isRecord(value: unknown): value is JsonRecord {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function readableJson(value: unknown): string {
+  if (typeof value === "string") return value;
+  if (value == null) return "";
+  return JSON.stringify(value, null, 2);
+}
+
+function contentText(value: unknown): string {
+  if (!Array.isArray(value)) return readableJson(value);
+  return value
+    .map((part) => {
+      if (!isRecord(part)) return readableJson(part);
+      if (typeof part.text === "string") return part.text;
+      if (typeof part.content === "string") return part.content;
+      if (part.type === "image" || part.type === "image_url") return "[图片]";
+      return readableJson(part);
+    })
+    .filter(Boolean)
+    .join("\n");
+}
+
+function normalizeRole(value: unknown): TraceRole {
+  if (value === "system" || value === "user" || value === "assistant")
+    return value;
+  return "tool";
+}
+
+function toolMessages(value: unknown, prefix: string): TraceMessage[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter(isRecord).map((call, index) => {
+    const fn = isRecord(call.function) ? call.function : call;
+    const name = typeof fn.name === "string" ? fn.name : "未命名工具";
+    const args = fn.arguments ?? fn.input ?? call.arguments ?? call.input ?? {};
+    return {
+      id: `${prefix}-tool-${index}`,
+      role: "tool",
+      label: `工具调用 · ${name}`,
+      content: readableJson(args),
+    };
+  });
+}
+
+function parseMessage(value: unknown, id: string): TraceMessage[] {
+  if (!isRecord(value)) return [];
+  const role = normalizeRole(value.role);
+  const content = contentText(value.content ?? value.text ?? value.output);
+  const name = typeof value.name === "string" ? value.name : "";
+  const attachments = Array.isArray(value.attachments)
+    ? value.attachments.filter(isRecord)
+    : undefined;
+  const message =
+    content || attachments?.length
+      ? [
+          {
+            id,
+            role,
+            label: name ? `${roleLabels[role]} · ${name}` : roleLabels[role],
+            content,
+            attachments,
+          },
+        ]
+      : [];
+  return [...message, ...toolMessages(value.tool_calls, id)];
+}
+
+function traceMessages(
+  request: JsonRecord,
+  response: JsonRecord,
+): TraceMessage[] {
+  const result: TraceMessage[] = [];
+  const system = contentText(request.system ?? request.system_prompt);
+  if (system) {
+    result.push({
+      id: "system",
+      role: "system",
+      label: "系统指令",
+      content: system,
+    });
+  }
+  if (Array.isArray(request.messages)) {
+    request.messages.forEach((message, index) => {
+      result.push(...parseMessage(message, `request-${index}`));
+    });
+  } else {
+    const prompt = contentText(request.prompt ?? request.input);
+    if (prompt)
+      result.push({
+        id: "prompt",
+        role: "user",
+        label: "用户",
+        content: prompt,
+      });
+  }
+
+  const responseMessage = isRecord(response.message) ? response.message : null;
+  if (responseMessage)
+    result.push(...parseMessage(responseMessage, "response-message"));
+  const choices = Array.isArray(response.choices) ? response.choices : [];
+  choices.filter(isRecord).forEach((choice, index) => {
+    result.push(
+      ...parseMessage(
+        choice.message ?? choice.delta,
+        `response-choice-${index}`,
+      ),
+    );
+  });
+  if (!responseMessage && choices.length === 0) {
+    const content = contentText(
+      response.content ?? response.output ?? response.text,
+    );
+    if (content) {
+      result.push({
+        id: "response",
+        role: "assistant",
+        label: "助手",
+        content,
+      });
+    }
+    result.push(...toolMessages(response.tool_calls, "response"));
+  }
+  return result;
+}
+
+function approximateTokens(value: string): number {
+  if (!value) return 0;
+  let tokens = 0;
+  for (const character of value) {
+    tokens += /[\u3400-\u9fff]/.test(character) ? 1 : 0.25;
+  }
+  return Math.max(1, Math.ceil(tokens));
+}
+
+function copyText(value: string) {
+  return navigator.clipboard.writeText(value);
+}
+
+function CopyButton({
+  label,
+  value,
+  text = "",
+}: {
+  label: string;
+  value: string;
+  text?: string;
+}) {
+  return (
+    <button
+      type="button"
+      className={text ? "text-btn log-copy-text" : "log-copy-button"}
+      aria-label={label}
+      title={label}
+      onClick={() => void copyText(value)}
+    >
+      <Copy aria-hidden />
+      {text}
+    </button>
+  );
+}
+
+function MessageTrace({ messages }: { messages: TraceMessage[] }) {
+  return (
+    <section className="log-trace" aria-label="消息链">
+      <div className="log-section-heading">
+        <div>
+          <span className="log-section-kicker">PROMPT TRACE</span>
+          <h3>消息链</h3>
+        </div>
+        <span>{messages.length} 条消息</span>
+      </div>
+      <div className="trace-message-list">
+        {messages.map((message, index) => (
+          <article className={`trace-message ${message.role}`} key={message.id}>
+            <header>
+              <strong>{message.label}</strong>
+              <div>
+                <span>
+                  {Array.from(message.content).length.toLocaleString("zh-CN")}{" "}
+                  字符 · ≈
+                  {approximateTokens(message.content).toLocaleString("zh-CN")}{" "}
+                  Token
+                </span>
+                <CopyButton
+                  label={`复制第 ${index + 1} 条${message.label}消息`}
+                  value={message.content}
+                />
+              </div>
+            </header>
+            {message.content ? <pre>{message.content}</pre> : null}
+            {message.attachments?.length ? (
+              <div className="trace-attachments">
+                {message.attachments.map((attachment, attachmentIndex) => (
+                  <span key={`${message.id}-attachment-${attachmentIndex}`}>
+                    附件 {attachmentIndex + 1} ·{" "}
+                    {String(attachment.mime_type ?? "文件")}
+                    {typeof attachment.byte_size === "number"
+                      ? ` · ${formatNumber(attachment.byte_size)} B`
+                      : ""}
+                  </span>
+                ))}
+              </div>
+            ) : null}
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 function LogDetail({
   id,
   onClose,
@@ -30,6 +274,22 @@ function LogDetail({
     queryFn: () => getLog(id),
   });
   const log = query.data;
+  const messages = useMemo(
+    () => (log ? traceMessages(log.request_payload, log.response_payload) : []),
+    [log],
+  );
+  useEffect(() => {
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.body.style.overflow = previous;
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [onClose]);
   return (
     <div
       className="drawer-backdrop"
@@ -37,18 +297,31 @@ function LogDetail({
         if (event.target === event.currentTarget) onClose();
       }}
     >
-      <aside className="log-drawer">
+      <aside
+        className="log-drawer"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="log-detail-title"
+      >
         <div className="drawer-head">
           <div>
             <span className="eyebrow">CALL DETAIL</span>
-            <h2>调用详情</h2>
+            <h2 id="log-detail-title">调用详情</h2>
+            <div className="log-detail-id">
+              <code>{id}</code>
+              <CopyButton label="复制日志 ID" value={id} />
+            </div>
           </div>
-          <button className="icon-btn" onClick={onClose}>
-            ×
+          <button
+            className="icon-btn log-close-button"
+            aria-label="关闭调用详情"
+            onClick={onClose}
+          >
+            <X aria-hidden />
           </button>
         </div>
         {query.isLoading ? (
-          <p>加载中…</p>
+          <p className="log-detail-state">加载中…</p>
         ) : log ? (
           <div className="drawer-content">
             <dl className="detail-grid">
@@ -66,16 +339,12 @@ function LogDetail({
               </div>
               <div>
                 <dt>调用源</dt>
-                <dd>
-                  {log.call_source === "model_playground"
-                    ? "模型测试"
-                    : "快速诊断"}
-                </dd>
+                <dd>{sourceLabels[log.call_source] ?? log.call_source}</dd>
               </div>
               <div>
                 <dt>供应商</dt>
                 <dd>
-                  {log.provider_kind === "openai" ? "OpenAI 兼容" : "Anthropic"}
+                  {providerLabels[log.provider_kind] ?? log.provider_kind}
                 </dd>
               </div>
               <div>
@@ -83,10 +352,18 @@ function LogDetail({
                 <dd>{log.latency_ms} ms</dd>
               </div>
               <div>
-                <dt>Token</dt>
-                <dd>{formatNumber(log.total_tokens)}</dd>
+                <dt>输入 Token</dt>
+                <dd>{formatNumber(log.prompt_tokens)}</dd>
               </div>
               <div>
+                <dt>输出 Token</dt>
+                <dd>{formatNumber(log.completion_tokens)}</dd>
+              </div>
+              <div>
+                <dt>总 Token</dt>
+                <dd>{formatNumber(log.total_tokens)}</dd>
+              </div>
+              <div className="wide">
                 <dt>时间</dt>
                 <dd>{new Date(log.created_at).toLocaleString("zh-CN")}</dd>
               </div>
@@ -94,45 +371,47 @@ function LogDetail({
             {log.error_message ? (
               <div className="inline-alert danger">{log.error_message}</div>
             ) : null}
-            <section className="payload-card">
-              <div>
-                <h3>请求</h3>
-                <button
-                  className="text-btn"
-                  onClick={() =>
-                    void navigator.clipboard.writeText(
-                      JSON.stringify(log.request_payload, null, 2),
-                    )
-                  }
-                >
-                  复制
-                </button>
-              </div>
-              <pre>{JSON.stringify(log.request_payload, null, 2)}</pre>
-            </section>
-            <section className="payload-card">
-              <div>
-                <h3>响应</h3>
-                <button
-                  className="text-btn"
-                  onClick={() =>
-                    void navigator.clipboard.writeText(
-                      JSON.stringify(log.response_payload, null, 2),
-                    )
-                  }
-                >
-                  复制
-                </button>
-              </div>
-              <pre>{JSON.stringify(log.response_payload, null, 2)}</pre>
-            </section>
+            {messages.length ? <MessageTrace messages={messages} /> : null}
+            <details className="raw-payloads" open={!messages.length}>
+              <summary>
+                <span>
+                  <Braces aria-hidden /> 原始数据
+                </span>
+                <small>用于排查供应商响应与参数</small>
+              </summary>
+              <section className="payload-card">
+                <div>
+                  <h3>请求</h3>
+                  <CopyButton
+                    label="复制原始请求"
+                    value={JSON.stringify(log.request_payload, null, 2)}
+                    text="复制"
+                  />
+                </div>
+                <pre>{JSON.stringify(log.request_payload, null, 2)}</pre>
+              </section>
+              <section className="payload-card">
+                <div>
+                  <h3>响应</h3>
+                  <CopyButton
+                    label="复制原始响应"
+                    value={JSON.stringify(log.response_payload, null, 2)}
+                    text="复制"
+                  />
+                </div>
+                <pre>{JSON.stringify(log.response_payload, null, 2)}</pre>
+              </section>
+            </details>
             <section className="trace-card">
-              <span>Trace ID</span>
-              <code>{log.trace_id}</code>
+              <div>
+                <span>Trace ID</span>
+                <code>{log.trace_id}</code>
+              </div>
+              <CopyButton label="复制 Trace ID" value={log.trace_id} />
             </section>
           </div>
         ) : (
-          <p>日志不存在。</p>
+          <p className="log-detail-state">日志不存在。</p>
         )}
         <div className="drawer-footer">
           <button className="btn danger" onClick={() => onDelete(id)}>
@@ -241,7 +520,7 @@ export function ModelCallLogsPage() {
         <div>
           <span className="eyebrow">OBSERVABILITY</span>
           <h1>模型调用日志</h1>
-          <p>查看模型测试的请求、回复、Token 用量与耗时。</p>
+          <p>查看各类模型调用的消息链、Token 用量、耗时与原始数据。</p>
         </div>
       </header>
       <div className="stat-grid">
@@ -290,6 +569,7 @@ export function ModelCallLogsPage() {
                 { value: "", label: "全部调用源" },
                 { value: "model_diagnostic", label: "快速诊断" },
                 { value: "model_playground", label: "模型测试" },
+                { value: "visual_workshop_assistant", label: "视觉助手" },
               ]}
             />
             <CustomSelect
@@ -427,15 +707,11 @@ export function ModelCallLogsPage() {
                       </time>
                     </td>
                     <td>
-                      {row.provider_kind === "openai"
-                        ? "OpenAI 兼容"
-                        : "Anthropic"}
+                      {providerLabels[row.provider_kind] ?? row.provider_kind}
                     </td>
                     <td>
                       <span className="source-badge">
-                        {row.call_source === "model_playground"
-                          ? "模型测试"
-                          : "快速诊断"}
+                        {sourceLabels[row.call_source] ?? row.call_source}
                       </span>
                     </td>
                     <td>
@@ -474,7 +750,9 @@ export function ModelCallLogsPage() {
                   <td colSpan={9} className="table-empty">
                     <span>◇</span>
                     <strong>暂无调用日志</strong>
-                    <small>快速诊断与模型测试产生的结果会显示在这里。</small>
+                    <small>
+                      快速诊断、模型测试与视觉助手产生的结果会显示在这里。
+                    </small>
                   </td>
                 </tr>
               )}
