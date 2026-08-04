@@ -76,6 +76,7 @@ export function CanvasNodeInspector({
   node,
   onClose,
   onPatch,
+  onPrepareCanvas,
   embedded = false,
   initialTab,
 }: {
@@ -83,6 +84,7 @@ export function CanvasNodeInspector({
   node: MediaNode;
   onClose: () => void;
   onPatch: (patch: Partial<MediaNode>, immediate?: boolean) => void;
+  onPrepareCanvas?: () => Promise<number>;
   embedded?: boolean;
   initialTab?: "content" | "generate";
 }) {
@@ -188,7 +190,17 @@ export function CanvasNodeInspector({
           compact
           projectId={projectId}
           lockedKind={node.kind}
+          draft={node.generation_draft}
           onClose={isAttachedComposer ? onClose : () => setTab("content")}
+          onDraftChange={(generationDraft, immediate) =>
+            onPatch(
+              { generation_draft: generationDraft } as Partial<MediaNode>,
+              immediate,
+            )
+          }
+          onBeforeSubmit={async () => {
+            await onPrepareCanvas?.();
+          }}
           onTaskCreated={(created) =>
             onPatch({ generation_task_id: created.id, asset_id: null }, true)
           }

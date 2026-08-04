@@ -87,6 +87,47 @@ class VisualCanvasPosition(BaseModel):
     y: float = Field(ge=-1_000_000, le=1_000_000)
 
 
+class VisualCanvasImageGenerationDraft(BaseModel):
+    model_id: str | None = None
+    prompt: str = Field(default="", max_length=6000)
+    size: str = Field(default="1024x1024", min_length=1, max_length=32)
+    seed: int | None = Field(default=None, ge=0)
+    image_count: int = Field(default=1, ge=1, le=4)
+    reference_asset_id: str | None = None
+
+
+class VisualCanvasVideoGenerationDraft(BaseModel):
+    model_id: str | None = None
+    prompt: str = Field(default="", max_length=6000)
+    mode: Literal["text", "image", "frames", "reference"] = "text"
+    duration: int = Field(default=5, ge=4, le=15)
+    resolution: Literal["480p", "720p", "1080p"] = "720p"
+    ratio: Literal["16:9", "9:16", "4:3", "3:4", "1:1"] = "16:9"
+    watermark: bool = True
+    generate_audio: bool = False
+    first_frame_asset_id: str | None = None
+    last_frame_asset_id: str | None = None
+    reference_asset_ids: list[str] = Field(default_factory=list, max_length=9)
+    audio_asset_ids: list[str] = Field(default_factory=list, max_length=3)
+    video_asset_ids: list[str] = Field(default_factory=list, max_length=3)
+
+    @model_validator(mode="after")
+    def references_are_unique(self) -> VisualCanvasVideoGenerationDraft:
+        for values in (
+            self.reference_asset_ids,
+            self.audio_asset_ids,
+            self.video_asset_ids,
+        ):
+            if len(values) != len(set(values)):
+                raise ValueError("同类参考素材不能重复")
+        if (
+            self.first_frame_asset_id is not None
+            and self.first_frame_asset_id == self.last_frame_asset_id
+        ):
+            raise ValueError("首帧和尾帧不能使用同一素材")
+        return self
+
+
 class VisualCanvasNodeBase(BaseModel):
     id: str = Field(min_length=1, max_length=64)
     title: str = Field(min_length=1, max_length=120)
@@ -110,12 +151,14 @@ class VisualCanvasImageNode(VisualCanvasNodeBase):
     kind: Literal["image"]
     asset_id: str | None = None
     generation_task_id: str | None = None
+    generation_draft: VisualCanvasImageGenerationDraft | None = None
 
 
 class VisualCanvasVideoNode(VisualCanvasNodeBase):
     kind: Literal["video"]
     asset_id: str | None = None
     generation_task_id: str | None = None
+    generation_draft: VisualCanvasVideoGenerationDraft | None = None
 
 
 class VisualCanvasAudioNode(VisualCanvasNodeBase):

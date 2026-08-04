@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef, type ReactNode } from "react";
 import { TriangleAlert, X } from "lucide-react";
 import { createPortal } from "react-dom";
+import "@shared/ui/confirm-dialog.css";
 
 export function ConfirmDialog({
   open,

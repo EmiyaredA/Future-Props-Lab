@@ -482,13 +482,47 @@ test("enters the visual workshop, persists projects, and supports deep navigatio
   await promptEditor.press("Backspace");
   await promptEditor.type("E2E 未来城市海报");
   await expect(promptEditor).toContainText("E2E 未来城市海报");
+  await page.getByRole("button", { name: "图片参数" }).click();
+  await page.getByRole("spinbutton", { name: /种子/ }).fill("42");
+  await page.getByRole("button", { name: "生成数量" }).click();
+  await page.getByRole("option", { name: "×3" }).click();
   await page.getByRole("button", { name: "生成图片" }).click();
-  await expect(page.getByText(/任务已提交/)).toBeVisible();
+  await expect(page.getByText(/已提交 3 个生成任务/)).toBeVisible();
+  await expect(page.locator(".canvas-save-state")).toContainText("已保存");
+
+  await page.reload();
+  await expect(page.getByText("图片1")).toBeVisible();
+  await page.getByText("图片1").click();
+  const restoredPrompt = page.getByRole("textbox", { name: "图片提示词" });
+  await expect(restoredPrompt).toContainText("E2E 未来城市海报");
+  await expect(
+    page.getByRole("button", { name: "E2E 参考图.png" }),
+  ).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByRole("button", { name: "生成数量" })).toContainText(
+    "×3",
+  );
+  await page.getByRole("button", { name: "图片参数" }).click();
+  await expect(page.getByRole("spinbutton", { name: /种子/ })).toHaveValue(
+    "42",
+  );
 
   await page.getByRole("button", { name: "对话" }).click();
   const assistantPanel = page.locator(".project-assistant-panel");
   await expect(assistantPanel).toHaveClass(/is-open/);
   await expect(assistantPanel).toHaveCSS("width", "418px");
+  await page.getByRole("button", { name: "历史对话" }).click();
+  await page.getByRole("button", { name: "删除对话 AI 助手对话" }).click();
+  const deleteDialog = page.getByRole("alertdialog", {
+    name: "删除助手对话",
+  });
+  await expect(deleteDialog).toBeVisible();
+  await expect(page.locator(".confirm-dialog-backdrop")).toHaveCSS(
+    "position",
+    "fixed",
+  );
+  await expect(deleteDialog).toHaveCSS("width", "440px");
+  await deleteDialog.getByRole("button", { name: "取消" }).click();
+  await page.getByRole("button", { name: "历史对话" }).click();
   await page.getByRole("button", { name: "选择模型" }).click();
   await expect(
     page.getByRole("dialog", { name: "配置 Agent 模型" }),

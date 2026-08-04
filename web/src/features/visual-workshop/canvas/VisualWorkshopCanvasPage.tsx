@@ -923,6 +923,7 @@ export function VisualWorkshopCanvasPage({
                     projectId={projectId}
                     node={node}
                     onClose={() => setSelectedId(undefined)}
+                    onPrepareCanvas={prepareCanvasForAgent}
                     onPatch={(patch, immediate) =>
                       patchNode(node.id, patch, immediate)
                     }

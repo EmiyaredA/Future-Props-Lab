@@ -24,11 +24,11 @@ import {
   Film,
   History,
   LoaderCircle,
-  Maximize2,
   MessageSquareText,
   Music,
   Image as ImageIcon,
   Paperclip,
+  PanelRightClose,
   Pencil,
   Plus,
   RefreshCw,
@@ -1938,7 +1938,7 @@ export function ProjectAssistantPanel({
               onClose();
             }}
           >
-            <Maximize2 aria-hidden />
+            <PanelRightClose aria-hidden />
           </button>
         </div>
       </header>

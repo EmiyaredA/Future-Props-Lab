@@ -306,6 +306,186 @@ async def test_file_management_rejects_invalid_content_and_scope() -> None:
 
 
 @pytest.mark.asyncio
+async def test_canvas_generation_drafts_round_trip_validate_and_tolerate_stale_assets() -> None:
+    transport = httpx.ASGITransport(app=app)
+    async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+        project = (
+            await client.post(
+                "/v1/visual-workshop/projects",
+                json={"title": "节点生成草稿", "kind": "canvas"},
+            )
+        ).json()
+
+        async def upload(name: str, content: bytes, mime_type: str) -> dict:
+            response = await client.post(
+                "/v1/files",
+                data={"project_id": project["id"]},
+                files={"upload": (name, content, mime_type)},
+            )
+            assert response.status_code == 200, response.text
+            return response.json()
+
+        image = await upload(
+            "draft.png",
+            b"\x89PNG\r\n\x1a\n" + b"draft-image",
+            "image/png",
+        )
+        video = await upload(
+            "draft.mp4",
+            b"\x00\x00\x00\x18ftypisom" + b"draft-video",
+            "video/mp4",
+        )
+        audio = await upload("draft.mp3", b"ID3draft-audio", "audio/mpeg")
+        nodes = [
+            {
+                "id": "image-1",
+                "kind": "image",
+                "title": "图片1",
+                "position": {"x": 20, "y": 30},
+                "generation_draft": {
+                    "model_id": "image-model",
+                    "prompt": "电影感主视觉",
+                    "size": "1536x864",
+                    "seed": 42,
+                    "image_count": 3,
+                    "reference_asset_id": image["id"],
+                },
+            },
+            {
+                "id": "video-1",
+                "kind": "video",
+                "title": "视频1",
+                "position": {"x": 220, "y": 30},
+                "generation_draft": {
+                    "model_id": "video-model",
+                    "prompt": "镜头缓慢推进",
+                    "mode": "reference",
+                    "duration": 8,
+                    "resolution": "1080p",
+                    "ratio": "9:16",
+                    "watermark": False,
+                    "generate_audio": True,
+                    "first_frame_asset_id": image["id"],
+                    "last_frame_asset_id": None,
+                    "reference_asset_ids": [image["id"]],
+                    "audio_asset_ids": [audio["id"]],
+                    "video_asset_ids": [video["id"]],
+                },
+            },
+        ]
+        saved = await client.put(
+            f"/v1/visual-workshop/projects/{project['id']}/canvas",
+            json={"expected_revision": 0, "nodes": nodes},
+        )
+        assert saved.status_code == 200, saved.text
+        assert saved.json()["nodes"][0]["generation_draft"]["image_count"] == 3
+        assert saved.json()["nodes"][1]["generation_draft"] == nodes[1]["generation_draft"]
+
+        structured_nodes = saved.json()["nodes"]
+        duplicate = [dict(node) for node in structured_nodes]
+        duplicate[1] = {
+            **duplicate[1],
+            "generation_draft": {
+                **duplicate[1]["generation_draft"],
+                "video_asset_ids": [video["id"], video["id"]],
+            },
+        }
+        assert (
+            await client.put(
+                f"/v1/visual-workshop/projects/{project['id']}/canvas",
+                json={"expected_revision": 1, "nodes": duplicate},
+            )
+        ).status_code == 422
+
+        wrong_kind = [dict(node) for node in structured_nodes]
+        wrong_kind[1] = {
+            **wrong_kind[1],
+            "generation_draft": {
+                **wrong_kind[1]["generation_draft"],
+                "reference_asset_ids": [audio["id"]],
+            },
+        }
+        wrong_kind_response = await client.put(
+            f"/v1/visual-workshop/projects/{project['id']}/canvas",
+            json={"expected_revision": 1, "nodes": wrong_kind},
+        )
+        assert wrong_kind_response.status_code == 422
+        assert wrong_kind_response.json()["code"] == "asset_kind_mismatch"
+
+        invalid_range = [dict(node) for node in structured_nodes]
+        invalid_range[1] = {
+            **invalid_range[1],
+            "generation_draft": {
+                **invalid_range[1]["generation_draft"],
+                "duration": 16,
+            },
+        }
+        assert (
+            await client.put(
+                f"/v1/visual-workshop/projects/{project['id']}/canvas",
+                json={"expected_revision": 1, "nodes": invalid_range},
+            )
+        ).status_code == 422
+
+        other_project = (
+            await client.post(
+                "/v1/visual-workshop/projects",
+                json={"title": "其他项目", "kind": "canvas"},
+            )
+        ).json()
+        foreign_image_response = await client.post(
+            "/v1/files",
+            data={"project_id": other_project["id"]},
+            files={
+                "upload": (
+                    "foreign.png",
+                    b"\x89PNG\r\n\x1a\n" + b"foreign-image",
+                    "image/png",
+                )
+            },
+        )
+        assert foreign_image_response.status_code == 200
+        wrong_scope = [dict(node) for node in structured_nodes]
+        wrong_scope[0] = {
+            **wrong_scope[0],
+            "generation_draft": {
+                **wrong_scope[0]["generation_draft"],
+                "reference_asset_id": foreign_image_response.json()["id"],
+            },
+        }
+        wrong_scope_response = await client.put(
+            f"/v1/visual-workshop/projects/{project['id']}/canvas",
+            json={"expected_revision": 1, "nodes": wrong_scope},
+        )
+        assert wrong_scope_response.status_code == 422
+        assert wrong_scope_response.json()["code"] == "scope_mismatch"
+
+        assert (
+            await client.delete(
+                f"/v1/files/{image['id']}",
+                params={"expected_revision": image["revision"]},
+            )
+        ).status_code == 200
+        stale_nodes = [dict(node) for node in structured_nodes]
+        stale_nodes[1] = {
+            **stale_nodes[1],
+            "generation_draft": {
+                **stale_nodes[1]["generation_draft"],
+                "prompt": "删除参考图后仍可保存其他修改",
+            },
+        }
+        stale_saved = await client.put(
+            f"/v1/visual-workshop/projects/{project['id']}/canvas",
+            json={"expected_revision": 1, "nodes": stale_nodes},
+        )
+        assert stale_saved.status_code == 200, stale_saved.text
+        assert (
+            stale_saved.json()["nodes"][1]["generation_draft"]["prompt"]
+            == "删除参考图后仍可保存其他修改"
+        )
+
+
+@pytest.mark.asyncio
 async def test_visual_generation_options_creation_filters_and_active_provider_guard() -> None:
     provider = ModelProvider(
         id=str(uuid4()),

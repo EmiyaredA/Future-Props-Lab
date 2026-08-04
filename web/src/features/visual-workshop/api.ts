@@ -10,6 +10,12 @@ export type VisualWorkshopProjectStatus = VisualWorkshopProject["status"];
 export type VisualCanvasDocument =
   components["schemas"]["VisualCanvasDocumentOut"];
 export type VisualCanvasNode = VisualCanvasDocument["nodes"][number];
+export type VisualCanvasImageGenerationDraft =
+  components["schemas"]["VisualCanvasImageGenerationDraft"];
+export type VisualCanvasVideoGenerationDraft =
+  components["schemas"]["VisualCanvasVideoGenerationDraft"];
+export type VisualCanvasGenerationDraft =
+  VisualCanvasImageGenerationDraft | VisualCanvasVideoGenerationDraft;
 export type GenerationOptions = components["schemas"]["GenerationOptionsOut"];
 export type GenerationTask = components["schemas"]["GenerationTaskOut"];
 export type GenerationTaskStatus = GenerationTask["status"];

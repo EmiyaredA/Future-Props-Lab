@@ -383,6 +383,118 @@ test("uses the compact video node composer for image-to-video tasks", async () =
   );
 });
 
+test("restores a node video draft, saves edits, and keeps it after submission", async () => {
+  vi.mocked(createGenerationTask).mockResolvedValueOnce({
+    ...baseTask,
+    kind: "video",
+    provider_id: "provider-video",
+    model_id: "model-video",
+    provider_kind: "senseaudio_video",
+    provider_name: "SenseAudio 视频生成",
+    model_slug: "doubao-seedance-2-0-260128",
+  });
+  const user = userEvent.setup();
+  const onDraftChange = vi.fn();
+  const onBeforeSubmit = vi.fn().mockResolvedValue(undefined);
+  renderWithClient(
+    <GenerationDrawer
+      compact
+      lockedKind="video"
+      projectId="project-1"
+      draft={{
+        model_id: "model-video",
+        prompt: "已保存的推进镜头",
+        mode: "image",
+        duration: 8,
+        resolution: "1080p",
+        ratio: "9:16",
+        watermark: false,
+        generate_audio: true,
+        first_frame_asset_id: "asset-1",
+        last_frame_asset_id: null,
+        reference_asset_ids: [],
+        audio_asset_ids: [],
+        video_asset_ids: [],
+      }}
+      onClose={vi.fn()}
+      onDraftChange={onDraftChange}
+      onBeforeSubmit={onBeforeSubmit}
+    />,
+  );
+
+  expect(
+    await screen.findByRole("button", { name: "图生视频" }),
+  ).toHaveAttribute("aria-pressed", "true");
+  expect(screen.getByRole("textbox", { name: "视频提示词" })).toHaveTextContent(
+    "已保存的推进镜头",
+  );
+  expect(screen.getByText("9:16 · 8S · 1080P")).toBeInTheDocument();
+  expect(
+    await screen.findByRole("button", { name: "参考图.png" }),
+  ).toHaveAttribute("aria-pressed", "true");
+
+  await user.click(screen.getByText("9:16 · 8S · 1080P"));
+  await user.click(screen.getByRole("checkbox", { name: "保留水印" }));
+  expect(onDraftChange).toHaveBeenLastCalledWith(
+    expect.objectContaining({
+      prompt: "已保存的推进镜头",
+      mode: "image",
+      first_frame_asset_id: "asset-1",
+      watermark: true,
+    }),
+    true,
+  );
+
+  await user.click(screen.getByRole("button", { name: "生成视频" }));
+  await waitFor(() => expect(createGenerationTask).toHaveBeenCalled());
+  expect(onBeforeSubmit).toHaveBeenCalledTimes(1);
+  expect(onBeforeSubmit.mock.invocationCallOrder[0]).toBeLessThan(
+    vi.mocked(createGenerationTask).mock.invocationCallOrder.at(-1)!,
+  );
+  expect(screen.getByRole("textbox", { name: "视频提示词" })).toHaveTextContent(
+    "已保存的推进镜头",
+  );
+  expect(
+    screen.getByRole("button", { name: "参考图.png" }),
+  ).toBeInTheDocument();
+});
+
+test("removes a missing saved asset from the node draft after loading files", async () => {
+  const onDraftChange = vi.fn();
+  renderWithClient(
+    <GenerationDrawer
+      compact
+      lockedKind="video"
+      projectId="project-1"
+      draft={{
+        model_id: "model-video",
+        prompt: "失效素材草稿",
+        mode: "image",
+        duration: 5,
+        resolution: "720p",
+        ratio: "16:9",
+        watermark: true,
+        generate_audio: false,
+        first_frame_asset_id: "missing-image",
+        last_frame_asset_id: null,
+        reference_asset_ids: [],
+        audio_asset_ids: [],
+        video_asset_ids: [],
+      }}
+      onClose={vi.fn()}
+      onDraftChange={onDraftChange}
+    />,
+  );
+
+  expect(
+    await screen.findByText("部分已选择素材已失效，已从当前草稿移除。"),
+  ).toBeInTheDocument();
+  expect(onDraftChange).toHaveBeenCalledWith(
+    expect.objectContaining({ first_frame_asset_id: null }),
+    true,
+  );
+});
+
 test("keeps the prompt editor mounted after deleting a text selection", async () => {
   const user = userEvent.setup();
   renderWithClient(

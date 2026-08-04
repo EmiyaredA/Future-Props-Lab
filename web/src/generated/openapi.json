@@ -3547,6 +3547,66 @@
         "title": "VisualCanvasDocumentPutIn",
         "type": "object"
       },
+      "VisualCanvasImageGenerationDraft": {
+        "properties": {
+          "image_count": {
+            "default": 1,
+            "maximum": 4.0,
+            "minimum": 1.0,
+            "title": "Image Count",
+            "type": "integer"
+          },
+          "model_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Id"
+          },
+          "prompt": {
+            "default": "",
+            "maxLength": 6000,
+            "title": "Prompt",
+            "type": "string"
+          },
+          "reference_asset_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reference Asset Id"
+          },
+          "seed": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seed"
+          },
+          "size": {
+            "default": "1024x1024",
+            "maxLength": 32,
+            "minLength": 1,
+            "title": "Size",
+            "type": "string"
+          }
+        },
+        "title": "VisualCanvasImageGenerationDraft",
+        "type": "object"
+      },
       "VisualCanvasImageNode": {
         "properties": {
           "asset_id": {
@@ -3559,6 +3619,16 @@
               }
             ],
             "title": "Asset Id"
+          },
+          "generation_draft": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/VisualCanvasImageGenerationDraft"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "generation_task_id": {
             "anyOf": [
@@ -3661,6 +3731,125 @@
         "title": "VisualCanvasTextNode",
         "type": "object"
       },
+      "VisualCanvasVideoGenerationDraft": {
+        "properties": {
+          "audio_asset_ids": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 3,
+            "title": "Audio Asset Ids",
+            "type": "array"
+          },
+          "duration": {
+            "default": 5,
+            "maximum": 15.0,
+            "minimum": 4.0,
+            "title": "Duration",
+            "type": "integer"
+          },
+          "first_frame_asset_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "First Frame Asset Id"
+          },
+          "generate_audio": {
+            "default": false,
+            "title": "Generate Audio",
+            "type": "boolean"
+          },
+          "last_frame_asset_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Frame Asset Id"
+          },
+          "mode": {
+            "default": "text",
+            "enum": [
+              "text",
+              "image",
+              "frames",
+              "reference"
+            ],
+            "title": "Mode",
+            "type": "string"
+          },
+          "model_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Id"
+          },
+          "prompt": {
+            "default": "",
+            "maxLength": 6000,
+            "title": "Prompt",
+            "type": "string"
+          },
+          "ratio": {
+            "default": "16:9",
+            "enum": [
+              "16:9",
+              "9:16",
+              "4:3",
+              "3:4",
+              "1:1"
+            ],
+            "title": "Ratio",
+            "type": "string"
+          },
+          "reference_asset_ids": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 9,
+            "title": "Reference Asset Ids",
+            "type": "array"
+          },
+          "resolution": {
+            "default": "720p",
+            "enum": [
+              "480p",
+              "720p",
+              "1080p"
+            ],
+            "title": "Resolution",
+            "type": "string"
+          },
+          "video_asset_ids": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 3,
+            "title": "Video Asset Ids",
+            "type": "array"
+          },
+          "watermark": {
+            "default": true,
+            "title": "Watermark",
+            "type": "boolean"
+          }
+        },
+        "title": "VisualCanvasVideoGenerationDraft",
+        "type": "object"
+      },
       "VisualCanvasVideoNode": {
         "properties": {
           "asset_id": {
@@ -3673,6 +3862,16 @@
               }
             ],
             "title": "Asset Id"
+          },
+          "generation_draft": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/VisualCanvasVideoGenerationDraft"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "generation_task_id": {
             "anyOf": [

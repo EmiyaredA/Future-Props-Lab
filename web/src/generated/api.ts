@@ -2187,10 +2187,35 @@ export interface components {
             /** Nodes */
             nodes?: (components["schemas"]["VisualCanvasTextNode"] | components["schemas"]["VisualCanvasImageNode"] | components["schemas"]["VisualCanvasVideoNode"] | components["schemas"]["VisualCanvasAudioNode"])[];
         };
+        /** VisualCanvasImageGenerationDraft */
+        VisualCanvasImageGenerationDraft: {
+            /**
+             * Image Count
+             * @default 1
+             */
+            image_count: number;
+            /** Model Id */
+            model_id?: string | null;
+            /**
+             * Prompt
+             * @default
+             */
+            prompt: string;
+            /** Reference Asset Id */
+            reference_asset_id?: string | null;
+            /** Seed */
+            seed?: number | null;
+            /**
+             * Size
+             * @default 1024x1024
+             */
+            size: string;
+        };
         /** VisualCanvasImageNode */
         VisualCanvasImageNode: {
             /** Asset Id */
             asset_id?: string | null;
+            generation_draft?: components["schemas"]["VisualCanvasImageGenerationDraft"] | null;
             /** Generation Task Id */
             generation_task_id?: string | null;
             /** Id */
@@ -2229,10 +2254,64 @@ export interface components {
             /** Title */
             title: string;
         };
+        /** VisualCanvasVideoGenerationDraft */
+        VisualCanvasVideoGenerationDraft: {
+            /** Audio Asset Ids */
+            audio_asset_ids?: string[];
+            /**
+             * Duration
+             * @default 5
+             */
+            duration: number;
+            /** First Frame Asset Id */
+            first_frame_asset_id?: string | null;
+            /**
+             * Generate Audio
+             * @default false
+             */
+            generate_audio: boolean;
+            /** Last Frame Asset Id */
+            last_frame_asset_id?: string | null;
+            /**
+             * Mode
+             * @default text
+             * @enum {string}
+             */
+            mode: "text" | "image" | "frames" | "reference";
+            /** Model Id */
+            model_id?: string | null;
+            /**
+             * Prompt
+             * @default
+             */
+            prompt: string;
+            /**
+             * Ratio
+             * @default 16:9
+             * @enum {string}
+             */
+            ratio: "16:9" | "9:16" | "4:3" | "3:4" | "1:1";
+            /** Reference Asset Ids */
+            reference_asset_ids?: string[];
+            /**
+             * Resolution
+             * @default 720p
+             * @enum {string}
+             */
+            resolution: "480p" | "720p" | "1080p";
+            /** Video Asset Ids */
+            video_asset_ids?: string[];
+            /**
+             * Watermark
+             * @default true
+             */
+            watermark: boolean;
+        };
         /** VisualCanvasVideoNode */
         VisualCanvasVideoNode: {
             /** Asset Id */
             asset_id?: string | null;
+            generation_draft?: components["schemas"]["VisualCanvasVideoGenerationDraft"] | null;
             /** Generation Task Id */
             generation_task_id?: string | null;
             /** Id */

@@ -57,17 +57,33 @@ class VisualCanvasDocuments:
         nodes: list[VisualCanvasNode],
         current_nodes: list[dict],
     ) -> None:
-        expected = {
-            node.asset_id: node.kind
-            for node in nodes
-            if node.kind != "text" and node.asset_id is not None
-        }
+        expected: list[tuple[str, str]] = []
+        for node in nodes:
+            if node.kind != "text" and node.asset_id is not None:
+                expected.append((node.asset_id, node.kind))
+            if node.kind == "image" and node.generation_draft:
+                if node.generation_draft.reference_asset_id:
+                    expected.append((node.generation_draft.reference_asset_id, "image"))
+            if node.kind == "video" and node.generation_draft:
+                draft = node.generation_draft
+                expected.extend(
+                    (asset_id, "image")
+                    for asset_id in (
+                        draft.first_frame_asset_id,
+                        draft.last_frame_asset_id,
+                        *draft.reference_asset_ids,
+                    )
+                    if asset_id
+                )
+                expected.extend((asset_id, "audio") for asset_id in draft.audio_asset_ids)
+                expected.extend((asset_id, "video") for asset_id in draft.video_asset_ids)
         if not expected:
             return
+        expected_ids = {asset_id for asset_id, _ in expected}
         rows = (
             (
                 await self.session.execute(
-                    select(VisualAsset).where(VisualAsset.id.in_(expected.keys()))
+                    select(VisualAsset).where(VisualAsset.id.in_(expected_ids))
                 )
             )
             .scalars()
@@ -89,10 +105,26 @@ class VisualCanvasDocuments:
                 .scalars()
                 .all()
             )
-        existing_asset_ids = {
-            node.get("asset_id") for node in current_nodes if node.get("asset_id")
-        }
-        for asset_id, kind in expected.items():
+        existing_asset_ids: set[str] = set()
+        for node in current_nodes:
+            if node.get("asset_id"):
+                existing_asset_ids.add(node["asset_id"])
+            draft = node.get("generation_draft") or {}
+            if node.get("kind") == "image" and draft.get("reference_asset_id"):
+                existing_asset_ids.add(draft["reference_asset_id"])
+            if node.get("kind") == "video":
+                existing_asset_ids.update(
+                    asset_id
+                    for asset_id in (
+                        draft.get("first_frame_asset_id"),
+                        draft.get("last_frame_asset_id"),
+                        *(draft.get("reference_asset_ids") or []),
+                        *(draft.get("audio_asset_ids") or []),
+                        *(draft.get("video_asset_ids") or []),
+                    )
+                    if asset_id
+                )
+        for asset_id, kind in expected:
             asset = assets.get(asset_id)
             if asset is None:
                 if asset_id in existing_asset_ids:
@@ -101,6 +133,8 @@ class VisualCanvasDocuments:
             if asset.media_kind != kind:
                 raise VisualCanvasError("节点与素材类型不匹配", code="asset_kind_mismatch")
             if asset.project_id != project_id and asset.id not in references:
+                if asset_id in existing_asset_ids:
+                    continue
                 raise VisualCanvasError("节点素材不属于当前项目", code="scope_mismatch")
 
     async def _validate_tasks(self, project_id: str, nodes: list[VisualCanvasNode]) -> None:

@@ -41,6 +41,9 @@ import {
   createGenerationTask,
   getGenerationOptions,
   type GenerationTaskInput,
+  type VisualCanvasGenerationDraft,
+  type VisualCanvasImageGenerationDraft,
+  type VisualCanvasVideoGenerationDraft,
 } from "@features/visual-workshop/api";
 import { ApiError, fetchApiBlob } from "@platform/api/client";
 import { CustomSelect } from "@shared/ui/CustomSelect";
@@ -289,12 +292,14 @@ function GenerationPromptEditor({
   label,
   placeholder,
   onChange,
+  onBlur,
 }: {
   value: string;
   assets: ManagedFile[];
   label: string;
   placeholder: string;
   onChange: (value: string) => void;
+  onBlur?: () => void;
 }) {
   const editorRef = useRef<HTMLDivElement>(null);
   const lastCaret = useRef<PromptCaret | undefined>(undefined);
@@ -678,6 +683,7 @@ function GenerationPromptEditor({
         onKeyUp={rememberCaret}
         onMouseUp={ensureCaret}
         onFocus={ensureCaret}
+        onBlur={onBlur}
         onCompositionStart={() => {
           composing.current = true;
         }}
@@ -776,6 +782,7 @@ function ProjectMediaPicker({
   minimal = false,
   onChange,
   onFilesLoaded,
+  onInvalidSelection,
 }: {
   projectId: string;
   label: string;
@@ -786,6 +793,7 @@ function ProjectMediaPicker({
   minimal?: boolean;
   onChange: (value: string[]) => void;
   onFilesLoaded?: (files: ManagedFile[]) => void;
+  onInvalidSelection?: () => void;
 }) {
   const client = useQueryClient();
   const uploadInput = useRef<HTMLInputElement>(null);
@@ -819,7 +827,28 @@ function ProjectMediaPicker({
       left.display_name.localeCompare(right.display_name, "zh-CN"),
     );
   }, [fileQueries]);
-  useEffect(() => onFilesLoaded?.(files), [files, onFilesLoaded]);
+  const loading =
+    folders.isLoading || fileQueries.some((query) => query.isLoading);
+  const selectionReady =
+    folders.isSuccess &&
+    !folders.isFetching &&
+    fileQueries.every((query) => query.isSuccess && !query.isFetching);
+  useEffect(() => {
+    if (!selectionReady) return;
+    onFilesLoaded?.(files);
+    const available = new Set(files.map((file) => file.id));
+    const valid = value.filter((assetId) => available.has(assetId));
+    if (valid.length === value.length) return;
+    onChange(valid);
+    onInvalidSelection?.();
+  }, [
+    files,
+    onChange,
+    onFilesLoaded,
+    onInvalidSelection,
+    selectionReady,
+    value,
+  ]);
   const upload = useMutation({
     mutationFn: async (selected: File[]) => {
       const uploaded: ManagedFile[] = [];
@@ -840,8 +869,6 @@ function ProjectMediaPicker({
       );
     },
   });
-  const loading =
-    folders.isLoading || fileQueries.some((query) => query.isLoading);
   const visibleFiles = minimal
     ? files.filter((file) => value.includes(file.id))
     : files;
@@ -947,40 +974,79 @@ export function GenerationDrawer({
   projectId,
   onClose,
   lockedKind,
+  draft,
+  onDraftChange,
+  onBeforeSubmit,
   onTaskCreated,
   compact = false,
 }: {
   projectId: string;
   onClose: () => void;
   lockedKind?: GenerationKind;
+  draft?: VisualCanvasGenerationDraft | null;
+  onDraftChange?: (
+    draft: VisualCanvasGenerationDraft,
+    immediate?: boolean,
+  ) => void;
+  onBeforeSubmit?: () => Promise<void>;
   onTaskCreated?: (
     task: Awaited<ReturnType<typeof createGenerationTask>>,
   ) => void;
   compact?: boolean;
 }) {
   const client = useQueryClient();
+  const imageDraft =
+    lockedKind === "image"
+      ? (draft as VisualCanvasImageGenerationDraft | null | undefined)
+      : undefined;
+  const videoDraft =
+    lockedKind === "video"
+      ? (draft as VisualCanvasVideoGenerationDraft | null | undefined)
+      : undefined;
   const [kind, setKind] = useState<GenerationKind>(lockedKind ?? "image");
-  const [modelId, setModelId] = useState("");
-  const [prompt, setPrompt] = useState("");
-  const [size, setSize] = useState("1024x1024");
-  const [seed, setSeed] = useState("");
-  const [imageCount, setImageCount] = useState(1);
-  const [imageReference, setImageReference] = useState<string[]>([]);
-  const [videoMode, setVideoMode] = useState<VideoMode>("text");
-  const [duration, setDuration] = useState(5);
+  const [modelId, setModelId] = useState(
+    imageDraft?.model_id ?? videoDraft?.model_id ?? "",
+  );
+  const [prompt, setPrompt] = useState(
+    imageDraft?.prompt ?? videoDraft?.prompt ?? "",
+  );
+  const [size, setSize] = useState(imageDraft?.size ?? "1024x1024");
+  const [seed, setSeed] = useState(
+    imageDraft?.seed == null ? "" : String(imageDraft.seed),
+  );
+  const [imageCount, setImageCount] = useState(imageDraft?.image_count ?? 1);
+  const [imageReference, setImageReference] = useState<string[]>(
+    imageDraft?.reference_asset_id ? [imageDraft.reference_asset_id] : [],
+  );
+  const [videoMode, setVideoMode] = useState<VideoMode>(
+    videoDraft?.mode ?? "text",
+  );
+  const [duration, setDuration] = useState(videoDraft?.duration ?? 5);
   const [resolution, setResolution] = useState<"480p" | "720p" | "1080p">(
-    "720p",
+    videoDraft?.resolution ?? "720p",
   );
   const [ratio, setRatio] = useState<"16:9" | "9:16" | "4:3" | "3:4" | "1:1">(
-    "16:9",
+    videoDraft?.ratio ?? "16:9",
   );
-  const [watermark, setWatermark] = useState(true);
-  const [generateAudio, setGenerateAudio] = useState(false);
-  const [firstFrame, setFirstFrame] = useState<string[]>([]);
-  const [lastFrame, setLastFrame] = useState<string[]>([]);
-  const [references, setReferences] = useState<string[]>([]);
-  const [audioReferences, setAudioReferences] = useState<string[]>([]);
-  const [videoReferences, setVideoReferences] = useState<string[]>([]);
+  const [watermark, setWatermark] = useState(videoDraft?.watermark ?? true);
+  const [generateAudio, setGenerateAudio] = useState(
+    videoDraft?.generate_audio ?? false,
+  );
+  const [firstFrame, setFirstFrame] = useState<string[]>(
+    videoDraft?.first_frame_asset_id ? [videoDraft.first_frame_asset_id] : [],
+  );
+  const [lastFrame, setLastFrame] = useState<string[]>(
+    videoDraft?.last_frame_asset_id ? [videoDraft.last_frame_asset_id] : [],
+  );
+  const [references, setReferences] = useState<string[]>(
+    videoDraft?.reference_asset_ids ?? [],
+  );
+  const [audioReferences, setAudioReferences] = useState<string[]>(
+    videoDraft?.audio_asset_ids ?? [],
+  );
+  const [videoReferences, setVideoReferences] = useState<string[]>(
+    videoDraft?.video_asset_ids ?? [],
+  );
   const [composerExpanded, setComposerExpanded] = useState(false);
   const [notice, setNotice] = useState("");
   const [promptFiles, setPromptFiles] = useState<Record<string, ManagedFile>>(
@@ -1035,6 +1101,73 @@ export function GenerationDrawer({
   const selectedImageSize =
     availableImageSizes.find((option) => option.value === size) ??
     availableImageSizes[0];
+  const persistDraft = useCallback(
+    (changes: Record<string, unknown> = {}, immediate = false) => {
+      if (!lockedKind || !onDraftChange) return;
+      const parsedSeed = Number(seed);
+      if (lockedKind === "image") {
+        onDraftChange(
+          {
+            model_id: modelId || null,
+            prompt,
+            size,
+            seed:
+              seed !== "" && Number.isSafeInteger(parsedSeed) && parsedSeed >= 0
+                ? parsedSeed
+                : null,
+            image_count: imageCount,
+            reference_asset_id: imageReference[0] ?? null,
+            ...changes,
+          } as VisualCanvasImageGenerationDraft,
+          immediate,
+        );
+        return;
+      }
+      onDraftChange(
+        {
+          model_id: modelId || null,
+          prompt,
+          mode: videoMode,
+          duration,
+          resolution,
+          ratio,
+          watermark,
+          generate_audio: generateAudio,
+          first_frame_asset_id: firstFrame[0] ?? null,
+          last_frame_asset_id: lastFrame[0] ?? null,
+          reference_asset_ids: references,
+          audio_asset_ids: audioReferences,
+          video_asset_ids: videoReferences,
+          ...changes,
+        } as VisualCanvasVideoGenerationDraft,
+        immediate,
+      );
+    },
+    [
+      audioReferences,
+      duration,
+      firstFrame,
+      generateAudio,
+      imageCount,
+      imageReference,
+      lastFrame,
+      lockedKind,
+      modelId,
+      onDraftChange,
+      prompt,
+      ratio,
+      references,
+      resolution,
+      seed,
+      size,
+      videoMode,
+      videoReferences,
+      watermark,
+    ],
+  );
+  const invalidSelection = useCallback(() => {
+    setNotice("部分已选择素材已失效，已从当前草稿移除。");
+  }, []);
 
   useEffect(() => {
     const preferred = models.find((model) =>
@@ -1042,21 +1175,26 @@ export function GenerationDrawer({
         ? model.slug === "senseaudio-image-2.0-260319"
         : model.slug === "doubao-seedance-2-0-260128",
     );
-    if (!models.some((model) => model.id === modelId))
-      setModelId(preferred?.id ?? models[0]?.id ?? "");
-  }, [kind, modelId, models]);
+    if (!models.some((model) => model.id === modelId)) {
+      const next = preferred?.id ?? models[0]?.id ?? "";
+      if (next === modelId) return;
+      setModelId(next);
+      persistDraft({ model_id: next || null }, true);
+    }
+  }, [kind, modelId, models, persistDraft]);
   useEffect(() => {
     if (
       kind === "image" &&
       selectedModel?.sizes?.length &&
       !selectedModel.sizes.includes(size)
-    )
-      setSize(
-        selectedModel.sizes.includes("1024x1024")
-          ? "1024x1024"
-          : selectedModel.sizes[0],
-      );
-  }, [kind, selectedModel, size]);
+    ) {
+      const next = selectedModel.sizes.includes("1024x1024")
+        ? "1024x1024"
+        : selectedModel.sizes[0];
+      setSize(next);
+      persistDraft({ size: next }, true);
+    }
+  }, [kind, persistDraft, selectedModel, size]);
 
   const createMutation = useMutation({
     mutationFn: async ({
@@ -1085,7 +1223,7 @@ export function GenerationDrawer({
     },
     onError: (error) => setNotice(errorMessage(error)),
   });
-  const submit = (event: FormEvent) => {
+  const submit = async (event: FormEvent) => {
     event.preventDefault();
     setNotice("");
     if (!modelId) {
@@ -1104,6 +1242,13 @@ export function GenerationDrawer({
       videoReferences.length === 0
     ) {
       setNotice("参考音频需要搭配至少一张图片或一个视频。");
+      return;
+    }
+    try {
+      persistDraft({}, true);
+      await onBeforeSubmit?.();
+    } catch (error) {
+      setNotice(errorMessage(error));
       return;
     }
     if (kind === "image") {
@@ -1158,8 +1303,12 @@ export function GenerationDrawer({
                 label="参考图片（可选）"
                 minimal
                 value={imageReference}
-                onChange={setImageReference}
+                onChange={(value) => {
+                  setImageReference(value);
+                  persistDraft({ reference_asset_id: value[0] ?? null }, true);
+                }}
                 onFilesLoaded={rememberPromptFiles}
+                onInvalidSelection={invalidSelection}
               />
               <button
                 type="button"
@@ -1183,7 +1332,11 @@ export function GenerationDrawer({
                 assets={promptAssets}
                 label="图片提示词"
                 placeholder="描述你想生成的画面…"
-                onChange={setPrompt}
+                onChange={(value) => {
+                  setPrompt(value);
+                  persistDraft({ prompt: value });
+                }}
+                onBlur={() => persistDraft({}, true)}
               />
             </div>
           </div>
@@ -1231,6 +1384,7 @@ export function GenerationDrawer({
                     key={model.id}
                     onClick={() => {
                       setModelId(model.id);
+                      persistDraft({ model_id: model.id }, true);
                       modelMenuRef.current?.removeAttribute("open");
                     }}
                   >
@@ -1276,6 +1430,7 @@ export function GenerationDrawer({
                                   choice.clarity === selectedImageSize?.clarity,
                               ) ?? choices[0];
                             if (next) setSize(next.value);
+                            if (next) persistDraft({ size: next.value }, true);
                           }}
                         >
                           <span className="image-ratio-icon-shell">
@@ -1304,7 +1459,10 @@ export function GenerationDrawer({
                           disabled={!next}
                           key={clarity}
                           onClick={() => {
-                            if (next) setSize(next.value);
+                            if (next) {
+                              setSize(next.value);
+                              persistDraft({ size: next.value }, true);
+                            }
                           }}
                         >
                           {clarity}
@@ -1320,7 +1478,20 @@ export function GenerationDrawer({
                     min="0"
                     placeholder="随机"
                     value={seed}
-                    onChange={(event) => setSeed(event.target.value)}
+                    onChange={(event) => {
+                      const value = event.target.value;
+                      setSeed(value);
+                      const parsed = Number(value);
+                      persistDraft({
+                        seed:
+                          value !== "" &&
+                          Number.isSafeInteger(parsed) &&
+                          parsed >= 0
+                            ? parsed
+                            : null,
+                      });
+                    }}
+                    onBlur={() => persistDraft({}, true)}
                   />
                 </label>
               </div>
@@ -1339,6 +1510,7 @@ export function GenerationDrawer({
                     key={count}
                     onClick={(event) => {
                       setImageCount(count);
+                      persistDraft({ image_count: count }, true);
                       event.currentTarget
                         .closest("details")
                         ?.removeAttribute("open");
@@ -1389,7 +1561,10 @@ export function GenerationDrawer({
                   className={videoMode === mode.value ? "active" : ""}
                   aria-pressed={videoMode === mode.value}
                   key={mode.value}
-                  onClick={() => setVideoMode(mode.value)}
+                  onClick={() => {
+                    setVideoMode(mode.value);
+                    persistDraft({ mode: mode.value }, true);
+                  }}
                 >
                   {mode.label}
                 </button>
@@ -1421,8 +1596,15 @@ export function GenerationDrawer({
                     label="选择起始画面"
                     minimal
                     value={firstFrame}
-                    onChange={setFirstFrame}
+                    onChange={(value) => {
+                      setFirstFrame(value);
+                      persistDraft(
+                        { first_frame_asset_id: value[0] ?? null },
+                        true,
+                      );
+                    }}
                     onFilesLoaded={rememberPromptFiles}
+                    onInvalidSelection={invalidSelection}
                   />
                 ) : null}
                 {videoMode === "frames" ? (
@@ -1432,16 +1614,30 @@ export function GenerationDrawer({
                       label="首帧"
                       minimal
                       value={firstFrame}
-                      onChange={setFirstFrame}
+                      onChange={(value) => {
+                        setFirstFrame(value);
+                        persistDraft(
+                          { first_frame_asset_id: value[0] ?? null },
+                          true,
+                        );
+                      }}
                       onFilesLoaded={rememberPromptFiles}
+                      onInvalidSelection={invalidSelection}
                     />
                     <ProjectMediaPicker
                       projectId={projectId}
                       label="尾帧（可选）"
                       minimal
                       value={lastFrame}
-                      onChange={setLastFrame}
+                      onChange={(value) => {
+                        setLastFrame(value);
+                        persistDraft(
+                          { last_frame_asset_id: value[0] ?? null },
+                          true,
+                        );
+                      }}
                       onFilesLoaded={rememberPromptFiles}
+                      onInvalidSelection={invalidSelection}
                     />
                   </>
                 ) : null}
@@ -1454,8 +1650,12 @@ export function GenerationDrawer({
                       value={references}
                       multiple
                       max={9}
-                      onChange={setReferences}
+                      onChange={(value) => {
+                        setReferences(value);
+                        persistDraft({ reference_asset_ids: value }, true);
+                      }}
                       onFilesLoaded={rememberPromptFiles}
+                      onInvalidSelection={invalidSelection}
                     />
                     <ProjectMediaPicker
                       projectId={projectId}
@@ -1465,8 +1665,12 @@ export function GenerationDrawer({
                       value={videoReferences}
                       multiple
                       max={3}
-                      onChange={setVideoReferences}
+                      onChange={(value) => {
+                        setVideoReferences(value);
+                        persistDraft({ video_asset_ids: value }, true);
+                      }}
                       onFilesLoaded={rememberPromptFiles}
+                      onInvalidSelection={invalidSelection}
                     />
                     <ProjectMediaPicker
                       projectId={projectId}
@@ -1476,8 +1680,12 @@ export function GenerationDrawer({
                       value={audioReferences}
                       multiple
                       max={3}
-                      onChange={setAudioReferences}
+                      onChange={(value) => {
+                        setAudioReferences(value);
+                        persistDraft({ audio_asset_ids: value }, true);
+                      }}
                       onFilesLoaded={rememberPromptFiles}
+                      onInvalidSelection={invalidSelection}
                     />
                   </>
                 ) : null}
@@ -1489,7 +1697,11 @@ export function GenerationDrawer({
                 assets={promptAssets}
                 label="视频提示词"
                 placeholder="描述您的修改或生成需求…"
-                onChange={setPrompt}
+                onChange={(value) => {
+                  setPrompt(value);
+                  persistDraft({ prompt: value });
+                }}
+                onBlur={() => persistDraft({}, true)}
               />
             </div>
           </div>
@@ -1537,6 +1749,7 @@ export function GenerationDrawer({
                     key={model.id}
                     onClick={() => {
                       setModelId(model.id);
+                      persistDraft({ model_id: model.id }, true);
                       modelMenuRef.current?.removeAttribute("open");
                     }}
                   >
@@ -1570,9 +1783,13 @@ export function GenerationDrawer({
                         "--video-duration-progress": `${((duration - 4) / 11) * 100}%`,
                       } as CSSProperties
                     }
-                    onChange={(event) =>
-                      setDuration(Number(event.target.value))
-                    }
+                    onChange={(event) => {
+                      const value = Number(event.target.value);
+                      setDuration(value);
+                      persistDraft({ duration: value });
+                    }}
+                    onPointerUp={() => persistDraft({}, true)}
+                    onBlur={() => persistDraft({}, true)}
                   />
                   <span className="video-duration-limits" aria-hidden="true">
                     <span>4 秒</span>
@@ -1586,7 +1803,11 @@ export function GenerationDrawer({
                     className="video-parameter-select"
                     value={ratio}
                     options={VIDEO_RATIO_OPTIONS}
-                    onChange={(value) => setRatio(value as typeof ratio)}
+                    onChange={(value) => {
+                      const next = value as typeof ratio;
+                      setRatio(next);
+                      persistDraft({ ratio: next }, true);
+                    }}
                   />
                 </label>
                 <label>
@@ -1596,9 +1817,11 @@ export function GenerationDrawer({
                     className="video-parameter-select"
                     value={resolution}
                     options={VIDEO_RESOLUTION_OPTIONS}
-                    onChange={(value) =>
-                      setResolution(value as typeof resolution)
-                    }
+                    onChange={(value) => {
+                      const next = value as typeof resolution;
+                      setResolution(next);
+                      persistDraft({ resolution: next }, true);
+                    }}
                   />
                 </label>
                 <div className="video-parameter-switches">
@@ -1606,9 +1829,13 @@ export function GenerationDrawer({
                     <input
                       type="checkbox"
                       checked={generateAudio}
-                      onChange={(event) =>
-                        setGenerateAudio(event.target.checked)
-                      }
+                      onChange={(event) => {
+                        setGenerateAudio(event.target.checked);
+                        persistDraft(
+                          { generate_audio: event.target.checked },
+                          true,
+                        );
+                      }}
                     />
                     生成音频
                   </label>
@@ -1616,7 +1843,10 @@ export function GenerationDrawer({
                     <input
                       type="checkbox"
                       checked={watermark}
-                      onChange={(event) => setWatermark(event.target.checked)}
+                      onChange={(event) => {
+                        setWatermark(event.target.checked);
+                        persistDraft({ watermark: event.target.checked }, true);
+                      }}
                     />
                     保留水印
                   </label>

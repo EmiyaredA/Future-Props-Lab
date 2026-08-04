@@ -424,58 +424,6 @@ textarea:focus {
   gap: 10px;
   margin-top: 6px;
 }
-.confirm-dialog-backdrop {
-  z-index: 90;
-}
-.confirm-dialog {
-  position: relative;
-  width: min(440px, 100%);
-  padding: 28px;
-  overflow: visible;
-}
-.confirm-dialog-close {
-  position: absolute;
-  top: 16px;
-  right: 16px;
-}
-.confirm-dialog-close svg {
-  width: 17px;
-  height: 17px;
-}
-.confirm-dialog-icon {
-  width: 48px;
-  height: 48px;
-  display: grid;
-  place-items: center;
-  margin-bottom: 18px;
-  border: 1px solid color-mix(in srgb, var(--danger) 22%, transparent);
-  border-radius: 14px;
-  background: var(--danger-soft);
-  color: var(--danger);
-}
-.confirm-dialog-icon svg {
-  width: 22px;
-  height: 22px;
-}
-.confirm-dialog-copy {
-  padding-right: 20px;
-}
-.confirm-dialog-copy h2 {
-  margin: 6px 0 8px;
-  color: var(--text-strong);
-  font-size: 21px;
-}
-.confirm-dialog-copy p {
-  margin: 0;
-  color: var(--muted);
-  line-height: 1.7;
-}
-.confirm-dialog .modal-actions {
-  margin-top: 24px;
-}
-.confirm-dialog .modal-actions .btn {
-  min-width: 88px;
-}
 .conflict-card {
   text-align: center;
 }

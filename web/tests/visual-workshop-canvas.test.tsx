@@ -1164,7 +1164,9 @@ test("uses the unified attachment panel for project files and local uploads", as
     ),
   ).toBeInTheDocument();
   expect(
-    container.querySelector('button[aria-label="收起对话"] .lucide-maximize-2'),
+    container.querySelector(
+      'button[aria-label="收起对话"] .lucide-panel-right-close',
+    ),
   ).toBeInTheDocument();
 
   await user.click(screen.getByRole("button", { name: "添加附件" }));
