@@ -132,15 +132,17 @@ export function CanvasNodeInspector({
   }, [node.asset_id, onPatch, task.data]);
 
   const Icon = mediaIcon(node.kind);
-  const isVideoComposer =
-    embedded && node.kind === "video" && tab === "generate";
+  const isAttachedComposer =
+    embedded &&
+    (node.kind === "image" || node.kind === "video") &&
+    tab === "generate";
   return (
     <aside
-      className={`canvas-node-inspector${embedded ? " is-embedded" : ""}`}
+      className={`canvas-node-inspector${embedded ? ` is-embedded is-${node.kind}` : ""}`}
       aria-label="节点检查器"
       onClick={(event) => event.stopPropagation()}
     >
-      {!isVideoComposer ? (
+      {!isAttachedComposer ? (
         <header>
           <div>
             <Icon aria-hidden />
@@ -160,7 +162,7 @@ export function CanvasNodeInspector({
           </button>
         </header>
       ) : null}
-      {node.kind !== "audio" && !isVideoComposer ? (
+      {node.kind !== "audio" && !isAttachedComposer ? (
         <nav className="canvas-inspector-tabs" role="tablist">
           <button
             className={tab === "content" ? "active" : ""}
@@ -185,7 +187,7 @@ export function CanvasNodeInspector({
           compact
           projectId={projectId}
           lockedKind={node.kind}
-          onClose={isVideoComposer ? onClose : () => setTab("content")}
+          onClose={isAttachedComposer ? onClose : () => setTab("content")}
           onTaskCreated={(created) =>
             onPatch({ generation_task_id: created.id, asset_id: null }, true)
           }

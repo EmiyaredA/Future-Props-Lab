@@ -174,6 +174,12 @@ class VisualAssistantConversation(Base):
     model_id: Mapped[str | None] = mapped_column(
         String(36), ForeignKey("model_entries.id", ondelete="SET NULL"), nullable=True
     )
+    image_model_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("model_entries.id", ondelete="SET NULL"), nullable=True
+    )
+    video_model_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("model_entries.id", ondelete="SET NULL"), nullable=True
+    )
     revision: Mapped[int] = mapped_column(Integer, default=0)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, onupdate=utc_now)
@@ -204,6 +210,7 @@ class VisualAssistantMessage(Base):
     turn_id: Mapped[str] = mapped_column(String(36), index=True)
     role: Mapped[str] = mapped_column(String(16))
     content: Mapped[str] = mapped_column(Text, default="")
+    content_parts: Mapped[list[dict]] = mapped_column(JSON, default=list)
     model_slug: Mapped[str] = mapped_column(String(160), default="")
     status: Mapped[str] = mapped_column(String(16), index=True)
     error_message: Mapped[str | None] = mapped_column(Text)
@@ -236,7 +243,9 @@ class VisualAssistantAction(Base):
     __table_args__ = (
         UniqueConstraint("message_id", "action_id", name="uq_visual_assistant_action_id"),
         UniqueConstraint("message_id", "position", name="uq_visual_assistant_action_position"),
+        Index("ix_visual_assistant_actions_message", "message_id", "position"),
         Index("ix_visual_assistant_actions_run", "run_id", "status"),
+        Index("ix_visual_assistant_actions_generation_task", "generation_task_id"),
     )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
@@ -244,7 +253,7 @@ class VisualAssistantAction(Base):
         String(36), ForeignKey("visual_assistant_messages.id", ondelete="CASCADE")
     )
     action_id: Mapped[str] = mapped_column(String(160))
-    run_id: Mapped[str] = mapped_column(String(36), index=True)
+    run_id: Mapped[str] = mapped_column(String(36))
     approval_group_id: Mapped[str | None] = mapped_column(String(36))
     position: Mapped[int] = mapped_column(Integer)
     tool_name: Mapped[str] = mapped_column(String(100))

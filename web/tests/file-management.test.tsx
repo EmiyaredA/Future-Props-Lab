@@ -222,6 +222,29 @@ test("switches file layouts, remembers the choice, and imports a library file", 
   expect(await screen.findByText("已导入当前项目")).toBeInTheDocument();
 });
 
+test("uses the compact asset controls without losing upload and folder actions", async () => {
+  const user = userEvent.setup();
+  renderProjectBrowser(true);
+  expect(await screen.findByText("故事说明.md")).toBeInTheDocument();
+  expect(screen.getByPlaceholderText("搜索素材")).toBeInTheDocument();
+
+  await user.click(screen.getByRole("button", { name: "筛选素材" }));
+  expect(screen.getByRole("dialog", { name: "素材筛选" })).toBeInTheDocument();
+  await user.click(screen.getByRole("button", { name: "文件类型" }));
+  await user.click(screen.getByRole("option", { name: "图片" }));
+  await waitFor(() =>
+    expect(getFiles).toHaveBeenLastCalledWith(
+      expect.objectContaining({ mediaKind: "image" }),
+    ),
+  );
+
+  await user.click(screen.getByRole("button", { name: "添加素材" }));
+  await user.click(screen.getByRole("menuitem", { name: "新建文件夹" }));
+  expect(
+    screen.getByRole("dialog", { name: "新建文件夹" }),
+  ).toBeInTheDocument();
+});
+
 test("uses custom dialogs for creating, renaming, moving, and deleting folders", async () => {
   const user = userEvent.setup();
   const promptSpy = vi.spyOn(window, "prompt");
@@ -333,9 +356,13 @@ test("explains reference removal without implying the source file is deleted", a
   );
 });
 
-test("keeps the compact drawer layout and its toolbar upload entry", async () => {
+test("keeps the compact drawer layout and its upload menu entry", async () => {
+  const user = userEvent.setup();
   const { container } = renderProjectBrowser(true);
   expect(await screen.findByText("故事说明.md")).toBeInTheDocument();
   expect(container.querySelector(".file-upload-card")).toBeNull();
-  expect(screen.getByRole("button", { name: "上传文件" })).toBeInTheDocument();
+  await user.click(screen.getByRole("button", { name: "添加素材" }));
+  expect(
+    screen.getByRole("menuitem", { name: "上传文件" }),
+  ).toBeInTheDocument();
 });

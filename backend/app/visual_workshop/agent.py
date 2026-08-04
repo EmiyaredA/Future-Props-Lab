@@ -27,7 +27,7 @@ from app.schemas.visual_workshop import (
     VisualCanvasDocumentPutIn,
 )
 from app.visual_workshop.canvas import VisualCanvasDocuments
-from app.visual_workshop.generation import VisualGeneration, generation_task_out
+from app.visual_workshop.generation import GenerationError, VisualGeneration, generation_task_out
 
 CANVAS_CONTEXT_LIMIT = 32_000
 TEXT_NODE_LIMIT = 4_000
@@ -40,11 +40,14 @@ def _json_text(value: Any, limit: int = 12_000) -> str:
 
 
 def _compact_node(node: dict[str, Any]) -> dict[str, Any]:
+    position = node.get("position")
+    if hasattr(position, "model_dump"):
+        position = position.model_dump(mode="json")
     item = {
         "id": node.get("id"),
         "kind": node.get("kind"),
         "title": node.get("title"),
-        "position": node.get("position"),
+        "position": position,
     }
     if node.get("asset_id"):
         item["asset_id"] = node["asset_id"]
@@ -62,18 +65,37 @@ async def visual_context_source(project_id: str) -> list[ContextFragment]:
     async with SessionLocal() as session:
         project = await session.get(VisualWorkshopProject, project_id)
         canvas = await VisualCanvasDocuments(session).get(project_id)
-        task_count = int(
-            len(
-                (
-                    await session.execute(
-                        select(VisualGenerationTask.id).where(
-                            VisualGenerationTask.project_id == project_id
+        reference_ids = select(VisualProjectAssetReference.asset_id).where(
+            VisualProjectAssetReference.project_id == project_id
+        )
+        assets = list(
+            (
+                await session.execute(
+                    select(VisualAsset)
+                    .where(
+                        or_(
+                            VisualAsset.project_id == project_id,
+                            VisualAsset.id.in_(reference_ids),
                         )
                     )
+                    .order_by(VisualAsset.updated_at.desc())
+                    .limit(60)
                 )
-                .scalars()
-                .all()
             )
+            .scalars()
+            .all()
+        )
+        tasks = list(
+            (
+                await session.execute(
+                    select(VisualGenerationTask)
+                    .where(VisualGenerationTask.project_id == project_id)
+                    .order_by(VisualGenerationTask.updated_at.desc())
+                    .limit(40)
+                )
+            )
+            .scalars()
+            .all()
         )
     nodes = [_compact_node(dict(item)) for item in canvas.nodes]
     return [
@@ -85,7 +107,8 @@ async def visual_context_source(project_id: str) -> list[ContextFragment]:
                     "title": project.title if project else "",
                     "canvas_revision": canvas.revision,
                     "node_count": len(nodes),
-                    "generation_task_count": task_count,
+                    "asset_count": len(assets),
+                    "generation_task_count": len(tasks),
                 }
             ),
             priority=100,
@@ -96,12 +119,46 @@ async def visual_context_source(project_id: str) -> list[ContextFragment]:
             priority=90,
             character_budget=CANVAS_CONTEXT_LIMIT,
         ),
+        ContextFragment(
+            "assets",
+            _json_text(
+                [
+                    {
+                        "id": item.id,
+                        "name": item.display_name,
+                        "kind": item.media_kind,
+                        "mime_type": item.mime_type,
+                        "byte_size": item.byte_size,
+                    }
+                    for item in assets
+                ],
+                8_000,
+            ),
+            priority=70,
+            character_budget=8_000,
+        ),
+        ContextFragment(
+            "generation_tasks",
+            _json_text(
+                [
+                    {
+                        "id": item.id,
+                        "kind": item.kind,
+                        "status": item.status,
+                        "model": item.model_slug,
+                        "result_asset_id": item.result_asset_id,
+                    }
+                    for item in tasks
+                ],
+                8_000,
+            ),
+            priority=60,
+            character_budget=8_000,
+        ),
     ]
 
 
-async def _read_canvas(
-    arguments: dict[str, Any], context: ToolExecutionContext
-) -> Observation:
+async def _read_canvas(arguments: dict[str, Any], context: ToolExecutionContext) -> Observation:
     del arguments
     project_id = str(context.scope["project_id"])
     async with SessionLocal() as session:
@@ -119,9 +176,7 @@ async def _read_canvas(
     )
 
 
-async def _list_assets(
-    arguments: dict[str, Any], context: ToolExecutionContext
-) -> Observation:
+async def _list_assets(arguments: dict[str, Any], context: ToolExecutionContext) -> Observation:
     project_id = str(context.scope["project_id"])
     kind = str(arguments.get("kind") or "").strip()
     query = str(arguments.get("query") or "").strip()
@@ -138,11 +193,7 @@ async def _list_assets(
         if query:
             statement = statement.where(VisualAsset.display_name.contains(query))
         rows = list(
-            (
-                await session.execute(
-                    statement.order_by(VisualAsset.updated_at.desc()).limit(limit)
-                )
-            )
+            (await session.execute(statement.order_by(VisualAsset.updated_at.desc()).limit(limit)))
             .scalars()
             .all()
         )
@@ -275,6 +326,7 @@ async def _apply_canvas_changes(
             )
         updated = await documents.put(project_id, body)
     data = updated.model_dump(mode="json")
+    data["canvas_revision"] = updated.revision
     return Observation(
         context.tool_call_id,
         "apply_canvas_changes",
@@ -290,6 +342,10 @@ async def _start_generation_on_canvas(
     project_id = str(context.scope["project_id"])
     task_payload = dict(arguments.get("task") or {})
     node_payload = dict(arguments.get("node") or {})
+    generation_kind = str(task_payload.get("kind") or "")
+    configured_model_id = context.scope.get(f"{generation_kind}_model_id")
+    if generation_kind in {"image", "video"} and configured_model_id:
+        task_payload["model_id"] = str(configured_model_id)
     async with SessionLocal() as session:
         documents = VisualCanvasDocuments(session)
         current = await documents.get(project_id)
@@ -321,6 +377,23 @@ async def _start_generation_on_canvas(
             updated = await documents.replace(project_id, canvas_body)
             await session.commit()
             await session.refresh(task)
+        except GenerationError as exc:
+            await session.rollback()
+            if configured_model_id and exc.code in {"model_unavailable", "missing_api_key"}:
+                label = "图像" if generation_kind == "image" else "视频"
+                return Observation(
+                    context.tool_call_id,
+                    "start_generation_on_canvas",
+                    False,
+                    f"当前对话固定的{label}生成模型不可用，请重新配置后再试。",
+                    {
+                        "kind": generation_kind,
+                        "model_id": str(configured_model_id),
+                        "canvas_revision": current.revision,
+                    },
+                    error_code="configured_model_unavailable",
+                )
+            raise
         except Exception:
             await session.rollback()
             raise
@@ -346,6 +419,7 @@ def _tool(
     schema: dict[str, Any],
     effect: str,
     handler,
+    generation_model_ids: dict[str, str | None] | None = None,
 ) -> ToolBinding:
     def summarize(arguments: dict[str, Any]) -> dict[str, Any]:
         if name == "apply_canvas_changes":
@@ -357,10 +431,12 @@ def _tool(
             }
         if name == "start_generation_on_canvas":
             task = dict(arguments.get("task") or {})
+            kind = str(task.get("kind") or "")
+            configured_model_id = (generation_model_ids or {}).get(kind)
             return {
                 "label": "创建生成任务",
-                "kind": task.get("kind"),
-                "model_id": task.get("model_id"),
+                "kind": kind,
+                "model_id": configured_model_id or task.get("model_id"),
                 "prompt": str(task.get("prompt") or "")[:500],
                 "node": arguments.get("node") or {},
             }
@@ -369,8 +445,11 @@ def _tool(
     return ToolBinding(name, description, schema, effect, handler, summarize)
 
 
-def visual_agent_tools() -> tuple[ToolBinding, ...]:
+def visual_agent_tools(
+    *, image_model_id: str | None = None, video_model_id: str | None = None
+) -> tuple[ToolBinding, ...]:
     object_schema = {"type": "object", "additionalProperties": True}
+    generation_model_ids = {"image": image_model_id, "video": video_model_id}
     return (
         _tool(
             "read_canvas",
@@ -439,12 +518,20 @@ def visual_agent_tools() -> tuple[ToolBinding, ...]:
             },
             "external",
             _start_generation_on_canvas,
+            generation_model_ids,
         ),
     )
 
 
 def build_visual_agent_definition(
-    *, project_id: str, model: str, tools_enabled: bool
+    *,
+    project_id: str,
+    model: str,
+    tools_enabled: bool,
+    image_model_id: str | None = None,
+    image_model_slug: str = "",
+    video_model_id: str | None = None,
+    video_model_slug: str = "",
 ) -> AgentDefinition:
     instructions = (
         "你是 Future Props Lab 视觉工坊的项目 Agent。你要理解项目、画布、素材和生成任务，"
@@ -454,13 +541,34 @@ def build_visual_agent_definition(
         "多个相关画布改动必须合并到一次 apply_canvas_changes 调用。"
         "不要删除项目、删除素材、上传文件或调用未提供的能力。"
     )
+    if image_model_id:
+        instructions += (
+            f"当前对话固定使用图像生成模型 {image_model_slug or image_model_id}"
+            f"（model_id={image_model_id}）；图片生成任务必须使用该模型。"
+        )
+    else:
+        instructions += "当前对话的图像生成模型为自动选择，请从可用生成选项中选择。"
+    if video_model_id:
+        instructions += (
+            f"当前对话固定使用视频生成模型 {video_model_slug or video_model_id}"
+            f"（model_id={video_model_id}）；视频生成任务必须使用该模型。"
+        )
+    else:
+        instructions += "当前对话的视频生成模型为自动选择，请从可用生成选项中选择。"
     if not tools_enabled:
         instructions += "当前模型不支持工具调用，本轮只能提供分析和建议，不得声称修改了项目。"
     return AgentDefinition(
         id="visual_workshop_agent",
         model=model,
         instructions=instructions,
-        tools=visual_agent_tools() if tools_enabled else (),
+        tools=(
+            visual_agent_tools(
+                image_model_id=image_model_id,
+                video_model_id=video_model_id,
+            )
+            if tools_enabled
+            else ()
+        ),
         context_sources=(lambda: visual_context_source(project_id),),
         budgets=RunBudgets(),
     )

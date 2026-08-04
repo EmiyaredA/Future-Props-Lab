@@ -979,72 +979,189 @@ button.file-item-main:focus-visible {
 }
 .is-compact .file-browser-controls {
   margin: 0;
-  border-width: 0 0 1px;
+  overflow: visible;
+  border: 0;
   border-radius: 0;
-  background: var(--surface);
+  background: transparent;
   box-shadow: none;
 }
-.is-compact .file-browser-toolbar {
-  min-height: 52px;
-  padding: 7px 10px;
+.file-compact-search-row {
+  min-height: 60px;
+  padding: 10px 13px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
-.is-compact .file-breadcrumb button {
-  font-size: 9px;
-}
-.is-compact .file-primary-actions {
-  gap: 5px;
-}
-.is-compact .file-primary-actions button {
-  min-height: 31px;
-  padding: 0 8px;
-  font-size: 8px;
-}
-.is-compact .file-browser-filters {
-  padding: 8px 10px 10px;
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 6px;
-}
-.is-compact .file-browser-filters > label {
+.file-compact-search-row > label {
   min-width: 0;
+  min-height: 36px;
+  padding: 0 11px;
+  display: flex;
+  align-items: center;
+  flex: 1;
+  gap: 8px;
+  border: 1px solid var(--border-strong);
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--surface-soft) 72%, transparent);
+}
+.file-compact-search-row > label:focus-within {
+  border-color: var(--accent-line);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 9%, transparent);
+}
+.file-compact-search-row > label svg {
+  width: 15px;
+  height: 15px;
+  flex: none;
+  color: var(--faint);
+}
+.file-compact-search-row input {
+  min-width: 0;
+  width: 100%;
   min-height: 34px;
-  grid-column: 1 / -1;
+  padding: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  box-shadow: none;
+  color: var(--text);
+  font-size: 11px;
 }
-.is-compact .file-browser-filters input {
-  min-height: 31px;
+.file-compact-search-row input::placeholder {
+  color: var(--faint);
+}
+.file-compact-actions {
+  display: flex;
+  align-items: center;
+  flex: none;
+  gap: 2px;
+}
+.file-compact-menu {
+  position: relative;
+}
+.file-compact-menu > button,
+.file-compact-sort {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--muted);
+}
+.file-compact-menu > button:hover,
+.file-compact-menu > button.active,
+.file-compact-menu > button[aria-expanded="true"],
+.file-compact-sort:hover {
+  background: var(--surface-hover);
+  color: var(--text-strong);
+}
+.file-compact-menu > button.active {
+  color: var(--accent);
+}
+.file-compact-menu > button svg,
+.file-compact-sort svg {
+  width: 17px;
+  height: 17px;
+}
+.file-compact-filter-popover,
+.file-compact-add-popover {
+  position: absolute;
+  z-index: 24;
+  top: 40px;
+  right: 0;
+  width: 184px;
+  padding: 10px;
+  border: 1px solid var(--border-strong);
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: 0 18px 48px rgb(0 0 0 / 28%);
+}
+.file-compact-filter-popover > span {
+  margin: 0 2px 6px;
+  display: block;
+  color: var(--faint);
   font-size: 9px;
+  font-weight: 700;
 }
-.is-compact .file-filter-select {
+.file-compact-filter-popover > span:not(:first-child) {
+  margin-top: 10px;
+}
+.file-compact-filter-popover .file-filter-select {
   width: 100%;
   min-width: 0;
 }
-.is-compact .file-filter-select .custom-select-trigger {
+.file-compact-filter-popover .custom-select-trigger {
   min-height: 34px;
-  font-size: 8px;
+  font-size: 10px;
 }
-.is-compact .file-view-toggle {
-  grid-column: 1 / -1;
-  justify-content: stretch;
+.file-compact-add-popover {
+  width: 150px;
+  padding: 6px;
 }
-.is-compact .file-view-toggle button {
-  width: auto;
+.file-compact-add-popover > button {
+  width: 100%;
+  min-height: 35px;
+  padding: 0 9px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text);
+  font-size: 10px;
+  text-align: left;
+}
+.file-compact-add-popover > button:hover:not(:disabled) {
+  background: var(--surface-hover);
+  color: var(--accent);
+}
+.file-compact-add-popover > button svg {
+  width: 15px;
+  height: 15px;
+}
+.file-compact-location {
+  min-height: 54px;
+  padding: 7px 17px 9px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.file-compact-location .file-breadcrumb {
   flex: 1;
+}
+.file-compact-location .file-breadcrumb button {
+  min-height: 32px;
+  padding-inline: 2px;
+  color: var(--text-strong);
+  font-size: 13px;
+  font-weight: 760;
+}
+.file-compact-location .file-breadcrumb span button {
+  padding-inline: 5px;
+  color: var(--muted);
+  font-size: 10px;
+}
+.file-compact-sort {
+  flex: none;
 }
 .is-compact .file-notice,
 .is-compact .file-upload-feedback {
-  margin: 9px 10px 0;
+  margin: 8px 13px 0;
 }
 .is-compact .file-items {
-  padding: 10px;
+  padding: 0 13px 16px;
 }
 .is-compact .file-items.grid {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
 }
 .is-compact .file-items.grid article {
-  min-height: 150px;
+  min-height: 138px;
 }
-.is-compact .file-item-main {
+.is-compact .file-items.grid .file-item-main {
   padding: 14px 38px 10px 11px;
   grid-template-columns: 39px minmax(0, 1fr);
   gap: 8px;
@@ -1086,9 +1203,61 @@ button.file-item-main:focus-visible {
   padding: 0 6px;
   font-size: 7px;
 }
+.is-compact .file-items.list {
+  gap: 2px;
+}
+.is-compact .file-items.list article {
+  min-height: 62px;
+  display: block;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  box-shadow: none;
+}
+.is-compact .file-items.list article:hover {
+  background: var(--surface-hover);
+}
+.is-compact .file-items.list .file-item-main {
+  min-height: 62px;
+  padding: 9px 40px 9px 6px;
+  grid-template-columns: 44px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+}
+.is-compact .file-items.list .file-item-preview {
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 8px;
+  color: var(--muted);
+  background: color-mix(in srgb, var(--surface-hover) 86%, var(--surface));
+}
+.is-compact .file-items.list .file-item-preview.folder {
+  color: color-mix(in srgb, var(--text) 58%, var(--surface));
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--muted) 74%, var(--surface)) 0%,
+    color-mix(in srgb, var(--faint) 48%, var(--surface)) 100%
+  );
+}
+.is-compact .file-items.list .file-item-preview svg {
+  width: 23px;
+  height: 23px;
+}
+.is-compact .file-items.list .file-item-copy {
+  gap: 0;
+}
+.is-compact .file-items.list .file-item-copy > strong {
+  font-size: 12px;
+}
+.is-compact .file-items.list .file-item-copy > :not(strong),
+.is-compact .file-items.list .file-item-footer {
+  display: none;
+}
 .is-compact .file-item-menu {
-  top: 8px;
-  right: 7px;
+  top: 50%;
+  right: 5px;
+  transform: translateY(-50%);
 }
 .is-compact .file-item-menu-trigger {
   width: 26px;
@@ -1098,8 +1267,10 @@ button.file-item-main:focus-visible {
   top: 31px;
 }
 .is-compact .file-empty {
-  min-height: 210px;
-  margin: 10px;
+  min-height: 260px;
+  margin: 0 13px;
+  border: 0;
+  color: var(--faint);
 }
 @media (max-width: 1100px) {
   .file-items.grid {

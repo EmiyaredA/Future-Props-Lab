@@ -49,6 +49,7 @@ import {
   type ModelTestMessage,
 } from "@features/models/api";
 import { fetchApiBlob } from "@platform/api/client";
+import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
 import type { SelectOption } from "@shared/ui/CustomSelect";
 import { ModelGenerationTestPanel } from "@features/models/ModelGenerationTestPanel";
 import {
@@ -392,6 +393,9 @@ export function ModelTestPage() {
     url: string;
     name: string;
   } | null>(null);
+  const [conversationToDelete, setConversationToDelete] =
+    useState<ModelTestConversation | null>(null);
+  const [deletingConversation, setDeletingConversation] = useState(false);
   const [uploadingAttachments, setUploadingAttachments] = useState(false);
   const [removingAttachmentId, setRemovingAttachmentId] = useState<
     string | null
@@ -557,15 +561,21 @@ export function ModelTestPage() {
   };
 
   const remove = async () => {
-    if (!conversation || streamingId) return;
-    if (!confirm(`删除对话「${conversation.title}」？`)) return;
+    if (!conversationToDelete || streamingId) return;
+    setDeletingConversation(true);
     try {
-      await deleteModelTestConversation(conversation.id, conversation.revision);
+      await deleteModelTestConversation(
+        conversationToDelete.id,
+        conversationToDelete.revision,
+      );
+      setConversationToDelete(null);
       setActiveId(null);
       autoCreated.current = false;
       await conversationsQuery.refetch();
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : String(cause));
+    } finally {
+      setDeletingConversation(false);
     }
   };
 
@@ -938,7 +948,7 @@ export function ModelTestPage() {
                   className="chat-delete-button"
                   aria-label="删除当前对话"
                   disabled={Boolean(streamingId) || uploadingAttachments}
-                  onClick={() => void remove()}
+                  onClick={() => setConversationToDelete(conversation)}
                 >
                   <Trash2 aria-hidden />
                 </button>
@@ -1323,6 +1333,19 @@ export function ModelTestPage() {
           </div>
         </div>
       ) : null}
+      <ConfirmDialog
+        open={Boolean(conversationToDelete)}
+        title="删除测试对话"
+        description={
+          conversationToDelete
+            ? `对话「${conversationToDelete.title}」及其中的全部消息将被永久删除。`
+            : ""
+        }
+        confirmLabel="删除对话"
+        pending={deletingConversation}
+        onCancel={() => setConversationToDelete(null)}
+        onConfirm={remove}
+      />
     </section>
   );
 }

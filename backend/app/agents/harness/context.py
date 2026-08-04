@@ -32,4 +32,3 @@ class ContextCompiler:
             "omitted": omitted,
             "characters": self.max_characters - remaining,
         }
-

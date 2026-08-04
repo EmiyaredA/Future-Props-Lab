@@ -66,6 +66,73 @@ const VIDEO_RATIO_OPTIONS: SelectOption[] = [
 const VIDEO_RESOLUTION_OPTIONS: SelectOption[] = ["480p", "720p", "1080p"].map(
   (value) => ({ value, label: value.toUpperCase() }),
 );
+const IMAGE_RATIO_OPTIONS = [
+  { label: "1:1", width: 1, height: 1 },
+  { label: "2:3", width: 2, height: 3 },
+  { label: "3:2", width: 3, height: 2 },
+  { label: "3:4", width: 3, height: 4 },
+  { label: "4:3", width: 4, height: 3 },
+  { label: "4:5", width: 4, height: 5 },
+  { label: "5:4", width: 5, height: 4 },
+  { label: "9:16", width: 9, height: 16 },
+  { label: "16:9", width: 16, height: 9 },
+  { label: "21:9", width: 21, height: 9 },
+] as const;
+const IMAGE_CLARITY_OPTIONS = ["1K", "2K", "4K"] as const;
+
+type ImageRatio = (typeof IMAGE_RATIO_OPTIONS)[number]["label"];
+type ImageClarity = (typeof IMAGE_CLARITY_OPTIONS)[number];
+type ImageSizeChoice = {
+  value: string;
+  width: number;
+  height: number;
+  ratio: ImageRatio;
+  clarity: ImageClarity;
+};
+
+function classifyImageRatio(width: number, height: number): ImageRatio {
+  const ratio = width / height;
+  return IMAGE_RATIO_OPTIONS.reduce((nearest, option) =>
+    Math.abs(Math.log(ratio / (option.width / option.height))) <
+    Math.abs(Math.log(ratio / (nearest.width / nearest.height)))
+      ? option
+      : nearest,
+  ).label;
+}
+
+function classifyImageClarity(width: number, height: number): ImageClarity {
+  const longEdge = Math.max(width, height);
+  if (longEdge < 2048) return "1K";
+  if (longEdge < 3328) return "2K";
+  return "4K";
+}
+
+function imageSizeChoices(sizes: string[]): ImageSizeChoice[] {
+  return sizes.flatMap((value) => {
+    const match = /^(\d+)x(\d+)$/.exec(value);
+    if (!match) return [];
+    const width = Number(match[1]);
+    const height = Number(match[2]);
+    return [
+      {
+        value,
+        width,
+        height,
+        ratio: classifyImageRatio(width, height),
+        clarity: classifyImageClarity(width, height),
+      },
+    ];
+  });
+}
+
+function imageRatioIconStyle(
+  option: (typeof IMAGE_RATIO_OPTIONS)[number],
+): CSSProperties {
+  const ratio = option.width / option.height;
+  return ratio >= 1
+    ? { width: 32, height: Math.max(12, 32 / ratio) }
+    : { width: Math.max(12, 32 * ratio), height: 32 };
+}
 
 function MediaPreview({ file }: { file: ManagedFile }) {
   const [source, setSource] = useState("");
@@ -174,6 +241,27 @@ function ProjectMediaPicker({
     : files;
   const UploadIcon =
     kind === "video" ? Video : kind === "audio" ? Music : Image;
+  const uploadButton = (
+    <button
+      type="button"
+      className="generation-media-upload"
+      aria-label={`上传${label}`}
+      title={`上传${label}`}
+      disabled={upload.isPending || (multiple && value.length >= max)}
+      onClick={() => uploadInput.current?.click()}
+    >
+      {upload.isPending ? (
+        <LoaderCircle className="spinning" aria-hidden />
+      ) : minimal ? (
+        <UploadIcon aria-hidden />
+      ) : (
+        <Upload aria-hidden />
+      )}
+      <span className={minimal ? "sr-only" : undefined}>
+        {upload.isPending ? "上传中" : "上传"}
+      </span>
+    </button>
+  );
 
   return (
     <fieldset
@@ -203,25 +291,7 @@ function ProjectMediaPicker({
         </span>
       ) : (
         <div className="generation-image-options">
-          <button
-            type="button"
-            className="generation-media-upload"
-            aria-label={`上传${label}`}
-            title={`上传${label}`}
-            disabled={upload.isPending || (multiple && value.length >= max)}
-            onClick={() => uploadInput.current?.click()}
-          >
-            {upload.isPending ? (
-              <LoaderCircle className="spinning" aria-hidden />
-            ) : minimal ? (
-              <UploadIcon aria-hidden />
-            ) : (
-              <Upload aria-hidden />
-            )}
-            <span className={minimal ? "sr-only" : undefined}>
-              {upload.isPending ? "上传中" : "上传"}
-            </span>
-          </button>
+          {minimal ? null : uploadButton}
           {visibleFiles.map((file) => {
             const selected = value.includes(file.id);
             return (
@@ -250,6 +320,7 @@ function ProjectMediaPicker({
               </button>
             );
           })}
+          {minimal ? uploadButton : null}
         </div>
       )}
       {multiple && !minimal ? (
@@ -287,6 +358,7 @@ export function GenerationDrawer({
   const [prompt, setPrompt] = useState("");
   const [size, setSize] = useState("1024x1024");
   const [seed, setSeed] = useState("");
+  const [imageCount, setImageCount] = useState(1);
   const [imageReference, setImageReference] = useState<string[]>([]);
   const [videoMode, setVideoMode] = useState<VideoMode>("text");
   const [duration, setDuration] = useState(5);
@@ -314,6 +386,13 @@ export function GenerationDrawer({
     (model) => model.kind === kind,
   );
   const selectedModel = models.find((model) => model.id === modelId);
+  const availableImageSizes = useMemo(
+    () => imageSizeChoices(selectedModel?.sizes ?? []),
+    [selectedModel?.sizes],
+  );
+  const selectedImageSize =
+    availableImageSizes.find((option) => option.value === size) ??
+    availableImageSizes[0];
 
   useEffect(() => {
     const preferred = models.find((model) =>
@@ -338,11 +417,26 @@ export function GenerationDrawer({
   }, [kind, selectedModel, size]);
 
   const createMutation = useMutation({
-    mutationFn: (body: GenerationTaskInput) =>
-      createGenerationTask(projectId, body),
-    onSuccess: (task) => {
+    mutationFn: async ({
+      body,
+      count = 1,
+    }: {
+      body: GenerationTaskInput;
+      count?: number;
+    }) => {
+      const tasks = [];
+      for (let index = 0; index < count; index += 1) {
+        tasks.push(await createGenerationTask(projectId, body));
+      }
+      return tasks;
+    },
+    onSuccess: (tasks) => {
+      const task = tasks[0];
+      if (!task) return;
       setNotice(
-        `任务已提交（${task.id.slice(0, 8)}），可在“生成任务”页查看进度。`,
+        tasks.length === 1
+          ? `任务已提交（${task.id.slice(0, 8)}），可在“生成任务”页查看进度。`
+          : `已提交 ${tasks.length} 个生成任务，第一个结果将自动绑定当前节点。`,
       );
       void client.invalidateQueries({ queryKey: ["visual-generation-tasks"] });
       onTaskCreated?.(task);
@@ -368,36 +462,266 @@ export function GenerationDrawer({
     }
     if (kind === "image") {
       createMutation.mutate({
-        kind: "image",
-        model_id: modelId,
-        prompt,
-        size,
-        seed: seed === "" ? null : Number(seed),
-        reference_asset_id: imageReference[0] ?? null,
+        body: {
+          kind: "image",
+          model_id: modelId,
+          prompt,
+          size,
+          seed: seed === "" ? null : Number(seed),
+          reference_asset_id: imageReference[0] ?? null,
+        },
+        count: imageCount,
       });
       return;
     }
     createMutation.mutate({
-      kind: "video",
-      model_id: modelId,
-      prompt,
-      mode: videoMode === "image" ? "frames" : videoMode,
-      duration,
-      resolution,
-      ratio,
-      watermark,
-      generate_audio: generateAudio,
-      first_frame_asset_id:
-        videoMode === "frames" || videoMode === "image"
-          ? (firstFrame[0] ?? null)
-          : null,
-      last_frame_asset_id:
-        videoMode === "frames" ? (lastFrame[0] ?? null) : null,
-      reference_asset_ids: videoMode === "reference" ? references : [],
-      audio_asset_ids: videoMode === "reference" ? audioReferences : [],
-      video_asset_ids: videoMode === "reference" ? videoReferences : [],
+      body: {
+        kind: "video",
+        model_id: modelId,
+        prompt,
+        mode: videoMode === "image" ? "frames" : videoMode,
+        duration,
+        resolution,
+        ratio,
+        watermark,
+        generate_audio: generateAudio,
+        first_frame_asset_id:
+          videoMode === "frames" || videoMode === "image"
+            ? (firstFrame[0] ?? null)
+            : null,
+        last_frame_asset_id:
+          videoMode === "frames" ? (lastFrame[0] ?? null) : null,
+        reference_asset_ids: videoMode === "reference" ? references : [],
+        audio_asset_ids: videoMode === "reference" ? audioReferences : [],
+        video_asset_ids: videoMode === "reference" ? videoReferences : [],
+      },
     });
   };
+
+  if (compact && lockedKind === "image") {
+    return (
+      <aside
+        className={`canvas-generation-drawer is-compact image-node-composer${composerExpanded ? " is-expanded" : ""}`}
+        aria-label="节点 AI 生成"
+      >
+        <form className="video-node-composer-form" onSubmit={submit}>
+          <div className="image-composer-body">
+            <div className="image-composer-tools">
+              <ProjectMediaPicker
+                projectId={projectId}
+                label="参考图片（可选）"
+                minimal
+                value={imageReference}
+                onChange={setImageReference}
+              />
+              <button
+                type="button"
+                className="video-composer-close"
+                aria-label={
+                  composerExpanded ? "收起图片生成器" : "展开图片生成器"
+                }
+                title={composerExpanded ? "收起" : "展开"}
+                onClick={() => setComposerExpanded((current) => !current)}
+              >
+                {composerExpanded ? (
+                  <Minimize2 aria-hidden />
+                ) : (
+                  <Maximize2 aria-hidden />
+                )}
+              </button>
+            </div>
+            <label className="video-composer-prompt image-composer-prompt">
+              <span className="sr-only">图片提示词</span>
+              <textarea
+                required
+                maxLength={6000}
+                placeholder="描述你想生成的画面…"
+                value={prompt}
+                onChange={(event) => setPrompt(event.target.value)}
+              />
+              <small>{prompt.length}/6000</small>
+            </label>
+          </div>
+
+          {notice ? (
+            <div
+              className="generation-notice video-composer-notice"
+              role="status"
+            >
+              {notice}
+            </div>
+          ) : null}
+
+          <footer className="video-composer-footer image-composer-footer">
+            <span className="video-composer-kind">
+              <Image aria-hidden />
+              图片生成
+            </span>
+            <details
+              className="video-composer-model"
+              ref={modelMenuRef}
+              onBlur={(event) => {
+                if (!event.currentTarget.contains(event.relatedTarget))
+                  event.currentTarget.removeAttribute("open");
+              }}
+            >
+              <summary
+                role="button"
+                aria-label="生成模型"
+                aria-disabled={options.isLoading || models.length === 0}
+                onClick={(event) => {
+                  if (options.isLoading || models.length === 0)
+                    event.preventDefault();
+                }}
+              >
+                <span>{selectedModel?.label ?? "暂无可用模型"}</span>
+                <ChevronDown aria-hidden />
+              </summary>
+              <div className="video-model-menu" role="listbox">
+                {models.map((model) => (
+                  <button
+                    type="button"
+                    role="option"
+                    aria-selected={model.id === modelId}
+                    key={model.id}
+                    onClick={() => {
+                      setModelId(model.id);
+                      modelMenuRef.current?.removeAttribute("open");
+                    }}
+                  >
+                    {model.id === modelId ? <Check aria-hidden /> : <span />}
+                    {model.label}
+                  </button>
+                ))}
+              </div>
+            </details>
+            <details className="video-composer-parameters image-composer-parameters">
+              <summary role="button" aria-label="图片参数">
+                <span
+                  className="image-parameter-summary-icon"
+                  aria-hidden="true"
+                />
+                {selectedImageSize
+                  ? `${selectedImageSize.ratio} / ${selectedImageSize.clarity}`
+                  : "选择尺寸"}
+                <ChevronDown aria-hidden />
+              </summary>
+              <div className="image-parameter-popover">
+                <fieldset className="image-ratio-options">
+                  <legend>比例</legend>
+                  <div role="group" aria-label="图片比例">
+                    {IMAGE_RATIO_OPTIONS.map((option) => {
+                      const choices = availableImageSizes.filter(
+                        (choice) => choice.ratio === option.label,
+                      );
+                      const available = choices.length > 0;
+                      const selected =
+                        selectedImageSize?.ratio === option.label;
+                      return (
+                        <button
+                          type="button"
+                          aria-label={`比例 ${option.label}`}
+                          aria-pressed={selected}
+                          disabled={!available}
+                          key={option.label}
+                          onClick={() => {
+                            const next =
+                              choices.find(
+                                (choice) =>
+                                  choice.clarity === selectedImageSize?.clarity,
+                              ) ?? choices[0];
+                            if (next) setSize(next.value);
+                          }}
+                        >
+                          <span className="image-ratio-icon-shell">
+                            <span style={imageRatioIconStyle(option)} />
+                          </span>
+                          <span>{option.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </fieldset>
+                <fieldset className="image-clarity-options">
+                  <legend>清晰度</legend>
+                  <div role="group" aria-label="图片清晰度">
+                    {IMAGE_CLARITY_OPTIONS.map((clarity) => {
+                      const next = availableImageSizes.find(
+                        (choice) =>
+                          choice.ratio === selectedImageSize?.ratio &&
+                          choice.clarity === clarity,
+                      );
+                      return (
+                        <button
+                          type="button"
+                          aria-label={`清晰度 ${clarity}`}
+                          aria-pressed={selectedImageSize?.clarity === clarity}
+                          disabled={!next}
+                          key={clarity}
+                          onClick={() => {
+                            if (next) setSize(next.value);
+                          }}
+                        >
+                          {clarity}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </fieldset>
+                <label className="image-seed-control">
+                  <span>种子（可选）</span>
+                  <input
+                    type="number"
+                    min="0"
+                    placeholder="随机"
+                    value={seed}
+                    onChange={(event) => setSeed(event.target.value)}
+                  />
+                </label>
+              </div>
+            </details>
+            <details className="image-composer-count">
+              <summary role="button" aria-label="生成数量">
+                ×{imageCount}
+                <ChevronDown aria-hidden />
+              </summary>
+              <div role="listbox" aria-label="选择生成数量">
+                {[1, 2, 3, 4].map((count) => (
+                  <button
+                    type="button"
+                    role="option"
+                    aria-selected={imageCount === count}
+                    key={count}
+                    onClick={(event) => {
+                      setImageCount(count);
+                      event.currentTarget
+                        .closest("details")
+                        ?.removeAttribute("open");
+                    }}
+                  >
+                    ×{count}
+                    {imageCount === count ? <Check aria-hidden /> : null}
+                  </button>
+                ))}
+              </div>
+            </details>
+            <button
+              className="video-composer-submit"
+              disabled={createMutation.isPending || !modelId || !prompt.trim()}
+              type="submit"
+              aria-label={createMutation.isPending ? "正在提交" : "生成图片"}
+            >
+              {createMutation.isPending ? (
+                <LoaderCircle className="spinning" aria-hidden />
+              ) : (
+                <ArrowUp aria-hidden />
+              )}
+            </button>
+          </footer>
+        </form>
+      </aside>
+    );
+  }
 
   if (compact && lockedKind === "video") {
     const modeLabels: Array<{ value: VideoMode; label: string }> = [

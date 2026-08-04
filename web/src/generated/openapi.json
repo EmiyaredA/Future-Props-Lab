@@ -2521,6 +2521,179 @@
         "title": "VisualAssetReferencePatchIn",
         "type": "object"
       },
+      "VisualAssistantActionOut": {
+        "properties": {
+          "action_id": {
+            "title": "Action Id",
+            "type": "string"
+          },
+          "approval_group_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Approval Group Id"
+          },
+          "canvas_revision": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Canvas Revision"
+          },
+          "created_at": {
+            "title": "Created At",
+            "type": "string"
+          },
+          "display_payload": {
+            "additionalProperties": true,
+            "title": "Display Payload",
+            "type": "object"
+          },
+          "duration_ms": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duration Ms"
+          },
+          "effect": {
+            "enum": [
+              "read",
+              "write",
+              "external"
+            ],
+            "title": "Effect",
+            "type": "string"
+          },
+          "error_message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Message"
+          },
+          "generation_task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Generation Task Id"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "position": {
+            "title": "Position",
+            "type": "integer"
+          },
+          "result_payload": {
+            "additionalProperties": true,
+            "title": "Result Payload",
+            "type": "object"
+          },
+          "run_id": {
+            "title": "Run Id",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "proposed",
+              "waiting_approval",
+              "running",
+              "completed",
+              "rejected",
+              "failed",
+              "cancelled"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "tool_name": {
+            "title": "Tool Name",
+            "type": "string"
+          },
+          "updated_at": {
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "action_id",
+          "run_id",
+          "approval_group_id",
+          "position",
+          "tool_name",
+          "effect",
+          "status",
+          "display_payload",
+          "result_payload",
+          "error_message",
+          "duration_ms",
+          "canvas_revision",
+          "generation_task_id",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "VisualAssistantActionOut",
+        "type": "object"
+      },
+      "VisualAssistantApprovalIn": {
+        "properties": {
+          "canvas_revision": {
+            "minimum": 0.0,
+            "title": "Canvas Revision",
+            "type": "integer"
+          },
+          "decision": {
+            "enum": [
+              "approve",
+              "reject"
+            ],
+            "title": "Decision",
+            "type": "string"
+          }
+        },
+        "required": [
+          "decision",
+          "canvas_revision"
+        ],
+        "title": "VisualAssistantApprovalIn",
+        "type": "object"
+      },
+      "VisualAssistantApprovalOut": {
+        "properties": {
+          "accepted": {
+            "default": true,
+            "title": "Accepted",
+            "type": "boolean"
+          }
+        },
+        "title": "VisualAssistantApprovalOut",
+        "type": "object"
+      },
       "VisualAssistantAssetOut": {
         "properties": {
           "byte_size": {
@@ -2549,6 +2722,27 @@
         "title": "VisualAssistantAssetOut",
         "type": "object"
       },
+      "VisualAssistantAssetPart": {
+        "properties": {
+          "asset_id": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Asset Id",
+            "type": "string"
+          },
+          "type": {
+            "const": "asset",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "asset_id"
+        ],
+        "title": "VisualAssistantAssetPart",
+        "type": "object"
+      },
       "VisualAssistantConversationListOut": {
         "properties": {
           "items": {
@@ -2573,6 +2767,21 @@
           },
           "id": {
             "title": "Id",
+            "type": "string"
+          },
+          "image_model_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Image Model Id"
+          },
+          "image_model_slug": {
+            "title": "Image Model Slug",
             "type": "string"
           },
           "messages": {
@@ -2612,6 +2821,21 @@
           "updated_at": {
             "title": "Updated At",
             "type": "string"
+          },
+          "video_model_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Video Model Id"
+          },
+          "video_model_slug": {
+            "title": "Video Model Slug",
+            "type": "string"
           }
         },
         "required": [
@@ -2620,6 +2844,10 @@
           "title",
           "model_id",
           "model_slug",
+          "image_model_id",
+          "image_model_slug",
+          "video_model_id",
+          "video_model_slug",
           "revision",
           "created_at",
           "updated_at"
@@ -2633,6 +2861,17 @@
             "minimum": 0.0,
             "title": "Expected Revision",
             "type": "integer"
+          },
+          "image_model_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Image Model Id"
           },
           "model_id": {
             "anyOf": [
@@ -2657,6 +2896,17 @@
               }
             ],
             "title": "Title"
+          },
+          "video_model_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Video Model Id"
           }
         },
         "required": [
@@ -2673,6 +2923,21 @@
           },
           "id": {
             "title": "Id",
+            "type": "string"
+          },
+          "image_model_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Image Model Id"
+          },
+          "image_model_slug": {
+            "title": "Image Model Slug",
             "type": "string"
           },
           "model_id": {
@@ -2705,6 +2970,21 @@
           "updated_at": {
             "title": "Updated At",
             "type": "string"
+          },
+          "video_model_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Video Model Id"
+          },
+          "video_model_slug": {
+            "title": "Video Model Slug",
+            "type": "string"
           }
         },
         "required": [
@@ -2713,6 +2993,10 @@
           "title",
           "model_id",
           "model_slug",
+          "image_model_id",
+          "image_model_slug",
+          "video_model_id",
+          "video_model_slug",
           "revision",
           "created_at",
           "updated_at"
@@ -2722,6 +3006,13 @@
       },
       "VisualAssistantMessageOut": {
         "properties": {
+          "actions": {
+            "items": {
+              "$ref": "#/components/schemas/VisualAssistantActionOut"
+            },
+            "title": "Actions",
+            "type": "array"
+          },
           "assets": {
             "items": {
               "$ref": "#/components/schemas/VisualAssistantAssetOut"
@@ -2732,6 +3023,27 @@
           "content": {
             "title": "Content",
             "type": "string"
+          },
+          "content_parts": {
+            "items": {
+              "discriminator": {
+                "mapping": {
+                  "asset": "#/components/schemas/VisualAssistantAssetPart",
+                  "text": "#/components/schemas/VisualAssistantTextPart"
+                },
+                "propertyName": "type"
+              },
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/VisualAssistantTextPart"
+                },
+                {
+                  "$ref": "#/components/schemas/VisualAssistantAssetPart"
+                }
+              ]
+            },
+            "title": "Content Parts",
+            "type": "array"
           },
           "created_at": {
             "title": "Created At",
@@ -2864,11 +3176,38 @@
             "title": "Asset Ids",
             "type": "array"
           },
+          "canvas_revision": {
+            "minimum": 0.0,
+            "title": "Canvas Revision",
+            "type": "integer"
+          },
           "content": {
             "default": "",
             "maxLength": 100000,
             "title": "Content",
             "type": "string"
+          },
+          "content_parts": {
+            "items": {
+              "discriminator": {
+                "mapping": {
+                  "asset": "#/components/schemas/VisualAssistantAssetPart",
+                  "text": "#/components/schemas/VisualAssistantTextPart"
+                },
+                "propertyName": "type"
+              },
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/VisualAssistantTextPart"
+                },
+                {
+                  "$ref": "#/components/schemas/VisualAssistantAssetPart"
+                }
+              ]
+            },
+            "maxItems": 1000,
+            "title": "Content Parts",
+            "type": "array"
           },
           "expected_revision": {
             "minimum": 0.0,
@@ -2877,9 +3216,30 @@
           }
         },
         "required": [
-          "expected_revision"
+          "expected_revision",
+          "canvas_revision"
         ],
         "title": "VisualAssistantSendIn",
+        "type": "object"
+      },
+      "VisualAssistantTextPart": {
+        "properties": {
+          "text": {
+            "maxLength": 100000,
+            "title": "Text",
+            "type": "string"
+          },
+          "type": {
+            "const": "text",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "text"
+        ],
+        "title": "VisualAssistantTextPart",
         "type": "object"
       },
       "VisualCanvasAudioNode": {
@@ -7830,6 +8190,101 @@
           }
         },
         "summary": "Stream Message",
+        "tags": [
+          "visual-workshop-assistant"
+        ]
+      }
+    },
+    "/v1/visual-workshop/projects/{project_id}/conversations/{conversation_id}/runs/{run_id}/approvals/{approval_id}": {
+      "post": {
+        "operationId": "resolve_approval_v1_visual_workshop_projects__project_id__conversations__conversation_id__runs__run_id__approvals__approval_id__post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "conversation_id",
+            "required": true,
+            "schema": {
+              "title": "Conversation Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "title": "Run Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "approval_id",
+            "required": true,
+            "schema": {
+              "title": "Approval Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Studio-Token",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Studio-Token"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VisualAssistantApprovalIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VisualAssistantApprovalOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Resolve Approval",
         "tags": [
           "visual-workshop-assistant"
         ]

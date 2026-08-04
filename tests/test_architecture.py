@@ -165,6 +165,7 @@ def test_business_routes_are_mounted_under_v1() -> None:
 
 def test_documented_core_directories_exist() -> None:
     required = (
+        "backend/app/agents",
         "backend/app/concurrency",
         "backend/app/core",
         "backend/app/llm",

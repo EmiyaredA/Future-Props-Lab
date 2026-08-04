@@ -9,10 +9,12 @@ import {
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AlertCircle,
+  ArrowDownAZ,
   CheckCircle2,
   Download,
   File,
   FileText,
+  Filter,
   Folder,
   FolderOpen,
   FolderPlus,
@@ -48,7 +50,7 @@ import {
 } from "@features/files/api";
 import "@features/files/files.css";
 
-type ViewMode = "grid" | "list";
+export type AssetViewMode = "grid" | "list";
 type UploadStatus = "queued" | "uploading" | "success" | "error";
 type UploadItem = {
   id: string;
@@ -267,23 +269,31 @@ export function AssetBrowser({
   projectId,
   compact = false,
   importMode = false,
+  viewMode,
+  onViewModeChange,
   onImported,
 }: {
   projectId?: string;
   compact?: boolean;
   importMode?: boolean;
+  viewMode?: AssetViewMode;
+  onViewModeChange?: (view: AssetViewMode) => void;
   onImported?: () => void;
 }) {
   const client = useQueryClient();
   const fileInput = useRef<HTMLInputElement>(null);
+  const compactActions = useRef<HTMLDivElement>(null);
   const dialogTitleId = useId();
   const [folderId, setFolderId] = useState<string>();
   const [query, setQuery] = useState("");
   const [kind, setKind] = useState<"all" | MediaKind>("all");
   const [sort, setSort] = useState<"updated" | "name">("updated");
-  const [view, setViewState] = useState<ViewMode>(() =>
+  const [localView, setLocalView] = useState<AssetViewMode>(() =>
     window.localStorage.getItem(VIEW_KEY) === "list" ? "list" : "grid",
   );
+  const view = viewMode ?? localView;
+  const [compactFilterOpen, setCompactFilterOpen] = useState(false);
+  const [compactAddOpen, setCompactAddOpen] = useState(false);
   const [notice, setNotice] = useState("");
   const [uploads, setUploads] = useState<UploadItem[]>([]);
   const [openMenu, setOpenMenu] = useState<string>();
@@ -442,9 +452,35 @@ export function AssetBrowser({
     return () => document.removeEventListener("keydown", closeOnEscape);
   }, [act.isPending, editor]);
 
-  const setView = (next: ViewMode) => {
-    setViewState(next);
-    window.localStorage.setItem(VIEW_KEY, next);
+  useEffect(() => {
+    window.localStorage.setItem(VIEW_KEY, view);
+  }, [view]);
+
+  useEffect(() => {
+    if (!compactFilterOpen && !compactAddOpen) return;
+    const closeOnPointer = (event: MouseEvent) => {
+      if (!compactActions.current?.contains(event.target as Node)) {
+        setCompactFilterOpen(false);
+        setCompactAddOpen(false);
+      }
+    };
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setCompactFilterOpen(false);
+        setCompactAddOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", closeOnPointer);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("mousedown", closeOnPointer);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [compactAddOpen, compactFilterOpen]);
+
+  const setView = (next: AssetViewMode) => {
+    setLocalView(next);
+    onViewModeChange?.(next);
   };
   const openEditor = (next: Exclude<FileEditor, null>) => {
     setOpenMenu(undefined);
@@ -593,100 +629,234 @@ export function AssetBrowser({
   return (
     <section className={`file-browser${compact ? " is-compact" : ""}`}>
       <div className="file-browser-controls">
-        <div className="file-browser-toolbar">
-          <div className="file-location">
-            <div className="file-breadcrumb" aria-label="文件路径">
-              <button type="button" onClick={() => setFolderId(undefined)}>
-                {importMode ? "文件管理" : projectId ? "项目素材" : "全部文件"}
-              </button>
-              {path.map((folder) => (
-                <span key={folder.id}>
-                  <i aria-hidden>/</i>
-                  <button type="button" onClick={() => setFolderId(folder.id)}>
-                    {folder.name}
+        {compact ? (
+          <>
+            <div className="file-compact-search-row">
+              <label>
+                <Search aria-hidden />
+                <input
+                  aria-label="搜索文件或文件夹"
+                  placeholder="搜索素材"
+                  value={query}
+                  onChange={(event) => setQuery(event.target.value)}
+                />
+              </label>
+              <div className="file-compact-actions" ref={compactActions}>
+                <div className="file-compact-menu">
+                  <button
+                    type="button"
+                    className={kind !== "all" ? "active" : ""}
+                    aria-label="筛选素材"
+                    aria-haspopup="dialog"
+                    aria-expanded={compactFilterOpen}
+                    onClick={() => {
+                      setCompactFilterOpen((current) => !current);
+                      setCompactAddOpen(false);
+                    }}
+                  >
+                    <Filter aria-hidden />
                   </button>
-                </span>
-              ))}
+                  {compactFilterOpen ? (
+                    <div
+                      className="file-compact-filter-popover"
+                      role="dialog"
+                      aria-label="素材筛选"
+                    >
+                      <span>文件类型</span>
+                      <CustomSelect
+                        ariaLabel="文件类型"
+                        className="file-filter-select"
+                        value={kind}
+                        options={KIND_OPTIONS}
+                        onChange={(value) => setKind(value as typeof kind)}
+                      />
+                      <span>排序方式</span>
+                      <CustomSelect
+                        ariaLabel="文件排序"
+                        className="file-filter-select file-sort-select"
+                        value={sort}
+                        options={SORT_OPTIONS}
+                        onChange={(value) => setSort(value as typeof sort)}
+                      />
+                    </div>
+                  ) : null}
+                </div>
+                {!importMode ? (
+                  <div className="file-compact-menu">
+                    <button
+                      type="button"
+                      aria-label="添加素材"
+                      aria-haspopup="menu"
+                      aria-expanded={compactAddOpen}
+                      onClick={() => {
+                        setCompactAddOpen((current) => !current);
+                        setCompactFilterOpen(false);
+                      }}
+                    >
+                      <Plus aria-hidden />
+                    </button>
+                    {compactAddOpen ? (
+                      <div className="file-compact-add-popover" role="menu">
+                        <button
+                          type="button"
+                          role="menuitem"
+                          onClick={() => {
+                            setCompactAddOpen(false);
+                            openEditor({ kind: "create-folder", name: "" });
+                          }}
+                        >
+                          <FolderPlus aria-hidden /> 新建文件夹
+                        </button>
+                        <button
+                          type="button"
+                          role="menuitem"
+                          disabled={upload.isPending}
+                          onClick={() => {
+                            setCompactAddOpen(false);
+                            fileInput.current?.click();
+                          }}
+                        >
+                          {upload.isPending ? (
+                            <LoaderCircle className="spin" aria-hidden />
+                          ) : (
+                            <Upload aria-hidden />
+                          )}
+                          上传文件
+                        </button>
+                      </div>
+                    ) : null}
+                  </div>
+                ) : null}
+              </div>
             </div>
-            {!compact && !foldersQuery.isLoading && !filesQuery.isLoading ? (
-              <small>
-                {childFolders.length} 个文件夹 · {files.length} 个文件
-              </small>
-            ) : null}
-          </div>
-          {!importMode ? (
-            <div className="file-primary-actions">
+            <div className="file-compact-location">
+              <div className="file-breadcrumb" aria-label="文件路径">
+                <button type="button" onClick={() => setFolderId(undefined)}>
+                  全部
+                </button>
+                {path.map((folder) => (
+                  <span key={folder.id}>
+                    <i aria-hidden>/</i>
+                    <button
+                      type="button"
+                      onClick={() => setFolderId(folder.id)}
+                    >
+                      {folder.name}
+                    </button>
+                  </span>
+                ))}
+              </div>
               <button
                 type="button"
-                onClick={() => openEditor({ kind: "create-folder", name: "" })}
+                className="file-compact-sort"
+                aria-label={
+                  sort === "updated" ? "切换为按名称排序" : "切换为最近更新"
+                }
+                title={sort === "updated" ? "最近更新" : "按名称"}
+                onClick={() =>
+                  setSort((current) =>
+                    current === "updated" ? "name" : "updated",
+                  )
+                }
               >
-                <FolderPlus aria-hidden /> 新建文件夹
+                <ArrowDownAZ aria-hidden />
               </button>
-              {compact ? (
-                <button
-                  type="button"
-                  className="primary"
-                  disabled={upload.isPending}
-                  onClick={() => fileInput.current?.click()}
-                >
-                  {upload.isPending ? (
-                    <LoaderCircle className="spin" aria-hidden />
-                  ) : (
-                    <Upload aria-hidden />
-                  )}
-                  {upload.isPending
-                    ? `${completedUploads}/${uploads.length}`
-                    : "上传文件"}
-                </button>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="file-browser-toolbar">
+              <div className="file-location">
+                <div className="file-breadcrumb" aria-label="文件路径">
+                  <button type="button" onClick={() => setFolderId(undefined)}>
+                    {importMode
+                      ? "文件管理"
+                      : projectId
+                        ? "项目素材"
+                        : "全部文件"}
+                  </button>
+                  {path.map((folder) => (
+                    <span key={folder.id}>
+                      <i aria-hidden>/</i>
+                      <button
+                        type="button"
+                        onClick={() => setFolderId(folder.id)}
+                      >
+                        {folder.name}
+                      </button>
+                    </span>
+                  ))}
+                </div>
+                {!foldersQuery.isLoading && !filesQuery.isLoading ? (
+                  <small>
+                    {childFolders.length} 个文件夹 · {files.length} 个文件
+                  </small>
+                ) : null}
+              </div>
+              {!importMode ? (
+                <div className="file-primary-actions">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      openEditor({ kind: "create-folder", name: "" })
+                    }
+                  >
+                    <FolderPlus aria-hidden /> 新建文件夹
+                  </button>
+                </div>
               ) : null}
             </div>
-          ) : null}
-        </div>
-        <div className="file-browser-filters">
-          <label>
-            <Search aria-hidden />
-            <input
-              aria-label="搜索文件或文件夹"
-              placeholder={compact ? "搜索当前文件夹" : "搜索文件或文件夹"}
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-            />
-          </label>
-          <CustomSelect
-            ariaLabel="文件类型"
-            className="file-filter-select"
-            value={kind}
-            options={KIND_OPTIONS}
-            onChange={(value) => setKind(value as typeof kind)}
-          />
-          <CustomSelect
-            ariaLabel="文件排序"
-            className="file-filter-select file-sort-select"
-            value={sort}
-            options={SORT_OPTIONS}
-            onChange={(value) => setSort(value as typeof sort)}
-          />
-          <div className="file-view-toggle" role="group" aria-label="文件视图">
-            <button
-              type="button"
-              aria-label="卡片视图"
-              aria-pressed={view === "grid"}
-              className={view === "grid" ? "active" : ""}
-              onClick={() => setView("grid")}
-            >
-              <Grid2X2 aria-hidden />
-            </button>
-            <button
-              type="button"
-              aria-label="列表视图"
-              aria-pressed={view === "list"}
-              className={view === "list" ? "active" : ""}
-              onClick={() => setView("list")}
-            >
-              <List aria-hidden />
-            </button>
-          </div>
-        </div>
+            <div className="file-browser-filters">
+              <label>
+                <Search aria-hidden />
+                <input
+                  aria-label="搜索文件或文件夹"
+                  placeholder="搜索文件或文件夹"
+                  value={query}
+                  onChange={(event) => setQuery(event.target.value)}
+                />
+              </label>
+              <CustomSelect
+                ariaLabel="文件类型"
+                className="file-filter-select"
+                value={kind}
+                options={KIND_OPTIONS}
+                onChange={(value) => setKind(value as typeof kind)}
+              />
+              <CustomSelect
+                ariaLabel="文件排序"
+                className="file-filter-select file-sort-select"
+                value={sort}
+                options={SORT_OPTIONS}
+                onChange={(value) => setSort(value as typeof sort)}
+              />
+              <div
+                className="file-view-toggle"
+                role="group"
+                aria-label="文件视图"
+              >
+                <button
+                  type="button"
+                  aria-label="卡片视图"
+                  aria-pressed={view === "grid"}
+                  className={view === "grid" ? "active" : ""}
+                  onClick={() => setView("grid")}
+                >
+                  <Grid2X2 aria-hidden />
+                </button>
+                <button
+                  type="button"
+                  aria-label="列表视图"
+                  aria-pressed={view === "list"}
+                  className={view === "list" ? "active" : ""}
+                  onClick={() => setView("list")}
+                >
+                  <List aria-hidden />
+                </button>
+              </div>
+            </div>
+          </>
+        )}
       </div>
       {!importMode ? (
         <input

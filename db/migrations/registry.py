@@ -15,6 +15,8 @@ from db.migrations.versions import (
     r0010_model_categories_and_test_generation,
     r0011_visual_assistant_conversations,
     r0012_visual_assistant_actions,
+    r0013_visual_assistant_generation_models,
+    r0014_visual_assistant_content_parts,
 )
 
 
@@ -68,6 +70,14 @@ MIGRATIONS = (
     Migration(
         r0012_visual_assistant_actions.MIGRATION_ID,
         r0012_visual_assistant_actions.SQL,
+    ),
+    Migration(
+        r0013_visual_assistant_generation_models.MIGRATION_ID,
+        r0013_visual_assistant_generation_models.SQL,
+    ),
+    Migration(
+        r0014_visual_assistant_content_parts.MIGRATION_ID,
+        r0014_visual_assistant_content_parts.SQL,
     ),
 )
 

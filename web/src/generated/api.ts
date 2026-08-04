@@ -841,6 +841,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/visual-workshop/projects/{project_id}/conversations/{conversation_id}/runs/{run_id}/approvals/{approval_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Resolve Approval */
+        post: operations["resolve_approval_v1_visual_workshop_projects__project_id__conversations__conversation_id__runs__run_id__approvals__approval_id__post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/visual-workshop/projects/{project_id}/generation-tasks": {
         parameters: {
             query?: never;
@@ -1752,6 +1769,69 @@ export interface components {
              */
             move_to_root: boolean;
         };
+        /** VisualAssistantActionOut */
+        VisualAssistantActionOut: {
+            /** Action Id */
+            action_id: string;
+            /** Approval Group Id */
+            approval_group_id: string | null;
+            /** Canvas Revision */
+            canvas_revision: number | null;
+            /** Created At */
+            created_at: string;
+            /** Display Payload */
+            display_payload: {
+                [key: string]: unknown;
+            };
+            /** Duration Ms */
+            duration_ms: number | null;
+            /**
+             * Effect
+             * @enum {string}
+             */
+            effect: "read" | "write" | "external";
+            /** Error Message */
+            error_message: string | null;
+            /** Generation Task Id */
+            generation_task_id: string | null;
+            /** Id */
+            id: string;
+            /** Position */
+            position: number;
+            /** Result Payload */
+            result_payload: {
+                [key: string]: unknown;
+            };
+            /** Run Id */
+            run_id: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "proposed" | "waiting_approval" | "running" | "completed" | "rejected" | "failed" | "cancelled";
+            /** Tool Name */
+            tool_name: string;
+            /** Updated At */
+            updated_at: string;
+        };
+        /** VisualAssistantApprovalIn */
+        VisualAssistantApprovalIn: {
+            /** Canvas Revision */
+            canvas_revision: number;
+            /**
+             * Decision
+             * @enum {string}
+             */
+            decision: "approve" | "reject";
+        };
+        /** VisualAssistantApprovalOut */
+        VisualAssistantApprovalOut: {
+            /**
+             * Accepted
+             * @default true
+             */
+            accepted: boolean;
+        };
         /** VisualAssistantAssetOut */
         VisualAssistantAssetOut: {
             /** Byte Size */
@@ -1762,6 +1842,16 @@ export interface components {
             id: string;
             /** Mime Type */
             mime_type: string;
+        };
+        /** VisualAssistantAssetPart */
+        VisualAssistantAssetPart: {
+            /** Asset Id */
+            asset_id: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "asset";
         };
         /** VisualAssistantConversationListOut */
         VisualAssistantConversationListOut: {
@@ -1774,6 +1864,10 @@ export interface components {
             created_at: string;
             /** Id */
             id: string;
+            /** Image Model Id */
+            image_model_id: string | null;
+            /** Image Model Slug */
+            image_model_slug: string;
             /** Messages */
             messages?: components["schemas"]["VisualAssistantMessageOut"][];
             /** Model Id */
@@ -1788,15 +1882,23 @@ export interface components {
             title: string;
             /** Updated At */
             updated_at: string;
+            /** Video Model Id */
+            video_model_id: string | null;
+            /** Video Model Slug */
+            video_model_slug: string;
         };
         /** VisualAssistantConversationPatchIn */
         VisualAssistantConversationPatchIn: {
             /** Expected Revision */
             expected_revision: number;
+            /** Image Model Id */
+            image_model_id?: string | null;
             /** Model Id */
             model_id?: string | null;
             /** Title */
             title?: string | null;
+            /** Video Model Id */
+            video_model_id?: string | null;
         };
         /** VisualAssistantConversationSummaryOut */
         VisualAssistantConversationSummaryOut: {
@@ -1804,6 +1906,10 @@ export interface components {
             created_at: string;
             /** Id */
             id: string;
+            /** Image Model Id */
+            image_model_id: string | null;
+            /** Image Model Slug */
+            image_model_slug: string;
             /** Model Id */
             model_id: string | null;
             /** Model Slug */
@@ -1816,13 +1922,21 @@ export interface components {
             title: string;
             /** Updated At */
             updated_at: string;
+            /** Video Model Id */
+            video_model_id: string | null;
+            /** Video Model Slug */
+            video_model_slug: string;
         };
         /** VisualAssistantMessageOut */
         VisualAssistantMessageOut: {
+            /** Actions */
+            actions?: components["schemas"]["VisualAssistantActionOut"][];
             /** Assets */
             assets?: components["schemas"]["VisualAssistantAssetOut"][];
             /** Content */
             content: string;
+            /** Content Parts */
+            content_parts?: (components["schemas"]["VisualAssistantTextPart"] | components["schemas"]["VisualAssistantAssetPart"])[];
             /** Created At */
             created_at: string;
             /** Error Message */
@@ -1870,13 +1984,27 @@ export interface components {
         VisualAssistantSendIn: {
             /** Asset Ids */
             asset_ids?: string[];
+            /** Canvas Revision */
+            canvas_revision: number;
             /**
              * Content
              * @default
              */
             content: string;
+            /** Content Parts */
+            content_parts?: (components["schemas"]["VisualAssistantTextPart"] | components["schemas"]["VisualAssistantAssetPart"])[];
             /** Expected Revision */
             expected_revision: number;
+        };
+        /** VisualAssistantTextPart */
+        VisualAssistantTextPart: {
+            /** Text */
+            text: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "text";
         };
         /** VisualCanvasAudioNode */
         VisualCanvasAudioNode: {
@@ -4399,6 +4527,46 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    resolve_approval_v1_visual_workshop_projects__project_id__conversations__conversation_id__runs__run_id__approvals__approval_id__post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Studio-Token"?: string | null;
+            };
+            path: {
+                project_id: string;
+                conversation_id: string;
+                run_id: string;
+                approval_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VisualAssistantApprovalIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VisualAssistantApprovalOut"];
                 };
             };
             /** @description Validation Error */

@@ -1,6 +1,8 @@
 import { expect, test } from "@playwright/test";
 
-test("sidebar and custom select chevrons stay centered", async ({ page }) => {
+test("sidebar chevron points inward when collapsed and custom select chevrons stay centered", async ({
+  page,
+}) => {
   await page.goto("/model-call-logs");
   await expect(
     page.getByRole("heading", { name: "模型调用日志" }),
@@ -28,6 +30,16 @@ test("sidebar and custom select chevrons stay centered", async ({ page }) => {
       : 99;
   });
   expect(Math.abs(navOffset)).toBeLessThan(0.6);
+
+  await expect(page.locator(".nav-chevron")).toHaveCSS(
+    "transform",
+    "matrix(0, 1, -1, 0, 0, 0)",
+  );
+  await page.getByRole("button", { name: "基模型" }).click();
+  await expect(page.locator(".nav-chevron")).toHaveCSS(
+    "transform",
+    "matrix(-1, 0, 0, -1, 0, 0)",
+  );
 });
 
 test("model test workspace keeps panels readable on desktop and narrow screens", async ({

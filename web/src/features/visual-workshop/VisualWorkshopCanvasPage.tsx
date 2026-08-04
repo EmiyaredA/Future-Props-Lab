@@ -2,16 +2,17 @@ import { PointerEvent, useCallback, useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft,
+  CircleQuestionMark,
   Clipboard,
   Copy,
   Focus,
   FolderCog,
   FolderOpen,
+  Grid2X2,
   Hand,
   Image,
-  Maximize,
+  List,
   MessageSquareText,
-  Minimize,
   Minus,
   MousePointer2,
   Music,
@@ -26,7 +27,7 @@ import {
   X,
 } from "lucide-react";
 import { uploadManagedFile } from "@features/files/api";
-import { AssetBrowser } from "@features/files/AssetBrowser";
+import { AssetBrowser, type AssetViewMode } from "@features/files/AssetBrowser";
 import { CanvasNodeInspector } from "@features/visual-workshop/CanvasNodeInspector";
 import { ProjectAssistantPanel } from "@features/visual-workshop/ProjectAssistantPanel";
 import {
@@ -54,9 +55,15 @@ type ContextMenuState = {
 const DEFAULT_VIEWPORT: Viewport = { x: 0, y: 0, zoom: 1 };
 const NODE_SIZE: Record<NodeKind, { width: number; height: number }> = {
   text: { width: 300, height: 180 },
-  image: { width: 320, height: 230 },
+  image: { width: 480, height: 304 },
   video: { width: 480, height: 304 },
   audio: { width: 320, height: 150 },
+};
+const ATTACHED_EDITOR_SIZE: Partial<
+  Record<NodeKind, { width: number; height: number; gap: number }>
+> = {
+  image: { width: 760, height: 420, gap: 22 },
+  video: { width: 760, height: 460, gap: 22 },
 };
 const NODE_DRAG_BLOCKER_SELECTOR = [
   "a",
@@ -166,7 +173,6 @@ export function VisualWorkshopCanvasPage({
   onAssets: () => void;
 }) {
   const client = useQueryClient();
-  const root = useRef<HTMLDivElement>(null);
   const surface = useRef<HTMLDivElement>(null);
   const uploadInput = useRef<HTMLInputElement>(null);
   const pan = useRef<
@@ -187,25 +193,26 @@ export function VisualWorkshopCanvasPage({
   const revisionRef = useRef(0);
   const nodesRef = useRef<VisualCanvasNode[]>([]);
   const conflictRef = useRef(false);
+  const saveFailureRef = useRef("");
   const saveQueue = useRef(Promise.resolve());
   const autoSave = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const clipboard = useRef<VisualCanvasNode | undefined>(undefined);
+  const pendingFitNode = useRef<string | undefined>(undefined);
   const lastPointer = useRef({ x: 0, y: 0 });
   const uploadPosition = useRef({ x: 0, y: 0 });
   const [viewport, setViewport] = useState(() => readViewport(projectId));
   const [nodes, setNodes] = useState<VisualCanvasNode[]>([]);
   const [selectedId, setSelectedId] = useState<string>();
-  const [videoEditorTab, setVideoEditorTab] = useState<"content" | "generate">(
+  const [mediaEditorTab, setMediaEditorTab] = useState<"content" | "generate">(
     "generate",
   );
   const [contextMenu, setContextMenu] = useState<ContextMenuState>();
   const [assetsOpen, setAssetsOpen] = useState(false);
   const [assistantOpen, setAssistantOpen] = useState(false);
   const [assetTab, setAssetTab] = useState<"project" | "library">("project");
+  const [assetView, setAssetView] = useState<AssetViewMode>("list");
   const [editingTitle, setEditingTitle] = useState(false);
   const [title, setTitle] = useState("");
-  const [fullscreen, setFullscreen] = useState(false);
-  const [immersiveFallback, setImmersiveFallback] = useState(false);
   const [saveState, setSaveState] = useState<
     "saved" | "saving" | "error" | "conflict"
   >("saved");
@@ -253,6 +260,7 @@ export function VisualWorkshopCanvasPage({
         if (conflictRef.current) return;
         setSaveState("saving");
         setSaveMessage("");
+        saveFailureRef.current = "";
         try {
           const updated = await putVisualCanvas(
             projectId,
@@ -273,14 +281,31 @@ export function VisualWorkshopCanvasPage({
             }
           }
           setSaveState("error");
-          setSaveMessage(
-            error instanceof Error ? error.message : "画布保存失败",
-          );
+          const message =
+            error instanceof Error ? error.message : "画布保存失败";
+          saveFailureRef.current = message;
+          setSaveMessage(message);
         }
       });
     },
     [projectId],
   );
+
+  const prepareCanvasForAgent = useCallback(async () => {
+    if (autoSave.current) {
+      clearTimeout(autoSave.current);
+      autoSave.current = undefined;
+      enqueueSave(nodesRef.current);
+    }
+    await saveQueue.current;
+    if (conflictRef.current) {
+      throw new Error("画布存在保存冲突，请先选择要使用的版本");
+    }
+    if (saveFailureRef.current) {
+      throw new Error(`画布尚未保存：${saveFailureRef.current}`);
+    }
+    return revisionRef.current;
+  }, [enqueueSave]);
 
   const replaceNodes = useCallback(
     (
@@ -364,24 +389,6 @@ export function VisualWorkshopCanvasPage({
     };
   }, [canvasReady]);
 
-  useEffect(() => {
-    const sync = () => {
-      const active = document.fullscreenElement === root.current;
-      setFullscreen(active);
-      if (active) setImmersiveFallback(false);
-    };
-    document.addEventListener("fullscreenchange", sync);
-    return () => document.removeEventListener("fullscreenchange", sync);
-  }, []);
-  useEffect(() => {
-    if (!immersiveFallback) return;
-    const exit = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setImmersiveFallback(false);
-    };
-    window.addEventListener("keydown", exit);
-    return () => window.removeEventListener("keydown", exit);
-  }, [immersiveFallback]);
-
   const renameMutation = useMutation({
     mutationFn: () =>
       projectQuery.data
@@ -455,6 +462,8 @@ export function VisualWorkshopCanvasPage({
       const node = (
         kind === "text" ? { ...base, text: "" } : base
       ) as VisualCanvasNode;
+      if (kind === "image" || kind === "video")
+        pendingFitNode.current = node.id;
       replaceNodes((current) => [...current, node], true);
       setSelectedId(node.id);
       setAssetsOpen(false);
@@ -491,7 +500,7 @@ export function VisualWorkshopCanvasPage({
     [replaceNodes],
   );
   const fitView = useCallback(
-    (expandedVideoId?: string) => {
+    (expandedMediaId?: string) => {
       const bounds = surface.current?.getBoundingClientRect();
       if (!bounds || !nodesRef.current.length) {
         setViewport(DEFAULT_VIEWPORT);
@@ -518,38 +527,40 @@ export function VisualWorkshopCanvasPage({
       }
       const availableWidth = Math.max(1, availableRight - availableLeft);
       const padding = 120;
-      const expandedId = expandedVideoId ?? selectedId;
-      const videoEditorWidth = 760;
-      const videoEditorHeight = 460;
-      const videoEditorGap = 22;
+      const expandedId = expandedMediaId ?? selectedId;
+      const attachedEditor = (node: VisualCanvasNode) =>
+        node.id === expandedId ? ATTACHED_EDITOR_SIZE[node.kind] : undefined;
       const minX = Math.min(
-        ...nodesRef.current.map((node) =>
-          node.kind === "video" && node.id === expandedId
+        ...nodesRef.current.map((node) => {
+          const editor = attachedEditor(node);
+          return editor
             ? node.position.x -
-              Math.max(0, (videoEditorWidth - NODE_SIZE.video.width) / 2)
-            : node.position.x,
-        ),
+                Math.max(0, (editor.width - NODE_SIZE[node.kind].width) / 2)
+            : node.position.x;
+        }),
       );
       const minY = Math.min(...nodesRef.current.map((node) => node.position.y));
       const maxX = Math.max(
-        ...nodesRef.current.map(
-          (node) =>
+        ...nodesRef.current.map((node) => {
+          const editor = attachedEditor(node);
+          return (
             node.position.x +
             NODE_SIZE[node.kind].width +
-            (node.kind === "video" && node.id === expandedId
-              ? Math.max(0, (videoEditorWidth - NODE_SIZE.video.width) / 2)
-              : 0),
-        ),
+            (editor
+              ? Math.max(0, (editor.width - NODE_SIZE[node.kind].width) / 2)
+              : 0)
+          );
+        }),
       );
       const maxY = Math.max(
-        ...nodesRef.current.map(
-          (node) =>
+        ...nodesRef.current.map((node) => {
+          const editor = attachedEditor(node);
+          return (
             node.position.y +
             NODE_SIZE[node.kind].height +
-            (node.kind === "video" && node.id === expandedId
-              ? videoEditorGap + videoEditorHeight
-              : 0),
-        ),
+            (editor ? editor.gap + editor.height : 0)
+          );
+        }),
       );
       const zoom = clampZoom(
         Math.min(
@@ -567,6 +578,13 @@ export function VisualWorkshopCanvasPage({
     },
     [selectedId],
   );
+
+  useEffect(() => {
+    const nodeId = pendingFitNode.current;
+    if (!nodeId || selectedId !== nodeId) return;
+    pendingFitNode.current = undefined;
+    requestAnimationFrame(() => fitView(nodeId));
+  }, [fitView, nodes, selectedId]);
 
   useEffect(() => {
     const handleKeys = (event: KeyboardEvent) => {
@@ -671,10 +689,11 @@ export function VisualWorkshopCanvasPage({
     nodeDrag.current = undefined;
     if (autoSave.current) clearTimeout(autoSave.current);
     enqueueSave(nodesRef.current);
-    if (!completed.moved && completed.kind === "video") {
-      setVideoEditorTab("generate");
-      requestAnimationFrame(() => fitView(completed.id));
-    }
+    if (
+      !completed.moved &&
+      (completed.kind === "image" || completed.kind === "video")
+    )
+      setMediaEditorTab("generate");
   };
   const openContextMenu = (event: React.MouseEvent<HTMLDivElement>) => {
     event.preventDefault();
@@ -696,22 +715,6 @@ export function VisualWorkshopCanvasPage({
     });
     lastPointer.current = world;
   };
-  const toggleFullscreen = async () => {
-    if (document.fullscreenElement) {
-      await document.exitFullscreen();
-      return;
-    }
-    if (immersiveFallback) {
-      setImmersiveFallback(false);
-      return;
-    }
-    try {
-      await root.current?.requestFullscreen();
-    } catch {
-      setImmersiveFallback(true);
-    }
-  };
-  const isFullscreen = fullscreen || immersiveFallback;
   const selectedNode = nodes.find((node) => node.id === selectedId);
   const selectedMedia =
     selectedNode?.kind === "text" ? undefined : selectedNode;
@@ -734,10 +737,7 @@ export function VisualWorkshopCanvasPage({
     );
 
   return (
-    <div
-      ref={root}
-      className={`visual-canvas${immersiveFallback ? " is-immersive" : ""}${assistantOpen ? " has-assistant" : ""}`}
-    >
+    <div className={`visual-canvas${assistantOpen ? " has-assistant" : ""}`}>
       <header className="visual-canvas-topbar">
         <div className="canvas-project-identity">
           <img
@@ -802,13 +802,6 @@ export function VisualWorkshopCanvasPage({
             <MessageSquareText aria-hidden />
             对话
           </button>
-          <button
-            aria-label={isFullscreen ? "退出全屏" : "进入全屏"}
-            onClick={() => void toggleFullscreen()}
-          >
-            {isFullscreen ? <Minimize aria-hidden /> : <Maximize aria-hidden />}
-            {isFullscreen ? "退出全屏" : "全屏"}
-          </button>
         </div>
       </header>
       <nav className="canvas-tool-dock" aria-label="画布工具">
@@ -862,13 +855,18 @@ export function VisualWorkshopCanvasPage({
                   event.stopPropagation();
                   setSelectedId(node.id);
                   setAssetsOpen(false);
-                  if (node.kind === "video" && selectedId !== node.id) {
-                    setVideoEditorTab("generate");
+                  if (
+                    (node.kind === "image" || node.kind === "video") &&
+                    selectedId !== node.id
+                  ) {
+                    setMediaEditorTab("generate");
                   }
                 }}
               >
                 <header>
-                  {node.kind === "video" ? (
+                  {node.kind === "image" ? (
+                    <Image className="canvas-node-kind-icon" aria-hidden />
+                  ) : node.kind === "video" ? (
                     <Video className="canvas-node-kind-icon" aria-hidden />
                   ) : null}
                   {selected ? (
@@ -888,7 +886,8 @@ export function VisualWorkshopCanvasPage({
                   ) : (
                     <strong>{node.title}</strong>
                   )}
-                  {!selected && node.kind === "video" ? (
+                  {!selected &&
+                  (node.kind === "image" || node.kind === "video") ? (
                     <Pencil className="canvas-node-title-edit" aria-hidden />
                   ) : null}
                   {selected ? (
@@ -936,20 +935,21 @@ export function VisualWorkshopCanvasPage({
                 ) : (
                   <div className="canvas-node-media">
                     <CanvasMediaPreview node={node} />
-                    {node.kind === "video" ? (
+                    {node.kind === "image" || node.kind === "video" ? (
                       <button
                         type="button"
-                        className="canvas-video-replace"
+                        className="canvas-media-replace"
                         aria-label={
-                          node.asset_id ? "替换视频素材" : "选择视频素材"
+                          node.asset_id
+                            ? `替换${nodeLabel(node.kind)}素材`
+                            : `选择${nodeLabel(node.kind)}素材`
                         }
                         onPointerDown={(event) => event.stopPropagation()}
                         onClick={(event) => {
                           event.stopPropagation();
                           setSelectedId(node.id);
-                          setVideoEditorTab("content");
+                          setMediaEditorTab("content");
                           setAssetsOpen(false);
-                          requestAnimationFrame(() => fitView(node.id));
                         }}
                       >
                         <RefreshCw aria-hidden />
@@ -958,7 +958,7 @@ export function VisualWorkshopCanvasPage({
                     ) : null}
                   </div>
                 )}
-                {node.kind === "video" ? (
+                {node.kind === "image" || node.kind === "video" ? (
                   <>
                     <span
                       className="canvas-node-port is-input"
@@ -974,10 +974,11 @@ export function VisualWorkshopCanvasPage({
                     </span>
                   </>
                 ) : null}
-                {selected && node.kind === "video" ? (
+                {selected &&
+                (node.kind === "image" || node.kind === "video") ? (
                   <CanvasNodeInspector
                     embedded
-                    initialTab={videoEditorTab}
+                    initialTab={mediaEditorTab}
                     projectId={projectId}
                     node={node}
                     onClose={() => setSelectedId(undefined)}
@@ -1085,13 +1086,45 @@ export function VisualWorkshopCanvasPage({
       {assetsOpen ? (
         <aside className="canvas-assets-drawer" aria-label="项目素材库">
           <header>
-            <strong>素材库</strong>
-            <button
-              aria-label="关闭素材库"
-              onClick={() => setAssetsOpen(false)}
-            >
-              <X aria-hidden />
-            </button>
+            <div className="canvas-assets-title">
+              <strong>素材库</strong>
+              <span title="管理本项目素材，或从其他项目导入">
+                <CircleQuestionMark aria-hidden />
+              </span>
+            </div>
+            <div className="canvas-assets-header-actions">
+              <div
+                className="file-view-toggle"
+                role="group"
+                aria-label="文件视图"
+              >
+                <button
+                  type="button"
+                  aria-label="卡片视图"
+                  aria-pressed={assetView === "grid"}
+                  className={assetView === "grid" ? "active" : ""}
+                  onClick={() => setAssetView("grid")}
+                >
+                  <Grid2X2 aria-hidden />
+                </button>
+                <button
+                  type="button"
+                  aria-label="列表视图"
+                  aria-pressed={assetView === "list"}
+                  className={assetView === "list" ? "active" : ""}
+                  onClick={() => setAssetView("list")}
+                >
+                  <List aria-hidden />
+                </button>
+              </div>
+              <button
+                className="canvas-assets-close"
+                aria-label="关闭素材库"
+                onClick={() => setAssetsOpen(false)}
+              >
+                <X aria-hidden />
+              </button>
+            </div>
           </header>
           <nav className="canvas-assets-tabs" role="tablist">
             <button
@@ -1108,22 +1141,29 @@ export function VisualWorkshopCanvasPage({
               aria-selected={assetTab === "library"}
               onClick={() => setAssetTab("library")}
             >
-              文件管理
+              跨项目
             </button>
           </nav>
           {assetTab === "project" ? (
-            <AssetBrowser compact projectId={projectId} />
+            <AssetBrowser
+              compact
+              projectId={projectId}
+              viewMode={assetView}
+              onViewModeChange={setAssetView}
+            />
           ) : (
             <AssetBrowser
               compact
               importMode
               projectId={projectId}
+              viewMode={assetView}
+              onViewModeChange={setAssetView}
               onImported={() => setAssetTab("project")}
             />
           )}
         </aside>
       ) : null}
-      {selectedMedia && selectedMedia.kind !== "video" ? (
+      {selectedMedia && selectedMedia.kind === "audio" ? (
         <CanvasNodeInspector
           projectId={projectId}
           node={selectedMedia}
@@ -1137,6 +1177,7 @@ export function VisualWorkshopCanvasPage({
         projectId={projectId}
         open={assistantOpen}
         onClose={() => setAssistantOpen(false)}
+        prepareCanvas={prepareCanvasForAgent}
       />
       {conflict ? (
         <div className="canvas-conflict" role="alert">
@@ -1149,6 +1190,7 @@ export function VisualWorkshopCanvasPage({
               nodesRef.current = conflict.nodes;
               revisionRef.current = conflict.revision;
               conflictRef.current = false;
+              saveFailureRef.current = "";
               setNodes(conflict.nodes);
               setConflict(undefined);
               setSaveState("saved");
@@ -1161,6 +1203,7 @@ export function VisualWorkshopCanvasPage({
             onClick={() => {
               revisionRef.current = conflict.revision;
               conflictRef.current = false;
+              saveFailureRef.current = "";
               setConflict(undefined);
               enqueueSave(nodesRef.current);
             }}
@@ -1174,7 +1217,7 @@ export function VisualWorkshopCanvasPage({
       ) : null}
       <div
         className={`canvas-controls${
-          assetsOpen || (selectedMedia && selectedMedia.kind !== "video")
+          assetsOpen || (selectedMedia && selectedMedia.kind === "audio")
             ? " with-assets"
             : ""
         }`}

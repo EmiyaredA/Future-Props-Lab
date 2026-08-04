@@ -1,6 +1,7 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ApiError } from "@platform/api/client";
+import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
 import { CustomSelect } from "@shared/ui/CustomSelect";
 import { ProviderIcon } from "@shared/ui/ProviderIcon";
 import {
@@ -28,6 +29,10 @@ type Conflict = {
 type Modal =
   | { kind: "provider"; initial: Provider | null }
   | { kind: "model"; providerId: string; initial: ModelEntry | null }
+  | null;
+type DeleteTarget =
+  | { kind: "provider"; provider: Provider }
+  | { kind: "model"; model: ModelEntry }
   | null;
 
 const providerKindLabel = {
@@ -376,6 +381,8 @@ export function ModelServicePage() {
   const catalog = catalogQuery.data;
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [modal, setModal] = useState<Modal>(null);
+  const [deleteTarget, setDeleteTarget] = useState<DeleteTarget>(null);
+  const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [conflict, setConflict] = useState<Conflict | null>(null);
@@ -447,6 +454,28 @@ export function ModelServicePage() {
           : addModel(providerId, input, revision),
       initial ? "模型已更新" : "模型已添加",
     );
+  };
+  const removeTarget = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    try {
+      if (deleteTarget.kind === "provider") {
+        await mutate(
+          (revision) => deleteProvider(deleteTarget.provider.id, revision),
+          "供应商已删除",
+        );
+      } else {
+        await mutate(
+          (revision) => deleteModel(deleteTarget.model.id, revision),
+          "模型已删除",
+        );
+      }
+      setDeleteTarget(null);
+    } catch {
+      setDeleteTarget(null);
+    } finally {
+      setDeleting(false);
+    }
   };
   return (
     <section className="page model-service-page">
@@ -559,15 +588,9 @@ export function ModelServicePage() {
                   </button>
                   <button
                     className="compact-action danger"
-                    onClick={() => {
-                      if (
-                        confirm(`删除供应商「${selected.name}」及其全部模型？`)
-                      )
-                        void mutate(
-                          (revision) => deleteProvider(selected.id, revision),
-                          "供应商已删除",
-                        ).catch(() => undefined);
-                    }}
+                    onClick={() =>
+                      setDeleteTarget({ kind: "provider", provider: selected })
+                    }
                   >
                     <ActionIcon kind="delete" /> 删除
                   </button>
@@ -676,13 +699,9 @@ export function ModelServicePage() {
                           <button
                             className="row-icon-action danger"
                             aria-label={`删除 ${model.label || model.slug}`}
-                            onClick={() => {
-                              if (confirm(`删除模型「${model.slug}」？`))
-                                void mutate(
-                                  (revision) => deleteModel(model.id, revision),
-                                  "模型已删除",
-                                ).catch(() => undefined);
-                            }}
+                            onClick={() =>
+                              setDeleteTarget({ kind: "model", model })
+                            }
                           >
                             <ActionIcon kind="delete" />
                           </button>
@@ -732,6 +751,23 @@ export function ModelServicePage() {
           )}
         </div>
       ) : null}
+      <ConfirmDialog
+        open={Boolean(deleteTarget)}
+        title={deleteTarget?.kind === "provider" ? "删除供应商" : "删除模型"}
+        description={
+          deleteTarget?.kind === "provider"
+            ? `删除供应商「${deleteTarget.provider.name}」时，其全部模型也会被删除。此操作无法撤销。`
+            : deleteTarget
+              ? `模型「${deleteTarget.model.slug}」将从模型目录中永久删除。此操作无法撤销。`
+              : ""
+        }
+        confirmLabel={
+          deleteTarget?.kind === "provider" ? "删除供应商" : "删除模型"
+        }
+        pending={deleting}
+        onCancel={() => setDeleteTarget(null)}
+        onConfirm={removeTarget}
+      />
       {conflict ? (
         <div className="modal-backdrop">
           <div className="modal-card conflict-card">

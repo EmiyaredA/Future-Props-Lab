@@ -73,6 +73,26 @@ test("enters the visual workshop, persists projects, and supports deep navigatio
               error_message: null,
               created_at: "2026-08-03T08:01:01Z",
               assets: [],
+              actions: [
+                {
+                  id: "e2e-action",
+                  action_id: "e2e-read-canvas",
+                  run_id: "e2e-run",
+                  approval_group_id: null,
+                  position: 0,
+                  tool_name: "read_canvas",
+                  effect: "read",
+                  status: "completed",
+                  display_payload: { label: "读取最新画布" },
+                  result_payload: { canvas_revision: canvas.revision },
+                  error_message: null,
+                  duration_ms: 8,
+                  canvas_revision: canvas.revision,
+                  generation_task_id: null,
+                  created_at: "2026-08-03T08:01:00Z",
+                  updated_at: "2026-08-03T08:01:01Z",
+                },
+              ],
             },
           ],
         };
@@ -82,24 +102,39 @@ test("enters the visual workshop, persists projects, and supports deep navigatio
             schema_version: 2,
             sequence: 0,
             payload: {
+              run_id: "e2e-run",
               assistant_message_id: "e2e-assistant-message",
               model: String(
                 assistantConversation?.model_slug || "e2e-chat-model",
               ),
               model_changed_from: null,
+              agent_mode: "tools",
               revision: 1,
+            },
+          },
+          {
+            type: "step",
+            schema_version: 2,
+            sequence: 1,
+            payload: {
+              run_id: "e2e-run",
+              actions: (
+                assistantConversation?.messages as Array<
+                  Record<string, unknown>
+                >
+              )[1].actions,
             },
           },
           {
             type: "delta",
             schema_version: 2,
-            sequence: 1,
+            sequence: 2,
             payload: { text: "E2E 助手建议：先完善主视觉，再统一素材色调。" },
           },
           {
             type: "done",
             schema_version: 2,
-            sequence: 2,
+            sequence: 3,
             payload: { revision: 2 },
           },
         ];
@@ -344,7 +379,19 @@ test("enters the visual workshop, persists projects, and supports deep navigatio
   await expect(
     page.getByRole("complementary", { name: "项目素材库" }),
   ).toBeVisible();
-  await page.getByRole("tab", { name: "文件管理" }).click();
+  await expect(
+    page.getByRole("complementary", { name: "项目素材库" }),
+  ).toHaveCSS("width", "336px");
+  await expect(page.getByRole("button", { name: "列表视图" })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  await expect(page.getByPlaceholder("搜索素材")).toBeVisible();
+  await expect(page.getByRole("button", { name: "添加素材" })).toBeVisible();
+  await page.getByRole("button", { name: "筛选素材" }).click();
+  await expect(page.getByRole("dialog", { name: "素材筛选" })).toBeVisible();
+  await page.getByRole("button", { name: "筛选素材" }).click();
+  await page.getByRole("tab", { name: "跨项目" }).click();
   await expect(page.getByText("文件管理中还没有可导入的文件")).toBeVisible();
   await page.getByRole("button", { name: "管理素材" }).click();
   await expect(page).toHaveURL(
@@ -372,9 +419,8 @@ test("enters the visual workshop, persists projects, and supports deep navigatio
   await page.reload();
   await expect(page.getByText("图片1")).toBeVisible();
   await page.getByText("图片1").click();
-  await page.getByRole("tab", { name: "AI 生成" }).click();
-  await page.getByPlaceholder("描述要生成的画面…").fill("E2E 未来城市海报");
-  await page.getByRole("button", { name: "创建生成任务" }).click();
+  await page.getByPlaceholder("描述你想生成的画面…").fill("E2E 未来城市海报");
+  await page.getByRole("button", { name: "生成图片" }).click();
   await expect(page.getByText(/任务已提交/)).toBeVisible();
 
   await page.getByRole("button", { name: "对话" }).click();
@@ -383,19 +429,24 @@ test("enters the visual workshop, persists projects, and supports deep navigatio
   await expect(assistantPanel).toHaveCSS("width", "418px");
   await page.getByRole("button", { name: "选择模型" }).click();
   await expect(
-    page.getByRole("dialog", { name: "选择对话模型" }),
+    page.getByRole("dialog", { name: "配置 Agent 模型" }),
   ).toBeVisible();
+  await expect(page.getByRole("tab", { name: /图像生成/ })).toBeVisible();
+  await expect(page.getByRole("tab", { name: /视频生成/ })).toBeVisible();
   await page.getByRole("button", { name: /Anthropic/ }).click();
   await page.getByRole("button", { name: /E2E Vision/ }).click();
-  await expect(page.getByRole("dialog", { name: "选择对话模型" })).toHaveCount(
-    0,
-  );
+  await expect(
+    page.getByRole("dialog", { name: "配置 Agent 模型" }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "关闭模型选择" }).click();
   await page.getByRole("button", { name: "总结当前画布内容" }).click();
   await expect(
     page.getByPlaceholder("输入创意想法，询问当前画布…"),
   ).toHaveValue("总结当前画布内容");
   await page.getByRole("button", { name: "发送" }).click();
   await expect(page.getByText(/E2E 助手建议/)).toBeVisible();
+  await expect(page.getByLabel("Agent 执行步骤")).toBeVisible();
+  await expect(page.getByText("读取画布")).toBeVisible();
 
   await page.setViewportSize({ width: 700, height: 800 });
   await expect(assistantPanel).toHaveCSS("left", "10px");

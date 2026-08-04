@@ -42,13 +42,12 @@ def _safe_result(payload: dict) -> tuple[dict, int | None, str | None]:
     task = observation.get("task")
     generation_task_id = str(task.get("id")) if isinstance(task, dict) and task.get("id") else None
     result = {
-        key: value
-        for key, value in observation.items()
-        if key not in {"nodes", "request_payload"}
+        key: value for key, value in observation.items() if key not in {"nodes", "request_payload"}
     }
     if payload.get("model_text"):
         result["message"] = str(payload["model_text"])[:1000]
-    return result, int(canvas_revision) if isinstance(canvas_revision, int) else None, generation_task_id
+    normalized_revision = int(canvas_revision) if isinstance(canvas_revision, int) else None
+    return result, normalized_revision, generation_task_id
 
 
 async def persist_agent_event(message_id: str, event: AgentEvent) -> list[VisualAssistantActionOut]:
@@ -122,7 +121,9 @@ async def persist_agent_event(message_id: str, event: AgentEvent) -> list[Visual
             row.status = "completed" if event.type == "tool_completed" else "failed"
             row.result_payload = result
             row.error_message = (
-                None if event.type == "tool_completed" else str(payload.get("model_text") or "工具失败")
+                None
+                if event.type == "tool_completed"
+                else str(payload.get("model_text") or "工具失败")
             )
             row.duration_ms = int(payload.get("duration_ms") or 0)
             row.canvas_revision = canvas_revision
@@ -170,9 +171,7 @@ async def recover_interrupted_visual_assistant_runs() -> None:
         message_rows = list(
             (
                 await session.execute(
-                    select(VisualAssistantMessage).where(
-                        VisualAssistantMessage.status == "pending"
-                    )
+                    select(VisualAssistantMessage).where(VisualAssistantMessage.status == "pending")
                 )
             )
             .scalars()

@@ -53,6 +53,7 @@ async def test_persistent_playground_stream_cas_and_model_snapshot(
             prompt_tokens=8,
             completion_tokens=2,
             total_tokens=10,
+            finish_reason="stop",
         )
 
     monkeypatch.setattr("app.llm.playground.stream.stream_text_completion", fake_stream)
@@ -116,6 +117,11 @@ async def test_persistent_playground_stream_cas_and_model_snapshot(
         assert [event["sequence"] for event in events] == [0, 1, 2, 3]
         assert all(event["schema_version"] == 2 for event in events)
         assert events[-1]["payload"]["total_tokens"] == 10
+        call_log = (await client.get(f"/v1/llm-call-logs/{events[-1]['payload']['log_id']}")).json()
+        assert call_log["request_payload"]["conversation_id"] == conversation["id"]
+        assert call_log["response_payload"]["finish_reason"] == "stop"
+        assert call_log["response_payload"]["rounds"] == 1
+        assert call_log["response_payload"]["first_token_latency_ms"] >= 0
 
         detail = (await client.get(f"/v1/model-test/conversations/{conversation['id']}")).json()
         assert detail["revision"] == conversation["revision"] + 2

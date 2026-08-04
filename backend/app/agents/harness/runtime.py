@@ -3,6 +3,8 @@ from __future__ import annotations
 import asyncio
 import inspect
 import time
+from collections.abc import Callable
+from dataclasses import replace
 from uuid import uuid4
 
 from app.agents.harness.approval import ApprovalBroker, approval_broker
@@ -15,6 +17,7 @@ from app.agents.harness.types import (
     ProposedAction,
     RunResult,
     RunStatus,
+    ToolBinding,
     ToolExecutionContext,
 )
 from app.llm.providers.agent import AgentMessage, ModelAdapter, ModelTextDelta, ModelTurnEnd, Usage
@@ -28,7 +31,7 @@ async def _maybe_emit(listener: EventListener | None, event: AgentEvent) -> None
         await result
 
 
-class AgentHarness:
+class ReactiveToolLoop:
     def __init__(
         self,
         *,
@@ -44,6 +47,31 @@ class AgentHarness:
         self.run_id = str(uuid4())
         self._abort = asyncio.Event()
         self._running = False
+        self._listeners: list[EventListener] = []
+
+    def subscribe(self, listener: EventListener) -> Callable[[], None]:
+        self._listeners.append(listener)
+
+        def unsubscribe() -> None:
+            if listener in self._listeners:
+                self._listeners.remove(listener)
+
+        return unsubscribe
+
+    def update_configuration(
+        self,
+        *,
+        model: str | None = None,
+        tools: tuple[ToolBinding, ...] | None = None,
+    ) -> None:
+        if self._running:
+            raise RuntimeError("agent harness configuration is locked while running")
+        changes = {}
+        if model is not None:
+            changes["model"] = model
+        if tools is not None:
+            changes["tools"] = tools
+        self.definition = replace(self.definition, **changes)
 
     async def abort(self) -> None:
         self._abort.set()
@@ -143,28 +171,23 @@ class AgentHarness:
         if self._running:
             raise RuntimeError("agent harness is already running")
         self._running = True
+        provided_listener = listener
+
+        async def dispatch(event: AgentEvent) -> None:
+            await _maybe_emit(provided_listener, event)
+            for subscriber in tuple(self._listeners):
+                await _maybe_emit(subscriber, event)
+
+        listener = dispatch
         definition = self.definition
         observations: list[Observation] = []
         usage = Usage()
         final_text = ""
         tool_failures = 0
         try:
-            fragments = []
-            for source in definition.context_sources:
-                fragments.extend(await source())
-            context, context_summary = ContextCompiler(
-                definition.budgets.context_characters
-            ).compile(fragments)
-            system_prompt = definition.instructions
-            if context:
-                system_prompt = f"{system_prompt}\n\n{context}"
             await _maybe_emit(
                 listener,
                 AgentEvent("run_started", self.run_id, payload={"definition_id": definition.id}),
-            )
-            await _maybe_emit(
-                listener,
-                AgentEvent("context_compiled", self.run_id, payload=context_summary),
             )
             tools = {binding.name: binding for binding in definition.tools}
             tool_specs = [binding.spec() for binding in definition.tools]
@@ -172,6 +195,24 @@ class AgentHarness:
             for round_index in range(definition.budgets.max_rounds):
                 if self._abort.is_set():
                     raise asyncio.CancelledError
+                fragments = []
+                for source in definition.context_sources:
+                    fragments.extend(await source())
+                context, context_summary = ContextCompiler(
+                    definition.budgets.context_characters
+                ).compile(fragments)
+                system_prompt = definition.instructions
+                if context:
+                    system_prompt = f"{system_prompt}\n\n{context}"
+                await _maybe_emit(
+                    listener,
+                    AgentEvent(
+                        "context_compiled",
+                        self.run_id,
+                        round_index,
+                        context_summary,
+                    ),
+                )
                 await _maybe_emit(
                     listener,
                     AgentEvent("model_started", self.run_id, round_index),
@@ -179,9 +220,7 @@ class AgentHarness:
                 round_text: list[str] = []
                 turn_end: ModelTurnEnd | None = None
                 try:
-                    async with asyncio.timeout(
-                        definition.budgets.model_turn_timeout_seconds
-                    ):
+                    async with asyncio.timeout(definition.budgets.model_turn_timeout_seconds):
                         async for event in self.adapter.stream_turn(
                             system=system_prompt,
                             messages=messages,
@@ -283,13 +322,20 @@ class AgentHarness:
                 for call in turn_end.tool_calls:
                     binding = tools.get(call.name)
                     if binding is None:
-                        observations.append(
-                            Observation(
-                                call.id,
-                                call.name,
-                                False,
-                                "工具不存在或当前不可用。",
-                                error_code="tool_unavailable",
+                        observation = Observation(
+                            call.id,
+                            call.name,
+                            False,
+                            "工具不存在或当前不可用。",
+                            error_code="tool_unavailable",
+                        )
+                        observations.append(observation)
+                        messages.append(
+                            AgentMessage(
+                                role="tool",
+                                text=observation.model_text,
+                                tool_call_id=call.id,
+                                tool_name=call.name,
                             )
                         )
                         tool_failures += 1
@@ -410,6 +456,7 @@ class AgentHarness:
                             },
                         ),
                     )
+                    approved_revision = resolution.canvas_revision if resolution else None
                     for action in gated:
                         if decision == "reject":
                             observation = Observation(
@@ -424,7 +471,7 @@ class AgentHarness:
                                 action,
                                 listener=listener,
                                 round_index=round_index,
-                                approved_canvas_revision=resolution.canvas_revision,
+                                approved_canvas_revision=approved_revision,
                             )
                         observations.append(observation)
                         if (
@@ -434,6 +481,7 @@ class AgentHarness:
                             tool_failures += 1
                         if observation.success and "canvas_revision" in observation.data:
                             self.scope["canvas_revision"] = observation.data["canvas_revision"]
+                            approved_revision = int(observation.data["canvas_revision"])
                         messages.append(
                             AgentMessage(
                                 role="tool",
@@ -474,3 +522,7 @@ class AgentHarness:
             raise
         finally:
             self._running = False
+
+
+class AgentHarness(ReactiveToolLoop):
+    """Business-facing harness using the first built-in reactive strategy."""

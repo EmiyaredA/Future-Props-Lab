@@ -192,6 +192,7 @@ async def test_openai_streaming_normalizes_deltas_and_usage() -> None:
             text=(
                 'data: {"choices":[{"delta":{"content":"A"}}]}\n\n'
                 'data: {"choices":[{"delta":{"content":"B"}}]}\n\n'
+                'data: {"choices":[{"delta":{},"finish_reason":"stop"}]}\n\n'
                 'data: {"choices":[],"usage":{"prompt_tokens":3,'
                 '"completion_tokens":2,"total_tokens":5}}\n\n'
                 "data: [DONE]\n\n"
@@ -215,6 +216,7 @@ async def test_openai_streaming_normalizes_deltas_and_usage() -> None:
     ]
     assert "".join(chunk.text for chunk in chunks) == "AB"
     assert chunks[-1].total_tokens == 5
+    assert any(chunk.finish_reason == "stop" for chunk in chunks)
 
 
 @pytest.mark.asyncio
@@ -226,7 +228,8 @@ async def test_anthropic_streaming_normalizes_deltas_and_usage() -> None:
                 'data: {"type":"message_start","message":{"usage":{"input_tokens":4}}}\n\n'
                 'data: {"type":"content_block_delta","delta":{"type":"text_delta",'
                 '"text":"Hi"}}\n\n'
-                'data: {"type":"message_delta","usage":{"output_tokens":2}}\n\n'
+                'data: {"type":"message_delta","delta":{"stop_reason":"end_turn"},'
+                '"usage":{"output_tokens":2}}\n\n'
             ),
             headers={"content-type": "text/event-stream"},
         )
@@ -249,6 +252,7 @@ async def test_anthropic_streaming_normalizes_deltas_and_usage() -> None:
     assert chunks[-1].prompt_tokens == 4
     assert chunks[-1].completion_tokens == 2
     assert chunks[-1].total_tokens == 6
+    assert chunks[-1].finish_reason == "end_turn"
 
 
 @pytest.mark.asyncio

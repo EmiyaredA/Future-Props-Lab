@@ -146,6 +146,22 @@ class VisualAssistantAssetOut(BaseModel):
     byte_size: int
 
 
+class VisualAssistantTextPart(BaseModel):
+    type: Literal["text"]
+    text: str = Field(max_length=100_000)
+
+
+class VisualAssistantAssetPart(BaseModel):
+    type: Literal["asset"]
+    asset_id: str = Field(min_length=1, max_length=64)
+
+
+VisualAssistantContentPart = Annotated[
+    VisualAssistantTextPart | VisualAssistantAssetPart,
+    Field(discriminator="type"),
+]
+
+
 class VisualAssistantActionOut(BaseModel):
     id: str
     action_id: str
@@ -174,6 +190,7 @@ class VisualAssistantMessageOut(BaseModel):
     status: VisualAssistantMessageStatus
     error_message: str | None
     created_at: str
+    content_parts: list[VisualAssistantContentPart] = Field(default_factory=list)
     assets: list[VisualAssistantAssetOut] = Field(default_factory=list)
     actions: list[VisualAssistantActionOut] = Field(default_factory=list)
 
@@ -184,6 +201,10 @@ class VisualAssistantConversationSummaryOut(BaseModel):
     title: str
     model_id: str | None
     model_slug: str
+    image_model_id: str | None
+    image_model_slug: str
+    video_model_id: str | None
+    video_model_slug: str
     revision: int
     created_at: str
     updated_at: str
@@ -215,6 +236,8 @@ class VisualAssistantConversationPatchIn(BaseModel):
     expected_revision: int = Field(ge=0)
     title: str | None = Field(default=None, min_length=1, max_length=120)
     model_id: str | None = None
+    image_model_id: str | None = None
+    video_model_id: str | None = None
 
     @field_validator("title")
     @classmethod
@@ -223,7 +246,8 @@ class VisualAssistantConversationPatchIn(BaseModel):
 
     @model_validator(mode="after")
     def has_change(self) -> VisualAssistantConversationPatchIn:
-        if self.title is None and "model_id" not in self.model_fields_set:
+        model_fields = {"model_id", "image_model_id", "video_model_id"}
+        if self.title is None and not model_fields.intersection(self.model_fields_set):
             raise ValueError("至少需要提供标题或模型")
         return self
 
@@ -233,14 +257,38 @@ class VisualAssistantSendIn(BaseModel):
     canvas_revision: int = Field(ge=0)
     content: str = Field(default="", max_length=100_000)
     asset_ids: list[str] = Field(default_factory=list, max_length=5)
+    content_parts: list[VisualAssistantContentPart] = Field(default_factory=list, max_length=1000)
 
     @model_validator(mode="after")
     def has_content(self) -> VisualAssistantSendIn:
         self.content = self.content.strip()
+        if self.content_parts:
+            if self.content or self.asset_ids:
+                raise ValueError("结构化正文不能与旧版正文或附件字段混用")
+            text_length = sum(
+                len(part.text)
+                for part in self.content_parts
+                if isinstance(part, VisualAssistantTextPart)
+            )
+            if text_length > 100_000:
+                raise ValueError("消息文本不能超过 100000 个字符")
+            asset_ids = {
+                part.asset_id
+                for part in self.content_parts
+                if isinstance(part, VisualAssistantAssetPart)
+            }
+            if len(asset_ids) > 5:
+                raise ValueError("每条消息最多添加 5 个附件")
+            if not asset_ids and not any(
+                isinstance(part, VisualAssistantTextPart) and part.text.strip()
+                for part in self.content_parts
+            ):
+                raise ValueError("消息文本和附件不能同时为空")
+            return self
         if not self.content and not self.asset_ids:
-            raise ValueError("消息文本和图片不能同时为空")
+            raise ValueError("消息文本和附件不能同时为空")
         if len(set(self.asset_ids)) != len(self.asset_ids):
-            raise ValueError("图片不能重复")
+            raise ValueError("附件不能重复")
         return self
 
 

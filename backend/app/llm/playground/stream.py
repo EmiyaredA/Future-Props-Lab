@@ -38,6 +38,8 @@ async def _settle(
     prompt_tokens: int | None,
     completion_tokens: int | None,
     total_tokens: int | None,
+    first_token_latency_ms: int | None,
+    finish_reason: str | None,
 ) -> tuple[ModelTestMessage, LlmCallLog, int]:
     latency_ms = max(0, round((time.monotonic() - started) * 1000))
     async with SessionLocal() as session:
@@ -66,8 +68,18 @@ async def _settle(
             provider_kind=prepared.provider_kind,
             model=prepared.model_slug,
             trace_id=trace_id,
-            request_payload={"model": prepared.model_slug, **prepared.request_payload},
-            response_payload={"content": content, "status": status},
+            request_payload={
+                "model": prepared.model_slug,
+                "conversation_id": prepared.conversation_id,
+                **prepared.request_payload,
+            },
+            response_payload={
+                "content": content,
+                "status": status,
+                "finish_reason": finish_reason,
+                "first_token_latency_ms": first_token_latency_ms,
+                "rounds": 1,
+            },
             prompt_tokens=prompt_tokens,
             completion_tokens=completion_tokens,
             total_tokens=total_tokens,
@@ -90,6 +102,8 @@ async def generation_events(prepared: PreparedGeneration) -> AsyncIterator[bytes
     prompt_tokens: int | None = None
     completion_tokens: int | None = None
     total_tokens: int | None = None
+    first_token_latency_ms: int | None = None
+    finish_reason: str | None = None
     yield _event(
         "start",
         sequence,
@@ -119,7 +133,10 @@ async def generation_events(prepared: PreparedGeneration) -> AsyncIterator[bytes
             prompt_tokens = chunk.prompt_tokens or prompt_tokens
             completion_tokens = chunk.completion_tokens or completion_tokens
             total_tokens = chunk.total_tokens or total_tokens
+            finish_reason = chunk.finish_reason or finish_reason
             if chunk.text:
+                if first_token_latency_ms is None:
+                    first_token_latency_ms = max(0, round((time.monotonic() - started) * 1000))
                 content += chunk.text
                 yield _event(
                     "delta",
@@ -140,6 +157,8 @@ async def generation_events(prepared: PreparedGeneration) -> AsyncIterator[bytes
             prompt_tokens=prompt_tokens,
             completion_tokens=completion_tokens,
             total_tokens=total_tokens,
+            first_token_latency_ms=first_token_latency_ms,
+            finish_reason=finish_reason or "stop",
         )
         yield _event(
             "done",
@@ -167,6 +186,8 @@ async def generation_events(prepared: PreparedGeneration) -> AsyncIterator[bytes
                 prompt_tokens=prompt_tokens,
                 completion_tokens=completion_tokens,
                 total_tokens=total_tokens,
+                first_token_latency_ms=first_token_latency_ms,
+                finish_reason="cancelled",
             )
         )
         raise
@@ -183,6 +204,8 @@ async def generation_events(prepared: PreparedGeneration) -> AsyncIterator[bytes
             prompt_tokens=prompt_tokens,
             completion_tokens=completion_tokens,
             total_tokens=total_tokens,
+            first_token_latency_ms=first_token_latency_ms,
+            finish_reason="error",
         )
         yield _event(
             "error",

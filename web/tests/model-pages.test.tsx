@@ -316,6 +316,10 @@ test("renders call log payloads as a readable role-based message trace", async (
     response_payload: {
       content: "请先查看接口文档中的参数表。",
       status: "completed",
+      finish_reason: "stop",
+      first_token_latency_ms: 120,
+      rounds: 1,
+      actions: [{ tool_name: "search_docs", status: "completed" }],
     },
     prompt_tokens: 29,
     completion_tokens: 12,
@@ -336,18 +340,27 @@ test("renders call log payloads as a readable role-based message trace", async (
   expect(screen.getByText("回答要简洁准确。")).toBeInTheDocument();
   expect(screen.getByText("如何查询 API 的请求参数？")).toBeInTheDocument();
   expect(screen.getByText("请先查看接口文档中的参数表。")).toBeInTheDocument();
-  expect(screen.getByText("3 条消息")).toBeInTheDocument();
-  expect(screen.getByText("输入 Token").nextElementSibling).toHaveTextContent(
-    "29",
+  expect(screen.getByText("2 条消息")).toBeInTheDocument();
+  expect(screen.getByText("请求上下文")).toBeInTheDocument();
+  expect(screen.getByText("模型回复")).toBeInTheDocument();
+  expect(screen.getByText("Token 与耗时")).toBeInTheDocument();
+  expect(
+    screen.getByText("Prompt Tokens").nextElementSibling,
+  ).toHaveTextContent("29");
+  expect(
+    screen.getByText("Completion Tokens").nextElementSibling,
+  ).toHaveTextContent("12");
+  expect(screen.getByText("首 Token").nextElementSibling).toHaveTextContent(
+    "120 ms",
   );
-  expect(screen.getByText("输出 Token").nextElementSibling).toHaveTextContent(
-    "12",
-  );
-  expect(screen.getByText("原始数据")).toBeInTheDocument();
-  expect(container.querySelectorAll(".trace-message")).toHaveLength(3);
+  expect(screen.getByText("TOOL_CALLS")).toBeInTheDocument();
+  expect(screen.getByText("stop")).toBeInTheDocument();
+  expect(container.querySelectorAll(".trace-message")).toHaveLength(2);
   expect(
     screen.getByRole("button", { name: "复制 Trace ID" }),
   ).toBeInTheDocument();
+  await user.click(screen.getByRole("button", { name: "JSON" }));
+  expect(screen.getAllByText(/"temperature": 0.7/)).not.toHaveLength(0);
 });
 
 test("renders persistent model test workspace with safe markdown", async () => {

@@ -3,8 +3,15 @@ from __future__ import annotations
 from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import StreamingResponse
 
+from app.agents.harness.approval import (
+    ApprovalConflictError,
+    ApprovalNotFoundError,
+    approval_broker,
+)
 from app.deps import SessionDep
 from app.schemas.visual_workshop import (
+    VisualAssistantApprovalIn,
+    VisualAssistantApprovalOut,
     VisualAssistantConversationListOut,
     VisualAssistantConversationOut,
     VisualAssistantConversationPatchIn,
@@ -119,8 +126,10 @@ async def stream_message(
             project_id,
             conversation_id,
             body.expected_revision,
+            body.canvas_revision,
             body.content,
             body.asset_ids,
+            body.content_parts,
         )
     except (
         AssistantNotFoundError,
@@ -134,3 +143,33 @@ async def stream_message(
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )
+
+
+@router.post(
+    "/{conversation_id}/runs/{run_id}/approvals/{approval_id}",
+    response_model=VisualAssistantApprovalOut,
+)
+async def resolve_approval(
+    session: SessionDep,
+    project_id: str,
+    conversation_id: str,
+    run_id: str,
+    approval_id: str,
+    body: VisualAssistantApprovalIn,
+) -> VisualAssistantApprovalOut:
+    try:
+        await VisualAssistantConversations(session).get(project_id, conversation_id)
+        await approval_broker.resolve(
+            run_id=run_id,
+            approval_id=approval_id,
+            scope={"project_id": project_id, "conversation_id": conversation_id},
+            decision=body.decision,
+            canvas_revision=body.canvas_revision,
+        )
+    except AssistantNotFoundError as exc:
+        raise _translate(exc) from None
+    except ApprovalNotFoundError as exc:
+        raise HTTPException(404, {"code": "approval_not_found", "message": str(exc)}) from None
+    except ApprovalConflictError as exc:
+        raise HTTPException(409, {"code": "approval_conflict", "message": str(exc)}) from None
+    return VisualAssistantApprovalOut()

@@ -74,6 +74,7 @@ class ApprovalBroker:
         decision: Literal["approve", "reject"],
         canvas_revision: int,
     ) -> None:
+        del canvas_revision
         async with self._lock:
             pending = self._pending.get((run_id, approval_id))
             if pending is None or monotonic() >= pending.expires_at:
@@ -84,7 +85,13 @@ class ApprovalBroker:
             if pending.future.done():
                 raise ApprovalConflictError("待确认操作已经处理")
             pending.future.set_result(
-                ApprovalResolution(decision=decision, canvas_revision=canvas_revision)
+                ApprovalResolution(
+                    decision=decision,
+                    # Approval never rebases an existing proposal. The submitted
+                    # revision is only proof of what the user is currently seeing;
+                    # tools must CAS against the revision used to build the proposal.
+                    canvas_revision=pending.proposal_canvas_revision,
+                )
             )
 
     async def cancel_run(self, run_id: str) -> None:
@@ -96,4 +103,3 @@ class ApprovalBroker:
 
 
 approval_broker = ApprovalBroker()
-

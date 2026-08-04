@@ -14,6 +14,7 @@ class TextDelta:
     prompt_tokens: int | None = None
     completion_tokens: int | None = None
     total_tokens: int | None = None
+    finish_reason: str | None = None
 
 
 @dataclass(frozen=True)
@@ -105,16 +106,21 @@ async def stream_text_completion(
                 async for payload in _data_lines(response):
                     choices = payload.get("choices") or []
                     text = ""
+                    finish_reason: str | None = None
                     if choices and isinstance(choices[0], dict):
                         delta = choices[0].get("delta") or {}
                         if isinstance(delta, dict):
                             text = str(delta.get("content") or "")
+                        raw_finish_reason = choices[0].get("finish_reason")
+                        if raw_finish_reason:
+                            finish_reason = str(raw_finish_reason)
                     usage = payload.get("usage") or {}
                     yield TextDelta(
                         text=text,
                         prompt_tokens=_integer(usage.get("prompt_tokens")),
                         completion_tokens=_integer(usage.get("completion_tokens")),
                         total_tokens=_integer(usage.get("total_tokens")),
+                        finish_reason=finish_reason,
                     )
             return
 
@@ -154,6 +160,7 @@ async def stream_text_completion(
             body["system"] = system_prompt
         prompt_tokens: int | None = None
         completion_tokens: int | None = None
+        finish_reason: str | None = None
         async with client.stream(
             "POST",
             f"{root.rstrip('/')}/messages",
@@ -174,6 +181,12 @@ async def stream_text_completion(
                 if event_type == "message_delta":
                     usage = payload.get("usage") or {}
                     completion_tokens = _integer(usage.get("output_tokens")) or completion_tokens
+                    delta = payload.get("delta") or {}
+                    raw_finish_reason = (
+                        delta.get("stop_reason") if isinstance(delta, dict) else None
+                    )
+                    if raw_finish_reason:
+                        finish_reason = str(raw_finish_reason)
                 total = (
                     prompt_tokens + completion_tokens
                     if prompt_tokens is not None and completion_tokens is not None
@@ -184,4 +197,5 @@ async def stream_text_completion(
                     prompt_tokens=prompt_tokens,
                     completion_tokens=completion_tokens,
                     total_tokens=total,
+                    finish_reason=finish_reason,
                 )

@@ -132,9 +132,16 @@ class DefaultCompletionVerifier:
         observations: tuple[Observation, ...],
         round_index: int,
     ) -> CompletionDecision:
-        del observations, round_index
+        del round_index
+        if observations and not observations[-1].success and observations[-1].retryable:
+            return CompletionDecision(
+                "continue",
+                "最近一次工具结果要求重新规划",
+                "最近一次工具返回了可重试冲突。请重新读取必要状态、重新规划，"
+                "不要把未执行的操作描述为已完成。",
+            )
         if final_text.strip():
-            return CompletionDecision("complete", "模型已返回有效文本")
+            return CompletionDecision("complete", "已通过完成性验证")
         return CompletionDecision(
             "continue",
             "模型未返回最终文本",
@@ -189,3 +196,20 @@ class ProposedAction:
     summary: dict[str, Any]
     policy: PolicyDecision
 
+
+class AgentStrategy(Protocol):
+    async def run(
+        self,
+        *,
+        messages: list[AgentMessage],
+        user_text: str,
+        listener: EventListener | None = None,
+    ) -> RunResult: ...
+
+
+class EventStore(Protocol):
+    async def append(self, event: AgentEvent) -> None: ...
+
+
+class SkillProvider(Protocol):
+    async def tools(self, scope: dict[str, Any]) -> tuple[ToolBinding, ...]: ...

@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Braces, Copy, X } from "lucide-react";
+import { Braces, ChevronDown, Copy, X } from "lucide-react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import {
   batchDeleteLogs,
   deleteLog,
@@ -11,6 +13,7 @@ import {
   type CallLogItem,
   type LogFilters,
 } from "@features/models/api";
+import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
 import { CustomSelect } from "@shared/ui/CustomSelect";
 
 function formatNumber(value: number | null | undefined): string {
@@ -19,6 +22,10 @@ function formatNumber(value: number | null | undefined): string {
 
 type JsonRecord = Record<string, unknown>;
 type TraceRole = "system" | "user" | "assistant" | "tool";
+type DisplayMode = "readable" | "json";
+type TextMode = "markdown" | "raw";
+type DeleteTarget =
+  { kind: "single"; ids: [string] } | { kind: "batch"; ids: string[] } | null;
 
 type TraceMessage = {
   id: string;
@@ -117,10 +124,7 @@ function parseMessage(value: unknown, id: string): TraceMessage[] {
   return [...message, ...toolMessages(value.tool_calls, id)];
 }
 
-function traceMessages(
-  request: JsonRecord,
-  response: JsonRecord,
-): TraceMessage[] {
+function requestMessages(request: JsonRecord): TraceMessage[] {
   const result: TraceMessage[] = [];
   const system = contentText(request.system ?? request.system_prompt);
   if (system) {
@@ -146,33 +150,48 @@ function traceMessages(
       });
   }
 
-  const responseMessage = isRecord(response.message) ? response.message : null;
-  if (responseMessage)
-    result.push(...parseMessage(responseMessage, "response-message"));
-  const choices = Array.isArray(response.choices) ? response.choices : [];
-  choices.filter(isRecord).forEach((choice, index) => {
-    result.push(
-      ...parseMessage(
-        choice.message ?? choice.delta,
-        `response-choice-${index}`,
-      ),
-    );
-  });
-  if (!responseMessage && choices.length === 0) {
-    const content = contentText(
-      response.content ?? response.output ?? response.text,
-    );
-    if (content) {
-      result.push({
-        id: "response",
-        role: "assistant",
-        label: "助手",
-        content,
-      });
-    }
-    result.push(...toolMessages(response.tool_calls, "response"));
-  }
   return result;
+}
+
+function firstChoice(response: JsonRecord): JsonRecord | null {
+  const choices = Array.isArray(response.choices)
+    ? response.choices.filter(isRecord)
+    : [];
+  return choices[0] ?? null;
+}
+
+function responseMessage(response: JsonRecord): JsonRecord | null {
+  if (isRecord(response.message)) return response.message;
+  const choice = firstChoice(response);
+  return choice && isRecord(choice.message) ? choice.message : null;
+}
+
+function responseContent(response: JsonRecord): string {
+  const message = responseMessage(response);
+  if (message) return contentText(message.content ?? message.text);
+  return contentText(response.content ?? response.output ?? response.text);
+}
+
+function responseFinishReason(response: JsonRecord): string {
+  const choice = firstChoice(response);
+  return String(
+    response.finish_reason ??
+      choice?.finish_reason ??
+      response.run_status ??
+      "—",
+  );
+}
+
+function responseTools(response: JsonRecord): JsonRecord[] {
+  if (Array.isArray(response.actions)) return response.actions.filter(isRecord);
+  const message = responseMessage(response);
+  const source = message?.tool_calls ?? response.tool_calls;
+  return Array.isArray(source) ? source.filter(isRecord) : [];
+}
+
+function integerValue(...values: unknown[]): number | null {
+  const match = values.find((value) => typeof value === "number");
+  return typeof match === "number" ? match : null;
 }
 
 function approximateTokens(value: string): number {
@@ -225,7 +244,12 @@ function MessageTrace({ messages }: { messages: TraceMessage[] }) {
         {messages.map((message, index) => (
           <article className={`trace-message ${message.role}`} key={message.id}>
             <header>
-              <strong>{message.label}</strong>
+              <strong>
+                {message.role === "user" &&
+                !messages.slice(index + 1).some((item) => item.role === "user")
+                  ? "用户 · 本轮"
+                  : message.label}
+              </strong>
               <div>
                 <span>
                   {Array.from(message.content).length.toLocaleString("zh-CN")}{" "}
@@ -260,6 +284,35 @@ function MessageTrace({ messages }: { messages: TraceMessage[] }) {
   );
 }
 
+function InspectorSection({
+  tone,
+  title,
+  children,
+}: {
+  tone: "request" | "response" | "metrics";
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <details className={`log-inspector-section ${tone}`} open>
+      <summary>
+        <strong>{title}</strong>
+        <ChevronDown aria-hidden />
+      </summary>
+      <div className="log-inspector-section-body">{children}</div>
+    </details>
+  );
+}
+
+function RawJson({ value }: { value: JsonRecord }) {
+  return (
+    <div className="log-json-view">
+      <CopyButton label="复制 JSON" value={JSON.stringify(value, null, 2)} />
+      <pre>{JSON.stringify(value, null, 2)}</pre>
+    </div>
+  );
+}
+
 function LogDetail({
   id,
   onClose,
@@ -274,8 +327,10 @@ function LogDetail({
     queryFn: () => getLog(id),
   });
   const log = query.data;
+  const [displayMode, setDisplayMode] = useState<DisplayMode>("readable");
+  const [textMode, setTextMode] = useState<TextMode>("markdown");
   const messages = useMemo(
-    () => (log ? traceMessages(log.request_payload, log.response_payload) : []),
+    () => (log ? requestMessages(log.request_payload) : []),
     [log],
   );
   useEffect(() => {
@@ -324,91 +379,184 @@ function LogDetail({
           <p className="log-detail-state">加载中…</p>
         ) : log ? (
           <div className="drawer-content">
-            <dl className="detail-grid">
-              <div>
-                <dt>状态</dt>
-                <dd>
-                  <span className={`status ${log.status}`}>
-                    {log.status === "success" ? "成功" : "失败"}
-                  </span>
-                </dd>
-              </div>
-              <div>
-                <dt>模型</dt>
-                <dd>{log.model}</dd>
-              </div>
-              <div>
-                <dt>调用源</dt>
-                <dd>{sourceLabels[log.call_source] ?? log.call_source}</dd>
-              </div>
-              <div>
-                <dt>供应商</dt>
-                <dd>
-                  {providerLabels[log.provider_kind] ?? log.provider_kind}
-                </dd>
-              </div>
-              <div>
-                <dt>耗时</dt>
-                <dd>{log.latency_ms} ms</dd>
-              </div>
-              <div>
-                <dt>输入 Token</dt>
-                <dd>{formatNumber(log.prompt_tokens)}</dd>
-              </div>
-              <div>
-                <dt>输出 Token</dt>
-                <dd>{formatNumber(log.completion_tokens)}</dd>
-              </div>
-              <div>
-                <dt>总 Token</dt>
-                <dd>{formatNumber(log.total_tokens)}</dd>
-              </div>
-              <div className="wide">
-                <dt>时间</dt>
-                <dd>{new Date(log.created_at).toLocaleString("zh-CN")}</dd>
-              </div>
+            <dl className="log-meta-card">
+              {[
+                ["时间", new Date(log.created_at).toLocaleString("zh-CN")],
+                ["调用源", sourceLabels[log.call_source] ?? log.call_source],
+                ["模型", log.model],
+                [
+                  "Provider",
+                  providerLabels[log.provider_kind] ?? log.provider_kind,
+                ],
+                ["会话", String(log.request_payload.conversation_id ?? "—")],
+                ["状态", log.status === "success" ? "成功" : "失败"],
+              ].map(([label, value]) => (
+                <div key={label}>
+                  <dt>{label}</dt>
+                  <dd>{value}</dd>
+                </div>
+              ))}
             </dl>
+            <div className="log-display-toolbar">
+              <span>内容展示</span>
+              <div className="log-segmented" aria-label="内容展示模式">
+                <button
+                  className={displayMode === "readable" ? "active" : ""}
+                  onClick={() => setDisplayMode("readable")}
+                >
+                  可读
+                </button>
+                <button
+                  className={displayMode === "json" ? "active" : ""}
+                  onClick={() => setDisplayMode("json")}
+                >
+                  JSON
+                </button>
+              </div>
+              <div
+                className="log-segmented text-mode"
+                aria-label="回复文本模式"
+              >
+                <button
+                  className={textMode === "markdown" ? "active" : ""}
+                  onClick={() => setTextMode("markdown")}
+                >
+                  MD
+                </button>
+                <button
+                  className={textMode === "raw" ? "active" : ""}
+                  onClick={() => setTextMode("raw")}
+                >
+                  原文
+                </button>
+              </div>
+            </div>
             {log.error_message ? (
               <div className="inline-alert danger">{log.error_message}</div>
             ) : null}
-            {messages.length ? <MessageTrace messages={messages} /> : null}
-            <details className="raw-payloads" open={!messages.length}>
-              <summary>
-                <span>
-                  <Braces aria-hidden /> 原始数据
-                </span>
-                <small>用于排查供应商响应与参数</small>
-              </summary>
-              <section className="payload-card">
-                <div>
-                  <h3>请求</h3>
-                  <CopyButton
-                    label="复制原始请求"
-                    value={JSON.stringify(log.request_payload, null, 2)}
-                    text="复制"
-                  />
+            <InspectorSection tone="request" title="请求上下文">
+              {displayMode === "json" ? (
+                <RawJson value={log.request_payload} />
+              ) : messages.length ? (
+                <div className="log-history-card">
+                  <header>
+                    <strong>对话历史 ({messages.length})</strong>
+                    <CopyButton
+                      label="复制请求上下文"
+                      value={JSON.stringify(log.request_payload, null, 2)}
+                    />
+                  </header>
+                  <MessageTrace messages={messages} />
                 </div>
-                <pre>{JSON.stringify(log.request_payload, null, 2)}</pre>
-              </section>
-              <section className="payload-card">
-                <div>
-                  <h3>响应</h3>
-                  <CopyButton
-                    label="复制原始响应"
-                    value={JSON.stringify(log.response_payload, null, 2)}
-                    text="复制"
-                  />
+              ) : (
+                <div className="log-empty-block">
+                  该日志没有保存可读请求上下文。
                 </div>
-                <pre>{JSON.stringify(log.response_payload, null, 2)}</pre>
-              </section>
-            </details>
-            <section className="trace-card">
+              )}
+            </InspectorSection>
+            <InspectorSection tone="response" title="模型回复">
+              {displayMode === "json" ? (
+                <RawJson value={log.response_payload} />
+              ) : (
+                <div className="log-response-stack">
+                  <div className="log-response-card">
+                    <header>
+                      <span>文本</span>
+                      <CopyButton
+                        label="复制模型回复"
+                        value={responseContent(log.response_payload)}
+                      />
+                    </header>
+                    <div className="log-response-content">
+                      {responseContent(log.response_payload) ? (
+                        textMode === "markdown" ? (
+                          <div className="markdown-body">
+                            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                              {responseContent(log.response_payload)}
+                            </ReactMarkdown>
+                          </div>
+                        ) : (
+                          <pre>{responseContent(log.response_payload)}</pre>
+                        )
+                      ) : (
+                        <span>无文本回复</span>
+                      )}
+                    </div>
+                  </div>
+                  <details
+                    className="log-response-meta"
+                    open={responseTools(log.response_payload).length > 0}
+                  >
+                    <summary>
+                      <span>TOOL_CALLS</span>
+                      <small>
+                        {responseTools(log.response_payload).length || "—"}
+                      </small>
+                      <ChevronDown aria-hidden />
+                    </summary>
+                    <pre>
+                      {JSON.stringify(
+                        responseTools(log.response_payload),
+                        null,
+                        2,
+                      )}
+                    </pre>
+                  </details>
+                  <div className="log-response-meta static">
+                    <span>FINISH_REASON</span>
+                    <code>{responseFinishReason(log.response_payload)}</code>
+                    <CopyButton
+                      label="复制结束原因"
+                      value={responseFinishReason(log.response_payload)}
+                    />
+                  </div>
+                </div>
+              )}
+            </InspectorSection>
+            <InspectorSection tone="metrics" title="Token 与耗时">
+              <dl className="log-metrics-grid">
+                {[
+                  ["Prompt Tokens", formatNumber(log.prompt_tokens)],
+                  ["Completion Tokens", formatNumber(log.completion_tokens)],
+                  ["Total Tokens", formatNumber(log.total_tokens)],
+                  ["总耗时", `${formatNumber(log.latency_ms)} ms`],
+                  [
+                    "首 Token",
+                    integerValue(log.response_payload.first_token_latency_ms) ==
+                    null
+                      ? "—"
+                      : `${formatNumber(integerValue(log.response_payload.first_token_latency_ms))} ms`,
+                  ],
+                  [
+                    "轮次",
+                    formatNumber(
+                      integerValue(
+                        log.response_payload.rounds,
+                        log.request_payload.rounds,
+                      ),
+                    ),
+                  ],
+                ].map(([label, value]) => (
+                  <div key={label}>
+                    <dt>{label}</dt>
+                    <dd>{value}</dd>
+                  </div>
+                ))}
+              </dl>
+            </InspectorSection>
+            <div className="log-identifiers">
+              <div>
+                <span>日志 ID</span>
+                <code>{log.id}</code>
+              </div>
+              <CopyButton label="复制日志 ID" value={log.id} />
               <div>
                 <span>Trace ID</span>
                 <code>{log.trace_id}</code>
               </div>
               <CopyButton label="复制 Trace ID" value={log.trace_id} />
-            </section>
+              <Braces aria-hidden />
+            </div>
           </div>
         ) : (
           <p className="log-detail-state">日志不存在。</p>
@@ -442,6 +590,7 @@ export function ModelCallLogsPage() {
   });
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [detailId, setDetailId] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<DeleteTarget>(null);
   const listQuery = useQuery({
     queryKey: ["model-logs", filters],
     queryFn: () => getLogs(filters),
@@ -479,6 +628,7 @@ export function ModelCallLogsPage() {
         return next;
       });
       setDetailId(null);
+      setDeleteTarget(null);
       await invalidate();
     },
   });
@@ -486,6 +636,7 @@ export function ModelCallLogsPage() {
     mutationFn: batchDeleteLogs,
     onSuccess: async () => {
       setSelected(new Set());
+      setDeleteTarget(null);
       await invalidate();
     },
   });
@@ -511,7 +662,7 @@ export function ModelCallLogsPage() {
       return next;
     });
   const confirmOne = (id: string) => {
-    if (confirm("确定删除这条调用日志？")) removeOne.mutate(id);
+    setDeleteTarget({ kind: "single", ids: [id] });
   };
 
   return (
@@ -645,10 +796,9 @@ export function ModelCallLogsPage() {
           <button
             className="btn danger"
             disabled={!selected.size || removeMany.isPending}
-            onClick={() => {
-              if (confirm(`确定删除选中的 ${selected.size} 条日志？`))
-                removeMany.mutate([...selected]);
-            }}
+            onClick={() =>
+              setDeleteTarget({ kind: "batch", ids: [...selected] })
+            }
           >
             批量删除{selected.size ? ` (${selected.size})` : ""}
           </button>
@@ -798,6 +948,28 @@ export function ModelCallLogsPage() {
           onDelete={confirmOne}
         />
       ) : null}
+      <ConfirmDialog
+        open={Boolean(deleteTarget)}
+        title={deleteTarget?.kind === "batch" ? "批量删除日志" : "删除调用日志"}
+        description={
+          deleteTarget?.kind === "batch"
+            ? `将永久删除选中的 ${deleteTarget.ids.length} 条调用日志，此操作无法撤销。`
+            : "将永久删除这条调用日志及其请求与响应详情，此操作无法撤销。"
+        }
+        confirmLabel={
+          deleteTarget?.kind === "batch"
+            ? `删除 ${deleteTarget.ids.length} 条日志`
+            : "删除日志"
+        }
+        pending={removeOne.isPending || removeMany.isPending}
+        onCancel={() => setDeleteTarget(null)}
+        onConfirm={() => {
+          if (!deleteTarget) return;
+          if (deleteTarget.kind === "batch")
+            removeMany.mutate(deleteTarget.ids);
+          else removeOne.mutate(deleteTarget.ids[0]);
+        }}
+      />
     </section>
   );
 }

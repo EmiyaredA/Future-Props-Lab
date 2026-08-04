@@ -202,6 +202,74 @@ test("creates an image task with model-linked sizes and a project reference", as
   expect(await screen.findByText(/任务已提交/)).toBeInTheDocument();
 });
 
+test("uses the compact image node composer with reference, size, and seed controls", async () => {
+  const user = userEvent.setup();
+  renderWithClient(
+    <GenerationDrawer
+      compact
+      lockedKind="image"
+      projectId="project-1"
+      onClose={vi.fn()}
+    />,
+  );
+
+  const modelMenu = await screen.findByRole("button", { name: "生成模型" });
+  await waitFor(() =>
+    expect(modelMenu).toHaveTextContent("SenseAudio Image 2.0"),
+  );
+  const imageParameters = screen.getByRole("button", { name: "图片参数" });
+  expect(imageParameters).toHaveTextContent("1:1 / 1K");
+  await user.click(screen.getByRole("button", { name: "展开图片生成器" }));
+  expect(screen.getByRole("button", { name: "收起图片生成器" })).toBeVisible();
+
+  const referencePicker = screen
+    .getByRole("group", { name: "参考图片（可选）" })
+    .querySelector<HTMLInputElement>('input[type="file"]')!;
+  await user.upload(
+    referencePicker,
+    new File(["image"], "local.png", { type: "image/png" }),
+  );
+  const selectedReference = await screen.findByRole("button", {
+    name: "参考图.png",
+  });
+  const uploadReference = screen.getByRole("button", {
+    name: "上传参考图片（可选）",
+  });
+  expect(
+    selectedReference.compareDocumentPosition(uploadReference) &
+      Node.DOCUMENT_POSITION_FOLLOWING,
+  ).toBeTruthy();
+  await user.type(
+    screen.getByPlaceholderText("描述你想生成的画面…"),
+    "电影感的未来城市",
+  );
+  await user.click(imageParameters);
+  await user.click(screen.getByRole("button", { name: "比例 16:9" }));
+  expect(screen.getByRole("button", { name: "清晰度 1K" })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  expect(screen.getByRole("button", { name: "清晰度 2K" })).toBeDisabled();
+  await user.type(screen.getByRole("spinbutton", { name: /种子/ }), "42");
+  await user.click(screen.getByRole("button", { name: "生成数量" }));
+  await user.click(screen.getByRole("option", { name: "×3" }));
+  const callsBeforeSubmit = vi.mocked(createGenerationTask).mock.calls.length;
+  await user.click(screen.getByRole("button", { name: "生成图片" }));
+
+  await waitFor(() =>
+    expect(createGenerationTask).toHaveBeenCalledTimes(callsBeforeSubmit + 3),
+  );
+  expect(createGenerationTask).toHaveBeenLastCalledWith("project-1", {
+    kind: "image",
+    model_id: "model-image",
+    prompt: "电影感的未来城市",
+    size: "1536x864",
+    seed: 42,
+    reference_asset_id: "asset-1",
+  });
+  expect(await screen.findByText(/已提交 3 个生成任务/)).toBeInTheDocument();
+});
+
 test("uses the compact video node composer for image-to-video tasks", async () => {
   vi.mocked(createGenerationTask).mockResolvedValueOnce({
     ...baseTask,

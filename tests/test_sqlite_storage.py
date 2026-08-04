@@ -36,14 +36,14 @@ def test_sqlite_migration_is_repeatable_and_detects_drift(tmp_path: Path) -> Non
     database_path = tmp_path / "nested" / "catalog.db"
 
     assert apply_migrations(database_path) == (
-        "r0011_visual_assistant_conversations",
+        "r0014_visual_assistant_content_parts",
         True,
     )
     assert apply_migrations(database_path) == (
-        "r0011_visual_assistant_conversations",
+        "r0014_visual_assistant_content_parts",
         False,
     )
-    assert check_migrations(database_path) == "r0011_visual_assistant_conversations"
+    assert check_migrations(database_path) == "r0014_visual_assistant_content_parts"
 
     with connect_database(database_path) as connection:
         connection.execute(
@@ -69,7 +69,7 @@ def test_existing_r0001_database_upgrades_without_rewriting_history(tmp_path: Pa
         connection.commit()
 
     assert apply_migrations(database_path) == (
-        "r0011_visual_assistant_conversations",
+        "r0014_visual_assistant_content_parts",
         True,
     )
     with connect_database(database_path) as connection:
@@ -88,6 +88,9 @@ def test_existing_r0001_database_upgrades_without_rewriting_history(tmp_path: Pa
             ("r0009_visual_canvas_documents",),
             ("r0010_model_categories_and_test_generation",),
             ("r0011_visual_assistant_conversations",),
+            ("r0012_visual_assistant_actions",),
+            ("r0013_visual_assistant_generation_models",),
+            ("r0014_visual_assistant_content_parts",),
         ]
         assert connection.execute("SELECT COUNT(*) FROM model_test_conversations").fetchone() == (
             0,
@@ -96,6 +99,53 @@ def test_existing_r0001_database_upgrades_without_rewriting_history(tmp_path: Pa
         assert connection.execute("SELECT COUNT(*) FROM visual_workshop_projects").fetchone() == (
             0,
         )
+        conversation_columns = {
+            row[1]
+            for row in connection.execute(
+                "PRAGMA table_info(visual_assistant_conversations)"
+            ).fetchall()
+        }
+        assert {"image_model_id", "video_model_id"} <= conversation_columns
+        conversation_indexes = {
+            row[1]
+            for row in connection.execute(
+                "PRAGMA index_list(visual_assistant_conversations)"
+            ).fetchall()
+        }
+        assert {
+            "ix_visual_assistant_conversations_image_model",
+            "ix_visual_assistant_conversations_video_model",
+        } <= conversation_indexes
+
+
+def test_r0014_adds_empty_content_parts_to_existing_messages(tmp_path: Path) -> None:
+    database_path = tmp_path / "assistant-content-parts-upgrade.db"
+    with connect_database(database_path) as connection:
+        connection.executescript(
+            """
+            CREATE TABLE visual_assistant_messages (
+              id VARCHAR(36) PRIMARY KEY,
+              content TEXT NOT NULL DEFAULT ''
+            );
+            """
+        )
+        connection.execute(
+            "INSERT INTO visual_assistant_messages (id, content) VALUES (?, ?)",
+            ("message-1", "旧消息"),
+        )
+        connection.executescript(MIGRATIONS[-1].sql)
+        connection.commit()
+        columns = {
+            row[1]
+            for row in connection.execute("PRAGMA table_info(visual_assistant_messages)").fetchall()
+        }
+        stored = connection.execute(
+            "SELECT content, content_parts FROM visual_assistant_messages WHERE id = ?",
+            ("message-1",),
+        ).fetchone()
+
+    assert "content_parts" in columns
+    assert stored == ("旧消息", "[]")
 
 
 def test_existing_default_catalog_is_extended_without_overwriting_user_data(
@@ -164,7 +214,7 @@ def test_existing_default_catalog_is_extended_without_overwriting_user_data(
         connection.commit()
 
     assert apply_migrations(database_path) == (
-        "r0011_visual_assistant_conversations",
+        "r0014_visual_assistant_content_parts",
         True,
     )
 
@@ -253,7 +303,7 @@ def test_existing_default_catalog_is_extended_without_overwriting_user_data(
     assert stored_categories == {"[]"}
 
     assert apply_migrations(database_path) == (
-        "r0011_visual_assistant_conversations",
+        "r0014_visual_assistant_content_parts",
         False,
     )
     with connect_database(database_path) as connection:
@@ -271,7 +321,7 @@ def test_catalog_upgrade_does_not_recreate_deleted_default_provider(tmp_path: Pa
         connection.commit()
 
     assert apply_migrations(database_path) == (
-        "r0011_visual_assistant_conversations",
+        "r0014_visual_assistant_content_parts",
         True,
     )
     with connect_database(database_path) as connection:
@@ -307,7 +357,7 @@ def test_r0007_upgrade_adds_visual_tasks_and_preserves_provider_credentials(
         connection.commit()
 
     assert apply_migrations(database_path) == (
-        "r0011_visual_assistant_conversations",
+        "r0014_visual_assistant_content_parts",
         True,
     )
     with connect_database(database_path) as connection:
