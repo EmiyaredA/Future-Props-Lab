@@ -25,7 +25,8 @@
 
 - `backend/app/` 采用功能模块优先结构。`main.py`、`deps.py`、`problem_details.py` 与
   `routes/` 只负责应用装配和 HTTP/SSE 协议边界；`core/`、`concurrency/` 是基础设施；
-  `models/`、`schemas/` 只定义持久化与传输形状；业务规则归属 `llm/` 等具体功能包。
+  `models/`、`schemas/` 只定义持久化与传输形状；公共文件规则归属 `files/`，业务规则归属
+  `llm/`、`visual_workshop/` 等具体功能包。
 - 路由模块不得直接导入 SQLAlchemy、ORM 模型或 `db.migrations`，不得自行持有查询、写入和
   事务规则。它们只校验请求、调用功能模块并把领域结果或错误映射为协议响应。
 - 不新增 `services/`、`domain/`、`platform/`、`product/` 等通用后端抽象层目录。需要拆分时，
@@ -66,7 +67,8 @@
 - 整体 JSON、配置和会话等 revisioned 资源使用数据库 CAS：缺少 revision 返回 422，冲突
   返回 409 与当前快照，客户端不得静默覆盖。
 - 备份数据库前先停止应用，并同时复制 SQLite 主文件、`visual-workshop/assets/` 与
-  `model-test/attachments/`、`model-test/generated/`；不要把 `.runtime/` 当作可提交的代码、
+  `model-test/attachments/`、`model-test/references/`、`model-test/generated/`；不要把
+  `.runtime/` 当作可提交的代码、
   迁移或测试资产。
 
 ## 测试、文档与质量门禁

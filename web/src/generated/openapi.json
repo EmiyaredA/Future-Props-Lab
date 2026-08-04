@@ -68,6 +68,23 @@
         "title": "Body_upload_file_v1_files_post",
         "type": "object"
       },
+      "Body_upload_generation_assets_v1_model_test_generation_assets_post": {
+        "properties": {
+          "files": {
+            "items": {
+              "contentMediaType": "application/octet-stream",
+              "type": "string"
+            },
+            "title": "Files",
+            "type": "array"
+          }
+        },
+        "required": [
+          "files"
+        ],
+        "title": "Body_upload_generation_assets_v1_model_test_generation_assets_post",
+        "type": "object"
+      },
       "CallLogListItem": {
         "properties": {
           "call_source": {
@@ -1180,6 +1197,154 @@
           "updated_at"
         ],
         "title": "ModelTestConversationSummaryOut",
+        "type": "object"
+      },
+      "ModelTestGenerationAssetBackfillOut": {
+        "properties": {
+          "conflicts": {
+            "title": "Conflicts",
+            "type": "integer"
+          },
+          "copied_assets": {
+            "title": "Copied Assets",
+            "type": "integer"
+          },
+          "processed_tasks": {
+            "title": "Processed Tasks",
+            "type": "integer"
+          },
+          "remaining_tasks": {
+            "title": "Remaining Tasks",
+            "type": "integer"
+          },
+          "skipped_active": {
+            "title": "Skipped Active",
+            "type": "integer"
+          },
+          "skipped_missing": {
+            "title": "Skipped Missing",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "processed_tasks",
+          "copied_assets",
+          "skipped_active",
+          "skipped_missing",
+          "conflicts",
+          "remaining_tasks"
+        ],
+        "title": "ModelTestGenerationAssetBackfillOut",
+        "type": "object"
+      },
+      "ModelTestGenerationAssetBackfillStatusOut": {
+        "properties": {
+          "active_tasks": {
+            "title": "Active Tasks",
+            "type": "integer"
+          },
+          "eligible_tasks": {
+            "title": "Eligible Tasks",
+            "type": "integer"
+          },
+          "missing_files": {
+            "title": "Missing Files",
+            "type": "integer"
+          },
+          "pending_tasks": {
+            "title": "Pending Tasks",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "pending_tasks",
+          "eligible_tasks",
+          "active_tasks",
+          "missing_files"
+        ],
+        "title": "ModelTestGenerationAssetBackfillStatusOut",
+        "type": "object"
+      },
+      "ModelTestGenerationAssetCleanupOut": {
+        "properties": {
+          "deleted_assets": {
+            "title": "Deleted Assets",
+            "type": "integer"
+          },
+          "deleted_orphan_files": {
+            "title": "Deleted Orphan Files",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "deleted_assets",
+          "deleted_orphan_files"
+        ],
+        "title": "ModelTestGenerationAssetCleanupOut",
+        "type": "object"
+      },
+      "ModelTestGenerationAssetListOut": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ModelTestGenerationAssetOut"
+            },
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "title": "ModelTestGenerationAssetListOut",
+        "type": "object"
+      },
+      "ModelTestGenerationAssetOut": {
+        "properties": {
+          "byte_size": {
+            "title": "Byte Size",
+            "type": "integer"
+          },
+          "claimed": {
+            "title": "Claimed",
+            "type": "boolean"
+          },
+          "created_at": {
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "media_kind": {
+            "enum": [
+              "image",
+              "audio",
+              "video"
+            ],
+            "title": "Media Kind",
+            "type": "string"
+          },
+          "mime_type": {
+            "title": "Mime Type",
+            "type": "string"
+          },
+          "original_filename": {
+            "title": "Original Filename",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "original_filename",
+          "media_kind",
+          "mime_type",
+          "byte_size",
+          "claimed",
+          "created_at"
+        ],
+        "title": "ModelTestGenerationAssetOut",
         "type": "object"
       },
       "ModelTestGenerationOptionListOut": {
@@ -6096,6 +6261,286 @@
           }
         },
         "summary": "Regenerate Message",
+        "tags": [
+          "model-test"
+        ]
+      }
+    },
+    "/v1/model-test/generation-assets": {
+      "post": {
+        "operationId": "upload_generation_assets_v1_model_test_generation_assets_post",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Studio-Token",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Studio-Token"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_upload_generation_assets_v1_model_test_generation_assets_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModelTestGenerationAssetListOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Upload Generation Assets",
+        "tags": [
+          "model-test"
+        ]
+      }
+    },
+    "/v1/model-test/generation-assets/backfill": {
+      "post": {
+        "operationId": "backfill_generation_assets_v1_model_test_generation_assets_backfill_post",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Studio-Token",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Studio-Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModelTestGenerationAssetBackfillOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Backfill Generation Assets",
+        "tags": [
+          "model-test"
+        ]
+      }
+    },
+    "/v1/model-test/generation-assets/backfill-status": {
+      "get": {
+        "operationId": "generation_asset_backfill_status_v1_model_test_generation_assets_backfill_status_get",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Studio-Token",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Studio-Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModelTestGenerationAssetBackfillStatusOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Generation Asset Backfill Status",
+        "tags": [
+          "model-test"
+        ]
+      }
+    },
+    "/v1/model-test/generation-assets/cleanup": {
+      "post": {
+        "operationId": "cleanup_generation_assets_v1_model_test_generation_assets_cleanup_post",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Studio-Token",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Studio-Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModelTestGenerationAssetCleanupOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Cleanup Generation Assets",
+        "tags": [
+          "model-test"
+        ]
+      }
+    },
+    "/v1/model-test/generation-assets/{asset_id}": {
+      "delete": {
+        "operationId": "delete_generation_asset_v1_model_test_generation_assets__asset_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "asset_id",
+            "required": true,
+            "schema": {
+              "title": "Asset Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Studio-Token",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Studio-Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "boolean"
+                  },
+                  "title": "Response Delete Generation Asset V1 Model Test Generation Assets  Asset Id  Delete",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Generation Asset",
         "tags": [
           "model-test"
         ]

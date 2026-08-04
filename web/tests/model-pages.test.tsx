@@ -2,9 +2,9 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { vi } from "vitest";
-import { ModelCallLogsPage } from "@features/models/ModelCallLogsPage";
-import { ModelServicePage } from "@features/models/ModelServicePage";
-import { ModelTestPage } from "@features/models/ModelTestPage";
+import { ModelServicePage } from "@features/models/catalog";
+import { ModelTestPage } from "@features/models/conversation";
+import { ModelCallLogsPage } from "@features/models/logs";
 import {
   createModelTestConversation,
   createModelTestGenerationTask,
@@ -20,7 +20,7 @@ import {
   patchModelTestConversation,
   streamModelTest,
   uploadModelTestAttachments,
-  uploadModelTestReferenceAsset,
+  uploadModelTestReferenceAssets,
   type ModelTestConversation,
 } from "@features/models/api";
 
@@ -238,7 +238,18 @@ vi.mock("@features/models/api", async () => {
       messages: [],
     }),
     uploadModelTestAttachments: vi.fn(),
-    uploadModelTestReferenceAsset: vi.fn(),
+    uploadModelTestReferenceAssets: vi.fn(),
+    cleanupModelTestReferenceAssets: vi.fn().mockResolvedValue({
+      deleted_assets: 0,
+      deleted_orphan_files: 0,
+    }),
+    getModelTestReferenceBackfillStatus: vi.fn().mockResolvedValue({
+      pending_tasks: 0,
+      eligible_tasks: 0,
+      active_tasks: 0,
+      missing_files: 0,
+    }),
+    backfillModelTestReferenceAssets: vi.fn(),
     deleteModelTestReferenceAsset: vi.fn().mockResolvedValue({ deleted: true }),
     deleteModelTestAttachment: vi.fn().mockResolvedValue({ deleted: true }),
     streamModelTest: vi.fn().mockResolvedValue(undefined),
@@ -469,24 +480,18 @@ test("uploads reference audio and video with the video generation task", async (
     configurable: true,
     value: revokeUrl,
   });
-  vi.mocked(uploadModelTestReferenceAsset).mockImplementation(
-    async (file) =>
-      ({
+  vi.mocked(uploadModelTestReferenceAssets).mockImplementation(
+    async (files) => ({
+      items: files.map((file) => ({
         id: file.type.startsWith("audio/") ? "asset-audio" : "asset-video",
-        project_id: null,
-        folder_id: null,
         original_filename: file.name,
-        display_name: file.name,
         media_kind: file.type.startsWith("audio/") ? "audio" : "video",
         mime_type: file.type,
         byte_size: file.size,
-        revision: 0,
+        claimed: false,
         created_at: "2026-08-03T00:00:00Z",
-        updated_at: "2026-08-03T00:00:00Z",
-        source: "library",
-        is_reference: false,
-        reference_id: null,
-      }) as never,
+      })),
+    }),
   );
   const user = userEvent.setup();
   renderWithQuery(<ModelTestPage />);
@@ -520,7 +525,7 @@ test("uploads reference audio and video with the video generation task", async (
       video_asset_ids: ["asset-video"],
     }),
   );
-  expect(uploadModelTestReferenceAsset).toHaveBeenCalledTimes(2);
+  expect(uploadModelTestReferenceAssets).toHaveBeenCalledTimes(1);
   expect(deleteModelTestReferenceAsset).not.toHaveBeenCalled();
   expect(revokeUrl).toHaveBeenCalledWith("blob:video/mp4");
   expect(revokeUrl).toHaveBeenCalledWith("blob:audio/mpeg");

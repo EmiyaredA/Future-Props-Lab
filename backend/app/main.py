@@ -22,7 +22,7 @@ from app.problem_details import (
     validation_exception_handler,
 )
 from app.routes import api_router
-from app.visual_workshop.assistant_actions import recover_interrupted_visual_assistant_runs
+from app.visual_workshop.assistant import recover_interrupted_visual_assistant_runs
 from app.visual_workshop.generation_runner import VisualGenerationRunner
 from db.migrations import apply_migrations
 from db.migrations.registry import LATEST_MIGRATION_ID

@@ -16,6 +16,12 @@ ROOT_PROBE_PATHS = {"/health", "/ready"}
 FROM_IMPORT_PATTERN = re.compile(r"\bfrom\s+[\"']([^\"']+)[\"']")
 SIDE_EFFECT_IMPORT_PATTERN = re.compile(r"^\s*import\s+[\"']([^\"']+)[\"']", re.MULTILINE)
 DYNAMIC_IMPORT_PATTERN = re.compile(r"\bimport\(\s*[\"']([^\"']+)[\"']\s*\)")
+APP_SHELL_SELECTOR_PATTERN = re.compile(
+    r"\.(?:studio-(?:shell|sidebar|main|lock)|sidebar-footer|nav-(?:group|primary|sub)|auth-)"
+)
+FEATURE_SELECTOR_PATTERN = re.compile(
+    r"\.(?:model|provider|playground|generation-test|log-|conversation|chat-message)"
+)
 
 
 def _python_files(root: Path) -> list[Path]:
@@ -101,6 +107,34 @@ def test_backend_avoids_generic_abstract_layer_directories() -> None:
     assert not violations, "请按具体能力命名后端目录：\n" + "\n".join(violations)
 
 
+def test_public_files_have_independent_ownership() -> None:
+    required = (
+        BACKEND_APP / "files" / "assets.py",
+        BACKEND_APP / "models" / "files.py",
+        BACKEND_APP / "schemas" / "files.py",
+    )
+    assert all(path.is_file() for path in required), "公共文件能力必须由 app/files 拥有"
+    assert not (BACKEND_APP / "visual_workshop" / "assets.py").exists()
+    for route_name in ("file_management.py", "visual_workshop.py"):
+        imports = _python_imports(BACKEND_APP / "routes" / route_name)
+        assert "app.visual_workshop.assets" not in imports
+
+
+def test_visual_assistant_has_no_function_local_app_imports() -> None:
+    violations: list[str] = []
+    for path in _python_files(BACKEND_APP / "visual_workshop" / "assistant"):
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        for function in (
+            node
+            for node in ast.walk(tree)
+            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+        ):
+            for node in ast.walk(function):
+                if isinstance(node, (ast.Import, ast.ImportFrom)):
+                    violations.append(f"{_relative(path)}:{node.lineno}")
+    assert not violations, "视觉助手不得在函数内动态导入：\n" + "\n".join(violations)
+
+
 def test_web_dependency_direction() -> None:
     layer_rules = {
         "platform": (WEB_SRC / "app", WEB_SRC / "features"),
@@ -119,6 +153,34 @@ def test_web_dependency_direction() -> None:
                 ):
                     violations.append(f"{_relative(path)} imports {specifier}")
     assert not violations, "Web 依赖方向违规：\n" + "\n".join(violations)
+
+
+def test_cross_feature_imports_use_public_entry() -> None:
+    violations: list[str] = []
+    features_root = WEB_SRC / "features"
+    for path in sorted(features_root.rglob("*")):
+        if path.suffix not in {".ts", ".tsx"}:
+            continue
+        source_feature = path.relative_to(features_root).parts[0]
+        for specifier in _web_imports(path):
+            if not specifier.startswith("@features/"):
+                continue
+            segments = specifier.split("/")
+            if len(segments) < 2 or segments[1] == source_feature:
+                continue
+            if len(segments) > 2:
+                violations.append(f"{_relative(path)} imports {specifier}")
+    assert not violations, "跨 feature 只能导入目标 feature 公共入口：\n" + "\n".join(violations)
+
+
+def test_feature_styles_do_not_reenter_the_app_shell() -> None:
+    app_styles = (WEB_SRC / "app" / "styles.css").read_text(encoding="utf-8")
+    assert not FEATURE_SELECTOR_PATTERN.search(app_styles), "业务样式不得重新堆入 app/styles.css"
+    violations: list[str] = []
+    for path in sorted((WEB_SRC / "features").rglob("*.css")):
+        if APP_SHELL_SELECTOR_PATTERN.search(path.read_text(encoding="utf-8")):
+            violations.append(_relative(path))
+    assert not violations, "feature 样式不得覆盖应用壳选择器：\n" + "\n".join(violations)
 
 
 def test_business_routes_are_mounted_under_v1() -> None:
@@ -168,6 +230,7 @@ def test_documented_core_directories_exist() -> None:
         "backend/app/agents",
         "backend/app/concurrency",
         "backend/app/core",
+        "backend/app/files",
         "backend/app/llm",
         "backend/app/models",
         "backend/app/routes",

@@ -24,26 +24,30 @@ def _create_database_at_migration(database_path: Path, migration_count: int) -> 
     with connect_database(database_path) as connection:
         ensure_registry(connection)
         for migration in MIGRATIONS[:migration_count]:
+            if migration.foreign_keys_off:
+                connection.execute("PRAGMA foreign_keys = OFF")
             connection.executescript(migration.sql)
             connection.execute(
                 "INSERT INTO schema_migrations (migration_id, checksum) VALUES (?, ?)",
                 (migration.migration_id, migration_checksum(migration)),
             )
-        connection.commit()
+            connection.commit()
+            if migration.foreign_keys_off:
+                connection.execute("PRAGMA foreign_keys = ON")
 
 
 def test_sqlite_migration_is_repeatable_and_detects_drift(tmp_path: Path) -> None:
     database_path = tmp_path / "nested" / "catalog.db"
 
     assert apply_migrations(database_path) == (
-        "r0014_visual_assistant_content_parts",
+        "r0015_model_test_generation_assets",
         True,
     )
     assert apply_migrations(database_path) == (
-        "r0014_visual_assistant_content_parts",
+        "r0015_model_test_generation_assets",
         False,
     )
-    assert check_migrations(database_path) == "r0014_visual_assistant_content_parts"
+    assert check_migrations(database_path) == "r0015_model_test_generation_assets"
 
     with connect_database(database_path) as connection:
         connection.execute(
@@ -69,7 +73,7 @@ def test_existing_r0001_database_upgrades_without_rewriting_history(tmp_path: Pa
         connection.commit()
 
     assert apply_migrations(database_path) == (
-        "r0014_visual_assistant_content_parts",
+        "r0015_model_test_generation_assets",
         True,
     )
     with connect_database(database_path) as connection:
@@ -91,6 +95,7 @@ def test_existing_r0001_database_upgrades_without_rewriting_history(tmp_path: Pa
             ("r0012_visual_assistant_actions",),
             ("r0013_visual_assistant_generation_models",),
             ("r0014_visual_assistant_content_parts",),
+            ("r0015_model_test_generation_assets",),
         ]
         assert connection.execute("SELECT COUNT(*) FROM model_test_conversations").fetchone() == (
             0,
@@ -116,6 +121,19 @@ def test_existing_r0001_database_upgrades_without_rewriting_history(tmp_path: Pa
             "ix_visual_assistant_conversations_image_model",
             "ix_visual_assistant_conversations_video_model",
         } <= conversation_indexes
+        generation_asset_columns = {
+            row[1]
+            for row in connection.execute(
+                "PRAGMA table_info(model_test_generation_assets)"
+            ).fetchall()
+        }
+        assert {
+            "task_id",
+            "role",
+            "position",
+            "storage_key",
+            "legacy_visual_asset_id",
+        } <= generation_asset_columns
 
 
 def test_r0014_adds_empty_content_parts_to_existing_messages(tmp_path: Path) -> None:
@@ -133,7 +151,12 @@ def test_r0014_adds_empty_content_parts_to_existing_messages(tmp_path: Path) -> 
             "INSERT INTO visual_assistant_messages (id, content) VALUES (?, ?)",
             ("message-1", "旧消息"),
         )
-        connection.executescript(MIGRATIONS[-1].sql)
+        migration = next(
+            item
+            for item in MIGRATIONS
+            if item.migration_id == "r0014_visual_assistant_content_parts"
+        )
+        connection.executescript(migration.sql)
         connection.commit()
         columns = {
             row[1]
@@ -146,6 +169,79 @@ def test_r0014_adds_empty_content_parts_to_existing_messages(tmp_path: Path) -> 
 
     assert "content_parts" in columns
     assert stored == ("旧消息", "[]")
+
+
+def test_r0015_upgrades_r0014_and_enforces_private_asset_ownership(tmp_path: Path) -> None:
+    database_path = tmp_path / "generation-assets-upgrade.db"
+    _create_database_at_migration(database_path, len(MIGRATIONS) - 1)
+    with connect_database(database_path) as connection:
+        connection.execute(
+            """
+            INSERT INTO model_test_generation_tasks (
+              id, provider_kind, generation_kind, provider_name, model_slug,
+              request_payload, status, progress, revision, created_at, updated_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+            """,
+            (
+                "legacy-task",
+                "senseaudio_video",
+                "video",
+                "legacy",
+                "legacy-video",
+                '{"video_asset_ids":["public-asset"]}',
+                "failed",
+                0,
+                0,
+            ),
+        )
+        connection.commit()
+
+    assert apply_migrations(database_path) == (
+        "r0015_model_test_generation_assets",
+        True,
+    )
+    assert apply_migrations(database_path) == (
+        "r0015_model_test_generation_assets",
+        False,
+    )
+    with connect_database(database_path) as connection:
+        assert connection.execute(
+            "SELECT request_payload FROM model_test_generation_tasks WHERE id = 'legacy-task'"
+        ).fetchone() == ('{"video_asset_ids":["public-asset"]}',)
+        indexes = {
+            row[1]
+            for row in connection.execute(
+                "PRAGMA index_list(model_test_generation_assets)"
+            ).fetchall()
+        }
+        assert {
+            "ix_model_test_generation_assets_task",
+            "ix_model_test_generation_assets_draft_created",
+        } <= indexes
+        connection.execute(
+            """
+            INSERT INTO model_test_generation_assets (
+              id, task_id, role, position, original_filename, storage_key,
+              media_kind, mime_type, byte_size
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                "private-asset",
+                "legacy-task",
+                "reference_video",
+                0,
+                "legacy.mp4",
+                "private-key",
+                "video",
+                "video/mp4",
+                1,
+            ),
+        )
+        connection.execute("DELETE FROM model_test_generation_tasks WHERE id = 'legacy-task'")
+        connection.commit()
+        assert connection.execute(
+            "SELECT COUNT(*) FROM model_test_generation_assets WHERE id = 'private-asset'"
+        ).fetchone() == (0,)
 
 
 def test_existing_default_catalog_is_extended_without_overwriting_user_data(
@@ -214,7 +310,7 @@ def test_existing_default_catalog_is_extended_without_overwriting_user_data(
         connection.commit()
 
     assert apply_migrations(database_path) == (
-        "r0014_visual_assistant_content_parts",
+        "r0015_model_test_generation_assets",
         True,
     )
 
@@ -303,7 +399,7 @@ def test_existing_default_catalog_is_extended_without_overwriting_user_data(
     assert stored_categories == {"[]"}
 
     assert apply_migrations(database_path) == (
-        "r0014_visual_assistant_content_parts",
+        "r0015_model_test_generation_assets",
         False,
     )
     with connect_database(database_path) as connection:
@@ -321,7 +417,7 @@ def test_catalog_upgrade_does_not_recreate_deleted_default_provider(tmp_path: Pa
         connection.commit()
 
     assert apply_migrations(database_path) == (
-        "r0014_visual_assistant_content_parts",
+        "r0015_model_test_generation_assets",
         True,
     )
     with connect_database(database_path) as connection:
@@ -357,7 +453,7 @@ def test_r0007_upgrade_adds_visual_tasks_and_preserves_provider_credentials(
         connection.commit()
 
     assert apply_migrations(database_path) == (
-        "r0014_visual_assistant_content_parts",
+        "r0015_model_test_generation_assets",
         True,
     )
     with connect_database(database_path) as connection:

@@ -24,8 +24,8 @@ from app.visual_workshop.assistant import (
     AssistantModelUnavailableError,
     AssistantNotFoundError,
     VisualAssistantConversations,
+    assistant_events,
 )
-from app.visual_workshop.assistant_stream import assistant_events
 
 router = APIRouter(
     prefix="/visual-workshop/projects/{project_id}/conversations",

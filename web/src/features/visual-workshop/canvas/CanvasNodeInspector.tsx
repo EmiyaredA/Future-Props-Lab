@@ -12,8 +12,8 @@ import {
   uploadManagedFile,
   type ManagedFile,
   type MediaKind,
-} from "@features/files/api";
-import { GenerationDrawer } from "@features/visual-workshop/GenerationDrawer";
+} from "@features/files";
+import { GenerationDrawer } from "@features/visual-workshop/generation/GenerationDrawer";
 import {
   getGenerationTask,
   type VisualCanvasNode,
@@ -140,6 +140,7 @@ export function CanvasNodeInspector({
     <aside
       className={`canvas-node-inspector${embedded ? ` is-embedded is-${node.kind}` : ""}`}
       aria-label="节点检查器"
+      onPointerDown={(event) => event.stopPropagation()}
       onClick={(event) => event.stopPropagation()}
     >
       {!isAttachedComposer ? (

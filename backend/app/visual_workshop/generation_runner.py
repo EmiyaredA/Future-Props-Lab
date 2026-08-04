@@ -1,12 +1,8 @@
 from __future__ import annotations
 
 import asyncio
-import base64
-import ipaddress
 import os
-import socket
 from pathlib import Path
-from urllib.parse import urljoin, urlsplit
 from uuid import uuid4
 
 import httpx
@@ -17,7 +13,14 @@ from app.core.config import Settings, get_settings
 from app.core.credentials import decrypt_secret
 from app.core.db import SessionLocal
 from app.core.time import utc_now
-from app.llm.generation_runtime import generation_semaphore
+from app.llm.generation_runtime import (
+    GenerationMaterializationError,
+    PollingGenerationRunner,
+    assert_public_https,
+    download_generated_media,
+    generated_type,
+    read_data_uri,
+)
 from app.llm.providers import (
     create_image_task,
     create_video_task,
@@ -32,13 +35,9 @@ from app.llm.providers.temporary_media import TemporaryMediaError, upload_tempor
 from app.models import ModelProvider, VisualAsset, VisualGenerationTask
 from app.visual_workshop.generation import ACTIVE_TASK_STATUSES
 
-POLL_INTERVAL_SECONDS = 5
-MAX_CONCURRENCY = 4
-MAX_REDIRECTS = 4
-
-
-class MaterializationError(Exception):
-    pass
+MaterializationError = GenerationMaterializationError
+_assert_public_https = assert_public_https
+_generated_type = generated_type
 
 
 def _safe_task_error(exc: Exception) -> str:
@@ -51,56 +50,9 @@ def _safe_task_error(exc: Exception) -> str:
     return f"任务处理失败（{type(exc).__name__}）"
 
 
-def _generated_type(head: bytes, content_type: str) -> tuple[str, str, str] | None:
-    content_type = content_type.split(";", 1)[0].strip().lower()
-    if head.startswith(b"\x89PNG\r\n\x1a\n"):
-        detected = ("image", "image/png", ".png")
-    elif head.startswith(b"\xff\xd8\xff"):
-        detected = ("image", "image/jpeg", ".jpg")
-    elif head.startswith(b"RIFF") and head[8:12] == b"WEBP":
-        detected = ("image", "image/webp", ".webp")
-    elif head.startswith((b"GIF87a", b"GIF89a")):
-        detected = ("image", "image/gif", ".gif")
-    elif b"ftyp" in head[4:16]:
-        mime = "video/quicktime" if content_type == "video/quicktime" else "video/mp4"
-        detected = ("video", mime, ".mov" if mime == "video/quicktime" else ".mp4")
-    elif head.startswith(b"\x1aE\xdf\xa3"):
-        detected = ("video", "video/webm", ".webm")
-    else:
-        return None
-    return detected if content_type == detected[1] else None
+class VisualGenerationRunner(PollingGenerationRunner):
+    runner_name = "visual-generation-runner"
 
-
-async def _assert_public_https(url: str) -> None:
-    parsed = urlsplit(url)
-    if parsed.scheme != "https" or not parsed.hostname or parsed.username or parsed.password:
-        raise MaterializationError("生成结果必须使用无凭证的 HTTPS 公网地址")
-
-    def resolve() -> list[str]:
-        return list(
-            {
-                item[4][0]
-                for item in socket.getaddrinfo(
-                    parsed.hostname,
-                    parsed.port or 443,
-                    type=socket.SOCK_STREAM,
-                )
-            }
-        )
-
-    try:
-        addresses = await asyncio.to_thread(resolve)
-    except OSError as exc:
-        raise MaterializationError("无法解析生成结果地址") from exc
-    if not addresses:
-        raise MaterializationError("生成结果地址没有可用 IP")
-    for address in addresses:
-        ip = ipaddress.ip_address(address)
-        if not ip.is_global:
-            raise MaterializationError("生成结果地址指向非公网网络")
-
-
-class VisualGenerationRunner:
     def __init__(
         self,
         session_factory: async_sessionmaker[AsyncSession] = SessionLocal,
@@ -108,12 +60,11 @@ class VisualGenerationRunner:
         download_transport: httpx.AsyncBaseTransport | None = None,
         temporary_media_transport: httpx.AsyncBaseTransport | None = None,
     ) -> None:
+        super().__init__()
         self.session_factory = session_factory
         self.settings = settings or get_settings()
         self.download_transport = download_transport
         self.temporary_media_transport = temporary_media_transport
-        self._stop = asyncio.Event()
-        self._task: asyncio.Task[None] | None = None
 
     async def recover(self) -> None:
         async with self.session_factory() as session:
@@ -128,26 +79,6 @@ class VisualGenerationRunner:
                 )
             )
             await session.commit()
-
-    async def start(self) -> None:
-        await self.recover()
-        self._stop.clear()
-        self._task = asyncio.create_task(self._run(), name="visual-generation-runner")
-
-    async def stop(self) -> None:
-        self._stop.set()
-        if self._task:
-            self._task.cancel()
-            await asyncio.gather(self._task, return_exceptions=True)
-            self._task = None
-
-    async def _run(self) -> None:
-        while not self._stop.is_set():
-            await self.process_once()
-            try:
-                await asyncio.wait_for(self._stop.wait(), timeout=POLL_INTERVAL_SECONDS)
-            except TimeoutError:
-                pass
 
     async def process_once(self) -> None:
         async with self.session_factory() as session:
@@ -164,11 +95,7 @@ class VisualGenerationRunner:
                 .all()
             )
 
-        async def guarded(task_id: str) -> None:
-            async with generation_semaphore:
-                await self._process_task(task_id)
-
-        await asyncio.gather(*(guarded(task_id) for task_id in task_ids))
+        await self.run_concurrently(task_ids, self._process_task)
 
     async def _fail(self, task_id: str, message: str, *, result_url: str = "") -> None:
         async with self.session_factory() as session:
@@ -296,8 +223,7 @@ class VisualGenerationRunner:
             byte_size = asset.byte_size
         if byte_size > 30 * 1024 * 1024:
             raise ValueError("参考图片超过 SenseAudio 的 30 MB 限制")
-        data = await asyncio.to_thread(path.read_bytes)
-        return f"data:{mime_type};base64,{base64.b64encode(data).decode('ascii')}"
+        return await read_data_uri(path=path, mime_type=mime_type, max_bytes=30 * 1024 * 1024)
 
     async def _temporary_asset_url(self, asset_id: str, expected_kind: str) -> str:
         async with self.session_factory() as session:
@@ -401,58 +327,12 @@ class VisualGenerationRunner:
         )
 
     async def _download(self, url: str, target: Path) -> tuple[int, str, str, str]:
-        current_url = url
-        content_type = ""
-        size = 0
-        head = bytearray()
-        timeout = httpx.Timeout(120.0, connect=15.0)
-        try:
-            async with httpx.AsyncClient(
-                timeout=timeout,
-                follow_redirects=False,
-                transport=self.download_transport,
-            ) as client:
-                for _ in range(MAX_REDIRECTS + 1):
-                    await _assert_public_https(current_url)
-                    async with client.stream("GET", current_url) as response:
-                        if response.is_redirect:
-                            location = response.headers.get("location")
-                            if not location:
-                                raise MaterializationError("生成结果重定向缺少地址")
-                            current_url = urljoin(current_url, location)
-                            continue
-                        if response.is_error:
-                            raise MaterializationError(
-                                f"生成结果下载失败（HTTP {response.status_code}）"
-                            )
-                        declared_size = response.headers.get("content-length")
-                        if (
-                            declared_size
-                            and declared_size.isdecimal()
-                            and int(declared_size) > self.settings.fpl_visual_asset_max_bytes
-                        ):
-                            raise MaterializationError("生成结果超过文件大小上限")
-                        content_type = response.headers.get("content-type", "")
-                        with target.open("xb") as output:
-                            async for chunk in response.aiter_bytes(1024 * 1024):
-                                size += len(chunk)
-                                if size > self.settings.fpl_visual_asset_max_bytes:
-                                    raise MaterializationError("生成结果超过文件大小上限")
-                                if len(head) < 512:
-                                    head.extend(chunk[: 512 - len(head)])
-                                output.write(chunk)
-                        break
-                else:
-                    raise MaterializationError("生成结果重定向次数过多")
-        except MaterializationError:
-            raise
-        except httpx.HTTPError as exc:
-            raise MaterializationError("生成结果下载网络错误") from exc
-        detected = _generated_type(bytes(head), content_type)
-        if size == 0 or detected is None:
-            raise MaterializationError("生成结果不是受支持的图片或视频")
-        media_kind, mime_type, extension = detected
-        return size, media_kind, mime_type, extension
+        return await download_generated_media(
+            url=url,
+            target=target,
+            max_bytes=self.settings.fpl_visual_asset_max_bytes,
+            transport=self.download_transport,
+        )
 
     async def _materialize(self, task_id: str, result_url: str) -> None:
         root = self.settings.visual_asset_path

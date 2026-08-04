@@ -4,10 +4,13 @@ from fastapi import APIRouter, HTTPException, Query
 
 from app.core.config import get_settings
 from app.deps import SessionDep
-from app.schemas.visual_workshop import (
+from app.files import AssetError, VisualAssets
+from app.schemas.files import (
     VisualAssetOut,
     VisualAssetReferenceCreateIn,
     VisualAssetReferencePatchIn,
+)
+from app.schemas.visual_workshop import (
     VisualCanvasDocumentOut,
     VisualCanvasDocumentPutIn,
     VisualWorkshopProjectCreateIn,
@@ -15,7 +18,6 @@ from app.schemas.visual_workshop import (
     VisualWorkshopProjectOut,
     VisualWorkshopProjectPatchIn,
 )
-from app.visual_workshop.assets import AssetError, VisualAssets
 from app.visual_workshop.canvas import VisualCanvasDocuments, VisualCanvasError
 from app.visual_workshop.projects import (
     VisualWorkshopProjectNotFoundError,

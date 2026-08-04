@@ -21,6 +21,41 @@ class ModelTestAttachmentListOut(BaseModel):
     items: list[ModelTestAttachmentOut]
 
 
+class ModelTestGenerationAssetOut(BaseModel):
+    id: str
+    original_filename: str
+    media_kind: Literal["image", "audio", "video"]
+    mime_type: str
+    byte_size: int
+    claimed: bool
+    created_at: str
+
+
+class ModelTestGenerationAssetListOut(BaseModel):
+    items: list[ModelTestGenerationAssetOut]
+
+
+class ModelTestGenerationAssetCleanupOut(BaseModel):
+    deleted_assets: int
+    deleted_orphan_files: int
+
+
+class ModelTestGenerationAssetBackfillStatusOut(BaseModel):
+    pending_tasks: int
+    eligible_tasks: int
+    active_tasks: int
+    missing_files: int
+
+
+class ModelTestGenerationAssetBackfillOut(BaseModel):
+    processed_tasks: int
+    copied_assets: int
+    skipped_active: int
+    skipped_missing: int
+    conflicts: int
+    remaining_tasks: int
+
+
 class ModelTestMessageOut(BaseModel):
     id: str
     turn_id: str

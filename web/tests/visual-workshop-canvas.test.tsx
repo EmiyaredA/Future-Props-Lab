@@ -9,7 +9,7 @@ import {
 } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, vi } from "vitest";
-import { VisualWorkshopCanvasPage } from "@features/visual-workshop/VisualWorkshopCanvasPage";
+import { VisualWorkshopCanvasPage } from "@features/visual-workshop/canvas";
 import { getFiles, getFolders, uploadManagedFile } from "@features/files/api";
 import {
   createVisualAssistantConversation,
@@ -291,6 +291,14 @@ test("opens an Updream-style context menu and persists created nodes", async () 
     "is-embedded",
     "is-image",
   );
+  const promptEditor = screen.getByRole("textbox", { name: "图片提示词" });
+  const setPointerCapture = vi.mocked(HTMLElement.prototype.setPointerCapture);
+  setPointerCapture.mockClear();
+  fireEvent.pointerDown(promptEditor, { pointerId: 1 });
+  expect(setPointerCapture).not.toHaveBeenCalled();
+  await user.click(promptEditor);
+  await user.type(promptEditor, "上传素材后仍可编辑");
+  expect(promptEditor).toHaveTextContent("上传素材后仍可编辑");
 
   await user.click(screen.getByRole("button", { name: "选择图片素材" }));
   expect(screen.getByRole("tab", { name: "素材" })).toHaveAttribute(

@@ -1,16 +1,4 @@
-import { useEffect, useState } from "react";
-import { ApplicationCenterPage } from "@features/applications/ApplicationCenterPage";
-import { FileManagementPage } from "@features/files/FileManagementPage";
-import { HomePage } from "@features/home/HomePage";
-import { ModelCallLogsPage } from "@features/models/ModelCallLogsPage";
-import { ModelServicePage } from "@features/models/ModelServicePage";
-import { ModelTestPage } from "@features/models/ModelTestPage";
-import { ToolNavigationPage } from "@features/tools/ToolNavigationPage";
-import { VisualWorkshopEmptyPage } from "@features/visual-workshop/VisualWorkshopEmptyPage";
-import { VisualWorkshopAssetsPage } from "@features/visual-workshop/VisualWorkshopAssetsPage";
-import { VisualWorkshopCanvasPage } from "@features/visual-workshop/VisualWorkshopCanvasPage";
-import { VisualWorkshopProjectsPage } from "@features/visual-workshop/VisualWorkshopProjectsPage";
-import { VisualWorkshopTasksPage } from "@features/visual-workshop/VisualWorkshopTasksPage";
+import { lazy, Suspense, useEffect, useState, type ReactNode } from "react";
 import { StudioSidebar } from "@app/layout/StudioSidebar";
 import { VisualWorkshopShell } from "@app/layout/VisualWorkshopShell";
 import {
@@ -22,6 +10,75 @@ import {
   type StudioPage,
   type WorkshopPage,
 } from "@app/routes";
+
+const HomePage = lazy(() =>
+  import("@features/home/HomePage").then((module) => ({
+    default: module.HomePage,
+  })),
+);
+const ApplicationCenterPage = lazy(() =>
+  import("@features/applications/ApplicationCenterPage").then((module) => ({
+    default: module.ApplicationCenterPage,
+  })),
+);
+const FileManagementPage = lazy(() =>
+  import("@features/files").then((module) => ({
+    default: module.FileManagementPage,
+  })),
+);
+const ToolNavigationPage = lazy(() =>
+  import("@features/tools/ToolNavigationPage").then((module) => ({
+    default: module.ToolNavigationPage,
+  })),
+);
+const ModelTestPage = lazy(() =>
+  import("@features/models/conversation").then((module) => ({
+    default: module.ModelTestPage,
+  })),
+);
+const ModelServicePage = lazy(() =>
+  import("@features/models/catalog").then((module) => ({
+    default: module.ModelServicePage,
+  })),
+);
+const ModelCallLogsPage = lazy(() =>
+  import("@features/models/logs").then((module) => ({
+    default: module.ModelCallLogsPage,
+  })),
+);
+const VisualWorkshopCanvasPage = lazy(() =>
+  import("@features/visual-workshop/canvas").then((module) => ({
+    default: module.VisualWorkshopCanvasPage,
+  })),
+);
+const VisualWorkshopProjectsPage = lazy(() =>
+  import("@features/visual-workshop/projects").then((module) => ({
+    default: module.VisualWorkshopProjectsPage,
+  })),
+);
+const VisualWorkshopAssetsPage = lazy(() =>
+  import("@features/visual-workshop/assets").then((module) => ({
+    default: module.VisualWorkshopAssetsPage,
+  })),
+);
+const VisualWorkshopTasksPage = lazy(() =>
+  import("@features/visual-workshop/generation").then((module) => ({
+    default: module.VisualWorkshopTasksPage,
+  })),
+);
+const VisualWorkshopEmptyPage = lazy(() =>
+  import("@features/visual-workshop/pages/VisualWorkshopEmptyPage").then(
+    (module) => ({ default: module.VisualWorkshopEmptyPage }),
+  ),
+);
+
+function PageBoundary({ children }: { children: ReactNode }) {
+  return (
+    <Suspense fallback={<div className="page-loading">正在加载…</div>}>
+      {children}
+    </Suspense>
+  );
+}
 
 export default function App() {
   const [route, setRoute] = useState<AppRoute>(parseRoute);
@@ -46,11 +103,13 @@ export default function App() {
 
   if (page === "visual-workshop-canvas" && route.projectId) {
     return (
-      <VisualWorkshopCanvasPage
-        projectId={route.projectId}
-        onBack={() => navigate("visual-workshop-projects")}
-        onAssets={() => navigate("visual-workshop-assets", route.projectId)}
-      />
+      <PageBoundary>
+        <VisualWorkshopCanvasPage
+          projectId={route.projectId}
+          onBack={() => navigate("visual-workshop-projects")}
+          onAssets={() => navigate("visual-workshop-assets", route.projectId)}
+        />
+      </PageBoundary>
     );
   }
 
@@ -61,36 +120,40 @@ export default function App() {
         navigate={(next: WorkshopPage) => navigate(next)}
         onBack={() => navigate("apps")}
       >
-        {page === "visual-workshop-projects" ? (
-          <VisualWorkshopProjectsPage
-            onOpenProject={(projectId) =>
-              navigate("visual-workshop-canvas", projectId)
-            }
-            onOpenAssets={(projectId) =>
-              navigate("visual-workshop-assets", projectId)
-            }
-          />
-        ) : page === "visual-workshop-assets" && route.projectId ? (
-          <VisualWorkshopAssetsPage
-            projectId={route.projectId}
-            onCanvas={() => navigate("visual-workshop-canvas", route.projectId)}
-            onProjects={() => navigate("visual-workshop-projects")}
-          />
-        ) : page === "visual-workshop-tasks" ? (
-          <VisualWorkshopTasksPage
-            onOpenProject={(projectId) =>
-              navigate("visual-workshop-canvas", projectId)
-            }
-            onOpenAssets={(projectId) =>
-              navigate("visual-workshop-assets", projectId)
-            }
-          />
-        ) : (
-          <VisualWorkshopEmptyPage
-            page={page === "visual-workshop-assets" ? "assets" : "tasks"}
-            onProjects={() => navigate("visual-workshop-projects")}
-          />
-        )}
+        <PageBoundary>
+          {page === "visual-workshop-projects" ? (
+            <VisualWorkshopProjectsPage
+              onOpenProject={(projectId) =>
+                navigate("visual-workshop-canvas", projectId)
+              }
+              onOpenAssets={(projectId) =>
+                navigate("visual-workshop-assets", projectId)
+              }
+            />
+          ) : page === "visual-workshop-assets" && route.projectId ? (
+            <VisualWorkshopAssetsPage
+              projectId={route.projectId}
+              onCanvas={() =>
+                navigate("visual-workshop-canvas", route.projectId)
+              }
+              onProjects={() => navigate("visual-workshop-projects")}
+            />
+          ) : page === "visual-workshop-tasks" ? (
+            <VisualWorkshopTasksPage
+              onOpenProject={(projectId) =>
+                navigate("visual-workshop-canvas", projectId)
+              }
+              onOpenAssets={(projectId) =>
+                navigate("visual-workshop-assets", projectId)
+              }
+            />
+          ) : (
+            <VisualWorkshopEmptyPage
+              page={page === "visual-workshop-assets" ? "assets" : "tasks"}
+              onProjects={() => navigate("visual-workshop-projects")}
+            />
+          )}
+        </PageBoundary>
       </VisualWorkshopShell>
     );
   }
@@ -102,21 +165,23 @@ export default function App() {
         navigate={(next: StudioPage) => navigate(next)}
       />
       <main className="studio-main">
-        {page === "home" ? (
-          <HomePage onNavigate={navigatePath} />
-        ) : page === "apps" ? (
-          <ApplicationCenterPage onOpen={navigatePath} />
-        ) : page === "files" ? (
-          <FileManagementPage />
-        ) : page === "tools" ? (
-          <ToolNavigationPage onOpenInternal={navigatePath} />
-        ) : page === "model-test" ? (
-          <ModelTestPage />
-        ) : page === "model-service" ? (
-          <ModelServicePage />
-        ) : (
-          <ModelCallLogsPage />
-        )}
+        <PageBoundary>
+          {page === "home" ? (
+            <HomePage onNavigate={navigatePath} />
+          ) : page === "apps" ? (
+            <ApplicationCenterPage onOpen={navigatePath} />
+          ) : page === "files" ? (
+            <FileManagementPage />
+          ) : page === "tools" ? (
+            <ToolNavigationPage onOpenInternal={navigatePath} />
+          ) : page === "model-test" ? (
+            <ModelTestPage />
+          ) : page === "model-service" ? (
+            <ModelServicePage />
+          ) : (
+            <ModelCallLogsPage />
+          )}
+        </PageBoundary>
       </main>
     </div>
   );

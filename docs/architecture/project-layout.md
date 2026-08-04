@@ -11,10 +11,11 @@ Future-Props-Lab/
 │   ├── problem_details.py # 统一协议错误映射
 │   ├── concurrency/   # revision/CAS 并发语义
 │   ├── core/          # 配置、数据库、时间与密钥基础设施
+│   ├── files/         # 公共文件、文件夹、存储校验与项目文件引用
 │   ├── agents/        # 供应商无关 Agent Harness、Reactive 工具循环与内存审批
-│   ├── llm/           # 模型目录、供应商适配、诊断、测试工作台和调用日志
+│   ├── llm/           # 模型目录、供应商适配、共享生成运行时、测试工作台和调用日志
 │   ├── tool_navigation/ # 工具收藏与最近使用状态规则
-│   ├── visual_workshop/ # 视觉工坊项目、素材、项目对话、生成任务与单机执行器
+│   ├── visual_workshop/ # 视觉工坊项目、画布、助手、生成任务与领域适配器
 │   ├── models/        # SQLAlchemy 持久化形状
 │   ├── routes/        # `/v1` HTTP/SSE 协议边界
 │   └── schemas/       # Pydantic 请求与响应形状
@@ -49,8 +50,9 @@ Future-Props-Lab/
 - 工具目录由 Web 静态注册表维护；后端 `tool_navigation/` 只持久化稳定工具 ID 对应的收藏与
   最近使用状态，不复制工具名称、分类或外部网址。
 - AI 应用目录同样由 Web 静态注册表维护，应用最近访问记录只保存在浏览器本地。视觉创作工坊
-  使用独立页面壳；后端 `visual_workshop/` 负责真实项目、文件元数据、项目私有素材、公共文件
-  引用、revisioned 节点画布、项目对话与图片/视频异步生成任务，不预置项目或素材。Studio 一级
+  使用独立页面壳；后端 `files/` 负责公共文件元数据、文件夹、存储校验与项目引用，
+  `visual_workshop/` 负责真实项目、revisioned 节点画布、项目对话与图片/视频异步生成任务，
+  不预置项目或素材。Studio 一级
   “文件管理”和项目素材浏览器复用同一文件 API；公共文件被项目引用期间禁止删除，对话消息引用
   的项目素材也必须先解除引用才能删除。
 - Web 的依赖方向是 `app → features → shared/platform/generated`。`platform/` 与 `shared/`
@@ -61,8 +63,9 @@ Future-Props-Lab/
 ## 数据与运行边界
 
 数据库是仓库根目录 `.runtime/future-props.db` 下的单机 SQLite 文件；文件管理内容保存在数据库
-同级的 `visual-workshop/assets/`，模型测试私有图片保存在 `model-test/attachments/`，模型测试
-生成结果保存在 `model-test/generated/`，数据库与这些目录共同构成本机数据真源。FastAPI 启动时自动创建
+同级的 `visual-workshop/assets/`，模型测试对话图片保存在 `model-test/attachments/`，生成参考
+素材保存在 `model-test/references/`，生成结果保存在 `model-test/generated/`，数据库与这些目录
+共同构成本机数据真源。FastAPI 启动时自动创建
 目录并执行 `registry.py` 中已登记、带 checksum 的 migration；每个连接启用外键约束、WAL
 与忙等待。迁移历史只追加且不导入运行时 `app`，schema 变化必须同时更新 ORM、注册表、测试
 和文档。
@@ -70,7 +73,8 @@ Future-Props-Lab/
 目录配置、模型测试会话与生成任务、视觉工坊项目、节点画布、项目对话、文件夹、文件和项目引用
 使用 revision/CAS 防止静默覆盖；工具单项状态通过幂等更新和原子 upsert 写入。图片/视频生成任务持久化
 供应商/模型快照和规范化参数，FastAPI 生命周期中的单机执行器负责恢复、轮询与安全下载；视觉工坊
-和模型测试共享远端生成并发上限，但分别保存结果。`AsyncSession` 只能由单个异步任务
+和模型测试复用 `llm/generation_runtime/` 的轮询、并发与安全下载能力，但分别保存任务状态与
+结果。`AsyncSession` 只能由单个异步任务
 使用；每个生成分支使用独立短会话，供应商网络调用和文件下载不占用已开始写入的事务。
 项目对话同样在发送准备与流式结算阶段使用独立短事务，并复用统一供应商适配边界。视觉工坊
 Agent 是通用 Harness 的首个消费者：读取画布、素材和生成任务无需确认，画布写入和外部生成必须

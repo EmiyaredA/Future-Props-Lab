@@ -130,3 +130,30 @@ class ModelTestGenerationTask(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, onupdate=utc_now)
     completed_at: Mapped[datetime | None] = mapped_column(DateTime)
+
+
+class ModelTestGenerationAsset(Base):
+    __tablename__ = "model_test_generation_assets"
+    __table_args__ = (
+        UniqueConstraint(
+            "task_id", "role", "position", name="uq_model_test_generation_asset_position"
+        ),
+        Index("ix_model_test_generation_assets_task", "task_id", "role", "position"),
+        Index("ix_model_test_generation_assets_draft_created", "created_at"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    task_id: Mapped[str | None] = mapped_column(
+        String(36),
+        ForeignKey("model_test_generation_tasks.id", ondelete="CASCADE"),
+        nullable=True,
+    )
+    role: Mapped[str | None] = mapped_column(String(24), nullable=True)
+    position: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    original_filename: Mapped[str] = mapped_column(String(255))
+    storage_key: Mapped[str] = mapped_column(String(64), unique=True)
+    media_kind: Mapped[str] = mapped_column(String(16))
+    mime_type: Mapped[str] = mapped_column(String(120))
+    byte_size: Mapped[int] = mapped_column(Integer)
+    legacy_visual_asset_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)

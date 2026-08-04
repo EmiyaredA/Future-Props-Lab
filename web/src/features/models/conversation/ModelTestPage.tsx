@@ -8,6 +8,7 @@ import {
   type ComponentPropsWithoutRef,
   type ReactNode,
 } from "react";
+import "@features/models/models.css";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Bot,
@@ -51,11 +52,11 @@ import {
 import { fetchApiBlob } from "@platform/api/client";
 import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
 import type { SelectOption } from "@shared/ui/CustomSelect";
-import { ModelGenerationTestPanel } from "@features/models/ModelGenerationTestPanel";
+import { ModelGenerationTestPanel } from "@features/models/generation/ModelGenerationTestPanel";
 import {
   ModelTestWorkspaceHeader,
   type ModelTestMode,
-} from "@features/models/ModelTestWorkspaceHeader";
+} from "@features/models/workspace/ModelTestWorkspaceHeader";
 
 const MAX_ATTACHMENTS = 5;
 const MAX_ATTACHMENT_BYTES = 8 * 1024 * 1024;

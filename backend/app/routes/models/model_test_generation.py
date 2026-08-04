@@ -1,11 +1,21 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, HTTPException, Query
+from typing import Annotated
+
+from fastapi import APIRouter, File, HTTPException, Query, UploadFile
 from fastapi.responses import FileResponse
 
 from app.deps import SessionDep
 from app.llm.playground.generation import ModelTestGeneration, ModelTestGenerationError
+from app.llm.playground.generation_assets import (
+    GenerationAssetError,
+    ModelTestGenerationAssets,
+)
 from app.schemas.model_test import (
+    ModelTestGenerationAssetBackfillOut,
+    ModelTestGenerationAssetBackfillStatusOut,
+    ModelTestGenerationAssetCleanupOut,
+    ModelTestGenerationAssetListOut,
     ModelTestGenerationCreateIn,
     ModelTestGenerationOptionListOut,
     ModelTestGenerationTaskListOut,
@@ -17,6 +27,53 @@ router = APIRouter(prefix="/model-test", tags=["model-test"])
 
 def _translate(exc: ModelTestGenerationError) -> HTTPException:
     return HTTPException(exc.status, {"code": exc.code, "message": str(exc)})
+
+
+def _translate_asset(exc: GenerationAssetError) -> HTTPException:
+    return HTTPException(exc.status, {"code": exc.code, "message": str(exc)})
+
+
+@router.post("/generation-assets", response_model=ModelTestGenerationAssetListOut)
+async def upload_generation_assets(
+    session: SessionDep,
+    files: Annotated[list[UploadFile], File()],
+) -> ModelTestGenerationAssetListOut:
+    try:
+        return await ModelTestGenerationAssets(session).upload(files)
+    except GenerationAssetError as exc:
+        raise _translate_asset(exc) from None
+
+
+@router.delete("/generation-assets/{asset_id}")
+async def delete_generation_asset(session: SessionDep, asset_id: str) -> dict[str, bool]:
+    try:
+        await ModelTestGenerationAssets(session).delete_draft(asset_id)
+    except GenerationAssetError as exc:
+        raise _translate_asset(exc) from None
+    return {"deleted": True}
+
+
+@router.post("/generation-assets/cleanup", response_model=ModelTestGenerationAssetCleanupOut)
+async def cleanup_generation_assets(session: SessionDep) -> ModelTestGenerationAssetCleanupOut:
+    return await ModelTestGenerationAssets(session).cleanup()
+
+
+@router.get(
+    "/generation-assets/backfill-status",
+    response_model=ModelTestGenerationAssetBackfillStatusOut,
+)
+async def generation_asset_backfill_status(
+    session: SessionDep,
+) -> ModelTestGenerationAssetBackfillStatusOut:
+    return await ModelTestGenerationAssets(session).backfill_status()
+
+
+@router.post("/generation-assets/backfill", response_model=ModelTestGenerationAssetBackfillOut)
+async def backfill_generation_assets(
+    session: SessionDep,
+    limit: int = Query(default=50, ge=1, le=100),
+) -> ModelTestGenerationAssetBackfillOut:
+    return await ModelTestGenerationAssets(session).backfill(limit)
 
 
 @router.get("/generation-options", response_model=ModelTestGenerationOptionListOut)

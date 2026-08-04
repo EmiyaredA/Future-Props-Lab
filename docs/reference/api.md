@@ -45,6 +45,11 @@
 - `GET/DELETE /v1/model-test/generation-tasks/{task_id}`
 - `GET /v1/model-test/generation-tasks/{task_id}/content`：鉴权预览独立测试结果。
 - `POST /v1/model-test/generation-tasks/{task_id}/retry-materialization`
+- `POST /v1/model-test/generation-assets`：批量上传模型测试私有的不可修改草稿素材。
+- `DELETE /v1/model-test/generation-assets/{asset_id}`：删除尚未被任务认领的草稿。
+- `POST /v1/model-test/generation-assets/cleanup`：清理超过 24 小时的草稿和遗留文件。
+- `GET /v1/model-test/generation-assets/backfill-status`：检查仍引用旧公共文件的历史任务。
+- `POST /v1/model-test/generation-assets/backfill`：幂等复制历史素材并通过任务 CAS 完成认领。
 
 修改、删除、发送和重新生成使用会话 `expected_revision` 做 CAS 保护。发送请求可携带最多 5 个
 `attachment_ids`，文本和图片至少提供一项。图片仅支持 JPEG、PNG、WebP 与静态 GIF，单张
@@ -56,7 +61,9 @@ error`；成功、失败、超时或取消都会保存消息状态并写入调�
 
 模型测试页按供应商协议自适应：OpenAI/Anthropic 模型进入多轮对话，SenseAudio 图片/视频模型进入
 独立异步生成测试。图片测试支持提示词、尺寸和种子；视频测试支持提示词、时长、分辨率、比例、
-水印、生成音频，以及从本机素材库选择最多 9 张图片、3 个音频和 3 个视频。任务结果下载到 `model-test/generated/`，不创建视觉工坊项目或素材。任务与模型
+水印、生成音频，以及上传最多 9 张图片、3 个音频和 3 个视频到模型测试私有草稿区。创建任务会在
+同一事务认领这些草稿；新任务不能引用公共 `visual_assets`。历史任务由显式回填 API 迁移，原公共
+文件保持不动。任务结果下载到 `model-test/generated/`，不创建视觉工坊项目或素材。任务与模型
 目录都通过 `/v1` API 管理，活动任务不可删除或随模型一起停用；终态删除使用 revision/CAS。
 
 ## 工具导航

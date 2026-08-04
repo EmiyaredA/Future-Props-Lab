@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { ArrowLeft, Boxes, FolderOpen } from "lucide-react";
-import { AssetBrowser } from "@features/files/AssetBrowser";
+import { AssetBrowser } from "@features/files";
 
 export function VisualWorkshopAssetsPage({
   projectId,

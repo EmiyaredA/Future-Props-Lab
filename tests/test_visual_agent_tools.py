@@ -12,7 +12,7 @@ from app.core.credentials import encrypt_secret
 from app.core.db import SessionLocal
 from app.main import app
 from app.models import ModelEntry, ModelProvider, VisualGenerationTask
-from app.visual_workshop.agent import visual_agent_tools
+from app.visual_workshop.assistant.tools import visual_agent_tools
 
 
 @pytest.mark.asyncio

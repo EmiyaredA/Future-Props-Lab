@@ -19,8 +19,8 @@ from app.llm.providers.agent import ModelTextDelta, ModelTurnEnd, ToolCall, Usag
 from app.main import app
 from app.models import LlmCallLog, ModelEntry, ModelProvider, VisualAsset
 from app.schemas.visual_workshop import VisualAssistantSendIn
-from app.visual_workshop import assistant_stream
 from app.visual_workshop.assistant import VisualAssistantConversations
+from app.visual_workshop.assistant import stream as assistant_stream
 
 
 @pytest.mark.asyncio
@@ -574,13 +574,15 @@ async def test_visual_assistant_builds_safe_context_for_documents_and_media(
         is_encrypted = False
         pages = [FakePage()] * 51
 
-    monkeypatch.setattr("app.visual_workshop.assistant.PdfReader", lambda _path: FakeReader())
+    monkeypatch.setattr(
+        "app.visual_workshop.assistant.conversations.PdfReader", lambda _path: FakeReader()
+    )
     pdf_text, warning = VisualAssistantConversations._read_pdf(tmp_path / "sample.pdf")
     assert pdf_text.startswith("PDF 正文")
     assert warning == "PDF 仅读取前 50 页"
 
     monkeypatch.setattr(
-        "app.visual_workshop.assistant.PdfReader",
+        "app.visual_workshop.assistant.conversations.PdfReader",
         lambda _path: (_ for _ in ()).throw(ValueError("broken")),
     )
     pdf_text, warning = VisualAssistantConversations._read_pdf(tmp_path / "broken.pdf")

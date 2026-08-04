@@ -43,6 +43,7 @@ from app.schemas.visual_workshop import (
     VisualAssistantModelOptionOut,
     VisualAssistantTextPart,
 )
+from app.visual_workshop.assistant.actions import action_out
 
 MAX_IMAGE_BYTES = 8 * 1024 * 1024
 MAX_ATTACHMENTS = 5
@@ -229,8 +230,6 @@ class VisualAssistantConversations:
             .scalars()
             .all()
         )
-        from app.visual_workshop.assistant_actions import action_out
-
         actions: dict[str, list[VisualAssistantActionOut]] = {}
         for action in action_rows:
             actions.setdefault(action.message_id, []).append(action_out(action))

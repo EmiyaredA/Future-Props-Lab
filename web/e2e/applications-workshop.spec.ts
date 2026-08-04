@@ -5,6 +5,23 @@ test("enters the visual workshop, persists projects, and supports deep navigatio
 }) => {
   let projects: Array<Record<string, unknown>> = [];
   let generationTasks: Array<Record<string, unknown>> = [];
+  let exposeReferenceImage = false;
+  const referenceImage = {
+    id: "e2e-reference-image",
+    project_id: "e2e-project",
+    folder_id: null,
+    reference_id: null,
+    original_filename: "e2e-reference.png",
+    display_name: "E2E 参考图.png",
+    media_kind: "image",
+    mime_type: "image/png",
+    byte_size: 1024,
+    source: "project",
+    is_reference: false,
+    revision: 0,
+    created_at: "2026-08-03T08:00:00Z",
+    updated_at: "2026-08-03T08:00:00Z",
+  };
   let canvas = {
     project_id: "e2e-project",
     nodes: [] as Array<Record<string, unknown>>,
@@ -45,10 +62,20 @@ test("enters the visual workshop, persists projects, and supports deep navigatio
         return;
       }
       if (url.pathname.endsWith("/messages/stream")) {
-        const body = request.postDataJSON() as { content: string };
+        const body = request.postDataJSON() as {
+          content?: string;
+          content_parts?: Array<{ type: string; text?: string }>;
+        };
+        const content =
+          body.content ??
+          body.content_parts
+            ?.filter((part) => part.type === "text")
+            .map((part) => part.text ?? "")
+            .join("") ??
+          "";
         assistantConversation = {
           ...assistantConversation,
-          title: body.content.slice(0, 24),
+          title: content.slice(0, 24),
           revision: 2,
           updated_at: "2026-08-03T08:01:10Z",
           messages: [
@@ -56,7 +83,7 @@ test("enters the visual workshop, persists projects, and supports deep navigatio
               id: "e2e-user-message",
               turn_id: "e2e-turn",
               role: "user",
-              content: body.content,
+              content,
               model_slug: "",
               status: "completed",
               error_message: null,
@@ -274,9 +301,19 @@ test("enters the visual workshop, persists projects, and supports deep navigatio
     });
   });
   await page.route("**/v1/files**", async (route) => {
+    if (route.request().method() === "POST") {
+      exposeReferenceImage = true;
+      await route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify(referenceImage),
+      });
+      return;
+    }
     await route.fulfill({
       contentType: "application/json",
-      body: JSON.stringify({ items: [] }),
+      body: JSON.stringify({
+        items: exposeReferenceImage ? [referenceImage] : [],
+      }),
     });
   });
   await page.route(
@@ -419,7 +456,32 @@ test("enters the visual workshop, persists projects, and supports deep navigatio
   await page.reload();
   await expect(page.getByText("图片1")).toBeVisible();
   await page.getByText("图片1").click();
-  await page.getByPlaceholder("描述你想生成的画面…").fill("E2E 未来城市海报");
+  const fileChooserPromise = page.waitForEvent("filechooser");
+  await page.getByRole("button", { name: "上传参考图片（可选）" }).click();
+  const fileChooser = await fileChooserPromise;
+  await fileChooser.setFiles({
+    name: "E2E 参考图.png",
+    mimeType: "image/png",
+    buffer: Buffer.from("e2e-reference-image"),
+  });
+  await expect(
+    page.getByRole("button", { name: "E2E 参考图.png" }),
+  ).toBeVisible();
+  const promptEditor = page.getByRole("textbox", { name: "图片提示词" });
+  await promptEditor.click();
+  await promptEditor.type("@");
+  await expect(
+    page.getByRole("listbox", { name: "引用已选素材" }),
+  ).toBeVisible();
+  await page.keyboard.press("Enter");
+  await promptEditor.type(" 初始描述");
+  await expect(
+    page.getByRole("button", { name: "移除引用 E2E 参考图.png" }),
+  ).toBeVisible();
+  await promptEditor.press("ControlOrMeta+A");
+  await promptEditor.press("Backspace");
+  await promptEditor.type("E2E 未来城市海报");
+  await expect(promptEditor).toContainText("E2E 未来城市海报");
   await page.getByRole("button", { name: "生成图片" }).click();
   await expect(page.getByText(/任务已提交/)).toBeVisible();
 
@@ -440,9 +502,9 @@ test("enters the visual workshop, persists projects, and supports deep navigatio
   ).toBeVisible();
   await page.getByRole("button", { name: "关闭模型选择" }).click();
   await page.getByRole("button", { name: "总结当前画布内容" }).click();
-  await expect(
-    page.getByPlaceholder("输入创意想法，询问当前画布…"),
-  ).toHaveValue("总结当前画布内容");
+  await expect(page.getByRole("textbox", { name: "消息内容" })).toContainText(
+    "总结当前画布内容",
+  );
   await page.getByRole("button", { name: "发送" }).click();
   await expect(page.getByText(/E2E 助手建议/)).toBeVisible();
   await expect(page.getByLabel("Agent 执行步骤")).toBeVisible();

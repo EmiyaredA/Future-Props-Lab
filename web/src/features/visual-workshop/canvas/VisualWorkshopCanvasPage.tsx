@@ -26,10 +26,25 @@ import {
   Video,
   X,
 } from "lucide-react";
-import { uploadManagedFile } from "@features/files/api";
-import { AssetBrowser, type AssetViewMode } from "@features/files/AssetBrowser";
-import { CanvasNodeInspector } from "@features/visual-workshop/CanvasNodeInspector";
-import { ProjectAssistantPanel } from "@features/visual-workshop/ProjectAssistantPanel";
+import {
+  AssetBrowser,
+  type AssetViewMode,
+  uploadManagedFile,
+} from "@features/files";
+import { ProjectAssistantPanel } from "@features/visual-workshop/assistant/ProjectAssistantPanel";
+import { CanvasNodeInspector } from "@features/visual-workshop/canvas/CanvasNodeInspector";
+import {
+  ATTACHED_EDITOR_SIZE,
+  DEFAULT_VIEWPORT,
+  NODE_DRAG_BLOCKER_SELECTOR,
+  NODE_SIZE,
+  clampZoom,
+  cloneNode,
+  nextNodeId,
+  nodeLabel,
+  readViewport,
+  type NodeKind,
+} from "@features/visual-workshop/canvas/geometry";
 import {
   getVisualCanvas,
   getVisualWorkshopProject,
@@ -42,8 +57,6 @@ import { ApiError, fetchApiBlob } from "@platform/api/client";
 import { ThemeToggle } from "@shared/ui/ThemeToggle";
 import "@features/visual-workshop/visual-workshop.css";
 
-type Viewport = { x: number; y: number; zoom: number };
-type NodeKind = VisualCanvasNode["kind"];
 type MediaNode = Exclude<VisualCanvasNode, { kind: "text" }>;
 type ContextMenuState = {
   left: number;
@@ -51,78 +64,6 @@ type ContextMenuState = {
   worldX: number;
   worldY: number;
 };
-
-const DEFAULT_VIEWPORT: Viewport = { x: 0, y: 0, zoom: 1 };
-const NODE_SIZE: Record<NodeKind, { width: number; height: number }> = {
-  text: { width: 300, height: 180 },
-  image: { width: 480, height: 304 },
-  video: { width: 480, height: 304 },
-  audio: { width: 320, height: 150 },
-};
-const ATTACHED_EDITOR_SIZE: Partial<
-  Record<NodeKind, { width: number; height: number; gap: number }>
-> = {
-  image: { width: 760, height: 420, gap: 22 },
-  video: { width: 760, height: 460, gap: 22 },
-};
-const NODE_DRAG_BLOCKER_SELECTOR = [
-  "a",
-  "button",
-  "input",
-  "textarea",
-  "select",
-  "video",
-  "audio",
-  "[contenteditable='true']",
-  ".canvas-node-port",
-  ".canvas-node-inspector",
-  ".project-assistant-panel",
-].join(",");
-
-function readViewport(projectId: string): Viewport {
-  try {
-    const value = JSON.parse(
-      window.localStorage.getItem(`fpl_canvas_viewport_${projectId}`) || "null",
-    ) as Viewport | null;
-    if (
-      value &&
-      Number.isFinite(value.x) &&
-      Number.isFinite(value.y) &&
-      value.zoom >= 0.25 &&
-      value.zoom <= 2
-    )
-      return value;
-  } catch {
-    // Corrupt browser preferences fall back to a centered canvas.
-  }
-  return DEFAULT_VIEWPORT;
-}
-
-function clampZoom(value: number) {
-  return Math.min(2, Math.max(0.25, value));
-}
-
-function nextNodeId(kind: NodeKind) {
-  const random =
-    globalThis.crypto?.randomUUID?.() ?? Math.random().toString(36).slice(2);
-  return `${kind}-${random}`;
-}
-
-function nodeLabel(kind: NodeKind) {
-  return { text: "文本", image: "图片", video: "视频", audio: "音频" }[kind];
-}
-
-function cloneNode(
-  node: VisualCanvasNode,
-  position: { x: number; y: number },
-): VisualCanvasNode {
-  return {
-    ...node,
-    id: nextNodeId(node.kind),
-    title: `${node.title} 副本`,
-    position,
-  } as VisualCanvasNode;
-}
 
 function CanvasMediaPreview({ node }: { node: MediaNode }) {
   const [url, setUrl] = useState("");

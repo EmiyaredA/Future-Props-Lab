@@ -31,7 +31,8 @@ export type ModelTestGenerationTask =
   components["schemas"]["ModelTestGenerationTaskOut"];
 export type ModelTestGenerationOption =
   components["schemas"]["ModelTestGenerationOptionOut"];
-export type ModelTestReferenceAsset = components["schemas"]["VisualAssetOut"];
+export type ModelTestReferenceAsset =
+  components["schemas"]["ModelTestGenerationAssetOut"];
 export type ModelTestImageGenerationInput =
   components["schemas"]["ModelTestImageGenerationIn"];
 export type ModelTestVideoGenerationInput =
@@ -314,13 +315,13 @@ export async function createModelTestGenerationTask(
   return unwrap(await api.POST("/v1/model-test/generation-tasks", { body }));
 }
 
-export async function uploadModelTestReferenceAsset(file: File) {
+export async function uploadModelTestReferenceAssets(files: File[]) {
   return unwrap(
-    await api.POST("/v1/files", {
-      body: { upload: file as unknown as string },
+    await api.POST("/v1/model-test/generation-assets", {
+      body: { files: files as unknown as string[] },
       bodySerializer() {
         const form = new FormData();
-        form.set("upload", file);
+        files.forEach((file) => form.append("files", file));
         return form;
       },
     }),
@@ -331,11 +332,26 @@ export async function deleteModelTestReferenceAsset(
   asset: ModelTestReferenceAsset,
 ) {
   return unwrap(
-    await api.DELETE("/v1/files/{asset_id}", {
-      params: {
-        path: { asset_id: asset.id },
-        query: { expected_revision: asset.revision },
-      },
+    await api.DELETE("/v1/model-test/generation-assets/{asset_id}", {
+      params: { path: { asset_id: asset.id } },
+    }),
+  );
+}
+
+export async function cleanupModelTestReferenceAssets() {
+  return unwrap(await api.POST("/v1/model-test/generation-assets/cleanup"));
+}
+
+export async function getModelTestReferenceBackfillStatus() {
+  return unwrap(
+    await api.GET("/v1/model-test/generation-assets/backfill-status"),
+  );
+}
+
+export async function backfillModelTestReferenceAssets() {
+  return unwrap(
+    await api.POST("/v1/model-test/generation-assets/backfill", {
+      params: { query: { limit: 50 } },
     }),
   );
 }

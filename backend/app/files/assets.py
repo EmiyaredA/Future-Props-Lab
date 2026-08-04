@@ -19,7 +19,7 @@ from app.models import (
     VisualProjectAssetReference,
     VisualWorkshopProject,
 )
-from app.schemas.visual_workshop import (
+from app.schemas.files import (
     VisualAssetFolderCreateIn,
     VisualAssetFolderListOut,
     VisualAssetFolderOut,

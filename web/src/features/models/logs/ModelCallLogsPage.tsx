@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import "@features/models/models.css";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Braces, ChevronDown, Copy, X } from "lucide-react";
 import ReactMarkdown from "react-markdown";

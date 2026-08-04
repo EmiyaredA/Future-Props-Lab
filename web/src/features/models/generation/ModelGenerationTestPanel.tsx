@@ -20,17 +20,21 @@ import { CustomSelect, type SelectOption } from "@shared/ui/CustomSelect";
 import {
   ModelTestWorkspaceHeader,
   type ModelTestMode,
-} from "@features/models/ModelTestWorkspaceHeader";
+} from "@features/models/workspace/ModelTestWorkspaceHeader";
 import {
+  backfillModelTestReferenceAssets,
+  cleanupModelTestReferenceAssets,
   createModelTestGenerationTask,
   deleteModelTestReferenceAsset,
   deleteModelTestGenerationTask,
   getModelTestGenerationOptions,
   getModelTestGenerationResult,
   getModelTestGenerationTasks,
+  getModelTestReferenceBackfillStatus,
   retryModelTestGenerationMaterialization,
   type ModelTestGenerationTask,
-  uploadModelTestReferenceAsset,
+  type ModelTestReferenceAsset,
+  uploadModelTestReferenceAssets,
 } from "@features/models/api";
 
 type GenerationKind = "image" | "video";
@@ -276,6 +280,10 @@ export function ModelGenerationTestPanel({
         ? 5000
         : false,
   });
+  const backfillStatusQuery = useQuery({
+    queryKey: ["model-test-generation-asset-backfill"],
+    queryFn: getModelTestReferenceBackfillStatus,
+  });
   const tasks = tasksQuery.data?.items ?? [];
   const normalizedSearch = taskSearch.trim().toLowerCase();
   const filteredTasks = normalizedSearch
@@ -308,6 +316,10 @@ export function ModelGenerationTestPanel({
     },
     [],
   );
+
+  useEffect(() => {
+    void cleanupModelTestReferenceAssets().catch(() => undefined);
+  }, []);
 
   useEffect(() => {
     const sizes = selectedOption?.sizes ?? [];
@@ -364,13 +376,18 @@ export function ModelGenerationTestPanel({
           seed: seed === "" ? null : Number(seed),
         });
       }
-      const uploaded = [];
+      const uploaded: Array<{
+        reference: LocalReference;
+        asset: ModelTestReferenceAsset;
+      }> = [];
       try {
-        for (const reference of referenceFiles) {
-          uploaded.push({
-            reference,
-            asset: await uploadModelTestReferenceAsset(reference.file),
-          });
+        if (referenceFiles.length) {
+          const response = await uploadModelTestReferenceAssets(
+            referenceFiles.map((reference) => reference.file),
+          );
+          response.items.forEach((asset, index) =>
+            uploaded.push({ reference: referenceFiles[index], asset }),
+          );
         }
         return await createModelTestGenerationTask({
           kind: "video",
@@ -428,6 +445,14 @@ export function ModelGenerationTestPanel({
     mutationFn: (taskId: string) =>
       retryModelTestGenerationMaterialization(taskId),
     onSuccess: refresh,
+    onError: (cause) =>
+      setError(cause instanceof Error ? cause.message : String(cause)),
+  });
+  const backfillMutation = useMutation({
+    mutationFn: backfillModelTestReferenceAssets,
+    onSuccess: async () => {
+      await Promise.all([backfillStatusQuery.refetch(), tasksQuery.refetch()]);
+    },
     onError: (cause) =>
       setError(cause instanceof Error ? cause.message : String(cause)),
   });
@@ -516,6 +541,22 @@ export function ModelGenerationTestPanel({
         modelOptions={modelOptions}
         onSelectModel={onSelectModel}
       />
+      {backfillStatusQuery.data?.pending_tasks ? (
+        <div className="inline-alert warning playground-alert" role="status">
+          检测到 {backfillStatusQuery.data.pending_tasks}{" "}
+          个历史任务仍在使用公共参考素材。
+          <button
+            type="button"
+            disabled={
+              backfillMutation.isPending ||
+              backfillStatusQuery.data.eligible_tasks === 0
+            }
+            onClick={() => backfillMutation.mutate()}
+          >
+            {backfillMutation.isPending ? "迁移中…" : "迁移历史素材"}
+          </button>
+        </div>
+      ) : null}
       {error ? (
         <div className="inline-alert danger playground-alert" role="alert">
           {error}

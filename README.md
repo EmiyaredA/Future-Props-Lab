@@ -23,7 +23,8 @@
 Studio 默认地址为 <http://127.0.0.1:3000>，打开后进入首页；API 文档为 <http://127.0.0.1:9000/docs>。一级“文件管理”保存可被视觉项目引用的图片、视频、音频与文档；工具导航聚合站内模型能力与常用公开研发工具，并将收藏和最近使用记录持久化到本机 SQLite。基模型菜单包含持久化多轮“模型测试”、供应商与模型管理，以及可按快速诊断/模型测试区分的调用日志。
 
 备份时先停止应用，再同时复制 `.runtime/future-props.db`、`.runtime/visual-workshop/assets/`、
-`.runtime/model-test/attachments/` 与 `.runtime/model-test/generated/`。数据库路径可通过
+`.runtime/model-test/attachments/`、`.runtime/model-test/references/` 与
+`.runtime/model-test/generated/`。数据库路径可通过
 `FPL_DATABASE_PATH` 调整，这些文件目录都位于数据库所在目录下。
 
 详细说明见 [项目结构](docs/architecture/project-layout.md)、[环境变量](docs/reference/configuration.md) 和 [API 参考](docs/reference/api.md)。

@@ -47,11 +47,7 @@ import {
 import { createPortal } from "react-dom";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import {
-  getFiles,
-  uploadManagedFile,
-  type ManagedFile,
-} from "@features/files/api";
+import { getFiles, uploadManagedFile, type ManagedFile } from "@features/files";
 import {
   createVisualAssistantConversation,
   deleteVisualAssistantConversation,
@@ -73,6 +69,11 @@ import {
 } from "@features/visual-workshop/api";
 import { ApiError, fetchApiBlob } from "@platform/api/client";
 import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
+import {
+  EMPTY_COMPOSER_TEXT,
+  findMentionAtCaret,
+  normalizeMentionParts,
+} from "@features/visual-workshop/mention-composer/model";
 
 const MAX_ATTACHMENTS = 5;
 const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
@@ -381,7 +382,7 @@ function InlineMessageContent({
   );
 }
 
-const EMPTY_EDITOR_TEXT = "\u200b";
+const EMPTY_EDITOR_TEXT = EMPTY_COMPOSER_TEXT;
 let composerPartSequence = 0;
 
 type ComposerTextPart = {
@@ -417,26 +418,7 @@ function assetPart(asset: SelectedAttachment): ComposerAssetPart {
 }
 
 function normalizeComposerParts(parts: ComposerPart[]): ComposerPart[] {
-  const normalized: ComposerPart[] = [];
-  for (const part of parts) {
-    if (part.type === "text") {
-      const text = part.text.replaceAll(EMPTY_EDITOR_TEXT, "");
-      const previous = normalized.at(-1);
-      if (previous?.type === "text")
-        normalized[normalized.length - 1] = {
-          ...previous,
-          text: previous.text + text,
-        };
-      else normalized.push({ ...part, text });
-      continue;
-    }
-    if (normalized.at(-1)?.type !== "text") normalized.push(textPart());
-    normalized.push(part);
-  }
-  if (!normalized.length) normalized.push(textPart());
-  if (normalized[0].type !== "text") normalized.unshift(textPart());
-  if (normalized.at(-1)?.type !== "text") normalized.push(textPart());
-  return normalized;
+  return normalizeMentionParts(parts, textPart, { leadingText: true });
 }
 
 function uniqueComposerAttachments(parts: ComposerPart[]) {
@@ -490,21 +472,7 @@ function caretInComposer(root: HTMLDivElement): ComposerCaret | null {
 }
 
 function mentionAtCaret(parts: ComposerPart[], caret: ComposerCaret | null) {
-  if (!caret) return null;
-  const part = parts.find(
-    (candidate): candidate is ComposerTextPart =>
-      candidate.key === caret.key && candidate.type === "text",
-  );
-  if (!part) return null;
-  const prefix = part.text.slice(0, caret.offset);
-  const match = prefix.match(/(?:^|[\s([（【])@([^\s@]*)$/u);
-  if (!match) return null;
-  const query = match[1] ?? "";
-  return {
-    ...caret,
-    start: caret.offset - query.length - 1,
-    query,
-  } satisfies MentionMatch;
+  return findMentionAtCaret(parts, caret);
 }
 
 function partsFromMessage(message: VisualAssistantMessage): ComposerPart[] {
@@ -623,8 +591,25 @@ const AssistantMentionComposer = forwardRef<
     const caret = caretInComposer(root);
     if (!caret) return;
     lastCaret.current = caret;
-    if (!composing.current)
-      setMention(mentionAtCaret(value, caret) ?? undefined);
+    const textElement = [
+      ...root.querySelectorAll<HTMLElement>("[data-composer-text]"),
+    ].find((element) => element.dataset.partKey === caret.key);
+    if (!composing.current && textElement)
+      setMention(
+        mentionAtCaret(
+          [
+            {
+              key: caret.key,
+              type: "text",
+              text: (textElement.textContent || "").replaceAll(
+                EMPTY_EDITOR_TEXT,
+                "",
+              ),
+            },
+          ],
+          caret,
+        ) ?? undefined,
+      );
   };
 
   const ensureCaret = () => {
@@ -772,18 +757,60 @@ const AssistantMentionComposer = forwardRef<
       pendingCaret.current = caret;
     }
     const normalized = normalizeComposerParts(parts);
+    let detectedMention = mentionAtCaret(normalized, caret) ?? undefined;
+    if (!detectedMention) {
+      const activeText = caret
+        ? normalized.find(
+            (part): part is ComposerTextPart =>
+              part.type === "text" && part.key === caret.key,
+          )
+        : [...normalized]
+            .reverse()
+            .find((part): part is ComposerTextPart => part.type === "text");
+      if (activeText && (!caret || activeText.text.length - caret.offset <= 1))
+        detectedMention =
+          mentionAtCaret(normalized, {
+            key: activeText.key,
+            offset: activeText.text.length,
+          }) ?? undefined;
+    }
     onChange(normalized);
-    setMention(mentionAtCaret(normalized, caret) ?? undefined);
-    queueMicrotask(() => {
-      const settledCaret = caretInComposer(root);
-      if (!settledCaret || composing.current) return;
-      lastCaret.current = settledCaret;
-      setMention(mentionAtCaret(normalized, settledCaret) ?? undefined);
-    });
+    setMention(detectedMention);
+    requestAnimationFrame(refreshMention);
   };
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
     rememberCaret();
+    if (
+      !composing.current &&
+      event.key.length === 1 &&
+      !event.ctrlKey &&
+      !event.metaKey &&
+      !event.altKey
+    ) {
+      const caret = lastCaret.current;
+      const root = editorRef.current;
+      const textElement = caret
+        ? [
+            ...(root?.querySelectorAll<HTMLElement>("[data-composer-text]") ??
+              []),
+          ].find((element) => element.dataset.partKey === caret.key)
+        : undefined;
+      if (caret && textElement) {
+        const text = (textElement.textContent || "").replaceAll(
+          EMPTY_EDITOR_TEXT,
+          "",
+        );
+        const nextText =
+          text.slice(0, caret.offset) + event.key + text.slice(caret.offset);
+        setMention(
+          mentionAtCaret([{ key: caret.key, type: "text", text: nextText }], {
+            key: caret.key,
+            offset: caret.offset + event.key.length,
+          }) ?? undefined,
+        );
+      }
+    }
     if (mention && !composing.current) {
       if (
         options.length &&

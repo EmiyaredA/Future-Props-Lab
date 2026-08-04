@@ -72,6 +72,10 @@ class Settings(BaseSettings):
     def model_test_generated_path(self) -> Path:
         return (self.database_path.parent / "model-test" / "generated").resolve()
 
+    @property
+    def model_test_reference_path(self) -> Path:
+        return (self.database_path.parent / "model-test" / "references").resolve()
+
 
 @lru_cache
 def get_settings() -> Settings:

@@ -157,17 +157,17 @@ async def test_video_generation_accepts_uploaded_reference_audio_and_video(
         model = model_response.json()["model"]
 
         video_upload = await client.post(
-            "/v1/files",
-            files={"upload": ("reference.mp4", b"\x00\x00\x00\x18ftypisomtest", "video/mp4")},
+            "/v1/model-test/generation-assets",
+            files={"files": ("reference.mp4", b"\x00\x00\x00\x18ftypisomtest", "video/mp4")},
         )
         audio_upload = await client.post(
-            "/v1/files",
-            files={"upload": ("reference.mp3", b"ID3test-audio", "audio/mpeg")},
+            "/v1/model-test/generation-assets",
+            files={"files": ("reference.mp3", b"ID3test-audio", "audio/mpeg")},
         )
         assert video_upload.status_code == 200, video_upload.text
         assert audio_upload.status_code == 200, audio_upload.text
-        video_asset = video_upload.json()
-        audio_asset = audio_upload.json()
+        video_asset = video_upload.json()["items"][0]
+        audio_asset = audio_upload.json()["items"][0]
 
         audio_only = await client.post(
             "/v1/model-test/generation-tasks",
@@ -222,13 +222,6 @@ async def test_video_generation_accepts_uploaded_reference_audio_and_video(
                 params={"expected_revision": failed["revision"]},
             )
         ).status_code == 200
-        for asset in (video_asset, audio_asset):
-            assert (
-                await client.delete(
-                    f"/v1/files/{asset['id']}",
-                    params={"expected_revision": asset["revision"]},
-                )
-            ).status_code == 200
         current_revision = (await client.get("/v1/model-providers")).json()["revision"]
         assert (
             await client.delete(

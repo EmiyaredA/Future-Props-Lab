@@ -21,13 +21,16 @@ from app.models import (
     VisualAssistantConversation,
     VisualAssistantMessage,
 )
-from app.visual_workshop.agent import build_visual_agent_definition
-from app.visual_workshop.assistant import PreparedAssistantGeneration, message_out
-from app.visual_workshop.assistant_actions import (
+from app.visual_workshop.assistant.actions import (
     action_out,
     cancel_active_actions,
     persist_agent_event,
 )
+from app.visual_workshop.assistant.conversations import (
+    PreparedAssistantGeneration,
+    message_out,
+)
+from app.visual_workshop.assistant.tools import build_visual_agent_definition
 
 
 def build_model_adapter(prepared: PreparedAssistantGeneration, api_key: str) -> HttpAgentAdapter:

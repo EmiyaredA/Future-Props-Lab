@@ -7,7 +7,8 @@ from fastapi.responses import FileResponse
 
 from app.core.config import get_settings
 from app.deps import SessionDep
-from app.schemas.visual_workshop import (
+from app.files import AssetError, VisualAssets
+from app.schemas.files import (
     VisualAssetFolderCreateIn,
     VisualAssetFolderListOut,
     VisualAssetFolderOut,
@@ -16,7 +17,6 @@ from app.schemas.visual_workshop import (
     VisualAssetOut,
     VisualAssetPatchIn,
 )
-from app.visual_workshop.assets import AssetError, VisualAssets
 
 router = APIRouter(tags=["file-management"])
 

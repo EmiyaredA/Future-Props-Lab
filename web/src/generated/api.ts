@@ -457,6 +457,91 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/model-test/generation-assets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Upload Generation Assets */
+        post: operations["upload_generation_assets_v1_model_test_generation_assets_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/model-test/generation-assets/backfill": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Backfill Generation Assets */
+        post: operations["backfill_generation_assets_v1_model_test_generation_assets_backfill_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/model-test/generation-assets/backfill-status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Generation Asset Backfill Status */
+        get: operations["generation_asset_backfill_status_v1_model_test_generation_assets_backfill_status_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/model-test/generation-assets/cleanup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cleanup Generation Assets */
+        post: operations["cleanup_generation_assets_v1_model_test_generation_assets_cleanup_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/model-test/generation-assets/{asset_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete Generation Asset */
+        delete: operations["delete_generation_asset_v1_model_test_generation_assets__asset_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/model-test/generation-options": {
         parameters: {
             query?: never;
@@ -898,6 +983,11 @@ export interface components {
             /** Upload */
             upload: string;
         };
+        /** Body_upload_generation_assets_v1_model_test_generation_assets_post */
+        Body_upload_generation_assets_v1_model_test_generation_assets_post: {
+            /** Files */
+            files: string[];
+        };
         /** CallLogListItem */
         CallLogListItem: {
             /** Call Source */
@@ -1268,6 +1358,64 @@ export interface components {
             title: string;
             /** Updated At */
             updated_at: string;
+        };
+        /** ModelTestGenerationAssetBackfillOut */
+        ModelTestGenerationAssetBackfillOut: {
+            /** Conflicts */
+            conflicts: number;
+            /** Copied Assets */
+            copied_assets: number;
+            /** Processed Tasks */
+            processed_tasks: number;
+            /** Remaining Tasks */
+            remaining_tasks: number;
+            /** Skipped Active */
+            skipped_active: number;
+            /** Skipped Missing */
+            skipped_missing: number;
+        };
+        /** ModelTestGenerationAssetBackfillStatusOut */
+        ModelTestGenerationAssetBackfillStatusOut: {
+            /** Active Tasks */
+            active_tasks: number;
+            /** Eligible Tasks */
+            eligible_tasks: number;
+            /** Missing Files */
+            missing_files: number;
+            /** Pending Tasks */
+            pending_tasks: number;
+        };
+        /** ModelTestGenerationAssetCleanupOut */
+        ModelTestGenerationAssetCleanupOut: {
+            /** Deleted Assets */
+            deleted_assets: number;
+            /** Deleted Orphan Files */
+            deleted_orphan_files: number;
+        };
+        /** ModelTestGenerationAssetListOut */
+        ModelTestGenerationAssetListOut: {
+            /** Items */
+            items: components["schemas"]["ModelTestGenerationAssetOut"][];
+        };
+        /** ModelTestGenerationAssetOut */
+        ModelTestGenerationAssetOut: {
+            /** Byte Size */
+            byte_size: number;
+            /** Claimed */
+            claimed: boolean;
+            /** Created At */
+            created_at: string;
+            /** Id */
+            id: string;
+            /**
+             * Media Kind
+             * @enum {string}
+             */
+            media_kind: "image" | "audio" | "video";
+            /** Mime Type */
+            mime_type: string;
+            /** Original Filename */
+            original_filename: string;
         };
         /** ModelTestGenerationOptionListOut */
         ModelTestGenerationOptionListOut: {
@@ -3421,6 +3569,171 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    upload_generation_assets_v1_model_test_generation_assets_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Studio-Token"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_upload_generation_assets_v1_model_test_generation_assets_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModelTestGenerationAssetListOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    backfill_generation_assets_v1_model_test_generation_assets_backfill_post: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: {
+                "X-Studio-Token"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModelTestGenerationAssetBackfillOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    generation_asset_backfill_status_v1_model_test_generation_assets_backfill_status_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Studio-Token"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModelTestGenerationAssetBackfillStatusOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    cleanup_generation_assets_v1_model_test_generation_assets_cleanup_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Studio-Token"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModelTestGenerationAssetCleanupOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_generation_asset_v1_model_test_generation_assets__asset_id__delete: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Studio-Token"?: string | null;
+            };
+            path: {
+                asset_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: boolean;
+                    };
                 };
             };
             /** @description Validation Error */

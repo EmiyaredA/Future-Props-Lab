@@ -32,7 +32,7 @@ async def test_model_catalog_diagnostic_and_logs(monkeypatch: pytest.MonkeyPatch
         assert ready.status_code == 200
         assert ready.json() == {
             "status": "ready",
-            "schema": "r0014_visual_assistant_content_parts",
+            "schema": "r0015_model_test_generation_assets",
         }
         categories = (await client.get("/v1/model-categories")).json()["items"]
         assert {item["id"] for item in categories} == {

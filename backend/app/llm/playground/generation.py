@@ -2,14 +2,23 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from sqlalchemy import func, select, update
+from sqlalchemy import delete, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.concurrency.revisions import RevisionConflictError
 from app.core.config import Settings, get_settings
 from app.core.time import iso_utc, utc_now
+from app.llm.playground.generation_assets import (
+    GenerationAssetError,
+    ModelTestGenerationAssets,
+)
 from app.llm.providers.senseaudio_image import IMAGE_MODEL_SIZES
-from app.models import ModelEntry, ModelProvider, ModelTestGenerationTask, VisualAsset
+from app.models import (
+    ModelEntry,
+    ModelProvider,
+    ModelTestGenerationAsset,
+    ModelTestGenerationTask,
+)
 from app.schemas.model_test import (
     ModelTestGenerationCreateIn,
     ModelTestGenerationOptionListOut,
@@ -21,12 +30,6 @@ from app.schemas.model_test import (
 )
 
 ACTIVE_GENERATION_STATUSES = ("queued", "submitting", "pending", "processing")
-MAX_INLINE_REFERENCE_BYTES = 45 * 1024 * 1024
-REFERENCE_MIME_TYPES = {
-    "image": {"image/jpeg", "image/png", "image/webp", "image/gif"},
-    "audio": {"audio/mpeg", "audio/wav", "audio/x-wav"},
-    "video": {"video/mp4", "video/quicktime"},
-}
 
 
 class ModelTestGenerationError(Exception):
@@ -132,8 +135,6 @@ class ModelTestGeneration:
                     f"当前模型提示词最多支持 {prompt_limit} 个字符",
                     code="prompt_too_long",
                 )
-        elif isinstance(body, ModelTestVideoGenerationIn):
-            await self._validate_video_assets(body)
         row = ModelTestGenerationTask(
             provider_id=provider.id,
             model_id=model.id,
@@ -146,68 +147,23 @@ class ModelTestGeneration:
             progress=0,
         )
         self.session.add(row)
+        await self.session.flush()
+        if isinstance(body, ModelTestVideoGenerationIn):
+            try:
+                await ModelTestGenerationAssets(self.session, self.settings).claim_for_task(
+                    row.id,
+                    (
+                        (body.reference_asset_ids, "reference_image", "image"),
+                        (body.audio_asset_ids, "reference_audio", "audio"),
+                        (body.video_asset_ids, "reference_video", "video"),
+                    ),
+                )
+            except GenerationAssetError as exc:
+                await self.session.rollback()
+                raise ModelTestGenerationError(str(exc), code=exc.code, status=exc.status) from None
         await self.session.commit()
         await self.session.refresh(row)
         return generation_task_out(row)
-
-    async def _validate_video_assets(self, body: ModelTestVideoGenerationIn) -> None:
-        groups = (
-            (body.reference_asset_ids, "image", "参考图片"),
-            (body.audio_asset_ids, "audio", "参考音频"),
-            (body.video_asset_ids, "video", "参考视频"),
-        )
-        asset_ids = [asset_id for ids, _, _ in groups for asset_id in ids]
-        if not asset_ids:
-            return
-        rows = list(
-            (await self.session.execute(select(VisualAsset).where(VisualAsset.id.in_(asset_ids))))
-            .scalars()
-            .all()
-        )
-        by_id = {row.id: row for row in rows}
-        inline_image_bytes = 0
-        for ids, expected_kind, label in groups:
-            for asset_id in ids:
-                asset = by_id.get(asset_id)
-                if asset is None:
-                    raise ModelTestGenerationError(
-                        f"{label}已不存在", code="reference_asset_missing", status=404
-                    )
-                if (
-                    asset.media_kind != expected_kind
-                    or asset.mime_type not in REFERENCE_MIME_TYPES[expected_kind]
-                ):
-                    raise ModelTestGenerationError(
-                        f"{label}格式不受支持", code="unsupported_reference_type"
-                    )
-                path = self.settings.visual_asset_path / asset.storage_key
-                if not path.is_file():
-                    raise ModelTestGenerationError(
-                        f"{label}文件已不存在", code="reference_asset_missing", status=404
-                    )
-                if expected_kind == "audio" and asset.byte_size > 15 * 1024 * 1024:
-                    raise ModelTestGenerationError(
-                        "单个参考音频不能超过 15 MB", code="reference_too_large"
-                    )
-                if expected_kind == "image" and asset.byte_size > 30 * 1024 * 1024:
-                    raise ModelTestGenerationError(
-                        "单张参考图片不能超过 30 MB", code="reference_too_large"
-                    )
-                if (
-                    expected_kind == "video"
-                    and asset.byte_size > self.settings.fpl_visual_asset_max_bytes
-                ):
-                    raise ModelTestGenerationError(
-                        "单个参考视频超过项目文件上限", code="reference_too_large"
-                    )
-                if expected_kind == "image":
-                    inline_image_bytes += asset.byte_size
-        if inline_image_bytes > MAX_INLINE_REFERENCE_BYTES:
-            raise ModelTestGenerationError(
-                "内联参考图片总大小不能超过 45 MB",
-                code="reference_payload_too_large",
-                status=413,
-            )
 
     async def list(
         self, *, model_id: str | None, page: int, page_size: int
@@ -255,10 +211,39 @@ class ModelTestGeneration:
         if row.revision != expected_revision:
             current = generation_task_out(row).model_dump(mode="json")
             raise RevisionConflictError(expected_revision, row.revision, current)
-        path = self._result_path(row)
-        await self.session.delete(row)
+        result_path = self._result_path(row)
+        assets = list(
+            (
+                await self.session.execute(
+                    select(ModelTestGenerationAsset).where(
+                        ModelTestGenerationAsset.task_id == task_id
+                    )
+                )
+            )
+            .scalars()
+            .all()
+        )
+        asset_paths = [
+            self.settings.model_test_reference_path / asset.storage_key for asset in assets
+        ]
+        result = await self.session.execute(
+            delete(ModelTestGenerationTask).where(
+                ModelTestGenerationTask.id == task_id,
+                ModelTestGenerationTask.revision == expected_revision,
+            )
+        )
+        if result.rowcount != 1:
+            await self.session.rollback()
+            current = await self._row(task_id)
+            raise RevisionConflictError(
+                expected_revision,
+                current.revision,
+                generation_task_out(current).model_dump(mode="json"),
+            )
         await self.session.commit()
-        if path:
+        if result_path:
+            result_path.unlink(missing_ok=True)
+        for path in asset_paths:
             path.unlink(missing_ok=True)
 
     async def retry_materialization(self, task_id: str) -> ModelTestGenerationTaskOut:

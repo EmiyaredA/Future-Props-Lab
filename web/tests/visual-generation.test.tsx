@@ -1,10 +1,16 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, vi } from "vitest";
 import { getFiles, getFolders, uploadManagedFile } from "@features/files/api";
-import { GenerationDrawer } from "@features/visual-workshop/GenerationDrawer";
-import { VisualWorkshopTasksPage } from "@features/visual-workshop/VisualWorkshopTasksPage";
+import { GenerationDrawer } from "@features/visual-workshop/generation/GenerationDrawer";
+import { VisualWorkshopTasksPage } from "@features/visual-workshop/generation";
 import {
   createGenerationTask,
   getGenerationOptions,
@@ -177,23 +183,35 @@ test("uses the local official SenseAudio logo", () => {
 
 test("creates an image task with model-linked sizes and a project reference", async () => {
   const user = userEvent.setup();
-  renderWithClient(
+  const { container } = renderWithClient(
     <GenerationDrawer projectId="project-1" onClose={vi.fn()} />,
   );
   expect(
     await screen.findByRole("option", { name: "SenseAudio Image 2.0" }),
   ).toBeInTheDocument();
-  await user.type(
-    screen.getByPlaceholderText("描述要生成的画面…"),
-    "电影感的未来城市",
-  );
   await user.click(await screen.findByRole("button", { name: /参考图.png/ }));
+  const promptEditor = screen.getByRole("textbox", { name: "图片提示词" });
+  expect(promptEditor).toHaveAttribute("contenteditable", "true");
+  expect(container.querySelector("textarea")).toBeNull();
+  await user.type(promptEditor, "@");
+  const mentionMenu = await screen.findByRole("listbox", {
+    name: "引用已选素材",
+  });
+  expect(
+    within(mentionMenu).getByRole("option", { name: /参考图\.png/ }),
+  ).toBeInTheDocument();
+  await user.keyboard("{Enter}");
+  await user.type(promptEditor, " 电影感的未来城市");
+  expect(
+    screen.getByRole("button", { name: "移除引用 参考图.png" }),
+  ).toBeInTheDocument();
+  expect(promptEditor).toHaveTextContent("参考图.png 电影感的未来城市");
   await user.click(screen.getByRole("button", { name: "创建生成任务" }));
   await waitFor(() =>
     expect(createGenerationTask).toHaveBeenCalledWith("project-1", {
       kind: "image",
       model_id: "model-image",
-      prompt: "电影感的未来城市",
+      prompt: "@参考图.png 电影感的未来城市",
       size: "1024x1024",
       seed: null,
       reference_asset_id: "asset-1",
@@ -239,10 +257,21 @@ test("uses the compact image node composer with reference, size, and seed contro
     selectedReference.compareDocumentPosition(uploadReference) &
       Node.DOCUMENT_POSITION_FOLLOWING,
   ).toBeTruthy();
-  await user.type(
-    screen.getByPlaceholderText("描述你想生成的画面…"),
-    "电影感的未来城市",
-  );
+  const promptEditor = screen.getByRole("textbox", { name: "图片提示词" });
+  expect(promptEditor).toHaveAttribute("contenteditable", "true");
+  await user.type(promptEditor, "@");
+  const mentionMenu = await screen.findByRole("listbox", {
+    name: "引用已选素材",
+  });
+  expect(
+    within(mentionMenu).getByRole("option", { name: /参考图\.png/ }),
+  ).toBeInTheDocument();
+  await user.keyboard("{Enter}");
+  await user.type(promptEditor, " 电影感的未来城市");
+  expect(
+    screen.getByRole("button", { name: "移除引用 参考图.png" }),
+  ).toBeInTheDocument();
+  expect(promptEditor).toHaveTextContent("参考图.png 电影感的未来城市");
   await user.click(imageParameters);
   await user.click(screen.getByRole("button", { name: "比例 16:9" }));
   expect(screen.getByRole("button", { name: "清晰度 1K" })).toHaveAttribute(
@@ -262,7 +291,7 @@ test("uses the compact image node composer with reference, size, and seed contro
   expect(createGenerationTask).toHaveBeenLastCalledWith("project-1", {
     kind: "image",
     model_id: "model-image",
-    prompt: "电影感的未来城市",
+    prompt: "@参考图.png 电影感的未来城市",
     size: "1536x864",
     seed: 42,
     reference_asset_id: "asset-1",
@@ -323,10 +352,21 @@ test("uses the compact video node composer for image-to-video tasks", async () =
     startFramePicker,
     new File(["image"], "local.png", { type: "image/png" }),
   );
-  await user.type(
-    screen.getByPlaceholderText("描述您的修改或生成需求…"),
-    "镜头缓慢推进",
-  );
+  const promptEditor = screen.getByRole("textbox", { name: "视频提示词" });
+  expect(promptEditor).toHaveAttribute("contenteditable", "true");
+  await user.type(promptEditor, "@");
+  const mentionMenu = await screen.findByRole("listbox", {
+    name: "引用已选素材",
+  });
+  expect(
+    within(mentionMenu).getByRole("option", { name: /参考图\.png/ }),
+  ).toBeInTheDocument();
+  await user.keyboard("{Enter}");
+  expect(
+    screen.getByRole("button", { name: "移除引用 参考图.png" }),
+  ).toBeInTheDocument();
+  await user.type(promptEditor, " 镜头缓慢推进");
+  expect(promptEditor).toHaveTextContent("参考图.png 镜头缓慢推进");
   await user.click(screen.getByRole("button", { name: "生成视频" }));
 
   await waitFor(() =>
@@ -337,10 +377,42 @@ test("uses the compact video node composer for image-to-video tasks", async () =
         mode: "frames",
         first_frame_asset_id: "asset-1",
         last_frame_asset_id: null,
-        prompt: "镜头缓慢推进",
+        prompt: "@参考图.png 镜头缓慢推进",
       }),
     ),
   );
+});
+
+test("keeps the prompt editor mounted after deleting a text selection", async () => {
+  const user = userEvent.setup();
+  renderWithClient(
+    <GenerationDrawer
+      compact
+      lockedKind="video"
+      projectId="project-1"
+      onClose={vi.fn()}
+    />,
+  );
+
+  const editor = await screen.findByRole("textbox", { name: "视频提示词" });
+  await user.type(editor, "第一版提示词");
+  const range = document.createRange();
+  range.selectNodeContents(editor);
+  const selection = window.getSelection();
+  selection?.removeAllRanges();
+  selection?.addRange(range);
+
+  expect(fireEvent.keyDown(editor, { key: "Backspace" })).toBe(false);
+  await user.type(editor, "第二版提示词", { skipClick: true });
+  expect(editor).toHaveTextContent("第二版提示词");
+  expect(editor).not.toHaveTextContent("第一版提示词");
+
+  range.selectNodeContents(editor);
+  selection?.removeAllRanges();
+  selection?.addRange(range);
+  await user.type(editor, "直接替换提示词", { skipClick: true });
+  expect(editor).toHaveTextContent("直接替换提示词");
+  expect(editor).not.toHaveTextContent("第二版提示词");
 });
 
 test("shows the official video modes and conditional reference fields", async () => {

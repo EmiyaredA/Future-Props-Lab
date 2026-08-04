@@ -1,4 +1,5 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
+import "@features/models/models.css";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ApiError } from "@platform/api/client";
 import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
