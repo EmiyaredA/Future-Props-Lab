@@ -1,5 +1,5 @@
 import type { LucideIcon } from "lucide-react";
-import { Clapperboard } from "lucide-react";
+import { BookOpen, Clapperboard } from "lucide-react";
 
 export type ApplicationCategory = "visual" | "productivity" | "development";
 export type ApplicationDefinition = {
@@ -23,7 +23,14 @@ export const APPLICATION_CATEGORIES: Array<{
   { value: "development", label: "开发辅助" },
 ];
 
-export const APPLICATION_TAGS = ["图像", "视频", "画布", "AI创作"];
+export const APPLICATION_TAGS = [
+  "图像",
+  "视频",
+  "画布",
+  "AI创作",
+  "剧本",
+  "角色",
+];
 
 export const APPLICATIONS: ApplicationDefinition[] = [
   {
@@ -35,6 +42,17 @@ export const APPLICATIONS: ApplicationDefinition[] = [
     path: "/apps/visual-workshop",
     icon: Clapperboard,
     brandImage: "/brand/visual-workshop-mark.png",
+  },
+  {
+    id: "galgame-workshop",
+    name: "Galgame 工坊",
+    description:
+      "本地优先的 Galgame 创作工坊，编辑结构化剧本、分支并直接试玩。",
+    category: "visual",
+    capabilities: ["剧本", "分支", "试玩"],
+    path: "/apps/galgame-workshop",
+    icon: BookOpen,
+    brandImage: "/brand/galgame-workshop-mark.png",
   },
 ];
 

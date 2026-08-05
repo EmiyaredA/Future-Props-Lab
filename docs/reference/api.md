@@ -136,6 +136,36 @@ approval_required / approval_resolved / canvas_updated / generation_task_created
 文本回复、run、轮数、工具名、脱敏输入与结果、审批结果、首 Token、耗时、画布 revision、生成任务
 ID、消息数量、画布摘要和素材 ID；不保存图片 Base64、临时链接、磁盘路径、密钥或供应商原始事件。
 
+## Galgame 工坊
+
+- `GET/POST /v1/galgame-workshop/projects`：按最近更新时间读取工程或新建空白工程。
+- `GET/PATCH/DELETE /v1/galgame-workshop/projects/{project_id}`：读取、修改或删除单个工程。
+- `GET/PUT /v1/galgame-workshop/projects/{project_id}/story`：读取或整份 CAS 保存 V1 故事文档。
+- `GET /v1/galgame-workshop/projects/{project_id}/story/report`：检查 Fragment 可达性、结局和循环。
+- `GET/POST /v1/galgame-workshop/projects/{project_id}/assets`：搜索或上传工程私有的静态故事图片。
+- `DELETE /v1/galgame-workshop/projects/{project_id}/assets/{asset_id}`：按素材 revision 删除未被故事使用的工程图片。
+
+工程状态为 `draft / completed`，标题长度为 1–120 字。修改和删除必须携带工程的
+`expected_revision`；冲突返回 `409 revision_conflict` 以及服务器当前工程快照。新建工程会同时
+写入 `schemaVersion: "1.0"` 故事文档，预置 `chapter-1` 章节和入口为 `main` 的空 Fragment。
+故事包含 `synopsis`、角色、场景、预留变量及 `chapters → fragments → blocks`；首批 Block 支持场景、
+旁白、对白、分支和章节结局。角色可选 `expressions[]` 和 `defaultExpressionId`，表情通过故事
+`assets[]` 中的 `characterPortrait` 记录引用文件，对白可用 `expressionId` 覆盖角色默认表情。场景可选
+`backgrounds[]` 和 `defaultBackgroundId`，背景通过 `sceneBackground` 记录引用文件；Scene Block 可用
+`backgroundId` 固定背景状态，未指定时跟随场景默认。故事保存使用独立 `expected_revision`，严格拒绝
+重复 ID、悬空引用、跨角色表情、跨场景背景和少于两个选项的分支；冲突快照包含服务器当前完整故事，
+旧版 V1 缺少立绘或背景字段时在读取中补默认空值，首次保存后自然写入扩展格式。
+
+线路报告把开放线路、不可达 Fragment、无出口循环和终止 Block 后的内容列为错误，把可退出循环列为
+警告；缺失的 `ready` 故事图片文件也会阻止完成。没有绑定背景的场景仍可使用确定性主题占位并完成。
+只有零错误时工程才能标记为 `completed`，已完成工程
+再次保存故事会自动回到 `draft`。上传图片属于工程私有素材，支持 PNG、JPEG、WebP 和 AVIF，删除
+工程时同时清理数据库记录和磁盘文件；从全局文件库选择只建立引用，引用解除或工程删除后释放原图。
+公共文件接口不能修改或删除 Galgame 私有素材，全局图片在被 Galgame 故事引用时同样禁止删除。
+Web 提供角色列表、资料与立绘、对白引用，以及场景列表、资料与背景、剧本引用三栏工作区；两者复用
+图片选择器、650ms 串行自动保存和冲突处理。内置试玩会把背景置于角色立绘、对白和选择层下方，加载
+失败时回退到确定性主题舞台。当前格式仅供工坊内部使用，不代表 LetsGal 原生工程或导入兼容。
+
 ## 图片与视频生成
 
 - `GET /v1/visual-workshop/generation-options`：返回已启用的 SenseAudio 图片/视频模型及图片尺寸。

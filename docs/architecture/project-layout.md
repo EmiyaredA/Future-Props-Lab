@@ -16,6 +16,7 @@ Future-Props-Lab/
 │   ├── llm/           # 模型目录、供应商适配、共享生成运行时、测试工作台和调用日志
 │   ├── tool_navigation/ # 工具收藏与最近使用状态规则
 │   ├── visual_workshop/ # 视觉工坊项目、画布、助手、生成任务与领域适配器
+│   ├── galgame_workshop/ # Galgame 工程、V1 故事 CAS、私有素材引用与线路分析
 │   ├── models/        # SQLAlchemy 持久化形状
 │   ├── routes/        # `/v1` HTTP/SSE 协议边界
 │   └── schemas/       # Pydantic 请求与响应形状
@@ -26,7 +27,7 @@ Future-Props-Lab/
 ├── web/src/
 │   ├── app/           # Studio 入口、壳与路由
 │   ├── docs/          # 独立空文档中心入口
-│   ├── features/      # 首页、AI 应用、文件管理、视觉工坊、工具导航与模型功能
+│   ├── features/      # 首页、AI 应用、文件管理、视觉工坊、Galgame 工坊、工具导航与模型功能
 │   ├── generated/     # OpenAPI 生成物
 │   ├── platform/      # API 与管理令牌基础设施
 │   └── shared/        # 品牌与主题 UI
@@ -50,11 +51,14 @@ Future-Props-Lab/
 - 工具目录由 Web 静态注册表维护；后端 `tool_navigation/` 只持久化稳定工具 ID 对应的收藏与
   最近使用状态，不复制工具名称、分类或外部网址。
 - AI 应用目录同样由 Web 静态注册表维护，应用最近访问记录只保存在浏览器本地。视觉创作工坊
-  使用独立页面壳；后端 `files/` 负责公共文件元数据、文件夹、存储校验与项目引用，
+  与 Galgame 工坊各自使用独立页面壳；后端 `files/` 负责公共文件元数据、文件夹、存储校验与项目引用，
   `visual_workshop/` 负责真实项目、revisioned 节点画布、项目对话与图片/视频异步生成任务，
-  不预置项目或素材。Studio 一级
-  “文件管理”和项目素材浏览器复用同一文件 API；公共文件被项目引用期间禁止删除，对话消息引用
-  的项目素材也必须先解除引用才能删除。
+  `galgame_workshop/` 负责 Galgame 工程元数据、V1 故事文档 CAS、角色立绘及场景背景素材生命周期与
+  Fragment 线路分析，
+  均不预置项目或素材。Studio 一级
+  “文件管理”和项目素材浏览器复用同一文件 API；Galgame 上传故事图片也复用公共存储与内容签名校验，
+  但只能通过 Galgame 工程素材 API 修改或删除。公共文件被视觉或 Galgame 工程引用期间禁止删除，
+  对话消息引用的项目素材也必须先解除引用才能删除。
 - Web 的依赖方向是 `app → features → shared/platform/generated`。`platform/` 与 `shared/`
   不依赖 `features/` 或 `app/`，`features/` 不依赖 `app/`；入口装配留在 `app/`，业务代码不
   放回 `web/src/` 根目录，生成契约不手工修改。
@@ -71,7 +75,8 @@ Future-Props-Lab/
 和文档。
 
 目录配置、模型测试会话与生成任务、视觉工坊项目、含节点级生成草稿的节点画布、项目对话、文件夹、文件和项目引用
-使用 revision/CAS 防止静默覆盖；工具单项状态通过幂等更新和原子 upsert 写入。图片/视频生成任务持久化
+使用 revision/CAS 防止静默覆盖；Galgame 工坊工程元数据与整份故事文档分别使用 revision/CAS，
+故事冲突保留服务器完整快照，完成态工程在故事修改后恢复草稿；工具单项状态通过幂等更新和原子 upsert 写入。图片/视频生成任务持久化
 供应商/模型快照和规范化参数，FastAPI 生命周期中的单机执行器负责恢复、轮询与安全下载；视觉工坊
 和模型测试复用 `llm/generation_runtime/` 的轮询、并发与安全下载能力，但分别保存任务状态与
 结果。`AsyncSession` 只能由单个异步任务

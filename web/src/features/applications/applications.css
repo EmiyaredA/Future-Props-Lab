@@ -168,19 +168,7 @@
   flex-direction: column;
   align-items: flex-start;
 }
-.application-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  color: var(--accent);
-  font-size: 10px;
-  font-weight: 750;
-}
-.application-badge svg {
-  width: 12px;
-}
 .application-copy > strong {
-  margin-top: 8px;
   color: var(--text-strong);
   font-size: 18px;
 }

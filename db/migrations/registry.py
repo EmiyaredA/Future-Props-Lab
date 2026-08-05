@@ -18,6 +18,8 @@ from db.migrations.versions import (
     r0013_visual_assistant_generation_models,
     r0014_visual_assistant_content_parts,
     r0015_model_test_generation_assets,
+    r0016_galgame_workshop_projects,
+    r0017_galgame_character_assets,
 )
 
 
@@ -83,6 +85,14 @@ MIGRATIONS = (
     Migration(
         r0015_model_test_generation_assets.MIGRATION_ID,
         r0015_model_test_generation_assets.SQL,
+    ),
+    Migration(
+        r0016_galgame_workshop_projects.MIGRATION_ID,
+        r0016_galgame_workshop_projects.SQL,
+    ),
+    Migration(
+        r0017_galgame_character_assets.MIGRATION_ID,
+        r0017_galgame_character_assets.SQL,
     ),
 )
 

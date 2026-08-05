@@ -1,6 +1,11 @@
 from app.models.base import Base
 from app.models.call_log import LlmCallLog
 from app.models.files import VisualAsset, VisualAssetFolder, VisualProjectAssetReference
+from app.models.galgame_workshop import (
+    GalgameProjectAssetReference,
+    GalgameStoryDocument,
+    GalgameWorkshopProject,
+)
 from app.models.model_service import ModelCatalogState, ModelEntry, ModelProvider
 from app.models.model_test import (
     ModelTestAttachment,
@@ -22,6 +27,9 @@ from app.models.visual_workshop import (
 
 __all__ = [
     "Base",
+    "GalgameStoryDocument",
+    "GalgameProjectAssetReference",
+    "GalgameWorkshopProject",
     "LlmCallLog",
     "ModelCatalogState",
     "ModelEntry",

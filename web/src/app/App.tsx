@@ -1,8 +1,10 @@
 import { lazy, Suspense, useEffect, useState, type ReactNode } from "react";
+import { GalgameWorkshopShell } from "@app/layout/GalgameWorkshopShell";
 import { StudioSidebar } from "@app/layout/StudioSidebar";
 import { VisualWorkshopShell } from "@app/layout/VisualWorkshopShell";
 import {
-  isWorkshopPage,
+  isGalgameWorkshopPage,
+  isVisualWorkshopPage,
   parseRoute,
   pathFor,
   type AppRoute,
@@ -71,6 +73,21 @@ const VisualWorkshopEmptyPage = lazy(() =>
     (module) => ({ default: module.VisualWorkshopEmptyPage }),
   ),
 );
+const GalgameWorkshopProjectsPage = lazy(() =>
+  import("@features/galgame-workshop/projects").then((module) => ({
+    default: module.GalgameWorkshopProjectsPage,
+  })),
+);
+const GalgameWorkshopOverviewPage = lazy(() =>
+  import("@features/galgame-workshop/overview").then((module) => ({
+    default: module.GalgameWorkshopOverviewPage,
+  })),
+);
+const GalgameWorkshopEditorPage = lazy(() =>
+  import("@features/galgame-workshop/editor").then((module) => ({
+    default: module.GalgameWorkshopEditorPage,
+  })),
+);
 
 function PageBoundary({ children }: { children: ReactNode }) {
   return (
@@ -113,7 +130,48 @@ export default function App() {
     );
   }
 
-  if (isWorkshopPage(page)) {
+  if (page === "galgame-workshop-editor" && route.projectId) {
+    return (
+      <PageBoundary>
+        <GalgameWorkshopEditorPage
+          projectId={route.projectId}
+          onOverview={() =>
+            navigate("galgame-workshop-overview", route.projectId)
+          }
+        />
+      </PageBoundary>
+    );
+  }
+
+  if (isGalgameWorkshopPage(page)) {
+    return (
+      <GalgameWorkshopShell
+        page={page}
+        navigate={(next: WorkshopPage) => navigate(next)}
+        onBack={() => navigate("apps")}
+      >
+        <PageBoundary>
+          {page === "galgame-workshop-overview" && route.projectId ? (
+            <GalgameWorkshopOverviewPage
+              projectId={route.projectId}
+              onProjects={() => navigate("galgame-workshop-projects")}
+              onOpenEditor={() =>
+                navigate("galgame-workshop-editor", route.projectId)
+              }
+            />
+          ) : (
+            <GalgameWorkshopProjectsPage
+              onOpenProject={(projectId) =>
+                navigate("galgame-workshop-overview", projectId)
+              }
+            />
+          )}
+        </PageBoundary>
+      </GalgameWorkshopShell>
+    );
+  }
+
+  if (isVisualWorkshopPage(page)) {
     return (
       <VisualWorkshopShell
         page={page}

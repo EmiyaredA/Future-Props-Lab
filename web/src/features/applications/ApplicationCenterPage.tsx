@@ -1,5 +1,5 @@
 import { FormEvent, useMemo, useState } from "react";
-import { ArrowRight, Clock3, Search, Sparkles, Tag } from "lucide-react";
+import { ArrowRight, Clock3, Search, Tag } from "lucide-react";
 import {
   APPLICATION_CATEGORIES,
   APPLICATION_TAGS,
@@ -135,10 +135,6 @@ export function ApplicationCenterPage({
                     )}
                   </span>
                   <span className="application-copy">
-                    <span className="application-badge">
-                      <Sparkles aria-hidden />
-                      AI 应用
-                    </span>
                     <strong>{app.name}</strong>
                     <small>{app.description}</small>
                     <span className="application-capabilities">

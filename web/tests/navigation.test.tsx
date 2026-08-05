@@ -2,6 +2,7 @@ import { fireEvent, render, screen, within } from "@testing-library/react";
 import { vi } from "vitest";
 import { parsePage, pathFor } from "@app/routes";
 import { StudioSidebar } from "@app/layout/StudioSidebar";
+import { GalgameWorkshopShell } from "@app/layout/GalgameWorkshopShell";
 import { VisualWorkshopShell } from "@app/layout/VisualWorkshopShell";
 import { DocsApp } from "../src/docs/DocsApp";
 
@@ -48,6 +49,9 @@ test("uses home as the default and parses deep application routes", () => {
   expect(parsePage("/apps/visual-workshop/projects/project-1/assets")).toBe(
     "visual-workshop-assets",
   );
+  expect(parsePage("/apps/galgame-workshop/projects/project-1/editor")).toBe(
+    "galgame-workshop-editor",
+  );
   expect(parsePage("/files")).toBe("files");
   expect(parsePage("/tools")).toBe("tools");
   expect(pathFor("home")).toBe("/home");
@@ -57,6 +61,9 @@ test("uses home as the default and parses deep application routes", () => {
     "/apps/visual-workshop/projects/project-1/canvas",
   );
   expect(pathFor("visual-workshop-tasks")).toBe("/apps/visual-workshop/tasks");
+  expect(pathFor("galgame-workshop-editor", "project-1")).toBe(
+    "/apps/galgame-workshop/projects/project-1/editor",
+  );
   expect(pathFor("model-service")).toBe("/model-service");
 });
 
@@ -79,6 +86,22 @@ test("renders the visual workshop brand and return card", () => {
   expect(screen.getByText("浏览全部 AI 应用")).toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: "返回应用中心" }));
   expect(onBack).toHaveBeenCalledOnce();
+});
+
+test("renders the Galgame workshop brand", () => {
+  const { container } = render(
+    <GalgameWorkshopShell
+      page="galgame-workshop-projects"
+      navigate={vi.fn()}
+      onBack={vi.fn()}
+    >
+      <div>Galgame 项目内容</div>
+    </GalgameWorkshopShell>,
+  );
+  expect(container.querySelector(".workshop-brand img")).toHaveAttribute(
+    "src",
+    "/brand/galgame-workshop-mark.png",
+  );
 });
 
 test("renders an intentionally empty documentation shell", () => {

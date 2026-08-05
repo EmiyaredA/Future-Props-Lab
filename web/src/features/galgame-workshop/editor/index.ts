@@ -1,0 +1,1 @@
+export { GalgameWorkshopEditorPage } from "./GalgameWorkshopEditorPage";

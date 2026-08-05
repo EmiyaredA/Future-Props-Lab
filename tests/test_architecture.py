@@ -235,6 +235,7 @@ def test_documented_core_directories_exist() -> None:
         "backend/app/models",
         "backend/app/routes",
         "backend/app/schemas",
+        "backend/app/galgame_workshop",
         "backend/app/tool_navigation",
         "backend/app/visual_workshop",
         "db/migrations/versions",

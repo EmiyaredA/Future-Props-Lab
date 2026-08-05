@@ -13,6 +13,7 @@ from app.concurrency.revisions import RevisionConflictError
 from app.core.config import Settings
 from app.core.time import iso_utc, utc_now
 from app.models import (
+    GalgameProjectAssetReference,
     VisualAsset,
     VisualAssetFolder,
     VisualAssistantMessageAsset,
@@ -333,6 +334,17 @@ class VisualAssets:
                     code="asset_in_use",
                     status=409,
                 )
+            galgame_reference = await self.session.scalar(
+                select(GalgameProjectAssetReference.id)
+                .where(GalgameProjectAssetReference.asset_id.in_(global_ids))
+                .limit(1)
+            )
+            if galgame_reference:
+                raise AssetError(
+                    "文件夹内有文件正在被 Galgame 工程使用，请先移除立绘引用",
+                    code="asset_in_use",
+                    status=409,
+                )
         paths = [self.settings.visual_asset_path / item.storage_key for item in assets]
         result = await self.session.execute(
             delete(VisualAssetFolder).where(
@@ -430,10 +442,41 @@ class VisualAssets:
         if project_id:
             await self._project(project_id)
         await self._validate_folder_scope(folder_id, project_id)
+        row = await self._store_upload(
+            upload,
+            visual_project_id=project_id,
+            galgame_project_id=None,
+            folder_id=folder_id,
+            allowed_extensions=None,
+        )
+        return asset_out(row)
+
+    async def upload_for_galgame(self, upload: UploadFile, *, project_id: str) -> VisualAsset:
+        return await self._store_upload(
+            upload,
+            visual_project_id=None,
+            galgame_project_id=project_id,
+            folder_id=None,
+            allowed_extensions={".jpg", ".jpeg", ".png", ".webp", ".avif"},
+        )
+
+    async def _store_upload(
+        self,
+        upload: UploadFile,
+        *,
+        visual_project_id: str | None,
+        galgame_project_id: str | None,
+        folder_id: str | None,
+        allowed_extensions: set[str] | None,
+    ) -> VisualAsset:
         filename = Path(upload.filename or "").name
         extension = Path(filename).suffix.lower()
         config = ALLOWED_FILES.get(extension)
-        if not filename or config is None:
+        if (
+            not filename
+            or config is None
+            or (allowed_extensions is not None and extension not in allowed_extensions)
+        ):
             raise AssetError("不支持此文件类型", code="unsupported_file_type")
         media_kind, mime_types = config
         content_type = (upload.content_type or "application/octet-stream").lower()
@@ -460,7 +503,8 @@ class VisualAssets:
                 raise AssetError("文件内容与声明的类型不匹配", code="invalid_file_content")
             os.replace(temp_path, final_path)
             row = VisualAsset(
-                project_id=project_id,
+                project_id=visual_project_id,
+                galgame_project_id=galgame_project_id,
                 folder_id=folder_id,
                 original_filename=filename,
                 display_name=filename,
@@ -472,7 +516,7 @@ class VisualAssets:
             self.session.add(row)
             await self.session.commit()
             await self.session.refresh(row)
-            return asset_out(row)
+            return row
         except Exception:
             temp_path.unlink(missing_ok=True)
             final_path.unlink(missing_ok=True)
@@ -482,6 +526,12 @@ class VisualAssets:
 
     async def patch_asset(self, asset_id: str, body: VisualAssetPatchIn) -> VisualAssetOut:
         row = await self._asset(asset_id)
+        if row.galgame_project_id is not None:
+            raise AssetError(
+                "Galgame 工程素材必须在所属工程中管理",
+                code="scope_mismatch",
+                status=409,
+            )
         new_folder_id = None if body.move_to_root else body.folder_id
         if body.folder_id is not None or body.move_to_root:
             await self._validate_folder_scope(new_folder_id, row.project_id)
@@ -509,6 +559,12 @@ class VisualAssets:
 
     async def delete_asset(self, asset_id: str, expected_revision: int) -> None:
         row = await self._asset(asset_id)
+        if row.galgame_project_id is not None:
+            raise AssetError(
+                "Galgame 工程素材必须在所属工程中管理",
+                code="scope_mismatch",
+                status=409,
+            )
         conversation_reference = await self.session.scalar(
             select(VisualAssistantMessageAsset.id)
             .where(VisualAssistantMessageAsset.asset_id == asset_id)
@@ -533,18 +589,27 @@ class VisualAssets:
                     status=409,
                 )
         path = self.settings.visual_asset_path / row.storage_key
-        result = await self.session.execute(
-            delete(VisualAsset).where(
-                VisualAsset.id == asset_id, VisualAsset.revision == expected_revision
+        try:
+            result = await self.session.execute(
+                delete(VisualAsset).where(
+                    VisualAsset.id == asset_id,
+                    VisualAsset.revision == expected_revision,
+                )
             )
-        )
-        if result.rowcount != 1:
+            if result.rowcount != 1:
+                await self.session.rollback()
+                current = asset_out(await self._asset(asset_id))
+                raise RevisionConflictError(
+                    expected_revision, current.revision, current.model_dump(mode="json")
+                )
+            await self.session.commit()
+        except IntegrityError:
             await self.session.rollback()
-            current = asset_out(await self._asset(asset_id))
-            raise RevisionConflictError(
-                expected_revision, current.revision, current.model_dump(mode="json")
-            )
-        await self.session.commit()
+            raise AssetError(
+                "文件正在被项目使用，请先移除项目引用",
+                code="asset_in_use",
+                status=409,
+            ) from None
         path.unlink(missing_ok=True)
 
     async def content(self, asset_id: str) -> tuple[VisualAsset, Path]:
@@ -559,7 +624,7 @@ class VisualAssets:
     ) -> VisualAssetOut:
         await self._project(project_id)
         asset = await self._asset(body.asset_id)
-        if asset.project_id is not None:
+        if asset.project_id is not None or asset.galgame_project_id is not None:
             raise AssetError("只能从文件管理导入文件", code="scope_mismatch")
         await self._validate_folder_scope(body.folder_id, project_id)
         existing = await self.session.scalar(

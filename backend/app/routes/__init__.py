@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends
 
 from app.deps import require_studio_auth
 from app.routes.file_management import router as file_management_router
+from app.routes.galgame_workshop import router as galgame_workshop_router
 from app.routes.models import call_logs, catalog, model_test, model_test_generation
 from app.routes.system import router as system_router
 from app.routes.tool_navigation import router as tool_navigation_router
@@ -20,3 +21,4 @@ api_router.include_router(file_management_router, dependencies=[Depends(require_
 api_router.include_router(visual_workshop_router, dependencies=[Depends(require_studio_auth)])
 api_router.include_router(visual_assistant_router, dependencies=[Depends(require_studio_auth)])
 api_router.include_router(visual_generation_router, dependencies=[Depends(require_studio_auth)])
+api_router.include_router(galgame_workshop_router, dependencies=[Depends(require_studio_auth)])

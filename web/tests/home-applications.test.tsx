@@ -30,6 +30,10 @@ test("application center filters and records recent application access", async (
     "src",
     "/brand/visual-workshop-mark.png",
   );
+  expect(
+    container.querySelectorAll(".application-icon img")[1],
+  ).toHaveAttribute("src", "/brand/galgame-workshop-mark.png");
+  expect(screen.queryByText("AI 应用")).not.toBeInTheDocument();
   await user.click(screen.getByRole("button", { name: "效率协作" }));
   expect(screen.getByText("没有找到匹配的应用")).toBeInTheDocument();
   await user.click(screen.getByRole("button", { name: "全部应用" }));
