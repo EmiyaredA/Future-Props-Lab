@@ -145,6 +145,10 @@ test("uses styled filters and keeps successful upload feedback concise", async (
   const { container } = renderLibraryBrowser();
   expect(await screen.findByText("故事说明.md")).toBeInTheDocument();
   expect(container.querySelector(".file-upload-card")).toBeInTheDocument();
+  expect(screen.getByLabelText("选择要上传的文件")).toHaveAttribute(
+    "accept",
+    expect.stringContaining(".json"),
+  );
 
   await user.click(screen.getByRole("button", { name: "文件类型" }));
   await user.click(screen.getByRole("option", { name: "图片" }));
@@ -161,6 +165,27 @@ test("uses styled filters and keeps successful upload feedback concise", async (
   );
   expect(await screen.findByText("已成功上传 1 个文件")).toBeInTheDocument();
   expect(screen.queryByRole("region", { name: "上传状态" })).toBeNull();
+});
+
+test("uploads JSON documents from file management", async () => {
+  const user = userEvent.setup();
+  renderLibraryBrowser();
+  expect(await screen.findByText("故事说明.md")).toBeInTheDocument();
+
+  const transcript = new File(
+    ['{"text":"广播剧转写","segments":[]}'],
+    "广播剧音频转写.json",
+    { type: "application/json" },
+  );
+  await user.upload(screen.getByLabelText("选择要上传的文件"), transcript);
+
+  await waitFor(() =>
+    expect(uploadManagedFile).toHaveBeenCalledWith(
+      transcript,
+      undefined,
+      undefined,
+    ),
+  );
 });
 
 test("filters and sorts folders alongside files", async () => {

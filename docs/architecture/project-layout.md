@@ -53,10 +53,10 @@ Future-Props-Lab/
 - AI 应用目录同样由 Web 静态注册表维护，应用最近访问记录只保存在浏览器本地。视觉创作工坊
   与 Galgame 工坊各自使用独立页面壳；后端 `files/` 负责公共文件元数据、文件夹、存储校验与项目引用，
   `visual_workshop/` 负责真实项目、revisioned 节点画布、项目对话与图片/视频异步生成任务，
-  `galgame_workshop/` 负责 Galgame 工程元数据、V1 故事文档 CAS、角色立绘及场景背景素材生命周期与
+  `galgame_workshop/` 负责 Galgame 工程元数据、V1 故事文档 CAS、多人角色舞台演出、角色立绘、场景背景及故事声音素材生命周期与
   Fragment 线路分析，
   均不预置项目或素材。Studio 一级
-  “文件管理”和项目素材浏览器复用同一文件 API；Galgame 上传故事图片也复用公共存储与内容签名校验，
+  “文件管理”和项目素材浏览器复用同一文件 API；Galgame 上传故事图片与声音也复用公共存储与内容签名校验，
   但只能通过 Galgame 工程素材 API 修改或删除。公共文件被视觉或 Galgame 工程引用期间禁止删除，
   对话消息引用的项目素材也必须先解除引用才能删除。
 - Web 的依赖方向是 `app → features → shared/platform/generated`。`platform/` 与 `shared/`

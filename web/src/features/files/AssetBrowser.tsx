@@ -70,7 +70,7 @@ type FileEditor =
 
 const VIEW_KEY = "fpl_file_browser_view";
 const ACCEPT =
-  ".jpg,.jpeg,.png,.webp,.gif,.avif,.mp4,.webm,.mov,.mp3,.wav,.m4a,.ogg,.pdf,.txt,.md";
+  ".jpg,.jpeg,.png,.webp,.gif,.avif,.mp4,.webm,.mov,.mp3,.wav,.m4a,.ogg,.pdf,.txt,.md,.json";
 const KIND_OPTIONS: SelectOption[] = [
   { value: "all", label: "全部类型" },
   { value: "image", label: "图片" },
@@ -900,7 +900,7 @@ export function AssetBrowser({
               </strong>
               <span>
                 {upload.isPending
-                  ? "支持图片、视频、音频、PDF 与文本文件，可一次选择多个"
+                  ? "支持图片、视频、音频、PDF、文本与 JSON 文件，可一次选择多个"
                   : "请检查失败原因后重新上传"}
               </span>
             </div>

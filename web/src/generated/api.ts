@@ -1200,6 +1200,11 @@ export interface components {
             display_name: string;
             /** Id */
             id: string;
+            /**
+             * Media Kind
+             * @enum {string}
+             */
+            media_kind: "image" | "audio";
             /** Mime Type */
             mime_type: string;
             /** Revision */
@@ -1207,27 +1212,66 @@ export interface components {
             /** Updated At */
             updated_at: string;
         };
-        /** GalgameStoryAsset */
-        GalgameStoryAsset: {
+        /** GalgameStoryAudioAsset */
+        GalgameStoryAudioAsset: {
             /** Fileid */
             fileId: string;
             /** Id */
             id: string;
+            /** Label */
+            label: string;
             /**
              * Role
              * @enum {string}
              */
-            role: "characterPortrait" | "sceneBackground";
+            role: "voiceSample" | "voiceLine" | "backgroundMusic" | "ambientSound" | "soundEffect" | "timelineTrack";
             /**
              * Status
              * @constant
              */
             status: "ready";
             /**
-             * Type
-             * @constant
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
              */
-            type: "image";
+            type: "audio";
+        };
+        /** GalgameStoryAudioBlock */
+        GalgameStoryAudioBlock: {
+            /**
+             * Action
+             * @enum {string}
+             */
+            action: "play" | "stop";
+            /** Assetid */
+            assetId?: string | null;
+            /**
+             * Channel
+             * @enum {string}
+             */
+            channel: "bgm" | "ambient" | "sfx";
+            /**
+             * Fadems
+             * @default 1000
+             */
+            fadeMs: number;
+            /** Id */
+            id: string;
+            /**
+             * Loop
+             * @default true
+             */
+            loop: boolean;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "audio";
+            /**
+             * Volume
+             * @default 70
+             */
+            volume: number;
         };
         /** GalgameStoryBranchBlock */
         GalgameStoryBranchBlock: {
@@ -1299,6 +1343,7 @@ export interface components {
             id: string;
             /** Name */
             name: string;
+            voiceProfile?: components["schemas"]["GalgameStoryVoiceProfile"] | null;
         };
         /** GalgameStoryCharacterExpression */
         GalgameStoryCharacterExpression: {
@@ -1309,14 +1354,70 @@ export interface components {
             /** Label */
             label: string;
         };
+        /** GalgameStoryCharacterTransform */
+        GalgameStoryCharacterTransform: {
+            /**
+             * Brightness
+             * @default 1
+             */
+            brightness: number;
+            /**
+             * Flipx
+             * @default false
+             */
+            flipX: boolean;
+            /**
+             * Layer
+             * @default 10
+             */
+            layer: number;
+            /**
+             * Opacity
+             * @default 1
+             */
+            opacity: number;
+            /**
+             * Scale
+             * @default 1
+             */
+            scale: number;
+            /**
+             * X
+             * @default 50
+             */
+            x: number;
+            /**
+             * Y
+             * @default 100
+             */
+            y: number;
+        };
+        /** GalgameStoryCharacterTransition */
+        GalgameStoryCharacterTransition: {
+            /**
+             * Durationms
+             * @default 240
+             */
+            durationMs: number;
+            /**
+             * Fade
+             * @default true
+             */
+            fade: boolean;
+        };
         /** GalgameStoryDialogueBlock */
         GalgameStoryDialogueBlock: {
             /** Characterid */
             characterId: string;
+            /** Endms */
+            endMs?: number | null;
             /** Expressionid */
             expressionId?: string | null;
             /** Id */
             id: string;
+            portrait?: components["schemas"]["GalgameStoryDialoguePortrait"] | null;
+            /** Startms */
+            startMs?: number | null;
             /**
              * Text
              * @default
@@ -1327,6 +1428,67 @@ export interface components {
              * @enum {string}
              */
             type: "dialogue";
+            /** Voiceassetid */
+            voiceAssetId?: string | null;
+            /** Voicevolume */
+            voiceVolume?: number | null;
+        };
+        /** GalgameStoryDialogueBoxStyle */
+        GalgameStoryDialogueBoxStyle: {
+            /** Assetid */
+            assetId?: string | null;
+            /**
+             * Backgroundcolor
+             * @default #080E18
+             */
+            backgroundColor: string;
+            /**
+             * Backgroundopacity
+             * @default 0.82
+             */
+            backgroundOpacity: number;
+            /**
+             * Borderradius
+             * @default 12
+             */
+            borderRadius: number;
+            /**
+             * Fontscale
+             * @default 1
+             */
+            fontScale: number;
+            /**
+             * Namecolor
+             * @default #FFFFFF
+             */
+            nameColor: string;
+            /**
+             * Preset
+             * @default dark
+             * @enum {string}
+             */
+            preset: "dark" | "light" | "accent" | "custom";
+            /**
+             * Textcolor
+             * @default #FFFFFF
+             */
+            textColor: string;
+        };
+        /** GalgameStoryDialoguePortrait */
+        GalgameStoryDialoguePortrait: {
+            /**
+             * Keepafter
+             * @default true
+             */
+            keepAfter: boolean;
+            /**
+             * Mode
+             * @default stage
+             * @enum {string}
+             */
+            mode: "stage" | "solo" | "hidden";
+            transform?: components["schemas"]["GalgameStoryCharacterTransform"] | null;
+            transition?: components["schemas"]["GalgameStoryCharacterTransition"];
         };
         /** GalgameStoryDocumentOut */
         GalgameStoryDocumentOut: {
@@ -1361,16 +1523,50 @@ export interface components {
         /** GalgameStoryFragment */
         GalgameStoryFragment: {
             /** Blocks */
-            blocks?: (components["schemas"]["GalgameStorySceneBlock"] | components["schemas"]["GalgameStoryNarrationBlock"] | components["schemas"]["GalgameStoryDialogueBlock"] | components["schemas"]["GalgameStoryBranchBlock"] | components["schemas"]["GalgameStoryEndChapterBlock"])[];
+            blocks?: (components["schemas"]["GalgameStorySceneBlock"] | components["schemas"]["GalgameStoryShowCharacterBlock"] | components["schemas"]["GalgameStoryRemoveCharacterBlock"] | components["schemas"]["GalgameStoryNarrationBlock"] | components["schemas"]["GalgameStoryDialogueBlock"] | components["schemas"]["GalgameStoryAudioBlock"] | components["schemas"]["GalgameStoryBranchBlock"] | components["schemas"]["GalgameStoryEndChapterBlock"])[];
             /** Id */
             id: string;
+            timeline?: components["schemas"]["GalgameStoryFragmentTimeline"] | null;
             /** Title */
             title: string;
         };
-        /** GalgameStoryNarrationBlock */
-        GalgameStoryNarrationBlock: {
+        /** GalgameStoryFragmentTimeline */
+        GalgameStoryFragmentTimeline: {
+            /** Assetid */
+            assetId: string;
+            /** Durationms */
+            durationMs: number;
+        };
+        /** GalgameStoryImageAsset */
+        GalgameStoryImageAsset: {
+            /** Fileid */
+            fileId: string;
             /** Id */
             id: string;
+            /**
+             * Role
+             * @enum {string}
+             */
+            role: "characterPortrait" | "sceneBackground" | "dialogueBox" | "uiComponent";
+            /**
+             * Status
+             * @constant
+             */
+            status: "ready";
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "image";
+        };
+        /** GalgameStoryNarrationBlock */
+        GalgameStoryNarrationBlock: {
+            /** Endms */
+            endMs?: number | null;
+            /** Id */
+            id: string;
+            /** Startms */
+            startMs?: number | null;
             /**
              * Text
              * @default
@@ -1382,14 +1578,21 @@ export interface components {
              */
             type: "narration";
         };
+        /** GalgameStoryPresentation */
+        GalgameStoryPresentation: {
+            dialogueBox?: components["schemas"]["GalgameStoryDialogueBoxStyle"];
+            stage?: components["schemas"]["GalgameStoryStageStyle"];
+            ui?: components["schemas"]["GalgameStoryUiStyle"];
+        };
         /** GalgameStoryProject */
         GalgameStoryProject: {
             /** Assets */
-            assets?: components["schemas"]["GalgameStoryAsset"][];
+            assets?: (components["schemas"]["GalgameStoryImageAsset"] | components["schemas"]["GalgameStoryAudioAsset"])[];
             /** Chapters */
             chapters?: components["schemas"]["GalgameStoryChapter"][];
             /** Characters */
             characters?: components["schemas"]["GalgameStoryCharacter"][];
+            presentation?: components["schemas"]["GalgameStoryPresentation"];
             /** Scenes */
             scenes?: components["schemas"]["GalgameStoryScene"][];
             /**
@@ -1406,6 +1609,24 @@ export interface components {
             variables?: {
                 [key: string]: unknown;
             }[];
+        };
+        /** GalgameStoryRemoveCharacterBlock */
+        GalgameStoryRemoveCharacterBlock: {
+            /**
+             * All
+             * @default false
+             */
+            all: boolean;
+            /** Characterid */
+            characterId?: string | null;
+            /** Id */
+            id: string;
+            transition?: components["schemas"]["GalgameStoryCharacterTransition"];
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "removeCharacter";
         };
         /** GalgameStoryReportIssue */
         GalgameStoryReportIssue: {
@@ -1466,6 +1687,8 @@ export interface components {
         GalgameStorySceneBlock: {
             /** Backgroundid */
             backgroundId?: string | null;
+            /** Clearcharacters */
+            clearCharacters?: boolean | null;
             /** Id */
             id: string;
             /** Sceneid */
@@ -1475,6 +1698,102 @@ export interface components {
              * @enum {string}
              */
             type: "scene";
+        };
+        /** GalgameStoryShowCharacterBlock */
+        GalgameStoryShowCharacterBlock: {
+            /** Characterid */
+            characterId: string;
+            /** Expressionid */
+            expressionId?: string | null;
+            /** Id */
+            id: string;
+            transform?: components["schemas"]["GalgameStoryCharacterTransform"];
+            transition?: components["schemas"]["GalgameStoryCharacterTransition"];
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "showCharacter";
+        };
+        /** GalgameStoryStageStyle */
+        GalgameStoryStageStyle: {
+            /**
+             * Focustransitionms
+             * @default 180
+             */
+            focusTransitionMs: number;
+            /**
+             * Inactivebrightness
+             * @default 0.6
+             */
+            inactiveBrightness: number;
+            /**
+             * Lipsyncenabled
+             * @default false
+             */
+            lipSyncEnabled: boolean;
+            /**
+             * Speakerfocusenabled
+             * @default true
+             */
+            speakerFocusEnabled: boolean;
+        };
+        /** GalgameStoryUiComponent */
+        GalgameStoryUiComponent: {
+            /** Assetid */
+            assetId?: string | null;
+            /** Id */
+            id: string;
+            /**
+             * Layer
+             * @default 1
+             */
+            layer: number;
+            /** Name */
+            name: string;
+            /**
+             * Visibility
+             * @default always
+             * @enum {string}
+             */
+            visibility: "always" | "content" | "dialogue" | "choices";
+            /**
+             * Width
+             * @default 24
+             */
+            width: number;
+            /**
+             * X
+             * @default 4
+             */
+            x: number;
+            /**
+             * Y
+             * @default 4
+             */
+            y: number;
+        };
+        /** GalgameStoryUiStyle */
+        GalgameStoryUiStyle: {
+            /** Components */
+            components?: components["schemas"]["GalgameStoryUiComponent"][];
+        };
+        /** GalgameStoryVoiceProfile */
+        GalgameStoryVoiceProfile: {
+            /**
+             * Description
+             * @default
+             */
+            description: string;
+            /**
+             * Language
+             * @default zh-CN
+             */
+            language: string;
+            /** Name */
+            name: string;
+            /** Sampleassetid */
+            sampleAssetId?: string | null;
         };
         /** GalgameWorkshopProjectCreateIn */
         GalgameWorkshopProjectCreateIn: {

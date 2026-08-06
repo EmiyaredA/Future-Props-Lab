@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import codecs
+import json
 import os
 from pathlib import Path
 from uuid import uuid4
@@ -50,14 +52,23 @@ ALLOWED_FILES: dict[str, tuple[str, set[str]]] = {
     ".pdf": ("document", {"application/pdf"}),
     ".txt": ("document", {"text/plain"}),
     ".md": ("document", {"text/markdown", "text/plain"}),
+    ".json": ("document", {"application/json", "text/json", "text/plain"}),
 }
 
 
 class AssetError(Exception):
-    def __init__(self, message: str, *, code: str = "asset_error", status: int = 422) -> None:
+    def __init__(
+        self,
+        message: str,
+        *,
+        code: str = "asset_error",
+        status: int = 422,
+        detail: dict[str, object] | None = None,
+    ) -> None:
         super().__init__(message)
         self.code = code
         self.status = status
+        self.detail = detail or {}
 
 
 def folder_out(row: VisualAssetFolder) -> VisualAssetFolderOut:
@@ -96,9 +107,10 @@ def asset_out(
 
 
 def _looks_like(extension: str, head: bytes) -> bool:
-    if extension in {".txt", ".md"}:
+    if extension in {".txt", ".md", ".json"}:
         try:
-            return b"\x00" not in head and bool(head.decode("utf-8"))
+            decoded = codecs.getincrementaldecoder("utf-8")().decode(head, final=False)
+            return b"\x00" not in head and bool(decoded)
         except UnicodeDecodeError:
             return False
     checks = {
@@ -457,7 +469,17 @@ class VisualAssets:
             visual_project_id=None,
             galgame_project_id=project_id,
             folder_id=None,
-            allowed_extensions={".jpg", ".jpeg", ".png", ".webp", ".avif"},
+            allowed_extensions={
+                ".jpg",
+                ".jpeg",
+                ".png",
+                ".webp",
+                ".avif",
+                ".mp3",
+                ".wav",
+                ".m4a",
+                ".ogg",
+            },
         )
 
     async def _store_upload(
@@ -501,6 +523,12 @@ class VisualAssets:
                     target.write(chunk)
             if size == 0 or not _looks_like(extension, bytes(head)):
                 raise AssetError("文件内容与声明的类型不匹配", code="invalid_file_content")
+            if extension == ".json":
+                try:
+                    with temp_path.open(encoding="utf-8-sig") as source:
+                        json.load(source)
+                except (UnicodeDecodeError, json.JSONDecodeError, RecursionError):
+                    raise AssetError("JSON 文件内容无效", code="invalid_file_content") from None
             os.replace(temp_path, final_path)
             row = VisualAsset(
                 project_id=visual_project_id,

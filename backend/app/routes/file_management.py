@@ -22,7 +22,10 @@ router = APIRouter(tags=["file-management"])
 
 
 def asset_http_error(exc: AssetError) -> HTTPException:
-    return HTTPException(exc.status, {"code": exc.code, "message": str(exc)})
+    return HTTPException(
+        exc.status,
+        {"code": exc.code, "message": str(exc), **exc.detail},
+    )
 
 
 @router.get("/file-folders", response_model=VisualAssetFolderListOut)

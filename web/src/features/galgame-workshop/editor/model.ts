@@ -1,13 +1,61 @@
 import type {
   GalgameStoryBlock,
+  GalgameStoryAudioBlock,
+  GalgameStoryAudioAsset,
   GalgameStoryBranchBlock,
   GalgameStoryChapter,
+  GalgameStoryDialogueBoxStyle,
   GalgameStoryFragment,
   GalgameStoryProject,
+  GalgameStoryStageStyle,
+  GalgameStoryUiStyle,
 } from "@features/galgame-workshop/api";
+import {
+  DEFAULT_CHARACTER_TRANSFORM,
+  DEFAULT_CHARACTER_TRANSITION,
+} from "@features/galgame-workshop/editor/stage";
 
-export type EditorWorkspace = "script" | "characters" | "scenes" | "report";
+export type EditorWorkspace = "script" | "characters" | "scenes" | "audio";
 export type BlockKind = GalgameStoryBlock["type"];
+export type AudioChannel = GalgameStoryAudioBlock["channel"];
+export type AudioRole = GalgameStoryAudioAsset["role"];
+
+export const AUDIO_ROLE_LABELS: Record<AudioRole, string> = {
+  voiceSample: "角色样本",
+  voiceLine: "对白配音",
+  backgroundMusic: "背景音乐",
+  ambientSound: "环境音",
+  soundEffect: "音效",
+  timelineTrack: "剧情时间轴",
+};
+
+export const AUDIO_CHANNEL_ROLES: Record<AudioChannel, AudioRole> = {
+  bgm: "backgroundMusic",
+  ambient: "ambientSound",
+  sfx: "soundEffect",
+};
+
+export const DEFAULT_DIALOGUE_BOX_STYLE: GalgameStoryDialogueBoxStyle = {
+  preset: "dark",
+  assetId: null,
+  backgroundColor: "#080E18",
+  textColor: "#FFFFFF",
+  nameColor: "#FFFFFF",
+  backgroundOpacity: 0.82,
+  borderRadius: 12,
+  fontScale: 1,
+};
+
+export const DEFAULT_UI_STYLE: GalgameStoryUiStyle = {
+  components: [],
+};
+
+export const DEFAULT_STAGE_STYLE: GalgameStoryStageStyle = {
+  speakerFocusEnabled: true,
+  inactiveBrightness: 0.6,
+  focusTransitionMs: 180,
+  lipSyncEnabled: false,
+};
 
 export function stableId() {
   return crypto.randomUUID().toLowerCase();
@@ -18,6 +66,22 @@ export function completeStoryDocument(
 ): GalgameStoryProject {
   return {
     ...document,
+    presentation: {
+      ...document.presentation,
+      dialogueBox: {
+        ...DEFAULT_DIALOGUE_BOX_STYLE,
+        ...document.presentation?.dialogueBox,
+      },
+      ui: {
+        ...DEFAULT_UI_STYLE,
+        ...document.presentation?.ui,
+        components: document.presentation?.ui?.components ?? [],
+      },
+      stage: {
+        ...DEFAULT_STAGE_STYLE,
+        ...document.presentation?.stage,
+      },
+    },
     scenes: (document.scenes ?? []).map((scene) => ({
       ...scene,
       backgrounds: scene.backgrounds ?? [],
@@ -70,7 +134,33 @@ export function makeBlock(
   const scenes = document.scenes ?? [];
   if (kind === "scene") {
     if (!scenes[0]) return undefined;
-    return { id: stableId(), type: "scene", sceneId: scenes[0].id };
+    return {
+      id: stableId(),
+      type: "scene",
+      sceneId: scenes[0].id,
+      clearCharacters: true,
+    };
+  }
+  if (kind === "showCharacter") {
+    if (!characters[0]) return undefined;
+    return {
+      id: stableId(),
+      type: "showCharacter",
+      characterId: characters[0].id,
+      expressionId: null,
+      transform: DEFAULT_CHARACTER_TRANSFORM,
+      transition: DEFAULT_CHARACTER_TRANSITION,
+    };
+  }
+  if (kind === "removeCharacter") {
+    if (!characters[0]) return undefined;
+    return {
+      id: stableId(),
+      type: "removeCharacter",
+      characterId: characters[0].id,
+      all: false,
+      transition: DEFAULT_CHARACTER_TRANSITION,
+    };
   }
   if (kind === "dialogue") {
     if (!characters[0]) return undefined;
@@ -79,11 +169,19 @@ export function makeBlock(
       type: "dialogue",
       characterId: characters[0].id,
       text: "",
+      voiceVolume: 100,
+      portrait: {
+        mode: "stage",
+        keepAfter: true,
+        transform: null,
+        transition: DEFAULT_CHARACTER_TRANSITION,
+      },
     };
   }
   if (kind === "narration") {
     return { id: stableId(), type: "narration", text: "" };
   }
+  if (kind === "audio") return undefined;
   if (kind === "endChapter") {
     return {
       id: stableId(),
@@ -108,6 +206,96 @@ export function makeBlock(
   };
 }
 
+export function makeAudioBlock(
+  document: GalgameStoryProject,
+  action: "play" | "stop",
+  channel: AudioChannel,
+): GalgameStoryAudioBlock | undefined {
+  const defaults =
+    channel === "sfx"
+      ? { volume: 100, loop: false, fadeMs: 0 }
+      : { volume: 70, loop: true, fadeMs: 1000 };
+  if (action === "stop")
+    return {
+      id: stableId(),
+      type: "audio",
+      action,
+      channel,
+      assetId: null,
+      ...defaults,
+    };
+  const asset = (document.assets ?? []).find(
+    (candidate) =>
+      candidate.type === "audio" &&
+      candidate.role === AUDIO_CHANNEL_ROLES[channel],
+  );
+  if (!asset) return undefined;
+  return {
+    id: stableId(),
+    type: "audio",
+    action,
+    channel,
+    assetId: asset.id,
+    ...defaults,
+  };
+}
+
+export type AudioReference = {
+  kind:
+    | "characterVoiceSample"
+    | "dialogueVoice"
+    | "audioBlock"
+    | "fragmentTimeline";
+  label: string;
+  characterId?: string;
+  chapterId?: string;
+  fragmentId?: string;
+  blockId?: string;
+};
+
+export function audioReferences(
+  document: GalgameStoryProject,
+  assetId: string,
+): AudioReference[] {
+  const references: AudioReference[] = [];
+  for (const character of document.characters ?? []) {
+    if (character.voiceProfile?.sampleAssetId === assetId)
+      references.push({
+        kind: "characterVoiceSample",
+        characterId: character.id,
+        label: `角色“${character.name}”的声线样本`,
+      });
+  }
+  for (const chapter of document.chapters ?? []) {
+    for (const fragment of chapter.fragments ?? []) {
+      if (fragment.timeline?.assetId === assetId)
+        references.push({
+          kind: "fragmentTimeline",
+          chapterId: chapter.id,
+          fragmentId: fragment.id,
+          label: `${chapter.title} · ${fragment.title} · 剧情时间轴`,
+        });
+      for (const [index, block] of (fragment.blocks ?? []).entries()) {
+        const kind =
+          block.type === "dialogue" && block.voiceAssetId === assetId
+            ? "dialogueVoice"
+            : block.type === "audio" && block.assetId === assetId
+              ? "audioBlock"
+              : undefined;
+        if (!kind) continue;
+        references.push({
+          kind,
+          chapterId: chapter.id,
+          fragmentId: fragment.id,
+          blockId: block.id,
+          label: `${chapter.title} · ${fragment.title} · Block ${index + 1}`,
+        });
+      }
+    }
+  }
+  return references;
+}
+
 export function referencedBy(
   document: GalgameStoryProject,
   kind: "character" | "scene" | "fragment",
@@ -121,7 +309,9 @@ export function referencedBy(
       for (const block of fragment.blocks ?? []) {
         if (
           (kind === "character" &&
-            block.type === "dialogue" &&
+            (block.type === "dialogue" ||
+              block.type === "showCharacter" ||
+              block.type === "removeCharacter") &&
             block.characterId === id) ||
           (kind === "scene" && block.type === "scene" && block.sceneId === id)
         )

@@ -11,14 +11,18 @@ from app.core.config import Settings
 from app.core.time import iso_utc
 from app.files import AssetError, VisualAssets
 from app.galgame_workshop.errors import GalgameWorkshopProjectNotFoundError
+from app.galgame_workshop.story import normalize_story_document
 from app.models import (
     GalgameProjectAssetReference,
+    GalgameStoryDocument,
     GalgameWorkshopProject,
     VisualAsset,
 )
 from app.schemas.galgame_workshop import (
     GalgameProjectAssetListOut,
     GalgameProjectAssetOut,
+    GalgameStoryAudioBlock,
+    GalgameStoryDialogueBlock,
 )
 
 
@@ -26,6 +30,7 @@ def galgame_asset_out(row: VisualAsset) -> GalgameProjectAssetOut:
     return GalgameProjectAssetOut(
         id=row.id,
         display_name=row.display_name,
+        media_kind=row.media_kind,
         mime_type=row.mime_type,
         byte_size=row.byte_size,
         revision=row.revision,
@@ -70,6 +75,84 @@ class GalgameProjectAssets:
         )
         return galgame_asset_out(row)
 
+    async def _story_references(self, project_id: str, file_id: str) -> list[dict[str, object]]:
+        row = await self.session.get(GalgameStoryDocument, project_id)
+        if row is None:
+            return []
+        document = normalize_story_document(row.document)
+        story_assets = [asset for asset in document.assets if asset.file_id == file_id]
+        story_asset_ids = {asset.id for asset in story_assets}
+        references: list[dict[str, object]] = []
+        for character in document.characters:
+            profile = character.voice_profile
+            if profile is not None and profile.sample_asset_id in story_asset_ids:
+                references.append(
+                    {
+                        "kind": "characterVoiceSample",
+                        "characterId": character.id,
+                        "storyAssetId": profile.sample_asset_id,
+                        "label": f"角色“{character.name}”的声线样本",
+                    }
+                )
+        for chapter in document.chapters:
+            for fragment in chapter.fragments:
+                if fragment.timeline is not None and fragment.timeline.asset_id in story_asset_ids:
+                    references.append(
+                        {
+                            "kind": "fragmentTimeline",
+                            "chapterId": chapter.id,
+                            "fragmentId": fragment.id,
+                            "storyAssetId": fragment.timeline.asset_id,
+                            "label": f"{chapter.title} · {fragment.title} · 剧情时间轴",
+                        }
+                    )
+                for block in fragment.blocks:
+                    asset_id = None
+                    kind = ""
+                    if (
+                        isinstance(block, GalgameStoryDialogueBlock)
+                        and block.voice_asset_id in story_asset_ids
+                    ):
+                        asset_id = block.voice_asset_id
+                        kind = "dialogueVoice"
+                    elif (
+                        isinstance(block, GalgameStoryAudioBlock)
+                        and block.asset_id in story_asset_ids
+                    ):
+                        asset_id = block.asset_id
+                        kind = "audioBlock"
+                    if asset_id is None:
+                        continue
+                    references.append(
+                        {
+                            "kind": kind,
+                            "chapterId": chapter.id,
+                            "fragmentId": fragment.id,
+                            "blockId": block.id,
+                            "storyAssetId": asset_id,
+                            "label": (
+                                f"{chapter.title} · {fragment.title} · "
+                                f"Block {fragment.blocks.index(block) + 1}"
+                            ),
+                        }
+                    )
+        used_story_asset_ids = {
+            str(reference["storyAssetId"])
+            for reference in references
+            if reference.get("storyAssetId") is not None
+        }
+        for asset in story_assets:
+            if asset.id in used_story_asset_ids:
+                continue
+            references.append(
+                {
+                    "kind": "storyAsset",
+                    "storyAssetId": asset.id,
+                    "label": getattr(asset, "label", None) or "故事素材库",
+                }
+            )
+        return references
+
     async def delete(self, project_id: str, asset_id: str, expected_revision: int) -> Path:
         await self._project(project_id)
         row = await self.session.get(VisualAsset, asset_id)
@@ -81,10 +164,12 @@ class GalgameProjectAssets:
             .limit(1)
         )
         if reference:
+            references = await self._story_references(project_id, asset_id)
             raise AssetError(
-                "图片仍被故事使用，请先移除角色或场景引用",
+                "素材仍被故事使用，请先移除相关引用",
                 code="asset_in_use",
                 status=409,
+                detail={"references": references},
             )
         path = self.settings.visual_asset_path / row.storage_key
         result = await self.session.execute(

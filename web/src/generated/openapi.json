@@ -378,6 +378,14 @@
             "title": "Id",
             "type": "string"
           },
+          "media_kind": {
+            "enum": [
+              "image",
+              "audio"
+            ],
+            "title": "Media Kind",
+            "type": "string"
+          },
           "mime_type": {
             "title": "Mime Type",
             "type": "string"
@@ -394,6 +402,7 @@
         "required": [
           "id",
           "display_name",
+          "media_kind",
           "mime_type",
           "byte_size",
           "revision",
@@ -403,7 +412,7 @@
         "title": "GalgameProjectAssetOut",
         "type": "object"
       },
-      "GalgameStoryAsset": {
+      "GalgameStoryAudioAsset": {
         "additionalProperties": false,
         "properties": {
           "fileId": {
@@ -417,10 +426,20 @@
             "title": "Id",
             "type": "string"
           },
+          "label": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Label",
+            "type": "string"
+          },
           "role": {
             "enum": [
-              "characterPortrait",
-              "sceneBackground"
+              "voiceSample",
+              "voiceLine",
+              "backgroundMusic",
+              "ambientSound",
+              "soundEffect",
+              "timelineTrack"
             ],
             "title": "Role",
             "type": "string"
@@ -431,7 +450,7 @@
             "type": "string"
           },
           "type": {
-            "const": "image",
+            "const": "audio",
             "title": "Type",
             "type": "string"
           }
@@ -440,10 +459,82 @@
           "id",
           "type",
           "role",
+          "label",
           "fileId",
           "status"
         ],
-        "title": "GalgameStoryAsset",
+        "title": "GalgameStoryAudioAsset",
+        "type": "object"
+      },
+      "GalgameStoryAudioBlock": {
+        "additionalProperties": false,
+        "properties": {
+          "action": {
+            "enum": [
+              "play",
+              "stop"
+            ],
+            "title": "Action",
+            "type": "string"
+          },
+          "assetId": {
+            "anyOf": [
+              {
+                "pattern": "^[a-z0-9][a-z0-9-]{0,63}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Assetid"
+          },
+          "channel": {
+            "enum": [
+              "bgm",
+              "ambient",
+              "sfx"
+            ],
+            "title": "Channel",
+            "type": "string"
+          },
+          "fadeMs": {
+            "default": 1000,
+            "maximum": 60000.0,
+            "minimum": 0.0,
+            "title": "Fadems",
+            "type": "integer"
+          },
+          "id": {
+            "pattern": "^[a-z0-9][a-z0-9-]{0,63}$",
+            "title": "Id",
+            "type": "string"
+          },
+          "loop": {
+            "default": true,
+            "title": "Loop",
+            "type": "boolean"
+          },
+          "type": {
+            "const": "audio",
+            "title": "Type",
+            "type": "string"
+          },
+          "volume": {
+            "default": 70,
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Volume",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "action",
+          "channel"
+        ],
+        "title": "GalgameStoryAudioBlock",
         "type": "object"
       },
       "GalgameStoryBranchBlock": {
@@ -640,6 +731,16 @@
             "minLength": 1,
             "title": "Name",
             "type": "string"
+          },
+          "voiceProfile": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/GalgameStoryVoiceProfile"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
@@ -677,6 +778,79 @@
         "title": "GalgameStoryCharacterExpression",
         "type": "object"
       },
+      "GalgameStoryCharacterTransform": {
+        "additionalProperties": false,
+        "properties": {
+          "brightness": {
+            "default": 1,
+            "maximum": 2.0,
+            "minimum": 0.0,
+            "title": "Brightness",
+            "type": "number"
+          },
+          "flipX": {
+            "default": false,
+            "title": "Flipx",
+            "type": "boolean"
+          },
+          "layer": {
+            "default": 10,
+            "maximum": 20.0,
+            "minimum": 0.0,
+            "title": "Layer",
+            "type": "integer"
+          },
+          "opacity": {
+            "default": 1,
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Opacity",
+            "type": "number"
+          },
+          "scale": {
+            "default": 1,
+            "maximum": 3.0,
+            "minimum": 0.25,
+            "title": "Scale",
+            "type": "number"
+          },
+          "x": {
+            "default": 50,
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "X",
+            "type": "number"
+          },
+          "y": {
+            "default": 100,
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Y",
+            "type": "number"
+          }
+        },
+        "title": "GalgameStoryCharacterTransform",
+        "type": "object"
+      },
+      "GalgameStoryCharacterTransition": {
+        "additionalProperties": false,
+        "properties": {
+          "durationMs": {
+            "default": 240,
+            "maximum": 5000.0,
+            "minimum": 0.0,
+            "title": "Durationms",
+            "type": "integer"
+          },
+          "fade": {
+            "default": true,
+            "title": "Fade",
+            "type": "boolean"
+          }
+        },
+        "title": "GalgameStoryCharacterTransition",
+        "type": "object"
+      },
       "GalgameStoryDialogueBlock": {
         "additionalProperties": false,
         "properties": {
@@ -684,6 +858,18 @@
             "pattern": "^[a-z0-9][a-z0-9-]{0,63}$",
             "title": "Characterid",
             "type": "string"
+          },
+          "endMs": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Endms"
           },
           "expressionId": {
             "anyOf": [
@@ -702,6 +888,28 @@
             "title": "Id",
             "type": "string"
           },
+          "portrait": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/GalgameStoryDialoguePortrait"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "startMs": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Startms"
+          },
           "text": {
             "default": "",
             "maxLength": 20000,
@@ -712,6 +920,31 @@
             "const": "dialogue",
             "title": "Type",
             "type": "string"
+          },
+          "voiceAssetId": {
+            "anyOf": [
+              {
+                "pattern": "^[a-z0-9][a-z0-9-]{0,63}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Voiceassetid"
+          },
+          "voiceVolume": {
+            "anyOf": [
+              {
+                "maximum": 100.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Voicevolume"
           }
         },
         "required": [
@@ -720,6 +953,110 @@
           "characterId"
         ],
         "title": "GalgameStoryDialogueBlock",
+        "type": "object"
+      },
+      "GalgameStoryDialogueBoxStyle": {
+        "additionalProperties": false,
+        "properties": {
+          "assetId": {
+            "anyOf": [
+              {
+                "pattern": "^[a-z0-9][a-z0-9-]{0,63}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Assetid"
+          },
+          "backgroundColor": {
+            "default": "#080E18",
+            "pattern": "^#[0-9a-fA-F]{6}$",
+            "title": "Backgroundcolor",
+            "type": "string"
+          },
+          "backgroundOpacity": {
+            "default": 0.82,
+            "maximum": 1.0,
+            "minimum": 0.2,
+            "title": "Backgroundopacity",
+            "type": "number"
+          },
+          "borderRadius": {
+            "default": 12,
+            "maximum": 32.0,
+            "minimum": 0.0,
+            "title": "Borderradius",
+            "type": "integer"
+          },
+          "fontScale": {
+            "default": 1,
+            "maximum": 1.4,
+            "minimum": 0.8,
+            "title": "Fontscale",
+            "type": "number"
+          },
+          "nameColor": {
+            "default": "#FFFFFF",
+            "pattern": "^#[0-9a-fA-F]{6}$",
+            "title": "Namecolor",
+            "type": "string"
+          },
+          "preset": {
+            "default": "dark",
+            "enum": [
+              "dark",
+              "light",
+              "accent",
+              "custom"
+            ],
+            "title": "Preset",
+            "type": "string"
+          },
+          "textColor": {
+            "default": "#FFFFFF",
+            "pattern": "^#[0-9a-fA-F]{6}$",
+            "title": "Textcolor",
+            "type": "string"
+          }
+        },
+        "title": "GalgameStoryDialogueBoxStyle",
+        "type": "object"
+      },
+      "GalgameStoryDialoguePortrait": {
+        "additionalProperties": false,
+        "properties": {
+          "keepAfter": {
+            "default": true,
+            "title": "Keepafter",
+            "type": "boolean"
+          },
+          "mode": {
+            "default": "stage",
+            "enum": [
+              "stage",
+              "solo",
+              "hidden"
+            ],
+            "title": "Mode",
+            "type": "string"
+          },
+          "transform": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/GalgameStoryCharacterTransform"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "transition": {
+            "$ref": "#/components/schemas/GalgameStoryCharacterTransition"
+          }
+        },
+        "title": "GalgameStoryDialoguePortrait",
         "type": "object"
       },
       "GalgameStoryDocumentOut": {
@@ -809,11 +1146,14 @@
             "items": {
               "discriminator": {
                 "mapping": {
+                  "audio": "#/components/schemas/GalgameStoryAudioBlock",
                   "branch": "#/components/schemas/GalgameStoryBranchBlock",
                   "dialogue": "#/components/schemas/GalgameStoryDialogueBlock",
                   "endChapter": "#/components/schemas/GalgameStoryEndChapterBlock",
                   "narration": "#/components/schemas/GalgameStoryNarrationBlock",
-                  "scene": "#/components/schemas/GalgameStorySceneBlock"
+                  "removeCharacter": "#/components/schemas/GalgameStoryRemoveCharacterBlock",
+                  "scene": "#/components/schemas/GalgameStorySceneBlock",
+                  "showCharacter": "#/components/schemas/GalgameStoryShowCharacterBlock"
                 },
                 "propertyName": "type"
               },
@@ -822,10 +1162,19 @@
                   "$ref": "#/components/schemas/GalgameStorySceneBlock"
                 },
                 {
+                  "$ref": "#/components/schemas/GalgameStoryShowCharacterBlock"
+                },
+                {
+                  "$ref": "#/components/schemas/GalgameStoryRemoveCharacterBlock"
+                },
+                {
                   "$ref": "#/components/schemas/GalgameStoryNarrationBlock"
                 },
                 {
                   "$ref": "#/components/schemas/GalgameStoryDialogueBlock"
+                },
+                {
+                  "$ref": "#/components/schemas/GalgameStoryAudioBlock"
                 },
                 {
                   "$ref": "#/components/schemas/GalgameStoryBranchBlock"
@@ -844,6 +1193,16 @@
             "title": "Id",
             "type": "string"
           },
+          "timeline": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/GalgameStoryFragmentTimeline"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "title": {
             "maxLength": 120,
             "minLength": 1,
@@ -858,13 +1217,103 @@
         "title": "GalgameStoryFragment",
         "type": "object"
       },
-      "GalgameStoryNarrationBlock": {
+      "GalgameStoryFragmentTimeline": {
         "additionalProperties": false,
         "properties": {
+          "assetId": {
+            "pattern": "^[a-z0-9][a-z0-9-]{0,63}$",
+            "title": "Assetid",
+            "type": "string"
+          },
+          "durationMs": {
+            "minimum": 1.0,
+            "title": "Durationms",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "assetId",
+          "durationMs"
+        ],
+        "title": "GalgameStoryFragmentTimeline",
+        "type": "object"
+      },
+      "GalgameStoryImageAsset": {
+        "additionalProperties": false,
+        "properties": {
+          "fileId": {
+            "maxLength": 36,
+            "minLength": 1,
+            "title": "Fileid",
+            "type": "string"
+          },
           "id": {
             "pattern": "^[a-z0-9][a-z0-9-]{0,63}$",
             "title": "Id",
             "type": "string"
+          },
+          "role": {
+            "enum": [
+              "characterPortrait",
+              "sceneBackground",
+              "dialogueBox",
+              "uiComponent"
+            ],
+            "title": "Role",
+            "type": "string"
+          },
+          "status": {
+            "const": "ready",
+            "title": "Status",
+            "type": "string"
+          },
+          "type": {
+            "const": "image",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "role",
+          "fileId",
+          "status"
+        ],
+        "title": "GalgameStoryImageAsset",
+        "type": "object"
+      },
+      "GalgameStoryNarrationBlock": {
+        "additionalProperties": false,
+        "properties": {
+          "endMs": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Endms"
+          },
+          "id": {
+            "pattern": "^[a-z0-9][a-z0-9-]{0,63}$",
+            "title": "Id",
+            "type": "string"
+          },
+          "startMs": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Startms"
           },
           "text": {
             "default": "",
@@ -885,12 +1334,42 @@
         "title": "GalgameStoryNarrationBlock",
         "type": "object"
       },
+      "GalgameStoryPresentation": {
+        "additionalProperties": false,
+        "properties": {
+          "dialogueBox": {
+            "$ref": "#/components/schemas/GalgameStoryDialogueBoxStyle"
+          },
+          "stage": {
+            "$ref": "#/components/schemas/GalgameStoryStageStyle"
+          },
+          "ui": {
+            "$ref": "#/components/schemas/GalgameStoryUiStyle"
+          }
+        },
+        "title": "GalgameStoryPresentation",
+        "type": "object"
+      },
       "GalgameStoryProject": {
         "additionalProperties": false,
         "properties": {
           "assets": {
             "items": {
-              "$ref": "#/components/schemas/GalgameStoryAsset"
+              "discriminator": {
+                "mapping": {
+                  "audio": "#/components/schemas/GalgameStoryAudioAsset",
+                  "image": "#/components/schemas/GalgameStoryImageAsset"
+                },
+                "propertyName": "type"
+              },
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/GalgameStoryImageAsset"
+                },
+                {
+                  "$ref": "#/components/schemas/GalgameStoryAudioAsset"
+                }
+              ]
             },
             "maxItems": 2000,
             "title": "Assets",
@@ -912,6 +1391,9 @@
             "maxItems": 200,
             "title": "Characters",
             "type": "array"
+          },
+          "presentation": {
+            "$ref": "#/components/schemas/GalgameStoryPresentation"
           },
           "scenes": {
             "items": {
@@ -946,6 +1428,47 @@
           "schemaVersion"
         ],
         "title": "GalgameStoryProject",
+        "type": "object"
+      },
+      "GalgameStoryRemoveCharacterBlock": {
+        "additionalProperties": false,
+        "properties": {
+          "all": {
+            "default": false,
+            "title": "All",
+            "type": "boolean"
+          },
+          "characterId": {
+            "anyOf": [
+              {
+                "pattern": "^[a-z0-9][a-z0-9-]{0,63}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Characterid"
+          },
+          "id": {
+            "pattern": "^[a-z0-9][a-z0-9-]{0,63}$",
+            "title": "Id",
+            "type": "string"
+          },
+          "transition": {
+            "$ref": "#/components/schemas/GalgameStoryCharacterTransition"
+          },
+          "type": {
+            "const": "removeCharacter",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "type"
+        ],
+        "title": "GalgameStoryRemoveCharacterBlock",
         "type": "object"
       },
       "GalgameStoryReportIssue": {
@@ -1142,6 +1665,17 @@
             ],
             "title": "Backgroundid"
           },
+          "clearCharacters": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Clearcharacters"
+          },
           "id": {
             "pattern": "^[a-z0-9][a-z0-9-]{0,63}$",
             "title": "Id",
@@ -1164,6 +1698,211 @@
           "sceneId"
         ],
         "title": "GalgameStorySceneBlock",
+        "type": "object"
+      },
+      "GalgameStoryShowCharacterBlock": {
+        "additionalProperties": false,
+        "properties": {
+          "characterId": {
+            "pattern": "^[a-z0-9][a-z0-9-]{0,63}$",
+            "title": "Characterid",
+            "type": "string"
+          },
+          "expressionId": {
+            "anyOf": [
+              {
+                "pattern": "^[a-z0-9][a-z0-9-]{0,63}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expressionid"
+          },
+          "id": {
+            "pattern": "^[a-z0-9][a-z0-9-]{0,63}$",
+            "title": "Id",
+            "type": "string"
+          },
+          "transform": {
+            "$ref": "#/components/schemas/GalgameStoryCharacterTransform"
+          },
+          "transition": {
+            "$ref": "#/components/schemas/GalgameStoryCharacterTransition"
+          },
+          "type": {
+            "const": "showCharacter",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "characterId"
+        ],
+        "title": "GalgameStoryShowCharacterBlock",
+        "type": "object"
+      },
+      "GalgameStoryStageStyle": {
+        "additionalProperties": false,
+        "properties": {
+          "focusTransitionMs": {
+            "default": 180,
+            "maximum": 5000.0,
+            "minimum": 0.0,
+            "title": "Focustransitionms",
+            "type": "integer"
+          },
+          "inactiveBrightness": {
+            "default": 0.6,
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Inactivebrightness",
+            "type": "number"
+          },
+          "lipSyncEnabled": {
+            "default": false,
+            "title": "Lipsyncenabled",
+            "type": "boolean"
+          },
+          "speakerFocusEnabled": {
+            "default": true,
+            "title": "Speakerfocusenabled",
+            "type": "boolean"
+          }
+        },
+        "title": "GalgameStoryStageStyle",
+        "type": "object"
+      },
+      "GalgameStoryUiComponent": {
+        "additionalProperties": false,
+        "properties": {
+          "assetId": {
+            "anyOf": [
+              {
+                "pattern": "^[a-z0-9][a-z0-9-]{0,63}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Assetid"
+          },
+          "id": {
+            "pattern": "^[a-z0-9][a-z0-9-]{0,63}$",
+            "title": "Id",
+            "type": "string"
+          },
+          "layer": {
+            "default": 1,
+            "maximum": 20.0,
+            "minimum": 0.0,
+            "title": "Layer",
+            "type": "integer"
+          },
+          "name": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "visibility": {
+            "default": "always",
+            "enum": [
+              "always",
+              "content",
+              "dialogue",
+              "choices"
+            ],
+            "title": "Visibility",
+            "type": "string"
+          },
+          "width": {
+            "default": 24,
+            "maximum": 100.0,
+            "minimum": 1.0,
+            "title": "Width",
+            "type": "number"
+          },
+          "x": {
+            "default": 4,
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "X",
+            "type": "number"
+          },
+          "y": {
+            "default": 4,
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Y",
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "GalgameStoryUiComponent",
+        "type": "object"
+      },
+      "GalgameStoryUiStyle": {
+        "additionalProperties": false,
+        "properties": {
+          "components": {
+            "items": {
+              "$ref": "#/components/schemas/GalgameStoryUiComponent"
+            },
+            "maxItems": 100,
+            "title": "Components",
+            "type": "array"
+          }
+        },
+        "title": "GalgameStoryUiStyle",
+        "type": "object"
+      },
+      "GalgameStoryVoiceProfile": {
+        "additionalProperties": false,
+        "properties": {
+          "description": {
+            "default": "",
+            "maxLength": 4000,
+            "title": "Description",
+            "type": "string"
+          },
+          "language": {
+            "default": "zh-CN",
+            "maxLength": 40,
+            "minLength": 1,
+            "title": "Language",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "sampleAssetId": {
+            "anyOf": [
+              {
+                "pattern": "^[a-z0-9][a-z0-9-]{0,63}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sampleassetid"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "GalgameStoryVoiceProfile",
         "type": "object"
       },
       "GalgameWorkshopProjectCreateIn": {

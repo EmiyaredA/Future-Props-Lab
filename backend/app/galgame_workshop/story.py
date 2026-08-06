@@ -317,15 +317,26 @@ class GalgameStoryDocuments:
         )
         by_id = {row.id: row for row in rows}
         if set(by_id) != file_ids:
-            raise GalgameStoryDocumentInvalidError("故事图片引用的文件不存在")
-        for row in rows:
-            if row.media_kind != "image" or row.mime_type not in {
-                "image/jpeg",
-                "image/png",
-                "image/webp",
-                "image/avif",
-            }:
+            raise GalgameStoryDocumentInvalidError("故事素材引用的文件不存在")
+        image_mime_types = {"image/jpeg", "image/png", "image/webp", "image/avif"}
+        audio_mime_types = {
+            "audio/mpeg",
+            "audio/wav",
+            "audio/x-wav",
+            "audio/mp4",
+            "audio/x-m4a",
+            "audio/ogg",
+        }
+        for asset in document.assets:
+            row = by_id[asset.file_id]
+            if asset.type == "image" and (
+                row.media_kind != "image" or row.mime_type not in image_mime_types
+            ):
                 raise GalgameStoryDocumentInvalidError("故事图片素材必须引用静态图片")
+            if asset.type == "audio" and (
+                row.media_kind != "audio" or row.mime_type not in audio_mime_types
+            ):
+                raise GalgameStoryDocumentInvalidError("故事声音素材必须引用支持的音频文件")
             if row.project_id is not None:
                 raise GalgameStoryDocumentInvalidError("不能引用视觉工坊的私有素材")
             if row.galgame_project_id not in {None, project_id}:
@@ -421,7 +432,7 @@ class GalgameStoryDocuments:
             *[
                 GalgameStoryReportIssue(
                     code="missing_asset_file",
-                    message="故事图片素材文件不存在",
+                    message="故事素材文件不存在",
                     path=f"/assets/{story.document.assets.index(asset)}",
                 )
                 for asset in missing

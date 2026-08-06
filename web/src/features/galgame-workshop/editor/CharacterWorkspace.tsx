@@ -7,17 +7,20 @@ import {
   FolderOpen,
   ImagePlus,
   LocateFixed,
+  Mic2,
   Plus,
   Search,
   Trash2,
   Upload,
   UserRound,
+  Volume2,
 } from "lucide-react";
 import {
   uploadGalgameProjectAsset,
   type GalgameStoryCharacter,
   type GalgameStoryCharacterExpression,
   type GalgameStoryProject,
+  type GalgameStoryAudioAsset,
 } from "@features/galgame-workshop/api";
 import { stableId } from "@features/galgame-workshop/editor/model";
 import {
@@ -25,6 +28,11 @@ import {
   type StoryImagePickerState,
 } from "@features/galgame-workshop/editor/StoryImagePicker";
 import { StoryAssetImage } from "@features/galgame-workshop/editor/StoryAssetImage";
+import {
+  StoryAudioPicker,
+  type StoryAudioPickerSource,
+} from "@features/galgame-workshop/editor/StoryAudioPicker";
+import { StoryAudioPreview } from "@features/galgame-workshop/editor/StoryAudioPreview";
 
 type Reference = {
   chapterId: string;
@@ -45,7 +53,12 @@ function referencesForCharacter(
   for (const chapter of document.chapters ?? []) {
     for (const fragment of chapter.fragments ?? []) {
       for (const [blockIndex, block] of (fragment.blocks ?? []).entries()) {
-        if (block.type !== "dialogue" || block.characterId !== characterId)
+        if (
+          (block.type !== "dialogue" &&
+            block.type !== "showCharacter" &&
+            block.type !== "removeCharacter") ||
+          block.characterId !== characterId
+        )
           continue;
         references.push({
           chapterId: chapter.id,
@@ -54,8 +67,16 @@ function referencesForCharacter(
           fragmentTitle: fragment.title,
           blockId: block.id,
           blockIndex,
-          text: block.text,
-          expressionId: block.expressionId,
+          text:
+            block.type === "dialogue"
+              ? block.text
+              : block.type === "showCharacter"
+                ? "角色登场 / 调整"
+                : "角色退场",
+          expressionId:
+            block.type === "dialogue" || block.type === "showCharacter"
+              ? block.expressionId
+              : undefined,
         });
       }
     }
@@ -98,15 +119,18 @@ export function CharacterWorkspace({
   onDocument,
   onLocate,
   onNotice,
+  focusCharacterId,
 }: {
   projectId: string;
   document: GalgameStoryProject;
   onDocument: (document: GalgameStoryProject) => void;
   onLocate: (fragmentId: string, blockId: string) => void;
   onNotice: (message: string) => void;
+  focusCharacterId?: string;
 }) {
   const client = useQueryClient();
   const fileInput = useRef<HTMLInputElement>(null);
+  const voiceFileInput = useRef<HTMLInputElement>(null);
   const characters = useMemo(
     () => document.characters ?? [],
     [document.characters],
@@ -116,9 +140,12 @@ export function CharacterWorkspace({
     characters[0]?.id,
   );
   const [selectedExpressionId, setSelectedExpressionId] = useState<string>();
-  const [tab, setTab] = useState<"base" | "portraits">("portraits");
+  const [tab, setTab] = useState<"base" | "portraits" | "voice">("portraits");
   const [picker, setPicker] = useState<StoryImagePickerState>();
   const [uploadError, setUploadError] = useState("");
+  const [voicePickerOpen, setVoicePickerOpen] = useState(false);
+  const [voicePickerSource, setVoicePickerSource] =
+    useState<StoryAudioPickerSource>("project");
   const selectedCharacter =
     characters.find((character) => character.id === selectedCharacterId) ??
     characters[0];
@@ -155,6 +182,14 @@ export function CharacterWorkspace({
     if (!selectedCharacter && characters[0])
       setSelectedCharacterId(characters[0].id);
   }, [characters, selectedCharacter]);
+
+  useEffect(() => {
+    if (!focusCharacterId) return;
+    if (characters.some((character) => character.id === focusCharacterId)) {
+      setSelectedCharacterId(focusCharacterId);
+      setTab("voice");
+    }
+  }, [characters, focusCharacterId]);
 
   useEffect(() => {
     if (!selectedExpression && expressions[0])
@@ -235,13 +270,67 @@ export function CharacterWorkspace({
       setUploadError(caught instanceof Error ? caught.message : "立绘上传失败"),
   });
 
+  const bindVoiceSample = (fileId: string, name: string) => {
+    if (!selectedCharacter) return;
+    const previousId = selectedCharacter.voiceProfile?.sampleAssetId;
+    const previousStillUsed = characters.some(
+      (character) =>
+        character.id !== selectedCharacter.id &&
+        character.voiceProfile?.sampleAssetId === previousId,
+    );
+    const assetId = stableId();
+    const asset: GalgameStoryAudioAsset = {
+      id: assetId,
+      type: "audio",
+      role: "voiceSample",
+      label: displayLabel(name, "声线样本"),
+      fileId,
+      status: "ready",
+    };
+    onDocument({
+      ...document,
+      assets: [
+        ...(document.assets ?? []).filter(
+          (item) => item.id !== previousId || previousStillUsed,
+        ),
+        asset,
+      ],
+      characters: characters.map((character) =>
+        character.id === selectedCharacter.id
+          ? {
+              ...character,
+              voiceProfile: {
+                name: character.voiceProfile?.name ?? "默认声线",
+                language: character.voiceProfile?.language ?? "zh-CN",
+                description: character.voiceProfile?.description ?? "",
+                sampleAssetId: assetId,
+              },
+            }
+          : character,
+      ),
+    });
+    setVoicePickerOpen(false);
+  };
+
+  const voiceUpload = useMutation({
+    mutationFn: (file: File) => uploadGalgameProjectAsset(projectId, file),
+    onSuccess: (asset) => {
+      void client.invalidateQueries({
+        queryKey: ["galgame-project-assets", projectId],
+      });
+      bindVoiceSample(asset.id, asset.display_name);
+    },
+    onError: (caught) =>
+      onNotice(caught instanceof Error ? caught.message : "声线样本上传失败"),
+  });
+
   const deleteExpression = (expression: GalgameStoryCharacterExpression) => {
     if (!selectedCharacter) return;
     const explicit = references.filter(
       (reference) => reference.expressionId === expression.id,
     );
     if (explicit.length) {
-      onNotice(`无法删除：表情仍被 ${explicit.length} 处对白显式引用。`);
+      onNotice(`无法删除：表情仍被 ${explicit.length} 处剧本演出显式引用。`);
       return;
     }
     if (
@@ -285,7 +374,7 @@ export function CharacterWorkspace({
   const deleteCharacter = () => {
     if (!selectedCharacter) return;
     if (references.length) {
-      onNotice(`无法删除：角色仍被 ${references.length} 处对白引用。`);
+      onNotice(`无法删除：角色仍被 ${references.length} 处剧本演出引用。`);
       return;
     }
     const expressionAssetIds = new Set(
@@ -314,6 +403,11 @@ export function CharacterWorkspace({
   const activeAsset = selectedExpression
     ? assetsById.get(selectedExpression.assetId)
     : undefined;
+  const voiceSampleAsset = (document.assets ?? []).find(
+    (asset): asset is GalgameStoryAudioAsset =>
+      asset.type === "audio" &&
+      asset.id === selectedCharacter?.voiceProfile?.sampleAssetId,
+  );
 
   return (
     <section className="galgame-character-workspace">
@@ -407,6 +501,13 @@ export function CharacterWorkspace({
                 >
                   立绘与表情
                 </button>
+                <button
+                  type="button"
+                  className={tab === "voice" ? "active" : ""}
+                  onClick={() => setTab("voice")}
+                >
+                  声线资料
+                </button>
               </nav>
             </header>
             {tab === "base" ? (
@@ -441,7 +542,7 @@ export function CharacterWorkspace({
                 </label>
                 <small>修改将在 650ms 后自动保存。</small>
               </div>
-            ) : (
+            ) : tab === "portraits" ? (
               <div className="galgame-portrait-editor">
                 <div className="galgame-portrait-stage-column">
                   <div className="galgame-portrait-stage">
@@ -609,6 +710,148 @@ export function CharacterWorkspace({
                   </footer>
                 </div>
               </div>
+            ) : (
+              <div className="galgame-character-voice-form">
+                <section>
+                  <header>
+                    <span>
+                      <Mic2 aria-hidden />
+                    </span>
+                    <span>
+                      <strong>角色声线</strong>
+                      <small>记录配音选角资料和试听样本。</small>
+                    </span>
+                  </header>
+                  <label className="galgame-field">
+                    <span>声线名称</span>
+                    <input
+                      value={selectedCharacter.voiceProfile?.name ?? "默认声线"}
+                      onChange={(event) =>
+                        updateCharacter(selectedCharacter.id, (character) => ({
+                          ...character,
+                          voiceProfile: {
+                            name: event.target.value,
+                            language:
+                              character.voiceProfile?.language ?? "zh-CN",
+                            description:
+                              character.voiceProfile?.description ?? "",
+                            sampleAssetId:
+                              character.voiceProfile?.sampleAssetId ?? null,
+                          },
+                        }))
+                      }
+                    />
+                  </label>
+                  <label className="galgame-field">
+                    <span>语言</span>
+                    <input
+                      value={
+                        selectedCharacter.voiceProfile?.language ?? "zh-CN"
+                      }
+                      onChange={(event) =>
+                        updateCharacter(selectedCharacter.id, (character) => ({
+                          ...character,
+                          voiceProfile: {
+                            name: character.voiceProfile?.name ?? "默认声线",
+                            language: event.target.value,
+                            description:
+                              character.voiceProfile?.description ?? "",
+                            sampleAssetId:
+                              character.voiceProfile?.sampleAssetId ?? null,
+                          },
+                        }))
+                      }
+                    />
+                  </label>
+                  <label className="galgame-field">
+                    <span>声线描述</span>
+                    <textarea
+                      placeholder="例如：冷静、偏低沉，句尾略带气声…"
+                      value={selectedCharacter.voiceProfile?.description ?? ""}
+                      onChange={(event) =>
+                        updateCharacter(selectedCharacter.id, (character) => ({
+                          ...character,
+                          voiceProfile: {
+                            name: character.voiceProfile?.name ?? "默认声线",
+                            language:
+                              character.voiceProfile?.language ?? "zh-CN",
+                            description: event.target.value,
+                            sampleAssetId:
+                              character.voiceProfile?.sampleAssetId ?? null,
+                          },
+                        }))
+                      }
+                    />
+                  </label>
+                </section>
+                <section className="galgame-character-voice-sample">
+                  <header>
+                    <strong>试听样本</strong>
+                    <small>仅用于选角参考，不会自动绑定到对白。</small>
+                  </header>
+                  {voiceSampleAsset ? (
+                    <StoryAudioPreview
+                      fileId={voiceSampleAsset.fileId}
+                      label={voiceSampleAsset.label}
+                    />
+                  ) : (
+                    <div className="galgame-character-voice-empty">
+                      <Volume2 aria-hidden />
+                      <strong>尚未添加试听样本</strong>
+                    </div>
+                  )}
+                  <div>
+                    <button
+                      type="button"
+                      onClick={() => voiceFileInput.current?.click()}
+                    >
+                      <Upload aria-hidden /> 上传样本
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setVoicePickerSource("library");
+                        setVoicePickerOpen(true);
+                      }}
+                    >
+                      <FolderOpen aria-hidden /> 从文件库选择
+                    </button>
+                    {voiceSampleAsset ? (
+                      <button
+                        type="button"
+                        className="danger"
+                        onClick={() =>
+                          updateCharacter(
+                            selectedCharacter.id,
+                            (character) => ({
+                              ...character,
+                              voiceProfile: character.voiceProfile
+                                ? {
+                                    ...character.voiceProfile,
+                                    sampleAssetId: null,
+                                  }
+                                : null,
+                            }),
+                          )
+                        }
+                      >
+                        <Trash2 aria-hidden /> 移除
+                      </button>
+                    ) : null}
+                  </div>
+                  <input
+                    ref={voiceFileInput}
+                    hidden
+                    type="file"
+                    accept="audio/mpeg,audio/wav,audio/mp4,audio/ogg,.mp3,.wav,.m4a,.ogg"
+                    onChange={(event) => {
+                      const file = event.target.files?.[0];
+                      event.target.value = "";
+                      if (file) voiceUpload.mutate(file);
+                    }}
+                  />
+                </section>
+              </div>
             )}
           </>
         ) : (
@@ -713,6 +956,18 @@ export function CharacterWorkspace({
           onChoose={bindFile}
           onUpload={() => fileInput.current?.click()}
           onClose={() => setPicker(undefined)}
+        />
+      ) : null}
+      {voicePickerOpen ? (
+        <StoryAudioPicker
+          projectId={projectId}
+          title="选择角色试听样本"
+          source={voicePickerSource}
+          usedFileIds={usedFileIds}
+          onSource={setVoicePickerSource}
+          onChoose={bindVoiceSample}
+          onUpload={() => voiceFileInput.current?.click()}
+          onClose={() => setVoicePickerOpen(false)}
         />
       ) : null}
     </section>

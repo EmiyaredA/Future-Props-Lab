@@ -11,7 +11,30 @@ export type GalgameStoryCharacter =
   components["schemas"]["GalgameStoryCharacter"];
 export type GalgameStoryCharacterExpression =
   components["schemas"]["GalgameStoryCharacterExpression"];
-export type GalgameStoryAsset = components["schemas"]["GalgameStoryAsset"];
+export type GalgameStoryAudioAsset =
+  components["schemas"]["GalgameStoryAudioAsset"];
+export type GalgameStoryImageAsset =
+  components["schemas"]["GalgameStoryImageAsset"];
+export type GalgameStoryAsset = GalgameStoryImageAsset | GalgameStoryAudioAsset;
+export type GalgameStoryVoiceProfile =
+  components["schemas"]["GalgameStoryVoiceProfile"];
+export type GalgameStoryDialogueBoxStyle =
+  components["schemas"]["GalgameStoryDialogueBoxStyle"];
+export type GalgameStoryStageStyle =
+  components["schemas"]["GalgameStoryStageStyle"];
+export type GalgameStoryCharacterTransform =
+  components["schemas"]["GalgameStoryCharacterTransform"];
+export type GalgameStoryCharacterTransition =
+  components["schemas"]["GalgameStoryCharacterTransition"];
+export type GalgameStoryDialoguePortrait =
+  components["schemas"]["GalgameStoryDialoguePortrait"];
+export type GalgameStoryShowCharacterBlock =
+  components["schemas"]["GalgameStoryShowCharacterBlock"];
+export type GalgameStoryRemoveCharacterBlock =
+  components["schemas"]["GalgameStoryRemoveCharacterBlock"];
+export type GalgameStoryUiStyle = components["schemas"]["GalgameStoryUiStyle"];
+export type GalgameStoryUiComponent =
+  components["schemas"]["GalgameStoryUiComponent"];
 export type GalgameProjectAsset =
   components["schemas"]["GalgameProjectAssetOut"];
 export type GalgameStoryScene = components["schemas"]["GalgameStoryScene"];
@@ -25,6 +48,8 @@ export type GalgameStoryBlock = NonNullable<
 >[number];
 export type GalgameStoryBranchBlock =
   components["schemas"]["GalgameStoryBranchBlock"];
+export type GalgameStoryAudioBlock =
+  components["schemas"]["GalgameStoryAudioBlock"];
 export type GalgameStoryRouteReport =
   components["schemas"]["GalgameStoryRouteReportOut"];
 

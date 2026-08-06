@@ -142,8 +142,8 @@ ID、消息数量、画布摘要和素材 ID；不保存图片 Base64、临时�
 - `GET/PATCH/DELETE /v1/galgame-workshop/projects/{project_id}`：读取、修改或删除单个工程。
 - `GET/PUT /v1/galgame-workshop/projects/{project_id}/story`：读取或整份 CAS 保存 V1 故事文档。
 - `GET /v1/galgame-workshop/projects/{project_id}/story/report`：检查 Fragment 可达性、结局和循环。
-- `GET/POST /v1/galgame-workshop/projects/{project_id}/assets`：搜索或上传工程私有的静态故事图片。
-- `DELETE /v1/galgame-workshop/projects/{project_id}/assets/{asset_id}`：按素材 revision 删除未被故事使用的工程图片。
+- `GET/POST /v1/galgame-workshop/projects/{project_id}/assets`：搜索或上传工程私有的故事图片与声音。
+- `DELETE /v1/galgame-workshop/projects/{project_id}/assets/{asset_id}`：按素材 revision 删除未被故事使用的工程素材；引用冲突返回可定位的角色、Fragment 与 Block 信息。
 
 工程状态为 `draft / completed`，标题长度为 1–120 字。修改和删除必须携带工程的
 `expected_revision`；冲突返回 `409 revision_conflict` 以及服务器当前工程快照。新建工程会同时
@@ -152,18 +152,57 @@ ID、消息数量、画布摘要和素材 ID；不保存图片 Base64、临时�
 旁白、对白、分支和章节结局。角色可选 `expressions[]` 和 `defaultExpressionId`，表情通过故事
 `assets[]` 中的 `characterPortrait` 记录引用文件，对白可用 `expressionId` 覆盖角色默认表情。场景可选
 `backgrounds[]` 和 `defaultBackgroundId`，背景通过 `sceneBackground` 记录引用文件；Scene Block 可用
-`backgroundId` 固定背景状态，未指定时跟随场景默认。故事保存使用独立 `expected_revision`，严格拒绝
-重复 ID、悬空引用、跨角色表情、跨场景背景和少于两个选项的分支；冲突快照包含服务器当前完整故事，
+`backgroundId` 固定背景状态，未指定时跟随场景默认；`clearCharacters` 控制切换场景时是否清空舞台角色。
+`showCharacter` Block 以 `characterId` 为舞台唯一实例进行登场或调整，保存表情、百分比位置、比例、亮度、
+透明度、水平翻转、层级与基础过渡；`removeCharacter` 可让指定角色或全部角色退场。故事保存使用独立
+`expected_revision`，严格拒绝重复 ID、悬空引用、跨角色表情、越界角色变换、跨场景背景和少于两个选项的分支；冲突快照包含服务器当前完整故事，
 旧版 V1 缺少立绘或背景字段时在读取中补默认空值，首次保存后自然写入扩展格式。
 
+对白的可选 `portrait` 保存 `stage / solo / hidden` 立绘模式、对白后是否保留、可选角色变换与过渡。
+缺少 `portrait` 的旧对白继续使用单人临时立绘；新建对白默认加入多人舞台并保留角色。`stage` 模式未指定
+变换时继承角色当前舞台状态，不在场时使用底部居中的默认变换。
+
+`presentation.dialogueBox` 保存工坊内置试玩的全局对话框外观，包括预设、底色、正文与角色名颜色、
+透明度、圆角和字号。可选 `assetId` 必须引用 `assets[]` 中 role 为 `dialogueBox` 的静态图片；上传图片
+与角色立绘、场景背景复用同一套工程私有素材和全局文件引用生命周期。旧 V1 故事缺少
+`presentation` 时读取为默认暗色对话框，首次修改后随 Story CAS 整体保存。
+`presentation.stage` 保存多人舞台的说话者自动聚焦开关、非说话者亮度倍率、聚焦过渡时长与
+`lipSyncEnabled`。角色基础亮度始终保存在具体演出 Block，自动聚焦只在试玩渲染时叠加，不改写故事
+数据。口型开启后，运行时以无对白区间采样的底噪为基准，在约 12fps 下把当前说话者同一姿态的
+`f000 / f001 / f002` 闭口、半口和张口差分映射为三档音量口型；旁白、暂停、无对白和非说话者保持
+闭口，缺少配套差分的素材静默回退到作者指定的表情。
+
+`presentation.ui.components` 保存项目级自定义 Gal 界面组件。组件不预设为日期 HUD、快捷栏或其他
+固定用途；每项自行定义 `name`、`assetId`、百分比坐标 `x` / `y`、百分比宽度 `width`、显示时机
+`visibility` 与叠放层级 `layer`。组件图片统一使用 `uiComponent` 素材角色，编辑器支持任意增删、上传、
+从文件库选择、替换和移除。旧版固定界面槽位在读取时会迁移为普通自定义组件。
+
+故事声音与图片共用 `assets[]`，音频素材使用 `type: audio` 和
+`voiceSample / voiceLine / backgroundMusic / ambientSound / soundEffect / timelineTrack` 角色。角色可通过
+`voiceProfile` 保存声线名称、语言、描述和试听样本；对白通过 `voiceAssetId` 与 `voiceVolume`
+绑定逐句配音。`audio` Block 显式控制 `bgm / ambient / sfx` 通道的播放、停止、音量、循环和
+淡入淡出；BGM 与环境音不会从场景隐式继承。Fragment 可选 `timeline: { assetId, durationMs }`，
+并通过对白或旁白成对的 `startMs / endMs` 绑定一条持续播放的剧情时间轴。保存时会校验时间非负、
+起止有序、互不重叠、不超过总长，并要求 `assetId` 指向 `timelineTrack`；普通 Fragment 与旧故事
+仍保持原有手动播放语义。编辑器可在剧本流和可视化时间轴之间切换，以角色颜色显示对白片段和
+舞台事件锚点，支持共享分界拖动、首尾边界、片段平移、100ms 吸附、连锁移动和 `mm:ss.mmm` 精确
+输入。开场、内部与结尾的无对白区间由相邻对白边界和时间轴总长推导，不创建 Gap Block；选中后可直接
+编辑其有效边界。时间轴还提供 300ms 预听、所选对白循环与播放头设为起止点。所有合法修改仍通过整份
+Story CAS 自动保存。时间轴播放头、缩放、循环与连锁移动偏好只存在于浏览器，不进入故事文档；试听或
+试玩遇到无对白区间时仍连续播放完整音轨（包括其中的音乐和环境声），同时保留舞台状态、关闭口型并
+隐藏对话框；试玩控制条渲染在舞台下方。编辑器重新获得窗口焦点或手动刷新时会检查最新 Story
+revision；无本地待保存修改时自动载入，否则沿用 CAS 冲突处理。
+
 线路报告把开放线路、不可达 Fragment、无出口循环和终止 Block 后的内容列为错误，把可退出循环列为
-警告；缺失的 `ready` 故事图片文件也会阻止完成。没有绑定背景的场景仍可使用确定性主题占位并完成。
+警告；缺失的 `ready` 故事图片或声音文件也会阻止完成。没有绑定背景的场景仍可使用确定性主题占位并完成。
 只有零错误时工程才能标记为 `completed`，已完成工程
-再次保存故事会自动回到 `draft`。上传图片属于工程私有素材，支持 PNG、JPEG、WebP 和 AVIF，删除
+再次保存故事会自动回到 `draft`。上传图片属于工程私有素材，支持 PNG、JPEG、WebP 和 AVIF；上传声音支持
+MP3、WAV、M4A 和 OGG。删除
 工程时同时清理数据库记录和磁盘文件；从全局文件库选择只建立引用，引用解除或工程删除后释放原图。
 公共文件接口不能修改或删除 Galgame 私有素材，全局图片在被 Galgame 故事引用时同样禁止删除。
-Web 提供角色列表、资料与立绘、对白引用，以及场景列表、资料与背景、剧本引用三栏工作区；两者复用
-图片选择器、650ms 串行自动保存和冲突处理。内置试玩会把背景置于角色立绘、对白和选择层下方，加载
+Web 提供角色列表、资料、立绘与声线，场景列表、资料与背景，以及声音资源三栏工作区；图片和声音选择器
+复用 650ms 串行自动保存和冲突处理。内置试玩会把背景置于角色立绘、对白和选择层下方，并独立管理
+配音、BGM、环境音和最多八路音效，加载
 失败时回退到确定性主题舞台。当前格式仅供工坊内部使用，不代表 LetsGal 原生工程或导入兼容。
 
 ## 图片与视频生成
@@ -199,8 +238,9 @@ Data URI 或素材内容。
 私有素材。项目导入公共文件时只建立引用，不复制磁盘内容；存在项目引用的公共文件或包含它的
 文件夹返回 `409 asset_in_use`，必须先从相关项目移除引用。文件夹最多五层。
 
-允许 JPEG、PNG、WebP、GIF、AVIF、MP4、WebM、MOV、MP3、WAV、M4A、OGG、PDF、TXT 与
-Markdown；服务端同时校验扩展名、MIME、文件头和配置的大小上限。文件使用随机存储键保存，
+允许 JPEG、PNG、WebP、GIF、AVIF、MP4、WebM、MOV、MP3、WAV、M4A、OGG、PDF、TXT、
+Markdown 与 JSON；服务端同时校验扩展名、MIME、文件头和配置的大小上限，JSON 还会执行完整语法解析。
+文件使用随机存储键保存，
 原始文件名不参与磁盘路径构造。
 
 ## 健康与鉴权

@@ -119,7 +119,10 @@ async def upload_project_asset(
     except GalgameWorkshopProjectNotFoundError as exc:
         raise _not_found(exc) from None
     except AssetError as exc:
-        raise HTTPException(exc.status, {"code": exc.code, "message": str(exc)}) from None
+        raise HTTPException(
+            exc.status,
+            {"code": exc.code, "message": str(exc), **exc.detail},
+        ) from None
 
 
 @router.delete("/{project_id}/assets/{asset_id}")
@@ -136,7 +139,10 @@ async def delete_project_asset(
     except GalgameWorkshopProjectNotFoundError as exc:
         raise _not_found(exc) from None
     except AssetError as exc:
-        raise HTTPException(exc.status, {"code": exc.code, "message": str(exc)}) from None
+        raise HTTPException(
+            exc.status,
+            {"code": exc.code, "message": str(exc), **exc.detail},
+        ) from None
     return {"deleted": True}
 
 

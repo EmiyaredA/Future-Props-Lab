@@ -236,6 +236,21 @@ async def test_file_management_upload_folders_and_project_references() -> None:
         assert project_upload.status_code == 200, project_upload.text
         assert project_upload.json()["source"] == "project"
 
+        transcript_upload = await client.post(
+            "/v1/files",
+            files={
+                "upload": (
+                    "radio-drama-transcript.json",
+                    b'{"text":"' + (b"a" * 502) + "你".encode() + b'"}',
+                    "application/json",
+                )
+            },
+        )
+        assert transcript_upload.status_code == 200, transcript_upload.text
+        assert transcript_upload.json()["media_kind"] == "document"
+        assert transcript_upload.json()["mime_type"] == "application/json"
+        assert transcript_upload.json()["source"] == "library"
+
         first_reference = await client.post(
             f"/v1/visual-workshop/projects/{project['id']}/asset-references",
             json={"asset_id": asset["id"]},
@@ -297,6 +312,12 @@ async def test_file_management_rejects_invalid_content_and_scope() -> None:
         )
         assert invalid.status_code == 422
         assert invalid.json()["code"] == "invalid_file_content"
+        invalid_json = await client.post(
+            "/v1/files",
+            files={"upload": ("broken.json", b'{"segments":', "application/json")},
+        )
+        assert invalid_json.status_code == 422
+        assert invalid_json.json()["code"] == "invalid_file_content"
         unsupported = await client.post(
             "/v1/files",
             files={"upload": ("archive.zip", b"PK contents", "application/zip")},
