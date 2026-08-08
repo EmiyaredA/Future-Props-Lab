@@ -3,6 +3,7 @@ from __future__ import annotations
 import codecs
 import json
 import os
+import shutil
 from pathlib import Path
 from uuid import uuid4
 
@@ -27,6 +28,7 @@ from app.schemas.files import (
     VisualAssetFolderListOut,
     VisualAssetFolderOut,
     VisualAssetFolderPatchIn,
+    VisualAssetImportIn,
     VisualAssetListOut,
     VisualAssetOut,
     VisualAssetPatchIn,
@@ -88,12 +90,16 @@ def asset_out(
     *,
     reference: VisualProjectAssetReference | None = None,
 ) -> VisualAssetOut:
+    display_name = reference.display_name if reference else row.display_name
     return VisualAssetOut(
         id=row.id,
         project_id=reference.project_id if reference else row.project_id,
         folder_id=reference.folder_id if reference else row.folder_id,
         original_filename=row.original_filename,
-        display_name=reference.display_name if reference else row.display_name,
+        display_name=display_name_without_original_extension(
+            display_name,
+            row.original_filename,
+        ),
         media_kind=row.media_kind,
         mime_type=row.mime_type,
         byte_size=row.byte_size,
@@ -130,6 +136,23 @@ def _looks_like(extension: str, head: bytes) -> bool:
         ".pdf": head.startswith(b"%PDF-"),
     }
     return checks.get(extension, False)
+
+
+def display_name_without_original_extension(display_name: str, original_filename: str) -> str:
+    cleaned = display_name.strip()
+    extension = Path(original_filename).suffix
+    if not extension or len(cleaned) <= len(extension):
+        return cleaned
+    if cleaned.lower().endswith(extension.lower()):
+        return cleaned[: -len(extension)].strip() or cleaned
+    return cleaned
+
+
+def download_filename(display_name: str, original_filename: str) -> str:
+    base = display_name_without_original_extension(display_name, original_filename)
+    safe_base = base.replace("/", "-").replace("\\", "-").strip()
+    fallback = display_name_without_original_extension(original_filename, original_filename)
+    return f"{safe_base or fallback or 'download'}{Path(original_filename).suffix}"
 
 
 class VisualAssets:
@@ -535,7 +558,7 @@ class VisualAssets:
                 galgame_project_id=galgame_project_id,
                 folder_id=folder_id,
                 original_filename=filename,
-                display_name=filename,
+                display_name=display_name_without_original_extension(filename, filename),
                 storage_key=storage_key,
                 media_kind=media_kind,
                 mime_type=(content_type if content_type in mime_types else sorted(mime_types)[0]),
@@ -568,7 +591,10 @@ class VisualAssets:
             "updated_at": utc_now(),
         }
         if body.display_name is not None:
-            values["display_name"] = body.display_name
+            values["display_name"] = display_name_without_original_extension(
+                body.display_name,
+                row.original_filename,
+            )
         if body.folder_id is not None or body.move_to_root:
             values["folder_id"] = new_folder_id
         result = await self.session.execute(
@@ -667,12 +693,141 @@ class VisualAssets:
             project_id=project_id,
             asset_id=body.asset_id,
             folder_id=body.folder_id,
-            display_name=asset.display_name,
+            display_name=display_name_without_original_extension(
+                asset.display_name,
+                asset.original_filename,
+            ),
         )
         self.session.add(row)
         await self.session.commit()
         await self.session.refresh(row)
         return asset_out(asset, reference=row)
+
+    async def import_assets(self, project_id: str, body: VisualAssetImportIn) -> VisualAssetListOut:
+        await self._project(project_id)
+        if body.source_scope == "project":
+            assert body.source_project_id is not None
+            if body.source_project_id == project_id:
+                raise AssetError(
+                    "不能从当前项目重复导入素材",
+                    code="scope_mismatch",
+                )
+            await self._project(body.source_project_id)
+
+        rows = (
+            (
+                await self.session.execute(
+                    select(VisualAsset).where(VisualAsset.id.in_(body.asset_ids))
+                )
+            )
+            .scalars()
+            .all()
+        )
+        by_id = {row.id: row for row in rows}
+        if len(by_id) != len(body.asset_ids):
+            raise AssetError("部分来源素材不存在", code="not_found", status=404)
+        ordered = [by_id[asset_id] for asset_id in body.asset_ids]
+
+        if body.source_scope == "library":
+            if any(
+                row.project_id is not None or row.galgame_project_id is not None for row in ordered
+            ):
+                raise AssetError("素材不属于公共文件库", code="scope_mismatch")
+            existing_rows = (
+                (
+                    await self.session.execute(
+                        select(VisualProjectAssetReference).where(
+                            VisualProjectAssetReference.project_id == project_id,
+                            VisualProjectAssetReference.asset_id.in_(body.asset_ids),
+                        )
+                    )
+                )
+                .scalars()
+                .all()
+            )
+            references = {row.asset_id: row for row in existing_rows}
+            for asset in ordered:
+                if asset.id in references:
+                    continue
+                reference = VisualProjectAssetReference(
+                    project_id=project_id,
+                    asset_id=asset.id,
+                    folder_id=None,
+                    display_name=display_name_without_original_extension(
+                        asset.display_name,
+                        asset.original_filename,
+                    ),
+                )
+                self.session.add(reference)
+                references[asset.id] = reference
+            await self.session.commit()
+            for reference in references.values():
+                if reference.id is None:
+                    await self.session.refresh(reference)
+            return VisualAssetListOut(
+                items=[asset_out(asset, reference=references[asset.id]) for asset in ordered]
+            )
+
+        assert body.source_project_id is not None
+        if any(
+            row.project_id != body.source_project_id or row.galgame_project_id is not None
+            for row in ordered
+        ):
+            raise AssetError("素材不属于所选来源项目", code="scope_mismatch")
+
+        root = self.settings.visual_asset_path
+        temp_dir = root / ".tmp"
+        temp_dir.mkdir(parents=True, exist_ok=True)
+        copied_paths: list[Path] = []
+        imported_rows: list[VisualAsset] = []
+        try:
+            for source in ordered:
+                source_path = root / source.storage_key
+                if not source_path.is_file():
+                    raise AssetError("来源素材文件不存在", code="file_missing", status=404)
+                storage_key = uuid4().hex
+                temp_path = temp_dir / storage_key
+                final_path = root / storage_key
+                try:
+                    shutil.copyfile(source_path, temp_path)
+                    os.replace(temp_path, final_path)
+                finally:
+                    temp_path.unlink(missing_ok=True)
+                copied_paths.append(final_path)
+                imported = VisualAsset(
+                    project_id=project_id,
+                    galgame_project_id=None,
+                    folder_id=None,
+                    original_filename=source.original_filename,
+                    display_name=display_name_without_original_extension(
+                        source.display_name,
+                        source.original_filename,
+                    ),
+                    storage_key=storage_key,
+                    media_kind=source.media_kind,
+                    mime_type=source.mime_type,
+                    byte_size=source.byte_size,
+                )
+                imported_rows.append(imported)
+                self.session.add(imported)
+            await self.session.commit()
+            for imported in imported_rows:
+                await self.session.refresh(imported)
+            return VisualAssetListOut(items=[asset_out(row) for row in imported_rows])
+        except AssetError:
+            await self.session.rollback()
+            for path in copied_paths:
+                path.unlink(missing_ok=True)
+            raise
+        except Exception as exc:
+            await self.session.rollback()
+            for path in copied_paths:
+                path.unlink(missing_ok=True)
+            raise AssetError(
+                "跨项目素材复制失败",
+                code="asset_import_failed",
+                status=500,
+            ) from exc
 
     async def patch_reference(
         self, project_id: str, reference_id: str, body: VisualAssetReferencePatchIn
@@ -688,7 +843,10 @@ class VisualAssets:
             "updated_at": utc_now(),
         }
         if body.display_name is not None:
-            values["display_name"] = body.display_name
+            values["display_name"] = display_name_without_original_extension(
+                body.display_name,
+                (await self._asset(row.asset_id)).original_filename,
+            )
         if body.folder_id is not None or body.move_to_root:
             values["folder_id"] = new_folder_id
         result = await self.session.execute(

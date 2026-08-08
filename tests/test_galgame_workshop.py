@@ -15,6 +15,7 @@ from app.models import (
     GalgameWorkshopProject,
     VisualAsset,
 )
+from app.schemas.galgame_workshop import GalgameStoryProject
 
 
 def playable_story() -> dict:
@@ -102,6 +103,178 @@ def playable_story() -> dict:
     }
 
 
+def test_galgame_timeline_accepts_parallel_point_events_and_rejects_conflicts() -> None:
+    document = playable_story()
+    document["characters"].append(
+        {"id": "character-two", "name": "助手", "description": "协同行动"}
+    )
+    document["assets"] = [
+        {
+            "id": "bgm-one",
+            "type": "audio",
+            "role": "backgroundMusic",
+            "label": "主题音乐",
+            "fileId": "file-bgm",
+            "status": "ready",
+        },
+        {
+            "id": "sfx-one",
+            "type": "audio",
+            "role": "soundEffect",
+            "label": "提示音",
+            "fileId": "file-sfx",
+            "status": "ready",
+        },
+    ]
+    fragment = document["chapters"][0]["fragments"][0]
+    fragment["timeline"] = {"durationMs": 3000}
+    fragment["blocks"] = [
+        {"id": "scene", "type": "scene", "sceneId": "scene-lab"},
+        {
+            "id": "show-one",
+            "type": "showCharacter",
+            "characterId": "character-one",
+            "atMs": 0,
+        },
+        {
+            "id": "show-two",
+            "type": "showCharacter",
+            "characterId": "character-two",
+            "atMs": 0,
+        },
+        {
+            "id": "stop-bgm",
+            "type": "audio",
+            "action": "stop",
+            "channel": "bgm",
+            "atMs": 0,
+        },
+        {
+            "id": "play-bgm",
+            "type": "audio",
+            "action": "play",
+            "channel": "bgm",
+            "assetId": "bgm-one",
+            "atMs": 0,
+        },
+        {
+            "id": "sfx-a",
+            "type": "audio",
+            "action": "play",
+            "channel": "sfx",
+            "assetId": "sfx-one",
+            "atMs": 0,
+        },
+        {
+            "id": "sfx-b",
+            "type": "audio",
+            "action": "play",
+            "channel": "sfx",
+            "assetId": "sfx-one",
+            "atMs": 0,
+        },
+        {
+            "id": "line",
+            "type": "dialogue",
+            "characterId": "character-one",
+            "text": "一起开始。",
+            "startMs": 0,
+            "endMs": 2500,
+        },
+        fragment["blocks"][-1],
+    ]
+    normalized = GalgameStoryProject.model_validate(document).model_dump(mode="json", by_alias=True)
+    assert normalized["chapters"][0]["fragments"][0]["timeline"] == {"durationMs": 3000}
+    assert normalized["chapters"][0]["fragments"][0]["blocks"][0].get("atMs") is None
+
+    legacy_implicit = deepcopy(document)
+    legacy_blocks = legacy_implicit["chapters"][0]["fragments"][0]["blocks"]
+    del legacy_blocks[1]["atMs"]
+    legacy_blocks.insert(
+        2,
+        {
+            "id": "show-one-legacy-adjustment",
+            "type": "showCharacter",
+            "characterId": "character-one",
+        },
+    )
+    GalgameStoryProject.model_validate(legacy_implicit)
+
+    conflict_cases = []
+    duplicate_scene = deepcopy(document)
+    duplicate_scene["chapters"][0]["fragments"][0]["blocks"].insert(
+        1, {"id": "scene-two", "type": "scene", "sceneId": "scene-lab", "atMs": 0}
+    )
+    conflict_cases.append(duplicate_scene)
+
+    duplicate_character = deepcopy(document)
+    duplicate_character["chapters"][0]["fragments"][0]["blocks"].insert(
+        2,
+        {
+            "id": "show-one-again",
+            "type": "showCharacter",
+            "characterId": "character-one",
+            "atMs": 0,
+        },
+    )
+    conflict_cases.append(duplicate_character)
+
+    remove_all_conflict = deepcopy(document)
+    remove_all_conflict["chapters"][0]["fragments"][0]["blocks"].insert(
+        1, {"id": "remove-all", "type": "removeCharacter", "all": True, "atMs": 0}
+    )
+    conflict_cases.append(remove_all_conflict)
+
+    duplicate_bgm = deepcopy(document)
+    duplicate_bgm["chapters"][0]["fragments"][0]["blocks"].insert(
+        6,
+        {
+            "id": "play-bgm-two",
+            "type": "audio",
+            "action": "play",
+            "channel": "bgm",
+            "assetId": "bgm-one",
+            "atMs": 0,
+        },
+    )
+    conflict_cases.append(duplicate_bgm)
+
+    out_of_bounds = deepcopy(document)
+    out_of_bounds["chapters"][0]["fragments"][0]["blocks"][1]["atMs"] = 3001
+    conflict_cases.append(out_of_bounds)
+
+    untimed_point = deepcopy(document)
+    del untimed_point["chapters"][0]["fragments"][0]["timeline"]
+    untimed_point["chapters"][0]["fragments"][0]["blocks"] = [
+        {"id": "scene", "type": "scene", "sceneId": "scene-lab", "atMs": 0},
+        untimed_point["chapters"][0]["fragments"][0]["blocks"][-1],
+    ]
+    conflict_cases.append(untimed_point)
+
+    for invalid in conflict_cases:
+        with pytest.raises(ValueError):
+            GalgameStoryProject.model_validate(invalid)
+
+
+def test_galgame_dialogue_supports_multiple_speakers_without_changing_legacy_blocks() -> None:
+    story = playable_story()
+    story["characters"].append({"id": "character-two", "name": "助手", "description": "同时回应"})
+    dialogue = story["chapters"][0]["fragments"][0]["blocks"][1]
+    dialogue["speakerIds"] = ["character-one", "character-two"]
+
+    normalized = GalgameStoryProject.model_validate(story).model_dump(mode="json", by_alias=True)
+
+    assert normalized["chapters"][0]["fragments"][0]["blocks"][1]["speakerIds"] == [
+        "character-one",
+        "character-two",
+    ]
+    legacy = playable_story()
+    legacy_normalized = GalgameStoryProject.model_validate(legacy).model_dump(
+        mode="json", by_alias=True
+    )
+    assert "speakerIds" not in legacy_normalized["chapters"][0]["fragments"][0]["blocks"][1]
+
+
 @pytest.mark.asyncio
 async def test_galgame_workshop_story_edit_report_completion_and_conflicts() -> None:
     async with SessionLocal() as session:
@@ -175,6 +348,7 @@ async def test_galgame_workshop_story_edit_report_completion_and_conflicts() -> 
             json={"expected_revision": 0, "document": playable_story()},
         )
         assert saved.status_code == 200, saved.text
+
         assert saved.json()["revision"] == 1
 
         report = (
@@ -234,6 +408,28 @@ async def test_galgame_story_rejects_invalid_references_and_reports_route_risks(
         response = await client.put(
             f"/v1/galgame-workshop/projects/{created['id']}/story",
             json={"expected_revision": 0, "document": invalid},
+        )
+        assert response.status_code == 422
+
+        missing_secondary_speaker = playable_story()
+        missing_secondary_speaker["chapters"][0]["fragments"][0]["blocks"][1]["speakerIds"] = [
+            "character-one",
+            "missing-character",
+        ]
+        response = await client.put(
+            f"/v1/galgame-workshop/projects/{created['id']}/story",
+            json={"expected_revision": 0, "document": missing_secondary_speaker},
+        )
+        assert response.status_code == 422
+
+        duplicate_speakers = playable_story()
+        duplicate_speakers["chapters"][0]["fragments"][0]["blocks"][1]["speakerIds"] = [
+            "character-one",
+            "character-one",
+        ]
+        response = await client.put(
+            f"/v1/galgame-workshop/projects/{created['id']}/story",
+            json={"expected_revision": 0, "document": duplicate_speakers},
         )
         assert response.status_code == 422
 
@@ -586,10 +782,21 @@ async def test_galgame_story_validates_multicharacter_stage_blocks() -> None:
             json={"expected_revision": 0, "document": document},
         )
         assert saved.status_code == 200, saved.text
+
         saved_blocks = saved.json()["document"]["chapters"][0]["fragments"][0]["blocks"]
         assert saved_blocks[0]["clearCharacters"] is False
         assert saved_blocks[1]["transform"]["x"] == 75
         assert saved_blocks[2]["portrait"]["mode"] == "stage"
+
+        extended_transform = deepcopy(document)
+        extended_transform["chapters"][0]["fragments"][0]["blocks"][1]["transform"].update(
+            {"x": -100, "y": 200}
+        )
+        extended = await client.put(
+            f"/v1/galgame-workshop/projects/{project['id']}/story",
+            json={"expected_revision": 1, "document": extended_transform},
+        )
+        assert extended.status_code == 200, extended.text
 
         invalid_targets = deepcopy(document)
         invalid_targets["chapters"][0]["fragments"][0]["blocks"][3].update(
@@ -597,15 +804,17 @@ async def test_galgame_story_validates_multicharacter_stage_blocks() -> None:
         )
         invalid_transform = deepcopy(document)
         invalid_transform["chapters"][0]["fragments"][0]["blocks"][1]["transform"]["scale"] = 3.1
+        invalid_position = deepcopy(document)
+        invalid_position["chapters"][0]["fragments"][0]["blocks"][1]["transform"]["x"] = 201
         missing_character = deepcopy(document)
         missing_character["chapters"][0]["fragments"][0]["blocks"][1]["characterId"] = (
             "missing-character"
         )
 
-        for invalid in (invalid_targets, invalid_transform, missing_character):
+        for invalid in (invalid_targets, invalid_transform, invalid_position, missing_character):
             rejected = await client.put(
                 f"/v1/galgame-workshop/projects/{project['id']}/story",
-                json={"expected_revision": 1, "document": invalid},
+                json={"expected_revision": 2, "document": invalid},
             )
             assert rejected.status_code == 422, rejected.text
 
@@ -1065,6 +1274,11 @@ async def test_galgame_timeline_validates_ranges_roles_and_asset_references() ->
         )
         assert saved.status_code == 200, saved.text
 
+        report = (
+            await client.get(f"/v1/galgame-workshop/projects/{project['id']}/story/report")
+        ).json()
+        assert "reference_track_only" in {warning["code"] for warning in report["warnings"]}
+
         protected = await client.delete(
             f"/v1/galgame-workshop/projects/{project['id']}/assets/{uploaded['id']}",
             params={"expected_revision": uploaded["revision"]},
@@ -1102,9 +1316,17 @@ async def test_galgame_timeline_validates_ranges_roles_and_asset_references() ->
             )
             assert rejected.status_code == 422, rejected.text
 
+        optional_reference = deepcopy(document)
+        del optional_reference["chapters"][0]["fragments"][0]["timeline"]["assetId"]
+        saved_without_reference = await client.put(
+            f"/v1/galgame-workshop/projects/{project['id']}/story",
+            json={"expected_revision": 1, "document": optional_reference},
+        )
+        assert saved_without_reference.status_code == 200, saved_without_reference.text
+
         cleared = await client.put(
             f"/v1/galgame-workshop/projects/{project['id']}/story",
-            json={"expected_revision": 1, "document": playable_story()},
+            json={"expected_revision": 2, "document": playable_story()},
         )
         assert cleared.status_code == 200
         removed = await client.delete(

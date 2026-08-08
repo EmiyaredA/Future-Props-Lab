@@ -104,14 +104,62 @@ test("renders the Galgame workshop brand", () => {
   );
 });
 
-test("renders an intentionally empty documentation shell", () => {
+test("renders and searches the documentation center", () => {
+  window.history.replaceState({}, "", "/docs.html");
+  vi.spyOn(window, "scrollTo").mockImplementation(() => undefined);
   render(<DocsApp />);
   expect(
-    screen.getByRole("heading", { name: "文档内容正在准备中" }),
+    screen.getByRole("heading", { name: "未来道具研究所使用指南" }),
   ).toBeInTheDocument();
   expect(screen.getByRole("link", { name: "返回 Studio" })).toHaveAttribute(
     "href",
     "/model-service",
   );
   expect(screen.getByRole("group", { name: "外观模式" })).toBeInTheDocument();
+  expect(
+    screen.getByRole("complementary", { name: "本页目录" }),
+  ).toBeInTheDocument();
+
+  fireEvent.change(screen.getByRole("searchbox", { name: "搜索使用指南" }), {
+    target: { value: "波纹" },
+  });
+  const directory = screen.getByRole("complementary", { name: "功能目录" });
+  expect(
+    within(directory).getByRole("link", { name: "剧情时间轴" }),
+  ).toBeInTheDocument();
+  expect(
+    within(directory).queryByRole("link", { name: "视频生成" }),
+  ).not.toBeInTheDocument();
+  fireEvent.click(within(directory).getByRole("link", { name: "剧情时间轴" }));
+  expect(
+    screen.getByRole("heading", { name: "剧情时间轴", level: 1 }),
+  ).toBeInTheDocument();
+  expect(window.location.search).toBe("?page=galgame-timeline");
+
+  fireEvent.click(screen.getByRole("button", { name: "打开功能目录" }));
+  expect(directory).toHaveClass("open");
+  fireEvent.click(screen.getAllByRole("button", { name: "关闭功能目录" })[0]!);
+  expect(directory).not.toHaveClass("open");
+});
+
+test("opens documentation deep links and follows browser navigation", () => {
+  window.history.replaceState(
+    {},
+    "",
+    "/docs.html?page=visual-video#input-modes",
+  );
+  render(<DocsApp />);
+  expect(
+    screen.getByRole("heading", { name: "视频生成", level: 1 }),
+  ).toBeInTheDocument();
+  expect(screen.getByRole("link", { name: "四种输入方式" })).toHaveAttribute(
+    "href",
+    "#input-modes",
+  );
+
+  window.history.pushState({}, "", "/docs.html?page=galgame-preview-report");
+  fireEvent.popState(window);
+  expect(
+    screen.getByRole("heading", { name: "试玩与线路检查", level: 1 }),
+  ).toBeInTheDocument();
 });

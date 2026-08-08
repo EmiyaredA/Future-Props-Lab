@@ -331,6 +331,9 @@ class GalgameStoryBlockBase(GalgameStoryModel):
 
 class GalgameStorySceneBlock(GalgameStoryBlockBase):
     type: Literal["scene"]
+    at_ms: int | None = Field(
+        default=None, alias="atMs", ge=0, exclude_if=lambda value: value is None
+    )
     scene_id: str = Field(alias="sceneId", pattern=STABLE_ID_PATTERN)
     background_id: str | None = Field(default=None, alias="backgroundId", pattern=STABLE_ID_PATTERN)
     clear_characters: bool | None = Field(default=None, alias="clearCharacters")
@@ -342,8 +345,8 @@ class GalgameStorySceneBlock(GalgameStoryBlockBase):
 
 
 class GalgameStoryCharacterTransform(GalgameStoryModel):
-    x: float = Field(default=50, ge=0, le=100)
-    y: float = Field(default=100, ge=0, le=100)
+    x: float = Field(default=50, ge=-100, le=200)
+    y: float = Field(default=100, ge=-100, le=200)
     scale: float = Field(default=1, ge=0.25, le=3)
     brightness: float = Field(default=1, ge=0, le=2)
     opacity: float = Field(default=1, ge=0, le=1)
@@ -369,6 +372,9 @@ class GalgameStoryDialoguePortrait(GalgameStoryModel):
 
 class GalgameStoryShowCharacterBlock(GalgameStoryBlockBase):
     type: Literal["showCharacter"]
+    at_ms: int | None = Field(
+        default=None, alias="atMs", ge=0, exclude_if=lambda value: value is None
+    )
     character_id: str = Field(alias="characterId", pattern=STABLE_ID_PATTERN)
     expression_id: str | None = Field(default=None, alias="expressionId", pattern=STABLE_ID_PATTERN)
     transform: GalgameStoryCharacterTransform = Field(
@@ -381,6 +387,9 @@ class GalgameStoryShowCharacterBlock(GalgameStoryBlockBase):
 
 class GalgameStoryRemoveCharacterBlock(GalgameStoryBlockBase):
     type: Literal["removeCharacter"]
+    at_ms: int | None = Field(
+        default=None, alias="atMs", ge=0, exclude_if=lambda value: value is None
+    )
     character_id: str | None = Field(
         default=None,
         alias="characterId",
@@ -424,6 +433,13 @@ class GalgameStoryNarrationBlock(GalgameStoryTimedBlockBase):
 class GalgameStoryDialogueBlock(GalgameStoryTimedBlockBase):
     type: Literal["dialogue"]
     character_id: str = Field(alias="characterId", pattern=STABLE_ID_PATTERN)
+    speaker_ids: list[str] | None = Field(
+        default=None,
+        alias="speakerIds",
+        min_length=1,
+        max_length=16,
+        exclude_if=lambda value: value is None,
+    )
     expression_id: str | None = Field(default=None, alias="expressionId", pattern=STABLE_ID_PATTERN)
     text: str = Field(default="", max_length=20_000)
     voice_asset_id: str | None = Field(
@@ -448,9 +464,26 @@ class GalgameStoryDialogueBlock(GalgameStoryTimedBlockBase):
     def null_voice_volume_uses_default(cls, value: Any) -> Any:
         return 100 if value is None else value
 
+    @model_validator(mode="after")
+    def speakers_are_unambiguous(self) -> GalgameStoryDialogueBlock:
+        if self.speaker_ids is None:
+            return self
+        if len(self.speaker_ids) != len(set(self.speaker_ids)):
+            raise ValueError("对白的同时说话角色不能重复")
+        if self.speaker_ids[0] != self.character_id:
+            raise ValueError("对白的主说话角色必须是 speakerIds 的第一项")
+        return self
+
+    @property
+    def effective_speaker_ids(self) -> list[str]:
+        return self.speaker_ids or [self.character_id]
+
 
 class GalgameStoryAudioBlock(GalgameStoryBlockBase):
     type: Literal["audio"]
+    at_ms: int | None = Field(
+        default=None, alias="atMs", ge=0, exclude_if=lambda value: value is None
+    )
     action: Literal["play", "stop"]
     channel: Literal["bgm", "ambient", "sfx"]
     asset_id: str | None = Field(default=None, alias="assetId", pattern=STABLE_ID_PATTERN)
@@ -530,8 +563,18 @@ GalgameStoryBlock = Annotated[
 
 
 class GalgameStoryFragmentTimeline(GalgameStoryModel):
-    asset_id: str = Field(alias="assetId", pattern=STABLE_ID_PATTERN)
-    duration_ms: int = Field(alias="durationMs", ge=1)
+    asset_id: str | None = Field(
+        default=None,
+        alias="assetId",
+        pattern=STABLE_ID_PATTERN,
+        exclude_if=lambda value: value is None,
+        description="可选的剧情校准参考声轨；不参与多轨运行时混音",
+    )
+    duration_ms: int = Field(
+        alias="durationMs",
+        ge=1,
+        description="剧情时间轴总长（毫秒），独立于所引用声音素材的媒体时长",
+    )
 
 
 class GalgameStoryFragment(GalgameStoryModel):
@@ -644,15 +687,110 @@ class GalgameStoryProject(GalgameStoryModel):
                 raise ValueError(f"章节“{chapter.title}”的入口 Fragment 不存在")
             for fragment in chapter.fragments:
                 timeline_asset = None
-                if fragment.timeline is not None:
+                if fragment.timeline is not None and fragment.timeline.asset_id is not None:
                     timeline_asset = assets_by_id.get(fragment.timeline.asset_id)
                     if timeline_asset is None:
                         raise ValueError("Fragment 时间轴引用了不存在的声音素材")
                     if timeline_asset.role != "timelineTrack":
                         raise ValueError("Fragment 时间轴只能引用剧情时间轴素材")
                 previous_end_ms = 0
-                for block in fragment.blocks:
+                scene_events_at: dict[int, bool] = {}
+                character_events_at: dict[int, list[tuple[str, bool]]] = {}
+                audio_plays_at: dict[tuple[int, str], bool] = {}
+                timed_cues = [
+                    (index, block.start_ms)
+                    for index, block in enumerate(fragment.blocks)
+                    if isinstance(block, (GalgameStoryDialogueBlock, GalgameStoryNarrationBlock))
+                    and block.start_ms is not None
+                ]
+                for block_index, block in enumerate(fragment.blocks):
                     block_ids.append(block.id)
+                    point_time = (
+                        block.at_ms
+                        if isinstance(
+                            block,
+                            (
+                                GalgameStorySceneBlock,
+                                GalgameStoryShowCharacterBlock,
+                                GalgameStoryRemoveCharacterBlock,
+                                GalgameStoryAudioBlock,
+                            ),
+                        )
+                        else None
+                    )
+                    if fragment.timeline is None:
+                        if point_time is not None:
+                            raise ValueError("普通 Fragment 的演出事件不能包含时间轴锚点")
+                    elif isinstance(
+                        block,
+                        (
+                            GalgameStorySceneBlock,
+                            GalgameStoryShowCharacterBlock,
+                            GalgameStoryRemoveCharacterBlock,
+                            GalgameStoryAudioBlock,
+                        ),
+                    ):
+                        if point_time is None:
+                            next_cue = next(
+                                (
+                                    (cue_index, cue_time)
+                                    for cue_index, cue_time in timed_cues
+                                    if cue_index > block_index
+                                ),
+                                None,
+                            )
+                            point_time = (
+                                0
+                                if next_cue is not None
+                                and timed_cues
+                                and timed_cues[0][0] > block_index
+                                else (
+                                    next_cue[1]
+                                    if next_cue is not None
+                                    else fragment.timeline.duration_ms
+                                )
+                            )
+                        if point_time > fragment.timeline.duration_ms:
+                            raise ValueError("演出事件不能超过剧情时间轴总长")
+                        explicit_point_time = block.at_ms is not None
+                        if isinstance(block, GalgameStorySceneBlock):
+                            if point_time in scene_events_at and (
+                                explicit_point_time or scene_events_at[point_time]
+                            ):
+                                raise ValueError("同一时刻只能切换一次场景")
+                            scene_events_at[point_time] = (
+                                scene_events_at.get(point_time, False) or explicit_point_time
+                            )
+                        elif isinstance(
+                            block,
+                            (GalgameStoryShowCharacterBlock, GalgameStoryRemoveCharacterBlock),
+                        ):
+                            character_id = (
+                                block.character_id if block.character_id is not None else "__all__"
+                            )
+                            simultaneous = character_events_at.setdefault(point_time, [])
+                            for existing_id, existing_explicit in simultaneous:
+                                overlaps = (
+                                    character_id == existing_id
+                                    or character_id == "__all__"
+                                    or existing_id == "__all__"
+                                )
+                                if overlaps and (explicit_point_time or existing_explicit):
+                                    raise ValueError("同一角色在同一时刻只能有一个舞台事件")
+                            simultaneous.append((character_id, explicit_point_time))
+                        elif (
+                            isinstance(block, GalgameStoryAudioBlock)
+                            and block.action == "play"
+                            and block.channel in {"bgm", "ambient"}
+                        ):
+                            event_key = (point_time, block.channel)
+                            if event_key in audio_plays_at and (
+                                explicit_point_time or audio_plays_at[event_key]
+                            ):
+                                raise ValueError("同一时刻同一持续声音通道只能播放一个素材")
+                            audio_plays_at[event_key] = (
+                                audio_plays_at.get(event_key, False) or explicit_point_time
+                            )
                     if isinstance(block, (GalgameStoryDialogueBlock, GalgameStoryNarrationBlock)):
                         if fragment.timeline is None:
                             if block.start_ms is not None or block.end_ms is not None:
@@ -663,11 +801,14 @@ class GalgameStoryProject(GalgameStoryModel):
                             if block.start_ms < previous_end_ms:
                                 raise ValueError("时间轴对白不能重叠或逆序")
                             if block.end_ms > fragment.timeline.duration_ms:
-                                raise ValueError("时间轴对白不能超过声音素材总长")
+                                raise ValueError("时间轴对白不能超过剧情时间轴总长")
                             previous_end_ms = block.end_ms
                     if isinstance(block, GalgameStoryDialogueBlock):
-                        if block.character_id not in known_characters:
-                            raise ValueError("对白引用了不存在的角色")
+                        if any(
+                            speaker_id not in known_characters
+                            for speaker_id in block.effective_speaker_ids
+                        ):
+                            raise ValueError("对白引用了不存在的说话角色")
                         if (
                             block.expression_id is not None
                             and block.expression_id

@@ -21,9 +21,11 @@ from app.models import (
     VisualAsset,
 )
 from app.schemas.galgame_workshop import (
+    GalgameStoryAudioBlock,
     GalgameStoryBranchBlock,
     GalgameStoryChapter,
     GalgameStoryChapterReport,
+    GalgameStoryDialogueBlock,
     GalgameStoryDocumentOut,
     GalgameStoryDocumentPutIn,
     GalgameStoryEndChapterBlock,
@@ -161,6 +163,31 @@ def build_route_report(
             )
 
         for fragment_index, fragment in enumerate(chapter.fragments):
+            if fragment.timeline is not None and fragment.timeline.asset_id is not None:
+                has_runtime_audio = any(
+                    (
+                        isinstance(block, GalgameStoryDialogueBlock)
+                        and block.voice_asset_id is not None
+                    )
+                    or (isinstance(block, GalgameStoryAudioBlock) and block.action == "play")
+                    for block in fragment.blocks
+                )
+                if not has_runtime_audio:
+                    warnings.append(
+                        GalgameStoryReportIssue(
+                            code="reference_track_only",
+                            message=(
+                                f"Fragment“{fragment.title}”只有参考声轨；"
+                                "正式试玩需要绑定逐句配音、背景音乐、环境音或音效"
+                            ),
+                            path=(
+                                f"/chapters/{chapter_index}/fragments/"
+                                f"{fragment_index}/timeline/assetId"
+                            ),
+                            chapter_id=chapter.id,
+                            fragment_id=fragment.id,
+                        )
+                    )
             terminator_index = _terminator_index(chapter, fragment.id)
             if terminator_index is None:
                 errors.append(

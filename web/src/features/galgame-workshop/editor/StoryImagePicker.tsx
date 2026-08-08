@@ -9,7 +9,12 @@ import {
   Upload,
   X,
 } from "lucide-react";
-import { getFiles, getFolders, type ManagedFile } from "@features/files";
+import {
+  fileQueryKeys,
+  getFiles,
+  getFolders,
+  type ManagedFile,
+} from "@features/files";
 import {
   deleteGalgameProjectAsset,
   getGalgameProjectAssets,
@@ -57,13 +62,13 @@ export function StoryImagePicker({
     enabled: state.source === "project",
   });
   const libraryQuery = useQuery({
-    queryKey: [
-      "managed-files",
-      "library",
-      libraryFolderId ?? "root",
+    queryKey: fileQueryKeys.list({
+      folderId: libraryFolderId,
       query,
-      "image",
-    ],
+      mediaKind: "image",
+      sort: "updated",
+      includeReferences: false,
+    }),
     queryFn: () =>
       getFiles({
         folderId: libraryFolderId,
@@ -75,7 +80,7 @@ export function StoryImagePicker({
     enabled: state.source === "library",
   });
   const foldersQuery = useQuery({
-    queryKey: ["managed-folders", "library"],
+    queryKey: fileQueryKeys.folders(),
     queryFn: () => getFolders(),
     enabled: state.source === "library",
   });

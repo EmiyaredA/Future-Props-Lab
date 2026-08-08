@@ -7,8 +7,10 @@ import {
 } from "@tanstack/react-query";
 import { Image, LoaderCircle, Music, Upload, Video, X } from "lucide-react";
 import {
+  fileQueryKeys,
   getFiles,
   getFolders,
+  invalidateFileScope,
   uploadManagedFile,
   type ManagedFile,
   type MediaKind,
@@ -33,7 +35,7 @@ function mediaIcon(kind: MediaNode["kind"]) {
 
 function useProjectMedia(projectId: string, kind: MediaKind) {
   const folders = useQuery({
-    queryKey: ["canvas-media-folders", projectId],
+    queryKey: fileQueryKeys.folders(projectId),
     queryFn: () => getFolders(projectId),
   });
   const folderIds = useMemo(
@@ -45,7 +47,12 @@ function useProjectMedia(projectId: string, kind: MediaKind) {
   );
   const queries = useQueries({
     queries: folderIds.map((folderId) => ({
-      queryKey: ["canvas-media", projectId, folderId ?? "root", kind],
+      queryKey: fileQueryKeys.list({
+        projectId,
+        folderId,
+        mediaKind: kind,
+        includeReferences: true,
+      }),
       queryFn: () =>
         getFiles({
           projectId,
@@ -77,14 +84,19 @@ export function CanvasNodeInspector({
   onClose,
   onPatch,
   onPrepareCanvas,
+  onTaskLinked,
   embedded = false,
   initialTab,
 }: {
   projectId: string;
   node: MediaNode;
   onClose: () => void;
-  onPatch: (patch: Partial<MediaNode>, immediate?: boolean) => void;
+  onPatch: (
+    patch: Partial<MediaNode>,
+    immediate?: boolean,
+  ) => void | Promise<void>;
   onPrepareCanvas?: () => Promise<number>;
+  onTaskLinked?: (taskId: string) => void;
   embedded?: boolean;
   initialTab?: "content" | "generate";
 }) {
@@ -98,7 +110,7 @@ export function CanvasNodeInspector({
   const upload = useMutation({
     mutationFn: (file: File) => uploadManagedFile(file, projectId),
     onSuccess: (file) => {
-      void client.invalidateQueries({ queryKey: ["canvas-media"] });
+      void invalidateFileScope(client, projectId);
       onPatch({ asset_id: file.id }, true);
     },
   });
@@ -142,6 +154,7 @@ export function CanvasNodeInspector({
     <aside
       className={`canvas-node-inspector${embedded ? ` is-embedded is-${node.kind}` : ""}`}
       aria-label="节点检查器"
+      data-canvas-wheel="content"
       onPointerDown={(event) => event.stopPropagation()}
       onClick={(event) => event.stopPropagation()}
     >
@@ -189,6 +202,7 @@ export function CanvasNodeInspector({
         <GenerationDrawer
           compact
           projectId={projectId}
+          canvasNodeId={node.id}
           lockedKind={node.kind}
           draft={node.generation_draft}
           onClose={isAttachedComposer ? onClose : () => setTab("content")}
@@ -199,11 +213,18 @@ export function CanvasNodeInspector({
             )
           }
           onBeforeSubmit={async () => {
-            await onPrepareCanvas?.();
+            return onPrepareCanvas?.();
           }}
-          onTaskCreated={(created) =>
-            onPatch({ generation_task_id: created.id, asset_id: null }, true)
-          }
+          onTaskCreated={(created) => {
+            if (onTaskLinked) {
+              onTaskLinked(created.id);
+              return;
+            }
+            return onPatch(
+              { generation_task_id: created.id, asset_id: null },
+              true,
+            );
+          }}
         />
       ) : (
         <div className="canvas-inspector-content">

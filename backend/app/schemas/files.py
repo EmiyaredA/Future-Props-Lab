@@ -82,6 +82,27 @@ class VisualAssetListOut(BaseModel):
     items: list[VisualAssetOut]
 
 
+class VisualAssetImportIn(BaseModel):
+    source_scope: VisualAssetScope
+    source_project_id: str | None = None
+    asset_ids: list[str] = Field(min_length=1)
+
+    @field_validator("asset_ids")
+    @classmethod
+    def asset_ids_are_unique(cls, value: list[str]) -> list[str]:
+        if len(value) != len(set(value)):
+            raise ValueError("asset_ids 不能包含重复项")
+        return value
+
+    @model_validator(mode="after")
+    def source_matches_scope(self) -> VisualAssetImportIn:
+        if self.source_scope == "project" and self.source_project_id is None:
+            raise ValueError("项目来源必须指定 source_project_id")
+        if self.source_scope == "library" and self.source_project_id is not None:
+            raise ValueError("公共库来源不能指定 source_project_id")
+        return self
+
+
 class VisualAssetPatchIn(BaseModel):
     expected_revision: int = Field(ge=0)
     display_name: str | None = Field(default=None, min_length=1, max_length=255)
@@ -132,6 +153,7 @@ __all__ = [
     "VisualAssetFolderListOut",
     "VisualAssetFolderOut",
     "VisualAssetFolderPatchIn",
+    "VisualAssetImportIn",
     "VisualAssetListOut",
     "VisualAssetOut",
     "VisualAssetPatchIn",

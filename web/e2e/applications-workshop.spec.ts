@@ -456,8 +456,9 @@ test("enters the visual workshop, persists projects, and supports deep navigatio
   await page.reload();
   await expect(page.getByText("图片1")).toBeVisible();
   await page.getByText("图片1").click();
-  const fileChooserPromise = page.waitForEvent("filechooser");
   await page.getByRole("button", { name: "上传参考图片（可选）" }).click();
+  const fileChooserPromise = page.waitForEvent("filechooser");
+  await page.getByRole("menuitem", { name: /本地上传/ }).click();
   const fileChooser = await fileChooserPromise;
   await fileChooser.setFiles({
     name: "E2E 参考图.png",

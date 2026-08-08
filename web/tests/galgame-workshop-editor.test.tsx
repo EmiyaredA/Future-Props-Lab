@@ -861,17 +861,17 @@ test("opens the visual timeline and edits precise cue timing", async () => {
   });
   renderEditor();
 
-  expect(await screen.findByText(/剧情时间轴 1:45\.0/)).toBeInTheDocument();
+  expect(await screen.findByText(/剧情总长 1:45\.0/)).toBeInTheDocument();
   expect(screen.getByLabelText("对白开始时间")).toHaveValue("00:12.300");
   expect(screen.getByLabelText("对白结束时间")).toHaveValue("00:18.900");
-  await user.click(screen.getByRole("button", { name: "时间轴" }));
   expect(
-    screen.getByRole("region", { name: "可编辑剧情时间轴" }),
+    screen.getByRole("region", { name: "Beat 多轨剧情时间轴" }),
   ).toBeInTheDocument();
   expect(
     screen.getByRole("button", { name: /旁白 00:12\.300/ }),
   ).toBeInTheDocument();
   expect(screen.getByLabelText("时间轴缩放")).toHaveValue("300");
+  expect(screen.getByText(/在播放头添加 · 00:00\.000/)).toBeInTheDocument();
 
   const start = screen.getByLabelText("对白开始时间");
   await user.clear(start);
@@ -892,6 +892,202 @@ test("opens the visual timeline and edits precise cue timing", async () => {
     },
     { timeout: 2000 },
   );
+});
+
+test("projects an untimed Fragment and materializes it on the first timing edit", async () => {
+  const user = userEvent.setup();
+  renderEditor();
+  await screen.findByText("纵向切片");
+
+  expect(
+    screen.getByRole("region", { name: "Beat 多轨剧情时间轴" }),
+  ).toBeInTheDocument();
+  expect(screen.getByText(/估算时间 · 编辑后保存/)).toBeInTheDocument();
+  expect(screen.getByText(/在播放头添加 · 00:00\.000/)).toBeInTheDocument();
+  expect(putGalgameStoryDocument).not.toHaveBeenCalled();
+  await user.click(screen.getByRole("button", { name: "旁白" }));
+  await waitFor(
+    () => {
+      const fragment = vi.mocked(putGalgameStoryDocument).mock.calls.at(-1)?.[1]
+        .chapters?.[0]?.fragments?.[0];
+      expect(fragment?.timeline?.durationMs).toBeGreaterThanOrEqual(2000);
+      expect(fragment?.timeline).not.toHaveProperty("assetId");
+    },
+    { timeout: 2000 },
+  );
+});
+
+test("uses one Beat timeline with contiguous range selection and protected structure", async () => {
+  const user = userEvent.setup();
+  vi.mocked(getGalgameStoryDocument).mockResolvedValueOnce({
+    ...story,
+    document: {
+      ...story.document,
+      chapters: [
+        {
+          ...story.document.chapters[0],
+          fragments: [
+            {
+              id: "main",
+              title: "Beat 范围",
+              timeline: { durationMs: 7000 },
+              blocks: [
+                {
+                  id: "beat-a",
+                  type: "narration",
+                  text: "第一拍",
+                  startMs: 0,
+                  endMs: 2000,
+                },
+                {
+                  id: "beat-b",
+                  type: "narration",
+                  text: "第二拍",
+                  startMs: 2500,
+                  endMs: 5000,
+                },
+                {
+                  id: "beat-end",
+                  type: "endChapter",
+                  endingId: "end",
+                  label: "结束",
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    },
+  });
+  renderEditor();
+
+  expect(
+    await screen.findByRole("region", { name: "Beat 多轨剧情时间轴" }),
+  ).toBeInTheDocument();
+  expect(
+    screen.queryByRole("button", { name: "剧本流" }),
+  ).not.toBeInTheDocument();
+  expect(
+    screen.getByRole("separator", { name: "调整舞台与 Beat 时间轴高度" }),
+  ).toBeInTheDocument();
+
+  await user.click(screen.getByRole("button", { name: /Beat 1，/ }));
+  await user.keyboard("{Shift>}");
+  await user.click(screen.getByRole("button", { name: /Beat 2，/ }));
+  await user.keyboard("{/Shift}");
+  expect(screen.getByText("Beat 1–2")).toBeInTheDocument();
+
+  await user.click(screen.getByRole("button", { name: "选择全部" }));
+  expect(screen.getByText("Beat 1–3")).toBeInTheDocument();
+  expect(screen.getByText("含受保护结构 Beat")).toBeInTheDocument();
+});
+
+test("shares ripple editing between the timeline and precise end time", async () => {
+  const user = userEvent.setup();
+  vi.mocked(getGalgameStoryDocument).mockResolvedValueOnce({
+    ...story,
+    document: {
+      ...story.document,
+      characters: [
+        { id: "hero", name: "调查员", description: "" },
+        { id: "partner", name: "助手", description: "" },
+      ],
+      assets: [
+        {
+          id: "timeline-audio",
+          type: "audio",
+          role: "timelineTrack",
+          label: "完整剧情时间轴",
+          fileId: "file-timeline",
+          status: "ready",
+        },
+      ],
+      chapters: [
+        {
+          ...story.document.chapters[0],
+          fragments: [
+            {
+              id: "main",
+              title: "完整时间轴",
+              timeline: { assetId: "timeline-audio", durationMs: 12_000 },
+              blocks: [
+                {
+                  id: "line-a",
+                  type: "dialogue",
+                  characterId: "hero",
+                  text: "A 块",
+                  startMs: 0,
+                  endMs: 3000,
+                },
+                {
+                  id: "line-b",
+                  type: "dialogue",
+                  characterId: "partner",
+                  text: "B 块",
+                  startMs: 3000,
+                  endMs: 6000,
+                },
+                {
+                  id: "line-c",
+                  type: "narration",
+                  text: "C 块",
+                  startMs: 6000,
+                  endMs: 9000,
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    },
+  });
+  renderEditor();
+
+  await screen.findByText(/剧情总长 0:12\.0/);
+  const ripple = screen.getByRole("checkbox", { name: "波纹编辑" });
+  await user.click(ripple);
+  expect(ripple).toBeChecked();
+
+  const end = screen.getByRole("textbox", { name: "对白结束时间" });
+  await user.clear(end);
+  await user.type(end, "00:04.000{enter}");
+
+  await waitFor(
+    () => {
+      const blocks = vi.mocked(putGalgameStoryDocument).mock.calls.at(-1)?.[1]
+        .chapters?.[0]?.fragments?.[0]?.blocks;
+      expect(blocks).toMatchObject([
+        { id: "line-a", startMs: 0, endMs: 4000 },
+        { id: "line-b", startMs: 4000, endMs: 7000 },
+        { id: "line-c", startMs: 7000, endMs: 10_000 },
+      ]);
+      expect(
+        vi.mocked(putGalgameStoryDocument).mock.calls.at(-1)?.[1].chapters?.[0]
+          ?.fragments?.[0]?.timeline?.durationMs,
+      ).toBe(13_000);
+    },
+    { timeout: 2000 },
+  );
+  const totalDuration = screen.getByRole("textbox", {
+    name: "剧情时间轴总长",
+  });
+  expect(totalDuration).toHaveValue("00:13.000");
+  await user.clear(totalDuration);
+  await user.type(totalDuration, "00:08.000{enter}");
+  expect(
+    screen.getByText("已保留到最后一个 Block 的结束时间 00:10.000"),
+  ).toBeInTheDocument();
+  await waitFor(() =>
+    expect(
+      vi.mocked(putGalgameStoryDocument).mock.calls.at(-1)?.[1].chapters?.[0]
+        ?.fragments?.[0]?.timeline?.durationMs,
+    ).toBe(10_000),
+  );
+  expect(
+    JSON.parse(
+      localStorage.getItem("future_props_galgame_timeline_preferences")!,
+    ),
+  ).toMatchObject({ ripple: true });
 });
 
 test("reloads a newer saved server revision on focus without losing the current location", async () => {
@@ -1180,6 +1376,35 @@ test("uses workshop dropdowns for dialogue properties and switches appearance", 
 
   const characterSelect = await screen.findByLabelText("说话角色");
   expect(characterSelect.tagName).toBe("BUTTON");
+  const simultaneousSpeakers = screen.getByRole("group", {
+    name: "同时说话角色",
+  });
+  expect(
+    within(simultaneousSpeakers).getByRole("checkbox", {
+      name: /冈部伦太郎/,
+    }),
+  ).toBeDisabled();
+  await user.click(
+    within(simultaneousSpeakers).getByRole("checkbox", {
+      name: "牧濑红莉栖",
+    }),
+  );
+  await waitFor(
+    () => {
+      const block = vi.mocked(putGalgameStoryDocument).mock.calls.at(-1)?.[1]
+        .chapters?.[0]?.fragments?.[0]?.blocks?.[0];
+      expect(block).toMatchObject({
+        type: "dialogue",
+        characterId: "okabe",
+        speakerIds: ["okabe", "kurisu"],
+      });
+    },
+    { timeout: 2000 },
+  );
+  expect(screen.getAllByText("冈部伦太郎、牧濑红莉栖").length).toBeGreaterThan(
+    0,
+  );
+
   await user.click(characterSelect);
   await user.click(screen.getByRole("option", { name: "牧濑红莉栖" }));
   expect(characterSelect).toHaveTextContent("牧濑红莉栖");
@@ -1194,6 +1419,7 @@ test("uses workshop dropdowns for dialogue properties and switches appearance", 
       expect(block).toMatchObject({
         type: "dialogue",
         characterId: "kurisu",
+        speakerIds: ["kurisu", "okabe"],
         expressionId: "concerned",
       });
     },
@@ -1366,6 +1592,22 @@ test("adds and edits multi-character stage blocks with live edit preview", async
   expect(container.querySelector('[data-character-id="hero"]')).toHaveStyle({
     left: "25%",
   });
+  const xPosition = screen.getByLabelText("角色X 位置数值");
+  const yPosition = screen.getByLabelText("角色Y 位置数值");
+  expect(xPosition).toHaveAttribute("min", "-100");
+  expect(xPosition).toHaveAttribute("max", "200");
+  expect(yPosition).toHaveAttribute("min", "-100");
+  expect(yPosition).toHaveAttribute("max", "200");
+  fireEvent.change(xPosition, { target: { value: "-40" } });
+  fireEvent.change(yPosition, { target: { value: "150" } });
+  await waitFor(() => {
+    const block = vi.mocked(putGalgameStoryDocument).mock.calls.at(-1)?.[1]
+      .chapters?.[0]?.fragments?.[0]?.blocks?.[0];
+    expect(block).toMatchObject({
+      type: "showCharacter",
+      transform: { x: -40, y: 150 },
+    });
+  });
   fireEvent.keyDown(screen.getByLabelText("调整角色 调查员"), {
     key: "ArrowRight",
     shiftKey: true,
@@ -1376,7 +1618,7 @@ test("adds and edits multi-character stage blocks with live edit preview", async
         .chapters?.[0]?.fragments?.[0]?.blocks?.[0];
       expect(block).toMatchObject({
         type: "showCharacter",
-        transform: { x: 30 },
+        transform: { x: -35 },
       });
     },
     { timeout: 2000 },

@@ -489,6 +489,18 @@
             ],
             "title": "Assetid"
           },
+          "atMs": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Atms"
+          },
           "channel": {
             "enum": [
               "bgm",
@@ -816,15 +828,15 @@
           },
           "x": {
             "default": 50,
-            "maximum": 100.0,
-            "minimum": 0.0,
+            "maximum": 200.0,
+            "minimum": -100.0,
             "title": "X",
             "type": "number"
           },
           "y": {
             "default": 100,
-            "maximum": 100.0,
-            "minimum": 0.0,
+            "maximum": 200.0,
+            "minimum": -100.0,
             "title": "Y",
             "type": "number"
           }
@@ -897,6 +909,22 @@
                 "type": "null"
               }
             ]
+          },
+          "speakerIds": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 16,
+                "minItems": 1,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Speakerids"
           },
           "startMs": {
             "anyOf": [
@@ -1221,18 +1249,26 @@
         "additionalProperties": false,
         "properties": {
           "assetId": {
-            "pattern": "^[a-z0-9][a-z0-9-]{0,63}$",
-            "title": "Assetid",
-            "type": "string"
+            "anyOf": [
+              {
+                "pattern": "^[a-z0-9][a-z0-9-]{0,63}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "可选的剧情校准参考声轨；不参与多轨运行时混音",
+            "title": "Assetid"
           },
           "durationMs": {
+            "description": "剧情时间轴总长（毫秒），独立于所引用声音素材的媒体时长",
             "minimum": 1.0,
             "title": "Durationms",
             "type": "integer"
           }
         },
         "required": [
-          "assetId",
           "durationMs"
         ],
         "title": "GalgameStoryFragmentTimeline",
@@ -1437,6 +1473,18 @@
             "default": false,
             "title": "All",
             "type": "boolean"
+          },
+          "atMs": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Atms"
           },
           "characterId": {
             "anyOf": [
@@ -1653,6 +1701,18 @@
       "GalgameStorySceneBlock": {
         "additionalProperties": false,
         "properties": {
+          "atMs": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Atms"
+          },
           "backgroundId": {
             "anyOf": [
               {
@@ -1703,6 +1763,18 @@
       "GalgameStoryShowCharacterBlock": {
         "additionalProperties": false,
         "properties": {
+          "atMs": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Atms"
+          },
           "characterId": {
             "pattern": "^[a-z0-9][a-z0-9-]{0,63}$",
             "title": "Characterid",
@@ -2288,6 +2360,31 @@
       },
       "ImageGenerationTaskCreateIn": {
         "properties": {
+          "canvas_node_id": {
+            "anyOf": [
+              {
+                "maxLength": 64,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Canvas Node Id"
+          },
+          "expected_canvas_revision": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expected Canvas Revision"
+          },
           "kind": {
             "const": "image",
             "title": "Kind",
@@ -3870,12 +3967,37 @@
             "title": "Audio Asset Ids",
             "type": "array"
           },
+          "canvas_node_id": {
+            "anyOf": [
+              {
+                "maxLength": 64,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Canvas Node Id"
+          },
           "duration": {
             "default": 5,
             "maximum": 15.0,
             "minimum": 4.0,
             "title": "Duration",
             "type": "integer"
+          },
+          "expected_canvas_revision": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expected Canvas Revision"
           },
           "first_frame_asset_id": {
             "anyOf": [
@@ -4140,6 +4262,43 @@
           "expected_revision"
         ],
         "title": "VisualAssetFolderPatchIn",
+        "type": "object"
+      },
+      "VisualAssetImportIn": {
+        "properties": {
+          "asset_ids": {
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1,
+            "title": "Asset Ids",
+            "type": "array"
+          },
+          "source_project_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Project Id"
+          },
+          "source_scope": {
+            "enum": [
+              "library",
+              "project"
+            ],
+            "title": "Source Scope",
+            "type": "string"
+          }
+        },
+        "required": [
+          "source_scope",
+          "asset_ids"
+        ],
+        "title": "VisualAssetImportIn",
         "type": "object"
       },
       "VisualAssetListOut": {
@@ -10406,6 +10565,74 @@
           }
         },
         "summary": "Patch Project",
+        "tags": [
+          "visual-workshop"
+        ]
+      }
+    },
+    "/v1/visual-workshop/projects/{project_id}/asset-imports": {
+      "post": {
+        "operationId": "import_assets_v1_visual_workshop_projects__project_id__asset_imports_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Studio-Token",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Studio-Token"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VisualAssetImportIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VisualAssetListOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Import Assets",
         "tags": [
           "visual-workshop"
         ]

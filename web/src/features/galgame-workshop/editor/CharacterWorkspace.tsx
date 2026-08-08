@@ -22,6 +22,7 @@ import {
   type GalgameStoryProject,
   type GalgameStoryAudioAsset,
 } from "@features/galgame-workshop/api";
+import { dialogueSpeakerIds } from "@features/galgame-workshop/editor/dialogue";
 import { stableId } from "@features/galgame-workshop/editor/model";
 import {
   StoryImagePicker,
@@ -57,7 +58,9 @@ function referencesForCharacter(
           (block.type !== "dialogue" &&
             block.type !== "showCharacter" &&
             block.type !== "removeCharacter") ||
-          block.characterId !== characterId
+          (block.type === "dialogue"
+            ? !dialogueSpeakerIds(block).includes(characterId)
+            : block.characterId !== characterId)
         )
           continue;
         references.push({

@@ -6,6 +6,8 @@ from app.core.config import get_settings
 from app.deps import SessionDep
 from app.files import AssetError, VisualAssets
 from app.schemas.files import (
+    VisualAssetImportIn,
+    VisualAssetListOut,
     VisualAssetOut,
     VisualAssetReferenceCreateIn,
     VisualAssetReferencePatchIn,
@@ -113,6 +115,18 @@ async def create_asset_reference(
 ) -> VisualAssetOut:
     try:
         return await VisualAssets(session, get_settings()).create_reference(project_id, body)
+    except AssetError as exc:
+        raise _asset_error(exc) from None
+
+
+@router.post("/{project_id}/asset-imports", response_model=VisualAssetListOut)
+async def import_assets(
+    session: SessionDep,
+    project_id: str,
+    body: VisualAssetImportIn,
+) -> VisualAssetListOut:
+    try:
+        return await VisualAssets(session, get_settings()).import_assets(project_id, body)
     except AssetError as exc:
         raise _asset_error(exc) from None
 

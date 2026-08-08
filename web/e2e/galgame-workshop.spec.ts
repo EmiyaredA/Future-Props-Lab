@@ -1,5 +1,25 @@
 import { expect, test } from "@playwright/test";
 
+function silentWav(durationMs: number) {
+  const sampleRate = 8000;
+  const sampleCount = Math.max(1, Math.round((sampleRate * durationMs) / 1000));
+  const dataSize = sampleCount * 2;
+  const buffer = Buffer.alloc(44 + dataSize);
+  buffer.write("RIFF", 0);
+  buffer.writeUInt32LE(36 + dataSize, 4);
+  buffer.write("WAVEfmt ", 8);
+  buffer.writeUInt32LE(16, 16);
+  buffer.writeUInt16LE(1, 20);
+  buffer.writeUInt16LE(1, 22);
+  buffer.writeUInt32LE(sampleRate, 24);
+  buffer.writeUInt32LE(sampleRate * 2, 28);
+  buffer.writeUInt16LE(2, 32);
+  buffer.writeUInt16LE(16, 34);
+  buffer.write("data", 36);
+  buffer.writeUInt32LE(dataSize, 40);
+  return buffer;
+}
+
 test("builds, saves, checks, and plays a branching Galgame slice", async ({
   page,
 }, testInfo) => {
@@ -368,6 +388,10 @@ test("builds, saves, checks, and plays a branching Galgame slice", async ({
     .getByRole("button", { name: /对白/ })
     .click();
   await page.getByLabel("对白正文").fill("线索只允许一次选择。");
+  await page
+    .getByRole("group", { name: "同时说话角色" })
+    .getByRole("checkbox", { name: "助手" })
+    .check();
   const voiceChooserPromise = page.waitForEvent("filechooser");
   await page.getByRole("button", { name: "上传配音" }).click();
   const voiceChooser = await voiceChooserPromise;
@@ -404,6 +428,11 @@ test("builds, saves, checks, and plays a branching Galgame slice", async ({
 
   await page.getByRole("button", { name: "试玩", exact: true }).click();
   const player = page.getByRole("region", { name: "游戏预览" });
+  const advanceDialogue = async (name: RegExp) => {
+    const dialogue = player.getByRole("button", { name });
+    await dialogue.click();
+    if (await dialogue.isVisible().catch(() => false)) await dialogue.click();
+  };
   await player.getByRole("button", { name: "开始试玩", exact: true }).click();
   await expect(player.locator(".galgame-player-background")).toBeVisible();
   await expect(player.locator(".galgame-player-ui-component")).toBeVisible();
@@ -417,23 +446,24 @@ test("builds, saves, checks, and plays a branching Galgame slice", async ({
       elements.map((element) => Number(getComputedStyle(element).zIndex)),
     );
   expect(dialogueLayer).toBeGreaterThan(Math.max(...actorLayers));
-  await player.getByRole("button", { name: /研究所只剩下应急灯/ }).click();
+  await advanceDialogue(/研究所只剩下应急灯/);
+  await expect(player.getByText("调查员、助手")).toBeVisible();
   await expect(player.locator(".galgame-player-portrait-image")).toBeVisible();
-  await player.getByRole("button", { name: /线索只允许一次选择/ }).click();
+  await advanceDialogue(/线索只允许一次选择/);
   await player.getByRole("button", { name: "检查设备" }).click();
+  await player.getByRole("button", { name: "点击继续" }).click();
   await expect(player.getByText("设备结局")).toBeVisible();
   await player.getByRole("button", { name: "重新开始", exact: true }).click();
-  await player.getByRole("button", { name: /研究所只剩下应急灯/ }).click();
-  await player.getByRole("button", { name: /线索只允许一次选择/ }).click();
+  await advanceDialogue(/研究所只剩下应急灯/);
+  await advanceDialogue(/线索只允许一次选择/);
   await player.getByRole("button", { name: "检查时钟" }).click();
+  await player.getByRole("button", { name: "点击继续" }).click();
   await expect(player.getByText("时钟结局")).toBeVisible();
 
   await page.getByRole("button", { name: /main/ }).click();
-  const audioCards = page.locator(".galgame-block-card.is-audio");
-  while ((await audioCards.count()) > 0) {
-    await audioCards.first().locator(".galgame-block-select").click();
-    await page.getByRole("button", { name: "删除 Block" }).click();
-  }
+  await page.getByRole("button", { name: "编辑", exact: true }).click();
+  await page.getByRole("button", { name: /rainy-cafe 00:/ }).click();
+  await page.getByRole("button", { name: "删除事件" }).click();
   await page.getByRole("button", { name: "声音", exact: true }).click();
   await page.getByRole("button", { name: "选择声音 rainy-cafe" }).click();
   await page.getByRole("button", { name: "删除声音" }).click();
@@ -557,7 +587,7 @@ test("builds, saves, checks, and plays a branching Galgame slice", async ({
   await expect(page.getByText("已完成")).toBeVisible();
 });
 
-test("edits synchronized dialogue boundaries on the visual timeline", async ({
+test("edits shared boundaries and persists a ripple trim on the visual timeline", async ({
   page,
 }) => {
   test.setTimeout(30_000);
@@ -568,6 +598,7 @@ test("edits synchronized dialogue boundaries on the visual timeline", async ({
     characters: [
       { id: "hero", name: "调查员", description: "" },
       { id: "partner", name: "助手", description: "" },
+      { id: "observer", name: "观察员", description: "" },
     ],
     scenes: [{ id: "lab", name: "研究所", backgrounds: [] }],
     variables: [],
@@ -578,6 +609,30 @@ test("edits synchronized dialogue boundaries on the visual timeline", async ({
         role: "timelineTrack",
         label: "完整时间轴",
         fileId: "timeline-file",
+        status: "ready",
+      },
+      {
+        id: "bgm",
+        type: "audio",
+        role: "backgroundMusic",
+        label: "研究所主题",
+        fileId: "bgm-file",
+        status: "ready",
+      },
+      {
+        id: "ambient",
+        type: "audio",
+        role: "ambientSound",
+        label: "设备低鸣",
+        fileId: "ambient-file",
+        status: "ready",
+      },
+      {
+        id: "sfx",
+        type: "audio",
+        role: "soundEffect",
+        label: "提示音",
+        fileId: "sfx-file",
         status: "ready",
       },
     ],
@@ -591,7 +646,7 @@ test("edits synchronized dialogue boundaries on the visual timeline", async ({
           {
             id: "main",
             title: "时间轴场景",
-            timeline: { assetId: "timeline-track", durationMs: 10_000 },
+            timeline: { assetId: "timeline-track", durationMs: 15_000 },
             blocks: [
               {
                 id: "scene",
@@ -604,6 +659,12 @@ test("edits synchronized dialogue boundaries on the visual timeline", async ({
                 type: "dialogue",
                 characterId: "hero",
                 text: "第一句",
+                portrait: {
+                  mode: "stage",
+                  keepAfter: true,
+                  transform: null,
+                  transition: { durationMs: 0, fade: false },
+                },
                 startMs: 1000,
                 endMs: 3000,
               },
@@ -612,9 +673,78 @@ test("edits synchronized dialogue boundaries on the visual timeline", async ({
                 type: "dialogue",
                 characterId: "partner",
                 text: "第二句",
+                portrait: {
+                  mode: "stage",
+                  keepAfter: true,
+                  transform: null,
+                  transition: { durationMs: 0, fade: false },
+                },
                 startMs: 3000,
+                endMs: 6000,
+              },
+              {
+                id: "line-three",
+                type: "dialogue",
+                characterId: "hero",
+                text: "第三句",
+                portrait: {
+                  mode: "stage",
+                  keepAfter: true,
+                  transform: null,
+                  transition: { durationMs: 0, fade: false },
+                },
+                startMs: 6500,
                 endMs: 10_000,
               },
+              ...["hero", "partner", "observer"].map((characterId, index) => ({
+                id: `show-${characterId}`,
+                type: "showCharacter",
+                characterId,
+                atMs: 0,
+                transform: {
+                  x: 25 + index * 25,
+                  y: 100,
+                  scale: 1,
+                  brightness: 1,
+                  opacity: 1,
+                  flipX: false,
+                  layer: 10 + index,
+                },
+                transition: { durationMs: 0, fade: false },
+              })),
+              {
+                id: "play-bgm",
+                type: "audio",
+                action: "play",
+                channel: "bgm",
+                assetId: "bgm",
+                volume: 70,
+                loop: true,
+                fadeMs: 0,
+                atMs: 0,
+              },
+              {
+                id: "play-ambient",
+                type: "audio",
+                action: "play",
+                channel: "ambient",
+                assetId: "ambient",
+                volume: 60,
+                loop: true,
+                fadeMs: 0,
+                atMs: 0,
+              },
+              ...["sfx-one", "sfx-two"].map((id) => ({
+                id,
+                type: "audio",
+                action: "play",
+                channel: "sfx",
+                assetId: "sfx",
+                volume: 100,
+                loop: false,
+                fadeMs: 0,
+                atMs: 0,
+              })),
               {
                 id: "ending",
                 type: "endChapter",
@@ -628,10 +758,10 @@ test("edits synchronized dialogue boundaries on the visual timeline", async ({
     ],
   };
 
-  await page.route("**/v1/files/timeline-file/content", (route) =>
+  await page.route("**/v1/files/*/content", (route) =>
     route.fulfill({
-      contentType: "audio/mpeg",
-      body: Buffer.from("ID3-e2e-timeline"),
+      contentType: "audio/wav",
+      body: silentWav(1000),
     }),
   );
   await page.route(
@@ -693,9 +823,30 @@ test("edits synchronized dialogue boundaries on the visual timeline", async ({
 
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto("/apps/galgame-workshop/projects/timeline-project/editor");
-  await page.getByRole("button", { name: "时间轴", exact: true }).click();
-  const timeline = page.getByRole("region", { name: "可编辑剧情时间轴" });
+  const timeline = page.getByRole("region", {
+    name: "Beat 多轨剧情时间轴",
+  });
   await expect(timeline).toBeVisible();
+  await expect(
+    timeline.getByRole("button", { name: /登场 · 调查员/ }),
+  ).toBeVisible();
+  await expect(
+    timeline.getByRole("button", { name: /登场 · 助手/ }),
+  ).toBeVisible();
+  await expect(
+    timeline.getByRole("button", { name: /登场 · 观察员/ }),
+  ).toBeVisible();
+  await expect(
+    timeline.getByRole("button", { name: /研究所主题/ }),
+  ).toBeVisible();
+  await expect(
+    timeline.getByRole("button", { name: /设备低鸣/ }),
+  ).toBeVisible();
+  await expect(timeline.getByRole("button", { name: /提示音/ })).toHaveCount(2);
+  await expect(page.getByText(/在播放头添加 · 00:00\.000/)).toBeVisible();
+  await expect(
+    timeline.locator(".galgame-timeline-lengths > span"),
+  ).toContainText("声轨长度00:01.000");
   const leadingGap = timeline.getByRole("button", {
     name: "无对白 00:00.000 到 00:01.000",
   });
@@ -711,9 +862,8 @@ test("edits synchronized dialogue boundaries on the visual timeline", async ({
   expect(document.chapters[0].fragments[0].blocks[1].startMs).toBe(1500);
 
   await page.reload();
-  await page.getByRole("button", { name: "时间轴", exact: true }).click();
   const reloadedTimeline = page.getByRole("region", {
-    name: "可编辑剧情时间轴",
+    name: "Beat 多轨剧情时间轴",
   });
   await expect(
     reloadedTimeline.getByRole("button", {
@@ -739,4 +889,65 @@ test("edits synchronized dialogue boundaries on the visual timeline", async ({
   const blocks = document.chapters[0].fragments[0].blocks;
   expect(blocks[1].endMs).toBe(3500);
   expect(blocks[2].startMs).toBe(3500);
+
+  await timeline.getByRole("checkbox", { name: "波纹编辑" }).check();
+  const revisionBeforeRipple = revision;
+  await endTime.fill("00:10.000");
+  await endTime.press("Enter");
+  await expect
+    .poll(() => revision, { timeout: 3000 })
+    .toBeGreaterThan(revisionBeforeRipple);
+  const rippleBlocks = document.chapters[0].fragments[0].blocks;
+  expect(rippleBlocks[1]).toMatchObject({ startMs: 1500, endMs: 10_000 });
+  expect(rippleBlocks[2]).toMatchObject({ startMs: 10_000, endMs: 12_500 });
+  expect(rippleBlocks[3]).toMatchObject({ startMs: 13_000, endMs: 16_500 });
+  expect(document.chapters[0].fragments[0].timeline.durationMs).toBe(21_500);
+  await expect(
+    timeline.getByRole("textbox", { name: "剧情时间轴总长" }),
+  ).toHaveValue("00:21.500");
+
+  await page.reload();
+  const persistedTimeline = page.getByRole("region", {
+    name: "Beat 多轨剧情时间轴",
+  });
+  await expect(
+    persistedTimeline.getByRole("button", {
+      name: /调查员 00:01\.500 到 00:10\.000/,
+    }),
+  ).toBeVisible();
+  await expect(
+    persistedTimeline.getByRole("button", {
+      name: /助手 00:10\.000 到 00:12\.500/,
+    }),
+  ).toBeVisible();
+  await expect(
+    persistedTimeline.getByRole("button", {
+      name: /调查员 00:13\.000 到 00:16\.500/,
+    }),
+  ).toBeVisible();
+
+  const player = page.getByRole("region", { name: "游戏预览" });
+  await page
+    .getByRole("navigation", { name: "预览模式" })
+    .getByRole("button", { name: "试玩", exact: true })
+    .click();
+  await player.getByRole("button", { name: "开始试玩", exact: true }).click();
+  const progress = player.getByRole("slider", { name: "剧情时间轴进度" });
+  await expect(progress).toBeVisible();
+  await player.getByRole("button", { name: "暂停时间轴" }).click();
+  await progress.evaluate((element) => {
+    const input = element as HTMLInputElement;
+    const setter = Object.getOwnPropertyDescriptor(
+      HTMLInputElement.prototype,
+      "value",
+    )?.set;
+    setter?.call(input, "13000");
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  });
+  await expect(progress).toHaveValue("13000");
+  await expect(player.getByText("第三句")).toBeVisible();
+  await expect(player.locator('[data-character-id="hero"]')).toBeVisible();
+  await expect(player.locator('[data-character-id="partner"]')).toBeVisible();
+  await expect(player.locator('[data-character-id="observer"]')).toBeVisible();
 });

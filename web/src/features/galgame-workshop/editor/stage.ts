@@ -6,7 +6,11 @@ import type {
   GalgameStoryFragment,
   GalgameStoryProject,
 } from "@features/galgame-workshop/api";
-import { timelineCues } from "@features/galgame-workshop/editor/timeline";
+import { dialogueSpeakerIds } from "@features/galgame-workshop/editor/dialogue";
+import {
+  activeTimelineCue,
+  timelineEvents,
+} from "@features/galgame-workshop/editor/timeline";
 
 export const DEFAULT_CHARACTER_TRANSFORM: Required<GalgameStoryCharacterTransform> =
   {
@@ -18,6 +22,9 @@ export const DEFAULT_CHARACTER_TRANSFORM: Required<GalgameStoryCharacterTransfor
     flipX: false,
     layer: 10,
   };
+
+export const CHARACTER_POSITION_MIN = -100;
+export const CHARACTER_POSITION_MAX = 200;
 
 export const DEFAULT_CHARACTER_TRANSITION: Required<GalgameStoryCharacterTransition> =
   {
@@ -41,6 +48,7 @@ export type GalgameStageState = {
   soloActor?: StageActor;
   hiddenCharacterId?: string;
   activeSpeakerId?: string;
+  activeSpeakerIds?: string[];
 };
 
 export function characterTransform(
@@ -125,6 +133,7 @@ export function settleStage(state: GalgameStageState): GalgameStageState {
     soloActor: undefined,
     hiddenCharacterId: undefined,
     activeSpeakerId: undefined,
+    activeSpeakerIds: undefined,
   };
 }
 
@@ -164,6 +173,7 @@ export function applyAutomaticStageBlock(
       soloActor: undefined,
       hiddenCharacterId: undefined,
       activeSpeakerId: undefined,
+      activeSpeakerIds: undefined,
     };
   }
   if (block.type === "showCharacter") {
@@ -226,8 +236,10 @@ export function enterContentBlock(
       soloActor: undefined,
       hiddenCharacterId: undefined,
       activeSpeakerId: undefined,
+      activeSpeakerIds: undefined,
     };
 
+  const speakerIds = dialogueSpeakerIds(block);
   const portrait = block.portrait;
   if (!portrait || portrait.mode === "solo") {
     const soloPortrait: GalgameStoryDialoguePortrait = portrait ?? {
@@ -245,6 +257,7 @@ export function enterContentBlock(
       ),
       hiddenCharacterId: undefined,
       activeSpeakerId: block.characterId,
+      activeSpeakerIds: speakerIds,
     };
   }
   if (portrait.mode === "hidden")
@@ -252,7 +265,8 @@ export function enterContentBlock(
       ...state,
       soloActor: undefined,
       hiddenCharacterId: block.characterId,
-      activeSpeakerId: undefined,
+      activeSpeakerId: block.characterId,
+      activeSpeakerIds: speakerIds,
     };
 
   const existing = state.actors[block.characterId];
@@ -269,6 +283,7 @@ export function enterContentBlock(
     soloActor: undefined,
     hiddenCharacterId: undefined,
     activeSpeakerId: block.characterId,
+    activeSpeakerIds: speakerIds,
   };
 }
 
@@ -316,27 +331,21 @@ export function replayStageAtTime(
   fragment: GalgameStoryFragment,
   milliseconds: number,
 ) {
-  const cues = timelineCues(fragment);
-  const started = [...cues]
-    .reverse()
-    .find((cue) => cue.startMs <= milliseconds);
-  if (!started) {
-    const firstIndex = cues[0]?.blockIndex ?? 0;
-    return {
-      stage:
-        firstIndex > 0
-          ? replayStageToBlock(document, fragment, firstIndex - 1)
-          : emptyStageState(),
-    };
+  let state = emptyStageState();
+  for (const event of timelineEvents(fragment)) {
+    if (event.timeMs > milliseconds) break;
+    if (
+      event.block.type === "scene" ||
+      event.block.type === "showCharacter" ||
+      event.block.type === "removeCharacter"
+    )
+      state = applyAutomaticStageBlock(state, event.block, document);
   }
-  const entered = replayStageToBlock(document, fragment, started.blockIndex);
-  if (milliseconds < started.endMs)
-    return {
-      stage: entered,
-      block: started.block,
-      blockIndex: started.blockIndex,
-    };
+  const active = activeTimelineCue(fragment, milliseconds);
+  if (!active) return { stage: state };
   return {
-    stage: leaveContentBlock(entered, started.block),
+    stage: enterContentBlock(state, active.block, document),
+    block: active.block,
+    blockIndex: active.blockIndex,
   };
 }

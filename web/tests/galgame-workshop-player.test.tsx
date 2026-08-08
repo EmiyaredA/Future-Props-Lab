@@ -69,6 +69,19 @@ beforeEach(() => {
     createObjectURL: vi.fn(() => `blob:audio-${MockAudio.instances.length}`),
     revokeObjectURL: vi.fn(),
   });
+  vi.stubGlobal(
+    "matchMedia",
+    vi.fn(() => ({
+      matches: true,
+      media: "(prefers-reduced-motion: reduce)",
+      onchange: null,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    })),
+  );
 });
 
 vi.mock("@features/galgame-workshop/editor/StoryAssetImage", () => ({
@@ -184,6 +197,63 @@ test("plays both branches and restores the initial stage on restart", async () =
   expect(screen.getByText("时钟结局")).toBeInTheDocument();
 });
 
+test("uses two clicks to reveal then advance a line", async () => {
+  vi.stubGlobal(
+    "matchMedia",
+    vi.fn(() => ({
+      matches: false,
+      media: "(prefers-reduced-motion: reduce)",
+      onchange: null,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    })),
+  );
+  const user = userEvent.setup();
+  render(<StoryPlayer document={story} />);
+  await user.click(screen.getByRole("button", { name: "开始试玩" }));
+  const dialogue = screen.getByText("点击显示全文").closest("button")!;
+  expect(screen.queryByText("开始调查。")).not.toBeInTheDocument();
+  await user.click(dialogue);
+  expect(screen.getByText("开始调查。")).toBeInTheDocument();
+  expect(
+    screen.queryByRole("button", { name: "设备" }),
+  ).not.toBeInTheDocument();
+  await user.click(dialogue);
+  expect(screen.getByRole("button", { name: "设备" })).toBeInTheDocument();
+});
+
+test("automatically advances an untimed legacy fragment", () => {
+  vi.useFakeTimers();
+  try {
+    const autoStory = structuredClone(story);
+    autoStory.chapters![0].fragments = [
+      {
+        id: "main",
+        title: "main",
+        blocks: [
+          { id: "line", type: "narration", text: "自动推进。" },
+          {
+            id: "end",
+            type: "endChapter",
+            endingId: "auto-ending",
+            label: "自动结局",
+          },
+        ],
+      },
+    ];
+    render(<StoryPlayer document={autoStory} />);
+    fireEvent.click(screen.getByRole("button", { name: "开始试玩" }));
+    fireEvent.click(screen.getByRole("button", { name: "自动" }));
+    act(() => vi.advanceTimersByTime(1500));
+    expect(screen.getByText("自动结局")).toBeInTheDocument();
+  } finally {
+    vi.useRealTimers();
+  }
+});
+
 test("stops safely when a fragment has no terminator", async () => {
   const user = userEvent.setup();
   const openStory = structuredClone(story);
@@ -241,6 +311,85 @@ test("uses the default portrait unless dialogue selects an expression", async ()
   render(<StoryPlayer document={portraitStory} />);
   await user.click(screen.getByRole("button", { name: "开始试玩" }));
   expect(screen.getByTestId("portrait-file")).toHaveTextContent("file-smile");
+});
+
+test("shows multiple speaker names and keeps every speaking stage actor focused", async () => {
+  const user = userEvent.setup();
+  const multiSpeakerStory = structuredClone(story);
+  multiSpeakerStory.characters = [
+    { id: "hero", name: "调查员", description: "" },
+    { id: "partner", name: "助手", description: "" },
+  ];
+  multiSpeakerStory.chapters![0].fragments![0].blocks = [
+    { id: "scene", type: "scene", sceneId: "lab" },
+    {
+      id: "show-hero",
+      type: "showCharacter",
+      characterId: "hero",
+      expressionId: null,
+      transform: {
+        x: 30,
+        y: 100,
+        scale: 1,
+        brightness: 1,
+        opacity: 1,
+        flipX: false,
+        layer: 10,
+      },
+      transition: { durationMs: 0, fade: false },
+    },
+    {
+      id: "show-partner",
+      type: "showCharacter",
+      characterId: "partner",
+      expressionId: null,
+      transform: {
+        x: 70,
+        y: 100,
+        scale: 1,
+        brightness: 1,
+        opacity: 1,
+        flipX: false,
+        layer: 10,
+      },
+      transition: { durationMs: 0, fade: false },
+    },
+    {
+      id: "dialogue",
+      type: "dialogue",
+      characterId: "hero",
+      speakerIds: ["hero", "partner"],
+      text: "就是现在！",
+      portrait: {
+        mode: "stage",
+        keepAfter: true,
+        transform: null,
+        transition: { durationMs: 0, fade: false },
+      },
+    },
+    {
+      id: "end",
+      type: "endChapter",
+      endingId: "together",
+      label: "共同结局",
+    },
+  ];
+
+  render(<StoryPlayer document={multiSpeakerStory} />);
+  await user.click(screen.getByRole("button", { name: "开始试玩" }));
+
+  expect(screen.getByText("调查员、助手")).toBeInTheDocument();
+  expect(screen.getByText("就是现在！")).toBeInTheDocument();
+  const hero = document.querySelector<HTMLElement>(
+    '[data-character-id="hero"]',
+  );
+  const partner = document.querySelector<HTMLElement>(
+    '[data-character-id="partner"]',
+  );
+  expect(hero).toBeInTheDocument();
+  expect(partner).toBeInTheDocument();
+  expect(hero?.style.filter).toContain("brightness(1)");
+  expect(partner?.style.filter).toContain("brightness(1)");
 });
 
 test("keeps multiple staged characters, applies speaker focus, and removes actors", async () => {
@@ -632,18 +781,18 @@ test("runs voice, persistent music, ambient and sound-effect channels and cleans
 
   await user.click(screen.getByText("开始调查。").closest("button")!);
   await waitFor(() => expect(MockAudio.instances).toHaveLength(4));
-  expect(MockAudio.instances[2].pause).toHaveBeenCalled();
+  await waitFor(() => expect(MockAudio.instances[2].pause).toHaveBeenCalled());
   expect(screen.getByText("门铃响了。")).toBeInTheDocument();
 
   await user.click(screen.getByText("门铃响了。").closest("button")!);
   expect(screen.getByText("声音结局")).toBeInTheDocument();
   await waitFor(() => expect(URL.revokeObjectURL).toHaveBeenCalled());
   expect(
-    MockAudio.instances.every((audio) => audio.pause.mock.calls.length),
-  ).toBe(true);
+    MockAudio.instances.map((audio) => audio.pause.mock.calls.length),
+  ).toEqual([1, 1, 1, 1]);
 });
 
-test("plays one continuous timeline audio and keeps dialogue, seeking and controls synchronized", async () => {
+test("keeps the reference track silent while timeline dialogue and controls stay synchronized", async () => {
   const user = userEvent.setup();
   const timelineStory = structuredClone(story);
   timelineStory.characters = [
@@ -718,38 +867,34 @@ test("plays one continuous timeline audio and keeps dialogue, seeking and contro
 
   render(<StoryPlayer document={timelineStory} />);
   await user.click(screen.getByRole("button", { name: "开始试玩" }));
-  await waitFor(() => expect(MockAudio.instances).toHaveLength(1));
-  const audio = MockAudio.instances[0];
-  expect(audio.play).toHaveBeenCalledTimes(1);
-  expect(audio.paused).toBe(false);
-  expect(screen.queryByText("第一句。")).not.toBeInTheDocument();
+  expect(MockAudio.instances).toHaveLength(0);
+  expect(screen.getByText("第一句。")).toBeInTheDocument();
   expect(
     document.querySelector('[data-character-id="hero"]'),
   ).toBeInTheDocument();
-  expect(screen.getByLabelText("剧情时间轴进度")).toHaveValue("0");
+  expect(
+    Number((screen.getByLabelText("剧情时间轴进度") as HTMLInputElement).value),
+  ).toBeGreaterThanOrEqual(1000);
   expect(
     document
       .querySelector(".galgame-stage")
       ?.contains(screen.getByLabelText("剧情时间轴控制")),
   ).toBe(false);
 
-  act(() => {
-    audio.currentTime = 1.2;
-    audio.dispatch("timeupdate");
+  fireEvent.change(screen.getByLabelText("剧情时间轴进度"), {
+    target: { value: "1200" },
   });
   expect(screen.getByText("第一句。")).toBeInTheDocument();
 
-  act(() => {
-    audio.currentTime = 6.4;
-    audio.dispatch("timeupdate");
+  fireEvent.change(screen.getByLabelText("剧情时间轴进度"), {
+    target: { value: "6400" },
   });
   await waitFor(() => expect(screen.getByText("第二句。")).toBeInTheDocument());
   expect(screen.getByText("助手")).toBeInTheDocument();
-  expect(MockAudio.instances).toHaveLength(1);
+  expect(MockAudio.instances).toHaveLength(0);
 
-  act(() => {
-    audio.currentTime = 5.7;
-    audio.dispatch("timeupdate");
+  fireEvent.change(screen.getByLabelText("剧情时间轴进度"), {
+    target: { value: "5700" },
   });
   expect(screen.queryByText("短暂的停顿。")).not.toBeInTheDocument();
   expect(screen.queryByText("第二句。")).not.toBeInTheDocument();
@@ -759,31 +904,26 @@ test("plays one continuous timeline audio and keeps dialogue, seeking and contro
   expect(screen.getByLabelText("剧情时间轴控制")).toBeInTheDocument();
 
   await user.click(screen.getByRole("button", { name: "上一句" }));
-  expect(audio.currentTime).toBe(4);
   expect(screen.getByText("短暂的停顿。")).toBeInTheDocument();
   await user.click(screen.getByRole("button", { name: "下一句" }));
-  expect(audio.currentTime).toBe(6);
+  expect(screen.getByText("第二句。")).toBeInTheDocument();
 
   await user.click(screen.getByRole("button", { name: "暂停时间轴" }));
-  expect(audio.pause).toHaveBeenCalled();
   await user.click(screen.getByRole("button", { name: "播放时间轴" }));
-  expect(audio.play).toHaveBeenCalledTimes(2);
+  expect(screen.getByRole("button", { name: "自动" })).toHaveClass("active");
 
   fireEvent.change(screen.getByLabelText("剧情时间轴进度"), {
     target: { value: "1000" },
   });
-  expect(audio.currentTime).toBe(1);
   expect(screen.getByText("第一句。")).toBeInTheDocument();
 
-  act(() => audio.dispatch("ended"));
-  expect(await screen.findByText("时间轴结局")).toBeInTheDocument();
-  act(() => {
-    audio.currentTime = 0;
-    audio.dispatch("timeupdate");
+  fireEvent.change(screen.getByLabelText("剧情时间轴进度"), {
+    target: { value: "10000" },
   });
+  expect(await screen.findByText("时间轴结局")).toBeInTheDocument();
   expect(screen.getByText("时间轴结局")).toBeInTheDocument();
   expect(screen.queryByText("第一句。")).not.toBeInTheDocument();
-  await waitFor(() => expect(URL.revokeObjectURL).toHaveBeenCalled());
+  expect(MockAudio.instances).toHaveLength(0);
 });
 
 test("offers a user gesture retry when browser autoplay is blocked", async () => {

@@ -33,6 +33,8 @@ import {
 } from "@features/galgame-workshop/editor/model";
 import {
   applyAutomaticStageBlock,
+  CHARACTER_POSITION_MAX,
+  CHARACTER_POSITION_MIN,
   emptyStageState,
   enterContentBlock,
   leaveContentBlock,
@@ -41,6 +43,7 @@ import {
   type GalgameStageState,
   visibleStageActors,
 } from "@features/galgame-workshop/editor/stage";
+import { dialogueSpeakerIds } from "@features/galgame-workshop/editor/dialogue";
 import { StoryAssetImage } from "@features/galgame-workshop/editor/StoryAssetImage";
 import {
   createAudioLevelMonitor,
@@ -49,6 +52,15 @@ import {
   type AudioLevelMonitor,
   type LipSyncFrame,
 } from "@features/galgame-workshop/editor/lipSync";
+import { TimelineClock } from "@features/galgame-workshop/editor/timelineClock";
+import {
+  estimatedCueDuration,
+  effectivePointTime,
+  projectFragmentTimeline,
+  timelineAudioStateAt,
+  timelineCues,
+  timelineEvents,
+} from "@features/galgame-workshop/editor/timeline";
 
 type PlayerFrame =
   | { mode: "idle"; stage: GalgameStageState }
@@ -156,6 +168,11 @@ type StoryPlayerProps = {
   editTimelinePlaying?: boolean;
   editableCharacterId?: string;
   onCharacterPosition?: (x: number, y: number) => void;
+  onPlaybackPosition?: (position: {
+    fragmentId: string;
+    positionMs: number;
+    blockId?: string;
+  }) => void;
 };
 
 type MixChannel = "voice" | "bgm" | "ambient" | "sfx";
@@ -166,8 +183,10 @@ type PlayingAudio = {
   levelMonitor?: AudioLevelMonitor;
 };
 
-type TimelinePlayback = PlayingAudio & {
+type TimelinePlayback = {
   fragmentId: string;
+  clock: TimelineClock;
+  lastPositionMs: number;
 };
 
 function formatTimelineTime(milliseconds: number) {
@@ -175,16 +194,6 @@ function formatTimelineTime(milliseconds: number) {
   const minutes = Math.floor(totalSeconds / 60);
   const seconds = totalSeconds % 60;
   return `${minutes}:${seconds.toString().padStart(2, "0")}`;
-}
-
-function timelineCues(fragment: GalgameStoryFragment) {
-  return (fragment.blocks ?? []).flatMap((block, blockIndex) =>
-    (block.type === "dialogue" || block.type === "narration") &&
-    block.startMs != null &&
-    block.endMs != null
-      ? [{ block, blockIndex }]
-      : [],
-  );
 }
 
 const DEFAULT_MIX: Record<MixChannel, number> = {
@@ -206,6 +215,7 @@ export const StoryPlayer = forwardRef<StoryPlayerHandle, StoryPlayerProps>(
       editTimelinePlaying = false,
       editableCharacterId,
       onCharacterPosition,
+      onPlaybackPosition,
     },
     ref,
   ) {
@@ -218,6 +228,10 @@ export const StoryPlayer = forwardRef<StoryPlayerHandle, StoryPlayerProps>(
     const [autoplayBlocked, setAutoplayBlocked] = useState(false);
     const [timelinePositionMs, setTimelinePositionMs] = useState(0);
     const [timelinePlaying, setTimelinePlaying] = useState(false);
+    const [advanceMode, setAdvanceMode] = useState<"manual" | "auto">("manual");
+    const [visibleTextLength, setVisibleTextLength] = useState(0);
+    const advanceRef = useRef<() => void>(() => undefined);
+    const advanceModeRef = useRef(advanceMode);
     const [voicePlaying, setVoicePlaying] = useState(false);
     const [audioLevelDb, setAudioLevelDb] = useState<number | null>(null);
     const [mouthFrame, setMouthFrame] = useState<LipSyncFrame>(0);
@@ -230,6 +244,7 @@ export const StoryPlayer = forwardRef<StoryPlayerHandle, StoryPlayerProps>(
       ambient: null,
     });
     const sfxRef = useRef<PlayingAudio[]>([]);
+    const fadingRef = useRef(new Set<PlayingAudio>());
     const urlsRef = useRef(new Map<string, Promise<string>>());
     const pendingRef = useRef(new Set<HTMLAudioElement>());
     const timersRef = useRef(new Set<number>());
@@ -283,13 +298,44 @@ export const StoryPlayer = forwardRef<StoryPlayerHandle, StoryPlayerProps>(
     const displayFrame = mode === "edit" ? editFrame : frame;
 
     useEffect(() => {
+      if (
+        mode !== "play" ||
+        (displayFrame.mode !== "content" && displayFrame.mode !== "stageOnly")
+      )
+        return;
+      const source = chapter
+        ? fragmentById(chapter, displayFrame.fragmentId)
+        : undefined;
+      if (!source) return;
+      const projected = projectFragmentTimeline(source);
+      const blockId =
+        displayFrame.mode === "content" ? displayFrame.block.id : undefined;
+      const blockIndex = blockId
+        ? projected.blocks?.findIndex((block) => block.id === blockId)
+        : undefined;
+      const projectedPosition =
+        blockIndex != null && blockIndex >= 0
+          ? (effectivePointTime(projected, blockIndex) ??
+            timelineCues(projected).find((cue) => cue.block.id === blockId)
+              ?.startMs ??
+            0)
+          : 0;
+      onPlaybackPosition?.({
+        fragmentId: source.id,
+        positionMs: source.timeline ? timelinePositionMs : projectedPosition,
+        blockId,
+      });
+    }, [chapter, displayFrame, mode, onPlaybackPosition, timelinePositionMs]);
+
+    useEffect(() => {
+      advanceModeRef.current = advanceMode;
+    }, [advanceMode]);
+
+    useEffect(() => {
       mixRef.current = mix;
       if (voiceRef.current)
         voiceRef.current.audio.volume =
           voiceRef.current.baseVolume * (mix.voice / 100);
-      if (timelineRef.current)
-        timelineRef.current.audio.volume =
-          timelineRef.current.baseVolume * (mix.voice / 100);
       for (const channel of ["bgm", "ambient"] as const) {
         const playing = channelRefs.current[channel];
         if (playing)
@@ -346,6 +392,17 @@ export const StoryPlayer = forwardRef<StoryPlayerHandle, StoryPlayerProps>(
       [],
     );
 
+    const fadeAndStop = useCallback(
+      (playing: PlayingAudio, duration: number) => {
+        fadingRef.current.add(playing);
+        fadeTo(playing, 0, duration, () => {
+          fadingRef.current.delete(playing);
+          stopPlaying(playing);
+        });
+      },
+      [fadeTo, stopPlaying],
+    );
+
     const objectUrl = useCallback((fileId: string) => {
       const existing = urlsRef.current.get(fileId);
       if (existing) return existing;
@@ -383,8 +440,7 @@ export const StoryPlayer = forwardRef<StoryPlayerHandle, StoryPlayerProps>(
           const active = [...sfxRef.current];
           sfxRef.current = [];
           for (const playing of active) {
-            if (fadeMs > 0)
-              fadeTo(playing, 0, fadeMs, () => stopPlaying(playing));
+            if (fadeMs > 0) fadeAndStop(playing, fadeMs);
             else stopPlaying(playing);
           }
           return;
@@ -392,10 +448,10 @@ export const StoryPlayer = forwardRef<StoryPlayerHandle, StoryPlayerProps>(
         const playing = channelRefs.current[channel];
         channelRefs.current[channel] = null;
         if (!playing) return;
-        if (fadeMs > 0) fadeTo(playing, 0, fadeMs, () => stopPlaying(playing));
+        if (fadeMs > 0) fadeAndStop(playing, fadeMs);
         else stopPlaying(playing);
       },
-      [fadeTo, stopPlaying],
+      [fadeAndStop, stopPlaying],
     );
 
     const executeAudioBlock = useCallback(
@@ -410,7 +466,7 @@ export const StoryPlayer = forwardRef<StoryPlayerHandle, StoryPlayerProps>(
         );
         if (!asset || asset.type !== "audio") return;
         const channel = block.channel;
-        if (channel !== "sfx") stopChannel(channel, 0);
+        if (channel !== "sfx") stopChannel(channel, block.fadeMs);
         const requestGeneration =
           channel === "sfx"
             ? channelGenerationRef.current.sfx
@@ -459,7 +515,9 @@ export const StoryPlayer = forwardRef<StoryPlayerHandle, StoryPlayerProps>(
       for (const channel of ["voice", "bgm", "ambient", "sfx"] as const)
         channelGenerationRef.current[channel] += 1;
       clearTimers();
-      stopPlaying(timelineRef.current);
+      for (const playing of fadingRef.current) stopPlaying(playing);
+      fadingRef.current.clear();
+      timelineRef.current?.clock.dispose();
       timelineRef.current = null;
       stopPlaying(voiceRef.current);
       voiceRef.current = null;
@@ -490,6 +548,9 @@ export const StoryPlayer = forwardRef<StoryPlayerHandle, StoryPlayerProps>(
       displayFrame.mode === "content" && displayFrame.block.type === "dialogue"
         ? displayFrame.block
         : undefined;
+    const activeDialogueSpeakerIds = activeDialogue
+      ? dialogueSpeakerIds(activeDialogue)
+      : [];
     const activeFragment =
       mode === "play" &&
       (displayFrame.mode === "content" || displayFrame.mode === "stageOnly") &&
@@ -526,11 +587,7 @@ export const StoryPlayer = forwardRef<StoryPlayerHandle, StoryPlayerProps>(
     const lipSyncSpeaking =
       stageStyle.lipSyncEnabled &&
       Boolean(activeDialogue) &&
-      (mode === "edit"
-        ? editTimelinePlaying
-        : activeTimeline
-          ? timelinePlaying
-          : voicePlaying);
+      (mode === "edit" ? editTimelinePlaying : voicePlaying);
     const currentAudioLevelDb =
       mode === "edit" ? editAudioLevelDb : audioLevelDb;
 
@@ -553,7 +610,7 @@ export const StoryPlayer = forwardRef<StoryPlayerHandle, StoryPlayerProps>(
         const renderedExpressionId = resolveLipSyncExpressionId(
           character,
           authoredExpressionId,
-          activeDialogue?.characterId === actor.characterId ? mouthFrame : 0,
+          activeDialogueSpeakerIds.includes(actor.characterId) ? mouthFrame : 0,
         );
         const expression = (character.expressions ?? []).find(
           (candidate) => candidate.id === renderedExpressionId,
@@ -585,7 +642,7 @@ export const StoryPlayer = forwardRef<StoryPlayerHandle, StoryPlayerProps>(
     );
 
     useEffect(() => {
-      if (mode === "edit" || activeTimeline) return;
+      if (mode === "edit") return;
       channelGenerationRef.current.voice += 1;
       const requestGeneration = channelGenerationRef.current.voice;
       stopPlaying(voiceRef.current);
@@ -593,6 +650,7 @@ export const StoryPlayer = forwardRef<StoryPlayerHandle, StoryPlayerProps>(
       if (!activeDialogue?.voiceAssetId || activeVoiceAsset?.type !== "audio")
         return;
       const playerGeneration = generationRef.current;
+      let autoAdvanceTimer: number | undefined;
       void objectUrl(activeVoiceAsset.fileId)
         .then((url) => {
           if (
@@ -609,7 +667,15 @@ export const StoryPlayer = forwardRef<StoryPlayerHandle, StoryPlayerProps>(
           audio.volume = playing.baseVolume * (mixRef.current.voice / 100);
           audio.addEventListener("play", () => setVoicePlaying(true));
           audio.addEventListener("pause", () => setVoicePlaying(false));
-          audio.addEventListener("ended", () => setVoicePlaying(false));
+          audio.addEventListener("ended", () => {
+            setVoicePlaying(false);
+            if (advanceModeRef.current === "auto") {
+              autoAdvanceTimer = window.setTimeout(
+                () => advanceRef.current(),
+                400,
+              );
+            }
+          });
           voiceRef.current = playing;
           void (async () => {
             await playing.levelMonitor?.resume().catch(() => undefined);
@@ -617,12 +683,14 @@ export const StoryPlayer = forwardRef<StoryPlayerHandle, StoryPlayerProps>(
           })();
         })
         .catch(() => undefined);
+      return () => {
+        if (autoAdvanceTimer != null) window.clearTimeout(autoAdvanceTimer);
+      };
     }, [
       activeDialogue?.id,
       activeDialogue?.voiceAssetId,
       activeDialogue?.voiceVolume,
       activeVoiceAsset,
-      activeTimeline,
       mode,
       objectUrl,
       stopPlaying,
@@ -635,37 +703,41 @@ export const StoryPlayer = forwardRef<StoryPlayerHandle, StoryPlayerProps>(
 
     useEffect(() => () => cleanupPlayback(), [cleanupPlayback]);
 
-    const finishTimeline = useCallback((fragment: GalgameStoryFragment) => {
-      setTimelinePlaying(false);
-      const ending = (fragment.blocks ?? []).find(
-        (block) => block.type === "endChapter",
-      );
-      setFrame(
-        ending?.type === "endChapter"
-          ? {
-              mode: "ending",
-              label: ending.label,
-              stage: emptyStageState(),
-            }
-          : {
-              mode: "error",
-              message: "时间轴结束，但 Fragment 没有章节结局",
-              stage: emptyStageState(),
-            },
-      );
-    }, []);
+    const finishTimeline = useCallback(
+      (fragment: GalgameStoryFragment) => {
+        setTimelinePlaying(false);
+        const terminatorIndex = (fragment.blocks ?? []).findIndex(
+          (block) => block.type === "branch" || block.type === "endChapter",
+        );
+        const terminator = fragment.blocks?.[terminatorIndex];
+        const stage = replayStageAtTime(
+          document,
+          fragment,
+          fragment.timeline?.durationMs ?? 0,
+        ).stage;
+        setFrame(
+          terminator?.type === "endChapter"
+            ? { mode: "ending", label: terminator.label, stage }
+            : terminator?.type === "branch"
+              ? {
+                  mode: "content",
+                  fragmentId: fragment.id,
+                  blockIndex: terminatorIndex,
+                  block: terminator,
+                  stage: enterContentBlock(stage, terminator, document),
+                }
+              : {
+                  mode: "error",
+                  message: "时间轴结束，但 Fragment 没有分支或章节结局",
+                  stage,
+                },
+        );
+      },
+      [document],
+    );
 
     const showTimelinePosition = useCallback(
       (fragment: GalgameStoryFragment, milliseconds: number) => {
-        const cues = timelineCues(fragment);
-        if (!cues.length) {
-          setFrame({
-            mode: "error",
-            message: "时间轴 Fragment 没有可播放对白",
-            stage: emptyStageState(),
-          });
-          return;
-        }
         const preview = replayStageAtTime(document, fragment, milliseconds);
         setFrame(
           preview.block && preview.blockIndex != null
@@ -686,85 +758,86 @@ export const StoryPlayer = forwardRef<StoryPlayerHandle, StoryPlayerProps>(
       [document],
     );
 
+    const reconcileTimelineAudio = useCallback(
+      (fragment: GalgameStoryFragment, milliseconds: number) => {
+        stopChannel("sfx", 0);
+        stopChannel("bgm", 80);
+        stopChannel("ambient", 80);
+        const state = timelineAudioStateAt(fragment, milliseconds);
+        if (state.bgm) executeAudioBlock(state.bgm);
+        if (state.ambient) executeAudioBlock(state.ambient);
+      },
+      [executeAudioBlock, stopChannel],
+    );
+
     const startTimeline = useCallback(
-      (fragment: GalgameStoryFragment) => {
+      (fragment: GalgameStoryFragment, autoplay = advanceMode === "auto") => {
         if (!fragment.timeline) return;
-        const asset = (document.assets ?? []).find(
-          (candidate) =>
-            candidate.type === "audio" &&
-            candidate.id === fragment.timeline?.assetId,
-        );
-        if (!asset || asset.type !== "audio") {
-          setFrame({
-            mode: "error",
-            message: "时间轴声音素材不存在",
-            stage: emptyStageState(),
-          });
-          return;
-        }
+        const timelineDurationMs = fragment.timeline.durationMs;
         showTimelinePosition(fragment, 0);
         setTimelinePositionMs(0);
-        channelGenerationRef.current.voice += 1;
-        const requestGeneration = channelGenerationRef.current.voice;
         const playerGeneration = generationRef.current;
-        void objectUrl(asset.fileId)
-          .then((url) => {
+        const audioEvents = timelineEvents(fragment).filter(
+          (event) => event.block.type === "audio",
+        );
+        const playback = { current: undefined as TimelinePlayback | undefined };
+        const clock = new TimelineClock(timelineDurationMs, {
+          onPosition: (milliseconds) => {
+            const playing = playback.current;
             if (
+              !playing ||
               playerGeneration !== generationRef.current ||
-              requestGeneration !== channelGenerationRef.current.voice
+              timelineRef.current !== playing
             )
               return;
-            const audio = new Audio(url);
-            const playing: TimelinePlayback = {
-              audio,
-              baseVolume: 1,
-              fragmentId: fragment.id,
-              levelMonitor: createAudioLevelMonitor(audio, setAudioLevelDb),
-            };
-            audio.loop = false;
-            audio.volume = mixRef.current.voice / 100;
-            const sync = () => {
-              if (
-                playerGeneration !== generationRef.current ||
-                timelineRef.current !== playing
-              )
-                return;
-              const milliseconds = Math.min(
-                fragment.timeline?.durationMs ?? 0,
-                Math.max(0, audio.currentTime * 1000),
-              );
-              setTimelinePositionMs(milliseconds);
-              if (milliseconds >= (fragment.timeline?.durationMs ?? 0)) {
-                finishTimeline(fragment);
-                return;
+            if (milliseconds >= playing.lastPositionMs)
+              for (const event of audioEvents) {
+                if (
+                  event.timeMs <= playing.lastPositionMs ||
+                  event.timeMs > milliseconds ||
+                  event.block.type !== "audio"
+                )
+                  continue;
+                executeAudioBlock(event.block);
               }
-              showTimelinePosition(fragment, milliseconds);
-            };
-            audio.addEventListener("timeupdate", sync);
-            audio.addEventListener("seeked", sync);
-            audio.addEventListener("ended", () => finishTimeline(fragment), {
-              once: true,
-            });
-            timelineRef.current = playing;
-            void (async () => {
-              await playing.levelMonitor?.resume().catch(() => undefined);
-              setTimelinePlaying(await tryPlay(audio));
-            })();
-          })
-          .catch(() => {
-            if (playerGeneration !== generationRef.current) return;
-            setFrame({
-              mode: "error",
-              message: "无法加载时间轴声音素材",
-              stage: emptyStageState(),
-            });
-          });
+            playing.lastPositionMs = milliseconds;
+            setTimelinePositionMs(milliseconds);
+            showTimelinePosition(fragment, milliseconds);
+          },
+          onPlayingChange: (next) => {
+            const playing = playback.current;
+            if (timelineRef.current === playing) setTimelinePlaying(next);
+          },
+          onFinish: () => {
+            const playing = playback.current;
+            if (
+              !playing ||
+              playerGeneration !== generationRef.current ||
+              timelineRef.current !== playing
+            )
+              return;
+            finishTimeline(fragment);
+          },
+        });
+        const playing = {
+          fragmentId: fragment.id,
+          clock,
+          lastPositionMs: -1,
+        };
+        playback.current = playing;
+        timelineRef.current = playing;
+        const firstCue = timelineCues(fragment)[0];
+        clock.seek(autoplay ? 0 : (firstCue?.startMs ?? 0));
+        if (autoplay) clock.play();
+        else if (firstCue)
+          clock.playUntil(Math.max(firstCue.startMs, firstCue.endMs - 1));
       },
-      [document, finishTimeline, objectUrl, showTimelinePosition, tryPlay],
+      [advanceMode, executeAudioBlock, finishTimeline, showTimelinePosition],
     );
 
     const restart = () => {
       cleanupPlayback();
+      setAdvanceMode("manual");
       if (!chapter) {
         setFrame({
           mode: "error",
@@ -775,7 +848,7 @@ export const StoryPlayer = forwardRef<StoryPlayerHandle, StoryPlayerProps>(
       }
       const entryFragment = fragmentById(chapter, chapter.entryFragmentId);
       if (entryFragment?.timeline) {
-        startTimeline(entryFragment);
+        startTimeline(entryFragment, false);
         return;
       }
       setFrame(
@@ -789,19 +862,62 @@ export const StoryPlayer = forwardRef<StoryPlayerHandle, StoryPlayerProps>(
       );
     };
     useImperativeHandle(ref, () => ({ restart }));
-    const seekTimeline = (milliseconds: number) => {
+    const enterFragment = (fragmentId: string) => {
+      if (!chapter) return;
+      timelineRef.current?.clock.dispose();
+      timelineRef.current = null;
+      const target = fragmentById(chapter, fragmentId);
+      if (target?.timeline) {
+        startTimeline(target, advanceMode === "auto");
+        return;
+      }
+      setFrame(
+        nextFrame(
+          document,
+          fragmentId,
+          0,
+          emptyStageState(),
+          executeAudioBlock,
+        ),
+      );
+    };
+    const seekTimeline = (
+      milliseconds: number,
+      triggerPointEffects = false,
+    ) => {
       const playing = timelineRef.current;
       if (!playing || !activeFragment?.timeline) return;
       const target = Math.max(
         0,
         Math.min(activeFragment.timeline.durationMs, milliseconds),
       );
-      playing.audio.currentTime = target / 1000;
-      setTimelinePositionMs(target);
-      showTimelinePosition(activeFragment, target);
+      if (advanceModeRef.current === "manual") playing.clock.pause();
+      playing.lastPositionMs = target;
+      reconcileTimelineAudio(activeFragment, target);
+      if (triggerPointEffects)
+        for (const event of timelineEvents(activeFragment))
+          if (
+            event.timeMs === target &&
+            event.block.type === "audio" &&
+            event.block.channel === "sfx" &&
+            event.block.action === "play"
+          )
+            executeAudioBlock(event.block);
+      playing.clock.seek(target);
+      if (target >= activeFragment.timeline.durationMs) {
+        finishTimeline(activeFragment);
+      }
+    };
+    const fadeCurrentVoice = () => {
+      channelGenerationRef.current.voice += 1;
+      const playing = voiceRef.current;
+      voiceRef.current = null;
+      setVoicePlaying(false);
+      if (playing) fadeAndStop(playing, 80);
     };
     const skipTimelineCue = (direction: -1 | 1) => {
       if (!activeFragment) return;
+      fadeCurrentVoice();
       const cues = timelineCues(activeFragment);
       const currentIndex =
         frame.mode === "content"
@@ -816,28 +932,59 @@ export const StoryPlayer = forwardRef<StoryPlayerHandle, StoryPlayerProps>(
         0,
         Math.min(cues.length - 1, currentIndex + direction),
       );
-      seekTimeline(cues[nextIndex]?.block.startMs ?? 0);
+      if (direction === 1 && currentIndex >= cues.length - 1)
+        seekTimeline(activeFragment.timeline?.durationMs ?? 0, true);
+      else {
+        const nextCue = cues[nextIndex];
+        seekTimeline(nextCue?.startMs ?? 0, true);
+        if (advanceModeRef.current === "manual" && nextCue)
+          timelineRef.current?.clock.playUntil(
+            Math.max(nextCue.startMs, nextCue.endMs - 1),
+          );
+      }
     };
     const toggleTimeline = () => {
       const playing = timelineRef.current;
-      const audio = playing?.audio;
-      if (!audio) return;
-      if (audio.paused)
-        void (async () => {
-          await playing?.levelMonitor?.resume().catch(() => undefined);
-          setTimelinePlaying(await tryPlay(audio));
-        })();
-      else {
-        audio.pause();
-        setTimelinePlaying(false);
+      if (!playing) return;
+      const { clock } = playing;
+      if (!clock.isPlaying) {
+        if (clock.position >= (activeFragment?.timeline?.durationMs ?? 0))
+          clock.seek(0);
+        setAdvanceMode("auto");
+        clock.play();
+      } else {
+        clock.pause();
+        setAdvanceMode("manual");
       }
+    };
+    const selectAdvanceMode = (next: "manual" | "auto") => {
+      setAdvanceMode(next);
+      const playing = timelineRef.current;
+      if (!playing) return;
+      if (next === "auto") {
+        if (
+          playing.clock.position >= (activeFragment?.timeline?.durationMs ?? 0)
+        )
+          playing.clock.seek(0);
+        playing.clock.play();
+      } else playing.clock.pause();
     };
     const advance = () => {
       if (frame.mode !== "content") return;
+      if (
+        (frame.block.type === "dialogue" || frame.block.type === "narration") &&
+        visibleTextLength < Array.from(frame.block.text || "（空正文）").length
+      ) {
+        setVisibleTextLength(
+          Array.from(frame.block.text || "（空正文）").length,
+        );
+        return;
+      }
       if (activeTimeline) {
         skipTimelineCue(1);
         return;
       }
+      fadeCurrentVoice();
       setFrame(
         nextFrame(
           document,
@@ -848,6 +995,64 @@ export const StoryPlayer = forwardRef<StoryPlayerHandle, StoryPlayerProps>(
         ),
       );
     };
+    advanceRef.current = advance;
+
+    const displayText =
+      displayFrame.mode === "content" &&
+      (displayFrame.block.type === "dialogue" ||
+        displayFrame.block.type === "narration")
+        ? displayFrame.block.text || "（空正文）"
+        : "";
+    const displayBlockId =
+      displayFrame.mode === "content" ? displayFrame.block.id : "";
+
+    useEffect(() => {
+      if (!displayText) {
+        setVisibleTextLength(0);
+        return;
+      }
+      if (
+        mode === "edit" ||
+        globalThis.matchMedia?.("(prefers-reduced-motion: reduce)").matches
+      ) {
+        setVisibleTextLength(Array.from(displayText).length);
+        return;
+      }
+      const characters = Array.from(displayText);
+      const durationMs = Math.min(
+        1800,
+        Math.max(200, (characters.length / 40) * 1000),
+      );
+      const stepMs = Math.max(16, durationMs / Math.max(1, characters.length));
+      setVisibleTextLength(0);
+      const timer = window.setInterval(
+        () =>
+          setVisibleTextLength((current) => {
+            const next = Math.min(characters.length, current + 1);
+            if (next >= characters.length) window.clearInterval(timer);
+            return next;
+          }),
+        stepMs,
+      );
+      return () => window.clearInterval(timer);
+    }, [displayBlockId, displayText, mode]);
+
+    useEffect(() => {
+      if (
+        mode !== "play" ||
+        advanceMode !== "auto" ||
+        activeTimeline ||
+        activeVoiceAsset ||
+        frame.mode !== "content" ||
+        (frame.block.type !== "dialogue" && frame.block.type !== "narration")
+      )
+        return;
+      const timer = window.setTimeout(
+        () => advanceRef.current(),
+        estimatedCueDuration(frame.block.text),
+      );
+      return () => window.clearTimeout(timer);
+    }, [activeTimeline, activeVoiceAsset, advanceMode, frame, mode]);
 
     return (
       <section
@@ -869,6 +1074,27 @@ export const StoryPlayer = forwardRef<StoryPlayerHandle, StoryPlayerProps>(
             </small>
           </div>
           <span className="galgame-player-header-actions">
+            {mode === "play" && displayFrame.mode !== "idle" ? (
+              <span
+                className="galgame-player-advance-mode"
+                aria-label="推进模式"
+              >
+                <button
+                  type="button"
+                  className={advanceMode === "manual" ? "active" : ""}
+                  onClick={() => selectAdvanceMode("manual")}
+                >
+                  手动
+                </button>
+                <button
+                  type="button"
+                  className={advanceMode === "auto" ? "active" : ""}
+                  onClick={() => selectAdvanceMode("auto")}
+                >
+                  自动
+                </button>
+              </span>
+            ) : null}
             <button
               type="button"
               className={mixerOpen ? "active" : ""}
@@ -935,14 +1161,9 @@ export const StoryPlayer = forwardRef<StoryPlayerHandle, StoryPlayerProps>(
                 void voiceRef.current?.levelMonitor
                   ?.resume()
                   .catch(() => undefined);
-                void timelineRef.current?.levelMonitor
-                  ?.resume()
-                  .catch(() => undefined);
-                for (const audio of pending)
-                  void tryPlay(audio).then((playing) => {
-                    if (audio === timelineRef.current?.audio)
-                      setTimelinePlaying(playing);
-                  });
+                for (const audio of pending) {
+                  void tryPlay(audio);
+                }
               }}
             >
               <Volume2 aria-hidden /> 点击启用声音
@@ -985,11 +1206,15 @@ export const StoryPlayer = forwardRef<StoryPlayerHandle, StoryPlayerProps>(
           {stageActors.map(
             ({ actor, character, asset, renderedExpressionId }) => {
               const focused =
-                displayFrame.stage.activeSpeakerId === actor.characterId;
+                displayFrame.stage.activeSpeakerIds?.includes(
+                  actor.characterId,
+                ) ?? displayFrame.stage.activeSpeakerId === actor.characterId;
+              const hasActiveSpeakers = Boolean(
+                displayFrame.stage.activeSpeakerIds?.length ??
+                displayFrame.stage.activeSpeakerId,
+              );
               const focusMultiplier =
-                stageStyle.speakerFocusEnabled &&
-                displayFrame.stage.activeSpeakerId &&
-                !focused
+                stageStyle.speakerFocusEnabled && hasActiveSpeakers && !focused
                   ? stageStyle.inactiveBrightness
                   : 1;
               const editable =
@@ -1021,18 +1246,18 @@ export const StoryPlayer = forwardRef<StoryPlayerHandle, StoryPlayerProps>(
                             const bounds = stage.getBoundingClientRect();
                             onCharacterPosition(
                               Math.max(
-                                0,
+                                CHARACTER_POSITION_MIN,
                                 Math.min(
-                                  100,
+                                  CHARACTER_POSITION_MAX,
                                   ((moveEvent.clientX - bounds.left) /
                                     bounds.width) *
                                     100,
                                 ),
                               ),
                               Math.max(
-                                0,
+                                CHARACTER_POSITION_MIN,
                                 Math.min(
-                                  100,
+                                  CHARACTER_POSITION_MAX,
                                   ((moveEvent.clientY - bounds.top) /
                                     bounds.height) *
                                     100,
@@ -1065,12 +1290,18 @@ export const StoryPlayer = forwardRef<StoryPlayerHandle, StoryPlayerProps>(
                           event.preventDefault();
                           onCharacterPosition(
                             Math.max(
-                              0,
-                              Math.min(100, actor.transform.x + delta[0]),
+                              CHARACTER_POSITION_MIN,
+                              Math.min(
+                                CHARACTER_POSITION_MAX,
+                                actor.transform.x + delta[0],
+                              ),
                             ),
                             Math.max(
-                              0,
-                              Math.min(100, actor.transform.y + delta[1]),
+                              CHARACTER_POSITION_MIN,
+                              Math.min(
+                                CHARACTER_POSITION_MAX,
+                                actor.transform.y + delta[1],
+                              ),
                             ),
                           );
                         }
@@ -1127,28 +1358,24 @@ export const StoryPlayer = forwardRef<StoryPlayerHandle, StoryPlayerProps>(
                 重新开始
               </button>
             </div>
-          ) : displayFrame.mode === "stageOnly" ? null : displayFrame.block
-              .type === "branch" ? (
+          ) : displayFrame.mode === "stageOnly" ? (
+            mode === "play" ? (
+              <button
+                type="button"
+                className="galgame-stage-advance"
+                onClick={() => skipTimelineCue(1)}
+              >
+                点击继续
+              </button>
+            ) : null
+          ) : displayFrame.block.type === "branch" ? (
             <div className="galgame-choices">
               <strong>{displayFrame.block.prompt || "请选择"}</strong>
               {displayFrame.block.choices.map((choice) => (
                 <button
                   key={choice.id}
                   type="button"
-                  onClick={() =>
-                    setFrame(
-                      nextFrame(
-                        document,
-                        choice.targetFragmentId,
-                        0,
-                        leaveContentBlock(
-                          displayFrame.stage,
-                          displayFrame.block,
-                        ),
-                        executeAudioBlock,
-                      ),
-                    )
-                  }
+                  onClick={() => enterFragment(choice.targetFragmentId)}
                 >
                   {choice.text || "未命名选项"}
                 </button>
@@ -1180,19 +1407,27 @@ export const StoryPlayer = forwardRef<StoryPlayerHandle, StoryPlayerProps>(
               ) : null}
               {displayFrame.block.type === "dialogue" ? (
                 <strong style={{ color: dialogueStyle.nameColor }}>
-                  {characters.get(displayFrame.block.characterId)?.name ??
-                    "未知角色"}
+                  {dialogueSpeakerIds(displayFrame.block)
+                    .map(
+                      (speakerId) =>
+                        characters.get(speakerId)?.name ?? "未知角色",
+                    )
+                    .join("、")}
                 </strong>
               ) : (
                 <small>旁白</small>
               )}
-              <span>{displayFrame.block.text || "（空正文）"}</span>
+              <span>
+                {Array.from(displayText).slice(0, visibleTextLength).join("")}
+              </span>
               <em>
                 {mode === "edit"
                   ? "编辑预览"
-                  : activeTimeline
-                    ? "时间轴自动播放"
-                    : "点击继续"}
+                  : visibleTextLength < Array.from(displayText).length
+                    ? "点击显示全文"
+                    : advanceMode === "auto"
+                      ? "自动播放"
+                      : "点击继续"}
               </em>
             </button>
           ) : null}

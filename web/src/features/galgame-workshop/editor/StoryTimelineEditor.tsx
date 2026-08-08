@@ -1,6 +1,5 @@
 import {
   useEffect,
-  useMemo,
   useRef,
   useState,
   type KeyboardEvent,
@@ -8,12 +7,16 @@ import {
 } from "react";
 import {
   MapPinned,
+  Music2,
   Pause,
   Play,
   Repeat2,
   SkipBack,
   SkipForward,
+  UserRound,
   Users,
+  Volume2,
+  Waves,
 } from "lucide-react";
 import { fetchApiBlob } from "@platform/api/client";
 import type {
@@ -22,12 +25,19 @@ import type {
 } from "@features/galgame-workshop/api";
 import {
   activeTimelineCue,
+  effectivePointTime,
   formatTimecode,
   moveTimelineCue,
-  resizeTimelineBoundary,
+  parseTimecode,
+  resizeTimelineCueEnd,
   setTimelineCueEdge,
+  setTimelineDuration,
   setTimelineGapEdge,
+  setTimelinePointTime,
   timelineCues,
+  timelineBeats,
+  timelineBeatRange,
+  timelineEvents,
   timelineGaps,
   timelineStageMarkers,
 } from "@features/galgame-workshop/editor/timeline";
@@ -35,25 +45,13 @@ import {
   createAudioLevelMonitor,
   type AudioLevelMonitor,
 } from "@features/galgame-workshop/editor/lipSync";
-
-const TIMELINE_PREFERENCES_KEY = "future_props_galgame_timeline_preferences";
-const MIN_ZOOM = 120;
-const MAX_ZOOM = 960;
-
-function loadPreferences() {
-  try {
-    const value = JSON.parse(
-      localStorage.getItem(TIMELINE_PREFERENCES_KEY) ?? "null",
-    ) as { zoom?: number; ripple?: boolean; loop?: boolean } | null;
-    return {
-      zoom: Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, value?.zoom ?? 300)),
-      ripple: value?.ripple ?? false,
-      loop: value?.loop ?? false,
-    };
-  } catch {
-    return { zoom: 300, ripple: false, loop: false };
-  }
-}
+import { dialogueSpeakerIds } from "@features/galgame-workshop/editor/dialogue";
+import {
+  MAX_TIMELINE_ZOOM,
+  MIN_TIMELINE_ZOOM,
+  type TimelinePreferences,
+} from "@features/galgame-workshop/editor/timelinePreferences";
+import { TimelineClock } from "@features/galgame-workshop/editor/timelineClock";
 
 function characterColor(characterId: string) {
   const palette = [
@@ -73,10 +71,23 @@ function characterColor(characterId: string) {
 }
 
 type DragState = {
-  kind: "cue" | "boundary" | "cue-start" | "cue-end" | "gap-start" | "gap-end";
+  kind:
+    | "cue"
+    | "point"
+    | "boundary"
+    | "cue-start"
+    | "cue-end"
+    | "gap-start"
+    | "gap-end";
   itemId: string;
   startX: number;
   source: GalgameStoryFragment;
+};
+
+export type TimelineBeatSelection = {
+  anchorIndex: number;
+  startIndex: number;
+  endIndex: number;
 };
 
 export function StoryTimelineEditor({
@@ -90,6 +101,14 @@ export function StoryTimelineEditor({
   onPreviewPosition,
   onAudioLevel,
   onPlayingChange,
+  preferences,
+  onPreferencesChange,
+  beatSelection,
+  onBeatSelection,
+  readOnly = false,
+  followPositionMs,
+  followBlockId,
+  estimated = false,
 }: {
   document: GalgameStoryProject;
   fragment: GalgameStoryFragment;
@@ -101,27 +120,55 @@ export function StoryTimelineEditor({
   onPreviewPosition: (milliseconds: number | null) => void;
   onAudioLevel?: (decibels: number | null) => void;
   onPlayingChange?: (playing: boolean) => void;
+  preferences: TimelinePreferences;
+  onPreferencesChange: (preferences: TimelinePreferences) => void;
+  beatSelection?: TimelineBeatSelection;
+  onBeatSelection: (selection: TimelineBeatSelection) => void;
+  readOnly?: boolean;
+  followPositionMs?: number | null;
+  followBlockId?: string;
+  estimated?: boolean;
 }) {
-  const initialPreferences = useMemo(loadPreferences, []);
-  const [zoom, setZoom] = useState(initialPreferences.zoom);
-  const [ripple, setRipple] = useState(initialPreferences.ripple);
-  const [loop, setLoop] = useState(initialPreferences.loop);
+  const { zoom, ripple, loop } = preferences;
   const [positionMs, setPositionMs] = useState(0);
   const [playing, setPlaying] = useState(false);
   const [ready, setReady] = useState(false);
+  const [audioDurationMs, setAudioDurationMs] = useState<number | null>(null);
+  const [durationInput, setDurationInput] = useState("");
+  const [durationHint, setDurationHint] = useState("");
   const [error, setError] = useState("");
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const audioDurationRef = useRef(0);
+  const clockRef = useRef<TimelineClock | null>(null);
   const levelMonitorRef = useRef<AudioLevelMonitor | undefined>(undefined);
   const scrollRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
   const dragCleanupRef = useRef<(() => void) | null>(null);
+  const beatDragAnchorRef = useRef<number | null>(null);
   const auditionRef = useRef<
     { startMs: number; endMs: number; loop: boolean } | undefined
   >(undefined);
   const cues = timelineCues(fragment);
+  const beats = timelineBeats(fragment);
   const gaps = timelineGaps(fragment);
   const markers = timelineStageMarkers(fragment);
+  const events = timelineEvents(fragment);
+  const pointEvents = events.filter(
+    (event) =>
+      event.block.type === "scene" ||
+      event.block.type === "showCharacter" ||
+      event.block.type === "removeCharacter" ||
+      event.block.type === "audio",
+  );
   const durationMs = fragment.timeline?.durationMs ?? 0;
+  const durationRef = useRef(durationMs);
+  durationRef.current = durationMs;
+  const onPreviewPositionRef = useRef(onPreviewPosition);
+  onPreviewPositionRef.current = onPreviewPosition;
+  const onPlayingChangeRef = useRef(onPlayingChange);
+  onPlayingChangeRef.current = onPlayingChange;
+  const onAudioLevelRef = useRef(onAudioLevel);
+  onAudioLevelRef.current = onAudioLevel;
   const trackWidth = Math.max(640, (durationMs / 60_000) * zoom);
   const activeCue = activeTimelineCue(fragment, positionMs);
   const timelineAsset = (document.assets ?? []).find(
@@ -130,13 +177,99 @@ export function StoryTimelineEditor({
   const characters = new Map(
     (document.characters ?? []).map((character) => [character.id, character]),
   );
-
-  useEffect(() => {
-    localStorage.setItem(
-      TIMELINE_PREFERENCES_KEY,
-      JSON.stringify({ zoom, ripple, loop }),
-    );
-  }, [loop, ripple, zoom]);
+  const characterTrackIds = Array.from(
+    new Set(
+      pointEvents.flatMap((event) =>
+        (event.block.type === "showCharacter" ||
+          event.block.type === "removeCharacter") &&
+        event.block.characterId
+          ? [event.block.characterId]
+          : [],
+      ),
+    ),
+  );
+  const laneHeight = 44;
+  const lanes = [
+    { id: "reference", label: "参考声轨" },
+    { id: "scene", label: "场景" },
+    ...characterTrackIds.map((characterId) => ({
+      id: `character:${characterId}`,
+      label: characters.get(characterId)?.name ?? "未知角色",
+    })),
+    { id: "dialogue", label: "对白 / 配音" },
+    { id: "bgm", label: "BGM" },
+    { id: "ambient", label: "环境音" },
+    { id: "sfx", label: "音效" },
+    { id: "structure", label: "分支 / 结局" },
+  ];
+  const beatBandHeight = 54;
+  const laneTop = (laneId: string) =>
+    42 +
+    beatBandHeight +
+    Math.max(
+      0,
+      lanes.findIndex((lane) => lane.id === laneId),
+    ) *
+      laneHeight;
+  const dialogueTop = laneTop("dialogue");
+  const trackHeight = 42 + beatBandHeight + lanes.length * laneHeight;
+  const stateSegments = pointEvents.flatMap((event, eventIndex) => {
+    const block = event.block;
+    const laneId =
+      block.type === "scene"
+        ? "scene"
+        : block.type === "showCharacter"
+          ? `character:${block.characterId}`
+          : block.type === "audio" &&
+              block.action === "play" &&
+              (block.channel === "bgm" || block.channel === "ambient")
+            ? block.channel
+            : undefined;
+    if (!laneId) return [];
+    const next = pointEvents.slice(eventIndex + 1).find((candidate) => {
+      if (candidate.timeMs <= event.timeMs) return false;
+      if (block.type === "scene") return candidate.block.type === "scene";
+      if (block.type === "showCharacter")
+        return (
+          (candidate.block.type === "scene" &&
+            candidate.block.clearCharacters !== false) ||
+          ((candidate.block.type === "showCharacter" ||
+            candidate.block.type === "removeCharacter") &&
+            (candidate.block.type !== "removeCharacter" ||
+              candidate.block.all ||
+              candidate.block.characterId === block.characterId) &&
+            (candidate.block.type !== "showCharacter" ||
+              candidate.block.characterId === block.characterId))
+        );
+      if (block.type !== "audio") return false;
+      return (
+        candidate.block.type === "audio" &&
+        candidate.block.channel === block.channel
+      );
+    });
+    const asset =
+      block.type === "audio"
+        ? (document.assets ?? []).find((item) => item.id === block.assetId)
+        : undefined;
+    const label =
+      block.type === "scene"
+        ? ((document.scenes ?? []).find((scene) => scene.id === block.sceneId)
+            ?.name ?? "场景")
+        : block.type === "showCharacter"
+          ? (characters.get(block.characterId)?.name ?? "角色")
+          : asset?.type === "audio"
+            ? asset.label
+            : "声音";
+    return [
+      {
+        id: `state:${block.id}`,
+        laneId,
+        label,
+        startMs: event.timeMs,
+        endMs: next?.timeMs ?? durationMs,
+      },
+    ];
+  });
 
   useEffect(() => {
     let active = true;
@@ -144,46 +277,73 @@ export function StoryTimelineEditor({
     const audio = new Audio();
     audio.preload = "metadata";
     audioRef.current = audio;
-    const update = () => {
-      if (!active) return;
-      const next = Math.min(durationMs, Math.max(0, audio.currentTime * 1000));
-      setPositionMs(next);
-      onPreviewPosition(next);
-      const audition = auditionRef.current;
-      if (!audition || next < audition.endMs) return;
-      if (audition.loop) {
-        audio.currentTime = audition.startMs / 1000;
-        void audio.play();
-      } else {
+    const syncAudio = (milliseconds: number, shouldPlay: boolean) => {
+      const withinAudio = milliseconds < audioDurationRef.current;
+      if (!withinAudio) {
+        audio.pause();
+        onAudioLevelRef.current?.(null);
+        return;
+      }
+      audio.currentTime = milliseconds / 1000;
+      if (shouldPlay)
+        void audio.play().catch(() => {
+          if (active) setError("声轨播放被阻止，剧情时间轴将继续静音播放");
+        });
+    };
+    const clock = new TimelineClock(durationRef.current, {
+      onPosition: (next) => {
+        if (!active) return;
+        setPositionMs(next);
+        onPreviewPositionRef.current(next);
+        const audition = auditionRef.current;
+        if (!audition || next < audition.endMs) return;
+        if (audition.loop) {
+          clock.seek(audition.startMs);
+          syncAudio(audition.startMs, true);
+        } else {
+          auditionRef.current = undefined;
+          clock.pause();
+          audio.pause();
+          onAudioLevelRef.current?.(null);
+        }
+      },
+      onPlayingChange: (next) => {
+        if (!active) return;
+        setPlaying(next);
+        onPlayingChangeRef.current?.(next);
+      },
+      onFinish: () => {
         auditionRef.current = undefined;
         audio.pause();
-      }
-    };
-    const loaded = () => active && setReady(true);
-    const paused = () => {
+        onAudioLevelRef.current?.(null);
+      },
+    });
+    clockRef.current = clock;
+    const loaded = () => {
       if (!active) return;
-      setPlaying(false);
-      onPlayingChange?.(false);
+      const mediaDuration = Number.isFinite(audio.duration)
+        ? Math.max(0, Math.round(audio.duration * 1000))
+        : 0;
+      audioDurationRef.current = mediaDuration;
+      setAudioDurationMs(mediaDuration);
+      setReady(true);
     };
-    const started = () => {
+    const ended = () => {
       if (!active) return;
-      setPlaying(true);
-      onPlayingChange?.(true);
+      onAudioLevelRef.current?.(null);
     };
     const failed = () => active && setError("剧情时间轴音频无法读取");
-    audio.addEventListener("timeupdate", update);
-    audio.addEventListener("seeked", update);
     audio.addEventListener("loadedmetadata", loaded);
-    audio.addEventListener("play", started);
-    audio.addEventListener("pause", paused);
-    audio.addEventListener("ended", paused);
+    audio.addEventListener("ended", ended);
     audio.addEventListener("error", failed);
     setReady(false);
     setPlaying(false);
     setPositionMs(0);
+    setAudioDurationMs(null);
+    audioDurationRef.current = 0;
     setError("");
     levelMonitorRef.current = createAudioLevelMonitor(audio, (decibels) => {
-      if (active) onAudioLevel?.(decibels);
+      if (active) onAudioLevelRef.current?.(decibels);
     });
     if (timelineAsset?.type === "audio")
       void fetchApiBlob(`/v1/files/${timelineAsset.fileId}/content`)
@@ -194,28 +354,77 @@ export function StoryTimelineEditor({
           audio.load();
         })
         .catch(failed);
-    else setError("剧情时间轴素材不存在");
+    else {
+      setReady(true);
+      setAudioDurationMs(0);
+    }
     return () => {
       active = false;
       auditionRef.current = undefined;
+      clock.dispose();
       levelMonitorRef.current?.dispose();
       levelMonitorRef.current = undefined;
       audio.pause();
+      audio.removeEventListener("loadedmetadata", loaded);
+      audio.removeEventListener("ended", ended);
+      audio.removeEventListener("error", failed);
       audio.removeAttribute("src");
       audio.load();
       if (objectUrl) URL.revokeObjectURL(objectUrl);
       if (audioRef.current === audio) audioRef.current = null;
-      onAudioLevel?.(null);
-      onPlayingChange?.(false);
-      onPreviewPosition(null);
+      if (clockRef.current === clock) clockRef.current = null;
+      onAudioLevelRef.current?.(null);
+      onPlayingChangeRef.current?.(false);
+      onPreviewPositionRef.current(null);
     };
+  }, [timelineAsset?.fileId, timelineAsset?.type]);
+
+  useEffect(() => {
+    clockRef.current?.setDuration(durationMs);
+    setDurationInput(formatTimecode(durationMs));
+  }, [durationMs]);
+
+  useEffect(() => {
+    if (!readOnly || followPositionMs == null) return;
+    const target = Math.max(0, Math.min(durationMs, followPositionMs));
+    clockRef.current?.seek(target);
+    setPositionMs(target);
+  }, [durationMs, followPositionMs, readOnly]);
+
+  useEffect(() => {
+    if (!readOnly) return;
+    const followedIndex = followBlockId
+      ? beats.findIndex(
+          (beat) =>
+            beat.content?.id === followBlockId ||
+            beat.events.some((event) => event.block.id === followBlockId),
+        )
+      : beats.findIndex(
+          (beat, index) =>
+            beat.startMs <= (followPositionMs ?? 0) &&
+            (beats[index + 1]?.startMs ?? durationMs + 1) >
+              (followPositionMs ?? 0),
+        );
+    if (followedIndex < 0) return;
+    if (
+      beatSelection?.startIndex === followedIndex &&
+      beatSelection.endIndex === followedIndex
+    )
+      return;
+    onBeatSelection({
+      anchorIndex: followedIndex,
+      startIndex: followedIndex,
+      endIndex: followedIndex,
+    });
   }, [
+    beatSelection?.endIndex,
+    beatSelection?.startIndex,
+    beats,
     durationMs,
-    onPreviewPosition,
-    onAudioLevel,
-    onPlayingChange,
-    timelineAsset?.fileId,
-    timelineAsset?.type,
+    followBlockId,
+    followPositionMs,
+    onBeatSelection,
+    readOnly,
   ]);
 
   useEffect(() => {
@@ -239,26 +448,45 @@ export function StoryTimelineEditor({
   const seek = (milliseconds: number) => {
     const target = Math.min(durationMs, Math.max(0, milliseconds));
     const audio = audioRef.current;
-    if (audio && ready) audio.currentTime = target / 1000;
-    setPositionMs(target);
-    onPreviewPosition(target);
+    const clock = clockRef.current;
+    if (!clock) return;
+    clock.seek(target);
+    if (!audio || !ready) return;
+    if (target < audioDurationRef.current) {
+      audio.currentTime = target / 1000;
+      if (clock.isPlaying)
+        void audio.play().catch(() => {
+          setError("声轨播放被阻止，剧情时间轴将继续静音播放");
+        });
+    } else {
+      audio.pause();
+      onAudioLevelRef.current?.(null);
+    }
   };
 
   const toggle = async () => {
     const audio = audioRef.current;
-    if (!audio || !ready) return;
-    if (!audio.paused) {
+    const clock = clockRef.current;
+    if (!audio || !clock || !ready) return;
+    if (clock.isPlaying) {
+      clock.pause();
       audio.pause();
+      onAudioLevelRef.current?.(null);
       return;
     }
+    auditionRef.current = undefined;
+    if (clock.position >= durationMs) clock.seek(0);
     try {
-      auditionRef.current = undefined;
       await levelMonitorRef.current?.resume();
-      await audio.play();
+      if (clock.position < audioDurationRef.current) {
+        audio.currentTime = clock.position / 1000;
+        await audio.play();
+      }
       setError("");
     } catch {
-      setError("浏览器阻止了播放，请再次点击");
+      setError("声轨播放被阻止，剧情时间轴将继续静音播放");
     }
+    clock.play();
   };
 
   const auditionSelected = async () => {
@@ -266,7 +494,8 @@ export function StoryTimelineEditor({
     const cue = cues.find(
       (candidate) => candidate.block.id === selectedBlockId,
     );
-    if (!audio || !ready || !cue) return;
+    const clock = clockRef.current;
+    if (!audio || !clock || !ready || !cue) return;
     const startMs = Math.max(0, cue.startMs - 300);
     auditionRef.current = {
       startMs: cue.startMs,
@@ -276,17 +505,49 @@ export function StoryTimelineEditor({
     seek(startMs);
     try {
       await levelMonitorRef.current?.resume();
-      await audio.play();
+      if (startMs < audioDurationRef.current) await audio.play();
       setError("");
     } catch {
-      setError("浏览器阻止了播放，请再次点击");
+      setError("声轨播放被阻止，所选区间将继续静音预览");
     }
+    clock.play();
+  };
+
+  const commitDuration = () => {
+    if (readOnly) return;
+    const parsed = parseTimecode(durationInput);
+    if (parsed == null || parsed < 1) {
+      setDurationHint("请输入有效的 mm:ss.mmm 时间码");
+      setDurationInput(formatTimecode(durationMs));
+      return;
+    }
+    const updated = setTimelineDuration(fragment, parsed);
+    const nextDuration = updated.timeline?.durationMs ?? durationMs;
+    setDurationInput(formatTimecode(nextDuration));
+    setDurationHint(
+      nextDuration > parsed
+        ? `已保留到最后一个 Block 的结束时间 ${formatTimecode(nextDuration)}`
+        : "",
+    );
+    onFragment(updated);
   };
 
   const setSelectedEdgeAtPlayhead = (edge: "start" | "end") => {
-    if (!selectedBlockId) return;
+    if (!selectedBlockId || readOnly) return;
     onFragment(
-      setTimelineCueEdge(fragment, selectedBlockId, edge, positionMs, false),
+      edge === "end"
+        ? resizeTimelineCueEnd(fragment, selectedBlockId, positionMs, {
+            precise: true,
+            ripple,
+            keepContinuous: false,
+          })
+        : setTimelineCueEdge(
+            fragment,
+            selectedBlockId,
+            edge,
+            positionMs,
+            false,
+          ),
     );
   };
 
@@ -311,7 +572,7 @@ export function StoryTimelineEditor({
     kind: DragState["kind"],
     itemId: string,
   ) => {
-    if (event.button !== 0) return;
+    if (event.button !== 0 || readOnly) return;
     event.preventDefault();
     event.stopPropagation();
     if (kind.startsWith("gap")) onSelectGap(itemId);
@@ -325,17 +586,36 @@ export function StoryTimelineEditor({
     dragCleanupRef.current?.();
     const move = (pointer: globalThis.PointerEvent) => {
       const deltaMs = ((pointer.clientX - drag.startX) / zoom) * 60_000;
-      if (drag.kind === "boundary") {
+      if (drag.kind === "point") {
+        const sourceIndex = drag.source.blocks?.findIndex(
+          (block) => block.id === drag.itemId,
+        );
+        if (sourceIndex == null || sourceIndex < 0) return;
+        const sourceTime = effectivePointTime(drag.source, sourceIndex);
+        if (sourceTime == null) return;
+        onFragment(
+          setTimelinePointTime(
+            drag.source,
+            drag.itemId,
+            sourceTime + deltaMs,
+            pointer.altKey,
+          ),
+        );
+      } else if (drag.kind === "boundary") {
         const sourceCue = timelineCues(drag.source).find(
           (cue) => cue.block.id === drag.itemId,
         );
         if (!sourceCue) return;
         onFragment(
-          resizeTimelineBoundary(
+          resizeTimelineCueEnd(
             drag.source,
             drag.itemId,
             sourceCue.endMs + deltaMs,
-            pointer.altKey,
+            {
+              precise: pointer.altKey,
+              ripple,
+              keepContinuous: true,
+            },
           ),
         );
       } else if (drag.kind === "cue")
@@ -353,14 +633,25 @@ export function StoryTimelineEditor({
         if (!sourceCue) return;
         const edge = drag.kind === "cue-start" ? "start" : "end";
         onFragment(
-          setTimelineCueEdge(
-            drag.source,
-            drag.itemId,
-            edge,
-            sourceCue[edge === "start" ? "startMs" : "endMs"] + deltaMs,
-            false,
-            pointer.altKey,
-          ),
+          edge === "end"
+            ? resizeTimelineCueEnd(
+                drag.source,
+                drag.itemId,
+                sourceCue.endMs + deltaMs,
+                {
+                  precise: pointer.altKey,
+                  ripple,
+                  keepContinuous: false,
+                },
+              )
+            : setTimelineCueEdge(
+                drag.source,
+                drag.itemId,
+                edge,
+                sourceCue.startMs + deltaMs,
+                false,
+                pointer.altKey,
+              ),
         );
       } else {
         const sourceGap = timelineGaps(drag.source).find(
@@ -395,7 +686,8 @@ export function StoryTimelineEditor({
     event: KeyboardEvent<HTMLElement>,
     cueId: string,
   ) => {
-    if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+    if (readOnly || (event.key !== "ArrowLeft" && event.key !== "ArrowRight"))
+      return;
     event.preventDefault();
     const step = event.shiftKey ? 1000 : 100;
     const direction = event.key === "ArrowRight" ? 1 : -1;
@@ -413,22 +705,24 @@ export function StoryTimelineEditor({
     cueId: string,
     edge: "start" | "end",
   ) => {
-    if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+    if (readOnly || (event.key !== "ArrowLeft" && event.key !== "ArrowRight"))
+      return;
     event.preventDefault();
     event.stopPropagation();
     const cue = cues.find((candidate) => candidate.block.id === cueId);
     if (!cue) return;
     const step = event.shiftKey ? 1000 : 100;
+    const requested =
+      cue[edge === "start" ? "startMs" : "endMs"] +
+      (event.key === "ArrowRight" ? step : -step);
     onFragment(
-      setTimelineCueEdge(
-        fragment,
-        cueId,
-        edge,
-        cue[edge === "start" ? "startMs" : "endMs"] +
-          (event.key === "ArrowRight" ? step : -step),
-        false,
-        true,
-      ),
+      edge === "end"
+        ? resizeTimelineCueEnd(fragment, cueId, requested, {
+            precise: true,
+            ripple,
+            keepContinuous: false,
+          })
+        : setTimelineCueEdge(fragment, cueId, edge, requested, false, true),
     );
   };
 
@@ -437,7 +731,8 @@ export function StoryTimelineEditor({
     gapId: string,
     edge: "start" | "end",
   ) => {
-    if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+    if (readOnly || (event.key !== "ArrowLeft" && event.key !== "ArrowRight"))
+      return;
     event.preventDefault();
     event.stopPropagation();
     const gap = gaps.find((candidate) => candidate.id === gapId);
@@ -460,9 +755,58 @@ export function StoryTimelineEditor({
     { length: Math.floor(durationMs / tickEveryMs) + 1 },
     (_, index) => index * tickEveryMs,
   );
+  const selectedRange = beatSelection
+    ? timelineBeatRange(
+        fragment,
+        beatSelection.startIndex,
+        beatSelection.endIndex,
+      )
+    : undefined;
+  const selectBeat = (index: number, extend = false) => {
+    const anchorIndex = extend
+      ? (beatSelection?.anchorIndex ?? beatSelection?.startIndex ?? index)
+      : index;
+    onBeatSelection({
+      anchorIndex,
+      startIndex: Math.min(anchorIndex, index),
+      endIndex: Math.max(anchorIndex, index),
+    });
+  };
+  const selectBlock = (blockId: string) => {
+    const beatIndex = beats.findIndex(
+      (beat) =>
+        beat.content?.id === blockId ||
+        beat.events.some((event) => event.block.id === blockId),
+    );
+    if (beatIndex >= 0) selectBeat(beatIndex);
+    onSelectBlock(blockId);
+  };
 
   return (
-    <section className="galgame-timeline-editor" aria-label="可编辑剧情时间轴">
+    <section
+      className={`galgame-timeline-editor${readOnly ? " is-readonly" : ""}`}
+      aria-label={readOnly ? "试玩剧情时间轴" : "Beat 多轨剧情时间轴"}
+      tabIndex={0}
+      onKeyDown={(event) => {
+        if (
+          !(event.metaKey || event.ctrlKey) ||
+          event.key.toLowerCase() !== "a"
+        )
+          return;
+        if (
+          event.target instanceof HTMLInputElement ||
+          event.target instanceof HTMLTextAreaElement
+        )
+          return;
+        event.preventDefault();
+        if (beats.length)
+          onBeatSelection({
+            anchorIndex: 0,
+            startIndex: 0,
+            endIndex: beats.length - 1,
+          });
+      }}
+    >
       <header className="galgame-timeline-toolbar">
         <div className="galgame-timeline-transport">
           <button
@@ -490,32 +834,97 @@ export function StoryTimelineEditor({
           <strong>
             {formatTimecode(positionMs)} / {formatTimecode(durationMs)}
           </strong>
+          {estimated ? <em>估算时间 · 编辑后保存</em> : null}
+        </div>
+        <div className="galgame-timeline-lengths">
+          <span>
+            声轨长度
+            <strong>
+              {audioDurationMs == null
+                ? "读取中"
+                : formatTimecode(audioDurationMs)}
+            </strong>
+          </span>
+          <label>
+            <span>剧情长度</span>
+            <input
+              type="text"
+              inputMode="decimal"
+              aria-label="剧情时间轴总长"
+              value={durationInput}
+              disabled={readOnly}
+              onChange={(event) => {
+                setDurationInput(event.target.value);
+                setDurationHint("");
+              }}
+              onBlur={commitDuration}
+              onKeyDown={(event) => {
+                if (event.key !== "Enter") return;
+                event.preventDefault();
+                commitDuration();
+                event.currentTarget.blur();
+              }}
+            />
+          </label>
         </div>
         <label>
           <span>缩放</span>
           <input
             type="range"
-            min={MIN_ZOOM}
-            max={MAX_ZOOM}
+            min={MIN_TIMELINE_ZOOM}
+            max={MAX_TIMELINE_ZOOM}
             step="60"
             value={zoom}
             aria-label="时间轴缩放"
-            onChange={(event) => setZoom(Number(event.target.value))}
+            onChange={(event) =>
+              onPreferencesChange({
+                ...preferences,
+                zoom: Number(event.target.value),
+              })
+            }
           />
         </label>
-        <label className="galgame-timeline-ripple">
+        <label
+          className="galgame-timeline-ripple"
+          title="移动对白或拉伸右边界时，同步推移后续对白"
+        >
           <input
             type="checkbox"
             checked={ripple}
-            onChange={(event) => setRipple(event.target.checked)}
+            disabled={readOnly}
+            onChange={(event) =>
+              onPreferencesChange({
+                ...preferences,
+                ripple: event.target.checked,
+              })
+            }
           />
-          <span>连锁移动</span>
+          <span>波纹编辑</span>
         </label>
+        <button
+          type="button"
+          className="galgame-timeline-select-all"
+          disabled={!beats.length}
+          onClick={() =>
+            onBeatSelection({
+              anchorIndex: 0,
+              startIndex: 0,
+              endIndex: Math.max(0, beats.length - 1),
+            })
+          }
+        >
+          选择全部
+        </button>
       </header>
+      {durationHint ? (
+        <small className="galgame-timeline-hint" role="status">
+          {durationHint}
+        </small>
+      ) : null}
       <div className="galgame-timeline-calibration">
         <button
           type="button"
-          disabled={!selectedBlockId || !ready}
+          disabled={readOnly || !selectedBlockId || !ready}
           onClick={() => void auditionSelected()}
         >
           <Play aria-hidden /> 预听所选（提前 300ms）
@@ -524,20 +933,26 @@ export function StoryTimelineEditor({
           <input
             type="checkbox"
             checked={loop}
-            onChange={(event) => setLoop(event.target.checked)}
+            disabled={readOnly}
+            onChange={(event) =>
+              onPreferencesChange({
+                ...preferences,
+                loop: event.target.checked,
+              })
+            }
           />
           <Repeat2 aria-hidden /> 循环所选
         </label>
         <button
           type="button"
-          disabled={!selectedBlockId}
+          disabled={readOnly || !selectedBlockId}
           onClick={() => setSelectedEdgeAtPlayhead("start")}
         >
           播放头设为开始
         </button>
         <button
           type="button"
-          disabled={!selectedBlockId}
+          disabled={readOnly || !selectedBlockId}
           onClick={() => setSelectedEdgeAtPlayhead("end")}
         >
           播放头设为结束
@@ -548,7 +963,7 @@ export function StoryTimelineEditor({
         <div
           ref={trackRef}
           className="galgame-timeline-track"
-          style={{ width: `${trackWidth}px` }}
+          style={{ width: `${trackWidth}px`, height: `${trackHeight}px` }}
           onPointerDown={(event) => {
             if (event.target !== event.currentTarget) return;
             const bounds = event.currentTarget.getBoundingClientRect();
@@ -566,7 +981,234 @@ export function StoryTimelineEditor({
               </i>
             ))}
           </div>
-          <div className="galgame-timeline-gaps">
+          {selectedRange ? (
+            <div
+              className="galgame-timeline-selection-range"
+              style={{
+                left: `${(selectedRange.startMs / Math.max(1, durationMs)) * 100}%`,
+                width: `${Math.max(
+                  0,
+                  (selectedRange.durationMs / Math.max(1, durationMs)) * 100,
+                )}%`,
+                top: `${42 + beatBandHeight}px`,
+                height: `${trackHeight - 42 - beatBandHeight}px`,
+              }}
+              aria-hidden
+            />
+          ) : null}
+          <div
+            className="galgame-timeline-beat-band"
+            style={{ top: "42px", height: `${beatBandHeight}px` }}
+            aria-label="Beat 选择带"
+            onPointerLeave={() => undefined}
+          >
+            {beats.map((beat, index) => {
+              const nextStart = beats[index + 1]?.startMs ?? durationMs;
+              const widthPx = Math.max(
+                30,
+                ((Math.max(beat.endMs, nextStart) - beat.startMs) /
+                  Math.max(1, durationMs)) *
+                  trackWidth,
+              );
+              const selected = Boolean(
+                beatSelection &&
+                index >= beatSelection.startIndex &&
+                index <= beatSelection.endIndex,
+              );
+              const structural = beat.events.some(
+                (event) =>
+                  event.block.type === "branch" ||
+                  event.block.type === "endChapter",
+              );
+              return (
+                <button
+                  key={beat.id}
+                  type="button"
+                  className={`${selected ? "selected" : ""}${structural ? " structural" : ""}`}
+                  style={{
+                    left: `${(beat.startMs / Math.max(1, durationMs)) * trackWidth}px`,
+                    width: `${widthPx}px`,
+                  }}
+                  aria-pressed={selected}
+                  aria-label={`Beat ${index + 1}，${formatTimecode(beat.startMs)}`}
+                  onClick={(event) => {
+                    selectBeat(index, event.shiftKey);
+                    seek(beat.startMs);
+                  }}
+                  onPointerDown={(event) => {
+                    if (event.button !== 0 || event.shiftKey) return;
+                    beatDragAnchorRef.current = index;
+                    selectBeat(index);
+                    const finish = () => {
+                      beatDragAnchorRef.current = null;
+                      window.removeEventListener("pointerup", finish);
+                      window.removeEventListener("pointercancel", finish);
+                    };
+                    window.addEventListener("pointerup", finish);
+                    window.addEventListener("pointercancel", finish);
+                  }}
+                  onPointerEnter={() => {
+                    const anchorIndex = beatDragAnchorRef.current;
+                    if (anchorIndex == null) return;
+                    onBeatSelection({
+                      anchorIndex,
+                      startIndex: Math.min(anchorIndex, index),
+                      endIndex: Math.max(anchorIndex, index),
+                    });
+                  }}
+                >
+                  <strong>Beat {index + 1}</strong>
+                  <span>{formatTimecode(beat.startMs)}</span>
+                </button>
+              );
+            })}
+          </div>
+          <div className="galgame-timeline-lanes" aria-hidden>
+            {lanes.map((lane) => (
+              <div
+                key={lane.id}
+                className="galgame-timeline-lane"
+                style={{
+                  top: `${laneTop(lane.id)}px`,
+                  height: `${laneHeight}px`,
+                }}
+              >
+                <span>{lane.label}</span>
+              </div>
+            ))}
+          </div>
+          {fragment.timeline?.assetId ? (
+            <button
+              type="button"
+              className="galgame-timeline-reference"
+              style={{
+                top: `${laneTop("reference") + 7}px`,
+                width: "100%",
+              }}
+              onClick={() => seek(0)}
+              title="参考声轨只用于校准和试听，不进入正式多轨混音"
+            >
+              <Waves aria-hidden />
+              {timelineAsset?.type === "audio"
+                ? timelineAsset.label
+                : "参考声轨缺失"}
+            </button>
+          ) : null}
+          {stateSegments.map((segment) => (
+            <div
+              key={segment.id}
+              className="galgame-timeline-state-segment"
+              style={{
+                left: `${(segment.startMs / Math.max(1, durationMs)) * 100}%`,
+                top: `${laneTop(segment.laneId) + 10}px`,
+                width: `${
+                  ((segment.endMs - segment.startMs) /
+                    Math.max(1, durationMs)) *
+                  100
+                }%`,
+              }}
+              title={`${segment.label} · 持续到 ${formatTimecode(segment.endMs)}`}
+              aria-hidden
+            >
+              {segment.label}
+            </div>
+          ))}
+          {pointEvents.map((event) => {
+            const block = event.block;
+            const laneId =
+              block.type === "scene"
+                ? "scene"
+                : block.type === "showCharacter" ||
+                    block.type === "removeCharacter"
+                  ? `character:${block.characterId ?? characterTrackIds[0] ?? "unknown"}`
+                  : block.type === "audio"
+                    ? block.channel
+                    : "structure";
+            const asset =
+              block.type === "audio"
+                ? (document.assets ?? []).find(
+                    (candidate) => candidate.id === block.assetId,
+                  )
+                : undefined;
+            const label =
+              block.type === "scene"
+                ? ((document.scenes ?? []).find(
+                    (scene) => scene.id === block.sceneId,
+                  )?.name ?? "场景")
+                : block.type === "showCharacter"
+                  ? `登场 · ${characters.get(block.characterId)?.name ?? "角色"}`
+                  : block.type === "removeCharacter"
+                    ? block.all
+                      ? "全部退场"
+                      : `退场 · ${characters.get(block.characterId ?? "")?.name ?? "角色"}`
+                    : block.type === "audio"
+                      ? block.action === "stop"
+                        ? "停止"
+                        : asset?.type === "audio"
+                          ? asset.label
+                          : "声音"
+                      : "事件";
+            return (
+              <button
+                key={block.id}
+                type="button"
+                className={`galgame-timeline-point${block.id === selectedBlockId ? " selected" : ""}`}
+                style={{
+                  left: `${(event.timeMs / Math.max(1, durationMs)) * 100}%`,
+                  top: `${laneTop(laneId) + 7}px`,
+                }}
+                title={`${label} · ${formatTimecode(event.timeMs)}${event.explicit ? "" : " · 兼容锚点"}`}
+                aria-label={`${label} ${formatTimecode(event.timeMs)}`}
+                onClick={() => {
+                  selectBlock(block.id);
+                  seek(event.timeMs);
+                }}
+                onPointerDown={(pointer) =>
+                  startDrag(pointer, "point", block.id)
+                }
+                disabled={readOnly}
+              >
+                {block.type === "scene" ? (
+                  <MapPinned aria-hidden />
+                ) : block.type === "showCharacter" ||
+                  block.type === "removeCharacter" ? (
+                  <UserRound aria-hidden />
+                ) : block.type === "audio" && block.channel === "bgm" ? (
+                  <Music2 aria-hidden />
+                ) : block.type === "audio" && block.channel === "ambient" ? (
+                  <Waves aria-hidden />
+                ) : (
+                  <Volume2 aria-hidden />
+                )}
+                <span>{label}</span>
+              </button>
+            );
+          })}
+          {(fragment.blocks ?? [])
+            .filter(
+              (block) => block.type === "branch" || block.type === "endChapter",
+            )
+            .map((block) => (
+              <button
+                key={block.id}
+                type="button"
+                className={`galgame-timeline-structure${block.id === selectedBlockId ? " selected" : ""}`}
+                style={{
+                  left: `calc(100% - 28px)`,
+                  top: `${laneTop("structure") + 7}px`,
+                }}
+                onClick={() => {
+                  selectBlock(block.id);
+                  seek(durationMs);
+                }}
+              >
+                {block.type === "branch" ? "分支" : "结局"}
+              </button>
+            ))}
+          <div
+            className="galgame-timeline-gaps"
+            style={{ inset: 0, height: `${trackHeight}px` }}
+          >
             {gaps.map((gap) => {
               const left = (gap.startMs / Math.max(1, durationMs)) * 100;
               const width =
@@ -577,7 +1219,12 @@ export function StoryTimelineEditor({
                   role="button"
                   tabIndex={0}
                   className={`galgame-timeline-gap${gap.id === selectedGapId ? " selected" : ""}`}
-                  style={{ left: `${left}%`, width: `${width}%` }}
+                  style={{
+                    left: `${left}%`,
+                    width: `${width}%`,
+                    top: `${dialogueTop + 5}px`,
+                    height: `${laneHeight - 10}px`,
+                  }}
                   aria-label={`无对白 ${formatTimecode(gap.startMs)} 到 ${formatTimecode(gap.endMs)}`}
                   title={`无对白 · ${formatTimecode(gap.startMs)}–${formatTimecode(gap.endMs)}`}
                   onClick={() => {
@@ -619,13 +1266,28 @@ export function StoryTimelineEditor({
               );
             })}
           </div>
-          <div className="galgame-timeline-cues">
+          <div
+            className="galgame-timeline-cues"
+            style={{ inset: 0, height: `${trackHeight}px` }}
+          >
             {cues.map((cue, index) => {
+              const speakerIds =
+                cue.block.type === "dialogue"
+                  ? dialogueSpeakerIds(cue.block)
+                  : [];
               const characterId =
                 cue.block.type === "dialogue"
-                  ? cue.block.characterId
+                  ? (speakerIds[0] ?? cue.block.characterId)
                   : "narration";
-              const character = characters.get(characterId);
+              const speakerName =
+                cue.block.type === "dialogue"
+                  ? speakerIds
+                      .map(
+                        (speakerId) =>
+                          characters.get(speakerId)?.name ?? "未知角色",
+                      )
+                      .join("、")
+                  : "旁白";
               const cueMarkers = markers.get(cue.block.id) ?? [];
               const left = (cue.startMs / Math.max(1, durationMs)) * 100;
               const width =
@@ -641,12 +1303,14 @@ export function StoryTimelineEditor({
                   style={{
                     left: `${left}%`,
                     width: `${width}%`,
+                    top: `${dialogueTop + 5}px`,
+                    height: `${laneHeight - 10}px`,
                     backgroundColor: characterColor(characterId),
                   }}
-                  aria-label={`${character?.name ?? "旁白"} ${formatTimecode(cue.startMs)} 到 ${formatTimecode(cue.endMs)}`}
-                  title={`${character?.name ?? "旁白"} · ${cue.block.text}\n${formatTimecode(cue.startMs)}–${formatTimecode(cue.endMs)}`}
+                  aria-label={`${speakerName} ${formatTimecode(cue.startMs)} 到 ${formatTimecode(cue.endMs)}`}
+                  title={`${speakerName} · ${cue.block.text}\n${formatTimecode(cue.startMs)}–${formatTimecode(cue.endMs)}`}
                   onClick={() => {
-                    onSelectBlock(cue.block.id);
+                    selectBlock(cue.block.id);
                     seek(cue.startMs);
                   }}
                   onPointerDown={(event) =>
@@ -659,7 +1323,7 @@ export function StoryTimelineEditor({
                       role="separator"
                       tabIndex={0}
                       className="start"
-                      aria-label={`调整${character?.name ?? "旁白"}的开始时间`}
+                      aria-label={`调整${speakerName}的开始时间`}
                       onPointerDown={(event) =>
                         startDrag(event, "cue-start", cue.block.id)
                       }
@@ -678,32 +1342,37 @@ export function StoryTimelineEditor({
                       {cueMarkers.length}
                     </span>
                   ) : null}
-                  <strong>{character?.name ?? "旁白"}</strong>
+                  <strong>{speakerName}</strong>
                   <span>{cue.block.text}</span>
                   {index < cues.length - 1 ? (
                     <i
                       role="separator"
                       tabIndex={0}
-                      aria-label={`调整${character?.name ?? "旁白"}后的对白分界`}
+                      aria-label={`调整${speakerName}后的对白分界`}
                       onPointerDown={(event) =>
                         startDrag(event, "boundary", cue.block.id)
                       }
                       onKeyDown={(event) => {
                         if (
-                          event.key !== "ArrowLeft" &&
-                          event.key !== "ArrowRight"
+                          readOnly ||
+                          (event.key !== "ArrowLeft" &&
+                            event.key !== "ArrowRight")
                         )
                           return;
                         event.preventDefault();
                         event.stopPropagation();
                         const step = event.shiftKey ? 1000 : 100;
                         onFragment(
-                          resizeTimelineBoundary(
+                          resizeTimelineCueEnd(
                             fragment,
                             cue.block.id,
                             cue.endMs +
                               (event.key === "ArrowRight" ? step : -step),
-                            true,
+                            {
+                              precise: true,
+                              ripple,
+                              keepContinuous: true,
+                            },
                           ),
                         );
                       }}
@@ -713,7 +1382,7 @@ export function StoryTimelineEditor({
                       role="separator"
                       tabIndex={0}
                       className="end"
-                      aria-label={`调整${character?.name ?? "旁白"}的结束时间`}
+                      aria-label={`调整${speakerName}的结束时间`}
                       onPointerDown={(event) =>
                         startDrag(event, "cue-end", cue.block.id)
                       }
@@ -734,8 +1403,15 @@ export function StoryTimelineEditor({
         </div>
       </div>
       <footer>
-        <span>{cues.length} 句对白</span>
-        <span>拖动分界调整切点 · Alt 精确到 1ms · Shift+方向键 1s</span>
+        <span>
+          {beats.length} Beat · {cues.length} 句对白
+        </span>
+        <span>
+          {ripple
+            ? "波纹：拉伸右边界会推移后续对白"
+            : "普通：拖动分界调整相邻切点"}
+          {" · Alt 精确到 1ms · Shift+方向键 1s"}
+        </span>
       </footer>
     </section>
   );

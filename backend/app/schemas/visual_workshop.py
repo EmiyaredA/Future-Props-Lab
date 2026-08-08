@@ -378,6 +378,8 @@ class ImageGenerationTaskCreateIn(BaseModel):
     size: str = Field(default="1024x1024", max_length=32)
     seed: int | None = Field(default=None, ge=0)
     reference_asset_id: str | None = None
+    canvas_node_id: str | None = Field(default=None, min_length=1, max_length=64)
+    expected_canvas_revision: int | None = Field(default=None, ge=0)
 
     @field_validator("prompt")
     @classmethod
@@ -386,6 +388,12 @@ class ImageGenerationTaskCreateIn(BaseModel):
         if not cleaned:
             raise ValueError("提示词不能为空")
         return cleaned
+
+    @model_validator(mode="after")
+    def canvas_link_is_complete(self) -> ImageGenerationTaskCreateIn:
+        if (self.canvas_node_id is None) != (self.expected_canvas_revision is None):
+            raise ValueError("画布节点和画布版本必须同时提供")
+        return self
 
 
 class VideoGenerationTaskCreateIn(BaseModel):
@@ -403,6 +411,8 @@ class VideoGenerationTaskCreateIn(BaseModel):
     reference_asset_ids: list[str] = Field(default_factory=list, max_length=9)
     audio_asset_ids: list[str] = Field(default_factory=list, max_length=3)
     video_asset_ids: list[str] = Field(default_factory=list, max_length=3)
+    canvas_node_id: str | None = Field(default=None, min_length=1, max_length=64)
+    expected_canvas_revision: int | None = Field(default=None, ge=0)
 
     @field_validator("prompt")
     @classmethod
@@ -411,6 +421,8 @@ class VideoGenerationTaskCreateIn(BaseModel):
 
     @model_validator(mode="after")
     def valid_content_mode(self) -> VideoGenerationTaskCreateIn:
+        if (self.canvas_node_id is None) != (self.expected_canvas_revision is None):
+            raise ValueError("画布节点和画布版本必须同时提供")
         asset_ids = [
             item
             for item in (

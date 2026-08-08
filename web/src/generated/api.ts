@@ -909,6 +909,23 @@ export interface paths {
         patch: operations["patch_project_v1_visual_workshop_projects__project_id__patch"];
         trace?: never;
     };
+    "/v1/visual-workshop/projects/{project_id}/asset-imports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Import Assets */
+        post: operations["import_assets_v1_visual_workshop_projects__project_id__asset_imports_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/visual-workshop/projects/{project_id}/asset-references": {
         parameters: {
             query?: never;
@@ -1245,6 +1262,8 @@ export interface components {
             action: "play" | "stop";
             /** Assetid */
             assetId?: string | null;
+            /** Atms */
+            atMs?: number | null;
             /**
              * Channel
              * @enum {string}
@@ -1416,6 +1435,8 @@ export interface components {
             /** Id */
             id: string;
             portrait?: components["schemas"]["GalgameStoryDialoguePortrait"] | null;
+            /** Speakerids */
+            speakerIds?: string[] | null;
             /** Startms */
             startMs?: number | null;
             /**
@@ -1532,9 +1553,15 @@ export interface components {
         };
         /** GalgameStoryFragmentTimeline */
         GalgameStoryFragmentTimeline: {
-            /** Assetid */
-            assetId: string;
-            /** Durationms */
+            /**
+             * Assetid
+             * @description 可选的剧情校准参考声轨；不参与多轨运行时混音
+             */
+            assetId?: string | null;
+            /**
+             * Durationms
+             * @description 剧情时间轴总长（毫秒），独立于所引用声音素材的媒体时长
+             */
             durationMs: number;
         };
         /** GalgameStoryImageAsset */
@@ -1617,6 +1644,8 @@ export interface components {
              * @default false
              */
             all: boolean;
+            /** Atms */
+            atMs?: number | null;
             /** Characterid */
             characterId?: string | null;
             /** Id */
@@ -1685,6 +1714,8 @@ export interface components {
         };
         /** GalgameStorySceneBlock */
         GalgameStorySceneBlock: {
+            /** Atms */
+            atMs?: number | null;
             /** Backgroundid */
             backgroundId?: string | null;
             /** Clearcharacters */
@@ -1701,6 +1732,8 @@ export interface components {
         };
         /** GalgameStoryShowCharacterBlock */
         GalgameStoryShowCharacterBlock: {
+            /** Atms */
+            atMs?: number | null;
             /** Characterid */
             characterId: string;
             /** Expressionid */
@@ -1925,6 +1958,10 @@ export interface components {
         };
         /** ImageGenerationTaskCreateIn */
         ImageGenerationTaskCreateIn: {
+            /** Canvas Node Id */
+            canvas_node_id?: string | null;
+            /** Expected Canvas Revision */
+            expected_canvas_revision?: number | null;
             /**
              * @description discriminator enum property added by openapi-typescript
              * @enum {string}
@@ -2492,11 +2529,15 @@ export interface components {
         VideoGenerationTaskCreateIn: {
             /** Audio Asset Ids */
             audio_asset_ids?: string[];
+            /** Canvas Node Id */
+            canvas_node_id?: string | null;
             /**
              * Duration
              * @default 5
              */
             duration: number;
+            /** Expected Canvas Revision */
+            expected_canvas_revision?: number | null;
             /** First Frame Asset Id */
             first_frame_asset_id?: string | null;
             /**
@@ -2595,6 +2636,18 @@ export interface components {
             name?: string | null;
             /** Parent Id */
             parent_id?: string | null;
+        };
+        /** VisualAssetImportIn */
+        VisualAssetImportIn: {
+            /** Asset Ids */
+            asset_ids: string[];
+            /** Source Project Id */
+            source_project_id?: string | null;
+            /**
+             * Source Scope
+             * @enum {string}
+             */
+            source_scope: "library" | "project";
         };
         /** VisualAssetListOut */
         VisualAssetListOut: {
@@ -5634,6 +5687,43 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["VisualWorkshopProjectOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    import_assets_v1_visual_workshop_projects__project_id__asset_imports_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Studio-Token"?: string | null;
+            };
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VisualAssetImportIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VisualAssetListOut"];
                 };
             };
             /** @description Validation Error */

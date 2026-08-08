@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, Folder, Music2, Search, Upload, X } from "lucide-react";
-import { getFiles, getFolders } from "@features/files";
+import { fileQueryKeys, getFiles, getFolders } from "@features/files";
 import { getGalgameProjectAssets } from "@features/galgame-workshop/api";
 import { StoryAudioPreview } from "@features/galgame-workshop/editor/StoryAudioPreview";
 
@@ -34,7 +34,13 @@ export function StoryAudioPicker({
     enabled: source === "project",
   });
   const libraryQuery = useQuery({
-    queryKey: ["managed-files", "library", folderId ?? "root", query, "audio"],
+    queryKey: fileQueryKeys.list({
+      folderId,
+      query,
+      mediaKind: "audio",
+      sort: "updated",
+      includeReferences: false,
+    }),
     queryFn: () =>
       getFiles({
         folderId,
@@ -46,7 +52,7 @@ export function StoryAudioPicker({
     enabled: source === "library",
   });
   const foldersQuery = useQuery({
-    queryKey: ["managed-folders", "library"],
+    queryKey: fileQueryKeys.folders(),
     queryFn: () => getFolders(),
     enabled: source === "library",
   });

@@ -477,12 +477,14 @@ button.file-item-main:focus-visible {
 .file-item-menu-trigger {
   width: 31px;
   height: 31px;
+  padding: 0;
   display: grid;
   place-items: center;
   border: 1px solid var(--border);
   border-radius: 8px;
   background: color-mix(in srgb, var(--surface) 92%, transparent);
   color: var(--muted);
+  line-height: 0;
   box-shadow: 0 1px 3px rgb(0 0 0 / 5%);
   backdrop-filter: blur(6px);
 }
@@ -493,6 +495,8 @@ button.file-item-main:focus-visible {
 }
 .file-item-menu-trigger svg {
   width: 16px;
+  height: 16px;
+  display: block;
 }
 .file-item-menu-popover {
   position: absolute;
@@ -828,6 +832,178 @@ button.file-item-main:focus-visible {
   place-items: center;
   background: var(--overlay);
   backdrop-filter: blur(3px);
+}
+.file-preview-backdrop {
+  position: fixed;
+  z-index: 90;
+  inset: 0;
+  padding: 24px;
+  display: grid;
+  place-items: center;
+  background: color-mix(in srgb, #111 62%, transparent);
+  backdrop-filter: blur(4px);
+}
+.file-preview-dialog {
+  width: min(920px, calc(100vw - 32px));
+  max-height: min(820px, calc(100vh - 48px));
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: 0 28px 90px rgb(0 0 0 / 32%);
+}
+.file-preview-dialog > header {
+  min-height: 62px;
+  padding: 12px 14px 12px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border-bottom: 1px solid var(--border);
+}
+.file-preview-dialog > header > div {
+  min-width: 0;
+}
+.file-preview-dialog > header span {
+  color: var(--accent);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+.file-preview-dialog > header h2 {
+  margin: 3px 0 0;
+  overflow: hidden;
+  color: var(--text-strong);
+  font-size: 14px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.file-preview-dialog > header button {
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  flex: none;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--muted);
+}
+.file-preview-dialog > header button:hover {
+  background: var(--surface-soft);
+  color: var(--text);
+}
+.file-preview-dialog > header button svg {
+  width: 18px;
+}
+.file-preview-stage {
+  min-height: 260px;
+  max-height: calc(100vh - 140px);
+  padding: 20px;
+  overflow: auto;
+  display: grid;
+  place-items: center;
+  background: color-mix(in srgb, var(--bg) 76%, #111);
+}
+.file-preview-stage img,
+.file-preview-stage video {
+  max-width: 100%;
+  max-height: calc(100vh - 184px);
+  display: block;
+  border-radius: 9px;
+  object-fit: contain;
+}
+.file-preview-stage video {
+  width: 100%;
+}
+.file-preview-state {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 11px;
+}
+.file-preview-state svg {
+  width: 16px;
+}
+.file-preview-fallback {
+  width: min(420px, 100%);
+  padding: 36px 28px;
+  display: grid;
+  place-items: center;
+  gap: 12px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface);
+  text-align: center;
+}
+.file-preview-fallback svg {
+  width: 42px;
+  height: 42px;
+  color: var(--accent);
+}
+.file-preview-fallback > strong {
+  max-width: 100%;
+  overflow: hidden;
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.file-preview-fallback > p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.file-preview-fallback > button {
+  margin-top: 4px;
+  min-height: 34px;
+  padding: 0 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface-soft);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 600;
+}
+.file-preview-fallback > button:hover {
+  border-color: var(--accent-line);
+  color: var(--accent);
+}
+.file-preview-fallback > button svg {
+  width: 14px;
+  height: 14px;
+}
+.file-audio-preview {
+  width: min(560px, 100%);
+  padding: 34px 28px;
+  display: grid;
+  place-items: center;
+  gap: 15px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface);
+}
+.file-audio-preview > svg {
+  width: 42px;
+  height: 42px;
+  color: var(--accent);
+}
+.file-audio-preview > strong {
+  max-width: 100%;
+  overflow: hidden;
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.file-audio-preview audio {
+  width: 100%;
 }
 .file-dialog {
   width: min(470px, 100%);

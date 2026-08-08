@@ -2,6 +2,7 @@ import type { components } from "@generated/api";
 import { api, fetchApiBlob, unwrap } from "@platform/api/client";
 import { ApiError } from "@platform/api/client";
 import { getStudioToken, notifyAuthRequired } from "@platform/api/studioAuth";
+import { postSse } from "@platform/api/sse";
 
 export type Catalog = components["schemas"]["ModelCatalogOut"];
 export type Provider = components["schemas"]["ProviderOut"];
@@ -403,51 +404,12 @@ export async function streamModelTest(
   signal: AbortSignal,
   onEvent: (event: ModelStreamEvent) => void,
 ) {
-  const base = String(import.meta.env.VITE_API_BASE || "").replace(/\/$/, "");
   const suffix = regenerate ? "regenerate/stream" : "messages/stream";
-  const token = getStudioToken();
-  const response = await fetch(
-    `${base}/v1/model-test/conversations/${encodeURIComponent(id)}/${suffix}`,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "text/event-stream",
-        ...(token ? { "X-Studio-Token": token } : {}),
-      },
-      body: JSON.stringify(body),
-      signal,
-    },
-  );
-  if (response.status === 401) notifyAuthRequired();
-  if (!response.ok) {
-    const problem = (await response.json().catch(() => ({}))) as Record<
-      string,
-      unknown
-    >;
-    throw new ApiError(
-      String(problem.detail || "请求失败，请稍后重试"),
-      problem,
-      response.status,
-    );
-  }
-  if (!response.body) throw new Error("浏览器不支持流式响应");
-  const reader = response.body.getReader();
-  const decoder = new TextDecoder();
-  let buffer = "";
-  while (true) {
-    const { value, done } = await reader.read();
-    buffer += decoder.decode(value, { stream: !done });
-    const frames = buffer.split("\n\n");
-    buffer = frames.pop() ?? "";
-    for (const frame of frames) {
-      const data = frame
-        .split("\n")
-        .find((line) => line.startsWith("data:"))
-        ?.slice(5)
-        .trim();
-      if (data) onEvent(JSON.parse(data) as ModelStreamEvent);
-    }
-    if (done) break;
-  }
+  await postSse<ModelStreamEvent>({
+    path: `/v1/model-test/conversations/${encodeURIComponent(id)}/${suffix}`,
+    body,
+    signal,
+    onEvent,
+    defaultErrorMessage: "请求失败，请稍后重试",
+  });
 }

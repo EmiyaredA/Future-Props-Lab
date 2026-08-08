@@ -21,7 +21,6 @@ import {
   MapPinned,
   MessageSquareText,
   Music2,
-  MoreHorizontal,
   Plus,
   Play,
   RefreshCcw,
@@ -49,7 +48,17 @@ import {
   type GalgameStoryProject,
 } from "@features/galgame-workshop/api";
 import { DialogueVoiceBinding } from "@features/galgame-workshop/editor/DialogueVoiceBinding";
+import {
+  dialogueSpeakerIds,
+  withDialogueSpeakers,
+} from "@features/galgame-workshop/editor/dialogue";
 import { StoryTimelineEditor } from "@features/galgame-workshop/editor/StoryTimelineEditor";
+import type { TimelineBeatSelection } from "@features/galgame-workshop/editor/StoryTimelineEditor";
+import {
+  loadTimelinePreferences,
+  storeTimelinePreferences,
+  type TimelinePreferences,
+} from "@features/galgame-workshop/editor/timelinePreferences";
 import {
   completeStoryDocument,
   firstChapter,
@@ -71,18 +80,34 @@ import {
   type StoryPlayerHandle,
 } from "@features/galgame-workshop/editor/StoryPlayer";
 import {
+  CHARACTER_POSITION_MAX,
+  CHARACTER_POSITION_MIN,
   characterTransform,
   characterTransition,
   DEFAULT_CHARACTER_TRANSFORM,
   DEFAULT_CHARACTER_TRANSITION,
+  replayStageAtTime,
   replayStageToBlock,
+  visibleStageActors,
 } from "@features/galgame-workshop/editor/stage";
 import {
+  appendBlockToTimeline,
+  deleteTimelineBeatRange,
+  duplicateTimelineBeatRange,
+  effectivePointTime,
   formatTimecode,
   parseTimecode,
+  projectFragmentTimeline,
+  resizeTimelineCueEnd,
+  scaleTimelineBeatRange,
   setTimelineCueEdge,
   setTimelineGapEdge,
+  setTimelinePointTime,
+  timelineAudioStateAt,
+  timelineBeatRange,
+  timelineBeats,
   timelineGaps,
+  translateTimelineBeatRange,
   type GalgameTimelineGap,
 } from "@features/galgame-workshop/editor/timeline";
 import { CharacterWorkspace } from "@features/galgame-workshop/editor/CharacterWorkspace";
@@ -106,7 +131,6 @@ const PROJECT_KEY = (projectId: string) =>
 
 type SaveState = "saved" | "saving" | "error" | "conflict";
 type InspectorTab = "properties" | "appearance" | "report";
-type ScriptView = "flow" | "timeline";
 
 const WORKSPACES: Array<{
   id: EditorWorkspace;
@@ -131,6 +155,7 @@ const BLOCK_LABELS: Record<BlockKind, string> = {
 };
 
 const SIDEBAR_WIDTHS_KEY = "future_props_galgame_editor_sidebar_widths";
+const STAGE_SPLIT_KEY = "future_props_galgame_editor_stage_split";
 const SIDEBAR_GUTTER_WIDTH = 12;
 const SIDEBAR_LIMITS = {
   left: { min: 180, max: 360 },
@@ -179,6 +204,11 @@ function loadSidebarWidths(): SidebarWidths {
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(Math.max(value, min), max);
+}
+
+function loadStageSplit() {
+  const stored = Number(localStorage.getItem(STAGE_SPLIT_KEY));
+  return Number.isFinite(stored) && stored >= 24 && stored <= 72 ? stored : 42;
 }
 
 function errorMessage(error: unknown) {
@@ -377,8 +407,8 @@ function CharacterTransformFields({
 }) {
   const value = characterTransform(transform);
   const fields = [
-    ["x", "X 位置", 0, 100, 1, "%"],
-    ["y", "Y 位置", 0, 100, 1, "%"],
+    ["x", "X 位置", CHARACTER_POSITION_MIN, CHARACTER_POSITION_MAX, 1, "%"],
+    ["y", "Y 位置", CHARACTER_POSITION_MIN, CHARACTER_POSITION_MAX, 1, "%"],
     ["scale", "比例", 0.25, 3, 0.05, "×"],
     ["brightness", "亮度", 0, 2, 0.05, "×"],
     ["opacity", "透明度", 0, 1, 0.05, ""],
@@ -453,68 +483,212 @@ function CharacterTransformFields({
   );
 }
 
-function BlockCard({
-  block,
-  index,
-  selected,
+function BeatRangeInspector({
+  fragment,
+  selection,
   document,
-  chapter,
-  onSelect,
+  onSelectBlock,
+  onApply,
+  onRequestDelete,
 }: {
-  block: GalgameStoryBlock;
-  index: number;
-  selected: boolean;
+  fragment: GalgameStoryFragment;
+  selection: TimelineBeatSelection;
   document: GalgameStoryProject;
-  chapter: GalgameStoryChapter;
-  onSelect: () => void;
+  onSelectBlock: (blockId: string) => void;
+  onApply: (result: { fragment: GalgameStoryFragment; error?: string }) => void;
+  onRequestDelete: () => void;
 }) {
-  const character =
-    block.type === "dialogue" ||
-    block.type === "showCharacter" ||
-    block.type === "removeCharacter"
-      ? document.characters?.find(
-          (candidate) => candidate.id === block.characterId,
-        )
-      : undefined;
+  const [moveMs, setMoveMs] = useState(0);
+  const [scalePercent, setScalePercent] = useState(100);
+  const beats = timelineBeats(fragment);
+  const range = timelineBeatRange(
+    fragment,
+    selection.startIndex,
+    selection.endIndex,
+  );
+  if (!range)
+    return (
+      <div className="galgame-inspector-empty">
+        <Settings2 aria-hidden />
+        <strong>当前没有 Beat</strong>
+        <span>在播放头添加对白、舞台或声音事件后即可开始编排。</span>
+      </div>
+    );
+  const selectedBeats = beats.slice(range.startIndex, range.endIndex + 1);
+  const selectedBlocks = (fragment.blocks ?? []).filter((block) =>
+    range.blockIds.includes(block.id),
+  );
+  const counts = selectedBlocks.reduce<Record<string, number>>(
+    (result, block) => ({
+      ...result,
+      [BLOCK_LABELS[block.type]]: (result[BLOCK_LABELS[block.type]] ?? 0) + 1,
+    }),
+    {},
+  );
+  const firstBeat = selectedBeats[0];
+  const stage = replayStageAtTime(document, fragment, firstBeat.startMs).stage;
+  const audio = timelineAudioStateAt(fragment, firstBeat.startMs);
+  const sceneName = (document.scenes ?? []).find(
+    (scene) => scene.id === stage.sceneId,
+  )?.name;
+  const actorNames = visibleStageActors(stage).map(
+    (actor) =>
+      (document.characters ?? []).find(
+        (character) => character.id === actor.characterId,
+      )?.name ?? actor.characterId,
+  );
+  const audioName = (assetId?: string | null) => {
+    const asset = (document.assets ?? []).find((item) => item.id === assetId);
+    return asset?.type === "audio" ? asset.label : "静音";
+  };
+  const single = range.startIndex === range.endIndex;
+
   return (
-    <article
-      className={`galgame-block-card is-${block.type} ${selected ? "selected" : ""}`}
-    >
-      <span className="galgame-block-index">{index + 1}</span>
-      <button
-        type="button"
-        className="galgame-block-select"
-        aria-pressed={selected}
-        onClick={onSelect}
-      >
-        <span className="galgame-block-kind">
-          <BlockTypeIcon type={block.type} />
+    <div className="galgame-beat-range-inspector">
+      <header>
+        <span>
+          <strong>
+            {single
+              ? `Beat ${range.startIndex + 1}`
+              : `Beat ${range.startIndex + 1}–${range.endIndex + 1}`}
+          </strong>
+          <small>
+            {formatTimecode(range.startMs)}–{formatTimecode(range.endMs)}
+          </small>
         </span>
-        <span className="galgame-block-copy">
-          <span>
-            <strong>{BLOCK_LABELS[block.type]}</strong>
-            {character ? <em>{character.name}</em> : null}
-            {(block.type === "dialogue" || block.type === "narration") &&
-            block.startMs != null &&
-            block.endMs != null ? (
-              <em>
-                {formatMilliseconds(block.startMs)}–
-                {formatMilliseconds(block.endMs)}
-              </em>
-            ) : null}
-          </span>
-          {block.type === "branch" ? (
-            <>
-              <b>{block.prompt || "请选择"}</b>
-              <small>{blockSummary(block, document, chapter)}</small>
-            </>
-          ) : (
-            <b>{blockSummary(block, document, chapter)}</b>
-          )}
+        {range.structuralBlockIds.length ? <em>含受保护结构 Beat</em> : null}
+      </header>
+      <div className="galgame-beat-range-metrics">
+        <span>
+          <small>范围时长</small>
+          <strong>{formatTimecode(range.durationMs)}</strong>
         </span>
-        <MoreHorizontal aria-hidden />
-      </button>
-    </article>
+        <span>
+          <small>Beat</small>
+          <strong>{selectedBeats.length}</strong>
+        </span>
+        <span>
+          <small>事件</small>
+          <strong>{selectedBlocks.length}</strong>
+        </span>
+      </div>
+      {single ? (
+        <>
+          <section className="galgame-beat-state-summary">
+            <strong>开始时持续状态</strong>
+            <span>场景 · {sceneName ?? "未设置"}</span>
+            <span>
+              在场 · {actorNames.length ? actorNames.join("、") : "无角色"}
+            </span>
+            <span>BGM · {audioName(audio.bgm?.assetId)}</span>
+            <span>环境 · {audioName(audio.ambient?.assetId)}</span>
+          </section>
+          <section className="galgame-beat-event-list">
+            <strong>Beat 内事件</strong>
+            {selectedBlocks.map((block) => (
+              <button
+                key={block.id}
+                type="button"
+                onClick={() => onSelectBlock(block.id)}
+              >
+                <BlockTypeIcon type={block.type} />
+                <span>
+                  <strong>{BLOCK_LABELS[block.type]}</strong>
+                  <small>
+                    {blockSummary(block, document, firstChapter(document)!)}
+                  </small>
+                </span>
+              </button>
+            ))}
+          </section>
+        </>
+      ) : (
+        <section className="galgame-beat-range-counts">
+          <strong>事件统计</strong>
+          {Object.entries(counts).map(([label, count]) => (
+            <span key={label}>
+              {label}
+              <em>{count}</em>
+            </span>
+          ))}
+        </section>
+      )}
+      <section className="galgame-beat-range-actions">
+        <strong>范围操作 · 自动波纹后续 Beat</strong>
+        <label>
+          <span>整体平移</span>
+          <input
+            type="number"
+            step="100"
+            value={moveMs}
+            onChange={(event) => setMoveMs(Number(event.target.value))}
+          />
+          <em>ms</em>
+          <button
+            type="button"
+            onClick={() =>
+              onApply(
+                translateTimelineBeatRange(
+                  fragment,
+                  range.startIndex,
+                  range.endIndex,
+                  moveMs,
+                ),
+              )
+            }
+          >
+            应用
+          </button>
+        </label>
+        <label>
+          <span>范围缩放</span>
+          <input
+            type="number"
+            min="1"
+            step="5"
+            value={scalePercent}
+            onChange={(event) => setScalePercent(Number(event.target.value))}
+          />
+          <em>%</em>
+          <button
+            type="button"
+            onClick={() =>
+              onApply(
+                scaleTimelineBeatRange(
+                  fragment,
+                  range.startIndex,
+                  range.endIndex,
+                  scalePercent / 100,
+                ),
+              )
+            }
+          >
+            应用
+          </button>
+        </label>
+        <div>
+          <button
+            type="button"
+            onClick={() =>
+              onApply(
+                duplicateTimelineBeatRange(
+                  fragment,
+                  range.startIndex,
+                  range.endIndex,
+                  () => stableId(),
+                ),
+              )
+            }
+          >
+            复制到范围之后
+          </button>
+          <button type="button" className="danger" onClick={onRequestDelete}>
+            删除并闭合空隙
+          </button>
+        </div>
+        <small>分支和章节结局参与统计，但不会被复制、删除、移动或缩放。</small>
+      </section>
+    </div>
   );
 }
 
@@ -529,6 +703,12 @@ function BlockInspector({
   voiceStale,
   onVoiceStale,
   onVoiceFresh,
+  timelinePreferences,
+  onMoveUp,
+  onMoveDown,
+  onDelete,
+  canMoveUp,
+  canMoveDown,
 }: {
   projectId: string;
   block?: GalgameStoryBlock;
@@ -540,6 +720,12 @@ function BlockInspector({
   voiceStale: boolean;
   onVoiceStale: () => void;
   onVoiceFresh: () => void;
+  timelinePreferences: TimelinePreferences;
+  onMoveUp: () => void;
+  onMoveDown: () => void;
+  onDelete: () => void;
+  canMoveUp: boolean;
+  canMoveDown: boolean;
 }) {
   if (!block)
     return (
@@ -552,6 +738,14 @@ function BlockInspector({
 
   const patch = (updater: (current: GalgameStoryBlock) => GalgameStoryBlock) =>
     onDocument(updateBlock(document, fragmentId, block.id, updater));
+  const fragment = chapter.fragments?.find((item) => item.id === fragmentId);
+  const blockIndex = fragment?.blocks?.findIndex(
+    (item) => item.id === block.id,
+  );
+  const pointTime =
+    fragment && blockIndex != null && blockIndex >= 0
+      ? effectivePointTime(fragment, blockIndex)
+      : undefined;
 
   return (
     <div className="galgame-block-inspector">
@@ -563,6 +757,32 @@ function BlockInspector({
           <strong>{BLOCK_LABELS[block.type]}</strong>
           <small>{block.id}</small>
         </span>
+        <nav className="galgame-block-order-actions" aria-label="执行顺序">
+          <button
+            type="button"
+            disabled={!canMoveUp}
+            onClick={onMoveUp}
+            aria-label="提前执行"
+          >
+            <ArrowUp aria-hidden />
+          </button>
+          <button
+            type="button"
+            disabled={!canMoveDown}
+            onClick={onMoveDown}
+            aria-label="延后执行"
+          >
+            <ArrowDown aria-hidden />
+          </button>
+          <button
+            type="button"
+            className="danger"
+            onClick={onDelete}
+            aria-label="删除事件"
+          >
+            <Trash2 aria-hidden />
+          </button>
+        </nav>
       </header>
       {(block.type === "dialogue" || block.type === "narration") &&
       block.startMs != null &&
@@ -599,18 +819,43 @@ function BlockInspector({
               onCommit={(milliseconds) =>
                 onDocument(
                   updateFragment(document, fragmentId, (fragment) =>
-                    setTimelineCueEdge(
-                      fragment,
-                      block.id,
-                      "end",
-                      milliseconds,
-                      true,
-                    ),
+                    resizeTimelineCueEnd(fragment, block.id, milliseconds, {
+                      precise: true,
+                      ripple: timelinePreferences.ripple,
+                      keepContinuous: true,
+                    }),
                   ),
                 )
               }
             />
           </div>
+        </div>
+      ) : null}
+      {(block.type === "scene" ||
+        block.type === "showCharacter" ||
+        block.type === "removeCharacter" ||
+        block.type === "audio") &&
+      fragment?.timeline &&
+      pointTime != null ? (
+        <div className="galgame-block-timing" aria-label="演出事件时间点">
+          <header>
+            <Clock3 aria-hidden />
+            <span>
+              <strong>演出时间点</strong>
+              <small>{block.atMs == null ? "兼容锚点" : "显式锚点"}</small>
+            </span>
+          </header>
+          <TimecodeField
+            label="触发时间"
+            value={pointTime}
+            onCommit={(milliseconds) =>
+              onDocument(
+                updateFragment(document, fragmentId, (current) =>
+                  setTimelinePointTime(current, block.id, milliseconds, true),
+                ),
+              )
+            }
+          />
         </div>
       ) : null}
       {block.type === "scene" ? (
@@ -809,15 +1054,64 @@ function BlockInspector({
               onChange={(characterId) =>
                 patch((current) =>
                   current.type === "dialogue"
-                    ? {
-                        ...current,
-                        characterId,
-                        expressionId: null,
-                      }
+                    ? withDialogueSpeakers(
+                        current,
+                        (() => {
+                          const currentSpeakers = dialogueSpeakerIds(current);
+                          if (currentSpeakers.length === 1)
+                            return [characterId];
+                          if (currentSpeakers.includes(characterId))
+                            return [
+                              characterId,
+                              ...currentSpeakers.filter(
+                                (speakerId) => speakerId !== characterId,
+                              ),
+                            ];
+                          return [characterId, ...currentSpeakers.slice(1)];
+                        })(),
+                      )
                     : current,
                 )
               }
             />
+            <div
+              className="galgame-dialogue-speakers"
+              role="group"
+              aria-label="同时说话角色"
+            >
+              {(document.characters ?? []).map((character) => {
+                const speakerIds = dialogueSpeakerIds(block);
+                const primary = character.id === block.characterId;
+                return (
+                  <label key={character.id}>
+                    <input
+                      type="checkbox"
+                      checked={speakerIds.includes(character.id)}
+                      disabled={primary}
+                      onChange={(event) =>
+                        patch((current) => {
+                          if (current.type !== "dialogue") return current;
+                          const currentSpeakers = dialogueSpeakerIds(current);
+                          return withDialogueSpeakers(
+                            current,
+                            event.target.checked
+                              ? [...currentSpeakers, character.id]
+                              : currentSpeakers.filter(
+                                  (speakerId) => speakerId !== character.id,
+                                ),
+                          );
+                        })
+                      }
+                    />
+                    <span>{character.name}</span>
+                    {primary ? <small>主角色</small> : null}
+                  </label>
+                );
+              })}
+            </div>
+            <small className="galgame-field-hint">
+              可勾选多人同时说这一句；主角色继续控制本句表情、立绘和配音绑定。
+            </small>
           </Field>
           <Field label="对白表情">
             <CustomSelect
@@ -1258,8 +1552,8 @@ function TimelineGapInspector({
 }) {
   const updateEdge = (edge: "start" | "end", milliseconds: number) =>
     onDocument(
-      updateFragment(document, fragment.id, (current) =>
-        setTimelineGapEdge(current, gap.id, edge, milliseconds),
+      updateFragment(document, fragment.id, () =>
+        setTimelineGapEdge(fragment, gap.id, edge, milliseconds),
       ),
     );
   return (
@@ -1303,7 +1597,8 @@ function TimelineGapInspector({
         </div>
       </div>
       <small className="galgame-gap-note">
-        无对白区间不会新增 Block；完整音轨继续播放，舞台保留并隐藏对话框。
+        无对白区间不会新增
+        Block；剧情时钟继续推进，参考声轨结束后保持静音，舞台保留并隐藏对话框。
       </small>
     </div>
   );
@@ -1329,7 +1624,23 @@ export function GalgameWorkshopEditorPage({
   const resizeCleanupRef = useRef<(() => void) | undefined>(undefined);
   const [workspace, setWorkspace] = useState<EditorWorkspace>("script");
   const [previewMode, setPreviewMode] = useState<"edit" | "play">("edit");
-  const [scriptView, setScriptView] = useState<ScriptView>("flow");
+  const [stageSplit, setStageSplit] = useState(loadStageSplit);
+  const [beatSelection, setBeatSelection] = useState<TimelineBeatSelection>({
+    anchorIndex: 0,
+    startIndex: 0,
+    endIndex: 0,
+  });
+  const [playbackBeatSelection, setPlaybackBeatSelection] =
+    useState<TimelineBeatSelection>({
+      anchorIndex: 0,
+      startIndex: 0,
+      endIndex: 0,
+    });
+  const [playbackFollow, setPlaybackFollow] = useState<{
+    fragmentId: string;
+    positionMs: number;
+    blockId?: string;
+  }>();
   const [timelinePreviewMs, setTimelinePreviewMs] = useState<number | null>(
     null,
   );
@@ -1337,6 +1648,8 @@ export function GalgameWorkshopEditorPage({
     number | null
   >(null);
   const [timelineAudioPlaying, setTimelineAudioPlaying] = useState(false);
+  const [timelinePreferences, setTimelinePreferences] =
+    useState<TimelinePreferences>(loadTimelinePreferences);
   const [inspectorTab, setInspectorTab] = useState<InspectorTab>("properties");
   const [sidebarWidths, setSidebarWidths] =
     useState<SidebarWidths>(loadSidebarWidths);
@@ -1349,11 +1662,20 @@ export function GalgameWorkshopEditorPage({
   const [notice, setNotice] = useState("");
   const [conflict, setConflict] = useState<GalgameStoryDocument>();
   const [confirmOverwrite, setConfirmOverwrite] = useState(false);
+  const [confirmRangeDelete, setConfirmRangeDelete] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
   const [staleVoiceBlocks, setStaleVoiceBlocks] = useState<Set<string>>(
     () => new Set(),
   );
   const [focusedCharacterId, setFocusedCharacterId] = useState<string>();
+
+  useEffect(() => {
+    storeTimelinePreferences(timelinePreferences);
+  }, [timelinePreferences]);
+
+  useEffect(() => {
+    localStorage.setItem(STAGE_SPLIT_KEY, String(stageSplit));
+  }, [stageSplit]);
 
   const projectQuery = useQuery({
     queryKey: PROJECT_KEY(projectId),
@@ -1584,11 +1906,24 @@ export function GalgameWorkshopEditorPage({
   const fragments = chapter.fragments ?? [];
   const selectedFragment =
     fragmentById(chapter, selectedFragmentId) ?? fragments[0];
+  const projectedSelectedFragment = selectedFragment
+    ? projectFragmentTimeline(selectedFragment)
+    : undefined;
+  const playbackSourceFragment = playbackFollow
+    ? fragmentById(chapter, playbackFollow.fragmentId)
+    : undefined;
+  const timelineSourceFragment =
+    previewMode === "play" && playbackSourceFragment
+      ? playbackSourceFragment
+      : selectedFragment;
+  const timelineFragment = timelineSourceFragment
+    ? projectFragmentTimeline(timelineSourceFragment)
+    : undefined;
   const selectedBlock = selectedFragment?.blocks?.find(
     (block) => block.id === selectedBlockId,
   );
-  const selectedTimelineGap = selectedFragment
-    ? timelineGaps(selectedFragment).find(
+  const selectedTimelineGap = projectedSelectedFragment
+    ? timelineGaps(projectedSelectedFragment).find(
         (gap) => gap.id === selectedTimelineGapId,
       )
     : undefined;
@@ -1620,8 +1955,8 @@ export function GalgameWorkshopEditorPage({
     setSelectedFragmentId(fragment.id);
     setSelectedTimelineGapId(undefined);
     setSelectedBlockId(fragment.blocks?.[0]?.id);
+    setBeatSelection({ anchorIndex: 0, startIndex: 0, endIndex: 0 });
     setTimelinePreviewMs(null);
-    if (!fragment.timeline) setScriptView("flow");
   };
   const addFragment = () => {
     const id = stableId();
@@ -1677,10 +2012,13 @@ export function GalgameWorkshopEditorPage({
       return;
     }
     replaceDocument(
-      updateFragment(document, selectedFragment.id, (fragment) => ({
-        ...fragment,
-        blocks: [...(fragment.blocks ?? []), block],
-      })),
+      updateFragment(document, selectedFragment.id, (fragment) =>
+        appendBlockToTimeline(
+          projectFragmentTimeline(fragment),
+          block,
+          timelinePreviewMs ?? 0,
+        ),
+      ),
     );
     setSelectedBlockId(block.id);
     setSelectedTimelineGapId(undefined);
@@ -1696,10 +2034,13 @@ export function GalgameWorkshopEditorPage({
       transition: DEFAULT_CHARACTER_TRANSITION,
     };
     replaceDocument(
-      updateFragment(document, selectedFragment.id, (fragment) => ({
-        ...fragment,
-        blocks: [...(fragment.blocks ?? []), block],
-      })),
+      updateFragment(document, selectedFragment.id, (fragment) =>
+        appendBlockToTimeline(
+          projectFragmentTimeline(fragment),
+          block,
+          timelinePreviewMs ?? 0,
+        ),
+      ),
     );
     setSelectedBlockId(block.id);
     setSelectedTimelineGapId(undefined);
@@ -1721,10 +2062,13 @@ export function GalgameWorkshopEditorPage({
       return;
     }
     replaceDocument(
-      updateFragment(document, selectedFragment.id, (fragment) => ({
-        ...fragment,
-        blocks: [...(fragment.blocks ?? []), block],
-      })),
+      updateFragment(document, selectedFragment.id, (fragment) =>
+        appendBlockToTimeline(
+          projectFragmentTimeline(fragment),
+          block,
+          timelinePreviewMs ?? 0,
+        ),
+      ),
     );
     setSelectedBlockId(block.id);
     setSelectedTimelineGapId(undefined);
@@ -1752,6 +2096,21 @@ export function GalgameWorkshopEditorPage({
       })),
     );
     setSelectedBlockId(remaining[Math.min(index, remaining.length - 1)]?.id);
+    setSelectedTimelineGapId(undefined);
+  };
+  const applyBeatRangeResult = (result: {
+    fragment: GalgameStoryFragment;
+    error?: string;
+  }) => {
+    if (!selectedFragment) return;
+    if (result.error) {
+      setNotice(result.error);
+      return;
+    }
+    replaceDocument(
+      updateFragment(document, selectedFragment.id, () => result.fragment),
+    );
+    setSelectedBlockId(undefined);
     setSelectedTimelineGapId(undefined);
   };
   const locateIssue = (issue: GalgameStoryReportIssue) => {
@@ -1783,10 +2142,36 @@ export function GalgameWorkshopEditorPage({
   };
   const startPreview = () => {
     setWorkspace("script");
+    setPreviewMode("play");
     requestAnimationFrame(() => {
       playerRef.current?.restart();
       previewRef.current?.focus();
     });
+  };
+
+  const startStageResize = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (event.button !== 0 || window.innerWidth <= 980) return;
+    event.preventDefault();
+    resizeCleanupRef.current?.();
+    const move = (pointer: PointerEvent) => {
+      const bounds = editorGridRef.current
+        ?.querySelector(".galgame-compose-panel")
+        ?.getBoundingClientRect();
+      if (!bounds) return;
+      setStageSplit(
+        clamp(((pointer.clientY - bounds.top) / bounds.height) * 100, 24, 72),
+      );
+    };
+    const finish = () => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", finish);
+      window.removeEventListener("pointercancel", finish);
+      resizeCleanupRef.current = undefined;
+    };
+    resizeCleanupRef.current = finish;
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", finish);
+    window.addEventListener("pointercancel", finish);
   };
 
   const constrainedSidebarWidth = (
@@ -1865,6 +2250,7 @@ export function GalgameWorkshopEditorPage({
   const editorGridStyle = {
     "--galgame-fragment-width": `${sidebarWidths.left}px`,
     "--galgame-preview-width": `${sidebarWidths.right}px`,
+    "--galgame-stage-split": `${stageSplit}%`,
   } as CSSProperties;
 
   return (
@@ -2099,124 +2485,86 @@ export function GalgameWorkshopEditorPage({
                     <small>
                       {selectedFragment.blocks?.length ?? 0} Block
                       {selectedFragment.timeline
-                        ? ` · 剧情时间轴 ${formatMilliseconds(selectedFragment.timeline.durationMs)}`
+                        ? ` · 剧情总长 ${formatMilliseconds(selectedFragment.timeline.durationMs)}`
                         : ""}
                     </small>
                   </div>
-                  {selectedFragment.timeline ? (
-                    <nav
-                      className="galgame-script-view-switch"
-                      aria-label="剧本编排视图"
-                    >
-                      <button
-                        type="button"
-                        className={scriptView === "flow" ? "active" : ""}
-                        onClick={() => {
-                          setScriptView("flow");
-                          setTimelinePreviewMs(null);
-                        }}
-                      >
-                        <BookOpenText aria-hidden /> 剧本流
-                      </button>
-                      <button
-                        type="button"
-                        className={scriptView === "timeline" ? "active" : ""}
-                        onClick={() => {
-                          setScriptView("timeline");
-                          setPreviewMode("edit");
-                        }}
-                      >
-                        <Clock3 aria-hidden /> 时间轴
-                      </button>
-                    </nav>
-                  ) : null}
-                  <div className="galgame-selected-actions">
-                    <button
-                      type="button"
-                      aria-label="上移 Block"
-                      disabled={!selectedBlock || selectedIndex === 0}
-                      onClick={() => moveSelected(-1)}
-                    >
-                      <ArrowUp aria-hidden />
-                    </button>
-                    <button
-                      type="button"
-                      aria-label="下移 Block"
-                      disabled={
-                        !selectedBlock ||
-                        selectedIndex ===
-                          (selectedFragment.blocks?.length ?? 0) - 1
-                      }
-                      onClick={() => moveSelected(1)}
-                    >
-                      <ArrowDown aria-hidden />
-                    </button>
-                    <button
-                      type="button"
-                      aria-label="删除 Block"
-                      disabled={!selectedBlock}
-                      onClick={deleteSelected}
-                    >
-                      <Trash2 aria-hidden />
-                    </button>
-                  </div>
                 </header>
-                {scriptView === "timeline" && selectedFragment.timeline ? (
-                  <StoryTimelineEditor
-                    document={document}
-                    fragment={selectedFragment}
-                    selectedBlockId={selectedBlockId}
-                    selectedGapId={selectedTimelineGapId}
-                    onSelectBlock={(blockId) => {
-                      setSelectedTimelineGapId(undefined);
-                      setSelectedBlockId(blockId);
-                      setInspectorTab("properties");
-                    }}
-                    onSelectGap={(gapId) => {
-                      setSelectedBlockId(undefined);
-                      setSelectedTimelineGapId(gapId);
-                      setInspectorTab("properties");
-                    }}
-                    onFragment={(fragment) =>
-                      replaceDocument(
-                        updateFragment(
-                          document,
-                          selectedFragment.id,
-                          () => fragment,
-                        ),
-                      )
-                    }
-                    onPreviewPosition={previewTimelinePosition}
-                    onAudioLevel={setTimelineAudioLevelDb}
-                    onPlayingChange={setTimelineAudioPlaying}
-                  />
-                ) : (
+                {timelineFragment ? (
                   <>
-                    <div className="galgame-block-list">
-                      {(selectedFragment.blocks ?? []).map((block, index) => (
-                        <BlockCard
-                          key={block.id}
-                          block={block}
-                          index={index}
-                          selected={block.id === selectedBlockId}
-                          document={document}
-                          chapter={chapter}
-                          onSelect={() => {
-                            setSelectedTimelineGapId(undefined);
-                            setSelectedBlockId(block.id);
-                            setInspectorTab("properties");
-                          }}
-                        />
-                      ))}
-                      {!selectedFragment.blocks?.length ? (
-                        <div className="galgame-empty-blocks">
-                          <MessageSquareText aria-hidden />
-                          <strong>这个 Fragment 还没有 Block</strong>
-                          <span>从下方添加场景、对白、分支或章节结局。</span>
-                        </div>
-                      ) : null}
-                    </div>
-                    <div className="galgame-block-add">
+                    <StoryTimelineEditor
+                      document={document}
+                      fragment={timelineFragment}
+                      selectedBlockId={
+                        previewMode === "play"
+                          ? playbackFollow?.blockId
+                          : selectedBlockId
+                      }
+                      selectedGapId={
+                        previewMode === "edit"
+                          ? selectedTimelineGapId
+                          : undefined
+                      }
+                      beatSelection={
+                        previewMode === "play"
+                          ? playbackBeatSelection
+                          : beatSelection
+                      }
+                      onBeatSelection={(selection) => {
+                        if (previewMode === "play")
+                          setPlaybackBeatSelection(selection);
+                        else {
+                          setBeatSelection(selection);
+                          setSelectedBlockId(undefined);
+                          setSelectedTimelineGapId(undefined);
+                          setInspectorTab("properties");
+                        }
+                      }}
+                      readOnly={previewMode === "play"}
+                      followPositionMs={
+                        previewMode === "play"
+                          ? playbackFollow?.positionMs
+                          : undefined
+                      }
+                      followBlockId={
+                        previewMode === "play"
+                          ? playbackFollow?.blockId
+                          : undefined
+                      }
+                      estimated={!timelineSourceFragment?.timeline}
+                      onSelectBlock={(blockId) => {
+                        setSelectedTimelineGapId(undefined);
+                        setSelectedBlockId(blockId);
+                        setInspectorTab("properties");
+                      }}
+                      onSelectGap={(gapId) => {
+                        setSelectedBlockId(undefined);
+                        setSelectedTimelineGapId(gapId);
+                        setInspectorTab("properties");
+                      }}
+                      onFragment={(fragment) => {
+                        if (previewMode === "play" || !selectedFragment) return;
+                        replaceDocument(
+                          updateFragment(
+                            document,
+                            selectedFragment.id,
+                            () => fragment,
+                          ),
+                        );
+                      }}
+                      onPreviewPosition={previewTimelinePosition}
+                      onAudioLevel={setTimelineAudioLevelDb}
+                      onPlayingChange={setTimelineAudioPlaying}
+                      preferences={timelinePreferences}
+                      onPreferencesChange={setTimelinePreferences}
+                    />
+                    <div
+                      className="galgame-block-add galgame-playhead-add"
+                      hidden={previewMode === "play"}
+                    >
+                      <strong>
+                        在播放头添加 · {formatTimecode(timelinePreviewMs ?? 0)}
+                      </strong>
                       {(
                         [
                           "scene",
@@ -2244,65 +2592,72 @@ export function GalgameWorkshopEditorPage({
                       >
                         <Plus aria-hidden /> 全部退场
                       </button>
-                      <button
-                        type="button"
-                        disabled={terminates}
-                        onClick={() => addAudioBlock("play", "bgm")}
-                      >
-                        <Plus aria-hidden /> 背景音乐
-                      </button>
-                      <button
-                        type="button"
-                        disabled={terminates}
-                        onClick={() => addAudioBlock("play", "ambient")}
-                      >
-                        <Plus aria-hidden /> 环境音
-                      </button>
-                      <button
-                        type="button"
-                        disabled={terminates}
-                        onClick={() => addAudioBlock("play", "sfx")}
-                      >
-                        <Plus aria-hidden /> 音效
-                      </button>
+                      {(["bgm", "ambient", "sfx"] as const).map((channel) => (
+                        <button
+                          key={channel}
+                          type="button"
+                          disabled={terminates}
+                          onClick={() => addAudioBlock("play", channel)}
+                        >
+                          <Plus aria-hidden />
+                          {
+                            { bgm: "背景音乐", ambient: "环境音", sfx: "音效" }[
+                              channel
+                            ]
+                          }
+                        </button>
+                      ))}
                       <details className="galgame-stop-audio-menu">
                         <summary>停止声音</summary>
                         <div>
-                          <button
-                            type="button"
-                            disabled={terminates}
-                            onClick={() => addAudioBlock("stop", "bgm")}
-                          >
-                            停止背景音乐
-                          </button>
-                          <button
-                            type="button"
-                            disabled={terminates}
-                            onClick={() => addAudioBlock("stop", "ambient")}
-                          >
-                            停止环境音
-                          </button>
-                          <button
-                            type="button"
-                            disabled={terminates}
-                            onClick={() => addAudioBlock("stop", "sfx")}
-                          >
-                            停止音效
-                          </button>
+                          {(["bgm", "ambient", "sfx"] as const).map(
+                            (channel) => (
+                              <button
+                                key={channel}
+                                type="button"
+                                disabled={terminates}
+                                onClick={() => addAudioBlock("stop", channel)}
+                              >
+                                停止
+                                {
+                                  {
+                                    bgm: "背景音乐",
+                                    ambient: "环境音",
+                                    sfx: "音效",
+                                  }[channel]
+                                }
+                              </button>
+                            ),
+                          )}
                         </div>
                       </details>
                     </div>
-                    {terminates ? (
-                      <small className="galgame-terminator-note">
-                        当前 Fragment 已有终止
-                        Block；删除或移动它后才能继续添加。
-                      </small>
-                    ) : null}
                   </>
-                )}
+                ) : null}
               </>
             ) : null}
           </main>
+
+          <div
+            className="galgame-stage-resizer"
+            role="separator"
+            tabIndex={0}
+            aria-label="调整舞台与 Beat 时间轴高度"
+            aria-orientation="horizontal"
+            aria-valuemin={24}
+            aria-valuemax={72}
+            aria-valuenow={Math.round(stageSplit)}
+            title="拖动调整舞台高度，双击恢复 42%"
+            onPointerDown={startStageResize}
+            onDoubleClick={() => setStageSplit(42)}
+            onKeyDown={(event) => {
+              if (event.key !== "ArrowUp" && event.key !== "ArrowDown") return;
+              event.preventDefault();
+              setStageSplit((current) =>
+                clamp(current + (event.key === "ArrowDown" ? 2 : -2), 24, 72),
+              );
+            }}
+          />
 
           <div
             className="galgame-panel-resizer"
@@ -2333,7 +2688,7 @@ export function GalgameWorkshopEditorPage({
                 className={previewMode === "play" ? "active" : ""}
                 onClick={() => {
                   setPreviewMode("play");
-                  setScriptView("flow");
+                  setPlaybackFollow(undefined);
                   setTimelinePreviewMs(null);
                 }}
               >
@@ -2409,6 +2764,7 @@ export function GalgameWorkshopEditorPage({
                     ),
                   );
                 }}
+                onPlaybackPosition={setPlaybackFollow}
               />
             </div>
             <nav className="galgame-inspector-tabs" aria-label="Block 检查器">
@@ -2444,11 +2800,11 @@ export function GalgameWorkshopEditorPage({
                 selectedTimelineGap && selectedFragment ? (
                   <TimelineGapInspector
                     gap={selectedTimelineGap}
-                    fragment={selectedFragment}
+                    fragment={projectedSelectedFragment ?? selectedFragment}
                     document={document}
                     onDocument={replaceDocument}
                   />
-                ) : (
+                ) : selectedBlock ? (
                   <BlockInspector
                     projectId={projectId}
                     block={selectedBlock}
@@ -2474,7 +2830,37 @@ export function GalgameWorkshopEditorPage({
                         return next;
                       })
                     }
+                    timelinePreferences={timelinePreferences}
+                    onMoveUp={() => moveSelected(-1)}
+                    onMoveDown={() => moveSelected(1)}
+                    onDelete={deleteSelected}
+                    canMoveUp={Boolean(
+                      selectedIndex != null && selectedIndex > 0,
+                    )}
+                    canMoveDown={Boolean(
+                      selectedIndex != null &&
+                      selectedIndex >= 0 &&
+                      selectedIndex <
+                        (selectedFragment?.blocks?.length ?? 0) - 1,
+                    )}
                   />
+                ) : projectedSelectedFragment ? (
+                  <BeatRangeInspector
+                    fragment={projectedSelectedFragment}
+                    selection={beatSelection}
+                    document={document}
+                    onSelectBlock={(blockId) => {
+                      setSelectedTimelineGapId(undefined);
+                      setSelectedBlockId(blockId);
+                    }}
+                    onApply={applyBeatRangeResult}
+                    onRequestDelete={() => setConfirmRangeDelete(true)}
+                  />
+                ) : (
+                  <div className="galgame-inspector-empty">
+                    <Settings2 aria-hidden />
+                    <strong>未选择 Fragment</strong>
+                  </div>
                 )
               ) : inspectorTab === "appearance" ? (
                 <DialogueStyleInspector
@@ -2605,6 +2991,24 @@ export function GalgameWorkshopEditorPage({
           </button>
         </div>
       ) : null}
+      <ConfirmDialog
+        open={confirmRangeDelete && Boolean(projectedSelectedFragment)}
+        title="删除所选 Beat 范围？"
+        description="非结构 Block 会被删除，后续 Beat 自动前移并闭合时间空隙；分支和章节结局会保留。"
+        confirmLabel="删除并闭合"
+        onCancel={() => setConfirmRangeDelete(false)}
+        onConfirm={() => {
+          setConfirmRangeDelete(false);
+          if (!projectedSelectedFragment) return;
+          applyBeatRangeResult(
+            deleteTimelineBeatRange(
+              projectedSelectedFragment,
+              beatSelection.startIndex,
+              beatSelection.endIndex,
+            ),
+          );
+        }}
+      />
       <ConfirmDialog
         open={confirmOverwrite && Boolean(conflict)}
         title="用本地草稿覆盖服务器版本？"

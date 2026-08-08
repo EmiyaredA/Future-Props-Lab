@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from sqlalchemy import func, select
+from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import Settings, get_settings
@@ -10,6 +10,7 @@ from app.models import (
     ModelEntry,
     ModelProvider,
     VisualAsset,
+    VisualCanvasDocument,
     VisualGenerationTask,
     VisualProjectAssetReference,
     VisualWorkshopProject,
@@ -169,12 +170,52 @@ class VisualGeneration:
             raise GenerationError("单个参考视频超过项目文件上限", code="reference_too_large")
         return asset
 
+    async def _attach_task_to_canvas_node(
+        self,
+        *,
+        project_id: str,
+        node_id: str,
+        expected_revision: int,
+        task_id: str,
+        kind: str,
+    ) -> None:
+        row = await self.session.get(VisualCanvasDocument, project_id)
+        if row is None:
+            raise GenerationError("项目画布不存在", code="canvas_not_found", status=404)
+        nodes = [dict(node) for node in (row.nodes or [])]
+        for node in nodes:
+            if node.get("id") != node_id:
+                continue
+            if node.get("kind") != kind:
+                raise GenerationError("画布节点类型与生成任务不匹配", code="canvas_kind_mismatch")
+            node["generation_task_id"] = task_id
+            node["asset_id"] = None
+            break
+        else:
+            raise GenerationError("画布节点不存在", code="canvas_node_not_found", status=404)
+        now = utc_now()
+        result = await self.session.execute(
+            update(VisualCanvasDocument)
+            .where(
+                VisualCanvasDocument.project_id == project_id,
+                VisualCanvasDocument.revision == expected_revision,
+            )
+            .values(nodes=nodes, revision=expected_revision + 1, updated_at=now)
+        )
+        if result.rowcount != 1:
+            raise GenerationError(
+                "画布已变化，请刷新后重试", code="canvas_revision_conflict", status=409
+            )
+
     async def prepare_create(
         self, project_id: str, body: GenerationTaskCreateIn
     ) -> VisualGenerationTask:
         await self._project(project_id)
         model, provider = await self._model(body.model_id, body.kind)
-        payload = body.model_dump(mode="json")
+        payload = body.model_dump(
+            mode="json",
+            exclude={"canvas_node_id", "expected_canvas_revision"},
+        )
         if isinstance(body, ImageGenerationTaskCreateIn):
             sizes = IMAGE_MODEL_SIZES.get(model.slug)
             if not sizes or body.size not in sizes:
@@ -220,6 +261,14 @@ class VisualGeneration:
 
     async def create(self, project_id: str, body: GenerationTaskCreateIn) -> GenerationTaskOut:
         row = await self.prepare_create(project_id, body)
+        if body.canvas_node_id is not None and body.expected_canvas_revision is not None:
+            await self._attach_task_to_canvas_node(
+                project_id=project_id,
+                node_id=body.canvas_node_id,
+                expected_revision=body.expected_canvas_revision,
+                task_id=row.id,
+                kind=body.kind,
+            )
         await self.session.commit()
         await self.session.refresh(row)
         return generation_task_out(row)

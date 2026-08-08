@@ -48,6 +48,7 @@ import {
   type ManagedFolder,
   type MediaKind,
 } from "@features/files/api";
+import { fileQueryKeys, invalidateFileScope } from "@features/files/queryKeys";
 import "@features/files/files.css";
 
 export type AssetViewMode = "grid" | "list";
@@ -123,6 +124,32 @@ function extensionLabel(file: ManagedFile) {
     : kindLabel(file.media_kind);
 }
 
+function originalExtension(file: ManagedFile) {
+  const match = /(\.[^./\\]+)$/.exec(file.original_filename);
+  return match?.[1] ?? "";
+}
+
+function stripOriginalExtension(name: string, file: ManagedFile) {
+  const extension = originalExtension(file);
+  const trimmed = name.trim();
+  if (!extension || trimmed.length <= extension.length) return trimmed;
+  return trimmed
+    .toLocaleLowerCase("zh-CN")
+    .endsWith(extension.toLocaleLowerCase("zh-CN"))
+    ? trimmed.slice(0, -extension.length).trim()
+    : trimmed;
+}
+
+function fileDisplayName(file: ManagedFile) {
+  return stripOriginalExtension(file.display_name, file) || file.display_name;
+}
+
+function fileDownloadName(file: ManagedFile) {
+  const baseName = fileDisplayName(file).replace(/[\\/]/g, "-").trim();
+  const fallback = stripOriginalExtension(file.original_filename, file);
+  return `${baseName || fallback || "download"}${originalExtension(file)}`;
+}
+
 function FileKindIcon({ kind }: { kind: MediaKind }) {
   const Icon =
     kind === "image"
@@ -158,6 +185,120 @@ function AssetPreview({ file }: { file: ManagedFile }) {
     <span>
       <FileKindIcon kind={file.media_kind} />
     </span>
+  );
+}
+
+function AssetPreviewDialog({
+  file,
+  onClose,
+  onDownload,
+}: {
+  file: ManagedFile;
+  onClose: () => void;
+  onDownload: () => void;
+}) {
+  const titleId = useId();
+  const [source, setSource] = useState("");
+  const [failed, setFailed] = useState(false);
+  const canInlinePreview =
+    file.media_kind === "image" ||
+    file.media_kind === "video" ||
+    file.media_kind === "audio";
+
+  useEffect(() => {
+    if (!canInlinePreview) return;
+    let active = true;
+    let objectUrl = "";
+    setSource("");
+    setFailed(false);
+    void fetchApiBlob(`/v1/files/${encodeURIComponent(file.id)}/content`)
+      .then((blob) => {
+        if (!active) return;
+        objectUrl = URL.createObjectURL(blob);
+        setSource(objectUrl);
+      })
+      .catch(() => {
+        if (active) setFailed(true);
+      });
+    return () => {
+      active = false;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [canInlinePreview, file.id]);
+
+  useEffect(() => {
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", closeOnEscape);
+    return () => document.removeEventListener("keydown", closeOnEscape);
+  }, [onClose]);
+
+  return (
+    <div
+      className="file-preview-backdrop"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) onClose();
+      }}
+    >
+      <section
+        className="file-preview-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+      >
+        <header>
+          <div>
+            <span>{kindLabel(file.media_kind)}预览</span>
+            <h2 id={titleId}>{fileDisplayName(file)}</h2>
+          </div>
+          <button
+            type="button"
+            aria-label="关闭预览"
+            title="关闭"
+            onClick={onClose}
+          >
+            <X aria-hidden />
+          </button>
+        </header>
+        <div className={`file-preview-stage ${file.media_kind}`}>
+          {!canInlinePreview ? (
+            <div className="file-preview-fallback">
+              <FileKindIcon kind={file.media_kind} />
+              <strong>{fileDisplayName(file)}</strong>
+              <p>该文件类型暂不支持在线预览，可下载后查看。</p>
+              <button type="button" onClick={onDownload}>
+                <Download aria-hidden /> 下载文件
+              </button>
+            </div>
+          ) : null}
+          {canInlinePreview && !source && !failed ? (
+            <span className="file-preview-state">
+              <LoaderCircle className="spin" aria-hidden />
+              正在加载预览…
+            </span>
+          ) : null}
+          {canInlinePreview && failed ? (
+            <span className="file-preview-state" role="alert">
+              预览加载失败，请关闭后重试。
+            </span>
+          ) : null}
+          {source && file.media_kind === "image" ? (
+            <img src={source} alt={fileDisplayName(file)} />
+          ) : null}
+          {source && file.media_kind === "video" ? (
+            <video src={source} controls />
+          ) : null}
+          {source && file.media_kind === "audio" ? (
+            <div className="file-audio-preview">
+              <Music aria-hidden />
+              <strong>{fileDisplayName(file)}</strong>
+              <audio src={source} controls />
+            </div>
+          ) : null}
+        </div>
+      </section>
+    </div>
   );
 }
 
@@ -197,6 +338,7 @@ function ItemActionMenu({
   deleteLabel,
   onToggle,
   onClose,
+  onDownload,
   onRename,
   onMove,
   onDelete,
@@ -207,6 +349,7 @@ function ItemActionMenu({
   deleteLabel: string;
   onToggle: () => void;
   onClose: () => void;
+  onDownload?: () => void;
   onRename: () => void;
   onMove: () => void;
   onDelete: () => void;
@@ -244,6 +387,11 @@ function ItemActionMenu({
       </button>
       {open ? (
         <div className="file-item-menu-popover" id={id} role="menu">
+          {onDownload ? (
+            <button type="button" role="menuitem" onClick={onDownload}>
+              <Download aria-hidden /> 下载
+            </button>
+          ) : null}
           <button type="button" role="menuitem" onClick={onRename}>
             <Pencil aria-hidden /> 重命名
           </button>
@@ -297,20 +445,23 @@ export function AssetBrowser({
   const [notice, setNotice] = useState("");
   const [uploads, setUploads] = useState<UploadItem[]>([]);
   const [openMenu, setOpenMenu] = useState<string>();
+  const [previewFile, setPreviewFile] = useState<ManagedFile>();
   const [editor, setEditor] = useState<FileEditor>(null);
   const [editorError, setEditorError] = useState("");
   const sourceProjectId = importMode ? undefined : projectId;
-  const key = [
-    "managed-files",
-    sourceProjectId ?? "library",
-    folderId ?? "root",
-  ];
   const foldersQuery = useQuery({
-    queryKey: ["managed-folders", sourceProjectId ?? "library"],
+    queryKey: fileQueryKeys.folders(sourceProjectId),
     queryFn: () => getFolders(sourceProjectId),
   });
   const filesQuery = useQuery({
-    queryKey: [...key, query, kind, sort],
+    queryKey: fileQueryKeys.list({
+      projectId: sourceProjectId,
+      folderId,
+      query,
+      mediaKind: kind === "all" ? undefined : kind,
+      sort,
+      includeReferences: !importMode,
+    }),
     queryFn: () =>
       getFiles({
         projectId: sourceProjectId,
@@ -322,8 +473,7 @@ export function AssetBrowser({
       }),
   });
   const refresh = () => {
-    void client.invalidateQueries({ queryKey: ["managed-files"] });
-    void client.invalidateQueries({ queryKey: ["managed-folders"] });
+    void invalidateFileScope(client, sourceProjectId, { folders: true });
   };
   const act = useMutation({
     mutationFn: async (operation: () => Promise<unknown>) => operation(),
@@ -525,8 +675,11 @@ export function AssetBrowser({
       if (name && name !== editor.folder.name)
         act.mutate(() => patchFolder(editor.folder, { name }));
     } else if (editor.kind === "rename-file") {
-      const name = editor.name.trim();
-      if (name && name !== editor.file.display_name)
+      const name = stripOriginalExtension(editor.name, editor.file);
+      if (
+        name &&
+        name !== stripOriginalExtension(editor.file.display_name, editor.file)
+      )
         act.mutate(() => patchManagedFile(editor.file, { display_name: name }));
     } else if (editor.kind === "move-folder") {
       act.mutate(() =>
@@ -571,7 +724,7 @@ export function AssetBrowser({
       const url = URL.createObjectURL(blob);
       const anchor = document.createElement("a");
       anchor.href = url;
-      anchor.download = file.original_filename;
+      anchor.download = fileDownloadName(file);
       anchor.click();
       URL.revokeObjectURL(url);
     } catch (error) {
@@ -617,7 +770,9 @@ export function AssetBrowser({
       return !editor.name.trim() || editor.name.trim() === editor.folder.name;
     if (editor.kind === "rename-file")
       return (
-        !editor.name.trim() || editor.name.trim() === editor.file.display_name
+        !stripOriginalExtension(editor.name, editor.file) ||
+        stripOriginalExtension(editor.name, editor.file) ===
+          stripOriginalExtension(editor.file.display_name, editor.file)
       );
     if (editor.kind === "move-folder")
       return editor.target === (editor.folder.parent_id ?? "root");
@@ -1034,16 +1189,21 @@ export function AssetBrowser({
           {files.map((file) => {
             const itemKey = `${file.reference_id ?? "asset"}-${file.id}`;
             const menuKey = `file-${itemKey}`;
+            const displayName = fileDisplayName(file);
             return (
               <article className="file-asset-item" key={itemKey}>
-                <div className="file-item-main">
+                <button
+                  type="button"
+                  className="file-item-main"
+                  aria-label={`预览 ${displayName}`}
+                  title={`预览 ${displayName}`}
+                  onClick={() => setPreviewFile(file)}
+                >
                   <span className={`file-item-preview ${file.media_kind}`}>
                     <AssetPreview file={file} />
                   </span>
                   <span className="file-item-copy">
-                    <strong title={file.display_name}>
-                      {file.display_name}
-                    </strong>
+                    <strong title={displayName}>{displayName}</strong>
                     <span className="file-item-tags">
                       <small>{kindLabel(file.media_kind)}</small>
                       <small>{extensionLabel(file)}</small>
@@ -1053,7 +1213,7 @@ export function AssetBrowser({
                       {formatBytes(file.byte_size)}
                     </small>
                   </span>
-                </div>
+                </button>
                 <div className="file-item-footer">
                   <time dateTime={file.updated_at}>
                     {relativeUpdatedAt(file.updated_at)}
@@ -1065,6 +1225,7 @@ export function AssetBrowser({
                       onClick={() =>
                         act.mutate(async () => {
                           await importFile(projectId, file.id);
+                          await invalidateFileScope(client, projectId);
                           onImported?.();
                           setNotice("已导入当前项目");
                         })
@@ -1085,7 +1246,7 @@ export function AssetBrowser({
                 {!importMode ? (
                   <ItemActionMenu
                     id={`file-menu-${menuKey}`}
-                    label={file.display_name}
+                    label={fileDisplayName(file)}
                     open={openMenu === menuKey}
                     deleteLabel={file.is_reference ? "移除引用" : "删除"}
                     onToggle={() =>
@@ -1094,11 +1255,15 @@ export function AssetBrowser({
                       )
                     }
                     onClose={() => setOpenMenu(undefined)}
+                    onDownload={() => {
+                      setOpenMenu(undefined);
+                      void downloadFile(file);
+                    }}
                     onRename={() =>
                       openEditor({
                         kind: "rename-file",
                         file,
-                        name: file.display_name,
+                        name: fileDisplayName(file),
                       })
                     }
                     onMove={() =>
@@ -1147,6 +1312,15 @@ export function AssetBrowser({
         <div className="file-busy" role="status">
           正在处理…
         </div>
+      ) : null}
+      {previewFile ? (
+        <AssetPreviewDialog
+          file={previewFile}
+          onClose={() => setPreviewFile(undefined)}
+          onDownload={() => {
+            void downloadFile(previewFile);
+          }}
+        />
       ) : null}
       {editor ? (
         <div
@@ -1255,7 +1429,7 @@ export function AssetBrowser({
                     ? `删除“${editor.folder.name}”及其中全部文件和子文件夹后将无法恢复。`
                     : editor.file.is_reference
                       ? "只会从当前项目移除引用，文件管理中的源文件不会受到影响。"
-                      : `删除“${editor.file.display_name}”后将无法恢复。`}
+                      : `删除“${fileDisplayName(editor.file)}”后将无法恢复。`}
                 </p>
                 {editorError ? (
                   <p className="file-dialog-error">{editorError}</p>

@@ -1,6 +1,6 @@
 import type { components } from "@generated/api";
-import { api, ApiError, unwrap } from "@platform/api/client";
-import { getStudioToken, notifyAuthRequired } from "@platform/api/studioAuth";
+import { api, unwrap } from "@platform/api/client";
+import { postSse } from "@platform/api/sse";
 
 export type VisualWorkshopProject =
   components["schemas"]["VisualWorkshopProjectOut"];
@@ -290,57 +290,15 @@ export async function streamVisualAssistant(
   signal: AbortSignal,
   onEvent: (event: VisualAssistantStreamEvent) => void,
 ) {
-  const base = String(import.meta.env.VITE_API_BASE || "").replace(/\/$/, "");
-  const token = getStudioToken();
-  const response = await fetch(
-    `${base}/v1/visual-workshop/projects/${encodeURIComponent(projectId)}` +
+  await postSse<VisualAssistantStreamEvent>({
+    path:
+      `/v1/visual-workshop/projects/${encodeURIComponent(projectId)}` +
       `/conversations/${encodeURIComponent(conversationId)}/messages/stream`,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "text/event-stream",
-        ...(token ? { "X-Studio-Token": token } : {}),
-      },
-      body: JSON.stringify(body),
-      signal,
-    },
-  );
-  if (response.status === 401) notifyAuthRequired();
-  if (!response.ok) {
-    const problem = (await response.json().catch(() => ({}))) as Record<
-      string,
-      unknown
-    >;
-    const detail = problem.detail as
-      Record<string, unknown> | string | undefined;
-    throw new ApiError(
-      typeof detail === "object"
-        ? String(detail.message || "对话请求失败")
-        : String(detail || problem.message || "对话请求失败"),
-      problem,
-      response.status,
-    );
-  }
-  if (!response.body) throw new Error("浏览器不支持流式响应");
-  const reader = response.body.getReader();
-  const decoder = new TextDecoder();
-  let buffer = "";
-  while (true) {
-    const { value, done } = await reader.read();
-    buffer += decoder.decode(value, { stream: !done });
-    const frames = buffer.split("\n\n");
-    buffer = frames.pop() ?? "";
-    for (const frame of frames) {
-      const data = frame
-        .split("\n")
-        .find((line) => line.startsWith("data:"))
-        ?.slice(5)
-        .trim();
-      if (data) onEvent(JSON.parse(data) as VisualAssistantStreamEvent);
-    }
-    if (done) break;
-  }
+    body,
+    signal,
+    onEvent,
+    defaultErrorMessage: "对话请求失败",
+  });
 }
 
 export async function resolveVisualAssistantApproval(

@@ -8,8 +8,14 @@ import {
 } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, vi } from "vitest";
-import { getFiles, getFolders, uploadManagedFile } from "@features/files/api";
+import {
+  getFiles,
+  getFolders,
+  importManagedFiles,
+  uploadManagedFile,
+} from "@features/files/api";
 import { GenerationDrawer } from "@features/visual-workshop/generation/GenerationDrawer";
+import { GenerationPromptEditor } from "@features/visual-workshop/generation/GenerationPromptEditor";
 import { VisualWorkshopTasksPage } from "@features/visual-workshop/generation";
 import {
   createGenerationTask,
@@ -28,6 +34,7 @@ vi.mock("@features/files/api", async () => {
     ...actual,
     getFiles: vi.fn(),
     getFolders: vi.fn(),
+    importManagedFiles: vi.fn(),
     uploadManagedFile: vi.fn(),
   };
 });
@@ -79,6 +86,56 @@ const audioFile = {
   media_kind: "audio" as const,
   mime_type: "audio/mpeg",
 };
+
+const crossProjectFile = {
+  ...imageFile,
+  id: "cross-project-asset",
+  project_id: "project-2",
+  original_filename: "cross-project.png",
+  display_name: "跨项目参考图.png",
+};
+
+const libraryFile = {
+  ...imageFile,
+  id: "library-asset",
+  project_id: null,
+  original_filename: "library.png",
+  display_name: "公共参考图.png",
+  source: "library" as const,
+};
+
+test("renders prompt asset blocks as bracketed project filenames", async () => {
+  const user = userEvent.setup();
+  const onChange = vi.fn();
+  render(
+    <GenerationPromptEditor
+      value=""
+      assets={[
+        {
+          ...imageFile,
+          original_filename: "codex-clipboard-source.png",
+          display_name: "人设图1",
+        },
+      ]}
+      label="图片提示词"
+      placeholder="描述画面"
+      onChange={onChange}
+    />,
+  );
+
+  const promptEditor = screen.getByRole("textbox", { name: "图片提示词" });
+  await user.type(promptEditor, "@");
+  const mentionMenu = await screen.findByRole("listbox", {
+    name: "引用已选素材",
+  });
+  expect(
+    within(mentionMenu).getByRole("option", { name: /人设图1\.png/ }),
+  ).toBeInTheDocument();
+  await user.keyboard("{Enter}");
+
+  expect(promptEditor).toHaveTextContent("人设图1.png");
+  await waitFor(() => expect(onChange).toHaveBeenCalledWith("[人设图1.png]"));
+});
 
 const baseTask = {
   id: "task-12345678",
@@ -137,14 +194,39 @@ beforeEach(() => {
     ],
   });
   vi.mocked(getFolders).mockResolvedValue({ items: [] });
-  vi.mocked(getFiles).mockImplementation(async ({ mediaKind }) => ({
+  vi.mocked(getFiles).mockImplementation(async ({ mediaKind, projectId }) => ({
     items:
       mediaKind === "video"
         ? [videoFile]
         : mediaKind === "audio"
           ? [audioFile]
-          : [imageFile],
+          : projectId === "project-2"
+            ? [crossProjectFile]
+            : projectId === undefined
+              ? [libraryFile]
+              : [imageFile],
   }));
+  vi.mocked(importManagedFiles).mockImplementation(
+    async (projectId, options) => ({
+      items:
+        options.sourceScope === "library"
+          ? [
+              {
+                ...libraryFile,
+                project_id: projectId,
+                is_reference: true,
+                reference_id: "library-reference",
+              },
+            ]
+          : [
+              {
+                ...crossProjectFile,
+                id: "copied-project-asset",
+                project_id: projectId,
+              },
+            ],
+    }),
+  );
   vi.mocked(uploadManagedFile).mockImplementation(async (file) =>
     file.type.startsWith("video/")
       ? videoFile
@@ -163,6 +245,15 @@ beforeEach(() => {
         revision: 0,
         created_at: "2026-08-03T08:00:00Z",
         updated_at: "2026-08-03T08:00:00Z",
+      },
+      {
+        id: "project-2",
+        title: "其他视觉项目",
+        kind: "canvas",
+        status: "draft",
+        revision: 0,
+        created_at: "2026-08-02T08:00:00Z",
+        updated_at: "2026-08-02T08:00:00Z",
       },
     ],
   });
@@ -206,12 +297,21 @@ test("creates an image task with model-linked sizes and a project reference", as
     screen.getByRole("button", { name: "移除引用 参考图.png" }),
   ).toBeInTheDocument();
   expect(promptEditor).toHaveTextContent("参考图.png 电影感的未来城市");
+  const promptAsset = container.querySelector<HTMLElement>(
+    ".generation-prompt-asset",
+  )!;
+  fireEvent.mouseUp(promptAsset);
+  const setClipboardText = vi.fn();
+  fireEvent.copy(promptEditor, {
+    clipboardData: { setData: setClipboardText },
+  });
+  expect(setClipboardText).toHaveBeenCalledWith("text/plain", "[参考图.png]");
   await user.click(screen.getByRole("button", { name: "创建生成任务" }));
   await waitFor(() =>
     expect(createGenerationTask).toHaveBeenCalledWith("project-1", {
       kind: "image",
       model_id: "model-image",
-      prompt: "@参考图.png 电影感的未来城市",
+      prompt: "[参考图.png] 电影感的未来城市",
       size: "1024x1024",
       seed: null,
       reference_asset_id: "asset-1",
@@ -291,12 +391,189 @@ test("uses the compact image node composer with reference, size, and seed contro
   expect(createGenerationTask).toHaveBeenLastCalledWith("project-1", {
     kind: "image",
     model_id: "model-image",
-    prompt: "@参考图.png 电影感的未来城市",
+    prompt: "[参考图.png] 电影感的未来城市",
     size: "1536x864",
     seed: 42,
     reference_asset_id: "asset-1",
   });
   expect(await screen.findByText(/已提交 3 个生成任务/)).toBeInTheDocument();
+});
+
+test("renders prompt references from filled draft text", async () => {
+  const user = userEvent.setup();
+  renderWithClient(
+    <GenerationDrawer
+      compact
+      lockedKind="image"
+      projectId="project-1"
+      draft={{
+        model_id: "model-image",
+        prompt: "",
+        size: "1024x1024",
+        seed: null,
+        image_count: 1,
+        reference_asset_id: null,
+      }}
+      onClose={vi.fn()}
+    />,
+  );
+
+  const promptEditor = await screen.findByRole("textbox", {
+    name: "图片提示词",
+  });
+  await user.click(promptEditor);
+  fireEvent.paste(promptEditor, {
+    clipboardData: {
+      getData: () =>
+        "生成 [参考图.png] 并兼容旧格式 @[参考图.png] 并保持 @reference.png固定说明",
+    },
+  });
+
+  expect(
+    await screen.findAllByRole("button", { name: "移除引用 参考图.png" }),
+  ).toHaveLength(2);
+  expect(promptEditor).toHaveTextContent(
+    "生成 参考图.png 并兼容旧格式 参考图.png 并保持 @reference.png固定说明",
+  );
+
+  await user.click(screen.getByRole("button", { name: "生成图片" }));
+
+  await waitFor(() =>
+    expect(createGenerationTask).toHaveBeenCalledWith("project-1", {
+      kind: "image",
+      model_id: "model-image",
+      prompt:
+        "生成 [参考图.png] 并兼容旧格式 [参考图.png] 并保持 @reference.png固定说明",
+      size: "1024x1024",
+      seed: null,
+      reference_asset_id: null,
+    }),
+  );
+});
+
+test("opens selected reference media from the card and only removes it with the corner button", async () => {
+  const user = userEvent.setup();
+  renderWithClient(
+    <GenerationDrawer
+      compact
+      lockedKind="image"
+      projectId="project-1"
+      onClose={vi.fn()}
+    />,
+  );
+  await screen.findByRole("button", { name: "生成模型" });
+  const referencePicker = screen
+    .getByRole("group", { name: "参考图片（可选）" })
+    .querySelector<HTMLInputElement>('input[type="file"]')!;
+  await user.upload(
+    referencePicker,
+    new File(["image"], "local.png", { type: "image/png" }),
+  );
+
+  const referenceCard = await screen.findByRole("button", {
+    name: "参考图.png",
+  });
+  await user.click(referenceCard);
+  const preview = screen.getByRole("dialog", { name: "参考图.png" });
+  expect(within(preview).getByText("图片预览")).toBeInTheDocument();
+  expect(referenceCard).toHaveAttribute("aria-pressed", "true");
+
+  await user.click(within(preview).getByRole("button", { name: "关闭预览" }));
+  expect(screen.queryByRole("dialog", { name: "参考图.png" })).toBeNull();
+  fireEvent.click(
+    screen.getByRole("button", { name: "移除参考文件 参考图.png" }),
+  );
+  expect(screen.queryByRole("button", { name: "参考图.png" })).toBeNull();
+});
+
+test("selects current, cross-project, and library media from the source menu", async () => {
+  const user = userEvent.setup();
+  renderWithClient(
+    <GenerationDrawer
+      compact
+      lockedKind="image"
+      projectId="project-1"
+      onClose={vi.fn()}
+    />,
+  );
+  await screen.findByRole("button", { name: "生成模型" });
+  const sourceTrigger = await screen.findByRole("button", {
+    name: "上传参考图片（可选）",
+  });
+
+  await user.click(sourceTrigger);
+  const sourceMenu = screen.getByRole("menu", {
+    name: "参考图片（可选）来源",
+  });
+  expect(
+    within(sourceMenu).getByRole("menuitem", { name: /本地上传/ }),
+  ).toBeVisible();
+  await user.click(
+    within(sourceMenu).getByRole("menuitem", { name: /本项目素材/ }),
+  );
+  const projectDialog = await screen.findByRole("dialog", {
+    name: "选择本项目素材",
+  });
+  await user.click(
+    await within(projectDialog).findByRole("option", { name: "参考图.png" }),
+  );
+  await user.click(
+    within(projectDialog).getByRole("button", { name: "确认选择" }),
+  );
+  expect(
+    await screen.findByRole("button", { name: "参考图.png" }),
+  ).toBeVisible();
+
+  await user.click(sourceTrigger);
+  await user.click(screen.getByRole("menuitem", { name: /跨项目素材/ }));
+  const crossDialog = await screen.findByRole("dialog", {
+    name: "选择跨项目素材",
+  });
+  expect(within(crossDialog).getByLabelText("来源项目")).toHaveValue(
+    "project-2",
+  );
+  await user.click(
+    await within(crossDialog).findByRole("option", {
+      name: "跨项目参考图.png",
+    }),
+  );
+  await user.click(
+    within(crossDialog).getByRole("button", { name: "导入并选择" }),
+  );
+  await waitFor(() =>
+    expect(importManagedFiles).toHaveBeenCalledWith("project-1", {
+      sourceScope: "project",
+      sourceProjectId: "project-2",
+      assetIds: ["cross-project-asset"],
+    }),
+  );
+  expect(
+    await screen.findByRole("button", { name: "跨项目参考图.png" }),
+  ).toBeVisible();
+
+  await user.click(sourceTrigger);
+  await user.click(screen.getByRole("menuitem", { name: /跨项目素材/ }));
+  const libraryDialog = await screen.findByRole("dialog", {
+    name: "选择跨项目素材",
+  });
+  await user.click(within(libraryDialog).getByRole("tab", { name: "公共库" }));
+  await user.click(
+    await within(libraryDialog).findByRole("option", {
+      name: "公共参考图.png",
+    }),
+  );
+  await user.click(
+    within(libraryDialog).getByRole("button", { name: "导入并选择" }),
+  );
+  await waitFor(() =>
+    expect(importManagedFiles).toHaveBeenCalledWith("project-1", {
+      sourceScope: "library",
+      assetIds: ["library-asset"],
+    }),
+  );
+  expect(
+    await screen.findByRole("button", { name: "公共参考图.png" }),
+  ).toBeVisible();
 });
 
 test("uses the compact video node composer for image-to-video tasks", async () => {
@@ -377,7 +654,7 @@ test("uses the compact video node composer for image-to-video tasks", async () =
         mode: "frames",
         first_frame_asset_id: "asset-1",
         last_frame_asset_id: null,
-        prompt: "@参考图.png 镜头缓慢推进",
+        prompt: "[参考图.png] 镜头缓慢推进",
       }),
     ),
   );
@@ -573,15 +850,19 @@ test("uploads local reference media, auto-selects it and submits asset ids", asy
     screen.getByRole("option", { name: "Doubao Seedance 2.0" }),
   ).toBeInTheDocument();
   await user.click(screen.getByRole("button", { name: "全能参考" }));
+  const stickyReferenceBar = screen.getByRole("group", {
+    name: "固定参考素材",
+  });
+  expect(stickyReferenceBar).toHaveClass("video-composer-reference");
   expect(screen.queryByText(/已选 0\//)).not.toBeInTheDocument();
   expect(
-    screen.getByRole("button", { name: "上传参考图片" }),
+    within(stickyReferenceBar).getByRole("button", { name: "上传参考图片" }),
   ).toBeInTheDocument();
   expect(
-    screen.getByRole("button", { name: "上传参考视频" }),
+    within(stickyReferenceBar).getByRole("button", { name: "上传参考视频" }),
   ).toBeInTheDocument();
   expect(
-    screen.getByRole("button", { name: "上传参考音频" }),
+    within(stickyReferenceBar).getByRole("button", { name: "上传参考音频" }),
   ).toBeInTheDocument();
 
   const videoPicker = screen.getByText("参考视频").closest("fieldset");
@@ -593,6 +874,18 @@ test("uploads local reference media, auto-selects it and submits asset ids", asy
   await user.upload(
     audioPicker!.querySelector('input[type="file"]')!,
     new File(["audio"], "local.mp3", { type: "audio/mpeg" }),
+  );
+  await user.click(await screen.findByRole("button", { name: "参考视频.mp4" }));
+  const videoPreview = screen.getByRole("dialog", { name: "参考视频.mp4" });
+  expect(within(videoPreview).getByText("视频预览")).toBeInTheDocument();
+  await user.click(
+    within(videoPreview).getByRole("button", { name: "关闭预览" }),
+  );
+  await user.click(screen.getByRole("button", { name: "参考音频.mp3" }));
+  const audioPreview = screen.getByRole("dialog", { name: "参考音频.mp3" });
+  expect(within(audioPreview).getByText("音频预览")).toBeInTheDocument();
+  await user.click(
+    within(audioPreview).getByRole("button", { name: "关闭预览" }),
   );
   await user.click(screen.getByRole("button", { name: "生成视频" }));
 

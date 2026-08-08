@@ -19,15 +19,16 @@ export default defineConfig({
     {
       command:
         "FPL_SECRETS_KEY=Q3kT62dvbHHXXulO5XPCR84_yXK6t-6LXz7BcIYONys= " +
+        "FPL_STUDIO_TOKEN= " +
         `FPL_DATABASE_PATH=${databasePath} ` +
         `../.venv/bin/uvicorn app.main:app --app-dir ../backend --host 127.0.0.1 --port ${apiPort}`,
       url: `http://127.0.0.1:${apiPort}/ready`,
-      reuseExistingServer: true,
+      reuseExistingServer: false,
     },
     {
       command: "npm run dev",
       url: `http://127.0.0.1:${webPort}/model-service`,
-      reuseExistingServer: true,
+      reuseExistingServer: false,
     },
   ],
 });

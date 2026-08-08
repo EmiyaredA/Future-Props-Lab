@@ -2,6 +2,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, vi } from "vitest";
+import { fetchApiBlob } from "@platform/api/client";
 import { AssetBrowser } from "@features/files/AssetBrowser";
 import {
   createFolder,
@@ -32,6 +33,10 @@ vi.mock("@features/files/api", async () => {
     uploadManagedFile: vi.fn(),
   };
 });
+
+vi.mock("@platform/api/client", () => ({
+  fetchApiBlob: vi.fn(),
+}));
 
 const libraryFile = {
   id: "file-1",
@@ -103,9 +108,24 @@ function renderProjectBrowser(compact = false) {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  Object.defineProperty(URL, "createObjectURL", {
+    configurable: true,
+    value: vi.fn(() => "blob:file-download"),
+  });
+  Object.defineProperty(URL, "revokeObjectURL", {
+    configurable: true,
+    value: vi.fn(),
+  });
+  Object.defineProperty(HTMLAnchorElement.prototype, "click", {
+    configurable: true,
+    value: vi.fn(),
+  });
   window.localStorage.clear();
   vi.mocked(getFolders).mockResolvedValue({ items: [] });
   vi.mocked(getFiles).mockResolvedValue({ items: [libraryFile] });
+  vi.mocked(fetchApiBlob).mockResolvedValue(
+    new Blob(["story"], { type: "text/markdown" }),
+  );
   vi.mocked(createFolder).mockResolvedValue(folderA);
   vi.mocked(patchFolder).mockImplementation(async (folder, changes) => ({
     ...folder,
@@ -143,7 +163,7 @@ beforeEach(() => {
 test("uses styled filters and keeps successful upload feedback concise", async () => {
   const user = userEvent.setup();
   const { container } = renderLibraryBrowser();
-  expect(await screen.findByText("故事说明.md")).toBeInTheDocument();
+  expect(await screen.findByText("故事说明")).toBeInTheDocument();
   expect(container.querySelector(".file-upload-card")).toBeInTheDocument();
   expect(screen.getByLabelText("选择要上传的文件")).toHaveAttribute(
     "accept",
@@ -170,7 +190,7 @@ test("uses styled filters and keeps successful upload feedback concise", async (
 test("uploads JSON documents from file management", async () => {
   const user = userEvent.setup();
   renderLibraryBrowser();
-  expect(await screen.findByText("故事说明.md")).toBeInTheDocument();
+  expect(await screen.findByText("故事说明")).toBeInTheDocument();
 
   const transcript = new File(
     ['{"text":"广播剧转写","segments":[]}'],
@@ -216,7 +236,7 @@ test("keeps uploading remaining files and explains a failed video upload", async
     .mockResolvedValueOnce(libraryFile)
     .mockRejectedValueOnce(new Error("文件内容与声明的类型不匹配"));
   renderLibraryBrowser();
-  expect(await screen.findByText("故事说明.md")).toBeInTheDocument();
+  expect(await screen.findByText("故事说明")).toBeInTheDocument();
 
   const image = new File(["image"], "poster.png", { type: "image/png" });
   const video = new File(["video"], "trailer.mp4", { type: "video/mp4" });
@@ -234,7 +254,7 @@ test("keeps uploading remaining files and explains a failed video upload", async
 test("switches file layouts, remembers the choice, and imports a library file", async () => {
   const user = userEvent.setup();
   const { container } = renderBrowser();
-  expect(await screen.findByText("故事说明.md")).toBeInTheDocument();
+  expect(await screen.findByText("故事说明")).toBeInTheDocument();
   expect(container.querySelector(".file-items")).toHaveClass("grid");
   await user.click(screen.getByRole("button", { name: "列表视图" }));
   expect(container.querySelector(".file-items")).toHaveClass("list");
@@ -250,7 +270,7 @@ test("switches file layouts, remembers the choice, and imports a library file", 
 test("uses the compact asset controls without losing upload and folder actions", async () => {
   const user = userEvent.setup();
   renderProjectBrowser(true);
-  expect(await screen.findByText("故事说明.md")).toBeInTheDocument();
+  expect(await screen.findByText("故事说明")).toBeInTheDocument();
   expect(screen.getByPlaceholderText("搜索素材")).toBeInTheDocument();
 
   await user.click(screen.getByRole("button", { name: "筛选素材" }));
@@ -330,23 +350,40 @@ test("uses custom dialogs for creating, renaming, moving, and deleting folders",
 test("keeps file download visible and moves secondary actions into a dismissible menu", async () => {
   const user = userEvent.setup();
   renderLibraryBrowser();
-  expect(await screen.findByText("故事说明.md")).toBeInTheDocument();
+  expect(await screen.findByText("故事说明")).toBeInTheDocument();
   expect(screen.getByRole("button", { name: "下载" })).toBeInTheDocument();
 
-  await user.click(
-    screen.getByRole("button", { name: "更多操作 故事说明.md" }),
+  let downloadAnchor: HTMLAnchorElement | undefined;
+  const originalCreateElement = document.createElement.bind(document);
+  const createElementSpy = vi.spyOn(document, "createElement");
+  createElementSpy.mockImplementation(((
+    tagName: string,
+    options?: ElementCreationOptions,
+  ) => {
+    const element = originalCreateElement(tagName, options);
+    if (tagName.toLocaleLowerCase() === "a") {
+      downloadAnchor = element as HTMLAnchorElement;
+    }
+    return element;
+  }) as typeof document.createElement);
+
+  await user.click(screen.getByRole("button", { name: "更多操作 故事说明" }));
+  expect(screen.getByRole("menu")).toBeInTheDocument();
+  await user.click(screen.getByRole("menuitem", { name: "下载" }));
+  await waitFor(() =>
+    expect(fetchApiBlob).toHaveBeenCalledWith("/v1/files/file-1/download"),
   );
+  expect(downloadAnchor?.download).toBe("故事说明.md");
+  createElementSpy.mockRestore();
+
+  await user.click(screen.getByRole("button", { name: "更多操作 故事说明" }));
   expect(screen.getByRole("menu")).toBeInTheDocument();
   await user.keyboard("{Escape}");
   expect(screen.queryByRole("menu")).toBeNull();
 
-  await user.click(
-    screen.getByRole("button", { name: "更多操作 故事说明.md" }),
-  );
+  await user.click(screen.getByRole("button", { name: "更多操作 故事说明" }));
   await user.click(screen.getByRole("menuitem", { name: "删除" }));
-  expect(
-    screen.getByText("删除“故事说明.md”后将无法恢复。"),
-  ).toBeInTheDocument();
+  expect(screen.getByText("删除“故事说明”后将无法恢复。")).toBeInTheDocument();
   await user.click(screen.getByRole("button", { name: "确认删除" }));
   await waitFor(() =>
     expect(deleteManagedFile).toHaveBeenCalledWith(libraryFile),
@@ -364,11 +401,9 @@ test("explains reference removal without implying the source file is deleted", a
   };
   vi.mocked(getFiles).mockResolvedValue({ items: [referenceFile] });
   renderProjectBrowser();
-  expect(await screen.findByText("故事说明.md")).toBeInTheDocument();
+  expect(await screen.findByText("故事说明")).toBeInTheDocument();
 
-  await user.click(
-    screen.getByRole("button", { name: "更多操作 故事说明.md" }),
-  );
+  await user.click(screen.getByRole("button", { name: "更多操作 故事说明" }));
   await user.click(screen.getByRole("menuitem", { name: "移除引用" }));
   expect(
     screen.getByText(
@@ -381,10 +416,42 @@ test("explains reference removal without implying the source file is deleted", a
   );
 });
 
+test("opens an inline preview when a file card is clicked", async () => {
+  const user = userEvent.setup();
+  const imageFile = {
+    ...libraryFile,
+    id: "image-1",
+    original_filename: "persona.png",
+    display_name: "人设图3.png",
+    media_kind: "image" as const,
+    mime_type: "image/png",
+  };
+  vi.mocked(getFiles).mockResolvedValue({ items: [imageFile] });
+  vi.mocked(fetchApiBlob).mockResolvedValue(
+    new Blob(["png"], { type: "image/png" }),
+  );
+  renderProjectBrowser(true);
+
+  expect(await screen.findByText("人设图3")).toBeInTheDocument();
+  await user.click(screen.getByRole("button", { name: "预览 人设图3" }));
+
+  expect(screen.getByRole("dialog", { name: "人设图3" })).toBeInTheDocument();
+  await waitFor(() =>
+    expect(fetchApiBlob).toHaveBeenCalledWith("/v1/files/image-1/content"),
+  );
+  expect(await screen.findByRole("img", { name: "人设图3" })).toHaveAttribute(
+    "src",
+    "blob:file-download",
+  );
+
+  await user.click(screen.getByRole("button", { name: "关闭预览" }));
+  expect(screen.queryByRole("dialog", { name: "人设图3" })).toBeNull();
+});
+
 test("keeps the compact drawer layout and its upload menu entry", async () => {
   const user = userEvent.setup();
   const { container } = renderProjectBrowser(true);
-  expect(await screen.findByText("故事说明.md")).toBeInTheDocument();
+  expect(await screen.findByText("故事说明")).toBeInTheDocument();
   expect(container.querySelector(".file-upload-card")).toBeNull();
   await user.click(screen.getByRole("button", { name: "添加素材" }));
   expect(

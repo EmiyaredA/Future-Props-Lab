@@ -182,3 +182,24 @@ export async function importFile(projectId: string, assetId: string) {
     ),
   );
 }
+
+export async function importManagedFiles(
+  projectId: string,
+  options:
+    | { sourceScope: "library"; assetIds: string[] }
+    | { sourceScope: "project"; sourceProjectId: string; assetIds: string[] },
+) {
+  return unwrap(
+    await api.POST("/v1/visual-workshop/projects/{project_id}/asset-imports", {
+      params: { path: { project_id: projectId } },
+      body: {
+        source_scope: options.sourceScope,
+        source_project_id:
+          options.sourceScope === "project"
+            ? options.sourceProjectId
+            : undefined,
+        asset_ids: options.assetIds,
+      },
+    }),
+  );
+}

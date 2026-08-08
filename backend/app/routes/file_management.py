@@ -7,7 +7,7 @@ from fastapi.responses import FileResponse
 
 from app.core.config import get_settings
 from app.deps import SessionDep
-from app.files import AssetError, VisualAssets
+from app.files import AssetError, VisualAssets, download_filename
 from app.schemas.files import (
     VisualAssetFolderCreateIn,
     VisualAssetFolderListOut,
@@ -158,4 +158,8 @@ async def download_file(session: SessionDep, asset_id: str) -> FileResponse:
         row, path = await VisualAssets(session, get_settings()).content(asset_id)
     except AssetError as exc:
         raise asset_http_error(exc) from None
-    return FileResponse(path, media_type=row.mime_type, filename=row.original_filename)
+    return FileResponse(
+        path,
+        media_type=row.mime_type,
+        filename=download_filename(row.display_name, row.original_filename),
+    )

@@ -26,13 +26,15 @@ Future-Props-Lab/
 │   └── runner.py      # checksum、连续前缀检查和事务应用
 ├── web/src/
 │   ├── app/           # Studio 入口、壳与路由
-│   ├── docs/          # 独立空文档中心入口
+│   ├── docs/          # 数据驱动的双工坊使用指南、搜索、目录与深链接
 │   ├── features/      # 首页、AI 应用、文件管理、视觉工坊、Galgame 工坊、工具导航与模型功能
 │   ├── generated/     # OpenAPI 生成物
 │   ├── platform/      # API 与管理令牌基础设施
 │   └── shared/        # 品牌与主题 UI
+├── web/public/docs/   # 文档中心使用的当前真实界面截图
 ├── web/tests/         # Web 组件测试
 ├── web/e2e/           # Playwright 浏览器旅程
+│   └── fixtures/      # 人物旅程的确定性 API mock 与测试数据；真实烟测不使用
 ├── tests/             # 后端单元、API、存储与架构测试
 └── scripts/           # OpenAPI 契约导出
 ```
@@ -62,6 +64,9 @@ Future-Props-Lab/
 - Web 的依赖方向是 `app → features → shared/platform/generated`。`platform/` 与 `shared/`
   不依赖 `features/` 或 `app/`，`features/` 不依赖 `app/`；入口装配留在 `app/`，业务代码不
   放回 `web/src/` 根目录，生成契约不手工修改。
+- `web/src/docs/` 是独立文档入口的数据与展示边界，按页面和章节驱动视觉创作工坊、Galgame
+  工坊指南，负责本地全文搜索、`docs.html?page=...#section` 深链接、响应式导航和主题；配套截图只
+  存放于 `web/public/docs/`，不作为产品状态或测试数据源。
 - 根 `/health`、`/ready` 是无版本探针，其他业务路由由统一的 `/v1` router 注册。
 
 ## 数据与运行边界

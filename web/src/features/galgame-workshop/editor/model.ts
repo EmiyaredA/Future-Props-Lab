@@ -10,6 +10,7 @@ import type {
   GalgameStoryStageStyle,
   GalgameStoryUiStyle,
 } from "@features/galgame-workshop/api";
+import { dialogueSpeakerIds } from "@features/galgame-workshop/editor/dialogue";
 import {
   DEFAULT_CHARACTER_TRANSFORM,
   DEFAULT_CHARACTER_TRANSITION,
@@ -309,10 +310,11 @@ export function referencedBy(
       for (const block of fragment.blocks ?? []) {
         if (
           (kind === "character" &&
-            (block.type === "dialogue" ||
-              block.type === "showCharacter" ||
-              block.type === "removeCharacter") &&
-            block.characterId === id) ||
+            ((block.type === "dialogue" &&
+              dialogueSpeakerIds(block).includes(id)) ||
+              ((block.type === "showCharacter" ||
+                block.type === "removeCharacter") &&
+                block.characterId === id))) ||
           (kind === "scene" && block.type === "scene" && block.sceneId === id)
         )
           references.push(`Fragment“${fragment.title}”`);

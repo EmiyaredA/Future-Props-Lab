@@ -28,6 +28,7 @@ import {
 } from "lucide-react";
 import {
   AssetBrowser,
+  invalidateFileScope,
   type AssetViewMode,
   uploadManagedFile,
 } from "@features/files";
@@ -65,16 +66,47 @@ type ContextMenuState = {
   worldY: number;
 };
 
+type PreviewSource = {
+  assetId: string | null;
+  kind: MediaNode["kind"];
+  fallback: boolean;
+};
+
+function previewSourceForNode(node: MediaNode): PreviewSource {
+  if (node.asset_id) {
+    return { assetId: node.asset_id, kind: node.kind, fallback: false };
+  }
+  if (node.kind === "image" && node.generation_draft?.reference_asset_id) {
+    return {
+      assetId: node.generation_draft.reference_asset_id,
+      kind: "image",
+      fallback: true,
+    };
+  }
+  if (node.kind === "video" && node.generation_draft) {
+    const draft = node.generation_draft;
+    const imageId =
+      draft.first_frame_asset_id ??
+      draft.reference_asset_ids?.[0] ??
+      draft.last_frame_asset_id;
+    if (imageId) return { assetId: imageId, kind: "image", fallback: true };
+    const videoId = draft.video_asset_ids?.[0];
+    if (videoId) return { assetId: videoId, kind: "video", fallback: true };
+  }
+  return { assetId: null, kind: node.kind, fallback: false };
+}
+
 function CanvasMediaPreview({ node }: { node: MediaNode }) {
   const [url, setUrl] = useState("");
   const [missing, setMissing] = useState(false);
+  const preview = previewSourceForNode(node);
   useEffect(() => {
     let active = true;
     let objectUrl = "";
     setUrl("");
     setMissing(false);
-    if (!node.asset_id) return;
-    void fetchApiBlob(`/v1/files/${node.asset_id}/content`)
+    if (!preview.assetId) return;
+    void fetchApiBlob(`/v1/files/${preview.assetId}/content`)
       .then((blob) => {
         objectUrl = URL.createObjectURL(blob);
         if (active) setUrl(objectUrl);
@@ -86,12 +118,18 @@ function CanvasMediaPreview({ node }: { node: MediaNode }) {
       active = false;
       if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
-  }, [node.asset_id]);
+  }, [preview.assetId]);
 
-  if (url && node.kind === "image")
-    return <img src={url} alt="" draggable={false} />;
-  if (url && node.kind === "video") return <video src={url} controls />;
-  if (url && node.kind === "audio") return <audio src={url} controls />;
+  if (url && preview.kind === "image")
+    return (
+      <img
+        src={url}
+        alt={preview.fallback ? "生成参考素材预览" : ""}
+        draggable={false}
+      />
+    );
+  if (url && preview.kind === "video") return <video src={url} controls />;
+  if (url && preview.kind === "audio") return <audio src={url} controls />;
   const Icon =
     node.kind === "image" ? Image : node.kind === "video" ? Video : Music;
   return (
@@ -285,12 +323,44 @@ export function VisualWorkshopCanvasPage({
     },
     [replaceNodes],
   );
+  const linkGenerationTask = useCallback(
+    (nodeId: string, taskId: string) => {
+      if (autoSave.current) {
+        clearTimeout(autoSave.current);
+        autoSave.current = undefined;
+      }
+      const next = nodesRef.current.map((node) =>
+        node.id === nodeId && (node.kind === "image" || node.kind === "video")
+          ? ({
+              ...node,
+              generation_task_id: taskId,
+              asset_id: null,
+            } as VisualCanvasNode)
+          : node,
+      );
+      nodesRef.current = next;
+      revisionRef.current += 1;
+      setNodes(next);
+      setSaveState("saved");
+      setSaveMessage("");
+      void client.invalidateQueries({
+        queryKey: ["visual-workshop-canvas", projectId],
+      });
+    },
+    [client, projectId],
+  );
 
   useEffect(() => {
     if (!canvasReady) return;
     const element = surface.current;
     if (!element) return;
     const handleWheel = (event: globalThis.WheelEvent) => {
+      if (
+        event.target instanceof Element &&
+        event.target.closest('[data-canvas-wheel="content"]')
+      ) {
+        return;
+      }
       event.preventDefault();
       setContextMenu(undefined);
       const bounds = element.getBoundingClientRect();
@@ -373,7 +443,7 @@ export function VisualWorkshopCanvasPage({
         ],
         true,
       );
-      void client.invalidateQueries({ queryKey: ["canvas-media"] });
+      void invalidateFileScope(client, projectId);
     },
   });
 
@@ -926,6 +996,9 @@ export function VisualWorkshopCanvasPage({
                     onPrepareCanvas={prepareCanvasForAgent}
                     onPatch={(patch, immediate) =>
                       patchNode(node.id, patch, immediate)
+                    }
+                    onTaskLinked={(taskId) =>
+                      linkGenerationTask(node.id, taskId)
                     }
                   />
                 ) : null}

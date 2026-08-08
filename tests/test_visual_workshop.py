@@ -6,6 +6,7 @@ import pytest
 from sqlalchemy import delete
 
 import app.deps as deps
+import app.files.assets as asset_module
 from app.core.config import get_settings
 from app.core.credentials import encrypt_secret
 from app.core.db import SessionLocal
@@ -227,6 +228,8 @@ async def test_file_management_upload_folders_and_project_references() -> None:
         asset = image.json()
         assert asset["media_kind"] == "image"
         assert asset["source"] == "library"
+        assert asset["original_filename"] == "hero.png"
+        assert asset["display_name"] == "hero"
 
         project_upload = await client.post(
             "/v1/files",
@@ -235,6 +238,7 @@ async def test_file_management_upload_folders_and_project_references() -> None:
         )
         assert project_upload.status_code == 200, project_upload.text
         assert project_upload.json()["source"] == "project"
+        assert project_upload.json()["display_name"] == "notes"
 
         transcript_upload = await client.post(
             "/v1/files",
@@ -250,6 +254,7 @@ async def test_file_management_upload_folders_and_project_references() -> None:
         assert transcript_upload.json()["media_kind"] == "document"
         assert transcript_upload.json()["mime_type"] == "application/json"
         assert transcript_upload.json()["source"] == "library"
+        assert transcript_upload.json()["display_name"] == "radio-drama-transcript"
 
         first_reference = await client.post(
             f"/v1/visual-workshop/projects/{project['id']}/asset-references",
@@ -300,6 +305,140 @@ async def test_file_management_upload_folders_and_project_references() -> None:
             f"/v1/files/{asset['id']}", params={"expected_revision": asset["revision"]}
         )
         assert deleted.status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_visual_workshop_imports_library_references_and_project_copies(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    transport = httpx.ASGITransport(app=app)
+    async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+        target = (
+            await client.post(
+                "/v1/visual-workshop/projects",
+                json={"title": "素材接收项目", "kind": "canvas"},
+            )
+        ).json()
+        source = (
+            await client.post(
+                "/v1/visual-workshop/projects",
+                json={"title": "素材来源项目", "kind": "canvas"},
+            )
+        ).json()
+
+        library = (
+            await client.post(
+                "/v1/files",
+                files={
+                    "upload": (
+                        "library.png",
+                        b"\x89PNG\r\n\x1a\nlibrary-image",
+                        "image/png",
+                    )
+                },
+            )
+        ).json()
+
+        async def upload_source(name: str, payload: bytes) -> dict:
+            response = await client.post(
+                "/v1/files",
+                data={"project_id": source["id"]},
+                files={"upload": (name, b"\x89PNG\r\n\x1a\n" + payload, "image/png")},
+            )
+            assert response.status_code == 200, response.text
+            return response.json()
+
+        first = await upload_source("first.png", b"first-project-image")
+        second = await upload_source("second.png", b"second-project-image")
+
+        library_import = await client.post(
+            f"/v1/visual-workshop/projects/{target['id']}/asset-imports",
+            json={"source_scope": "library", "asset_ids": [library["id"]]},
+        )
+        repeated_library_import = await client.post(
+            f"/v1/visual-workshop/projects/{target['id']}/asset-imports",
+            json={"source_scope": "library", "asset_ids": [library["id"]]},
+        )
+        assert library_import.status_code == 200, library_import.text
+        assert (
+            repeated_library_import.json()["items"][0]["reference_id"]
+            == library_import.json()["items"][0]["reference_id"]
+        )
+
+        copied = await client.post(
+            f"/v1/visual-workshop/projects/{target['id']}/asset-imports",
+            json={
+                "source_scope": "project",
+                "source_project_id": source["id"],
+                "asset_ids": [second["id"], first["id"]],
+            },
+        )
+        assert copied.status_code == 200, copied.text
+        imported = copied.json()["items"]
+        assert [item["display_name"] for item in imported] == ["second", "first"]
+        assert all(item["project_id"] == target["id"] for item in imported)
+        assert all(item["id"] not in {first["id"], second["id"]} for item in imported)
+
+        duplicate_ids = await client.post(
+            f"/v1/visual-workshop/projects/{target['id']}/asset-imports",
+            json={
+                "source_scope": "project",
+                "source_project_id": source["id"],
+                "asset_ids": [first["id"], first["id"]],
+            },
+        )
+        assert duplicate_ids.status_code == 422
+        same_project = await client.post(
+            f"/v1/visual-workshop/projects/{target['id']}/asset-imports",
+            json={
+                "source_scope": "project",
+                "source_project_id": target["id"],
+                "asset_ids": [imported[0]["id"]],
+            },
+        )
+        assert same_project.status_code == 422
+        assert same_project.json()["code"] == "scope_mismatch"
+
+        root = get_settings().visual_asset_path
+        files_before_failure = {path.name for path in root.iterdir() if path.is_file()}
+        target_before_failure = (
+            await client.get("/v1/files", params={"project_id": target["id"]})
+        ).json()["items"]
+        real_copyfile = asset_module.shutil.copyfile
+        copy_attempts = 0
+
+        def fail_second_copy(source_path, target_path):
+            nonlocal copy_attempts
+            copy_attempts += 1
+            if copy_attempts == 2:
+                raise OSError("deterministic copy failure")
+            return real_copyfile(source_path, target_path)
+
+        monkeypatch.setattr(asset_module.shutil, "copyfile", fail_second_copy)
+        failed_copy = await client.post(
+            f"/v1/visual-workshop/projects/{target['id']}/asset-imports",
+            json={
+                "source_scope": "project",
+                "source_project_id": source["id"],
+                "asset_ids": [first["id"], second["id"]],
+            },
+        )
+        assert failed_copy.status_code == 500
+        assert failed_copy.json()["code"] == "asset_import_failed"
+        target_after_failure = (
+            await client.get("/v1/files", params={"project_id": target["id"]})
+        ).json()["items"]
+        assert len(target_after_failure) == len(target_before_failure)
+        assert {path.name for path in root.iterdir() if path.is_file()} == files_before_failure
+
+        deleted_source = await client.delete(
+            f"/v1/visual-workshop/projects/{source['id']}",
+            params={"expected_revision": source["revision"]},
+        )
+        assert deleted_source.status_code == 200
+        copied_content = await client.get(f"/v1/files/{imported[0]['id']}/content")
+        assert copied_content.status_code == 200
+        assert copied_content.content.endswith(b"second-project-image")
 
 
 @pytest.mark.asyncio
@@ -578,6 +717,24 @@ async def test_visual_generation_options_creation_filters_and_active_provider_gu
         assert invalid_size.status_code == 422
         assert invalid_size.json()["code"] == "unsupported_size"
 
+        canvas_node = await client.put(
+            f"/v1/visual-workshop/projects/{project['id']}/canvas",
+            json={
+                "expected_revision": 0,
+                "nodes": [
+                    {
+                        "id": "image-node-1",
+                        "kind": "image",
+                        "title": "图片节点",
+                        "position": {"x": 120, "y": 80},
+                        "asset_id": None,
+                    }
+                ],
+            },
+        )
+        assert canvas_node.status_code == 200, canvas_node.text
+        assert canvas_node.json()["revision"] == 1
+
         created = await client.post(
             f"/v1/visual-workshop/projects/{project['id']}/generation-tasks",
             json={
@@ -586,12 +743,21 @@ async def test_visual_generation_options_creation_filters_and_active_provider_gu
                 "prompt": "未来城市的电影海报",
                 "size": "1024x1024",
                 "seed": 9,
+                "canvas_node_id": "image-node-1",
+                "expected_canvas_revision": 1,
             },
         )
         assert created.status_code == 200, created.text
         task = created.json()
         assert task["status"] == "queued"
         assert task["request_payload"]["seed"] == 9
+        assert "canvas_node_id" not in task["request_payload"]
+        linked_canvas = (
+            await client.get(f"/v1/visual-workshop/projects/{project['id']}/canvas")
+        ).json()
+        assert linked_canvas["revision"] == 2
+        assert linked_canvas["nodes"][0]["generation_task_id"] == task["id"]
+        assert linked_canvas["nodes"][0]["asset_id"] is None
         assert "test-only-secret" not in created.text
         assert "data:" not in created.text
 
@@ -751,6 +917,27 @@ async def test_visual_video_generation_uses_scoped_media_asset_ids() -> None:
             )
             assert scope_mismatch.status_code == 422
             assert scope_mismatch.json()["code"] == "scope_mismatch"
+
+            imported = await client.post(
+                f"/v1/visual-workshop/projects/{project_ids[0]}/asset-imports",
+                json={
+                    "source_scope": "project",
+                    "source_project_id": project_ids[1],
+                    "asset_ids": [other_video["id"]],
+                },
+            )
+            assert imported.status_code == 200, imported.text
+            imported_video_id = imported.json()["items"][0]["id"]
+            imported_generation = await client.post(
+                f"/v1/visual-workshop/projects/{project_ids[0]}/generation-tasks",
+                json={
+                    "kind": "video",
+                    "model_id": model.id,
+                    "mode": "reference",
+                    "video_asset_ids": [imported_video_id],
+                },
+            )
+            assert imported_generation.status_code == 200, imported_generation.text
 
             wrong_type = await client.post(
                 f"/v1/visual-workshop/projects/{project_ids[0]}/generation-tasks",
