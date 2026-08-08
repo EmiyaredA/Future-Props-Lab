@@ -36,7 +36,9 @@ Future-Props-Lab/
 ├── web/e2e/           # Playwright 浏览器旅程
 │   └── fixtures/      # 人物旅程的确定性 API mock 与测试数据；真实烟测不使用
 ├── tests/             # 后端单元、API、存储与架构测试
-└── scripts/           # OpenAPI 契约导出
+├── scripts/           # OpenAPI 契约导出
+├── .runtime/          # 本机 SQLite 与运行期素材（已忽略，不提交）
+└── .scratch/          # 本地临时分镜、场景图与工作草稿（已忽略，不提交）
 ```
 
 ## 目录与依赖边界
@@ -74,7 +76,8 @@ Future-Props-Lab/
 数据库是仓库根目录 `.runtime/future-props.db` 下的单机 SQLite 文件；文件管理内容保存在数据库
 同级的 `visual-workshop/assets/`，模型测试对话图片保存在 `model-test/attachments/`，生成参考
 素材保存在 `model-test/references/`，生成结果保存在 `model-test/generated/`，数据库与这些目录
-共同构成本机数据真源。FastAPI 启动时自动创建
+共同构成本机数据真源。本地临时分镜、场景图与未定稿草稿放在仓库根目录 `.scratch/`，与 `.runtime/`
+一样被 git 忽略，不进入文档资产或产品素材真源。FastAPI 启动时自动创建
 目录并执行 `registry.py` 中已登记、带 checksum 的 migration；每个连接启用外键约束、WAL
 与忙等待。迁移历史只追加且不导入运行时 `app`，schema 变化必须同时更新 ORM、注册表、测试
 和文档。

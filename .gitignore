@@ -167,6 +167,9 @@ web/playwright-report/
 # Local runtime state
 .runtime/
 
+# Local scratch media and working drafts (not product assets)
+.scratch/
+
 # Spyder project settings
 .spyderproject
 .spyproject
