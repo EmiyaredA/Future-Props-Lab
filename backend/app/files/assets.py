@@ -51,6 +51,10 @@ ALLOWED_FILES: dict[str, tuple[str, set[str]]] = {
     ".wav": ("audio", {"audio/wav", "audio/x-wav"}),
     ".m4a": ("audio", {"audio/mp4", "audio/x-m4a"}),
     ".ogg": ("audio", {"audio/ogg"}),
+    ".ttf": ("font", {"font/ttf", "application/x-font-ttf", "application/octet-stream"}),
+    ".otf": ("font", {"font/otf", "application/x-font-opentype", "application/octet-stream"}),
+    ".woff": ("font", {"font/woff", "application/font-woff", "application/octet-stream"}),
+    ".woff2": ("font", {"font/woff2", "application/octet-stream"}),
     ".pdf": ("document", {"application/pdf"}),
     ".txt": ("document", {"text/plain"}),
     ".md": ("document", {"text/markdown", "text/plain"}),
@@ -133,6 +137,10 @@ def _looks_like(extension: str, head: bytes) -> bool:
         ".wav": head.startswith(b"RIFF") and head[8:12] == b"WAVE",
         ".m4a": b"ftyp" in head[4:16],
         ".ogg": head.startswith(b"OggS"),
+        ".ttf": head.startswith((b"\x00\x01\x00\x00", b"true", b"typ1")),
+        ".otf": head.startswith(b"OTTO"),
+        ".woff": head.startswith(b"wOFF"),
+        ".woff2": head.startswith(b"wOF2"),
         ".pdf": head.startswith(b"%PDF-"),
     }
     return checks.get(extension, False)
@@ -502,6 +510,13 @@ class VisualAssets:
                 ".wav",
                 ".m4a",
                 ".ogg",
+                ".mp4",
+                ".webm",
+                ".mov",
+                ".ttf",
+                ".otf",
+                ".woff",
+                ".woff2",
             },
         )
 

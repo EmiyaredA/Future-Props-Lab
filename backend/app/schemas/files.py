@@ -5,7 +5,7 @@ from typing import Literal
 from pydantic import BaseModel, Field, field_validator, model_validator
 
 VisualAssetScope = Literal["library", "project"]
-VisualAssetKind = Literal["image", "video", "audio", "document"]
+VisualAssetKind = Literal["image", "video", "audio", "font", "document"]
 
 
 def _clean_name(value: str) -> str:

@@ -466,7 +466,7 @@ test("enters the visual workshop, persists projects, and supports deep navigatio
     buffer: Buffer.from("e2e-reference-image"),
   });
   await expect(
-    page.getByRole("button", { name: "E2E 参考图.png" }),
+    page.getByRole("button", { name: "E2E 参考图.png", exact: true }),
   ).toBeVisible();
   const promptEditor = page.getByRole("textbox", { name: "图片提示词" });
   await promptEditor.click();
@@ -497,7 +497,7 @@ test("enters the visual workshop, persists projects, and supports deep navigatio
   const restoredPrompt = page.getByRole("textbox", { name: "图片提示词" });
   await expect(restoredPrompt).toContainText("E2E 未来城市海报");
   await expect(
-    page.getByRole("button", { name: "E2E 参考图.png" }),
+    page.getByRole("button", { name: "E2E 参考图.png", exact: true }),
   ).toHaveAttribute("aria-pressed", "true");
   await expect(page.getByRole("button", { name: "生成数量" })).toContainText(
     "×3",

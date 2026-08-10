@@ -8,13 +8,42 @@ export const TIMELINE_SNAP_MS = 100;
 
 export type GalgameTimedBlock = Extract<
   GalgameStoryBlock,
-  { type: "dialogue" | "narration" }
+  { type: "dialogue" | "narration" | "storyParagraph" | "systemMessage" }
 >;
+
+export function isTimelineCueBlock(
+  block: GalgameStoryBlock,
+): block is GalgameTimedBlock {
+  return (
+    block.type === "dialogue" ||
+    block.type === "narration" ||
+    block.type === "storyParagraph" ||
+    block.type === "systemMessage"
+  );
+}
 
 export type GalgameTimelinePointBlock = Extract<
   GalgameStoryBlock,
-  { type: "scene" | "showCharacter" | "removeCharacter" | "audio" }
+  {
+    type:
+      | "scene"
+      | "showCg"
+      | "hideCg"
+      | "showCharacter"
+      | "removeCharacter"
+      | "audio";
+  }
 >;
+
+export type GalgameTimelineCharacterBlock = Extract<
+  GalgameTimelinePointBlock,
+  { type: "showCharacter" | "removeCharacter" }
+>;
+
+export type GalgameTimelineCharacterTiming =
+  | { mode: "dialogue"; dialogueBlockId: string }
+  | { mode: "timelineEnd" }
+  | { mode: "independent"; timeMs: number };
 
 export type GalgameTimelineEvent = {
   block: GalgameStoryBlock;
@@ -24,18 +53,25 @@ export type GalgameTimelineEvent = {
   explicit: boolean;
 };
 
-export type GalgameTimelineBeat = {
-  id: string;
+export type GalgameTimelinePlaybackStep = {
   startMs: number;
   endMs: number;
-  content?: GalgameTimedBlock;
   contentBlockIndex?: number;
-  events: GalgameTimelineEvent[];
 };
 
 export type GalgameTimelineAudioState = {
   bgm?: Extract<GalgameTimelinePointBlock, { type: "audio" }>;
   ambient?: Extract<GalgameTimelinePointBlock, { type: "audio" }>;
+};
+
+export type GalgameTimelineAudioPlayback = {
+  block: Extract<GalgameTimelinePointBlock, { type: "audio" }>;
+  startedAtMs: number;
+};
+
+export type GalgameTimelineAudioPlaybackState = {
+  bgm?: GalgameTimelineAudioPlayback;
+  ambient?: GalgameTimelineAudioPlayback;
 };
 
 export type GalgameTimelineCue = {
@@ -55,27 +91,20 @@ export type GalgameTimelineGap = {
   nextCueId?: string;
 };
 
-export type GalgameBeatRange = {
-  startIndex: number;
-  endIndex: number;
+export type GalgameTimelineCgRange = {
+  id: string;
+  showBlock: Extract<GalgameTimelinePointBlock, { type: "showCg" }>;
   startMs: number;
   endMs: number;
-  durationMs: number;
-  beatIds: string[];
-  blockIds: string[];
-  structuralBlockIds: string[];
-};
-
-export type GalgameBeatRangeEditResult = {
-  fragment: GalgameStoryFragment;
-  error?: string;
+  endBlock?: Extract<GalgameTimelinePointBlock, { type: "showCg" | "hideCg" }>;
+  endKind: "hide" | "replace" | "timeline";
 };
 
 export function timelineCues(fragment: GalgameStoryFragment) {
   return (fragment.blocks ?? [])
     .flatMap((block, blockIndex) => {
       if (
-        (block.type !== "dialogue" && block.type !== "narration") ||
+        !isTimelineCueBlock(block) ||
         block.startMs == null ||
         block.endMs == null
       )
@@ -97,16 +126,17 @@ function eventPriority(block: GalgameStoryBlock) {
   if (block.type === "scene") return 0;
   if (block.type === "removeCharacter") return 1;
   if (block.type === "showCharacter") return 2;
-  if (block.type === "audio" && block.action === "stop") return 3;
+  if (block.type === "showCg" || block.type === "hideCg") return 3;
+  if (block.type === "audio" && block.action === "stop") return 4;
   if (
     block.type === "audio" &&
     block.action === "play" &&
     block.channel !== "sfx"
   )
-    return 4;
-  if (block.type === "audio") return 5;
-  if (block.type === "dialogue" || block.type === "narration") return 6;
-  return 7;
+    return 5;
+  if (block.type === "audio") return 6;
+  if (isTimelineCueBlock(block)) return 7;
+  return 8;
 }
 
 export function effectivePointTime(
@@ -117,6 +147,8 @@ export function effectivePointTime(
   if (
     !block ||
     (block.type !== "scene" &&
+      block.type !== "showCg" &&
+      block.type !== "hideCg" &&
       block.type !== "showCharacter" &&
       block.type !== "removeCharacter" &&
       block.type !== "audio")
@@ -126,17 +158,87 @@ export function effectivePointTime(
   if (!fragment.timeline) return undefined;
   const cues = timelineCues(fragment);
   const next = cues.find((cue) => cue.blockIndex > blockIndex);
-  if (next) return cues[0]?.blockIndex > blockIndex ? 0 : next.startMs;
+  if (next)
+    return block.type === "showCharacter" || block.type === "removeCharacter"
+      ? next.startMs
+      : cues[0]?.blockIndex > blockIndex
+        ? 0
+        : next.startMs;
   return fragment.timeline.durationMs;
+}
+
+export function timelineCharacterTiming(
+  fragment: GalgameStoryFragment,
+  blockId: string,
+): GalgameTimelineCharacterTiming | undefined {
+  const blocks = fragment.blocks ?? [];
+  const blockIndex = blocks.findIndex((block) => block.id === blockId);
+  const block = blocks[blockIndex];
+  if (
+    !block ||
+    (block.type !== "showCharacter" && block.type !== "removeCharacter")
+  )
+    return undefined;
+  if (block.atMs != null) return { mode: "independent", timeMs: block.atMs };
+  const dialogue = blocks
+    .slice(blockIndex + 1)
+    .find((candidate) => candidate.type === "dialogue");
+  return dialogue
+    ? { mode: "dialogue", dialogueBlockId: dialogue.id }
+    : { mode: "timelineEnd" };
+}
+
+export function attachTimelineCharacterEvent(
+  fragment: GalgameStoryFragment,
+  blockId: string,
+  dialogueBlockId: string,
+) {
+  const blocks = fragment.blocks ?? [];
+  const blockIndex = blocks.findIndex((block) => block.id === blockId);
+  const targetIndex = blocks.findIndex(
+    (block) => block.id === dialogueBlockId && block.type === "dialogue",
+  );
+  const block = blocks[blockIndex];
+  if (
+    blockIndex < 0 ||
+    targetIndex < 0 ||
+    !block ||
+    (block.type !== "showCharacter" && block.type !== "removeCharacter")
+  )
+    return fragment;
+
+  const attachedBlock = { ...block };
+  delete attachedBlock.atMs;
+  const nextDialogue = blocks
+    .slice(blockIndex + 1)
+    .find((candidate) => candidate.type === "dialogue");
+  if (nextDialogue?.id === dialogueBlockId)
+    return {
+      ...fragment,
+      blocks: blocks.map((candidate) =>
+        candidate.id === blockId ? attachedBlock : candidate,
+      ),
+    };
+
+  const withoutBlock = blocks.filter((candidate) => candidate.id !== blockId);
+  const insertionIndex = withoutBlock.findIndex(
+    (candidate) => candidate.id === dialogueBlockId,
+  );
+  if (insertionIndex < 0) return fragment;
+  return {
+    ...fragment,
+    blocks: [
+      ...withoutBlock.slice(0, insertionIndex),
+      attachedBlock,
+      ...withoutBlock.slice(insertionIndex),
+    ],
+  };
 }
 
 export function timelineEvents(fragment: GalgameStoryFragment) {
   return (fragment.blocks ?? [])
     .flatMap((block, blockIndex): GalgameTimelineEvent[] => {
-      if (
-        (block.type === "dialogue" || block.type === "narration") &&
-        block.startMs != null
-      )
+      if (isTimelineCueBlock(block) && block.startMs != null)
         return [
           {
             block,
@@ -167,79 +269,112 @@ export function timelineEvents(fragment: GalgameStoryFragment) {
     );
 }
 
-export function timelineBeats(fragment: GalgameStoryFragment) {
-  const cues = timelineCues(fragment);
-  const beats: GalgameTimelineBeat[] = cues.map((cue) => ({
-    id: `beat:${cue.block.id}`,
-    startMs: cue.startMs,
-    endMs: cue.endMs,
-    content: cue.block,
-    contentBlockIndex: cue.blockIndex,
-    events: [],
-  }));
+export function timelineCgRanges(
+  fragment: GalgameStoryFragment,
+): GalgameTimelineCgRange[] {
+  const durationMs = fragment.timeline?.durationMs ?? 0;
   const events = timelineEvents(fragment).filter(
-    (event) =>
-      event.block.type !== "dialogue" && event.block.type !== "narration",
+    (event) => event.block.type === "showCg" || event.block.type === "hideCg",
   );
-  for (const event of events) {
-    const target = beats.find((beat) => beat.startMs === event.timeMs);
-    if (target) target.events.push(event);
-    else
-      beats.push({
-        id: `beat:event:${event.block.id}`,
+  return events.flatMap((event, index) => {
+    if (event.block.type !== "showCg") return [];
+    const next = events[index + 1];
+    const endBlock =
+      next?.block.type === "showCg" || next?.block.type === "hideCg"
+        ? next.block
+        : undefined;
+    return [
+      {
+        id: `cg-range:${event.block.id}`,
+        showBlock: event.block,
         startMs: event.timeMs,
-        endMs: event.timeMs,
-        events: [event],
-      });
-  }
-  if (!beats.length && fragment.timeline)
-    beats.push({
-      id: `beat:fragment:${fragment.id}`,
-      startMs: 0,
-      endMs: fragment.timeline.durationMs,
-      events,
-    });
-  const structuralEvents = (fragment.blocks ?? []).flatMap(
+        endMs: next?.timeMs ?? durationMs,
+        endBlock,
+        endKind:
+          endBlock?.type === "hideCg"
+            ? ("hide" as const)
+            : endBlock?.type === "showCg"
+              ? ("replace" as const)
+              : ("timeline" as const),
+      },
+    ];
+  });
+}
+
+export function timelineStructureEvents(fragment: GalgameStoryFragment) {
+  const terminalMs = fragment.timeline?.durationMs ?? 0;
+  return (fragment.blocks ?? []).flatMap(
     (block, blockIndex): GalgameTimelineEvent[] =>
       block.type === "branch" || block.type === "endChapter"
         ? [
             {
               block,
               blockIndex,
-              timeMs: fragment.timeline?.durationMs ?? 0,
+              timeMs: terminalMs,
               priority: eventPriority(block),
               explicit: true,
             },
           ]
         : [],
   );
-  if (structuralEvents.length) {
-    const terminalMs =
-      fragment.timeline?.durationMs ?? beats.at(-1)?.endMs ?? 0;
-    const terminalBeat = beats.find((beat) => beat.startMs === terminalMs);
-    if (terminalBeat) terminalBeat.events.push(...structuralEvents);
-    else
-      beats.push({
-        id: `beat:structure:${fragment.id}`,
-        startMs: terminalMs,
-        endMs: terminalMs,
-        events: structuralEvents,
+}
+
+export function timelinePlaybackSteps(fragment: GalgameStoryFragment) {
+  const cues = [...timelineCues(fragment)].sort(
+    (left, right) =>
+      left.startMs - right.startMs || left.blockIndex - right.blockIndex,
+  );
+  const durationMs = fragment.timeline?.durationMs ?? cues.at(-1)?.endMs ?? 0;
+  if (!durationMs) return [];
+
+  const steps: GalgameTimelinePlaybackStep[] = [];
+  if (!cues.length) {
+    steps.push({
+      startMs: 0,
+      endMs: durationMs,
+    });
+  } else {
+    if (cues[0].startMs > 0)
+      steps.push({
+        startMs: 0,
+        endMs: cues[0].startMs,
+      });
+    for (const [index, cue] of cues.entries())
+      steps.push({
+        startMs: cue.startMs,
+        endMs: Math.max(cue.endMs, cues[index + 1]?.startMs ?? durationMs),
+        contentBlockIndex: cue.blockIndex,
       });
   }
-  return beats.sort((left, right) => left.startMs - right.startMs);
+  return steps;
 }
 
 export function timelineAudioStateAt(
   fragment: GalgameStoryFragment,
   milliseconds: number,
 ) {
-  const state: GalgameTimelineAudioState = {};
+  const playback = timelineAudioPlaybackStateAt(fragment, milliseconds);
+  return {
+    bgm: playback.bgm?.block,
+    ambient: playback.ambient?.block,
+  } satisfies GalgameTimelineAudioState;
+}
+
+export function timelineAudioPlaybackStateAt(
+  fragment: GalgameStoryFragment,
+  milliseconds: number,
+) {
+  const state: GalgameTimelineAudioPlaybackState = {};
   for (const event of timelineEvents(fragment)) {
     if (event.timeMs > milliseconds || event.block.type !== "audio") continue;
     if (event.block.channel !== "bgm" && event.block.channel !== "ambient")
       continue;
     if (event.block.action === "stop") delete state[event.block.channel];
-    else state[event.block.channel] = event.block;
+    else
+      state[event.block.channel] = {
+        block: event.block,
+        startedAtMs: event.timeMs,
+      };
   }
   return state;
 }
@@ -253,44 +388,61 @@ export function appendBlockToTimeline(
   block: GalgameStoryBlock,
   requestedAtMs?: number,
 ) {
+  const blocks = fragment.blocks ?? [];
+  const terminalIndex = blocks.findIndex(
+    (candidate) =>
+      candidate.type === "branch" || candidate.type === "endChapter",
+  );
+  const appendBeforeTerminator = (nextBlock: GalgameStoryBlock) =>
+    terminalIndex < 0
+      ? [...blocks, nextBlock]
+      : [
+          ...blocks.slice(0, terminalIndex),
+          nextBlock,
+          ...blocks.slice(terminalIndex),
+        ];
   if (!fragment.timeline)
-    return { ...fragment, blocks: [...(fragment.blocks ?? []), block] };
+    return { ...fragment, blocks: appendBeforeTerminator(block) };
   const cues = timelineCues(fragment);
   const requested = Math.max(
     0,
     requestedAtMs ??
-      (block.type === "dialogue" || block.type === "narration"
+      (isTimelineCueBlock(block)
         ? (cues.at(-1)?.endMs ?? 0) + (cues.length ? 300 : 0)
         : fragment.timeline.durationMs),
   );
-  const estimatedDuration =
-    block.type === "dialogue" || block.type === "narration"
-      ? estimatedCueDuration(block.text)
-      : 0;
+  const estimatedDuration = isTimelineCueBlock(block)
+    ? estimatedCueDuration(block.text)
+    : 0;
   let atMs = requested;
   if (estimatedDuration)
     for (const cue of cues)
       if (atMs < cue.endMs && atMs + estimatedDuration > cue.startMs)
         atMs = cue.endMs + 300;
-  const placed =
-    block.type === "dialogue" || block.type === "narration"
-      ? {
-          ...block,
-          startMs: atMs,
-          endMs: atMs + estimatedDuration,
-        }
-      : block.type === "scene" ||
-          block.type === "showCharacter" ||
-          block.type === "removeCharacter" ||
-          block.type === "audio"
-        ? { ...block, atMs }
-        : block;
-  const endMs =
-    placed.type === "dialogue" || placed.type === "narration"
-      ? (placed.endMs ?? atMs) + 500
-      : atMs;
+  if (block.type === "hideCg") {
+    const insertionIndex = terminalIndex < 0 ? blocks.length : terminalIndex;
+    const showMs = previousActiveCgShowTime(fragment, insertionIndex);
+    if (showMs != null) atMs = Math.max(atMs, showMs + TIMELINE_MIN_CUE_MS);
+  }
+  const placed = isTimelineCueBlock(block)
+    ? {
+        ...block,
+        startMs: atMs,
+        endMs: atMs + estimatedDuration,
+      }
+    : block.type === "scene" ||
+        block.type === "showCg" ||
+        block.type === "hideCg" ||
+        block.type === "showCharacter" ||
+        block.type === "removeCharacter" ||
+        block.type === "audio"
+      ? { ...block, atMs }
+      : block;
+  const endMs = isTimelineCueBlock(placed)
+    ? (placed.endMs ?? atMs) + 500
+    : atMs;
   return expandTimelineTo(
-    { ...fragment, blocks: [...(fragment.blocks ?? []), placed] },
+    { ...fragment, blocks: appendBeforeTerminator(placed) },
     endMs,
   );
 }
@@ -299,7 +451,7 @@ export function enableFragmentTimeline(fragment: GalgameStoryFragment) {
   if (fragment.timeline) return fragment;
   let cursorMs = 0;
   const timedBlocks = (fragment.blocks ?? []).map((block) => {
-    if (block.type !== "dialogue" && block.type !== "narration") return block;
+    if (!isTimelineCueBlock(block)) return block;
     const durationMs = estimatedCueDuration(block.text);
     const next = {
       ...block,
@@ -318,10 +470,12 @@ export function enableFragmentTimeline(fragment: GalgameStoryFragment) {
   return {
     ...withTimeline,
     blocks: (withTimeline.blocks ?? []).map((block, blockIndex) => {
+      if (block.type === "showCharacter" || block.type === "removeCharacter")
+        return block;
       if (
         block.type !== "scene" &&
-        block.type !== "showCharacter" &&
-        block.type !== "removeCharacter" &&
+        block.type !== "showCg" &&
+        block.type !== "hideCg" &&
         block.type !== "audio"
       )
         return block;
@@ -341,354 +495,6 @@ export function projectFragmentTimeline(fragment: GalgameStoryFragment) {
   return fragment.timeline ? fragment : enableFragmentTimeline(fragment);
 }
 
-export function timelineBeatRange(
-  fragment: GalgameStoryFragment,
-  requestedStartIndex: number,
-  requestedEndIndex = requestedStartIndex,
-): GalgameBeatRange | undefined {
-  const beats = timelineBeats(fragment);
-  if (!beats.length) return undefined;
-  const startIndex = Math.max(
-    0,
-    Math.min(
-      beats.length - 1,
-      Math.min(requestedStartIndex, requestedEndIndex),
-    ),
-  );
-  const endIndex = Math.max(
-    startIndex,
-    Math.min(
-      beats.length - 1,
-      Math.max(requestedStartIndex, requestedEndIndex),
-    ),
-  );
-  const selected = beats.slice(startIndex, endIndex + 1);
-  const startMs = selected[0].startMs;
-  const last = selected.at(-1)!;
-  const next = beats[endIndex + 1];
-  const timelineEnd = fragment.timeline?.durationMs ?? last.endMs;
-  const endMs = Math.max(
-    startMs,
-    last.endMs,
-    next ? next.startMs : timelineEnd,
-  );
-  const blocks = selected.flatMap((beat) => [
-    ...beat.events.map((event) => event.block),
-    ...(beat.content ? [beat.content] : []),
-  ]);
-  return {
-    startIndex,
-    endIndex,
-    startMs,
-    endMs,
-    durationMs: endMs - startMs,
-    beatIds: selected.map((beat) => beat.id),
-    blockIds: Array.from(new Set(blocks.map((block) => block.id))),
-    structuralBlockIds: blocks
-      .filter((block) => block.type === "branch" || block.type === "endChapter")
-      .map((block) => block.id),
-  };
-}
-
-function blockTime(
-  fragment: GalgameStoryFragment,
-  block: GalgameStoryBlock,
-  blockIndex: number,
-) {
-  if (block.type === "dialogue" || block.type === "narration")
-    return block.startMs;
-  return effectivePointTime(fragment, blockIndex);
-}
-
-function shiftBlock(
-  block: GalgameStoryBlock,
-  deltaMs: number,
-): GalgameStoryBlock {
-  if (block.type === "dialogue" || block.type === "narration")
-    return block.startMs == null || block.endMs == null
-      ? block
-      : {
-          ...block,
-          startMs: block.startMs + deltaMs,
-          endMs: block.endMs + deltaMs,
-        };
-  if (
-    block.type === "scene" ||
-    block.type === "showCharacter" ||
-    block.type === "removeCharacter" ||
-    block.type === "audio"
-  )
-    return block.atMs == null
-      ? block
-      : { ...block, atMs: block.atMs + deltaMs };
-  return block;
-}
-
-function validateBeatRangeEdit(
-  original: GalgameStoryFragment,
-  candidate: GalgameStoryFragment,
-): GalgameBeatRangeEditResult {
-  const cues = timelineCues(candidate);
-  for (const [index, cue] of cues.entries()) {
-    if (cue.startMs < 0)
-      return { fragment: original, error: "操作会把 Beat 移到时间轴起点之前" };
-    if (cue.endMs - cue.startMs < TIMELINE_MIN_CUE_MS)
-      return { fragment: original, error: "对白或旁白不能短于 100ms" };
-    if (index > 0 && cues[index - 1].endMs > cue.startMs)
-      return { fragment: original, error: "操作会造成对白或旁白时间重叠" };
-  }
-  const conflictKeys = new Map<string, string>();
-  for (const event of timelineEvents(candidate)) {
-    const block = event.block;
-    let key: string | undefined;
-    if (block.type === "scene") key = `scene:${event.timeMs}`;
-    else if (
-      block.type === "showCharacter" ||
-      block.type === "removeCharacter"
-    ) {
-      const characterId =
-        block.type === "showCharacter"
-          ? block.characterId
-          : block.all
-            ? "*"
-            : block.characterId;
-      if (characterId) key = `character:${characterId}:${event.timeMs}`;
-    } else if (
-      block.type === "audio" &&
-      block.action === "play" &&
-      (block.channel === "bgm" || block.channel === "ambient")
-    )
-      key = `audio:${block.channel}:${event.timeMs}`;
-    if (!key) continue;
-    const existing = conflictKeys.get(key);
-    if (existing && existing !== block.id)
-      return {
-        fragment: original,
-        error: "操作会造成同一时间的舞台或持续声音冲突",
-      };
-    conflictKeys.set(key, block.id);
-  }
-  const durationMs = candidate.timeline?.durationMs ?? 0;
-  if (
-    timelineEvents(candidate).some(
-      (event) => event.timeMs < 0 || event.timeMs > durationMs,
-    ) ||
-    cues.some((cue) => cue.endMs > durationMs)
-  )
-    return { fragment: original, error: "操作结果超出了剧情总时长" };
-  return { fragment: candidate };
-}
-
-function rangeOrError(
-  fragment: GalgameStoryFragment,
-  startIndex: number,
-  endIndex: number,
-) {
-  const materialized = projectFragmentTimeline(fragment);
-  const range = timelineBeatRange(materialized, startIndex, endIndex);
-  return range
-    ? { materialized, range }
-    : { materialized, error: "当前 Fragment 没有可处理的 Beat" };
-}
-
-export function translateTimelineBeatRange(
-  fragment: GalgameStoryFragment,
-  startIndex: number,
-  endIndex: number,
-  requestedDeltaMs: number,
-): GalgameBeatRangeEditResult {
-  const resolved = rangeOrError(fragment, startIndex, endIndex);
-  if (!resolved.range) return { fragment, error: resolved.error };
-  const { materialized, range } = resolved;
-  const selected = new Set(range.blockIds);
-  const deltaMs = snapTimelineTime(requestedDeltaMs, true);
-  if (!deltaMs) return { fragment: materialized };
-  const blocks = (materialized.blocks ?? []).map((block, blockIndex) => {
-    const timeMs = blockTime(materialized, block, blockIndex);
-    return selected.has(block.id) || (timeMs != null && timeMs >= range.endMs)
-      ? shiftBlock(block, deltaMs)
-      : block;
-  });
-  const candidate = withTimelineDuration(
-    { ...materialized, blocks },
-    (materialized.timeline?.durationMs ?? 0) + deltaMs,
-  );
-  return validateBeatRangeEdit(fragment, candidate);
-}
-
-export function scaleTimelineBeatRange(
-  fragment: GalgameStoryFragment,
-  startIndex: number,
-  endIndex: number,
-  requestedScale: number,
-): GalgameBeatRangeEditResult {
-  const resolved = rangeOrError(fragment, startIndex, endIndex);
-  if (!resolved.range) return { fragment, error: resolved.error };
-  const { materialized, range } = resolved;
-  if (!Number.isFinite(requestedScale) || requestedScale <= 0)
-    return { fragment, error: "缩放比例必须大于 0" };
-  if (range.durationMs <= 0)
-    return { fragment, error: "结构 Beat 没有可缩放的时间范围" };
-  const selected = new Set(range.blockIds);
-  const nextDuration = Math.round(range.durationMs * requestedScale);
-  const durationDelta = nextDuration - range.durationMs;
-  const blocks = (materialized.blocks ?? []).map((block, blockIndex) => {
-    if (selected.has(block.id)) {
-      if (
-        (block.type === "dialogue" || block.type === "narration") &&
-        block.startMs != null &&
-        block.endMs != null
-      )
-        return {
-          ...block,
-          startMs: Math.round(
-            range.startMs + (block.startMs - range.startMs) * requestedScale,
-          ),
-          endMs: Math.round(
-            range.startMs + (block.endMs - range.startMs) * requestedScale,
-          ),
-        };
-      if (
-        (block.type === "scene" ||
-          block.type === "showCharacter" ||
-          block.type === "removeCharacter" ||
-          block.type === "audio") &&
-        block.atMs != null
-      )
-        return {
-          ...block,
-          atMs: Math.round(
-            range.startMs + (block.atMs - range.startMs) * requestedScale,
-          ),
-        };
-      return block;
-    }
-    const timeMs = blockTime(materialized, block, blockIndex);
-    return timeMs != null && timeMs >= range.endMs
-      ? shiftBlock(block, durationDelta)
-      : block;
-  });
-  const candidate = withTimelineDuration(
-    { ...materialized, blocks },
-    (materialized.timeline?.durationMs ?? 0) + durationDelta,
-  );
-  return validateBeatRangeEdit(fragment, candidate);
-}
-
-function defaultDuplicateId(block: GalgameStoryBlock) {
-  const suffix =
-    globalThis.crypto?.randomUUID?.() ??
-    `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
-  return `${block.type}-${suffix}`;
-}
-
-export function duplicateTimelineBeatRange(
-  fragment: GalgameStoryFragment,
-  startIndex: number,
-  endIndex: number,
-  makeId: (block: GalgameStoryBlock) => string = defaultDuplicateId,
-): GalgameBeatRangeEditResult {
-  const resolved = rangeOrError(fragment, startIndex, endIndex);
-  if (!resolved.range) return { fragment, error: resolved.error };
-  const { materialized, range } = resolved;
-  if (range.durationMs <= 0) return { fragment, error: "结构 Beat 不能复制" };
-  const selected = new Set(range.blockIds);
-  const copyable = (materialized.blocks ?? []).filter(
-    (block) =>
-      selected.has(block.id) &&
-      block.type !== "branch" &&
-      block.type !== "endChapter",
-  );
-  if (!copyable.length)
-    return { fragment, error: "所选范围没有可复制的演出事件" };
-  const shifted = (materialized.blocks ?? []).map((block, blockIndex) => {
-    const timeMs = blockTime(materialized, block, blockIndex);
-    return !selected.has(block.id) && timeMs != null && timeMs >= range.endMs
-      ? shiftBlock(block, range.durationMs)
-      : block;
-  });
-  const copies = copyable.map((block) => ({
-    ...shiftBlock(block, range.durationMs),
-    id: makeId(block),
-  }));
-  const selectedIndexes = shifted.flatMap((block, index) =>
-    selected.has(block.id) &&
-    block.type !== "branch" &&
-    block.type !== "endChapter"
-      ? [index]
-      : [],
-  );
-  const terminalIndex = shifted.findIndex(
-    (block) => block.type === "branch" || block.type === "endChapter",
-  );
-  const insertionIndex = Math.min(
-    terminalIndex < 0 ? shifted.length : terminalIndex,
-    Math.max(...selectedIndexes) + 1,
-  );
-  const blocks = [
-    ...shifted.slice(0, insertionIndex),
-    ...copies,
-    ...shifted.slice(insertionIndex),
-  ];
-  const candidate = withTimelineDuration(
-    { ...materialized, blocks },
-    (materialized.timeline?.durationMs ?? 0) + range.durationMs,
-  );
-  return validateBeatRangeEdit(fragment, candidate);
-}
-
-export function deleteTimelineBeatRange(
-  fragment: GalgameStoryFragment,
-  startIndex: number,
-  endIndex: number,
-): GalgameBeatRangeEditResult {
-  const resolved = rangeOrError(fragment, startIndex, endIndex);
-  if (!resolved.range) return { fragment, error: resolved.error };
-  const { materialized, range } = resolved;
-  const selected = new Set(range.blockIds);
-  const removable = new Set(
-    (materialized.blocks ?? [])
-      .filter(
-        (block) =>
-          selected.has(block.id) &&
-          block.type !== "branch" &&
-          block.type !== "endChapter",
-      )
-      .map((block) => block.id),
-  );
-  if (!removable.size) return { fragment, error: "结构 Beat 受保护，不能删除" };
-  const blocks = (materialized.blocks ?? []).flatMap((block, blockIndex) => {
-    if (removable.has(block.id)) return [];
-    const timeMs = blockTime(materialized, block, blockIndex);
-    return [
-      timeMs != null && timeMs >= range.endMs
-        ? shiftBlock(block, -range.durationMs)
-        : block,
-    ];
-  });
-  const minimumDuration = Math.max(
-    1,
-    ...blocks.flatMap((block) =>
-      block.type === "dialogue" || block.type === "narration"
-        ? [block.endMs ?? 0]
-        : block.type === "scene" ||
-            block.type === "showCharacter" ||
-            block.type === "removeCharacter" ||
-            block.type === "audio"
-          ? [block.atMs ?? 0]
-          : [],
-    ),
-  );
-  const candidate = withTimelineDuration(
-    { ...materialized, blocks },
-    Math.max(
-      minimumDuration,
-      (materialized.timeline?.durationMs ?? 0) - range.durationMs,
-    ),
-  );
-  return validateBeatRangeEdit(fragment, candidate);
-}
-
 export function setTimelinePointTime(
   fragment: GalgameStoryFragment,
   blockId: string,
@@ -696,13 +502,26 @@ export function setTimelinePointTime(
   precise = false,
 ) {
   if (!fragment.timeline) return fragment;
-  const atMs = Math.max(0, snapTimelineTime(requestedMs, precise));
+  const blocks = fragment.blocks ?? [];
+  const blockIndex = blocks.findIndex((block) => block.id === blockId);
+  const target = blocks[blockIndex];
+  let minimumMs = 0;
+  if (target?.type === "hideCg") {
+    const showMs = previousActiveCgShowTime(fragment, blockIndex);
+    if (showMs != null) minimumMs = showMs + TIMELINE_MIN_CUE_MS;
+  }
+  const atMs = Math.max(
+    minimumMs,
+    Math.max(0, snapTimelineTime(requestedMs, precise)),
+  );
   return expandTimelineTo(
     {
       ...fragment,
       blocks: (fragment.blocks ?? []).map((block) =>
         block.id === blockId &&
         (block.type === "scene" ||
+          block.type === "showCg" ||
+          block.type === "hideCg" ||
           block.type === "showCharacter" ||
           block.type === "removeCharacter" ||
           block.type === "audio")
@@ -711,6 +530,147 @@ export function setTimelinePointTime(
       ),
     },
     atMs,
+  );
+}
+
+function previousActiveCgShowTime(
+  fragment: GalgameStoryFragment,
+  beforeBlockIndex: number,
+) {
+  const blocks = fragment.blocks ?? [];
+  for (let index = beforeBlockIndex - 1; index >= 0; index -= 1) {
+    const candidate = blocks[index];
+    if (candidate.type === "hideCg") return undefined;
+    if (candidate.type !== "showCg") continue;
+    return effectivePointTime(fragment, index);
+  }
+  return undefined;
+}
+
+function defaultCgHideId() {
+  const suffix =
+    globalThis.crypto?.randomUUID?.() ??
+    `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+  return `hide-cg-${suffix}`;
+}
+
+function cgEventBounds(fragment: GalgameStoryFragment, blockId: string) {
+  const events = timelineEvents(fragment).filter(
+    (event) => event.block.type === "showCg" || event.block.type === "hideCg",
+  );
+  const index = events.findIndex((event) => event.block.id === blockId);
+  return {
+    previousMs: index > 0 ? events[index - 1].timeMs : undefined,
+    nextMs: index >= 0 ? events[index + 1]?.timeMs : undefined,
+  };
+}
+
+export function setTimelineCgRangeEdge(
+  fragment: GalgameStoryFragment,
+  showBlockId: string,
+  edge: "start" | "end",
+  requestedMs: number,
+  precise = false,
+  makeHideId: () => string = defaultCgHideId,
+) {
+  if (!fragment.timeline) return fragment;
+  const range = timelineCgRanges(fragment).find(
+    (candidate) => candidate.showBlock.id === showBlockId,
+  );
+  if (!range) return fragment;
+  const snapped = Math.max(0, snapTimelineTime(requestedMs, precise));
+  if (edge === "start") {
+    const { previousMs } = cgEventBounds(fragment, showBlockId);
+    const startMs = Math.min(
+      range.endMs - TIMELINE_MIN_CUE_MS,
+      Math.max(
+        (previousMs ?? -TIMELINE_MIN_CUE_MS) + TIMELINE_MIN_CUE_MS,
+        snapped,
+      ),
+    );
+    return setTimelinePointTime(fragment, showBlockId, startMs, true);
+  }
+
+  const endMs = Math.max(range.startMs + TIMELINE_MIN_CUE_MS, snapped);
+  if (!range.endBlock)
+    return appendBlockToTimeline(
+      fragment,
+      {
+        id: makeHideId(),
+        type: "hideCg",
+        transition: { durationMs: 400, fade: true },
+      },
+      endMs,
+    );
+
+  const { nextMs } = cgEventBounds(fragment, range.endBlock.id);
+  const minimumEndMs = range.startMs + TIMELINE_MIN_CUE_MS;
+  const maximumEndMs =
+    nextMs == null ? Number.POSITIVE_INFINITY : nextMs - TIMELINE_MIN_CUE_MS;
+  if (maximumEndMs < minimumEndMs) return fragment;
+  const boundedEndMs = Math.max(minimumEndMs, Math.min(maximumEndMs, endMs));
+  return setTimelinePointTime(fragment, range.endBlock.id, boundedEndMs, true);
+}
+
+export function moveTimelineCgRange(
+  fragment: GalgameStoryFragment,
+  showBlockId: string,
+  requestedDeltaMs: number,
+  precise = false,
+  makeHideId: () => string = defaultCgHideId,
+) {
+  if (!fragment.timeline) return fragment;
+  let source = fragment;
+  let range = timelineCgRanges(source).find(
+    (candidate) => candidate.showBlock.id === showBlockId,
+  );
+  if (!range) return fragment;
+  if (!range.endBlock) {
+    source = setTimelineCgRangeEdge(
+      source,
+      showBlockId,
+      "end",
+      range.endMs,
+      true,
+      makeHideId,
+    );
+    range = timelineCgRanges(source).find(
+      (candidate) => candidate.showBlock.id === showBlockId,
+    );
+  }
+  if (!range?.endBlock) return fragment;
+
+  const requestedDelta = snapTimelineTime(requestedDeltaMs, precise);
+  const { previousMs } = cgEventBounds(source, showBlockId);
+  const { nextMs } = cgEventBounds(source, range.endBlock.id);
+  const minimumDelta = Math.max(
+    -range.startMs,
+    (previousMs ?? -TIMELINE_MIN_CUE_MS) + TIMELINE_MIN_CUE_MS - range.startMs,
+  );
+  const maximumDelta =
+    nextMs == null
+      ? Number.POSITIVE_INFINITY
+      : nextMs - TIMELINE_MIN_CUE_MS - range.endMs;
+  if (maximumDelta < minimumDelta) return source;
+  const deltaMs = Math.min(
+    maximumDelta,
+    Math.max(minimumDelta, requestedDelta),
+  );
+  if (!deltaMs) return source;
+  const movingIds = new Set([showBlockId, range.endBlock.id]);
+  return expandTimelineTo(
+    {
+      ...source,
+      blocks: (source.blocks ?? []).map((block, blockIndex) => {
+        if (!movingIds.has(block.id)) return block;
+        const timeMs = effectivePointTime(source, blockIndex);
+        return timeMs == null ||
+          (block.type !== "showCg" && block.type !== "hideCg")
+          ? block
+          : { ...block, atMs: timeMs + deltaMs };
+      }),
+    },
+    range.endMs + deltaMs,
   );
 }
 
@@ -767,7 +727,7 @@ export function timelineStageMarkers(fragment: GalgameStoryFragment) {
   let pending: GalgameStoryBlock[] = [];
   for (const block of fragment.blocks ?? []) {
     if (
-      (block.type === "dialogue" || block.type === "narration") &&
+      isTimelineCueBlock(block) &&
       block.startMs != null &&
       block.endMs != null
     ) {
@@ -777,6 +737,8 @@ export function timelineStageMarkers(fragment: GalgameStoryFragment) {
     }
     if (
       block.type === "scene" ||
+      block.type === "showCg" ||
+      block.type === "hideCg" ||
       block.type === "showCharacter" ||
       block.type === "removeCharacter"
     )
@@ -819,8 +781,7 @@ function replaceCueRanges(
     ...fragment,
     blocks: (fragment.blocks ?? []).map((block) => {
       const range = ranges.get(block.id);
-      if (!range || (block.type !== "dialogue" && block.type !== "narration"))
-        return block;
+      if (!range || !isTimelineCueBlock(block)) return block;
       return { ...block, ...range };
     }),
   };

@@ -15,8 +15,12 @@ import {
   DEFAULT_CHARACTER_TRANSFORM,
   DEFAULT_CHARACTER_TRANSITION,
 } from "@features/galgame-workshop/editor/stage";
+import { BLOCK_REGISTRY } from "@features/galgame-workshop/editor/blockRegistry";
 
-export type EditorWorkspace = "script" | "characters" | "scenes" | "audio";
+export type EditorWorkspace =
+  "script" | "assets" | "narrative" | "personalization" | "settings";
+export type AssetSection =
+  "overview" | "characters" | "scenes" | "bgm" | "sfx" | "voice" | "video";
 export type BlockKind = GalgameStoryBlock["type"];
 export type AudioChannel = GalgameStoryAudioBlock["channel"];
 export type AudioRole = GalgameStoryAudioAsset["role"];
@@ -27,7 +31,6 @@ export const AUDIO_ROLE_LABELS: Record<AudioRole, string> = {
   backgroundMusic: "背景音乐",
   ambientSound: "环境音",
   soundEffect: "音效",
-  timelineTrack: "剧情时间轴",
 };
 
 export const AUDIO_CHANNEL_ROLES: Record<AudioChannel, AudioRole> = {
@@ -58,6 +61,32 @@ export const DEFAULT_STAGE_STYLE: GalgameStoryStageStyle = {
   lipSyncEnabled: false,
 };
 
+export const DEFAULT_TEXT_PLAYBACK_STYLE = { defaultSpeedCps: 40 } as const;
+export const DEFAULT_PARAGRAPH_PRESENTATION = {
+  defaultStyleRef: { source: "builtin" as const, id: "classic" },
+  customStyles: [],
+};
+export const DEFAULT_SYSTEM_MESSAGE_PRESENTATION = {
+  binding: { source: "builtin" as const, id: "standard-message" },
+  customStyles: [],
+};
+
+export const DEFAULT_STORY_SETTINGS = {
+  canvas: { width: 1920, height: 1080 },
+  characterStage: {
+    anchorX: 50,
+    anchorY: 100,
+    defaultHeightPercent: 100,
+    positions: {
+      left: 15,
+      centerLeft: 32.5,
+      center: 50,
+      centerRight: 67.5,
+      right: 85,
+    },
+  },
+} satisfies NonNullable<GalgameStoryProject["settings"]>;
+
 export function stableId() {
   return crypto.randomUUID().toLowerCase();
 }
@@ -67,6 +96,26 @@ export function completeStoryDocument(
 ): GalgameStoryProject {
   return {
     ...document,
+    schemaVersion: "1.2",
+    entryChapterId:
+      document.entryChapterId ??
+      [...(document.chapters ?? [])].sort((a, b) => a.order - b.order)[0]?.id ??
+      "chapter-1",
+    characterAttributeTemplates: document.characterAttributeTemplates ?? [],
+    settings: {
+      canvas: {
+        ...DEFAULT_STORY_SETTINGS.canvas,
+        ...document.settings?.canvas,
+      },
+      characterStage: {
+        ...DEFAULT_STORY_SETTINGS.characterStage,
+        ...document.settings?.characterStage,
+        positions: {
+          ...DEFAULT_STORY_SETTINGS.characterStage.positions,
+          ...document.settings?.characterStage?.positions,
+        },
+      },
+    },
     presentation: {
       ...document.presentation,
       dialogueBox: {
@@ -82,21 +131,87 @@ export function completeStoryDocument(
         ...DEFAULT_STAGE_STYLE,
         ...document.presentation?.stage,
       },
+      text: {
+        ...DEFAULT_TEXT_PLAYBACK_STYLE,
+        ...document.presentation?.text,
+      },
+      paragraph: {
+        ...DEFAULT_PARAGRAPH_PRESENTATION,
+        ...document.presentation?.paragraph,
+        defaultStyleRef: {
+          ...DEFAULT_PARAGRAPH_PRESENTATION.defaultStyleRef,
+          ...document.presentation?.paragraph?.defaultStyleRef,
+        },
+        customStyles: document.presentation?.paragraph?.customStyles ?? [],
+      },
+      systemMessage: {
+        ...DEFAULT_SYSTEM_MESSAGE_PRESENTATION,
+        ...document.presentation?.systemMessage,
+        binding: {
+          ...DEFAULT_SYSTEM_MESSAGE_PRESENTATION.binding,
+          ...document.presentation?.systemMessage?.binding,
+        },
+        customStyles: document.presentation?.systemMessage?.customStyles ?? [],
+      },
     },
+    sceneGroups: document.sceneGroups ?? [],
     scenes: (document.scenes ?? []).map((scene) => ({
       ...scene,
-      backgrounds: scene.backgrounds ?? [],
-      defaultBackgroundId: scene.defaultBackgroundId ?? null,
+      layers:
+        scene.layers ??
+        (scene.backgrounds ?? []).map((background) => ({
+          id: background.id,
+          name: background.label,
+          assetId: background.assetId,
+          distance: 1,
+          offsetX: 0,
+          offsetY: 0,
+        })),
+      backgrounds: undefined,
+      defaultBackgroundId: undefined,
+    })),
+    cgs: (document.cgs ?? []).map((cg) => ({
+      ...cg,
+      variants: cg.variants ?? [],
+      defaultVariantId: cg.defaultVariantId ?? null,
     })),
     variables: document.variables ?? [],
     assets: document.assets ?? [],
-    characters: (document.characters ?? []).map((character) => ({
+    characters: (document.characters ?? []).map((character, index) => ({
       ...character,
-      expressions: character.expressions ?? [],
+      themeColor:
+        character.themeColor ??
+        [
+          "#E75B55",
+          "#4AA3DF",
+          "#46B978",
+          "#A56DE2",
+          "#E59B3D",
+          "#D85E9D",
+          "#32A6A0",
+          "#7586E5",
+        ][index % 8],
+      expressions: (character.expressions ?? []).map((expression) => ({
+        ...expression,
+        thumbnailCrop: expression.thumbnailCrop ?? { x: 50, y: 25, scale: 1.8 },
+        dialogueAvatar: expression.dialogueAvatar ?? {
+          source: "portrait",
+          crop: { x: 50, y: 25, scale: 1.8 },
+        },
+        overlays: expression.overlays ?? [],
+      })),
       defaultExpressionId: character.defaultExpressionId ?? null,
+      displayNames: character.displayNames ?? [],
+      defaultDisplayNameId: character.defaultDisplayNameId ?? null,
+      dialogueAvatar: {
+        enabled: character.dialogueAvatar?.enabled ?? false,
+      },
+      portraitSkins: character.portraitSkins ?? [],
+      defaultPortraitSkinId: character.defaultPortraitSkinId ?? null,
     })),
     chapters: (document.chapters ?? []).map((chapter) => ({
       ...chapter,
+      disabled: chapter.disabled ?? false,
       fragments: (chapter.fragments ?? []).map((fragment) => ({
         ...fragment,
         blocks: fragment.blocks ?? [],
@@ -109,12 +224,24 @@ export function firstChapter(document: GalgameStoryProject) {
   return document.chapters?.[0];
 }
 
+export function entryChapter(document: GalgameStoryProject) {
+  return (
+    document.chapters?.find(
+      (chapter) => chapter.id === document.entryChapterId,
+    ) ?? [...(document.chapters ?? [])].sort((a, b) => a.order - b.order)[0]
+  );
+}
+
+export function chapterById(document: GalgameStoryProject, chapterId: string) {
+  return document.chapters?.find((chapter) => chapter.id === chapterId);
+}
+
 export function fragmentById(chapter: GalgameStoryChapter, fragmentId: string) {
   return chapter.fragments?.find((fragment) => fragment.id === fragmentId);
 }
 
 export function isTerminator(block: GalgameStoryBlock) {
-  return block.type === "branch" || block.type === "endChapter";
+  return block.type === "endChapter" || block.type === "returnToEntry";
 }
 
 export function moveItem<T>(items: T[], index: number, direction: -1 | 1) {
@@ -133,6 +260,11 @@ export function makeBlock(
 ): GalgameStoryBlock | undefined {
   const characters = document.characters ?? [];
   const scenes = document.scenes ?? [];
+  const usableCgs = (document.cgs ?? []).filter(
+    (cg) =>
+      cg.defaultVariantId &&
+      (cg.variants ?? []).some((variant) => variant.id === cg.defaultVariantId),
+  );
   if (kind === "scene") {
     if (!scenes[0]) return undefined;
     return {
@@ -142,6 +274,31 @@ export function makeBlock(
       clearCharacters: true,
     };
   }
+  if (kind === "showCg") {
+    if (!usableCgs[0]) return undefined;
+    return {
+      id: stableId(),
+      type: "showCg",
+      cgId: usableCgs[0].id,
+      variantId: null,
+      displayMode: "fullscreen",
+      fit: "cover",
+      overlay: {
+        x: 50,
+        y: 50,
+        width: 60,
+        opacity: 1,
+        placement: "frontOfCharacters",
+      },
+      transition: { durationMs: 400, fade: true },
+    };
+  }
+  if (kind === "hideCg")
+    return {
+      id: stableId(),
+      type: "hideCg",
+      transition: { durationMs: 400, fade: true },
+    };
   if (kind === "showCharacter") {
     if (!characters[0]) return undefined;
     return {
@@ -149,7 +306,16 @@ export function makeBlock(
       type: "showCharacter",
       characterId: characters[0].id,
       expressionId: null,
-      transform: DEFAULT_CHARACTER_TRANSFORM,
+      transform: {
+        ...DEFAULT_CHARACTER_TRANSFORM,
+        x:
+          document.settings?.characterStage?.positions?.center ??
+          DEFAULT_STORY_SETTINGS.characterStage.positions.center,
+        y:
+          document.settings?.characterStage?.anchorY ??
+          DEFAULT_STORY_SETTINGS.characterStage.anchorY,
+        scale: document.settings?.characterStage?.legacyDefaultScale ?? 1,
+      },
       transition: DEFAULT_CHARACTER_TRANSITION,
     };
   }
@@ -171,8 +337,10 @@ export function makeBlock(
       characterId: characters[0].id,
       text: "",
       voiceVolume: 100,
+      hideDialogueAfter: false,
       portrait: {
         mode: "stage",
+        visible: true,
         keepAfter: true,
         transform: null,
         transition: DEFAULT_CHARACTER_TRANSITION,
@@ -180,7 +348,12 @@ export function makeBlock(
     };
   }
   if (kind === "narration") {
-    return { id: stableId(), type: "narration", text: "" };
+    return {
+      id: stableId(),
+      type: "narration",
+      text: "",
+      hideDialogueAfter: false,
+    };
   }
   if (kind === "audio") return undefined;
   if (kind === "endChapter") {
@@ -190,6 +363,88 @@ export function makeBlock(
       endingId: stableId(),
       label: "结局",
     };
+  }
+  if (kind === "returnToEntry")
+    return { id: stableId(), type: "returnToEntry" };
+  if (kind === "video") {
+    const video = (document.assets ?? []).find(
+      (candidate) => candidate.type === "video",
+    );
+    if (!video) return undefined;
+    return {
+      id: stableId(),
+      type: "video",
+      assetId: video.id,
+      action: "play",
+      loop: false,
+      volume: 100,
+      fit: "cover",
+      waitForCompletion: true,
+    };
+  }
+  if (kind === "animateSprite") {
+    if (!characters[0]) return undefined;
+    return {
+      id: stableId(),
+      type: "animateSprite",
+      characterId: characters[0].id,
+      animation: "idle",
+      durationMs: 500,
+      loop: false,
+      waitForCompletion: false,
+    };
+  }
+  if (kind === "gallery") {
+    const asset = document.assets?.[0];
+    if (!asset) return undefined;
+    return {
+      id: stableId(),
+      type: "gallery",
+      assetId: asset.id,
+      action: asset.type === "audio" ? "unlockMusic" : "unlockCg",
+    };
+  }
+  if (kind === "setVariable") {
+    const variable = document.variables?.[0];
+    if (!variable) return undefined;
+    return {
+      id: stableId(),
+      type: "setVariable",
+      variableId: variable.id,
+      operator: "set",
+      value: variable.defaultValue,
+    };
+  }
+  if (kind === "if") {
+    const target = chapter.fragments?.find(
+      (candidate) => candidate.id !== fragment.id,
+    );
+    if (!target) return undefined;
+    return {
+      id: stableId(),
+      type: "if",
+      condition: document.variables?.[0]?.id ?? "true",
+      thenFragmentId: target.id,
+      elseFragmentId: null,
+    };
+  }
+  if (kind === "callFragment") {
+    const target = chapter.fragments?.find(
+      (candidate) => candidate.id !== fragment.id,
+    );
+    if (!target) return undefined;
+    return {
+      id: stableId(),
+      type: "callFragment",
+      targetFragmentId: target.id,
+    };
+  }
+  if (kind !== "branch" && kind in BLOCK_REGISTRY) {
+    return {
+      id: stableId(),
+      type: kind,
+      ...BLOCK_REGISTRY[kind].defaults(),
+    } as GalgameStoryBlock;
   }
   const targets = (chapter.fragments ?? []).filter(
     (candidate) => candidate.id !== fragment.id,
@@ -242,11 +497,7 @@ export function makeAudioBlock(
 }
 
 export type AudioReference = {
-  kind:
-    | "characterVoiceSample"
-    | "dialogueVoice"
-    | "audioBlock"
-    | "fragmentTimeline";
+  kind: "characterVoiceSample" | "dialogueVoice" | "audioBlock";
   label: string;
   characterId?: string;
   chapterId?: string;
@@ -269,13 +520,6 @@ export function audioReferences(
   }
   for (const chapter of document.chapters ?? []) {
     for (const fragment of chapter.fragments ?? []) {
-      if (fragment.timeline?.assetId === assetId)
-        references.push({
-          kind: "fragmentTimeline",
-          chapterId: chapter.id,
-          fragmentId: fragment.id,
-          label: `${chapter.title} · ${fragment.title} · 剧情时间轴`,
-        });
       for (const [index, block] of (fragment.blocks ?? []).entries()) {
         const kind =
           block.type === "dialogue" && block.voiceAssetId === assetId
@@ -299,7 +543,7 @@ export function audioReferences(
 
 export function referencedBy(
   document: GalgameStoryProject,
-  kind: "character" | "scene" | "fragment",
+  kind: "character" | "scene" | "fragment" | "variable",
   id: string,
 ) {
   const references: string[] = [];
@@ -313,7 +557,8 @@ export function referencedBy(
             ((block.type === "dialogue" &&
               dialogueSpeakerIds(block).includes(id)) ||
               ((block.type === "showCharacter" ||
-                block.type === "removeCharacter") &&
+                block.type === "removeCharacter" ||
+                block.type === "animateSprite") &&
                 block.characterId === id))) ||
           (kind === "scene" && block.type === "scene" && block.sceneId === id)
         )
@@ -324,6 +569,19 @@ export function referencedBy(
               references.push(`Fragment“${fragment.title}”的分支`);
           }
         }
+        if (
+          kind === "fragment" &&
+          ((block.type === "callFragment" && block.targetFragmentId === id) ||
+            (block.type === "if" &&
+              (block.thenFragmentId === id || block.elseFragmentId === id)))
+        )
+          references.push(`Fragment“${fragment.title}”的调用`);
+        if (
+          kind === "variable" &&
+          ((block.type === "setVariable" && block.variableId === id) ||
+            (block.type === "if" && block.condition.includes(id)))
+        )
+          references.push(`Fragment“${fragment.title}”的变量逻辑`);
       }
     }
   }
@@ -342,17 +600,33 @@ export function updateFirstChapter(
   };
 }
 
+export function updateChapter(
+  document: GalgameStoryProject,
+  chapterId: string,
+  updater: (chapter: GalgameStoryChapter) => GalgameStoryChapter,
+) {
+  return {
+    ...document,
+    chapters: (document.chapters ?? []).map((chapter) =>
+      chapter.id === chapterId ? updater(chapter) : chapter,
+    ),
+  };
+}
+
 export function updateFragment(
   document: GalgameStoryProject,
   fragmentId: string,
   updater: (fragment: GalgameStoryFragment) => GalgameStoryFragment,
 ) {
-  return updateFirstChapter(document, (chapter) => ({
-    ...chapter,
-    fragments: (chapter.fragments ?? []).map((fragment) =>
-      fragment.id === fragmentId ? updater(fragment) : fragment,
-    ),
-  }));
+  return {
+    ...document,
+    chapters: (document.chapters ?? []).map((chapter) => ({
+      ...chapter,
+      fragments: (chapter.fragments ?? []).map((fragment) =>
+        fragment.id === fragmentId ? updater(fragment) : fragment,
+      ),
+    })),
+  };
 }
 
 export function updateBlock(

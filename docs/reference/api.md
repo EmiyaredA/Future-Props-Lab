@@ -140,32 +140,88 @@ ID、消息数量、画布摘要和素材 ID；不保存图片 Base64、临时�
 
 - `GET/POST /v1/galgame-workshop/projects`：按最近更新时间读取工程或新建空白工程。
 - `GET/PATCH/DELETE /v1/galgame-workshop/projects/{project_id}`：读取、修改或删除单个工程。
-- `GET/PUT /v1/galgame-workshop/projects/{project_id}/story`：读取或整份 CAS 保存 V1 故事文档。
-- `GET /v1/galgame-workshop/projects/{project_id}/story/report`：检查 Fragment 可达性、结局和循环。
-- `GET/POST /v1/galgame-workshop/projects/{project_id}/assets`：搜索或上传工程私有的故事图片与声音。
+- `GET/PUT /v1/galgame-workshop/projects/{project_id}/story`：读取或整份 CAS 保存 Story 1.2 故事文档。
+- `GET /v1/galgame-workshop/projects/{project_id}/story/report`：按章节顺序、调用栈与真实控制流检查可达性、停止点和递归。
+- `GET/POST /v1/galgame-workshop/projects/{project_id}/assets`：搜索或上传工程私有的图片、音视频与字体；上传可指定素材分类。
+- `POST /v1/galgame-workshop/projects/{project_id}/assets/import-preview|batch`：预检批量改名和虚拟路径，或原子导入一批素材。
+- `PATCH /v1/galgame-workshop/projects/{project_id}/assets/{asset_id}`：以素材 revision CAS 修改显示名、分类、虚拟路径与打包策略。
+- `GET /v1/galgame-workshop/projects/{project_id}/assets/overview`：返回数量、体积、类型分布、打包估算、引用位置、游离与缺失文件。
+- `POST /v1/galgame-workshop/projects/{project_id}/assets/metadata-scan`：重扫 Hash、图片尺寸和音视频时长。
+- `GET /v1/galgame-workshop/projects/{project_id}/assets/package-manifest`：按有效引用与强制策略生成打包清单，并报告阻断问题。
+- `POST /v1/galgame-workshop/projects/{project_id}/assets/repair`：以 Story revision CAS 重新绑定缺失引用。
+- `GET/PATCH /v1/galgame-workshop/projects/{project_id}/assets/asr/settings`：读取或 CAS 修改 ASR 模型、语言和并发。
+- `GET/POST /v1/galgame-workshop/projects/{project_id}/assets/asr/transcriptions`：读取任务或批量创建待处理/强制识别任务。
+- `PATCH /v1/galgame-workshop/projects/{project_id}/assets/{asset_id}/transcript`：以文本 revision CAS 手工修正识别文本。
+- `POST /v1/galgame-workshop/projects/{project_id}/assets/asr/match-dialogue`：归一化文本后稳定匹配对白并以 Story CAS 绑定语音。
+- `GET/POST /v1/galgame-workshop/projects/{project_id}/story/portrait-upgrade`：预览或应用旧立绘尺寸升级；应用前自动保存快照。
+- `GET /v1/galgame-workshop/projects/{project_id}/story/snapshots` 与 `POST .../{snapshot_id}/restore`：列出并以 Story revision 恢复维护快照。
 - `DELETE /v1/galgame-workshop/projects/{project_id}/assets/{asset_id}`：按素材 revision 删除未被故事使用的工程素材；引用冲突返回可定位的角色、Fragment 与 Block 信息。
 
 工程状态为 `draft / completed`，标题长度为 1–120 字。修改和删除必须携带工程的
 `expected_revision`；冲突返回 `409 revision_conflict` 以及服务器当前工程快照。新建工程会同时
-写入 `schemaVersion: "1.0"` 故事文档，预置 `chapter-1` 章节和入口为 `main` 的空 Fragment。
-故事包含 `synopsis`、角色、场景、预留变量及 `chapters → fragments → blocks`；首批 Block 支持场景、
-旁白、对白、分支和章节结局。角色可选 `expressions[]` 和 `defaultExpressionId`，表情通过故事
-`assets[]` 中的 `characterPortrait` 记录引用文件，对白可用 `expressionId` 覆盖角色默认表情。场景可选
-`backgrounds[]` 和 `defaultBackgroundId`，背景通过 `sceneBackground` 记录引用文件；Scene Block 可用
-`backgroundId` 固定背景状态，未指定时跟随场景默认；`clearCharacters` 控制切换场景时是否清空舞台角色。
+写入 `schemaVersion: "1.2"` 故事文档，预置 `chapter-1` 章节和入口为 `main` 的空 Fragment。
+故事包含 `synopsis`、`entryChapterId`、类型化变量、角色属性模板、角色、场景、剧情 CG、项目级
+`settings` 及
+`chapters → fragments → blocks`。章节有稳定 ID、顺序、入口 Fragment 和禁用状态；入口章不能删除或禁用，
+`endChapter` 会进入下一启用章。旧 `schemaVersion: "1.0/1.1"` Story 读取时自动补齐这些字段并升级为
+`schemaVersion: "1.2"`，继续使用整份文档 revision CAS。`settings.canvas` 保存 640×360 至
+7680×4320 的画布尺寸（默认 1920×1080）；`settings.characterStage` 保存默认锚点、默认画面高度和
+左、左中、中、右中、右五个严格递增的百分比站位。它们只作为新建 Block 与资产预览的默认值，
+不会改写已有角色 transform。角色的 `themeColor` 使用六位十六进制颜色；旧文档按角色顺序补入
+确定性色板。角色可选
+`expressions[]` 和 `defaultExpressionId`，表情通过故事
+`assets[]` 中的 `characterPortrait` 记录引用文件，对白可用 `expressionId` 覆盖角色默认表情。场景统一使用
+`sceneGroups + scenes[].layers[]`；每层保存稳定 ID、名称、`sceneLayer` 素材、距离和偏移，单层与多层共享模型。
+旧多背景场景会确定性拆分为多个场景并重写 Scene Block 引用；`clearCharacters` 控制切换场景时是否清空舞台角色。
 `showCharacter` Block 以 `characterId` 为舞台唯一实例进行登场或调整，保存表情、百分比位置（X/Y 均为 -100%–200%）、比例、亮度、
 透明度、水平翻转、层级与基础过渡；`removeCharacter` 可让指定角色或全部角色退场。故事保存使用独立
 `expected_revision`，严格拒绝重复 ID、悬空引用、跨角色表情、越界角色变换、跨场景背景和少于两个选项的分支；冲突快照包含服务器当前完整故事，
-旧版 V1 缺少立绘或背景字段时在读取中补默认空值，首次保存后自然写入扩展格式。
+旧版 V1 缺少立绘或背景字段时在读取中补默认空值，首次保存后自然写入扩展格式。项目变量声明
+`boolean / number / string` 类型、默认值和 `session / persistent` 生命周期；角色属性只能使用项目属性模板中
+声明的键和值类型。
+
+Block 使用一个带 `type` 判别字段的联合契约。除既有场景、角色、CG、对白、声音、分支和章节结束外，
+还包含段落与参数、系统消息、注释、等待、销毁场景、镜头与复位、粒子、舞台动画、浮动文字、幕布、
+视频、精灵动画、自动播放、对话框样式、立绘发言规则、鉴赏、条件、变量赋值、调用 Fragment 和返回入口章。
+扩展方法、扩展界面与任意自定义运行时 Block 不在该联合类型中。条件表达式只允许读取已声明变量与角色属性，
+不会执行 JavaScript。
+
+`cgs[]` 独立维护剧情 CG，不作为场景背景差分使用。每项 CG 最多包含 100 个 `variants[]`，图片必须引用
+`storyCg` 素材；存在差分时必须设置有效的 `defaultVariantId`。`showCg` Block 显式显示或替换 CG，
+`variantId: null` 跟随默认差分。`displayMode: fullscreen` 保持传统全屏 CG，`fit` 支持铺满裁切的
+`cover` 和黑边完整显示的 `contain`；`displayMode: overlay` 在场景上等比叠加图片，`overlay` 保存中心点
+百分比坐标、舞台宽度百分比、透明度以及角色前方/后方两档位置。`hideCg` 显式隐藏当前 CG，没有活动 CG
+时是确定性空操作。全屏 CG 和前景叠加 CG 覆盖角色，后景叠加 CG 位于背景与角色之间；自定义 UI、对话框、
+选项和系统交互继续显示在其上方。切换场景和分支跳转不会隐式隐藏 CG，章节结束和重新试玩会清空。旧 V1
+故事缺少 `displayMode` 时按 `fullscreen` 读取，缺少叠加参数时使用居中、60% 宽度、完全不透明和角色前方；缺少
+`cgs` 时读取为 `[]`，保存后统一写为 `schemaVersion: "1.1"`。
 
 Dialogue Block 的 `characterId` 继续表示主说话角色；可选 `speakerIds` 表示同一句对白由多人同时说出，
 第一项必须与 `characterId` 相同、角色不能重复且都必须存在。缺少 `speakerIds` 的旧故事仍按单人对白处理。
 对话框按顺序显示全部说话人，已在舞台上的说话角色会同时获得说话人聚焦与口型响应；本句的
 `expressionId`、`portrait` 和 `voiceAssetId` 仍由主说话角色承载，避免破坏已有单句配音和立绘数据。
 
-对白的可选 `portrait` 保存 `stage / solo / hidden` 立绘模式、对白后是否保留、可选角色变换与过渡。
-缺少 `portrait` 的旧对白继续使用单人临时立绘；新建对白默认加入多人舞台并保留角色。`stage` 模式未指定
+对白的可选 `portrait` 保存 `stage / dialogueAvatar / soloLegacy` 模式、`visible`、皮肤、对白后是否保留、
+可选角色变换与过渡。旧 `hidden` 读取为 `stage + visible:false`，旧 `solo` 读取为 `soloLegacy`；缺少
+`portrait` 的旧对白继续使用单人临时立绘，新建对白默认加入多人舞台并保留角色。`stage` 模式未指定
 变换时继承角色当前舞台状态，不在场时使用底部居中的默认变换。
+
+旁白、对白和剧情段落可保存 `content: { version: 1, nodes: [...] }` 结构化富文本；存在 `content` 时它是
+正文真源，服务端同步生成兼容 `text` 摘要。节点支持文本粗体、斜体、删除线、前景/背景色、8–200px 字号、
+注音、变量、换行、定时或玩家继续等待；只有对白允许内联表情切换。角色可配置固定值或字符串变量驱动的
+`displayNames`、从当前表情立绘裁切的 `dialogueAvatar`，以及按表情 ID 覆盖素材的 `portraitSkins`。
+
+`storyParagraph` 以全屏连续段落呈现，`textSpeedCps: 0` 表示继承项目默认速度。`paragraphParams` 是只影响
+后续段落的增量指令，支持速度、淡入、揭示效果、阅读态、0–100 条历史上限和样式引用；所有字段为空时拒绝
+保存。旧正数 `textSpeedMs` 换算为字符/秒，`0ms` 迁为即时显示，旧 `autoAdvanceMs / skippable` 不再生效。
+`systemMessage` 的提示模式为单按钮，确认模式为双按钮并可把结果写入布尔变量；取消、Esc 和异常关闭写入
+`false`。`wait` 使用 `duration / player` 两种模式，玩家继续等待不受自动播放或跳过影响。注释仅供作者查看，
+不进入运行时和时长计算。
+
+`presentation.text` 保存全局文字速度，`presentation.paragraph` 保存内置或项目段落样式，
+`presentation.systemMessage` 保存标准消息框槽位和项目消息框样式。引用统一为
+`{ source: builtin | project | extension, id }`；缺失的扩展或项目样式产生线路警告并在运行时回退内置样式，
+角色、变量、表情和素材等硬引用仍严格拒绝悬空值。
 
 `presentation.dialogueBox` 保存工坊内置试玩的全局对话框外观，包括预设、底色、正文与角色名颜色、
 透明度、圆角和字号。可选 `assetId` 必须引用 `assets[]` 中 role 为 `dialogueBox` 的静态图片；上传图片
@@ -183,26 +239,40 @@ Dialogue Block 的 `characterId` 继续表示主说话角色；可选 `speakerId
 从文件库选择、替换和移除。旧版固定界面槽位在读取时会迁移为普通自定义组件。
 
 故事声音与图片共用 `assets[]`，音频素材使用 `type: audio` 和
-`voiceSample / voiceLine / backgroundMusic / ambientSound / soundEffect / timelineTrack` 角色。角色可通过
+`voiceSample / voiceLine / backgroundMusic / ambientSound / soundEffect` 角色。角色可通过
 `voiceProfile` 保存声线名称、语言、描述和试听样本；对白通过 `voiceAssetId` 与 `voiceVolume`
 绑定逐句配音。`audio` Block 显式控制 `bgm / ambient / sfx` 通道的播放、停止、音量、循环和
-淡入淡出；BGM 与环境音不会从场景隐式继承。Fragment 可选 `timeline: { durationMs, assetId? }`，其中
-`durationMs` 是独立的剧情总长，`assetId` 只是可选的 `timelineTrack` 校准与试听参考，不进入正式多轨
-混音。对白或旁白通过成对的 `startMs / endMs` 绑定剧情时间轴；`scene`、`showCharacter`、
-`removeCharacter` 与 `audio` Block 可用 `atMs` 固定触发点。无时间轴的 Fragment 拒绝这些时间字段；
+淡入淡出；BGM 与环境音不会从场景隐式继承。Fragment 可选 `timeline: { durationMs }`，其中
+`durationMs` 是独立的剧情总长。对白、旁白、剧情段落或系统消息通过成对的 `startMs / endMs` 绑定剧情时间轴；`scene`、`showCharacter`、
+`removeCharacter`、`showCg`、`hideCg` 与 `audio` Block 可用 `atMs` 固定触发点。无时间轴的 Fragment 拒绝这些时间字段；
 有时间轴时所有显式时间都不能超过剧情总长，对白/旁白还必须有序且互不重叠。
 
-同一时刻允许一个场景状态、多个不同角色和多个 SFX；BGM 与环境音各自只允许一条播放事件，但允许
-先停止再播放以交叉淡化。同一时刻的归约顺序固定为：场景切换、角色退场、角色登场/调整、持续声音
-停止、持续声音播放、SFX、对白/旁白，同类事件保持原 Block 顺序。旧时间轴里缺少 `atMs` 的舞台或
-声音事件不会被自动改写：开场事件解释为 0，对白之间的事件锚定到下一句开始，尾部事件锚定到剧情
-结尾；只有用户调整后才保存显式 `atMs`。只含参考轨、没有逐句配音或独立声音 Block 的 Fragment
-会在线路报告中给出警告，但不阻止保存和完成。
+编辑器把一次 `showCg` 到下一个 `showCg`、`hideCg` 或时间轴末尾派生为可拖动、可调整双端的 CG 显示区间。
+调整没有显式结束事件的区间时会补充 `hideCg`；相邻 CG 的替换时间是共享边界，区间最短 100ms。
 
-编辑器统一使用 Beat 选择带与多轨时间轴，不再维护独立剧本流视图。中间上方是舞台编辑/试玩，下方
-按真实时间比例显示 Beat，并按参考声轨、场景、角色、对白/配音、BGM、环境音、SFX 和分支/结局
-标记分轨；右侧只保留属性、样式与线路检查。Beat 展示对白/旁白推进点、同时间事件，以及场景、在场
-角色、BGM 和环境音等持续状态。对白支持共享分界拖动、首尾边界、片段平移、100ms 吸附、
+同一时刻允许一个场景状态、一个 CG 事件、多个不同角色和多个 SFX；BGM 与环境音各自只允许一条播放事件，但允许
+先停止再播放以交叉淡化。同一时刻的归约顺序固定为：场景切换、角色退场、角色登场/调整、CG
+显示/隐藏、持续声音停止、持续声音播放、SFX、对白/旁白，同类事件保持原 Block 顺序。缺少 `atMs` 的
+`showCharacter / removeCharacter` 跟随 Block 顺序中的下一句对白；没有后续对白时跟随剧情结尾。移动对白时这些
+角色事件一起移动，只有单独拖动角色事件后才保存显式 `atMs` 并转为独立演出。其他缺少 `atMs` 的旧舞台或声音事件
+仍按兼容规则解释：首句前为 0，对白之间锚定下一句开始，尾部锚定剧情结尾。时间轴中的正式 BGM 会跟随播放、暂停与跳转；
+非循环 BGM 超过媒体时长后保持结束状态。
+
+角色舞台位置以百分比坐标保存，`x / y` 均允许 `-1000` 到 `1000`；`y = 100` 表示角色脚底锚点
+位于舞台底边，更大的值可继续把带透明留白或高倍率缩放的立绘向画面外移动。
+
+剧本编辑器使用章节树、正文和舞台/检查器三栏布局。正文可在“卡片 / 纯文本 / Ren’Py / JSON OP”四种视图间
+切换，并另有多轨“演出”视图；所有视图编辑同一组 Block。Ren’Py 视图使用 CodeMirror 6，常用语法直接映射，
+复杂指令写作 `studio <type>: {...}`；非法草稿仅保存在浏览器，不会覆盖最后一次合法 Block。JSON OP 始终只读。
+卡片视图负责按顺序创作，
+可就地编辑对白和旁白，并直接设置对白主角色、表情、已有配音、立绘模式与句后状态；连续且说话人集合相同的对白
+显示为一组。普通新增 Fragment 与 Block 不创建 `timeline`，仅切换到演出视图也不会保存。演出视图按真实时间比例显示
+场景、CG、对白/角色/配音、BGM、环境音、SFX 和分支/结局标记；固定轨道栏与时间内容区分离。跟随对白的角色事件
+合并为对白上的演出标记，显式
+`atMs` 角色事件以独立时间点显示。工具栏“演出细节”按需展开逐角色轨，精确设置可逐个隐藏这些轨道而不删除事件。
+用户直接选择各轨 Block 或无对白区间并在右侧编辑属性，分支与结局单独显示为终点标记。角色事件属性可在
+“独立时间”和明确指定的目标对白之间切换；重新吸附保持 Block ID、移动到目标对白前并删除 `atMs`。对白支持共享分界拖动、
+首尾边界、片段平移、100ms 吸附、
 波纹编辑和 `mm:ss.mmm` 精确
 输入。波纹编辑开启时，拉伸所选对白的右边界只改变该对白的结束时间，并以同一增量平移全部后续
 对白的开始和结束时间；后续对白时长、对白间空隙和舞台事件所属 Block 均保持不变。波纹收缩释放的
@@ -210,34 +280,37 @@ Dialogue Block 的 `characterId` 继续表示主说话角色；可选 `speakerId
 100ms；这一
 语义同时适用于右边界拖动、边界键盘微调、精确结束时间输入和“播放头设为结束”。关闭波纹编辑后
 仍使用共享分界、单块裁切和空隙编辑，开始边界与 Gap 编辑不会触发后续连锁移动。开场、内部与结尾的无对白区间由相邻对白边界和时间轴总长推导，不创建 Gap Block；选中后可直接
-编辑其有效边界。工具栏分别展示媒体声轨长度和可精确编辑的剧情总长；普通末尾裁切、Block 右移、
+编辑其有效边界。工具栏展示可精确编辑的剧情总长；普通末尾裁切、Block 右移、
 精确结束时间和播放头设为结束越过当前末尾时也会自动扩展剧情总长，手动缩短则不能早于最后一个
-Block。Beat 支持单选、Shift 或拖动连续选择，以及 `Ctrl/Cmd+A` 全选；范围检查器可按波纹语义平移、
-缩放、复制或删除非结构 Block，分支与结局参与统计但始终受保护。同时间同类事件的执行顺序在右侧
-属性检查器调整。时间轴还提供 300ms 预听、所选对白循环、播放头设为起止点，以及在播放头添加对白、
-旁白、舞台、声音、分支或结局。Fragment 不需要参考声轨：旧 Fragment 打开时只按正文估时生成只读
+Block。同时间同类事件的执行顺序在右侧属性检查器调整。时间轴还提供 300ms 预听、所选对白循环、
+播放头设为起止点，以及在播放头添加对白、
+旁白、舞台、声音、分支或结局。旧 Fragment 进入演出视图时只按正文估时生成只读
 投影，不触发保存；首次拖动、修改时间或在播放头添加事件时才物化精确时间轴。单句默认
 `max(1500ms, 字符数 × 180ms + 400ms)`，句间留白 300ms、结尾留白 500ms。所有合法修改仍通过整份
-Story CAS 自动保存。Beat 选择、舞台高度、时间轴播放头、缩放、循环与波纹编辑偏好只存在于浏览器，
-不进入故事文档；舞台与时间轴默认约为 42/58，可拖动分隔线调整。试玩时下方时间轴只读跟随当前
-Fragment、Beat 和播放头，退出试玩后恢复此前编辑选择。参考
-声轨提供独立试听，不会在正式试玩中与 BGM、环境音、SFX 或逐句配音重复发声。编辑器重新获得窗口
+Story CAS 自动保存。卡片/演出视图偏好、内容项选择、舞台高度、舞台视口比例（自动 / 16:9 / 16:10 / 4:3 / 自定义）、
+舞台折叠、时间轴播放头、缩放、循环与波纹编辑偏好只存在于浏览器，不进入故事文档；舞台与时间轴
+默认约为 42/58，可拖动分隔线调整，也可折叠舞台预览以放大时间轴。试玩时下方时间轴只读跟随当前
+Fragment、当前 Block 和播放头，退出试玩后恢复此前编辑选择。编辑时间轴时会试听当前正式 BGM，
+并按播放事件起点计算媒体位置。编辑器重新获得窗口
 焦点或手动刷新时会检查最新 Story
 revision；无本地待保存修改时自动载入，否则沿用 CAS 冲突处理。
 
-线路报告把开放线路、不可达 Fragment、无出口循环和终止 Block 后的内容列为错误，把可退出循环列为
-警告；缺失的 `ready` 故事图片或声音文件也会阻止完成。没有绑定背景的场景仍可使用确定性主题占位并完成。
+线路报告将终止指令后的内容、悬空引用、不可达章节或 Fragment、无出口递归及没有可达最终停止点列为错误，
+把禁用章和可退出递归列为警告；Fragment 自然结束是合法停止，不再视为开放断点。缺失的 `ready` 故事图片、
+声音或视频文件也会阻止完成。没有绑定背景的场景仍可使用确定性主题占位并完成。
 只有零错误时工程才能标记为 `completed`，已完成工程
 再次保存故事会自动回到 `draft`。上传图片属于工程私有素材，支持 PNG、JPEG、WebP 和 AVIF；上传声音支持
-MP3、WAV、M4A 和 OGG。删除
+MP3、WAV、M4A 和 OGG；视频支持 MP4、WebM 和 MOV。删除
 工程时同时清理数据库记录和磁盘文件；从全局文件库选择只建立引用，引用解除或工程删除后释放原图。
 公共文件接口不能修改或删除 Galgame 私有素材，全局图片在被 Galgame 故事引用时同样禁止删除。
-Web 提供角色列表、资料、立绘与声线，场景列表、资料与背景，以及声音资源三栏工作区；图片和声音选择器
+Web 顶层提供“剧本 / 资产 / 叙事地图 / 个性化 / 设置”。资产中心侧栏包含资源总览、角色、场景、BGM、音效和语音；剧情 CG 位于
+场景二级页签，环境音位于音效二级页签，视频只在资源总览和 Video Block 选择器中出现。图片、声音和视频选择器
 复用 650ms 串行自动保存和冲突处理。内置试玩会把背景置于角色立绘、对白和选择层下方，并独立管理
 配音、单路 BGM、单路环境音和最多八路音效。试玩默认手动推进，也可切换自动播放；两种模式共用同一
-剧情时钟和状态归约器。手动模式让当前 Beat 内的演出正常运行并在末尾等待点击，自动模式连续按精确
-时间推进；选择出现时两者都会暂停。对白采用两段式点击：尚未完整时先显示全文，完整后再前往下一
-Beat。跳转会重建目标时刻的场景、角色与持续声音状态，不补播中间的一次性 SFX；当前配音以 80ms
+剧情时钟和状态归约器。手动模式运行到下一句对白或旁白开始前并等待点击；首句前的演出先播放，纯演出
+Fragment 播放到结尾。自动模式连续按精确时间推进；选择出现时两者都会暂停。对白采用两段式点击：
+尚未完整时先显示全文，完整后再进入下一步。跳转会重建目标时刻的场景、角色与持续声音状态，不补播
+中间的一次性 SFX；当前配音以 80ms
 淡出。没有精确时间轴的旧 Fragment 仍可按配音结束后 400ms 或文本估时自动播放。声音加载
 失败时回退到确定性主题舞台。当前格式仅供工坊内部使用，不代表 LetsGal 原生工程或导入兼容。
 

@@ -14,16 +14,23 @@ export function StoryAudioPreview({
   fileId,
   label,
   compact = false,
+  onDurationMs,
 }: {
   fileId?: string;
   label: string;
   compact?: boolean;
+  onDurationMs?: (durationMs: number) => void;
 }) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const onDurationMsRef = useRef(onDurationMs);
   const [playing, setPlaying] = useState(false);
   const [duration, setDuration] = useState(0);
   const [ready, setReady] = useState(false);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    onDurationMsRef.current = onDurationMs;
+  }, [onDurationMs]);
 
   useEffect(() => {
     let active = true;
@@ -34,6 +41,7 @@ export function StoryAudioPreview({
     const loaded = () => {
       if (!active) return;
       setDuration(audio.duration);
+      onDurationMsRef.current?.(Math.round(audio.duration * 1000));
       setReady(true);
     };
     const ended = () => active && setPlaying(false);

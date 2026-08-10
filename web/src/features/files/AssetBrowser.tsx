@@ -112,9 +112,13 @@ function relativeUpdatedAt(value: string) {
 }
 
 function kindLabel(kind: MediaKind) {
-  return { image: "图片", video: "视频", audio: "音频", document: "文档" }[
-    kind
-  ];
+  return {
+    image: "图片",
+    video: "视频",
+    audio: "音频",
+    font: "字体",
+    document: "文档",
+  }[kind];
 }
 
 function extensionLabel(file: ManagedFile) {

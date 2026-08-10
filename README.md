@@ -22,6 +22,8 @@
 
 Studio 默认地址为 <http://127.0.0.1:3000>，打开后进入首页；API 文档为 <http://127.0.0.1:9000/docs>。一级“文件管理”保存可被视觉项目引用的图片、视频、音频与文档；工具导航聚合站内模型能力与常用公开研发工具，并将收藏和最近使用记录持久化到本机 SQLite。基模型菜单包含持久化多轮“模型测试”、供应商与模型管理，以及可按快速诊断/模型测试区分的调用日志。
 
+Galgame 工坊使用 Story 1.2 管理角色表情/皮肤、真实多层场景、剧情 CG、BGM、音效、语音、视频和资源总览。项目素材拥有稳定虚拟路径、媒体元数据与打包策略；语音识别通过已启用且声明 `speech_recognition` 能力的 OpenAI 兼容模型服务执行，不随应用捆绑大型本地模型。
+
 备份时先停止应用，再同时复制 `.runtime/future-props.db`、`.runtime/visual-workshop/assets/`、
 `.runtime/model-test/attachments/`、`.runtime/model-test/references/` 与
 `.runtime/model-test/generated/`。数据库路径可通过

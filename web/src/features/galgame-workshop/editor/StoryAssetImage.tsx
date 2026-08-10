@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import { fetchApiBlob } from "@platform/api/client";
 
 export function StoryAssetImage({
@@ -6,11 +6,13 @@ export function StoryAssetImage({
   alt,
   fallback,
   className,
+  style,
 }: {
   fileId?: string;
   alt: string;
   fallback: ReactNode;
   className?: string;
+  style?: CSSProperties;
 }) {
   const [url, setUrl] = useState("");
 
@@ -36,7 +38,13 @@ export function StoryAssetImage({
   }, [fileId]);
 
   return url ? (
-    <img className={className} src={url} alt={alt} onError={() => setUrl("")} />
+    <img
+      className={className}
+      style={style}
+      src={url}
+      alt={alt}
+      onError={() => setUrl("")}
+    />
   ) : (
     <>{fallback}</>
   );

@@ -98,7 +98,7 @@ function promptPartsFromValue(value: string, assets: ManagedFile[]) {
     const bracketed = rest.match(/^\[([^\]\r\n]+)\]/u);
     const legacyBracketed = rest.match(/^@\[([^\]\r\n]+)\]/u);
     const legacyBare = rest.match(
-      /^@([^\s@\]\[()（）【】,，。;；:：!！?？]+)(?=$|[\s,，。;；:：!！?？)）\]】])/u,
+      /^@([^\s@\][()（）【】,，。;；:：!！?？]+)(?=$|[\s,，。;；:：!！?？)）\]】])/u,
     );
     const match = bracketed ?? legacyBracketed ?? legacyBare;
     const name = match?.[1];

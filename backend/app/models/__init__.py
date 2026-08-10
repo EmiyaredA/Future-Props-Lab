@@ -2,8 +2,12 @@ from app.models.base import Base
 from app.models.call_log import LlmCallLog
 from app.models.files import VisualAsset, VisualAssetFolder, VisualProjectAssetReference
 from app.models.galgame_workshop import (
+    GalgameAssetMetadata,
+    GalgameAssetSettings,
+    GalgameAssetTranscriptionTask,
     GalgameProjectAssetReference,
     GalgameStoryDocument,
+    GalgameStorySnapshot,
     GalgameWorkshopProject,
 )
 from app.models.model_service import ModelCatalogState, ModelEntry, ModelProvider
@@ -28,7 +32,11 @@ from app.models.visual_workshop import (
 __all__ = [
     "Base",
     "GalgameStoryDocument",
+    "GalgameAssetMetadata",
+    "GalgameAssetSettings",
+    "GalgameAssetTranscriptionTask",
     "GalgameProjectAssetReference",
+    "GalgameStorySnapshot",
     "GalgameWorkshopProject",
     "LlmCallLog",
     "ModelCatalogState",

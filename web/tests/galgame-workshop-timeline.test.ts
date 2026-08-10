@@ -2,36 +2,37 @@ import { describe, expect, test } from "vitest";
 import type { GalgameStoryFragment } from "@features/galgame-workshop/api";
 import {
   activeTimelineCue,
-  deleteTimelineBeatRange,
-  duplicateTimelineBeatRange,
+  attachTimelineCharacterEvent,
+  appendBlockToTimeline,
   effectivePointTime,
   enableFragmentTimeline,
   formatTimecode,
+  moveTimelineCgRange,
   moveTimelineCue,
   parseTimecode,
   projectFragmentTimeline,
   resizeTimelineBoundary,
   resizeTimelineCueEnd,
   setTimelineCueEdge,
+  setTimelineCgRangeEdge,
   setTimelineDuration,
   setTimelinePointTime,
-  scaleTimelineBeatRange,
   setTimelineGapEdge,
   timelineAudioStateAt,
-  timelineBeats,
+  timelineCgRanges,
+  timelineCharacterTiming,
   timelineCues,
   timelineEvents,
   timelineGaps,
+  timelinePlaybackSteps,
   timelineStageMarkers,
-  timelineBeatRange,
-  translateTimelineBeatRange,
 } from "@features/galgame-workshop/editor/timeline";
 
 function fragment(): GalgameStoryFragment {
   return {
     id: "timeline",
     title: "时间轴",
-    timeline: { assetId: "track", durationMs: 10_000 },
+    timeline: { durationMs: 10_000 },
     blocks: [
       {
         id: "scene",
@@ -84,6 +85,189 @@ function fragment(): GalgameStoryFragment {
 }
 
 describe("Galgame timeline editing", () => {
+  test("derives CG ranges ending at hide, replacement, or the timeline end", () => {
+    const value: GalgameStoryFragment = {
+      id: "cg-timeline",
+      title: "CG 时间轴",
+      timeline: { durationMs: 8000 },
+      blocks: [
+        {
+          id: "cg-one",
+          type: "showCg",
+          atMs: 500,
+          cgId: "one",
+          displayMode: "fullscreen",
+          fit: "cover",
+        },
+        { id: "cg-one-hide", type: "hideCg", atMs: 2000 },
+        {
+          id: "cg-two",
+          type: "showCg",
+          atMs: 3000,
+          cgId: "two",
+          displayMode: "overlay",
+          fit: "cover",
+        },
+        {
+          id: "cg-three",
+          type: "showCg",
+          atMs: 5000,
+          cgId: "three",
+          displayMode: "overlay",
+          fit: "cover",
+        },
+      ],
+    };
+
+    expect(
+      timelineCgRanges(value).map((range) => [
+        range.showBlock.id,
+        range.startMs,
+        range.endMs,
+        range.endKind,
+      ]),
+    ).toEqual([
+      ["cg-one", 500, 2000, "hide"],
+      ["cg-two", 3000, 5000, "replace"],
+      ["cg-three", 5000, 8000, "timeline"],
+    ]);
+  });
+
+  test("edits shared CG range boundaries and materializes an implicit hide", () => {
+    const value: GalgameStoryFragment = {
+      id: "cg-timeline",
+      title: "CG 时间轴",
+      timeline: { durationMs: 8000 },
+      blocks: [
+        {
+          id: "cg-one",
+          type: "showCg",
+          atMs: 1000,
+          cgId: "one",
+          displayMode: "overlay",
+          fit: "cover",
+        },
+        {
+          id: "cg-two",
+          type: "showCg",
+          atMs: 4000,
+          cgId: "two",
+          displayMode: "fullscreen",
+          fit: "cover",
+        },
+      ],
+    };
+    const shared = setTimelineCgRangeEdge(value, "cg-one", "end", 4500);
+    expect(shared.blocks?.find((block) => block.id === "cg-two")).toMatchObject(
+      { atMs: 4500 },
+    );
+
+    const withHide = setTimelineCgRangeEdge(
+      shared,
+      "cg-two",
+      "end",
+      7000,
+      false,
+      () => "cg-two-hide",
+    );
+    expect(
+      withHide.blocks?.find((block) => block.id === "cg-two-hide"),
+    ).toMatchObject({ type: "hideCg", atMs: 7000 });
+  });
+
+  test("moves a CG range as one interval and keeps its duration", () => {
+    const value: GalgameStoryFragment = {
+      id: "cg-timeline",
+      title: "CG 时间轴",
+      timeline: { durationMs: 6000 },
+      blocks: [
+        {
+          id: "cg-one",
+          type: "showCg",
+          atMs: 1000,
+          cgId: "one",
+          displayMode: "overlay",
+          fit: "cover",
+        },
+        { id: "cg-one-hide", type: "hideCg", atMs: 3000 },
+      ],
+    };
+    const moved = moveTimelineCgRange(value, "cg-one", 750);
+    expect(moved.blocks?.find((block) => block.id === "cg-one")).toMatchObject({
+      atMs: 1800,
+    });
+    expect(
+      moved.blocks?.find((block) => block.id === "cg-one-hide"),
+    ).toMatchObject({ atMs: 3800 });
+  });
+
+  test("resets a hide CG event to 100ms after its paired show event", () => {
+    const value: GalgameStoryFragment = {
+      id: "cg-timeline",
+      title: "CG 时间轴",
+      timeline: { durationMs: 6000 },
+      blocks: [
+        {
+          id: "cg-one",
+          type: "showCg",
+          atMs: 2000,
+          cgId: "one",
+          displayMode: "overlay",
+          fit: "cover",
+        },
+        { id: "cg-one-hide", type: "hideCg", atMs: 3000 },
+      ],
+    };
+
+    const updated = setTimelinePointTime(value, "cg-one-hide", 1500, true);
+    expect(
+      updated.blocks?.find((block) => block.id === "cg-one-hide"),
+    ).toMatchObject({ atMs: 2100 });
+
+    const appended = appendBlockToTimeline(
+      { ...value, blocks: value.blocks?.slice(0, 1) },
+      { id: "new-hide", type: "hideCg" },
+      1500,
+    );
+    expect(
+      appended.blocks?.find((block) => block.id === "new-hide"),
+    ).toMatchObject({ atMs: 2100 });
+  });
+
+  test("adds timed content before an existing branch or chapter ending", () => {
+    const updated = appendBlockToTimeline(
+      {
+        ...fragment(),
+        blocks: [
+          ...(fragment().blocks ?? []),
+          {
+            id: "ending",
+            type: "endChapter",
+            endingId: "ending-main",
+            label: "完",
+          },
+        ],
+      },
+      {
+        id: "new-dialogue",
+        type: "dialogue",
+        characterId: "hero",
+        text: "新对白",
+      },
+      9500,
+    );
+
+    expect(updated.blocks?.at(-1)).toMatchObject({
+      id: "ending",
+      type: "endChapter",
+    });
+    expect(updated.blocks?.at(-2)).toMatchObject({
+      id: "new-dialogue",
+      type: "dialogue",
+      startMs: 9500,
+    });
+  });
+
   test("formats and parses millisecond timecodes", () => {
     expect(formatTimecode(1_780_343)).toBe("29:40.343");
     expect(parseTimecode("29:40.343")).toBe(1_780_343);
@@ -379,7 +563,49 @@ describe("Galgame timeline editing", () => {
       [1800, 3300],
     ]);
     expect(enabled.blocks?.[0]).toMatchObject({ atMs: 0 });
-    expect(enabled.blocks?.[2]).toMatchObject({ atMs: 1800 });
+    expect(enabled.blocks?.[2]).not.toHaveProperty("atMs");
+    expect(effectivePointTime(enabled, 2)).toBe(1800);
+  });
+
+  test("keeps character events attached until they are moved independently", () => {
+    const value = fragment();
+    expect(timelineCharacterTiming(value, "show-hero")).toEqual({
+      mode: "dialogue",
+      dialogueBlockId: "cue-1",
+    });
+
+    const movedCue = setTimelineCueEdge(
+      value,
+      "cue-1",
+      "start",
+      1000,
+      false,
+      true,
+    );
+    expect(effectivePointTime(movedCue, 1)).toBe(1000);
+    expect(movedCue.blocks?.[1]).not.toHaveProperty("atMs");
+
+    const independent = setTimelinePointTime(movedCue, "show-hero", 1500, true);
+    expect(independent.blocks?.[1]).toMatchObject({ atMs: 1500 });
+    expect(timelineCharacterTiming(independent, "show-hero")).toEqual({
+      mode: "independent",
+      timeMs: 1500,
+    });
+
+    const attached = attachTimelineCharacterEvent(
+      independent,
+      "show-hero",
+      "cue-2",
+    );
+    const attachedIndex = attached.blocks!.findIndex(
+      (block) => block.id === "show-hero",
+    );
+    expect(attached.blocks?.[attachedIndex]).not.toHaveProperty("atMs");
+    expect(attached.blocks?.[attachedIndex + 1]?.id).toBe("cue-2");
+    expect(timelineCharacterTiming(attached, "show-hero")).toEqual({
+      mode: "dialogue",
+      dialogueBlockId: "cue-2",
+    });
   });
 
   test("derives legacy anchors and runs same-time events in deterministic order", () => {
@@ -387,6 +613,16 @@ describe("Galgame timeline editing", () => {
     value.blocks = [
       value.blocks![0],
       value.blocks![1],
+      {
+        id: "show-cg",
+        type: "showCg",
+        cgId: "cg-one",
+        variantId: null,
+        displayMode: "fullscreen",
+        fit: "cover",
+        transition: { durationMs: 400, fade: true },
+        atMs: 0,
+      },
       {
         id: "stop-bgm",
         type: "audio",
@@ -436,14 +672,12 @@ describe("Galgame timeline editing", () => {
     ).toEqual([
       "scene",
       "showCharacter",
+      "showCg",
       "stop:bgm",
       "play:bgm",
       "play:sfx",
       "dialogue",
     ]);
-    expect(
-      timelineBeats(value)[0].events.map((event) => event.block.id),
-    ).toEqual(["scene", "show-hero", "stop-bgm", "play-bgm", "sfx"]);
   });
 
   test("seeks persistent audio state without replaying sound effects", () => {
@@ -495,6 +729,51 @@ describe("Galgame timeline editing", () => {
     });
   });
 
+  test("derives playback steps for opening, dialogue gaps and the timeline tail", () => {
+    const value = fragment();
+    value.blocks = value.blocks?.map((block) =>
+      block.id === "cue-1" ? { ...block, startMs: 1000, endMs: 2500 } : block,
+    );
+
+    expect(timelinePlaybackSteps(value)).toEqual([
+      { startMs: 0, endMs: 1000 },
+      { startMs: 1000, endMs: 3000, contentBlockIndex: 2 },
+      { startMs: 3000, endMs: 6000, contentBlockIndex: 3 },
+      { startMs: 6000, endMs: 10_000, contentBlockIndex: 4 },
+    ]);
+  });
+
+  test("creates one playback step for a performance-only timeline", () => {
+    const value: GalgameStoryFragment = {
+      id: "performance",
+      title: "纯演出",
+      timeline: { durationMs: 2000 },
+      blocks: [
+        {
+          id: "scene",
+          type: "scene",
+          sceneId: "lab",
+          backgroundId: null,
+          clearCharacters: true,
+          atMs: 0,
+        },
+      ],
+    };
+
+    expect(timelinePlaybackSteps(value)).toEqual([{ startMs: 0, endMs: 2000 }]);
+  });
+
+  test("returns no playback steps for an empty zero-length timeline", () => {
+    expect(
+      timelinePlaybackSteps({
+        id: "empty",
+        title: "空 Fragment",
+        timeline: { durationMs: 0 },
+        blocks: [],
+      }),
+    ).toEqual([]);
+  });
+
   test("projects an untimed fragment without mutating its persisted shape", () => {
     const legacy: GalgameStoryFragment = {
       id: "legacy",
@@ -506,112 +785,5 @@ describe("Galgame timeline editing", () => {
     expect(legacy.blocks?.[0]).not.toHaveProperty("startMs");
     expect(projected.timeline?.durationMs).toBeGreaterThan(0);
     expect(projected.blocks?.[0]).toMatchObject({ startMs: 0 });
-  });
-
-  test("computes contiguous Beat ranges and includes protected terminal Beats", () => {
-    const value = fragment();
-    value.blocks?.push({
-      id: "end",
-      type: "endChapter",
-      endingId: "ending",
-      label: "结束",
-    });
-    const beats = timelineBeats(value);
-    const range = timelineBeatRange(value, 1, beats.length - 1)!;
-    expect(range.startIndex).toBe(1);
-    expect(range.endIndex).toBe(beats.length - 1);
-    expect(range.blockIds).toContain("cue-2");
-    expect(range.structuralBlockIds).toEqual(["end"]);
-  });
-
-  test("ripple translates a range and every following Beat", () => {
-    const updated = translateTimelineBeatRange(fragment(), 1, 1, 500);
-    expect(updated.error).toBeUndefined();
-    expect(
-      timelineCues(updated.fragment).map(({ startMs, endMs }) => [
-        startMs,
-        endMs,
-      ]),
-    ).toEqual([
-      [0, 3000],
-      [3500, 6500],
-      [6500, 9500],
-    ]);
-    expect(updated.fragment.timeline?.durationMs).toBe(10_500);
-  });
-
-  test("scales a range from its start and ripples following Beats", () => {
-    const updated = scaleTimelineBeatRange(fragment(), 0, 1, 0.5);
-    expect(updated.error).toBeUndefined();
-    expect(
-      timelineCues(updated.fragment).map(({ startMs, endMs }) => [
-        startMs,
-        endMs,
-      ]),
-    ).toEqual([
-      [0, 1500],
-      [1500, 3000],
-      [3000, 6000],
-    ]);
-    expect(updated.fragment.timeline?.durationMs).toBe(7000);
-  });
-
-  test("duplicates non-structural Blocks with fresh ids before the terminator", () => {
-    const value = fragment();
-    value.blocks?.push({
-      id: "end",
-      type: "endChapter",
-      endingId: "ending",
-      label: "结束",
-    });
-    let index = 0;
-    const updated = duplicateTimelineBeatRange(
-      value,
-      1,
-      1,
-      (block) => `${block.id}-copy-${++index}`,
-    );
-    expect(updated.error).toBeUndefined();
-    expect(updated.fragment.blocks?.at(-1)?.id).toBe("end");
-    expect(
-      updated.fragment.blocks?.some((block) => block.id === "cue-2-copy-1"),
-    ).toBe(true);
-    expect(timelineCues(updated.fragment)).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ startMs: 6000, endMs: 9000 }),
-      ]),
-    );
-  });
-
-  test("deletes content, closes the range and preserves the terminator", () => {
-    const value = fragment();
-    value.blocks?.push({
-      id: "end",
-      type: "endChapter",
-      endingId: "ending",
-      label: "结束",
-    });
-    const updated = deleteTimelineBeatRange(value, 1, 1);
-    expect(updated.error).toBeUndefined();
-    expect(updated.fragment.blocks?.some((block) => block.id === "cue-2")).toBe(
-      false,
-    );
-    expect(updated.fragment.blocks?.at(-1)?.id).toBe("end");
-    expect(
-      timelineCues(updated.fragment).map(({ startMs, endMs }) => [
-        startMs,
-        endMs,
-      ]),
-    ).toEqual([
-      [0, 3000],
-      [3000, 6000],
-    ]);
-  });
-
-  test("rejects an invalid range edit without returning a modified snapshot", () => {
-    const value = fragment();
-    const result = translateTimelineBeatRange(value, 0, 0, -500);
-    expect(result.error).toContain("起点之前");
-    expect(result.fragment).toBe(value);
   });
 });

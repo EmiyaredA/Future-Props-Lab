@@ -21,7 +21,9 @@ test("素材管理员上传后，生成面板立即看到项目素材且不污�
     buffer: PNG,
   });
   await expect(page.getByText("已成功上传 1 个文件")).toBeVisible();
-  await expect(page.getByText("Persona 新素材.png").first()).toBeVisible();
+  await expect(
+    page.getByText("Persona 新素材", { exact: true }).first(),
+  ).toBeVisible();
 
   await page.getByRole("button", { name: "返回画布" }).click();
   await page.getByText("图片1", { exact: true }).click();
@@ -45,8 +47,10 @@ test("素材管理员上传后，生成面板立即看到项目素材且不污�
 
   await page.goto("/files");
   await expect(page.getByRole("heading", { name: "文件管理" })).toBeVisible();
-  await expect(page.getByText("公共素材.png")).toBeVisible();
-  await expect(page.getByText("Persona 新素材.png")).toHaveCount(0);
+  await expect(page.getByText("公共素材", { exact: true })).toBeVisible();
+  await expect(page.getByText("Persona 新素材", { exact: true })).toHaveCount(
+    0,
+  );
 });
 
 test("创作者从其他项目复制参考图后可直接提交生成任务", async ({
@@ -69,7 +73,7 @@ test("创作者从其他项目复制参考图后可直接提交生成任务", as
   await dialog.getByRole("option", { name: "跨项目参考图.png" }).click();
   await dialog.getByRole("button", { name: "导入并选择" }).click();
   await expect(
-    page.getByRole("button", { name: "跨项目参考图.png" }),
+    page.getByRole("button", { name: "跨项目参考图.png", exact: true }),
   ).toBeVisible();
 
   const prompt = page.getByRole("textbox", { name: "图片提示词" });

@@ -81,7 +81,7 @@ async def list_files(
     project_id: str | None = None,
     folder_id: str | None = None,
     query: str = Query(default="", max_length=255),
-    media_kind: Literal["image", "video", "audio", "document"] | None = None,
+    media_kind: Literal["image", "video", "audio", "font", "document"] | None = None,
     sort: Literal["updated", "name"] = "updated",
     include_references: bool = True,
 ) -> VisualAssetListOut:

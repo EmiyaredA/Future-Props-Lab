@@ -11,6 +11,7 @@ ModelCapability = Literal[
     "tools",
     "image_generation",
     "video_generation",
+    "speech_recognition",
 ]
 ModelCategory = Literal[
     "text_generation",

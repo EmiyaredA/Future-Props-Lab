@@ -45,7 +45,7 @@ describe("Galgame independent timeline clock", () => {
     clock.dispose();
   });
 
-  test("plays one manual beat and pauses without finishing the timeline", () => {
+  test("plays one manual segment and pauses without finishing the timeline", () => {
     vi.useFakeTimers();
     const finished = vi.fn();
     const clock = new TimelineClock(1000, {

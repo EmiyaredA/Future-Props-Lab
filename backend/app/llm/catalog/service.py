@@ -79,6 +79,8 @@ def _default_categories(row: ModelEntry) -> list[str]:
         return ["image_generation"]
     if "video_generation" in capabilities:
         return ["video_generation"]
+    if "speech_recognition" in capabilities:
+        return ["speech_recognition"]
     return ["text_generation"]
 
 

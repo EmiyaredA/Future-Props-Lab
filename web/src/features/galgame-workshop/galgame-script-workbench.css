@@ -1,0 +1,1410 @@
+/*
+ * Script workbench geometry is intentionally isolated here. The legacy editor
+ * styles also serve the asset and timeline surfaces; keeping the official-style
+ * script overrides in one file prevents another cascade of page-wide patches.
+ */
+.galgame-script-workbench {
+  --galgame-script-left-ratio: 16.5;
+  --galgame-script-center-ratio: 25;
+  --galgame-script-row: 50px;
+  --galgame-script-gutter: 6px;
+  height: auto;
+  min-height: 0;
+  flex: 1;
+  grid-template-columns:
+    calc(
+      (100% - (var(--galgame-script-gutter) * 2)) *
+        var(--galgame-script-left-ratio) / 100
+    )
+    var(--galgame-script-gutter)
+    calc(
+      (100% - (var(--galgame-script-gutter) * 2)) *
+        var(--galgame-script-center-ratio) / 100
+    )
+    var(--galgame-script-gutter) minmax(0, 1fr);
+  grid-template-rows:
+    minmax(320px, var(--galgame-stage-split, 60%)) 7px 38px
+    minmax(0, 1fr);
+  overflow: hidden;
+}
+
+/* Official AVG text-block geometry and inline authoring controls. */
+.galgame-rich-editor {
+  position: relative;
+  width: 100%;
+  min-width: 0;
+  flex: 1;
+}
+
+.galgame-rich-editor > textarea {
+  width: 100%;
+  min-height: 25px;
+  field-sizing: content;
+  resize: none;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--text-primary);
+  padding: 2px 0 5px;
+  line-height: 1.7;
+}
+
+.galgame-rich-editor.is-focused > textarea {
+  outline: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.galgame-rich-toolbar {
+  position: absolute;
+  z-index: 30;
+  left: 8px;
+  bottom: calc(100% + 6px);
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  max-width: calc(100% - 16px);
+  overflow-x: auto;
+  padding: 5px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-raised, var(--surface-1));
+  box-shadow: 0 8px 28px rgb(15 23 42 / 16%);
+}
+
+.galgame-rich-toolbar button,
+.galgame-rich-toolbar label,
+.galgame-rich-toolbar select {
+  flex: 0 0 auto;
+  min-width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--text-secondary);
+}
+
+.galgame-rich-toolbar button:hover,
+.galgame-rich-toolbar select:hover {
+  background: var(--surface-2);
+  color: var(--accent);
+}
+
+.galgame-rich-toolbar svg {
+  width: 15px;
+  height: 15px;
+}
+.galgame-rich-toolbar input[type="color"] {
+  width: 18px;
+  height: 18px;
+  opacity: 0;
+  position: absolute;
+}
+
+.galgame-rich-preview {
+  display: none;
+}
+
+.rich-token {
+  display: inline-flex;
+  margin: 0 3px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: color-mix(in srgb, #8b5cf6 14%, var(--surface-1));
+  color: #7c3aed;
+  font-size: 0.78em;
+  white-space: nowrap;
+}
+
+.galgame-dialogue-avatar {
+  width: 24px;
+  height: 24px;
+  overflow: hidden;
+  border-radius: 50%;
+  border: 1px solid color-mix(in srgb, var(--dialogue-theme) 45%, var(--border));
+  background: var(--surface-2);
+}
+
+.galgame-dialogue-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 20%;
+}
+.galgame-dialogue-visibility {
+  margin-left: 2px;
+  border: 0;
+  background: transparent;
+  color: var(--text-muted);
+}
+.galgame-dialogue-visibility svg {
+  width: 14px;
+  height: 14px;
+}
+
+.galgame-narration-command {
+  position: absolute;
+  z-index: 25;
+  inset: auto 10px 8px 42px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 5px;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-1);
+  box-shadow: 0 10px 30px rgb(15 23 42 / 14%);
+}
+
+.galgame-narration-command strong {
+  grid-column: 1 / -1;
+}
+.galgame-narration-command button {
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: var(--surface-2);
+  color: var(--text-primary);
+}
+
+.galgame-paragraph-card {
+  border-left: 3px solid #8b5cf6;
+}
+
+.galgame-paragraph-card.is-grouped-before {
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+}
+.galgame-paragraph-card.is-grouped-after {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.galgame-comment-card {
+  display: grid;
+  grid-template-columns: 32px 18px minmax(0, 1fr);
+  align-items: center;
+  min-height: 44px;
+  color: #16a36a;
+  border-color: transparent;
+  background: transparent;
+}
+
+.galgame-comment-card > input {
+  border: 0;
+  background: transparent;
+  color: #16845a;
+  outline: 0;
+}
+
+.galgame-official-command {
+  min-height: 46px;
+}
+.galgame-official-command.is-paragraphParams {
+  border-left: 3px solid #8b5cf6;
+}
+.galgame-official-command.is-systemMessage {
+  border-left: 3px solid #f59e0b;
+}
+.galgame-official-command.is-wait {
+  border-left: 3px solid #64748b;
+}
+
+.galgame-wait-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.galgame-wait-presets button {
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: var(--surface-1);
+  color: var(--text-secondary);
+  padding: 5px 8px;
+}
+.galgame-wait-presets button.active {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 9%, var(--surface-1));
+}
+
+.galgame-script-workbench[data-stage-collapsed="true"] {
+  grid-template-rows: auto 7px 38px minmax(240px, 1fr);
+}
+
+.galgame-script-workbench > .galgame-fragment-panel {
+  grid-column: 1;
+  grid-row: 1 / -1;
+  padding: 0 8px 12px;
+  border-right: 1px solid var(--gal-line);
+  background: var(--gal-panel);
+}
+
+.galgame-script-workbench > .galgame-panel-resizer:first-of-type {
+  grid-column: 2;
+  grid-row: 1 / -1;
+}
+
+.galgame-script-workbench > .galgame-block-panel {
+  grid-column: 3;
+  grid-row: 1 / -1;
+  padding: 0 8px 18px;
+  background:
+    linear-gradient(
+      90deg,
+      transparent 0 44px,
+      color-mix(in srgb, var(--gal-line) 58%, transparent) 44px 45px,
+      transparent 45px
+    ),
+    var(--gal-surface);
+}
+
+.galgame-script-workbench > .galgame-panel-resizer:last-of-type {
+  grid-column: 4;
+  grid-row: 1 / -1;
+}
+
+.galgame-script-workbench > .galgame-preview-panel {
+  display: contents;
+}
+
+.galgame-script-workbench .galgame-preview-focus {
+  grid-column: 5;
+  grid-row: 1;
+  padding: 0;
+  border-left: 1px solid var(--gal-line);
+  background: var(--gal-panel);
+}
+
+.galgame-script-workbench .galgame-stage-resizer {
+  grid-column: 5;
+  grid-row: 2;
+  display: block;
+}
+
+.galgame-script-workbench .galgame-inspector-tabs {
+  grid-column: 5;
+  grid-row: 3;
+  min-height: 38px;
+  margin: 0;
+  padding: 0 12px;
+  border: 0;
+  border-block: 1px solid var(--gal-line);
+  border-radius: 0;
+  background: var(--gal-panel);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.galgame-script-workbench .galgame-inspector-tabs > strong {
+  margin-right: auto;
+  color: var(--gal-text);
+  font-size: 12px;
+  font-weight: 620;
+}
+
+.galgame-script-workbench .galgame-inspector-tabs button {
+  width: auto;
+  min-width: 30px;
+  min-height: 28px;
+  padding: 0 8px;
+  border-radius: 5px;
+  gap: 4px;
+  font-size: 10px;
+}
+
+.galgame-script-workbench .galgame-inspector-tabs button svg {
+  width: 12px;
+  height: 12px;
+}
+
+.galgame-script-workbench .galgame-inspector-body {
+  grid-column: 5;
+  grid-row: 4;
+  min-width: 0;
+  min-height: 0;
+  margin: 0;
+  padding: 14px 18px 24px;
+  border: 0;
+  border-radius: 0;
+  overflow: auto;
+  background: var(--gal-surface);
+  box-shadow: none;
+}
+
+.galgame-script-workbench .galgame-panel-resizer {
+  width: var(--galgame-script-gutter);
+  min-width: var(--galgame-script-gutter);
+  background: var(--gal-panel);
+}
+
+.galgame-script-workbench .galgame-panel-resizer::after {
+  width: 1px;
+  height: 100%;
+  border-radius: 0;
+  background: var(--gal-line);
+}
+
+/* Flat chapter tree */
+.galgame-script-workbench .galgame-panel-heading {
+  min-height: 42px;
+  margin: 0 -8px 0;
+  padding: 0 12px;
+  border-bottom: 1px solid var(--gal-line);
+}
+
+.galgame-script-workbench .galgame-panel-heading small {
+  color: var(--gal-muted);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.galgame-script-workbench .galgame-panel-heading button {
+  min-height: 28px;
+  border: 0;
+  background: transparent;
+  font-size: 10px;
+}
+
+.galgame-structure-search-field {
+  min-height: 34px;
+  margin: 7px 0 9px;
+  padding: 0 9px;
+  border: 1px solid var(--gal-line);
+  border-radius: 5px;
+  background: var(--gal-surface);
+  color: var(--gal-faint);
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.galgame-structure-search-field > svg {
+  width: 13px;
+  height: 13px;
+  flex: 0 0 auto;
+}
+
+.galgame-script-workbench .galgame-structure-search {
+  width: 100%;
+  min-height: 32px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--gal-text);
+  font-size: 11px;
+}
+
+.galgame-entry-fragment {
+  width: 100%;
+  min-height: 38px;
+  margin-bottom: 16px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 5px;
+  background: var(--gal-accent-soft);
+  color: var(--gal-text);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.galgame-entry-fragment::after {
+  height: 1px;
+  margin-left: auto;
+  background: var(--gal-accent);
+  content: "";
+  flex: 1;
+}
+
+.galgame-entry-fragment svg {
+  width: 12px;
+  height: 12px;
+  color: var(--gal-accent);
+  fill: currentColor;
+}
+
+.galgame-entry-fragment strong {
+  font-size: 12px;
+}
+
+.galgame-script-workbench .galgame-story-settings {
+  margin-bottom: 10px;
+  border: 0;
+  border-bottom: 1px solid var(--gal-line);
+  border-radius: 0;
+  background: transparent;
+}
+
+.galgame-script-workbench .galgame-story-settings > summary {
+  min-height: 34px;
+  padding: 0 6px;
+  font-size: 10px;
+}
+
+.galgame-script-workbench .galgame-chapter-tree {
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.galgame-script-workbench .galgame-chapter-tree > div {
+  padding: 0;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+}
+
+.galgame-script-workbench .galgame-chapter-tree > div.active {
+  background: color-mix(in srgb, var(--gal-accent-soft) 62%, transparent);
+}
+
+.galgame-script-workbench .galgame-chapter-row {
+  min-height: 63px;
+  padding: 0;
+  border: 0;
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+}
+
+.galgame-chapter-main {
+  min-width: 0;
+  padding: 8px 0 8px 7px;
+  border: 0;
+  background: transparent;
+  color: var(--gal-text);
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  flex: 1;
+  text-align: left;
+  cursor: pointer;
+}
+
+.galgame-chapter-number {
+  padding-top: 2px;
+  color: var(--gal-faint);
+  font:
+    600 10px/1.4 ui-monospace,
+    monospace;
+}
+
+.galgame-chapter-copy {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+}
+
+.galgame-chapter-copy > span,
+.galgame-chapter-copy > small {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.galgame-chapter-copy strong {
+  overflow: hidden;
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.galgame-chapter-copy i {
+  padding: 2px 5px;
+  border-radius: 999px;
+  background: var(--gal-accent-soft);
+  color: var(--gal-accent);
+  font-size: 8px;
+  font-style: normal;
+  white-space: nowrap;
+}
+
+.galgame-chapter-copy > small {
+  color: var(--gal-muted);
+  font-size: 9px;
+}
+
+.galgame-chapter-copy > small em {
+  color: var(--gal-muted);
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-style: normal;
+}
+
+.galgame-chapter-copy > small em svg {
+  width: 10px;
+  height: 10px;
+}
+
+.galgame-chapter-cast {
+  display: inline-flex;
+  align-items: center;
+}
+
+.galgame-chapter-cast > span {
+  width: 20px;
+  height: 20px;
+  margin-right: -4px;
+  border: 1px solid var(--gal-panel);
+  border-radius: 50%;
+  overflow: hidden;
+  background: var(--chapter-cast-color, var(--gal-surface-strong));
+  display: grid;
+  place-items: center;
+}
+
+.galgame-chapter-cast img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.galgame-chapter-cast b {
+  font-size: 8px;
+}
+
+.galgame-chapter-expand {
+  width: 28px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--gal-muted);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.galgame-chapter-expand svg {
+  width: 13px;
+  height: 13px;
+  transition: transform 140ms ease;
+}
+
+.galgame-chapter-expand[aria-expanded="false"] svg {
+  transform: rotate(-90deg);
+}
+
+.galgame-script-workbench .galgame-fragment-list {
+  margin: 0 6px 7px 30px;
+  padding-left: 7px;
+  border-left: 1px solid var(--gal-line);
+}
+
+.galgame-script-workbench .galgame-fragment-list > button {
+  min-height: 31px;
+  padding: 3px 6px;
+  border-radius: 4px;
+}
+
+.galgame-structure-actions {
+  position: relative;
+  margin-top: 10px;
+  display: flex;
+  gap: 6px;
+}
+
+.galgame-structure-actions > button,
+.galgame-structure-actions-menu > summary {
+  min-height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--gal-line);
+  border-radius: 5px;
+  background: var(--gal-surface);
+  color: var(--gal-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  cursor: pointer;
+}
+
+.galgame-structure-actions > button {
+  flex: 1;
+}
+
+.galgame-structure-actions-menu {
+  position: relative;
+}
+
+.galgame-structure-actions-menu > summary {
+  width: 34px;
+  padding: 0;
+  list-style: none;
+}
+
+.galgame-structure-actions-menu > summary::-webkit-details-marker {
+  display: none;
+}
+
+.galgame-structure-actions-menu > summary svg {
+  width: 14px;
+  height: 14px;
+}
+
+.galgame-structure-actions-menu > div {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 5px);
+  z-index: 80;
+  width: 168px;
+  padding: 5px;
+  border: 1px solid var(--gal-line);
+  border-radius: 7px;
+  background: var(--gal-surface);
+  box-shadow: var(--gal-shadow);
+}
+
+.galgame-structure-actions-menu > div button {
+  width: 100%;
+  min-height: 30px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--gal-text);
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.galgame-structure-actions-menu > div button:hover {
+  background: var(--gal-accent-soft);
+}
+
+.galgame-structure-actions-menu > div button:disabled {
+  opacity: 0.35;
+}
+
+.galgame-script-workbench .galgame-fragment-actions {
+  margin-top: 7px;
+  border: 1px solid var(--gal-line);
+  border-radius: 5px;
+  background: var(--gal-surface);
+}
+
+.galgame-script-workbench .galgame-fragment-actions > summary {
+  padding: 7px 9px;
+  color: var(--gal-muted);
+  font-size: 9px;
+  cursor: pointer;
+}
+
+.galgame-script-workbench .galgame-fragment-actions > div {
+  padding: 0 6px 6px;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.galgame-script-workbench .galgame-fragment-actions input {
+  grid-column: 1 / -1;
+}
+
+/* Compact block stream */
+.galgame-script-workbench .galgame-block-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 60;
+  min-height: 42px;
+  margin: 0 -8px 10px;
+  padding: 5px 8px 5px 14px;
+  border-bottom: 1px solid var(--gal-line);
+  background: color-mix(in srgb, var(--gal-panel) 97%, transparent);
+}
+
+.galgame-script-workbench .galgame-block-toolbar > div {
+  min-width: 0;
+  flex: 1;
+}
+
+.galgame-structure-drawer-backdrop {
+  display: none;
+}
+
+.galgame-structure-drawer-toggle {
+  display: grid;
+}
+
+@media (min-width: 1280px) {
+  .galgame-structure-drawer-toggle {
+    display: none;
+  }
+}
+
+.galgame-script-workbench .galgame-block-toolbar input {
+  width: 100%;
+  min-width: 0;
+  font-size: 11px;
+}
+
+.galgame-script-workbench .galgame-block-toolbar small {
+  display: none;
+}
+
+.galgame-script-workbench .galgame-script-view-switch {
+  flex: 0 0 auto;
+  padding: 2px;
+  border: 0;
+  background: transparent;
+}
+
+.galgame-script-workbench .galgame-script-view-switch button {
+  width: 30px;
+  min-height: 30px;
+  padding: 0;
+  justify-content: center;
+}
+
+.galgame-script-workbench .galgame-script-view-switch button span {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.galgame-script-workbench .galgame-story-block-editor {
+  padding: 0 0 24px;
+}
+
+.galgame-script-workbench .galgame-block-list {
+  max-width: none;
+  margin: 0;
+  padding: 0 4px 0 42px;
+  gap: 2px;
+}
+
+.galgame-script-workbench .galgame-block-list::before {
+  left: 20px;
+}
+
+.galgame-script-workbench .galgame-block-row + .galgame-block-row {
+  margin-top: 0;
+}
+
+.galgame-script-workbench .galgame-block-index {
+  top: 14px;
+  left: -40px;
+  width: 24px;
+  height: 24px;
+  border-color: transparent;
+  background: var(--gal-panel);
+  color: var(--gal-faint);
+  font-size: 9px;
+}
+
+.galgame-script-workbench .galgame-block-card.selected .galgame-block-index {
+  width: 31px;
+  border: 0;
+  border-radius: 3px 0 0 3px;
+}
+
+.galgame-script-workbench
+  .galgame-block-card.selected
+  .galgame-block-index::after {
+  position: absolute;
+  right: -7px;
+  border-block: 12px solid transparent;
+  border-left: 7px solid var(--gal-accent);
+  content: "";
+}
+
+.galgame-script-workbench .galgame-block-select {
+  min-height: var(--galgame-script-row);
+  padding: 6px 8px;
+  border-radius: 5px;
+  box-shadow: none;
+  grid-template-columns: 28px minmax(0, 1fr) 14px;
+  gap: 7px;
+}
+
+.galgame-script-workbench .galgame-block-card.is-scene .galgame-block-select,
+.galgame-script-workbench .galgame-block-card.is-showCg .galgame-block-select {
+  min-height: 82px;
+  grid-template-columns: 72px 28px minmax(0, 1fr) 14px;
+}
+
+.galgame-block-thumbnail {
+  width: 72px;
+  height: 66px;
+  border-radius: 4px;
+  overflow: hidden;
+  background: var(--gal-surface-strong);
+  display: grid;
+  place-items: center;
+}
+
+.galgame-block-thumbnail img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.galgame-block-thumbnail svg {
+  width: 18px;
+  height: 18px;
+  color: var(--gal-muted);
+}
+
+.galgame-script-workbench .galgame-block-kind {
+  width: 28px;
+  height: 28px;
+  border-radius: 4px;
+}
+
+.galgame-script-workbench .galgame-block-copy {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+
+.galgame-script-workbench .galgame-block-copy > span {
+  flex: 0 0 auto;
+}
+
+.galgame-script-workbench .galgame-block-copy strong {
+  padding: 4px 6px;
+  border-radius: 3px;
+  background: var(--gal-surface-strong);
+  font-size: 9px;
+}
+
+.galgame-script-workbench .galgame-block-copy b {
+  min-width: 0;
+  font-size: 11px;
+}
+
+.galgame-script-workbench .galgame-block-card.is-curtain .galgame-block-kind,
+.galgame-script-workbench
+  .galgame-block-card.is-curtain
+  .galgame-block-copy
+  strong {
+  background: #4b5563;
+  color: #fff;
+}
+
+.galgame-script-workbench .galgame-block-card.is-particle .galgame-block-kind,
+.galgame-script-workbench
+  .galgame-block-card.is-particle
+  .galgame-block-copy
+  strong,
+.galgame-script-workbench
+  .galgame-block-card.is-stageAnimation
+  .galgame-block-kind,
+.galgame-script-workbench
+  .galgame-block-card.is-stageAnimation
+  .galgame-block-copy
+  strong {
+  background: color-mix(in srgb, #8b5cf6 85%, var(--gal-surface));
+  color: #fff;
+}
+
+.galgame-script-workbench .galgame-block-card.is-camera .galgame-block-kind,
+.galgame-script-workbench
+  .galgame-block-card.is-camera
+  .galgame-block-copy
+  strong,
+.galgame-script-workbench
+  .galgame-block-card.is-resetCamera
+  .galgame-block-kind,
+.galgame-script-workbench
+  .galgame-block-card.is-resetCamera
+  .galgame-block-copy
+  strong {
+  background: color-mix(in srgb, #6366f1 88%, var(--gal-surface));
+  color: #fff;
+}
+
+.galgame-script-workbench .galgame-block-card.is-audio .galgame-block-kind,
+.galgame-script-workbench
+  .galgame-block-card.is-audio
+  .galgame-block-copy
+  strong {
+  background: color-mix(in srgb, #ec4899 88%, var(--gal-surface));
+  color: #fff;
+}
+
+.galgame-script-workbench
+  .galgame-block-card.is-destroyScene
+  .galgame-block-kind,
+.galgame-script-workbench
+  .galgame-block-card.is-destroyScene
+  .galgame-block-copy
+  strong,
+.galgame-script-workbench .galgame-block-card.is-hideCg .galgame-block-kind,
+.galgame-script-workbench
+  .galgame-block-card.is-hideCg
+  .galgame-block-copy
+  strong,
+.galgame-script-workbench
+  .galgame-block-card.is-removeCharacter
+  .galgame-block-kind,
+.galgame-script-workbench
+  .galgame-block-card.is-removeCharacter
+  .galgame-block-copy
+  strong {
+  background: var(--gal-danger);
+  color: #fff;
+}
+
+.galgame-script-workbench .galgame-dialogue-card-body,
+.galgame-script-workbench .galgame-narration-card {
+  min-height: var(--galgame-script-row);
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.galgame-script-workbench .galgame-dialogue-card-body {
+  position: relative;
+  min-height: 50px;
+  border: 0;
+  background: transparent;
+  overflow: visible;
+}
+
+.galgame-script-workbench
+  .galgame-dialogue-card.is-grouped-before
+  .galgame-dialogue-card-body {
+  min-height: 28px;
+}
+
+.galgame-script-workbench .galgame-dialogue-card .galgame-block-index {
+  top: 3px;
+}
+
+.galgame-script-workbench .galgame-dialogue-card-body::before {
+  position: absolute;
+  z-index: 0;
+  top: 27px;
+  bottom: -5px;
+  left: 13px;
+  width: 1px;
+  background: repeating-linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--dialogue-theme) 62%, transparent) 0 3px,
+    transparent 3px 6px
+  );
+  content: "";
+}
+
+.galgame-script-workbench
+  .galgame-dialogue-card.is-grouped-before
+  .galgame-dialogue-card-body::before {
+  top: -5px;
+}
+
+.galgame-script-workbench
+  .galgame-dialogue-card:not(.is-grouped-after)
+  .galgame-dialogue-card-body::before {
+  bottom: 11px;
+}
+
+.galgame-script-workbench .galgame-narration-card:not(.is-editing) {
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+}
+
+.galgame-script-workbench
+  .galgame-block-card.galgame-narration-card.selected:not(.is-editing) {
+  border-color: transparent;
+  box-shadow: none;
+}
+
+.galgame-script-workbench
+  .galgame-narration-card:not(.is-editing)
+  .galgame-block-kind,
+.galgame-script-workbench
+  .galgame-narration-card:not(.is-editing)
+  > header
+  > strong,
+.galgame-script-workbench
+  .galgame-narration-card:not(.is-editing)
+  > header
+  > time {
+  display: none;
+}
+
+.galgame-script-workbench .galgame-narration-card:not(.is-editing) > header {
+  min-height: 42px;
+  padding: 6px 7px;
+}
+
+.galgame-script-workbench .galgame-dialogue-card-body > header,
+.galgame-script-workbench .galgame-narration-card > header {
+  min-height: 27px;
+  padding: 1px 7px 1px 0;
+  border-bottom: 0;
+  gap: 5px;
+}
+
+.galgame-script-workbench .galgame-dialogue-summary strong,
+.galgame-script-workbench .galgame-narration-card > header strong {
+  flex: 0 0 auto;
+  color: var(--dialogue-theme, var(--gal-text));
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.galgame-script-workbench .galgame-dialogue-expression,
+.galgame-script-workbench .galgame-dialogue-position {
+  flex: 0 0 auto;
+  color: color-mix(in srgb, var(--dialogue-theme) 65%, var(--gal-muted));
+  font-size: 8px;
+  font-style: normal;
+  white-space: nowrap;
+}
+
+.galgame-script-workbench .galgame-dialogue-content-line {
+  position: relative;
+  z-index: 1;
+  min-height: 25px;
+  padding: 1px 7px 3px 35px;
+  display: flex;
+  align-items: flex-start;
+  gap: 5px;
+  color: var(--dialogue-theme, var(--gal-text));
+}
+
+.galgame-script-workbench .galgame-dialogue-group-dot {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  width: 7px;
+  height: 7px;
+  border: 1px solid color-mix(in srgb, var(--dialogue-theme) 68%, transparent);
+  border-radius: 50%;
+  background: var(--gal-panel);
+}
+
+.galgame-script-workbench .galgame-dialogue-content-line > b,
+.galgame-script-workbench .galgame-narration-card > header > b {
+  min-width: 0;
+  flex: 1;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+.galgame-script-workbench .galgame-dialogue-attached-events {
+  display: none;
+}
+
+.galgame-script-workbench
+  .galgame-dialogue-card.is-editing
+  .galgame-dialogue-card-body,
+.galgame-script-workbench .galgame-narration-card.is-editing {
+  min-height: 52px;
+}
+
+.galgame-script-workbench .galgame-dialogue-card.is-editing header,
+.galgame-script-workbench .galgame-narration-card.is-editing > header {
+  min-height: 27px;
+  border-bottom: 0;
+}
+
+.galgame-script-workbench .galgame-dialogue-card textarea,
+.galgame-script-workbench .galgame-narration-card textarea {
+  min-height: 25px;
+  padding: 1px 0 4px;
+  font-size: 11px;
+}
+
+.galgame-script-workbench .galgame-dialogue-card textarea:focus,
+.galgame-script-workbench .galgame-narration-card textarea:focus {
+  background: transparent;
+}
+
+.galgame-script-workbench
+  .galgame-dialogue-card.selected
+  .galgame-dialogue-card-body,
+.galgame-script-workbench
+  .galgame-block-card.selected
+  .galgame-dialogue-card-body {
+  border-color: transparent;
+  box-shadow: none;
+}
+
+.galgame-script-workbench .galgame-dialogue-summary time {
+  display: none;
+}
+
+.galgame-script-workbench .galgame-block-insert {
+  min-height: 5px;
+  margin: -1px 0;
+}
+
+.galgame-script-workbench .galgame-block-insert > summary {
+  height: 7px;
+}
+
+.galgame-script-workbench .galgame-story-block-editor > footer {
+  max-width: none;
+  padding-left: 42px;
+}
+
+/* Preview is the visual anchor of the page. */
+.galgame-script-workbench .galgame-preview-focus .galgame-player {
+  height: 100%;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.galgame-script-workbench .galgame-player > header {
+  min-height: 42px;
+  padding: 5px 12px;
+  border-bottom: 1px solid var(--gal-line);
+  background: var(--gal-panel);
+}
+
+.galgame-script-workbench .galgame-player > header > div {
+  flex-direction: row;
+  align-items: center;
+  gap: 9px;
+}
+
+.galgame-script-workbench .galgame-player > header strong {
+  font-size: 11px;
+}
+
+.galgame-player-live {
+  color: var(--gal-accent);
+  font-size: 9px;
+  font-style: normal;
+  font-weight: 650;
+}
+
+.galgame-script-workbench .galgame-player-resolution {
+  padding: 5px 8px;
+  border: 1px solid var(--gal-line);
+  border-radius: 5px;
+  background: var(--gal-surface);
+  color: var(--gal-text);
+  font:
+    600 9px/1 ui-monospace,
+    monospace;
+}
+
+.galgame-script-workbench .galgame-player-header-actions {
+  gap: 4px;
+}
+
+.galgame-script-workbench .galgame-player-header-actions .galgame-preview-mode {
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.galgame-script-workbench
+  .galgame-player-header-actions
+  .galgame-preview-mode
+  button {
+  min-width: 44px;
+  height: 27px;
+  padding: 0 8px;
+  font-size: 9px;
+}
+
+.galgame-script-workbench
+  .galgame-player-header-actions
+  .galgame-preview-mode
+  button[aria-label] {
+  width: 27px;
+  min-width: 27px;
+  padding: 0;
+}
+
+.galgame-script-workbench .galgame-stage-host {
+  background: #050505;
+}
+
+.galgame-script-workbench
+  .galgame-preview-focus
+  .galgame-stage-host[data-aspect-mode="auto"]
+  .galgame-stage {
+  width: min(100cqw, calc(100cqh * 16 / 9)) !important;
+  height: min(100cqh, calc(100cqw * 9 / 16)) !important;
+  aspect-ratio: 16 / 9;
+}
+
+.galgame-script-workbench .galgame-block-inspector > header {
+  min-height: 42px;
+  padding-bottom: 11px;
+  border-bottom: 1px solid var(--gal-line);
+}
+
+.galgame-script-workbench
+  .galgame-block-inspector
+  .galgame-field
+  + .galgame-field {
+  margin-top: 12px;
+}
+
+@media (max-width: 1279px) and (min-width: 981px) {
+  .galgame-script-workbench {
+    display: grid;
+    grid-template-columns: minmax(360px, 42%) 6px minmax(0, 1fr);
+  }
+
+  .galgame-script-workbench > .galgame-fragment-panel {
+    position: fixed;
+    inset: 111px auto 27px 0;
+    z-index: 92;
+    width: min(320px, calc(100vw - 48px));
+    max-height: none;
+    border-right: 1px solid var(--gal-line);
+    box-shadow: var(--gal-shadow);
+    transform: translateX(-105%);
+    transition: transform 160ms ease;
+  }
+
+  .galgame-script-workbench > .galgame-fragment-panel.is-drawer-open {
+    transform: translateX(0);
+  }
+
+  .galgame-script-workbench > .galgame-panel-resizer:first-of-type {
+    display: none;
+  }
+
+  .galgame-script-workbench > .galgame-block-panel {
+    grid-column: 1;
+  }
+
+  .galgame-script-workbench > .galgame-panel-resizer:last-of-type {
+    grid-column: 2;
+  }
+
+  .galgame-script-workbench .galgame-preview-focus,
+  .galgame-script-workbench .galgame-stage-resizer,
+  .galgame-script-workbench .galgame-inspector-tabs,
+  .galgame-script-workbench .galgame-inspector-body {
+    grid-column: 3;
+  }
+
+  .galgame-structure-drawer-toggle {
+    width: 30px;
+    min-width: 30px;
+    min-height: 30px;
+    padding: 0;
+    border: 1px solid var(--gal-line);
+    border-radius: 5px;
+    background: var(--gal-surface);
+    color: var(--gal-muted);
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+  }
+
+  .galgame-structure-drawer-toggle svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  .galgame-structure-drawer-backdrop.is-open {
+    position: fixed;
+    inset: 111px 0 27px;
+    z-index: 91;
+    border: 0;
+    background: rgb(12 18 27 / 24%);
+    display: block;
+  }
+}
+
+@media (max-width: 980px) {
+  .galgame-script-workbench {
+    height: auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: visible;
+  }
+
+  .galgame-script-workbench > .galgame-fragment-panel {
+    position: static;
+    width: auto;
+    max-height: 420px;
+    border-right: 0;
+    border-bottom: 1px solid var(--gal-line);
+    box-shadow: none;
+    transform: none;
+  }
+
+  .galgame-structure-drawer-toggle,
+  .galgame-structure-drawer-backdrop {
+    display: none !important;
+  }
+
+  .galgame-script-workbench > .galgame-panel-resizer,
+  .galgame-script-workbench > .galgame-stage-resizer {
+    display: none;
+  }
+
+  .galgame-script-workbench > .galgame-block-panel {
+    min-height: 620px;
+    overflow: visible;
+  }
+
+  .galgame-script-workbench .galgame-preview-focus {
+    width: 100%;
+    max-width: none;
+    min-height: 460px;
+    margin-inline: 0;
+    border-left: 0;
+    border-top: 1px solid var(--gal-line);
+  }
+
+  .galgame-script-workbench .galgame-inspector-tabs,
+  .galgame-script-workbench .galgame-inspector-body {
+    width: 100%;
+    max-width: none;
+    margin-inline: 0;
+  }
+
+  .galgame-script-workbench .galgame-inspector-body {
+    min-height: 420px;
+    overflow: visible;
+  }
+}
+
+@media (max-width: 620px) {
+  .galgame-script-workbench .galgame-script-view-switch button:nth-child(3),
+  .galgame-script-workbench .galgame-script-view-switch button:nth-child(4) {
+    display: none;
+  }
+
+  .galgame-script-workbench .galgame-block-list {
+    padding-left: 35px;
+  }
+
+  .galgame-script-workbench .galgame-block-index {
+    left: -34px;
+  }
+
+  .galgame-script-workbench .galgame-inspector-tabs button span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+  }
+}

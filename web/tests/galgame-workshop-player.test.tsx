@@ -17,6 +17,8 @@ class MockAudio {
   loop = false;
   paused = true;
   currentTime = 0;
+  duration = 1780.344;
+  readyState = 1;
   listeners = new Map<string, Set<EventListener>>();
   play = vi.fn(async () => {
     if (MockAudio.rejectNextPlay) {
@@ -64,6 +66,7 @@ class MockAudio {
 beforeEach(() => {
   MockAudio.instances = [];
   MockAudio.rejectNextPlay = false;
+  localStorage.clear();
   vi.stubGlobal("Audio", MockAudio);
   vi.stubGlobal("URL", {
     createObjectURL: vi.fn(() => `blob:audio-${MockAudio.instances.length}`),
@@ -97,13 +100,15 @@ vi.mock("@features/galgame-workshop/editor/StoryAssetImage", () => ({
     fileId ? (
       <span
         data-testid={
-          className === "galgame-player-background"
+          className?.includes("galgame-player-background")
             ? "background-file"
-            : className === "galgame-dialogue-skin-image"
-              ? "dialogue-skin-file"
-              : className === "galgame-player-ui-component-image"
-                ? `ui-component-${fileId}`
-                : "portrait-file"
+            : className === "galgame-player-cg-image"
+              ? `cg-file-${fileId}`
+              : className === "galgame-dialogue-skin-image"
+                ? "dialogue-skin-file"
+                : className === "galgame-player-ui-component-image"
+                  ? `ui-component-${fileId}`
+                  : "portrait-file"
         }
       >
         {fileId}
@@ -217,7 +222,10 @@ test("uses two clicks to reveal then advance a line", async () => {
   const dialogue = screen.getByText("点击显示全文").closest("button")!;
   expect(screen.queryByText("开始调查。")).not.toBeInTheDocument();
   await user.click(dialogue);
-  expect(screen.getByText("开始调查。")).toBeInTheDocument();
+  await waitFor(
+    () => expect(screen.getByText("开始调查。")).toBeInTheDocument(),
+    { timeout: 2000 },
+  );
   expect(
     screen.queryByRole("button", { name: "设备" }),
   ).not.toBeInTheDocument();
@@ -254,7 +262,94 @@ test("automatically advances an untimed legacy fragment", () => {
   }
 });
 
-test("stops safely when a fragment has no terminator", async () => {
+test("plays the opening performance before revealing the first timed line", () => {
+  vi.useFakeTimers();
+  try {
+    const openingStory = structuredClone(story);
+    openingStory.chapters![0].fragments = [
+      {
+        id: "main",
+        title: "开场演出",
+        timeline: { durationMs: 3000 },
+        blocks: [
+          {
+            id: "scene",
+            type: "scene",
+            sceneId: "lab",
+            atMs: 0,
+          },
+          {
+            id: "line",
+            type: "narration",
+            text: "第一句。",
+            startMs: 1000,
+            endMs: 2000,
+          },
+          {
+            id: "end",
+            type: "endChapter",
+            endingId: "opening-ending",
+            label: "开场结局",
+          },
+        ],
+      },
+    ];
+
+    render(<StoryPlayer document={openingStory} />);
+    fireEvent.click(screen.getByRole("button", { name: "开始试玩" }));
+    act(() => vi.advanceTimersByTime(1200));
+
+    expect(screen.queryByText("第一句。")).not.toBeInTheDocument();
+    expect(screen.getByLabelText("剧情时间轴进度")).toHaveValue("999");
+
+    fireEvent.click(screen.getByRole("button", { name: "点击继续" }));
+    expect(screen.getByText("第一句。")).toBeInTheDocument();
+  } finally {
+    vi.useRealTimers();
+  }
+});
+
+test("plays a performance-only fragment through its full timeline", () => {
+  vi.useFakeTimers();
+  try {
+    const performanceStory = structuredClone(story);
+    performanceStory.chapters![0].fragments = [
+      {
+        id: "main",
+        title: "纯演出",
+        timeline: { durationMs: 1000 },
+        blocks: [
+          {
+            id: "scene",
+            type: "scene",
+            sceneId: "lab",
+            atMs: 0,
+          },
+          {
+            id: "end",
+            type: "endChapter",
+            endingId: "performance-ending",
+            label: "演出结局",
+          },
+        ],
+      },
+    ];
+
+    render(<StoryPlayer document={performanceStory} />);
+    fireEvent.click(screen.getByRole("button", { name: "开始试玩" }));
+    act(() => vi.advanceTimersByTime(1200));
+
+    expect(screen.getByLabelText("剧情时间轴进度")).toHaveValue("999");
+    expect(screen.getByRole("button", { name: "点击继续" })).toBeVisible();
+
+    fireEvent.click(screen.getByRole("button", { name: "点击继续" }));
+    expect(screen.getByText("演出结局")).toBeInTheDocument();
+  } finally {
+    vi.useRealTimers();
+  }
+});
+
+test("treats a naturally finished Fragment as a valid story stop", async () => {
   const user = userEvent.setup();
   const openStory = structuredClone(story);
   openStory.chapters![0].fragments![0].blocks = [
@@ -263,9 +358,7 @@ test("stops safely when a fragment has no terminator", async () => {
   render(<StoryPlayer document={openStory} />);
   await user.click(screen.getByRole("button", { name: "开始试玩" }));
   await user.click(screen.getByText("尚未完成").closest("button")!);
-  expect(screen.getByRole("alert")).toHaveTextContent(
-    "线路在没有结局的位置中断",
-  );
+  expect(screen.getByText("故事结束")).toBeInTheDocument();
 });
 
 test("uses the default portrait unless dialogue selects an expression", async () => {
@@ -528,7 +621,7 @@ test("keeps multiple staged characters, applies speaker focus, and removes actor
   expect(screen.getByText("助手退场了。")).toBeInTheDocument();
 });
 
-test("uses the scene default background unless the Scene Block selects a state", async () => {
+test("renders every scene layer in its saved order", async () => {
   const user = userEvent.setup();
   const backgroundStory = structuredClone(story);
   backgroundStory.scenes = [
@@ -536,25 +629,38 @@ test("uses the scene default background unless the Scene Block selects a state",
       id: "lab",
       name: "夜间研究所",
       description: "",
-      backgrounds: [
-        { id: "night", label: "夜间", assetId: "asset-night" },
-        { id: "rain", label: "雨夜", assetId: "asset-rain" },
+      layers: [
+        {
+          id: "night",
+          name: "夜间",
+          assetId: "asset-night",
+          distance: 1,
+          offsetX: 0,
+          offsetY: 0,
+        },
+        {
+          id: "rain",
+          name: "雨夜",
+          assetId: "asset-rain",
+          distance: 2,
+          offsetX: 3,
+          offsetY: 0,
+        },
       ],
-      defaultBackgroundId: "night",
     },
   ];
   backgroundStory.assets = [
     {
       id: "asset-night",
       type: "image",
-      role: "sceneBackground",
+      role: "sceneLayer",
       fileId: "file-night",
       status: "ready",
     },
     {
       id: "asset-rain",
       type: "image",
-      role: "sceneBackground",
+      role: "sceneLayer",
       fileId: "file-rain",
       status: "ready",
     },
@@ -562,15 +668,157 @@ test("uses the scene default background unless the Scene Block selects a state",
 
   const first = render(<StoryPlayer document={backgroundStory} />);
   await user.click(screen.getByRole("button", { name: "开始试玩" }));
-  expect(screen.getByTestId("background-file")).toHaveTextContent("file-night");
+  const backgrounds = screen.getAllByTestId("background-file");
+  expect(backgrounds[0]).toHaveTextContent("file-night");
+  expect(backgrounds[1]).toHaveTextContent("file-rain");
   first.unmount();
+});
 
-  const sceneBlock = backgroundStory.chapters![0].fragments![0].blocks![0];
-  if (sceneBlock.type !== "scene") throw new Error("expected scene block");
-  sceneBlock.backgroundId = "rain";
-  render(<StoryPlayer document={backgroundStory} />);
+test("shows and hides CGs without discarding the underlying stage or custom UI", async () => {
+  const user = userEvent.setup();
+  const cgStory = structuredClone(story);
+  cgStory.cgs = [
+    {
+      id: "confession",
+      name: "雨中告白",
+      description: "",
+      variants: [{ id: "normal", label: "标准", assetId: "asset-confession" }],
+      defaultVariantId: "normal",
+    },
+  ];
+  cgStory.assets = [
+    {
+      id: "asset-confession",
+      type: "image",
+      role: "storyCg",
+      fileId: "file-confession",
+      status: "ready",
+    },
+    {
+      id: "asset-hud",
+      type: "image",
+      role: "uiComponent",
+      fileId: "file-hud",
+      status: "ready",
+    },
+  ];
+  cgStory.presentation = {
+    ui: {
+      components: [
+        {
+          id: "hud",
+          name: "日期 HUD",
+          assetId: "asset-hud",
+          x: 4,
+          y: 4,
+          width: 20,
+          visibility: "always",
+          layer: 3,
+        },
+      ],
+    },
+  };
+  cgStory.chapters![0].fragments![0].blocks = [
+    { id: "scene", type: "scene", sceneId: "lab" },
+    {
+      id: "show-cg",
+      type: "showCg",
+      cgId: "confession",
+      variantId: null,
+      displayMode: "fullscreen",
+      fit: "contain",
+      transition: { durationMs: 400, fade: true },
+    },
+    {
+      id: "line-one",
+      type: "dialogue",
+      characterId: "hero",
+      text: "CG 上仍然显示对白。",
+    },
+    { id: "scene-again", type: "scene", sceneId: "lab" },
+    { id: "line-two", type: "narration", text: "切换场景没有关闭 CG。" },
+    {
+      id: "hide-cg",
+      type: "hideCg",
+      transition: { durationMs: 250, fade: true },
+    },
+    { id: "after-cg", type: "narration", text: "底层舞台恢复。" },
+    {
+      id: "end",
+      type: "endChapter",
+      endingId: "cg-ending",
+      label: "CG 结局",
+    },
+  ];
+
+  const { container, unmount } = render(<StoryPlayer document={cgStory} />);
   await user.click(screen.getByRole("button", { name: "开始试玩" }));
-  expect(screen.getByTestId("background-file")).toHaveTextContent("file-rain");
+  expect(screen.getByTestId("cg-file-file-confession")).toBeInTheDocument();
+  expect(container.querySelector('[data-cg-id="confession"]')).toHaveAttribute(
+    "data-fit",
+    "contain",
+  );
+  expect(screen.getByTestId("ui-component-file-hud")).toBeInTheDocument();
+  expect(screen.getByText("CG 上仍然显示对白。").closest("button")).toHaveClass(
+    "galgame-dialogue-box",
+  );
+
+  await user.click(screen.getByText("CG 上仍然显示对白。").closest("button")!);
+  expect(screen.getByText("切换场景没有关闭 CG。")).toBeInTheDocument();
+  expect(container.querySelector('[data-cg-id="confession"]')).toHaveAttribute(
+    "data-fit",
+    "contain",
+  );
+
+  await user.click(
+    screen.getByText("切换场景没有关闭 CG。").closest("button")!,
+  );
+  expect(screen.getByText("底层舞台恢复。")).toBeInTheDocument();
+  expect(
+    container.querySelector('[data-cg-id="confession"][data-exiting="true"]'),
+  ).toBeInTheDocument();
+  expect(
+    container.querySelector('[data-cg-id="confession"]:not([data-exiting])'),
+  ).not.toBeInTheDocument();
+
+  unmount();
+  const showCg = cgStory.chapters![0].fragments![0].blocks![1];
+  if (showCg.type !== "showCg") throw new Error("expected show CG block");
+  showCg.displayMode = "overlay";
+  showCg.overlay = {
+    x: 25,
+    y: 40,
+    width: 70,
+    opacity: 0.65,
+    placement: "behindCharacters",
+  };
+  const onCgOverlayChange = vi.fn();
+  const edited = render(
+    <StoryPlayer
+      document={cgStory}
+      mode="edit"
+      editFragment={cgStory.chapters![0].fragments![0]}
+      editBlockIndex={1}
+      editableCgBlockId="show-cg"
+      onCgOverlayChange={onCgOverlayChange}
+    />,
+  );
+  const editableCg = screen.getByLabelText(/调整 雨中告白/);
+  expect(editableCg).toHaveAttribute("data-display-mode", "overlay");
+  expect(editableCg).toHaveStyle({ left: "25%", top: "40%", width: "70%" });
+  expect(editableCg).toHaveStyle({ zIndex: "5" });
+  fireEvent.keyDown(editableCg, { key: "ArrowRight" });
+  expect(onCgOverlayChange).toHaveBeenLastCalledWith(
+    expect.objectContaining({ x: 26, y: 40, width: 70 }),
+  );
+  fireEvent.keyDown(
+    screen.getByRole("separator", { name: "调整 CG 画面宽度" }),
+    { key: "ArrowRight", shiftKey: true },
+  );
+  expect(onCgOverlayChange).toHaveBeenLastCalledWith(
+    expect.objectContaining({ width: 75 }),
+  );
+  edited.unmount();
 });
 
 test("applies saved dialogue and custom Gal components in the preview", async () => {
@@ -652,13 +900,13 @@ test("applies saved dialogue and custom Gal components in the preview", async ()
     left: "7%",
     top: "9%",
     width: "28%",
-    zIndex: "6",
+    zIndex: "44",
   });
   expect(dialogue).toHaveStyle({
     backgroundColor: "rgb(23 32 51 / 0.7)",
     borderRadius: "18px",
     color: "#F8FAFC",
-    fontSize: "1.1em",
+    fontSize: "clamp(14px, 1.375cqw, 28px)",
   });
   expect(screen.getByText("调查员")).toHaveStyle({ color: "#FB7185" });
   await user.click(dialogue);
@@ -792,7 +1040,7 @@ test("runs voice, persistent music, ambient and sound-effect channels and cleans
   ).toEqual([1, 1, 1, 1]);
 });
 
-test("keeps the reference track silent while timeline dialogue and controls stay synchronized", async () => {
+test("synchronizes formal BGM with timeline playback, pause, and seek", async () => {
   const user = userEvent.setup();
   const timelineStory = structuredClone(story);
   timelineStory.characters = [
@@ -801,9 +1049,9 @@ test("keeps the reference track silent while timeline dialogue and controls stay
   ];
   timelineStory.assets = [
     {
-      id: "timeline",
+      id: "timeline-bgm",
       type: "audio",
-      role: "timelineTrack",
+      role: "backgroundMusic",
       label: "完整广播剧",
       fileId: "file-timeline",
       status: "ready",
@@ -813,9 +1061,20 @@ test("keeps the reference track silent while timeline dialogue and controls stay
     {
       id: "main",
       title: "完整时间轴",
-      timeline: { assetId: "timeline", durationMs: 10_000 },
+      timeline: { durationMs: 10_000 },
       blocks: [
         { id: "scene", type: "scene", sceneId: "lab" },
+        {
+          id: "play-timeline-bgm",
+          type: "audio",
+          atMs: 0,
+          action: "play",
+          channel: "bgm",
+          assetId: "timeline-bgm",
+          volume: 100,
+          loop: false,
+          fadeMs: 0,
+        },
         {
           id: "timeline-show-hero",
           type: "showCharacter",
@@ -867,7 +1126,11 @@ test("keeps the reference track silent while timeline dialogue and controls stay
 
   render(<StoryPlayer document={timelineStory} />);
   await user.click(screen.getByRole("button", { name: "开始试玩" }));
-  expect(MockAudio.instances).toHaveLength(0);
+  await waitFor(() => expect(MockAudio.instances).toHaveLength(1));
+  const bgm = MockAudio.instances[0]!;
+  expect(bgm.volume).toBe(1);
+  expect(bgm.loop).toBe(false);
+  await user.click(screen.getByRole("button", { name: "点击继续" }));
   expect(screen.getByText("第一句。")).toBeInTheDocument();
   expect(
     document.querySelector('[data-character-id="hero"]'),
@@ -878,20 +1141,28 @@ test("keeps the reference track silent while timeline dialogue and controls stay
   expect(
     document
       .querySelector(".galgame-stage")
-      ?.contains(screen.getByLabelText("剧情时间轴控制")),
+      ?.contains(screen.getByLabelText("试玩控制")),
   ).toBe(false);
 
   fireEvent.change(screen.getByLabelText("剧情时间轴进度"), {
     target: { value: "1200" },
   });
   expect(screen.getByText("第一句。")).toBeInTheDocument();
+  expect(bgm.currentTime).toBeCloseTo(1.2, 3);
 
   fireEvent.change(screen.getByLabelText("剧情时间轴进度"), {
     target: { value: "6400" },
   });
   await waitFor(() => expect(screen.getByText("第二句。")).toBeInTheDocument());
   expect(screen.getByText("助手")).toBeInTheDocument();
-  expect(MockAudio.instances).toHaveLength(0);
+  expect(bgm.currentTime).toBeCloseTo(6.4, 3);
+
+  bgm.duration = 8;
+  fireEvent.change(screen.getByLabelText("剧情时间轴进度"), {
+    target: { value: "9000" },
+  });
+  expect(bgm.currentTime).toBe(8);
+  expect(bgm.paused).toBe(true);
 
   fireEvent.change(screen.getByLabelText("剧情时间轴进度"), {
     target: { value: "5700" },
@@ -901,15 +1172,19 @@ test("keeps the reference track silent while timeline dialogue and controls stay
   expect(
     document.querySelector('[data-character-id="hero"]'),
   ).toBeInTheDocument();
-  expect(screen.getByLabelText("剧情时间轴控制")).toBeInTheDocument();
+  expect(screen.getByLabelText("试玩控制")).toBeInTheDocument();
 
-  await user.click(screen.getByRole("button", { name: "上一句" }));
+  await user.click(screen.getByRole("button", { name: "上一步" }));
+  expect(screen.getByText("第一句。")).toBeInTheDocument();
+  await user.click(screen.getByRole("button", { name: "下一步" }));
   expect(screen.getByText("短暂的停顿。")).toBeInTheDocument();
-  await user.click(screen.getByRole("button", { name: "下一句" }));
+  await user.click(screen.getByRole("button", { name: "下一步" }));
   expect(screen.getByText("第二句。")).toBeInTheDocument();
 
   await user.click(screen.getByRole("button", { name: "暂停时间轴" }));
+  expect(bgm.pause).toHaveBeenCalled();
   await user.click(screen.getByRole("button", { name: "播放时间轴" }));
+  expect(bgm.play).toHaveBeenCalled();
   expect(screen.getByRole("button", { name: "自动" })).toHaveClass("active");
 
   fireEvent.change(screen.getByLabelText("剧情时间轴进度"), {
@@ -923,7 +1198,7 @@ test("keeps the reference track silent while timeline dialogue and controls stay
   expect(await screen.findByText("时间轴结局")).toBeInTheDocument();
   expect(screen.getByText("时间轴结局")).toBeInTheDocument();
   expect(screen.queryByText("第一句。")).not.toBeInTheDocument();
-  expect(MockAudio.instances).toHaveLength(0);
+  expect(MockAudio.instances).toHaveLength(1);
 });
 
 test("offers a user gesture retry when browser autoplay is blocked", async () => {
@@ -1002,4 +1277,140 @@ test("keeps at most eight overlapping sound effects", async () => {
   await waitFor(() => expect(MockAudio.instances).toHaveLength(9));
   expect(MockAudio.instances[0].pause).toHaveBeenCalled();
   expect(screen.getByText("九次滴答。")).toBeInTheDocument();
+});
+
+test("applies stage aspect presets and rejects invalid custom ratios", async () => {
+  const user = userEvent.setup();
+  const { container } = render(
+    <StoryPlayer
+      document={story}
+      mode="edit"
+      editFragment={story.chapters![0].fragments![0]}
+    />,
+  );
+
+  expect(screen.getByText("舞台编辑")).toBeInTheDocument();
+  expect(screen.queryByLabelText("试玩控制")).not.toBeInTheDocument();
+  expect(screen.queryByLabelText("推进模式")).not.toBeInTheDocument();
+  expect(
+    screen.queryByRole("button", { name: "试玩混音" }),
+  ).not.toBeInTheDocument();
+
+  expect(container.querySelector(".galgame-stage")).toHaveAttribute(
+    "data-aspect",
+    "auto",
+  );
+  await user.click(screen.getByRole("button", { name: "舞台比例" }));
+  await user.click(screen.getByRole("option", { name: "16:9" }));
+  expect(container.querySelector(".galgame-stage")).toHaveAttribute(
+    "data-aspect",
+    "16:9",
+  );
+  expect(container.querySelector(".galgame-stage-host")).toHaveAttribute(
+    "data-aspect-mode",
+    "16:9",
+  );
+
+  await user.click(screen.getByRole("option", { name: "自定义" }));
+  const width = screen.getByLabelText("自定义比例宽度");
+  const height = screen.getByLabelText("自定义比例高度");
+  fireEvent.change(width, { target: { value: "21" } });
+  fireEvent.change(height, { target: { value: "9" } });
+  expect(container.querySelector(".galgame-stage")).toHaveAttribute(
+    "data-aspect",
+    "21:9",
+  );
+
+  fireEvent.change(width, { target: { value: "0" } });
+  expect(container.querySelector(".galgame-stage")).toHaveAttribute(
+    "data-aspect",
+    "21:9",
+  );
+  fireEvent.blur(width);
+  expect(width).toHaveValue(21);
+});
+
+test("hides the stage host when collapsed", async () => {
+  const user = userEvent.setup();
+  const onCollapsedChange = vi.fn();
+  const { container, rerender } = render(
+    <StoryPlayer
+      document={story}
+      mode="edit"
+      editFragment={story.chapters![0].fragments![0]}
+      collapsed={false}
+      onCollapsedChange={onCollapsedChange}
+    />,
+  );
+
+  expect(container.querySelector(".galgame-stage-host")).not.toHaveAttribute(
+    "hidden",
+  );
+  await user.click(screen.getByRole("button", { name: "折叠舞台预览" }));
+  expect(onCollapsedChange).toHaveBeenCalledWith(true);
+
+  rerender(
+    <StoryPlayer
+      document={story}
+      mode="edit"
+      editFragment={story.chapters![0].fragments![0]}
+      collapsed
+      onCollapsedChange={onCollapsedChange}
+    />,
+  );
+  expect(container.querySelector(".galgame-stage-host")).toHaveAttribute(
+    "hidden",
+  );
+});
+
+test("presents official alert and confirm system messages as blocking modals", async () => {
+  const user = userEvent.setup();
+  const document = structuredClone(story);
+  document.chapters![0].fragments![0].blocks = [
+    {
+      id: "alert",
+      type: "systemMessage",
+      mode: "alert",
+      tone: "info",
+      title: "调查提示",
+      text: "请保存证据。",
+      acceptLabel: "知道了",
+    },
+    {
+      id: "confirm",
+      type: "systemMessage",
+      mode: "confirm",
+      tone: "warning",
+      title: "离开现场",
+      text: "确定离开吗？",
+      acceptLabel: "离开",
+      cancelLabel: "留下",
+    },
+    { id: "after-message", type: "narration", text: "消息处理完成。" },
+  ];
+
+  render(<StoryPlayer document={document} />);
+  await user.click(screen.getByRole("button", { name: "开始试玩" }));
+  const alert = screen.getByRole("dialog", { name: "调查提示" });
+  expect(alert).toHaveTextContent("请保存证据。");
+  await user.click(screen.getByRole("button", { name: "知道了" }));
+  const confirm = screen.getByRole("dialog", { name: "离开现场" });
+  expect(confirm).toHaveTextContent("确定离开吗？");
+  fireEvent.keyDown(confirm, { key: "Escape" });
+  expect(screen.getByText("消息处理完成。")).toBeInTheDocument();
+});
+
+test("keeps player waits blocking until a supported continue gesture", async () => {
+  const user = userEvent.setup();
+  const document = structuredClone(story);
+  document.chapters![0].fragments![0].blocks = [
+    { id: "player-wait", type: "wait", mode: "player", durationMs: null },
+    { id: "after-wait", type: "narration", text: "继续成功。" },
+  ];
+
+  render(<StoryPlayer document={document} />);
+  await user.click(screen.getByRole("button", { name: "开始试玩" }));
+  expect(screen.getByText("空格 / Enter / 向下滚轮")).toBeInTheDocument();
+  fireEvent.keyDown(window, { key: "Enter" });
+  expect(screen.getByText("继续成功。")).toBeInTheDocument();
 });

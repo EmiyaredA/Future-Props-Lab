@@ -110,8 +110,8 @@ export class TimelineClock {
     this.clearInterval();
     this.playing = false;
     this.callbacks.onPlayingChange?.(false);
-    const stoppedAtBeat = this.stopAtMs != null;
-    const finished = !stoppedAtBeat && this.positionMs >= this.durationMs;
+    const stoppedAtBoundary = this.stopAtMs != null;
+    const finished = !stoppedAtBoundary && this.positionMs >= this.durationMs;
     this.stopAtMs = undefined;
     if (finished) this.callbacks.onFinish?.();
   }

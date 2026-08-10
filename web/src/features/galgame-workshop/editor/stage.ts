@@ -2,6 +2,8 @@ import type {
   GalgameStoryBlock,
   GalgameStoryCharacterTransform,
   GalgameStoryCharacterTransition,
+  GalgameStoryCgOverlay,
+  GalgameStoryCgTransition,
   GalgameStoryDialoguePortrait,
   GalgameStoryFragment,
   GalgameStoryProject,
@@ -23,8 +25,8 @@ export const DEFAULT_CHARACTER_TRANSFORM: Required<GalgameStoryCharacterTransfor
     layer: 10,
   };
 
-export const CHARACTER_POSITION_MIN = -100;
-export const CHARACTER_POSITION_MAX = 200;
+export const CHARACTER_POSITION_MIN = -1000;
+export const CHARACTER_POSITION_MAX = 1000;
 
 export const DEFAULT_CHARACTER_TRANSITION: Required<GalgameStoryCharacterTransition> =
   {
@@ -32,23 +34,86 @@ export const DEFAULT_CHARACTER_TRANSITION: Required<GalgameStoryCharacterTransit
     fade: true,
   };
 
+export const DEFAULT_CG_TRANSITION: Required<GalgameStoryCgTransition> = {
+  durationMs: 400,
+  fade: true,
+};
+
+export const DEFAULT_CG_OVERLAY: Required<GalgameStoryCgOverlay> = {
+  x: 50,
+  y: 50,
+  width: 60,
+  opacity: 1,
+  placement: "frontOfCharacters",
+};
+
 export type StageActor = {
   characterId: string;
   expressionId?: string;
+  skinId?: string;
   transform: Required<GalgameStoryCharacterTransform>;
   transition: Required<GalgameStoryCharacterTransition>;
   entering: boolean;
   exiting: boolean;
 };
 
+export type StageCg = {
+  sourceBlockId: string;
+  cgId: string;
+  variantId: string;
+  displayMode: "fullscreen" | "overlay";
+  fit: "cover" | "contain";
+  overlay: Required<GalgameStoryCgOverlay>;
+  transition: Required<GalgameStoryCgTransition>;
+  entering: boolean;
+  exiting: boolean;
+};
+
 export type GalgameStageState = {
   sceneId?: string;
-  backgroundId?: string;
+  cg?: StageCg;
+  exitingCg?: StageCg;
   actors: Record<string, StageActor>;
   soloActor?: StageActor;
   hiddenCharacterId?: string;
   activeSpeakerId?: string;
   activeSpeakerIds?: string[];
+  camera?: {
+    x: number;
+    y: number;
+    scale: number;
+    rotation: number;
+    intensity: number;
+    effect: string;
+    durationMs: number;
+    easing: string;
+  };
+  particle?: { preset: string; density: number };
+  floatingText?: {
+    text: string;
+    x: number;
+    y: number;
+    color: string;
+    durationMs: number;
+  };
+  curtain?: { color: string; opacity: number; durationMs: number };
+  video?: {
+    assetId: string;
+    loop: boolean;
+    volume: number;
+    fit: "cover" | "contain";
+  };
+  stageAnimation?: {
+    target: string;
+    animation: string;
+    durationMs: number;
+  };
+  spriteAnimations?: Record<
+    string,
+    { animation: string; durationMs: number; loop: boolean }
+  >;
+  autoPlay?: { enabled: boolean; delayMs: number };
+  dialoguePreset?: string;
 };
 
 export function characterTransform(
@@ -61,6 +126,18 @@ export function characterTransition(
   value?: GalgameStoryCharacterTransition | null,
 ): Required<GalgameStoryCharacterTransition> {
   return { ...DEFAULT_CHARACTER_TRANSITION, ...value };
+}
+
+export function cgTransition(
+  value?: GalgameStoryCgTransition | null,
+): Required<GalgameStoryCgTransition> {
+  return { ...DEFAULT_CG_TRANSITION, ...value };
+}
+
+export function cgOverlay(
+  value?: GalgameStoryCgOverlay | null,
+): Required<GalgameStoryCgOverlay> {
+  return { ...DEFAULT_CG_OVERLAY, ...value };
 }
 
 export function emptyStageState(): GalgameStageState {
@@ -88,6 +165,7 @@ function actorFromPortrait(
   return {
     characterId,
     expressionId: resolvedExpression(document, characterId, expressionId),
+    skinId: portrait.skinId ?? undefined,
     transform: portrait.transform
       ? characterTransform(portrait.transform)
       : (existing?.transform ?? characterTransform()),
@@ -130,6 +208,8 @@ export function settleStage(state: GalgameStageState): GalgameStageState {
   return {
     ...state,
     actors,
+    cg: state.cg?.entering ? { ...state.cg, entering: false } : state.cg,
+    exitingCg: undefined,
     soloActor: undefined,
     hiddenCharacterId: undefined,
     activeSpeakerId: undefined,
@@ -161,19 +241,56 @@ export function applyAutomaticStageBlock(
   document: GalgameStoryProject,
 ): GalgameStageState {
   if (block.type === "scene") {
-    const scene = (document.scenes ?? []).find(
-      (candidate) => candidate.id === block.sceneId,
-    );
     return {
       ...state,
       sceneId: block.sceneId,
-      backgroundId:
-        block.backgroundId ?? scene?.defaultBackgroundId ?? undefined,
       actors: block.clearCharacters === false ? state.actors : {},
       soloActor: undefined,
       hiddenCharacterId: undefined,
       activeSpeakerId: undefined,
       activeSpeakerIds: undefined,
+    };
+  }
+  if (block.type === "showCg") {
+    const cg = (document.cgs ?? []).find(
+      (candidate) => candidate.id === block.cgId,
+    );
+    const variantId = block.variantId ?? cg?.defaultVariantId;
+    if (!variantId) return state;
+    return {
+      ...state,
+      exitingCg: state.cg
+        ? {
+            ...state.cg,
+            transition: cgTransition(block.transition),
+            entering: false,
+            exiting: true,
+          }
+        : undefined,
+      cg: {
+        sourceBlockId: block.id,
+        cgId: block.cgId,
+        variantId,
+        displayMode: block.displayMode ?? "fullscreen",
+        fit: block.fit,
+        overlay: cgOverlay(block.overlay),
+        transition: cgTransition(block.transition),
+        entering: true,
+        exiting: false,
+      },
+    };
+  }
+  if (block.type === "hideCg") {
+    if (!state.cg) return state;
+    return {
+      ...state,
+      exitingCg: {
+        ...state.cg,
+        transition: cgTransition(block.transition),
+        entering: false,
+        exiting: true,
+      },
+      cg: undefined,
     };
   }
   if (block.type === "showCharacter") {
@@ -222,6 +339,112 @@ export function applyAutomaticStageBlock(
         )
       : state;
   }
+  if (block.type === "destroyScene")
+    return {
+      ...emptyStageState(),
+      autoPlay: state.autoPlay,
+      dialoguePreset: state.dialoguePreset,
+    };
+  if (block.type === "camera")
+    return {
+      ...state,
+      camera: {
+        x: block.x,
+        y: block.y,
+        scale: block.scale,
+        rotation: block.rotation,
+        intensity: block.intensity,
+        effect: block.effect,
+        durationMs: block.durationMs,
+        easing: block.easing,
+      },
+    };
+  if (block.type === "resetCamera")
+    return {
+      ...state,
+      camera: {
+        x: 0,
+        y: 0,
+        scale: 1,
+        rotation: 0,
+        intensity: 0,
+        effect: "move",
+        durationMs: block.durationMs,
+        easing: "easeInOut",
+      },
+    };
+  if (block.type === "particle")
+    return {
+      ...state,
+      particle:
+        block.action === "play"
+          ? { preset: block.preset, density: block.density }
+          : undefined,
+    };
+  if (block.type === "floatingText")
+    return {
+      ...state,
+      floatingText: {
+        text: block.text,
+        x: block.x,
+        y: block.y,
+        color: block.color,
+        durationMs: block.durationMs,
+      },
+    };
+  if (block.type === "curtain")
+    return {
+      ...state,
+      curtain:
+        block.action === "show"
+          ? {
+              color: block.color,
+              opacity: block.opacity,
+              durationMs: block.durationMs,
+            }
+          : undefined,
+    };
+  if (block.type === "video")
+    return {
+      ...state,
+      video:
+        block.action === "play" && block.assetId
+          ? {
+              assetId: block.assetId,
+              loop: block.loop,
+              volume: block.volume,
+              fit: block.fit,
+            }
+          : undefined,
+    };
+  if (block.type === "stageAnimation")
+    return {
+      ...state,
+      stageAnimation: {
+        target: block.target,
+        animation: block.animation,
+        durationMs: block.durationMs,
+      },
+    };
+  if (block.type === "animateSprite")
+    return {
+      ...state,
+      spriteAnimations: {
+        ...state.spriteAnimations,
+        [block.characterId]: {
+          animation: block.animation,
+          durationMs: block.durationMs,
+          loop: block.loop,
+        },
+      },
+    };
+  if (block.type === "autoPlay")
+    return {
+      ...state,
+      autoPlay: { enabled: block.enabled, delayMs: block.delayMs },
+    };
+  if (block.type === "switchDialogueStyle")
+    return { ...state, dialoguePreset: block.preset };
   return state;
 }
 
@@ -240,10 +463,13 @@ export function enterContentBlock(
     };
 
   const speakerIds = dialogueSpeakerIds(block);
-  const portrait = block.portrait;
-  if (!portrait || portrait.mode === "solo") {
+  const portrait: GalgameStoryDialoguePortrait | undefined = block.portrait
+    ? { ...block.portrait, visible: block.portrait.visible ?? true }
+    : undefined;
+  if (!portrait || portrait.mode === "soloLegacy") {
     const soloPortrait: GalgameStoryDialoguePortrait = portrait ?? {
-      mode: "solo",
+      mode: "soloLegacy",
+      visible: true,
       keepAfter: false,
       transition: DEFAULT_CHARACTER_TRANSITION,
     };
@@ -260,7 +486,15 @@ export function enterContentBlock(
       activeSpeakerIds: speakerIds,
     };
   }
-  if (portrait.mode === "hidden")
+  const dialogueAvatarEnabled = Boolean(
+    (document.characters ?? []).find(
+      (character) => character.id === block.characterId,
+    )?.dialogueAvatar?.enabled,
+  );
+  if (
+    portrait.visible === false ||
+    (portrait.mode === "dialogueAvatar" && dialogueAvatarEnabled)
+  )
     return {
       ...state,
       soloActor: undefined,
@@ -314,8 +548,19 @@ export function replayStageToBlock(
     const block = blocks[index];
     if (
       block.type === "scene" ||
+      block.type === "showCg" ||
+      block.type === "hideCg" ||
       block.type === "showCharacter" ||
-      block.type === "removeCharacter"
+      block.type === "removeCharacter" ||
+      block.type === "destroyScene" ||
+      block.type === "camera" ||
+      block.type === "resetCamera" ||
+      block.type === "particle" ||
+      block.type === "floatingText" ||
+      block.type === "curtain" ||
+      block.type === "video" ||
+      block.type === "autoPlay" ||
+      block.type === "switchDialogueStyle"
     )
       state = applyAutomaticStageBlock(state, block, document);
     else if (block.type !== "audio" && block.type !== "endChapter") {
@@ -336,8 +581,19 @@ export function replayStageAtTime(
     if (event.timeMs > milliseconds) break;
     if (
       event.block.type === "scene" ||
+      event.block.type === "showCg" ||
+      event.block.type === "hideCg" ||
       event.block.type === "showCharacter" ||
-      event.block.type === "removeCharacter"
+      event.block.type === "removeCharacter" ||
+      event.block.type === "destroyScene" ||
+      event.block.type === "camera" ||
+      event.block.type === "resetCamera" ||
+      event.block.type === "particle" ||
+      event.block.type === "floatingText" ||
+      event.block.type === "curtain" ||
+      event.block.type === "video" ||
+      event.block.type === "autoPlay" ||
+      event.block.type === "switchDialogueStyle"
     )
       state = applyAutomaticStageBlock(state, event.block, document);
   }

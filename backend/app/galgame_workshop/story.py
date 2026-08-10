@@ -21,16 +21,19 @@ from app.models import (
     VisualAsset,
 )
 from app.schemas.galgame_workshop import (
-    GalgameStoryAudioBlock,
     GalgameStoryBranchBlock,
+    GalgameStoryCallFragmentBlock,
     GalgameStoryChapter,
     GalgameStoryChapterReport,
     GalgameStoryDialogueBlock,
     GalgameStoryDocumentOut,
     GalgameStoryDocumentPutIn,
     GalgameStoryEndChapterBlock,
+    GalgameStoryIfBlock,
+    GalgameStoryParagraphParamsBlock,
     GalgameStoryProject,
     GalgameStoryReportIssue,
+    GalgameStoryReturnToEntryBlock,
     GalgameStoryRouteReportOut,
 )
 
@@ -38,10 +41,12 @@ from app.schemas.galgame_workshop import (
 def default_story_document() -> GalgameStoryProject:
     return GalgameStoryProject.model_validate(
         {
-            "schemaVersion": "1.0",
+            "schemaVersion": "1.2",
+            "entryChapterId": "chapter-1",
             "synopsis": "",
             "characters": [],
             "scenes": [],
+            "cgs": [],
             "variables": [],
             "assets": [],
             "chapters": [
@@ -62,10 +67,11 @@ def normalize_story_document(value: object) -> GalgameStoryProject:
         raise GalgameStoryDocumentInvalidError("故事文档格式无效")
     candidate = dict(value)
     if "schemaVersion" not in candidate:
-        candidate["schemaVersion"] = "1.0"
+        candidate["schemaVersion"] = "1.2"
         candidate.setdefault("synopsis", "")
         candidate.setdefault("characters", [])
         candidate.setdefault("scenes", [])
+        candidate.setdefault("cgs", [])
         candidate.setdefault("variables", [])
         candidate.setdefault("assets", [])
         if not candidate.get("chapters"):
@@ -75,7 +81,7 @@ def normalize_story_document(value: object) -> GalgameStoryProject:
     try:
         return GalgameStoryProject.model_validate(candidate)
     except ValidationError as exc:
-        raise GalgameStoryDocumentInvalidError("故事文档不是受支持的 V1 格式") from exc
+        raise GalgameStoryDocumentInvalidError("故事文档不是受支持的 Story V1 格式") from exc
 
 
 def story_out(row: GalgameStoryDocument, document: GalgameStoryProject) -> GalgameStoryDocumentOut:
@@ -90,7 +96,7 @@ def story_out(row: GalgameStoryDocument, document: GalgameStoryProject) -> Galga
 def _terminator_index(chapter: GalgameStoryChapter, fragment_id: str) -> int | None:
     fragment = next(item for item in chapter.fragments if item.id == fragment_id)
     for index, block in enumerate(fragment.blocks):
-        if isinstance(block, (GalgameStoryBranchBlock, GalgameStoryEndChapterBlock)):
+        if isinstance(block, (GalgameStoryEndChapterBlock, GalgameStoryReturnToEntryBlock)):
             return index
     return None
 
@@ -144,64 +150,148 @@ def build_route_report(
     errors: list[GalgameStoryReportIssue] = []
     warnings: list[GalgameStoryReportIssue] = []
     chapter_reports: list[GalgameStoryChapterReport] = []
+    ordered_chapters = sorted(document.chapters, key=lambda item: item.order)
+    enabled_chapters = [chapter for chapter in ordered_chapters if not chapter.disabled]
+    entry_index = next(
+        index
+        for index, chapter in enumerate(enabled_chapters)
+        if chapter.id == document.entry_chapter_id
+    )
+    reachable_chapter_ids: set[str] = {document.entry_chapter_id}
+    can_advance_to_next = True
+    final_stop_reachable = False
+    characters_by_id = {character.id: character for character in document.characters}
+    paragraph_style_ids = {style.id for style in document.presentation.paragraph.custom_styles}
+    message_style_ids = {style.id for style in document.presentation.system_message.custom_styles}
+    for path, reference, known_project_ids, label in (
+        (
+            "/presentation/paragraph/defaultStyleRef",
+            document.presentation.paragraph.default_style_ref,
+            paragraph_style_ids,
+            "段落样式",
+        ),
+        (
+            "/presentation/systemMessage/binding",
+            document.presentation.system_message.binding,
+            message_style_ids,
+            "系统消息槽位",
+        ),
+    ):
+        unavailable = reference.source == "extension" or (
+            reference.source == "project" and reference.id not in known_project_ids
+        )
+        if unavailable:
+            warnings.append(
+                GalgameStoryReportIssue(
+                    code="unavailable_style_source",
+                    message=f"{label}来源当前不可用，运行时会回退到内置样式",
+                    path=path,
+                )
+            )
 
     for chapter_index, chapter in enumerate(document.chapters):
         fragment_by_id = {fragment.id: fragment for fragment in chapter.fragments}
         fragment_ids = set(fragment_by_id)
         edges: dict[str, set[str]] = {fragment_id: set() for fragment_id in fragment_ids}
-        terminal_fragments: set[str] = set()
+        call_edges: dict[str, set[str]] = {fragment_id: set() for fragment_id in fragment_ids}
         ending_by_fragment: dict[str, str] = {}
+        terminal_fragments: set[str] = set()
+        natural_fragments: set[str] = set()
 
-        if chapter.entry_fragment_id not in fragment_ids:
-            errors.append(
+        if chapter.disabled:
+            warnings.append(
                 GalgameStoryReportIssue(
-                    code="missing_entry",
-                    message=f"章节“{chapter.title}”的入口 Fragment 不存在",
-                    path=f"/chapters/{chapter_index}/entryFragmentId",
+                    code="disabled_chapter",
+                    message=f"章节“{chapter.title}”已禁用，试玩时会跳过",
+                    path=f"/chapters/{chapter_index}/disabled",
                     chapter_id=chapter.id,
                 )
             )
 
         for fragment_index, fragment in enumerate(chapter.fragments):
-            if fragment.timeline is not None and fragment.timeline.asset_id is not None:
-                has_runtime_audio = any(
-                    (
-                        isinstance(block, GalgameStoryDialogueBlock)
-                        and block.voice_asset_id is not None
-                    )
-                    or (isinstance(block, GalgameStoryAudioBlock) and block.action == "play")
-                    for block in fragment.blocks
-                )
-                if not has_runtime_audio:
-                    warnings.append(
-                        GalgameStoryReportIssue(
-                            code="reference_track_only",
-                            message=(
-                                f"Fragment“{fragment.title}”只有参考声轨；"
-                                "正式试玩需要绑定逐句配音、背景音乐、环境音或音效"
-                            ),
-                            path=(
-                                f"/chapters/{chapter_index}/fragments/"
-                                f"{fragment_index}/timeline/assetId"
-                            ),
-                            chapter_id=chapter.id,
-                            fragment_id=fragment.id,
-                        )
-                    )
             terminator_index = _terminator_index(chapter, fragment.id)
-            if terminator_index is None:
-                errors.append(
-                    GalgameStoryReportIssue(
-                        code="open_fragment",
-                        message=f"Fragment“{fragment.title}”没有分支或章节结局",
-                        path=(f"/chapters/{chapter_index}/fragments/{fragment_index}/blocks"),
-                        chapter_id=chapter.id,
-                        fragment_id=fragment.id,
-                    )
+            visible_blocks = (
+                fragment.blocks
+                if terminator_index is None
+                else fragment.blocks[: terminator_index + 1]
+            )
+            for block_index, block in enumerate(visible_blocks):
+                block_path = (
+                    f"/chapters/{chapter_index}/fragments/{fragment_index}/blocks/{block_index}"
                 )
+                if isinstance(block, GalgameStoryDialogueBlock):
+                    character = characters_by_id.get(block.character_id)
+                    if character is not None:
+                        display_name_ids = {item.id for item in character.display_names}
+                        skin_ids = {item.id for item in character.portrait_skins}
+                        if (
+                            block.display_name_id is not None
+                            and block.display_name_id not in display_name_ids
+                        ):
+                            warnings.append(
+                                GalgameStoryReportIssue(
+                                    code="missing_display_name",
+                                    message="对白显示名方案已失效，将回退角色本名",
+                                    path=f"{block_path}/displayNameId",
+                                    chapter_id=chapter.id,
+                                    fragment_id=fragment.id,
+                                    block_id=block.id,
+                                )
+                            )
+                        if (
+                            block.portrait is not None
+                            and block.portrait.skin_id is not None
+                            and block.portrait.skin_id not in skin_ids
+                        ):
+                            warnings.append(
+                                GalgameStoryReportIssue(
+                                    code="missing_portrait_skin",
+                                    message="对白立绘皮肤已失效，将回退默认立绘",
+                                    path=f"{block_path}/portrait/skinId",
+                                    chapter_id=chapter.id,
+                                    fragment_id=fragment.id,
+                                    block_id=block.id,
+                                )
+                            )
+                elif isinstance(block, GalgameStoryParagraphParamsBlock):
+                    reference = block.style_ref
+                    if reference is not None and (
+                        reference.source == "extension"
+                        or (
+                            reference.source == "project"
+                            and reference.id not in paragraph_style_ids
+                        )
+                    ):
+                        warnings.append(
+                            GalgameStoryReportIssue(
+                                code="unavailable_paragraph_style",
+                                message="段落参数引用的样式不可用，将回退内置样式",
+                                path=f"{block_path}/styleRef",
+                                chapter_id=chapter.id,
+                                fragment_id=fragment.id,
+                                block_id=block.id,
+                            )
+                        )
+                targets: set[str] = set()
+                if isinstance(block, GalgameStoryBranchBlock):
+                    targets.update(choice.target_fragment_id for choice in block.choices)
+                elif isinstance(block, GalgameStoryIfBlock):
+                    targets.add(block.then_fragment_id)
+                    if block.else_fragment_id is not None:
+                        targets.add(block.else_fragment_id)
+                elif isinstance(block, GalgameStoryCallFragmentBlock):
+                    targets.add(block.target_fragment_id)
+                edges[fragment.id].update(targets)
+                if isinstance(
+                    block,
+                    (GalgameStoryBranchBlock, GalgameStoryIfBlock, GalgameStoryCallFragmentBlock),
+                ):
+                    call_edges[fragment.id].update(targets)
+            if terminator_index is None:
+                natural_fragments.add(fragment.id)
                 continue
             terminator = fragment.blocks[terminator_index]
-            if terminator_index != len(fragment.blocks) - 1:
+            if terminator_index < len(fragment.blocks) - 1:
                 errors.append(
                     GalgameStoryReportIssue(
                         code="dead_blocks",
@@ -215,16 +305,12 @@ def build_route_report(
                         block_id=fragment.blocks[terminator_index + 1].id,
                     )
                 )
-            if isinstance(terminator, GalgameStoryBranchBlock):
-                edges[fragment.id].update(
-                    choice.target_fragment_id for choice in terminator.choices
-                )
-            else:
+            if isinstance(terminator, GalgameStoryEndChapterBlock):
                 terminal_fragments.add(fragment.id)
-                ending_by_fragment[fragment.id] = terminator.ending_id
+                ending_by_fragment[fragment.id] = terminator.ending_id or chapter.id
 
         reachable: set[str] = set()
-        if chapter.entry_fragment_id in fragment_ids:
+        if chapter.id in reachable_chapter_ids:
             queue = deque([chapter.entry_fragment_id])
             while queue:
                 fragment_id = queue.popleft()
@@ -236,7 +322,7 @@ def build_route_report(
         unreachable = sorted(fragment_ids - reachable)
         for fragment_id in unreachable:
             fragment = fragment_by_id[fragment_id]
-            errors.append(
+            (warnings if chapter.disabled else errors).append(
                 GalgameStoryReportIssue(
                     code="unreachable_fragment",
                     message=f"Fragment“{fragment.title}”无法从章节入口到达",
@@ -251,44 +337,49 @@ def build_route_report(
         reachable_endings = sorted(
             ending_by_fragment[fragment_id] for fragment_id in reachable & terminal_fragments
         )
-        if reachable and not reachable_endings:
-            errors.append(
-                GalgameStoryReportIssue(
-                    code="no_reachable_ending",
-                    message=f"章节“{chapter.title}”没有可达结局",
-                    path=f"/chapters/{chapter_index}",
-                    chapter_id=chapter.id,
-                )
-            )
-
-        reverse_edges: dict[str, set[str]] = {node: set() for node in fragment_ids}
-        for source, targets in edges.items():
-            for target in targets:
-                reverse_edges.setdefault(target, set()).add(source)
-        can_reach_ending: set[str] = set()
-        queue = deque(terminal_fragments)
-        while queue:
-            node = queue.popleft()
-            if node in can_reach_ending:
-                continue
-            can_reach_ending.add(node)
-            queue.extend(reverse_edges.get(node, set()) - can_reach_ending)
-
-        cycles = _strong_components(reachable, edges)
+        cycles = _strong_components(reachable, call_edges)
         for cycle in cycles:
-            trapped = not any(node in can_reach_ending for node in cycle)
+            trapped = all(
+                fragment_by_id[node].blocks
+                and isinstance(
+                    fragment_by_id[node].blocks[-1],
+                    (GalgameStoryBranchBlock, GalgameStoryIfBlock, GalgameStoryCallFragmentBlock),
+                )
+                and not (call_edges.get(node, set()) - set(cycle))
+                for node in cycle
+            )
             issue = GalgameStoryReportIssue(
                 code="trapped_cycle" if trapped else "cycle",
                 message=(
-                    "线路存在无法抵达结局的循环"
+                    "Fragment 递归调用没有可达出口"
                     if trapped
-                    else "线路存在可以退出的循环，请确认是有意设计"
+                    else "线路包含可以退出的递归调用，请确认是有意设计"
                 ),
                 path=f"/chapters/{chapter_index}/fragments",
                 chapter_id=chapter.id,
                 fragment_id=cycle[0],
             )
             (errors if trapped else warnings).append(issue)
+
+        if chapter.id in reachable_chapter_ids and not chapter.disabled:
+            enabled_position = enabled_chapters.index(chapter)
+            has_end = bool(reachable & terminal_fragments)
+            has_natural_stop = bool(reachable & natural_fragments)
+            if enabled_position + 1 < len(enabled_chapters):
+                if has_end:
+                    reachable_chapter_ids.add(enabled_chapters[enabled_position + 1].id)
+                elif chapter.id == document.entry_chapter_id or can_advance_to_next:
+                    warnings.append(
+                        GalgameStoryReportIssue(
+                            code="chapter_stops_before_next",
+                            message=f"章节“{chapter.title}”会自然停止，不会进入下一章",
+                            path=f"/chapters/{chapter_index}",
+                            chapter_id=chapter.id,
+                        )
+                    )
+                    can_advance_to_next = False
+            elif has_end or has_natural_stop:
+                final_stop_reachable = True
 
         chapter_reports.append(
             GalgameStoryChapterReport(
@@ -297,6 +388,25 @@ def build_route_report(
                 unreachable_fragment_ids=unreachable,
                 ending_ids=reachable_endings,
                 cycles=cycles,
+            )
+        )
+
+    for chapter in enabled_chapters[entry_index:]:
+        if chapter.id not in reachable_chapter_ids:
+            errors.append(
+                GalgameStoryReportIssue(
+                    code="unreachable_chapter",
+                    message=f"章节“{chapter.title}”无法从入口章到达",
+                    path=f"/chapters/{document.chapters.index(chapter)}",
+                    chapter_id=chapter.id,
+                )
+            )
+    if not final_stop_reachable:
+        errors.append(
+            GalgameStoryReportIssue(
+                code="no_reachable_final_stop",
+                message="故事没有可达的最终停止点",
+                path="/chapters",
             )
         )
 
@@ -354,6 +464,11 @@ class GalgameStoryDocuments:
             "audio/x-m4a",
             "audio/ogg",
         }
+        video_mime_types = {
+            "video/mp4",
+            "video/webm",
+            "video/quicktime",
+        }
         for asset in document.assets:
             row = by_id[asset.file_id]
             if asset.type == "image" and (
@@ -364,6 +479,10 @@ class GalgameStoryDocuments:
                 row.media_kind != "audio" or row.mime_type not in audio_mime_types
             ):
                 raise GalgameStoryDocumentInvalidError("故事声音素材必须引用支持的音频文件")
+            if asset.type == "video" and (
+                row.media_kind != "video" or row.mime_type not in video_mime_types
+            ):
+                raise GalgameStoryDocumentInvalidError("故事视频素材必须引用 MP4、WebM 或 MOV")
             if row.project_id is not None:
                 raise GalgameStoryDocumentInvalidError("不能引用视觉工坊的私有素材")
             if row.galgame_project_id not in {None, project_id}:
@@ -452,8 +571,6 @@ class GalgameStoryDocuments:
             for asset in story.document.assets
             if not (root / rows[asset.file_id].storage_key).is_file()
         ]
-        if not missing:
-            return report
         errors = [
             *report.errors,
             *[
@@ -465,4 +582,24 @@ class GalgameStoryDocuments:
                 for asset in missing
             ],
         ]
+        from app.galgame_workshop.assets import GalgameProjectAssets
+
+        manifest = await GalgameProjectAssets(self.session, get_settings()).package_manifest(
+            project_id
+        )
+        existing_codes = {(issue.code, issue.message) for issue in errors}
+        for issue in manifest.issues:
+            identity = (issue.code, issue.message)
+            if identity in existing_codes:
+                continue
+            errors.append(
+                GalgameStoryReportIssue(
+                    code=issue.code,
+                    message=issue.message,
+                    path="/assets",
+                )
+            )
+            existing_codes.add(identity)
+        if not errors:
+            return report
         return report.model_copy(update={"ready": False, "errors": errors})

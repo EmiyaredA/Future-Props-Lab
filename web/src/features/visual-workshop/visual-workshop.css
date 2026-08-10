@@ -4789,9 +4789,8 @@
   background: rgb(26 28 32 / 82%);
   color: #fff;
   line-height: 0;
-  opacity: 0;
-  pointer-events: none;
-  transform: scale(0.84);
+  opacity: 0.72;
+  transform: scale(1);
   box-shadow: 0 2px 5px rgb(0 0 0 / 22%);
   transition:
     opacity 120ms ease,
@@ -4801,8 +4800,6 @@
 .project-assistant-inline-asset:hover > button,
 .project-assistant-inline-asset:focus-within > button {
   opacity: 1;
-  pointer-events: auto;
-  transform: scale(1);
 }
 .project-assistant-inline-asset > button:hover:not(:disabled) {
   background: var(--danger);

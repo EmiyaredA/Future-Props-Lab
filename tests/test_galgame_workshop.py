@@ -8,6 +8,7 @@ from sqlalchemy import delete, update
 import app.deps as deps
 from app.core.config import get_settings
 from app.core.db import SessionLocal
+from app.galgame_workshop.story import build_route_report
 from app.main import app
 from app.models import (
     GalgameProjectAssetReference,
@@ -101,6 +102,174 @@ def playable_story() -> dict:
             }
         ],
     }
+
+
+def test_galgame_story_defaults_character_themes_and_stage_settings() -> None:
+    document = playable_story()
+    document["characters"].append(
+        {"id": "character-two", "name": "助手", "description": "协同行动"}
+    )
+
+    normalized = GalgameStoryProject.model_validate(document).model_dump(mode="json", by_alias=True)
+
+    assert [character["themeColor"] for character in normalized["characters"]] == [
+        "#E75B55",
+        "#4AA3DF",
+    ]
+    assert normalized["settings"] == {
+        "canvas": {"width": 1920, "height": 1080},
+        "characterStage": {
+            "anchorX": 50.0,
+            "anchorY": 100.0,
+            "defaultHeightPercent": 100.0,
+            "positions": {
+                "left": 15.0,
+                "centerLeft": 32.5,
+                "center": 50.0,
+                "centerRight": 67.5,
+                "right": 85.0,
+            },
+        },
+    }
+
+    invalid_canvas = deepcopy(document)
+    invalid_canvas["settings"] = {"canvas": {"width": 320, "height": 1080}}
+    with pytest.raises(ValueError, match="greater than or equal to 640"):
+        GalgameStoryProject.model_validate(invalid_canvas)
+
+    invalid_scale = deepcopy(document)
+    invalid_scale["settings"] = {"characterStage": {"defaultScale": 0}}
+    with pytest.raises(ValueError, match="greater than 0"):
+        GalgameStoryProject.model_validate(invalid_scale)
+
+    invalid_theme = deepcopy(document)
+    invalid_theme["characters"][0]["themeColor"] = "red"
+    with pytest.raises(ValueError, match="String should match pattern"):
+        GalgameStoryProject.model_validate(invalid_theme)
+
+    invalid_positions = deepcopy(document)
+    invalid_positions["settings"] = {
+        "characterStage": {
+            "positions": {
+                "left": 60,
+                "centerLeft": 30,
+                "center": 50,
+                "centerRight": 70,
+                "right": 85,
+            }
+        }
+    }
+    with pytest.raises(ValueError, match="必须从左到右严格递增"):
+        GalgameStoryProject.model_validate(invalid_positions)
+
+
+def test_galgame_story_v11_migrates_official_dialogue_blocks() -> None:
+    document = playable_story()
+    fragment = document["chapters"][0]["fragments"][0]
+    fragment["blocks"] = [
+        {
+            "id": "legacy-speed",
+            "type": "paragraphParams",
+            "textSpeedMs": 25,
+            "autoAdvanceMs": 1200,
+            "skippable": False,
+        },
+        {"id": "instant-speed", "type": "paragraphParams", "textSpeedMs": 0},
+        {"id": "player-wait", "type": "wait", "mode": "player", "durationMs": 900},
+    ]
+
+    normalized = GalgameStoryProject.model_validate(document).model_dump(mode="json", by_alias=True)
+
+    assert normalized["schemaVersion"] == "1.2"
+    assert normalized["chapters"][0]["fragments"][0]["blocks"] == [
+        {"id": "legacy-speed", "type": "paragraphParams", "textSpeedCps": 40},
+        {"id": "instant-speed", "type": "paragraphParams", "revealEffect": "instant"},
+        {"id": "player-wait", "type": "wait", "mode": "player"},
+    ]
+
+
+def test_galgame_story_validates_rich_text_and_message_results() -> None:
+    document = playable_story()
+    document["variables"] = [
+        {"id": "player-name", "name": "玩家名", "type": "string", "default": "真由理"},
+        {"id": "accepted", "name": "确认结果", "type": "boolean", "default": False},
+    ]
+    fragment = document["chapters"][0]["fragments"][0]
+    fragment["blocks"] = [
+        {
+            "id": "rich-dialogue",
+            "type": "dialogue",
+            "characterId": "character-one",
+            "text": "旧摘要",
+            "content": {
+                "version": 1,
+                "nodes": [
+                    {"type": "text", "text": "欢迎，", "marks": {"bold": True}},
+                    {"type": "variable", "variableId": "player-name"},
+                    {"type": "wait", "mode": "duration", "durationMs": 500},
+                ],
+            },
+        },
+        {
+            "id": "confirm",
+            "type": "systemMessage",
+            "mode": "confirm",
+            "text": "是否继续？",
+            "resultVariableId": "accepted",
+        },
+    ]
+
+    normalized = GalgameStoryProject.model_validate(document).model_dump(mode="json", by_alias=True)
+    dialogue = normalized["chapters"][0]["fragments"][0]["blocks"][0]
+    assert dialogue["text"] == "欢迎，"
+    assert dialogue["content"]["nodes"][0]["marks"]["bold"] is True
+
+    invalid_result = deepcopy(document)
+    invalid_result["chapters"][0]["fragments"][0]["blocks"][1]["resultVariableId"] = "player-name"
+    with pytest.raises(ValueError, match="布尔变量"):
+        GalgameStoryProject.model_validate(invalid_result)
+
+    invalid_expression = deepcopy(document)
+    invalid_expression["chapters"][0]["fragments"][0]["blocks"][0] = {
+        "id": "bad-narration",
+        "type": "narration",
+        "content": {
+            "version": 1,
+            "nodes": [{"type": "expression", "expressionId": "smile"}],
+        },
+    }
+    with pytest.raises(ValueError, match="只有对白"):
+        GalgameStoryProject.model_validate(invalid_expression)
+
+    empty_params = deepcopy(document)
+    empty_params["chapters"][0]["fragments"][0]["blocks"] = [
+        {"id": "empty-params", "type": "paragraphParams"}
+    ]
+    with pytest.raises(ValueError, match="至少需要修改一项"):
+        GalgameStoryProject.model_validate(empty_params)
+
+
+def test_galgame_story_reports_unavailable_soft_style_references() -> None:
+    document = playable_story()
+    document["presentation"] = {
+        "paragraph": {"defaultStyleRef": {"source": "extension", "id": "missing-paragraph"}},
+        "systemMessage": {"binding": {"source": "project", "id": "missing-message"}},
+    }
+    document["chapters"][0]["fragments"][0]["blocks"].insert(
+        0,
+        {
+            "id": "extension-style",
+            "type": "paragraphParams",
+            "styleRef": {"source": "extension", "id": "cinematic"},
+        },
+    )
+    normalized = GalgameStoryProject.model_validate(document)
+
+    report = build_route_report("project", 7, normalized)
+    warning_codes = {warning.code for warning in report.warnings}
+
+    assert "unavailable_style_source" in warning_codes
+    assert "unavailable_paragraph_style" in warning_codes
 
 
 def test_galgame_timeline_accepts_parallel_point_events_and_rejects_conflicts() -> None:
@@ -200,6 +369,20 @@ def test_galgame_timeline_accepts_parallel_point_events_and_rejects_conflicts() 
     )
     GalgameStoryProject.model_validate(legacy_implicit)
 
+    attached_to_first_dialogue = deepcopy(document)
+    attached_blocks = attached_to_first_dialogue["chapters"][0]["fragments"][0]["blocks"]
+    attached_blocks[-2]["startMs"] = 1000
+    attached_blocks[-2]["endMs"] = 2500
+    attached_blocks.insert(
+        -2,
+        {
+            "id": "show-one-attached-to-dialogue",
+            "type": "showCharacter",
+            "characterId": "character-one",
+        },
+    )
+    GalgameStoryProject.model_validate(attached_to_first_dialogue)
+
     conflict_cases = []
     duplicate_scene = deepcopy(document)
     duplicate_scene["chapters"][0]["fragments"][0]["blocks"].insert(
@@ -256,6 +439,80 @@ def test_galgame_timeline_accepts_parallel_point_events_and_rejects_conflicts() 
             GalgameStoryProject.model_validate(invalid)
 
 
+def test_story_v2_typed_variables_attributes_and_builtin_block_families() -> None:
+    document = playable_story()
+    document["entryChapterId"] = "chapter-1"
+    document["characterAttributeTemplates"] = [
+        {
+            "id": "trust",
+            "name": "信任",
+            "type": "number",
+            "defaultValue": 0,
+            "description": "线路判断用",
+        }
+    ]
+    document["characters"][0]["attributes"] = {"trust": 2}
+    document["variables"] = [
+        {
+            "id": "flag",
+            "name": "已调查",
+            "type": "boolean",
+            "defaultValue": False,
+            "persistence": "session",
+            "description": "",
+        }
+    ]
+    additions = [
+        {"id": "paragraph", "type": "storyParagraph", "text": "段落"},
+        {"id": "params", "type": "paragraphParams", "textSpeedMs": 20},
+        {"id": "system", "type": "systemMessage", "text": "系统"},
+        {"id": "comment", "type": "comment", "text": "注释"},
+        {"id": "wait", "type": "wait", "durationMs": 500},
+        {"id": "destroy", "type": "destroyScene"},
+        {"id": "camera", "type": "camera", "effect": "shake"},
+        {"id": "reset-camera", "type": "resetCamera"},
+        {"id": "particle", "type": "particle", "preset": "snow"},
+        {"id": "stage-animation", "type": "stageAnimation"},
+        {"id": "floating", "type": "floatingText", "text": "线索 +1"},
+        {"id": "curtain", "type": "curtain", "action": "show"},
+        {"id": "sprite", "type": "animateSprite", "characterId": "character-one"},
+        {"id": "autoplay", "type": "autoPlay", "enabled": True},
+        {"id": "dialogue-style", "type": "switchDialogueStyle", "preset": "light"},
+        {"id": "portrait-rule", "type": "portraitStyleRule", "mode": "stage"},
+        {"id": "set-flag", "type": "setVariable", "variableId": "flag", "value": True},
+        {
+            "id": "if-flag",
+            "type": "if",
+            "condition": "flag == true",
+            "thenFragmentId": "device-ending",
+            "elseFragmentId": "clock-ending",
+        },
+        {"id": "call-device", "type": "callFragment", "targetFragmentId": "device-ending"},
+    ]
+    blocks = document["chapters"][0]["fragments"][0]["blocks"]
+    blocks[2:2] = additions
+    parsed = GalgameStoryProject.model_validate(document)
+    assert parsed.entry_chapter_id == "chapter-1"
+    assert parsed.characters[0].attributes == {"trust": 2}
+    assert {block.type for block in parsed.chapters[0].fragments[0].blocks}.issuperset(
+        {item["type"] for item in additions}
+    )
+    invalid_attribute = deepcopy(document)
+    invalid_attribute["characters"][0]["attributes"]["trust"] = "高"
+    with pytest.raises(ValueError, match="属性值与模板类型"):
+        GalgameStoryProject.model_validate(invalid_attribute)
+
+    invalid_variable = deepcopy(document)
+    set_block = next(
+        block
+        for block in invalid_variable["chapters"][0]["fragments"][0]["blocks"]
+        if block["id"] == "set-flag"
+    )
+    set_block["value"] = 1
+    with pytest.raises(ValueError, match="变量赋值与声明类型"):
+        GalgameStoryProject.model_validate(invalid_variable)
+
+
 def test_galgame_dialogue_supports_multiple_speakers_without_changing_legacy_blocks() -> None:
     story = playable_story()
     story["characters"].append({"id": "character-two", "name": "助手", "description": "同时回应"})
@@ -292,10 +549,14 @@ async def test_galgame_workshop_story_edit_report_completion_and_conflicts() -> 
         assert story_response.status_code == 200
         initial_story = story_response.json()
         assert initial_story["document"] == {
-            "schemaVersion": "1.0",
+            "schemaVersion": "1.2",
+            "entryChapterId": "chapter-1",
             "synopsis": "",
             "characters": [],
+            "characterAttributeTemplates": [],
+            "sceneGroups": [],
             "scenes": [],
+            "cgs": [],
             "variables": [],
             "assets": [],
             "presentation": {
@@ -316,6 +577,33 @@ async def test_galgame_workshop_story_edit_report_completion_and_conflicts() -> 
                     "focusTransitionMs": 180,
                     "lipSyncEnabled": False,
                 },
+                "text": {"defaultSpeedCps": 40},
+                "paragraph": {
+                    "defaultStyleRef": {"source": "builtin", "id": "classic"},
+                    "customStyles": [],
+                },
+                "systemMessage": {
+                    "binding": {
+                        "source": "builtin",
+                        "id": "standard-message",
+                    },
+                    "customStyles": [],
+                },
+            },
+            "settings": {
+                "canvas": {"width": 1920, "height": 1080},
+                "characterStage": {
+                    "anchorX": 50.0,
+                    "anchorY": 100.0,
+                    "defaultHeightPercent": 100.0,
+                    "positions": {
+                        "left": 15.0,
+                        "centerLeft": 32.5,
+                        "center": 50.0,
+                        "centerRight": 67.5,
+                        "right": 85.0,
+                    },
+                },
             },
             "chapters": [
                 {
@@ -323,6 +611,7 @@ async def test_galgame_workshop_story_edit_report_completion_and_conflicts() -> 
                     "title": "第一章",
                     "order": 1,
                     "entryFragmentId": "main",
+                    "disabled": False,
                     "fragments": [{"id": "main", "title": "main", "blocks": []}],
                 }
             ],
@@ -331,17 +620,8 @@ async def test_galgame_workshop_story_edit_report_completion_and_conflicts() -> 
         blocked_report = (
             await client.get(f"/v1/galgame-workshop/projects/{project['id']}/story/report")
         ).json()
-        assert blocked_report["ready"] is False
-        assert {issue["code"] for issue in blocked_report["errors"]} == {
-            "open_fragment",
-            "no_reachable_ending",
-        }
-        blocked_complete = await client.patch(
-            f"/v1/galgame-workshop/projects/{project['id']}",
-            json={"expected_revision": 0, "status": "completed"},
-        )
-        assert blocked_complete.status_code == 422
-        assert blocked_complete.json()["code"] == "story_not_ready"
+        assert blocked_report["ready"] is True
+        assert blocked_report["errors"] == []
 
         saved = await client.put(
             f"/v1/galgame-workshop/projects/{project['id']}/story",
@@ -521,7 +801,7 @@ async def test_galgame_story_normalizes_the_legacy_empty_skeleton() -> None:
         await session.commit()
     async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
         story = (await client.get(f"/v1/galgame-workshop/projects/{project['id']}/story")).json()
-        assert story["document"]["schemaVersion"] == "1.0"
+        assert story["document"]["schemaVersion"] == "1.2"
         assert story["document"]["chapters"][0]["entryFragmentId"] == "main"
         assert story["document"]["presentation"]["dialogueBox"]["preset"] == "dark"
         assert story["document"]["presentation"]["ui"]["components"] == []
@@ -546,14 +826,60 @@ async def test_galgame_story_normalizes_legacy_scene_background_fields() -> None
         story = (await client.get(f"/v1/galgame-workshop/projects/{project['id']}/story")).json()
         scene = story["document"]["scenes"][0]
         scene_block = story["document"]["chapters"][0]["fragments"][0]["blocks"][0]
-        assert scene["backgrounds"] == []
-        assert scene["defaultBackgroundId"] is None
-        assert scene_block["backgroundId"] is None
+        assert scene["layers"] == []
+        assert "backgrounds" not in scene
+        assert "backgroundId" not in scene_block
         saved = await client.put(
             f"/v1/galgame-workshop/projects/{project['id']}/story",
             json={"expected_revision": 0, "document": story["document"]},
         )
         assert saved.status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_galgame_story_normalizes_legacy_variable_fields() -> None:
+    transport = httpx.ASGITransport(app=app)
+    async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+        project = (
+            await client.post("/v1/galgame-workshop/projects", json={"title": "旧变量工程"})
+        ).json()
+    legacy = playable_story()
+    legacy["variables"] = [
+        {
+            "id": "investigation-method",
+            "name": "investigationMethod",
+            "displayName": "排查方法",
+            "type": "string",
+            "default": "",
+            "defaultValue": "",
+            "scope": "slot",
+            "persistence": "slot",
+            "description": "记录玩家选择的排查方法。",
+        }
+    ]
+    async with SessionLocal() as session:
+        await session.execute(
+            update(GalgameStoryDocument)
+            .where(GalgameStoryDocument.project_id == project["id"])
+            .values(document=legacy)
+        )
+        await session.commit()
+    async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+        story_response = await client.get(f"/v1/galgame-workshop/projects/{project['id']}/story")
+        assert story_response.status_code == 200, story_response.text
+        variable = story_response.json()["document"]["variables"][0]
+        assert variable == {
+            "id": "investigation-method",
+            "name": "排查方法",
+            "type": "string",
+            "defaultValue": "",
+            "persistence": "session",
+            "description": "记录玩家选择的排查方法。",
+        }
+        report_response = await client.get(
+            f"/v1/galgame-workshop/projects/{project['id']}/story/report"
+        )
+        assert report_response.status_code == 200, report_response.text
 
 
 @pytest.mark.asyncio
@@ -790,7 +1116,7 @@ async def test_galgame_story_validates_multicharacter_stage_blocks() -> None:
 
         extended_transform = deepcopy(document)
         extended_transform["chapters"][0]["fragments"][0]["blocks"][1]["transform"].update(
-            {"x": -100, "y": 200}
+            {"x": -1000, "y": 1000}
         )
         extended = await client.put(
             f"/v1/galgame-workshop/projects/{project['id']}/story",
@@ -805,7 +1131,7 @@ async def test_galgame_story_validates_multicharacter_stage_blocks() -> None:
         invalid_transform = deepcopy(document)
         invalid_transform["chapters"][0]["fragments"][0]["blocks"][1]["transform"]["scale"] = 3.1
         invalid_position = deepcopy(document)
-        invalid_position["chapters"][0]["fragments"][0]["blocks"][1]["transform"]["x"] = 201
+        invalid_position["chapters"][0]["fragments"][0]["blocks"][1]["transform"]["x"] = 1001
         missing_character = deepcopy(document)
         missing_character["chapters"][0]["fragments"][0]["blocks"][1]["characterId"] = (
             "missing-character"
@@ -887,7 +1213,15 @@ async def test_galgame_dialogue_box_style_uses_a_typed_story_image() -> None:
             json={"expected_revision": 0, "document": document},
         )
         assert saved.status_code == 200, saved.text
-        assert saved.json()["document"]["presentation"] == document["presentation"]
+        presentation = saved.json()["document"]["presentation"]
+        assert presentation["dialogueBox"] == document["presentation"]["dialogueBox"]
+        assert presentation["ui"] == document["presentation"]["ui"]
+        assert presentation["stage"] == document["presentation"]["stage"]
+        assert presentation["text"] == {"defaultSpeedCps": 40}
+        assert presentation["paragraph"]["defaultStyleRef"] == {
+            "source": "builtin",
+            "id": "classic",
+        }
 
         wrong_role = document.copy()
         wrong_role["assets"] = [
@@ -937,7 +1271,7 @@ async def test_galgame_dialogue_box_style_uses_a_typed_story_image() -> None:
 
 
 @pytest.mark.asyncio
-async def test_galgame_scene_backgrounds_validate_roles_and_block_ownership() -> None:
+async def test_galgame_scene_layers_validate_roles_groups_and_unique_ids() -> None:
     transport = httpx.ASGITransport(app=app)
     png = b"\x89PNG\r\n\x1a\nbackground-content"
     async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
@@ -952,36 +1286,35 @@ async def test_galgame_scene_backgrounds_validate_roles_and_block_ownership() ->
         ).json()
 
         document = playable_story()
+        document["schemaVersion"] = "1.2"
         document["assets"] = [
             {
                 "id": "background-night-asset",
                 "type": "image",
-                "role": "sceneBackground",
+                "role": "sceneLayer",
                 "fileId": uploaded["id"],
                 "status": "ready",
             }
         ]
-        document["scenes"][0]["backgrounds"] = [
+        document["scenes"][0]["layers"] = [
             {
                 "id": "background-night",
-                "label": "夜间",
+                "name": "夜间",
                 "assetId": "background-night-asset",
+                "distance": 1,
+                "offsetX": 0,
+                "offsetY": 0,
             }
         ]
-        document["scenes"][0]["defaultBackgroundId"] = "background-night"
-        document["chapters"][0]["fragments"][0]["blocks"][0]["backgroundId"] = "background-night"
         saved = await client.put(
             f"/v1/galgame-workshop/projects/{project['id']}/story",
             json={"expected_revision": 0, "document": document},
         )
         assert saved.status_code == 200, saved.text
-        assert saved.json()["document"]["scenes"][0]["backgrounds"][0]["label"] == "夜间"
-        assert (
-            saved.json()["document"]["chapters"][0]["fragments"][0]["blocks"][0]["backgroundId"]
-            == "background-night"
-        )
+        assert saved.json()["document"]["scenes"][0]["layers"][0]["name"] == "夜间"
 
         wrong_role = playable_story()
+        wrong_role["schemaVersion"] = "1.2"
         wrong_role["assets"] = [
             {
                 "id": "portrait-asset",
@@ -991,10 +1324,9 @@ async def test_galgame_scene_backgrounds_validate_roles_and_block_ownership() ->
                 "status": "ready",
             }
         ]
-        wrong_role["scenes"][0]["backgrounds"] = [
-            {"id": "background-night", "label": "夜间", "assetId": "portrait-asset"}
+        wrong_role["scenes"][0]["layers"] = [
+            {"id": "background-night", "name": "夜间", "assetId": "portrait-asset"}
         ]
-        wrong_role["scenes"][0]["defaultBackgroundId"] = "background-night"
         response = await client.put(
             f"/v1/galgame-workshop/projects/{project['id']}/story",
             json={"expected_revision": 1, "document": wrong_role},
@@ -1002,20 +1334,10 @@ async def test_galgame_scene_backgrounds_validate_roles_and_block_ownership() ->
         assert response.status_code == 422
 
         cross_scene = playable_story()
+        cross_scene["schemaVersion"] = "1.2"
         cross_scene["assets"] = document["assets"]
         cross_scene["scenes"][0].update(document["scenes"][0])
-        cross_scene["scenes"].append(
-            {
-                "id": "scene-roof",
-                "name": "天台",
-                "description": "",
-                "backgrounds": [],
-                "defaultBackgroundId": None,
-            }
-        )
-        cross_scene["chapters"][0]["fragments"][0]["blocks"][0].update(
-            {"sceneId": "scene-roof", "backgroundId": "background-night"}
-        )
+        cross_scene["scenes"][0]["groupId"] = "missing-group"
         response = await client.put(
             f"/v1/galgame-workshop/projects/{project['id']}/story",
             json={"expected_revision": 1, "document": cross_scene},
@@ -1023,17 +1345,245 @@ async def test_galgame_scene_backgrounds_validate_roles_and_block_ownership() ->
         assert response.status_code == 422
 
         duplicate = playable_story()
+        duplicate["schemaVersion"] = "1.2"
         duplicate["assets"] = document["assets"]
-        duplicate["scenes"][0]["backgrounds"] = [
-            {"id": "background-night", "label": "夜间", "assetId": "background-night-asset"},
-            {"id": "background-night", "label": "雨夜", "assetId": "background-night-asset"},
+        duplicate["scenes"][0]["layers"] = [
+            {"id": "background-night", "name": "夜间", "assetId": "background-night-asset"},
+            {"id": "background-night", "name": "雨夜", "assetId": "background-night-asset"},
         ]
-        duplicate["scenes"][0]["defaultBackgroundId"] = "background-night"
         response = await client.put(
             f"/v1/galgame-workshop/projects/{project['id']}/story",
             json={"expected_revision": 1, "document": duplicate},
         )
         assert response.status_code == 422
+        removed = await client.delete(
+            f"/v1/galgame-workshop/projects/{project['id']}",
+            params={"expected_revision": project["revision"]},
+        )
+        assert removed.status_code == 200
+
+
+def test_galgame_cgs_validate_variants_blocks_and_timeline_conflicts() -> None:
+    legacy = GalgameStoryProject.model_validate(playable_story())
+    assert legacy.cgs == []
+
+    document = playable_story()
+    document["assets"] = [
+        {
+            "id": "cg-rain-asset",
+            "type": "image",
+            "role": "storyCg",
+            "fileId": "file-cg",
+            "status": "ready",
+        }
+    ]
+    document["cgs"] = [
+        {
+            "id": "cg-rain",
+            "name": "雨中告白",
+            "description": "雨幕中的关键分镜",
+            "variants": [
+                {
+                    "id": "normal",
+                    "label": "标准",
+                    "assetId": "cg-rain-asset",
+                }
+            ],
+            "defaultVariantId": "normal",
+        }
+    ]
+    fragment = document["chapters"][0]["fragments"][0]
+    fragment["blocks"].insert(
+        1,
+        {
+            "id": "show-cg",
+            "type": "showCg",
+            "cgId": "cg-rain",
+            "variantId": None,
+            "fit": "cover",
+            "transition": {"durationMs": 400, "fade": True},
+        },
+    )
+    fragment["blocks"].insert(
+        3,
+        {
+            "id": "hide-cg",
+            "type": "hideCg",
+            "transition": {"durationMs": 250, "fade": True},
+        },
+    )
+    parsed = GalgameStoryProject.model_validate(document)
+    assert parsed.cgs[0].default_variant_id == "normal"
+    show_cg = parsed.chapters[0].fragments[0].blocks[1]
+    assert show_cg.type == "showCg"
+    assert show_cg.display_mode == "fullscreen"
+    assert show_cg.fit == "cover"
+    assert show_cg.overlay.x == 50
+    assert show_cg.overlay.width == 60
+    assert show_cg.overlay.placement == "frontOfCharacters"
+    assert show_cg.transition.duration_ms == 400
+
+    overlay_document = deepcopy(document)
+    overlay_block = overlay_document["chapters"][0]["fragments"][0]["blocks"][1]
+    overlay_block["displayMode"] = "overlay"
+    overlay_block["overlay"] = {
+        "x": 25,
+        "y": 40,
+        "width": 85,
+        "opacity": 0.65,
+        "placement": "behindCharacters",
+    }
+    overlay = GalgameStoryProject.model_validate(overlay_document)
+    overlay_cg = overlay.chapters[0].fragments[0].blocks[1]
+    assert overlay_cg.type == "showCg"
+    assert overlay_cg.display_mode == "overlay"
+    assert overlay_cg.overlay.model_dump(by_alias=True) == {
+        "x": 25.0,
+        "y": 40.0,
+        "width": 85.0,
+        "opacity": 0.65,
+        "placement": "behindCharacters",
+    }
+
+    invalid_overlay = deepcopy(overlay_document)
+    invalid_overlay["chapters"][0]["fragments"][0]["blocks"][1]["overlay"]["width"] = 201
+    with pytest.raises(ValueError, match="less than or equal to 200"):
+        GalgameStoryProject.model_validate(invalid_overlay)
+
+    duplicate_cg = deepcopy(document)
+    duplicate_cg["cgs"].append(deepcopy(duplicate_cg["cgs"][0]))
+    with pytest.raises(ValueError, match="CG ID 不能重复"):
+        GalgameStoryProject.model_validate(duplicate_cg)
+
+    duplicate_variant = deepcopy(document)
+    duplicate_variant["cgs"][0]["variants"].append(
+        deepcopy(duplicate_variant["cgs"][0]["variants"][0])
+    )
+    with pytest.raises(ValueError, match="同一 CG 的差分 ID 不能重复"):
+        GalgameStoryProject.model_validate(duplicate_variant)
+
+    missing_default = deepcopy(document)
+    missing_default["cgs"][0]["defaultVariantId"] = None
+    with pytest.raises(ValueError, match="存在 CG 差分时必须指定默认差分"):
+        GalgameStoryProject.model_validate(missing_default)
+
+    wrong_role = deepcopy(document)
+    wrong_role["assets"][0]["role"] = "sceneBackground"
+    with pytest.raises(ValueError, match="CG 差分只能引用剧情 CG 素材"):
+        GalgameStoryProject.model_validate(wrong_role)
+
+    missing_variant = deepcopy(document)
+    missing_variant["chapters"][0]["fragments"][0]["blocks"][1]["variantId"] = "missing"
+    with pytest.raises(ValueError, match="有效的 CG 差分"):
+        GalgameStoryProject.model_validate(missing_variant)
+
+    cross_cg_variant = deepcopy(document)
+    cross_cg_variant["cgs"].append(
+        {
+            "id": "cg-other",
+            "name": "另一张 CG",
+            "variants": [{"id": "other", "label": "另一差分", "assetId": "cg-rain-asset"}],
+            "defaultVariantId": "other",
+        }
+    )
+    cross_cg_variant["chapters"][0]["fragments"][0]["blocks"][1]["variantId"] = "other"
+    with pytest.raises(ValueError, match="有效的 CG 差分"):
+        GalgameStoryProject.model_validate(cross_cg_variant)
+
+    conflict = deepcopy(document)
+    conflict_fragment = conflict["chapters"][0]["fragments"][0]
+    conflict_fragment["timeline"] = {"durationMs": 3000}
+    conflict_fragment["blocks"][1]["atMs"] = 1000
+    conflict_fragment["blocks"][3]["atMs"] = 1000
+    dialogue = conflict_fragment["blocks"][2]
+    dialogue["startMs"] = 1000
+    dialogue["endMs"] = 2000
+    with pytest.raises(ValueError, match="同一时刻只能有一个 CG 事件"):
+        GalgameStoryProject.model_validate(conflict)
+
+
+@pytest.mark.asyncio
+async def test_galgame_cg_asset_delete_reports_variant_location() -> None:
+    transport = httpx.ASGITransport(app=app)
+    png = b"\x89PNG\r\n\x1a\ncg-content"
+    async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+        project = (
+            await client.post("/v1/galgame-workshop/projects", json={"title": "CG 素材"})
+        ).json()
+        uploaded = (
+            await client.post(
+                f"/v1/galgame-workshop/projects/{project['id']}/assets",
+                files={"upload": ("confession.png", png, "image/png")},
+            )
+        ).json()
+        document = playable_story()
+        document["schemaVersion"] = "1.2"
+        document["assets"] = [
+            {
+                "id": "cg-confession-asset",
+                "type": "image",
+                "role": "storyCg",
+                "fileId": uploaded["id"],
+                "status": "ready",
+            }
+        ]
+        document["cgs"] = [
+            {
+                "id": "cg-confession",
+                "name": "雨中告白",
+                "description": "",
+                "variants": [
+                    {
+                        "id": "normal",
+                        "label": "标准",
+                        "assetId": "cg-confession-asset",
+                    }
+                ],
+                "defaultVariantId": "normal",
+            }
+        ]
+        document["chapters"][0]["fragments"][0]["blocks"].insert(
+            1,
+            {
+                "id": "show-confession",
+                "type": "showCg",
+                "cgId": "cg-confession",
+                "variantId": None,
+                "fit": "contain",
+            },
+        )
+        saved = await client.put(
+            f"/v1/galgame-workshop/projects/{project['id']}/story",
+            json={"expected_revision": 0, "document": document},
+        )
+        assert saved.status_code == 200, saved.text
+
+        blocked = await client.delete(
+            f"/v1/galgame-workshop/projects/{project['id']}/assets/{uploaded['id']}",
+            params={"expected_revision": uploaded["revision"]},
+        )
+        assert blocked.status_code == 409
+        references = blocked.json()["references"]
+        assert references == [
+            {
+                "kind": "cgVariant",
+                "cgId": "cg-confession",
+                "variantId": "normal",
+                "storyAssetId": "cg-confession-asset",
+                "label": "剧情 CG“雨中告白”· 标准",
+            },
+            {
+                "kind": "showCg",
+                "chapterId": "chapter-1",
+                "fragmentId": "main",
+                "blockId": "show-confession",
+                "storyAssetId": "cg-confession-asset",
+                "label": "第一章 · 抉择 · Block 2",
+                "cgId": "cg-confession",
+                "variantId": "normal",
+            },
+        ]
+
         removed = await client.delete(
             f"/v1/galgame-workshop/projects/{project['id']}",
             params={"expected_revision": project["revision"]},
@@ -1060,19 +1610,18 @@ async def test_galgame_scene_background_missing_file_blocks_completion() -> None
             {
                 "id": "background-day-asset",
                 "type": "image",
-                "role": "sceneBackground",
+                "role": "sceneLayer",
                 "fileId": uploaded["id"],
                 "status": "ready",
             }
         ]
-        document["scenes"][0]["backgrounds"] = [
+        document["scenes"][0]["layers"] = [
             {
                 "id": "background-day",
-                "label": "白昼",
+                "name": "白昼",
                 "assetId": "background-day-asset",
             }
         ]
-        document["scenes"][0]["defaultBackgroundId"] = "background-day"
         saved = await client.put(
             f"/v1/galgame-workshop/projects/{project['id']}/story",
             json={"expected_revision": 0, "document": document},
@@ -1229,6 +1778,81 @@ async def test_galgame_audio_upload_story_validation_and_delete_locations() -> N
 
 
 @pytest.mark.asyncio
+async def test_galgame_video_upload_overview_and_reference_protection() -> None:
+    transport = httpx.ASGITransport(app=app)
+    video = b"\x00\x00\x00\x18ftypisom\x00\x00\x02\x00video"
+    async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+        project = (
+            await client.post("/v1/galgame-workshop/projects", json={"title": "视频演出"})
+        ).json()
+        response = await client.post(
+            f"/v1/galgame-workshop/projects/{project['id']}/assets",
+            files={"upload": ("opening.mp4", video, "video/mp4")},
+        )
+        assert response.status_code == 200, response.text
+        uploaded = response.json()
+        assert uploaded["media_kind"] == "video"
+
+        document = playable_story()
+        document["assets"] = [
+            {
+                "id": "opening-video",
+                "type": "video",
+                "role": "video",
+                "label": "片头",
+                "fileId": uploaded["id"],
+                "status": "ready",
+            }
+        ]
+        document["chapters"][0]["fragments"][0]["blocks"].insert(
+            1,
+            {
+                "id": "play-opening",
+                "type": "video",
+                "assetId": "opening-video",
+                "action": "play",
+            },
+        )
+        saved = await client.put(
+            f"/v1/galgame-workshop/projects/{project['id']}/story",
+            json={"expected_revision": 0, "document": document},
+        )
+        assert saved.status_code == 200, saved.text
+
+        overview = await client.get(
+            f"/v1/galgame-workshop/projects/{project['id']}/assets/overview"
+        )
+        assert overview.status_code == 200, overview.text
+        item = overview.json()["items"][0]
+        assert item["category"] == "video"
+        assert item["reference_count"] == 1
+        assert item["references"][0]["blockId"] == "play-opening"
+
+        blocked = await client.delete(
+            f"/v1/galgame-workshop/projects/{project['id']}/assets/{uploaded['id']}",
+            params={"expected_revision": uploaded["revision"]},
+        )
+        assert blocked.status_code == 409
+        assert blocked.json()["references"][0]["kind"] == "videoBlock"
+
+        cleared = await client.put(
+            f"/v1/galgame-workshop/projects/{project['id']}/story",
+            json={"expected_revision": 1, "document": playable_story()},
+        )
+        assert cleared.status_code == 200, cleared.text
+        removed = await client.delete(
+            f"/v1/galgame-workshop/projects/{project['id']}/assets/{uploaded['id']}",
+            params={"expected_revision": uploaded["revision"]},
+        )
+        assert removed.status_code == 200, removed.text
+        deleted = await client.delete(
+            f"/v1/galgame-workshop/projects/{project['id']}",
+            params={"expected_revision": project["revision"]},
+        )
+        assert deleted.status_code == 200, deleted.text
+
+
+@pytest.mark.asyncio
 async def test_galgame_timeline_validates_ranges_roles_and_asset_references() -> None:
     transport = httpx.ASGITransport(app=app)
     audio = b"\x00\x00\x00\x18ftypM4A timeline-audio"
@@ -1246,16 +1870,16 @@ async def test_galgame_timeline_validates_ranges_roles_and_asset_references() ->
         document = playable_story()
         document["assets"] = [
             {
-                "id": "runaway-timeline",
+                "id": "runaway-bgm",
                 "type": "audio",
-                "role": "timelineTrack",
-                "label": "剧情时间轴",
+                "role": "backgroundMusic",
+                "label": "完整广播剧",
                 "fileId": uploaded["id"],
                 "status": "ready",
             }
         ]
         fragment = document["chapters"][0]["fragments"][0]
-        fragment["timeline"] = {"assetId": "runaway-timeline", "durationMs": 20_000}
+        fragment["timeline"] = {"durationMs": 20_000}
         dialogue = fragment["blocks"][1]
         dialogue.update({"startMs": 1_000, "endMs": 6_000})
         fragment["blocks"].insert(
@@ -1268,23 +1892,32 @@ async def test_galgame_timeline_validates_ranges_roles_and_asset_references() ->
                 "endMs": 9_000,
             },
         )
+        fragment["blocks"].insert(
+            3,
+            {
+                "id": "block-timeline-bgm",
+                "type": "audio",
+                "atMs": 0,
+                "action": "play",
+                "channel": "bgm",
+                "assetId": "runaway-bgm",
+                "volume": 100,
+                "loop": False,
+                "fadeMs": 0,
+            },
+        )
         saved = await client.put(
             f"/v1/galgame-workshop/projects/{project['id']}/story",
             json={"expected_revision": 0, "document": document},
         )
         assert saved.status_code == 200, saved.text
 
-        report = (
-            await client.get(f"/v1/galgame-workshop/projects/{project['id']}/story/report")
-        ).json()
-        assert "reference_track_only" in {warning["code"] for warning in report["warnings"]}
-
         protected = await client.delete(
             f"/v1/galgame-workshop/projects/{project['id']}/assets/{uploaded['id']}",
             params={"expected_revision": uploaded["revision"]},
         )
         assert protected.status_code == 409
-        assert "fragmentTimeline" in {item["kind"] for item in protected.json()["references"]}
+        assert "audioBlock" in {item["kind"] for item in protected.json()["references"]}
 
         invalid_documents = []
         missing_range = deepcopy(document)
@@ -1302,12 +1935,20 @@ async def test_galgame_timeline_validates_ranges_roles_and_asset_references() ->
         invalid_documents.append(out_of_range)
 
         wrong_role = deepcopy(document)
-        wrong_role["assets"][0]["role"] = "backgroundMusic"
+        wrong_role["assets"][0]["role"] = "soundEffect"
         invalid_documents.append(wrong_role)
 
         missing_asset = deepcopy(document)
-        missing_asset["chapters"][0]["fragments"][0]["timeline"]["assetId"] = "missing"
+        missing_asset["chapters"][0]["fragments"][0]["blocks"][3]["assetId"] = "missing"
         invalid_documents.append(missing_asset)
+
+        legacy_role = deepcopy(document)
+        legacy_role["assets"][0]["role"] = "timelineTrack"
+        invalid_documents.append(legacy_role)
+
+        legacy_timeline_asset = deepcopy(document)
+        legacy_timeline_asset["chapters"][0]["fragments"][0]["timeline"]["assetId"] = "runaway-bgm"
+        invalid_documents.append(legacy_timeline_asset)
 
         for invalid_document in invalid_documents:
             rejected = await client.put(
@@ -1316,13 +1957,14 @@ async def test_galgame_timeline_validates_ranges_roles_and_asset_references() ->
             )
             assert rejected.status_code == 422, rejected.text
 
-        optional_reference = deepcopy(document)
-        del optional_reference["chapters"][0]["fragments"][0]["timeline"]["assetId"]
-        saved_without_reference = await client.put(
+        timeline_without_audio = deepcopy(document)
+        timeline_without_audio["assets"] = []
+        del timeline_without_audio["chapters"][0]["fragments"][0]["blocks"][3]
+        saved_without_audio = await client.put(
             f"/v1/galgame-workshop/projects/{project['id']}/story",
-            json={"expected_revision": 1, "document": optional_reference},
+            json={"expected_revision": 1, "document": timeline_without_audio},
         )
-        assert saved_without_reference.status_code == 200, saved_without_reference.text
+        assert saved_without_audio.status_code == 200, saved_without_audio.text
 
         cleared = await client.put(
             f"/v1/galgame-workshop/projects/{project['id']}/story",

@@ -48,6 +48,7 @@ const capabilityLabel = {
   tools: "工具",
   image_generation: "图片生成",
   video_generation: "视频生成",
+  speech_recognition: "语音识别",
 } as const;
 
 function visibleCapabilities(model: ModelEntry) {

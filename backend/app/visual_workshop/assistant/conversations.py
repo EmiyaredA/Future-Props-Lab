@@ -16,6 +16,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.concurrency.revisions import RevisionConflictError
 from app.core.config import Settings, get_settings
 from app.core.time import iso_utc, utc_now
+from app.files.assets import download_filename
 from app.llm.providers import ChatMessageInput, ImageInput
 from app.models import (
     ModelEntry,
@@ -527,7 +528,11 @@ class VisualAssistantConversations:
                 continue
             asset_id = str(part.get("asset_id") or "")
             asset = assets.get(asset_id)
-            display_name = asset.display_name if asset is not None else "素材不可用"
+            display_name = (
+                download_filename(asset.display_name, asset.original_filename)
+                if asset is not None
+                else "素材不可用"
+            )
             if for_model:
                 chunks.append(f"[引用素材：{display_name}；asset_id={asset_id}]")
             else:
