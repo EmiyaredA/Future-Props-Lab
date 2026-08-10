@@ -8,6 +8,7 @@ from sqlalchemy import delete, update
 import app.deps as deps
 from app.core.config import get_settings
 from app.core.db import SessionLocal
+from app.files.storage import AssetStorage
 from app.galgame_workshop.story import build_route_report
 from app.main import app
 from app.models import (
@@ -1631,7 +1632,7 @@ async def test_galgame_scene_background_missing_file_blocks_completion() -> None
     async with SessionLocal() as session:
         row = await session.get(VisualAsset, uploaded["id"])
         assert row is not None
-        (get_settings().visual_asset_path / row.storage_key).unlink()
+        AssetStorage(get_settings()).path_for(row).unlink()
 
     async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
         report = (

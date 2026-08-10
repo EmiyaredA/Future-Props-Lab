@@ -506,9 +506,7 @@ test("builds, saves, checks, and plays a branching Galgame slice", async ({
     page.getByRole("button", { name: /rainy-cafe.mp3，1 处引用/ }),
   ).toBeVisible();
   await page.getByRole("button", { name: "列表视图" }).click();
-  await page
-    .getByRole("button", { name: /rainy-cafe.mp3，1 处引用/ })
-    .click();
+  await page.getByRole("button", { name: /rainy-cafe.mp3，1 处引用/ }).click();
   await expect(
     page.getByRole("complementary", { name: "资源详情" }),
   ).toContainText("rainy-cafe.mp3");

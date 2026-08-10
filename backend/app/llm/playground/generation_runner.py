@@ -13,6 +13,7 @@ from app.core.config import Settings, get_settings
 from app.core.credentials import decrypt_secret
 from app.core.db import SessionLocal
 from app.core.time import utc_now
+from app.files.storage import AssetStorage
 from app.llm.generation_runtime import (
     GenerationMaterializationError,
     PollingGenerationRunner,
@@ -61,6 +62,7 @@ class ModelTestGenerationRunner(PollingGenerationRunner):
         super().__init__()
         self.session_factory = session_factory
         self.settings = settings or get_settings()
+        self.storage = AssetStorage(self.settings)
         self.download_transport = download_transport
         self.temporary_media_transport = temporary_media_transport
 
@@ -276,7 +278,7 @@ class ModelTestGenerationRunner(PollingGenerationRunner):
             legacy = await session.get(VisualAsset, asset_id)
             if legacy is None or legacy.media_kind != expected_kind:
                 raise ValueError("参考素材已不存在或类型不匹配")
-            return self.settings.visual_asset_path / legacy.storage_key, legacy.mime_type
+            return self.storage.path_for(legacy), legacy.mime_type
 
     async def _temporary_asset_url(self, task_id: str, asset_id: str, expected_kind: str) -> str:
         try:

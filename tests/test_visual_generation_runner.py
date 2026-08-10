@@ -11,6 +11,7 @@ from sqlalchemy import delete
 
 from app.core.config import get_settings
 from app.core.db import SessionLocal
+from app.files.storage import AssetStorage
 from app.llm.providers.temporary_media import TemporaryMediaError
 from app.models import (
     ModelEntry,
@@ -108,7 +109,12 @@ async def _cleanup(provider_id: str, project_id: str) -> None:
         await session.execute(delete(ModelProvider).where(ModelProvider.id == provider_id))
         await session.commit()
     for asset in assets:
-        (get_settings().visual_asset_path / asset["storage_key"]).unlink(missing_ok=True)
+        path = AssetStorage(get_settings()).target_path(
+            str(asset["storage_key"]),
+            visual_project_id=project_id,
+            galgame_project_id=None,
+        )
+        path.unlink(missing_ok=True)
 
 
 def test_generated_type_requires_matching_mime_and_signature() -> None:
@@ -351,6 +357,6 @@ async def test_processing_result_completes_only_after_asset_is_saved(
             asset = await session.get(VisualAsset, completed.result_asset_id)
             assert asset is not None
             assert asset.project_id == project.id
-            assert (get_settings().visual_asset_path / asset.storage_key).is_file()
+            assert AssetStorage(get_settings()).path_for(asset).is_file()
     finally:
         await _cleanup(provider.id, project.id)

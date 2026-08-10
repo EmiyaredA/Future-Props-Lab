@@ -13,6 +13,8 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from app.concurrency.revisions import RevisionConflictError
 from app.core.config import get_settings
 from app.core.db import SessionLocal, engine
+from app.files.layout_migration import reconcile_project_trash
+from app.files.storage import AssetStorage
 from app.galgame_workshop.asr import GalgameAsrRunner
 from app.llm.catalog.seed import seed_sayflow_text_catalog
 from app.llm.playground.generation_runner import ModelTestGenerationRunner
@@ -35,6 +37,7 @@ settings = get_settings()
 async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
     apply_migrations(settings.database_path)
     async with SessionLocal() as session:
+        await reconcile_project_trash(session, AssetStorage(settings))
         await seed_sayflow_text_catalog(session)
     await recover_interrupted_visual_assistant_runs()
     runner = VisualGenerationRunner()

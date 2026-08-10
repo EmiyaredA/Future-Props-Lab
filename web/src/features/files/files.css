@@ -1536,3 +1536,48 @@ button.file-item-main:focus-visible {
     padding: 16px;
   }
 }
+/* Project storage layout maintenance */
+.file-storage-migration {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: center;
+  margin-bottom: 16px;
+  padding: 14px 16px;
+  border: 1px solid color-mix(in srgb, var(--accent) 32%, var(--border));
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--accent) 7%, var(--surface));
+}
+.file-storage-migration-icon,
+.file-storage-migration-complete svg {
+  display: grid;
+  place-items: center;
+  color: var(--accent);
+}
+.file-storage-migration-icon svg {
+  width: 22px;
+  height: 22px;
+}
+.file-storage-migration strong,
+.file-storage-migration p,
+.file-storage-migration small {
+  display: block;
+}
+.file-storage-migration p {
+  margin: 4px 0 0;
+  color: var(--muted);
+}
+.file-storage-migration small {
+  margin-top: 5px;
+  color: var(--danger);
+}
+.file-storage-migration button {
+  min-width: 96px;
+}
+.file-storage-migration-complete {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 16px;
+  color: var(--success, #2f9e67);
+}

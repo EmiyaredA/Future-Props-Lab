@@ -11,6 +11,7 @@ import {
   X,
 } from "lucide-react";
 import { ApiError } from "@platform/api/client";
+import { ProjectLibraryCard } from "@shared/ui/project-library";
 import {
   createGalgameWorkshopProject,
   deleteGalgameWorkshopProject,
@@ -25,15 +26,6 @@ type Editor =
   | { mode: "rename"; project: GalgameWorkshopProject; title: string }
   | { mode: "delete"; project: GalgameWorkshopProject }
   | null;
-
-function relativeTime(value: string) {
-  const elapsed = Date.now() - new Date(value).getTime();
-  if (elapsed < 60_000) return "刚刚更新";
-  if (elapsed < 3_600_000) return `${Math.floor(elapsed / 60_000)} 分钟前更新`;
-  if (elapsed < 86_400_000)
-    return `${Math.floor(elapsed / 3_600_000)} 小时前更新`;
-  return `${new Date(value).toLocaleDateString("zh-CN")} 更新`;
-}
 
 function errorMessage(error: unknown) {
   if (error instanceof ApiError && error.problem.code === "revision_conflict")
@@ -179,84 +171,65 @@ export function GalgameWorkshopProjectsPage({
       ) : filtered.length ? (
         <div className="workshop-project-grid">
           {filtered.map((project) => (
-            <article className="workshop-project-card" key={project.id}>
-              <button
-                className="workshop-project-cover galgame"
-                onClick={() => onOpenProject(project.id)}
-              >
-                <span className="workshop-project-cover-content">
-                  <span className="workshop-project-cover-label">
-                    <strong>故事工程</strong>
-                    <small>打开结构、试玩与检查</small>
-                  </span>
-                </span>
-              </button>
-              <div className="workshop-project-copy">
-                <div className="workshop-project-meta">
-                  <span className={`workshop-status ${project.status}`}>
-                    {project.status === "draft" ? "草稿" : "已完成"}
-                  </span>
-                  <small>{relativeTime(project.updated_at)}</small>
-                </div>
-                <h2>{project.title}</h2>
-                <div className="workshop-project-actions">
-                  <div className="workshop-project-primary-actions">
-                    <button onClick={() => onOpenProject(project.id)}>
-                      <Maximize2 aria-hidden />
-                      打开
-                    </button>
-                  </div>
-                  <div className="workshop-project-secondary-actions">
-                    <button
-                      aria-label="重命名"
-                      title="重命名"
-                      onClick={() =>
-                        setEditor({
-                          mode: "rename",
-                          project,
-                          title: project.title,
-                        })
-                      }
-                    >
-                      <Pencil aria-hidden />
-                    </button>
-                    <button
-                      aria-label={project.status === "draft" ? "完成" : "恢复"}
-                      title={
-                        project.status === "draft"
-                          ? "标记为已完成"
-                          : "恢复为草稿"
-                      }
-                      onClick={() =>
-                        patchMutation.mutate({
-                          project,
-                          changes: {
-                            status:
-                              project.status === "draft"
-                                ? "completed"
-                                : "draft",
-                          },
-                        })
-                      }
-                    >
-                      {project.status === "draft" ? (
-                        <Check aria-hidden />
-                      ) : (
-                        <RefreshCcw aria-hidden />
-                      )}
-                    </button>
-                    <button
-                      className="danger"
-                      aria-label="删除"
-                      title="删除"
-                      onClick={() => setEditor({ mode: "delete", project })}
-                    >
-                      <Trash2 aria-hidden />
-                    </button>
-                  </div>
-                </div>
+            <ProjectLibraryCard
+              key={project.id}
+              project={project}
+              cover="galgame"
+              coverTitle="故事工程"
+              coverDescription="打开结构、试玩与检查"
+              onOpen={() => onOpenProject(project.id)}
+            >
+              <div className="workshop-project-primary-actions">
+                <button onClick={() => onOpenProject(project.id)}>
+                  <Maximize2 aria-hidden />
+                  打开
+                </button>
               </div>
-            </article>
+              <div className="workshop-project-secondary-actions">
+                <button
+                  aria-label="重命名"
+                  title="重命名"
+                  onClick={() =>
+                    setEditor({
+                      mode: "rename",
+                      project,
+                      title: project.title,
+                    })
+                  }
+                >
+                  <Pencil aria-hidden />
+                </button>
+                <button
+                  aria-label={project.status === "draft" ? "完成" : "恢复"}
+                  title={
+                    project.status === "draft" ? "标记为已完成" : "恢复为草稿"
+                  }
+                  onClick={() =>
+                    patchMutation.mutate({
+                      project,
+                      changes: {
+                        status:
+                          project.status === "draft" ? "completed" : "draft",
+                      },
+                    })
+                  }
+                >
+                  {project.status === "draft" ? (
+                    <Check aria-hidden />
+                  ) : (
+                    <RefreshCcw aria-hidden />
+                  )}
+                </button>
+                <button
+                  className="danger"
+                  aria-label="删除"
+                  title="删除"
+                  onClick={() => setEditor({ mode: "delete", project })}
+                >
+                  <Trash2 aria-hidden />
+                </button>
+              </div>
+            </ProjectLibraryCard>
           ))}
         </div>
       ) : (projectsQuery.data?.items.length ?? 0) === 0 ? (

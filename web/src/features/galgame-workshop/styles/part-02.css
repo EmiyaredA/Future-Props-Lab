@@ -1,0 +1,1794 @@
+.galgame-voice-stale {
+  display: flex;
+  gap: 6px;
+  align-items: flex-start;
+  color: var(--gal-warning);
+  line-height: 1.45;
+}
+
+.galgame-character-voice-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 0.8fr);
+  gap: 18px;
+  padding: 20px;
+}
+
+.galgame-character-voice-form > section {
+  padding: 18px;
+  border: 1px solid var(--gal-line);
+  border-radius: 12px;
+  background: var(--gal-surface);
+}
+
+.galgame-character-voice-form > section > header {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 18px;
+}
+
+.galgame-character-voice-form > section > header > span:first-child {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  color: var(--gal-accent);
+  border-radius: 9px;
+  background: var(--gal-accent-soft);
+}
+
+.galgame-character-voice-form header strong,
+.galgame-character-voice-form header small {
+  display: block;
+}
+
+.galgame-character-voice-form header small {
+  margin-top: 3px;
+  color: var(--gal-muted);
+  font-size: 10px;
+}
+
+.galgame-character-voice-sample > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 12px;
+}
+
+.galgame-character-voice-empty {
+  display: grid;
+  place-items: center;
+  min-height: 150px;
+  color: var(--gal-muted);
+  border: 1px dashed var(--gal-line-strong);
+  border-radius: 10px;
+}
+
+.galgame-character-voice-empty svg {
+  width: 28px;
+  height: 28px;
+}
+
+.galgame-audio-picker-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.galgame-audio-picker-choice {
+  display: grid;
+  padding: 7px;
+  text-align: left;
+  border: 1px solid var(--gal-line);
+  border-radius: 9px;
+  background: var(--gal-surface);
+}
+
+.galgame-audio-picker-choice > button {
+  margin: 3px 8px 7px;
+  padding: 6px 8px;
+  color: var(--gal-muted);
+  border: 1px solid var(--gal-line);
+  border-radius: 6px;
+  background: var(--gal-surface-strong);
+  font-size: 10px;
+}
+
+.galgame-sound-workspace {
+  display: grid;
+  grid-template-columns: 210px minmax(440px, 1fr) 320px;
+  min-height: 0;
+  height: calc(100vh - 103px);
+  background: var(--gal-bg);
+}
+
+.galgame-sound-categories,
+.galgame-sound-inspector {
+  min-width: 0;
+  border-right: 1px solid var(--gal-line);
+  background: var(--gal-panel);
+}
+
+.galgame-sound-categories {
+  display: flex;
+  flex-direction: column;
+}
+
+.galgame-sound-categories > header,
+.galgame-sound-library > header {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  min-height: 64px;
+  padding: 0 14px;
+  border-bottom: 1px solid var(--gal-line);
+}
+
+.galgame-sound-categories > header {
+  justify-content: space-between;
+}
+
+.galgame-sound-categories > header small,
+.galgame-sound-categories > header strong,
+.galgame-sound-library > header strong,
+.galgame-sound-library > header small {
+  display: block;
+}
+
+.galgame-sound-categories > header small {
+  color: var(--gal-accent);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+}
+
+.galgame-sound-categories > header strong,
+.galgame-sound-library > header strong {
+  margin-top: 3px;
+  font-size: 13px;
+}
+
+.galgame-sound-categories > header button {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--gal-line);
+  border-radius: 7px;
+  background: var(--gal-surface);
+}
+
+.galgame-sound-role-list {
+  display: grid;
+  gap: 3px;
+  padding: 10px 8px;
+}
+
+.galgame-sound-role-list button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 38px;
+  padding: 0 10px;
+  color: var(--gal-muted);
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+}
+
+.galgame-sound-role-list button span {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.galgame-sound-role-list button em {
+  color: var(--gal-faint);
+  font-size: 10px;
+  font-style: normal;
+}
+
+.galgame-sound-role-list button.active {
+  color: var(--gal-accent);
+  background: var(--gal-accent-soft);
+}
+
+.galgame-sound-mix-summary {
+  margin: 8px;
+  padding: 13px;
+  border: 1px solid var(--gal-line);
+  border-radius: 10px;
+  background: var(--gal-surface);
+}
+
+.galgame-sound-mix-summary strong,
+.galgame-sound-mix-summary small,
+.galgame-sound-mix-summary span {
+  display: block;
+}
+
+.galgame-sound-mix-summary small,
+.galgame-sound-mix-summary span {
+  margin-top: 5px;
+  color: var(--gal-muted);
+  font-size: 10px;
+}
+
+.galgame-sound-mix-summary span {
+  color: var(--gal-ok);
+}
+
+.galgame-sound-mix-summary > div {
+  display: flex;
+  gap: 3px;
+  align-items: center;
+  height: 30px;
+  margin-top: 9px;
+}
+
+.galgame-sound-mix-summary i {
+  flex: 1;
+  border-radius: 2px;
+  background: linear-gradient(var(--gal-accent), var(--gal-accent-hover));
+}
+
+.galgame-sound-categories > footer {
+  margin-top: auto;
+  padding: 13px;
+  color: var(--gal-muted);
+  border-top: 1px solid var(--gal-line);
+  font-size: 9px;
+}
+
+.galgame-sound-library {
+  min-width: 0;
+  overflow: auto;
+  background: color-mix(in srgb, var(--gal-bg) 94%, var(--gal-panel));
+}
+
+.galgame-sound-library > header > span {
+  margin-right: auto;
+}
+
+.galgame-sound-library > header small {
+  margin-top: 3px;
+  color: var(--gal-muted);
+  font-size: 9px;
+}
+
+.galgame-sound-library > header label {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  width: 180px;
+  height: 34px;
+  padding: 0 9px;
+  color: var(--gal-muted);
+  border: 1px solid var(--gal-line);
+  border-radius: 7px;
+  background: var(--gal-surface);
+}
+
+.galgame-sound-library > header input {
+  min-width: 0;
+  width: 100%;
+  border: 0;
+  outline: 0;
+  background: transparent;
+}
+
+.galgame-sound-library > header button {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  height: 34px;
+  padding: 0 10px;
+  border: 1px solid var(--gal-line);
+  border-radius: 7px;
+  background: var(--gal-surface);
+  white-space: nowrap;
+}
+
+.galgame-sound-library > header button.primary {
+  color: #fff;
+  border-color: var(--gal-accent);
+  background: var(--gal-accent);
+}
+
+.galgame-sound-list {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+}
+
+.galgame-sound-list article {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 7px 12px;
+  border: 1px solid var(--gal-line);
+  border-radius: 10px;
+  background: var(--gal-surface);
+}
+
+.galgame-sound-list article.selected {
+  border-color: var(--gal-accent-line);
+  box-shadow: inset 3px 0 0 var(--gal-accent);
+}
+
+.galgame-sound-list article > button {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 5px;
+  text-align: left;
+  border: 0;
+  background: transparent;
+}
+
+.galgame-sound-list article em {
+  padding: 4px 8px;
+  color: var(--gal-accent);
+  border: 1px solid var(--gal-accent-line);
+  border-radius: 10px;
+  background: var(--gal-accent-soft);
+  font-size: 9px;
+  font-style: normal;
+}
+
+.galgame-sound-list article > button > small {
+  color: var(--gal-muted);
+  font-size: 9px;
+}
+
+.galgame-sound-empty,
+.galgame-sound-inspector-empty {
+  display: grid;
+  place-items: center;
+  min-height: 230px;
+  color: var(--gal-muted);
+  text-align: center;
+}
+
+.galgame-sound-empty span {
+  font-size: 11px;
+}
+
+.galgame-sound-inspector {
+  display: flex;
+  flex-direction: column;
+  border-right: 0;
+  border-left: 1px solid var(--gal-line);
+}
+
+.galgame-sound-inspector > nav {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  min-height: 44px;
+  border-bottom: 1px solid var(--gal-line);
+}
+
+.galgame-sound-inspector > nav button {
+  position: relative;
+  color: var(--gal-muted);
+  border: 0;
+  background: transparent;
+}
+
+.galgame-sound-inspector > nav button.active {
+  color: var(--gal-text);
+}
+
+.galgame-sound-inspector > nav button.active::after {
+  position: absolute;
+  right: 25%;
+  bottom: 0;
+  left: 25%;
+  height: 2px;
+  background: var(--gal-accent);
+  content: "";
+}
+
+.galgame-sound-inspector > div {
+  padding: 15px;
+  overflow: auto;
+}
+
+.galgame-sound-inspector > div > header {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.galgame-sound-inspector > div > header > span:first-child {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  color: var(--gal-accent);
+  border: 1px solid var(--gal-accent-line);
+  border-radius: 9px;
+  background: var(--gal-accent-soft);
+}
+
+.galgame-sound-inspector header strong,
+.galgame-sound-inspector header small {
+  display: block;
+}
+
+.galgame-sound-inspector header small {
+  margin-bottom: 3px;
+  color: var(--gal-muted);
+  font-size: 9px;
+}
+
+.galgame-sound-inspector .galgame-field {
+  margin-top: 14px;
+}
+
+.galgame-sound-references {
+  margin-top: 17px;
+  padding-top: 13px;
+  border-top: 1px solid var(--gal-line);
+}
+
+.galgame-sound-references > strong {
+  display: block;
+  margin-bottom: 7px;
+  font-size: 11px;
+}
+
+.galgame-sound-references button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 9px 0;
+  color: var(--gal-text);
+  text-align: left;
+  border: 0;
+  border-bottom: 1px solid var(--gal-line);
+  background: transparent;
+  font-size: 10px;
+}
+
+.galgame-sound-references > small {
+  color: var(--gal-muted);
+}
+
+.galgame-sound-inspector > footer {
+  margin-top: auto;
+  padding: 12px;
+  border-top: 1px solid var(--gal-line);
+}
+
+.galgame-sound-inspector > footer button {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 34px;
+  color: var(--gal-danger);
+  border: 1px solid var(--gal-line);
+  border-radius: 7px;
+  background: var(--gal-surface);
+}
+
+.galgame-player-header-actions {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.galgame-player-header-actions button.active {
+  color: var(--gal-accent);
+  border-color: var(--gal-accent-line);
+  background: var(--gal-accent-soft);
+}
+
+.galgame-player-advance-mode {
+  display: inline-flex;
+  padding: 2px;
+  border: 1px solid var(--gal-line);
+  border-radius: 7px;
+  background: var(--gal-panel);
+}
+
+.galgame-player-advance-mode button {
+  width: auto;
+  min-width: 46px;
+  min-height: 26px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  font-size: 9px;
+  white-space: nowrap;
+}
+
+.galgame-player-advance-mode button.active {
+  background: var(--gal-accent-soft);
+  color: var(--gal-accent);
+}
+
+.galgame-player-aspect {
+  position: absolute;
+  z-index: 32;
+  top: 44px;
+  right: 10px;
+  width: 196px;
+  padding: 11px;
+  color: var(--gal-text);
+  border: 1px solid var(--gal-line-strong);
+  border-radius: 10px;
+  background: var(--gal-surface);
+  box-shadow: var(--gal-shadow);
+}
+
+.galgame-player-aspect > header {
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.galgame-player-aspect-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 5px;
+}
+
+.galgame-player-aspect-options button {
+  min-height: 28px;
+  padding: 0 6px;
+  border: 1px solid var(--gal-line);
+  border-radius: 7px;
+  background: var(--gal-panel);
+  color: var(--gal-muted);
+  font-size: 10px;
+  cursor: pointer;
+}
+
+.galgame-player-aspect-options button.active {
+  color: var(--gal-accent);
+  border-color: var(--gal-accent-line);
+  background: var(--gal-accent-soft);
+}
+
+.galgame-player-aspect-custom {
+  margin-top: 9px;
+  display: flex;
+  align-items: end;
+  gap: 6px;
+}
+
+.galgame-player-aspect-custom label {
+  min-width: 0;
+  flex: 1;
+  display: grid;
+  gap: 3px;
+  font-size: 9px;
+  color: var(--gal-muted);
+}
+
+.galgame-player-aspect-custom input {
+  width: 100%;
+  min-height: 28px;
+  padding: 0 7px;
+  border: 1px solid var(--gal-line);
+  border-radius: 7px;
+  background: var(--gal-panel);
+  color: var(--gal-text);
+}
+
+.galgame-player-aspect-custom > span {
+  padding-bottom: 6px;
+  color: var(--gal-muted);
+  font-size: 12px;
+}
+
+.galgame-stage-host {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background: rgb(5 10 18 / 0.88);
+  container-type: size;
+}
+
+.galgame-stage-host[hidden] {
+  display: none;
+}
+
+.galgame-stage-host[data-aspect-mode="auto"] .galgame-stage {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 16 / 9;
+}
+
+.galgame-editor-grid
+  .galgame-preview-focus
+  .galgame-stage-host[data-aspect-mode="auto"]
+  .galgame-stage {
+  height: 100%;
+  aspect-ratio: auto;
+}
+
+.galgame-stage-host:not([data-aspect-mode="auto"]) .galgame-stage {
+  width: min(
+    100cqw,
+    calc(100cqh * var(--galgame-stage-aspect-w) / var(--galgame-stage-aspect-h))
+  );
+  height: min(
+    100cqh,
+    calc(100cqw * var(--galgame-stage-aspect-h) / var(--galgame-stage-aspect-w))
+  );
+  max-width: 100%;
+  max-height: 100%;
+  flex: none;
+}
+
+.galgame-player-mixer {
+  position: absolute;
+  z-index: 30;
+  top: 10px;
+  right: 10px;
+  width: 155px;
+  padding: 11px;
+  color: var(--gal-text);
+  border: 1px solid var(--gal-line-strong);
+  border-radius: 10px;
+  background: var(--gal-surface);
+  box-shadow: var(--gal-shadow);
+}
+
+.galgame-player-mixer > header,
+.galgame-player-mixer label span {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.galgame-player-mixer > header {
+  margin-bottom: 8px;
+}
+
+.galgame-player-mixer label {
+  display: grid;
+  gap: 3px;
+  margin: 7px 0;
+  font-size: 9px;
+}
+
+.galgame-player-mixer label em {
+  color: var(--gal-accent);
+  font-style: normal;
+}
+
+.galgame-player-mixer input {
+  width: 100%;
+  accent-color: var(--gal-accent);
+}
+
+.galgame-player-enable-audio {
+  position: absolute;
+  z-index: 31;
+  top: 10px;
+  left: 10px;
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  padding: 7px 9px;
+  color: #fff;
+  border: 1px solid var(--gal-accent-line);
+  border-radius: 8px;
+  background: var(--gal-accent-hover);
+  box-shadow: var(--gal-shadow-soft);
+  font-size: 10px;
+}
+
+.galgame-player-runtime-controls {
+  min-height: 44px;
+  padding: 7px 9px;
+  border-top: 1px solid var(--gal-line);
+  background: var(--gal-surface-strong);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.galgame-player-runtime-transport {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.galgame-player-runtime-controls button {
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 1px solid var(--gal-line);
+  border-radius: 6px;
+  background: var(--gal-surface);
+  color: var(--gal-text);
+  display: grid;
+  place-items: center;
+}
+
+.galgame-player-runtime-controls .galgame-player-advance-mode button {
+  width: auto;
+  min-width: 46px;
+  padding: 0 10px;
+  border: 0;
+}
+
+.galgame-player-runtime-controls > input {
+  min-width: 80px;
+  flex: 1;
+  accent-color: var(--gal-accent);
+}
+
+.galgame-player-runtime-controls > time,
+.galgame-player-runtime-hint,
+.galgame-player-advance-control > small {
+  color: var(--gal-muted);
+  font-size: 9px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.galgame-player-runtime-hint {
+  margin-right: auto;
+}
+
+.galgame-player-advance-control {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+@media (max-width: 1180px) {
+  .galgame-sound-workspace {
+    grid-template-columns: 180px minmax(0, 1fr);
+  }
+  .galgame-sound-inspector {
+    display: none;
+  }
+  .galgame-sound-library > header label {
+    display: none;
+  }
+  .galgame-character-voice-form {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  .galgame-sound-workspace {
+    grid-template-columns: 1fr;
+    height: auto;
+    min-height: calc(100vh - 103px);
+  }
+  .galgame-sound-categories {
+    display: none;
+  }
+  .galgame-sound-library > header {
+    flex-wrap: wrap;
+    padding: 10px;
+  }
+  .galgame-sound-library > header > span {
+    width: 100%;
+  }
+  .galgame-sound-list article > button {
+    gap: 5px;
+  }
+  .galgame-sound-list article > button > small {
+    display: none;
+  }
+  .galgame-audio-picker-grid {
+    grid-template-columns: 1fr;
+  }
+  .galgame-character-voice-form {
+    padding: 12px;
+  }
+}
+
+.galgame-assets-dashboard {
+  position: relative;
+  display: grid;
+  min-width: 0;
+  height: 100%;
+  grid-template-columns: 248px minmax(620px, 1fr) 350px;
+  overflow: hidden;
+  background: var(--gal-surface);
+}
+
+.galgame-assets-dashboard button,
+.galgame-assets-dashboard input,
+.galgame-assets-dashboard select {
+  font: inherit;
+}
+
+.galgame-assets-dashboard button {
+  color: inherit;
+}
+
+.galgame-assets-filter-panel {
+  z-index: 3;
+  min-width: 0;
+  overflow: auto;
+  border-right: 1px solid var(--gal-line);
+  background: color-mix(in srgb, var(--gal-panel) 92%, var(--gal-surface));
+}
+
+.galgame-assets-filter-panel > header,
+.galgame-assets-toolbar,
+.galgame-assets-browser > header,
+.galgame-assets-import-dialog > header,
+.galgame-assets-import-dialog > footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.galgame-assets-filter-panel > header {
+  height: 46px;
+  padding: 0 14px 0 16px;
+}
+
+.galgame-assets-filter-panel > header > div,
+.galgame-assets-toolbar-actions,
+.galgame-assets-view-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.galgame-assets-filter-panel > header button,
+.galgame-assets-toolbar-actions > button,
+.galgame-assets-view-switch button,
+.galgame-assets-inspector-close,
+.galgame-assets-import-dialog > header button {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  place-items: center;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+}
+
+.galgame-assets-filter-panel > header button:hover,
+.galgame-assets-toolbar-actions > button:hover,
+.galgame-assets-view-switch button:hover,
+.galgame-assets-inspector-close:hover,
+.galgame-assets-import-dialog > header button:hover {
+  background: var(--gal-surface-strong);
+}
+
+.galgame-assets-dashboard svg {
+  width: 17px;
+  height: 17px;
+}
+
+.galgame-assets-search {
+  display: flex;
+  height: 38px;
+  align-items: center;
+  gap: 8px;
+  margin: 0 12px 12px;
+  padding: 0 10px;
+  border: 1px solid var(--gal-line);
+  border-radius: 7px;
+  background: var(--gal-surface);
+  color: var(--gal-muted);
+}
+
+.galgame-assets-search input {
+  min-width: 0;
+  flex: 1;
+  padding: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--gal-text);
+}
+
+.galgame-assets-search button {
+  display: grid;
+  padding: 0;
+  place-items: center;
+  border: 0;
+  background: transparent;
+}
+
+.galgame-assets-filter-panel nav,
+.galgame-assets-filter-panel > section {
+  display: grid;
+  gap: 2px;
+  padding: 0 8px 12px;
+}
+
+.galgame-assets-filter-panel > section > small {
+  padding: 10px 8px 6px;
+  color: var(--gal-faint);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+}
+
+.galgame-assets-filter-panel nav button,
+.galgame-assets-filter-panel > section > button,
+.galgame-assets-tree-row > button:last-child {
+  display: grid;
+  min-width: 0;
+  min-height: 32px;
+  grid-template-columns: 20px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 9px;
+  border: 0;
+  border-radius: 6px;
+  text-align: left;
+  background: transparent;
+}
+
+.galgame-assets-filter-panel nav button span,
+.galgame-assets-filter-panel > section > button span,
+.galgame-assets-tree-row span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.galgame-assets-filter-panel button em,
+.galgame-assets-tree-row em {
+  min-width: 24px;
+  padding: 1px 6px;
+  border-radius: 10px;
+  background: var(--gal-surface-strong);
+  color: var(--gal-faint);
+  font-size: 11px;
+  font-style: normal;
+  text-align: center;
+}
+
+.galgame-assets-filter-panel nav button.active,
+.galgame-assets-filter-panel > section > button.active,
+.galgame-assets-tree-row.active {
+  color: var(--gal-accent);
+  background: var(--gal-accent-soft);
+  box-shadow: inset 3px 0 0 var(--gal-accent);
+}
+
+.galgame-assets-filter-panel button.active em,
+.galgame-assets-tree-row.active em {
+  background: var(--gal-accent);
+  color: #fff;
+}
+
+.galgame-assets-filter-panel .is-image svg,
+.galgame-assets-type-card .is-image {
+  color: #5e65e8;
+}
+
+.galgame-assets-filter-panel .is-audio svg,
+.galgame-assets-type-card .is-audio {
+  color: #ef5ca3;
+}
+
+.galgame-assets-filter-panel .is-video svg,
+.galgame-assets-type-card .is-video {
+  color: #f59e0b;
+}
+
+.galgame-assets-filter-panel .is-font svg,
+.galgame-assets-type-card .is-font {
+  color: #45b9a8;
+}
+
+.galgame-assets-filter-panel .is-particle svg,
+.galgame-assets-type-card .is-particle {
+  color: #a765e8;
+}
+
+.galgame-assets-filter-panel .is-ui svg,
+.galgame-assets-type-card .is-ui {
+  color: #35a9e7;
+}
+
+.galgame-assets-filter-panel .is-transition svg,
+.galgame-assets-type-card .is-transition {
+  color: #f4864b;
+}
+
+.galgame-assets-directory-tree {
+  border-top: 1px solid var(--gal-line);
+}
+
+.galgame-assets-directory-tree ul {
+  display: grid;
+  gap: 1px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.galgame-assets-tree-row {
+  display: grid;
+  grid-template-columns: 21px minmax(0, 1fr);
+  align-items: center;
+  padding-left: calc(var(--tree-depth) * 12px);
+  border-radius: 6px;
+}
+
+.galgame-assets-tree-row > button:last-child {
+  padding-left: 1px;
+}
+
+.galgame-assets-tree-toggle {
+  display: grid;
+  width: 21px;
+  height: 30px;
+  padding: 0;
+  place-items: center;
+  border: 0;
+  background: transparent;
+}
+
+.galgame-assets-tree-toggle:disabled {
+  opacity: 0;
+}
+
+.galgame-assets-tree-toggle svg {
+  width: 13px;
+  height: 13px;
+}
+
+.galgame-assets-workbench {
+  display: grid;
+  min-width: 0;
+  min-height: 0;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  overflow: hidden;
+  background: var(--gal-surface);
+}
+
+.galgame-assets-toolbar {
+  min-height: 46px;
+  padding: 7px 14px 7px 18px;
+  border-bottom: 1px solid var(--gal-line);
+}
+
+.galgame-assets-toolbar > div:first-child {
+  display: flex;
+  min-width: 0;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.galgame-assets-toolbar > div:first-child > span {
+  overflow: hidden;
+  color: var(--gal-muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.galgame-assets-view-switch {
+  padding: 2px;
+  border-radius: 7px;
+  background: var(--gal-surface-strong);
+}
+
+.galgame-assets-view-switch button {
+  width: 27px;
+  height: 27px;
+}
+
+.galgame-assets-view-switch button.active {
+  color: var(--gal-accent);
+  background: var(--gal-surface);
+  box-shadow: 0 1px 4px rgb(20 30 45 / 0.12);
+}
+
+.galgame-assets-zoom {
+  display: flex;
+  width: 100px;
+  align-items: center;
+  padding: 0 8px;
+}
+
+.galgame-assets-zoom input {
+  width: 100%;
+  accent-color: var(--gal-accent);
+}
+
+.galgame-assets-filter-open,
+.galgame-assets-filter-close {
+  display: none !important;
+}
+
+.galgame-assets-summary {
+  display: grid;
+  min-height: 270px;
+  grid-template-columns:
+    minmax(330px, 1.65fr) minmax(230px, 1fr) minmax(170px, 0.72fr)
+    minmax(250px, 1.05fr);
+  border-bottom: 1px solid var(--gal-line);
+  background: var(--gal-surface);
+}
+
+.galgame-assets-summary > article {
+  min-width: 0;
+  padding: 20px;
+  border-right: 1px solid var(--gal-line);
+}
+
+.galgame-assets-summary > article:last-child {
+  border-right: 0;
+}
+
+.galgame-assets-summary > article > small {
+  display: block;
+  margin-bottom: 14px;
+  color: var(--gal-faint);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+}
+
+.galgame-assets-overview-values {
+  display: flex;
+  gap: 28px;
+}
+
+.galgame-assets-overview-values > span {
+  display: grid;
+  align-content: start;
+}
+
+.galgame-assets-overview-values small {
+  color: var(--gal-muted);
+}
+
+.galgame-assets-overview-values strong {
+  margin-top: 4px;
+  font-size: 28px;
+  line-height: 1;
+}
+
+.galgame-assets-overview-values em {
+  margin-top: 5px;
+  color: var(--gal-muted);
+  font-style: normal;
+}
+
+.galgame-assets-package-card {
+  display: grid;
+  gap: 10px;
+  margin-top: 18px;
+  padding: 14px;
+  border: 1px solid var(--gal-line);
+  border-radius: 9px;
+  background: var(--gal-panel);
+}
+
+.galgame-assets-package-card > div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.galgame-assets-package-card del {
+  color: var(--gal-faint);
+}
+
+.galgame-assets-package-card strong {
+  color: var(--gal-accent);
+  font-size: 21px;
+}
+
+.galgame-assets-package-card em {
+  margin-left: auto;
+  color: var(--gal-accent);
+  font-size: 11px;
+  font-style: normal;
+}
+
+.galgame-assets-package-card progress,
+.galgame-assets-type-card progress,
+.galgame-assets-module-card progress {
+  width: 100%;
+  height: 5px;
+  border: 0;
+  border-radius: 10px;
+  overflow: hidden;
+  accent-color: var(--gal-accent);
+}
+
+.galgame-assets-package-card footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--gal-muted);
+  font-size: 11px;
+}
+
+.galgame-assets-package-card footer i {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-right: 4px;
+  border-radius: 50%;
+  background: var(--gal-accent);
+}
+
+.galgame-assets-issues {
+  display: grid;
+  gap: 3px;
+  margin-top: 10px;
+  color: var(--gal-danger);
+  font-size: 11px;
+}
+
+.galgame-assets-issues strong {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.galgame-assets-issues button {
+  overflow: hidden;
+  padding: 2px 0;
+  border: 0;
+  color: var(--gal-danger);
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  background: transparent;
+}
+
+.galgame-assets-type-card {
+  display: grid;
+  align-content: start;
+  gap: 9px;
+}
+
+.galgame-assets-type-card > small {
+  margin-bottom: 4px !important;
+}
+
+.galgame-assets-type-card > button {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: 22px minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 7px;
+  padding: 0;
+  border: 0;
+  text-align: left;
+  background: transparent;
+}
+
+.galgame-assets-type-card > button > span {
+  display: grid;
+  min-width: 0;
+  gap: 4px;
+}
+
+.galgame-assets-type-card > button strong {
+  font-size: 12px;
+}
+
+.galgame-assets-type-card > button em,
+.galgame-assets-type-card > button small {
+  color: var(--gal-muted);
+  font-size: 11px;
+  font-style: normal;
+}
+
+.galgame-assets-largest-card details {
+  position: relative;
+}
+
+.galgame-assets-largest-card summary {
+  display: flex;
+  min-height: 62px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid var(--gal-line);
+  border-radius: 8px;
+  text-align: center;
+  cursor: pointer;
+  background: var(--gal-panel);
+  list-style: none;
+}
+
+.galgame-assets-largest-card details > div {
+  position: absolute;
+  z-index: 5;
+  top: calc(100% + 6px);
+  right: 0;
+  left: 0;
+  display: grid;
+  gap: 3px;
+  padding: 7px;
+  border: 1px solid var(--gal-line);
+  border-radius: 8px;
+  background: var(--gal-surface);
+  box-shadow: var(--gal-shadow);
+}
+
+.galgame-assets-largest-card details > div button {
+  display: flex;
+  min-width: 0;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 6px;
+  border: 0;
+  border-radius: 5px;
+  text-align: left;
+  background: transparent;
+}
+
+.galgame-assets-largest-card details > div button:hover {
+  background: var(--gal-surface-strong);
+}
+
+.galgame-assets-largest-card details > div span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.galgame-assets-largest-card details > div em {
+  flex: none;
+  color: var(--gal-muted);
+  font-size: 11px;
+  font-style: normal;
+}
+
+.galgame-assets-module-card > div {
+  display: grid;
+  gap: 6px;
+}
+
+.galgame-assets-module-card button {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 9px;
+  border: 1px solid var(--gal-line);
+  border-radius: 7px;
+  text-align: left;
+  background: var(--gal-surface);
+}
+
+.galgame-assets-module-card button.warning {
+  border-color: color-mix(in srgb, var(--gal-warning) 45%, var(--gal-line));
+}
+
+.galgame-assets-module-card button em,
+.galgame-assets-module-card button small {
+  color: var(--gal-muted);
+  font-size: 11px;
+  font-style: normal;
+}
+
+.galgame-assets-module-card button progress {
+  grid-column: 2 / -1;
+  height: 3px;
+}
+
+.galgame-assets-browser {
+  display: grid;
+  min-height: 0;
+  grid-template-rows: auto minmax(0, 1fr);
+  overflow: hidden;
+}
+
+.galgame-assets-browser > header {
+  min-height: 48px;
+  padding: 8px 18px;
+  border-bottom: 1px solid var(--gal-line);
+}
+
+.galgame-assets-browser > header > div {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 7px;
+}
+
+.galgame-assets-browser > header strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.galgame-assets-browser > header span {
+  flex: none;
+  color: var(--gal-muted);
+}
+
+.galgame-assets-browser > header > button {
+  padding: 5px 9px;
+  border: 1px solid var(--gal-line);
+  border-radius: 6px;
+  background: var(--gal-panel);
+}
+
+.galgame-assets-results {
+  display: grid;
+  min-height: 0;
+  grid-template-columns: repeat(
+    auto-fill,
+    minmax(min(100%, var(--asset-card-width)), 1fr)
+  );
+  align-content: start;
+  gap: 14px;
+  padding: 16px 18px 28px;
+  overflow: auto;
+}
+
+.galgame-assets-results > button {
+  display: grid;
+  min-width: 0;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--gal-line);
+  border-radius: 8px;
+  text-align: left;
+  background: var(--gal-surface);
+  box-shadow: 0 1px 3px rgb(20 30 45 / 0.04);
+}
+
+.galgame-assets-results > button:hover,
+.galgame-assets-results > button.selected {
+  border-color: var(--gal-accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--gal-accent) 15%, transparent);
+}
+
+.galgame-assets-results > button.orphaned {
+  border-style: dashed;
+}
+
+.galgame-assets-result-preview {
+  position: relative;
+  display: grid;
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  place-items: center;
+  overflow: hidden;
+  background: var(--gal-surface-strong);
+}
+
+.galgame-assets-result-preview > img,
+.galgame-assets-result-preview > video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.galgame-assets-result-preview > svg {
+  width: 42px;
+  height: 42px;
+  color: var(--gal-faint);
+}
+
+.galgame-assets-result-preview > .galgame-audio-preview {
+  width: calc(100% - 20px);
+}
+
+.galgame-assets-result-preview > small,
+.galgame-assets-result-preview > em {
+  position: absolute;
+  bottom: 8px;
+  padding: 2px 6px;
+  border-radius: 9px;
+  color: #fff;
+  font-size: 9px;
+  font-style: normal;
+  letter-spacing: 0.06em;
+  background: rgb(10 15 23 / 0.76);
+}
+
+.galgame-assets-result-preview > small {
+  left: 8px;
+}
+
+.galgame-assets-result-preview > em {
+  right: 8px;
+  color: var(--gal-accent);
+  background: color-mix(in srgb, var(--gal-surface) 94%, transparent);
+}
+
+.galgame-assets-result-copy {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+  padding: 10px 11px 4px;
+}
+
+.galgame-assets-result-copy strong,
+.galgame-assets-result-copy small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.galgame-assets-result-copy small,
+.galgame-assets-result-type,
+.galgame-assets-result-size,
+.galgame-assets-result-status {
+  color: var(--gal-muted);
+  font-size: 11px;
+}
+
+.galgame-assets-result-type,
+.galgame-assets-result-size {
+  display: none;
+}
+
+.galgame-assets-result-status {
+  padding: 0 11px 10px;
+  color: var(--gal-accent);
+}
+
+.galgame-assets-result-status.orphaned {
+  color: var(--gal-warning);
+}
+
+.galgame-assets-results.is-list {
+  grid-template-columns: 1fr;
+  gap: 7px;
+}
+
+.galgame-assets-results.is-list > button {
+  grid-template-columns: 54px minmax(180px, 1fr) 86px 86px 90px;
+  align-items: center;
+  padding: 6px 10px;
+}
+
+.galgame-assets-results.is-list .galgame-assets-result-preview {
+  width: 48px;
+  height: 48px;
+  aspect-ratio: 1;
+  border-radius: 5px;
+}
+
+.galgame-assets-results.is-list .galgame-assets-result-preview > small,
+.galgame-assets-results.is-list .galgame-assets-result-preview > em,
+.galgame-assets-results.is-list .galgame-audio-preview > span,
+.galgame-assets-results.is-list .galgame-audio-preview > svg {
+  display: none;
+}
+
+.galgame-assets-results.is-list .galgame-audio-preview {
+  display: grid;
+  width: 34px;
+  place-items: center;
+}
+
+.galgame-assets-results.is-list .galgame-assets-result-copy {
+  padding: 0;
+}
+
+.galgame-assets-results.is-list .galgame-assets-result-type,
+.galgame-assets-results.is-list .galgame-assets-result-size,
+.galgame-assets-results.is-list .galgame-assets-result-status {
+  display: block;
+  padding: 0;
+  text-align: right;
+}
+
+.galgame-assets-results-empty,
+.galgame-assets-inspector-empty,
+.galgame-assets-empty {
+  display: grid;
+  min-height: 240px;
+  place-content: center;
+  justify-items: center;
+  gap: 9px;
+  padding: 24px;
+  color: var(--gal-muted);
+  text-align: center;
+}
+
+.galgame-assets-results-empty svg,
+.galgame-assets-inspector-empty svg,
+.galgame-assets-empty svg {
+  width: 30px;
+  height: 30px;
+  padding: 10px;
+  box-sizing: content-box;
+  border-radius: 10px;
+  background: var(--gal-surface-strong);
+}
+
+.galgame-assets-inspector {
+  position: relative;
+  z-index: 4;
+  min-width: 0;
+  padding: 18px;
+  overflow: auto;
+  border-left: 1px solid var(--gal-line);
+  background: var(--gal-surface);
+}
+
+.galgame-assets-inspector-close {
+  position: absolute;
+  z-index: 2;
+  top: 10px;
+  right: 10px;
+  visibility: hidden;
+}
+
+.galgame-assets-inspector > header {
+  display: grid;
+  gap: 4px;
+  padding-right: 30px;
+}
+
+.galgame-assets-inspector > header small,
+.galgame-assets-missing-inspector > small {
+  color: var(--gal-accent);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+}
+
+.galgame-assets-inspector > header span {
+  overflow-wrap: anywhere;
+  color: var(--gal-muted);
+  font-size: 11px;
+}
+
+.galgame-assets-inspector-preview {
+  display: grid;
+  min-height: 180px;
+  max-height: 280px;
+  margin: 16px 0;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 9px;
+  background: var(--gal-surface-strong);
+}
+
+.galgame-assets-inspector-preview > img,
+.galgame-assets-inspector-preview > video {
+  width: 100%;
+  max-height: 280px;
+  object-fit: contain;
+}
+
+.galgame-assets-inspector-preview > svg {
+  width: 48px;
+  height: 48px;
+  color: var(--gal-faint);
+}
+
+.galgame-assets-inspector > form,
+.galgame-assets-missing-inspector {
+  display: grid;
+  gap: 11px;
+}
+
+.galgame-assets-inspector label,
+.galgame-assets-import-dialog > label,
+.galgame-assets-missing-inspector label {
+  display: grid;
+  min-width: 0;
+  gap: 5px;
+}
+
+.galgame-assets-inspector label > span,
+.galgame-assets-import-dialog label > span,
+.galgame-assets-missing-inspector label > span {
+  color: var(--gal-muted);
+  font-size: 11px;
+}
+
+.galgame-assets-inspector input,
+.galgame-assets-import-dialog input {
+  min-width: 0;
+  height: 36px;
+  padding: 0 9px;
+  border: 1px solid var(--gal-line);
+  border-radius: 7px;
+  outline: 0;
+  background: var(--gal-panel);
+  color: var(--gal-text);
+}
+
+.galgame-assets-inspector-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.galgame-assets-inspector .custom-select-trigger,
+.galgame-assets-import-dialog .custom-select-trigger,
+.galgame-assets-missing-inspector .custom-select-trigger {
+  min-height: 36px;
+  background: var(--gal-panel);
+}
+
+.galgame-assets-inspector .custom-select-menu,
+.galgame-assets-import-dialog .custom-select-menu,
+.galgame-assets-missing-inspector .custom-select-menu {
+  z-index: 120;
+}
+
+.galgame-editor-page .galgame-assets-import-dialog .custom-select-menu {
+  position: static;
+  width: 100%;
+  max-height: 220px;
+  margin-top: 5px;
+}
+
+.galgame-assets-inspector form > button,
+.galgame-assets-missing-inspector > button {
+  min-height: 36px;
+  border: 0;
+  border-radius: 7px;
+  color: #fff;
+  background: var(--gal-accent);
+}
+
+.galgame-assets-inspector dl {
+  display: grid;
+  gap: 0;
+  margin: 18px 0;
+  border-block: 1px solid var(--gal-line);
+}
+
+.galgame-assets-inspector dl > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--gal-line);
+}
+
+.galgame-assets-inspector dl > div:last-child {
+  border-bottom: 0;
+}
+
+.galgame-assets-inspector dt {
+  color: var(--gal-muted);
+}
+
+.galgame-assets-inspector dd {
+  max-width: 68%;
+  margin: 0;
+  overflow: hidden;
+  text-align: right;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.galgame-assets-references {
+  display: grid;
+  gap: 6px;
+}
+
+.galgame-assets-references > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.galgame-assets-references > header span {
+  min-width: 22px;
+  padding: 1px 6px;
+  border-radius: 10px;
+  color: var(--gal-accent);
+  text-align: center;
+  background: var(--gal-accent-soft);
+}

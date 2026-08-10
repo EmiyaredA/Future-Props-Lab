@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.concurrency.revisions import RevisionConflictError
 from app.core.config import get_settings
 from app.core.time import iso_utc, utc_now
+from app.files.storage import TARGET_STORAGE_VERSION, AssetStorage
 from app.models import VisualAsset, VisualCanvasDocument, VisualWorkshopProject
 from app.schemas.visual_workshop import (
     VisualWorkshopProjectCreateIn,
@@ -34,6 +35,7 @@ def project_out(row: VisualWorkshopProject) -> VisualWorkshopProjectOut:
 class VisualWorkshopProjects:
     def __init__(self, session: AsyncSession) -> None:
         self.session = session
+        self.storage = AssetStorage(get_settings())
 
     async def list(self) -> VisualWorkshopProjectListOut:
         rows = (
@@ -63,8 +65,15 @@ class VisualWorkshopProjects:
         row = VisualWorkshopProject(title=body.title, kind=body.kind, status="draft")
         self.session.add(row)
         await self.session.flush()
-        self.session.add(VisualCanvasDocument(project_id=row.id, nodes=[]))
-        await self.session.commit()
+        created_root = self.storage.ensure_project_layout("visual-workshop", row.id)
+        try:
+            self.session.add(VisualCanvasDocument(project_id=row.id, nodes=[]))
+            await self.session.commit()
+        except Exception:
+            await self.session.rollback()
+            if created_root:
+                self.storage.remove_project_root("visual-workshop", row.id)
+            raise
         await self.session.refresh(row)
         return project_out(row)
 
@@ -108,24 +117,34 @@ class VisualWorkshopProjects:
 
     async def delete(self, project_id: str, expected_revision: int) -> None:
         await self._row(project_id)
-        storage_keys = (
+        assets = (
             (
                 await self.session.execute(
-                    select(VisualAsset.storage_key).where(VisualAsset.project_id == project_id)
+                    select(VisualAsset).where(VisualAsset.project_id == project_id)
                 )
             )
             .scalars()
             .all()
         )
-        result = await self.session.execute(
-            delete(VisualWorkshopProject).where(
-                VisualWorkshopProject.id == project_id,
-                VisualWorkshopProject.revision == expected_revision,
+        legacy_paths = [
+            self.storage.path_for(asset)
+            for asset in assets
+            if asset.storage_version < TARGET_STORAGE_VERSION
+        ]
+        staged = self.storage.stage_project_root("visual-workshop", project_id)
+        try:
+            result = await self.session.execute(
+                delete(VisualWorkshopProject).where(
+                    VisualWorkshopProject.id == project_id,
+                    VisualWorkshopProject.revision == expected_revision,
+                )
             )
-        )
-        if result.rowcount != 1:
-            await self._raise_conflict(project_id, expected_revision)
-        await self.session.commit()
-        root = get_settings().visual_asset_path
-        for storage_key in storage_keys:
-            (root / storage_key).unlink(missing_ok=True)
+            if result.rowcount != 1:
+                await self._raise_conflict(project_id, expected_revision)
+            await self.session.commit()
+        except Exception:
+            self.storage.restore_staged_root(staged)
+            raise
+        for path in legacy_paths:
+            path.unlink(missing_ok=True)
+        self.storage.purge_staged_root(staged)

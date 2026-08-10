@@ -15,6 +15,7 @@ from app.core.credentials import decrypt_secret
 from app.core.db import SessionLocal
 from app.core.time import iso_utc, utc_now
 from app.files import AssetError
+from app.files.storage import AssetStorage
 from app.galgame_workshop.story import GalgameStoryDocuments
 from app.llm.generation_runtime import PollingGenerationRunner
 from app.models import (
@@ -365,6 +366,7 @@ class GalgameAsrRunner(PollingGenerationRunner):
         super().__init__()
         self.session_factory = session_factory
         self.settings = settings or get_settings()
+        self.storage = AssetStorage(self.settings)
         self.transport = transport
 
     async def recover(self) -> None:
@@ -459,7 +461,7 @@ class GalgameAsrRunner(PollingGenerationRunner):
                 model_slug = task.model_slug
                 language = task.language
                 filename = asset.original_filename
-                file_path = self.settings.visual_asset_path / asset.storage_key
+                file_path = self.storage.path_for(asset)
                 mime_type = asset.mime_type
                 force = task.force
                 await session.commit()

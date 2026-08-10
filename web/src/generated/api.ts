@@ -74,6 +74,40 @@ export interface paths {
         patch: operations["patch_file_folder_v1_file_folders__folder_id__patch"];
         trace?: never;
     };
+    "/v1/file-storage/layout": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Storage Layout Status */
+        get: operations["storage_layout_status_v1_file_storage_layout_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/file-storage/layout/migrate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Migrate Storage Layout */
+        post: operations["migrate_storage_layout_v1_file_storage_layout_migrate_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/files": {
         parameters: {
             query?: never;
@@ -4404,6 +4438,64 @@ export interface components {
             /** Name */
             name: string;
         };
+        /** StorageLayoutIssueOut */
+        StorageLayoutIssueOut: {
+            /** Asset Id */
+            asset_id: string;
+            /**
+             * Code
+             * @enum {string}
+             */
+            code: "source_missing" | "target_conflict" | "copy_failed";
+            /** Message */
+            message: string;
+        };
+        /** StorageLayoutMigrationOut */
+        StorageLayoutMigrationOut: {
+            /** Already Materialized Assets */
+            already_materialized_assets: number;
+            /** Complete */
+            complete: boolean;
+            /** Conflicts */
+            conflicts: number;
+            /** Issues */
+            issues: components["schemas"]["StorageLayoutIssueOut"][];
+            /** Migrated Assets */
+            migrated_assets: number;
+            /** Migrated Projects */
+            migrated_projects: number;
+            /** Missing Files */
+            missing_files: number;
+            /** Processed Assets */
+            processed_assets: number;
+            /** Remaining Assets */
+            remaining_assets: number;
+            /** Remaining Projects */
+            remaining_projects: number;
+        };
+        /** StorageLayoutStatusOut */
+        StorageLayoutStatusOut: {
+            /** Complete */
+            complete: boolean;
+            /** Conflicting Files */
+            conflicting_files: number;
+            /** Migrated Assets */
+            migrated_assets: number;
+            /** Missing Files */
+            missing_files: number;
+            /** Pending Assets */
+            pending_assets: number;
+            /** Pending Bytes */
+            pending_bytes: number;
+            /** Pending Projects */
+            pending_projects: number;
+            /**
+             * Target Version
+             * @default 2
+             * @constant
+             */
+            target_version: 2;
+        };
         /** StudioAuthStatus */
         StudioAuthStatus: {
             /** Auth Required */
@@ -5299,6 +5391,70 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["VisualAssetFolderOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    storage_layout_status_v1_file_storage_layout_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Studio-Token"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StorageLayoutStatusOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    migrate_storage_layout_v1_file_storage_layout_migrate_post: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: {
+                "X-Studio-Token"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StorageLayoutMigrationOut"];
                 };
             };
             /** @description Validation Error */

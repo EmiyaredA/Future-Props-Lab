@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import Settings, get_settings
 from app.core.time import iso_utc, utc_now
+from app.files.storage import AssetStorage
 from app.llm.providers.senseaudio_image import IMAGE_MODEL_SIZES
 from app.models import (
     ModelEntry,
@@ -80,6 +81,7 @@ class VisualGeneration:
     def __init__(self, session: AsyncSession, settings: Settings | None = None) -> None:
         self.session = session
         self.settings = settings or get_settings()
+        self.storage = AssetStorage(self.settings)
 
     async def options(self) -> GenerationOptionsOut:
         rows = (
@@ -159,7 +161,7 @@ class VisualGeneration:
                 in_scope = True
         if not in_scope:
             raise GenerationError(f"{label}不属于当前项目", code="scope_mismatch")
-        path = self.settings.visual_asset_path / asset.storage_key
+        path = self.storage.path_for(asset)
         if not path.is_file():
             raise GenerationError(f"{label}文件已不存在", code="invalid_reference", status=404)
         if expected_kind == "image" and asset.byte_size > 30 * 1024 * 1024:

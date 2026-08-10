@@ -16,7 +16,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.concurrency.revisions import RevisionConflictError
 from app.core.config import Settings, get_settings
 from app.core.time import iso_utc, utc_now
-from app.files.assets import download_filename
+from app.files.policy import download_filename
+from app.files.storage import AssetStorage
 from app.llm.providers import ChatMessageInput, ImageInput
 from app.models import (
     ModelEntry,
@@ -133,6 +134,7 @@ class VisualAssistantConversations:
     def __init__(self, session: AsyncSession, settings: Settings | None = None) -> None:
         self.session = session
         self.settings = settings or get_settings()
+        self.storage = AssetStorage(self.settings)
 
     async def _project(self, project_id: str) -> VisualWorkshopProject:
         row = await self.session.get(VisualWorkshopProject, project_id)
@@ -557,7 +559,7 @@ class VisualAssistantConversations:
                 raise AssistantAssetError(f"AVIF 图片内容无效：{display_name}") from None
 
         async def encode(asset: VisualAsset) -> ImageInput:
-            path = self.settings.visual_asset_path / asset.storage_key
+            path = self.storage.path_for(asset)
             if not path.is_file():
                 raise AssistantAssetError(
                     f"图片内容不存在：{asset.display_name}",
@@ -618,7 +620,7 @@ class VisualAssistantConversations:
             return "", "PDF 解析失败，已仅提供文件元数据"
 
     async def _document_text(self, asset: VisualAsset) -> tuple[str, str | None]:
-        path = self.settings.visual_asset_path / asset.storage_key
+        path = self.storage.path_for(asset)
         if not path.is_file():
             return "", f"附件内容不存在：{asset.display_name}"
         if asset.mime_type == "application/pdf":

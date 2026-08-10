@@ -62,7 +62,30 @@ class Settings(BaseSettings):
 
     @property
     def visual_asset_path(self) -> Path:
+        """Legacy v1 asset root retained until explicit layout migration completes."""
         return (self.database_path.parent / "visual-workshop" / "assets").resolve()
+
+    @property
+    def runtime_path(self) -> Path:
+        return self.database_path.parent.resolve()
+
+    @property
+    def library_asset_path(self) -> Path:
+        return (self.runtime_path / "library" / "assets").resolve()
+
+    @property
+    def applications_path(self) -> Path:
+        return (self.runtime_path / "applications").resolve()
+
+    @property
+    def storage_trash_path(self) -> Path:
+        return (self.runtime_path / ".trash").resolve()
+
+    def visual_project_path(self, project_id: str) -> Path:
+        return (self.applications_path / "visual-workshop" / "projects" / project_id).resolve()
+
+    def galgame_project_path(self, project_id: str) -> Path:
+        return (self.applications_path / "galgame-workshop" / "projects" / project_id).resolve()
 
     @property
     def model_test_attachment_path(self) -> Path:

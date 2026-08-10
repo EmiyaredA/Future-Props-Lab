@@ -10,6 +10,7 @@ import app.files.assets as asset_module
 from app.core.config import get_settings
 from app.core.credentials import encrypt_secret
 from app.core.db import SessionLocal
+from app.files.storage import AssetStorage
 from app.main import app
 from app.models import (
     ModelEntry,
@@ -399,7 +400,7 @@ async def test_visual_workshop_imports_library_references_and_project_copies(
         assert same_project.status_code == 422
         assert same_project.json()["code"] == "scope_mismatch"
 
-        root = get_settings().visual_asset_path
+        root = get_settings().visual_project_path(target["id"]) / "assets"
         files_before_failure = {path.name for path in root.iterdir() if path.is_file()}
         target_before_failure = (
             await client.get("/v1/files", params={"project_id": target["id"]})
@@ -844,7 +845,7 @@ async def test_visual_video_generation_uses_scoped_media_asset_ids() -> None:
         session.add(model)
         await session.commit()
 
-    storage_keys: list[str] = []
+    assets: list[dict] = []
     project_ids: list[str] = []
     transport = httpx.ASGITransport(app=app)
     try:
@@ -963,7 +964,6 @@ async def test_visual_video_generation_uses_scoped_media_asset_ids() -> None:
                 .mappings()
                 .all()
             )
-            storage_keys.extend(str(asset["storage_key"]) for asset in assets)
             await session.execute(
                 delete(VisualGenerationTask).where(VisualGenerationTask.provider_id == provider.id)
             )
@@ -976,5 +976,11 @@ async def test_visual_video_generation_uses_scoped_media_asset_ids() -> None:
                 )
             await session.execute(delete(ModelProvider).where(ModelProvider.id == provider.id))
             await session.commit()
-        for storage_key in storage_keys:
-            (get_settings().visual_asset_path / storage_key).unlink(missing_ok=True)
+        storage = AssetStorage(get_settings())
+        for asset in assets:
+            path = storage.target_path(
+                str(asset["storage_key"]),
+                visual_project_id=str(asset["project_id"]),
+                galgame_project_id=None,
+            )
+            path.unlink(missing_ok=True)

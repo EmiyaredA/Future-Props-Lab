@@ -7,7 +7,6 @@ from sqlalchemy import delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.concurrency.revisions import RevisionConflictError
-from app.core.config import get_settings
 from app.core.time import iso_utc, utc_now
 from app.galgame_workshop.errors import (
     GalgameStoryDocumentInvalidError,
@@ -552,54 +551,3 @@ class GalgameStoryDocuments:
         await self._sync_asset_references(project_id, set(asset_rows))
         await self.session.commit()
         return await self.get(project_id)
-
-    async def report(self, project_id: str) -> GalgameStoryRouteReportOut:
-        story = await self.get(project_id)
-        report = build_route_report(project_id, story.revision, story.document)
-        try:
-            rows = await self._asset_rows(project_id, story.document)
-        except GalgameStoryDocumentInvalidError as exc:
-            issue = GalgameStoryReportIssue(
-                code="invalid_asset_reference",
-                message=str(exc),
-                path="/assets",
-            )
-            return report.model_copy(update={"ready": False, "errors": [*report.errors, issue]})
-        root = get_settings().visual_asset_path
-        missing = [
-            asset
-            for asset in story.document.assets
-            if not (root / rows[asset.file_id].storage_key).is_file()
-        ]
-        errors = [
-            *report.errors,
-            *[
-                GalgameStoryReportIssue(
-                    code="missing_asset_file",
-                    message="故事素材文件不存在",
-                    path=f"/assets/{story.document.assets.index(asset)}",
-                )
-                for asset in missing
-            ],
-        ]
-        from app.galgame_workshop.assets import GalgameProjectAssets
-
-        manifest = await GalgameProjectAssets(self.session, get_settings()).package_manifest(
-            project_id
-        )
-        existing_codes = {(issue.code, issue.message) for issue in errors}
-        for issue in manifest.issues:
-            identity = (issue.code, issue.message)
-            if identity in existing_codes:
-                continue
-            errors.append(
-                GalgameStoryReportIssue(
-                    code=issue.code,
-                    message=issue.message,
-                    path="/assets",
-                )
-            )
-            existing_codes.add(identity)
-        if not errors:
-            return report
-        return report.model_copy(update={"ready": False, "errors": errors})

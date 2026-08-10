@@ -66,7 +66,7 @@
   不得放在已经开始写入的长事务中；流式生成应使用独立短事务准备和结算状态。
 - 整体 JSON、配置和会话等 revisioned 资源使用数据库 CAS：缺少 revision 返回 422，冲突
   返回 409 与当前快照，客户端不得静默覆盖。
-- 备份数据库前先停止应用，并同时复制 SQLite 主文件、`visual-workshop/assets/` 与
+- 备份数据库前先停止应用，并同时复制 SQLite 主文件、`library/assets/`、`applications/` 与
   `model-test/attachments/`、`model-test/references/`、`model-test/generated/`；不要把
   `.runtime/` 当作可提交的代码、
   迁移或测试资产。

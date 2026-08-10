@@ -18,7 +18,9 @@ except ImportError:  # pragma: no cover - dependency is required in production
 from app.concurrency.revisions import RevisionConflictError
 from app.core.config import Settings
 from app.core.time import iso_utc
-from app.files import AssetError, VisualAssets
+from app.files import AssetError, AssetLibrary
+from app.files.policy import GALGAME_EXTENSIONS
+from app.files.storage import AssetStorage
 from app.galgame_workshop.errors import GalgameWorkshopProjectNotFoundError
 from app.galgame_workshop.story import normalize_story_document
 from app.models import (
@@ -37,7 +39,6 @@ from app.schemas.galgame_workshop import (
     GalgameAssetPackagingPolicy,
     GalgameAssetReferenceLocation,
     GalgameMissingAssetOverviewItem,
-    GalgameMissingAssetRepairIn,
     GalgamePackageManifestIssue,
     GalgamePackageManifestItem,
     GalgamePackageManifestOut,
@@ -164,6 +165,8 @@ class GalgameProjectAssets:
     def __init__(self, session: AsyncSession, settings: Settings) -> None:
         self.session = session
         self.settings = settings
+        self.storage = AssetStorage(settings)
+        self.library = AssetLibrary(session, settings)
 
     async def _project(self, project_id: str) -> GalgameWorkshopProject:
         row = await self.session.get(GalgameWorkshopProject, project_id)
@@ -178,7 +181,7 @@ class GalgameProjectAssets:
         self, row: VisualAsset, *, category: str, virtual_path: str
     ) -> GalgameAssetMetadata:
         checksum, width, height, duration_ms = _file_metadata(
-            self.settings.visual_asset_path / row.storage_key, row.media_kind
+            self.storage.path_for(row), row.media_kind
         )
         metadata = GalgameAssetMetadata(
             asset_id=row.id,
@@ -266,8 +269,10 @@ class GalgameProjectAssets:
         )
         planned = preview.items[0]
         upload.filename = planned.final_name
-        row = await VisualAssets(self.session, self.settings).upload_for_galgame(
-            upload, project_id=project_id
+        row = await self.library.store_upload(
+            upload,
+            galgame_project_id=project_id,
+            allowed_extensions=GALGAME_EXTENSIONS,
         )
         metadata = await self._create_metadata(
             row, category=selected_category, virtual_path=planned.virtual_path
@@ -285,8 +290,10 @@ class GalgameProjectAssets:
         items: list[GalgameProjectAssetOut] = []
         for upload, planned in zip(uploads, preview.items, strict=True):
             upload.filename = planned.final_name
-            row = await VisualAssets(self.session, self.settings).upload_for_galgame(
-                upload, project_id=project_id
+            row = await self.library.store_upload(
+                upload,
+                galgame_project_id=project_id,
+                allowed_extensions=GALGAME_EXTENSIONS,
             )
             metadata = await self._create_metadata(
                 row, category=category, virtual_path=planned.virtual_path
@@ -389,7 +396,7 @@ class GalgameProjectAssets:
                     category=_default_category(row),
                     virtual_path=_default_virtual_path(row),
                 )
-            path = self.settings.visual_asset_path / row.storage_key
+            path = self.storage.path_for(row)
             if path.is_file():
                 checksum, width, height, duration_ms = _file_metadata(path, row.media_kind)
                 metadata.checksum_sha256 = checksum
@@ -764,7 +771,7 @@ class GalgameProjectAssets:
             virtual_path = (
                 metadata.virtual_path if metadata is not None else _default_virtual_path(row)
             )
-            path_exists = (self.settings.visual_asset_path / row.storage_key).is_file()
+            path_exists = self.storage.path_for(row).is_file()
             if referenced and policy == "exclude":
                 issues.append(
                     GalgamePackageManifestIssue(
@@ -826,35 +833,6 @@ class GalgameProjectAssets:
             issues=issues,
         )
 
-    async def repair_missing(self, project_id: str, body: GalgameMissingAssetRepairIn) -> object:
-        from app.galgame_workshop.story import GalgameStoryDocuments
-        from app.schemas.galgame_workshop import GalgameStoryDocumentPutIn
-
-        story = await GalgameStoryDocuments(self.session).get(project_id)
-        replacement = await self.session.get(VisualAsset, body.replacement_file_id)
-        if replacement is None or replacement.galgame_project_id not in {None, project_id}:
-            raise AssetError("替换文件不存在或不属于当前工程", code="not_found", status=404)
-        payload = story.document.model_dump(mode="json", by_alias=True)
-        target = next(
-            (asset for asset in payload["assets"] if asset["id"] == body.story_asset_id),
-            None,
-        )
-        if target is None:
-            raise AssetError("故事素材不存在", code="story_asset_not_found", status=404)
-        expected_kind = target["type"]
-        if replacement.media_kind != expected_kind:
-            raise AssetError("替换文件类型与故事素材不一致", code="media_kind_mismatch")
-        target["fileId"] = replacement.id
-        return await GalgameStoryDocuments(self.session).put(
-            project_id,
-            GalgameStoryDocumentPutIn.model_validate(
-                {
-                    "expectedRevision": body.expected_story_revision,
-                    "document": payload,
-                }
-            ),
-        )
-
     async def delete(self, project_id: str, asset_id: str, expected_revision: int) -> Path:
         await self._project(project_id)
         row = await self.session.get(VisualAsset, asset_id)
@@ -873,7 +851,7 @@ class GalgameProjectAssets:
                 status=409,
                 detail={"references": references},
             )
-        path = self.settings.visual_asset_path / row.storage_key
+        path = self.storage.path_for(row)
         result = await self.session.execute(
             delete(VisualAsset).where(
                 VisualAsset.id == asset_id,

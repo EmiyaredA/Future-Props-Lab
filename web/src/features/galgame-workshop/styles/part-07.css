@@ -1,0 +1,1798 @@
+.galgame-background-actions button:first-child,
+.galgame-scene-locate {
+  border-color: var(--gal-accent-line);
+  color: var(--gal-accent);
+}
+
+.galgame-background-stage-column > small {
+  color: var(--gal-muted);
+}
+
+.galgame-background-stage-column > small.danger {
+  color: var(--gal-danger);
+}
+
+.galgame-background-state-column {
+  padding: 15px;
+  border: 1px solid var(--gal-line);
+  border-radius: 12px;
+  background: var(--gal-panel);
+  align-self: start;
+}
+
+.galgame-background-state-column > header {
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.galgame-background-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.galgame-background-grid > button {
+  position: relative;
+  min-width: 0;
+  padding: 5px;
+  overflow: hidden;
+  border: 1px solid var(--gal-line);
+  border-radius: 9px;
+  background: var(--gal-surface);
+  color: var(--gal-text);
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.galgame-background-grid > button.active {
+  border-color: var(--gal-accent);
+  box-shadow: 0 0 0 2px var(--gal-accent-soft);
+}
+
+.galgame-background-grid > button > span {
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  border-radius: 6px;
+  background: var(--gal-surface-strong);
+  display: grid;
+  place-items: center;
+}
+
+.galgame-background-grid > button > span img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.galgame-background-grid > button strong {
+  width: 100%;
+  padding: 0 2px 2px;
+  overflow: hidden;
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.galgame-background-grid > button em {
+  position: absolute;
+  top: 9px;
+  right: 9px;
+  padding: 2px 5px;
+  border-radius: 999px;
+  background: var(--gal-accent);
+  color: #fff;
+  font-size: 9px;
+  font-style: normal;
+}
+
+.galgame-background-grid > button.galgame-background-add {
+  min-height: 92px;
+  border-style: dashed;
+  color: var(--gal-muted);
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.galgame-background-form {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--gal-line);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 10px;
+}
+
+.galgame-background-form > div {
+  grid-column: 1 / -1;
+  justify-content: flex-end;
+  gap: 7px;
+}
+
+.galgame-background-form button.danger {
+  color: var(--gal-danger);
+}
+
+.galgame-background-state-column > footer {
+  margin-top: 14px;
+  padding: 9px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--gal-ok) 10%, transparent);
+  color: var(--gal-ok);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+}
+
+.galgame-scene-reference-panel {
+  padding: 13px;
+  border-left: 1px solid var(--gal-line);
+  background: var(--gal-panel);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.galgame-scene-reference-panel > section {
+  padding: 13px;
+  border: 1px solid var(--gal-line);
+  border-radius: 10px;
+  background: var(--gal-surface);
+}
+
+.galgame-scene-reference-panel section > header {
+  justify-content: space-between;
+  margin-bottom: 11px;
+}
+
+.galgame-scene-reference-metrics {
+  margin-bottom: 10px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 7px;
+}
+
+.galgame-scene-reference-metrics > span {
+  min-height: 62px;
+  border-radius: 8px;
+  background: var(--gal-surface-strong);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+}
+
+.galgame-scene-reference-metrics strong {
+  font-size: 19px;
+}
+
+.galgame-scene-reference-metrics small,
+.galgame-scene-reference-list small,
+.galgame-scene-reference-list p,
+.galgame-scene-danger-zone span,
+.galgame-scene-preview-state {
+  color: var(--gal-muted);
+  font-size: 10px;
+}
+
+.galgame-scene-reference-list {
+  max-height: 350px;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.galgame-scene-reference-list > button {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid var(--gal-line);
+  border-radius: 8px;
+  background: var(--gal-panel);
+  color: var(--gal-text);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.galgame-scene-reference-list > button > span {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.galgame-scene-reference-list strong,
+.galgame-scene-reference-list small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.galgame-scene-reference-list strong {
+  font-size: 10px;
+}
+
+.galgame-scene-locate {
+  width: 100%;
+  margin-top: 9px;
+}
+
+.galgame-scene-preview-state {
+  margin: 10px 0 0;
+  padding: 8px;
+  border-radius: 8px;
+  background: var(--gal-surface-strong);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.galgame-scene-preview-state strong {
+  color: var(--gal-text);
+}
+
+.galgame-scene-danger-zone {
+  margin-top: auto;
+}
+
+.galgame-scene-danger-zone header {
+  flex-direction: column;
+  align-items: flex-start !important;
+  gap: 3px;
+}
+
+.galgame-scene-danger-zone button {
+  width: 100%;
+  color: var(--gal-danger);
+}
+
+.galgame-scene-danger-zone button:disabled,
+.galgame-background-form button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.galgame-conflict {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: 20;
+  max-width: min(680px, calc(100vw - 36px));
+  padding: 11px;
+  border: 1px solid var(--gal-danger);
+  border-radius: 10px;
+  background: var(--gal-surface);
+  box-shadow: var(--gal-shadow);
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.galgame-conflict span {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.galgame-conflict button {
+  min-height: 32px;
+  padding: 0 9px;
+  border: 1px solid var(--gal-line);
+  border-radius: 7px;
+  background: var(--gal-panel);
+  color: var(--gal-text);
+  cursor: pointer;
+}
+
+.galgame-editor-state {
+  min-height: 100vh;
+  background: var(--gal-bg);
+  color: var(--gal-text);
+}
+
+@media (max-width: 1240px) {
+  .galgame-timeline-editor {
+    --galgame-timeline-label-width: 144px;
+  }
+  .galgame-timeline-calibration,
+  .galgame-timeline-advanced-content {
+    flex-wrap: wrap;
+  }
+  .galgame-timeline-zoom {
+    margin-left: 0;
+  }
+  .galgame-editor-grid {
+    grid-template-columns:
+      var(--galgame-fragment-width) 6px minmax(420px, 1fr) 6px
+      var(--galgame-preview-width);
+  }
+  .galgame-character-workspace {
+    grid-template-columns: 220px minmax(500px, 1fr) 310px;
+  }
+  .galgame-scene-workspace {
+    grid-template-columns: 220px minmax(500px, 1fr) 310px;
+  }
+  .galgame-background-editor {
+    padding: 14px;
+    grid-template-columns: minmax(300px, 1fr) minmax(250px, 0.78fr);
+    gap: 12px;
+  }
+  .galgame-portrait-editor {
+    padding: 14px;
+    grid-template-columns: minmax(230px, 0.85fr) minmax(270px, 1.15fr);
+    gap: 12px;
+  }
+  .galgame-expression-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .galgame-overview-modules {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 980px) {
+  .galgame-editor-page {
+    max-width: 100%;
+    overflow-x: clip;
+  }
+  .galgame-editor-grid {
+    width: 100%;
+    min-width: 0;
+    height: auto;
+    grid-template-columns: 1fr;
+    grid-template-rows: none;
+    overflow: visible;
+  }
+  .galgame-editor-grid > .galgame-fragment-panel,
+  .galgame-editor-grid > .galgame-block-panel,
+  .galgame-editor-grid .galgame-preview-focus,
+  .galgame-editor-grid .galgame-inspector-tabs,
+  .galgame-editor-grid .galgame-inspector-body {
+    grid-column: 1;
+    grid-row: auto;
+  }
+  .galgame-editor-grid > .galgame-fragment-panel {
+    order: 1;
+  }
+  .galgame-editor-grid .galgame-preview-focus {
+    min-height: 360px;
+    order: 2;
+  }
+  .galgame-editor-grid > .galgame-block-panel {
+    order: 3;
+  }
+  .galgame-editor-grid .galgame-inspector-tabs {
+    order: 4;
+  }
+  .galgame-editor-grid .galgame-inspector-body {
+    order: 5;
+  }
+  .galgame-stage-resizer {
+    display: none;
+  }
+  .galgame-timeline-toolbar,
+  .galgame-timeline-calibration {
+    flex-wrap: nowrap;
+  }
+  .galgame-timeline-toolbar {
+    overflow-x: auto;
+    scrollbar-width: thin;
+  }
+  .galgame-timeline-toolbar:has(details[open]) {
+    overflow: visible;
+  }
+  .galgame-timeline-controls {
+    position: static;
+    box-shadow: none;
+  }
+  .galgame-block-panel .galgame-timeline-editor {
+    height: auto;
+    min-height: 500px;
+  }
+  .galgame-timeline-scroll {
+    min-height: 390px;
+    flex: 0 0 390px;
+  }
+  .galgame-timeline-lengths {
+    margin-left: 0;
+  }
+  .galgame-panel-resizer {
+    display: none;
+  }
+  .galgame-character-workspace {
+    height: auto;
+    min-height: 0;
+    grid-template-columns: 1fr;
+    overflow: visible;
+  }
+  .galgame-scene-workspace {
+    height: auto;
+    min-height: 0;
+    grid-template-columns: 1fr;
+    overflow: visible;
+  }
+  .galgame-scene-list-panel,
+  .galgame-scene-detail-panel,
+  .galgame-scene-reference-panel {
+    overflow: visible;
+    border-right: 0;
+    border-left: 0;
+  }
+  .galgame-scene-list-panel {
+    border-bottom: 1px solid var(--gal-line);
+  }
+  .galgame-scene-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  }
+  .galgame-scene-detail-panel {
+    min-height: 600px;
+  }
+  .galgame-scene-reference-panel {
+    border-top: 1px solid var(--gal-line);
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(240px, 0.45fr);
+  }
+  .galgame-scene-danger-zone {
+    margin-top: 0;
+  }
+  .galgame-character-list-panel,
+  .galgame-character-detail-panel,
+  .galgame-character-reference-panel {
+    overflow: visible;
+    border-right: 0;
+    border-left: 0;
+  }
+  .galgame-character-list-panel {
+    border-bottom: 1px solid var(--gal-line);
+  }
+  .galgame-character-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  }
+  .galgame-character-detail-panel {
+    min-height: 620px;
+  }
+  .galgame-portrait-editor {
+    min-height: 550px;
+  }
+  .galgame-character-reference-panel {
+    border-top: 1px solid var(--gal-line);
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(240px, 0.45fr);
+  }
+  .galgame-character-danger-zone {
+    margin-top: 0;
+  }
+  .galgame-fragment-panel,
+  .galgame-block-panel,
+  .galgame-preview-panel {
+    overflow: visible;
+  }
+  .galgame-fragment-panel {
+    border-right: 0;
+    border-bottom: 1px solid var(--gal-line);
+  }
+  .galgame-fragment-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  }
+  .galgame-fragment-actions {
+    max-width: 330px;
+  }
+  .galgame-fragment-panel > footer {
+    text-align: left;
+  }
+  .galgame-block-panel {
+    min-height: 430px;
+  }
+  .galgame-preview-panel {
+    border-top: 1px solid var(--gal-line);
+    border-left: 0;
+  }
+  .galgame-preview-focus,
+  .galgame-inspector-tabs,
+  .galgame-inspector-body {
+    max-width: 720px;
+    margin-right: auto;
+    margin-left: auto;
+  }
+  .galgame-inspector-tabs {
+    margin-top: 11px;
+  }
+  .galgame-overview-stats {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 700px) {
+  .galgame-editor-header {
+    align-items: flex-start;
+  }
+  .galgame-editor-actions {
+    align-self: stretch;
+  }
+  .galgame-editor-actions > .theme-toggle button {
+    min-width: 30px;
+    padding: 0 7px;
+  }
+  .galgame-editor-actions > .theme-toggle span {
+    display: none;
+  }
+  .galgame-save-state {
+    padding: 0 8px;
+  }
+  .galgame-editor-project small {
+    display: none;
+  }
+  .galgame-editor-project strong {
+    max-width: 34vw;
+  }
+  .galgame-editor-tabs {
+    gap: 18px;
+  }
+  .galgame-character-detail-panel > header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .galgame-scene-detail-panel > header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .galgame-background-editor {
+    grid-template-columns: 1fr;
+  }
+  .galgame-background-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .galgame-scene-reference-panel {
+    grid-template-columns: 1fr;
+  }
+  .galgame-portrait-editor {
+    min-height: 0;
+    grid-template-columns: 1fr;
+  }
+  .galgame-portrait-stage {
+    max-height: 500px;
+  }
+  .galgame-expression-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .galgame-character-reference-panel {
+    grid-template-columns: 1fr;
+  }
+  .galgame-asset-picker-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .galgame-asset-picker-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .galgame-asset-picker-toolbar label {
+    max-width: none;
+  }
+  .galgame-block-panel {
+    padding-right: 12px;
+    padding-left: 12px;
+  }
+  .galgame-block-add {
+    padding-left: 0;
+  }
+  .galgame-terminator-note {
+    margin-left: 0;
+  }
+  .galgame-overview-hero {
+    padding: 22px;
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .galgame-overview-toolbar {
+    flex-direction: row;
+  }
+  .galgame-overview-toolbar button {
+    flex: 1;
+  }
+  .galgame-overview-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .galgame-overview-modules {
+    grid-template-columns: 1fr;
+  }
+  .galgame-library-metrics {
+    width: 100%;
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .galgame-library-metrics > span {
+    min-width: 0;
+    padding: 10px;
+    flex-direction: column;
+    gap: 3px;
+  }
+  .galgame-route-report-backdrop {
+    padding: 12px;
+  }
+  .galgame-route-report-dialog {
+    max-height: calc(100vh - 24px);
+  }
+  .galgame-route-report-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .galgame-route-report-metrics article:nth-child(3) {
+    grid-column: 1 / -1;
+    border-top: 1px solid var(--gal-line);
+    border-left: 0;
+  }
+  .galgame-route-report-dialog > footer {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .galgame-route-report-dialog > footer > div {
+    width: 100%;
+  }
+  .galgame-route-report-dialog > footer button {
+    flex: 1;
+  }
+  .galgame-conflict {
+    align-items: stretch;
+    flex-wrap: wrap;
+  }
+  .galgame-conflict span {
+    flex-basis: 100%;
+  }
+}
+
+@media (max-width: 460px) {
+  .galgame-editor-header {
+    gap: 8px;
+  }
+  .galgame-editor-project img {
+    display: none;
+  }
+  .galgame-editor-project strong {
+    max-width: 29vw;
+  }
+  .galgame-preview-launch {
+    padding: 0 9px;
+  }
+  .galgame-save-state svg {
+    display: none;
+  }
+  .galgame-fragment-list {
+    grid-template-columns: 1fr;
+  }
+  .galgame-character-list {
+    grid-template-columns: 1fr;
+  }
+  .galgame-scene-list {
+    grid-template-columns: 1fr;
+  }
+  .galgame-background-actions,
+  .galgame-background-form {
+    grid-template-columns: 1fr;
+  }
+  .galgame-background-form > div {
+    grid-column: auto;
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .galgame-background-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .galgame-portrait-actions,
+  .galgame-expression-form {
+    grid-template-columns: 1fr;
+  }
+  .galgame-expression-form > div {
+    grid-column: auto;
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .galgame-expression-grid,
+  .galgame-asset-picker-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .galgame-asset-picker-backdrop {
+    padding: 8px;
+  }
+  .galgame-route-report-backdrop {
+    padding: 8px;
+  }
+  .galgame-route-report-dialog {
+    max-height: calc(100vh - 16px);
+  }
+  .galgame-route-report-dialog > header,
+  .galgame-route-report-content,
+  .galgame-route-report-dialog > footer {
+    padding-right: 12px;
+    padding-left: 12px;
+  }
+  .galgame-route-report-meta {
+    padding-right: 12px;
+    padding-left: 12px;
+  }
+  .galgame-route-report-section > header > span {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .galgame-route-report-chapters small,
+  .galgame-route-report-routes small,
+  .galgame-route-report-issues small {
+    white-space: normal;
+  }
+  .galgame-overview-stats {
+    grid-template-columns: 1fr;
+  }
+  .galgame-overview-toolbar {
+    flex-direction: column;
+  }
+  .galgame-entity-workspace {
+    padding: 16px 12px;
+  }
+}
+
+/* Official-style creator shell: shared topbar, wide preview and dedicated workspaces. */
+
+.galgame-editor-page {
+  height: 100vh;
+  min-height: 680px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.galgame-editor-header {
+  position: relative;
+  z-index: 80;
+  min-height: 62px;
+  padding: 9px 18px;
+  background: color-mix(in srgb, var(--gal-panel) 96%, transparent);
+}
+
+.galgame-global-search {
+  width: min(420px, 34vw);
+  min-height: 36px;
+  padding: 0 10px;
+  border: 1px solid var(--gal-line);
+  border-radius: 9px;
+  background: var(--gal-surface-strong);
+  color: var(--gal-faint);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: text;
+}
+
+.galgame-global-search span {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.galgame-global-search kbd,
+.galgame-command-dialog kbd {
+  padding: 2px 6px;
+  border: 1px solid var(--gal-line);
+  border-radius: 5px;
+  background: var(--gal-surface);
+  color: var(--gal-muted);
+  font:
+    10px/1.4 ui-monospace,
+    monospace;
+}
+
+.galgame-run-menu {
+  position: relative;
+}
+
+.galgame-run-menu > summary {
+  list-style: none;
+}
+
+.galgame-run-menu > summary::-webkit-details-marker {
+  display: none;
+}
+
+.galgame-run-menu > div {
+  position: absolute;
+  top: calc(100% + 7px);
+  right: 0;
+  z-index: 100;
+  width: 210px;
+  padding: 6px;
+  border: 1px solid var(--gal-line);
+  border-radius: 10px;
+  background: var(--gal-surface);
+  box-shadow: var(--gal-shadow);
+}
+
+.galgame-run-menu > div button {
+  width: 100%;
+  min-height: 34px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--gal-text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.galgame-run-menu > div button:hover {
+  background: var(--gal-accent-soft);
+  color: var(--gal-accent);
+}
+
+.galgame-run-menu > div button:disabled {
+  opacity: 0.42;
+}
+
+.galgame-editor-tabs {
+  min-height: 49px;
+  justify-content: center;
+  gap: 30px;
+  background: var(--gal-panel);
+}
+
+.galgame-editor-grid {
+  --galgame-preview-width: 640px;
+  height: auto;
+  min-height: 0;
+  flex: 1;
+  grid-template-rows:
+    minmax(310px, var(--galgame-stage-split, 58%)) 7px 42px
+    minmax(180px, 1fr);
+}
+
+.galgame-editor-grid[data-stage-collapsed="true"] {
+  grid-template-rows: auto 7px 42px minmax(240px, 1fr);
+}
+
+.galgame-editor-grid > .galgame-block-panel {
+  grid-column: 3;
+  grid-row: 1 / -1;
+}
+
+.galgame-stage-resizer {
+  display: block;
+  grid-column: 5;
+  grid-row: 2;
+}
+
+.galgame-editor-grid .galgame-preview-focus {
+  grid-column: 5;
+  grid-row: 1;
+  padding: 10px 10px 0;
+  background: var(--gal-panel);
+}
+
+.galgame-editor-grid .galgame-inspector-tabs {
+  grid-column: 5;
+  grid-row: 3;
+  margin: 7px 10px 0;
+}
+
+.galgame-editor-grid .galgame-inspector-body {
+  grid-column: 5;
+  grid-row: 4;
+  margin: 8px 10px 10px;
+}
+
+.galgame-block-panel {
+  background:
+    linear-gradient(
+      90deg,
+      transparent 0 48px,
+      color-mix(in srgb, var(--gal-line) 55%, transparent) 48px 49px,
+      transparent 49px
+    ),
+    var(--gal-surface);
+}
+
+.galgame-block-toolbar {
+  background: color-mix(in srgb, var(--gal-surface) 95%, transparent);
+}
+
+.galgame-editor-statusbar {
+  min-height: 28px;
+  padding: 0 14px;
+  border-top: 1px solid var(--gal-line);
+  background: var(--gal-panel);
+  color: var(--gal-muted);
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  font-size: 10px;
+}
+
+.galgame-editor-statusbar span:first-child {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.galgame-editor-statusbar i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--gal-ok);
+}
+
+.galgame-editor-statusbar .warning {
+  color: var(--gal-warning);
+}
+
+.galgame-editor-statusbar .healthy {
+  color: var(--gal-ok);
+}
+
+.galgame-editor-statusbar a {
+  margin-left: auto;
+  color: var(--gal-muted);
+  text-decoration: none;
+}
+
+.galgame-command-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 500;
+  padding-top: min(14vh, 130px);
+  background: rgb(13 20 31 / 0.32);
+  backdrop-filter: blur(5px);
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+}
+
+.galgame-command-dialog {
+  width: min(680px, calc(100vw - 30px));
+  max-height: min(680px, 72vh);
+  overflow: hidden;
+  border: 1px solid var(--gal-line-strong);
+  border-radius: 13px;
+  background: var(--gal-surface);
+  box-shadow: 0 24px 80px rgb(12 22 38 / 0.24);
+}
+
+.galgame-command-dialog > label {
+  min-height: 54px;
+  padding: 0 14px;
+  border-bottom: 1px solid var(--gal-line);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.galgame-command-dialog > label input {
+  min-width: 0;
+  flex: 1;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--gal-text);
+  font-size: 15px;
+}
+
+.galgame-command-dialog > label button {
+  width: 28px;
+  height: 28px;
+  border: 0;
+  background: transparent;
+  color: var(--gal-muted);
+}
+
+.galgame-command-results {
+  max-height: calc(min(680px, 72vh) - 55px);
+  padding: 7px;
+  overflow: auto;
+}
+
+.galgame-command-results > button {
+  width: 100%;
+  min-height: 50px;
+  padding: 7px 10px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--gal-text);
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  text-align: left;
+}
+
+.galgame-command-results > button:hover {
+  background: var(--gal-accent-soft);
+}
+
+.galgame-command-results > button > svg {
+  color: var(--gal-accent);
+}
+
+.galgame-command-results > button span {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.galgame-command-results strong,
+.galgame-command-results small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.galgame-command-results small {
+  color: var(--gal-muted);
+  font-size: 10px;
+}
+
+.galgame-asset-center {
+  min-height: 0;
+  flex: 1;
+  overflow: hidden;
+}
+
+.galgame-asset-nav-group {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.galgame-asset-nav-group > small {
+  padding: 12px 10px 5px;
+  border-bottom: 1px solid color-mix(in srgb, var(--gal-line) 60%, transparent);
+  color: var(--gal-faint);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+}
+
+.galgame-asset-center > aside .galgame-asset-nav-group button span {
+  flex: 1;
+}
+
+.galgame-asset-center > aside .galgame-asset-nav-group button em {
+  color: var(--gal-faint);
+  font-size: 10px;
+  font-style: normal;
+}
+
+.galgame-character-workspace {
+  height: 100%;
+  grid-template-columns: 250px minmax(540px, 1fr) minmax(390px, 0.72fr);
+}
+
+.galgame-character-list > button.active {
+  border-color: color-mix(
+    in srgb,
+    var(--character-theme, var(--gal-accent)) 45%,
+    var(--gal-line)
+  );
+  background: color-mix(
+    in srgb,
+    var(--character-theme, var(--gal-accent)) 9%,
+    var(--gal-surface)
+  );
+  box-shadow: inset 3px 0 var(--character-theme, var(--gal-accent));
+}
+
+.galgame-character-theme-field input[type="color"] {
+  width: 100%;
+  height: 38px;
+  padding: 3px;
+}
+
+.galgame-character-live-preview {
+  padding: 12px !important;
+}
+
+.galgame-character-live-preview > header {
+  justify-content: space-between;
+}
+
+.galgame-character-live-preview > header small {
+  color: var(--gal-muted);
+  font-size: 9px;
+}
+
+.galgame-character-preview-stage {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  margin: 10px 0;
+  overflow: hidden;
+  border: 1px solid var(--gal-line);
+  border-radius: 8px;
+  background-color: var(--gal-surface-strong);
+  background-image:
+    linear-gradient(
+      45deg,
+      color-mix(in srgb, var(--gal-line) 45%, transparent) 25%,
+      transparent 25%
+    ),
+    linear-gradient(
+      -45deg,
+      color-mix(in srgb, var(--gal-line) 45%, transparent) 25%,
+      transparent 25%
+    ),
+    linear-gradient(
+      45deg,
+      transparent 75%,
+      color-mix(in srgb, var(--gal-line) 45%, transparent) 75%
+    ),
+    linear-gradient(
+      -45deg,
+      transparent 75%,
+      color-mix(in srgb, var(--gal-line) 45%, transparent) 75%
+    );
+  background-size: 20px 20px;
+  background-position:
+    0 0,
+    0 10px,
+    10px -10px,
+    -10px 0;
+}
+
+.galgame-character-preview-stage > img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.galgame-character-preview-actor {
+  position: absolute;
+  width: 48%;
+  height: 94%;
+}
+
+.galgame-character-preview-actor img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center bottom;
+}
+
+.galgame-character-preview-actor > svg {
+  width: 48px;
+  height: 48px;
+  color: var(--gal-muted);
+}
+
+.galgame-character-live-preview > label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.galgame-character-live-preview > label span {
+  color: var(--gal-muted);
+  font-size: 10px;
+}
+
+.galgame-character-live-preview select {
+  min-width: 0;
+  flex: 1;
+  min-height: 32px;
+  border: 1px solid var(--gal-line);
+  border-radius: 7px;
+  background: var(--gal-surface);
+  color: var(--gal-text);
+}
+
+.galgame-character-position-pills {
+  margin-top: 8px;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.galgame-character-position-pills button {
+  min-height: 28px;
+  padding: 0;
+  border: 1px solid var(--gal-line);
+  border-radius: 6px;
+  background: var(--gal-surface);
+  color: var(--gal-muted);
+  font-size: 9px;
+}
+
+.galgame-character-position-pills button.active {
+  border-color: var(--gal-accent-line);
+  background: var(--gal-accent-soft);
+  color: var(--gal-accent);
+}
+
+.galgame-narrative-workspace,
+.galgame-personalization-workspace,
+.galgame-settings-workspace {
+  min-height: 0;
+  flex: 1;
+  overflow: hidden;
+  background: var(--gal-bg);
+}
+
+.galgame-narrative-workspace {
+  display: grid;
+  grid-template-columns: 310px minmax(0, 1fr);
+}
+
+.galgame-narrative-sidebar {
+  min-height: 0;
+  overflow: auto;
+  border-right: 1px solid var(--gal-line);
+  background: var(--gal-panel);
+}
+
+.galgame-narrative-sidebar > nav {
+  min-height: 46px;
+  padding: 6px;
+  border-bottom: 1px solid var(--gal-line);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 5px;
+}
+
+.galgame-narrative-sidebar > nav button {
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--gal-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.galgame-narrative-sidebar > nav button.active {
+  background: var(--gal-surface);
+  color: var(--gal-text);
+  box-shadow: var(--gal-shadow-soft);
+}
+
+.galgame-narrative-sidebar > section {
+  padding: 12px;
+}
+
+.galgame-narrative-sidebar section > header {
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.galgame-narrative-sidebar section > header span {
+  display: flex;
+  flex-direction: column;
+}
+
+.galgame-narrative-sidebar section > header small {
+  color: var(--gal-accent);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+}
+
+.galgame-narrative-sidebar section > header button {
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 7px;
+  background: var(--gal-accent);
+  color: white;
+}
+
+.galgame-narrative-sidebar section > article {
+  margin-top: 8px;
+  padding: 10px;
+  border: 1px solid var(--gal-line);
+  border-radius: 9px;
+  background: var(--gal-surface);
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.galgame-narrative-sidebar section > article > div {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.galgame-narrative-sidebar input,
+.galgame-narrative-sidebar select {
+  width: 100%;
+  min-height: 31px;
+  border: 1px solid var(--gal-line);
+  border-radius: 6px;
+  background: var(--gal-surface-strong);
+  color: var(--gal-text);
+}
+
+.galgame-narrative-sidebar article small {
+  color: var(--gal-faint);
+  font-size: 9px;
+}
+
+.galgame-branch-list > button {
+  width: 100%;
+  min-height: 54px;
+  padding: 8px;
+  border: 0;
+  border-bottom: 1px solid var(--gal-line);
+  background: transparent;
+  color: var(--gal-text);
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr) 18px;
+  align-items: center;
+  gap: 8px;
+  text-align: left;
+}
+
+.galgame-branch-list > button span {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.galgame-branch-list > button small {
+  color: var(--gal-muted);
+}
+
+.galgame-narrative-canvas {
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.galgame-narrative-canvas > header {
+  min-height: 48px;
+  padding: 0 14px;
+  border-bottom: 1px solid var(--gal-line);
+  background: var(--gal-surface);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.galgame-narrative-canvas > header > span {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.galgame-narrative-canvas > header small {
+  color: var(--gal-muted);
+}
+
+.galgame-narrative-canvas > header > div {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.galgame-narrative-canvas > header button {
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--gal-line);
+  border-radius: 6px;
+  background: var(--gal-surface);
+  color: var(--gal-muted);
+}
+
+.galgame-narrative-canvas > header output {
+  min-width: 46px;
+  text-align: center;
+  font-size: 10px;
+}
+
+.galgame-narrative-viewport {
+  min-height: 0;
+  flex: 1;
+  overflow: hidden;
+  cursor: grab;
+  background-color: var(--gal-bg);
+  background-image: radial-gradient(
+    var(--gal-line-strong) 0.7px,
+    transparent 0.7px
+  );
+  background-size: 18px 18px;
+  touch-action: none;
+}
+
+.galgame-narrative-viewport:active {
+  cursor: grabbing;
+}
+
+.galgame-narrative-viewport svg {
+  overflow: visible;
+  transform-origin: 0 0;
+}
+
+.galgame-map-edge path {
+  fill: none;
+  stroke: var(--gal-line-strong);
+  stroke-width: 1.5;
+}
+
+.galgame-map-edge.branch path {
+  stroke: var(--gal-accent);
+}
+
+.galgame-map-edge.condition path {
+  stroke: var(--gal-warning);
+}
+
+.galgame-map-edge.call path {
+  stroke: #7187d8;
+}
+
+.galgame-map-edge text {
+  fill: var(--gal-muted);
+  font-size: 9px;
+}
+
+.galgame-map-edge.muted {
+  opacity: 0.16;
+}
+
+#galgame-map-arrow path {
+  fill: var(--gal-line-strong);
+}
+
+.galgame-map-node {
+  width: 176px;
+  height: 72px;
+  padding: 9px 11px;
+  border: 1px solid var(--gal-line-strong);
+  border-radius: 9px;
+  background: var(--gal-surface);
+  color: var(--gal-text);
+  box-shadow: var(--gal-shadow-soft);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 3px;
+  text-align: left;
+}
+
+.galgame-map-node.chapter {
+  border-left: 4px solid var(--gal-accent);
+}
+
+.galgame-map-node.logic {
+  border-style: dashed;
+  background: var(--gal-surface-strong);
+}
+
+.galgame-map-node small {
+  color: var(--gal-muted);
+  font-size: 9px;
+}
+
+.galgame-map-node.muted {
+  opacity: 0.24;
+}
+
+.galgame-map-node.selected {
+  outline: 2px solid var(--gal-accent);
+  outline-offset: 2px;
+}
+
+.galgame-personalization-workspace {
+  display: grid;
+  grid-template-columns: minmax(360px, 470px) minmax(520px, 1fr);
+}
+
+.galgame-personalization-workspace > aside {
+  min-height: 0;
+  padding: 18px;
+  overflow: auto;
+  border-right: 1px solid var(--gal-line);
+  background: var(--gal-panel);
+}
+
+.galgame-personalization-workspace > aside > header h2 {
+  margin: 4px 0;
+}
+
+.galgame-personalization-workspace > aside > header small {
+  color: var(--gal-accent);
+}
+
+.galgame-personalization-workspace > aside > header p {
+  margin: 0 0 15px;
+  color: var(--gal-muted);
+}
+
+.galgame-personalization-workspace > main {
+  min-width: 0;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+}
+
+.galgame-personalization-workspace > main > header {
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.galgame-personalization-workspace > main > header span {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.galgame-personalization-workspace > main > header small,
+.galgame-personalization-workspace > main > p {
+  color: var(--gal-muted);
+  font-size: 10px;
+}
+
+.galgame-personalization-preview {
+  min-height: 360px;
+  flex: 1;
+  overflow: hidden;
+  border: 1px solid var(--gal-line);
+  border-radius: 11px;
+  background: #05070a;
+  box-shadow: var(--gal-shadow);
+}
+
+.galgame-personalization-preview .galgame-player {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.galgame-personalization-preview .galgame-stage-host {
+  min-height: 0;
+  flex: 1;
+}
+
+.galgame-settings-workspace {
+  padding: 24px clamp(18px, 4vw, 64px);
+  overflow: auto;
+}
+
+.galgame-settings-workspace > header {
+  max-width: 1120px;
+  margin: 0 auto 18px;
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+}
+
+.galgame-settings-workspace > header span {
+  display: grid;
+  grid-template-columns: 26px 1fr;
+  align-items: center;
+}
+
+.galgame-settings-workspace > header span svg {
+  grid-row: 1 / 3;
+  width: 22px;
+  height: 22px;
+  color: var(--gal-accent);
+}
+
+.galgame-settings-workspace > header small {
+  color: var(--gal-accent);
+  letter-spacing: 0.12em;
+}
+
+.galgame-settings-workspace > header h2 {
+  margin: 2px 0 0;
+}
+
+.galgame-settings-workspace > header p {
+  color: var(--gal-muted);
+}
+
+.galgame-settings-grid {
+  max-width: 1120px;
+  margin: auto;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.galgame-settings-grid > section {
+  padding: 18px;
+  border: 1px solid var(--gal-line);
+  border-radius: 11px;
+  background: var(--gal-surface);
+  box-shadow: var(--gal-shadow-soft);
+}
+
+.galgame-settings-grid h3 {
+  margin: 0 0 14px;
+}
+
+.galgame-settings-grid label {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.galgame-settings-grid label > span {
+  color: var(--gal-muted);
+  font-size: 10px;
+}
+
+.galgame-settings-grid input,
+.galgame-settings-grid textarea,
+.galgame-settings-grid select {
+  width: 100%;
+  min-height: 38px;
+  padding: 8px 10px;
+  border: 1px solid var(--gal-line);
+  border-radius: 7px;
+  background: var(--gal-surface-strong);
+  color: var(--gal-text);
+}
+
+.galgame-settings-grid textarea {
+  min-height: 110px;
+  resize: vertical;
+}
+
+.galgame-settings-title-field {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 7px;
+}
+
+.galgame-settings-title-field button {
+  padding: 0 12px;
+  border: 1px solid var(--gal-accent);
+  border-radius: 7px;
+  background: var(--gal-accent);
+  color: white;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.galgame-settings-title-field button:disabled {
+  opacity: 0.45;
+}
+
+.galgame-settings-pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 9px;
+}
+
+.galgame-settings-positions {
+  grid-column: 1 / -1;
+}
+
+.galgame-settings-positions h3 {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.galgame-settings-positions > p {
+  color: var(--gal-muted);
+}
+
+.galgame-settings-positions > div {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 9px;
+}
+
+@media (min-width: 1800px) {
+  .galgame-editor-grid {
+    --galgame-preview-width: 760px;
+  }
+  .galgame-character-workspace {
+    grid-template-columns: 270px minmax(620px, 1fr) 450px;
+  }
+}
+
+@media (max-width: 1279px) and (min-width: 981px) {
+  .galgame-editor-grid {
+    grid-template-columns:
+      minmax(180px, var(--galgame-fragment-width))
+      6px minmax(400px, 1fr) 6px minmax(420px, var(--galgame-preview-width));
+  }
+  .galgame-editor-actions > .theme-toggle {
+    display: none;
+  }
+  .galgame-save-state {
+    display: none;
+  }
+  .galgame-global-search {
+    width: min(310px, 28vw);
+  }
+  .galgame-character-workspace {
+    grid-template-columns: 220px minmax(480px, 1fr) 330px;
+  }
+}
+
+@media (max-width: 980px) {
+  .galgame-editor-page {
+    height: auto;
+    min-height: 100vh;
+    overflow: visible;
+  }
+  .galgame-global-search {
+    order: 3;
+    width: 100%;
+    flex-basis: 100%;
+  }
+  .galgame-editor-header {
+    flex-wrap: wrap;
+  }
+  .galgame-editor-tabs {
+    justify-content: flex-start;
+  }
+  .galgame-editor-grid {
+    flex: none;
+  }
+  .galgame-editor-grid .galgame-preview-focus {
+    order: 3;
+  }
+  .galgame-editor-grid > .galgame-block-panel {
+    order: 2;
+  }
+  .galgame-editor-grid .galgame-inspector-tabs {
+    order: 4;
+  }
+  .galgame-editor-grid .galgame-inspector-body {
+    order: 5;
+  }
+  .galgame-editor-statusbar {
+    position: sticky;
+    bottom: 0;
+    z-index: 70;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+  .galgame-narrative-workspace {
+    min-height: 760px;
+    grid-template-columns: 270px minmax(600px, 1fr);
+    overflow-x: auto;
+  }
+  .galgame-personalization-workspace {
+    grid-template-columns: 1fr;
+    overflow: visible;
+  }
+  .galgame-personalization-workspace > aside {
+    border-right: 0;
+    border-bottom: 1px solid var(--gal-line);
+  }
+  .galgame-personalization-workspace > main {
+    min-height: 620px;
+  }
+  .galgame-settings-grid {
+    grid-template-columns: 1fr;
+  }
+  .galgame-settings-positions {
+    grid-column: auto;
+  }
+  .galgame-settings-positions > div {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}

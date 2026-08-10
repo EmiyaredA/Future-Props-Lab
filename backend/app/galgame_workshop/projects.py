@@ -6,11 +6,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.concurrency.revisions import RevisionConflictError
 from app.core.config import get_settings
 from app.core.time import iso_utc, utc_now
+from app.files.storage import TARGET_STORAGE_VERSION, AssetStorage
 from app.galgame_workshop.errors import (
     GalgameStoryNotReadyError,
     GalgameWorkshopProjectNotFoundError,
 )
-from app.galgame_workshop.story import GalgameStoryDocuments, default_story_document
+from app.galgame_workshop.readiness import GalgameReadiness
+from app.galgame_workshop.story import default_story_document
 from app.models import GalgameStoryDocument, GalgameWorkshopProject, VisualAsset
 from app.schemas.galgame_workshop import (
     GalgameWorkshopProjectCreateIn,
@@ -34,6 +36,7 @@ def project_out(row: GalgameWorkshopProject) -> GalgameWorkshopProjectOut:
 class GalgameWorkshopProjects:
     def __init__(self, session: AsyncSession) -> None:
         self.session = session
+        self.storage = AssetStorage(get_settings())
 
     async def list(self) -> GalgameWorkshopProjectListOut:
         rows = (
@@ -63,13 +66,20 @@ class GalgameWorkshopProjects:
         row = GalgameWorkshopProject(title=body.title, status="draft")
         self.session.add(row)
         await self.session.flush()
-        self.session.add(
-            GalgameStoryDocument(
-                project_id=row.id,
-                document=default_story_document().model_dump(mode="json", by_alias=True),
+        created_root = self.storage.ensure_project_layout("galgame-workshop", row.id)
+        try:
+            self.session.add(
+                GalgameStoryDocument(
+                    project_id=row.id,
+                    document=default_story_document().model_dump(mode="json", by_alias=True),
+                )
             )
-        )
-        await self.session.commit()
+            await self.session.commit()
+        except Exception:
+            await self.session.rollback()
+            if created_root:
+                self.storage.remove_project_root("galgame-workshop", row.id)
+            raise
         await self.session.refresh(row)
         return project_out(row)
 
@@ -89,7 +99,7 @@ class GalgameWorkshopProjects:
     ) -> GalgameWorkshopProjectOut:
         await self._row(project_id)
         if body.status == "completed":
-            report = await GalgameStoryDocuments(self.session).report(project_id)
+            report = await GalgameReadiness(self.session, get_settings()).report(project_id)
             if not report.ready:
                 raise GalgameStoryNotReadyError(report)
         values: dict[str, object] = {
@@ -124,15 +134,25 @@ class GalgameWorkshopProjects:
             .scalars()
             .all()
         )
-        paths = [get_settings().visual_asset_path / asset.storage_key for asset in assets]
-        result = await self.session.execute(
-            delete(GalgameWorkshopProject).where(
-                GalgameWorkshopProject.id == project_id,
-                GalgameWorkshopProject.revision == expected_revision,
+        legacy_paths = [
+            self.storage.path_for(asset)
+            for asset in assets
+            if asset.storage_version < TARGET_STORAGE_VERSION
+        ]
+        staged = self.storage.stage_project_root("galgame-workshop", project_id)
+        try:
+            result = await self.session.execute(
+                delete(GalgameWorkshopProject).where(
+                    GalgameWorkshopProject.id == project_id,
+                    GalgameWorkshopProject.revision == expected_revision,
+                )
             )
-        )
-        if result.rowcount != 1:
-            await self._raise_conflict(project_id, expected_revision)
-        await self.session.commit()
-        for path in paths:
+            if result.rowcount != 1:
+                await self._raise_conflict(project_id, expected_revision)
+            await self.session.commit()
+        except Exception:
+            self.storage.restore_staged_root(staged)
+            raise
+        for path in legacy_paths:
             path.unlink(missing_ok=True)
+        self.storage.purge_staged_root(staged)

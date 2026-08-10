@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field, field_validator, model_validator
 
 VisualAssetScope = Literal["library", "project"]
 VisualAssetKind = Literal["image", "video", "audio", "font", "document"]
+StorageLayoutIssueCode = Literal["source_missing", "target_conflict", "copy_failed"]
 
 
 def _clean_name(value: str) -> str:
@@ -148,6 +149,36 @@ class VisualAssetReferencePatchIn(BaseModel):
         return self
 
 
+class StorageLayoutIssueOut(BaseModel):
+    asset_id: str
+    code: StorageLayoutIssueCode
+    message: str
+
+
+class StorageLayoutStatusOut(BaseModel):
+    target_version: Literal[2] = 2
+    pending_projects: int
+    pending_assets: int
+    migrated_assets: int
+    pending_bytes: int
+    missing_files: int
+    conflicting_files: int
+    complete: bool
+
+
+class StorageLayoutMigrationOut(BaseModel):
+    processed_assets: int
+    migrated_projects: int
+    migrated_assets: int
+    already_materialized_assets: int
+    missing_files: int
+    conflicts: int
+    remaining_projects: int
+    remaining_assets: int
+    issues: list[StorageLayoutIssueOut]
+    complete: bool
+
+
 __all__ = [
     "VisualAssetFolderCreateIn",
     "VisualAssetFolderListOut",
@@ -159,4 +190,7 @@ __all__ = [
     "VisualAssetPatchIn",
     "VisualAssetReferenceCreateIn",
     "VisualAssetReferencePatchIn",
+    "StorageLayoutIssueOut",
+    "StorageLayoutMigrationOut",
+    "StorageLayoutStatusOut",
 ]

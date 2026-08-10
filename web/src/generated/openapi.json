@@ -8196,6 +8196,144 @@
         "title": "ProviderOut",
         "type": "object"
       },
+      "StorageLayoutIssueOut": {
+        "properties": {
+          "asset_id": {
+            "title": "Asset Id",
+            "type": "string"
+          },
+          "code": {
+            "enum": [
+              "source_missing",
+              "target_conflict",
+              "copy_failed"
+            ],
+            "title": "Code",
+            "type": "string"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          }
+        },
+        "required": [
+          "asset_id",
+          "code",
+          "message"
+        ],
+        "title": "StorageLayoutIssueOut",
+        "type": "object"
+      },
+      "StorageLayoutMigrationOut": {
+        "properties": {
+          "already_materialized_assets": {
+            "title": "Already Materialized Assets",
+            "type": "integer"
+          },
+          "complete": {
+            "title": "Complete",
+            "type": "boolean"
+          },
+          "conflicts": {
+            "title": "Conflicts",
+            "type": "integer"
+          },
+          "issues": {
+            "items": {
+              "$ref": "#/components/schemas/StorageLayoutIssueOut"
+            },
+            "title": "Issues",
+            "type": "array"
+          },
+          "migrated_assets": {
+            "title": "Migrated Assets",
+            "type": "integer"
+          },
+          "migrated_projects": {
+            "title": "Migrated Projects",
+            "type": "integer"
+          },
+          "missing_files": {
+            "title": "Missing Files",
+            "type": "integer"
+          },
+          "processed_assets": {
+            "title": "Processed Assets",
+            "type": "integer"
+          },
+          "remaining_assets": {
+            "title": "Remaining Assets",
+            "type": "integer"
+          },
+          "remaining_projects": {
+            "title": "Remaining Projects",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "processed_assets",
+          "migrated_projects",
+          "migrated_assets",
+          "already_materialized_assets",
+          "missing_files",
+          "conflicts",
+          "remaining_projects",
+          "remaining_assets",
+          "issues",
+          "complete"
+        ],
+        "title": "StorageLayoutMigrationOut",
+        "type": "object"
+      },
+      "StorageLayoutStatusOut": {
+        "properties": {
+          "complete": {
+            "title": "Complete",
+            "type": "boolean"
+          },
+          "conflicting_files": {
+            "title": "Conflicting Files",
+            "type": "integer"
+          },
+          "migrated_assets": {
+            "title": "Migrated Assets",
+            "type": "integer"
+          },
+          "missing_files": {
+            "title": "Missing Files",
+            "type": "integer"
+          },
+          "pending_assets": {
+            "title": "Pending Assets",
+            "type": "integer"
+          },
+          "pending_bytes": {
+            "title": "Pending Bytes",
+            "type": "integer"
+          },
+          "pending_projects": {
+            "title": "Pending Projects",
+            "type": "integer"
+          },
+          "target_version": {
+            "const": 2,
+            "default": 2,
+            "title": "Target Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "pending_projects",
+          "pending_assets",
+          "migrated_assets",
+          "pending_bytes",
+          "missing_files",
+          "conflicting_files",
+          "complete"
+        ],
+        "title": "StorageLayoutStatusOut",
+        "type": "object"
+      },
       "StudioAuthStatus": {
         "properties": {
           "auth_required": {
@@ -10619,6 +10757,116 @@
           }
         },
         "summary": "Patch File Folder",
+        "tags": [
+          "file-management"
+        ]
+      }
+    },
+    "/v1/file-storage/layout": {
+      "get": {
+        "operationId": "storage_layout_status_v1_file_storage_layout_get",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-Studio-Token",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Studio-Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StorageLayoutStatusOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Storage Layout Status",
+        "tags": [
+          "file-management"
+        ]
+      }
+    },
+    "/v1/file-storage/layout/migrate": {
+      "post": {
+        "operationId": "migrate_storage_layout_v1_file_storage_layout_migrate_post",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-Studio-Token",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Studio-Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StorageLayoutMigrationOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Migrate Storage Layout",
         "tags": [
           "file-management"
         ]

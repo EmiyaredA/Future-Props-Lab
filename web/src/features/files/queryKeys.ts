@@ -13,6 +13,7 @@ export type FileListKeyOptions = {
 const scope = (projectId?: string) => projectId ?? "library";
 
 export const fileQueryKeys = {
+  storageLayout: ["file-storage-layout"] as const,
   allFiles: ["managed-files"] as const,
   allFolders: ["managed-folders"] as const,
   files: (projectId?: string) => ["managed-files", scope(projectId)] as const,

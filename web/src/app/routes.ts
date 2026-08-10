@@ -52,40 +52,8 @@ export function parsePage(pathname = window.location.pathname): AppPage {
 }
 
 export function parseRoute(pathname = window.location.pathname): AppRoute {
-  const galgameEditor = pathname.match(
-    /^\/apps\/galgame-workshop\/projects\/([^/]+)\/editor/,
-  );
-  if (galgameEditor)
-    return {
-      page: "galgame-workshop-editor",
-      projectId: decodeURIComponent(galgameEditor[1]),
-    };
-  const galgameOverview = pathname.match(
-    /^\/apps\/galgame-workshop\/projects\/([^/]+)\/overview/,
-  );
-  if (galgameOverview)
-    return {
-      page: "galgame-workshop-overview",
-      projectId: decodeURIComponent(galgameOverview[1]),
-    };
-  if (pathname.startsWith("/apps/galgame-workshop"))
-    return { page: "galgame-workshop-projects" };
-
-  const projectRoute = pathname.match(
-    /^\/apps\/visual-workshop\/projects\/([^/]+)\/(canvas|assets)/,
-  );
-  if (projectRoute)
-    return {
-      page:
-        projectRoute[2] === "canvas"
-          ? "visual-workshop-canvas"
-          : "visual-workshop-assets",
-      projectId: decodeURIComponent(projectRoute[1]),
-    };
-  if (pathname.startsWith("/apps/visual-workshop/tasks"))
-    return { page: "visual-workshop-tasks" };
-  if (pathname.startsWith("/apps/visual-workshop"))
-    return { page: "visual-workshop-projects" };
+  const application = matchApplicationPath(pathname);
+  if (application) return application as AppRoute;
   if (pathname.startsWith("/apps")) return { page: "apps" };
   if (pathname.startsWith("/files")) return { page: "files" };
   if (pathname.startsWith("/tools")) return { page: "tools" };
@@ -97,14 +65,8 @@ export function parseRoute(pathname = window.location.pathname): AppRoute {
 }
 
 export function pathFor(page: AppPage, projectId?: string): string {
-  if (page === "galgame-workshop-editor" && projectId)
-    return `/apps/galgame-workshop/projects/${encodeURIComponent(projectId)}/editor`;
-  if (page === "galgame-workshop-overview" && projectId)
-    return `/apps/galgame-workshop/projects/${encodeURIComponent(projectId)}/overview`;
-  if (page === "visual-workshop-canvas" && projectId)
-    return `/apps/visual-workshop/projects/${encodeURIComponent(projectId)}/canvas`;
-  if (page === "visual-workshop-assets" && projectId)
-    return `/apps/visual-workshop/projects/${encodeURIComponent(projectId)}/assets`;
+  const applicationPath = applicationPathFor(page, projectId);
+  if (applicationPath) return applicationPath;
   const paths: Record<AppPage, string> = {
     home: "/home",
     apps: "/apps",
@@ -123,3 +85,7 @@ export function pathFor(page: AppPage, projectId?: string): string {
   };
   return paths[page];
 }
+import {
+  applicationPathFor,
+  matchApplicationPath,
+} from "@app/applicationRegistry";

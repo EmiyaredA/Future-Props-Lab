@@ -4,6 +4,10 @@ import { api, unwrap } from "@platform/api/client";
 export type ManagedFile = components["schemas"]["VisualAssetOut"];
 export type ManagedFolder = components["schemas"]["VisualAssetFolderOut"];
 export type MediaKind = ManagedFile["media_kind"];
+export type StorageLayoutStatus =
+  components["schemas"]["StorageLayoutStatusOut"];
+export type StorageLayoutMigration =
+  components["schemas"]["StorageLayoutMigrationOut"];
 
 export async function getFolders(projectId?: string) {
   return unwrap(
@@ -200,6 +204,18 @@ export async function importManagedFiles(
             : undefined,
         asset_ids: options.assetIds,
       },
+    }),
+  );
+}
+
+export async function getStorageLayoutStatus() {
+  return unwrap(await api.GET("/v1/file-storage/layout"));
+}
+
+export async function migrateStorageLayout(limit = 50) {
+  return unwrap(
+    await api.POST("/v1/file-storage/layout/migrate", {
+      params: { query: { limit } },
     }),
   );
 }

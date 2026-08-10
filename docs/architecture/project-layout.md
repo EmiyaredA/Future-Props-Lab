@@ -11,21 +11,21 @@ Future-Props-Lab/
 │   ├── problem_details.py # 统一协议错误映射
 │   ├── concurrency/   # revision/CAS 并发语义
 │   ├── core/          # 配置、数据库、时间与密钥基础设施
-│   ├── files/         # 公共文件、文件夹、存储校验与项目文件引用
+│   ├── files/         # 文件策略、落盘、公共库、项目引用与旧布局迁移
 │   ├── agents/        # 供应商无关 Agent Harness、Reactive 工具循环与内存审批
 │   ├── llm/           # 模型目录、供应商适配、共享生成运行时、测试工作台和调用日志
 │   ├── tool_navigation/ # 工具收藏与最近使用状态规则
 │   ├── visual_workshop/ # 视觉工坊项目、画布、助手、生成任务与领域适配器
 │   ├── galgame_workshop/ # Galgame 工程、Story 1.2 CAS、素材/ASR/尺寸维护与线路分析
 │   ├── models/        # SQLAlchemy 持久化形状
-│   ├── routes/        # `/v1` HTTP/SSE 协议边界
-│   └── schemas/       # Pydantic 请求与响应形状
+│   ├── routes/        # `/v1` HTTP/SSE 协议边界；Galgame 按五类协议模块汇总
+│   └── schemas/       # Pydantic 请求与响应形状；Galgame 按 Story/Block/素材/维护拆包
 ├── db/migrations/
 │   ├── versions/      # 只追加、不可改写的 SQLite migration
 │   ├── registry.py    # 有序 migration 注册表与最新版本
 │   └── runner.py      # checksum、连续前缀检查和事务应用
 ├── web/src/
-│   ├── app/           # Studio 入口、壳与路由
+│   ├── app/           # Studio 入口、壳、路由与唯一 AI 应用注册表
 │   ├── docs/          # 数据驱动的双工坊使用指南、搜索、目录与深链接
 │   ├── features/      # 首页、AI 应用、文件管理、视觉工坊、Galgame 工坊、工具导航与模型功能
 │   ├── generated/     # OpenAPI 生成物
@@ -73,14 +73,17 @@ Future-Props-Lab/
 
 ## 数据与运行边界
 
-数据库是仓库根目录 `.runtime/future-props.db` 下的单机 SQLite 文件；文件管理内容保存在数据库
-同级的 `visual-workshop/assets/`，模型测试对话图片保存在 `model-test/attachments/`，生成参考
-素材保存在 `model-test/references/`，生成结果保存在 `model-test/generated/`，数据库与这些目录
-共同构成本机数据真源。本地临时分镜、场景图与未定稿草稿放在仓库根目录 `.scratch/`，与 `.runtime/`
+数据库是仓库根目录 `.runtime/future-props.db` 下的单机 SQLite 文件，也是项目状态唯一真源。
+公共文件保存在 `library/assets/`；视觉项目使用
+`applications/visual-workshop/projects/<project-id>/{assets,generated}/`；Galgame 项目使用
+`applications/galgame-workshop/projects/<project-id>/{assets,derived,exports}/`。项目目录只保存素材、
+派生文件和导出快照，标题变化不改变目录。模型测试对话图片保存在 `model-test/attachments/`，生成参考
+素材保存在 `model-test/references/`，生成结果保存在 `model-test/generated/`。本地临时分镜、场景图与未定稿草稿放在仓库根目录 `.scratch/`，与 `.runtime/`
 一样被 git 忽略，不进入文档资产或产品素材真源。FastAPI 启动时自动创建
 目录并执行 `registry.py` 中已登记、带 checksum 的 migration；每个连接启用外键约束、WAL
 与忙等待。迁移历史只追加且不导入运行时 `app`，schema 变化必须同时更新 ORM、注册表、测试
-和文档。
+和文档。`r0019_project_storage_layout` 只增加存储版本；旧文件由受鉴权的显式迁移 API 校验并搬迁，
+schema migration 不执行文件 I/O。
 
 目录配置、模型测试会话与生成任务、视觉工坊项目、含节点级生成草稿的节点画布、项目对话、文件夹、文件和项目引用
 使用 revision/CAS 防止静默覆盖；Galgame 工坊工程元数据与整份故事文档分别使用 revision/CAS，

@@ -3,6 +3,7 @@ from __future__ import annotations
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.concurrency.revisions import RevisionConflictError
 from app.core.time import iso_utc
 from app.files import AssetError
 from app.galgame_workshop.story import GalgameStoryDocuments
@@ -71,8 +72,6 @@ class GalgamePortraitMaintenance:
     async def apply(self, project_id: str, body: GalgamePortraitUpgradeApplyIn) -> object:
         story = await GalgameStoryDocuments(self.session).get(project_id)
         if story.revision != body.expected_story_revision:
-            from app.concurrency.revisions import RevisionConflictError
-
             raise RevisionConflictError(
                 body.expected_story_revision,
                 story.revision,

@@ -3,6 +3,11 @@ import { GalgameWorkshopShell } from "@app/layout/GalgameWorkshopShell";
 import { StudioSidebar } from "@app/layout/StudioSidebar";
 import { VisualWorkshopShell } from "@app/layout/VisualWorkshopShell";
 import {
+  APPLICATION_DEFINITIONS,
+  GALGAME_WORKSHOP_MODULE,
+  VISUAL_WORKSHOP_MODULE,
+} from "@app/applicationRegistry";
+import {
   isGalgameWorkshopPage,
   isVisualWorkshopPage,
   parseRoute,
@@ -48,46 +53,18 @@ const ModelCallLogsPage = lazy(() =>
     default: module.ModelCallLogsPage,
   })),
 );
-const VisualWorkshopCanvasPage = lazy(() =>
-  import("@features/visual-workshop/canvas").then((module) => ({
-    default: module.VisualWorkshopCanvasPage,
-  })),
+const VisualWorkshopCanvasPage = lazy(VISUAL_WORKSHOP_MODULE.pages.canvas);
+const VisualWorkshopProjectsPage = lazy(VISUAL_WORKSHOP_MODULE.pages.projects);
+const VisualWorkshopAssetsPage = lazy(VISUAL_WORKSHOP_MODULE.pages.assets);
+const VisualWorkshopTasksPage = lazy(VISUAL_WORKSHOP_MODULE.pages.tasks);
+const VisualWorkshopEmptyPage = lazy(VISUAL_WORKSHOP_MODULE.pages.empty);
+const GalgameWorkshopProjectsPage = lazy(
+  GALGAME_WORKSHOP_MODULE.pages.projects,
 );
-const VisualWorkshopProjectsPage = lazy(() =>
-  import("@features/visual-workshop/projects").then((module) => ({
-    default: module.VisualWorkshopProjectsPage,
-  })),
+const GalgameWorkshopOverviewPage = lazy(
+  GALGAME_WORKSHOP_MODULE.pages.overview,
 );
-const VisualWorkshopAssetsPage = lazy(() =>
-  import("@features/visual-workshop/assets").then((module) => ({
-    default: module.VisualWorkshopAssetsPage,
-  })),
-);
-const VisualWorkshopTasksPage = lazy(() =>
-  import("@features/visual-workshop/generation").then((module) => ({
-    default: module.VisualWorkshopTasksPage,
-  })),
-);
-const VisualWorkshopEmptyPage = lazy(() =>
-  import("@features/visual-workshop/pages/VisualWorkshopEmptyPage").then(
-    (module) => ({ default: module.VisualWorkshopEmptyPage }),
-  ),
-);
-const GalgameWorkshopProjectsPage = lazy(() =>
-  import("@features/galgame-workshop/projects").then((module) => ({
-    default: module.GalgameWorkshopProjectsPage,
-  })),
-);
-const GalgameWorkshopOverviewPage = lazy(() =>
-  import("@features/galgame-workshop/overview").then((module) => ({
-    default: module.GalgameWorkshopOverviewPage,
-  })),
-);
-const GalgameWorkshopEditorPage = lazy(() =>
-  import("@features/galgame-workshop/editor").then((module) => ({
-    default: module.GalgameWorkshopEditorPage,
-  })),
-);
+const GalgameWorkshopEditorPage = lazy(GALGAME_WORKSHOP_MODULE.pages.editor);
 
 function PageBoundary({ children }: { children: ReactNode }) {
   return (
@@ -227,7 +204,10 @@ export default function App() {
           {page === "home" ? (
             <HomePage onNavigate={navigatePath} />
           ) : page === "apps" ? (
-            <ApplicationCenterPage onOpen={navigatePath} />
+            <ApplicationCenterPage
+              applications={APPLICATION_DEFINITIONS}
+              onOpen={navigatePath}
+            />
           ) : page === "files" ? (
             <FileManagementPage />
           ) : page === "tools" ? (

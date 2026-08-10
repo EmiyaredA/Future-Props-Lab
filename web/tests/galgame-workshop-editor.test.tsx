@@ -135,12 +135,11 @@ const story = {
 type AssetOverviewItem = Awaited<
   ReturnType<typeof getGalgameAssetOverview>
 >["items"][number];
-type StrictProjectAsset = Awaited<
-  ReturnType<typeof patchGalgameProjectAsset>
->;
+type StrictProjectAsset = Awaited<ReturnType<typeof patchGalgameProjectAsset>>;
 
 function overviewItem(
-  overrides: Partial<AssetOverviewItem> & Pick<AssetOverviewItem, "id" | "display_name">,
+  overrides: Partial<AssetOverviewItem> &
+    Pick<AssetOverviewItem, "id" | "display_name">,
 ): AssetOverviewItem {
   const { id, display_name, ...rest } = overrides;
   return {
@@ -428,15 +427,24 @@ test("filters, summarizes, switches, and edits the aligned asset overview", asyn
   results = document.querySelector<HTMLElement>(".galgame-assets-results")!;
   expect(within(results).getAllByText("主题曲.mp3").length).toBeGreaterThan(0);
   expect(within(results).queryByText("frame.png")).not.toBeInTheDocument();
-  await user.click(within(filters).getByRole("button", { name: "清除资源搜索" }));
+  await user.click(
+    within(filters).getByRole("button", { name: "清除资源搜索" }),
+  );
 
   await user.click(screen.getByRole("button", { name: "列表视图" }));
-  expect(document.querySelector(".galgame-assets-results")).toHaveClass("is-list");
+  expect(document.querySelector(".galgame-assets-results")).toHaveClass(
+    "is-list",
+  );
   await user.click(screen.getByRole("button", { name: /frame.png，游离/ }));
   const inspector = screen.getByRole("complementary", { name: "资源详情" });
   await user.clear(within(inspector).getByLabelText("文件名"));
-  await user.type(within(inspector).getByLabelText("文件名"), "dialogue-frame.png");
-  await user.click(within(inspector).getByRole("button", { name: "保存资源信息" }));
+  await user.type(
+    within(inspector).getByLabelText("文件名"),
+    "dialogue-frame.png",
+  );
+  await user.click(
+    within(inspector).getByRole("button", { name: "保存资源信息" }),
+  );
   await waitFor(() =>
     expect(patchGalgameProjectAsset).toHaveBeenCalledWith(
       "project-1",
@@ -446,7 +454,9 @@ test("filters, summarizes, switches, and edits the aligned asset overview", asyn
   );
 
   await user.click(screen.getByRole("button", { name: "收起资源统计" }));
-  expect(screen.queryByRole("region", { name: "资源统计" })).not.toBeInTheDocument();
+  expect(
+    screen.queryByRole("region", { name: "资源统计" }),
+  ).not.toBeInTheDocument();
 });
 
 test("previews batch imports and repairs missing assets with the latest Story revision", async () => {
@@ -543,13 +553,23 @@ test("previews batch imports and repairs missing assets with the latest Story re
 
   await user.click(screen.getByRole("button", { name: "批量导入资源" }));
   const importDialog = screen.getByRole("dialog", { name: "批量导入资源" });
-  const upload = importDialog.querySelector<HTMLInputElement>('input[type="file"]')!;
-  await user.upload(upload, new File(["image"], "new-bg.png", { type: "image/png" }));
+  const upload =
+    importDialog.querySelector<HTMLInputElement>('input[type="file"]')!;
+  await user.upload(
+    upload,
+    new File(["image"], "new-bg.png", { type: "image/png" }),
+  );
   await user.click(within(importDialog).getByLabelText("业务分类"));
   await user.click(within(importDialog).getByRole("option", { name: "场景" }));
-  await user.click(within(importDialog).getByRole("button", { name: "预览目标路径" }));
-  expect(await within(importDialog).findByText("backgrounds/new-bg.png")).toBeInTheDocument();
-  await user.click(within(importDialog).getByRole("button", { name: "确认导入" }));
+  await user.click(
+    within(importDialog).getByRole("button", { name: "预览目标路径" }),
+  );
+  expect(
+    await within(importDialog).findByText("backgrounds/new-bg.png"),
+  ).toBeInTheDocument();
+  await user.click(
+    within(importDialog).getByRole("button", { name: "确认导入" }),
+  );
   await waitFor(() =>
     expect(batchUploadGalgameProjectAssets).toHaveBeenCalledWith(
       "project-1",
@@ -558,13 +578,19 @@ test("previews batch imports and repairs missing assets with the latest Story re
     ),
   );
 
-  await user.click(screen.getByRole("button", { name: "被剧本引用的素材记录不存在" }));
+  await user.click(
+    screen.getByRole("button", { name: "被剧本引用的素材记录不存在" }),
+  );
   const inspector = screen.getByRole("complementary", { name: "资源详情" });
   await user.click(within(inspector).getByLabelText("替换文件"));
   await user.click(
-    within(inspector).getByRole("option", { name: "backgrounds/replacement.png" }),
+    within(inspector).getByRole("option", {
+      name: "backgrounds/replacement.png",
+    }),
   );
-  await user.click(within(inspector).getByRole("button", { name: "重新绑定并保存 Story" }));
+  await user.click(
+    within(inspector).getByRole("button", { name: "重新绑定并保存 Story" }),
+  );
   await waitFor(() =>
     expect(repairGalgameMissingAsset).toHaveBeenCalledWith(
       "project-1",
@@ -1014,11 +1040,12 @@ test("uploads dialogue and custom Gal component images with auto-save", async ()
   const { container } = renderEditor();
   expect(await screen.findByText("纵向切片")).toBeInTheDocument();
   await user.click(screen.getByRole("button", { name: "样式" }));
+  const uploadButton = await screen.findByRole("button", { name: "上传底图" });
 
   const uploadInput = container.querySelector<HTMLInputElement>(
     '.galgame-dialogue-style-inspector input[type="file"]',
   )!;
-  await user.click(screen.getByRole("button", { name: "上传底图" }));
+  await user.click(uploadButton);
   await user.upload(
     uploadInput,
     new File(["dialogue-frame"], "dialogue-frame.png", {
@@ -3263,7 +3290,9 @@ test("uses aligned table workspaces for BGM, sound effects, and voice", async ()
   await openAssetSection(user, "BGM");
   const bgmWorkspace = document.querySelector(".galgame-sound-workspace");
   expect(bgmWorkspace).toHaveClass("is-bgm");
-  expect(within(bgmWorkspace as HTMLElement).getAllByText("BGM")).toHaveLength(1);
+  expect(within(bgmWorkspace as HTMLElement).getAllByText("BGM")).toHaveLength(
+    1,
+  );
   expect(await screen.findByText("rainy-cafe.mp3")).toBeInTheDocument();
   expect(screen.getByText("1:36")).toBeInTheDocument();
   expect(screen.getByText("2.0 MB")).toBeInTheDocument();

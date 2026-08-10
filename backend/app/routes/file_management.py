@@ -8,7 +8,10 @@ from fastapi.responses import FileResponse
 from app.core.config import get_settings
 from app.deps import SessionDep
 from app.files import AssetError, VisualAssets, download_filename
+from app.files.layout_migration import LayoutMigrationBusyError, StorageLayoutMigration
 from app.schemas.files import (
+    StorageLayoutMigrationOut,
+    StorageLayoutStatusOut,
     VisualAssetFolderCreateIn,
     VisualAssetFolderListOut,
     VisualAssetFolderOut,
@@ -26,6 +29,22 @@ def asset_http_error(exc: AssetError) -> HTTPException:
         exc.status,
         {"code": exc.code, "message": str(exc), **exc.detail},
     )
+
+
+@router.get("/file-storage/layout", response_model=StorageLayoutStatusOut)
+async def storage_layout_status(session: SessionDep) -> StorageLayoutStatusOut:
+    return await StorageLayoutMigration(session, get_settings()).status()
+
+
+@router.post("/file-storage/layout/migrate", response_model=StorageLayoutMigrationOut)
+async def migrate_storage_layout(
+    session: SessionDep,
+    limit: int = Query(default=50, ge=1, le=100),
+) -> StorageLayoutMigrationOut:
+    try:
+        return await StorageLayoutMigration(session, get_settings()).migrate(limit)
+    except LayoutMigrationBusyError as exc:
+        raise HTTPException(409, {"code": "storage_migration_busy", "message": str(exc)}) from None
 
 
 @router.get("/file-folders", response_model=VisualAssetFolderListOut)

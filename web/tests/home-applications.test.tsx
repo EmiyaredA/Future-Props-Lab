@@ -1,6 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { vi } from "vitest";
+import { APPLICATION_DEFINITIONS } from "@app/applicationRegistry";
 import { ApplicationCenterPage } from "@features/applications/ApplicationCenterPage";
 import { HomePage } from "@features/home/HomePage";
 
@@ -24,7 +25,12 @@ test("home keeps the three destinations equal and links model shortcuts", async 
 test("application center filters and records recent application access", async () => {
   const user = userEvent.setup();
   const open = vi.fn();
-  const { container } = render(<ApplicationCenterPage onOpen={open} />);
+  const { container } = render(
+    <ApplicationCenterPage
+      applications={APPLICATION_DEFINITIONS}
+      onOpen={open}
+    />,
+  );
   expect(screen.getByText("还没有访问记录")).toBeInTheDocument();
   expect(container.querySelector(".application-icon img")).toHaveAttribute(
     "src",

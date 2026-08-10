@@ -135,6 +135,49 @@ def test_visual_assistant_has_no_function_local_app_imports() -> None:
     assert not violations, "视觉助手不得在函数内动态导入：\n" + "\n".join(violations)
 
 
+def test_backend_business_packages_have_no_function_local_app_imports() -> None:
+    allowed_roots = {"routes", "schemas", "models", "core", "concurrency", "files"}
+    violations: list[str] = []
+    for path in _python_files(BACKEND_APP):
+        relative = path.relative_to(BACKEND_APP)
+        if relative.parts[0] in allowed_roots:
+            continue
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        for function in (
+            node
+            for node in ast.walk(tree)
+            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+        ):
+            for node in ast.walk(function):
+                if (
+                    isinstance(node, ast.ImportFrom)
+                    and node.module
+                    and node.module.startswith("app.")
+                ):
+                    violations.append(f"{_relative(path)}:{node.lineno} imports {node.module}")
+                elif isinstance(node, ast.Import):
+                    for alias in node.names:
+                        if alias.name.startswith("app."):
+                            violations.append(
+                                f"{_relative(path)}:{node.lineno} imports {alias.name}"
+                            )
+    assert not violations, "业务包不得使用函数内 app.* 导入：\n" + "\n".join(violations)
+
+
+def test_legacy_asset_root_is_only_resolved_by_storage_boundary() -> None:
+    allowed = {
+        BACKEND_APP / "core" / "config.py",
+        BACKEND_APP / "files" / "storage.py",
+        BACKEND_APP / "files" / "layout_migration.py",
+    }
+    violations = [
+        _relative(path)
+        for path in _python_files(BACKEND_APP)
+        if path not in allowed and "visual_asset_path" in path.read_text(encoding="utf-8")
+    ]
+    assert not violations, "旧素材根目录只能由存储/迁移边界解析：\n" + "\n".join(violations)
+
+
 def test_web_dependency_direction() -> None:
     layer_rules = {
         "platform": (WEB_SRC / "app", WEB_SRC / "features"),
@@ -253,3 +296,43 @@ def test_documented_core_directories_exist() -> None:
     )
     missing = [path for path in required if not (REPO_ROOT / path).is_dir()]
     assert not missing, "项目结构文档声明的核心目录缺失：\n" + "\n".join(missing)
+
+
+def test_galgame_protocol_and_schema_modules_stay_split() -> None:
+    route_root = BACKEND_APP / "routes" / "galgame_workshop"
+    schema_root = BACKEND_APP / "schemas" / "galgame_workshop"
+    assert {"projects.py", "story.py", "assets.py", "asr.py", "maintenance.py"}.issubset(
+        {path.name for path in route_root.glob("*.py")}
+    )
+    assert not (BACKEND_APP / "routes" / "galgame_workshop.py").exists()
+    assert not (BACKEND_APP / "schemas" / "galgame_workshop.py").exists()
+    oversized = [
+        f"{_relative(path)}: {len(path.read_text(encoding='utf-8').splitlines())}"
+        for path in schema_root.glob("*.py")
+        if len(path.read_text(encoding="utf-8").splitlines()) > 800
+    ]
+    assert not oversized, "Galgame schema 单文件不得超过 800 行：\n" + "\n".join(oversized)
+
+
+def test_project_applications_have_modules_routes_and_storage_roots() -> None:
+    registry = (WEB_SRC / "app" / "applicationRegistry.ts").read_text(encoding="utf-8")
+    settings = (BACKEND_APP / "core" / "config.py").read_text(encoding="utf-8")
+    for application in ("visual-workshop", "galgame-workshop"):
+        feature = WEB_SRC / "features" / application
+        module = feature / "module.ts"
+        assert module.is_file(), f"{application} 缺少 feature module"
+        source = module.read_text(encoding="utf-8")
+        assert "supportsProjects: true" in source
+        assert f"/apps/{application}/projects/" in source
+        assert f'"{application}"' in settings
+        assert module.stem in registry or application.replace("-", "_").upper() in registry
+
+
+def test_galgame_css_is_split_into_reviewable_files() -> None:
+    root = WEB_SRC / "features" / "galgame-workshop"
+    oversized = [
+        f"{_relative(path)}: {len(path.read_text(encoding='utf-8').splitlines())}"
+        for path in root.rglob("*.css")
+        if len(path.read_text(encoding="utf-8").splitlines()) > 2_000
+    ]
+    assert not oversized, "Galgame CSS 单文件不得超过 2,000 行：\n" + "\n".join(oversized)

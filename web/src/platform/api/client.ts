@@ -1,25 +1,9 @@
 import createClient from "openapi-fetch";
 import type { paths } from "@generated/api";
 import { getStudioToken, notifyAuthRequired } from "@platform/api/studioAuth";
+import { ApiError, type ProblemDetail } from "@platform/api/errors";
 
-export type ProblemDetail = {
-  code?: string;
-  detail?: string;
-  status?: number;
-  current?: unknown;
-  log_id?: string;
-  [key: string]: unknown;
-};
-
-export class ApiError extends Error {
-  constructor(
-    message: string,
-    public readonly problem: ProblemDetail,
-    public readonly status: number,
-  ) {
-    super(message);
-  }
-}
+export { ApiError, type ProblemDetail } from "@platform/api/errors";
 
 export const api = createClient<paths>({
   baseUrl: import.meta.env.VITE_API_BASE || "",

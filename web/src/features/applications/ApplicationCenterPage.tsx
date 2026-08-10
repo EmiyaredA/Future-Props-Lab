@@ -3,7 +3,6 @@ import { ArrowRight, Clock3, Search, Tag } from "lucide-react";
 import {
   APPLICATION_CATEGORIES,
   APPLICATION_TAGS,
-  APPLICATIONS,
   categoryLabel,
   type ApplicationCategory,
   type ApplicationDefinition,
@@ -31,8 +30,10 @@ function rememberApplication(id: string) {
 
 export function ApplicationCenterPage({
   onOpen,
+  applications,
 }: {
   onOpen: (path: string) => void;
+  applications: ApplicationDefinition[];
 }) {
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState<"all" | ApplicationCategory>("all");
@@ -40,7 +41,7 @@ export function ApplicationCenterPage({
   const [recent, setRecent] = useState(recentIds);
   const filtered = useMemo(() => {
     const needle = query.trim().toLocaleLowerCase("zh-CN");
-    return APPLICATIONS.filter((app) => {
+    return applications.filter((app) => {
       if (category !== "all" && app.category !== category) return false;
       if (tag && !app.capabilities.includes(tag)) return false;
       return (
@@ -56,14 +57,14 @@ export function ApplicationCenterPage({
           .includes(needle)
       );
     });
-  }, [category, query, tag]);
+  }, [applications, category, query, tag]);
   const open = (app: ApplicationDefinition) => {
     rememberApplication(app.id);
     setRecent(recentIds());
     onOpen(app.path);
   };
   const recentApps = recent
-    .map((id) => APPLICATIONS.find((app) => app.id === id))
+    .map((id) => applications.find((app) => app.id === id))
     .filter(Boolean) as ApplicationDefinition[];
 
   return (

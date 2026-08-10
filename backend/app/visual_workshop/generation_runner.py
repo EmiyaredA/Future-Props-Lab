@@ -13,6 +13,7 @@ from app.core.config import Settings, get_settings
 from app.core.credentials import decrypt_secret
 from app.core.db import SessionLocal
 from app.core.time import utc_now
+from app.files.storage import TARGET_STORAGE_VERSION, AssetStorage
 from app.llm.generation_runtime import (
     GenerationMaterializationError,
     PollingGenerationRunner,
@@ -63,6 +64,7 @@ class VisualGenerationRunner(PollingGenerationRunner):
         super().__init__()
         self.session_factory = session_factory
         self.settings = settings or get_settings()
+        self.storage = AssetStorage(self.settings)
         self.download_transport = download_transport
         self.temporary_media_transport = temporary_media_transport
 
@@ -218,7 +220,7 @@ class VisualGenerationRunner(PollingGenerationRunner):
             asset = await session.get(VisualAsset, asset_id)
             if asset is None or asset.media_kind != "image":
                 raise ValueError("参考图片已不存在")
-            path = self.settings.visual_asset_path / asset.storage_key
+            path = self.storage.path_for(asset)
             mime_type = asset.mime_type
             byte_size = asset.byte_size
         if byte_size > 30 * 1024 * 1024:
@@ -230,7 +232,7 @@ class VisualGenerationRunner(PollingGenerationRunner):
             asset = await session.get(VisualAsset, asset_id)
             if asset is None or asset.media_kind != expected_kind:
                 raise TemporaryMediaError("参考素材已不存在或类型不匹配")
-            path = self.settings.visual_asset_path / asset.storage_key
+            path = self.storage.path_for(asset)
             mime_type = asset.mime_type
         return await upload_temporary_media(
             path=path,
@@ -335,12 +337,17 @@ class VisualGenerationRunner(PollingGenerationRunner):
         )
 
     async def _materialize(self, task_id: str, result_url: str) -> None:
-        root = self.settings.visual_asset_path
-        temp_dir = root / ".tmp"
-        temp_dir.mkdir(parents=True, exist_ok=True)
         storage_key = uuid4().hex
-        temp_path = temp_dir / storage_key
-        final_path = root / storage_key
+        async with self.session_factory() as session:
+            task = await session.get(VisualGenerationTask, task_id)
+            if task is None:
+                return
+            project_id = task.project_id
+        temp_path, final_path = self.storage.prepare_write(
+            storage_key,
+            visual_project_id=project_id,
+            galgame_project_id=None,
+        )
         try:
             size, media_kind, mime_type, extension = await self._download(result_url, temp_path)
             os.replace(temp_path, final_path)
@@ -358,6 +365,7 @@ class VisualGenerationRunner(PollingGenerationRunner):
                     original_filename=filename,
                     display_name=filename,
                     storage_key=storage_key,
+                    storage_version=TARGET_STORAGE_VERSION,
                     media_kind=media_kind,
                     mime_type=mime_type,
                     byte_size=size,

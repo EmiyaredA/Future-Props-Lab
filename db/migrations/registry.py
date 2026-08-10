@@ -21,6 +21,7 @@ from db.migrations.versions import (
     r0016_galgame_workshop_projects,
     r0017_galgame_character_assets,
     r0018_galgame_asset_management,
+    r0019_project_storage_layout,
 )
 
 
@@ -98,6 +99,10 @@ MIGRATIONS = (
     Migration(
         r0018_galgame_asset_management.MIGRATION_ID,
         r0018_galgame_asset_management.SQL,
+    ),
+    Migration(
+        r0019_project_storage_layout.MIGRATION_ID,
+        r0019_project_storage_layout.SQL,
     ),
 )
 

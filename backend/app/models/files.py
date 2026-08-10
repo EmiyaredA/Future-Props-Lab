@@ -5,9 +5,9 @@ from datetime import datetime
 from sqlalchemy import DateTime, ForeignKey, Index, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
+from app.core.ids import new_id
 from app.core.time import utc_now
 from app.models.base import Base
-from app.models.model_service import new_id
 
 
 class VisualAssetFolder(Base):
@@ -54,6 +54,7 @@ class VisualAsset(Base):
     original_filename: Mapped[str] = mapped_column(String(255))
     display_name: Mapped[str] = mapped_column(String(255))
     storage_key: Mapped[str] = mapped_column(String(64), unique=True)
+    storage_version: Mapped[int] = mapped_column(Integer, default=1)
     media_kind: Mapped[str] = mapped_column(String(16))
     mime_type: Mapped[str] = mapped_column(String(120))
     byte_size: Mapped[int] = mapped_column(Integer)

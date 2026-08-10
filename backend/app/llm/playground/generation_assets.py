@@ -14,6 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import Settings, get_settings
 from app.core.time import iso_utc, utc_now
+from app.files.storage import AssetStorage
 from app.models import ModelTestGenerationAsset, ModelTestGenerationTask, VisualAsset
 from app.schemas.model_test import (
     ModelTestGenerationAssetBackfillOut,
@@ -95,6 +96,7 @@ class ModelTestGenerationAssets:
     def __init__(self, session: AsyncSession, settings: Settings | None = None) -> None:
         self.session = session
         self.settings = settings or get_settings()
+        self.storage = AssetStorage(self.settings)
 
     async def upload(self, files: list[UploadFile]) -> ModelTestGenerationAssetListOut:
         if not files or len(files) > MAX_DRAFT_ASSETS:
@@ -457,7 +459,7 @@ class ModelTestGenerationAssets:
                 row = by_id.get(str(asset_id))
                 if row is None or row.media_kind != expected_kind:
                     return None
-                path = self.settings.visual_asset_path / row.storage_key
+                path = self.storage.path_for(row)
                 if not path.is_file():
                     return None
                 items.append(

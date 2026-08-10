@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import codecs
-import json
 import os
 import shutil
 from pathlib import Path
@@ -15,6 +13,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.concurrency.revisions import RevisionConflictError
 from app.core.config import Settings
 from app.core.time import iso_utc, utc_now
+from app.files.library import AssetError, AssetLibrary
+from app.files.policy import display_name_without_original_extension
+from app.files.storage import TARGET_STORAGE_VERSION, AssetStorage
 from app.models import (
     GalgameProjectAssetReference,
     VisualAsset,
@@ -37,44 +38,6 @@ from app.schemas.files import (
 )
 
 MAX_FOLDER_DEPTH = 5
-ALLOWED_FILES: dict[str, tuple[str, set[str]]] = {
-    ".jpg": ("image", {"image/jpeg"}),
-    ".jpeg": ("image", {"image/jpeg"}),
-    ".png": ("image", {"image/png"}),
-    ".webp": ("image", {"image/webp"}),
-    ".gif": ("image", {"image/gif"}),
-    ".avif": ("image", {"image/avif"}),
-    ".mp4": ("video", {"video/mp4"}),
-    ".webm": ("video", {"video/webm"}),
-    ".mov": ("video", {"video/quicktime"}),
-    ".mp3": ("audio", {"audio/mpeg"}),
-    ".wav": ("audio", {"audio/wav", "audio/x-wav"}),
-    ".m4a": ("audio", {"audio/mp4", "audio/x-m4a"}),
-    ".ogg": ("audio", {"audio/ogg"}),
-    ".ttf": ("font", {"font/ttf", "application/x-font-ttf", "application/octet-stream"}),
-    ".otf": ("font", {"font/otf", "application/x-font-opentype", "application/octet-stream"}),
-    ".woff": ("font", {"font/woff", "application/font-woff", "application/octet-stream"}),
-    ".woff2": ("font", {"font/woff2", "application/octet-stream"}),
-    ".pdf": ("document", {"application/pdf"}),
-    ".txt": ("document", {"text/plain"}),
-    ".md": ("document", {"text/markdown", "text/plain"}),
-    ".json": ("document", {"application/json", "text/json", "text/plain"}),
-}
-
-
-class AssetError(Exception):
-    def __init__(
-        self,
-        message: str,
-        *,
-        code: str = "asset_error",
-        status: int = 422,
-        detail: dict[str, object] | None = None,
-    ) -> None:
-        super().__init__(message)
-        self.code = code
-        self.status = status
-        self.detail = detail or {}
 
 
 def folder_out(row: VisualAssetFolder) -> VisualAssetFolderOut:
@@ -116,57 +79,12 @@ def asset_out(
     )
 
 
-def _looks_like(extension: str, head: bytes) -> bool:
-    if extension in {".txt", ".md", ".json"}:
-        try:
-            decoded = codecs.getincrementaldecoder("utf-8")().decode(head, final=False)
-            return b"\x00" not in head and bool(decoded)
-        except UnicodeDecodeError:
-            return False
-    checks = {
-        ".jpg": head.startswith(b"\xff\xd8\xff"),
-        ".jpeg": head.startswith(b"\xff\xd8\xff"),
-        ".png": head.startswith(b"\x89PNG\r\n\x1a\n"),
-        ".webp": head.startswith(b"RIFF") and head[8:12] == b"WEBP",
-        ".gif": head.startswith((b"GIF87a", b"GIF89a")),
-        ".avif": b"ftypavif" in head[:32] or b"ftypavis" in head[:32],
-        ".mp4": b"ftyp" in head[4:16],
-        ".mov": b"ftyp" in head[4:16],
-        ".webm": head.startswith(b"\x1aE\xdf\xa3"),
-        ".mp3": head.startswith(b"ID3") or (len(head) > 1 and head[0] == 0xFF),
-        ".wav": head.startswith(b"RIFF") and head[8:12] == b"WAVE",
-        ".m4a": b"ftyp" in head[4:16],
-        ".ogg": head.startswith(b"OggS"),
-        ".ttf": head.startswith((b"\x00\x01\x00\x00", b"true", b"typ1")),
-        ".otf": head.startswith(b"OTTO"),
-        ".woff": head.startswith(b"wOFF"),
-        ".woff2": head.startswith(b"wOF2"),
-        ".pdf": head.startswith(b"%PDF-"),
-    }
-    return checks.get(extension, False)
-
-
-def display_name_without_original_extension(display_name: str, original_filename: str) -> str:
-    cleaned = display_name.strip()
-    extension = Path(original_filename).suffix
-    if not extension or len(cleaned) <= len(extension):
-        return cleaned
-    if cleaned.lower().endswith(extension.lower()):
-        return cleaned[: -len(extension)].strip() or cleaned
-    return cleaned
-
-
-def download_filename(display_name: str, original_filename: str) -> str:
-    base = display_name_without_original_extension(display_name, original_filename)
-    safe_base = base.replace("/", "-").replace("\\", "-").strip()
-    fallback = display_name_without_original_extension(original_filename, original_filename)
-    return f"{safe_base or fallback or 'download'}{Path(original_filename).suffix}"
-
-
 class VisualAssets:
     def __init__(self, session: AsyncSession, settings: Settings) -> None:
         self.session = session
         self.settings = settings
+        self.storage = AssetStorage(settings)
+        self.library = AssetLibrary(session, settings)
 
     async def _project(self, project_id: str) -> None:
         if await self.session.get(VisualWorkshopProject, project_id) is None:
@@ -388,7 +306,7 @@ class VisualAssets:
                     code="asset_in_use",
                     status=409,
                 )
-        paths = [self.settings.visual_asset_path / item.storage_key for item in assets]
+        paths = [self.storage.path_for(item) for item in assets]
         result = await self.session.execute(
             delete(VisualAssetFolder).where(
                 VisualAssetFolder.id == folder_id,
@@ -485,110 +403,12 @@ class VisualAssets:
         if project_id:
             await self._project(project_id)
         await self._validate_folder_scope(folder_id, project_id)
-        row = await self._store_upload(
+        row = await self.library.store_upload(
             upload,
             visual_project_id=project_id,
-            galgame_project_id=None,
             folder_id=folder_id,
-            allowed_extensions=None,
         )
         return asset_out(row)
-
-    async def upload_for_galgame(self, upload: UploadFile, *, project_id: str) -> VisualAsset:
-        return await self._store_upload(
-            upload,
-            visual_project_id=None,
-            galgame_project_id=project_id,
-            folder_id=None,
-            allowed_extensions={
-                ".jpg",
-                ".jpeg",
-                ".png",
-                ".webp",
-                ".avif",
-                ".mp3",
-                ".wav",
-                ".m4a",
-                ".ogg",
-                ".mp4",
-                ".webm",
-                ".mov",
-                ".ttf",
-                ".otf",
-                ".woff",
-                ".woff2",
-            },
-        )
-
-    async def _store_upload(
-        self,
-        upload: UploadFile,
-        *,
-        visual_project_id: str | None,
-        galgame_project_id: str | None,
-        folder_id: str | None,
-        allowed_extensions: set[str] | None,
-    ) -> VisualAsset:
-        filename = Path(upload.filename or "").name
-        extension = Path(filename).suffix.lower()
-        config = ALLOWED_FILES.get(extension)
-        if (
-            not filename
-            or config is None
-            or (allowed_extensions is not None and extension not in allowed_extensions)
-        ):
-            raise AssetError("不支持此文件类型", code="unsupported_file_type")
-        media_kind, mime_types = config
-        content_type = (upload.content_type or "application/octet-stream").lower()
-        if content_type not in mime_types and content_type != "application/octet-stream":
-            raise AssetError("文件扩展名与 MIME 类型不匹配", code="file_type_mismatch")
-        root = self.settings.visual_asset_path
-        temp_dir = root / ".tmp"
-        temp_dir.mkdir(parents=True, exist_ok=True)
-        storage_key = uuid4().hex
-        temp_path = temp_dir / storage_key
-        final_path = root / storage_key
-        size = 0
-        head = bytearray()
-        try:
-            with temp_path.open("xb") as target:
-                while chunk := await upload.read(1024 * 1024):
-                    size += len(chunk)
-                    if size > self.settings.fpl_visual_asset_max_bytes:
-                        raise AssetError("文件超过上传大小限制", code="file_too_large", status=413)
-                    if len(head) < 512:
-                        head.extend(chunk[: 512 - len(head)])
-                    target.write(chunk)
-            if size == 0 or not _looks_like(extension, bytes(head)):
-                raise AssetError("文件内容与声明的类型不匹配", code="invalid_file_content")
-            if extension == ".json":
-                try:
-                    with temp_path.open(encoding="utf-8-sig") as source:
-                        json.load(source)
-                except (UnicodeDecodeError, json.JSONDecodeError, RecursionError):
-                    raise AssetError("JSON 文件内容无效", code="invalid_file_content") from None
-            os.replace(temp_path, final_path)
-            row = VisualAsset(
-                project_id=visual_project_id,
-                galgame_project_id=galgame_project_id,
-                folder_id=folder_id,
-                original_filename=filename,
-                display_name=display_name_without_original_extension(filename, filename),
-                storage_key=storage_key,
-                media_kind=media_kind,
-                mime_type=(content_type if content_type in mime_types else sorted(mime_types)[0]),
-                byte_size=size,
-            )
-            self.session.add(row)
-            await self.session.commit()
-            await self.session.refresh(row)
-            return row
-        except Exception:
-            temp_path.unlink(missing_ok=True)
-            final_path.unlink(missing_ok=True)
-            raise
-        finally:
-            await upload.close()
 
     async def patch_asset(self, asset_id: str, body: VisualAssetPatchIn) -> VisualAssetOut:
         row = await self._asset(asset_id)
@@ -657,7 +477,7 @@ class VisualAssets:
                     code="asset_in_use",
                     status=409,
                 )
-        path = self.settings.visual_asset_path / row.storage_key
+        path = self.storage.path_for(row)
         try:
             result = await self.session.execute(
                 delete(VisualAsset).where(
@@ -683,7 +503,7 @@ class VisualAssets:
 
     async def content(self, asset_id: str) -> tuple[VisualAsset, Path]:
         row = await self._asset(asset_id)
-        path = self.settings.visual_asset_path / row.storage_key
+        path = self.storage.path_for(row)
         if not path.is_file():
             raise AssetError("文件内容不存在", code="file_missing", status=404)
         return row, path
@@ -790,19 +610,19 @@ class VisualAssets:
         ):
             raise AssetError("素材不属于所选来源项目", code="scope_mismatch")
 
-        root = self.settings.visual_asset_path
-        temp_dir = root / ".tmp"
-        temp_dir.mkdir(parents=True, exist_ok=True)
         copied_paths: list[Path] = []
         imported_rows: list[VisualAsset] = []
         try:
             for source in ordered:
-                source_path = root / source.storage_key
+                source_path = self.storage.path_for(source)
                 if not source_path.is_file():
                     raise AssetError("来源素材文件不存在", code="file_missing", status=404)
                 storage_key = uuid4().hex
-                temp_path = temp_dir / storage_key
-                final_path = root / storage_key
+                temp_path, final_path = self.storage.prepare_write(
+                    storage_key,
+                    visual_project_id=project_id,
+                    galgame_project_id=None,
+                )
                 try:
                     shutil.copyfile(source_path, temp_path)
                     os.replace(temp_path, final_path)
@@ -819,6 +639,7 @@ class VisualAssets:
                         source.original_filename,
                     ),
                     storage_key=storage_key,
+                    storage_version=TARGET_STORAGE_VERSION,
                     media_kind=source.media_kind,
                     mime_type=source.mime_type,
                     byte_size=source.byte_size,
