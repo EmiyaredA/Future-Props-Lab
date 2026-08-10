@@ -6,6 +6,7 @@ import {
   type PointerEvent as ReactPointerEvent,
   type WheelEvent as ReactWheelEvent,
 } from "react";
+import { createPortal } from "react-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Check,
@@ -14,19 +15,25 @@ import {
   Copy,
   Eye,
   EyeOff,
+  ExternalLink,
   FolderOpen,
   GripVertical,
+  Image as ImageIcon,
   ImagePlus,
   Images,
-  LocateFixed,
   MapPinned,
   Minus,
+  MoreHorizontal,
   MousePointer2,
   Move,
+  PanelLeftClose,
+  PanelRightClose,
+  Pencil,
   Plus,
   RotateCcw,
   Search,
   Trash2,
+  Undo2,
   Upload,
 } from "lucide-react";
 import {
@@ -45,6 +52,12 @@ import {
 import { StoryAssetImage } from "@features/galgame-workshop/editor/StoryAssetImage";
 
 type VisualSelection = { kind: "scene" | "cg"; id: string };
+type VisualMenuState = {
+  item: VisualSelection;
+  left: number;
+  top: number;
+  trigger: HTMLButtonElement;
+};
 type PickerTarget = {
   kind: "scene-layer" | "cg-variant";
   mode: "add" | "replace";
@@ -160,6 +173,8 @@ export function VisualWorkspace({
     | undefined
   >(undefined);
   const draggedItem = useRef<VisualSelection | undefined>(undefined);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const renameInputRef = useRef<HTMLInputElement>(null);
   const scenes = useMemo(() => document.scenes ?? [], [document.scenes]);
   const cgs = useMemo(() => document.cgs ?? [], [document.cgs]);
   const groups = useMemo(
@@ -197,6 +212,9 @@ export function VisualWorkspace({
     layerId: string;
     value: number;
   }>();
+  const [itemMenu, setItemMenu] = useState<VisualMenuState>();
+  const [renaming, setRenaming] = useState<VisualSelection>();
+  const [renameDraft, setRenameDraft] = useState("");
 
   const selectedScene =
     selection?.kind === "scene"
@@ -308,6 +326,52 @@ export function VisualWorkspace({
       setSelectedVariantId(selectedVariant.id);
     if (!selectedVariant) setSelectedVariantId(undefined);
   }, [selectedVariant, selectedVariantId]);
+
+  useEffect(() => {
+    if (!itemMenu) return;
+    const closeOnPointer = (event: MouseEvent) => {
+      const target = event.target as Node;
+      if (
+        menuRef.current?.contains(target) ||
+        itemMenu.trigger.contains(target)
+      )
+        return;
+      setItemMenu(undefined);
+    };
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      setItemMenu(undefined);
+      itemMenu.trigger.focus();
+    };
+    const closeOnViewportChange = () => setItemMenu(undefined);
+    const focusFirstItem = window.setTimeout(() => {
+      menuRef.current
+        ?.querySelector<HTMLButtonElement>(
+          'button[role="menuitem"]:not(:disabled)',
+        )
+        ?.focus();
+    });
+    globalThis.document.addEventListener("mousedown", closeOnPointer);
+    globalThis.document.addEventListener("keydown", closeOnEscape);
+    window.addEventListener("resize", closeOnViewportChange);
+    window.addEventListener("scroll", closeOnViewportChange, true);
+    return () => {
+      window.clearTimeout(focusFirstItem);
+      globalThis.document.removeEventListener("mousedown", closeOnPointer);
+      globalThis.document.removeEventListener("keydown", closeOnEscape);
+      window.removeEventListener("resize", closeOnViewportChange);
+      window.removeEventListener("scroll", closeOnViewportChange, true);
+    };
+  }, [itemMenu]);
+
+  useEffect(() => {
+    if (!renaming) return;
+    const focusRename = window.setTimeout(() => {
+      renameInputRef.current?.focus();
+      renameInputRef.current?.select();
+    });
+    return () => window.clearTimeout(focusRename);
+  }, [renaming]);
 
   const selectVisual = (next: VisualSelection) => {
     setSelection(next);
@@ -500,29 +564,37 @@ export function VisualWorkspace({
     selectVisual({ kind: "cg", id: cg.id });
   };
 
-  const duplicateSelection = () => {
-    if (selectedScene) {
+  const duplicateVisual = (target: VisualSelection) => {
+    if (target.kind === "scene") {
+      const source = scenes.find((scene) => scene.id === target.id);
+      if (!source) return;
       const copy: GalgameStoryScene = {
-        ...selectedScene,
+        ...source,
         id: stableId(),
-        name: `${selectedScene.name} 副本`,
-        layers: layers.map((layer) => ({ ...layer, id: stableId() })),
+        name: `${source.name} 副本`,
+        layers: (source.layers ?? []).map((layer) => ({
+          ...layer,
+          id: stableId(),
+        })),
       };
       onDocument({ ...document, scenes: [...scenes, copy] });
       selectVisual({ kind: "scene", id: copy.id });
+      return;
     }
-    if (selectedCg) {
-      const variantsCopy = variants.map((variant) => ({
+    const source = cgs.find((cg) => cg.id === target.id);
+    if (source) {
+      const sourceVariants = source.variants ?? [];
+      const variantsCopy = sourceVariants.map((variant) => ({
         ...variant,
         id: stableId(),
       }));
-      const defaultIndex = variants.findIndex(
-        (variant) => variant.id === selectedCg.defaultVariantId,
+      const defaultIndex = sourceVariants.findIndex(
+        (variant) => variant.id === source.defaultVariantId,
       );
       const copy: GalgameStoryCg = {
-        ...selectedCg,
+        ...source,
         id: stableId(),
-        name: `${selectedCg.name} 副本`,
+        name: `${source.name} 副本`,
         variants: variantsCopy,
         defaultVariantId:
           defaultIndex >= 0 ? variantsCopy[defaultIndex]?.id : null,
@@ -561,6 +633,31 @@ export function VisualWorkspace({
       source,
     );
     onDocument({ ...document, cgs: remaining });
+  };
+
+  const beginRename = (target: VisualSelection) => {
+    const visual =
+      target.kind === "scene"
+        ? scenes.find((scene) => scene.id === target.id)
+        : cgs.find((cg) => cg.id === target.id);
+    if (!visual) return;
+    setItemMenu(undefined);
+    setRenameDraft(visual.name);
+    setRenaming(target);
+  };
+
+  const commitRename = () => {
+    if (!renaming) return;
+    const name = renameDraft.trim();
+    if (!name) {
+      onNotice("名称不能为空。");
+      setRenaming(undefined);
+      return;
+    }
+    if (renaming.kind === "scene")
+      updateScene(renaming.id, (scene) => ({ ...scene, name }));
+    else updateCg(renaming.id, (cg) => ({ ...cg, name }));
+    setRenaming(undefined);
   };
 
   const reorderLayer = (layerId: string, targetId: string) => {
@@ -619,37 +716,44 @@ export function VisualWorkspace({
     setSelectedVariantId(remaining[0]?.id);
   };
 
-  const removeSelectedVisual = () => {
-    if (selectedScene) {
-      if (sceneRefs.length) {
+  const removeVisual = (target: VisualSelection) => {
+    if (target.kind === "scene") {
+      if (sceneReferences(document, target.id).length) {
         onNotice("场景仍被 Scene Block 引用，无法删除。");
         return;
       }
-      const remaining = scenes.filter((scene) => scene.id !== selectedScene.id);
+      const remaining = scenes.filter((scene) => scene.id !== target.id);
       onDocument({ ...document, scenes: remaining });
-      setSelection(
-        remaining[0]
-          ? { kind: "scene", id: remaining[0].id }
+      if (selection?.kind === "scene" && selection.id === target.id) {
+        const fallback = remaining[0]
+          ? ({ kind: "scene", id: remaining[0].id } as const)
           : cgs[0]
-            ? { kind: "cg", id: cgs[0].id }
-            : undefined,
-      );
-    }
-    if (selectedCg) {
-      if (cgRefs.length) {
-        onNotice("CG 仍被显示 CG Block 引用，无法删除。");
-        return;
+            ? ({ kind: "cg", id: cgs[0].id } as const)
+            : undefined;
+        if (fallback) selectVisual(fallback);
+        else setSelection(undefined);
       }
-      const remaining = cgs.filter((cg) => cg.id !== selectedCg.id);
-      onDocument({ ...document, cgs: remaining });
-      setSelection(
-        remaining[0]
-          ? { kind: "cg", id: remaining[0].id }
-          : scenes[0]
-            ? { kind: "scene", id: scenes[0].id }
-            : undefined,
-      );
+      return;
     }
+    if (cgReferences(document, target.id).length) {
+      onNotice("CG 仍被显示 CG Block 引用，无法删除。");
+      return;
+    }
+    const remaining = cgs.filter((cg) => cg.id !== target.id);
+    onDocument({ ...document, cgs: remaining });
+    if (selection?.kind === "cg" && selection.id === target.id) {
+      const fallback = remaining[0]
+        ? ({ kind: "cg", id: remaining[0].id } as const)
+        : scenes[0]
+          ? ({ kind: "scene", id: scenes[0].id } as const)
+          : undefined;
+      if (fallback) selectVisual(fallback);
+      else setSelection(undefined);
+    }
+  };
+
+  const removeSelectedVisual = () => {
+    if (selection) removeVisual(selection);
   };
 
   const startStageDrag = (event: ReactPointerEvent<HTMLDivElement>) => {
@@ -760,6 +864,26 @@ export function VisualWorkspace({
   const detailCount = selectedScene ? layers.length : variants.length;
   const stageEmpty = selectedScene ? !layers.length : !selectedVariant;
 
+  const openItemMenu = (trigger: HTMLButtonElement, item: VisualSelection) => {
+    if (itemMenu?.item.kind === item.kind && itemMenu.item.id === item.id) {
+      setItemMenu(undefined);
+      return;
+    }
+    const bounds = trigger.getBoundingClientRect();
+    const width = 236;
+    const itemCount = item.kind === "scene" ? 7 + groups.length : 4;
+    const estimatedHeight = Math.min(
+      window.innerHeight - 16,
+      itemCount * 38 + 34,
+    );
+    const left = clamp(bounds.right - width, 8, window.innerWidth - width - 8);
+    const top =
+      bounds.bottom + estimatedHeight + 4 <= window.innerHeight - 8
+        ? bounds.bottom + 4
+        : Math.max(8, bounds.top - estimatedHeight - 4);
+    setItemMenu({ item, left, top, trigger });
+  };
+
   const renderBrowserItem = (item: VisualSelection) => {
     const scene =
       item.kind === "scene"
@@ -778,15 +902,29 @@ export function VisualWorkspace({
       sceneLayer?.assetId ?? cgVariant?.assetId ?? "",
     );
     const selected = selection?.kind === item.kind && selection.id === item.id;
+    const isRenaming = renaming?.kind === item.kind && renaming.id === item.id;
+    const menuOpen =
+      itemMenu?.item.kind === item.kind && itemMenu.item.id === item.id;
+    const name = scene?.name ?? cg?.name ?? "";
     return (
-      <button
+      <div
         key={`${item.kind}-${item.id}`}
-        type="button"
         className={`galgame-visual-browser-item${selected ? " active" : ""}`}
-        draggable
+        draggable={!isRenaming}
         onDragStart={(event) => {
+          if (
+            (event.target as HTMLElement).closest(
+              ".galgame-visual-browser-menu-trigger",
+            )
+          ) {
+            event.preventDefault();
+            return;
+          }
           draggedItem.current = item;
           event.dataTransfer.setData("text/visual-id", item.id);
+        }}
+        onDragEnd={() => {
+          draggedItem.current = undefined;
         }}
         onDragOver={(event) => event.preventDefault()}
         onDrop={(event) => {
@@ -798,33 +936,106 @@ export function VisualWorkspace({
           else moveCg(dragged.id, item.id);
           draggedItem.current = undefined;
         }}
-        onClick={() => selectVisual(item)}
       >
-        <span>
-          <StoryAssetImage
-            fileId={asset?.fileId}
-            alt=""
-            fallback={
-              item.kind === "scene" ? (
-                <MapPinned aria-hidden />
-              ) : (
-                <Images aria-hidden />
-              )
-            }
-          />
-        </span>
-        <em>
-          <strong>{scene?.name ?? cg?.name}</strong>
-          <small>
-            {item.kind === "scene"
-              ? `${scene?.layers?.length ?? 0} 层`
-              : `${cg?.variants?.length ?? 0} 个差分`}
-          </small>
-        </em>
-        <GripVertical aria-hidden />
-      </button>
+        {isRenaming ? (
+          <div className="galgame-visual-browser-open is-renaming">
+            <span>
+              <StoryAssetImage
+                fileId={asset?.fileId}
+                alt=""
+                fallback={
+                  item.kind === "scene" ? (
+                    <MapPinned aria-hidden />
+                  ) : (
+                    <Images aria-hidden />
+                  )
+                }
+              />
+            </span>
+            <em>
+              <input
+                ref={renameInputRef}
+                aria-label={`重命名${item.kind === "scene" ? "场景" : "CG"}`}
+                value={renameDraft}
+                maxLength={120}
+                onChange={(event) => setRenameDraft(event.target.value)}
+                onBlur={commitRename}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    event.preventDefault();
+                    commitRename();
+                  }
+                  if (event.key === "Escape") {
+                    event.preventDefault();
+                    setRenaming(undefined);
+                  }
+                }}
+              />
+              <small>
+                {item.kind === "scene"
+                  ? `${scene?.layers?.length ?? 0} 层`
+                  : `${cg?.variants?.length ?? 0} 个差分`}
+              </small>
+            </em>
+          </div>
+        ) : (
+          <button
+            type="button"
+            className="galgame-visual-browser-open"
+            onClick={() => selectVisual(item)}
+          >
+            <span>
+              <StoryAssetImage
+                fileId={asset?.fileId}
+                alt=""
+                fallback={
+                  item.kind === "scene" ? (
+                    <MapPinned aria-hidden />
+                  ) : (
+                    <Images aria-hidden />
+                  )
+                }
+              />
+            </span>
+            <em>
+              <strong>{name}</strong>
+              <small>
+                {item.kind === "scene"
+                  ? `${scene?.layers?.length ?? 0} 层`
+                  : `${cg?.variants?.length ?? 0} 个差分`}
+              </small>
+            </em>
+          </button>
+        )}
+        <button
+          type="button"
+          className="galgame-visual-browser-menu-trigger"
+          aria-label={`更多操作 ${name}`}
+          aria-haspopup="menu"
+          aria-expanded={menuOpen}
+          aria-controls={menuOpen ? "galgame-visual-item-menu" : undefined}
+          draggable={false}
+          onClick={(event) => openItemMenu(event.currentTarget, item)}
+        >
+          <MoreHorizontal aria-hidden />
+        </button>
+      </div>
     );
   };
+
+  const menuScene =
+    itemMenu?.item.kind === "scene"
+      ? scenes.find((scene) => scene.id === itemMenu.item.id)
+      : undefined;
+  const menuCg =
+    itemMenu?.item.kind === "cg"
+      ? cgs.find((cg) => cg.id === itemMenu.item.id)
+      : undefined;
+  const menuReferences = menuScene
+    ? sceneReferences(document, menuScene.id)
+    : menuCg
+      ? cgReferences(document, menuCg.id)
+      : [];
 
   return (
     <section className="galgame-unified-visual-workspace">
@@ -843,19 +1054,35 @@ export function VisualWorkspace({
         <nav aria-label="工作台面板">
           <button
             type="button"
+            aria-label={browserOpen ? "收起资源树" : "展开资源树"}
+            title={browserOpen ? "收起资源树" : "展开资源树"}
             aria-pressed={!browserOpen}
             onClick={() => setBrowserOpen((current) => !current)}
           >
-            {browserOpen ? "收起资源树" : "展开资源树"}
+            <PanelLeftClose
+              className={browserOpen ? "" : "is-flipped"}
+              aria-hidden
+            />
           </button>
           <button
             type="button"
+            aria-label={
+              stackOpen
+                ? `收起${selectedScene ? "图层" : "差分"}`
+                : `展开${selectedScene ? "图层" : "差分"}`
+            }
+            title={
+              stackOpen
+                ? `收起${selectedScene ? "图层" : "差分"}`
+                : `展开${selectedScene ? "图层" : "差分"}`
+            }
             aria-pressed={!stackOpen}
             onClick={() => setStackOpen((current) => !current)}
           >
-            {stackOpen
-              ? `收起${selectedScene ? "图层" : "差分"}`
-              : `展开${selectedScene ? "图层" : "差分"}`}
+            <PanelRightClose
+              className={stackOpen ? "" : "is-flipped"}
+              aria-hidden
+            />
           </button>
         </nav>
       </div>
@@ -1053,15 +1280,6 @@ export function VisualWorkspace({
               </p>
             ) : null}
           </div>
-
-          <button
-            type="button"
-            className="galgame-visual-duplicate"
-            disabled={!selection}
-            onClick={duplicateSelection}
-          >
-            <Copy aria-hidden /> 复制当前项
-          </button>
         </aside>
 
         <main className="galgame-visual-stage-panel">
@@ -1507,61 +1725,26 @@ export function VisualWorkspace({
             <section>
               <header>
                 {selectedScene ? (
-                  <MapPinned aria-hidden />
+                  <ImageIcon aria-hidden />
                 ) : (
                   <Images aria-hidden />
                 )}
                 <strong>{selectedScene ? "场景属性" : "CG 属性"}</strong>
               </header>
               {selectedScene ? (
-                <>
-                  <label>
-                    <span>名称</span>
-                    <input
-                      aria-label="场景名称"
-                      value={selectedScene.name}
-                      onChange={(event) =>
-                        updateScene(selectedScene.id, (scene) => ({
-                          ...scene,
-                          name: event.target.value,
-                        }))
-                      }
-                    />
-                  </label>
-                  <label>
-                    <span>说明</span>
-                    <textarea
-                      aria-label="场景说明"
-                      value={selectedScene.description}
-                      onChange={(event) =>
-                        updateScene(selectedScene.id, (scene) => ({
-                          ...scene,
-                          description: event.target.value,
-                        }))
-                      }
-                    />
-                  </label>
-                  <label>
-                    <span>分组</span>
-                    <select
-                      aria-label="场景分组"
-                      value={selectedScene.groupId ?? ""}
-                      onChange={(event) =>
-                        updateScene(selectedScene.id, (scene) => ({
-                          ...scene,
-                          groupId: event.target.value || null,
-                        }))
-                      }
-                    >
-                      <option value="">场景</option>
-                      {groups.map((group) => (
-                        <option key={group.id} value={group.id}>
-                          {group.name}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                </>
+                <label>
+                  <span>名称</span>
+                  <input
+                    aria-label="场景名称"
+                    value={selectedScene.name}
+                    onChange={(event) =>
+                      updateScene(selectedScene.id, (scene) => ({
+                        ...scene,
+                        name: event.target.value,
+                      }))
+                    }
+                  />
+                </label>
               ) : selectedCg ? (
                 <>
                   <label>
@@ -1602,7 +1785,7 @@ export function VisualWorkspace({
 
             <section className="galgame-visual-references">
               <header>
-                <LocateFixed aria-hidden />
+                <ExternalLink aria-hidden />
                 <strong>引用位置</strong>
                 <span>
                   {selectedScene ? sceneRefs.length : cgRefs.length} 处
@@ -1904,6 +2087,127 @@ export function VisualWorkspace({
           }}
         />
       ) : null}
+
+      {itemMenu && (menuScene || menuCg)
+        ? createPortal(
+            <div
+              ref={menuRef}
+              id="galgame-visual-item-menu"
+              className="galgame-visual-item-menu"
+              role="menu"
+              aria-label={`${menuScene?.name ?? menuCg?.name} 操作`}
+              style={{ left: itemMenu.left, top: itemMenu.top }}
+            >
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  selectVisual(itemMenu.item);
+                  setItemMenu(undefined);
+                }}
+              >
+                <Eye aria-hidden />
+                打开{menuScene ? "场景" : " CG"}
+              </button>
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => beginRename(itemMenu.item)}
+              >
+                <Pencil aria-hidden />
+                重命名
+              </button>
+
+              {menuScene ? (
+                <>
+                  <i aria-hidden />
+                  <button
+                    type="button"
+                    role="menuitem"
+                    disabled={!menuScene.groupId}
+                    onClick={() => {
+                      moveScene(menuScene.id, undefined, null);
+                      setItemMenu(undefined);
+                    }}
+                  >
+                    <Undo2 aria-hidden />
+                    移出分组
+                  </button>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    disabled={!menuScene.groupId}
+                    onClick={() => {
+                      moveScene(menuScene.id, undefined, null);
+                      setItemMenu(undefined);
+                    }}
+                  >
+                    {!menuScene.groupId ? (
+                      <Check aria-hidden />
+                    ) : (
+                      <FolderOpen aria-hidden />
+                    )}
+                    移动到 场景
+                  </button>
+                  {groups.map((group) => (
+                    <button
+                      key={group.id}
+                      type="button"
+                      role="menuitem"
+                      disabled={menuScene.groupId === group.id}
+                      onClick={() => {
+                        moveScene(menuScene.id, undefined, group.id);
+                        setItemMenu(undefined);
+                      }}
+                    >
+                      {menuScene.groupId === group.id ? (
+                        <Check aria-hidden />
+                      ) : (
+                        <FolderOpen aria-hidden />
+                      )}
+                      移动到 {group.name}
+                    </button>
+                  ))}
+                </>
+              ) : null}
+
+              <i aria-hidden />
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  duplicateVisual(itemMenu.item);
+                  setItemMenu(undefined);
+                }}
+              >
+                <Copy aria-hidden />
+                复制{menuScene ? "场景" : " CG"}
+              </button>
+              <i aria-hidden />
+              <button
+                type="button"
+                className="danger"
+                role="menuitem"
+                disabled={menuReferences.length > 0}
+                title={
+                  menuReferences.length
+                    ? menuScene
+                      ? "场景仍被 Scene Block 引用，无法删除。"
+                      : "CG 仍被显示 CG Block 引用，无法删除。"
+                    : undefined
+                }
+                onClick={() => {
+                  removeVisual(itemMenu.item);
+                  setItemMenu(undefined);
+                }}
+              >
+                <Trash2 aria-hidden />
+                删除{menuScene ? "场景" : " CG"}
+              </button>
+            </div>,
+            globalThis.document.body,
+          )
+        : null}
     </section>
   );
 }

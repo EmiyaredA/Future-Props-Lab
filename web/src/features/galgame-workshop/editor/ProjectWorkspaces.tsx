@@ -297,8 +297,6 @@ export function PersonalizationWorkspace({
   );
 }
 
-type PositionKey = keyof typeof DEFAULT_STORY_SETTINGS.characterStage.positions;
-
 export function ProjectSettingsWorkspace({
   title,
   document,
@@ -319,21 +317,14 @@ export function ProjectSettingsWorkspace({
     characterStage: {
       ...DEFAULT_STORY_SETTINGS.characterStage,
       ...document.settings?.characterStage,
-      positions: {
-        ...DEFAULT_STORY_SETTINGS.characterStage.positions,
-        ...document.settings?.characterStage?.positions,
-      },
+      positionPresets: document.settings?.characterStage?.positionPresets
+        ?.length
+        ? document.settings.characterStage.positionPresets
+        : DEFAULT_STORY_SETTINGS.characterStage.positionPresets,
     },
   };
   const updateSettings = (next: typeof settings) =>
     onDocument({ ...document, settings: next });
-  const positionLabels: Record<PositionKey, string> = {
-    left: "左",
-    centerLeft: "左中",
-    center: "中",
-    centerRight: "右中",
-    right: "右",
-  };
   return (
     <div className="galgame-settings-workspace">
       <header>
@@ -438,42 +429,22 @@ export function ProjectSettingsWorkspace({
           </div>
           <div className="galgame-settings-pair">
             <label>
-              <span>默认锚点 X (%)</span>
-              <input
-                type="number"
-                min="0"
-                max="100"
-                step="0.5"
-                value={settings.characterStage.anchorX}
+              <span>默认锚点</span>
+              <select
+                value={settings.characterStage.anchor}
                 onChange={(event) =>
                   updateSettings({
                     ...settings,
                     characterStage: {
                       ...settings.characterStage,
-                      anchorX: Number(event.target.value),
+                      anchor: event.target.value as "center" | "topLeft",
                     },
                   })
                 }
-              />
-            </label>
-            <label>
-              <span>默认锚点 Y (%)</span>
-              <input
-                type="number"
-                min="0"
-                max="100"
-                step="0.5"
-                value={settings.characterStage.anchorY}
-                onChange={(event) =>
-                  updateSettings({
-                    ...settings,
-                    characterStage: {
-                      ...settings.characterStage,
-                      anchorY: Number(event.target.value),
-                    },
-                  })
-                }
-              />
+              >
+                <option value="center">居中</option>
+                <option value="topLeft">左上</option>
+              </select>
             </label>
           </div>
           <label>
@@ -498,30 +469,55 @@ export function ProjectSettingsWorkspace({
         </section>
         <section className="galgame-settings-positions">
           <h3>
-            <SlidersHorizontal aria-hidden /> 五个标准站位
+            <SlidersHorizontal aria-hidden /> 位置预设
           </h3>
           <p>
             用于新建角色 Block 和资产预览，不会改写已有 Block 的 transform。
           </p>
           <div>
-            {(Object.keys(positionLabels) as PositionKey[]).map((key) => (
-              <label key={key}>
-                <span>{positionLabels[key]}</span>
+            {settings.characterStage.positionPresets.map((preset) => (
+              <label key={preset.id}>
+                <span>{preset.name}</span>
                 <input
+                  aria-label={`${preset.name} X`}
                   type="number"
                   min="0"
                   max="100"
                   step="0.5"
-                  value={settings.characterStage.positions[key]}
+                  value={preset.x}
                   onChange={(event) =>
                     updateSettings({
                       ...settings,
                       characterStage: {
                         ...settings.characterStage,
-                        positions: {
-                          ...settings.characterStage.positions,
-                          [key]: Number(event.target.value),
-                        },
+                        positionPresets:
+                          settings.characterStage.positionPresets.map((item) =>
+                            item.id === preset.id
+                              ? { ...item, x: Number(event.target.value) }
+                              : item,
+                          ),
+                      },
+                    })
+                  }
+                />
+                <input
+                  aria-label={`${preset.name} Y`}
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="0.5"
+                  value={preset.y}
+                  onChange={(event) =>
+                    updateSettings({
+                      ...settings,
+                      characterStage: {
+                        ...settings.characterStage,
+                        positionPresets:
+                          settings.characterStage.positionPresets.map((item) =>
+                            item.id === preset.id
+                              ? { ...item, y: Number(event.target.value) }
+                              : item,
+                          ),
                       },
                     })
                   }

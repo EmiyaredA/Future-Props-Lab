@@ -30,6 +30,8 @@ export type GalgameStorySettings =
   components["schemas"]["GalgameStorySettings"];
 export type GalgameStoryCharacterStageSettings =
   components["schemas"]["GalgameStoryCharacterStageSettings"];
+export type GalgameStoryPositionPreset =
+  components["schemas"]["GalgameStoryPositionPreset"];
 export type GalgameStoryCharacter = Omit<
   components["schemas"]["GalgameStoryCharacter"],
   "themeColor"
@@ -52,7 +54,7 @@ export type GalgameStoryProject = Omit<
   chapters?: GalgameStoryChapter[];
   scenes?: GalgameStoryScene[];
   assets?: GalgameStoryAsset[];
-  schemaVersion: "1.0" | "1.1" | "1.2";
+  schemaVersion: "1.0" | "1.1" | "1.2" | "1.3";
 };
 export type GalgameStoryDocument = Omit<
   GeneratedGalgameStoryDocument,

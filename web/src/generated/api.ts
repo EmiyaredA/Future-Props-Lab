@@ -2300,26 +2300,34 @@ export interface components {
         /** GalgameStoryCharacterStageSettings */
         GalgameStoryCharacterStageSettings: {
             /**
-             * Anchorx
-             * @default 50
+             * Anchor
+             * @default center
+             * @enum {string}
              */
-            anchorX: number;
-            /**
-             * Anchory
-             * @default 100
-             */
-            anchorY: number;
+            anchor: "center" | "topLeft";
             /**
              * Defaultheightpercent
              * @default 100
              */
             defaultHeightPercent: number;
+            /**
+             * Defaultpositionid
+             * @default position-center
+             */
+            defaultPositionId: string;
             /** Legacydefaultscale */
             legacyDefaultScale?: number | null;
-            positions?: components["schemas"]["GalgameStoryStagePositions"];
+            /** Positionpresets */
+            positionPresets?: components["schemas"]["GalgameStoryPositionPreset"][];
         };
         /** GalgameStoryCharacterTransform */
         GalgameStoryCharacterTransform: {
+            /**
+             * Anchor
+             * @default bottomCenter
+             * @enum {string}
+             */
+            anchor: "center" | "topLeft" | "bottomCenter";
             /**
              * Brightness
              * @default 1
@@ -2914,6 +2922,19 @@ export interface components {
              */
             type: "portraitStyleRule";
         };
+        /** GalgameStoryPositionPreset */
+        GalgameStoryPositionPreset: {
+            /** Builtinkey */
+            builtinKey?: ("left" | "centerLeft" | "center" | "centerRight" | "right") | null;
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** X */
+            x: number;
+            /** Y */
+            y: number;
+        };
         /** GalgameStoryPresentation */
         GalgameStoryPresentation: {
             dialogueBox?: components["schemas"]["GalgameStoryDialogueBoxStyle"];
@@ -2946,7 +2967,7 @@ export interface components {
              * Schemaversion
              * @constant
              */
-            schemaVersion: "1.2";
+            schemaVersion: "1.3";
             settings?: components["schemas"]["GalgameStorySettings"];
             /**
              * Synopsis
@@ -3324,34 +3345,6 @@ export interface components {
              * @default false
              */
             waitForCompletion: boolean;
-        };
-        /** GalgameStoryStagePositions */
-        GalgameStoryStagePositions: {
-            /**
-             * Center
-             * @default 50
-             */
-            center: number;
-            /**
-             * Centerleft
-             * @default 32.5
-             */
-            centerLeft: number;
-            /**
-             * Centerright
-             * @default 67.5
-             */
-            centerRight: number;
-            /**
-             * Left
-             * @default 15
-             */
-            left: number;
-            /**
-             * Right
-             * @default 85
-             */
-            right: number;
         };
         /** GalgameStoryStageStyle */
         GalgameStoryStageStyle: {

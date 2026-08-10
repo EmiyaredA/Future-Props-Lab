@@ -119,6 +119,7 @@ export function decodeRenpy(
           transform: {
             x: 50,
             y: 100,
+            anchor: "bottomCenter",
             scale: 1,
             brightness: 1,
             opacity: 1,

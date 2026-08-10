@@ -9,17 +9,17 @@
   width: calc(100% - 14px);
   min-height: 55px;
   margin: 3px 0 3px 14px;
-  padding: 5px 8px;
+  padding: 5px 5px 5px 8px;
   border: 1px solid transparent;
   border-radius: 7px;
   background: transparent;
   color: var(--gal-text);
   display: grid;
-  grid-template-columns: 56px minmax(0, 1fr) 14px;
+  grid-template-columns: minmax(0, 1fr) 25px;
   align-items: center;
-  gap: 9px;
+  gap: 4px;
   text-align: left;
-  cursor: pointer;
+  cursor: grab;
 }
 
 .galgame-visual-browser-item::before {
@@ -45,7 +45,25 @@
   background: var(--gal-accent);
 }
 
-.galgame-visual-browser-item > span {
+.galgame-visual-browser-open {
+  min-width: 0;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr);
+  align-items: center;
+  gap: 9px;
+  text-align: left;
+}
+
+button.galgame-visual-browser-open {
+  cursor: pointer;
+}
+
+.galgame-visual-browser-open > span {
   width: 56px;
   aspect-ratio: 16 / 10;
   overflow: hidden;
@@ -61,7 +79,7 @@
   object-fit: cover;
 }
 
-.galgame-visual-browser-item > em {
+.galgame-visual-browser-open > em {
   min-width: 0;
   font-style: normal;
   display: flex;
@@ -69,45 +87,122 @@
   gap: 3px;
 }
 
-.galgame-visual-browser-item > em strong,
-.galgame-visual-browser-item > em small {
+.galgame-visual-browser-open > em strong,
+.galgame-visual-browser-open > em small {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.galgame-visual-browser-item > em small,
-.galgame-visual-browser-item > svg {
+.galgame-visual-browser-open > em small {
   color: var(--gal-faint);
 }
 
-.galgame-visual-browser-item > svg {
-  width: 13px;
-  height: 13px;
+.galgame-visual-browser-open > em input {
+  min-width: 0;
+  width: 100%;
+  height: 27px;
+  padding: 0 6px;
+  border: 1px solid var(--gal-accent-line);
+  border-radius: 5px;
+  background: var(--gal-surface);
+  color: var(--gal-text);
+  font: inherit;
+  font-weight: 650;
+  outline: none;
+}
+
+.galgame-visual-browser-menu-trigger {
+  width: 25px;
+  height: 30px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--gal-faint);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.galgame-visual-browser-menu-trigger:hover,
+.galgame-visual-browser-menu-trigger[aria-expanded="true"] {
+  border-color: var(--gal-accent-line);
+  background: var(--gal-surface);
+  color: var(--gal-text);
+}
+
+.galgame-visual-browser-menu-trigger svg {
+  width: 15px;
+  height: 15px;
+}
+
+.galgame-visual-item-menu {
+  position: fixed;
+  z-index: 1200;
+  width: 236px;
+  max-height: calc(100vh - 16px);
+  padding: 6px;
+  overflow-y: auto;
+  border: 1px solid var(--gal-line);
+  border-radius: 10px;
+  background: var(--gal-surface);
+  box-shadow: 0 12px 34px rgb(15 23 42 / 18%);
+}
+
+.galgame-visual-item-menu > button {
+  width: 100%;
+  min-height: 36px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--gal-text);
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.galgame-visual-item-menu > button:hover,
+.galgame-visual-item-menu > button:focus-visible {
+  background: var(--gal-soft);
+  outline: none;
+}
+
+.galgame-visual-item-menu > button svg {
+  width: 16px;
+  height: 16px;
+  color: var(--gal-muted);
+}
+
+.galgame-visual-item-menu > button.danger {
+  color: var(--gal-danger);
+}
+
+.galgame-visual-item-menu > button.danger svg {
+  color: currentcolor;
+}
+
+.galgame-visual-item-menu > button:disabled {
+  color: var(--gal-faint);
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.galgame-visual-item-menu > i {
+  height: 1px;
+  margin: 5px 7px;
+  background: var(--gal-line);
+  display: block;
 }
 
 .galgame-visual-tree-empty {
   padding: 24px 12px;
   color: var(--gal-muted);
   text-align: center;
-}
-
-.galgame-visual-duplicate {
-  min-height: 38px;
-  margin: 8px;
-  border: 1px solid var(--gal-line);
-  border-radius: 7px;
-  background: var(--gal-surface);
-  color: var(--gal-muted);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 7px;
-  cursor: pointer;
-}
-
-.galgame-visual-duplicate svg {
-  width: 14px;
 }
 
 .galgame-visual-stage-panel {
@@ -510,9 +605,10 @@
   min-width: 0;
   min-height: 0;
   border-right: 1px solid var(--gal-line);
-  overflow: auto;
+  overflow-x: hidden;
+  overflow-y: auto;
   display: grid;
-  grid-template-rows: auto minmax(110px, 1fr);
+  grid-template-rows: minmax(165px, 1fr) minmax(110px, auto);
 }
 
 .galgame-visual-properties > section {
@@ -834,12 +930,20 @@
 }
 
 @media (max-width: 1500px) {
+  .galgame-asset-center > aside {
+    padding-top: 10px;
+  }
+
+  .galgame-asset-center > aside > header {
+    display: none;
+  }
+
   .galgame-visual-editor-grid {
-    --galgame-visual-browser-width: 248px;
-    --galgame-visual-stack-width: 298px;
+    --galgame-visual-browser-width: 220px;
+    --galgame-visual-stack-width: 260px;
 
     grid-template-columns:
-      var(--galgame-visual-browser-width) minmax(480px, 1fr)
+      var(--galgame-visual-browser-width) minmax(520px, 1fr)
       var(--galgame-visual-stack-width);
   }
 
@@ -852,16 +956,33 @@
   }
 
   .galgame-visual-bottom-panel {
-    grid-template-columns: 280px minmax(0, 1fr);
+    grid-template-columns: 250px minmax(0, 1fr);
   }
 
   .galgame-visual-stack-list article {
-    grid-template-columns: 12px 18px 42px minmax(62px, 1fr) 58px repeat(3, 23px);
-    gap: 3px;
+    grid-template-columns: 10px 16px 38px minmax(50px, 1fr) 48px repeat(3, 21px);
+    gap: 2px;
   }
 
   .galgame-visual-stack-list article.is-cg {
-    grid-template-columns: 12px 18px 42px minmax(62px, 1fr) repeat(3, 23px);
+    grid-template-columns: 10px 16px 38px minmax(50px, 1fr) repeat(3, 21px);
+  }
+
+  .galgame-visual-stack-list article > span {
+    width: 38px;
+  }
+
+  .galgame-visual-stack-list article > label input {
+    width: 46px;
+  }
+
+  .galgame-visual-stack-list article > button {
+    width: 21px;
+    height: 25px;
+  }
+
+  .galgame-visual-stack-list article > div small {
+    display: none;
   }
 }
 

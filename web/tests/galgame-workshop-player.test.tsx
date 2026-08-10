@@ -406,6 +406,59 @@ test("uses the default portrait unless dialogue selects an expression", async ()
   expect(screen.getByTestId("portrait-file")).toHaveTextContent("file-smile");
 });
 
+test("renders center and top-left character anchors at their saved coordinates", async () => {
+  const user = userEvent.setup();
+  const anchorStory = structuredClone(story);
+  anchorStory.chapters![0].fragments![0].blocks = [
+    { id: "scene", type: "scene", sceneId: "lab" },
+    {
+      id: "show-hero",
+      type: "showCharacter",
+      characterId: "hero",
+      expressionId: null,
+      transform: {
+        x: 40,
+        y: 60,
+        anchor: "center",
+        scale: 1,
+        brightness: 1,
+        opacity: 1,
+        flipX: false,
+        layer: 10,
+      },
+      transition: { durationMs: 0, fade: false },
+    },
+    {
+      id: "line",
+      type: "dialogue",
+      characterId: "hero",
+      text: "锚点测试",
+      portrait: { mode: "dialogueAvatar", visible: true, keepAfter: false },
+    },
+  ];
+
+  const first = render(<StoryPlayer document={anchorStory} />);
+  await user.click(screen.getByRole("button", { name: "开始试玩" }));
+  expect(first.container.querySelector(".galgame-stage-actor")).toHaveStyle({
+    left: "40%",
+    top: "60%",
+    transform: "translate(-50%, -50%) scale(1) scaleX(1)",
+    transformOrigin: "center",
+  });
+  first.unmount();
+
+  const showBlock = anchorStory.chapters![0].fragments![0].blocks![1];
+  if (showBlock.type !== "showCharacter")
+    throw new Error("expected showCharacter");
+  showBlock.transform!.anchor = "topLeft";
+  const second = render(<StoryPlayer document={anchorStory} />);
+  await user.click(screen.getByRole("button", { name: "开始试玩" }));
+  expect(second.container.querySelector(".galgame-stage-actor")).toHaveStyle({
+    transform: "translate(0, 0) scale(1) scaleX(1)",
+    transformOrigin: "top left",
+  });
+});
+
 test("shows multiple speaker names and keeps every speaking stage actor focused", async () => {
   const user = userEvent.setup();
   const multiSpeakerStory = structuredClone(story);
@@ -423,6 +476,7 @@ test("shows multiple speaker names and keeps every speaking stage actor focused"
       transform: {
         x: 30,
         y: 100,
+        anchor: "bottomCenter",
         scale: 1,
         brightness: 1,
         opacity: 1,
@@ -439,6 +493,7 @@ test("shows multiple speaker names and keeps every speaking stage actor focused"
       transform: {
         x: 70,
         y: 100,
+        anchor: "bottomCenter",
         scale: 1,
         brightness: 1,
         opacity: 1,
@@ -544,6 +599,7 @@ test("keeps multiple staged characters, applies speaker focus, and removes actor
           transform: {
             x: 25,
             y: 100,
+            anchor: "bottomCenter",
             scale: 1,
             brightness: 1,
             opacity: 1,
@@ -560,6 +616,7 @@ test("keeps multiple staged characters, applies speaker focus, and removes actor
           transform: {
             x: 75,
             y: 100,
+            anchor: "bottomCenter",
             scale: 0.9,
             brightness: 0.8,
             opacity: 1,
@@ -1083,6 +1140,7 @@ test("synchronizes formal BGM with timeline playback, pause, and seek", async ()
           transform: {
             x: 30,
             y: 100,
+            anchor: "bottomCenter",
             scale: 1,
             brightness: 1,
             opacity: 1,

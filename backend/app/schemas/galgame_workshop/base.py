@@ -287,48 +287,6 @@ class GalgameStoryCharacter(GalgameStoryModel):
         return self
 
 
-class GalgameStoryCanvasSettings(GalgameStoryModel):
-    width: int = Field(default=1920, ge=640, le=7680)
-    height: int = Field(default=1080, ge=360, le=4320)
-
-
-class GalgameStoryStagePositions(GalgameStoryModel):
-    left: float = Field(default=15, ge=0, le=100)
-    center_left: float = Field(default=32.5, alias="centerLeft", ge=0, le=100)
-    center: float = Field(default=50, ge=0, le=100)
-    center_right: float = Field(default=67.5, alias="centerRight", ge=0, le=100)
-    right: float = Field(default=85, ge=0, le=100)
-
-    @model_validator(mode="after")
-    def positions_are_ordered(self) -> GalgameStoryStagePositions:
-        values = [self.left, self.center_left, self.center, self.center_right, self.right]
-        if values != sorted(values) or len(set(values)) != len(values):
-            raise ValueError("角色标准站位必须从左到右严格递增")
-        return self
-
-
-class GalgameStoryCharacterStageSettings(GalgameStoryModel):
-    anchor_x: float = Field(default=50, alias="anchorX", ge=0, le=100)
-    anchor_y: float = Field(default=100, alias="anchorY", ge=0, le=100)
-    default_height_percent: float = Field(default=100, alias="defaultHeightPercent", gt=0, le=400)
-    legacy_default_scale: float | None = Field(
-        default=None,
-        alias="legacyDefaultScale",
-        gt=0,
-        le=4,
-        exclude_if=lambda value: value is None,
-    )
-    positions: GalgameStoryStagePositions = Field(default_factory=GalgameStoryStagePositions)
-
-
-class GalgameStorySettings(GalgameStoryModel):
-    canvas: GalgameStoryCanvasSettings = Field(default_factory=GalgameStoryCanvasSettings)
-    character_stage: GalgameStoryCharacterStageSettings = Field(
-        default_factory=GalgameStoryCharacterStageSettings,
-        alias="characterStage",
-    )
-
-
 class GalgameStoryImageAsset(GalgameStoryModel):
     id: str = Field(pattern=STABLE_ID_PATTERN)
     type: Literal["image"]

@@ -1,9 +1,12 @@
 import {
+  useCallback,
   useEffect,
   useMemo,
   useRef,
   useState,
   type CSSProperties,
+  type KeyboardEvent as ReactKeyboardEvent,
+  type PointerEvent as ReactPointerEvent,
 } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -70,6 +73,23 @@ type AssetDisplayKind =
 type AssetStatus = "all" | "referenced" | "orphaned" | "include" | "exclude";
 type AssetSelection =
   { kind: "asset"; id: string } | { kind: "missing"; id: string };
+
+const SUMMARY_HEIGHT_KEY = "future_props_galgame_asset_summary_height";
+const MIN_SUMMARY_HEIGHT = 180;
+const MIN_BROWSER_HEIGHT = 180;
+const SUMMARY_RESIZER_HEIGHT = 8;
+const ASSET_TOOLBAR_HEIGHT = 46;
+
+function loadSummaryHeight() {
+  try {
+    const stored = Number(localStorage.getItem(SUMMARY_HEIGHT_KEY));
+    return Number.isFinite(stored) && stored >= MIN_SUMMARY_HEIGHT
+      ? stored
+      : null;
+  } catch {
+    return null;
+  }
+}
 
 interface DirectoryNode {
   name: string;
@@ -352,13 +372,18 @@ export function AssetOverviewWorkspace({
 }) {
   const client = useQueryClient();
   const fileInput = useRef<HTMLInputElement>(null);
+  const workbenchRef = useRef<HTMLElement>(null);
+  const summaryRef = useRef<HTMLElement>(null);
+  const summaryResizeCleanupRef = useRef<(() => void) | undefined>(undefined);
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<AssetStatus>("all");
   const [kind, setKind] = useState<AssetDisplayKind | "all">("all");
   const [directory, setDirectory] = useState("");
   const [view, setView] = useState<"grid" | "list">("grid");
-  const [cardWidth, setCardWidth] = useState(260);
   const [summaryOpen, setSummaryOpen] = useState(true);
+  const [summaryHeight, setSummaryHeight] = useState<number | null>(
+    loadSummaryHeight,
+  );
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [selection, setSelection] = useState<AssetSelection>();
   const [expandedDirectories, setExpandedDirectories] = useState(
@@ -377,6 +402,99 @@ export function AssetOverviewWorkspace({
     category: "other" as GalgameAssetCategory,
     packagingPolicy: "auto" as "auto" | "include" | "exclude",
   });
+
+  const maximumSummaryHeight = useCallback(() => {
+    const workbenchHeight =
+      workbenchRef.current?.getBoundingClientRect().height ?? 720;
+    return Math.max(
+      MIN_SUMMARY_HEIGHT,
+      Math.floor(
+        workbenchHeight -
+          ASSET_TOOLBAR_HEIGHT -
+          SUMMARY_RESIZER_HEIGHT -
+          MIN_BROWSER_HEIGHT,
+      ),
+    );
+  }, []);
+
+  const clampSummaryHeight = useCallback(
+    (value: number) =>
+      Math.round(
+        Math.min(Math.max(value, MIN_SUMMARY_HEIGHT), maximumSummaryHeight()),
+      ),
+    [maximumSummaryHeight],
+  );
+
+  useEffect(() => {
+    try {
+      if (summaryHeight === null) localStorage.removeItem(SUMMARY_HEIGHT_KEY);
+      else localStorage.setItem(SUMMARY_HEIGHT_KEY, String(summaryHeight));
+    } catch {
+      // Layout preferences are best-effort when storage is unavailable.
+    }
+  }, [summaryHeight]);
+
+  useEffect(() => {
+    const clampRememberedHeight = () =>
+      setSummaryHeight((current) =>
+        current === null ? null : clampSummaryHeight(current),
+      );
+    window.addEventListener("resize", clampRememberedHeight);
+    return () => window.removeEventListener("resize", clampRememberedHeight);
+  }, [clampSummaryHeight]);
+
+  useEffect(
+    () => () => {
+      summaryResizeCleanupRef.current?.();
+    },
+    [],
+  );
+
+  const startSummaryResize = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (event.button !== 0 || window.innerWidth <= 900) return;
+    event.preventDefault();
+    summaryResizeCleanupRef.current?.();
+    const startY = event.clientY;
+    const startHeight =
+      summaryRef.current?.getBoundingClientRect().height ??
+      summaryHeight ??
+      MIN_SUMMARY_HEIGHT;
+    globalThis.document.body.classList.add("galgame-assets-summary-resizing");
+
+    const move = (pointer: PointerEvent) =>
+      setSummaryHeight(
+        clampSummaryHeight(startHeight + pointer.clientY - startY),
+      );
+    const finish = () => {
+      globalThis.document.body.classList.remove(
+        "galgame-assets-summary-resizing",
+      );
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", finish);
+      window.removeEventListener("pointercancel", finish);
+      summaryResizeCleanupRef.current = undefined;
+    };
+    summaryResizeCleanupRef.current = finish;
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", finish);
+    window.addEventListener("pointercancel", finish);
+  };
+
+  const resizeSummaryWithKeyboard = (
+    event: ReactKeyboardEvent<HTMLDivElement>,
+  ) => {
+    if (event.key !== "ArrowUp" && event.key !== "ArrowDown") return;
+    event.preventDefault();
+    const currentHeight =
+      summaryHeight ??
+      summaryRef.current?.getBoundingClientRect().height ??
+      MIN_SUMMARY_HEIGHT;
+    setSummaryHeight(
+      clampSummaryHeight(
+        currentHeight + (event.key === "ArrowDown" ? 16 : -16),
+      ),
+    );
+  };
 
   const overview = useQuery({
     queryKey: ["galgame-asset-overview", projectId],
@@ -633,7 +751,6 @@ export function AssetOverviewWorkspace({
   return (
     <div
       className={`galgame-assets-dashboard ${filtersOpen ? "filters-open" : ""}`}
-      style={{ "--asset-card-width": `${cardWidth}px` } as CSSProperties}
     >
       <aside className="galgame-assets-filter-panel" aria-label="资源筛选">
         <header>
@@ -751,7 +868,17 @@ export function AssetOverviewWorkspace({
         </section>
       </aside>
 
-      <main className="galgame-assets-workbench">
+      <main
+        ref={workbenchRef}
+        className={`galgame-assets-workbench ${summaryOpen ? "summary-open" : ""} ${summaryHeight !== null ? "summary-sized" : ""}`}
+        style={
+          summaryHeight === null
+            ? undefined
+            : ({
+                "--asset-summary-height": `${summaryHeight}px`,
+              } as CSSProperties)
+        }
+      >
         <header className="galgame-assets-toolbar">
           <div>
             <button
@@ -791,18 +918,6 @@ export function AssetOverviewWorkspace({
                 <List aria-hidden />
               </button>
             </div>
-            <label className="galgame-assets-zoom">
-              <span className="sr-only">卡片大小</span>
-              <input
-                type="range"
-                min="210"
-                max="360"
-                step="10"
-                value={cardWidth}
-                disabled={view === "list"}
-                onChange={(event) => setCardWidth(Number(event.target.value))}
-              />
-            </label>
             <button
               type="button"
               aria-label="刷新元数据"
@@ -836,7 +951,11 @@ export function AssetOverviewWorkspace({
         </header>
 
         {summaryOpen ? (
-          <section className="galgame-assets-summary" aria-label="资源统计">
+          <section
+            ref={summaryRef}
+            className="galgame-assets-summary"
+            aria-label="资源统计"
+          >
             <article className="galgame-assets-overview-card">
               <small>总览</small>
               <div className="galgame-assets-overview-values">
@@ -1002,6 +1121,26 @@ export function AssetOverviewWorkspace({
               </div>
             </article>
           </section>
+        ) : null}
+
+        {summaryOpen ? (
+          <div
+            className="galgame-assets-summary-resizer"
+            role="separator"
+            tabIndex={0}
+            aria-label="调整资源统计与资源列表高度"
+            aria-orientation="horizontal"
+            aria-valuemin={MIN_SUMMARY_HEIGHT}
+            aria-valuemax={maximumSummaryHeight()}
+            aria-valuenow={summaryHeight ?? undefined}
+            aria-valuetext={
+              summaryHeight === null ? "自动高度" : `${summaryHeight} 像素`
+            }
+            title="拖动调整统计区高度，双击恢复自动高度"
+            onPointerDown={startSummaryResize}
+            onKeyDown={resizeSummaryWithKeyboard}
+            onDoubleClick={() => setSummaryHeight(null)}
+          />
         ) : null}
 
         <section className="galgame-assets-browser">

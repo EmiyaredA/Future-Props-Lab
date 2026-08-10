@@ -16,7 +16,7 @@ Future-Props-Lab/
 │   ├── llm/           # 模型目录、供应商适配、共享生成运行时、测试工作台和调用日志
 │   ├── tool_navigation/ # 工具收藏与最近使用状态规则
 │   ├── visual_workshop/ # 视觉工坊项目、画布、助手、生成任务与领域适配器
-│   ├── galgame_workshop/ # Galgame 工程、Story 1.2 CAS、素材/ASR/尺寸维护与线路分析
+│   ├── galgame_workshop/ # Galgame 工程、Story 1.3 CAS、素材/ASR/尺寸维护与线路分析
 │   ├── models/        # SQLAlchemy 持久化形状
 │   ├── routes/        # `/v1` HTTP/SSE 协议边界；Galgame 按五类协议模块汇总
 │   └── schemas/       # Pydantic 请求与响应形状；Galgame 按 Story/Block/素材/维护拆包
@@ -57,7 +57,7 @@ Future-Props-Lab/
 - AI 应用目录同样由 Web 静态注册表维护，应用最近访问记录只保存在浏览器本地。视觉创作工坊
   与 Galgame 工坊各自使用独立页面壳；后端 `files/` 负责公共文件元数据、文件夹、存储校验与项目引用，
   `visual_workshop/` 负责真实项目、revisioned 节点画布、项目对话与图片/视频异步生成任务，
-  `galgame_workshop/` 负责 Galgame 工程元数据、Story 1.2 故事文档 CAS、剧情对话富文本、多人角色舞台演出、
+  `galgame_workshop/` 负责 Galgame 工程元数据、Story 1.3 故事文档 CAS、剧情对话富文本、多人角色舞台演出、
   角色/多层场景/音视频素材生命周期、虚拟打包路径、语音识别任务、立绘尺寸快照恢复与 Fragment 线路分析，
   均不预置项目或素材。Studio 一级
   “文件管理”和项目素材浏览器复用同一文件 API；Galgame 上传图片、音视频与字体也复用公共存储、内容签名和媒体元数据校验，

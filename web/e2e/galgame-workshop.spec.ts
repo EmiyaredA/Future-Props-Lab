@@ -89,6 +89,18 @@ test("builds, saves, checks, and plays a branching Galgame slice", async ({
   let projects: Array<Record<string, unknown>> = [];
   let storyRevision = 0;
   let projectAssets: Array<Record<string, unknown>> = [];
+  let includeOverviewLayoutFixtures = false;
+  const overviewLayoutFixtures = Array.from({ length: 30 }, (_, index) => ({
+    id: `overview-layout-${index}`,
+    display_name: `overview-layout-${String(index).padStart(2, "0")}.png`,
+    media_kind: "image",
+    mime_type: "image/png",
+    byte_size: 68,
+    revision: 0,
+    created_at: "2026-08-05T08:00:00Z",
+    updated_at: "2026-08-05T08:00:00Z",
+    orphaned: index % 5 === 0,
+  }));
   let document: Record<string, unknown> = {
     schemaVersion: "1.0",
     synopsis: "",
@@ -218,15 +230,19 @@ test("builds, saves, checks, and plays a branching Galgame slice", async ({
       return;
     }
     if (path.endsWith("/assets/package-manifest")) {
+      const sourceAssets = includeOverviewLayoutFixtures
+        ? [...projectAssets, ...overviewLayoutFixtures]
+        : projectAssets;
+      const packagedAssets = sourceAssets.filter((asset) => !asset.orphaned);
       await route.fulfill({
         contentType: "application/json",
         body: JSON.stringify({
           ready: true,
-          totalBytes: projectAssets.reduce(
+          totalBytes: packagedAssets.reduce(
             (sum, asset) => sum + Number(asset.byte_size ?? 0),
             0,
           ),
-          items: projectAssets.map((asset) => ({
+          items: packagedAssets.map((asset) => ({
             assetId: asset.id,
             virtualPath: `assets/${asset.display_name}`,
             byteSize: asset.byte_size,
@@ -238,8 +254,12 @@ test("builds, saves, checks, and plays a branching Galgame slice", async ({
       return;
     }
     if (path.endsWith("/assets/overview")) {
-      const items = projectAssets.map((asset) => {
+      const sourceAssets = includeOverviewLayoutFixtures
+        ? [...projectAssets, ...overviewLayoutFixtures]
+        : projectAssets;
+      const items = sourceAssets.map((asset) => {
         const audio = asset.media_kind === "audio";
+        const orphaned = Boolean(asset.orphaned);
         const category = audio
           ? "bgm"
           : String(asset.display_name).includes("research")
@@ -251,8 +271,8 @@ test("builds, saves, checks, and plays a branching Galgame slice", async ({
           virtualPath: `${category}/${asset.display_name}`,
           packagingPolicy: "auto",
           missing: false,
-          orphaned: false,
-          reference_count: 1,
+          orphaned,
+          reference_count: orphaned ? 0 : 1,
           references: [],
           transcriptRevision: 0,
           transcriptStatus: "pending",
@@ -262,15 +282,18 @@ test("builds, saves, checks, and plays a branching Galgame slice", async ({
         (sum, asset) => sum + Number(asset.byte_size ?? 0),
         0,
       );
+      const estimatedPackageBytes = items
+        .filter((asset) => !asset.orphaned)
+        .reduce((sum, asset) => sum + Number(asset.byte_size ?? 0), 0);
       await route.fulfill({
         contentType: "application/json",
         body: JSON.stringify({
           items,
           missing_items: [],
           totalBytes,
-          referencedCount: items.length,
-          orphanedCount: 0,
-          estimatedPackageBytes: totalBytes,
+          referencedCount: items.filter((asset) => !asset.orphaned).length,
+          orphanedCount: items.filter((asset) => asset.orphaned).length,
+          estimatedPackageBytes,
           largestAssetIds: items.map((asset) => asset.id),
           moduleHealth: { character: "ready", scene: "ready", bgm: "ready" },
         }),
@@ -431,6 +454,65 @@ test("builds, saves, checks, and plays a branching Galgame slice", async ({
   await expect(page).toHaveURL(/\/editor$/);
   await expect(page.locator(".workshop-sidebar")).toHaveCount(0);
   await expect(page.locator(".galgame-editor-grid")).toBeVisible();
+
+  includeOverviewLayoutFixtures = true;
+  await openAssetSection(page, "资源总览");
+  await expect(page.getByText(/共 30 项 · 6 项游离/)).toBeVisible();
+  const resourceResults = page.locator(".galgame-assets-results");
+  const resourceCards = resourceResults.locator(":scope > button");
+  await expect(resourceCards).toHaveCount(30);
+  const gridCardHeight = await resourceCards
+    .first()
+    .evaluate((element) => element.getBoundingClientRect().height);
+  const gridCardWidth = await resourceCards
+    .first()
+    .evaluate((element) => element.getBoundingClientRect().width);
+  expect(gridCardHeight).toBeGreaterThan(160);
+  expect(gridCardWidth).toBeLessThan(210);
+  await expect(page.getByLabel("卡片大小")).toHaveCount(0);
+  expect(
+    await resourceResults.evaluate(
+      (element) => element.scrollHeight > element.clientHeight,
+    ),
+  ).toBe(true);
+
+  const summary = page.getByRole("region", { name: "资源统计" });
+  const summaryDivider = page.getByRole("separator", {
+    name: "调整资源统计与资源列表高度",
+  });
+  const summaryBeforeResize = await summary.boundingBox();
+  const summaryDividerBounds = await summaryDivider.boundingBox();
+  expect(summaryBeforeResize).not.toBeNull();
+  expect(summaryDividerBounds).not.toBeNull();
+  await page.mouse.move(
+    summaryDividerBounds!.x + summaryDividerBounds!.width / 2,
+    summaryDividerBounds!.y + summaryDividerBounds!.height / 2,
+  );
+  await page.mouse.down();
+  await page.mouse.move(
+    summaryDividerBounds!.x + summaryDividerBounds!.width / 2,
+    summaryDividerBounds!.y + summaryDividerBounds!.height / 2 + 40,
+  );
+  await page.mouse.up();
+  const summaryAfterResize = await summary.boundingBox();
+  expect(summaryAfterResize?.height).toBeGreaterThan(
+    (summaryBeforeResize?.height ?? 0) + 30,
+  );
+  await summaryDivider.dblclick();
+
+  await page.getByRole("button", { name: "列表视图" }).click();
+  const listRowHeight = await resourceCards
+    .first()
+    .evaluate((element) => element.getBoundingClientRect().height);
+  expect(listRowHeight).toBeGreaterThanOrEqual(60);
+  await page
+    .getByRole("button", { name: /overview-layout-00.png，游离/ })
+    .click();
+  await expect(
+    page.getByRole("complementary", { name: "资源详情" }),
+  ).toContainText("overview-layout-00.png");
+  await page.getByRole("button", { name: "关闭资源详情" }).click();
+  includeOverviewLayoutFixtures = false;
 
   await openAssetSection(page, "角色");
   await expect(page.getByRole("button", { name: "位置与锚点" })).toBeVisible();

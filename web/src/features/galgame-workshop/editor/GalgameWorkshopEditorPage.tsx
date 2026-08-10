@@ -1358,7 +1358,7 @@ export function GalgameWorkshopEditorPage({
             />
             <span>
               <strong>{projectQuery.data?.title}</strong>
-              <small>Galgame Workshop · Story V2</small>
+              <small>Galgame Workshop · Story 1.3</small>
             </span>
           </div>
           <button

@@ -2131,7 +2131,19 @@ export const StoryPlayer = forwardRef<StoryPlayerHandle, StoryPlayerProps>(
                       zIndex: actor.transform.layer + 10,
                       opacity: actor.exiting ? 0 : actor.transform.opacity,
                       filter: `brightness(${actor.transform.brightness * focusMultiplier}) drop-shadow(0 6px 14px rgb(0 0 0 / 0.3))`,
-                      transform: `translate(-50%, -100%) scale(${actor.transform.scale}) scaleX(${actor.transform.flipX ? -1 : 1})`,
+                      transformOrigin:
+                        actor.transform.anchor === "center"
+                          ? "center"
+                          : actor.transform.anchor === "topLeft"
+                            ? "top left"
+                            : "bottom center",
+                      transform: `${
+                        actor.transform.anchor === "center"
+                          ? "translate(-50%, -50%)"
+                          : actor.transform.anchor === "topLeft"
+                            ? "translate(0, 0)"
+                            : "translate(-50%, -100%)"
+                      } scale(${actor.transform.scale}) scaleX(${actor.transform.flipX ? -1 : 1})`,
                       transitionDuration: `${actor.transition.durationMs}ms, ${actor.transition.durationMs}ms, ${actor.transition.durationMs}ms, ${stageStyle.focusTransitionMs}ms, ${actor.transition.durationMs}ms`,
                       animationDuration: spriteAnimation
                         ? `${spriteAnimation.durationMs}ms`

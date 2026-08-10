@@ -453,6 +453,66 @@ test("filters, summarizes, switches, and edits the aligned asset overview", asyn
     ),
   );
 
+  const workbench = document.querySelector<HTMLElement>(
+    ".galgame-assets-workbench",
+  )!;
+  const summary = screen.getByRole("region", { name: "资源统计" });
+  Object.defineProperty(workbench, "getBoundingClientRect", {
+    configurable: true,
+    value: () => ({
+      width: 1000,
+      height: 800,
+      top: 0,
+      right: 1000,
+      bottom: 800,
+      left: 0,
+      x: 0,
+      y: 0,
+      toJSON: () => ({}),
+    }),
+  });
+  Object.defineProperty(summary, "getBoundingClientRect", {
+    configurable: true,
+    value: () => ({
+      width: 1000,
+      height: 270,
+      top: 46,
+      right: 1000,
+      bottom: 316,
+      left: 0,
+      x: 0,
+      y: 46,
+      toJSON: () => ({}),
+    }),
+  });
+  const summaryDivider = screen.getByRole("separator", {
+    name: "调整资源统计与资源列表高度",
+  });
+  fireEvent.pointerDown(summaryDivider, {
+    button: 0,
+    clientY: 316,
+    pointerId: 3,
+  });
+  fireEvent.pointerMove(window, { clientY: 356, pointerId: 3 });
+  fireEvent.pointerUp(window, { clientY: 356, pointerId: 3 });
+  await waitFor(() =>
+    expect(workbench.style.getPropertyValue("--asset-summary-height")).toBe(
+      "310px",
+    ),
+  );
+  expect(
+    localStorage.getItem("future_props_galgame_asset_summary_height"),
+  ).toBe("310");
+  fireEvent.keyDown(summaryDivider, { key: "ArrowUp" });
+  expect(workbench.style.getPropertyValue("--asset-summary-height")).toBe(
+    "294px",
+  );
+  fireEvent.doubleClick(summaryDivider);
+  expect(workbench.style.getPropertyValue("--asset-summary-height")).toBe("");
+  expect(
+    localStorage.getItem("future_props_galgame_asset_summary_height"),
+  ).toBeNull();
+
   await user.click(screen.getByRole("button", { name: "收起资源统计" }));
   expect(
     screen.queryByRole("region", { name: "资源统计" }),
@@ -1194,7 +1254,16 @@ test("merges scenes and CGs into one searchable asset workspace", async () => {
           id: "scene-lab",
           name: "夜间研究所",
           description: "雨夜场景",
+          groupId: "group-city",
           layers: [],
+        },
+      ],
+      sceneGroups: [
+        {
+          id: "group-city",
+          name: "城市",
+          color: "#7586E5",
+          collapsed: false,
         },
       ],
       cgs: [
@@ -1220,16 +1289,31 @@ test("merges scenes and CGs into one searchable asset workspace", async () => {
   expect(
     within(assetNavigation).queryByRole("button", { name: "CG" }),
   ).not.toBeInTheDocument();
-  expect(screen.getByRole("button", { name: /场景 1/ })).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: /场景 0/ })).toBeInTheDocument();
   expect(screen.getByRole("button", { name: "剧情 CG" })).toBeInTheDocument();
+  const sceneItem = screen.getByRole("button", {
+    name: "图片 夜间研究所 0 层",
+  });
+  expect(sceneItem.closest(".galgame-visual-browser-item")).toHaveAttribute(
+    "draggable",
+    "true",
+  );
+  expect(screen.getByLabelText("场景名称")).toHaveValue("夜间研究所");
+  expect(screen.queryByLabelText("场景说明")).not.toBeInTheDocument();
+  expect(screen.queryByLabelText("场景分组")).not.toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "添加分组" })).toBeInTheDocument();
 
   await user.type(screen.getByLabelText("搜索场景和 CG"), "告白");
-  await user.click(screen.getByRole("button", { name: /雨夜告白/ }));
+  await user.click(
+    screen.getByRole("button", { name: "图片 雨夜告白 0 个差分" }),
+  );
   expect(screen.getByLabelText("CG 名称")).toHaveValue("雨夜告白");
   expect(screen.queryByRole("button", { name: "图层定位" })).toBeNull();
 
   await user.clear(screen.getByLabelText("搜索场景和 CG"));
-  await user.click(screen.getByRole("button", { name: /夜间研究所/ }));
+  await user.click(
+    screen.getByRole("button", { name: "图片 夜间研究所 0 层" }),
+  );
   await user.click(screen.getByRole("button", { name: /搜索台词/ }));
   const globalSearch = screen.getByRole("dialog", { name: "搜索项目内容" });
   await user.type(within(globalSearch).getByRole("textbox"), "雨夜告白");
@@ -1237,6 +1321,209 @@ test("merges scenes and CGs into one searchable asset workspace", async () => {
     within(globalSearch).getByRole("button", { name: /雨夜告白.*CG/ }),
   );
   expect(screen.getByLabelText("CG 名称")).toHaveValue("雨夜告白");
+});
+
+test("operates on scene and CG rows through item menus", async () => {
+  const user = userEvent.setup();
+  vi.mocked(getGalgameStoryDocument).mockResolvedValueOnce({
+    ...story,
+    document: {
+      ...story.document,
+      sceneGroups: [
+        {
+          id: "group-city",
+          name: "城市",
+          color: "#7586E5",
+          collapsed: false,
+        },
+        {
+          id: "group-suburb",
+          name: "郊区",
+          color: "#6EAF88",
+          collapsed: false,
+        },
+      ],
+      scenes: [
+        {
+          id: "scene-hall",
+          name: "大厅",
+          description: "入口",
+          layers: [
+            {
+              id: "layer-hall",
+              name: "大厅背景",
+              assetId: "asset-hall",
+              distance: 1,
+              offsetX: 0,
+              offsetY: 0,
+            },
+          ],
+        },
+        {
+          id: "scene-roof",
+          name: "天台",
+          description: "夜景",
+          groupId: "group-city",
+          layers: [],
+        },
+      ],
+      cgs: [
+        {
+          id: "cg-rain",
+          name: "雨夜 CG",
+          description: "关键画面",
+          variants: [
+            { id: "variant-rain", label: "默认", assetId: "asset-rain" },
+          ],
+          defaultVariantId: "variant-rain",
+        },
+      ],
+      chapters: [
+        {
+          ...story.document.chapters[0],
+          fragments: [
+            {
+              id: "main",
+              title: "main",
+              blocks: [
+                { id: "scene-block", type: "scene", sceneId: "scene-hall" },
+                {
+                  id: "cg-block",
+                  type: "showCg",
+                  cgId: "cg-rain",
+                  variantId: null,
+                  displayMode: "fullscreen",
+                  fit: "cover",
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    },
+  });
+  renderEditor();
+  await screen.findByText("纵向切片");
+  await openAssetSection(user, "场景");
+
+  const roofTrigger = screen.getByRole("button", {
+    name: "更多操作 天台",
+  });
+  await user.click(roofTrigger);
+  const roofMenu = screen.getByRole("menu", { name: "天台 操作" });
+  expect(screen.getByLabelText("场景名称")).toHaveValue("大厅");
+  expect(
+    within(roofMenu).getByRole("menuitem", { name: "移动到 城市" }),
+  ).toBeDisabled();
+  expect(
+    within(roofMenu).getByRole("menuitem", { name: "移动到 郊区" }),
+  ).toBeEnabled();
+  expect(
+    within(roofMenu).queryByRole("menuitem", { name: "移动到 CG" }),
+  ).not.toBeInTheDocument();
+  await user.keyboard("{Escape}");
+  expect(screen.queryByRole("menu", { name: "天台 操作" })).toBeNull();
+  expect(roofTrigger).toHaveFocus();
+
+  await user.click(roofTrigger);
+  await user.click(screen.getByLabelText("搜索场景和 CG"));
+  expect(screen.queryByRole("menu", { name: "天台 操作" })).toBeNull();
+
+  await user.click(roofTrigger);
+  await user.click(screen.getByRole("menuitem", { name: "打开场景" }));
+  expect(screen.getByLabelText("场景名称")).toHaveValue("天台");
+
+  await user.click(roofTrigger);
+  await user.click(screen.getByRole("menuitem", { name: "重命名" }));
+  const rename = screen.getByLabelText("重命名场景");
+  await user.clear(rename);
+  await user.type(rename, "  新天台  {Enter}");
+  await waitFor(
+    () => {
+      const saved = vi.mocked(putGalgameStoryDocument).mock.calls.at(-1)?.[1];
+      expect(
+        saved?.scenes?.find((scene) => scene.id === "scene-roof")?.name,
+      ).toBe("新天台");
+    },
+    { timeout: 2000 },
+  );
+
+  await user.click(screen.getByRole("button", { name: "更多操作 新天台" }));
+  await user.click(screen.getByRole("menuitem", { name: "重命名" }));
+  await user.clear(screen.getByLabelText("重命名场景"));
+  await user.keyboard("{Escape}");
+  expect(screen.queryByLabelText("重命名场景")).toBeNull();
+  expect(
+    screen.getByRole("button", { name: "更多操作 新天台" }),
+  ).toBeInTheDocument();
+
+  await user.click(screen.getByRole("button", { name: "更多操作 新天台" }));
+  await user.click(screen.getByRole("menuitem", { name: "重命名" }));
+  await user.clear(screen.getByLabelText("重命名场景"));
+  await user.click(screen.getByLabelText("搜索场景和 CG"));
+  expect(screen.getByRole("status")).toHaveTextContent("名称不能为空");
+
+  await user.click(screen.getByRole("button", { name: "更多操作 新天台" }));
+  await user.click(screen.getByRole("menuitem", { name: "移动到 郊区" }));
+  await waitFor(
+    () => {
+      const saved = vi.mocked(putGalgameStoryDocument).mock.calls.at(-1)?.[1];
+      expect(
+        saved?.scenes?.find((scene) => scene.id === "scene-roof")?.groupId,
+      ).toBe("group-suburb");
+    },
+    { timeout: 2000 },
+  );
+
+  await user.click(screen.getByRole("button", { name: "更多操作 大厅" }));
+  expect(screen.getByRole("menuitem", { name: "删除场景" })).toBeDisabled();
+  await user.click(screen.getByRole("menuitem", { name: "复制场景" }));
+  await waitFor(
+    () => {
+      const saved = vi.mocked(putGalgameStoryDocument).mock.calls.at(-1)?.[1];
+      const source = saved?.scenes?.find((scene) => scene.id === "scene-hall");
+      const copy = saved?.scenes?.find((scene) => scene.name === "大厅 副本");
+      expect(copy?.id).not.toBe(source?.id);
+      expect(copy?.layers?.[0]?.id).not.toBe(source?.layers?.[0]?.id);
+    },
+    { timeout: 2000 },
+  );
+  expect(screen.getByLabelText("场景名称")).toHaveValue("大厅 副本");
+
+  await user.click(screen.getByRole("button", { name: "更多操作 雨夜 CG" }));
+  const cgMenu = screen.getByRole("menu", { name: "雨夜 CG 操作" });
+  expect(
+    within(cgMenu).queryByRole("menuitem", { name: "移出分组" }),
+  ).not.toBeInTheDocument();
+  expect(
+    within(cgMenu).getByRole("menuitem", { name: "删除 CG" }),
+  ).toBeDisabled();
+  await user.click(within(cgMenu).getByRole("menuitem", { name: "复制 CG" }));
+  await waitFor(
+    () => {
+      const saved = vi.mocked(putGalgameStoryDocument).mock.calls.at(-1)?.[1];
+      const source = saved?.cgs?.find((cg) => cg.id === "cg-rain");
+      const copy = saved?.cgs?.find((cg) => cg.name === "雨夜 CG 副本");
+      expect(copy?.id).not.toBe(source?.id);
+      expect(copy?.variants?.[0]?.id).not.toBe(source?.variants?.[0]?.id);
+      expect(copy?.defaultVariantId).toBe(copy?.variants?.[0]?.id);
+    },
+    { timeout: 2000 },
+  );
+
+  await user.click(
+    screen.getByRole("button", { name: "更多操作 雨夜 CG 副本" }),
+  );
+  await user.click(screen.getByRole("menuitem", { name: "删除 CG" }));
+  await waitFor(
+    () =>
+      expect(
+        vi.mocked(putGalgameStoryDocument).mock.calls.at(-1)?.[1].cgs,
+      ).toHaveLength(1),
+    { timeout: 2000 },
+  );
+  expect(screen.getByLabelText("CG 名称")).toHaveValue("雨夜 CG");
+  expect(screen.queryByText("复制当前项")).not.toBeInTheDocument();
 });
 
 test("uploads video from the asset overview and inserts a selectable Video Block", async () => {
@@ -1343,7 +1630,7 @@ test("blocks deletion of characters and scenes that are still referenced", async
   expect(putGalgameStoryDocument).not.toHaveBeenCalled();
 });
 
-test("edits character stage settings from the global character workspace with ordered positions", async () => {
+test("edits independent two-dimensional character position presets", async () => {
   const user = userEvent.setup();
   vi.mocked(getGalgameStoryDocument).mockResolvedValueOnce({
     ...story,
@@ -1352,16 +1639,46 @@ test("edits character stage settings from the global character workspace with or
       settings: {
         canvas: { width: 1920, height: 1080 },
         characterStage: {
-          anchorX: 50,
-          anchorY: 100,
+          anchor: "center",
+          defaultPositionId: "position-center",
           defaultHeightPercent: 100,
-          positions: {
-            left: 10,
-            centerLeft: 30,
-            center: 50,
-            centerRight: 60,
-            right: 90,
-          },
+          positionPresets: [
+            {
+              id: "position-left",
+              name: "左",
+              x: 10,
+              y: 50,
+              builtinKey: "left",
+            },
+            {
+              id: "position-center-left",
+              name: "中左",
+              x: 30,
+              y: 50,
+              builtinKey: "centerLeft",
+            },
+            {
+              id: "position-center",
+              name: "中",
+              x: 50,
+              y: 50,
+              builtinKey: "center",
+            },
+            {
+              id: "position-center-right",
+              name: "中右",
+              x: 60,
+              y: 50,
+              builtinKey: "centerRight",
+            },
+            {
+              id: "position-right",
+              name: "右",
+              x: 90,
+              y: 50,
+              builtinKey: "right",
+            },
+          ],
         },
       },
       characters: [
@@ -1421,8 +1738,10 @@ test("edits character stage settings from the global character workspace with or
   await waitFor(
     () => {
       const saved = vi.mocked(putGalgameStoryDocument).mock.calls.at(-1)?.[1];
-      expect(saved?.settings?.characterStage?.positions?.center).toBe(45);
-      expect(saved?.settings?.characterStage?.anchorY).toBe(60);
+      const center = saved?.settings?.characterStage?.positionPresets?.find(
+        (preset) => preset.id === "position-center",
+      );
+      expect(center).toMatchObject({ x: 45, y: 60 });
     },
     { timeout: 2000 },
   );
@@ -1439,10 +1758,42 @@ test("edits character stage settings from the global character workspace with or
   await waitFor(
     () => {
       const saved = vi.mocked(putGalgameStoryDocument).mock.calls.at(-1)?.[1];
-      expect(saved?.settings?.characterStage?.positions?.center).toBe(59.5);
+      expect(
+        saved?.settings?.characterStage?.positionPresets?.find(
+          (preset) => preset.id === "position-center",
+        )?.x,
+      ).toBe(99);
     },
     { timeout: 2000 },
   );
+
+  await user.click(screen.getByRole("button", { name: "左上" }));
+  await waitFor(() => {
+    const saved = vi.mocked(putGalgameStoryDocument).mock.calls.at(-1)?.[1];
+    expect(saved?.settings?.characterStage?.anchor).toBe("topLeft");
+  });
+
+  await user.click(screen.getByRole("button", { name: "新增" }));
+  await user.type(screen.getByLabelText("新增位置预设名称"), "近景");
+  await user.keyboard("{Enter}");
+  const customPosition = screen.getByRole("button", { name: /近景 50，50/ });
+  expect(customPosition).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "删除位置预设" })).toBeEnabled();
+
+  await user.click(customPosition);
+  await user.keyboard("{F2}");
+  const presetName = screen.getByLabelText("位置预设名称");
+  await user.clear(presetName);
+  await user.type(presetName, "近景改名{Enter}");
+  expect(
+    screen.getByRole("button", { name: /近景改名 50，50/ }),
+  ).toBeInTheDocument();
+
+  await user.click(screen.getByRole("button", { name: /默认位置/ }));
+  await user.click(screen.getByRole("button", { name: "删除位置预设" }));
+  expect(
+    screen.queryByRole("button", { name: /近景改名/ }),
+  ).not.toBeInTheDocument();
 
   await user.click(screen.getByRole("button", { name: "默认尺寸" }));
   const height = screen.getByRole("spinbutton", {
@@ -1456,6 +1807,85 @@ test("edits character stage settings from the global character workspace with or
     },
     { timeout: 2000 },
   );
+}, 10_000);
+
+test("shows the selected portrait's real stage footprint for each anchor", async () => {
+  const user = userEvent.setup();
+  const portraitStory = structuredClone(story) as GalgameStoryDocument;
+  portraitStory.document.assets = [
+    {
+      id: "portrait-default",
+      type: "image",
+      role: "characterPortrait",
+      fileId: "file-portrait",
+      status: "ready",
+    },
+  ];
+  portraitStory.document.characters = [
+    {
+      id: "character-one",
+      name: "调查员",
+      description: "",
+      expressions: [
+        {
+          id: "expression-default",
+          label: "默认",
+          assetId: "portrait-default",
+          heightPercent: 80,
+        },
+      ],
+      defaultExpressionId: "expression-default",
+    },
+  ];
+  vi.mocked(getGalgameStoryDocument).mockResolvedValueOnce(portraitStory);
+  vi.mocked(getGalgameProjectAssets).mockResolvedValue({
+    items: [
+      {
+        id: "file-portrait",
+        display_name: "portrait.png",
+        media_kind: "image",
+        mime_type: "image/png",
+        byte_size: 1024,
+        revision: 0,
+        created_at: "2026-08-10T00:00:00Z",
+        updated_at: "2026-08-10T00:00:00Z",
+        width: 400,
+        height: 800,
+      } as GalgameProjectAsset,
+    ],
+  });
+
+  const { container } = renderEditor();
+  await screen.findByText("纵向切片");
+  await openAssetSection(user, "角色");
+  await user.click(screen.getByRole("button", { name: "位置与锚点" }));
+
+  await waitFor(() => {
+    const footprint = container.querySelector<HTMLElement>(
+      ".galgame-character-position-footprint",
+    );
+    expect(footprint).toHaveClass("is-center");
+    expect(footprint).toHaveStyle({ width: "22.5%", height: "80%" });
+    expect(footprint).toHaveAttribute(
+      "title",
+      "原图 400 × 800px · 表情高度 80%",
+    );
+  });
+
+  const preview = container.querySelector<HTMLElement>(
+    ".galgame-character-preview-actor",
+  );
+  expect(preview).toHaveStyle({
+    width: "22.5%",
+    height: "80%",
+    transform: "translate(-50%, -50%)",
+  });
+
+  await user.click(screen.getByRole("button", { name: "左上" }));
+  expect(
+    container.querySelector(".galgame-character-position-footprint"),
+  ).toHaveClass("is-topLeft");
+  expect(preview).toHaveStyle({ transform: "translate(0, 0)" });
 });
 
 test("separates character attribute templates, values, preview, and resource references", async () => {
@@ -2335,6 +2765,7 @@ test("keeps character events on the dialogue lane until performance details open
   const transform = {
     x: 50,
     y: 100,
+    anchor: "bottomCenter" as const,
     scale: 1,
     brightness: 1,
     opacity: 1,
@@ -2453,6 +2884,7 @@ test("shows attached character direction on dialogue and reattaches independent 
   const transform = {
     x: 50,
     y: 100,
+    anchor: "bottomCenter" as const,
     scale: 1,
     brightness: 1,
     opacity: 1,

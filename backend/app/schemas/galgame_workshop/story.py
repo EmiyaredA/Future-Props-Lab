@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field, field_validator, model_validator
 
 from app.schemas.galgame_workshop.base import _clean_title
 from app.schemas.galgame_workshop.blocks import *  # noqa: F403
+from app.schemas.galgame_workshop.stage_settings import GalgameStorySettings
 
 
 class GalgameStoryFragmentTimeline(GalgameStoryModel):
@@ -52,7 +53,7 @@ class GalgameStoryChapter(GalgameStoryModel):
 
 
 class GalgameStoryProject(GalgameStoryModel):
-    schema_version: Literal["1.2"] = Field(alias="schemaVersion")
+    schema_version: Literal["1.3"] = Field(alias="schemaVersion")
     synopsis: str = Field(default="", max_length=10_000)
     entry_chapter_id: str | None = Field(
         default=None, alias="entryChapterId", pattern=STABLE_ID_PATTERN
@@ -79,8 +80,8 @@ class GalgameStoryProject(GalgameStoryModel):
             return value
         migrated = dict(value)
         source_version = migrated.get("schemaVersion")
-        if source_version in {None, "1.0", "1.1"}:
-            migrated["schemaVersion"] = "1.2"
+        if source_version in {None, "1.0", "1.1", "1.2"}:
+            migrated["schemaVersion"] = "1.3"
         chapters = [dict(chapter) for chapter in migrated.get("chapters", [])]
         for chapter in chapters:
             chapter.setdefault("disabled", False)
@@ -113,6 +114,32 @@ class GalgameStoryProject(GalgameStoryModel):
         if legacy_scale is not None:
             character_stage.setdefault("legacyDefaultScale", legacy_scale)
         character_stage.setdefault("defaultHeightPercent", 100)
+        if "positionPresets" not in character_stage:
+            has_legacy_positions = any(
+                key in character_stage for key in ("positions", "anchorX", "anchorY")
+            )
+            legacy_positions = dict(character_stage.pop("positions", {}) or {})
+            legacy_y = character_stage.pop("anchorY", 100 if has_legacy_positions else 50)
+            character_stage.pop("anchorX", None)
+            position_defaults = (
+                ("position-left", "左", "left", 25),
+                ("position-center-left", "中左", "centerLeft", 37.5),
+                ("position-center", "中", "center", 50),
+                ("position-center-right", "中右", "centerRight", 62.5),
+                ("position-right", "右", "right", 75),
+            )
+            character_stage["positionPresets"] = [
+                {
+                    "id": preset_id,
+                    "name": name,
+                    "x": legacy_positions.get(key, default_x),
+                    "y": legacy_y,
+                    "builtinKey": key,
+                }
+                for preset_id, name, key, default_x in position_defaults
+            ]
+        character_stage.setdefault("defaultPositionId", "position-center")
+        character_stage.setdefault("anchor", "center")
         settings["characterStage"] = character_stage
         migrated["settings"] = settings
 

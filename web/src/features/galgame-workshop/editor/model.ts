@@ -71,19 +71,51 @@ export const DEFAULT_SYSTEM_MESSAGE_PRESENTATION = {
   customStyles: [],
 };
 
+export const DEFAULT_CHARACTER_POSITION_PRESETS = [
+  {
+    id: "position-left",
+    name: "左",
+    x: 25,
+    y: 50,
+    builtinKey: "left" as const,
+  },
+  {
+    id: "position-center-left",
+    name: "中左",
+    x: 37.5,
+    y: 50,
+    builtinKey: "centerLeft" as const,
+  },
+  {
+    id: "position-center",
+    name: "中",
+    x: 50,
+    y: 50,
+    builtinKey: "center" as const,
+  },
+  {
+    id: "position-center-right",
+    name: "中右",
+    x: 62.5,
+    y: 50,
+    builtinKey: "centerRight" as const,
+  },
+  {
+    id: "position-right",
+    name: "右",
+    x: 75,
+    y: 50,
+    builtinKey: "right" as const,
+  },
+];
+
 export const DEFAULT_STORY_SETTINGS = {
   canvas: { width: 1920, height: 1080 },
   characterStage: {
-    anchorX: 50,
-    anchorY: 100,
+    anchor: "center" as const,
+    defaultPositionId: "position-center",
     defaultHeightPercent: 100,
-    positions: {
-      left: 15,
-      centerLeft: 32.5,
-      center: 50,
-      centerRight: 67.5,
-      right: 85,
-    },
+    positionPresets: DEFAULT_CHARACTER_POSITION_PRESETS,
   },
 } satisfies NonNullable<GalgameStoryProject["settings"]>;
 
@@ -96,7 +128,7 @@ export function completeStoryDocument(
 ): GalgameStoryProject {
   return {
     ...document,
-    schemaVersion: "1.2",
+    schemaVersion: "1.3",
     entryChapterId:
       document.entryChapterId ??
       [...(document.chapters ?? [])].sort((a, b) => a.order - b.order)[0]?.id ??
@@ -110,10 +142,10 @@ export function completeStoryDocument(
       characterStage: {
         ...DEFAULT_STORY_SETTINGS.characterStage,
         ...document.settings?.characterStage,
-        positions: {
-          ...DEFAULT_STORY_SETTINGS.characterStage.positions,
-          ...document.settings?.characterStage?.positions,
-        },
+        positionPresets: document.settings?.characterStage?.positionPresets
+          ?.length
+          ? document.settings.characterStage.positionPresets
+          : DEFAULT_CHARACTER_POSITION_PRESETS,
       },
     },
     presentation: {
@@ -301,6 +333,14 @@ export function makeBlock(
     };
   if (kind === "showCharacter") {
     if (!characters[0]) return undefined;
+    const stageSettings = {
+      ...DEFAULT_STORY_SETTINGS.characterStage,
+      ...document.settings?.characterStage,
+    };
+    const defaultPosition =
+      stageSettings.positionPresets.find(
+        (preset) => preset.id === stageSettings.defaultPositionId,
+      ) ?? stageSettings.positionPresets[0];
     return {
       id: stableId(),
       type: "showCharacter",
@@ -308,12 +348,9 @@ export function makeBlock(
       expressionId: null,
       transform: {
         ...DEFAULT_CHARACTER_TRANSFORM,
-        x:
-          document.settings?.characterStage?.positions?.center ??
-          DEFAULT_STORY_SETTINGS.characterStage.positions.center,
-        y:
-          document.settings?.characterStage?.anchorY ??
-          DEFAULT_STORY_SETTINGS.characterStage.anchorY,
+        x: defaultPosition.x,
+        y: defaultPosition.y,
+        anchor: stageSettings.anchor,
         scale: document.settings?.characterStage?.legacyDefaultScale ?? 1,
       },
       transition: DEFAULT_CHARACTER_TRANSITION,

@@ -797,6 +797,8 @@
 }
 
 .galgame-assets-dashboard {
+  --asset-card-width: 180px;
+
   position: relative;
   display: grid;
   min-width: 0;
@@ -1053,9 +1055,17 @@
   display: grid;
   min-width: 0;
   min-height: 0;
-  grid-template-rows: auto auto minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
   overflow: hidden;
   background: var(--gal-surface);
+}
+
+.galgame-assets-workbench.summary-open {
+  grid-template-rows: auto auto 8px minmax(0, 1fr);
+}
+
+.galgame-assets-workbench.summary-open.summary-sized {
+  grid-template-rows: auto var(--asset-summary-height) 8px minmax(0, 1fr);
 }
 
 .galgame-assets-toolbar {
@@ -1095,18 +1105,6 @@
   box-shadow: 0 1px 4px rgb(20 30 45 / 0.12);
 }
 
-.galgame-assets-zoom {
-  display: flex;
-  width: 100px;
-  align-items: center;
-  padding: 0 8px;
-}
-
-.galgame-assets-zoom input {
-  width: 100%;
-  accent-color: var(--gal-accent);
-}
-
 .galgame-assets-filter-open,
 .galgame-assets-filter-close {
   display: none !important;
@@ -1114,12 +1112,46 @@
 
 .galgame-assets-summary {
   display: grid;
-  min-height: 270px;
+  min-height: 0;
   grid-template-columns:
     minmax(330px, 1.65fr) minmax(230px, 1fr) minmax(170px, 0.72fr)
     minmax(250px, 1.05fr);
-  border-bottom: 1px solid var(--gal-line);
+  overflow: auto;
   background: var(--gal-surface);
+}
+
+.galgame-assets-summary-resizer {
+  position: relative;
+  z-index: 4;
+  min-height: 8px;
+  border-block: 1px solid var(--gal-line);
+  outline: 0;
+  background: var(--gal-panel);
+  cursor: row-resize;
+  touch-action: none;
+}
+
+.galgame-assets-summary-resizer::after {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 42px;
+  height: 3px;
+  border-radius: 999px;
+  background: var(--gal-line-strong);
+  content: "";
+  transform: translate(-50%, -50%);
+}
+
+.galgame-assets-summary-resizer:hover::after,
+.galgame-assets-summary-resizer:focus-visible::after {
+  background: var(--gal-accent);
+}
+
+body.galgame-assets-summary-resizing,
+body.galgame-assets-summary-resizing * {
+  cursor: row-resize !important;
+  user-select: none !important;
 }
 
 .galgame-assets-summary > article {
@@ -1431,6 +1463,7 @@
     auto-fill,
     minmax(min(100%, var(--asset-card-width)), 1fr)
   );
+  grid-auto-rows: max-content;
   align-content: start;
   gap: 14px;
   padding: 16px 18px 28px;

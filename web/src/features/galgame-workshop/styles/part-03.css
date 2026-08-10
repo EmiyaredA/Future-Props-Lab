@@ -356,6 +356,15 @@
 }
 
 @media (max-width: 900px) {
+  .galgame-assets-workbench.summary-open,
+  .galgame-assets-workbench.summary-open.summary-sized {
+    grid-template-rows: auto auto minmax(0, 1fr);
+  }
+
+  .galgame-assets-summary-resizer {
+    display: none;
+  }
+
   .galgame-assets-toolbar {
     align-items: flex-start;
   }
@@ -364,8 +373,7 @@
     align-items: center;
   }
 
-  .galgame-assets-toolbar > div:first-child > span,
-  .galgame-assets-zoom {
+  .galgame-assets-toolbar > div:first-child > span {
     display: none;
   }
 
@@ -381,7 +389,6 @@
   }
 
   .galgame-assets-results {
-    grid-template-columns: repeat(auto-fill, minmax(min(100%, 210px), 1fr));
     padding: 12px;
   }
 

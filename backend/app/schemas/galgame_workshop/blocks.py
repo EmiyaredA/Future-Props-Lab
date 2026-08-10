@@ -66,6 +66,7 @@ class GalgameStoryHideCgBlock(GalgameStoryBlockBase):
 class GalgameStoryCharacterTransform(GalgameStoryModel):
     x: float = Field(default=50, ge=-1000, le=1000)
     y: float = Field(default=100, ge=-1000, le=1000)
+    anchor: Literal["center", "topLeft", "bottomCenter"] = "bottomCenter"
     scale: float = Field(default=1, ge=0.25, le=3)
     brightness: float = Field(default=1, ge=0, le=2)
     opacity: float = Field(default=1, ge=0, le=1)

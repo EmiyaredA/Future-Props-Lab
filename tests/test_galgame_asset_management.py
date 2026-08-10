@@ -117,7 +117,7 @@ def test_story_11_multibackground_scene_splits_deterministically() -> None:
     first = GalgameStoryProject.model_validate(deepcopy(source))
     second = GalgameStoryProject.model_validate(deepcopy(source))
 
-    assert first.schema_version == "1.2"
+    assert first.schema_version == "1.3"
     assert first.scenes[0].id == "room"
     assert first.scenes[0].layers[0].id == "day"
     assert first.scenes[1].id == second.scenes[1].id

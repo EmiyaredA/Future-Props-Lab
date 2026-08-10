@@ -6,7 +6,7 @@ import {
   type CSSProperties,
   type PointerEvent as ReactPointerEvent,
 } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Check,
   ChevronRight,
@@ -14,6 +14,7 @@ import {
   EyeOff,
   FileImage,
   FolderOpen,
+  GripVertical,
   ImagePlus,
   LocateFixed,
   Maximize2,
@@ -22,6 +23,7 @@ import {
   RotateCcw,
   Search,
   SlidersHorizontal,
+  Star,
   Trash2,
   Upload,
   UserRound,
@@ -29,15 +31,20 @@ import {
 } from "lucide-react";
 import {
   batchUploadGalgameProjectAssets,
+  getGalgameProjectAssets,
   previewGalgamePortraitUpgrade,
   uploadGalgameProjectAsset,
   type GalgameStoryCharacter,
   type GalgameStoryCharacterExpression,
   type GalgameStoryProject,
+  type GalgameStoryPositionPreset,
   type GalgameStoryAudioAsset,
 } from "@features/galgame-workshop/api";
 import { dialogueSpeakerIds } from "@features/galgame-workshop/editor/dialogue";
-import { stableId } from "@features/galgame-workshop/editor/model";
+import {
+  DEFAULT_CHARACTER_POSITION_PRESETS,
+  stableId,
+} from "@features/galgame-workshop/editor/model";
 import {
   StoryImagePicker,
   type StoryImagePickerState,
@@ -65,36 +72,11 @@ type CharacterWorkspaceMode = "character" | "positions" | "size" | "templates";
 
 type CharacterReferenceTab = "preview" | "references";
 
-type CharacterPositionKey =
-  "left" | "centerLeft" | "center" | "centerRight" | "right";
-
-const CHARACTER_POSITION_KEYS: CharacterPositionKey[] = [
-  "left",
-  "centerLeft",
-  "center",
-  "centerRight",
-  "right",
-];
-
-const CHARACTER_POSITION_LABELS: Record<CharacterPositionKey, string> = {
-  left: "左",
-  centerLeft: "中左",
-  center: "中",
-  centerRight: "中右",
-  right: "右",
-};
-
 const DEFAULT_CHARACTER_STAGE = {
-  anchorX: 50,
-  anchorY: 100,
+  anchor: "center" as const,
+  defaultPositionId: "position-center",
   defaultHeightPercent: 100,
-  positions: {
-    left: 15,
-    centerLeft: 32.5,
-    center: 50,
-    centerRight: 67.5,
-    right: 85,
-  },
+  positionPresets: DEFAULT_CHARACTER_POSITION_PRESETS,
 };
 
 const CHARACTER_PALETTE = [
@@ -227,14 +209,23 @@ export function CharacterWorkspace({
   const [previewBackgroundMode, setPreviewBackgroundMode] = useState<
     "scene" | "dark" | "light" | "checkerboard"
   >("scene");
-  const [selectedStagePosition, setSelectedStagePosition] =
-    useState<CharacterPositionKey>("center");
+  const [selectedStagePositionId, setSelectedStagePositionId] =
+    useState("position-center");
   const [previewSceneId, setPreviewSceneId] = useState(
     document.scenes?.[0]?.id ?? "",
   );
-  const [previewPosition, setPreviewPosition] = useState<
-    "left" | "centerLeft" | "center" | "centerRight" | "right"
-  >("center");
+  const [previewPositionId, setPreviewPositionId] = useState("position-center");
+  const [addingPositionPreset, setAddingPositionPreset] = useState(false);
+  const [editingPositionPresetId, setEditingPositionPresetId] =
+    useState<string>();
+  const [positionNameDraft, setPositionNameDraft] = useState("");
+  const [draggedPositionPresetId, setDraggedPositionPresetId] =
+    useState<string>();
+  const [naturalPortraitSize, setNaturalPortraitSize] = useState<{
+    fileId: string;
+    width: number;
+    height: number;
+  }>();
   const [picker, setPicker] = useState<StoryImagePickerState>();
   const [uploadError, setUploadError] = useState("");
   const portraitPreview = useMutation({
@@ -243,6 +234,10 @@ export function CharacterWorkspace({
       onNotice(
         caught instanceof Error ? caught.message : "无法生成立绘尺寸预览",
       ),
+  });
+  const projectAssetsQuery = useQuery({
+    queryKey: ["galgame-project-assets", projectId, ""],
+    queryFn: () => getGalgameProjectAssets(projectId),
   });
   const [voicePickerOpen, setVoicePickerOpen] = useState(false);
   const [voicePickerSource, setVoicePickerSource] =
@@ -693,10 +688,9 @@ export function CharacterWorkspace({
   const stageSettings = {
     ...DEFAULT_CHARACTER_STAGE,
     ...document.settings?.characterStage,
-    positions: {
-      ...DEFAULT_CHARACTER_STAGE.positions,
-      ...document.settings?.characterStage?.positions,
-    },
+    positionPresets: document.settings?.characterStage?.positionPresets?.length
+      ? document.settings.characterStage.positionPresets
+      : DEFAULT_CHARACTER_POSITION_PRESETS.map((preset) => ({ ...preset })),
   };
   const updateStageSettings = (next: typeof stageSettings) =>
     onDocument({
@@ -706,45 +700,42 @@ export function CharacterWorkspace({
         characterStage: next,
       },
     });
+  const selectedStagePosition =
+    stageSettings.positionPresets.find(
+      (preset) => preset.id === selectedStagePositionId,
+    ) ?? stageSettings.positionPresets[0];
+  const previewPosition =
+    stageSettings.positionPresets.find(
+      (preset) => preset.id === previewPositionId,
+    ) ?? selectedStagePosition;
+
+  useEffect(() => {
+    if (!selectedStagePosition) return;
+    if (selectedStagePosition.id !== selectedStagePositionId)
+      setSelectedStagePositionId(selectedStagePosition.id);
+  }, [selectedStagePosition, selectedStagePositionId]);
+
+  useEffect(() => {
+    if (!previewPosition) return;
+    if (previewPosition.id !== previewPositionId)
+      setPreviewPositionId(previewPosition.id);
+  }, [previewPosition, previewPositionId]);
+
   const updateStagePosition = (
-    key: CharacterPositionKey,
-    requested: number,
-  ) => {
-    const index = CHARACTER_POSITION_KEYS.indexOf(key);
-    const lower =
-      index === 0
-        ? 0
-        : stageSettings.positions[CHARACTER_POSITION_KEYS[index - 1]] + 0.5;
-    const upper =
-      index === CHARACTER_POSITION_KEYS.length - 1
-        ? 100
-        : stageSettings.positions[CHARACTER_POSITION_KEYS[index + 1]] - 0.5;
-    const value = Math.min(upper, Math.max(lower, requested));
+    presetId: string,
+    patch: Partial<Pick<GalgameStoryPositionPreset, "name" | "x" | "y">>,
+  ) =>
     updateStageSettings({
       ...stageSettings,
-      positions: { ...stageSettings.positions, [key]: value },
+      positionPresets: stageSettings.positionPresets.map((preset) =>
+        preset.id === presetId ? { ...preset, ...patch } : preset,
+      ),
     });
-  };
   const updateStageCoordinates = (requestedX: number, requestedY: number) => {
-    const index = CHARACTER_POSITION_KEYS.indexOf(selectedStagePosition);
-    const lower =
-      index === 0
-        ? 0
-        : stageSettings.positions[CHARACTER_POSITION_KEYS[index - 1]] + 0.5;
-    const upper =
-      index === CHARACTER_POSITION_KEYS.length - 1
-        ? 100
-        : stageSettings.positions[CHARACTER_POSITION_KEYS[index + 1]] - 0.5;
-    updateStageSettings({
-      ...stageSettings,
-      anchorY: Math.min(100, Math.max(0, Number(requestedY.toFixed(1)))),
-      positions: {
-        ...stageSettings.positions,
-        [selectedStagePosition]: Math.min(
-          upper,
-          Math.max(lower, Number(requestedX.toFixed(1))),
-        ),
-      },
+    if (!selectedStagePosition) return;
+    updateStagePosition(selectedStagePosition.id, {
+      x: Math.min(100, Math.max(0, Number(requestedX.toFixed(1)))),
+      y: Math.min(100, Math.max(0, Number(requestedY.toFixed(1)))),
     });
   };
   const updateStagePoint = (event: ReactPointerEvent<HTMLDivElement>) => {
@@ -755,43 +746,283 @@ export function CharacterWorkspace({
       ((event.clientY - rect.top) / rect.height) * 100,
     );
   };
-  const previewX = stageSettings.positions[previewPosition];
+  const moveStagePosition = (sourceId: string, targetId: string) => {
+    if (sourceId === targetId) return;
+    const sourceIndex = stageSettings.positionPresets.findIndex(
+      (preset) => preset.id === sourceId,
+    );
+    const targetIndex = stageSettings.positionPresets.findIndex(
+      (preset) => preset.id === targetId,
+    );
+    if (sourceIndex < 0 || targetIndex < 0) return;
+    const positionPresets = [...stageSettings.positionPresets];
+    const [moved] = positionPresets.splice(sourceIndex, 1);
+    positionPresets.splice(targetIndex, 0, moved);
+    updateStageSettings({ ...stageSettings, positionPresets });
+  };
+  const submitPositionName = (presetId?: string) => {
+    const name = positionNameDraft.trim();
+    if (!name) {
+      onNotice("位置预设名称不能为空。");
+      return;
+    }
+    if (
+      stageSettings.positionPresets.some(
+        (preset) =>
+          preset.id !== presetId &&
+          preset.name.toLocaleLowerCase("zh-CN") ===
+            name.toLocaleLowerCase("zh-CN"),
+      )
+    ) {
+      onNotice("位置预设名称不能重复。");
+      return;
+    }
+    if (presetId) {
+      updateStagePosition(presetId, { name });
+      setEditingPositionPresetId(undefined);
+    } else {
+      if (stageSettings.positionPresets.length >= 20) {
+        onNotice("位置预设最多可创建 20 个。");
+        return;
+      }
+      const id = stableId();
+      updateStageSettings({
+        ...stageSettings,
+        positionPresets: [
+          ...stageSettings.positionPresets,
+          { id, name, x: 50, y: 50 },
+        ],
+      });
+      setSelectedStagePositionId(id);
+      setPreviewPositionId(id);
+      setAddingPositionPreset(false);
+    }
+    setPositionNameDraft("");
+  };
+  const deleteSelectedStagePosition = () => {
+    if (!selectedStagePosition || selectedStagePosition.builtinKey) return;
+    const positionPresets = stageSettings.positionPresets.filter(
+      (preset) => preset.id !== selectedStagePosition.id,
+    );
+    const fallback =
+      positionPresets.find(
+        (preset) => preset.id === stageSettings.defaultPositionId,
+      ) ?? positionPresets[0];
+    updateStageSettings({
+      ...stageSettings,
+      positionPresets,
+      defaultPositionId:
+        stageSettings.defaultPositionId === selectedStagePosition.id
+          ? fallback.id
+          : stageSettings.defaultPositionId,
+    });
+    setSelectedStagePositionId(fallback.id);
+    if (previewPositionId === selectedStagePosition.id)
+      setPreviewPositionId(fallback.id);
+  };
+  const resetStagePositions = () => {
+    const hasCustom = stageSettings.positionPresets.some(
+      (preset) => !preset.builtinKey,
+    );
+    if (
+      hasCustom &&
+      !window.confirm("恢复默认会删除所有自定义位置预设，是否继续？")
+    )
+      return;
+    updateStageSettings({
+      ...stageSettings,
+      anchor: "center",
+      defaultPositionId: "position-center",
+      positionPresets: DEFAULT_CHARACTER_POSITION_PRESETS.map((preset) => ({
+        ...preset,
+      })),
+    });
+    setSelectedStagePositionId("position-center");
+    setPreviewPositionId("position-center");
+  };
+
+  const portraitFileId = previewExpressionAsset?.fileId;
+  const portraitMetadata = projectAssetsQuery.data?.items.find(
+    (asset) => asset.id === portraitFileId,
+  );
+  const matchingNaturalPortraitSize =
+    naturalPortraitSize?.fileId === portraitFileId
+      ? naturalPortraitSize
+      : undefined;
+  const portraitWidth =
+    portraitMetadata?.width ?? matchingNaturalPortraitSize?.width;
+  const portraitHeight =
+    portraitMetadata?.height ?? matchingNaturalPortraitSize?.height;
+  const effectivePortraitHeight =
+    previewExpression?.heightPercent ??
+    selectedCharacter?.portraitHeightPercent ??
+    stageSettings.defaultHeightPercent;
+  const canvasWidth = document.settings?.canvas?.width ?? 1920;
+  const canvasHeight = document.settings?.canvas?.height ?? 1080;
+  const hasPortraitDimensions = Boolean(portraitWidth && portraitHeight);
+  const footprintHeight = hasPortraitDimensions ? effectivePortraitHeight : 30;
+  const footprintWidth =
+    portraitWidth && portraitHeight
+      ? effectivePortraitHeight *
+        (portraitWidth / portraitHeight) *
+        (canvasHeight / canvasWidth)
+      : 30;
+  const footprintSource = previewExpression?.heightPercent
+    ? "表情高度"
+    : selectedCharacter?.portraitHeightPercent
+      ? "角色立绘高度"
+      : "全局默认高度";
+  const footprintTitle = hasPortraitDimensions
+    ? `原图 ${portraitWidth} × ${portraitHeight}px · ${footprintSource} ${effectivePortraitHeight}%`
+    : "当前素材缺少可用的图片尺寸元数据";
 
   const positionWorkspace = (
     <div className="galgame-character-global-workspace">
       <header>
         <span>
+          <LocateFixed aria-hidden />
           <strong>位置预设</strong>
-          <em>5</em>
+          <em>{stageSettings.positionPresets.length}</em>
         </span>
-        <button
-          type="button"
-          onClick={() =>
-            updateStageSettings({
-              ...stageSettings,
-              anchorX: DEFAULT_CHARACTER_STAGE.anchorX,
-              anchorY: DEFAULT_CHARACTER_STAGE.anchorY,
-              positions: { ...DEFAULT_CHARACTER_STAGE.positions },
-            })
-          }
-        >
-          <RotateCcw aria-hidden /> 恢复默认
-        </button>
+        <div>
+          <button type="button" className="reset" onClick={resetStagePositions}>
+            <RotateCcw aria-hidden /> 恢复默认
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setAddingPositionPreset(true);
+              setEditingPositionPresetId(undefined);
+              setPositionNameDraft("");
+            }}
+            disabled={stageSettings.positionPresets.length >= 20}
+          >
+            <Plus aria-hidden /> 新增
+          </button>
+          <button
+            type="button"
+            aria-label="删除位置预设"
+            onClick={deleteSelectedStagePosition}
+            disabled={
+              !selectedStagePosition ||
+              Boolean(selectedStagePosition.builtinKey)
+            }
+          >
+            <Trash2 aria-hidden />
+          </button>
+        </div>
       </header>
       <div className="galgame-character-position-presets">
-        {CHARACTER_POSITION_KEYS.map((key) => (
-          <button
-            key={key}
-            type="button"
-            className={selectedStagePosition === key ? "active" : ""}
-            onClick={() => setSelectedStagePosition(key)}
+        {stageSettings.positionPresets.map((preset) => (
+          <div
+            key={preset.id}
+            className={selectedStagePosition?.id === preset.id ? "active" : ""}
+            onDragOver={(event) => event.preventDefault()}
+            onDrop={() => {
+              if (draggedPositionPresetId)
+                moveStagePosition(draggedPositionPresetId, preset.id);
+              setDraggedPositionPresetId(undefined);
+            }}
           >
-            <strong>{CHARACTER_POSITION_LABELS[key]}</strong>
-            <small>
-              {stageSettings.positions[key]}，{stageSettings.anchorY}
-            </small>
-          </button>
+            <button
+              type="button"
+              className="galgame-character-position-grip"
+              aria-label={`移动位置预设 ${preset.name}`}
+              draggable
+              onDragStart={() => setDraggedPositionPresetId(preset.id)}
+              onDragEnd={() => setDraggedPositionPresetId(undefined)}
+              onKeyDown={(event) => {
+                const index = stageSettings.positionPresets.findIndex(
+                  (item) => item.id === preset.id,
+                );
+                const targetIndex =
+                  event.key === "ArrowLeft"
+                    ? index - 1
+                    : event.key === "ArrowRight"
+                      ? index + 1
+                      : -1;
+                const target = stageSettings.positionPresets[targetIndex];
+                if (!target) return;
+                event.preventDefault();
+                moveStagePosition(preset.id, target.id);
+              }}
+            >
+              <GripVertical aria-hidden />
+            </button>
+            {editingPositionPresetId === preset.id ? (
+              <input
+                aria-label="位置预设名称"
+                autoFocus
+                value={positionNameDraft}
+                maxLength={40}
+                onChange={(event) => setPositionNameDraft(event.target.value)}
+                onBlur={() => submitPositionName(preset.id)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") submitPositionName(preset.id);
+                  if (event.key === "Escape") {
+                    setEditingPositionPresetId(undefined);
+                    setPositionNameDraft("");
+                  }
+                }}
+              />
+            ) : (
+              <button
+                type="button"
+                className="galgame-character-position-select"
+                onClick={() => {
+                  setSelectedStagePositionId(preset.id);
+                  setPreviewPositionId(preset.id);
+                }}
+                onDoubleClick={() => {
+                  if (preset.builtinKey) return;
+                  setEditingPositionPresetId(preset.id);
+                  setPositionNameDraft(preset.name);
+                }}
+                onKeyDown={(event) => {
+                  if (event.key !== "F2" || preset.builtinKey) return;
+                  event.preventDefault();
+                  setEditingPositionPresetId(preset.id);
+                  setPositionNameDraft(preset.name);
+                }}
+              >
+                <strong>{preset.name}</strong>
+                <small>
+                  {preset.x}，{preset.y}
+                </small>
+              </button>
+            )}
+            {stageSettings.defaultPositionId === preset.id ? (
+              <Star
+                className="galgame-character-position-star"
+                aria-label="默认位置"
+              />
+            ) : null}
+          </div>
         ))}
+        {addingPositionPreset ? (
+          <form
+            className="galgame-character-position-new"
+            onSubmit={(event) => {
+              event.preventDefault();
+              submitPositionName();
+            }}
+          >
+            <input
+              aria-label="新增位置预设名称"
+              autoFocus
+              value={positionNameDraft}
+              maxLength={40}
+              placeholder="位置名称"
+              onChange={(event) => setPositionNameDraft(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Escape") {
+                  setAddingPositionPreset(false);
+                  setPositionNameDraft("");
+                }
+              }}
+            />
+          </form>
+        ) : null}
       </div>
       <div
         className="galgame-character-position-canvas"
@@ -835,60 +1066,83 @@ export function CharacterWorkspace({
           if (!delta) return;
           event.preventDefault();
           updateStageCoordinates(
-            stageSettings.positions[selectedStagePosition] + delta[0],
-            stageSettings.anchorY + delta[1],
+            selectedStagePosition.x + delta[0],
+            selectedStagePosition.y + delta[1],
           );
         }}
       >
         <span
+          className={`galgame-character-position-footprint is-${stageSettings.anchor}`}
+          title={footprintTitle}
+          style={{
+            left: `${selectedStagePosition.x}%`,
+            top: `${selectedStagePosition.y}%`,
+            width: `${footprintWidth}%`,
+            height: `${footprintHeight}%`,
+          }}
+        >
+          <em>
+            {hasPortraitDimensions
+              ? `${Number(footprintWidth.toFixed(1))}% × ${Number(footprintHeight.toFixed(1))}%`
+              : "尺寸未知"}
+          </em>
+        </span>
+        <span
           className="galgame-character-position-guide"
           style={{
-            left: `${stageSettings.positions[selectedStagePosition]}%`,
-            top: `${stageSettings.anchorY}%`,
+            left: `${selectedStagePosition.x}%`,
+            top: `${selectedStagePosition.y}%`,
           }}
         >
           <i />
-          <em>
-            {stageSettings.positions[selectedStagePosition]}%，
-            {stageSettings.anchorY}%
+          <em
+            style={{
+              left: selectedStagePosition.x > 80 ? "auto" : 12,
+              right: selectedStagePosition.x > 80 ? 12 : "auto",
+              top: selectedStagePosition.y > 85 ? "auto" : 13,
+              bottom: selectedStagePosition.y > 85 ? 13 : "auto",
+            }}
+          >
+            {selectedStagePosition.x}%，{selectedStagePosition.y}%
           </em>
         </span>
       </div>
       <footer className="galgame-character-position-fields">
-        <label className="is-position">
-          <span>{CHARACTER_POSITION_LABELS[selectedStagePosition]}站位</span>
-          <b>X</b>
-          <input
-            aria-label={`${CHARACTER_POSITION_LABELS[selectedStagePosition]}站位 X`}
-            type="number"
-            min="0"
-            max="100"
-            step="0.5"
-            value={stageSettings.positions[selectedStagePosition]}
-            onChange={(event) =>
-              updateStagePosition(
-                selectedStagePosition,
-                Number(event.target.value),
-              )
-            }
-          />
-          <small>%</small>
-        </label>
         <strong className="galgame-character-anchor-label">锚点</strong>
-        <label>
+        <div className="galgame-character-anchor-options">
+          <button
+            type="button"
+            className={stageSettings.anchor === "center" ? "active" : ""}
+            onClick={() =>
+              updateStageSettings({ ...stageSettings, anchor: "center" })
+            }
+          >
+            居中
+          </button>
+          <button
+            type="button"
+            className={stageSettings.anchor === "topLeft" ? "active" : ""}
+            onClick={() =>
+              updateStageSettings({ ...stageSettings, anchor: "topLeft" })
+            }
+          >
+            左上
+          </button>
+        </div>
+        <label className="is-position">
           <b>X</b>
           <input
-            aria-label="全局锚点 X"
+            aria-label={`${selectedStagePosition.name}站位 X`}
             type="number"
             min="0"
             max="100"
             step="0.5"
-            value={stageSettings.anchorX}
+            value={selectedStagePosition.x}
             onChange={(event) =>
-              updateStageSettings({
-                ...stageSettings,
-                anchorX: Math.min(100, Math.max(0, Number(event.target.value))),
-              })
+              updateStageCoordinates(
+                Number(event.target.value),
+                selectedStagePosition.y,
+              )
             }
           />
           <small>%</small>
@@ -896,21 +1150,36 @@ export function CharacterWorkspace({
         <label>
           <b>Y</b>
           <input
-            aria-label="全局锚点 Y"
+            aria-label={`${selectedStagePosition.name}站位 Y`}
             type="number"
             min="0"
             max="100"
             step="0.5"
-            value={stageSettings.anchorY}
+            value={selectedStagePosition.y}
             onChange={(event) =>
-              updateStageSettings({
-                ...stageSettings,
-                anchorY: Math.min(100, Math.max(0, Number(event.target.value))),
-              })
+              updateStageCoordinates(
+                selectedStagePosition.x,
+                Number(event.target.value),
+              )
             }
           />
           <small>%</small>
         </label>
+        <button
+          type="button"
+          className="galgame-character-default-position"
+          onClick={() =>
+            updateStageSettings({
+              ...stageSettings,
+              defaultPositionId: selectedStagePosition.id,
+            })
+          }
+          disabled={
+            stageSettings.defaultPositionId === selectedStagePosition.id
+          }
+        >
+          <Star aria-hidden /> 默认位置
+        </button>
       </footer>
     </div>
   );
@@ -2066,10 +2335,10 @@ export function CharacterWorkspace({
                 </div>
                 <div className="galgame-expression-column">
                   <label className="galgame-expression-avatar-toggle">
-                    <span>
+                    <span className="galgame-expression-avatar-icon">
                       <UserRound aria-hidden />
-                      对白头像
                     </span>
+                    <strong>对白头像</strong>
                     <input
                       type="checkbox"
                       checked={
@@ -2082,22 +2351,22 @@ export function CharacterWorkspace({
                         }))
                       }
                     />
+                    <i aria-hidden />
                   </label>
-                  <header>
-                    <strong>表情集合</strong>
-                    <span>{expressions.length}</span>
-                    {selectedExpressionIds.size ? (
-                      <button
-                        type="button"
-                        className="danger"
-                        onClick={deleteSelectedExpressions}
-                      >
-                        <Trash2 aria-hidden /> 删除所选（
-                        {selectedExpressionIds.size}）
-                      </button>
-                    ) : null}
-                  </header>
                   <div className="galgame-expression-grid">
+                    {selectedExpressionIds.size > 1 ? (
+                      <div className="galgame-expression-selection-actions">
+                        <span>已选择 {selectedExpressionIds.size} 个表情</span>
+                        <button
+                          type="button"
+                          className="danger"
+                          onClick={deleteSelectedExpressions}
+                        >
+                          <Trash2 aria-hidden /> 删除所选（
+                          {selectedExpressionIds.size}）
+                        </button>
+                      </div>
+                    ) : null}
                     {expressions.map((expression) => {
                       const asset = assetsById.get(expression.assetId);
                       return (
@@ -3047,15 +3316,28 @@ export function CharacterWorkspace({
                 <span
                   className="galgame-character-preview-actor"
                   style={{
-                    left: `${previewX}%`,
-                    top: `${stageSettings.anchorY}%`,
-                    transform: `translate(-${stageSettings.anchorX}%, -100%)`,
+                    left: `${previewPosition.x}%`,
+                    top: `${previewPosition.y}%`,
+                    width: `${footprintWidth}%`,
+                    height: `${footprintHeight}%`,
+                    transform:
+                      stageSettings.anchor === "center"
+                        ? "translate(-50%, -50%)"
+                        : "translate(0, 0)",
                   }}
                 >
                   <StoryAssetImage
                     fileId={previewExpressionAsset?.fileId}
                     alt={selectedCharacter?.name ?? "角色预览"}
                     fallback={<UserRound aria-hidden />}
+                    onNaturalSize={({ width, height }) => {
+                      if (!previewExpressionAsset?.fileId) return;
+                      setNaturalPortraitSize({
+                        fileId: previewExpressionAsset.fileId,
+                        width,
+                        height,
+                      });
+                    }}
                   />
                 </span>
               ) : null}
@@ -3097,22 +3379,22 @@ export function CharacterWorkspace({
             <div className="galgame-character-preview-position-heading">
               <strong>位置</strong>
               <small>
-                {CHARACTER_POSITION_LABELS[previewPosition]} · {previewX}，
-                {stageSettings.anchorY}
+                {previewPosition.name} · {previewPosition.x}，
+                {previewPosition.y}
               </small>
             </div>
             <div
               className="galgame-character-position-pills"
               aria-label="预览站位"
             >
-              {CHARACTER_POSITION_KEYS.map((position) => (
+              {stageSettings.positionPresets.map((position) => (
                 <button
-                  key={position}
+                  key={position.id}
                   type="button"
-                  className={previewPosition === position ? "active" : ""}
-                  onClick={() => setPreviewPosition(position)}
+                  className={previewPosition.id === position.id ? "active" : ""}
+                  onClick={() => setPreviewPositionId(position.id)}
                 >
-                  {CHARACTER_POSITION_LABELS[position]}
+                  {position.name}
                 </button>
               ))}
             </div>

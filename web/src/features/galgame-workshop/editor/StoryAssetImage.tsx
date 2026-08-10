@@ -7,12 +7,14 @@ export function StoryAssetImage({
   fallback,
   className,
   style,
+  onNaturalSize,
 }: {
   fileId?: string;
   alt: string;
   fallback: ReactNode;
   className?: string;
   style?: CSSProperties;
+  onNaturalSize?: (size: { width: number; height: number }) => void;
 }) {
   const [url, setUrl] = useState("");
 
@@ -43,6 +45,12 @@ export function StoryAssetImage({
       style={style}
       src={url}
       alt={alt}
+      onLoad={(event) =>
+        onNaturalSize?.({
+          width: event.currentTarget.naturalWidth,
+          height: event.currentTarget.naturalHeight,
+        })
+      }
       onError={() => setUrl("")}
     />
   ) : (

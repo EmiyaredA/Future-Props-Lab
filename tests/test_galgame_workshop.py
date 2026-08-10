@@ -105,6 +105,28 @@ def playable_story() -> dict:
     }
 
 
+def default_position_presets() -> list[dict]:
+    return [
+        {"id": "position-left", "name": "左", "x": 25.0, "y": 50.0, "builtinKey": "left"},
+        {
+            "id": "position-center-left",
+            "name": "中左",
+            "x": 37.5,
+            "y": 50.0,
+            "builtinKey": "centerLeft",
+        },
+        {"id": "position-center", "name": "中", "x": 50.0, "y": 50.0, "builtinKey": "center"},
+        {
+            "id": "position-center-right",
+            "name": "中右",
+            "x": 62.5,
+            "y": 50.0,
+            "builtinKey": "centerRight",
+        },
+        {"id": "position-right", "name": "右", "x": 75.0, "y": 50.0, "builtinKey": "right"},
+    ]
+
+
 def test_galgame_story_defaults_character_themes_and_stage_settings() -> None:
     document = playable_story()
     document["characters"].append(
@@ -120,16 +142,34 @@ def test_galgame_story_defaults_character_themes_and_stage_settings() -> None:
     assert normalized["settings"] == {
         "canvas": {"width": 1920, "height": 1080},
         "characterStage": {
-            "anchorX": 50.0,
-            "anchorY": 100.0,
+            "anchor": "center",
+            "defaultPositionId": "position-center",
             "defaultHeightPercent": 100.0,
-            "positions": {
-                "left": 15.0,
-                "centerLeft": 32.5,
-                "center": 50.0,
-                "centerRight": 67.5,
-                "right": 85.0,
-            },
+            "positionPresets": [
+                {"id": "position-left", "name": "左", "x": 25.0, "y": 50.0, "builtinKey": "left"},
+                {
+                    "id": "position-center-left",
+                    "name": "中左",
+                    "x": 37.5,
+                    "y": 50.0,
+                    "builtinKey": "centerLeft",
+                },
+                {
+                    "id": "position-center",
+                    "name": "中",
+                    "x": 50.0,
+                    "y": 50.0,
+                    "builtinKey": "center",
+                },
+                {
+                    "id": "position-center-right",
+                    "name": "中右",
+                    "x": 62.5,
+                    "y": 50.0,
+                    "builtinKey": "centerRight",
+                },
+                {"id": "position-right", "name": "右", "x": 75.0, "y": 50.0, "builtinKey": "right"},
+            ],
         },
     }
 
@@ -151,17 +191,64 @@ def test_galgame_story_defaults_character_themes_and_stage_settings() -> None:
     invalid_positions = deepcopy(document)
     invalid_positions["settings"] = {
         "characterStage": {
-            "positions": {
-                "left": 60,
-                "centerLeft": 30,
-                "center": 50,
-                "centerRight": 70,
-                "right": 85,
-            }
+            "positionPresets": normalized["settings"]["characterStage"]["positionPresets"]
+            + [
+                {
+                    "id": "position-left",
+                    "name": "自定义",
+                    "x": 100,
+                    "y": 100,
+                }
+            ]
         }
     }
-    with pytest.raises(ValueError, match="必须从左到右严格递增"):
+    with pytest.raises(ValueError, match="ID 不能重复"):
         GalgameStoryProject.model_validate(invalid_positions)
+
+
+def test_story_12_migrates_position_presets_and_preserves_legacy_block_anchor() -> None:
+    document = playable_story()
+    document["schemaVersion"] = "1.2"
+    document["settings"] = {
+        "characterStage": {
+            "anchorX": 50,
+            "anchorY": 60,
+            "defaultHeightPercent": 120,
+            "positions": {
+                "left": 5,
+                "centerLeft": 25,
+                "center": 45,
+                "centerRight": 65,
+                "right": 95,
+            },
+        }
+    }
+    document["chapters"][0]["fragments"][0]["blocks"].insert(
+        1,
+        {
+            "id": "legacy-character",
+            "type": "showCharacter",
+            "characterId": "character-one",
+            "transform": {"x": 45, "y": 60},
+        },
+    )
+
+    normalized = GalgameStoryProject.model_validate(document).model_dump(mode="json", by_alias=True)
+
+    stage = normalized["settings"]["characterStage"]
+    assert normalized["schemaVersion"] == "1.3"
+    assert stage["anchor"] == "center"
+    assert [(preset["x"], preset["y"]) for preset in stage["positionPresets"]] == [
+        (5.0, 60.0),
+        (25.0, 60.0),
+        (45.0, 60.0),
+        (65.0, 60.0),
+        (95.0, 60.0),
+    ]
+    assert (
+        normalized["chapters"][0]["fragments"][0]["blocks"][1]["transform"]["anchor"]
+        == "bottomCenter"
+    )
 
 
 def test_galgame_story_v11_migrates_official_dialogue_blocks() -> None:
@@ -181,7 +268,7 @@ def test_galgame_story_v11_migrates_official_dialogue_blocks() -> None:
 
     normalized = GalgameStoryProject.model_validate(document).model_dump(mode="json", by_alias=True)
 
-    assert normalized["schemaVersion"] == "1.2"
+    assert normalized["schemaVersion"] == "1.3"
     assert normalized["chapters"][0]["fragments"][0]["blocks"] == [
         {"id": "legacy-speed", "type": "paragraphParams", "textSpeedCps": 40},
         {"id": "instant-speed", "type": "paragraphParams", "revealEffect": "instant"},
@@ -550,7 +637,7 @@ async def test_galgame_workshop_story_edit_report_completion_and_conflicts() -> 
         assert story_response.status_code == 200
         initial_story = story_response.json()
         assert initial_story["document"] == {
-            "schemaVersion": "1.2",
+            "schemaVersion": "1.3",
             "entryChapterId": "chapter-1",
             "synopsis": "",
             "characters": [],
@@ -594,16 +681,10 @@ async def test_galgame_workshop_story_edit_report_completion_and_conflicts() -> 
             "settings": {
                 "canvas": {"width": 1920, "height": 1080},
                 "characterStage": {
-                    "anchorX": 50.0,
-                    "anchorY": 100.0,
+                    "anchor": "center",
+                    "defaultPositionId": "position-center",
                     "defaultHeightPercent": 100.0,
-                    "positions": {
-                        "left": 15.0,
-                        "centerLeft": 32.5,
-                        "center": 50.0,
-                        "centerRight": 67.5,
-                        "right": 85.0,
-                    },
+                    "positionPresets": default_position_presets(),
                 },
             },
             "chapters": [
@@ -802,7 +883,7 @@ async def test_galgame_story_normalizes_the_legacy_empty_skeleton() -> None:
         await session.commit()
     async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
         story = (await client.get(f"/v1/galgame-workshop/projects/{project['id']}/story")).json()
-        assert story["document"]["schemaVersion"] == "1.2"
+        assert story["document"]["schemaVersion"] == "1.3"
         assert story["document"]["chapters"][0]["entryFragmentId"] == "main"
         assert story["document"]["presentation"]["dialogueBox"]["preset"] == "dark"
         assert story["document"]["presentation"]["ui"]["components"] == []

@@ -2629,19 +2629,14 @@
       "GalgameStoryCharacterStageSettings": {
         "additionalProperties": false,
         "properties": {
-          "anchorX": {
-            "default": 50,
-            "maximum": 100.0,
-            "minimum": 0.0,
-            "title": "Anchorx",
-            "type": "number"
-          },
-          "anchorY": {
-            "default": 100,
-            "maximum": 100.0,
-            "minimum": 0.0,
-            "title": "Anchory",
-            "type": "number"
+          "anchor": {
+            "default": "center",
+            "enum": [
+              "center",
+              "topLeft"
+            ],
+            "title": "Anchor",
+            "type": "string"
           },
           "defaultHeightPercent": {
             "default": 100,
@@ -2649,6 +2644,12 @@
             "maximum": 400.0,
             "title": "Defaultheightpercent",
             "type": "number"
+          },
+          "defaultPositionId": {
+            "default": "position-center",
+            "pattern": "^[a-z0-9][a-z0-9-]{0,63}$",
+            "title": "Defaultpositionid",
+            "type": "string"
           },
           "legacyDefaultScale": {
             "anyOf": [
@@ -2663,8 +2664,14 @@
             ],
             "title": "Legacydefaultscale"
           },
-          "positions": {
-            "$ref": "#/components/schemas/GalgameStoryStagePositions"
+          "positionPresets": {
+            "items": {
+              "$ref": "#/components/schemas/GalgameStoryPositionPreset"
+            },
+            "maxItems": 20,
+            "minItems": 5,
+            "title": "Positionpresets",
+            "type": "array"
           }
         },
         "title": "GalgameStoryCharacterStageSettings",
@@ -2673,6 +2680,16 @@
       "GalgameStoryCharacterTransform": {
         "additionalProperties": false,
         "properties": {
+          "anchor": {
+            "default": "bottomCenter",
+            "enum": [
+              "center",
+              "topLeft",
+              "bottomCenter"
+            ],
+            "title": "Anchor",
+            "type": "string"
+          },
           "brightness": {
             "default": 1,
             "maximum": 2.0,
@@ -4160,6 +4177,60 @@
         "title": "GalgameStoryPortraitStyleRuleBlock",
         "type": "object"
       },
+      "GalgameStoryPositionPreset": {
+        "additionalProperties": false,
+        "properties": {
+          "builtinKey": {
+            "anyOf": [
+              {
+                "enum": [
+                  "left",
+                  "centerLeft",
+                  "center",
+                  "centerRight",
+                  "right"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Builtinkey"
+          },
+          "id": {
+            "pattern": "^[a-z0-9][a-z0-9-]{0,63}$",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 40,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "x": {
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "X",
+            "type": "number"
+          },
+          "y": {
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Y",
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "x",
+          "y"
+        ],
+        "title": "GalgameStoryPositionPreset",
+        "type": "object"
+      },
       "GalgameStoryPresentation": {
         "additionalProperties": false,
         "properties": {
@@ -4279,7 +4350,7 @@
             "type": "array"
           },
           "schemaVersion": {
-            "const": "1.2",
+            "const": "1.3",
             "title": "Schemaversion",
             "type": "string"
           },
@@ -5256,48 +5327,6 @@
           "type"
         ],
         "title": "GalgameStoryStageAnimationBlock",
-        "type": "object"
-      },
-      "GalgameStoryStagePositions": {
-        "additionalProperties": false,
-        "properties": {
-          "center": {
-            "default": 50,
-            "maximum": 100.0,
-            "minimum": 0.0,
-            "title": "Center",
-            "type": "number"
-          },
-          "centerLeft": {
-            "default": 32.5,
-            "maximum": 100.0,
-            "minimum": 0.0,
-            "title": "Centerleft",
-            "type": "number"
-          },
-          "centerRight": {
-            "default": 67.5,
-            "maximum": 100.0,
-            "minimum": 0.0,
-            "title": "Centerright",
-            "type": "number"
-          },
-          "left": {
-            "default": 15,
-            "maximum": 100.0,
-            "minimum": 0.0,
-            "title": "Left",
-            "type": "number"
-          },
-          "right": {
-            "default": 85,
-            "maximum": 100.0,
-            "minimum": 0.0,
-            "title": "Right",
-            "type": "number"
-          }
-        },
-        "title": "GalgameStoryStagePositions",
         "type": "object"
       },
       "GalgameStoryStageStyle": {

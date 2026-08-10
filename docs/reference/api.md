@@ -147,7 +147,7 @@ ID、消息数量、画布摘要和素材 ID；不保存图片 Base64、临时�
 
 - `GET/POST /v1/galgame-workshop/projects`：按最近更新时间读取工程或新建空白工程。
 - `GET/PATCH/DELETE /v1/galgame-workshop/projects/{project_id}`：读取、修改或删除单个工程。
-- `GET/PUT /v1/galgame-workshop/projects/{project_id}/story`：读取或整份 CAS 保存 Story 1.2 故事文档。
+- `GET/PUT /v1/galgame-workshop/projects/{project_id}/story`：读取或整份 CAS 保存 Story 1.3 故事文档。
 - `GET /v1/galgame-workshop/projects/{project_id}/story/report`：按章节顺序、调用栈与真实控制流检查可达性、停止点和递归。
 - `GET/POST /v1/galgame-workshop/projects/{project_id}/assets`：搜索或上传工程私有的图片、音视频与字体；上传可指定素材分类。
 - `POST /v1/galgame-workshop/projects/{project_id}/assets/import-preview|batch`：预检批量改名和虚拟路径，或原子导入一批素材。
@@ -166,21 +166,22 @@ ID、消息数量、画布摘要和素材 ID；不保存图片 Base64、临时�
 
 工程状态为 `draft / completed`，标题长度为 1–120 字。修改和删除必须携带工程的
 `expected_revision`；冲突返回 `409 revision_conflict` 以及服务器当前工程快照。新建工程会同时
-写入 `schemaVersion: "1.2"` 故事文档，预置 `chapter-1` 章节和入口为 `main` 的空 Fragment。
+写入 `schemaVersion: "1.3"` 故事文档，预置 `chapter-1` 章节和入口为 `main` 的空 Fragment。
 故事包含 `synopsis`、`entryChapterId`、类型化变量、角色属性模板、角色、场景、剧情 CG、项目级
 `settings` 及
 `chapters → fragments → blocks`。章节有稳定 ID、顺序、入口 Fragment 和禁用状态；入口章不能删除或禁用，
 `endChapter` 会进入下一启用章。旧 `schemaVersion: "1.0/1.1"` Story 读取时自动补齐这些字段并升级为
-`schemaVersion: "1.2"`，继续使用整份文档 revision CAS。`settings.canvas` 保存 640×360 至
-7680×4320 的画布尺寸（默认 1920×1080）；`settings.characterStage` 保存默认锚点、默认画面高度和
-左、左中、中、右中、右五个严格递增的百分比站位。它们只作为新建 Block 与资产预览的默认值，
+`schemaVersion: "1.3"`，继续使用整份文档 revision CAS。`settings.canvas` 保存 640×360 至
+7680×4320 的画布尺寸（默认 1920×1080）；`settings.characterStage` 保存默认锚点、默认画面高度、
+默认位置 ID 与 1–20 个可排序的二维百分比位置预设，其中左、中左、中、中右、右五个内置预设必须保留。
+旧版标量站位会结合共享 Y 坐标自动转换为二维预设。它们只作为新建 Block 与资产预览的默认值，
 不会改写已有角色 transform。角色的 `themeColor` 使用六位十六进制颜色；旧文档按角色顺序补入
 确定性色板。角色可选
 `expressions[]` 和 `defaultExpressionId`，表情通过故事
 `assets[]` 中的 `characterPortrait` 记录引用文件，对白可用 `expressionId` 覆盖角色默认表情。场景统一使用
 `sceneGroups + scenes[].layers[]`；每层保存稳定 ID、名称、`sceneLayer` 素材、距离和偏移，单层与多层共享模型。
 旧多背景场景会确定性拆分为多个场景并重写 Scene Block 引用；`clearCharacters` 控制切换场景时是否清空舞台角色。
-`showCharacter` Block 以 `characterId` 为舞台唯一实例进行登场或调整，保存表情、百分比位置（X/Y 均为 -100%–200%）、比例、亮度、
+`showCharacter` Block 以 `characterId` 为舞台唯一实例进行登场或调整，保存表情、图片锚点、百分比位置（X/Y 均为 -1000%–1000%）、比例、亮度、
 透明度、水平翻转、层级与基础过渡；`removeCharacter` 可让指定角色或全部角色退场。故事保存使用独立
 `expected_revision`，严格拒绝重复 ID、悬空引用、跨角色表情、越界角色变换、跨场景背景和少于两个选项的分支；冲突快照包含服务器当前完整故事，
 旧版 V1 缺少立绘或背景字段时在读取中补默认空值，首次保存后自然写入扩展格式。项目变量声明

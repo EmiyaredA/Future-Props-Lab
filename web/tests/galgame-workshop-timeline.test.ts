@@ -49,6 +49,7 @@ function fragment(): GalgameStoryFragment {
         transform: {
           x: 50,
           y: 100,
+          anchor: "bottomCenter",
           scale: 1,
           brightness: 1,
           opacity: 1,
@@ -543,6 +544,7 @@ describe("Galgame timeline editing", () => {
           transform: {
             x: 50,
             y: 100,
+            anchor: "bottomCenter",
             scale: 1,
             brightness: 1,
             opacity: 1,

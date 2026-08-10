@@ -91,6 +91,24 @@ export function CharacterTransformFields({
           </button>
         ))}
       </div>
+      <label className="galgame-stage-field">
+        <span>图片锚点</span>
+        <select
+          aria-label="角色图片锚点"
+          value={value.anchor}
+          onChange={(event) =>
+            onTransform({
+              ...value,
+              anchor: event.target
+                .value as GalgameStoryCharacterTransform["anchor"],
+            })
+          }
+        >
+          <option value="center">居中</option>
+          <option value="topLeft">左上</option>
+          <option value="bottomCenter">底部居中（兼容）</option>
+        </select>
+      </label>
       {fields.map(([key, label, min, max, step, suffix]) => (
         <label key={key} className="galgame-stage-range">
           <span>
