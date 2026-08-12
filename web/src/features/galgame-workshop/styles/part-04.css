@@ -1491,100 +1491,330 @@
   margin-top: -1px;
 }
 
-.galgame-block-insert {
-  position: relative;
-  z-index: 4;
-  min-height: 10px;
-  margin: -2px 0 1px;
+.galgame-block-command-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 560;
+  background: transparent;
 }
 
-.galgame-block-insert > summary {
-  height: 12px;
-  color: var(--gal-accent);
-  display: grid;
-  grid-template-columns: 1fr auto auto 1fr;
-  align-items: center;
-  gap: 5px;
-  list-style: none;
-  cursor: pointer;
-  opacity: 0;
-  transition: opacity 120ms ease;
+.galgame-block-command-palette {
+  position: fixed;
+  min-height: 300px;
+  overflow: hidden;
+  border: 1px solid var(--gal-line-strong);
+  border-radius: 14px;
+  background: var(--gal-surface);
+  box-shadow: 0 22px 70px rgb(18 31 49 / 0.22);
+  color: var(--gal-text);
+  display: flex;
+  flex-direction: column;
 }
 
-.galgame-block-insert > summary::-webkit-details-marker {
-  display: none;
-}
-
-.galgame-block-insert > summary > span {
+.galgame-block-command-title {
+  position: absolute;
+  width: 1px;
   height: 1px;
-  background: var(--gal-accent-line);
-}
-
-.galgame-block-insert > summary svg {
-  width: 11px;
-  height: 11px;
-}
-
-.galgame-block-insert > summary em {
-  font-size: 8px;
-  font-style: normal;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
   white-space: nowrap;
 }
 
-.galgame-block-insert:hover > summary,
-.galgame-block-insert[open] > summary,
-.galgame-block-insert > summary:focus-visible,
-.galgame-block-list > .galgame-block-insert:last-child > summary {
-  opacity: 1;
-}
-
-.galgame-block-insert-menu {
-  margin: 5px 0 8px;
-  padding: 9px;
-  border: 1px solid var(--gal-accent-line);
-  border-radius: 9px;
-  background: var(--gal-surface);
-  box-shadow: var(--gal-shadow-soft);
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 9px;
-}
-
-.galgame-block-insert-menu section {
-  min-width: 0;
-}
-
-.galgame-block-insert-menu section > strong {
-  color: var(--gal-muted);
-  font-size: 9px;
-}
-
-.galgame-block-insert-menu section > div {
-  margin-top: 5px;
+.galgame-block-command-palette > header {
+  min-height: 64px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--gal-line);
   display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
+  align-items: center;
+  gap: 10px;
 }
 
-.galgame-block-insert-menu button {
-  min-height: 27px;
-  padding: 0 7px;
-  border: 1px solid var(--gal-line);
-  border-radius: 6px;
+.galgame-block-command-palette > header > label {
+  min-width: 0;
+  min-height: 44px;
+  padding: 0 13px;
+  border: 1px solid var(--gal-line-strong);
+  border-radius: 9px;
   background: var(--gal-panel);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+}
+
+.galgame-block-command-palette > header > label:focus-within {
+  border-color: var(--gal-accent);
+  box-shadow: 0 0 0 2px var(--gal-accent-soft);
+}
+
+.galgame-block-command-palette > header svg {
+  width: 17px;
+  height: 17px;
+  color: var(--gal-muted);
+}
+
+.galgame-block-command-palette > header input {
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
   color: var(--gal-text);
-  font-size: 9px;
+  font: inherit;
+  font-size: 14px;
+  flex: 1;
+}
+
+.galgame-block-command-palette > header input::placeholder {
+  color: var(--gal-faint);
+}
+
+.galgame-block-command-palette > header kbd {
+  padding: 2px 6px;
+  border: 1px solid var(--gal-line);
+  border-radius: 5px;
+  background: var(--gal-surface);
+  color: var(--gal-muted);
+  font: inherit;
+  font-size: 10px;
+}
+
+.galgame-block-command-palette > header > button {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--gal-muted);
+  display: grid;
+  place-items: center;
   cursor: pointer;
 }
 
-.galgame-block-insert-menu button:hover {
-  border-color: var(--gal-accent-line);
+.galgame-block-command-palette > header > button:hover,
+.galgame-block-command-palette > header > button:focus-visible {
+  outline: 0;
+  background: var(--gal-accent-soft);
   color: var(--gal-accent);
 }
 
-.galgame-block-insert-menu button:disabled {
+.galgame-block-command-copy {
+  padding: 9px 16px;
+  border-bottom: 1px solid var(--gal-line);
+  display: grid;
+  gap: 5px;
+}
+
+.galgame-block-command-copy > small {
+  color: var(--gal-faint);
+  font-size: 9px;
+}
+
+.galgame-block-command-copy > span {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.galgame-block-command-copy strong {
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.galgame-block-command-copy em {
+  overflow: hidden;
+  color: var(--gal-muted);
+  font-size: 10px;
+  font-style: normal;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.galgame-block-command-groups {
+  min-height: 0;
+  padding: 8px;
+  overflow: auto;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(170px, 1fr));
+  align-items: start;
+}
+
+.galgame-block-command-groups.has-context {
+  grid-template-columns: 200px repeat(4, minmax(160px, 1fr));
+}
+
+.galgame-block-command-groups > section {
+  min-width: 0;
+  min-height: 100%;
+  padding: 6px 8px 12px;
+  border-right: 1px solid var(--gal-line);
+}
+
+.galgame-block-command-groups > section:last-child {
+  border-right: 0;
+}
+
+.galgame-block-command-groups > section > strong {
+  padding: 0 7px;
+  color: var(--gal-muted);
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.galgame-block-command-groups > section > div {
+  margin-top: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.galgame-block-command-groups button {
+  width: 100%;
+  min-height: 36px;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--gal-text);
+  display: grid;
+  grid-template-columns: 25px minmax(0, 1fr) 14px;
+  align-items: center;
+  gap: 8px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.galgame-block-command-groups button:hover,
+.galgame-block-command-groups button:focus-visible {
+  outline: 0;
+  background: var(--gal-accent-soft);
+  color: var(--gal-accent);
+}
+
+.galgame-block-command-groups button:disabled {
   opacity: 0.35;
   cursor: not-allowed;
+}
+
+.galgame-block-command-groups button > span {
+  width: 25px;
+  height: 25px;
+  border-radius: 6px;
+  background: var(--gal-panel);
+  color: var(--gal-muted);
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+}
+
+.galgame-block-command-groups button svg {
+  width: 14px;
+  height: 14px;
+}
+
+.galgame-block-command-groups button b {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+  font-weight: 560;
+}
+
+.galgame-block-command-groups button > svg {
+  width: 13px;
+  height: 13px;
+  color: var(--gal-accent);
+}
+
+.galgame-block-command-context {
+  background: color-mix(in srgb, var(--gal-panel) 72%, transparent);
+}
+
+.galgame-block-command-context > div {
+  gap: 9px !important;
+}
+
+.galgame-block-command-context-section {
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--gal-line);
+}
+
+.galgame-block-command-context-section:last-child {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.galgame-block-command-context-section > small {
+  display: block;
+  padding: 0 7px 4px;
+  color: var(--gal-faint);
+  font-size: 9px;
+}
+
+.galgame-block-command-context-section > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.galgame-block-command-context button.checked {
+  background: var(--gal-accent-soft);
+  color: var(--gal-accent);
+}
+
+.galgame-block-command-context button.checked > span {
+  background: color-mix(in srgb, var(--gal-accent) 13%, var(--gal-surface));
+  color: var(--gal-accent);
+}
+
+.galgame-block-command-empty {
+  min-height: 180px;
+  margin: 0;
+  color: var(--gal-muted);
+  display: grid;
+  place-items: center;
+}
+
+@media (max-width: 900px) {
+  .galgame-block-command-groups {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .galgame-block-command-groups.has-context {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .galgame-block-command-groups > section {
+    min-height: auto;
+    border-bottom: 1px solid var(--gal-line);
+  }
+
+  .galgame-block-command-groups > section:nth-child(2n) {
+    border-right: 0;
+  }
+}
+
+@media (max-width: 560px) {
+  .galgame-block-command-palette > header kbd,
+  .galgame-block-command-copy span {
+    display: none;
+  }
+
+  .galgame-block-command-groups {
+    grid-template-columns: 1fr;
+  }
+
+  .galgame-block-command-groups.has-context {
+    grid-template-columns: 1fr;
+  }
+
+  .galgame-block-command-groups > section {
+    min-height: auto;
+    border-right: 0;
+    border-bottom: 1px solid var(--gal-line);
+  }
 }
 
 .galgame-dialogue-card-body,

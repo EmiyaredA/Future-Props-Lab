@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field, field_validator, model_validator
 
 from app.schemas.galgame_workshop.base import _clean_title
 from app.schemas.galgame_workshop.blocks import *  # noqa: F403
+from app.schemas.galgame_workshop.localization import GalgameStoryLocalizations
 from app.schemas.galgame_workshop.stage_settings import GalgameStorySettings
 
 
@@ -71,6 +72,10 @@ class GalgameStoryProject(GalgameStoryModel):
     assets: list[GalgameStoryAsset] = Field(default_factory=list, max_length=2000)
     presentation: GalgameStoryPresentation = Field(default_factory=GalgameStoryPresentation)
     settings: GalgameStorySettings = Field(default_factory=GalgameStorySettings)
+    localizations: GalgameStoryLocalizations | None = Field(
+        default=None,
+        exclude_if=lambda value: value is None,
+    )
     chapters: list[GalgameStoryChapter] = Field(default_factory=list, min_length=1, max_length=100)
 
     @model_validator(mode="before")
@@ -256,6 +261,49 @@ class GalgameStoryProject(GalgameStoryModel):
         known_variables = set(variable_ids)
         variables_by_id = {variable.id: variable for variable in self.variables}
         known_attributes = set(attribute_ids)
+
+        blocks_by_id = {
+            block.id: block
+            for chapter in self.chapters
+            for fragment in chapter.fragments
+            for block in fragment.blocks
+        }
+        if self.localizations is not None:
+            for target in self.localizations.targets:
+                for entry in target.entries:
+                    block = blocks_by_id.get(entry.block_id)
+                    if block is None:
+                        raise ValueError("译文引用的 Block 不存在")
+                    valid_fields: set[str]
+                    if isinstance(
+                        block,
+                        (
+                            GalgameStoryNarrationBlock,
+                            GalgameStoryStoryParagraphBlock,
+                            GalgameStoryDialogueBlock,
+                            GalgameStoryFloatingTextBlock,
+                        ),
+                    ):
+                        valid_fields = {"text"}
+                    elif isinstance(block, GalgameStorySystemMessageBlock):
+                        valid_fields = {
+                            "text",
+                            "title",
+                            "acceptLabel",
+                            "cancelLabel",
+                        }
+                    elif isinstance(block, GalgameStoryBranchBlock):
+                        valid_fields = {"prompt", "choiceText"}
+                    elif isinstance(block, GalgameStoryEndChapterBlock):
+                        valid_fields = {"label"}
+                    else:
+                        valid_fields = set()
+                    if entry.field not in valid_fields:
+                        raise ValueError("译文字段与 Block 类型不匹配")
+                    if entry.field == "choiceText" and not any(
+                        choice.id == entry.choice_id for choice in block.choices
+                    ):
+                        raise ValueError("译文引用的 Choice 不存在")
         attribute_types = {
             attribute.id: attribute.type for attribute in self.character_attribute_templates
         }

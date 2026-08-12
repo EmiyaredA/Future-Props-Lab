@@ -22,17 +22,19 @@ describe("script layout preferences", () => {
     let stored = "";
     storeScriptLayout(
       normalizeScriptLayout({
-        version: 2,
+        version: 4,
         leftRatio: 40,
         centerRatio: 50,
+        performanceCenterRatio: 90,
         previewSplitRatio: 10,
       }),
       { setItem: (_key, value) => (stored = value) },
     );
     expect(JSON.parse(stored)).toEqual({
-      version: 2,
+      version: 4,
       leftRatio: 24,
       centerRatio: 38,
+      performanceCenterRatio: 54,
       previewSplitRatio: 42,
     });
   });

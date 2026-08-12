@@ -12,6 +12,7 @@ import {
 import { getVisualWorkshopProjects } from "@features/visual-workshop/api";
 import { GenerationMediaPreview } from "@features/visual-workshop/generation/GenerationMediaPreview";
 import { ApiError } from "@platform/api/client";
+import { CustomSelect } from "@shared/ui/CustomSelect";
 
 type PickerMode = "project" | "cross";
 type CrossScope = "project" | "library";
@@ -258,25 +259,24 @@ export function ProjectMediaSourceDialog({
             {crossScope === "project" ? (
               <label>
                 <span>来源项目</span>
-                <select
-                  aria-label="来源项目"
+                <CustomSelect
+                  ariaLabel="来源项目"
                   value={sourceProjectId}
                   disabled={projects.isLoading || sourceProjects.length === 0}
-                  onChange={(event) => {
-                    setSourceProjectId(event.target.value);
+                  onChange={(value) => {
+                    setSourceProjectId(value);
                     setSelected([]);
                     setQuery("");
                   }}
-                >
-                  {sourceProjects.length === 0 ? (
-                    <option value="">暂无其他项目</option>
-                  ) : null}
-                  {sourceProjects.map((project) => (
-                    <option value={project.id} key={project.id}>
-                      {project.title}
-                    </option>
-                  ))}
-                </select>
+                  options={
+                    sourceProjects.length === 0
+                      ? [{ value: "", label: "暂无其他项目", disabled: true }]
+                      : sourceProjects.map((project) => ({
+                          value: project.id,
+                          label: project.title,
+                        }))
+                  }
+                />
               </label>
             ) : null}
           </div>

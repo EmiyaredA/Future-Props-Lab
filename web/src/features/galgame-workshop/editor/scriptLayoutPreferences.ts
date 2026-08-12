@@ -1,16 +1,18 @@
 export type ScriptLayoutPreferences = {
-  version: 2;
+  version: 4;
   leftRatio: number;
   centerRatio: number;
+  performanceCenterRatio: number;
   previewSplitRatio: number;
 };
 
-export const SCRIPT_LAYOUT_KEY = "future_props_galgame_editor_script_layout_v2";
+export const SCRIPT_LAYOUT_KEY = "future_props_galgame_editor_script_layout_v4";
 
 export const DEFAULT_SCRIPT_LAYOUT: ScriptLayoutPreferences = {
-  version: 2,
+  version: 4,
   leftRatio: 16.5,
-  centerRatio: 25,
+  centerRatio: 39.5,
+  performanceCenterRatio: 58.5,
   previewSplitRatio: 60,
 };
 
@@ -26,13 +28,21 @@ export function normalizeScriptLayout(
     24,
   );
   const centerMaximum = Math.max(22, 62 - leftRatio);
+  const performanceCenterMaximum = Math.max(42, 78 - leftRatio);
   return {
-    version: 2,
+    version: 4,
     leftRatio,
     centerRatio: clamp(
-      Number.isFinite(value.centerRatio) ? Number(value.centerRatio) : 25,
+      Number.isFinite(value.centerRatio) ? Number(value.centerRatio) : 39.5,
       22,
       centerMaximum,
+    ),
+    performanceCenterRatio: clamp(
+      Number.isFinite(value.performanceCenterRatio)
+        ? Number(value.performanceCenterRatio)
+        : 58.5,
+      42,
+      performanceCenterMaximum,
     ),
     previewSplitRatio: clamp(
       Number.isFinite(value.previewSplitRatio)
@@ -51,7 +61,7 @@ export function loadScriptLayout(
     const parsed = JSON.parse(
       storage.getItem(SCRIPT_LAYOUT_KEY) ?? "null",
     ) as Partial<ScriptLayoutPreferences> | null;
-    if (parsed?.version === 2) return normalizeScriptLayout(parsed);
+    if (parsed?.version === 4) return normalizeScriptLayout(parsed);
   } catch {
     // A stale or malformed preference must never break the editor shell.
   }

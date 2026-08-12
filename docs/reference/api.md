@@ -159,7 +159,7 @@ ID、消息数量、画布摘要和素材 ID；不保存图片 Base64、临时�
 - `GET/PATCH /v1/galgame-workshop/projects/{project_id}/assets/asr/settings`：读取或 CAS 修改 ASR 模型、语言和并发。
 - `GET/POST /v1/galgame-workshop/projects/{project_id}/assets/asr/transcriptions`：读取任务或批量创建待处理/强制识别任务。
 - `PATCH /v1/galgame-workshop/projects/{project_id}/assets/{asset_id}/transcript`：以文本 revision CAS 手工修正识别文本。
-- `POST /v1/galgame-workshop/projects/{project_id}/assets/asr/match-dialogue`：归一化文本后稳定匹配对白并以 Story CAS 绑定语音。
+- `POST /v1/galgame-workshop/projects/{project_id}/assets/asr/match-dialogue`：归一化文本后稳定匹配对白并以 Story CAS 绑定语音；可通过 `blockIds` 只匹配指定对白，省略时匹配全项目。
 - `GET/POST /v1/galgame-workshop/projects/{project_id}/story/portrait-upgrade`：预览或应用旧立绘尺寸升级；应用前自动保存快照。
 - `GET /v1/galgame-workshop/projects/{project_id}/story/snapshots` 与 `POST .../{snapshot_id}/restore`：列出并以 Story revision 恢复维护快照。
 - `DELETE /v1/galgame-workshop/projects/{project_id}/assets/{asset_id}`：按素材 revision 删除未被故事使用的工程素材；引用冲突返回可定位的角色、Fragment 与 Block 信息。
@@ -187,6 +187,14 @@ ID、消息数量、画布摘要和素材 ID；不保存图片 Base64、临时�
 旧版 V1 缺少立绘或背景字段时在读取中补默认空值，首次保存后自然写入扩展格式。项目变量声明
 `boolean / number / string` 类型、默认值和 `session / persistent` 生命周期；角色属性只能使用项目属性模板中
 声明的键和值类型。
+
+Story 1.3 可选的 `localizations` 保存人工翻译：`sourceLocale` 为源语言，`defaultLocale` 为游戏启动
+语言，`targets[]` 按 BCP-47 语言标签保存译文。每条 `entries[]` 通过稳定的
+`blockId + field + choiceId?` 引用玩家可见字段，并同时保存 `sourceFingerprint` 与纯文本译文；不复制
+Block，也不改变章节、Fragment、分支目标或时间轴。目标语言与翻译引用在各自作用域内必须唯一，
+`choiceText` 必须携带存在于对应 Branch Block 的 `choiceId`。播放器可显式指定 locale，否则使用
+`defaultLocale`；缺失、空白或源文指纹过期的译文回退 `sourceLocale`。没有 `localizations` 的旧 Story
+继续按 `zh-CN` 运行。
 
 Block 使用一个带 `type` 判别字段的联合契约。除既有场景、角色、CG、对白、声音、分支和章节结束外，
 还包含段落与参数、系统消息、注释、等待、销毁场景、镜头与复位、粒子、舞台动画、浮动文字、幕布、
@@ -225,6 +233,10 @@ Dialogue Block 的 `characterId` 继续表示主说话角色；可选 `speakerId
 `systemMessage` 的提示模式为单按钮，确认模式为双按钮并可把结果写入布尔变量；取消、Esc 和异常关闭写入
 `false`。`wait` 使用 `duration / player` 两种模式，玩家继续等待不受自动播放或跳过影响。注释仅供作者查看，
 不进入运行时和时长计算。
+
+`curtain` 使用 `fullscreen / letterbox / pillarbox / frame` 分别表示全屏、上下黑边、左右黑边和四周黑边，
+并通过 `show / hide` 合上或打开幕布。缺少 `mode` 的旧 Block 按 `fullscreen` 读取；颜色、不透明度、动画时长
+和 `waitForCompletion` 继续决定渲染与剧情推进。该扩展仍属于 Story 1.3，不需要持久层迁移。
 
 `presentation.text` 保存全局文字速度，`presentation.paragraph` 保存内置或项目段落样式，
 `presentation.systemMessage` 保存标准消息框槽位和项目消息框样式。引用统一为
@@ -269,10 +281,9 @@ Dialogue Block 的 `characterId` 继续表示主说话角色；可选 `speakerId
 角色舞台位置以百分比坐标保存，`x / y` 均允许 `-1000` 到 `1000`；`y = 100` 表示角色脚底锚点
 位于舞台底边，更大的值可继续把带透明留白或高倍率缩放的立绘向画面外移动。
 
-剧本编辑器使用章节树、正文和舞台/检查器三栏布局。正文可在“卡片 / 纯文本 / Ren’Py / JSON OP”四种视图间
-切换，并另有多轨“演出”视图；所有视图编辑同一组 Block。Ren’Py 视图使用 CodeMirror 6，常用语法直接映射，
-复杂指令写作 `studio <type>: {...}`；非法草稿仅保存在浏览器，不会覆盖最后一次合法 Block。JSON OP 始终只读。
-卡片视图负责按顺序创作，
+剧本编辑器使用章节树、卡片正文和舞台/检查器三栏布局。“卡片 / JSON”位于主视图标签组，
+“演出”作为独立工作区入口；三者读取同一组 Block。JSON OP 是当前 Fragment 的顶层只读检查视图，
+支持复制但不会修改剧本。卡片视图负责按顺序创作，
 可就地编辑对白和旁白，并直接设置对白主角色、表情、已有配音、立绘模式与句后状态；连续且说话人集合相同的对白
 显示为一组。普通新增 Fragment 与 Block 不创建 `timeline`，仅切换到演出视图也不会保存。演出视图按真实时间比例显示
 场景、CG、对白/角色/配音、BGM、环境音、SFX 和分支/结局标记；固定轨道栏与时间内容区分离。跟随对白的角色事件

@@ -55,6 +55,8 @@ import {
   type StoryAudioPickerSource,
 } from "@features/galgame-workshop/editor/StoryAudioPicker";
 import { StoryAudioPreview } from "@features/galgame-workshop/editor/StoryAudioPreview";
+import { CustomColorPicker } from "@shared/ui/CustomColorPicker";
+import { CustomSelect } from "@shared/ui/CustomSelect";
 
 type Reference = {
   kind: "dialogue" | "showCharacter" | "removeCharacter";
@@ -137,6 +139,17 @@ function displayLabel(filename: string, fallback: string) {
   return label || fallback;
 }
 
+function thumbnailCropStyle(
+  expression?: GalgameStoryCharacterExpression,
+): CSSProperties {
+  const crop = expression?.thumbnailCrop ?? { x: 50, y: 25, scale: 1.8 };
+  return {
+    "--thumbnail-x": `${crop.x}%`,
+    "--thumbnail-y": `${crop.y}%`,
+    "--thumbnail-scale": crop.scale,
+  } as CSSProperties;
+}
+
 function CharacterAvatar({
   character,
   document,
@@ -151,7 +164,10 @@ function CharacterAvatar({
     (item) => item.id === expression?.assetId,
   );
   return (
-    <span className="galgame-character-avatar">
+    <span
+      className="galgame-character-avatar"
+      style={thumbnailCropStyle(expression)}
+    >
       <StoryAssetImage
         fileId={asset?.fileId}
         alt=""
@@ -1354,12 +1370,11 @@ export function CharacterWorkspace({
                 })
               }
             />
-            <select
-              aria-label={`${attribute.name}类型`}
+            <CustomSelect
+              ariaLabel={`${attribute.name}类型`}
               value={attribute.type}
-              onChange={(event) => {
-                const type = event.target.value as
-                  "string" | "number" | "boolean";
+              onChange={(value) => {
+                const type = value as "string" | "number" | "boolean";
                 const defaultValue =
                   type === "string" ? "" : type === "number" ? 0 : false;
                 onDocument({
@@ -1380,11 +1395,12 @@ export function CharacterWorkspace({
                   })),
                 });
               }}
-            >
-              <option value="string">文本</option>
-              <option value="number">数值</option>
-              <option value="boolean">开关</option>
-            </select>
+              options={[
+                { value: "string", label: "文本" },
+                { value: "number", label: "数值" },
+                { value: "boolean", label: "开关" },
+              ]}
+            />
             {attribute.type === "boolean" ? (
               <input
                 aria-label={`${attribute.name}默认值`}
@@ -1826,13 +1842,14 @@ export function CharacterWorkspace({
                 </label>
                 <label className="galgame-field galgame-character-theme-field">
                   <span>角色主题色</span>
-                  <input
-                    type="color"
+                  <CustomColorPicker
+                    ariaLabel="角色主题色"
                     value={selectedCharacter.themeColor ?? "#E75B55"}
-                    onChange={(event) =>
+                    colors={CHARACTER_PALETTE}
+                    onChange={(value) =>
                       updateCharacter(selectedCharacter.id, (character) => ({
                         ...character,
-                        themeColor: event.target.value,
+                        themeColor: value,
                       }))
                     }
                   />
@@ -1889,10 +1906,10 @@ export function CharacterWorkspace({
                             )
                           }
                         />
-                        <select
-                          aria-label="显示名来源"
+                        <CustomSelect
+                          ariaLabel="显示名来源"
                           value={scheme.source}
-                          onChange={(event) =>
+                          onChange={(value) =>
                             updateCharacter(
                               selectedCharacter.id,
                               (character) => ({
@@ -1901,7 +1918,7 @@ export function CharacterWorkspace({
                                   character.displayNames ?? []
                                 ).map((item) =>
                                   item.id === scheme.id
-                                    ? event.target.value === "variable"
+                                    ? value === "variable"
                                       ? {
                                           ...item,
                                           source: "variable",
@@ -1913,7 +1930,7 @@ export function CharacterWorkspace({
                                                 variable.type === "string",
                                             )?.id ?? null,
                                         }
-                                      : event.target.value === "attribute"
+                                      : value === "attribute"
                                         ? {
                                             ...item,
                                             source: "attribute",
@@ -1937,16 +1954,17 @@ export function CharacterWorkspace({
                               }),
                             )
                           }
-                        >
-                          <option value="literal">固定名称</option>
-                          <option value="variable">字符串变量</option>
-                          <option value="attribute">角色属性</option>
-                        </select>
+                          options={[
+                            { value: "literal", label: "固定名称" },
+                            { value: "variable", label: "字符串变量" },
+                            { value: "attribute", label: "角色属性" },
+                          ]}
+                        />
                         {scheme.source === "variable" ? (
-                          <select
-                            aria-label="显示名变量"
+                          <CustomSelect
+                            ariaLabel="显示名变量"
                             value={scheme.variableId ?? ""}
-                            onChange={(event) =>
+                            onChange={(value) =>
                               updateCharacter(
                                 selectedCharacter.id,
                                 (character) => ({
@@ -1957,29 +1975,30 @@ export function CharacterWorkspace({
                                     item.id === scheme.id
                                       ? {
                                           ...item,
-                                          variableId:
-                                            event.target.value || null,
+                                          variableId: value || null,
                                         }
                                       : item,
                                   ),
                                 }),
                               )
                             }
-                          >
-                            <option value="">选择变量</option>
-                            {(document.variables ?? [])
-                              .filter((variable) => variable.type === "string")
-                              .map((variable) => (
-                                <option key={variable.id} value={variable.id}>
-                                  {variable.name}
-                                </option>
-                              ))}
-                          </select>
+                            options={[
+                              { value: "", label: "选择变量" },
+                              ...(document.variables ?? [])
+                                .filter(
+                                  (variable) => variable.type === "string",
+                                )
+                                .map((variable) => ({
+                                  value: variable.id,
+                                  label: variable.name,
+                                })),
+                            ]}
+                          />
                         ) : scheme.source === "attribute" ? (
-                          <select
-                            aria-label="显示名角色属性"
+                          <CustomSelect
+                            ariaLabel="显示名角色属性"
                             value={scheme.attributeId ?? ""}
-                            onChange={(event) =>
+                            onChange={(value) =>
                               updateCharacter(
                                 selectedCharacter.id,
                                 (character) => ({
@@ -1990,26 +2009,25 @@ export function CharacterWorkspace({
                                     item.id === scheme.id
                                       ? {
                                           ...item,
-                                          attributeId:
-                                            event.target.value || null,
+                                          attributeId: value || null,
                                         }
                                       : item,
                                   ),
                                 }),
                               )
                             }
-                          >
-                            <option value="">选择属性</option>
-                            {(document.characterAttributeTemplates ?? [])
-                              .filter(
-                                (attribute) => attribute.type === "string",
-                              )
-                              .map((attribute) => (
-                                <option key={attribute.id} value={attribute.id}>
-                                  {attribute.name}
-                                </option>
-                              ))}
-                          </select>
+                            options={[
+                              { value: "", label: "选择属性" },
+                              ...(document.characterAttributeTemplates ?? [])
+                                .filter(
+                                  (attribute) => attribute.type === "string",
+                                )
+                                .map((attribute) => ({
+                                  value: attribute.id,
+                                  label: attribute.name,
+                                })),
+                            ]}
+                          />
                         ) : (
                           <input
                             aria-label="固定显示名"
@@ -2447,7 +2465,7 @@ export function CharacterWorkspace({
                             );
                           }}
                         >
-                          <span>
+                          <span style={thumbnailCropStyle(expression)}>
                             <StoryAssetImage
                               fileId={asset?.fileId}
                               alt=""
@@ -2599,12 +2617,13 @@ export function CharacterWorkspace({
                       </fieldset>
                       <label className="galgame-field">
                         <span>对白头像来源</span>
-                        <select
+                        <CustomSelect
+                          ariaLabel="对白头像来源"
                           value={
                             selectedExpression.dialogueAvatar?.source ??
                             "portrait"
                           }
-                          onChange={(event) =>
+                          onChange={(value) =>
                             updateCharacter(
                               selectedCharacter.id,
                               (character) => ({
@@ -2615,11 +2634,10 @@ export function CharacterWorkspace({
                                       ? {
                                           ...expression,
                                           dialogueAvatar: {
-                                            source: event.target.value as
+                                            source: value as
                                               "portrait" | "independent",
                                             assetId:
-                                              event.target.value ===
-                                              "independent"
+                                              value === "independent"
                                                 ? (expression.dialogueAvatar
                                                     ?.assetId ?? null)
                                                 : null,
@@ -2636,22 +2654,27 @@ export function CharacterWorkspace({
                               }),
                             )
                           }
-                        >
-                          <option value="portrait">跟随当前皮肤立绘</option>
-                          <option value="independent">独立头像</option>
-                        </select>
+                          options={[
+                            {
+                              value: "portrait",
+                              label: "跟随当前皮肤立绘",
+                            },
+                            { value: "independent", label: "独立头像" },
+                          ]}
+                        />
                       </label>
                       {selectedExpression.dialogueAvatar?.source ===
                       "independent" ? (
                         <label className="galgame-field">
                           <span>独立头像素材</span>
-                          <select
+                          <CustomSelect
+                            ariaLabel="独立头像素材"
                             value={
                               selectedExpression.dialogueAvatar.assetId ?? ""
                             }
-                            onChange={(event) => {
+                            onChange={(value) => {
                               const source = (document.assets ?? []).find(
-                                (asset) => asset.id === event.target.value,
+                                (asset) => asset.id === value,
                               );
                               if (!source || source.type !== "image") return;
                               const avatarAssetId = stableId();
@@ -2696,29 +2719,28 @@ export function CharacterWorkspace({
                                 ),
                               });
                             }}
-                          >
-                            <option value="">选择已有图片</option>
-                            {(document.assets ?? [])
-                              .filter((asset) => asset.type === "image")
-                              .map((asset) => (
-                                <option key={asset.id} value={asset.id}>
-                                  {asset.id}
-                                </option>
-                              ))}
-                          </select>
+                            options={[
+                              { value: "", label: "选择已有图片" },
+                              ...(document.assets ?? [])
+                                .filter((asset) => asset.type === "image")
+                                .map((asset) => ({
+                                  value: asset.id,
+                                  label: asset.id,
+                                })),
+                            ]}
+                          />
                         </label>
                       ) : null}
                       <section className="galgame-expression-overlays">
                         <header>
                           <strong>图形覆盖</strong>
-                          <select
-                            aria-label="添加图形覆盖"
-                            defaultValue=""
-                            onChange={(event) => {
+                          <CustomSelect
+                            ariaLabel="添加图形覆盖"
+                            value=""
+                            onChange={(value) => {
                               const source = (document.assets ?? []).find(
-                                (asset) => asset.id === event.target.value,
+                                (asset) => asset.id === value,
                               );
-                              event.target.value = "";
                               if (!source || source.type !== "image") return;
                               const overlayAssetId = stableId();
                               const overlayId = stableId();
@@ -2766,16 +2788,16 @@ export function CharacterWorkspace({
                                 ),
                               });
                             }}
-                          >
-                            <option value="">从已有图片添加…</option>
-                            {(document.assets ?? [])
-                              .filter((asset) => asset.type === "image")
-                              .map((asset) => (
-                                <option key={asset.id} value={asset.id}>
-                                  {asset.id}
-                                </option>
-                              ))}
-                          </select>
+                            options={[
+                              { value: "", label: "从已有图片添加…" },
+                              ...(document.assets ?? [])
+                                .filter((asset) => asset.type === "image")
+                                .map((asset) => ({
+                                  value: asset.id,
+                                  label: asset.id,
+                                })),
+                            ]}
+                          />
                         </header>
                         {(selectedExpression.overlays ?? []).map((overlay) => (
                           <div key={overlay.id}>
@@ -2961,7 +2983,8 @@ export function CharacterWorkspace({
                                   (expression) => (
                                     <label key={expression.id}>
                                       <span>{expression.label}</span>
-                                      <select
+                                      <CustomSelect
+                                        ariaLabel={`${expression.label}皮肤素材`}
                                         value={
                                           selectedSkin.overrides?.find(
                                             (item) =>
@@ -2969,7 +2992,7 @@ export function CharacterWorkspace({
                                               expression.id,
                                           )?.assetId ?? ""
                                         }
-                                        onChange={(event) =>
+                                        onChange={(value) =>
                                           updateCharacter(
                                             selectedCharacter.id,
                                             (character) => ({
@@ -2988,14 +3011,13 @@ export function CharacterWorkspace({
                                                 );
                                                 return {
                                                   ...item,
-                                                  overrides: event.target.value
+                                                  overrides: value
                                                     ? [
                                                         ...overrides,
                                                         {
                                                           expressionId:
                                                             expression.id,
-                                                          assetId:
-                                                            event.target.value,
+                                                          assetId: value,
                                                         },
                                                       ]
                                                     : overrides,
@@ -3004,19 +3026,19 @@ export function CharacterWorkspace({
                                             }),
                                           )
                                         }
-                                      >
-                                        <option value="">跟随原始表情</option>
-                                        {(
-                                          selectedCharacter.expressions ?? []
-                                        ).map((source) => (
-                                          <option
-                                            key={source.id}
-                                            value={source.assetId}
-                                          >
-                                            使用 {source.label} 素材
-                                          </option>
-                                        ))}
-                                      </select>
+                                        options={[
+                                          {
+                                            value: "",
+                                            label: "跟随原始表情",
+                                          },
+                                          ...(
+                                            selectedCharacter.expressions ?? []
+                                          ).map((source) => ({
+                                            value: source.assetId,
+                                            label: `使用 ${source.label} 素材`,
+                                          })),
+                                        ]}
+                                      />
                                     </label>
                                   ),
                                 )}
@@ -3363,18 +3385,19 @@ export function CharacterWorkspace({
             </div>
             <label>
               <span>背景</span>
-              <select
+              <CustomSelect
+                ariaLabel="角色预览背景"
                 value={previewSceneId}
-                onChange={(event) => setPreviewSceneId(event.target.value)}
+                onChange={setPreviewSceneId}
                 disabled={previewBackgroundMode !== "scene"}
-              >
-                <option value="">棋盘背景</option>
-                {(document.scenes ?? []).map((scene) => (
-                  <option key={scene.id} value={scene.id}>
-                    {scene.name}
-                  </option>
-                ))}
-              </select>
+                options={[
+                  { value: "", label: "棋盘背景" },
+                  ...(document.scenes ?? []).map((scene) => ({
+                    value: scene.id,
+                    label: scene.name,
+                  })),
+                ]}
+              />
             </label>
             <div className="galgame-character-preview-position-heading">
               <strong>位置</strong>

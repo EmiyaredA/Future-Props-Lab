@@ -80,13 +80,19 @@ export async function matchGalgameVoiceDialogue(
   projectId: string,
   expectedStoryRevision: number,
   assetIds?: string[],
+  blockIds?: string[],
 ) {
   return unwrap(
     await api.POST(
       "/v1/galgame-workshop/projects/{project_id}/assets/asr/match-dialogue",
       {
         params: { path: { project_id: projectId } },
-        body: { expectedStoryRevision, assetIds, minimumSimilarity: 0.72 },
+        body: {
+          expectedStoryRevision,
+          assetIds,
+          blockIds,
+          minimumSimilarity: 0.72,
+        },
       },
     ),
   );

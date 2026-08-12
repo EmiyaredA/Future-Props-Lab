@@ -567,6 +567,7 @@ class GalgameStoryFloatingTextBlock(GalgameStoryBlockBase):
 class GalgameStoryCurtainBlock(GalgameStoryBlockBase):
     type: Literal["curtain"]
     at_ms: int | None = Field(default=None, alias="atMs", ge=0)
+    mode: Literal["fullscreen", "letterbox", "pillarbox", "frame"] = "fullscreen"
     action: Literal["show", "hide"] = "show"
     color: str = Field(default="#000000", pattern=HEX_COLOR_PATTERN)
     opacity: float = Field(default=1, ge=0, le=1)

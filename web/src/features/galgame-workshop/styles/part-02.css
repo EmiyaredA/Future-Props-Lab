@@ -810,7 +810,7 @@
 
 .galgame-assets-dashboard button,
 .galgame-assets-dashboard input,
-.galgame-assets-dashboard select {
+.galgame-assets-dashboard .custom-select-trigger {
   font: inherit;
 }
 

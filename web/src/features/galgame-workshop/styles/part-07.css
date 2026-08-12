@@ -754,7 +754,7 @@
 
 .galgame-editor-header {
   position: relative;
-  z-index: 80;
+  z-index: 200;
   min-height: 62px;
   padding: 9px 18px;
   background: color-mix(in srgb, var(--gal-panel) 96%, transparent);
@@ -1091,10 +1091,13 @@
   box-shadow: inset 3px 0 var(--character-theme, var(--gal-accent));
 }
 
-.galgame-character-theme-field input[type="color"] {
+.galgame-character-theme-field .custom-color-picker,
+.galgame-character-theme-field .custom-color-picker-trigger {
   width: 100%;
+}
+
+.galgame-character-theme-field .custom-color-picker-trigger {
   height: 38px;
-  padding: 3px;
 }
 
 .galgame-character-live-preview {
@@ -1183,9 +1186,12 @@
   font-size: 10px;
 }
 
-.galgame-character-live-preview select {
+.galgame-character-live-preview .custom-select {
   min-width: 0;
   flex: 1;
+}
+
+.galgame-character-live-preview .custom-select-trigger {
   min-height: 32px;
   border: 1px solid var(--gal-line);
   border-radius: 7px;
@@ -1312,7 +1318,7 @@
 }
 
 .galgame-narrative-sidebar input,
-.galgame-narrative-sidebar select {
+.galgame-narrative-sidebar .custom-select-trigger {
   width: 100%;
   min-height: 31px;
   border: 1px solid var(--gal-line);
@@ -1640,7 +1646,7 @@
 
 .galgame-settings-grid input,
 .galgame-settings-grid textarea,
-.galgame-settings-grid select {
+.galgame-settings-grid .custom-select-trigger {
   width: 100%;
   min-height: 38px;
   padding: 8px 10px;

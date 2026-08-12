@@ -97,7 +97,15 @@ export type GalgameStageState = {
     color: string;
     durationMs: number;
   };
-  curtain?: { color: string; opacity: number; durationMs: number };
+  curtain?: {
+    mode: "fullscreen" | "letterbox" | "pillarbox" | "frame";
+    color: string;
+    opacity: number;
+    durationMs: number;
+    visible: boolean;
+    action: "show" | "hide";
+    transitionKey: string;
+  };
   video?: {
     assetId: string;
     loop: boolean;
@@ -397,13 +405,26 @@ export function applyAutomaticStageBlock(
     return {
       ...state,
       curtain:
-        block.action === "show"
-          ? {
-              color: block.color,
-              opacity: block.opacity,
+        block.action === "hide" && !state.curtain
+          ? undefined
+          : {
+              mode:
+                block.action === "hide"
+                  ? (state.curtain?.mode ?? block.mode)
+                  : block.mode,
+              color:
+                block.action === "hide"
+                  ? (state.curtain?.color ?? block.color)
+                  : block.color,
+              opacity:
+                block.action === "hide"
+                  ? (state.curtain?.opacity ?? block.opacity)
+                  : block.opacity,
               durationMs: block.durationMs,
-            }
-          : undefined,
+              visible: block.action === "show",
+              action: block.action,
+              transitionKey: block.id,
+            },
     };
   if (block.type === "video")
     return {

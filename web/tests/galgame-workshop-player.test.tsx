@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { act, type ReactNode } from "react";
 import { StoryPlayer } from "@features/galgame-workshop/editor/StoryPlayer";
 import type { GalgameStoryProject } from "@features/galgame-workshop/api";
+import { sourceFingerprint } from "@features/galgame-workshop/editor/localization";
 import { beforeEach, vi } from "vitest";
 
 vi.mock("@platform/api/client", () => ({
@@ -184,6 +185,72 @@ const story: GalgameStoryProject = {
     },
   ],
 };
+
+function localizedPlayerStory(): GalgameStoryProject {
+  return {
+    ...structuredClone(story),
+    localizations: {
+      sourceLocale: "zh-CN",
+      defaultLocale: "en-US",
+      targets: [
+        {
+          locale: "en-US",
+          entries: [
+            {
+              blockId: "dialogue",
+              field: "text",
+              sourceFingerprint: sourceFingerprint("开始调查。"),
+              text: "Start the investigation.",
+            },
+            {
+              blockId: "branch",
+              field: "prompt",
+              sourceFingerprint: sourceFingerprint("检查哪里？"),
+              text: "Where should we inspect?",
+            },
+            {
+              blockId: "branch",
+              field: "choiceText",
+              choiceId: "left",
+              sourceFingerprint: sourceFingerprint("设备"),
+              text: "Device",
+            },
+            {
+              blockId: "left-text",
+              field: "text",
+              sourceFingerprint: sourceFingerprint("发现干扰。"),
+              text: "Interference found.",
+            },
+          ],
+        },
+      ],
+    },
+  };
+}
+
+test("plays the startup locale, supports an explicit override and rejects stale text", async () => {
+  const user = userEvent.setup();
+  const localized = localizedPlayerStory();
+  const first = render(<StoryPlayer document={localized} />);
+  await user.click(screen.getByRole("button", { name: "开始试玩" }));
+  await user.click(
+    screen.getByText("Start the investigation.").closest("button")!,
+  );
+  expect(screen.getByText("Where should we inspect?")).toBeInTheDocument();
+  await user.click(screen.getByRole("button", { name: "Device" }));
+  expect(screen.getByText("Interference found.")).toBeInTheDocument();
+  first.unmount();
+
+  const second = render(<StoryPlayer document={localized} locale="zh-CN" />);
+  await user.click(screen.getByRole("button", { name: "开始试玩" }));
+  expect(screen.getByText("开始调查。")).toBeInTheDocument();
+  second.unmount();
+
+  localized.localizations!.targets![0].entries![0].sourceFingerprint = "stale";
+  render(<StoryPlayer document={localized} />);
+  await user.click(screen.getByRole("button", { name: "开始试玩" }));
+  expect(screen.getByText("开始调查。")).toBeInTheDocument();
+});
 
 test("plays both branches and restores the initial stage on restart", async () => {
   const user = userEvent.setup();
@@ -1471,4 +1538,30 @@ test("keeps player waits blocking until a supported continue gesture", async () 
   expect(screen.getByText("空格 / Enter / 向下滚轮")).toBeInTheDocument();
   fireEvent.keyDown(window, { key: "Enter" });
   expect(screen.getByText("继续成功。")).toBeInTheDocument();
+});
+
+test("renders curtain geometry from the shared stage state", async () => {
+  const user = userEvent.setup();
+  const document = structuredClone(story);
+  document.chapters![0].fragments![0].blocks = [
+    {
+      id: "frame-curtain",
+      type: "curtain",
+      mode: "frame",
+      action: "show",
+      color: "#123456",
+      opacity: 0.8,
+      durationMs: 600,
+      waitForCompletion: false,
+    },
+    { id: "behind-curtain", type: "narration", text: "幕布之后。" },
+  ];
+
+  render(<StoryPlayer document={document} />);
+  await user.click(screen.getByRole("button", { name: "开始试玩" }));
+  const curtain = screen.getByLabelText("四周黑边幕布合上");
+  expect(curtain).toHaveClass("is-frame", "is-show");
+  expect(curtain.querySelector(".is-top")).toBeInTheDocument();
+  expect(curtain.querySelector(".is-right")).toBeInTheDocument();
+  expect(curtain).toHaveStyle({ "--curtain-color": "#123456" });
 });

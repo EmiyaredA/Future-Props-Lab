@@ -112,7 +112,7 @@
   gap: 8px;
 }
 
-.galgame-expression-overlays header select,
+.galgame-expression-overlays header .custom-select,
 .galgame-expression-overlays > div input {
   min-width: 0;
   flex: 1;
@@ -693,7 +693,7 @@
 
 .galgame-character-position-fields input,
 .galgame-character-template-table input,
-.galgame-character-template-table select {
+.galgame-character-template-table .custom-select-trigger {
   min-width: 0;
   min-height: 34px;
   border: 1px solid var(--gal-line);

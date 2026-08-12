@@ -15,6 +15,7 @@ import {
   UserRound,
 } from "lucide-react";
 import { CustomSelect } from "@shared/ui/CustomSelect";
+import { CustomColorPicker } from "@shared/ui/CustomColorPicker";
 import {
   type GalgameStoryBlock,
   type GalgameStoryChapter,
@@ -33,7 +34,11 @@ import {
   withDialogueSpeakers,
 } from "@features/galgame-workshop/editor/dialogue";
 import { StoryAssetImage } from "@features/galgame-workshop/editor/StoryAssetImage";
-import { BLOCK_REGISTRY } from "@features/galgame-workshop/editor/blockRegistry";
+import {
+  BLOCK_REGISTRY,
+  CURTAIN_MODE_OPTIONS,
+  WAIT_DURATION_PRESETS,
+} from "@features/galgame-workshop/editor/blockRegistry";
 import type { TimelinePreferences } from "@features/galgame-workshop/editor/timelinePreferences";
 import {
   stableId,
@@ -63,6 +68,7 @@ import {
 } from "@features/galgame-workshop/editor/timeline";
 import { RichTextEditor } from "@features/galgame-workshop/editor/RichTextEditor";
 import {
+  dialogueDisplayName,
   plainRichText,
   richTextPlainText,
 } from "@features/galgame-workshop/editor/richText";
@@ -75,6 +81,29 @@ const BLOCK_LABELS = Object.fromEntries(
     capability.label,
   ]),
 ) as Record<BlockKind, string>;
+
+const AUDIO_INSPECTOR_CHANNELS = [
+  {
+    value: "bgm",
+    label: "背景音乐",
+    code: "BGM",
+    role: "backgroundMusic",
+  },
+  { value: "sfx", label: "音效", code: "SE", role: "soundEffect" },
+  {
+    value: "ambient",
+    label: "环境音",
+    code: "AMBIENT",
+    role: "ambientSound",
+  },
+] as const;
+
+type AudioInspectorChannel = (typeof AUDIO_INSPECTOR_CHANNELS)[number]["value"];
+
+function audioInspectorRole(channel: AudioInspectorChannel) {
+  return AUDIO_INSPECTOR_CHANNELS.find((option) => option.value === channel)!
+    .role;
+}
 
 export function Field({
   label,
@@ -316,6 +345,7 @@ export function BlockInspector({
   voiceStale,
   onVoiceStale,
   onVoiceFresh,
+  onAutoMatchVoice,
   timelinePreferences,
   onMoveUp,
   onMoveDown,
@@ -333,6 +363,7 @@ export function BlockInspector({
   voiceStale: boolean;
   onVoiceStale: () => void;
   onVoiceFresh: () => void;
+  onAutoMatchVoice: (blockId: string) => Promise<boolean>;
   timelinePreferences: TimelinePreferences;
   onMoveUp: () => void;
   onMoveDown: () => void;
@@ -373,6 +404,25 @@ export function BlockInspector({
   const dialogueTargets =
     fragment?.blocks?.filter((candidate) => candidate.type === "dialogue") ??
     [];
+  const dialogueCharacter =
+    block.type === "dialogue"
+      ? (document.characters ?? []).find(
+          (character) => character.id === block.characterId,
+        )
+      : undefined;
+  const dialogueName =
+    block.type === "dialogue"
+      ? dialogueDisplayName(
+          dialogueCharacter,
+          block.displayNameId,
+          Object.fromEntries(
+            (document.variables ?? []).map((variable) => [
+              variable.id,
+              variable.defaultValue,
+            ]),
+          ),
+        )
+      : undefined;
 
   return (
     <div className="galgame-block-inspector">
@@ -381,8 +431,12 @@ export function BlockInspector({
           <BlockTypeIcon type={block.type} />
         </span>
         <span>
-          <strong>{BLOCK_LABELS[block.type]}</strong>
-          <small>{block.id}</small>
+          <strong>
+            {block.type === "dialogue"
+              ? `对白 · ${dialogueName}`
+              : BLOCK_LABELS[block.type]}
+          </strong>
+          {block.type === "dialogue" ? null : <small>{block.id}</small>}
         </span>
         <nav className="galgame-block-order-actions" aria-label="执行顺序">
           <button
@@ -411,8 +465,7 @@ export function BlockInspector({
           </button>
         </nav>
       </header>
-      {(block.type === "dialogue" ||
-        block.type === "narration" ||
+      {(block.type === "narration" ||
         block.type === "storyParagraph" ||
         block.type === "systemMessage") &&
       block.startMs != null &&
@@ -937,6 +990,7 @@ export function BlockInspector({
           <div className="galgame-field">
             <span>旁白正文</span>
             <RichTextEditor
+              autoFocus={false}
               ariaLabel="旁白正文"
               value={block.content ?? plainRichText(block.text)}
               document={document}
@@ -967,373 +1021,445 @@ export function BlockInspector({
         </>
       ) : block.type === "dialogue" ? (
         <>
-          <Field label="说话角色">
-            <CustomSelect
-              ariaLabel="说话角色"
-              value={block.characterId}
-              options={(document.characters ?? []).map((character) => ({
-                value: character.id,
-                label: character.name,
-              }))}
-              onChange={(characterId) =>
-                patch((current) =>
-                  current.type === "dialogue"
-                    ? withDialogueSpeakers(
-                        current,
-                        (() => {
-                          const currentSpeakers = dialogueSpeakerIds(current);
-                          if (currentSpeakers.length === 1)
-                            return [characterId];
-                          if (currentSpeakers.includes(characterId))
-                            return [
-                              characterId,
-                              ...currentSpeakers.filter(
-                                (speakerId) => speakerId !== characterId,
-                              ),
-                            ];
-                          return [characterId, ...currentSpeakers.slice(1)];
-                        })(),
-                      )
-                    : current,
-                )
-              }
-            />
-            <div
-              className="galgame-dialogue-speakers"
-              role="group"
-              aria-label="同时说话角色"
-            >
-              {(document.characters ?? []).map((character) => {
-                const speakerIds = dialogueSpeakerIds(block);
-                const primary = character.id === block.characterId;
-                return (
-                  <label key={character.id}>
-                    <input
-                      type="checkbox"
-                      checked={speakerIds.includes(character.id)}
-                      disabled={primary}
-                      onChange={(event) =>
-                        patch((current) => {
-                          if (current.type !== "dialogue") return current;
-                          const currentSpeakers = dialogueSpeakerIds(current);
-                          return withDialogueSpeakers(
-                            current,
-                            event.target.checked
-                              ? [...currentSpeakers, character.id]
-                              : currentSpeakers.filter(
-                                  (speakerId) => speakerId !== character.id,
-                                ),
-                          );
-                        })
-                      }
-                    />
-                    <span>{character.name}</span>
-                    {primary ? <small>主角色</small> : null}
-                  </label>
-                );
-              })}
-            </div>
-            <small className="galgame-field-hint">
-              可勾选多人同时说这一句；主角色继续控制本句表情、立绘和配音绑定。
-            </small>
-          </Field>
-          <Field label="对白表情">
-            <CustomSelect
-              ariaLabel="对白表情"
-              value={block.expressionId ?? ""}
-              options={(() => {
-                const character = (document.characters ?? []).find(
-                  (candidate) => candidate.id === block.characterId,
-                );
-                const defaultExpression = (character?.expressions ?? []).find(
-                  (expression) =>
-                    expression.id === character?.defaultExpressionId,
-                );
-                return [
-                  {
-                    value: "",
-                    label: `跟随默认${defaultExpression ? ` · ${defaultExpression.label}` : ""}`,
-                  },
-                  ...(character?.expressions ?? []).map((expression) => ({
-                    value: expression.id,
-                    label: expression.label,
-                  })),
-                ];
-              })()}
-              onChange={(expressionId) =>
-                patch((current) =>
-                  current.type === "dialogue"
-                    ? {
-                        ...current,
-                        expressionId: expressionId || null,
-                      }
-                    : current,
-                )
-              }
-            />
-          </Field>
-          <Field label="显示名方案">
-            <CustomSelect
-              ariaLabel="对白显示名方案"
-              value={block.displayNameId ?? ""}
-              options={(() => {
-                const character = (document.characters ?? []).find(
-                  (candidate) => candidate.id === block.characterId,
-                );
-                return [
-                  {
-                    value: "",
-                    label: `角色本名 · ${character?.name ?? "未知角色"}`,
-                  },
-                  ...(character?.displayNames ?? []).map((item) => ({
-                    value: item.id,
-                    label: `${item.label}${item.source === "variable" ? " · 变量" : ""}`,
-                  })),
-                ];
-              })()}
-              onChange={(displayNameId) =>
-                patch((current) =>
-                  current.type === "dialogue"
-                    ? { ...current, displayNameId: displayNameId || null }
-                    : current,
-                )
-              }
-            />
-          </Field>
-          <div className="galgame-field">
-            <span>对白正文</span>
-            <RichTextEditor
-              ariaLabel="对白正文"
-              value={block.content ?? plainRichText(block.text)}
-              document={document}
-              character={(document.characters ?? []).find(
-                (candidate) => candidate.id === block.characterId,
-              )}
-              placeholder="写下对白…"
-              onPlainTextChange={() => block.voiceAssetId && onVoiceStale()}
-              onChange={(content) => {
-                patch((current) =>
-                  current.type === "dialogue"
-                    ? { ...current, content, text: richTextPlainText(content) }
-                    : current,
-                );
-              }}
-            />
-          </div>
-          <Field label="立绘演出">
-            <CustomSelect
-              ariaLabel="对白立绘模式"
-              value={block.portrait?.mode ?? "legacy"}
-              options={[
-                ...(!block.portrait
-                  ? [
-                      {
-                        value: "legacy",
-                        label: "旧版临时立绘（兼容）",
-                      },
-                    ]
-                  : []),
-                { value: "stage", label: "舞台立绘" },
-                { value: "dialogueAvatar", label: "仅对白头像" },
-                { value: "soloLegacy", label: "旧版单人特写（兼容）" },
-              ]}
-              onChange={(mode) =>
-                patch((current) => {
-                  if (current.type !== "dialogue") return current;
-                  if (mode === "legacy") return { ...current, portrait: null };
-                  return {
-                    ...current,
-                    portrait: {
-                      mode: mode as "stage" | "dialogueAvatar" | "soloLegacy",
-                      visible: true,
-                      keepAfter: mode === "stage",
-                      transform: null,
-                      transition: DEFAULT_CHARACTER_TRANSITION,
-                    },
-                  };
-                })
-              }
-            />
-          </Field>
-          {block.portrait ? (
-            <label className="galgame-stage-checkbox">
-              <input
-                type="checkbox"
-                checked={block.portrait.visible !== false}
-                onChange={(event) =>
-                  patch((current) =>
-                    current.type === "dialogue" && current.portrait
-                      ? {
-                          ...current,
-                          portrait: {
-                            ...current.portrait,
-                            visible: event.target.checked,
-                          },
-                        }
-                      : current,
-                  )
-                }
-              />
-              <span>显示立绘或对白头像</span>
-            </label>
-          ) : null}
-          {block.portrait ? (
-            <Field label="立绘皮肤">
-              <CustomSelect
-                ariaLabel="对白立绘皮肤"
-                value={block.portrait.skinId ?? ""}
-                options={(() => {
-                  const character = (document.characters ?? []).find(
-                    (candidate) => candidate.id === block.characterId,
-                  );
-                  return [
-                    { value: "", label: "自动 · 角色默认皮肤" },
-                    ...(character?.portraitSkins ?? []).map((skin) => ({
-                      value: skin.id,
-                      label: skin.name,
-                    })),
-                  ];
-                })()}
-                onChange={(skinId) =>
-                  patch((current) =>
-                    current.type === "dialogue" && current.portrait
-                      ? {
-                          ...current,
-                          portrait: {
-                            ...current.portrait,
-                            skinId: skinId || null,
-                          },
-                        }
-                      : current,
-                  )
-                }
-              />
-            </Field>
-          ) : null}
-          {block.portrait?.mode === "stage" ? (
-            <label className="galgame-stage-checkbox">
-              <input
-                type="checkbox"
-                checked={block.portrait.keepAfter}
-                onChange={(event) =>
-                  patch((current) =>
-                    current.type === "dialogue" && current.portrait
-                      ? {
-                          ...current,
-                          portrait: {
-                            ...current.portrait,
-                            keepAfter: event.target.checked,
-                          },
-                        }
-                      : current,
-                  )
-                }
-              />
-              <span>对白结束后保留角色</span>
-            </label>
-          ) : null}
-          {block.portrait ? (
-            <details className="galgame-dialogue-portrait-advanced">
-              <summary>高级立绘设置</summary>
+          <section className="galgame-dialogue-primary-settings">
+            <div className="galgame-dialogue-display-name-field">
+              <span>显示名</span>
               <div>
-                {block.portrait.mode === "stage" ? (
-                  <label className="galgame-stage-checkbox">
-                    <input
-                      type="checkbox"
-                      checked={Boolean(block.portrait.transform)}
-                      onChange={(event) =>
-                        patch((current) =>
-                          current.type === "dialogue" && current.portrait
-                            ? {
-                                ...current,
-                                portrait: {
-                                  ...current.portrait,
-                                  transform: event.target.checked
-                                    ? DEFAULT_CHARACTER_TRANSFORM
-                                    : null,
-                                },
-                              }
-                            : current,
+                <output aria-label="当前对白显示名">{dialogueName}</output>
+                <CustomSelect
+                  ariaLabel="对白显示名方案"
+                  value={block.displayNameId ?? ""}
+                  options={[
+                    { value: "", label: "主名称" },
+                    ...(dialogueCharacter?.displayNames ?? []).map((item) => ({
+                      value: item.id,
+                      label: item.label,
+                    })),
+                  ]}
+                  onChange={(displayNameId) =>
+                    patch((current) =>
+                      current.type === "dialogue"
+                        ? { ...current, displayNameId: displayNameId || null }
+                        : current,
+                    )
+                  }
+                />
+              </div>
+              <small>仅改变这句对白显示的名字；角色、立绘与配音不变。</small>
+            </div>
+            <DialogueVoiceBinding
+              projectId={projectId}
+              document={document}
+              fragmentId={fragmentId}
+              block={block}
+              stale={voiceStale}
+              onDocument={onDocument}
+              onFresh={onVoiceFresh}
+              onNotice={onNotice}
+              onAutoMatchVoice={onAutoMatchVoice}
+            />
+          </section>
+          <details className="galgame-dialogue-advanced-settings">
+            <summary>高级设置</summary>
+            <div>
+              {block.startMs != null && block.endMs != null ? (
+                <div className="galgame-block-timing" aria-label="对白时间范围">
+                  <header>
+                    <Clock3 aria-hidden />
+                    <span>
+                      <strong>剧情时间轴</strong>
+                      <small>
+                        时长 {formatTimecode(block.endMs - block.startMs)}
+                      </small>
+                    </span>
+                  </header>
+                  <div>
+                    <TimecodeField
+                      label="对白开始时间"
+                      value={block.startMs}
+                      onCommit={(milliseconds) =>
+                        onDocument(
+                          updateFragment(document, fragmentId, (current) =>
+                            setTimelineCueEdge(
+                              current,
+                              block.id,
+                              "start",
+                              milliseconds,
+                              true,
+                            ),
+                          ),
                         )
                       }
                     />
-                    <span>为这句对白自定义站位与外观</span>
-                  </label>
-                ) : null}
-                {block.portrait.visible !== false &&
-                (block.portrait.mode === "soloLegacy" ||
-                  block.portrait.transform) ? (
-                  <CharacterTransformFields
-                    transform={block.portrait.transform}
-                    transition={block.portrait.transition}
-                    onTransform={(transform) =>
-                      patch((current) =>
-                        current.type === "dialogue" && current.portrait
-                          ? {
-                              ...current,
-                              portrait: { ...current.portrait, transform },
-                            }
-                          : current,
-                      )
-                    }
-                    onTransition={(transition) =>
-                      patch((current) =>
-                        current.type === "dialogue" && current.portrait
-                          ? {
-                              ...current,
-                              portrait: { ...current.portrait, transition },
-                            }
-                          : current,
-                      )
-                    }
-                  />
-                ) : (
-                  <CharacterTransitionFields
-                    transition={block.portrait.transition}
-                    onChange={(transition) =>
-                      patch((current) =>
-                        current.type === "dialogue" && current.portrait
-                          ? {
-                              ...current,
-                              portrait: { ...current.portrait, transition },
-                            }
-                          : current,
-                      )
-                    }
-                  />
-                )}
+                    <TimecodeField
+                      label="对白结束时间"
+                      value={block.endMs}
+                      onCommit={(milliseconds) =>
+                        onDocument(
+                          updateFragment(document, fragmentId, (current) =>
+                            resizeTimelineCueEnd(
+                              current,
+                              block.id,
+                              milliseconds,
+                              {
+                                precise: true,
+                                ripple: timelinePreferences.ripple,
+                                keepContinuous: true,
+                              },
+                            ),
+                          ),
+                        )
+                      }
+                    />
+                  </div>
+                </div>
+              ) : null}
+              <Field label="说话角色">
+                <CustomSelect
+                  ariaLabel="说话角色"
+                  value={block.characterId}
+                  options={(document.characters ?? []).map((character) => ({
+                    value: character.id,
+                    label: character.name,
+                  }))}
+                  onChange={(characterId) =>
+                    patch((current) =>
+                      current.type === "dialogue"
+                        ? withDialogueSpeakers(
+                            current,
+                            (() => {
+                              const currentSpeakers =
+                                dialogueSpeakerIds(current);
+                              if (currentSpeakers.length === 1)
+                                return [characterId];
+                              if (currentSpeakers.includes(characterId))
+                                return [
+                                  characterId,
+                                  ...currentSpeakers.filter(
+                                    (speakerId) => speakerId !== characterId,
+                                  ),
+                                ];
+                              return [characterId, ...currentSpeakers.slice(1)];
+                            })(),
+                          )
+                        : current,
+                    )
+                  }
+                />
+                <div
+                  className="galgame-dialogue-speakers"
+                  role="group"
+                  aria-label="同时说话角色"
+                >
+                  {(document.characters ?? []).map((character) => {
+                    const speakerIds = dialogueSpeakerIds(block);
+                    const primary = character.id === block.characterId;
+                    return (
+                      <label key={character.id}>
+                        <input
+                          type="checkbox"
+                          checked={speakerIds.includes(character.id)}
+                          disabled={primary}
+                          onChange={(event) =>
+                            patch((current) => {
+                              if (current.type !== "dialogue") return current;
+                              const currentSpeakers =
+                                dialogueSpeakerIds(current);
+                              return withDialogueSpeakers(
+                                current,
+                                event.target.checked
+                                  ? [...currentSpeakers, character.id]
+                                  : currentSpeakers.filter(
+                                      (speakerId) => speakerId !== character.id,
+                                    ),
+                              );
+                            })
+                          }
+                        />
+                        <span>{character.name}</span>
+                        {primary ? <small>主角色</small> : null}
+                      </label>
+                    );
+                  })}
+                </div>
+                <small className="galgame-field-hint">
+                  可勾选多人同时说这一句；主角色继续控制本句表情、立绘和配音绑定。
+                </small>
+              </Field>
+              <Field label="对白表情">
+                <CustomSelect
+                  ariaLabel="对白表情"
+                  value={block.expressionId ?? ""}
+                  options={(() => {
+                    const character = (document.characters ?? []).find(
+                      (candidate) => candidate.id === block.characterId,
+                    );
+                    const defaultExpression = (
+                      character?.expressions ?? []
+                    ).find(
+                      (expression) =>
+                        expression.id === character?.defaultExpressionId,
+                    );
+                    return [
+                      {
+                        value: "",
+                        label: `跟随默认${defaultExpression ? ` · ${defaultExpression.label}` : ""}`,
+                      },
+                      ...(character?.expressions ?? []).map((expression) => ({
+                        value: expression.id,
+                        label: expression.label,
+                      })),
+                    ];
+                  })()}
+                  onChange={(expressionId) =>
+                    patch((current) =>
+                      current.type === "dialogue"
+                        ? {
+                            ...current,
+                            expressionId: expressionId || null,
+                          }
+                        : current,
+                    )
+                  }
+                />
+              </Field>
+              <div className="galgame-field">
+                <span>对白正文</span>
+                <RichTextEditor
+                  autoFocus={false}
+                  ariaLabel="对白正文"
+                  value={block.content ?? plainRichText(block.text)}
+                  document={document}
+                  character={(document.characters ?? []).find(
+                    (candidate) => candidate.id === block.characterId,
+                  )}
+                  placeholder="写下对白…"
+                  onPlainTextChange={() => block.voiceAssetId && onVoiceStale()}
+                  onChange={(content) => {
+                    patch((current) =>
+                      current.type === "dialogue"
+                        ? {
+                            ...current,
+                            content,
+                            text: richTextPlainText(content),
+                          }
+                        : current,
+                    );
+                  }}
+                />
               </div>
-            </details>
-          ) : null}
-          <label className="galgame-stage-checkbox">
-            <input
-              type="checkbox"
-              checked={block.hideDialogueAfter ?? false}
-              onChange={(event) =>
-                patch((current) =>
-                  current.type === "dialogue"
-                    ? { ...current, hideDialogueAfter: event.target.checked }
-                    : current,
-                )
-              }
-            />
-            <span>本句后隐藏对话框（┘）</span>
-          </label>
-          <DialogueVoiceBinding
-            projectId={projectId}
-            document={document}
-            fragmentId={fragmentId}
-            block={block}
-            stale={voiceStale}
-            onDocument={onDocument}
-            onFresh={onVoiceFresh}
-            onNotice={onNotice}
-          />
+              <Field label="立绘演出">
+                <CustomSelect
+                  ariaLabel="对白立绘模式"
+                  value={block.portrait?.mode ?? "legacy"}
+                  options={[
+                    ...(!block.portrait
+                      ? [
+                          {
+                            value: "legacy",
+                            label: "旧版临时立绘（兼容）",
+                          },
+                        ]
+                      : []),
+                    { value: "stage", label: "舞台立绘" },
+                    { value: "dialogueAvatar", label: "仅对白头像" },
+                    { value: "soloLegacy", label: "旧版单人特写（兼容）" },
+                  ]}
+                  onChange={(mode) =>
+                    patch((current) => {
+                      if (current.type !== "dialogue") return current;
+                      if (mode === "legacy")
+                        return { ...current, portrait: null };
+                      return {
+                        ...current,
+                        portrait: {
+                          mode: mode as
+                            "stage" | "dialogueAvatar" | "soloLegacy",
+                          visible: true,
+                          keepAfter: mode === "stage",
+                          transform: null,
+                          transition: DEFAULT_CHARACTER_TRANSITION,
+                        },
+                      };
+                    })
+                  }
+                />
+              </Field>
+              {block.portrait ? (
+                <label className="galgame-stage-checkbox">
+                  <input
+                    type="checkbox"
+                    checked={block.portrait.visible !== false}
+                    onChange={(event) =>
+                      patch((current) =>
+                        current.type === "dialogue" && current.portrait
+                          ? {
+                              ...current,
+                              portrait: {
+                                ...current.portrait,
+                                visible: event.target.checked,
+                              },
+                            }
+                          : current,
+                      )
+                    }
+                  />
+                  <span>显示立绘或对白头像</span>
+                </label>
+              ) : null}
+              {block.portrait ? (
+                <Field label="立绘皮肤">
+                  <CustomSelect
+                    ariaLabel="对白立绘皮肤"
+                    value={block.portrait.skinId ?? ""}
+                    options={(() => {
+                      const character = (document.characters ?? []).find(
+                        (candidate) => candidate.id === block.characterId,
+                      );
+                      return [
+                        { value: "", label: "自动 · 角色默认皮肤" },
+                        ...(character?.portraitSkins ?? []).map((skin) => ({
+                          value: skin.id,
+                          label: skin.name,
+                        })),
+                      ];
+                    })()}
+                    onChange={(skinId) =>
+                      patch((current) =>
+                        current.type === "dialogue" && current.portrait
+                          ? {
+                              ...current,
+                              portrait: {
+                                ...current.portrait,
+                                skinId: skinId || null,
+                              },
+                            }
+                          : current,
+                      )
+                    }
+                  />
+                </Field>
+              ) : null}
+              {block.portrait?.mode === "stage" ? (
+                <label className="galgame-stage-checkbox">
+                  <input
+                    type="checkbox"
+                    checked={block.portrait.keepAfter}
+                    onChange={(event) =>
+                      patch((current) =>
+                        current.type === "dialogue" && current.portrait
+                          ? {
+                              ...current,
+                              portrait: {
+                                ...current.portrait,
+                                keepAfter: event.target.checked,
+                              },
+                            }
+                          : current,
+                      )
+                    }
+                  />
+                  <span>对白结束后保留角色</span>
+                </label>
+              ) : null}
+              {block.portrait ? (
+                <details className="galgame-dialogue-portrait-advanced">
+                  <summary>高级立绘设置</summary>
+                  <div>
+                    {block.portrait.mode === "stage" ? (
+                      <label className="galgame-stage-checkbox">
+                        <input
+                          type="checkbox"
+                          checked={Boolean(block.portrait.transform)}
+                          onChange={(event) =>
+                            patch((current) =>
+                              current.type === "dialogue" && current.portrait
+                                ? {
+                                    ...current,
+                                    portrait: {
+                                      ...current.portrait,
+                                      transform: event.target.checked
+                                        ? DEFAULT_CHARACTER_TRANSFORM
+                                        : null,
+                                    },
+                                  }
+                                : current,
+                            )
+                          }
+                        />
+                        <span>为这句对白自定义站位与外观</span>
+                      </label>
+                    ) : null}
+                    {block.portrait.visible !== false &&
+                    (block.portrait.mode === "soloLegacy" ||
+                      block.portrait.transform) ? (
+                      <CharacterTransformFields
+                        transform={block.portrait.transform}
+                        transition={block.portrait.transition}
+                        onTransform={(transform) =>
+                          patch((current) =>
+                            current.type === "dialogue" && current.portrait
+                              ? {
+                                  ...current,
+                                  portrait: { ...current.portrait, transform },
+                                }
+                              : current,
+                          )
+                        }
+                        onTransition={(transition) =>
+                          patch((current) =>
+                            current.type === "dialogue" && current.portrait
+                              ? {
+                                  ...current,
+                                  portrait: { ...current.portrait, transition },
+                                }
+                              : current,
+                          )
+                        }
+                      />
+                    ) : (
+                      <CharacterTransitionFields
+                        transition={block.portrait.transition}
+                        onChange={(transition) =>
+                          patch((current) =>
+                            current.type === "dialogue" && current.portrait
+                              ? {
+                                  ...current,
+                                  portrait: { ...current.portrait, transition },
+                                }
+                              : current,
+                          )
+                        }
+                      />
+                    )}
+                  </div>
+                </details>
+              ) : null}
+              <label className="galgame-stage-checkbox">
+                <input
+                  type="checkbox"
+                  checked={block.hideDialogueAfter ?? false}
+                  onChange={(event) =>
+                    patch((current) =>
+                      current.type === "dialogue"
+                        ? {
+                            ...current,
+                            hideDialogueAfter: event.target.checked,
+                          }
+                        : current,
+                    )
+                  }
+                />
+                <span>本句后隐藏对话框（┘）</span>
+              </label>
+            </div>
+          </details>
         </>
       ) : block.type === "storyParagraph" ? (
         <>
           <Field label="段落正文">
             <RichTextEditor
+              autoFocus={false}
               ariaLabel="剧情段落正文"
               value={block.content ?? plainRichText(block.text)}
               document={document}
@@ -1616,186 +1742,388 @@ export function BlockInspector({
           ) : null}
         </>
       ) : block.type === "wait" ? (
-        <>
-          <Field label="等待模式">
-            <CustomSelect
-              ariaLabel="等待模式"
-              value={block.mode}
-              options={[
-                { value: "duration", label: "等待指定时间" },
-                { value: "player", label: "等待玩家继续" },
-              ]}
-              onChange={(mode) =>
-                patch((current) =>
-                  current.type === "wait"
-                    ? mode === "player"
+        <div className="galgame-wait-inspector">
+          <section>
+            <span>模式</span>
+            <div
+              className="galgame-inspector-segments"
+              role="group"
+              aria-label="等待模式"
+            >
+              <button
+                type="button"
+                className={block.mode === "duration" ? "active" : ""}
+                aria-pressed={block.mode === "duration"}
+                onClick={() =>
+                  patch((current) =>
+                    current.type === "wait"
+                      ? {
+                          ...current,
+                          mode: "duration",
+                          durationMs: current.durationMs ?? 1000,
+                        }
+                      : current,
+                  )
+                }
+              >
+                等待指定时间
+              </button>
+              <button
+                type="button"
+                className={block.mode === "player" ? "active" : ""}
+                aria-pressed={block.mode === "player"}
+                onClick={() =>
+                  patch((current) =>
+                    current.type === "wait"
                       ? { ...current, mode: "player", durationMs: null }
-                      : { ...current, mode: "duration", durationMs: 1000 }
-                    : current,
-                )
-              }
-            />
-          </Field>
+                      : current,
+                  )
+                }
+              >
+                等待玩家继续
+              </button>
+            </div>
+          </section>
           {block.mode === "duration" ? (
-            <Field label="等待时长">
-              <div className="galgame-wait-presets">
-                {[200, 500, 1000, 2000, 3000].map((durationMs) => (
+            <>
+              <label className="galgame-inspector-number-row">
+                <span>时长</span>
+                <div>
+                  <input
+                    aria-label="等待时长"
+                    type="number"
+                    min="0"
+                    max="3600000"
+                    value={block.durationMs ?? 1000}
+                    onChange={(event) =>
+                      patch((current) =>
+                        current.type === "wait"
+                          ? {
+                              ...current,
+                              durationMs: Math.min(
+                                3600000,
+                                Math.max(0, Number(event.target.value)),
+                              ),
+                            }
+                          : current,
+                      )
+                    }
+                  />
+                  <em>ms</em>
+                </div>
+              </label>
+              <section>
+                <span>预设</span>
+                <div className="galgame-wait-presets">
+                  {WAIT_DURATION_PRESETS.map((durationMs) => (
+                    <button
+                      key={durationMs}
+                      type="button"
+                      className={
+                        block.durationMs === durationMs ? "active" : ""
+                      }
+                      onClick={() =>
+                        patch((current) =>
+                          current.type === "wait"
+                            ? { ...current, durationMs }
+                            : current,
+                        )
+                      }
+                    >
+                      {durationMs}
+                    </button>
+                  ))}
                   <button
-                    key={durationMs}
                     type="button"
-                    className={block.durationMs === durationMs ? "active" : ""}
                     onClick={() =>
                       patch((current) =>
                         current.type === "wait"
-                          ? { ...current, durationMs }
+                          ? { ...current, mode: "player", durationMs: null }
                           : current,
                       )
                     }
                   >
-                    {durationMs}ms
+                    等待玩家继续
                   </button>
-                ))}
-              </div>
-            </Field>
+                </div>
+              </section>
+            </>
           ) : (
             <p className="galgame-inspector-note">
               自动播放和跳过模式都不会越过此 Block，必须由玩家继续。
             </p>
           )}
-        </>
+        </div>
       ) : block.type === "audio" ? (
-        <>
-          <Field label="动作">
-            <CustomSelect
-              ariaLabel="声音动作"
-              value={block.action}
-              options={[
+        <div className="galgame-audio-inspector">
+          <div className="galgame-audio-inspector-section">
+            <span className="galgame-audio-inspector-label">动作</span>
+            <div
+              className="galgame-audio-action-tabs"
+              role="group"
+              aria-label="声音动作"
+            >
+              {[
                 { value: "play", label: "播放 / 切换" },
                 { value: "stop", label: "停止通道" },
-              ]}
-              onChange={(action) =>
-                patch((current) => {
-                  if (current.type !== "audio") return current;
-                  if (action === "stop")
-                    return { ...current, action: "stop", assetId: null };
-                  const asset = (document.assets ?? []).find(
-                    (candidate) =>
-                      candidate.type === "audio" &&
-                      candidate.role ===
-                        {
-                          bgm: "backgroundMusic",
-                          ambient: "ambientSound",
-                          sfx: "soundEffect",
-                        }[current.channel],
+              ].map((action) => {
+                const disabled =
+                  action.value === "play" &&
+                  block.action === "stop" &&
+                  !(document.assets ?? []).some(
+                    (asset) =>
+                      asset.type === "audio" &&
+                      asset.role === audioInspectorRole(block.channel),
                   );
-                  return asset
-                    ? { ...current, action: "play", assetId: asset.id }
-                    : current;
-                })
-              }
-            />
-          </Field>
-          <Field label="声音通道">
-            <CustomSelect
-              ariaLabel="声音通道"
-              value={block.channel}
-              options={[
-                { value: "bgm", label: "背景音乐" },
-                { value: "ambient", label: "环境音" },
-                { value: "sfx", label: "音效" },
-              ]}
-              onChange={(channel) =>
-                patch((current) => {
-                  if (current.type !== "audio") return current;
-                  const nextChannel = channel as "bgm" | "ambient" | "sfx";
-                  const defaults =
-                    nextChannel === "sfx"
-                      ? { volume: 100, loop: false, fadeMs: 0 }
-                      : { volume: 70, loop: true, fadeMs: 1000 };
-                  const asset = (document.assets ?? []).find(
-                    (candidate) =>
-                      candidate.type === "audio" &&
-                      candidate.role ===
-                        {
-                          bgm: "backgroundMusic",
-                          ambient: "ambientSound",
-                          sfx: "soundEffect",
-                        }[nextChannel],
-                  );
-                  return {
-                    ...current,
-                    channel: nextChannel,
-                    assetId:
-                      current.action === "play" ? (asset?.id ?? null) : null,
-                    ...defaults,
-                  };
-                })
-              }
-            />
-          </Field>
+                return (
+                  <button
+                    key={action.value}
+                    type="button"
+                    className={block.action === action.value ? "active" : ""}
+                    aria-pressed={block.action === action.value}
+                    disabled={disabled}
+                    onClick={() =>
+                      patch((current) => {
+                        if (current.type !== "audio") return current;
+                        if (action.value === "stop")
+                          return { ...current, action: "stop", assetId: null };
+                        const asset = (document.assets ?? []).find(
+                          (candidate) =>
+                            candidate.type === "audio" &&
+                            candidate.role ===
+                              audioInspectorRole(current.channel),
+                        );
+                        return asset
+                          ? {
+                              ...current,
+                              action: "play",
+                              assetId: asset.id,
+                            }
+                          : current;
+                      })
+                    }
+                  >
+                    {action.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+          <div className="galgame-audio-inspector-section">
+            <span className="galgame-audio-inspector-label">类型</span>
+            <div
+              className="galgame-audio-type-tabs"
+              role="group"
+              aria-label="声音类型"
+            >
+              {AUDIO_INSPECTOR_CHANNELS.map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  className={block.channel === option.value ? "active" : ""}
+                  aria-pressed={block.channel === option.value}
+                  onClick={() =>
+                    patch((current) => {
+                      if (current.type !== "audio") return current;
+                      const nextChannel = option.value;
+                      const defaults =
+                        nextChannel === "sfx"
+                          ? { volume: 100, loop: false, fadeMs: 0 }
+                          : { volume: 70, loop: true, fadeMs: 1000 };
+                      const asset = (document.assets ?? []).find(
+                        (candidate) =>
+                          candidate.type === "audio" &&
+                          candidate.role === option.role,
+                      );
+                      return {
+                        ...current,
+                        channel: nextChannel,
+                        assetId:
+                          current.action === "play"
+                            ? (asset?.id ?? null)
+                            : null,
+                        ...defaults,
+                      };
+                    })
+                  }
+                >
+                  <span>{option.label}</span>
+                  <small>{option.code}</small>
+                </button>
+              ))}
+            </div>
+          </div>
           {block.action === "play" ? (
             <Field label="声音素材">
               <CustomSelect
                 ariaLabel="声音素材"
                 value={block.assetId ?? ""}
-                options={(document.assets ?? [])
-                  .filter(
-                    (asset) =>
-                      asset.type === "audio" &&
-                      asset.role ===
-                        {
-                          bgm: "backgroundMusic",
-                          ambient: "ambientSound",
-                          sfx: "soundEffect",
-                        }[block.channel],
-                  )
-                  .map((asset) => ({
-                    value: asset.id,
-                    label: asset.type === "audio" ? asset.label : "未知声音",
-                  }))}
+                options={[
+                  {
+                    value: "",
+                    label: "点击选择音频文件…",
+                    disabled: true,
+                  },
+                  ...(document.assets ?? [])
+                    .filter(
+                      (asset) =>
+                        asset.type === "audio" &&
+                        asset.role === audioInspectorRole(block.channel),
+                    )
+                    .map((asset) => ({
+                      value: asset.id,
+                      label: asset.type === "audio" ? asset.label : "未知声音",
+                    })),
+                ]}
                 onChange={(assetId) =>
                   patch((current) =>
                     current.type === "audio"
-                      ? { ...current, assetId }
+                      ? { ...current, assetId: assetId || null }
                       : current,
                   )
                 }
               />
             </Field>
           ) : null}
-          <label className="galgame-audio-range">
-            <span>
-              {block.action === "stop" ? "淡出时间" : "播放音量"}
-              <em>
-                {block.action === "stop"
-                  ? `${(block.fadeMs / 1000).toFixed(1)}s`
-                  : `${block.volume}%`}
-              </em>
-            </span>
-            <input
-              type="range"
-              min="0"
-              max={block.action === "stop" ? "10000" : "100"}
-              step={block.action === "stop" ? "100" : "1"}
-              value={block.action === "stop" ? block.fadeMs : block.volume}
-              onChange={(event) =>
-                patch((current) =>
-                  current.type === "audio"
-                    ? block.action === "stop"
-                      ? { ...current, fadeMs: Number(event.target.value) }
-                      : { ...current, volume: Number(event.target.value) }
-                    : current,
-                )
-              }
-            />
-          </label>
+          <Field label="音轨 ID">
+            <input aria-label="音轨 ID" value={block.channel} readOnly />
+            <small className="galgame-audio-track-hint">
+              同一音轨的新声音会替换当前声音，停止指令也按此音轨生效。
+            </small>
+          </Field>
           {block.action === "play" ? (
             <>
-              <label className="galgame-audio-range">
-                <span>
-                  淡入时间 <em>{(block.fadeMs / 1000).toFixed(1)}s</em>
-                </span>
+              <label className="galgame-audio-control-row">
+                <span>音量</span>
+                <div>
+                  <input
+                    aria-label="播放音量"
+                    className="galgame-audio-number"
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="1"
+                    value={block.volume}
+                    onChange={(event) =>
+                      patch((current) =>
+                        current.type === "audio"
+                          ? {
+                              ...current,
+                              volume: Math.min(
+                                100,
+                                Math.max(0, Number(event.target.value)),
+                              ),
+                            }
+                          : current,
+                      )
+                    }
+                  />
+                  <em>%</em>
+                  <input
+                    aria-label="播放音量滑杆"
+                    type="range"
+                    min="0"
+                    max="100"
+                    step="1"
+                    value={block.volume}
+                    onChange={(event) =>
+                      patch((current) =>
+                        current.type === "audio"
+                          ? { ...current, volume: Number(event.target.value) }
+                          : current,
+                      )
+                    }
+                  />
+                </div>
+              </label>
+              <label className="galgame-audio-switch">
+                <span>循环播放</span>
                 <input
+                  type="checkbox"
+                  checked={block.loop}
+                  onChange={(event) =>
+                    patch((current) =>
+                      current.type === "audio"
+                        ? { ...current, loop: event.target.checked }
+                        : current,
+                    )
+                  }
+                />
+                <i aria-hidden />
+              </label>
+              <label className="galgame-audio-control-row">
+                <span>淡入时长</span>
+                <div>
+                  <input
+                    aria-label="淡入时间"
+                    className="galgame-audio-number"
+                    type="number"
+                    min="0"
+                    max="10000"
+                    step="100"
+                    value={block.fadeMs}
+                    onChange={(event) =>
+                      patch((current) =>
+                        current.type === "audio"
+                          ? {
+                              ...current,
+                              fadeMs: Math.min(
+                                10000,
+                                Math.max(0, Number(event.target.value)),
+                              ),
+                            }
+                          : current,
+                      )
+                    }
+                  />
+                  <em>ms</em>
+                  <input
+                    aria-label="淡入时间滑杆"
+                    type="range"
+                    min="0"
+                    max="10000"
+                    step="100"
+                    value={block.fadeMs}
+                    onChange={(event) =>
+                      patch((current) =>
+                        current.type === "audio"
+                          ? { ...current, fadeMs: Number(event.target.value) }
+                          : current,
+                      )
+                    }
+                  />
+                </div>
+              </label>
+            </>
+          ) : (
+            <label className="galgame-audio-control-row">
+              <span>淡出时长</span>
+              <div>
+                <input
+                  aria-label="淡出时间"
+                  className="galgame-audio-number"
+                  type="number"
+                  min="0"
+                  max="10000"
+                  step="100"
+                  value={block.fadeMs}
+                  onChange={(event) =>
+                    patch((current) =>
+                      current.type === "audio"
+                        ? {
+                            ...current,
+                            fadeMs: Math.min(
+                              10000,
+                              Math.max(0, Number(event.target.value)),
+                            ),
+                          }
+                        : current,
+                    )
+                  }
+                />
+                <em>ms</em>
+                <input
+                  aria-label="淡出时间滑杆"
                   type="range"
                   min="0"
                   max="10000"
@@ -1809,24 +2137,170 @@ export function BlockInspector({
                     )
                   }
                 />
-              </label>
-              <label className="galgame-audio-loop">
+              </div>
+            </label>
+          )}
+        </div>
+      ) : block.type === "curtain" ? (
+        <div className="galgame-curtain-inspector">
+          <section>
+            <span>模式</span>
+            <div
+              className="galgame-inspector-segments is-four"
+              role="group"
+              aria-label="幕布模式"
+            >
+              {CURTAIN_MODE_OPTIONS.map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  className={block.mode === option.value ? "active" : ""}
+                  aria-pressed={block.mode === option.value}
+                  onClick={() =>
+                    patch((current) =>
+                      current.type === "curtain"
+                        ? { ...current, mode: option.value }
+                        : current,
+                    )
+                  }
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          </section>
+          <section>
+            <span>动作</span>
+            <div
+              className="galgame-inspector-segments"
+              role="group"
+              aria-label="幕布动作"
+            >
+              <button
+                type="button"
+                className={block.action === "show" ? "active" : ""}
+                aria-pressed={block.action === "show"}
+                onClick={() =>
+                  patch((current) =>
+                    current.type === "curtain"
+                      ? { ...current, action: "show" }
+                      : current,
+                  )
+                }
+              >
+                合上（屏幕变暗）
+              </button>
+              <button
+                type="button"
+                className={block.action === "hide" ? "active" : ""}
+                aria-pressed={block.action === "hide"}
+                onClick={() =>
+                  patch((current) =>
+                    current.type === "curtain"
+                      ? { ...current, action: "hide" }
+                      : current,
+                  )
+                }
+              >
+                打开（屏幕显露）
+              </button>
+            </div>
+          </section>
+          <label className="galgame-inspector-range-row">
+            <span>时长</span>
+            <div>
+              <span>
                 <input
-                  type="checkbox"
-                  checked={block.loop}
+                  aria-label="幕布动画时长"
+                  type="number"
+                  min="0"
+                  max="60000"
+                  step="100"
+                  value={block.durationMs}
                   onChange={(event) =>
                     patch((current) =>
-                      current.type === "audio"
-                        ? { ...current, loop: event.target.checked }
+                      current.type === "curtain"
+                        ? {
+                            ...current,
+                            durationMs: Math.min(
+                              60000,
+                              Math.max(0, Number(event.target.value)),
+                            ),
+                          }
                         : current,
                     )
                   }
                 />
-                <span>循环播放</span>
-              </label>
-            </>
-          ) : null}
-        </>
+                <em>ms</em>
+              </span>
+              <input
+                aria-label="幕布动画时长滑杆"
+                type="range"
+                min="0"
+                max="60000"
+                step="100"
+                value={block.durationMs}
+                onChange={(event) =>
+                  patch((current) =>
+                    current.type === "curtain"
+                      ? { ...current, durationMs: Number(event.target.value) }
+                      : current,
+                  )
+                }
+              />
+            </div>
+          </label>
+          <label className="galgame-curtain-color-row">
+            <span>颜色</span>
+            <CustomColorPicker
+              ariaLabel="幕布颜色"
+              value={block.color}
+              onChange={(color) =>
+                patch((current) =>
+                  current.type === "curtain" ? { ...current, color } : current,
+                )
+              }
+            />
+          </label>
+          <label className="galgame-inspector-range-row">
+            <span>不透明度</span>
+            <div>
+              <output>{Math.round(block.opacity * 100)}%</output>
+              <input
+                aria-label="幕布不透明度"
+                type="range"
+                min="0"
+                max="1"
+                step="0.05"
+                value={block.opacity}
+                onChange={(event) =>
+                  patch((current) =>
+                    current.type === "curtain"
+                      ? { ...current, opacity: Number(event.target.value) }
+                      : current,
+                  )
+                }
+              />
+            </div>
+          </label>
+          <label className="galgame-inspector-check-row">
+            <input
+              type="checkbox"
+              checked={block.waitForCompletion}
+              onChange={(event) =>
+                patch((current) =>
+                  current.type === "curtain"
+                    ? {
+                        ...current,
+                        waitForCompletion: event.target.checked,
+                      }
+                    : current,
+                )
+              }
+            />
+            <span>等待动画完成后继续</span>
+          </label>
+        </div>
       ) : block.type === "video" ? (
         <>
           <Field label="视频动作">

@@ -1,6 +1,7 @@
 .galgame-workshop-shell,
 .galgame-editor-page,
 .galgame-route-report-backdrop,
+.galgame-block-command-backdrop,
 .galgame-playhead-add-popover {
   --gal-bg: #edf1f6;
   --gal-panel: #f7f9fc;
@@ -335,136 +336,6 @@
   overflow-x: auto;
 }
 
-.galgame-plain-view,
-.galgame-renpy-view,
-.galgame-json-view {
-  min-height: 0;
-  height: 100%;
-  overflow: auto;
-  background: var(--surface-primary);
-}
-
-.galgame-plain-line {
-  display: grid;
-  grid-template-columns: 42px 110px minmax(0, 1fr) repeat(3, 30px);
-  align-items: start;
-  gap: 8px;
-  padding: 10px 14px;
-  border-bottom: 1px solid var(--border-soft);
-}
-
-.galgame-plain-line textarea {
-  min-height: 54px;
-  resize: vertical;
-}
-
-.galgame-plain-line p {
-  margin: 7px 0;
-  color: var(--text-secondary);
-}
-
-.galgame-plain-line button,
-.galgame-json-view button {
-  border: 1px solid var(--border-soft);
-  border-radius: 7px;
-  background: var(--surface-muted);
-  color: var(--text-secondary);
-}
-
-.galgame-renpy-view,
-.galgame-json-view {
-  display: grid;
-  grid-template-rows: auto minmax(0, 1fr) auto;
-}
-
-.galgame-renpy-view > header,
-.galgame-json-view > header {
-  display: flex;
-  justify-content: space-between;
-  padding: 10px 14px;
-  border-bottom: 1px solid var(--border-soft);
-  color: var(--text-secondary);
-}
-
-.galgame-renpy-code,
-.galgame-json-view > pre {
-  width: 100%;
-  min-height: 460px;
-  margin: 0;
-  padding: 18px;
-  border: 0;
-  outline: 0;
-  resize: none;
-  overflow: auto;
-  background: color-mix(in srgb, var(--surface-primary) 94%, #7184ff 6%);
-  color: var(--text-primary);
-  font:
-    13px/1.75 ui-monospace,
-    SFMono-Regular,
-    Menlo,
-    Monaco,
-    Consolas,
-    monospace;
-  white-space: pre-wrap;
-}
-
-.galgame-renpy-code {
-  padding: 0;
-}
-
-.galgame-renpy-code .cm-editor {
-  min-height: 460px;
-  background: transparent;
-}
-
-.galgame-renpy-code .cm-scroller {
-  padding: 12px 0;
-  font:
-    13px/1.75 ui-monospace,
-    SFMono-Regular,
-    Menlo,
-    Monaco,
-    Consolas,
-    monospace;
-}
-
-.galgame-renpy-code .cm-content {
-  padding: 6px 14px;
-  caret-color: var(--text-primary);
-}
-
-.galgame-renpy-code .cm-gutters {
-  border-right: 1px solid var(--border-soft);
-  background: var(--surface-muted);
-  color: var(--text-tertiary);
-}
-
-.galgame-renpy-code .cm-activeLine,
-.galgame-renpy-code .cm-activeLineGutter {
-  background: color-mix(in srgb, var(--accent) 8%, transparent);
-}
-
-.galgame-renpy-code .cm-focused {
-  outline: 2px solid color-mix(in srgb, var(--accent) 30%, transparent);
-  outline-offset: -2px;
-}
-
-.galgame-renpy-view > ul {
-  margin: 0;
-  padding: 10px 32px;
-  color: var(--danger);
-  border-top: 1px solid color-mix(in srgb, var(--danger) 30%, transparent);
-}
-
-.galgame-block-insert-menu > input {
-  grid-column: 1 / -1;
-  padding: 9px 11px;
-  border: 1px solid var(--border-soft);
-  border-radius: 8px;
-  background: var(--surface-primary);
-  color: var(--text-primary);
-}
-
 .galgame-asset-center {
   display: grid;
   grid-template-columns: 210px minmax(0, 1fr);
@@ -597,7 +468,7 @@
 
 .galgame-character-attributes button,
 .galgame-character-attributes input,
-.galgame-character-attributes select {
+.galgame-character-attributes .custom-select-trigger {
   min-height: 34px;
   border: 1px solid var(--gal-line);
   border-radius: 8px;
@@ -664,6 +535,188 @@
 .galgame-player-curtain {
   z-index: 38;
   pointer-events: none;
+  overflow: hidden;
+}
+
+.galgame-player-curtain-panel {
+  position: absolute;
+  display: none;
+  background: var(--curtain-color, #000);
+  opacity: var(--curtain-opacity, 1);
+  animation-duration: var(--curtain-duration, 400ms);
+  animation-fill-mode: both;
+  animation-timing-function: ease-in-out;
+}
+
+.galgame-player-curtain.is-fullscreen .is-fullscreen {
+  inset: 0;
+  display: block;
+}
+
+.galgame-player-curtain.is-letterbox .is-top,
+.galgame-player-curtain.is-letterbox .is-bottom,
+.galgame-player-curtain.is-frame .is-top,
+.galgame-player-curtain.is-frame .is-bottom {
+  left: 0;
+  right: 0;
+  height: 12%;
+  display: block;
+}
+
+.galgame-player-curtain .is-top {
+  top: 0;
+}
+
+.galgame-player-curtain .is-bottom {
+  bottom: 0;
+}
+
+.galgame-player-curtain.is-pillarbox .is-left,
+.galgame-player-curtain.is-pillarbox .is-right,
+.galgame-player-curtain.is-frame .is-left,
+.galgame-player-curtain.is-frame .is-right {
+  top: 0;
+  bottom: 0;
+  width: 12.5%;
+  display: block;
+}
+
+.galgame-player-curtain .is-left {
+  left: 0;
+}
+
+.galgame-player-curtain .is-right {
+  right: 0;
+}
+
+.galgame-player-curtain.is-show .is-fullscreen {
+  animation-name: galgame-curtain-fade-in;
+}
+
+.galgame-player-curtain.is-hide .is-fullscreen {
+  animation-name: galgame-curtain-fade-out;
+}
+
+.galgame-player-curtain.is-show .is-top {
+  animation-name: galgame-curtain-top-in;
+}
+
+.galgame-player-curtain.is-hide .is-top {
+  animation-name: galgame-curtain-top-out;
+}
+
+.galgame-player-curtain.is-show .is-bottom {
+  animation-name: galgame-curtain-bottom-in;
+}
+
+.galgame-player-curtain.is-hide .is-bottom {
+  animation-name: galgame-curtain-bottom-out;
+}
+
+.galgame-player-curtain.is-show .is-left {
+  animation-name: galgame-curtain-left-in;
+}
+
+.galgame-player-curtain.is-hide .is-left {
+  animation-name: galgame-curtain-left-out;
+}
+
+.galgame-player-curtain.is-show .is-right {
+  animation-name: galgame-curtain-right-in;
+}
+
+.galgame-player-curtain.is-hide .is-right {
+  animation-name: galgame-curtain-right-out;
+}
+
+@keyframes galgame-curtain-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: var(--curtain-opacity, 1);
+  }
+}
+
+@keyframes galgame-curtain-fade-out {
+  from {
+    opacity: var(--curtain-opacity, 1);
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes galgame-curtain-top-in {
+  from {
+    transform: translateY(-100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes galgame-curtain-top-out {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-100%);
+  }
+}
+
+@keyframes galgame-curtain-bottom-in {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes galgame-curtain-bottom-out {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(100%);
+  }
+}
+
+@keyframes galgame-curtain-left-in {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes galgame-curtain-left-out {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-100%);
+  }
+}
+
+@keyframes galgame-curtain-right-in {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes galgame-curtain-right-out {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(100%);
+  }
 }
 
 .galgame-player-floating-text {
@@ -882,12 +935,6 @@
     border-bottom: 1px solid var(--border-soft);
   }
   .galgame-asset-center > aside header {
-    display: none;
-  }
-  .galgame-plain-line {
-    grid-template-columns: 32px 84px minmax(180px, 1fr);
-  }
-  .galgame-plain-line button {
     display: none;
   }
 }

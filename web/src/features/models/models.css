@@ -370,8 +370,8 @@
   font-weight: 400;
 }
 input,
-select,
-textarea {
+textarea,
+.custom-select-trigger {
   min-height: 40px;
   padding: 0 12px;
   border: 1px solid var(--border-strong);
@@ -380,8 +380,8 @@ textarea {
   background: var(--surface);
 }
 input:focus,
-select:focus,
-textarea:focus {
+textarea:focus,
+.custom-select-trigger:focus {
   border-color: var(--accent);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 13%, transparent);
 }
@@ -509,7 +509,7 @@ textarea:focus {
   flex-wrap: wrap;
   gap: 8px;
 }
-.filter-row select {
+.filter-row > .custom-select {
   min-width: 145px;
 }
 .date-filter {
@@ -518,9 +518,6 @@ textarea:focus {
   gap: 6px;
   color: var(--faint);
   font-size: 11px;
-}
-.date-filter input {
-  width: 142px;
 }
 .table-meta {
   min-height: 58px;
@@ -609,7 +606,7 @@ th input {
   gap: 10px;
   color: var(--muted);
 }
-.pagination select {
+.pagination .custom-select {
   min-width: 70px;
 }
 .drawer-backdrop {

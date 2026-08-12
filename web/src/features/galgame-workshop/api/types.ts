@@ -176,6 +176,12 @@ export type GalgameStoryHideCgBlock =
   components["schemas"]["GalgameStoryHideCgBlock"];
 export type GalgameStoryBranchBlock =
   components["schemas"]["GalgameStoryBranchBlock"];
+export type GalgameStoryLocalizations =
+  components["schemas"]["GalgameStoryLocalizations"];
+export type GalgameStoryLocalizationTarget =
+  components["schemas"]["GalgameStoryLocalizationTarget"];
+export type GalgameStoryLocalizationEntry =
+  components["schemas"]["GalgameStoryLocalizationEntry"];
 export type GalgameStoryAudioBlock =
   components["schemas"]["GalgameStoryAudioBlock"];
 export type GalgameStoryRouteReport =

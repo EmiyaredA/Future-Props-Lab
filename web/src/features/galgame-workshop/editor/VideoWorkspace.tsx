@@ -12,6 +12,7 @@ import {
 } from "@features/galgame-workshop/api";
 import { stableId } from "@features/galgame-workshop/editor/model";
 import { fetchApiBlob } from "@platform/api/client";
+import { CustomSelect } from "@shared/ui/CustomSelect";
 
 function formatBytes(bytes: number) {
   if (bytes < 1024) return `${bytes} B`;
@@ -221,20 +222,21 @@ export function VideoWorkspace({
             </dl>
             <label>
               打包策略
-              <select
-                value={selected.packagingPolicy}
-                onChange={(event) =>
+              <CustomSelect
+                ariaLabel="视频打包策略"
+                value={selected.packagingPolicy ?? "auto"}
+                onChange={(value) =>
                   patchPolicy.mutate({
                     asset: selected,
-                    policy: event.target.value as
-                      "auto" | "include" | "exclude",
+                    policy: value as "auto" | "include" | "exclude",
                   })
                 }
-              >
-                <option value="auto">自动（仅有效引用）</option>
-                <option value="include">强制打包</option>
-                <option value="exclude">强制排除</option>
-              </select>
+                options={[
+                  { value: "auto", label: "自动（仅有效引用）" },
+                  { value: "include", label: "强制打包" },
+                  { value: "exclude", label: "强制排除" },
+                ]}
+              />
             </label>
             <section>
               {(details?.references ?? []).map((reference, index) => (

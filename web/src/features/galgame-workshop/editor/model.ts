@@ -246,7 +246,11 @@ export function completeStoryDocument(
       disabled: chapter.disabled ?? false,
       fragments: (chapter.fragments ?? []).map((fragment) => ({
         ...fragment,
-        blocks: fragment.blocks ?? [],
+        blocks: (fragment.blocks ?? []).map((block) =>
+          block.type === "curtain"
+            ? { ...block, mode: block.mode ?? "fullscreen" }
+            : block,
+        ),
       })),
     })),
   };

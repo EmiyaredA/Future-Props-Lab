@@ -15,6 +15,7 @@ import type {
   GalgameStoryVariable,
 } from "@features/galgame-workshop/api";
 import { stableId } from "@features/galgame-workshop/editor/model";
+import { CustomSelect } from "@shared/ui/CustomSelect";
 
 type GraphNode = {
   id: string;
@@ -279,35 +280,36 @@ export function NarrativeMapWorkspace({
                   }
                 />
                 <div>
-                  <select
-                    aria-label="变量类型"
+                  <CustomSelect
+                    ariaLabel="变量类型"
                     value={variable.type}
-                    onChange={(event) => {
-                      const type = event.target
-                        .value as GalgameStoryVariable["type"];
+                    onChange={(value) => {
+                      const type = value as GalgameStoryVariable["type"];
                       updateVariable(variable.id, {
                         type,
                         defaultValue: nextDefault(type),
                       });
                     }}
-                  >
-                    <option value="string">文本</option>
-                    <option value="number">数字</option>
-                    <option value="boolean">布尔</option>
-                  </select>
-                  <select
-                    aria-label="持久方式"
+                    options={[
+                      { value: "string", label: "文本" },
+                      { value: "number", label: "数字" },
+                      { value: "boolean", label: "布尔" },
+                    ]}
+                  />
+                  <CustomSelect
+                    ariaLabel="持久方式"
                     value={variable.persistence}
-                    onChange={(event) =>
+                    onChange={(value) =>
                       updateVariable(variable.id, {
-                        persistence: event.target
-                          .value as GalgameStoryVariable["persistence"],
+                        persistence:
+                          value as GalgameStoryVariable["persistence"],
                       })
                     }
-                  >
-                    <option value="session">当前存档</option>
-                    <option value="project">跨存档</option>
-                  </select>
+                    options={[
+                      { value: "session", label: "当前存档" },
+                      { value: "project", label: "跨存档" },
+                    ]}
+                  />
                 </div>
                 {variable.type === "boolean" ? (
                   <label>

@@ -2415,6 +2415,12 @@ export interface components {
             /** Id */
             id: string;
             /**
+             * Mode
+             * @default fullscreen
+             * @enum {string}
+             */
+            mode: "fullscreen" | "letterbox" | "pillarbox" | "frame";
+            /**
              * Opacity
              * @default 1
              */
@@ -2754,6 +2760,44 @@ export interface components {
              */
             y: number;
         };
+        /** GalgameStoryLocalizationEntry */
+        GalgameStoryLocalizationEntry: {
+            /** Blockid */
+            blockId: string;
+            /** Choiceid */
+            choiceId?: string | null;
+            /**
+             * Field
+             * @enum {string}
+             */
+            field: "text" | "title" | "acceptLabel" | "cancelLabel" | "prompt" | "choiceText" | "label";
+            /** Sourcefingerprint */
+            sourceFingerprint: string;
+            /** Text */
+            text: string;
+        };
+        /** GalgameStoryLocalizationTarget */
+        GalgameStoryLocalizationTarget: {
+            /** Entries */
+            entries?: components["schemas"]["GalgameStoryLocalizationEntry"][];
+            /** Locale */
+            locale: string;
+        };
+        /** GalgameStoryLocalizations */
+        GalgameStoryLocalizations: {
+            /**
+             * Defaultlocale
+             * @default zh-CN
+             */
+            defaultLocale: string;
+            /**
+             * Sourcelocale
+             * @default zh-CN
+             */
+            sourceLocale: string;
+            /** Targets */
+            targets?: components["schemas"]["GalgameStoryLocalizationTarget"][];
+        };
         /** GalgameStoryNarrationBlock */
         GalgameStoryNarrationBlock: {
             content?: components["schemas"]["GalgameStoryRichTextDocument"] | null;
@@ -2958,6 +3002,7 @@ export interface components {
             characters?: components["schemas"]["GalgameStoryCharacter"][];
             /** Entrychapterid */
             entryChapterId?: string | null;
+            localizations?: components["schemas"]["GalgameStoryLocalizations"] | null;
             presentation?: components["schemas"]["GalgameStoryPresentation"];
             /** Scenegroups */
             sceneGroups?: components["schemas"]["GalgameStorySceneGroup"][];
@@ -3760,6 +3805,8 @@ export interface components {
         GalgameVoiceMatchIn: {
             /** Assetids */
             assetIds?: string[] | null;
+            /** Blockids */
+            blockIds?: string[] | null;
             /** Expectedstoryrevision */
             expectedStoryRevision: number;
             /**

@@ -17,6 +17,7 @@ import {
   type GenerationTaskStatus,
 } from "@features/visual-workshop/api";
 import { fetchApiBlob } from "@platform/api/client";
+import { CustomSelect } from "@shared/ui/CustomSelect";
 import "@features/visual-workshop/visual-workshop.css";
 
 const ACTIVE_STATUSES = new Set<GenerationTaskStatus>([
@@ -129,41 +130,39 @@ export function VisualWorkshopTasksPage({
         </button>
       </header>
       <div className="generation-task-filters">
-        <select
-          aria-label="按项目筛选"
+        <CustomSelect
+          ariaLabel="按项目筛选"
           value={projectId}
-          onChange={(event) => setProjectId(event.target.value)}
-        >
-          <option value="">全部项目</option>
-          {(projects.data?.items ?? []).map((project) => (
-            <option value={project.id} key={project.id}>
-              {project.title}
-            </option>
-          ))}
-        </select>
-        <select
-          aria-label="按类型筛选"
+          onChange={setProjectId}
+          options={[
+            { value: "", label: "全部项目" },
+            ...(projects.data?.items ?? []).map((project) => ({
+              value: project.id,
+              label: project.title,
+            })),
+          ]}
+        />
+        <CustomSelect
+          ariaLabel="按类型筛选"
           value={kind}
-          onChange={(event) => setKind(event.target.value as typeof kind)}
-        >
-          <option value="">全部类型</option>
-          <option value="image">图片</option>
-          <option value="video">视频</option>
-        </select>
-        <select
-          aria-label="按状态筛选"
+          onChange={(value) => setKind(value as typeof kind)}
+          options={[
+            { value: "", label: "全部类型" },
+            { value: "image", label: "图片" },
+            { value: "video", label: "视频" },
+          ]}
+        />
+        <CustomSelect
+          ariaLabel="按状态筛选"
           value={status}
-          onChange={(event) => setStatus(event.target.value as typeof status)}
-        >
-          <option value="">全部状态</option>
-          {(
-            Object.entries(STATUS_LABELS) as [GenerationTaskStatus, string][]
-          ).map(([value, label]) => (
-            <option value={value} key={value}>
-              {label}
-            </option>
-          ))}
-        </select>
+          onChange={(value) => setStatus(value as typeof status)}
+          options={[
+            { value: "", label: "全部状态" },
+            ...(
+              Object.entries(STATUS_LABELS) as [GenerationTaskStatus, string][]
+            ).map(([value, label]) => ({ value, label })),
+          ]}
+        />
         <span>共 {tasks.data?.total ?? 0} 个任务</span>
       </div>
       {tasks.isLoading ? (

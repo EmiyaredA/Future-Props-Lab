@@ -2829,6 +2829,17 @@
             "title": "Id",
             "type": "string"
           },
+          "mode": {
+            "default": "fullscreen",
+            "enum": [
+              "fullscreen",
+              "letterbox",
+              "pillarbox",
+              "frame"
+            ],
+            "title": "Mode",
+            "type": "string"
+          },
           "opacity": {
             "default": 1,
             "maximum": 1.0,
@@ -3752,6 +3763,111 @@
         "title": "GalgameStoryImageCrop",
         "type": "object"
       },
+      "GalgameStoryLocalizationEntry": {
+        "additionalProperties": false,
+        "properties": {
+          "blockId": {
+            "pattern": "^[a-z0-9][a-z0-9-]{0,63}$",
+            "title": "Blockid",
+            "type": "string"
+          },
+          "choiceId": {
+            "anyOf": [
+              {
+                "pattern": "^[a-z0-9][a-z0-9-]{0,63}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Choiceid"
+          },
+          "field": {
+            "enum": [
+              "text",
+              "title",
+              "acceptLabel",
+              "cancelLabel",
+              "prompt",
+              "choiceText",
+              "label"
+            ],
+            "title": "Field",
+            "type": "string"
+          },
+          "sourceFingerprint": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Sourcefingerprint",
+            "type": "string"
+          },
+          "text": {
+            "maxLength": 20000,
+            "minLength": 1,
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "blockId",
+          "field",
+          "sourceFingerprint",
+          "text"
+        ],
+        "title": "GalgameStoryLocalizationEntry",
+        "type": "object"
+      },
+      "GalgameStoryLocalizationTarget": {
+        "additionalProperties": false,
+        "properties": {
+          "entries": {
+            "items": {
+              "$ref": "#/components/schemas/GalgameStoryLocalizationEntry"
+            },
+            "maxItems": 20000,
+            "title": "Entries",
+            "type": "array"
+          },
+          "locale": {
+            "pattern": "^[A-Za-z]{2,3}(?:-[A-Za-z0-9]{2,8})*$",
+            "title": "Locale",
+            "type": "string"
+          }
+        },
+        "required": [
+          "locale"
+        ],
+        "title": "GalgameStoryLocalizationTarget",
+        "type": "object"
+      },
+      "GalgameStoryLocalizations": {
+        "additionalProperties": false,
+        "properties": {
+          "defaultLocale": {
+            "default": "zh-CN",
+            "pattern": "^[A-Za-z]{2,3}(?:-[A-Za-z0-9]{2,8})*$",
+            "title": "Defaultlocale",
+            "type": "string"
+          },
+          "sourceLocale": {
+            "default": "zh-CN",
+            "pattern": "^[A-Za-z]{2,3}(?:-[A-Za-z0-9]{2,8})*$",
+            "title": "Sourcelocale",
+            "type": "string"
+          },
+          "targets": {
+            "items": {
+              "$ref": "#/components/schemas/GalgameStoryLocalizationTarget"
+            },
+            "maxItems": 30,
+            "title": "Targets",
+            "type": "array"
+          }
+        },
+        "title": "GalgameStoryLocalizations",
+        "type": "object"
+      },
       "GalgameStoryNarrationBlock": {
         "additionalProperties": false,
         "properties": {
@@ -4329,6 +4445,16 @@
               }
             ],
             "title": "Entrychapterid"
+          },
+          "localizations": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/GalgameStoryLocalizations"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "presentation": {
             "$ref": "#/components/schemas/GalgameStoryPresentation"
@@ -6328,6 +6454,22 @@
               }
             ],
             "title": "Assetids"
+          },
+          "blockIds": {
+            "anyOf": [
+              {
+                "items": {
+                  "pattern": "^[a-z0-9][a-z0-9-]{0,63}$",
+                  "type": "string"
+                },
+                "maxItems": 500,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Blockids"
           },
           "expectedStoryRevision": {
             "minimum": 0.0,

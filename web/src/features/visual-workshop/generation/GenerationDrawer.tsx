@@ -1028,19 +1028,20 @@ export function GenerationDrawer({
       <form className="generation-form" onSubmit={submit}>
         <label>
           <span>模型</span>
-          <select
-            aria-label="生成模型"
+          <CustomSelect
+            ariaLabel="生成模型"
             value={modelId}
-            onChange={(event) => setModelId(event.target.value)}
+            onChange={setModelId}
             disabled={options.isLoading}
-          >
-            {!models.length ? <option value="">暂无可用模型</option> : null}
-            {models.map((model) => (
-              <option value={model.id} key={model.id}>
-                {model.label}
-              </option>
-            ))}
-          </select>
+            options={
+              models.length
+                ? models.map((model) => ({
+                    value: model.id,
+                    label: model.label,
+                  }))
+                : [{ value: "", label: "暂无可用模型", disabled: true }]
+            }
+          />
           {selectedModel?.description ? (
             <small>{selectedModel.description}</small>
           ) : null}
@@ -1062,16 +1063,15 @@ export function GenerationDrawer({
             <div className="generation-form-grid">
               <label>
                 <span>尺寸</span>
-                <select
+                <CustomSelect
+                  ariaLabel="生成尺寸"
                   value={size}
-                  onChange={(event) => setSize(event.target.value)}
-                >
-                  {(selectedModel?.sizes ?? []).map((option) => (
-                    <option value={option} key={option}>
-                      {option}
-                    </option>
-                  ))}
-                </select>
+                  onChange={setSize}
+                  options={(selectedModel?.sizes ?? []).map((option) => ({
+                    value: option,
+                    label: option,
+                  }))}
+                />
               </label>
               <label>
                 <span>种子（可选）</span>
@@ -1097,48 +1097,43 @@ export function GenerationDrawer({
             <div className="generation-form-grid generation-form-grid-three">
               <label>
                 <span>时长</span>
-                <select
-                  value={duration}
-                  onChange={(event) => setDuration(Number(event.target.value))}
-                >
-                  {Array.from({ length: 12 }, (_, index) => index + 4).map(
-                    (value) => (
-                      <option value={value} key={value}>
-                        {value} 秒
-                      </option>
-                    ),
-                  )}
-                </select>
+                <CustomSelect
+                  ariaLabel="视频时长"
+                  value={String(duration)}
+                  onChange={(value) => setDuration(Number(value))}
+                  options={Array.from(
+                    { length: 12 },
+                    (_, index) => index + 4,
+                  ).map((value) => ({
+                    value: String(value),
+                    label: `${value} 秒`,
+                  }))}
+                />
               </label>
               <label>
                 <span>分辨率</span>
-                <select
+                <CustomSelect
+                  ariaLabel="视频分辨率"
                   value={resolution}
-                  onChange={(event) =>
-                    setResolution(event.target.value as typeof resolution)
+                  onChange={(value) =>
+                    setResolution(value as typeof resolution)
                   }
-                >
-                  <option value="480p">480p</option>
-                  <option value="720p">720p</option>
-                  <option value="1080p">1080p</option>
-                </select>
+                  options={["480p", "720p", "1080p"].map((value) => ({
+                    value,
+                    label: value,
+                  }))}
+                />
               </label>
               <label>
                 <span>比例</span>
-                <select
+                <CustomSelect
+                  ariaLabel="视频比例"
                   value={ratio}
-                  onChange={(event) =>
-                    setRatio(event.target.value as typeof ratio)
-                  }
-                >
-                  {(["16:9", "9:16", "4:3", "3:4", "1:1"] as const).map(
-                    (value) => (
-                      <option value={value} key={value}>
-                        {value}
-                      </option>
-                    ),
+                  onChange={(value) => setRatio(value as typeof ratio)}
+                  options={(["16:9", "9:16", "4:3", "3:4", "1:1"] as const).map(
+                    (value) => ({ value, label: value }),
                   )}
-                </select>
+                />
               </label>
             </div>
             <fieldset className="generation-mode-options">

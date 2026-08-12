@@ -127,6 +127,111 @@ def default_position_presets() -> list[dict]:
     ]
 
 
+def localized_story() -> dict:
+    document = playable_story()
+    document["localizations"] = {
+        "sourceLocale": "zh-CN",
+        "defaultLocale": "en-US",
+        "targets": [
+            {
+                "locale": "en-US",
+                "entries": [
+                    {
+                        "blockId": "block-dialogue",
+                        "field": "text",
+                        "sourceFingerprint": "v1-dialogue",
+                        "text": "Only one clue can support the choice.",
+                    },
+                    {
+                        "blockId": "block-branch",
+                        "field": "choiceText",
+                        "choiceId": "choice-device",
+                        "sourceFingerprint": "v1-choice",
+                        "text": "Inspect the device",
+                    },
+                ],
+            }
+        ],
+    }
+    return document
+
+
+def test_galgame_story_localization_schema_and_legacy_compatibility() -> None:
+    legacy = GalgameStoryProject.model_validate(playable_story())
+    assert legacy.localizations is None
+
+    localized = GalgameStoryProject.model_validate(localized_story()).model_dump(
+        mode="json", by_alias=True
+    )
+    assert localized["localizations"]["defaultLocale"] == "en-US"
+    assert localized["localizations"]["targets"][0]["entries"][1]["choiceId"] == ("choice-device")
+
+    invalid_cases: list[dict] = []
+    invalid_locale = localized_story()
+    invalid_locale["localizations"]["targets"][0]["locale"] = "not_a_locale"
+    invalid_cases.append(invalid_locale)
+
+    duplicate_locale = localized_story()
+    duplicate_locale["localizations"]["targets"].append({"locale": "EN-us", "entries": []})
+    invalid_cases.append(duplicate_locale)
+
+    duplicate_entry = localized_story()
+    duplicate_entry["localizations"]["targets"][0]["entries"].append(
+        deepcopy(duplicate_entry["localizations"]["targets"][0]["entries"][0])
+    )
+    invalid_cases.append(duplicate_entry)
+
+    missing_choice_id = localized_story()
+    del missing_choice_id["localizations"]["targets"][0]["entries"][1]["choiceId"]
+    invalid_cases.append(missing_choice_id)
+
+    invalid_choice = localized_story()
+    invalid_choice["localizations"]["targets"][0]["entries"][1]["choiceId"] = "missing-choice"
+    invalid_cases.append(invalid_choice)
+
+    invalid_field = localized_story()
+    invalid_field["localizations"]["targets"][0]["entries"][0]["field"] = "label"
+    invalid_cases.append(invalid_field)
+
+    for invalid in invalid_cases:
+        with pytest.raises(ValueError):
+            GalgameStoryProject.model_validate(invalid)
+
+
+@pytest.mark.asyncio
+async def test_galgame_story_localizations_round_trip_with_revision_cas() -> None:
+    transport = httpx.ASGITransport(app=app)
+    async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+        project = (
+            await client.post("/v1/galgame-workshop/projects", json={"title": "多语言往返"})
+        ).json()
+        first = await client.put(
+            f"/v1/galgame-workshop/projects/{project['id']}/story",
+            json={"expected_revision": 0, "document": localized_story()},
+        )
+        assert first.status_code == 200, first.text
+        assert (
+            first.json()["document"]["localizations"]["targets"][0]["entries"][0]["text"]
+            == "Only one clue can support the choice."
+        )
+
+        changed = localized_story()
+        changed["localizations"]["targets"][0]["entries"][0]["text"] = "Updated text"
+        second = await client.put(
+            f"/v1/galgame-workshop/projects/{project['id']}/story",
+            json={"expected_revision": 1, "document": changed},
+        )
+        assert second.status_code == 200
+        assert second.json()["revision"] == 2
+
+        stale = await client.put(
+            f"/v1/galgame-workshop/projects/{project['id']}/story",
+            json={"expected_revision": 1, "document": localized_story()},
+        )
+        assert stale.status_code == 409
+        assert stale.json()["code"] == "revision_conflict"
+
+
 def test_galgame_story_defaults_character_themes_and_stage_settings() -> None:
     document = playable_story()
     document["characters"].append(
@@ -599,6 +704,38 @@ def test_story_v2_typed_variables_attributes_and_builtin_block_families() -> Non
     set_block["value"] = 1
     with pytest.raises(ValueError, match="变量赋值与声明类型"):
         GalgameStoryProject.model_validate(invalid_variable)
+
+
+def test_galgame_curtain_modes_default_and_validate() -> None:
+    document = playable_story()
+    fragment = document["chapters"][0]["fragments"][0]
+    fragment["blocks"] = [
+        {"id": "legacy-curtain", "type": "curtain", "action": "show"},
+        *[
+            {
+                "id": f"curtain-{mode}",
+                "type": "curtain",
+                "mode": mode,
+                "action": "hide",
+            }
+            for mode in ("fullscreen", "letterbox", "pillarbox", "frame")
+        ],
+    ]
+
+    normalized = GalgameStoryProject.model_validate(document).model_dump(mode="json", by_alias=True)
+    curtains = normalized["chapters"][0]["fragments"][0]["blocks"]
+    assert curtains[0]["mode"] == "fullscreen"
+    assert [block["mode"] for block in curtains[1:]] == [
+        "fullscreen",
+        "letterbox",
+        "pillarbox",
+        "frame",
+    ]
+
+    invalid = deepcopy(document)
+    invalid["chapters"][0]["fragments"][0]["blocks"][0]["mode"] = "circle"
+    with pytest.raises(ValueError):
+        GalgameStoryProject.model_validate(invalid)
 
 
 def test_galgame_dialogue_supports_multiple_speakers_without_changing_legacy_blocks() -> None:

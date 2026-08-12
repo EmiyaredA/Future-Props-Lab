@@ -1,0 +1,113 @@
+.custom-color-picker {
+  position: relative;
+  min-width: 112px;
+}
+
+.custom-color-picker-trigger {
+  width: 100%;
+  min-height: 40px;
+  padding: 0 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+}
+
+.custom-color-picker-trigger > span {
+  width: 20px;
+  height: 20px;
+  flex: none;
+  border: 1px solid var(--border-strong);
+  border-radius: 5px;
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 35%);
+}
+
+.custom-color-picker-trigger > strong {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.custom-color-picker.compact {
+  min-width: 32px;
+}
+
+.custom-color-picker.compact .custom-color-picker-trigger {
+  width: 32px;
+  min-height: 32px;
+  padding: 0;
+  justify-content: center;
+  border: 0;
+  background: transparent;
+}
+
+.custom-color-picker.compact .custom-color-picker-trigger > span {
+  width: 17px;
+  height: 17px;
+  border-radius: 4px;
+}
+
+.custom-color-picker-popover {
+  position: absolute;
+  z-index: 100;
+  top: calc(100% + 6px);
+  left: 0;
+  width: 224px;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  box-shadow: 0 14px 42px rgb(0 0 0 / 18%);
+}
+
+.custom-color-picker-swatches {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 7px;
+}
+
+.custom-color-picker-swatches > button {
+  width: 32px;
+  height: 32px;
+  border: 2px solid transparent;
+  border-radius: 7px;
+  box-shadow: inset 0 0 0 1px rgb(0 0 0 / 14%);
+}
+
+.custom-color-picker-swatches > button[aria-pressed="true"] {
+  border-color: var(--accent);
+  box-shadow:
+    0 0 0 2px var(--surface),
+    0 0 0 4px var(--accent-line);
+}
+
+.custom-color-picker-popover > label {
+  display: grid;
+  gap: 5px;
+  margin-top: 11px;
+}
+
+.custom-color-picker-popover > label > span {
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.custom-color-picker-popover input {
+  width: 100%;
+  min-height: 34px;
+  padding: 0 9px;
+  border: 1px solid var(--border-strong);
+  border-radius: 7px;
+  background: var(--surface);
+  color: var(--text);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  text-transform: uppercase;
+}
+
+.custom-color-picker-popover input:focus {
+  border-color: var(--accent);
+  outline: 2px solid var(--accent-soft);
+}

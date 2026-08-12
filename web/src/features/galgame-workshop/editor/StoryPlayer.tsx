@@ -98,6 +98,7 @@ import {
   resolvedRichTextDocument,
   truncateRichText,
 } from "@features/galgame-workshop/editor/richText";
+import { localizedStoryDocument } from "@features/galgame-workshop/editor/localization";
 
 const STAGE_ASPECT_OPTIONS: StageAspectMode[] = [
   "auto",
@@ -159,6 +160,8 @@ export interface StoryPlayerHandle {
 
 type StoryPlayerProps = {
   document: GalgameStoryProject;
+  locale?: string;
+  includeStaleTranslations?: boolean;
   startCursor?: { chapterId: string; fragmentId: string; blockIndex?: number };
   mode?: "edit" | "play";
   editFragment?: GalgameStoryFragment;
@@ -214,10 +217,12 @@ const DEFAULT_MIX: Record<MixChannel, number> = {
 export const StoryPlayer = forwardRef<StoryPlayerHandle, StoryPlayerProps>(
   function StoryPlayer(
     {
-      document,
+      document: sourceDocument,
+      locale,
+      includeStaleTranslations = false,
       startCursor,
       mode = "play",
-      editFragment,
+      editFragment: sourceEditFragment,
       editBlockIndex,
       editTimelinePositionMs,
       editableCharacterId,
@@ -234,6 +239,26 @@ export const StoryPlayer = forwardRef<StoryPlayerHandle, StoryPlayerProps>(
     },
     ref,
   ) {
+    const document = useMemo(
+      () =>
+        localizedStoryDocument(sourceDocument, locale, {
+          includeStale: includeStaleTranslations,
+        }),
+      [includeStaleTranslations, locale, sourceDocument],
+    );
+    const editFragment = useMemo(() => {
+      if (!sourceEditFragment) return undefined;
+      const chapterIndex = (sourceDocument.chapters ?? []).findIndex(
+        (chapter) =>
+          chapter.fragments?.some(
+            (fragment) => fragment === sourceEditFragment,
+          ),
+      );
+      if (chapterIndex < 0) return sourceEditFragment;
+      return document.chapters?.[chapterIndex]?.fragments?.find(
+        (fragment) => fragment.id === sourceEditFragment.id,
+      );
+    }, [document.chapters, sourceDocument.chapters, sourceEditFragment]);
     const [frame, setFrame] = useState<PlayerFrame>({
       mode: "idle",
       stage: emptyStageState(),
@@ -1973,13 +1998,30 @@ export const StoryPlayer = forwardRef<StoryPlayerHandle, StoryPlayerProps>(
             ) : null}
             {displayFrame.stage.curtain ? (
               <div
-                className="galgame-player-curtain"
-                style={{
-                  background: displayFrame.stage.curtain.color,
-                  opacity: displayFrame.stage.curtain.opacity,
-                  transitionDuration: `${displayFrame.stage.curtain.durationMs}ms`,
-                }}
-              />
+                key={displayFrame.stage.curtain.transitionKey}
+                className={`galgame-player-curtain is-${displayFrame.stage.curtain.mode} is-${displayFrame.stage.curtain.action}`}
+                aria-label={`${
+                  {
+                    fullscreen: "全屏",
+                    letterbox: "上下黑边",
+                    pillarbox: "左右黑边",
+                    frame: "四周黑边",
+                  }[displayFrame.stage.curtain.mode]
+                }幕布${displayFrame.stage.curtain.visible ? "合上" : "打开"}`}
+                style={
+                  {
+                    "--curtain-color": displayFrame.stage.curtain.color,
+                    "--curtain-opacity": displayFrame.stage.curtain.opacity,
+                    "--curtain-duration": `${displayFrame.stage.curtain.durationMs}ms`,
+                  } as CSSProperties
+                }
+              >
+                <i className="galgame-player-curtain-panel is-fullscreen" />
+                <i className="galgame-player-curtain-panel is-top" />
+                <i className="galgame-player-curtain-panel is-bottom" />
+                <i className="galgame-player-curtain-panel is-left" />
+                <i className="galgame-player-curtain-panel is-right" />
+              </div>
             ) : null}
             {customUiComponents.map(({ component, asset }) => (
               <div

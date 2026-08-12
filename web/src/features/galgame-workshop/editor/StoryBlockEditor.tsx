@@ -1,11 +1,15 @@
 import {
+  useCallback,
   useEffect,
+  useId,
+  useLayoutEffect,
   useRef,
   useState,
   type CSSProperties,
-  type KeyboardEvent as ReactKeyboardEvent,
 } from "react";
+import { createPortal } from "react-dom";
 import {
+  Check,
   Clock3,
   Eye,
   EyeOff,
@@ -16,8 +20,10 @@ import {
   MessageSquareText,
   Music2,
   Plus,
+  Search,
   UserRound,
   Volume2,
+  X,
 } from "lucide-react";
 import type {
   GalgameStoryBlock,
@@ -34,7 +40,12 @@ import { type GalgameStoryDialogueBlock } from "@features/galgame-workshop/edito
 import { type BlockKind } from "@features/galgame-workshop/editor/model";
 import { StoryAssetImage } from "@features/galgame-workshop/editor/StoryAssetImage";
 import { formatTimecode } from "@features/galgame-workshop/editor/timeline";
-import { BLOCK_REGISTRY } from "@features/galgame-workshop/editor/blockRegistry";
+import {
+  BLOCK_REGISTRY,
+  CURTAIN_MODE_OPTIONS,
+  WAIT_DURATION_PRESETS,
+  blockCapability,
+} from "@features/galgame-workshop/editor/blockRegistry";
 import {
   RichTextEditor,
   RichTextView,
@@ -63,6 +74,8 @@ const AUDIO_LABELS = {
 type AudioChannel = keyof typeof AUDIO_LABELS;
 
 function blockIcon(type: BlockKind) {
+  if (type === "wait") return <Clock3 aria-hidden />;
+  if (type === "curtain") return <EyeOff aria-hidden />;
   if (type === "scene") return <MapPinned aria-hidden />;
   if (type === "showCg" || type === "hideCg") return <Images aria-hidden />;
   if (type === "dialogue") return <UserRound aria-hidden />;
@@ -144,15 +157,50 @@ function blockPreviewFileId(
   return document.assets?.find((candidate) => candidate.id === assetId)?.fileId;
 }
 
-function BlockInsertMenu({
+type InsertCommand = {
+  id: string;
+  label: string;
+  group: "角色" | "文本" | "演出" | "逻辑";
+  icon: ReturnType<typeof blockIcon>;
+  description: string;
+  checked?: boolean;
+  closeAfterRun?: boolean;
+  disabled?: boolean;
+  run: () => void;
+};
+
+type ContextCommandSection = {
+  label: string;
+  commands: InsertCommand[];
+};
+
+const INSERT_GROUPS = ["角色", "文本", "演出", "逻辑"] as const;
+const CATEGORY_LABELS = {
+  character: "角色",
+  text: "文本",
+  stage: "演出",
+  logic: "逻辑",
+} as const;
+
+function BlockInsertPalette({
+  anchor,
   beforeBundleId,
+  selectedBlock,
+  story,
   hasTerminator,
+  onClose,
+  onBlock,
   onAddBlock,
   onAddAllCharacters,
   onAddAudio,
 }: {
+  anchor: HTMLElement;
   beforeBundleId?: string;
+  selectedBlock?: GalgameStoryBlock;
+  story: GalgameStoryProject;
   hasTerminator: boolean;
+  onClose: (restoreFocus: boolean) => void;
+  onBlock: (block: GalgameStoryBlock) => void;
   onAddBlock: (kind: BlockKind, beforeBundleId?: string) => void;
   onAddAllCharacters: (beforeBundleId?: string) => void;
   onAddAudio: (
@@ -161,159 +209,424 @@ function BlockInsertMenu({
     beforeBundleId?: string,
   ) => void;
 }) {
-  const detailsRef = useRef<HTMLDetailsElement>(null);
+  const titleId = useId();
+  const inputRef = useRef<HTMLInputElement>(null);
+  const commandRefs = useRef(new Map<string, HTMLButtonElement>());
   const [query, setQuery] = useState("");
-  const closeThen = (action: () => void) => {
-    action();
-    if (detailsRef.current) detailsRef.current.open = false;
-  };
-  const openWithKeyboard = (event: ReactKeyboardEvent<HTMLElement>) => {
-    if (event.key !== "Tab" || event.shiftKey) return;
-    event.preventDefault();
-    if (!detailsRef.current) return;
-    detailsRef.current.open = true;
-    requestAnimationFrame(() =>
-      detailsRef.current?.querySelector<HTMLButtonElement>("button")?.focus(),
+  const [placement, setPlacement] = useState<CSSProperties>();
+
+  const selectedGroup = selectedBlock
+    ? CATEGORY_LABELS[BLOCK_REGISTRY[selectedBlock.type].category]
+    : "文本";
+  const contextSections: ContextCommandSection[] = (() => {
+    if (!selectedBlock) return [];
+    const setting = (
+      section: string,
+      id: string,
+      label: string,
+      checked: boolean,
+      description: string,
+      run: () => void,
+      icon = blockIcon(selectedBlock.type),
+    ) => ({ section, id, label, checked, description, run, icon });
+    if (selectedBlock.type === "curtain") {
+      const entries = [
+        ...CURTAIN_MODE_OPTIONS.map((option) =>
+          setting(
+            "幕布设置",
+            `context-curtain-mode-${option.value}`,
+            option.label,
+            selectedBlock.mode === option.value,
+            `将当前幕布形态设置为“${option.label}”。`,
+            () => onBlock({ ...selectedBlock, mode: option.value }),
+          ),
+        ),
+        setting(
+          "幕布动作",
+          "context-curtain-show",
+          "合上（屏幕变暗）",
+          selectedBlock.action === "show",
+          "让幕布按当前形态和颜色进入画面。",
+          () => onBlock({ ...selectedBlock, action: "show" }),
+          <EyeOff aria-hidden />,
+        ),
+        setting(
+          "幕布动作",
+          "context-curtain-hide",
+          "打开（屏幕显露）",
+          selectedBlock.action === "hide",
+          "让当前幕布反向离场并显露舞台。",
+          () => onBlock({ ...selectedBlock, action: "hide" }),
+          <Eye aria-hidden />,
+        ),
+        ...[0, 200, 500, 1000, 2000].map((durationMs) =>
+          setting(
+            "动作时长",
+            `context-curtain-duration-${durationMs}`,
+            durationMs === 0 ? "立即" : `${durationMs / 1000} 秒`,
+            selectedBlock.durationMs === durationMs,
+            `将幕布动画时长设置为 ${durationMs}ms。`,
+            () => onBlock({ ...selectedBlock, durationMs }),
+            <Clock3 aria-hidden />,
+          ),
+        ),
+      ];
+      return ["幕布设置", "幕布动作", "动作时长"].map((label) => ({
+        label,
+        commands: entries
+          .filter((entry) => entry.section === label)
+          .map((entry) => ({
+            ...entry,
+            group: selectedGroup,
+            closeAfterRun: false,
+          })),
+      }));
+    }
+    if (selectedBlock.type === "wait") {
+      const entries = [
+        setting(
+          "等待模式",
+          "context-wait-duration",
+          "等待指定时间",
+          selectedBlock.mode === "duration",
+          "按毫秒时长暂停剧情；跳过模式可以越过。",
+          () =>
+            onBlock({
+              ...selectedBlock,
+              mode: "duration",
+              durationMs: selectedBlock.durationMs ?? 1000,
+            }),
+        ),
+        setting(
+          "等待模式",
+          "context-wait-player",
+          "等待玩家继续",
+          selectedBlock.mode === "player",
+          "只响应玩家继续操作，不受自动播放或跳过影响。",
+          () => onBlock({ ...selectedBlock, mode: "player", durationMs: null }),
+        ),
+        ...WAIT_DURATION_PRESETS.map((durationMs) =>
+          setting(
+            "等待时长",
+            `context-wait-${durationMs}`,
+            `${durationMs}ms`,
+            selectedBlock.mode === "duration" &&
+              selectedBlock.durationMs === durationMs,
+            `等待 ${durationMs}ms 后继续剧情。`,
+            () =>
+              onBlock({
+                ...selectedBlock,
+                mode: "duration",
+                durationMs,
+              }),
+            <Clock3 aria-hidden />,
+          ),
+        ),
+      ];
+      return ["等待模式", "等待时长"].map((label) => ({
+        label,
+        commands: entries
+          .filter((entry) => entry.section === label)
+          .map((entry) => ({
+            ...entry,
+            group: selectedGroup,
+            closeAfterRun: false,
+          })),
+      }));
+    }
+    return [
+      {
+        label: "当前卡片",
+        commands: [
+          {
+            id: "context-open-inspector",
+            label: "在右侧属性中编辑",
+            group: selectedGroup,
+            icon: blockIcon(selectedBlock.type),
+            description: `${blockCapability(selectedBlock).summary(selectedBlock, story)}。完整设置已经显示在右侧属性面板。`,
+            closeAfterRun: true,
+            run: () => undefined,
+          },
+        ],
+      },
+    ];
+  })();
+  const commands: InsertCommand[] = [
+    ...(Object.keys(BLOCK_REGISTRY) as BlockKind[])
+      .filter((kind) => kind !== "audio")
+      .map((kind): InsertCommand => {
+        const capability = BLOCK_REGISTRY[kind];
+        return {
+          id: `insert-${kind}`,
+          label: capability.label,
+          group: CATEGORY_LABELS[capability.category],
+          icon: blockIcon(kind),
+          description: `在当前选中卡片前插入“${capability.label}” Block。`,
+          closeAfterRun: true,
+          disabled:
+            hasTerminator &&
+            (kind === "endChapter" || kind === "returnToEntry"),
+          run: () => onAddBlock(kind, beforeBundleId),
+        };
+      }),
+    {
+      id: "insert-remove-all-characters",
+      label: "全部退场",
+      group: "角色",
+      icon: blockIcon("removeCharacter"),
+      description: "在当前位置插入全部角色退场 Block。",
+      closeAfterRun: true,
+      run: () => onAddAllCharacters(beforeBundleId),
+    },
+    ...(Object.keys(AUDIO_LABELS) as AudioChannel[]).map(
+      (channel): InsertCommand => ({
+        id: `insert-play-${channel}`,
+        label: AUDIO_LABELS[channel],
+        group: "演出",
+        icon: <Music2 aria-hidden />,
+        description: `播放或切换${AUDIO_LABELS[channel]}。`,
+        closeAfterRun: true,
+        run: () => onAddAudio("play", channel, beforeBundleId),
+      }),
+    ),
+    ...(Object.keys(AUDIO_LABELS) as AudioChannel[]).map(
+      (channel): InsertCommand => ({
+        id: `insert-stop-${channel}`,
+        label: `停止${AUDIO_LABELS[channel]}`,
+        group: "演出",
+        icon: <Volume2 aria-hidden />,
+        description: `停止当前${AUDIO_LABELS[channel]}通道。`,
+        closeAfterRun: true,
+        run: () => onAddAudio("stop", channel, beforeBundleId),
+      }),
+    ),
+  ];
+  const normalizedQuery = query.trim().toLocaleLowerCase("zh-CN");
+  const matchesQuery = (command: InsertCommand) =>
+    `${command.label} ${command.group} ${command.description}`
+      .toLocaleLowerCase("zh-CN")
+      .includes(normalizedQuery);
+  const filteredCommands = commands.filter(matchesQuery);
+  const filteredContextSections = contextSections
+    .map((section) => ({
+      ...section,
+      commands: section.commands.filter(matchesQuery),
+    }))
+    .filter((section) => section.commands.length);
+  const visibleCommands = [
+    ...filteredContextSections.flatMap((section) => section.commands),
+    ...filteredCommands,
+  ];
+  const [activeCommandId, setActiveCommandId] = useState<string>();
+  const activeCommand =
+    visibleCommands.find((command) => command.id === activeCommandId) ??
+    visibleCommands[0];
+
+  useLayoutEffect(() => {
+    const place = () => {
+      const bounds = anchor.getBoundingClientRect();
+      const viewportPadding = 16;
+      const width = Math.min(1120, window.innerWidth - viewportPadding * 2);
+      const maxHeight = Math.min(720, window.innerHeight - viewportPadding * 2);
+      const left = Math.max(
+        viewportPadding,
+        Math.min(bounds.left, window.innerWidth - width - viewportPadding),
+      );
+      const top = Math.max(
+        viewportPadding,
+        Math.min(
+          bounds.top + Math.min(bounds.height, 28),
+          window.innerHeight - maxHeight - viewportPadding,
+        ),
+      );
+      setPlacement({ left, top, width, maxHeight });
+    };
+    place();
+    window.addEventListener("resize", place);
+    window.addEventListener("scroll", place, true);
+    return () => {
+      window.removeEventListener("resize", place);
+      window.removeEventListener("scroll", place, true);
+    };
+  }, [anchor]);
+
+  useEffect(() => {
+    const previousOverflow = document.body.style.overflow;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      onClose(true);
+    };
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", closeOnEscape);
+    requestAnimationFrame(() => inputRef.current?.focus());
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [onClose]);
+
+  const enabledCommands = visibleCommands.filter(
+    (command) => !command.disabled,
+  );
+  const focusCommand = (direction: 1 | -1) => {
+    if (!enabledCommands.length) return;
+    const current = enabledCommands.findIndex(
+      (command) =>
+        commandRefs.current.get(command.id) === document.activeElement,
     );
+    const next =
+      current < 0
+        ? direction > 0
+          ? 0
+          : enabledCommands.length - 1
+        : (current + direction + enabledCommands.length) %
+          enabledCommands.length;
+    commandRefs.current.get(enabledCommands[next].id)?.focus();
   };
-  const buttons = (kinds: BlockKind[]) =>
-    kinds
-      .filter((kind) =>
-        BLOCK_LABELS[kind]
-          .toLocaleLowerCase("zh-CN")
-          .includes(query.trim().toLocaleLowerCase("zh-CN")),
-      )
-      .map((kind) => (
-        <button
-          key={kind}
-          type="button"
-          disabled={
-            hasTerminator && (kind === "endChapter" || kind === "returnToEntry")
-          }
-          onClick={() => closeThen(() => onAddBlock(kind, beforeBundleId))}
-        >
-          {BLOCK_LABELS[kind]}
-        </button>
-      ));
-  return (
-    <details
-      ref={detailsRef}
-      className="galgame-block-insert"
-      data-insertion-id={beforeBundleId ?? "end"}
+  const runCommand = (command: InsertCommand) => {
+    if (command.disabled) return;
+    command.run();
+    if (command.closeAfterRun) onClose(command.id === "context-open-inspector");
+  };
+
+  return createPortal(
+    <div
+      className="galgame-block-command-backdrop"
+      role="presentation"
+      onPointerDown={(event) => {
+        if (event.target === event.currentTarget) onClose(true);
+      }}
     >
-      <summary
-        role="button"
-        aria-label="在这里插入 Block"
-        onKeyDown={openWithKeyboard}
+      <section
+        className="galgame-block-command-palette"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        style={placement}
+        onKeyDown={(event) => {
+          if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
+          event.preventDefault();
+          focusCommand(event.key === "ArrowDown" ? 1 : -1);
+        }}
       >
-        <span />
-        <Plus aria-hidden />
-        <em>插入 Block</em>
-        <span />
-      </summary>
-      <div className="galgame-block-insert-menu" aria-label="可插入 Block">
-        <input
-          aria-label="搜索 Block"
-          placeholder="搜索角色、文本、演出或逻辑…"
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-        />
-        <section>
-          <strong>角色</strong>
-          <div>
-            {buttons([
-              "dialogue",
-              "showCharacter",
-              "removeCharacter",
-              "animateSprite",
-              "portraitStyleRule",
-            ])}
-            <button
-              type="button"
-              onClick={() =>
-                closeThen(() => onAddAllCharacters(beforeBundleId))
-              }
-            >
-              全部退场
-            </button>
+        <h2 id={titleId} className="galgame-block-command-title">
+          插入 Block
+        </h2>
+        <header>
+          <label>
+            <Search aria-hidden />
+            <input
+              ref={inputRef}
+              aria-label="搜索可插入 Block"
+              placeholder="搜索指令、设置、角色、文本、演出或逻辑…"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key !== "Enter" || !enabledCommands[0]) return;
+                event.preventDefault();
+                runCommand(enabledCommands[0]);
+              }}
+            />
+            <kbd>Esc</kbd>
+          </label>
+          <button
+            type="button"
+            aria-label="关闭 Block 插入面板"
+            onClick={() => onClose(true)}
+          >
+            <X aria-hidden />
+          </button>
+        </header>
+        <div className="galgame-block-command-copy">
+          <small>指令说明</small>
+          <span>
+            <strong>{activeCommand?.label ?? "插入 Block"}</strong>
+            <em>
+              {activeCommand?.description ??
+                "选择一个 Block 类型插入当前剧情位置。"}
+            </em>
+          </span>
+        </div>
+        {visibleCommands.length ? (
+          <div
+            className={`galgame-block-command-groups${selectedBlock ? " has-context" : ""}`}
+          >
+            {selectedBlock ? (
+              <section className="galgame-block-command-context">
+                <strong>{BLOCK_LABELS[selectedBlock.type]}设置</strong>
+                <div>
+                  {filteredContextSections.map((section) => (
+                    <div
+                      className="galgame-block-command-context-section"
+                      key={section.label}
+                    >
+                      <small>{section.label}</small>
+                      <div>
+                        {section.commands.map((command) => (
+                          <button
+                            ref={(element) => {
+                              if (element)
+                                commandRefs.current.set(command.id, element);
+                              else commandRefs.current.delete(command.id);
+                            }}
+                            key={command.id}
+                            type="button"
+                            className={command.checked ? "checked" : ""}
+                            aria-pressed={command.checked}
+                            onFocus={() => setActiveCommandId(command.id)}
+                            onMouseEnter={() => setActiveCommandId(command.id)}
+                            onClick={() => runCommand(command)}
+                          >
+                            <span>{command.icon}</span>
+                            <b>{command.label}</b>
+                            {command.checked ? <Check aria-hidden /> : null}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            ) : null}
+            {INSERT_GROUPS.map((group) => {
+              const groupCommands = filteredCommands.filter(
+                (command) => command.group === group,
+              );
+              if (!groupCommands.length) return null;
+              return (
+                <section key={group}>
+                  <strong>{group}</strong>
+                  <div>
+                    {groupCommands.map((command) => (
+                      <button
+                        ref={(element) => {
+                          if (element)
+                            commandRefs.current.set(command.id, element);
+                          else commandRefs.current.delete(command.id);
+                        }}
+                        key={command.id}
+                        type="button"
+                        disabled={command.disabled}
+                        onFocus={() => setActiveCommandId(command.id)}
+                        onMouseEnter={() => setActiveCommandId(command.id)}
+                        onClick={() => runCommand(command)}
+                      >
+                        <span>{command.icon}</span>
+                        <b>{command.label}</b>
+                      </button>
+                    ))}
+                  </div>
+                </section>
+              );
+            })}
           </div>
-        </section>
-        <section>
-          <strong>文本</strong>
-          <div>
-            {buttons([
-              "narration",
-              "storyParagraph",
-              "paragraphParams",
-              "systemMessage",
-              "comment",
-              "wait",
-            ])}
-          </div>
-        </section>
-        <section>
-          <strong>演出</strong>
-          <div>
-            {buttons([
-              "scene",
-              "destroyScene",
-              "showCg",
-              "hideCg",
-              "camera",
-              "resetCamera",
-              "particle",
-              "stageAnimation",
-              "floatingText",
-              "curtain",
-              "video",
-              "autoPlay",
-              "switchDialogueStyle",
-            ])}
-          </div>
-        </section>
-        <section>
-          <strong>声音</strong>
-          <div>
-            {(Object.keys(AUDIO_LABELS) as AudioChannel[]).map((channel) => (
-              <button
-                key={`play-${channel}`}
-                type="button"
-                onClick={() =>
-                  closeThen(() => onAddAudio("play", channel, beforeBundleId))
-                }
-              >
-                {AUDIO_LABELS[channel]}
-              </button>
-            ))}
-            {(Object.keys(AUDIO_LABELS) as AudioChannel[]).map((channel) => (
-              <button
-                key={`stop-${channel}`}
-                type="button"
-                onClick={() =>
-                  closeThen(() => onAddAudio("stop", channel, beforeBundleId))
-                }
-              >
-                停止{AUDIO_LABELS[channel]}
-              </button>
-            ))}
-          </div>
-        </section>
-        <section>
-          <strong>逻辑</strong>
-          <div>
-            {buttons([
-              "branch",
-              "if",
-              "setVariable",
-              "callFragment",
-              "gallery",
-              "endChapter",
-              "returnToEntry",
-            ])}
-          </div>
-        </section>
-      </div>
-    </details>
+        ) : (
+          <p className="galgame-block-command-empty">没有找到匹配的指令。</p>
+        )}
+      </section>
+    </div>,
+    document.body,
   );
 }
 
@@ -726,6 +1039,8 @@ function CommentCard({
       className={`galgame-block-card galgame-comment-card is-comment${selected ? " selected" : ""}`}
       data-block-id={block.id}
       onClick={onSelect}
+      onFocusCapture={onSelect}
+      tabIndex={0}
     >
       <span className="galgame-block-index">{index + 1}</span>
       <span aria-hidden>#</span>
@@ -739,6 +1054,164 @@ function CommentCard({
   );
 }
 
+function waitDurationLabel(durationMs: number | null) {
+  if (durationMs == null) return "等待玩家继续";
+  const seconds = durationMs / 1000;
+  return `≈ ${Number.isInteger(seconds) ? seconds : seconds.toFixed(1)} 秒`;
+}
+
+function CurtainSwatch({
+  mode,
+  color,
+}: {
+  mode: Extract<GalgameStoryBlock, { type: "curtain" }>["mode"];
+  color: string;
+}) {
+  return (
+    <span
+      className={`galgame-curtain-swatch is-${mode}`}
+      style={{ "--curtain-card-color": color } as CSSProperties}
+      aria-hidden
+    >
+      <i className="is-fullscreen" />
+      <i className="is-top" />
+      <i className="is-bottom" />
+      <i className="is-left" />
+      <i className="is-right" />
+    </span>
+  );
+}
+
+function CurtainCard({
+  block,
+  index,
+  selected,
+  onSelect,
+}: {
+  block: Extract<GalgameStoryBlock, { type: "curtain" }>;
+  index: number;
+  selected: boolean;
+  onSelect: () => void;
+}) {
+  const modeLabel =
+    CURTAIN_MODE_OPTIONS.find((option) => option.value === block.mode)?.label ??
+    "全屏";
+  return (
+    <article
+      className={`galgame-block-card galgame-curtain-card is-curtain${selected ? " selected" : ""}`}
+      data-block-id={block.id}
+      onFocusCapture={onSelect}
+      tabIndex={0}
+    >
+      <span className="galgame-block-index">{index + 1}</span>
+      <button
+        type="button"
+        className="galgame-block-select"
+        aria-pressed={selected}
+        onClick={onSelect}
+      >
+        <span className="galgame-curtain-badge">
+          {blockIcon(block.type)}
+          <strong>幕布</strong>
+        </span>
+        <CurtainSwatch mode={block.mode} color={block.color} />
+        <span className="galgame-curtain-copy">
+          <b>{block.action === "show" ? "合上" : "打开"}</b>
+          <em>{block.action === "show" ? "渐入幕布" : "渐出幕布"}</em>
+        </span>
+        <span className="galgame-curtain-meta">
+          <small>{(block.durationMs / 1000).toFixed(1)}s</small>
+          <small>{modeLabel}</small>
+          <i style={{ backgroundColor: block.color }} aria-hidden />
+        </span>
+      </button>
+    </article>
+  );
+}
+
+function WaitCard({
+  block,
+  index,
+  selected,
+  onSelect,
+  onBlock,
+}: {
+  block: Extract<GalgameStoryBlock, { type: "wait" }>;
+  index: number;
+  selected: boolean;
+  onSelect: () => void;
+  onBlock: (block: GalgameStoryBlock) => void;
+}) {
+  return (
+    <article
+      className={`galgame-block-card galgame-wait-card is-wait${selected ? " selected" : ""}`}
+      data-block-id={block.id}
+      onClick={onSelect}
+      onFocusCapture={onSelect}
+      tabIndex={0}
+    >
+      <span className="galgame-block-index">{index + 1}</span>
+      <span className="galgame-wait-badge">
+        {blockIcon(block.type)}
+        <strong>等待</strong>
+      </span>
+      <label className="galgame-wait-duration">
+        <input
+          aria-label="等待时长"
+          type="number"
+          min="0"
+          max="3600000"
+          disabled={block.mode === "player"}
+          value={block.durationMs ?? ""}
+          onChange={(event) =>
+            onBlock({
+              ...block,
+              mode: "duration",
+              durationMs: Math.min(
+                3600000,
+                Math.max(0, Number(event.target.value)),
+              ),
+            })
+          }
+        />
+        <span>ms</span>
+      </label>
+      <span className="galgame-wait-card-presets" aria-label="等待预设">
+        {WAIT_DURATION_PRESETS.map((durationMs) => (
+          <button
+            key={durationMs}
+            type="button"
+            className={
+              block.mode === "duration" && block.durationMs === durationMs
+                ? "active"
+                : ""
+            }
+            aria-pressed={
+              block.mode === "duration" && block.durationMs === durationMs
+            }
+            onClick={() => onBlock({ ...block, mode: "duration", durationMs })}
+          >
+            {durationMs}
+          </button>
+        ))}
+        <button
+          type="button"
+          className={block.mode === "player" ? "active" : ""}
+          aria-pressed={block.mode === "player"}
+          onClick={() =>
+            onBlock({ ...block, mode: "player", durationMs: null })
+          }
+        >
+          等待玩家继续
+        </button>
+      </span>
+      <em className="galgame-wait-summary">
+        {waitDurationLabel(block.durationMs)}
+      </em>
+    </article>
+  );
+}
+
 function OfficialCommandCard({
   block,
   index,
@@ -747,7 +1220,7 @@ function OfficialCommandCard({
 }: {
   block: Extract<
     GalgameStoryBlock,
-    { type: "paragraphParams" | "systemMessage" | "wait" }
+    { type: "paragraphParams" | "systemMessage" }
   >;
   index: number;
   selected: boolean;
@@ -756,21 +1229,19 @@ function OfficialCommandCard({
   const summary =
     block.type === "systemMessage"
       ? `${block.mode === "confirm" ? "确认" : "提示"} · ${block.text || "未填写消息"}`
-      : block.type === "wait"
-        ? block.mode === "player"
-          ? "等待玩家继续"
-          : `等待 ${block.durationMs ?? 0}ms`
-        : [
-            block.textSpeedCps != null ? `${block.textSpeedCps} 字/秒` : "",
-            block.revealEffect ?? "",
-            block.readBehavior ?? "",
-          ]
-            .filter(Boolean)
-            .join(" · ") || "调整后续段落";
+      : [
+          block.textSpeedCps != null ? `${block.textSpeedCps} 字/秒` : "",
+          block.revealEffect ?? "",
+          block.readBehavior ?? "",
+        ]
+          .filter(Boolean)
+          .join(" · ") || "调整后续段落";
   return (
     <article
       className={`galgame-block-card galgame-official-command is-${block.type}${selected ? " selected" : ""}`}
       data-block-id={block.id}
+      onFocusCapture={onSelect}
+      tabIndex={0}
     >
       <span className="galgame-block-index">{index + 1}</span>
       <button type="button" className="galgame-block-select" onClick={onSelect}>
@@ -818,16 +1289,121 @@ export function StoryBlockEditor({
   onDeleteBlock: (blockId: string) => void;
   onVoiceStale: (blockId: string) => void;
 }) {
+  const editorRef = useRef<HTMLElement>(null);
+  const insertTargetRef = useRef<{
+    anchor: HTMLElement;
+    beforeBundleId?: string;
+  } | null>(null);
+  const focusInsertedBlockRef = useRef(false);
+  const focusInsertedBlockTimeoutRef = useRef<number | undefined>(undefined);
+  const [insertTarget, setInsertTarget] = useState<{
+    anchor: HTMLElement;
+    beforeBundleId?: string;
+  } | null>(null);
   const bundles = storyBlockBundles(fragment);
   const hasTerminator = bundles.some(
     (bundle) =>
       bundle.primaryBlock.type === "branch" ||
       bundle.primaryBlock.type === "endChapter",
   );
+  const selectedBundle = bundles.find((bundle) =>
+    bundle.blocks.some((block) => block.id === selectedBlockId),
+  );
+  const openInsertPalette = (anchor: HTMLElement, beforeBundleId?: string) => {
+    const target = { anchor, beforeBundleId };
+    insertTargetRef.current = target;
+    setInsertTarget(target);
+  };
+  const closeInsertPalette = useCallback((restoreFocus: boolean) => {
+    const target = insertTargetRef.current;
+    insertTargetRef.current = null;
+    setInsertTarget(null);
+    if (restoreFocus)
+      requestAnimationFrame(() => {
+        if (target?.anchor.isConnected) target.anchor.focus();
+      });
+  }, []);
+  const expectInsertedBlockFocus = () => {
+    focusInsertedBlockRef.current = true;
+    if (focusInsertedBlockTimeoutRef.current)
+      window.clearTimeout(focusInsertedBlockTimeoutRef.current);
+    focusInsertedBlockTimeoutRef.current = window.setTimeout(() => {
+      focusInsertedBlockRef.current = false;
+      focusInsertedBlockTimeoutRef.current = undefined;
+    }, 500);
+  };
+
+  useEffect(() => {
+    if (!focusInsertedBlockRef.current || !selectedBlockId) return;
+    focusInsertedBlockRef.current = false;
+    if (focusInsertedBlockTimeoutRef.current) {
+      window.clearTimeout(focusInsertedBlockTimeoutRef.current);
+      focusInsertedBlockTimeoutRef.current = undefined;
+    }
+    requestAnimationFrame(() => {
+      const card = editorRef.current?.querySelector<HTMLElement>(
+        `[data-block-id="${selectedBlockId}"]`,
+      );
+      card?.focus();
+    });
+  }, [selectedBlockId]);
+
+  useEffect(
+    () => () => {
+      if (focusInsertedBlockTimeoutRef.current)
+        window.clearTimeout(focusInsertedBlockTimeoutRef.current);
+    },
+    [],
+  );
+
   return (
     <section
+      ref={editorRef}
       className="galgame-story-block-editor"
       aria-label="Block 卡片编辑器"
+      onPointerDownCapture={(event) => {
+        const target = event.target as HTMLElement;
+        if (
+          target.closest(
+            "button, input, textarea, select, a, [contenteditable='true']",
+          )
+        )
+          return;
+        target.closest<HTMLElement>("[data-block-id]")?.focus();
+      }}
+      onKeyDownCapture={(event) => {
+        if (
+          event.key !== "Tab" ||
+          event.shiftKey ||
+          event.altKey ||
+          event.ctrlKey ||
+          event.metaKey ||
+          event.nativeEvent.isComposing ||
+          insertTarget
+        )
+          return;
+        const target = event.target as HTMLElement;
+        if (
+          target.closest(
+            "input, textarea, select, [contenteditable='true'], [role='dialog']",
+          )
+        )
+          return;
+        if (!bundles.length) {
+          const empty = target.closest<HTMLElement>(".galgame-empty-blocks");
+          if (!empty) return;
+          event.preventDefault();
+          openInsertPalette(empty);
+          return;
+        }
+        if (!selectedBundle) return;
+        const selectedCard = editorRef.current?.querySelector<HTMLElement>(
+          `[data-block-id="${selectedBundle.id}"]`,
+        );
+        if (!selectedCard?.contains(target)) return;
+        event.preventDefault();
+        openInsertPalette(selectedCard, selectedBundle.id);
+      }}
     >
       <div className="galgame-block-list">
         {bundles.map((bundle, index) => {
@@ -838,13 +1414,6 @@ export function StoryBlockEditor({
           );
           return (
             <div className="galgame-block-row" key={bundle.id}>
-              <BlockInsertMenu
-                beforeBundleId={bundle.id}
-                hasTerminator={hasTerminator}
-                onAddBlock={onAddBlock}
-                onAddAllCharacters={onAddAllCharacters}
-                onAddAudio={onAddAudio}
-              />
               {block.type === "dialogue" ? (
                 <DialogueCard
                   block={block}
@@ -868,10 +1437,12 @@ export function StoryBlockEditor({
                   onDelete={() => {
                     onDeleteBlock(block.id);
                     requestAnimationFrame(() => {
-                      const insertionId = nextBundleId ?? "end";
-                      globalThis.document
-                        .querySelector<HTMLElement>(
-                          `[data-insertion-id="${insertionId}"] > summary`,
+                      const focusId =
+                        nextBundleId ?? bundles[index - 1]?.primaryBlock.id;
+                      if (!focusId) return;
+                      editorRef.current
+                        ?.querySelector<HTMLElement>(
+                          `[data-block-id="${focusId}"]`,
                         )
                         ?.focus();
                     });
@@ -910,9 +1481,23 @@ export function StoryBlockEditor({
                   onSelect={() => onSelectBlock(block.id)}
                   onBlock={onBlock}
                 />
+              ) : block.type === "wait" ? (
+                <WaitCard
+                  block={block}
+                  index={index}
+                  selected={selected}
+                  onSelect={() => onSelectBlock(block.id)}
+                  onBlock={onBlock}
+                />
+              ) : block.type === "curtain" ? (
+                <CurtainCard
+                  block={block}
+                  index={index}
+                  selected={selected}
+                  onSelect={() => onSelectBlock(block.id)}
+                />
               ) : block.type === "paragraphParams" ||
-                block.type === "systemMessage" ||
-                block.type === "wait" ? (
+                block.type === "systemMessage" ? (
                 <OfficialCommandCard
                   block={block}
                   index={index}
@@ -923,6 +1508,8 @@ export function StoryBlockEditor({
                 <article
                   className={`galgame-block-card is-${block.type}${selected ? " selected" : ""}`}
                   data-block-id={block.id}
+                  onFocusCapture={() => onSelectBlock(block.id)}
+                  tabIndex={0}
                 >
                   <span className="galgame-block-index">{index + 1}</span>
                   <button
@@ -964,25 +1551,47 @@ export function StoryBlockEditor({
           );
         })}
         {!bundles.length ? (
-          <div className="galgame-empty-blocks">
+          <div className="galgame-empty-blocks" tabIndex={0}>
             <MessageSquareText aria-hidden />
             <strong>这个 Fragment 还没有 Block</strong>
-            <span>从插入位置开始写旁白、对白或舞台演出。</span>
+            <span>按 Tab 或使用下方按钮添加第一个 Block。</span>
+            <button
+              type="button"
+              onClick={(event) => openInsertPalette(event.currentTarget)}
+            >
+              <Plus aria-hidden />
+              添加第一个 Block
+            </button>
           </div>
-        ) : null}
-        {!hasTerminator ? (
-          <BlockInsertMenu
-            hasTerminator={false}
-            onAddBlock={onAddBlock}
-            onAddAllCharacters={onAddAllCharacters}
-            onAddAudio={onAddAudio}
-          />
         ) : null}
       </div>
       <footer>
         <span>{bundles.length} 个可见 Block</span>
-        <span>插入位置按 Tab 打开菜单</span>
+        <span>选中 Block，按 Tab 在其前面插入</span>
       </footer>
+      {insertTarget ? (
+        <BlockInsertPalette
+          anchor={insertTarget.anchor}
+          beforeBundleId={insertTarget.beforeBundleId}
+          selectedBlock={selectedBundle?.primaryBlock}
+          story={document}
+          hasTerminator={hasTerminator}
+          onClose={closeInsertPalette}
+          onBlock={onBlock}
+          onAddBlock={(kind, beforeBundleId) => {
+            expectInsertedBlockFocus();
+            onAddBlock(kind, beforeBundleId);
+          }}
+          onAddAllCharacters={(beforeBundleId) => {
+            expectInsertedBlockFocus();
+            onAddAllCharacters(beforeBundleId);
+          }}
+          onAddAudio={(action, channel, beforeBundleId) => {
+            expectInsertedBlockFocus();
+            onAddAudio(action, channel, beforeBundleId);
+          }}
+        />
+      ) : null}
     </section>
   );
 }

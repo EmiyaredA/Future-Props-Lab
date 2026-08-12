@@ -5,6 +5,8 @@ import { DialogueStyleInspector } from "@features/galgame-workshop/editor/Dialog
 import { DEFAULT_STORY_SETTINGS } from "@features/galgame-workshop/editor/model";
 import { stableId } from "@features/galgame-workshop/editor/model";
 import { StoryPlayer } from "@features/galgame-workshop/editor/StoryPlayer";
+import { CustomColorPicker } from "@shared/ui/CustomColorPicker";
+import { CustomSelect } from "@shared/ui/CustomSelect";
 
 export function PersonalizationWorkspace({
   projectId,
@@ -64,10 +66,11 @@ export function PersonalizationWorkspace({
           </label>
           <label>
             <span>默认段落样式</span>
-            <select
+            <CustomSelect
+              ariaLabel="默认段落样式"
               value={`${document.presentation?.paragraph?.defaultStyleRef?.source ?? "builtin"}:${document.presentation?.paragraph?.defaultStyleRef?.id ?? "classic"}`}
-              onChange={(event) => {
-                const [source, id] = event.target.value.split(":", 2);
+              onChange={(value) => {
+                const [source, id] = value.split(":", 2);
                 onDocument({
                   ...document,
                   presentation: {
@@ -83,25 +86,24 @@ export function PersonalizationWorkspace({
                   },
                 });
               }}
-            >
-              {[
-                ["classic", "经典"],
-                ["novel", "小说"],
-                ["minimal", "极简"],
-                ["cinema", "电影"],
-              ].map(([id, label]) => (
-                <option key={id} value={`builtin:${id}`}>
-                  内置 · {label}
-                </option>
-              ))}
-              {(document.presentation?.paragraph?.customStyles ?? []).map(
-                (style) => (
-                  <option key={style.id} value={`project:${style.id}`}>
-                    项目 · {style.name}
-                  </option>
+              options={[
+                ...[
+                  ["classic", "经典"],
+                  ["novel", "小说"],
+                  ["minimal", "极简"],
+                  ["cinema", "电影"],
+                ].map(([id, label]) => ({
+                  value: `builtin:${id}`,
+                  label: `内置 · ${label}`,
+                })),
+                ...(document.presentation?.paragraph?.customStyles ?? []).map(
+                  (style) => ({
+                    value: `project:${style.id}`,
+                    label: `项目 · ${style.name}`,
+                  }),
                 ),
-              )}
-            </select>
+              ]}
+            />
           </label>
           <button
             type="button"
@@ -170,10 +172,10 @@ export function PersonalizationWorkspace({
                   ).map((key) => (
                     <label key={key}>
                       <span>{key}</span>
-                      <input
-                        type="color"
+                      <CustomColorPicker
+                        ariaLabel={`段落样式${key}`}
                         value={style[key]}
-                        onChange={(event) =>
+                        onChange={(value) =>
                           onDocument({
                             ...document,
                             presentation: {
@@ -189,7 +191,7 @@ export function PersonalizationWorkspace({
                                     ?.customStyles ?? []
                                 ).map((item) =>
                                   item.id === style.id
-                                    ? { ...item, [key]: event.target.value }
+                                    ? { ...item, [key]: value }
                                     : item,
                                 ),
                               },
@@ -206,11 +208,11 @@ export function PersonalizationWorkspace({
         </section>
         <section className="galgame-personalization-official">
           <h3>标准系统消息</h3>
-          <select
-            aria-label="系统消息框来源"
+          <CustomSelect
+            ariaLabel="系统消息框来源"
             value={`${document.presentation?.systemMessage?.binding?.source ?? "builtin"}:${document.presentation?.systemMessage?.binding?.id ?? "standard-message"}`}
-            onChange={(event) => {
-              const [source, id] = event.target.value.split(":", 2);
+            onChange={(value) => {
+              const [source, id] = value.split(":", 2);
               onDocument({
                 ...document,
                 presentation: {
@@ -226,16 +228,19 @@ export function PersonalizationWorkspace({
                 },
               });
             }}
-          >
-            <option value="builtin:standard-message">内置 · 标准消息框</option>
-            {(document.presentation?.systemMessage?.customStyles ?? []).map(
-              (style) => (
-                <option key={style.id} value={`project:${style.id}`}>
-                  项目 · {style.name}
-                </option>
+            options={[
+              {
+                value: "builtin:standard-message",
+                label: "内置 · 标准消息框",
+              },
+              ...(document.presentation?.systemMessage?.customStyles ?? []).map(
+                (style) => ({
+                  value: `project:${style.id}`,
+                  label: `项目 · ${style.name}`,
+                }),
               ),
-            )}
-          </select>
+            ]}
+          />
           <button
             type="button"
             onClick={() => {
@@ -371,20 +376,19 @@ export function ProjectSettingsWorkspace({
           </label>
           <label>
             <span>入口章节</span>
-            <select
+            <CustomSelect
+              ariaLabel="入口章节"
               value={document.entryChapterId ?? ""}
-              onChange={(event) =>
-                onDocument({ ...document, entryChapterId: event.target.value })
+              onChange={(value) =>
+                onDocument({ ...document, entryChapterId: value })
               }
-            >
-              {(document.chapters ?? [])
+              options={(document.chapters ?? [])
                 .filter((chapter) => !chapter.disabled)
-                .map((chapter) => (
-                  <option key={chapter.id} value={chapter.id}>
-                    {chapter.title}
-                  </option>
-                ))}
-            </select>
+                .map((chapter) => ({
+                  value: chapter.id,
+                  label: chapter.title,
+                }))}
+            />
           </label>
         </section>
         <section>
@@ -430,21 +434,23 @@ export function ProjectSettingsWorkspace({
           <div className="galgame-settings-pair">
             <label>
               <span>默认锚点</span>
-              <select
+              <CustomSelect
+                ariaLabel="默认锚点"
                 value={settings.characterStage.anchor}
-                onChange={(event) =>
+                onChange={(value) =>
                   updateSettings({
                     ...settings,
                     characterStage: {
                       ...settings.characterStage,
-                      anchor: event.target.value as "center" | "topLeft",
+                      anchor: value as "center" | "topLeft",
                     },
                   })
                 }
-              >
-                <option value="center">居中</option>
-                <option value="topLeft">左上</option>
-              </select>
+                options={[
+                  { value: "center", label: "居中" },
+                  { value: "topLeft", label: "左上" },
+                ]}
+              />
             </label>
           </div>
           <label>

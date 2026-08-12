@@ -14,15 +14,14 @@ import {
   ArrowDown,
   ArrowLeft,
   ArrowUp,
-  AlignLeft,
   BookOpenText,
   Braces,
   ChevronDown,
   Clock3,
-  Code2,
   Copy,
   GitBranch,
   Images,
+  Languages,
   MapPinned,
   MoreHorizontal,
   Palette,
@@ -42,6 +41,7 @@ import {
   getGalgameStoryDocument,
   getGalgameStoryReport,
   getGalgameWorkshopProject,
+  matchGalgameVoiceDialogue,
   patchGalgameWorkshopProject,
   putGalgameStoryDocument,
   repairGalgameMissingAsset,
@@ -52,6 +52,12 @@ import {
   type GalgameStoryProject,
 } from "@features/galgame-workshop/api";
 import { TimelinePlayheadAddMenu } from "@features/galgame-workshop/editor/TimelinePlayheadAddMenu";
+import { StoryJsonView } from "@features/galgame-workshop/editor/StoryJsonView";
+import { StoryLocalizationWorkspace } from "@features/galgame-workshop/editor/StoryLocalizationWorkspace";
+import {
+  DEFAULT_TARGET_LOCALE,
+  pruneStoryLocalizations,
+} from "@features/galgame-workshop/editor/localization";
 import {
   canMoveStoryBlockBundle,
   continuingDialogueBlock,
@@ -123,6 +129,7 @@ import {
 } from "@features/galgame-workshop/editor/EditorShared";
 import "@features/galgame-workshop/galgame-workshop.css";
 import "@features/galgame-workshop/galgame-script-workbench.css";
+import "@features/galgame-workshop/galgame-json-view.css";
 
 const STORY_KEY = (projectId: string) =>
   ["galgame-workshop-story", projectId] as const;
@@ -133,7 +140,7 @@ const PROJECT_KEY = (projectId: string) =>
 
 type SaveState = "saved" | "saving" | "error" | "conflict";
 type InspectorTab = "properties" | "appearance" | "report";
-type ScriptView = "blocks" | "plain" | "renpy" | "json" | "performance";
+type ScriptView = "blocks" | "json" | "performance" | "localization";
 
 const BlockInspector = lazy(() =>
   import("@features/galgame-workshop/editor/EditorInspectors").then(
@@ -197,22 +204,6 @@ const ProjectSettingsWorkspace = lazy(() =>
     }),
   ),
 );
-const PlainStoryView = lazy(() =>
-  import("@features/galgame-workshop/editor/StoryTextViews").then((module) => ({
-    default: module.PlainStoryView,
-  })),
-);
-const RenpyStoryView = lazy(() =>
-  import("@features/galgame-workshop/editor/StoryTextViews").then((module) => ({
-    default: module.RenpyStoryView,
-  })),
-);
-const JsonStoryView = lazy(() =>
-  import("@features/galgame-workshop/editor/StoryTextViews").then((module) => ({
-    default: module.JsonStoryView,
-  })),
-);
-
 const WORKSPACES: Array<{
   id: EditorWorkspace;
   label: string;
@@ -234,10 +225,9 @@ function clamp(value: number, min: number, max: number) {
 
 function loadScriptView(): ScriptView {
   const stored = localStorage.getItem(SCRIPT_VIEW_KEY);
-  return stored === "plain" ||
-    stored === "renpy" ||
-    stored === "json" ||
-    stored === "performance"
+  return stored === "json" ||
+    stored === "performance" ||
+    stored === "localization"
     ? stored
     : "blocks";
 }
@@ -273,6 +263,9 @@ export function GalgameWorkshopEditorPage({
   const [titleSaving, setTitleSaving] = useState(false);
   const [assetSection, setAssetSection] = useState<AssetSection>("overview");
   const [scriptView, setScriptView] = useState<ScriptView>(loadScriptView);
+  const [localizationLocale, setLocalizationLocale] = useState(
+    DEFAULT_TARGET_LOCALE,
+  );
   const [visualSection, setVisualSection] = useState<"scenes" | "cgs">(
     "scenes",
   );
@@ -555,8 +548,9 @@ export function GalgameWorkshopEditorPage({
 
   const replaceDocument = useCallback(
     (next: GalgameStoryProject) => {
-      documentRef.current = next;
-      setDocument(next);
+      const normalized = pruneStoryLocalizations(next);
+      documentRef.current = normalized;
+      setDocument(normalized);
       setSaveState("saving");
       if (autoSave.current) clearTimeout(autoSave.current);
       autoSave.current = setTimeout(
@@ -576,6 +570,38 @@ export function GalgameWorkshopEditorPage({
       return enqueueSave(next);
     },
     [enqueueSave],
+  );
+  const autoMatchDialogueVoice = useCallback(
+    async (blockId: string) => {
+      const current = documentRef.current;
+      if (!current || !(await commitDocument(current))) return false;
+      try {
+        const result = await matchGalgameVoiceDialogue(
+          projectId,
+          revisionRef.current,
+          undefined,
+          [blockId],
+        );
+        const latest = await getGalgameStoryDocument(projectId);
+        const next = completeStoryDocument(latest.document);
+        revisionRef.current = latest.revision;
+        documentRef.current = next;
+        setDocument(next);
+        client.setQueryData(STORY_KEY(projectId), latest);
+        setSaveState("saved");
+        void client.invalidateQueries({ queryKey: REPORT_KEY(projectId) });
+        if (result.matches.length) {
+          setNotice("已为当前对白自动匹配语音。");
+          return true;
+        }
+        setNotice("未找到适合当前对白的语音。");
+        return false;
+      } catch (error) {
+        setNotice(errorMessage(error));
+        return false;
+      }
+    },
+    [client, commitDocument, projectId],
   );
   const upgradePortraitSizes = useCallback(async () => {
     const current = documentRef.current;
@@ -1285,10 +1311,15 @@ export function GalgameWorkshopEditorPage({
         normalizeScriptLayout(
           side === "left"
             ? { ...current, leftRatio: pointerRatio }
-            : {
-                ...current,
-                centerRatio: pointerRatio - current.leftRatio,
-              },
+            : scriptView === "performance" || scriptView === "localization"
+              ? {
+                  ...current,
+                  performanceCenterRatio: pointerRatio - current.leftRatio,
+                }
+              : {
+                  ...current,
+                  centerRatio: pointerRatio - current.leftRatio,
+                },
         ),
       );
     };
@@ -1316,7 +1347,12 @@ export function GalgameWorkshopEditorPage({
       normalizeScriptLayout(
         side === "left"
           ? { ...current, leftRatio: current.leftRatio + delta }
-          : { ...current, centerRatio: current.centerRatio + delta },
+          : scriptView === "performance" || scriptView === "localization"
+            ? {
+                ...current,
+                performanceCenterRatio: current.performanceCenterRatio + delta,
+              }
+            : { ...current, centerRatio: current.centerRatio + delta },
       ),
     );
   };
@@ -1326,13 +1362,23 @@ export function GalgameWorkshopEditorPage({
       normalizeScriptLayout(
         side === "left"
           ? { ...current, leftRatio: DEFAULT_SCRIPT_LAYOUT.leftRatio }
-          : { ...current, centerRatio: DEFAULT_SCRIPT_LAYOUT.centerRatio },
+          : scriptView === "performance" || scriptView === "localization"
+            ? {
+                ...current,
+                performanceCenterRatio:
+                  DEFAULT_SCRIPT_LAYOUT.performanceCenterRatio,
+              }
+            : { ...current, centerRatio: DEFAULT_SCRIPT_LAYOUT.centerRatio },
       ),
     );
 
+  const effectiveCenterRatio =
+    scriptView === "performance" || scriptView === "localization"
+      ? scriptLayout.performanceCenterRatio
+      : scriptLayout.centerRatio;
   const editorGridStyle = {
     "--galgame-script-left-ratio": scriptLayout.leftRatio,
-    "--galgame-script-center-ratio": scriptLayout.centerRatio,
+    "--galgame-script-center-ratio": effectiveCenterRatio,
     "--galgame-stage-split": `${scriptLayout.previewSplitRatio}%`,
   } as CSSProperties;
 
@@ -1458,6 +1504,7 @@ export function GalgameWorkshopEditorPage({
             data-stage-collapsed={
               stageViewportPreferences.collapsed ? "true" : "false"
             }
+            data-script-view={scriptView}
             style={editorGridStyle}
           >
             <aside
@@ -1878,7 +1925,38 @@ export function GalgameWorkshopEditorPage({
                     >
                       <BookOpenText aria-hidden />
                     </button>
-                    <div>
+                    <nav
+                      className="galgame-script-view-switch"
+                      aria-label="剧本编辑视图"
+                    >
+                      <button
+                        type="button"
+                        aria-label="卡片"
+                        title="卡片"
+                        className={scriptView === "blocks" ? "active" : ""}
+                        onClick={() => {
+                          setScriptView("blocks");
+                          setTimelinePreviewMs(null);
+                          setSelectedTimelineGapId(undefined);
+                        }}
+                      >
+                        <BookOpenText aria-hidden /> <span>卡片</span>
+                      </button>
+                      <button
+                        type="button"
+                        aria-label="JSON"
+                        title="JSON OP"
+                        className={scriptView === "json" ? "active" : ""}
+                        onClick={() => {
+                          setScriptView("json");
+                          setTimelinePreviewMs(null);
+                          setSelectedTimelineGapId(undefined);
+                        }}
+                      >
+                        <Braces aria-hidden /> <span>JSON</span>
+                      </button>
+                    </nav>
+                    <div className="galgame-fragment-context">
                       <input
                         aria-label="Fragment 名称"
                         value={selectedFragment.title}
@@ -1903,63 +1981,32 @@ export function GalgameWorkshopEditorPage({
                           : " · 顺序执行"}
                       </small>
                     </div>
-                    <nav
-                      className="galgame-script-view-switch"
-                      aria-label="剧本编辑视图"
+                    <button
+                      type="button"
+                      aria-label="演出"
+                      title="演出时间轴"
+                      className={`galgame-performance-switch${scriptView === "performance" ? " active" : ""}`}
+                      onClick={() => {
+                        setScriptView("performance");
+                        setPreviewMode("edit");
+                      }}
                     >
-                      <button
-                        type="button"
-                        aria-label="卡片"
-                        title="卡片"
-                        className={scriptView === "blocks" ? "active" : ""}
-                        onClick={() => {
-                          setScriptView("blocks");
-                          setTimelinePreviewMs(null);
-                          setSelectedTimelineGapId(undefined);
-                        }}
-                      >
-                        <BookOpenText aria-hidden /> <span>卡片</span>
-                      </button>
-                      <button
-                        type="button"
-                        aria-label="纯文本"
-                        title="纯文本"
-                        className={scriptView === "plain" ? "active" : ""}
-                        onClick={() => setScriptView("plain")}
-                      >
-                        <AlignLeft aria-hidden /> <span>纯文本</span>
-                      </button>
-                      <button
-                        type="button"
-                        aria-label="Ren’Py"
-                        title="Ren’Py"
-                        className={scriptView === "renpy" ? "active" : ""}
-                        onClick={() => setScriptView("renpy")}
-                      >
-                        <Code2 aria-hidden /> <span>Ren’Py</span>
-                      </button>
-                      <button
-                        type="button"
-                        aria-label="JSON OP"
-                        title="JSON OP"
-                        className={scriptView === "json" ? "active" : ""}
-                        onClick={() => setScriptView("json")}
-                      >
-                        <Braces aria-hidden /> <span>JSON OP</span>
-                      </button>
-                      <button
-                        type="button"
-                        aria-label="演出"
-                        title="演出时间轴"
-                        className={scriptView === "performance" ? "active" : ""}
-                        onClick={() => {
-                          setScriptView("performance");
-                          setPreviewMode("edit");
-                        }}
-                      >
-                        <Clock3 aria-hidden /> <span>演出</span>
-                      </button>
-                    </nav>
+                      <Clock3 aria-hidden /> <span>演出</span>
+                    </button>
+                    <button
+                      type="button"
+                      aria-label="多语言"
+                      title="多语言译稿校对"
+                      className={`galgame-performance-switch galgame-localization-switch${scriptView === "localization" ? " active" : ""}`}
+                      onClick={() => {
+                        setScriptView("localization");
+                        setPreviewMode("edit");
+                        setTimelinePreviewMs(null);
+                        setSelectedTimelineGapId(undefined);
+                      }}
+                    >
+                      <Languages aria-hidden /> <span>多语言</span>
+                    </button>
                   </header>
                   {scriptView === "performance" && timelineFragment ? (
                     <StoryTimelineEditor
@@ -2022,36 +2069,23 @@ export function GalgameWorkshopEditorPage({
                       preferences={timelinePreferences}
                       onPreferencesChange={setTimelinePreferences}
                     />
-                  ) : scriptView === "plain" ? (
-                    <PlainStoryView
+                  ) : scriptView === "localization" ? (
+                    <StoryLocalizationWorkspace
                       document={document}
+                      chapter={chapter}
                       fragment={selectedFragment}
-                      onFragment={(fragment) =>
-                        replaceDocument(
-                          updateFragment(
-                            document,
-                            selectedFragment.id,
-                            () => fragment,
-                          ),
-                        )
-                      }
-                    />
-                  ) : scriptView === "renpy" ? (
-                    <RenpyStoryView
-                      document={document}
-                      fragment={selectedFragment}
-                      onFragment={(fragment) =>
-                        replaceDocument(
-                          updateFragment(
-                            document,
-                            selectedFragment.id,
-                            () => fragment,
-                          ),
-                        )
-                      }
+                      targetLocale={localizationLocale}
+                      selectedBlockId={selectedBlockId}
+                      onTargetLocaleChange={setLocalizationLocale}
+                      onSelectBlock={(blockId) => {
+                        setSelectedTimelineGapId(undefined);
+                        setSelectedBlockId(blockId);
+                        setInspectorTab("properties");
+                      }}
+                      onDocument={replaceDocument}
                     />
                   ) : scriptView === "json" ? (
-                    <JsonStoryView fragment={selectedFragment} />
+                    <StoryJsonView fragment={selectedFragment} />
                   ) : (
                     <StoryBlockEditor
                       document={document}
@@ -2161,8 +2195,12 @@ export function GalgameWorkshopEditorPage({
               aria-label="调整预览检查栏宽度"
               aria-orientation="vertical"
               aria-valuemin={22}
-              aria-valuemax={38}
-              aria-valuenow={Math.round(scriptLayout.centerRatio)}
+              aria-valuemax={Math.round(
+                (scriptView === "performance" || scriptView === "localization"
+                  ? 78
+                  : 62) - scriptLayout.leftRatio,
+              )}
+              aria-valuenow={Math.round(effectiveCenterRatio)}
               title="拖动调整宽度，双击恢复默认"
               onPointerDown={(event) => startSidebarResize("right", event)}
               onKeyDown={(event) => resizeSidebarWithKeyboard("right", event)}
@@ -2179,6 +2217,12 @@ export function GalgameWorkshopEditorPage({
                   key={previewReloadKey}
                   ref={playerRef}
                   document={document}
+                  locale={
+                    scriptView === "localization"
+                      ? localizationLocale
+                      : undefined
+                  }
+                  includeStaleTranslations={scriptView === "localization"}
                   startCursor={previewStart}
                   mode={previewMode}
                   collapsed={stageViewportPreferences.collapsed}
@@ -2369,6 +2413,7 @@ export function GalgameWorkshopEditorPage({
                         fragmentId={selectedFragment?.id ?? ""}
                         onDocument={replaceDocument}
                         onNotice={setNotice}
+                        onAutoMatchVoice={autoMatchDialogueVoice}
                         voiceStale={Boolean(
                           selectedBlock &&
                           staleVoiceBlocks.has(selectedBlock.id),

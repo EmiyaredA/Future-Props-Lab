@@ -516,7 +516,9 @@ test("builds, saves, checks, and plays a branching Galgame slice", async ({
 
   await openAssetSection(page, "角色");
   await expect(page.getByRole("button", { name: "位置与锚点" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "角色预览" })).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "角色预览", exact: true }),
+  ).toBeVisible();
   await page.getByRole("button", { name: "新建角色" }).click();
   await expect(page.getByText("选择一个表情查看详情")).toBeVisible();
   await page.getByRole("button", { name: "显示名" }).click();
@@ -560,9 +562,9 @@ test("builds, saves, checks, and plays a branching Galgame slice", async ({
   const cgPicker = page.getByRole("dialog", { name: "添加 CG 差分" });
   await cgPicker.getByRole("button", { name: "全局文件库" }).click();
   await cgPicker.getByRole("button", { name: /雨夜.png/ }).click();
-  await expect(page.getByText("默认差分", { exact: true })).toBeVisible({
-    timeout: 3000,
-  });
+  await expect(
+    page.getByRole("button", { name: "设为默认差分 雨夜" }),
+  ).toBeDisabled({ timeout: 3000 });
 
   await openAssetSection(page, "BGM");
   await page.getByRole("button", { name: "导入", exact: true }).click();
@@ -604,10 +606,7 @@ test("builds, saves, checks, and plays a branching Galgame slice", async ({
     await page.setViewportSize({ width: 1440, height: 1000 });
   }
   await page.getByRole("button", { name: "剧本", exact: true }).click();
-  await page
-    .getByRole("navigation", { name: "剧本编辑视图" })
-    .getByRole("button", { name: "演出", exact: true })
-    .click();
+  await page.getByRole("button", { name: "演出", exact: true }).click();
   const addAtPlayhead = async (name: string | RegExp) => {
     const menu = page.locator(".galgame-playhead-add-menu");
     if ((await menu.getAttribute("open")) === null) {
@@ -659,12 +658,29 @@ test("builds, saves, checks, and plays a branching Galgame slice", async ({
   await addAtPlayhead(/旁白/);
   await page.getByLabel("旁白正文").fill("研究所只剩下应急灯。");
   await addAtPlayhead(/对白/);
-  await page.getByLabel("对白正文").fill("线索只允许一次选择。");
+  await page.locator("summary", { hasText: "高级设置" }).click();
+  const dialogueEditor = page.getByLabel("对白正文");
+  await dialogueEditor.fill("线索只允许一次选择。");
+  await dialogueEditor.click();
+  await dialogueEditor.press("ControlOrMeta+A");
+  await expect(page.getByLabel("文字排版工具条")).toHaveCSS(
+    "background-color",
+    "rgb(255, 255, 255)",
+  );
+  const editorBounds = await dialogueEditor
+    .locator("..")
+    .evaluate((element) => element.getBoundingClientRect().toJSON());
+  const toolbarBounds = await page
+    .getByLabel("文字排版工具条")
+    .evaluate((element) => element.getBoundingClientRect().toJSON());
+  expect(toolbarBounds.right).toBeLessThanOrEqual(editorBounds.right + 1);
+  expect(toolbarBounds.left).toBeGreaterThanOrEqual(editorBounds.left - 1);
   await page
     .getByRole("group", { name: "同时说话角色" })
     .getByRole("checkbox", { name: "助手" })
     .check();
   const voiceChooserPromise = page.waitForEvent("filechooser");
+  await page.locator("summary", { hasText: "更多语音设置" }).click();
   await page.getByRole("button", { name: "上传配音" }).click();
   const voiceChooser = await voiceChooserPromise;
   await voiceChooser.setFiles({
@@ -778,12 +794,12 @@ test("builds, saves, checks, and plays a branching Galgame slice", async ({
   await expectOfficialScriptGeometry(
     page,
     { width: 2048, height: 1200 },
-    { left: [330, 346], center: [494, 518], right: [1170, 1212] },
+    { left: [330, 346], center: [790, 815], right: [875, 910] },
   );
   await expectOfficialScriptGeometry(
     page,
     { width: 1440, height: 1000 },
-    { left: [230, 246], center: [344, 364], right: [818, 852] },
+    { left: [230, 246], center: [555, 575], right: [610, 640] },
   );
   await page.getByRole("button", { name: "检查", exact: true }).click();
 
@@ -894,7 +910,7 @@ test("builds, saves, checks, and plays a branching Galgame slice", async ({
   await expect(page.getByText("已完成")).toBeVisible();
 });
 
-test("authors two chapters across the four script views and plays into the next chapter", async ({
+test("authors two chapters across card and performance views and plays into the next chapter", async ({
   page,
 }) => {
   test.setTimeout(60_000);
@@ -1001,7 +1017,7 @@ test("authors two chapters across the four script views and plays into the next 
     .fill("第二章开始");
 
   const views = page.getByRole("navigation", { name: "剧本编辑视图" });
-  await views.getByRole("button", { name: "演出", exact: true }).click();
+  await page.getByRole("button", { name: "演出", exact: true }).click();
   const addAtPlayhead = async (name: string | RegExp) => {
     const menu = page.locator(".galgame-playhead-add-menu");
     if ((await menu.getAttribute("open")) === null)
@@ -1022,16 +1038,108 @@ test("authors two chapters across the four script views and plays into the next 
   await addAtPlayhead(/章节结局/);
   await page.getByLabel("结局名称").fill("进入第二章");
 
+  await page.setViewportSize({ width: 2048, height: 1200 });
+  const performanceWorkbench = page.locator(".galgame-script-workbench");
+  const [performanceCenter, performancePreview] = await Promise.all([
+    performanceWorkbench.locator(":scope > .galgame-block-panel").boundingBox(),
+    performanceWorkbench.locator(".galgame-preview-focus").boundingBox(),
+  ]);
+  expect(performanceCenter?.width).toBeGreaterThanOrEqual(1180);
+  expect(performanceCenter?.width).toBeLessThanOrEqual(1210);
+  expect(performancePreview?.width).toBeGreaterThanOrEqual(495);
+  expect(performancePreview?.width).toBeLessThanOrEqual(525);
+
   await views.getByRole("button", { name: "卡片", exact: true }).click();
   await expect(
     page.getByRole("region", { name: "Block 卡片编辑器" }),
   ).toBeVisible();
-  await views.getByRole("button", { name: "纯文本", exact: true }).click();
-  await expect(page.locator(".galgame-plain-view")).toBeVisible();
-  await views.getByRole("button", { name: "Ren’Py", exact: true }).click();
-  await expect(page.getByLabel("Ren’Py 剧本")).toBeVisible();
-  await views.getByRole("button", { name: "JSON OP", exact: true }).click();
-  await expect(page.getByText("规范化 JSON OP · 只读")).toBeVisible();
+  await expect(views.getByRole("button", { name: "纯文本" })).toHaveCount(0);
+  await expect(views.getByRole("button", { name: "Ren’Py" })).toHaveCount(0);
+  await views.getByRole("button", { name: "JSON", exact: true }).click();
+  const jsonView = page.getByRole("region", { name: "JSON OP 只读视图" });
+  await expect(jsonView).toBeVisible();
+  await expect(jsonView).toContainText('"type": "endChapter"');
+  await jsonView.getByRole("button", { name: "复制 JSON" }).click();
+  await page.getByRole("button", { name: "多语言", exact: true }).click();
+  await expect(page.getByRole("heading", { name: /译稿校对台/ })).toBeVisible();
+  const translation = page
+    .locator(".galgame-localization-target textarea")
+    .first();
+  await translation.fill("Continue to chapter two");
+  await expect
+    .poll(() =>
+      JSON.stringify(
+        (document.localizations as Record<string, unknown> | undefined) ?? {},
+      ),
+    )
+    .toContain("Continue to chapter two");
+  await page.reload();
+  await expect(page.getByText("多章节旅程")).toBeVisible();
+  await expect(page.getByRole("heading", { name: /译稿校对台/ })).toBeVisible();
+  await expect(translation).toHaveValue("Continue to chapter two");
+  await views.getByRole("button", { name: "卡片", exact: true }).click();
+  await expect(
+    page.getByRole("region", { name: "Block 卡片编辑器" }),
+  ).toBeVisible();
+
+  const workbench = page.locator(".galgame-script-workbench");
+  for (const { viewport, expected } of [
+    {
+      viewport: { width: 2048, height: 1200 },
+      expected: { left: [330, 346], center: [790, 815], right: [875, 910] },
+    },
+    {
+      viewport: { width: 1440, height: 1000 },
+      expected: { left: [230, 246], center: [555, 575], right: [610, 640] },
+    },
+    {
+      viewport: { width: 1280, height: 800 },
+      expected: { left: [202, 216], center: [492, 510], right: [548, 568] },
+    },
+  ]) {
+    await page.setViewportSize(viewport);
+    const [left, center, right] = await Promise.all(
+      [
+        workbench.locator(":scope > .galgame-fragment-panel"),
+        workbench.locator(":scope > .galgame-block-panel"),
+        workbench.locator(".galgame-preview-focus"),
+      ].map((locator) => locator.boundingBox()),
+    );
+    expect(left?.width).toBeGreaterThanOrEqual(expected.left[0]);
+    expect(left?.width).toBeLessThanOrEqual(expected.left[1]);
+    expect(center?.width).toBeGreaterThanOrEqual(expected.center[0]);
+    expect(center?.width).toBeLessThanOrEqual(expected.center[1]);
+    expect(right?.width).toBeGreaterThanOrEqual(expected.right[0]);
+    expect(right?.width).toBeLessThanOrEqual(expected.right[1]);
+  }
+
+  await page.setViewportSize({ width: 1100, height: 900 });
+  const drawerToggle = page.getByRole("button", { name: "打开剧本结构" });
+  await expect(drawerToggle).toBeVisible();
+  await drawerToggle.click();
+  await expect(
+    workbench.locator(":scope > .galgame-fragment-panel"),
+  ).toBeInViewport();
+  await page
+    .getByRole("button", { name: "关闭剧本结构" })
+    .click({ position: { x: 1000, y: 400 } });
+
+  await page.setViewportSize({ width: 900, height: 900 });
+  const [structureBox, cardsBox, previewBox, inspectorBox] = await Promise.all(
+    [
+      workbench.locator(":scope > .galgame-fragment-panel"),
+      workbench.locator(":scope > .galgame-block-panel"),
+      workbench.locator(".galgame-preview-focus"),
+      workbench.locator(".galgame-inspector-tabs"),
+    ].map((locator) => locator.boundingBox()),
+  );
+  expect(structureBox?.y).toBeLessThan(cardsBox?.y ?? 0);
+  expect(cardsBox?.y).toBeLessThan(previewBox?.y ?? 0);
+  expect(previewBox?.y).toBeLessThan(inspectorBox?.y ?? 0);
+  expect(
+    await page.evaluate(() => document.documentElement.scrollWidth),
+  ).toBeLessThanOrEqual(900);
+  await page.setViewportSize({ width: 1280, height: 800 });
 
   await page.getByRole("button", { name: "开始试玩", exact: true }).click();
   for (const scope of [
@@ -1051,6 +1159,120 @@ test("authors two chapters across the four script views and plays into the next 
   await expect(player.getByText("欢迎来到第二章")).toBeVisible();
   await player.getByRole("button", { name: "点击继续" }).click();
   await expect(player.getByText("全篇完成")).toBeVisible();
+});
+
+test("opens Block insertion from the selected card and closes it from the outside", async ({
+  page,
+}) => {
+  let revision = 0;
+  let document = {
+    schemaVersion: "1.0",
+    synopsis: "",
+    characters: [],
+    scenes: [],
+    variables: [],
+    chapters: [
+      {
+        id: "chapter-1",
+        title: "第一章",
+        order: 1,
+        entryFragmentId: "main",
+        fragments: [
+          {
+            id: "main",
+            title: "main",
+            blocks: [
+              { id: "first", type: "narration", text: "第一段" },
+              { id: "second", type: "narration", text: "第二段" },
+            ],
+          },
+        ],
+      },
+    ],
+  };
+  await page.route(
+    "**/v1/galgame-workshop/projects/block-insert-project**",
+    async (route) => {
+      const request = route.request();
+      const path = new URL(request.url()).pathname;
+      if (path.endsWith("/story/report")) {
+        await route.fulfill({
+          contentType: "application/json",
+          body: JSON.stringify({
+            project_id: "block-insert-project",
+            story_revision: revision,
+            ready: true,
+            errors: [],
+            warnings: [],
+            chapters: [],
+          }),
+        });
+        return;
+      }
+      if (path.endsWith("/story")) {
+        if (request.method() === "PUT") {
+          document = request.postDataJSON().document;
+          revision += 1;
+        }
+        await route.fulfill({
+          contentType: "application/json",
+          body: JSON.stringify({
+            project_id: "block-insert-project",
+            document,
+            revision,
+            updated_at: "2026-08-11T08:00:00Z",
+          }),
+        });
+        return;
+      }
+      await route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({
+          id: "block-insert-project",
+          title: "Block 插入工程",
+          status: "draft",
+          revision: 0,
+          created_at: "2026-08-11T08:00:00Z",
+          updated_at: "2026-08-11T08:00:00Z",
+        }),
+      });
+    },
+  );
+
+  await page.goto(
+    "/apps/galgame-workshop/projects/block-insert-project/editor",
+  );
+  const editor = page.getByRole("region", { name: "Block 卡片编辑器" });
+  await expect(editor).toBeVisible();
+  await expect(
+    editor.getByRole("button", { name: "在这里插入 Block" }),
+  ).toHaveCount(0);
+  const firstCard = editor.locator('[data-block-id="first"]');
+  await firstCard.click();
+  await firstCard.press("Tab");
+  const palette = page.getByRole("dialog", { name: "插入 Block" });
+  await expect(palette).toBeVisible();
+  await expect(
+    palette.getByRole("button", { name: "在右侧属性中编辑" }),
+  ).toBeVisible();
+  for (const group of ["角色", "文本", "演出", "逻辑"])
+    await expect(palette.getByText(group, { exact: true })).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("dialog", { name: "插入 Block" })).toHaveCount(0);
+  await expect(firstCard).toBeFocused();
+
+  await firstCard.press("Tab");
+  await page.mouse.click(4, 4);
+  await expect(page.getByRole("dialog", { name: "插入 Block" })).toHaveCount(0);
+
+  await firstCard.press("Tab");
+  await page.getByLabel("搜索可插入 Block").fill("注释");
+  await page.getByRole("button", { name: "注释", exact: true }).click();
+  await expect
+    .poll(() =>
+      document.chapters[0].fragments[0].blocks.map((block) => block.type),
+    )
+    .toEqual(["comment", "narration", "narration"]);
 });
 
 test("edits shared boundaries and persists a ripple trim on the visual timeline", async ({
@@ -1301,11 +1523,25 @@ test("edits shared boundaries and persists a ripple trim on the visual timeline"
       animations: "disabled",
     });
   }
+  await page.getByRole("button", { name: "多语言", exact: true }).click();
+  await expect(page.getByRole("heading", { name: /译稿校对台/ })).toBeVisible();
   await page
-    .getByRole("navigation", { name: "剧本编辑视图" })
-    .getByRole("button", { name: "演出", exact: true })
-    .click();
-  expect(revision).toBe(0);
+    .locator(".galgame-localization-target textarea")
+    .first()
+    .fill("The first line");
+  await expect.poll(() => revision).toBe(1);
+  if (process.env.UPDATE_GALGAME_DOCS_SCREENSHOT === "1") {
+    await page.screenshot({
+      path: "public/docs/galgame-localization.jpg",
+      type: "jpeg",
+      quality: 90,
+      animations: "disabled",
+    });
+  }
+  await page.getByRole("button", { name: "卡片", exact: true }).click();
+  await page.locator('[data-block-id="scene"] .galgame-block-select').click();
+  await page.getByRole("button", { name: "演出", exact: true }).click();
+  expect(revision).toBe(1);
   const timeline = page.getByRole("region", {
     name: "多轨剧情时间轴",
   });
@@ -1443,7 +1679,7 @@ test("edits shared boundaries and persists a ripple trim on the visual timeline"
   });
   await gapEndTime.fill("00:01.500");
   await gapEndTime.press("Enter");
-  await expect.poll(() => revision, { timeout: 3000 }).toBeGreaterThan(0);
+  await expect.poll(() => revision, { timeout: 3000 }).toBeGreaterThan(1);
   expect(document.chapters[0].fragments[0].blocks[1].startMs).toBe(1500);
 
   await page.reload();
@@ -1520,10 +1756,7 @@ test("edits shared boundaries and persists a ripple trim on the visual timeline"
     page.getByRole("region", { name: "Block 卡片编辑器" }),
   ).toBeVisible();
   await expect(page.getByText(/精确演出 00:21\.500/)).toHaveCount(1);
-  await page
-    .getByRole("navigation", { name: "剧本编辑视图" })
-    .getByRole("button", { name: "演出", exact: true })
-    .click();
+  await page.getByRole("button", { name: "演出", exact: true }).click();
 
   const player = page.getByRole("region", { name: "游戏预览" });
   await page

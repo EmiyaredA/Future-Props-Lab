@@ -255,7 +255,9 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: top center;
+  object-position: var(--thumbnail-x, 50%) var(--thumbnail-y, 25%);
+  transform-origin: var(--thumbnail-x, 50%) var(--thumbnail-y, 25%);
+  transform: scale(var(--thumbnail-scale, 1.8));
 }
 
 .galgame-character-detail-panel {
@@ -491,7 +493,9 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: top center;
+  object-position: var(--thumbnail-x, 50%) var(--thumbnail-y, 25%);
+  transform-origin: var(--thumbnail-x, 50%) var(--thumbnail-y, 25%);
+  transform: scale(var(--thumbnail-scale, 1.8));
 }
 
 .galgame-expression-grid > button strong {

@@ -1,12 +1,6 @@
 import { useRef, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import {
-  AlertTriangle,
-  FolderOpen,
-  Trash2,
-  Upload,
-  Volume2,
-} from "lucide-react";
+import { AlertTriangle, Mic, Sparkles, Trash2, Upload } from "lucide-react";
 import {
   uploadGalgameProjectAsset,
   type GalgameStoryAudioAsset,
@@ -33,6 +27,7 @@ export function DialogueVoiceBinding({
   onDocument,
   onFresh,
   onNotice,
+  onAutoMatchVoice,
 }: {
   projectId: string;
   document: GalgameStoryProject;
@@ -42,10 +37,12 @@ export function DialogueVoiceBinding({
   onDocument: (document: GalgameStoryProject) => void;
   onFresh: () => void;
   onNotice: (message: string) => void;
+  onAutoMatchVoice: (blockId: string) => Promise<boolean>;
 }) {
   const client = useQueryClient();
   const fileInput = useRef<HTMLInputElement>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [matching, setMatching] = useState(false);
   const [source, setSource] = useState<StoryAudioPickerSource>("project");
   const voiceAsset = (document.assets ?? []).find(
     (asset): asset is GalgameStoryAudioAsset =>
@@ -111,11 +108,7 @@ export function DialogueVoiceBinding({
   return (
     <section className="galgame-dialogue-voice-binding">
       <header>
-        <span>
-          <Volume2 aria-hidden />
-          <strong>对白配音</strong>
-        </span>
-        <em>{voiceAsset ? "已绑定" : "未绑定"}</em>
+        <strong>语音</strong>
       </header>
       {voiceAsset ? (
         <>
@@ -149,20 +142,31 @@ export function DialogueVoiceBinding({
           ) : null}
         </>
       ) : (
-        <p className="galgame-dialogue-voice-empty">为这句对白选择一条配音。</p>
+        <p className="galgame-dialogue-voice-empty">（未选择语音）</p>
       )}
-      <div>
+      <div className="galgame-dialogue-voice-actions">
+        <button
+          type="button"
+          disabled={matching}
+          onClick={async () => {
+            setMatching(true);
+            try {
+              if (await onAutoMatchVoice(block.id)) onFresh();
+            } finally {
+              setMatching(false);
+            }
+          }}
+        >
+          <Sparkles aria-hidden /> {matching ? "正在匹配…" : "自动匹配"}
+        </button>
         <button
           type="button"
           onClick={() => {
-            setSource("library");
+            setSource("project");
             setPickerOpen(true);
           }}
         >
-          <FolderOpen aria-hidden /> 从声音库选择
-        </button>
-        <button type="button" onClick={() => fileInput.current?.click()}>
-          <Upload aria-hidden /> 上传配音
+          <Mic aria-hidden /> 手动选择…
         </button>
         {voiceAsset ? (
           <button
@@ -178,6 +182,12 @@ export function DialogueVoiceBinding({
           </button>
         ) : null}
       </div>
+      <details className="galgame-dialogue-voice-more">
+        <summary>更多语音设置</summary>
+        <button type="button" onClick={() => fileInput.current?.click()}>
+          <Upload aria-hidden /> 上传配音
+        </button>
+      </details>
       <input
         ref={fileInput}
         hidden

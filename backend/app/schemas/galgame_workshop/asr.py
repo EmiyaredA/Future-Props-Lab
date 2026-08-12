@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-from typing import Literal
+from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.schemas.galgame_workshop.base import GalgameStoryModel
+from app.schemas.galgame_workshop.base import STABLE_ID_PATTERN, GalgameStoryModel
 
 
 class GalgameAsrSettingsPatchIn(GalgameStoryModel):
@@ -63,6 +63,9 @@ class GalgameTranscriptPatchIn(GalgameStoryModel):
 class GalgameVoiceMatchIn(GalgameStoryModel):
     expected_story_revision: int = Field(alias="expectedStoryRevision", ge=0)
     asset_ids: list[str] | None = Field(default=None, alias="assetIds", max_length=500)
+    block_ids: list[Annotated[str, Field(pattern=STABLE_ID_PATTERN)]] | None = Field(
+        default=None, alias="blockIds", max_length=500
+    )
     minimum_similarity: float = Field(default=0.72, alias="minimumSimilarity", ge=0, le=1)
 
 

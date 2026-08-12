@@ -27,6 +27,8 @@ import {
   StoryImagePicker,
   type StoryImagePickerState,
 } from "@features/galgame-workshop/editor/StoryImagePicker";
+import { CustomColorPicker } from "@shared/ui/CustomColorPicker";
+import { CustomSelect } from "@shared/ui/CustomSelect";
 
 const PRESETS: Array<{
   id: Exclude<GalgameStoryDialogueBoxStyle["preset"], "custom">;
@@ -570,22 +572,17 @@ export function DialogueStyleInspector({
                 <div className="galgame-interface-component-settings">
                   <label>
                     <span>显示时机</span>
-                    <select
-                      aria-label={`${component.name}显示时机`}
+                    <CustomSelect
+                      ariaLabel={`${component.name}显示时机`}
                       value={component.visibility}
-                      onChange={(event) =>
+                      onChange={(value) =>
                         updateComponent(component.id, {
-                          visibility: event.target
-                            .value as GalgameStoryUiComponent["visibility"],
+                          visibility:
+                            value as GalgameStoryUiComponent["visibility"],
                         })
                       }
-                    >
-                      {VISIBILITY_OPTIONS.map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
+                      options={VISIBILITY_OPTIONS}
+                    />
                   </label>
                   <label>
                     <span>层级</span>
@@ -648,42 +645,39 @@ export function DialogueStyleInspector({
       <div className="galgame-dialogue-color-grid">
         <label>
           <span>底板颜色</span>
-          <input
-            type="color"
-            aria-label="对话框底板颜色"
+          <CustomColorPicker
+            ariaLabel="对话框底板颜色"
             value={style.backgroundColor}
-            onChange={(event) =>
+            onChange={(value) =>
               updateStyle({
                 preset: "custom",
-                backgroundColor: event.target.value.toUpperCase(),
+                backgroundColor: value,
               })
             }
           />
         </label>
         <label>
           <span>正文颜色</span>
-          <input
-            type="color"
-            aria-label="对话框正文颜色"
+          <CustomColorPicker
+            ariaLabel="对话框正文颜色"
             value={style.textColor}
-            onChange={(event) =>
+            onChange={(value) =>
               updateStyle({
                 preset: "custom",
-                textColor: event.target.value.toUpperCase(),
+                textColor: value,
               })
             }
           />
         </label>
         <label>
           <span>角色名颜色</span>
-          <input
-            type="color"
-            aria-label="对话框角色名颜色"
+          <CustomColorPicker
+            ariaLabel="对话框角色名颜色"
             value={style.nameColor}
-            onChange={(event) =>
+            onChange={(value) =>
               updateStyle({
                 preset: "custom",
-                nameColor: event.target.value.toUpperCase(),
+                nameColor: value,
               })
             }
           />

@@ -426,6 +426,7 @@
 :root[data-theme="dark"] .galgame-workshop-shell,
 :root[data-theme="dark"] .galgame-editor-page,
 :root[data-theme="dark"] .galgame-route-report-backdrop,
+:root[data-theme="dark"] .galgame-block-command-backdrop,
 :root[data-theme="dark"] .galgame-playhead-add-popover {
   --gal-bg: #0c131e;
   --gal-panel: #111a27;

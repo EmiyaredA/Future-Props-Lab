@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
 import type { GalgameStoryProject } from "@features/galgame-workshop/api";
 import { BLOCK_REGISTRY } from "@features/galgame-workshop/editor/blockRegistry";
-import {
-  decodeRenpy,
-  encodeRenpy,
-} from "@features/galgame-workshop/editor/scriptCodecs";
 import { evaluateStoryExpression } from "@features/galgame-workshop/editor/storyExpression";
+import {
+  applyAutomaticStageBlock,
+  emptyStageState,
+} from "@features/galgame-workshop/editor/stage";
 import {
   advanceRuntime,
   chooseRuntimeFragment,
@@ -157,22 +157,6 @@ describe("Galgame workbench v2 runtime", () => {
     expect(stopped.kind).toBe("stopped");
   });
 
-  it("preserves IDs across Ren'Py edits and rejects invalid local drafts", () => {
-    const document = story();
-    const blocks = document.chapters?.[0].fragments?.[1].blocks ?? [];
-    const source = encodeRenpy(blocks).replace("调用内容", "修改后");
-    const decoded = decodeRenpy(source, blocks, document);
-    expect(decoded.errors).toEqual([]);
-    expect(decoded.blocks?.[0].id).toBe("called-line");
-    expect(decoded.blocks?.[0]).toMatchObject({
-      type: "narration",
-      text: "修改后",
-    });
-    expect(
-      decodeRenpy("studio camera: {broken", blocks, document).blocks,
-    ).toBeUndefined();
-  });
-
   it("pushes branch targets as calls", () => {
     const document = story();
     const state = initialRuntime(document);
@@ -211,6 +195,74 @@ describe("Galgame workbench v2 runtime", () => {
     expect(continued.kind).toBe("content");
     if (continued.kind === "content")
       expect(continued.block.id).toBe("after-camera");
+  });
+
+  it("reduces all curtain modes and opens the active curtain deterministically", () => {
+    const document = story();
+    for (const mode of [
+      "fullscreen",
+      "letterbox",
+      "pillarbox",
+      "frame",
+    ] as const) {
+      const shown = applyAutomaticStageBlock(
+        emptyStageState(),
+        {
+          id: `show-${mode}`,
+          type: "curtain",
+          mode,
+          action: "show",
+          color: "#123456",
+          opacity: 0.8,
+          durationMs: 600,
+          waitForCompletion: false,
+        },
+        document,
+      );
+      expect(shown.curtain).toMatchObject({
+        mode,
+        visible: true,
+        action: "show",
+        color: "#123456",
+      });
+
+      const hidden = applyAutomaticStageBlock(
+        shown,
+        {
+          id: `hide-${mode}`,
+          type: "curtain",
+          mode: "fullscreen",
+          action: "hide",
+          color: "#000000",
+          opacity: 1,
+          durationMs: 400,
+          waitForCompletion: false,
+        },
+        document,
+      );
+      expect(hidden.curtain).toMatchObject({
+        mode,
+        visible: false,
+        action: "hide",
+        color: "#123456",
+      });
+    }
+
+    const noOp = applyAutomaticStageBlock(
+      emptyStageState(),
+      {
+        id: "hide-empty",
+        type: "curtain",
+        mode: "frame",
+        action: "hide",
+        color: "#000000",
+        opacity: 1,
+        durationMs: 400,
+        waitForCompletion: false,
+      },
+      document,
+    );
+    expect(noOp.curtain).toBeUndefined();
   });
 
   it("applies paragraph parameters and ignores author comments", () => {

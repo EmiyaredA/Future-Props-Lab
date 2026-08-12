@@ -294,9 +294,18 @@ async def test_asr_runner_manual_override_force_and_dialogue_match() -> None:
                 files={"upload": ("hero_001.wav", wav_bytes(), "audio/wav")},
             )
         ).json()
+        story_document = story_with_dialogue()
+        story_document["chapters"][0]["fragments"][0]["blocks"].append(
+            {
+                "id": "untouched-line",
+                "type": "dialogue",
+                "characterId": "hero",
+                "text": "这句对白不应被自动匹配。",
+            }
+        )
         story = await client.put(
             f"/v1/galgame-workshop/projects/{project['id']}/story",
-            json={"expected_revision": 0, "document": story_with_dialogue()},
+            json={"expected_revision": 0, "document": story_document},
         )
         assert story.status_code == 200, story.text
         settings = await client.patch(
@@ -340,11 +349,18 @@ async def test_asr_runner_manual_override_force_and_dialogue_match() -> None:
             json={
                 "expectedStoryRevision": 1,
                 "assetIds": [uploaded["id"]],
+                "blockIds": ["hello-line"],
                 "minimumSimilarity": 0,
             },
         )
         assert match.status_code == 200, match.text
         assert match.json()["matches"][0]["blockId"] == "hello-line"
+        matched_story = (
+            await client.get(f"/v1/galgame-workshop/projects/{project['id']}/story")
+        ).json()["document"]
+        matched_blocks = matched_story["chapters"][0]["fragments"][0]["blocks"]
+        assert matched_blocks[0]["voiceAssetId"]
+        assert matched_blocks[1]["voiceAssetId"] is None
 
         response_text = "强制覆盖文本"
         forced = await client.post(

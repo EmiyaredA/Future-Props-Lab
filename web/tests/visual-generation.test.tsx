@@ -277,9 +277,12 @@ test("creates an image task with model-linked sizes and a project reference", as
   const { container } = renderWithClient(
     <GenerationDrawer projectId="project-1" onClose={vi.fn()} />,
   );
-  expect(
-    await screen.findByRole("option", { name: "SenseAudio Image 2.0" }),
-  ).toBeInTheDocument();
+  const generationModel = await screen.findByRole("button", {
+    name: "生成模型",
+  });
+  await waitFor(() =>
+    expect(generationModel).toHaveTextContent("SenseAudio Image 2.0"),
+  );
   await user.click(await screen.findByRole("button", { name: /参考图.png/ }));
   const promptEditor = screen.getByRole("textbox", { name: "图片提示词" });
   expect(promptEditor).toHaveAttribute("contenteditable", "true");
@@ -529,8 +532,8 @@ test("selects current, cross-project, and library media from the source menu", a
   const crossDialog = await screen.findByRole("dialog", {
     name: "选择跨项目素材",
   });
-  expect(within(crossDialog).getByLabelText("来源项目")).toHaveValue(
-    "project-2",
+  expect(within(crossDialog).getByLabelText("来源项目")).toHaveTextContent(
+    "其他视觉项目",
   );
   await user.click(
     await within(crossDialog).findByRole("option", {
@@ -810,9 +813,9 @@ test("shows the official video modes and conditional reference fields", async ()
     <GenerationDrawer projectId="project-1" onClose={vi.fn()} />,
   );
   await user.click(await screen.findByRole("tab", { name: "视频" }));
-  expect(
-    screen.getByRole("option", { name: "Doubao Seedance 2.0" }),
-  ).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "生成模型" })).toHaveTextContent(
+    "Doubao Seedance 2.0",
+  );
   await user.click(screen.getByRole("button", { name: "首尾帧" }));
   expect(screen.getByText("首帧（必选）")).toBeInTheDocument();
   expect(screen.getByText("尾帧（可选）")).toBeInTheDocument();

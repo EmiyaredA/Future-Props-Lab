@@ -7,6 +7,15 @@ import { richTextSummary } from "@features/galgame-workshop/editor/richText";
 export type BlockCategory = "text" | "character" | "stage" | "logic";
 export type BlockTiming = "flow" | "point" | "duration" | "terminal";
 
+export const WAIT_DURATION_PRESETS = [200, 500, 1000, 2000, 3000] as const;
+
+export const CURTAIN_MODE_OPTIONS = [
+  { value: "fullscreen", label: "全屏" },
+  { value: "letterbox", label: "上下黑边" },
+  { value: "pillarbox", label: "左右黑边" },
+  { value: "frame", label: "四周黑边" },
+] as const;
+
 export type BlockCapability = {
   label: string;
   category: BlockCategory;
@@ -251,6 +260,7 @@ export const BLOCK_REGISTRY = {
     timing: "duration",
     renpyKeyword: "studio curtain",
     defaults: () => ({
+      mode: "fullscreen",
       action: "show",
       color: "#000000",
       opacity: 1,

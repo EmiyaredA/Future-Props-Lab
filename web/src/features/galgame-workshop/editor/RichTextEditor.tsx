@@ -10,10 +10,12 @@ import {
 import {
   Bold,
   CaseSensitive,
+  ChevronDown,
   Italic,
   Palette,
   Pause,
   Pilcrow,
+  Smile,
   SpellCheck2,
   Strikethrough,
 } from "lucide-react";
@@ -23,6 +25,7 @@ import type {
   GalgameStoryRichTextDocument,
   GalgameStoryRichTextNode,
 } from "@features/galgame-workshop/api";
+import { CustomColorPicker } from "@shared/ui/CustomColorPicker";
 import {
   plainRichText,
   richTextPlainText,
@@ -30,6 +33,68 @@ import {
 
 type TextNode = Extract<GalgameStoryRichTextNode, { type: "text" }>;
 type TextMarks = NonNullable<TextNode["marks"]>;
+
+function RichToolbarMenu({
+  ariaLabel,
+  label,
+  icon,
+  options,
+  onChoose,
+}: {
+  ariaLabel: string;
+  label: string;
+  icon?: ReactNode;
+  options: Array<{ value: string; label: string }>;
+  onChoose: (value: string) => void;
+}) {
+  const root = useRef<HTMLDivElement>(null);
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    const close = (event: MouseEvent) => {
+      if (!root.current?.contains(event.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
+  }, []);
+
+  return (
+    <div className="galgame-rich-menu" ref={root}>
+      <button
+        type="button"
+        aria-label={ariaLabel}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        onClick={() => setOpen((current) => !current)}
+      >
+        {icon}
+        <span>{label}</span>
+        <ChevronDown />
+      </button>
+      {open ? (
+        <div role="menu" aria-label={`${label}选项`}>
+          {options.length ? (
+            options.map((option) => (
+              <button
+                key={option.value || "__default__"}
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  onChoose(option.value);
+                  setOpen(false);
+                }}
+              >
+                {option.label}
+              </button>
+            ))
+          ) : (
+            <span>暂无可用选项</span>
+          )}
+        </div>
+      ) : null}
+    </div>
+  );
+}
 
 function nodeLength(node: GalgameStoryRichTextNode) {
   return node.type === "text" || node.type === "ruby"
@@ -200,6 +265,7 @@ export function RichTextEditor({
   onChange,
   onPlainTextChange,
   onKeyDown,
+  autoFocus = true,
 }: {
   value?: GalgameStoryRichTextDocument | null;
   document: GalgameStoryProject;
@@ -209,10 +275,12 @@ export function RichTextEditor({
   onChange: (value: GalgameStoryRichTextDocument) => void;
   onPlainTextChange?: () => void;
   onKeyDown?: (event: KeyboardEvent<HTMLTextAreaElement>) => void;
+  autoFocus?: boolean;
 }) {
   const content = value ?? plainRichText("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const blurTimerRef = useRef<number | undefined>(undefined);
+  const toolbarPointerRef = useRef(false);
   const [selection, setSelection] = useState({ start: 0, end: 0 });
   const [focused, setFocused] = useState(false);
   const plain = useMemo(() => richTextPlainText(content), [content]);
@@ -249,168 +317,175 @@ export function RichTextEditor({
     });
   };
   return (
-    <div className={`galgame-rich-editor${focused ? " is-focused" : ""}`}>
+    <div
+      className={`galgame-rich-editor${focused ? " is-focused" : ""}`}
+      onFocusCapture={() => {
+        if (blurTimerRef.current !== undefined)
+          window.clearTimeout(blurTimerRef.current);
+        setFocused(true);
+      }}
+      onBlurCapture={(event) => {
+        if (toolbarPointerRef.current) return;
+        const next = event.relatedTarget;
+        if (next instanceof Node && event.currentTarget.contains(next)) return;
+        blurTimerRef.current = window.setTimeout(() => {
+          setFocused(false);
+        }, 120);
+      }}
+    >
       {focused && selected ? (
-        <div className="galgame-rich-toolbar" aria-label="文字排版工具条">
-          <button
-            type="button"
-            disabled={!selected}
-            aria-label="粗体"
-            onClick={() => apply({ bold: true })}
-          >
-            <Bold />
-          </button>
-          <button
-            type="button"
-            disabled={!selected}
-            aria-label="斜体"
-            onClick={() => apply({ italic: true })}
-          >
-            <Italic />
-          </button>
-          <button
-            type="button"
-            disabled={!selected}
-            aria-label="删除线"
-            onClick={() => apply({ strike: true })}
-          >
-            <Strikethrough />
-          </button>
-          <label aria-label="文字颜色">
-            <Palette />
-            <input
-              type="color"
-              defaultValue="#ffffff"
-              onChange={(event) => apply({ color: event.target.value })}
-            />
-          </label>
-          <label aria-label="文字背景色">
-            <SpellCheck2 />
-            <input
-              type="color"
-              defaultValue="#e75b55"
-              onChange={(event) =>
-                apply({ backgroundColor: event.target.value })
+        <div
+          className="galgame-rich-toolbar"
+          aria-label="文字排版工具条"
+          onMouseDownCapture={(event) => {
+            toolbarPointerRef.current = true;
+            event.stopPropagation();
+            if (!(event.target instanceof HTMLInputElement))
+              event.preventDefault();
+          }}
+          onMouseUpCapture={() => {
+            toolbarPointerRef.current = false;
+          }}
+          onClick={(event) => event.stopPropagation()}
+        >
+          <div className="galgame-rich-toolbar-group">
+            <button
+              type="button"
+              disabled={!selected}
+              aria-label="粗体"
+              onClick={() => apply({ bold: true })}
+            >
+              <Bold /> <span>粗体</span>
+            </button>
+            <button
+              type="button"
+              disabled={!selected}
+              aria-label="斜体"
+              onClick={() => apply({ italic: true })}
+            >
+              <Italic /> <span>斜体</span>
+            </button>
+            <button
+              type="button"
+              disabled={!selected}
+              aria-label="删除线"
+              onClick={() => apply({ strike: true })}
+            >
+              <Strikethrough /> <span>删除线</span>
+            </button>
+          </div>
+          <div className="galgame-rich-toolbar-group">
+            <span className="galgame-rich-color-control">
+              <Palette /> <span>文字色</span>
+              <CustomColorPicker
+                compact
+                ariaLabel="文字颜色"
+                value="#172133"
+                onChange={(color) => apply({ color })}
+              />
+            </span>
+            <span className="galgame-rich-color-control">
+              <SpellCheck2 /> <span>背景色</span>
+              <CustomColorPicker
+                compact
+                ariaLabel="文字背景色"
+                value="#E75B55"
+                onChange={(backgroundColor) => apply({ backgroundColor })}
+              />
+            </span>
+            <RichToolbarMenu
+              ariaLabel="字号"
+              label="字号"
+              options={[
+                { value: "", label: "默认字号" },
+                ...[24, 28, 32, 40, 48].map((size) => ({
+                  value: String(size),
+                  label: `${size}px`,
+                })),
+              ]}
+              onChoose={(value) =>
+                apply({ fontSizePx: value ? Number(value) : null })
               }
             />
-          </label>
-          <select
-            aria-label="字号"
-            defaultValue=""
-            onChange={(event) =>
-              apply({
-                fontSizePx: event.target.value
-                  ? Number(event.target.value)
-                  : null,
-              })
-            }
-          >
-            <option value="">字号</option>
-            {[24, 28, 32, 40, 48].map((size) => (
-              <option key={size} value={size}>
-                {size}px
-              </option>
-            ))}
-          </select>
-          <button
-            type="button"
-            disabled={!selected}
-            aria-label="注音"
-            onClick={ruby}
-          >
-            <CaseSensitive />
-          </button>
-          <select
-            aria-label="插入变量"
-            defaultValue=""
-            onChange={(event) => {
-              if (event.target.value)
-                insert({ type: "variable", variableId: event.target.value });
-              event.target.value = "";
-            }}
-          >
-            <option value="">变量</option>
-            {(document.variables ?? []).map((variable) => (
-              <option key={variable.id} value={variable.id}>
-                {variable.name}
-              </option>
-            ))}
-          </select>
-          {character ? (
-            <select
-              aria-label="插入表情切换"
-              defaultValue=""
-              onChange={(event) => {
-                if (event.target.value)
-                  insert({
-                    type: "expression",
-                    expressionId: event.target.value,
-                  });
-                event.target.value = "";
-              }}
+          </div>
+          <div className="galgame-rich-toolbar-group">
+            <button
+              type="button"
+              disabled={!selected}
+              aria-label="注音"
+              onClick={ruby}
             >
-              <option value="">表情</option>
-              {(character.expressions ?? []).map((expression) => (
-                <option key={expression.id} value={expression.id}>
-                  {expression.label}
-                </option>
-              ))}
-            </select>
-          ) : null}
-          <button
-            type="button"
-            aria-label="换行"
-            onClick={() => insert({ type: "lineBreak" })}
-          >
-            <Pilcrow />
-          </button>
-          <select
-            aria-label="插入等待"
-            defaultValue=""
-            onChange={(event) => {
-              const durationMs = Number(event.target.value);
-              if (durationMs >= 0)
-                insert({ type: "wait", mode: "duration", durationMs });
-              event.target.value = "";
-            }}
-          >
-            <option value="">等待</option>
-            {[500, 1000, 2000, 3000].map((ms) => (
-              <option key={ms} value={ms}>
-                {ms / 1000}s
-              </option>
-            ))}
-          </select>
-          <button
-            type="button"
-            aria-label="等待玩家继续"
-            onClick={() =>
-              insert({ type: "wait", mode: "player", durationMs: null })
-            }
-          >
-            <Pause />
-          </button>
+              <CaseSensitive /> <span>注音</span>
+            </button>
+            <RichToolbarMenu
+              ariaLabel="插入变量"
+              label="变量"
+              options={(document.variables ?? []).map((variable) => ({
+                value: variable.id,
+                label: variable.name,
+              }))}
+              onChoose={(variableId) =>
+                insert({ type: "variable", variableId })
+              }
+            />
+            {character ? (
+              <RichToolbarMenu
+                ariaLabel="插入表情切换"
+                label="表情"
+                icon={<Smile />}
+                options={(character.expressions ?? []).map((expression) => ({
+                  value: expression.id,
+                  label: expression.label,
+                }))}
+                onChoose={(expressionId) =>
+                  insert({ type: "expression", expressionId })
+                }
+              />
+            ) : null}
+          </div>
+          <div className="galgame-rich-toolbar-group">
+            <button
+              type="button"
+              aria-label="换行"
+              onClick={() => insert({ type: "lineBreak" })}
+            >
+              <Pilcrow /> <span>换行</span>
+            </button>
+            <RichToolbarMenu
+              ariaLabel="插入等待"
+              label="等待"
+              options={[500, 1000, 2000, 3000].map((ms) => ({
+                value: String(ms),
+                label: `${ms / 1000}s`,
+              }))}
+              onChoose={(value) =>
+                insert({
+                  type: "wait",
+                  mode: "duration",
+                  durationMs: Number(value),
+                })
+              }
+            />
+            <button
+              type="button"
+              aria-label="等待玩家继续"
+              onClick={() =>
+                insert({ type: "wait", mode: "player", durationMs: null })
+              }
+            >
+              <Pause /> <span>等待继续</span>
+            </button>
+          </div>
         </div>
       ) : null}
       <textarea
-        autoFocus
+        autoFocus={autoFocus}
         rows={1}
         ref={textareaRef}
         aria-label={ariaLabel}
         value={plain}
         placeholder={placeholder}
-        onFocus={() => {
-          if (blurTimerRef.current !== undefined)
-            window.clearTimeout(blurTimerRef.current);
-          setFocused(true);
-          updateSelection();
-        }}
-        onBlur={() => {
-          blurTimerRef.current = window.setTimeout(
-            () => setFocused(false),
-            120,
-          );
-        }}
+        onFocus={updateSelection}
         onSelect={updateSelection}
         onKeyDown={onKeyDown}
         onChange={(event) => {

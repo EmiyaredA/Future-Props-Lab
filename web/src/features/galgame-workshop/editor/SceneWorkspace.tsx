@@ -29,6 +29,7 @@ import {
   type StoryImagePickerState,
 } from "@features/galgame-workshop/editor/StoryImagePicker";
 import { StoryAssetImage } from "@features/galgame-workshop/editor/StoryAssetImage";
+import { CustomSelect } from "@shared/ui/CustomSelect";
 
 function sceneReferences(document: GalgameStoryProject, sceneId: string) {
   return (document.chapters ?? []).flatMap((chapter) =>
@@ -453,22 +454,23 @@ export function SceneWorkspace({
                 }))
               }
             />
-            <select
+            <CustomSelect
+              ariaLabel="场景分组"
               value={selectedScene.groupId ?? ""}
-              onChange={(event) =>
+              onChange={(value) =>
                 updateScene(selectedScene.id, (scene) => ({
                   ...scene,
-                  groupId: event.target.value || null,
+                  groupId: value || null,
                 }))
               }
-            >
-              <option value="">未分组</option>
-              {groups.map((group) => (
-                <option key={group.id} value={group.id}>
-                  {group.name}
-                </option>
-              ))}
-            </select>
+              options={[
+                { value: "", label: "未分组" },
+                ...groups.map((group) => ({
+                  value: group.id,
+                  label: group.name,
+                })),
+              ]}
+            />
             <span>{references.length} 处引用</span>
             {references.length ? (
               <small>场景仍被 Scene Block 引用，无法删除。</small>

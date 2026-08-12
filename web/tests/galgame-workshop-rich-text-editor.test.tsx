@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useState } from "react";
 import { describe, expect, it, vi } from "vitest";
@@ -11,7 +11,17 @@ import { RichTextEditor } from "@features/galgame-workshop/editor/RichTextEditor
 const document: GalgameStoryProject = {
   schemaVersion: "1.1",
   synopsis: "",
-  characters: [],
+  characters: [
+    {
+      id: "hero",
+      name: "真琴",
+      description: "",
+      expressions: [
+        { id: "smile", label: "微笑", assetId: "portrait-smile" },
+        { id: "calm", label: "平静", assetId: "portrait-calm" },
+      ],
+    },
+  ],
   scenes: [],
   variables: [
     {
@@ -42,6 +52,7 @@ function Harness({
       placeholder="写下正文…"
       value={value}
       document={document}
+      character={document.characters?.[0]}
       onChange={(next) => {
         setValue(next);
         onChange(next);
@@ -88,7 +99,8 @@ describe("official rich text toolbar", () => {
     input.setSelectionRange(2, 3);
     fireEvent.select(input);
 
-    await user.selectOptions(screen.getByLabelText("插入变量"), "player-name");
+    await user.click(screen.getByRole("button", { name: "插入变量" }));
+    await user.click(screen.getByRole("menuitem", { name: "玩家名" }));
     expect(changed.mock.calls.at(-1)?.[0].nodes).toContainEqual({
       type: "variable",
       variableId: "player-name",
@@ -100,5 +112,41 @@ describe("official rich text toolbar", () => {
       mode: "player",
       durationMs: null,
     });
+  });
+
+  it("opens the character expression menu and inserts the selected expression", async () => {
+    const user = userEvent.setup();
+    const changed = vi.fn();
+    render(<Harness onChange={changed} />);
+    const input = screen.getByLabelText("剧情正文") as HTMLTextAreaElement;
+    input.focus();
+    input.setSelectionRange(0, 2);
+    fireEvent.select(input);
+
+    await user.click(screen.getByRole("button", { name: "插入表情切换" }));
+    const menu = screen.getByRole("menu", { name: "表情选项" });
+    expect(within(menu).getByRole("menuitem", { name: "微笑" })).toBeVisible();
+    await user.click(within(menu).getByRole("menuitem", { name: "平静" }));
+
+    expect(changed.mock.calls.at(-1)?.[0].nodes).toContainEqual({
+      type: "expression",
+      expressionId: "calm",
+    });
+  });
+
+  it("keeps the selection active while a custom toolbar menu is open", async () => {
+    const user = userEvent.setup();
+    render(<Harness onChange={vi.fn()} />);
+    const input = screen.getByLabelText("剧情正文") as HTMLTextAreaElement;
+    input.focus();
+    input.setSelectionRange(0, 2);
+    fireEvent.select(input);
+
+    await user.click(screen.getByRole("button", { name: "字号" }));
+
+    expect(screen.getByLabelText("文字排版工具条")).toBeVisible();
+    expect(screen.getByRole("menu", { name: "字号选项" })).toBeVisible();
+    expect(input.selectionStart).toBe(0);
+    expect(input.selectionEnd).toBe(2);
   });
 });

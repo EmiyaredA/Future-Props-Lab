@@ -15,6 +15,7 @@ import {
   type LogFilters,
 } from "@features/models/api";
 import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
+import { CustomDateInput } from "@shared/ui/CustomDateInput";
 import { CustomSelect } from "@shared/ui/CustomSelect";
 
 function formatNumber(value: number | null | undefined): string {
@@ -755,18 +756,18 @@ export function ModelCallLogsPage() {
             />
             <label className="date-filter">
               <span>从</span>
-              <input
-                type="date"
+              <CustomDateInput
+                ariaLabel="开始日期"
                 value={filters.from}
-                onChange={(event) => setFilter("from", event.target.value)}
+                onChange={(value) => setFilter("from", value)}
               />
             </label>
             <label className="date-filter">
               <span>至</span>
-              <input
-                type="date"
+              <CustomDateInput
+                ariaLabel="结束日期"
                 value={filters.to}
-                onChange={(event) => setFilter("to", event.target.value)}
+                onChange={(value) => setFilter("to", value)}
               />
             </label>
             <button

@@ -8,6 +8,7 @@ import {
   characterTransform,
   characterTransition,
 } from "@features/galgame-workshop/editor/stage";
+import { CustomSelect } from "@shared/ui/CustomSelect";
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(Math.max(value, min), max);
@@ -93,21 +94,21 @@ export function CharacterTransformFields({
       </div>
       <label className="galgame-stage-field">
         <span>图片锚点</span>
-        <select
-          aria-label="角色图片锚点"
+        <CustomSelect
+          ariaLabel="角色图片锚点"
           value={value.anchor}
-          onChange={(event) =>
+          onChange={(anchor) =>
             onTransform({
               ...value,
-              anchor: event.target
-                .value as GalgameStoryCharacterTransform["anchor"],
+              anchor: anchor as GalgameStoryCharacterTransform["anchor"],
             })
           }
-        >
-          <option value="center">居中</option>
-          <option value="topLeft">左上</option>
-          <option value="bottomCenter">底部居中（兼容）</option>
-        </select>
+          options={[
+            { value: "center", label: "居中" },
+            { value: "topLeft", label: "左上" },
+            { value: "bottomCenter", label: "底部居中（兼容）" },
+          ]}
+        />
       </label>
       {fields.map(([key, label, min, max, step, suffix]) => (
         <label key={key} className="galgame-stage-range">

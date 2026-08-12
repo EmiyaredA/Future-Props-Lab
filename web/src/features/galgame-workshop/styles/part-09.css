@@ -652,7 +652,7 @@ button.galgame-visual-browser-open {
 
 .galgame-visual-properties input,
 .galgame-visual-properties textarea,
-.galgame-visual-properties select {
+.galgame-visual-properties .custom-select-trigger {
   width: 100%;
   min-height: 32px;
   padding: 6px 8px;

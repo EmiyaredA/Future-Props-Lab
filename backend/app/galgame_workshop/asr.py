@@ -287,12 +287,15 @@ class GalgameAsrService:
         story_asset_by_file = {
             asset["fileId"]: asset for asset in payload["assets"] if asset["type"] == "audio"
         }
+        requested_block_ids = set(body.block_ids) if body.block_ids is not None else None
         candidates: list[tuple[float, str, str, dict[str, object], VisualAsset]] = []
         for asset, metadata in voice_rows:
             normalized_transcript = _normalized_text(metadata.transcript or "")
             if not normalized_transcript:
                 continue
             for block, text in dialogue_blocks:
+                if requested_block_ids is not None and str(block["id"]) not in requested_block_ids:
+                    continue
                 similarity = SequenceMatcher(
                     None, normalized_transcript, _normalized_text(text)
                 ).ratio()
