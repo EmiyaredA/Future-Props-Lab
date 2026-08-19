@@ -40,7 +40,7 @@ from app.schemas.galgame_workshop import (
 def default_story_document() -> GalgameStoryProject:
     return GalgameStoryProject.model_validate(
         {
-            "schemaVersion": "1.3",
+            "schemaVersion": "1.4",
             "entryChapterId": "chapter-1",
             "synopsis": "",
             "characters": [],
@@ -66,7 +66,7 @@ def normalize_story_document(value: object) -> GalgameStoryProject:
         raise GalgameStoryDocumentInvalidError("故事文档格式无效")
     candidate = dict(value)
     if "schemaVersion" not in candidate:
-        candidate["schemaVersion"] = "1.3"
+        candidate["schemaVersion"] = "1.4"
         candidate.setdefault("synopsis", "")
         candidate.setdefault("characters", [])
         candidate.setdefault("scenes", [])

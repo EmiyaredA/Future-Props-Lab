@@ -300,6 +300,44 @@ test("uses two clicks to reveal then advance a line", async () => {
   expect(screen.getByRole("button", { name: "设备" })).toBeInTheDocument();
 });
 
+test("reveals dialogue one character at a time in the edit preview", () => {
+  vi.useFakeTimers();
+  vi.stubGlobal(
+    "matchMedia",
+    vi.fn(() => ({
+      matches: false,
+      media: "(prefers-reduced-motion: reduce)",
+      onchange: null,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    })),
+  );
+
+  try {
+    render(
+      <StoryPlayer
+        document={story}
+        mode="edit"
+        editFragment={story.chapters![0].fragments![0]}
+        editBlockIndex={1}
+      />,
+    );
+
+    expect(screen.queryByText("开始调查。")).not.toBeInTheDocument();
+    act(() => vi.advanceTimersByTime(25));
+    expect(screen.getByText("开")).toBeInTheDocument();
+    act(() => vi.advanceTimersByTime(25));
+    expect(screen.getByText("开始")).toBeInTheDocument();
+    act(() => vi.advanceTimersByTime(75));
+    expect(screen.getByText("开始调查。")).toBeInTheDocument();
+  } finally {
+    vi.useRealTimers();
+  }
+});
+
 test("automatically advances an untimed legacy fragment", () => {
   vi.useFakeTimers();
   try {
@@ -441,6 +479,14 @@ test("uses the default portrait unless dialogue selects an expression", async ()
         { id: "smile", label: "微笑", assetId: "asset-smile" },
       ],
       defaultExpressionId: "calm",
+      portraitSkins: [
+        {
+          id: "winter",
+          name: "冬装",
+          overrides: [{ expressionId: "calm", assetId: "asset-calm-winter" }],
+        },
+      ],
+      defaultPortraitSkinId: "winter",
     },
   ];
   portraitStory.assets = [
@@ -458,19 +504,111 @@ test("uses the default portrait unless dialogue selects an expression", async ()
       fileId: "file-smile",
       status: "ready",
     },
+    {
+      id: "asset-calm-winter",
+      type: "image",
+      role: "characterPortrait",
+      fileId: "file-calm-winter",
+      status: "ready",
+    },
   ];
 
   const dialogue = portraitStory.chapters![0].fragments![0].blocks![1];
   if (dialogue.type !== "dialogue") throw new Error("expected dialogue");
   const first = render(<StoryPlayer document={portraitStory} />);
   await user.click(screen.getByRole("button", { name: "开始试玩" }));
-  expect(screen.getByTestId("portrait-file")).toHaveTextContent("file-calm");
+  expect(screen.getByTestId("portrait-file")).toHaveTextContent(
+    "file-calm-winter",
+  );
   first.unmount();
 
   dialogue.expressionId = "smile";
   render(<StoryPlayer document={portraitStory} />);
   await user.click(screen.getByRole("button", { name: "开始试玩" }));
   expect(screen.getByTestId("portrait-file")).toHaveTextContent("file-smile");
+});
+
+test("keeps a voice-driven mouth sequence closed when no voice is playing", async () => {
+  vi.useFakeTimers();
+  try {
+    const lipSyncStory = structuredClone(story);
+    lipSyncStory.characters = [
+      {
+        id: "hero",
+        name: "调查员",
+        description: "",
+        expressions: [
+          {
+            id: "calm",
+            label: "平静",
+            assetId: "mouth-closed",
+            renderMode: "frameSequence",
+            sequence: {
+              playbackMode: "lipSync",
+              fps: 12,
+              loop: true,
+              frames: [
+                { id: "mouth-frame-closed", assetId: "mouth-closed" },
+                { id: "mouth-frame-half", assetId: "mouth-half" },
+                { id: "mouth-frame-open", assetId: "mouth-open" },
+              ],
+            },
+          },
+        ],
+        defaultExpressionId: "calm",
+      },
+    ];
+    lipSyncStory.assets = [
+      ["mouth-closed", "file-mouth-closed"],
+      ["mouth-half", "file-mouth-half"],
+      ["mouth-open", "file-mouth-open"],
+    ].map(([id, fileId]) => ({
+      id,
+      type: "image" as const,
+      role: "characterPortrait" as const,
+      fileId,
+      status: "ready" as const,
+    }));
+    lipSyncStory.presentation = {
+      stage: {
+        speakerFocusEnabled: true,
+        inactiveBrightness: 0.6,
+        focusTransitionMs: 180,
+        lipSyncEnabled: true,
+      },
+    };
+    lipSyncStory.chapters![0].fragments![0].blocks = [
+      { id: "scene", type: "scene", sceneId: "lab" },
+      {
+        id: "show-hero",
+        type: "showCharacter",
+        characterId: "hero",
+        expressionId: "calm",
+      },
+      {
+        id: "dialogue",
+        type: "dialogue",
+        characterId: "hero",
+        expressionId: "calm",
+        text: "没有配音。",
+      },
+    ];
+
+    const rendered = render(<StoryPlayer document={lipSyncStory} />);
+    fireEvent.click(screen.getByRole("button", { name: "开始试玩" }));
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    const portrait = rendered.container.querySelector(
+      ".galgame-player-portrait-image",
+    );
+    expect(portrait).toHaveAttribute("data-sequence-frame", "0");
+    act(() => vi.advanceTimersByTime(1000));
+    expect(portrait).toHaveAttribute("data-sequence-frame", "0");
+  } finally {
+    vi.useRealTimers();
+  }
 });
 
 test("renders center and top-left character anchors at their saved coordinates", async () => {
@@ -524,6 +662,139 @@ test("renders center and top-left character anchors at their saved coordinates",
     transform: "translate(0, 0) scale(1) scaleX(1)",
     transformOrigin: "top left",
   });
+});
+
+test.each([
+  [false, false, 1],
+  [true, false, -1],
+  [false, true, -1],
+  [true, true, 1],
+] as const)(
+  "composes expression flip %s with block flip %s",
+  async (expressionFlip, blockFlip, expectedScale) => {
+    const user = userEvent.setup();
+    const flipStory = structuredClone(story);
+    flipStory.characters = [
+      {
+        id: "hero",
+        name: "调查员",
+        description: "",
+        expressions: [
+          {
+            id: "calm",
+            label: "平静",
+            assetId: "asset-calm",
+            flipX: expressionFlip,
+            dialogueAvatar: {
+              source: "portrait",
+              crop: { x: 50, y: 25, scale: 1.8 },
+            },
+          },
+        ],
+        defaultExpressionId: "calm",
+        dialogueAvatar: { enabled: false },
+      },
+    ];
+    flipStory.assets = [
+      {
+        id: "asset-calm",
+        type: "image",
+        role: "characterPortrait",
+        fileId: "file-calm",
+        status: "ready",
+      },
+    ];
+    flipStory.chapters![0].fragments![0].blocks = [
+      { id: "scene", type: "scene", sceneId: "lab" },
+      {
+        id: "show-hero",
+        type: "showCharacter",
+        characterId: "hero",
+        expressionId: null,
+        transform: {
+          x: 40,
+          y: 60,
+          anchor: "center",
+          scale: 1,
+          brightness: 1,
+          opacity: 1,
+          flipX: blockFlip,
+          layer: 10,
+        },
+        transition: { durationMs: 0, fade: false },
+      },
+      {
+        id: "line",
+        type: "dialogue",
+        characterId: "hero",
+        text: "翻转测试",
+        portrait: {
+          mode: "dialogueAvatar",
+          visible: true,
+          keepAfter: false,
+        },
+      },
+    ];
+
+    const rendered = render(<StoryPlayer document={flipStory} />);
+    await user.click(screen.getByRole("button", { name: "开始试玩" }));
+    expect(
+      rendered.container.querySelector(".galgame-stage-actor"),
+    ).toHaveStyle({
+      transform: `translate(-50%, -50%) scale(1) scaleX(${expectedScale})`,
+    });
+  },
+);
+
+test("does not apply expression flipping to dialogue avatars", async () => {
+  const user = userEvent.setup();
+  const avatarStory = structuredClone(story);
+  avatarStory.characters = [
+    {
+      id: "hero",
+      name: "调查员",
+      description: "",
+      expressions: [
+        {
+          id: "calm",
+          label: "平静",
+          assetId: "asset-calm",
+          flipX: true,
+          dialogueAvatar: {
+            source: "portrait",
+            crop: { x: 50, y: 25, scale: 1.8 },
+          },
+        },
+      ],
+      defaultExpressionId: "calm",
+      dialogueAvatar: { enabled: true },
+    },
+  ];
+  avatarStory.assets = [
+    {
+      id: "asset-calm",
+      type: "image",
+      role: "characterPortrait",
+      fileId: "file-calm",
+      status: "ready",
+    },
+  ];
+  const dialogue = avatarStory.chapters![0].fragments![0].blocks![1];
+  if (dialogue.type !== "dialogue") throw new Error("expected dialogue");
+  dialogue.expressionId = "calm";
+  dialogue.portrait = {
+    mode: "dialogueAvatar",
+    visible: true,
+    keepAfter: false,
+  };
+
+  const rendered = render(<StoryPlayer document={avatarStory} />);
+  await user.click(screen.getByRole("button", { name: "开始试玩" }));
+  const avatar = rendered.container.querySelector(
+    ".galgame-dialogue-runtime-avatar",
+  );
+  expect(avatar).toBeInTheDocument();
+  expect(avatar).not.toHaveStyle({ transform: "scaleX(-1)" });
 });
 
 test("shows multiple speaker names and keeps every speaking stage actor focused", async () => {

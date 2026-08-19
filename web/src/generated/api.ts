@@ -2258,6 +2258,11 @@ export interface components {
             /** Assetid */
             assetId: string;
             dialogueAvatar?: components["schemas"]["GalgameStoryExpressionAvatar"];
+            /**
+             * Flipx
+             * @default false
+             */
+            flipX: boolean;
             /** Heightpercent */
             heightPercent?: number | null;
             /** Id */
@@ -2266,6 +2271,13 @@ export interface components {
             label: string;
             /** Overlays */
             overlays?: components["schemas"]["GalgameStoryCharacterOverlay"][];
+            /**
+             * Rendermode
+             * @default staticImage
+             * @enum {string}
+             */
+            renderMode: "staticImage" | "frameSequence";
+            sequence?: components["schemas"]["GalgameStoryExpressionSequence"] | null;
             thumbnailCrop?: components["schemas"]["GalgameStoryImageCrop"];
         };
         /** GalgameStoryCharacterOverlay */
@@ -2612,6 +2624,34 @@ export interface components {
              * @enum {string}
              */
             source: "portrait" | "independent";
+        };
+        /** GalgameStoryExpressionFrame */
+        GalgameStoryExpressionFrame: {
+            /** Assetid */
+            assetId: string;
+            /** Id */
+            id: string;
+        };
+        /** GalgameStoryExpressionSequence */
+        GalgameStoryExpressionSequence: {
+            /**
+             * Fps
+             * @default 2
+             */
+            fps: number;
+            /** Frames */
+            frames: components["schemas"]["GalgameStoryExpressionFrame"][];
+            /**
+             * Loop
+             * @default true
+             */
+            loop: boolean;
+            /**
+             * Playbackmode
+             * @default timed
+             * @enum {string}
+             */
+            playbackMode: "timed" | "lipSync";
         };
         /** GalgameStoryFloatingTextBlock */
         GalgameStoryFloatingTextBlock: {
@@ -3012,7 +3052,7 @@ export interface components {
              * Schemaversion
              * @constant
              */
-            schemaVersion: "1.3";
+            schemaVersion: "1.4";
             settings?: components["schemas"]["GalgameStorySettings"];
             /**
              * Synopsis
@@ -3283,6 +3323,10 @@ export interface components {
         GalgameStorySettings: {
             canvas?: components["schemas"]["GalgameStoryCanvasSettings"];
             characterStage?: components["schemas"]["GalgameStoryCharacterStageSettings"];
+            /** Characterstageoverrides */
+            characterStageOverrides?: {
+                [key: string]: components["schemas"]["GalgameStoryCharacterStageSettings"];
+            };
         };
         /** GalgameStoryShowCgBlock */
         GalgameStoryShowCgBlock: {

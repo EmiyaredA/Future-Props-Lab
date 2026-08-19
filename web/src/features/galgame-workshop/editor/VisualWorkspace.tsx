@@ -50,6 +50,7 @@ import {
   type StoryImagePickerState,
 } from "@features/galgame-workshop/editor/StoryImagePicker";
 import { StoryAssetImage } from "@features/galgame-workshop/editor/StoryAssetImage";
+import { InlineEditableName } from "@features/galgame-workshop/editor/EditorShared";
 
 type VisualSelection = { kind: "scene" | "cg"; id: string };
 type VisualMenuState = {
@@ -1285,7 +1286,26 @@ export function VisualWorkspace({
         <main className="galgame-visual-stage-panel">
           <header>
             <div>
-              <strong>{title}</strong>
+              {selection && (selectedScene || selectedCg) ? (
+                <InlineEditableName
+                  key={`${selection.kind}-${selection.id}`}
+                  value={title}
+                  label={selectedScene ? "场景名称" : "CG 名称"}
+                  onCommit={(name) => {
+                    if (selectedScene) {
+                      updateScene(selectedScene.id, (scene) => ({
+                        ...scene,
+                        name,
+                      }));
+                    } else if (selectedCg) {
+                      updateCg(selectedCg.id, (cg) => ({ ...cg, name }));
+                    }
+                  }}
+                  onEmpty={() => onNotice("名称不能为空。")}
+                />
+              ) : (
+                <strong>{title}</strong>
+              )}
               <span>
                 {detailCount} {selectedScene ? "层" : "个差分"} · {canvasWidth}×
                 {canvasHeight}

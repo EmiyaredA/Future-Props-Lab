@@ -569,6 +569,21 @@ class GalgameProjectAssets:
                             "label": f"角色“{character.name}”· {expression.label}",
                         }
                     )
+                if expression.sequence is not None:
+                    for frame_index, frame in enumerate(expression.sequence.frames):
+                        if frame.asset_id not in story_asset_ids:
+                            continue
+                        references.append(
+                            {
+                                "kind": "characterExpressionFrame",
+                                "characterId": character.id,
+                                "storyAssetId": frame.asset_id,
+                                "label": (
+                                    f"角色“{character.name}”· {expression.label}"
+                                    f" · 第 {frame_index + 1} 帧"
+                                ),
+                            }
+                        )
                 if expression.dialogue_avatar.asset_id in story_asset_ids:
                     references.append(
                         {

@@ -6,6 +6,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { createPortal } from "react-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AlertCircle,
@@ -1317,15 +1318,18 @@ export function AssetBrowser({
           正在处理…
         </div>
       ) : null}
-      {previewFile ? (
-        <AssetPreviewDialog
-          file={previewFile}
-          onClose={() => setPreviewFile(undefined)}
-          onDownload={() => {
-            void downloadFile(previewFile);
-          }}
-        />
-      ) : null}
+      {previewFile
+        ? createPortal(
+            <AssetPreviewDialog
+              file={previewFile}
+              onClose={() => setPreviewFile(undefined)}
+              onDownload={() => {
+                void downloadFile(previewFile);
+              }}
+            />,
+            document.body,
+          )
+        : null}
       {editor ? (
         <div
           className="file-dialog-backdrop"

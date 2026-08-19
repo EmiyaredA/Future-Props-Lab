@@ -22,6 +22,26 @@
   border-color: var(--accent-line);
 }
 
+.custom-select-trigger-content {
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.custom-select-trigger-content > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.custom-select-trigger-content > svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+}
+
 .select-chevron {
   width: 14px;
   height: 14px;

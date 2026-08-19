@@ -310,6 +310,36 @@ def test_galgame_story_defaults_character_themes_and_stage_settings() -> None:
     with pytest.raises(ValueError, match="ID 不能重复"):
         GalgameStoryProject.model_validate(invalid_positions)
 
+    character_override = deepcopy(document)
+    character_override["settings"] = {
+        "characterStageOverrides": {
+            "character-one": {
+                "anchor": "topLeft",
+                "defaultHeightPercent": 135,
+                "defaultPositionId": "position-center",
+                "positionPresets": default_position_presets(),
+            }
+        }
+    }
+    parsed_override = GalgameStoryProject.model_validate(character_override).model_dump(
+        mode="json", by_alias=True
+    )
+    assert parsed_override["settings"]["characterStageOverrides"]["character-one"] == {
+        "anchor": "topLeft",
+        "defaultPositionId": "position-center",
+        "defaultHeightPercent": 135.0,
+        "positionPresets": default_position_presets(),
+    }
+
+    unknown_override = deepcopy(character_override)
+    unknown_override["settings"]["characterStageOverrides"] = {
+        "missing-character": character_override["settings"]["characterStageOverrides"][
+            "character-one"
+        ]
+    }
+    with pytest.raises(ValueError, match="独立方案引用了不存在的角色"):
+        GalgameStoryProject.model_validate(unknown_override)
+
 
 def test_story_12_migrates_position_presets_and_preserves_legacy_block_anchor() -> None:
     document = playable_story()
@@ -341,7 +371,7 @@ def test_story_12_migrates_position_presets_and_preserves_legacy_block_anchor() 
     normalized = GalgameStoryProject.model_validate(document).model_dump(mode="json", by_alias=True)
 
     stage = normalized["settings"]["characterStage"]
-    assert normalized["schemaVersion"] == "1.3"
+    assert normalized["schemaVersion"] == "1.4"
     assert stage["anchor"] == "center"
     assert [(preset["x"], preset["y"]) for preset in stage["positionPresets"]] == [
         (5.0, 60.0),
@@ -373,7 +403,7 @@ def test_galgame_story_v11_migrates_official_dialogue_blocks() -> None:
 
     normalized = GalgameStoryProject.model_validate(document).model_dump(mode="json", by_alias=True)
 
-    assert normalized["schemaVersion"] == "1.3"
+    assert normalized["schemaVersion"] == "1.4"
     assert normalized["chapters"][0]["fragments"][0]["blocks"] == [
         {"id": "legacy-speed", "type": "paragraphParams", "textSpeedCps": 40},
         {"id": "instant-speed", "type": "paragraphParams", "revealEffect": "instant"},
@@ -774,7 +804,7 @@ async def test_galgame_workshop_story_edit_report_completion_and_conflicts() -> 
         assert story_response.status_code == 200
         initial_story = story_response.json()
         assert initial_story["document"] == {
-            "schemaVersion": "1.3",
+            "schemaVersion": "1.4",
             "entryChapterId": "chapter-1",
             "synopsis": "",
             "characters": [],
@@ -1020,7 +1050,7 @@ async def test_galgame_story_normalizes_the_legacy_empty_skeleton() -> None:
         await session.commit()
     async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
         story = (await client.get(f"/v1/galgame-workshop/projects/{project['id']}/story")).json()
-        assert story["document"]["schemaVersion"] == "1.3"
+        assert story["document"]["schemaVersion"] == "1.4"
         assert story["document"]["chapters"][0]["entryFragmentId"] == "main"
         assert story["document"]["presentation"]["dialogueBox"]["preset"] == "dark"
         assert story["document"]["presentation"]["ui"]["components"] == []
@@ -1580,6 +1610,126 @@ async def test_galgame_scene_layers_validate_roles_groups_and_unique_ids() -> No
             params={"expected_revision": project["revision"]},
         )
         assert removed.status_code == 200
+
+
+def test_character_expression_flip_defaults_and_round_trips() -> None:
+    document = playable_story()
+    document["assets"] = [
+        {
+            "id": "portrait-default",
+            "type": "image",
+            "role": "characterPortrait",
+            "fileId": "file-portrait",
+            "status": "ready",
+        }
+    ]
+    document["characters"][0]["expressions"] = [
+        {
+            "id": "expression-default",
+            "label": "默认",
+            "assetId": "portrait-default",
+            "flipX": True,
+        }
+    ]
+    document["characters"][0]["defaultExpressionId"] = "expression-default"
+
+    parsed = GalgameStoryProject.model_validate(document)
+    expression = parsed.characters[0].expressions[0]
+    assert expression.flip_x is True
+    assert expression.model_dump(mode="json", by_alias=True)["flipX"] is True
+
+    del document["characters"][0]["expressions"][0]["flipX"]
+    legacy = GalgameStoryProject.model_validate(document)
+    assert legacy.characters[0].expressions[0].flip_x is False
+    assert legacy.characters[0].expressions[0].render_mode == "staticImage"
+    assert legacy.schema_version == "1.4"
+
+
+def test_character_expression_sequence_validates_and_round_trips() -> None:
+    document = playable_story()
+    document["schemaVersion"] = "1.3"
+    document["assets"] = [
+        {
+            "id": f"portrait-{index}",
+            "type": "image",
+            "role": "characterPortrait",
+            "fileId": f"file-portrait-{index}",
+            "status": "ready",
+        }
+        for index in range(3)
+    ]
+    document["characters"][0]["expressions"] = [
+        {
+            "id": "expression-idle",
+            "label": "待机",
+            "assetId": "portrait-0",
+            "renderMode": "frameSequence",
+            "sequence": {
+                "fps": 12,
+                "loop": False,
+                "frames": [
+                    {"id": "idle-frame-0", "assetId": "portrait-0"},
+                    {"id": "idle-frame-1", "assetId": "portrait-1"},
+                ],
+            },
+        }
+    ]
+    document["characters"][0]["defaultExpressionId"] = "expression-idle"
+
+    parsed = GalgameStoryProject.model_validate(document)
+    expression = parsed.characters[0].expressions[0]
+    assert parsed.schema_version == "1.4"
+    assert expression.render_mode == "frameSequence"
+    assert expression.sequence is not None
+    assert expression.sequence.playback_mode == "timed"
+    assert expression.sequence.fps == 12
+    assert expression.sequence.loop is False
+    assert [frame.id for frame in expression.sequence.frames] == [
+        "idle-frame-0",
+        "idle-frame-1",
+    ]
+
+    default_fps = deepcopy(document)
+    del default_fps["characters"][0]["expressions"][0]["sequence"]["fps"]
+    default_expression = (
+        GalgameStoryProject.model_validate(default_fps).characters[0].expressions[0]
+    )
+    assert default_expression.sequence is not None
+    assert default_expression.sequence.fps == 2
+
+    missing_sequence = deepcopy(document)
+    del missing_sequence["characters"][0]["expressions"][0]["sequence"]
+    with pytest.raises(ValueError, match="必须保存序列帧配置"):
+        GalgameStoryProject.model_validate(missing_sequence)
+
+    wrong_poster = deepcopy(document)
+    wrong_poster["characters"][0]["expressions"][0]["assetId"] = "portrait-1"
+    with pytest.raises(ValueError, match="代表素材必须与首帧一致"):
+        GalgameStoryProject.model_validate(wrong_poster)
+
+    duplicate_frame = deepcopy(document)
+    duplicate_frame["characters"][0]["expressions"][0]["sequence"]["frames"][1]["id"] = (
+        "idle-frame-0"
+    )
+    with pytest.raises(ValueError, match="帧 ID 不能重复"):
+        GalgameStoryProject.model_validate(duplicate_frame)
+
+    lip_sync = deepcopy(document)
+    lip_sync_sequence = lip_sync["characters"][0]["expressions"][0]["sequence"]
+    lip_sync_sequence["playbackMode"] = "lipSync"
+    lip_sync_sequence["frames"].append({"id": "idle-frame-2", "assetId": "portrait-2"})
+    parsed_lip_sync = GalgameStoryProject.model_validate(lip_sync)
+    assert parsed_lip_sync.characters[0].expressions[0].sequence.playback_mode == "lipSync"
+
+    incomplete_lip_sync = deepcopy(document)
+    incomplete_lip_sync["characters"][0]["expressions"][0]["sequence"]["playbackMode"] = "lipSync"
+    with pytest.raises(ValueError, match="闭口、半口和张口三帧"):
+        GalgameStoryProject.model_validate(incomplete_lip_sync)
+
+    wrong_role = deepcopy(document)
+    wrong_role["assets"][1]["role"] = "sceneLayer"
+    with pytest.raises(ValueError, match="序列帧只能引用角色立绘素材"):
+        GalgameStoryProject.model_validate(wrong_role)
 
 
 def test_galgame_cgs_validate_variants_blocks_and_timeline_conflicts() -> None:

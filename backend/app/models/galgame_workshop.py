@@ -49,7 +49,7 @@ class GalgameStoryDocument(Base):
     document: Mapped[dict] = mapped_column(
         JSON,
         default=lambda: {
-            "schemaVersion": "1.3",
+            "schemaVersion": "1.4",
             "synopsis": "",
             "characters": [],
             "scenes": [],

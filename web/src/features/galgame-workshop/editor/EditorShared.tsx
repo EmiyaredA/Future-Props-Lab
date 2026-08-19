@@ -1,4 +1,10 @@
-import type { CSSProperties, ReactNode } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type ReactNode,
+} from "react";
 import { BookOpenText, Clock3, Settings2 } from "lucide-react";
 import type {
   GalgameStoryChapter,
@@ -7,6 +13,7 @@ import type {
 } from "@features/galgame-workshop/api";
 import { StoryAssetImage } from "@features/galgame-workshop/editor/StoryAssetImage";
 import { formatTimecode } from "@features/galgame-workshop/editor/timeline";
+import { characterExpressionAssetId } from "@features/galgame-workshop/editor/richText";
 
 export function Field({
   label,
@@ -20,6 +27,89 @@ export function Field({
       <span>{label}</span>
       {children}
     </label>
+  );
+}
+
+export function InlineEditableName({
+  value,
+  label,
+  onCommit,
+  onEmpty,
+  maxLength = 120,
+}: {
+  value: string;
+  label: string;
+  onCommit: (value: string) => void;
+  onEmpty?: () => void;
+  maxLength?: number;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(value);
+
+  useEffect(() => {
+    if (!editing) setDraft(value);
+  }, [editing, value]);
+
+  useEffect(() => {
+    if (!editing) return;
+    inputRef.current?.focus();
+    inputRef.current?.select();
+  }, [editing]);
+
+  const cancel = () => {
+    setDraft(value);
+    setEditing(false);
+  };
+
+  const commit = () => {
+    const nextValue = draft.trim();
+    if (!nextValue) {
+      onEmpty?.();
+      cancel();
+      return;
+    }
+    if (nextValue !== value) onCommit(nextValue);
+    setEditing(false);
+  };
+
+  return (
+    <strong className="galgame-inline-editable-name">
+      {editing ? (
+        <input
+          ref={inputRef}
+          aria-label={`编辑${label}`}
+          value={draft}
+          maxLength={maxLength}
+          onChange={(event) => setDraft(event.target.value)}
+          onBlur={commit}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") {
+              event.preventDefault();
+              commit();
+            } else if (event.key === "Escape") {
+              event.preventDefault();
+              cancel();
+            }
+          }}
+        />
+      ) : (
+        <button
+          type="button"
+          aria-label={`双击编辑${label}：${value}`}
+          title={`双击编辑${label}`}
+          onDoubleClick={() => setEditing(true)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" || event.key === "F2") {
+              event.preventDefault();
+              setEditing(true);
+            }
+          }}
+        >
+          {value}
+        </button>
+      )}
+    </strong>
   );
 }
 
@@ -52,11 +142,13 @@ export function ChapterCast({
         const character = (document.characters ?? []).find(
           (candidate) => candidate.id === characterId,
         );
-        const expression = character?.expressions?.find(
-          (candidate) => candidate.id === character.defaultExpressionId,
+        const portraitAssetId = characterExpressionAssetId(
+          character,
+          character?.defaultExpressionId,
+          undefined,
         );
         const asset = document.assets?.find(
-          (candidate) => candidate.id === expression?.assetId,
+          (candidate) => candidate.id === portraitAssetId,
         );
         return (
           <span

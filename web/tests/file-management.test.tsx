@@ -430,12 +430,16 @@ test("opens an inline preview when a file card is clicked", async () => {
   vi.mocked(fetchApiBlob).mockResolvedValue(
     new Blob(["png"], { type: "image/png" }),
   );
-  renderProjectBrowser(true);
+  const { container } = renderProjectBrowser(true);
 
   expect(await screen.findByText("人设图3")).toBeInTheDocument();
   await user.click(screen.getByRole("button", { name: "预览 人设图3" }));
 
-  expect(screen.getByRole("dialog", { name: "人设图3" })).toBeInTheDocument();
+  const preview = screen.getByRole("dialog", { name: "人设图3" });
+  expect(preview).toBeInTheDocument();
+  expect(container).not.toContainElement(preview);
+  expect(preview.parentElement).toHaveClass("file-preview-backdrop");
+  expect(preview.parentElement?.parentElement).toBe(document.body);
   await waitFor(() =>
     expect(fetchApiBlob).toHaveBeenCalledWith("/v1/files/image-1/content"),
   );

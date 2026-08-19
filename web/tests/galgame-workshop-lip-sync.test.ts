@@ -3,6 +3,7 @@ import type { GalgameStoryCharacter } from "@features/galgame-workshop/api";
 import {
   LipSyncLevelTracker,
   resolveLipSyncExpressionId,
+  resolveLipSyncPresentation,
 } from "@features/galgame-workshop/editor/lipSync";
 
 const character: GalgameStoryCharacter = {
@@ -14,6 +15,22 @@ const character: GalgameStoryCharacter = {
     { id: "pose-e003-f001", label: "半口", assetId: "half" },
     { id: "pose-e003-f002", label: "张口", assetId: "open" },
     { id: "static-expression", label: "静态", assetId: "static" },
+    {
+      id: "sequence-expression",
+      label: "平静",
+      assetId: "sequence-closed",
+      renderMode: "frameSequence",
+      sequence: {
+        playbackMode: "lipSync",
+        fps: 12,
+        loop: true,
+        frames: [
+          { id: "sequence-closed", assetId: "sequence-closed" },
+          { id: "sequence-half", assetId: "sequence-half" },
+          { id: "sequence-open", assetId: "sequence-open" },
+        ],
+      },
+    },
   ],
   defaultExpressionId: "pose-e003-f000",
 };
@@ -31,6 +48,21 @@ describe("音量驱动口型", () => {
     );
   });
 
+  test("语音口型序列保持表情 ID 并返回受控帧", () => {
+    expect(
+      resolveLipSyncPresentation(character, "sequence-expression", 2),
+    ).toEqual({
+      expressionId: "sequence-expression",
+      controlledFrameIndex: 2,
+    });
+    expect(
+      resolveLipSyncPresentation(character, "static-expression", 2),
+    ).toEqual({ expressionId: "static-expression" });
+    expect(resolveLipSyncPresentation(character, "pose-e003-f000", 1)).toEqual({
+      expressionId: "pose-e003-f001",
+    });
+  });
+
   test("根据动态底噪分三档并以 100ms 滞回抑制闪烁", () => {
     const tracker = new LipSyncLevelTracker();
     expect(tracker.update(-42, false, 0)).toBe(0);
@@ -39,5 +71,12 @@ describe("音量驱动口型", () => {
     expect(tracker.update(-25, true, 150)).toBe(1);
     expect(tracker.update(-25, true, 230)).toBe(2);
     expect(tracker.update(-40, false, 240)).toBe(0);
+  });
+
+  test("按表情帧率限制口型切换速度", () => {
+    const tracker = new LipSyncLevelTracker();
+    expect(tracker.update(-48, false, 0, 2)).toBe(0);
+    expect(tracker.update(-20, true, 400, 2)).toBe(0);
+    expect(tracker.update(-20, true, 510, 2)).toBe(2);
   });
 });

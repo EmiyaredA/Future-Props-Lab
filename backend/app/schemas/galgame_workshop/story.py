@@ -54,7 +54,7 @@ class GalgameStoryChapter(GalgameStoryModel):
 
 
 class GalgameStoryProject(GalgameStoryModel):
-    schema_version: Literal["1.3"] = Field(alias="schemaVersion")
+    schema_version: Literal["1.4"] = Field(alias="schemaVersion")
     synopsis: str = Field(default="", max_length=10_000)
     entry_chapter_id: str | None = Field(
         default=None, alias="entryChapterId", pattern=STABLE_ID_PATTERN
@@ -85,8 +85,8 @@ class GalgameStoryProject(GalgameStoryModel):
             return value
         migrated = dict(value)
         source_version = migrated.get("schemaVersion")
-        if source_version in {None, "1.0", "1.1", "1.2"}:
-            migrated["schemaVersion"] = "1.3"
+        if source_version in {None, "1.0", "1.1", "1.2", "1.3"}:
+            migrated["schemaVersion"] = "1.4"
         chapters = [dict(chapter) for chapter in migrated.get("chapters", [])]
         for chapter in chapters:
             chapter.setdefault("disabled", False)
@@ -105,6 +105,8 @@ class GalgameStoryProject(GalgameStoryModel):
             legacy_crop = legacy_avatar.pop("crop", None)
             character["dialogueAvatar"] = legacy_avatar
             expressions = [dict(expression) for expression in character.get("expressions", [])]
+            for expression in expressions:
+                expression.setdefault("renderMode", "staticImage")
             if legacy_crop is not None:
                 for expression in expressions:
                     expression.setdefault(
@@ -258,6 +260,8 @@ class GalgameStoryProject(GalgameStoryModel):
             raise ValueError("入口章节不能禁用")
 
         known_characters = set(character_ids)
+        if not set(self.settings.character_stage_overrides).issubset(known_characters):
+            raise ValueError("角色舞台独立方案引用了不存在的角色")
         known_variables = set(variable_ids)
         variables_by_id = {variable.id: variable for variable in self.variables}
         known_attributes = set(attribute_ids)
@@ -346,6 +350,13 @@ class GalgameStoryProject(GalgameStoryModel):
                     raise ValueError("角色表情引用了不存在的立绘素材")
                 if asset.role != "characterPortrait":
                     raise ValueError("角色表情只能引用角色立绘素材")
+                if expression.sequence is not None:
+                    for frame in expression.sequence.frames:
+                        frame_asset = assets_by_id.get(frame.asset_id)
+                        if frame_asset is None:
+                            raise ValueError("角色表情序列帧引用了不存在的立绘素材")
+                        if frame_asset.role != "characterPortrait":
+                            raise ValueError("角色表情序列帧只能引用角色立绘素材")
                 if expression.dialogue_avatar.asset_id is not None:
                     avatar_asset = assets_by_id.get(expression.dialogue_avatar.asset_id)
                     if avatar_asset is None:

@@ -98,3 +98,9 @@ class GalgameStorySettings(GalgameStoryModel):
         default_factory=GalgameStoryCharacterStageSettings,
         alias="characterStage",
     )
+    character_stage_overrides: dict[str, GalgameStoryCharacterStageSettings] = Field(
+        default_factory=dict,
+        alias="characterStageOverrides",
+        max_length=200,
+        exclude_if=lambda value: not value,
+    )

@@ -109,10 +109,38 @@ class GalgameStoryCharacterOverlay(GalgameStoryModel):
         return _clean_title(value)
 
 
+class GalgameStoryExpressionFrame(GalgameStoryModel):
+    id: str = Field(pattern=STABLE_ID_PATTERN)
+    asset_id: str = Field(alias="assetId", pattern=STABLE_ID_PATTERN)
+
+
+class GalgameStoryExpressionSequence(GalgameStoryModel):
+    playback_mode: Literal["timed", "lipSync"] = Field(default="timed", alias="playbackMode")
+    fps: int = Field(default=2, ge=1, le=60)
+    loop: bool = True
+    frames: list[GalgameStoryExpressionFrame] = Field(min_length=1, max_length=240)
+
+    @model_validator(mode="after")
+    def frame_ids_are_unique(self) -> GalgameStoryExpressionSequence:
+        frame_ids = [frame.id for frame in self.frames]
+        if len(frame_ids) != len(set(frame_ids)):
+            raise ValueError("同一表情序列的帧 ID 不能重复")
+        if self.playback_mode == "lipSync" and len(self.frames) != 3:
+            raise ValueError("语音口型序列必须依次保存闭口、半口和张口三帧")
+        return self
+
+
 class GalgameStoryCharacterExpression(GalgameStoryModel):
     id: str = Field(pattern=STABLE_ID_PATTERN)
     label: str = Field(min_length=1, max_length=120)
     asset_id: str = Field(alias="assetId", pattern=STABLE_ID_PATTERN)
+    render_mode: Literal["staticImage", "frameSequence"] = Field(
+        default="staticImage", alias="renderMode"
+    )
+    sequence: GalgameStoryExpressionSequence | None = Field(
+        default=None, exclude_if=lambda value: value is None
+    )
+    flip_x: bool = Field(default=False, alias="flipX")
     thumbnail_crop: GalgameStoryImageCrop = Field(
         default_factory=GalgameStoryImageCrop, alias="thumbnailCrop"
     )
@@ -134,10 +162,17 @@ class GalgameStoryCharacterExpression(GalgameStoryModel):
         return _clean_title(value)
 
     @model_validator(mode="after")
-    def overlay_ids_are_unique(self) -> GalgameStoryCharacterExpression:
+    def presentation_is_valid(self) -> GalgameStoryCharacterExpression:
         overlay_ids = [overlay.id for overlay in self.overlays]
         if len(overlay_ids) != len(set(overlay_ids)):
             raise ValueError("同一表情的图形覆盖 ID 不能重复")
+        if self.render_mode == "staticImage" and self.sequence is not None:
+            raise ValueError("静态图片表情不能保存序列帧配置")
+        if self.render_mode == "frameSequence":
+            if self.sequence is None:
+                raise ValueError("序列帧表情必须保存序列帧配置")
+            if self.asset_id != self.sequence.frames[0].asset_id:
+                raise ValueError("序列帧表情的代表素材必须与首帧一致")
         return self
 
 

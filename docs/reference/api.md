@@ -147,7 +147,7 @@ ID、消息数量、画布摘要和素材 ID；不保存图片 Base64、临时�
 
 - `GET/POST /v1/galgame-workshop/projects`：按最近更新时间读取工程或新建空白工程。
 - `GET/PATCH/DELETE /v1/galgame-workshop/projects/{project_id}`：读取、修改或删除单个工程。
-- `GET/PUT /v1/galgame-workshop/projects/{project_id}/story`：读取或整份 CAS 保存 Story 1.3 故事文档。
+- `GET/PUT /v1/galgame-workshop/projects/{project_id}/story`：读取或整份 CAS 保存 Story 1.4 故事文档。
 - `GET /v1/galgame-workshop/projects/{project_id}/story/report`：按章节顺序、调用栈与真实控制流检查可达性、停止点和递归。
 - `GET/POST /v1/galgame-workshop/projects/{project_id}/assets`：搜索或上传工程私有的图片、音视频与字体；上传可指定素材分类。
 - `POST /v1/galgame-workshop/projects/{project_id}/assets/import-preview|batch`：预检批量改名和虚拟路径，或原子导入一批素材。
@@ -166,19 +166,29 @@ ID、消息数量、画布摘要和素材 ID；不保存图片 Base64、临时�
 
 工程状态为 `draft / completed`，标题长度为 1–120 字。修改和删除必须携带工程的
 `expected_revision`；冲突返回 `409 revision_conflict` 以及服务器当前工程快照。新建工程会同时
-写入 `schemaVersion: "1.3"` 故事文档，预置 `chapter-1` 章节和入口为 `main` 的空 Fragment。
+写入 `schemaVersion: "1.4"` 故事文档，预置 `chapter-1` 章节和入口为 `main` 的空 Fragment。
 故事包含 `synopsis`、`entryChapterId`、类型化变量、角色属性模板、角色、场景、剧情 CG、项目级
 `settings` 及
 `chapters → fragments → blocks`。章节有稳定 ID、顺序、入口 Fragment 和禁用状态；入口章不能删除或禁用，
 `endChapter` 会进入下一启用章。旧 `schemaVersion: "1.0/1.1"` Story 读取时自动补齐这些字段并升级为
-`schemaVersion: "1.3"`，继续使用整份文档 revision CAS。`settings.canvas` 保存 640×360 至
-7680×4320 的画布尺寸（默认 1920×1080）；`settings.characterStage` 保存默认锚点、默认画面高度、
+`schemaVersion: "1.4"`，继续使用整份文档 revision CAS。`settings.canvas` 保存 640×360 至
+7680×4320 的画布尺寸（默认 1920×1080）；`settings.characterStage` 保存全局锚点、基准画面高度、
 默认位置 ID 与 1–20 个可排序的二维百分比位置预设，其中左、中左、中、中右、右五个内置预设必须保留。
+`settings.characterStageOverrides` 可按角色 ID 保存同形的独立方案；键必须引用现有角色，删除条目后角色恢复跟随全局方案。
 旧版标量站位会结合共享 Y 坐标自动转换为二维预设。它们只作为新建 Block 与资产预览的默认值，
 不会改写已有角色 transform。角色的 `themeColor` 使用六位十六进制颜色；旧文档按角色顺序补入
 确定性色板。角色可选
 `expressions[]` 和 `defaultExpressionId`，表情通过故事
-`assets[]` 中的 `characterPortrait` 记录引用文件，对白可用 `expressionId` 覆盖角色默认表情。场景统一使用
+`assets[]` 中的 `characterPortrait` 记录引用文件，并可用 `flipX` 保存表情在舞台上的默认水平朝向；
+该朝向与 Block 的 `transform.flipX` 叠加，两次翻转会互相抵消，且不影响原图、编辑器缩略图或对白头像。
+Story 1.4 的表情可用 `renderMode: frameSequence` 和
+`sequence: { playbackMode, fps, loop, frames[] }` 组织 1–240 张静态图片帧；帧 ID 在表情内唯一，FPS 默认为 2、范围为 1–60，
+`assetId` 始终等于首帧素材。编辑器预览和试玩播放器会预加载后逐帧播放，关闭循环后停在末帧；
+`playbackMode` 默认为 `timed`。设为 `lipSync` 时必须依次保存闭口、半口、张口三帧，编辑器仍可循环预览，
+试玩时则由当前对白配音的音量驱动，并在静音、暂停、非说话角色或关闭口型同步时固定使用闭口首帧；
+对白头像、表情卡缩略图和立绘皮肤覆盖仍使用静态代表图。Spine 与 Live2D 只作为未启用的扩展入口，
+当前契约不接受其资源包。
+对白可用 `expressionId` 覆盖角色默认表情。场景统一使用
 `sceneGroups + scenes[].layers[]`；每层保存稳定 ID、名称、`sceneLayer` 素材、距离和偏移，单层与多层共享模型。
 旧多背景场景会确定性拆分为多个场景并重写 Scene Block 引用；`clearCharacters` 控制切换场景时是否清空舞台角色。
 `showCharacter` Block 以 `characterId` 为舞台唯一实例进行登场或调整，保存表情、图片锚点、百分比位置（X/Y 均为 -1000%–1000%）、比例、亮度、
@@ -188,7 +198,7 @@ ID、消息数量、画布摘要和素材 ID；不保存图片 Base64、临时�
 `boolean / number / string` 类型、默认值和 `session / persistent` 生命周期；角色属性只能使用项目属性模板中
 声明的键和值类型。
 
-Story 1.3 可选的 `localizations` 保存人工翻译：`sourceLocale` 为源语言，`defaultLocale` 为游戏启动
+Story 1.4 可选的 `localizations` 保存人工翻译：`sourceLocale` 为源语言，`defaultLocale` 为游戏启动
 语言，`targets[]` 按 BCP-47 语言标签保存译文。每条 `entries[]` 通过稳定的
 `blockId + field + choiceId?` 引用玩家可见字段，并同时保存 `sourceFingerprint` 与纯文本译文；不复制
 Block，也不改变章节、Fragment、分支目标或时间轴。目标语言与翻译引用在各自作用域内必须唯一，
@@ -236,7 +246,7 @@ Dialogue Block 的 `characterId` 继续表示主说话角色；可选 `speakerId
 
 `curtain` 使用 `fullscreen / letterbox / pillarbox / frame` 分别表示全屏、上下黑边、左右黑边和四周黑边，
 并通过 `show / hide` 合上或打开幕布。缺少 `mode` 的旧 Block 按 `fullscreen` 读取；颜色、不透明度、动画时长
-和 `waitForCompletion` 继续决定渲染与剧情推进。该扩展仍属于 Story 1.3，不需要持久层迁移。
+和 `waitForCompletion` 继续决定渲染与剧情推进。该扩展继续随 Story 1.4 文档保存，不需要持久层迁移。
 
 `presentation.text` 保存全局文字速度，`presentation.paragraph` 保存内置或项目段落样式，
 `presentation.systemMessage` 保存标准消息框槽位和项目消息框样式。引用统一为
@@ -249,9 +259,9 @@ Dialogue Block 的 `characterId` 继续表示主说话角色；可选 `speakerId
 `presentation` 时读取为默认暗色对话框，首次修改后随 Story CAS 整体保存。
 `presentation.stage` 保存多人舞台的说话者自动聚焦开关、非说话者亮度倍率、聚焦过渡时长与
 `lipSyncEnabled`。角色基础亮度始终保存在具体演出 Block，自动聚焦只在试玩渲染时叠加，不改写故事
-数据。口型开启后，运行时以无对白区间采样的底噪为基准，在约 12fps 下把当前说话者同一姿态的
-`f000 / f001 / f002` 闭口、半口和张口差分映射为三档音量口型；旁白、暂停、无对白和非说话者保持
-闭口，缺少配套差分的素材静默回退到作者指定的表情。
+数据。口型开启后，运行时以无对白区间采样的底噪为基准，在表情设置的 FPS 上限内把 `lipSync` 序列的
+闭口、半口和张口三帧映射为三档音量口型；旧工程的 `f000 / f001 / f002` 三表情命名继续兼容。
+旁白、暂停、无对白和非说话者保持闭口，缺少配套差分的素材静默回退到作者指定的表情。
 
 `presentation.ui.components` 保存项目级自定义 Gal 界面组件。组件不预设为日期 HUD、快捷栏或其他
 固定用途；每项自行定义 `name`、`assetId`、百分比坐标 `x` / `y`、百分比宽度 `width`、显示时机

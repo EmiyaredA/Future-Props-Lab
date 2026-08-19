@@ -4,6 +4,7 @@ import type {
   GalgameStoryAudioAsset,
   GalgameStoryBranchBlock,
   GalgameStoryChapter,
+  GalgameStoryCharacterStageSettings,
   GalgameStoryDialogueBoxStyle,
   GalgameStoryFragment,
   GalgameStoryProject,
@@ -119,6 +120,39 @@ export const DEFAULT_STORY_SETTINGS = {
   },
 } satisfies NonNullable<GalgameStoryProject["settings"]>;
 
+export type ResolvedCharacterStageSettings = Omit<
+  GalgameStoryCharacterStageSettings,
+  "positionPresets"
+> & {
+  positionPresets: NonNullable<
+    GalgameStoryCharacterStageSettings["positionPresets"]
+  >;
+};
+
+export function normalizeCharacterStageSettings(
+  settings?: GalgameStoryCharacterStageSettings,
+): ResolvedCharacterStageSettings {
+  return {
+    ...DEFAULT_STORY_SETTINGS.characterStage,
+    ...settings,
+    positionPresets: settings?.positionPresets?.length
+      ? settings.positionPresets.map((preset) => ({ ...preset }))
+      : DEFAULT_CHARACTER_POSITION_PRESETS.map((preset) => ({ ...preset })),
+  };
+}
+
+export function characterStageSettings(
+  document: GalgameStoryProject,
+  characterId?: string,
+): ResolvedCharacterStageSettings {
+  const override = characterId
+    ? document.settings?.characterStageOverrides?.[characterId]
+    : undefined;
+  return normalizeCharacterStageSettings(
+    override ?? document.settings?.characterStage,
+  );
+}
+
 export function stableId() {
   return crypto.randomUUID().toLowerCase();
 }
@@ -128,7 +162,7 @@ export function completeStoryDocument(
 ): GalgameStoryProject {
   return {
     ...document,
-    schemaVersion: "1.3",
+    schemaVersion: "1.4",
     entryChapterId:
       document.entryChapterId ??
       [...(document.chapters ?? [])].sort((a, b) => a.order - b.order)[0]?.id ??
@@ -139,14 +173,17 @@ export function completeStoryDocument(
         ...DEFAULT_STORY_SETTINGS.canvas,
         ...document.settings?.canvas,
       },
-      characterStage: {
-        ...DEFAULT_STORY_SETTINGS.characterStage,
-        ...document.settings?.characterStage,
-        positionPresets: document.settings?.characterStage?.positionPresets
-          ?.length
-          ? document.settings.characterStage.positionPresets
-          : DEFAULT_CHARACTER_POSITION_PRESETS,
-      },
+      characterStage: normalizeCharacterStageSettings(
+        document.settings?.characterStage,
+      ),
+      characterStageOverrides: Object.fromEntries(
+        Object.entries(document.settings?.characterStageOverrides ?? {}).map(
+          ([characterId, settings]) => [
+            characterId,
+            normalizeCharacterStageSettings(settings),
+          ],
+        ),
+      ),
     },
     presentation: {
       ...document.presentation,
@@ -225,6 +262,8 @@ export function completeStoryDocument(
         ][index % 8],
       expressions: (character.expressions ?? []).map((expression) => ({
         ...expression,
+        renderMode: expression.renderMode ?? "staticImage",
+        flipX: expression.flipX ?? false,
         thumbnailCrop: expression.thumbnailCrop ?? { x: 50, y: 25, scale: 1.8 },
         dialogueAvatar: expression.dialogueAvatar ?? {
           source: "portrait",
@@ -337,10 +376,7 @@ export function makeBlock(
     };
   if (kind === "showCharacter") {
     if (!characters[0]) return undefined;
-    const stageSettings = {
-      ...DEFAULT_STORY_SETTINGS.characterStage,
-      ...document.settings?.characterStage,
-    };
+    const stageSettings = characterStageSettings(document, characters[0].id);
     const defaultPosition =
       stageSettings.positionPresets.find(
         (preset) => preset.id === stageSettings.defaultPositionId,
@@ -355,7 +391,7 @@ export function makeBlock(
         x: defaultPosition.x,
         y: defaultPosition.y,
         anchor: stageSettings.anchor,
-        scale: document.settings?.characterStage?.legacyDefaultScale ?? 1,
+        scale: stageSettings.legacyDefaultScale ?? 1,
       },
       transition: DEFAULT_CHARACTER_TRANSITION,
     };

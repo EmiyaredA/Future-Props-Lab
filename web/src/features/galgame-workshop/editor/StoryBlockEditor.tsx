@@ -9,20 +9,75 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import {
+  Activity,
+  AlignLeft,
+  AudioLines,
+  BadgeInfo,
+  BellRing,
+  Blend,
+  BookOpen,
+  Braces,
+  Camera,
   Check,
   Clock3,
+  CircleCheck,
+  CircleStop,
+  Clapperboard,
+  ContactRound,
+  CornerDownLeft,
+  Eraser,
   Eye,
   EyeOff,
   Flag,
+  FlipHorizontal2,
+  Film,
+  Frame,
   GitBranch,
-  Images,
+  GitMerge,
+  GalleryHorizontal,
+  Gauge,
+  ImageOff,
+  ImagePlus,
+  Layers2,
   MapPinned,
+  Maximize2,
+  MessageCircle,
+  MessageCircleMore,
+  MonitorPlay,
   MessageSquareText,
   Music2,
+  Palette,
+  PanelsTopLeft,
+  PlayCircle,
   Plus,
+  Quote,
+  RectangleHorizontal,
+  RectangleVertical,
+  Repeat2,
+  RotateCcw,
+  ScanFace,
+  ScanLine,
   Search,
+  Settings2,
+  SlidersHorizontal,
+  SlidersVertical,
+  Sparkles,
+  StickyNote,
+  Subtitles,
+  SunMedium,
+  Target,
+  Timer,
+  Undo2,
   UserRound,
+  UserRoundMinus,
+  UserRoundPlus,
+  Variable,
   Volume2,
+  WandSparkles,
+  Workflow,
+  Hourglass,
+  Zap,
+  type LucideIcon,
   X,
 } from "lucide-react";
 import type {
@@ -44,8 +99,8 @@ import {
   BLOCK_REGISTRY,
   CURTAIN_MODE_OPTIONS,
   WAIT_DURATION_PRESETS,
-  blockCapability,
 } from "@features/galgame-workshop/editor/blockRegistry";
+import { blockContextSettings } from "@features/galgame-workshop/editor/blockContextSettings";
 import {
   RichTextEditor,
   RichTextView,
@@ -73,18 +128,116 @@ const AUDIO_LABELS = {
 
 type AudioChannel = keyof typeof AUDIO_LABELS;
 
+/**
+ * Keep the command palette legible at a glance. The old fallback made almost
+ * every Block look like a text command, which was especially noisy in the
+ * four insertion columns. This map is deliberately exhaustive so a new Block
+ * kind cannot silently fall back to a generic glyph.
+ */
+const BLOCK_ICONS = {
+  narration: Quote,
+  dialogue: MessageCircleMore,
+  storyParagraph: AlignLeft,
+  paragraphParams: SlidersHorizontal,
+  systemMessage: BellRing,
+  comment: StickyNote,
+  wait: Clock3,
+  scene: MapPinned,
+  destroyScene: Eraser,
+  showCharacter: UserRoundPlus,
+  removeCharacter: UserRoundMinus,
+  showCg: ImagePlus,
+  hideCg: ImageOff,
+  camera: Camera,
+  resetCamera: RotateCcw,
+  audio: Music2,
+  particle: Sparkles,
+  stageAnimation: Clapperboard,
+  floatingText: Subtitles,
+  curtain: EyeOff,
+  video: Film,
+  animateSprite: PlayCircle,
+  autoPlay: MonitorPlay,
+  switchDialogueStyle: PanelsTopLeft,
+  portraitStyleRule: UserRound,
+  gallery: GalleryHorizontal,
+  branch: GitBranch,
+  if: GitMerge,
+  setVariable: Variable,
+  callFragment: Workflow,
+  endChapter: Flag,
+  returnToEntry: Undo2,
+} satisfies Record<BlockKind, LucideIcon>;
+
 function blockIcon(type: BlockKind) {
-  if (type === "wait") return <Clock3 aria-hidden />;
-  if (type === "curtain") return <EyeOff aria-hidden />;
-  if (type === "scene") return <MapPinned aria-hidden />;
-  if (type === "showCg" || type === "hideCg") return <Images aria-hidden />;
-  if (type === "dialogue") return <UserRound aria-hidden />;
-  if (type === "showCharacter" || type === "removeCharacter")
-    return <UserRound aria-hidden />;
-  if (type === "audio") return <Music2 aria-hidden />;
-  if (type === "branch") return <GitBranch aria-hidden />;
-  if (type === "endChapter") return <Flag aria-hidden />;
-  return <MessageSquareText aria-hidden />;
+  const Icon = BLOCK_ICONS[type];
+  return <Icon aria-hidden />;
+}
+
+/**
+ * Context settings need their own semantic glyphs. A dialogue card can have
+ * portrait, visibility, voice, and timing commands side by side; repeating
+ * the card's main icon for all of them hides those differences.
+ */
+function contextSettingIcon(
+  settingId: string,
+  label: string,
+  sectionLabel: string,
+  blockType: BlockKind,
+) {
+  const key = settingId
+    .replace(`context-${blockType}-`, "")
+    .toLocaleLowerCase("en-US");
+  const text = `${key} ${label} ${sectionLabel}`.toLocaleLowerCase("zh-CN");
+  let Icon: LucideIcon = Settings2;
+  if (key === "mode-fullscreen") Icon = Maximize2;
+  else if (key === "mode-letterbox") Icon = RectangleHorizontal;
+  else if (key === "mode-pillarbox") Icon = RectangleVertical;
+  else if (key === "mode-frame") Icon = Frame;
+  else if (key === "action-show") Icon = EyeOff;
+  else if (key === "action-hide") Icon = Eye;
+  else if (key === "duration-0") Icon = Zap;
+  else if (key.startsWith("duration-")) Icon = Timer;
+  else if (key === "action-play") Icon = PlayCircle;
+  else if (key === "action-stop") Icon = CircleStop;
+  else if (key === "loop") Icon = Repeat2;
+  else if (key === "wait") Icon = Hourglass;
+  else if (/portrait|立绘|角色|头像/.test(text))
+    Icon =
+      key.includes("solo") || label.includes("单人")
+        ? ScanFace
+        : key.includes("dialogueavatar") || label.includes("对白")
+          ? ContactRound
+          : UserRound;
+  else if (/hide-dialogue|对话框|对白后/.test(text)) Icon = MessageCircle;
+  else if (/voice|配音|音量|声音|audio/.test(text)) Icon = Volume2;
+  else if (/channel|通道/.test(text)) Icon = AudioLines;
+  else if (/duration|时长|delay|延迟|等待|wait/.test(text)) Icon = Timer;
+  else if (/speed|速度|速率/.test(text)) Icon = Gauge;
+  else if (/fade|淡入|淡出|transition/.test(text)) Icon = Blend;
+  else if (/flip|翻转/.test(text)) Icon = FlipHorizontal2;
+  else if (/position|位置|target|目标/.test(text)) Icon = Target;
+  else if (/fit|适配|placement|层级|叠放/.test(text)) Icon = ScanLine;
+  else if (/loop|循环/.test(text)) Icon = Repeat2;
+  else if (/preset|预设|样式|主题/.test(text)) Icon = Palette;
+  else if (/density|密度/.test(text)) Icon = Layers2;
+  else if (/continuous|持续/.test(text)) Icon = Activity;
+  else if (/volume|opacity|不透明|亮度|颜色/.test(text)) Icon = SunMedium;
+  else if (/clear|清空|销毁/.test(text)) Icon = Eraser;
+  else if (/operator|运算|变量/.test(text)) Icon = Braces;
+  else if (/unlock|鉴赏/.test(text)) Icon = GalleryHorizontal;
+  else if (/condition|条件/.test(text)) Icon = GitMerge;
+  else if (/branch|选项/.test(text)) Icon = GitBranch;
+  else if (/call|调用|fragment/.test(text)) Icon = CornerDownLeft;
+  else if (/end|结束/.test(text)) Icon = Flag;
+  else if (/return|返回/.test(text)) Icon = Undo2;
+  else if (/action|动作|开启|关闭|播放|停止/.test(text)) Icon = CircleCheck;
+  else if (/reveal|呈现|显示/.test(text)) Icon = WandSparkles;
+  else if (/read|已读|历史/.test(text)) Icon = BookOpen;
+  else if (/easing|缓动|控制/.test(text)) Icon = SlidersVertical;
+  else if (/mode|模式|tone|语义/.test(text)) Icon = BadgeInfo;
+  else if (/stop|停止/.test(text)) Icon = CircleStop;
+  return <Icon aria-hidden />;
 }
 
 function blockSummary(
@@ -166,6 +319,7 @@ type InsertCommand = {
   checked?: boolean;
   closeAfterRun?: boolean;
   disabled?: boolean;
+  searchText?: string;
   run: () => void;
 };
 
@@ -190,6 +344,7 @@ function BlockInsertPalette({
   hasTerminator,
   onClose,
   onBlock,
+  onEditProperties,
   onAddBlock,
   onAddAllCharacters,
   onAddAudio,
@@ -201,6 +356,7 @@ function BlockInsertPalette({
   hasTerminator: boolean;
   onClose: (restoreFocus: boolean) => void;
   onBlock: (block: GalgameStoryBlock) => void;
+  onEditProperties: () => void;
   onAddBlock: (kind: BlockKind, beforeBundleId?: string) => void;
   onAddAllCharacters: (beforeBundleId?: string) => void;
   onAddAudio: (
@@ -220,136 +376,44 @@ function BlockInsertPalette({
     : "文本";
   const contextSections: ContextCommandSection[] = (() => {
     if (!selectedBlock) return [];
-    const setting = (
-      section: string,
-      id: string,
-      label: string,
-      checked: boolean,
-      description: string,
-      run: () => void,
-      icon = blockIcon(selectedBlock.type),
-    ) => ({ section, id, label, checked, description, run, icon });
-    if (selectedBlock.type === "curtain") {
-      const entries = [
-        ...CURTAIN_MODE_OPTIONS.map((option) =>
-          setting(
-            "幕布设置",
-            `context-curtain-mode-${option.value}`,
-            option.label,
-            selectedBlock.mode === option.value,
-            `将当前幕布形态设置为“${option.label}”。`,
-            () => onBlock({ ...selectedBlock, mode: option.value }),
-          ),
+    const context = blockContextSettings(selectedBlock, story);
+    const sections = context.sections.map((item) => ({
+      label: item.label,
+      commands: item.settings.map((setting): InsertCommand => ({
+        id: setting.id,
+        label: setting.label,
+        group: selectedGroup,
+        icon: contextSettingIcon(
+          setting.id,
+          setting.label,
+          item.label,
+          selectedBlock.type,
         ),
-        setting(
-          "幕布动作",
-          "context-curtain-show",
-          "合上（屏幕变暗）",
-          selectedBlock.action === "show",
-          "让幕布按当前形态和颜色进入画面。",
-          () => onBlock({ ...selectedBlock, action: "show" }),
-          <EyeOff aria-hidden />,
-        ),
-        setting(
-          "幕布动作",
-          "context-curtain-hide",
-          "打开（屏幕显露）",
-          selectedBlock.action === "hide",
-          "让当前幕布反向离场并显露舞台。",
-          () => onBlock({ ...selectedBlock, action: "hide" }),
-          <Eye aria-hidden />,
-        ),
-        ...[0, 200, 500, 1000, 2000].map((durationMs) =>
-          setting(
-            "动作时长",
-            `context-curtain-duration-${durationMs}`,
-            durationMs === 0 ? "立即" : `${durationMs / 1000} 秒`,
-            selectedBlock.durationMs === durationMs,
-            `将幕布动画时长设置为 ${durationMs}ms。`,
-            () => onBlock({ ...selectedBlock, durationMs }),
-            <Clock3 aria-hidden />,
-          ),
-        ),
-      ];
-      return ["幕布设置", "幕布动作", "动作时长"].map((label) => ({
-        label,
-        commands: entries
-          .filter((entry) => entry.section === label)
-          .map((entry) => ({
-            ...entry,
-            group: selectedGroup,
-            closeAfterRun: false,
-          })),
-      }));
-    }
-    if (selectedBlock.type === "wait") {
-      const entries = [
-        setting(
-          "等待模式",
-          "context-wait-duration",
-          "等待指定时间",
-          selectedBlock.mode === "duration",
-          "按毫秒时长暂停剧情；跳过模式可以越过。",
-          () =>
-            onBlock({
-              ...selectedBlock,
-              mode: "duration",
-              durationMs: selectedBlock.durationMs ?? 1000,
-            }),
-        ),
-        setting(
-          "等待模式",
-          "context-wait-player",
-          "等待玩家继续",
-          selectedBlock.mode === "player",
-          "只响应玩家继续操作，不受自动播放或跳过影响。",
-          () => onBlock({ ...selectedBlock, mode: "player", durationMs: null }),
-        ),
-        ...WAIT_DURATION_PRESETS.map((durationMs) =>
-          setting(
-            "等待时长",
-            `context-wait-${durationMs}`,
-            `${durationMs}ms`,
-            selectedBlock.mode === "duration" &&
-              selectedBlock.durationMs === durationMs,
-            `等待 ${durationMs}ms 后继续剧情。`,
-            () =>
-              onBlock({
-                ...selectedBlock,
-                mode: "duration",
-                durationMs,
-              }),
-            <Clock3 aria-hidden />,
-          ),
-        ),
-      ];
-      return ["等待模式", "等待时长"].map((label) => ({
-        label,
-        commands: entries
-          .filter((entry) => entry.section === label)
-          .map((entry) => ({
-            ...entry,
-            group: selectedGroup,
-            closeAfterRun: false,
-          })),
-      }));
-    }
-    return [
-      {
-        label: "当前卡片",
+        checked: setting.checked,
+        disabled: setting.disabled,
+        description: setting.description,
+        searchText: `${BLOCK_LABELS[selectedBlock.type]} ${item.label}`,
+        closeAfterRun: false,
+        run: () => onBlock(setting.apply(selectedBlock)),
+      })),
+    }));
+    if (context.includeInspector)
+      sections.push({
+        label: "完整设置",
         commands: [
           {
             id: "context-open-inspector",
             label: "在右侧属性中编辑",
             group: selectedGroup,
-            icon: blockIcon(selectedBlock.type),
-            description: `${blockCapability(selectedBlock).summary(selectedBlock, story)}。完整设置已经显示在右侧属性面板。`,
+            icon: <Settings2 aria-hidden />,
+            description: "复杂内容、素材和引用设置可在右侧属性面板中完整编辑。",
+            searchText: `${BLOCK_LABELS[selectedBlock.type]} 完整设置 属性 检查器`,
             closeAfterRun: true,
-            run: () => undefined,
+            run: onEditProperties,
           },
         ],
-      },
-    ];
+      });
+    return sections;
   })();
   const commands: InsertCommand[] = [
     ...(Object.keys(BLOCK_REGISTRY) as BlockKind[])
@@ -403,7 +467,7 @@ function BlockInsertPalette({
   ];
   const normalizedQuery = query.trim().toLocaleLowerCase("zh-CN");
   const matchesQuery = (command: InsertCommand) =>
-    `${command.label} ${command.group} ${command.description}`
+    `${command.label} ${command.group} ${command.description} ${command.searchText ?? ""}`
       .toLocaleLowerCase("zh-CN")
       .includes(normalizedQuery);
   const filteredCommands = commands.filter(matchesQuery);
@@ -487,7 +551,7 @@ function BlockInsertPalette({
   const runCommand = (command: InsertCommand) => {
     if (command.disabled) return;
     command.run();
-    if (command.closeAfterRun) onClose(command.id === "context-open-inspector");
+    if (command.closeAfterRun) onClose(command.id !== "context-open-inspector");
   };
 
   return createPortal(
@@ -572,6 +636,7 @@ function BlockInsertPalette({
                             }}
                             key={command.id}
                             type="button"
+                            disabled={command.disabled}
                             className={command.checked ? "checked" : ""}
                             aria-pressed={command.checked}
                             onFocus={() => setActiveCommandId(command.id)}
@@ -733,7 +798,11 @@ function DialogueCard({
               <StoryAssetImage
                 fileId={expressionFileId}
                 alt=""
-                fallback={blockIcon(block.type)}
+                fallback={
+                  <b aria-hidden>
+                    {character?.name.trim().slice(0, 1) || "角"}
+                  </b>
+                }
               />
             </span>
             <strong>
@@ -1261,6 +1330,7 @@ export function StoryBlockEditor({
   fragment,
   selectedBlockId,
   onSelectBlock,
+  onEditProperties,
   onBlock,
   onAddBlock,
   onAddAllCharacters,
@@ -1274,6 +1344,7 @@ export function StoryBlockEditor({
   fragment: GalgameStoryFragment;
   selectedBlockId?: string;
   onSelectBlock: (blockId: string) => void;
+  onEditProperties: () => void;
   onBlock: (block: GalgameStoryBlock) => void;
   onAddBlock: (kind: BlockKind, beforeBundleId?: string) => void;
   onAddAllCharacters: (beforeBundleId?: string) => void;
@@ -1578,6 +1649,7 @@ export function StoryBlockEditor({
           hasTerminator={hasTerminator}
           onClose={closeInsertPalette}
           onBlock={onBlock}
+          onEditProperties={onEditProperties}
           onAddBlock={(kind, beforeBundleId) => {
             expectInsertedBlockFocus();
             onAddBlock(kind, beforeBundleId);

@@ -92,3 +92,27 @@ test("filters tools and records external usage", async ({ page }) => {
   await usage;
   await expect(page).toHaveURL(/\/tools$/);
 });
+
+test("opens the local video frame exporter", async ({ page }) => {
+  await page.goto("/tools");
+  const usage = page.waitForRequest(
+    "**/v1/tool-navigation/tools/video-frame-exporter/use",
+  );
+  await page.getByRole("button", { name: "打开视频帧导出" }).click();
+  await usage;
+
+  await expect(page).toHaveURL(/\/tools\/video-frame-exporter$/);
+  await expect(page.getByRole("heading", { name: "视频帧导出" })).toBeVisible();
+  await expect(page.getByText("视频仅在本地处理")).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "工具导航", exact: true }),
+  ).toHaveAttribute("aria-current", "page");
+
+  await page.setViewportSize({ width: 700, height: 800 });
+  await expect(page.locator(".video-frame-header")).toHaveCSS(
+    "grid-template-columns",
+    /\S+px/,
+  );
+  await page.getByRole("button", { name: "返回工具导航" }).click();
+  await expect(page).toHaveURL(/\/tools$/);
+});

@@ -7,6 +7,7 @@ import {
   within,
 } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import type { ReactNode } from "react";
 import { beforeEach, vi } from "vitest";
 import { GalgameWorkshopEditorPage } from "@features/galgame-workshop/editor";
 import {
@@ -92,9 +93,13 @@ vi.mock("@features/galgame-workshop/api", async () => {
 });
 
 vi.mock("@features/galgame-workshop/editor/StoryAssetImage", () => ({
-  StoryAssetImage: ({ fileId }: { fileId?: string }) => (
-    <span data-file-id={fileId ?? ""}>图片</span>
-  ),
+  StoryAssetImage: ({
+    fileId,
+    fallback,
+  }: {
+    fileId?: string;
+    fallback?: ReactNode;
+  }) => <span data-file-id={fileId ?? ""}>{fileId ? "图片" : fallback}</span>,
 }));
 
 vi.mock("@features/galgame-workshop/editor/StoryAudioPreview", () => ({
@@ -264,6 +269,38 @@ function renderEditor() {
   );
 }
 
+function createDragDataTransfer() {
+  const values = new Map<string, string>();
+  return {
+    dropEffect: "none",
+    effectAllowed: "none",
+    files: [],
+    items: [],
+    types: [],
+    clearData: (format?: string) => {
+      if (format) values.delete(format);
+      else values.clear();
+    },
+    getData: (format: string) => values.get(format) ?? "",
+    setData: (format: string, value: string) => values.set(format, value),
+    setDragImage: vi.fn(),
+  } as unknown as DataTransfer;
+}
+
+function fireVerticalDragEvent(
+  element: Element,
+  type: "dragover" | "drop",
+  dataTransfer: DataTransfer,
+  clientY: number,
+) {
+  const event = new Event(type, { bubbles: true, cancelable: true });
+  Object.defineProperties(event, {
+    clientY: { value: clientY },
+    dataTransfer: { value: dataTransfer },
+  });
+  fireEvent(element, event);
+}
+
 beforeEach(() => {
   vi.clearAllMocks();
   EditorMockAudio.instances = [];
@@ -278,6 +315,9 @@ beforeEach(() => {
   localStorage.removeItem("future_props_galgame_editor_script_layout_v3");
   localStorage.removeItem("future_props_galgame_editor_script_layout_v4");
   localStorage.removeItem("future_props_galgame_editor_script_view");
+  localStorage.removeItem(
+    "future_props_galgame_character_stage_scope:project-1",
+  );
   Object.defineProperty(window, "PointerEvent", {
     configurable: true,
     writable: true,
@@ -753,6 +793,14 @@ test("navigates the five creator workspaces and locates global search results", 
 
   await user.click(within(workspace).getByRole("button", { name: "个性化" }));
   expect(await screen.findByText("实时游戏预览")).toBeInTheDocument();
+  const typingSpeed = screen.getByRole("spinbutton", {
+    name: "全局打字速度（字/秒）",
+  });
+  expect(typingSpeed).toHaveValue(40);
+  await user.click(
+    screen.getByRole("button", { name: "增加全局打字速度（字/秒）" }),
+  );
+  expect(typingSpeed).toHaveValue(45);
 
   await user.click(within(workspace).getByRole("button", { name: "设置" }));
   expect(
@@ -1252,6 +1300,89 @@ test("creates character and scene entities and auto-saves typed story data", asy
   );
 });
 
+test("renames character, scene, and CG titles in place", async () => {
+  const user = userEvent.setup();
+  vi.mocked(getGalgameStoryDocument).mockResolvedValueOnce({
+    ...story,
+    document: {
+      ...story.document,
+      characters: [
+        {
+          id: "character-one",
+          name: "调查员",
+          description: "",
+          expressions: [],
+          defaultExpressionId: null,
+        },
+      ],
+      scenes: [
+        {
+          id: "scene-one",
+          name: "夜间研究所",
+          description: "",
+          groupId: null,
+          layers: [],
+        },
+      ],
+      cgs: [
+        {
+          id: "cg-one",
+          name: "雨夜告白",
+          description: "",
+          variants: [],
+          defaultVariantId: null,
+        },
+      ],
+    },
+  });
+  renderEditor();
+  await screen.findByText("纵向切片");
+
+  await openAssetSection(user, "角色");
+  await user.dblClick(
+    screen.getByRole("button", { name: "双击编辑角色名称：调查员" }),
+  );
+  const characterName = screen.getByRole("textbox", {
+    name: "编辑角色名称",
+  });
+  await user.clear(characterName);
+  await user.type(characterName, "现场负责人{Enter}");
+  expect(
+    screen.getByRole("button", { name: "双击编辑角色名称：现场负责人" }),
+  ).toBeVisible();
+
+  await openAssetSection(user, "场景");
+  await user.dblClick(
+    screen.getByRole("button", { name: "双击编辑场景名称：夜间研究所" }),
+  );
+  const sceneName = screen.getByRole("textbox", { name: "编辑场景名称" });
+  await user.clear(sceneName);
+  await user.type(sceneName, "废弃研究所{Enter}");
+  expect(
+    screen.getByRole("button", { name: "双击编辑场景名称：废弃研究所" }),
+  ).toBeVisible();
+
+  await user.click(
+    screen.getByRole("button", { name: "图片 雨夜告白 0 个差分" }),
+  );
+  await user.dblClick(
+    screen.getByRole("button", { name: "双击编辑CG 名称：雨夜告白" }),
+  );
+  const cgName = screen.getByRole("textbox", { name: "编辑CG 名称" });
+  await user.clear(cgName);
+  await user.type(cgName, "天台重逢{Enter}");
+
+  await waitFor(
+    () => {
+      const saved = vi.mocked(putGalgameStoryDocument).mock.calls.at(-1)?.[1];
+      expect(saved?.characters?.[0].name).toBe("现场负责人");
+      expect(saved?.scenes?.[0].name).toBe("废弃研究所");
+      expect(saved?.cgs?.[0].name).toBe("天台重逢");
+    },
+    { timeout: 2000 },
+  );
+});
+
 test("merges scenes and CGs into one searchable asset workspace", async () => {
   const user = userEvent.setup();
   vi.mocked(getGalgameStoryDocument).mockResolvedValueOnce({
@@ -1617,9 +1748,9 @@ test("blocks deletion of characters and scenes that are still referenced", async
   await screen.findByText("纵向切片");
 
   await openAssetSection(user, "角色");
+  await user.click(screen.getByRole("button", { name: /资源引用 1/ }));
   expect(screen.getByRole("button", { name: "删除角色" })).toBeDisabled();
   expect(screen.getByText("角色仍被对白引用，无法删除。")).toBeInTheDocument();
-  await user.click(screen.getByRole("button", { name: /资源引用 1/ }));
   await user.click(
     screen.getByRole("button", {
       name: /第一章 · main · Block 2/,
@@ -1707,9 +1838,9 @@ test("edits independent two-dimensional character position presets", async () =>
   await openAssetSection(user, "角色");
 
   expect(screen.getByText("1 项")).toBeInTheDocument();
-  await user.click(screen.getByRole("button", { name: "位置与锚点" }));
+  await user.click(screen.getByRole("button", { name: "位置与尺寸" }));
   const stage = screen.getByRole("application", {
-    name: "角色位置与锚点可视化编辑器",
+    name: "位置与尺寸舞台预览",
   });
   vi.spyOn(stage, "getBoundingClientRect").mockReturnValue({
     x: 100,
@@ -1757,7 +1888,7 @@ test("edits independent two-dimensional character position presets", async () =>
   );
   await waitFor(() => {
     const previewSprite = container.querySelector<HTMLElement>(
-      ".galgame-character-preview-actor",
+      ".galgame-stage-preview-actor",
     );
     expect(previewSprite).toHaveStyle({ left: "45%", top: "60%" });
   });
@@ -1777,13 +1908,13 @@ test("edits independent two-dimensional character position presets", async () =>
     { timeout: 2000 },
   );
 
-  await user.click(screen.getByRole("button", { name: "左上" }));
+  await user.click(screen.getByRole("button", { name: "左上角" }));
   await waitFor(() => {
     const saved = vi.mocked(putGalgameStoryDocument).mock.calls.at(-1)?.[1];
     expect(saved?.settings?.characterStage?.anchor).toBe("topLeft");
   });
 
-  await user.click(screen.getByRole("button", { name: "新增" }));
+  await user.click(screen.getByRole("button", { name: "新增位置" }));
   await user.type(screen.getByLabelText("新增位置预设名称"), "近景");
   await user.keyboard("{Enter}");
   const customPosition = screen.getByRole("button", { name: /近景 50，50/ });
@@ -1799,13 +1930,12 @@ test("edits independent two-dimensional character position presets", async () =>
     screen.getByRole("button", { name: /近景改名 50，50/ }),
   ).toBeInTheDocument();
 
-  await user.click(screen.getByRole("button", { name: /默认位置/ }));
+  await user.click(screen.getByRole("button", { name: /^设为默认位置$/ }));
   await user.click(screen.getByRole("button", { name: "删除位置预设" }));
   expect(
     screen.queryByRole("button", { name: /近景改名/ }),
   ).not.toBeInTheDocument();
 
-  await user.click(screen.getByRole("button", { name: "默认尺寸" }));
   const height = screen.getByRole("spinbutton", {
     name: "默认画面高度",
   });
@@ -1818,6 +1948,113 @@ test("edits independent two-dimensional character position presets", async () =>
     { timeout: 2000 },
   );
 }, 10_000);
+
+test("opens stage settings for the currently selected character", async () => {
+  const user = userEvent.setup();
+  const scopedStory = structuredClone(story) as GalgameStoryDocument;
+  scopedStory.document.characters = [
+    {
+      id: "character-one",
+      name: "角色甲",
+      description: "",
+      expressions: [],
+      defaultExpressionId: null,
+    },
+    {
+      id: "character-two",
+      name: "角色乙",
+      description: "",
+      expressions: [],
+      defaultExpressionId: null,
+    },
+  ];
+  localStorage.setItem(
+    "future_props_galgame_character_stage_scope:project-1",
+    "character-one",
+  );
+  vi.mocked(getGalgameStoryDocument).mockResolvedValueOnce(scopedStory);
+
+  renderEditor();
+  await screen.findByText("纵向切片");
+  await openAssetSection(user, "角色");
+  await user.click(
+    screen.getByRole("button", { name: /角色乙 0 个表情 · 0 处引用/ }),
+  );
+  await user.click(screen.getByRole("button", { name: "位置与尺寸" }));
+
+  expect(screen.getByRole("button", { name: /角色乙 跟随全局/ })).toBeVisible();
+  expect(
+    localStorage.getItem(
+      "future_props_galgame_character_stage_scope:project-1",
+    ),
+  ).toBe("character-two");
+});
+
+test("creates and removes an independent character stage scheme", async () => {
+  const user = userEvent.setup();
+  const scopedStory = structuredClone(story) as GalgameStoryDocument;
+  scopedStory.document.characters = [
+    {
+      id: "character-one",
+      name: "调查员",
+      description: "",
+      expressions: [],
+      defaultExpressionId: null,
+    },
+  ];
+  vi.mocked(getGalgameStoryDocument).mockResolvedValueOnce(scopedStory);
+
+  renderEditor();
+  await screen.findByText("纵向切片");
+  await openAssetSection(user, "角色");
+  await user.click(screen.getByRole("button", { name: "位置与尺寸" }));
+  await user.click(screen.getByRole("button", { name: /全局 固定/ }));
+  await user.click(screen.getByRole("option", { name: /调查员 跟随全局/ }));
+  expect(screen.getByText("当前角色正在跟随全局方案。")).toBeVisible();
+
+  await user.click(screen.getAllByRole("button", { name: /创建独立方案/ })[0]);
+  await waitFor(() => {
+    const saved = vi.mocked(putGalgameStoryDocument).mock.calls.at(-1)?.[1];
+    expect(
+      saved?.settings?.characterStageOverrides?.["character-one"],
+    ).toMatchObject({
+      anchor: "center",
+      defaultHeightPercent: 100,
+      defaultPositionId: "position-center",
+    });
+  });
+
+  const assetNavigation = screen.getByText("资产中心").closest("aside")!;
+  await user.click(
+    within(assetNavigation).getByRole("button", { name: "场景" }),
+  );
+  await user.click(
+    within(assetNavigation).getByRole("button", { name: "角色" }),
+  );
+  await user.click(screen.getByRole("button", { name: "位置与尺寸" }));
+  expect(screen.getByRole("button", { name: /调查员 独立/ })).toBeVisible();
+
+  fireEvent.change(screen.getByLabelText("默认画面高度"), {
+    target: { value: "135" },
+  });
+  await waitFor(() => {
+    const saved = vi.mocked(putGalgameStoryDocument).mock.calls.at(-1)?.[1];
+    expect(
+      saved?.settings?.characterStageOverrides?.["character-one"]
+        ?.defaultHeightPercent,
+    ).toBe(135);
+    expect(saved?.settings?.characterStage?.defaultHeightPercent).toBe(100);
+  });
+
+  await user.click(screen.getByRole("button", { name: "删除角色独立方案" }));
+  await user.click(screen.getByRole("button", { name: /^删除独立方案$/ }));
+  await waitFor(() => {
+    const saved = vi.mocked(putGalgameStoryDocument).mock.calls.at(-1)?.[1];
+    expect(
+      saved?.settings?.characterStageOverrides?.["character-one"],
+    ).toBeUndefined();
+  });
+});
 
 test("shows the selected portrait's real stage footprint for each anchor", async () => {
   const user = userEvent.setup();
@@ -1868,34 +2105,34 @@ test("shows the selected portrait's real stage footprint for each anchor", async
   const { container } = renderEditor();
   await screen.findByText("纵向切片");
   await openAssetSection(user, "角色");
-  await user.click(screen.getByRole("button", { name: "位置与锚点" }));
+  await user.click(screen.getByRole("button", { name: "位置与尺寸" }));
 
   await waitFor(() => {
     const footprint = container.querySelector<HTMLElement>(
-      ".galgame-character-position-footprint",
+      ".galgame-stage-preview-actor",
     );
     expect(footprint).toHaveClass("is-center");
-    expect(footprint).toHaveStyle({ width: "22.5%", height: "80%" });
+    expect(footprint).toHaveStyle({ width: "28.125%", height: "100%" });
     expect(footprint).toHaveAttribute(
       "title",
-      "原图 400 × 800px · 表情高度 80%",
+      "原图 400 × 800px · 方案基准 100%",
     );
   });
 
   const preview = container.querySelector<HTMLElement>(
-    ".galgame-character-preview-actor",
+    ".galgame-stage-preview-actor",
   );
   expect(preview).toHaveStyle({
-    width: "22.5%",
-    height: "80%",
-    transform: "translate(-50%, -50%)",
+    width: "28.125%",
+    height: "100%",
+    transform: "translate(-50%, -50%) scaleX(1)",
   });
 
-  await user.click(screen.getByRole("button", { name: "左上" }));
-  expect(
-    container.querySelector(".galgame-character-position-footprint"),
-  ).toHaveClass("is-topLeft");
-  expect(preview).toHaveStyle({ transform: "translate(0, 0)" });
+  await user.click(screen.getByRole("button", { name: "左上角" }));
+  expect(container.querySelector(".galgame-stage-preview-actor")).toHaveClass(
+    "is-topLeft",
+  );
+  expect(preview).toHaveStyle({ transform: "translate(0, 0) scaleX(1)" });
 });
 
 test("applies expression thumbnail crops to character and expression cards", async () => {
@@ -2019,6 +2256,22 @@ test("separates character attribute templates, values, preview, and resource ref
 
 test("opens selected characters with a blank expression detail and compact role tabs", async () => {
   const user = userEvent.setup();
+  vi.mocked(getGalgameProjectAssets).mockResolvedValue({
+    items: [
+      {
+        id: "file-default",
+        display_name: "default.png",
+        media_kind: "image",
+        mime_type: "image/png",
+        byte_size: 1024,
+        revision: 0,
+        created_at: "2026-08-19T00:00:00Z",
+        updated_at: "2026-08-19T00:00:00Z",
+        width: 800,
+        height: 1200,
+      } as GalgameProjectAsset,
+    ],
+  });
   vi.mocked(getGalgameStoryDocument).mockResolvedValueOnce({
     ...story,
     document: {
@@ -2077,26 +2330,212 @@ test("opens selected characters with a blank expression detail and compact role 
   await openAssetSection(user, "角色");
 
   expect(screen.getByText("选择一个表情查看详情")).toBeVisible();
-  expect(
-    rendered.container.querySelector(
-      '.galgame-character-preview-stage [data-file-id="file-default"]',
-    ),
-  ).toBeInTheDocument();
+  const defaultPreviewPortrait = rendered.container.querySelector<HTMLElement>(
+    '.galgame-character-preview-stage [data-file-id="file-default"]',
+  );
+  expect(defaultPreviewPortrait).toBeInTheDocument();
   expect(screen.queryByDisplayValue("平静")).not.toBeInTheDocument();
 
+  await user.click(screen.getByRole("button", { name: /惊讶$/ }));
+  expect(screen.queryByDisplayValue("惊讶")).not.toBeVisible();
+  expect(screen.getByText("对白头像已关闭")).toBeVisible();
   await user.click(screen.getByRole("checkbox", { name: "对白头像" }));
   await waitFor(() => {
     const saved = vi.mocked(putGalgameStoryDocument).mock.calls.at(-1)?.[1];
     expect(saved?.characters?.[0].dialogueAvatar?.enabled).toBe(true);
   });
-
-  await user.click(screen.getByRole("button", { name: /惊讶$/ }));
-  expect(screen.getByDisplayValue("惊讶")).toBeVisible();
   expect(
     rendered.container.querySelector(
       '.galgame-character-preview-stage [data-file-id="file-default"]',
     ),
   ).toBeInTheDocument();
+
+  const expressionSettings = rendered.container.querySelector<HTMLElement>(
+    ".galgame-expression-form",
+  );
+  if (!expressionSettings) throw new Error("missing expression settings");
+  for (const heading of [
+    "舞台显示",
+    "立绘尺寸",
+    "对白头像",
+    "高级设置",
+    "资源操作",
+  ])
+    expect(within(expressionSettings).getByText(heading)).toBeVisible();
+  expect(within(expressionSettings).queryByText("基本信息")).not.toBeVisible();
+  expect(
+    within(expressionSettings).getByLabelText("对白头像来源"),
+  ).toBeVisible();
+  expect(
+    within(expressionSettings).getByRole("button", { name: "替换图片" }),
+  ).toBeVisible();
+  expect(
+    within(expressionSettings).getByRole("button", { name: "静态图片" }),
+  ).toHaveAttribute("aria-pressed", "true");
+  expect(
+    within(expressionSettings).getByRole("button", { name: "Spine" }),
+  ).toBeDisabled();
+  expect(
+    within(expressionSettings).getByRole("button", { name: "Live2D" }),
+  ).toBeDisabled();
+
+  await user.click(
+    within(expressionSettings).getByRole("button", { name: "序列帧" }),
+  );
+  await waitFor(() => {
+    const saved = vi.mocked(putGalgameStoryDocument).mock.calls.at(-1)?.[1];
+    expect(saved?.characters?.[0].expressions?.[1]).toMatchObject({
+      renderMode: "frameSequence",
+      sequence: {
+        playbackMode: "timed",
+        fps: 2,
+        loop: true,
+        frames: [{ assetId: "portrait-alt" }],
+      },
+    });
+  });
+  const fpsSlider = within(expressionSettings).getByRole("slider", {
+    name: "播放帧率滑杆",
+  });
+  expect(fpsSlider).toHaveValue("2");
+  expect(fpsSlider.parentElement).toHaveClass("galgame-expression-fps-slider");
+  expect(fpsSlider.parentElement).toHaveStyle({
+    "--sequence-ratio": `${1 / 59}`,
+  });
+  expect(
+    within(expressionSettings).getByRole("region", {
+      name: "序列帧预览",
+    }),
+  ).toBeVisible();
+  const sequenceStageActor = rendered.container.querySelector<HTMLElement>(
+    ".galgame-expression-stage-actor",
+  );
+  expect(sequenceStageActor).toHaveAttribute("data-position", "50,50");
+  expect(sequenceStageActor).toHaveAttribute("data-size", "100");
+  expect(sequenceStageActor).toHaveStyle({
+    width: "37.5%",
+    height: "100%",
+    transform: "translate(-50%, -50%)",
+  });
+  expect(
+    rendered.container.querySelector(".galgame-character-workspace"),
+  ).toHaveClass("is-expression-detail");
+  expect(screen.getByRole("button", { name: "资源引用" })).toHaveAttribute(
+    "aria-expanded",
+    "false",
+  );
+  fireEvent.change(
+    within(expressionSettings).getByRole("slider", {
+      name: "播放帧率滑杆",
+    }),
+    { target: { value: "13" } },
+  );
+  await user.click(
+    within(expressionSettings).getByRole("checkbox", { name: "循环播放" }),
+  );
+  await user.click(
+    within(expressionSettings).getByRole("button", {
+      name: "从已有表情添加帧",
+    }),
+  );
+  await user.click(screen.getByRole("option", { name: "平静" }));
+  await waitFor(() => {
+    const saved = vi.mocked(putGalgameStoryDocument).mock.calls.at(-1)?.[1];
+    expect(saved?.characters?.[0].expressions?.[1].sequence).toMatchObject({
+      playbackMode: "timed",
+      fps: 13,
+      loop: false,
+      frames: [{ assetId: "portrait-alt" }, { assetId: "portrait-default" }],
+    });
+  });
+  await user.click(
+    within(expressionSettings).getByRole("button", { name: "语音口型" }),
+  );
+  expect(
+    screen.getByText("语音口型需要依次准备闭口、半口和张口三帧。"),
+  ).toBeVisible();
+  await user.click(
+    within(expressionSettings).getByRole("button", {
+      name: "从已有表情添加帧",
+    }),
+  );
+  await user.click(screen.getByRole("option", { name: "平静" }));
+  await user.click(
+    within(expressionSettings).getByRole("button", { name: "语音口型" }),
+  );
+  await waitFor(() => {
+    const saved = vi.mocked(putGalgameStoryDocument).mock.calls.at(-1)?.[1];
+    expect(saved?.characters?.[0].expressions?.[1].sequence).toMatchObject({
+      playbackMode: "lipSync",
+      fps: 13,
+      frames: [
+        { assetId: "portrait-alt" },
+        { assetId: "portrait-default" },
+        { assetId: "portrait-default" },
+      ],
+    });
+  });
+  expect(
+    within(expressionSettings).queryByRole("checkbox", { name: "循环播放" }),
+  ).not.toBeInTheDocument();
+  expect(within(expressionSettings).getByText("语音驱动")).toBeVisible();
+  expect(
+    within(expressionSettings).getByRole("button", {
+      name: "从已有表情添加帧",
+    }),
+  ).toBeDisabled();
+  await user.click(
+    within(expressionSettings).getByRole("button", { name: "静态图片" }),
+  );
+  const modeDialog = screen.getByRole("alertdialog", {
+    name: "切换为静态图片？",
+  });
+  await user.click(
+    within(modeDialog).getByRole("button", { name: "保留首帧并切换" }),
+  );
+  await waitFor(() => {
+    const saved = vi.mocked(putGalgameStoryDocument).mock.calls.at(-1)?.[1];
+    expect(saved?.characters?.[0].expressions?.[1].renderMode).toBe(
+      "staticImage",
+    );
+    expect(saved?.characters?.[0].expressions?.[1].sequence).toBeUndefined();
+  });
+
+  await user.click(
+    within(expressionSettings).getByRole("checkbox", { name: "左右翻转" }),
+  );
+  await waitFor(() => {
+    const saved = vi.mocked(putGalgameStoryDocument).mock.calls.at(-1)?.[1];
+    expect(saved?.characters?.[0].expressions?.[1].flipX).toBe(true);
+  });
+  expect(
+    rendered.container.querySelector(".galgame-portrait-stage-composite"),
+  ).toHaveStyle({ transform: "scaleX(-1)" });
+  expect(
+    rendered.container.querySelector(
+      ".galgame-expression-grid > button.active > span",
+    ),
+  ).not.toHaveStyle({ transform: "scaleX(-1)" });
+
+  await user.click(
+    within(expressionSettings).getByRole("button", { name: "自定义" }),
+  );
+  const customHeight = within(expressionSettings).getByRole("spinbutton", {
+    name: "自定义画面高度",
+  });
+  fireEvent.change(customHeight, { target: { value: "175" } });
+  await waitFor(() => {
+    const saved = vi.mocked(putGalgameStoryDocument).mock.calls.at(-1)?.[1];
+    expect(saved?.characters?.[0].expressions?.[1].heightPercent).toBe(175);
+  });
+  await user.click(within(expressionSettings).getByText("高级设置"));
+  expect(within(expressionSettings).getByText("基本信息")).toBeVisible();
+  expect(within(expressionSettings).getByDisplayValue("惊讶")).toBeVisible();
+  expect(
+    within(expressionSettings).getByRole("spinbutton", {
+      name: "缩略图裁剪 X",
+    }),
+  ).toBeVisible();
 
   await user.click(screen.getByRole("button", { name: /立绘皮肤/ }));
   expect(screen.getByText("让立绘在不同外观之间切换")).toBeVisible();
@@ -2132,7 +2571,7 @@ test("opens selected characters with a blank expression detail and compact role 
     const saved = vi.mocked(putGalgameStoryDocument).mock.calls.at(-1)?.[1];
     expect(saved?.characters?.[0].attributes?.affection).toBe(0);
   });
-});
+}, 20_000);
 
 test("can load the server snapshot after preserving a conflicted local draft", async () => {
   const user = userEvent.setup();
@@ -2297,10 +2736,23 @@ test("opens one Block command palette from the selected card and inserts before 
   await waitFor(() => expect(search).toHaveFocus());
   fireEvent.keyDown(search, { key: "ArrowDown" });
   expect(
-    within(palette).getByRole("button", { name: "在右侧属性中编辑" }),
+    within(palette).getByRole("button", { name: "本句后隐藏对话框" }),
   ).toHaveFocus();
-  search.focus();
-  await user.type(search, "注释");
+  await user.click(
+    within(palette).getByRole("button", { name: "在右侧属性中编辑" }),
+  );
+  expect(
+    screen.queryByRole("dialog", { name: "插入 Block" }),
+  ).not.toBeInTheDocument();
+  await waitFor(() => expect(screen.getByLabelText("旁白正文")).toHaveFocus());
+
+  firstCard.focus();
+  fireEvent.keyDown(firstCard, { key: "Tab" });
+  const reopenedPalette = screen.getByRole("dialog", { name: "插入 Block" });
+  const reopenedSearch =
+    within(reopenedPalette).getByLabelText("搜索可插入 Block");
+  await waitFor(() => expect(reopenedSearch).toHaveFocus());
+  await user.type(reopenedSearch, "注释");
   expect(screen.getByRole("button", { name: "注释" })).toBeInTheDocument();
   expect(
     screen.queryByRole("button", { name: "旁白" }),
@@ -3616,6 +4068,248 @@ test("binds the first portrait as the stable default expression and auto-saves",
         role: "characterPortrait",
         status: "ready",
       });
+    },
+    { timeout: 2000 },
+  );
+});
+
+test("uses the character initial when a dialogue avatar has no portrait", async () => {
+  vi.mocked(getGalgameStoryDocument).mockResolvedValueOnce({
+    ...story,
+    document: {
+      ...story.document,
+      characters: [
+        {
+          id: "character-one",
+          name: "冈部伦太郎",
+          description: "",
+          expressions: [],
+          defaultExpressionId: null,
+        },
+      ],
+      chapters: [
+        {
+          ...story.document.chapters[0],
+          fragments: [
+            {
+              id: "main",
+              title: "main",
+              blocks: [
+                {
+                  id: "dialogue",
+                  type: "dialogue",
+                  characterId: "character-one",
+                  text: "闭嘴，助手！",
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    },
+  });
+
+  const { container } = renderEditor();
+  await screen.findAllByText("闭嘴，助手！");
+
+  const avatar = container.querySelector(".galgame-dialogue-avatar");
+  expect(avatar).toHaveTextContent("冈");
+  expect(avatar?.querySelector("b")).toBeInTheDocument();
+});
+
+test("applies a changed character default expression to old default-pinned dialogue", async () => {
+  const user = userEvent.setup();
+  vi.mocked(getGalgameStoryDocument).mockResolvedValueOnce({
+    ...story,
+    document: {
+      ...story.document,
+      assets: [
+        {
+          id: "portrait-calm",
+          type: "image",
+          role: "characterPortrait",
+          fileId: "file-calm",
+          status: "ready",
+        },
+        {
+          id: "portrait-smile",
+          type: "image",
+          role: "characterPortrait",
+          fileId: "file-smile",
+          status: "ready",
+        },
+      ],
+      characters: [
+        {
+          id: "character-one",
+          name: "调查员",
+          description: "",
+          expressions: [
+            { id: "calm", label: "平静", assetId: "portrait-calm" },
+            { id: "smile", label: "微笑", assetId: "portrait-smile" },
+          ],
+          defaultExpressionId: "calm",
+        },
+      ],
+      chapters: [
+        {
+          ...story.document.chapters[0],
+          fragments: [
+            {
+              id: "main",
+              title: "main",
+              blocks: [
+                {
+                  id: "dialogue",
+                  type: "dialogue",
+                  characterId: "character-one",
+                  expressionId: "calm",
+                  text: "默认表情测试",
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    },
+  });
+
+  const { container } = renderEditor();
+  await screen.findByText("纵向切片");
+  await openAssetSection(user, "角色");
+  await user.click(screen.getByRole("button", { name: /微笑$/ }));
+  await user.click(screen.getByRole("button", { name: "设为默认" }));
+
+  await waitFor(() => {
+    const saved = vi.mocked(putGalgameStoryDocument).mock.calls.at(-1)?.[1];
+    expect(saved?.characters?.[0].defaultExpressionId).toBe("smile");
+    expect(saved?.chapters?.[0].fragments?.[0].blocks?.[0]).toMatchObject({
+      expressionId: null,
+    });
+  });
+
+  const workspace = screen.getByRole("navigation", { name: "创作工作区" });
+  await user.click(within(workspace).getByRole("button", { name: "剧本" }));
+  expect(
+    container.querySelector(
+      '.galgame-dialogue-card [data-file-id="file-smile"]',
+    ),
+  ).toBeInTheDocument();
+});
+
+test("reorders character and expression cards by dragging above or below a target", async () => {
+  const user = userEvent.setup();
+  vi.mocked(getGalgameStoryDocument).mockResolvedValueOnce({
+    ...story,
+    document: {
+      ...story.document,
+      characters: [
+        {
+          id: "character-a",
+          name: "角色甲",
+          description: "",
+          expressions: [
+            { id: "calm", label: "平静", assetId: "portrait-calm" },
+            { id: "smile", label: "微笑", assetId: "portrait-smile" },
+            { id: "surprised", label: "惊讶", assetId: "portrait-surprised" },
+          ],
+          defaultExpressionId: "calm",
+        },
+        {
+          id: "character-b",
+          name: "角色乙",
+          description: "",
+          expressions: [],
+          defaultExpressionId: null,
+        },
+        {
+          id: "character-c",
+          name: "角色丙",
+          description: "",
+          expressions: [],
+          defaultExpressionId: null,
+        },
+      ],
+    },
+  });
+
+  const { container } = renderEditor();
+  await screen.findByText("纵向切片");
+  await openAssetSection(user, "角色");
+
+  const characterList = container.querySelector<HTMLElement>(
+    ".galgame-character-list",
+  )!;
+  const characterA = within(characterList).getByRole("button", {
+    name: /角色甲/,
+  });
+  const characterDrag = createDragDataTransfer();
+  fireEvent.dragStart(characterA, { dataTransfer: characterDrag });
+  const characterCDropTarget = within(characterList).getByRole("button", {
+    name: /角色丙/,
+  });
+  vi.spyOn(characterCDropTarget, "getBoundingClientRect").mockReturnValue({
+    top: -100,
+    bottom: 0,
+    height: 100,
+  } as DOMRect);
+  fireVerticalDragEvent(characterCDropTarget, "dragover", characterDrag, 90);
+  expect(characterCDropTarget).toHaveClass("is-drop-after");
+  fireVerticalDragEvent(characterCDropTarget, "drop", characterDrag, 90);
+  expect(
+    within(characterList)
+      .getAllByRole("button")
+      .map((item) => item.textContent?.match(/角色[甲乙丙]/)?.[0]),
+  ).toEqual(["角色乙", "角色丙", "角色甲"]);
+
+  const characterUpDrag = createDragDataTransfer();
+  fireEvent.dragStart(
+    within(characterList).getByRole("button", { name: /角色丙/ }),
+    { dataTransfer: characterUpDrag },
+  );
+  const characterBDropTarget = within(characterList).getByRole("button", {
+    name: /角色乙/,
+  });
+  vi.spyOn(characterBDropTarget, "getBoundingClientRect").mockReturnValue({
+    top: 0,
+    bottom: 100,
+    height: 100,
+  } as DOMRect);
+  fireVerticalDragEvent(characterBDropTarget, "dragover", characterUpDrag, 10);
+  expect(characterBDropTarget).toHaveClass("is-drop-before");
+  fireVerticalDragEvent(characterBDropTarget, "drop", characterUpDrag, 10);
+
+  const expressionGrid = container.querySelector<HTMLElement>(
+    ".galgame-expression-grid",
+  )!;
+  const calm = within(expressionGrid).getByRole("button", { name: /平静/ });
+  const expressionDrag = createDragDataTransfer();
+  fireEvent.dragStart(calm, { dataTransfer: expressionDrag });
+  const surprisedDropTarget = within(expressionGrid).getByRole("button", {
+    name: /惊讶/,
+  });
+  vi.spyOn(surprisedDropTarget, "getBoundingClientRect").mockReturnValue({
+    top: -100,
+    bottom: 0,
+    height: 100,
+  } as DOMRect);
+  fireVerticalDragEvent(surprisedDropTarget, "dragover", expressionDrag, 90);
+  expect(surprisedDropTarget).toHaveClass("is-drop-after");
+  fireVerticalDragEvent(surprisedDropTarget, "drop", expressionDrag, 90);
+
+  await waitFor(
+    () => {
+      const saved = vi.mocked(putGalgameStoryDocument).mock.calls.at(-1)?.[1];
+      expect(saved?.characters?.map((character) => character.id)).toEqual([
+        "character-c",
+        "character-b",
+        "character-a",
+      ]);
+      expect(
+        saved?.characters
+          ?.find((character) => character.id === "character-a")
+          ?.expressions?.map((expression) => expression.id),
+      ).toEqual(["smile", "surprised", "calm"]);
     },
     { timeout: 2000 },
   );

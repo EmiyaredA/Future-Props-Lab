@@ -113,6 +113,16 @@ test("opens external tools without waiting for usage persistence", async () => {
   expect(recordToolUse).toHaveBeenCalledWith("api-debugger");
 });
 
+test("opens the internal video frame exporter and records usage", async () => {
+  const user = userEvent.setup();
+  const { onOpenInternal } = renderPage();
+  await screen.findByText("还没有收藏工具");
+
+  await user.click(screen.getByRole("button", { name: "打开视频帧导出" }));
+  expect(onOpenInternal).toHaveBeenCalledWith("/tools/video-frame-exporter");
+  expect(recordToolUse).toHaveBeenCalledWith("video-frame-exporter");
+});
+
 test("does not present first-party features as tool cards", async () => {
   renderPage();
   await screen.findByText("还没有收藏工具");

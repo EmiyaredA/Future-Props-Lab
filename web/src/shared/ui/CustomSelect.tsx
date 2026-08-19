@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import "@shared/ui/custom-select.css";
 
 export type SelectOption = {
@@ -27,6 +27,8 @@ export function CustomSelect({
   ariaLabel,
   disabled = false,
   className = "",
+  leadingIcon,
+  showChevron = true,
 }: {
   value: string;
   options: SelectOption[];
@@ -34,6 +36,8 @@ export function CustomSelect({
   ariaLabel: string;
   disabled?: boolean;
   className?: string;
+  leadingIcon?: ReactNode;
+  showChevron?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const root = useRef<HTMLDivElement>(null);
@@ -63,8 +67,11 @@ export function CustomSelect({
           if (event.key === "Escape") setOpen(false);
         }}
       >
-        <span>{selected?.label ?? "请选择"}</span>
-        <Chevron open={open} />
+        <span className="custom-select-trigger-content">
+          {leadingIcon}
+          <span>{selected?.label ?? "请选择"}</span>
+        </span>
+        {showChevron ? <Chevron open={open} /> : null}
       </button>
       {open ? (
         <div className="custom-select-menu" id={listId} role="listbox">

@@ -1,4 +1,10 @@
-import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type ReactNode,
+} from "react";
 import { fetchApiBlob } from "@platform/api/client";
 
 export function StoryAssetImage({
@@ -17,27 +23,57 @@ export function StoryAssetImage({
   onNaturalSize?: (size: { width: number; height: number }) => void;
 }) {
   const [url, setUrl] = useState("");
+  const activeUrlRef = useRef("");
 
   useEffect(() => {
     if (!fileId) {
+      const previousUrl = activeUrlRef.current;
+      activeUrlRef.current = "";
       setUrl("");
+      if (previousUrl) URL.revokeObjectURL(previousUrl);
       return;
     }
     let active = true;
-    let objectUrl = "";
     void fetchApiBlob(`/v1/files/${fileId}/content`)
       .then((blob) => {
-        objectUrl = URL.createObjectURL(blob);
-        if (active) setUrl(objectUrl);
+        const nextUrl = URL.createObjectURL(blob);
+        const preloader = new Image();
+        let settled = false;
+        const discard = () => {
+          if (settled) return;
+          settled = true;
+          URL.revokeObjectURL(nextUrl);
+        };
+        preloader.onload = () => {
+          if (settled) return;
+          settled = true;
+          if (!active) {
+            URL.revokeObjectURL(nextUrl);
+            return;
+          }
+          const previousUrl = activeUrlRef.current;
+          activeUrlRef.current = nextUrl;
+          setUrl(nextUrl);
+          if (previousUrl) URL.revokeObjectURL(previousUrl);
+        };
+        preloader.onerror = discard;
+        preloader.src = nextUrl;
       })
       .catch(() => {
-        if (active) setUrl("");
+        // Keep the previous image visible while a replacement is unavailable.
+        if (active && !activeUrlRef.current) setUrl("");
       });
     return () => {
       active = false;
-      if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
   }, [fileId]);
+
+  useEffect(
+    () => () => {
+      if (activeUrlRef.current) URL.revokeObjectURL(activeUrlRef.current);
+    },
+    [],
+  );
 
   return url ? (
     <img
@@ -51,7 +87,12 @@ export function StoryAssetImage({
           height: event.currentTarget.naturalHeight,
         })
       }
-      onError={() => setUrl("")}
+      onError={() => {
+        const failedUrl = activeUrlRef.current;
+        activeUrlRef.current = "";
+        setUrl("");
+        if (failedUrl) URL.revokeObjectURL(failedUrl);
+      }}
     />
   ) : (
     <>{fallback}</>

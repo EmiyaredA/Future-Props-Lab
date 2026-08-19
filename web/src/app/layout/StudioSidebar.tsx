@@ -97,6 +97,7 @@ export function StudioSidebar({
   navigate: (page: StudioPage) => void;
 }) {
   const [expanded, setExpanded] = useState(true);
+  const toolsActive = page === "tools" || page === "video-frame-exporter";
   return (
     <aside className="studio-sidebar">
       <div className="sidebar-brand">
@@ -133,8 +134,8 @@ export function StudioSidebar({
           <span>文件管理</span>
         </button>
         <button
-          className={`nav-primary${page === "tools" ? " active" : ""}`}
-          aria-current={page === "tools" ? "page" : undefined}
+          className={`nav-primary${toolsActive ? " active" : ""}`}
+          aria-current={toolsActive ? "page" : undefined}
           onClick={() => navigate("tools")}
         >
           <CompassIcon />

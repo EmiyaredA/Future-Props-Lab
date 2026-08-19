@@ -117,7 +117,7 @@ def test_story_11_multibackground_scene_splits_deterministically() -> None:
     first = GalgameStoryProject.model_validate(deepcopy(source))
     second = GalgameStoryProject.model_validate(deepcopy(source))
 
-    assert first.schema_version == "1.3"
+    assert first.schema_version == "1.4"
     assert first.scenes[0].id == "room"
     assert first.scenes[0].layers[0].id == "day"
     assert first.scenes[1].id == second.scenes[1].id
@@ -177,6 +177,87 @@ async def test_asset_import_metadata_packaging_and_cas() -> None:
         )
         assert manifest.status_code == 200
         assert manifest.json()["items"][0]["reason"] == "forced"
+
+
+@pytest.mark.asyncio
+async def test_sequence_frames_are_referenced_packaged_and_delete_protected() -> None:
+    transport = httpx.ASGITransport(app=app)
+    async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+        project = (
+            await client.post("/v1/galgame-workshop/projects", json={"title": "序列立绘"})
+        ).json()
+        uploads = []
+        for index in range(2):
+            response = await client.post(
+                f"/v1/galgame-workshop/projects/{project['id']}/assets",
+                data={"category": "character"},
+                files={
+                    "upload": (
+                        f"hero-{index}.png",
+                        image_bytes(300, 540),
+                        "image/png",
+                    )
+                },
+            )
+            assert response.status_code == 200, response.text
+            uploads.append(response.json())
+
+        document = story_with_dialogue()
+        document["assets"] = [
+            {
+                "id": f"hero-frame-asset-{index}",
+                "type": "image",
+                "role": "characterPortrait",
+                "fileId": upload["id"],
+                "status": "ready",
+            }
+            for index, upload in enumerate(uploads)
+        ]
+        document["characters"][0]["expressions"] = [
+            {
+                "id": "hero-idle",
+                "label": "待机",
+                "assetId": "hero-frame-asset-0",
+                "renderMode": "frameSequence",
+                "sequence": {
+                    "fps": 12,
+                    "loop": True,
+                    "frames": [
+                        {"id": "hero-idle-0", "assetId": "hero-frame-asset-0"},
+                        {"id": "hero-idle-1", "assetId": "hero-frame-asset-1"},
+                    ],
+                },
+            }
+        ]
+        document["characters"][0]["defaultExpressionId"] = "hero-idle"
+        saved = await client.put(
+            f"/v1/galgame-workshop/projects/{project['id']}/story",
+            json={"expected_revision": 0, "document": document},
+        )
+        assert saved.status_code == 200, saved.text
+
+        overview = await client.get(
+            f"/v1/galgame-workshop/projects/{project['id']}/assets/overview"
+        )
+        assert overview.status_code == 200, overview.text
+        second = next(item for item in overview.json()["items"] if item["id"] == uploads[1]["id"])
+        assert second["reference_count"] == 1
+        assert second["references"][0]["kind"] == "characterExpressionFrame"
+
+        manifest = await client.get(
+            f"/v1/galgame-workshop/projects/{project['id']}/assets/package-manifest"
+        )
+        assert manifest.status_code == 200, manifest.text
+        assert {item["assetId"] for item in manifest.json()["items"]} == {
+            upload["id"] for upload in uploads
+        }
+
+        blocked = await client.delete(
+            f"/v1/galgame-workshop/projects/{project['id']}/assets/{uploads[1]['id']}",
+            params={"expected_revision": uploads[1]["revision"]},
+        )
+        assert blocked.status_code == 409
+        assert blocked.json()["references"][0]["kind"] == "characterExpressionFrame"
 
 
 @pytest.mark.asyncio

@@ -32,10 +32,22 @@ export type GalgameStoryCharacterStageSettings =
   components["schemas"]["GalgameStoryCharacterStageSettings"];
 export type GalgameStoryPositionPreset =
   components["schemas"]["GalgameStoryPositionPreset"];
+type GeneratedGalgameStoryCharacterExpression =
+  components["schemas"]["GalgameStoryCharacterExpression"];
+export type GalgameStoryCharacterExpression = Omit<
+  GeneratedGalgameStoryCharacterExpression,
+  "flipX" | "renderMode"
+> & {
+  flipX?: boolean;
+  renderMode?: GeneratedGalgameStoryCharacterExpression["renderMode"];
+};
 export type GalgameStoryCharacter = Omit<
   components["schemas"]["GalgameStoryCharacter"],
-  "themeColor"
-> & { themeColor?: string };
+  "expressions" | "themeColor"
+> & {
+  expressions?: GalgameStoryCharacterExpression[];
+  themeColor?: string;
+};
 export type GalgameStoryBlock =
   CompatibleGalgameStoryBlock<GeneratedGalgameStoryBlock>;
 export type GalgameStoryFragment = Omit<
@@ -54,14 +66,12 @@ export type GalgameStoryProject = Omit<
   chapters?: GalgameStoryChapter[];
   scenes?: GalgameStoryScene[];
   assets?: GalgameStoryAsset[];
-  schemaVersion: "1.0" | "1.1" | "1.2" | "1.3";
+  schemaVersion: "1.0" | "1.1" | "1.2" | "1.3" | "1.4";
 };
 export type GalgameStoryDocument = Omit<
   GeneratedGalgameStoryDocument,
   "document"
 > & { document: GalgameStoryProject };
-export type GalgameStoryCharacterExpression =
-  components["schemas"]["GalgameStoryCharacterExpression"];
 export type GalgameStoryCharacterDisplayName =
   components["schemas"]["GalgameStoryCharacterDisplayName"];
 export type GalgameStoryPortraitSkin =

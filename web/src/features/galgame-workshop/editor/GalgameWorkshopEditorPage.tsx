@@ -1404,7 +1404,7 @@ export function GalgameWorkshopEditorPage({
             />
             <span>
               <strong>{projectQuery.data?.title}</strong>
-              <small>Galgame Workshop · Story 1.3</small>
+              <small>Galgame Workshop · Story 1.4</small>
             </span>
           </div>
           <button
@@ -2096,6 +2096,16 @@ export function GalgameWorkshopEditorPage({
                         setSelectedTimelineGapId(undefined);
                         setSelectedBlockId(blockId);
                         setInspectorTab("properties");
+                      }}
+                      onEditProperties={() => {
+                        setInspectorTab("properties");
+                        requestAnimationFrame(() => {
+                          globalThis.document
+                            .querySelector<HTMLElement>(
+                              ".galgame-inspector-body .galgame-block-inspector input:not(:disabled), .galgame-inspector-body .galgame-block-inspector textarea:not(:disabled), .galgame-inspector-body .galgame-block-inspector [role='group'] button:not(:disabled)",
+                            )
+                            ?.focus();
+                        });
                       }}
                       onBlock={(block) =>
                         replaceDocument(

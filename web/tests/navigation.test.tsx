@@ -54,8 +54,10 @@ test("uses home as the default and parses deep application routes", () => {
   );
   expect(parsePage("/files")).toBe("files");
   expect(parsePage("/tools")).toBe("tools");
+  expect(parsePage("/tools/video-frame-exporter")).toBe("video-frame-exporter");
   expect(pathFor("home")).toBe("/home");
   expect(pathFor("tools")).toBe("/tools");
+  expect(pathFor("video-frame-exporter")).toBe("/tools/video-frame-exporter");
   expect(pathFor("files")).toBe("/files");
   expect(pathFor("visual-workshop-canvas", "project-1")).toBe(
     "/apps/visual-workshop/projects/project-1/canvas",
@@ -65,6 +67,14 @@ test("uses home as the default and parses deep application routes", () => {
     "/apps/galgame-workshop/projects/project-1/editor",
   );
   expect(pathFor("model-service")).toBe("/model-service");
+});
+
+test("keeps tool navigation active on the video frame exporter", () => {
+  render(<StudioSidebar page="video-frame-exporter" navigate={vi.fn()} />);
+  expect(screen.getByRole("button", { name: "工具导航" })).toHaveAttribute(
+    "aria-current",
+    "page",
+  );
 });
 
 test("renders the visual workshop brand and return card", () => {

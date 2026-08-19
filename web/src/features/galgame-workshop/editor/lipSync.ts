@@ -2,6 +2,11 @@ import type { GalgameStoryCharacter } from "@features/galgame-workshop/api";
 
 export type LipSyncFrame = 0 | 1 | 2;
 
+export type LipSyncPresentation = {
+  expressionId: string | null | undefined;
+  controlledFrameIndex?: LipSyncFrame;
+};
+
 export type AudioLevelMonitor = {
   resume: () => Promise<void>;
   dispose: () => void;
@@ -29,6 +34,36 @@ export function resolveLipSyncExpressionId(
 }
 
 /**
+ * 语音口型序列保持作者选择的表情 ID，只受控切换三张口型帧；
+ * 旧工程仍可继续使用 f000 / f001 / f002 三条独立表情。
+ */
+export function resolveLipSyncPresentation(
+  character: GalgameStoryCharacter,
+  authoredExpressionId: string | null | undefined,
+  frame: LipSyncFrame,
+): LipSyncPresentation {
+  const expression = (character.expressions ?? []).find(
+    (candidate) => candidate.id === authoredExpressionId,
+  );
+  if (
+    expression?.renderMode === "frameSequence" &&
+    expression.sequence?.playbackMode === "lipSync" &&
+    expression.sequence.frames.length === 3
+  )
+    return {
+      expressionId: authoredExpressionId,
+      controlledFrameIndex: frame,
+    };
+  return {
+    expressionId: resolveLipSyncExpressionId(
+      character,
+      authoredExpressionId,
+      frame,
+    ),
+  };
+}
+
+/**
  * 使用无对白采样维护动态底噪，并限制口型变化频率，避免三帧快速闪烁。
  */
 export class LipSyncLevelTracker {
@@ -36,7 +71,12 @@ export class LipSyncLevelTracker {
   private frame: LipSyncFrame = 0;
   private changedAt = 0;
 
-  update(levelDb: number, speaking: boolean, nowMs: number): LipSyncFrame {
+  update(
+    levelDb: number,
+    speaking: boolean,
+    nowMs: number,
+    fps = 12,
+  ): LipSyncFrame {
     if (!speaking) {
       const sample = Math.max(MIN_DECIBELS, Math.min(-12, levelDb));
       this.noiseFloorDb = this.noiseFloorDb * 0.9 + sample * 0.1;
@@ -47,7 +87,8 @@ export class LipSyncLevelTracker {
     const aboveNoise = levelDb - this.noiseFloorDb;
     const target: LipSyncFrame = aboveNoise >= 12 ? 2 : aboveNoise >= 6 ? 1 : 0;
     if (target === this.frame) return this.frame;
-    if (nowMs - this.changedAt < 100) return this.frame;
+    const minimumFrameDurationMs = 1000 / Math.max(1, Math.min(60, fps));
+    if (nowMs - this.changedAt < minimumFrameDurationMs) return this.frame;
     this.frame = target;
     this.changedAt = nowMs;
     return this.frame;

@@ -82,10 +82,237 @@ function silentWav(durationMs: number) {
   return buffer;
 }
 
+test("shows migrated lip-sync expressions as one named three-frame item", async ({
+  page,
+}) => {
+  let revision = 554;
+  const storyDocument = {
+    schemaVersion: "1.4",
+    entryChapterId: "chapter-1",
+    synopsis: "",
+    characterAttributeTemplates: [],
+    variables: [],
+    settings: {},
+    assets: [
+      ["portrait-closed", "file-closed"],
+      ["portrait-half", "file-half"],
+      ["portrait-open", "file-open"],
+    ].map(([id, fileId]) => ({
+      id,
+      type: "image",
+      role: "characterPortrait",
+      fileId,
+      status: "ready",
+    })),
+    characters: [
+      {
+        id: "hero",
+        name: "测试角色",
+        description: "",
+        expressions: [
+          {
+            id: "e001-f000",
+            label: "平静",
+            assetId: "portrait-closed",
+            renderMode: "frameSequence",
+            sequence: {
+              playbackMode: "lipSync",
+              fps: 12,
+              loop: true,
+              frames: [
+                { id: "e001-mouth-closed", assetId: "portrait-closed" },
+                { id: "e001-mouth-half", assetId: "portrait-half" },
+                { id: "e001-mouth-open", assetId: "portrait-open" },
+              ],
+            },
+          },
+        ],
+        defaultExpressionId: "e001-f000",
+      },
+    ],
+    sceneGroups: [],
+    scenes: [],
+    cgs: [],
+    chapters: [
+      {
+        id: "chapter-1",
+        title: "第一章",
+        order: 1,
+        entryFragmentId: "main",
+        fragments: [
+          {
+            id: "main",
+            title: "main",
+            blocks: [
+              {
+                id: "dialogue-1",
+                type: "dialogue",
+                characterId: "hero",
+                expressionId: "e001-f000",
+                text: "口型测试。",
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  };
+  let savedDocument: typeof storyDocument | undefined;
+  const projectAssets = ["closed", "half", "open"].map((mouth) => ({
+    id: `file-${mouth}`,
+    display_name: `${mouth}.png`,
+    media_kind: "image",
+    mime_type: "image/png",
+    byte_size: 68,
+    revision: 0,
+    created_at: "2026-08-19T08:00:00Z",
+    updated_at: "2026-08-19T08:00:00Z",
+  }));
+
+  await page.route("**/v1/file-folders**", (route) =>
+    route.fulfill({ contentType: "application/json", body: '{"items":[]}' }),
+  );
+  await page.route("**/v1/files**", async (route) => {
+    if (new URL(route.request().url()).pathname.endsWith("/content")) {
+      await route.fulfill({
+        contentType: "image/png",
+        body: Buffer.from(
+          "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=",
+          "base64",
+        ),
+      });
+      return;
+    }
+    await route.fulfill({
+      contentType: "application/json",
+      body: '{"items":[]}',
+    });
+  });
+  await page.route(
+    "**/v1/galgame-workshop/projects/lip-sync-e2e**",
+    async (route) => {
+      const request = route.request();
+      const path = new URL(request.url()).pathname;
+      if (path.endsWith("/story/report")) {
+        await route.fulfill({
+          contentType: "application/json",
+          body: JSON.stringify({
+            project_id: "lip-sync-e2e",
+            story_revision: revision,
+            ready: true,
+            errors: [],
+            warnings: [],
+            chapters: [],
+          }),
+        });
+        return;
+      }
+      if (path.endsWith("/story")) {
+        if (request.method() === "PUT") {
+          savedDocument = (
+            request.postDataJSON() as { document: typeof storyDocument }
+          ).document;
+          revision += 1;
+        }
+        await route.fulfill({
+          contentType: "application/json",
+          body: JSON.stringify({
+            project_id: "lip-sync-e2e",
+            revision,
+            updated_at: "2026-08-19T08:00:00Z",
+            document: savedDocument ?? storyDocument,
+          }),
+        });
+        return;
+      }
+      if (path.endsWith("/assets/overview")) {
+        await route.fulfill({
+          contentType: "application/json",
+          body: JSON.stringify({
+            items: [],
+            missing_items: [],
+            totalBytes: 204,
+            referencedCount: 3,
+            orphanedCount: 0,
+            estimatedPackageBytes: 204,
+            largestAssetIds: [],
+            moduleHealth: { character: "ready" },
+          }),
+        });
+        return;
+      }
+      if (path.endsWith("/assets/package-manifest")) {
+        await route.fulfill({
+          contentType: "application/json",
+          body: JSON.stringify({
+            ready: true,
+            totalBytes: 204,
+            items: [],
+            issues: [],
+          }),
+        });
+        return;
+      }
+      if (path.endsWith("/assets")) {
+        await route.fulfill({
+          contentType: "application/json",
+          body: JSON.stringify({ items: projectAssets }),
+        });
+        return;
+      }
+      await route.fulfill({
+        contentType: "application/json",
+        body: JSON.stringify({
+          id: "lip-sync-e2e",
+          title: "口型迁移验收",
+          status: "draft",
+          revision: 0,
+          created_at: "2026-08-19T08:00:00Z",
+          updated_at: "2026-08-19T08:00:00Z",
+        }),
+      });
+    },
+  );
+
+  await page.goto("/apps/galgame-workshop/projects/lip-sync-e2e/editor");
+  await openAssetSection(page, "角色");
+  await page
+    .locator(".galgame-character-list")
+    .getByRole("button", { name: /测试角色 1 个表情/ })
+    .click();
+  const expressionGrid = page.locator(".galgame-expression-grid");
+  await expect(
+    expressionGrid.getByRole("button", { name: /平静/ }),
+  ).toHaveCount(1);
+  await expect(page.getByText(/原始表情/)).toHaveCount(0);
+  await expressionGrid.getByRole("button", { name: /平静/ }).click();
+
+  await expect(page.getByRole("button", { name: "语音口型" })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  const frames = page.locator(".galgame-expression-frame-list > li");
+  await expect(frames).toHaveCount(3);
+  await expect(frames.nth(0).locator(":scope > span")).toHaveText("闭");
+  await expect(frames.nth(1).locator(":scope > span")).toHaveText("半");
+  await expect(frames.nth(2).locator(":scope > span")).toHaveText("张");
+
+  await page.getByRole("button", { name: "定时播放" }).click();
+  await expect.poll(() => savedDocument).toBeTruthy();
+  expect(savedDocument?.characters[0].defaultExpressionId).toBe("e001-f000");
+  expect(savedDocument?.chapters[0].fragments[0].blocks[0].expressionId).toBe(
+    "e001-f000",
+  );
+  expect(savedDocument?.characters[0].expressions).toHaveLength(1);
+  expect(
+    savedDocument?.characters[0].expressions[0].sequence.frames,
+  ).toHaveLength(3);
+});
+
 test("builds, saves, checks, and plays a branching Galgame slice", async ({
   page,
 }, testInfo) => {
-  test.setTimeout(60_000);
+  test.setTimeout(120_000);
   let projects: Array<Record<string, unknown>> = [];
   let storyRevision = 0;
   let projectAssets: Array<Record<string, unknown>> = [];
@@ -515,10 +742,33 @@ test("builds, saves, checks, and plays a branching Galgame slice", async ({
   includeOverviewLayoutFixtures = false;
 
   await openAssetSection(page, "角色");
-  await expect(page.getByRole("button", { name: "位置与锚点" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "位置与尺寸" })).toBeVisible();
   await expect(
-    page.getByRole("button", { name: "角色预览", exact: true }),
+    page.getByRole("button", { name: "资源引用", exact: true }),
   ).toBeVisible();
+  await page.getByRole("button", { name: "位置与尺寸" }).click();
+  await expect(
+    page.getByRole("application", { name: "位置与尺寸舞台预览" }),
+  ).toBeVisible();
+  await expect(page.locator(".galgame-character-reference-panel")).toBeHidden();
+  await page.setViewportSize({ width: 2048, height: 1200 });
+  const wideStagePanels = await Promise.all(
+    ["is-presets", "is-position", "is-size"].map((className) =>
+      page.locator(`.galgame-stage-parameter-panel.${className}`).boundingBox(),
+    ),
+  );
+  expect(wideStagePanels.every(Boolean)).toBe(true);
+  expect(wideStagePanels[0]?.y).toBe(wideStagePanels[1]?.y);
+  expect(wideStagePanels[1]?.y).toBe(wideStagePanels[2]?.y);
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  const compactStagePanels = await Promise.all(
+    ["is-presets", "is-position", "is-size"].map((className) =>
+      page.locator(`.galgame-stage-parameter-panel.${className}`).boundingBox(),
+    ),
+  );
+  expect(compactStagePanels.every(Boolean)).toBe(true);
+  expect(compactStagePanels[0]?.y).toBeLessThan(compactStagePanels[1]?.y ?? 0);
+  expect(compactStagePanels[1]?.y).toBe(compactStagePanels[2]?.y);
   await page.getByRole("button", { name: "新建角色" }).click();
   await expect(page.getByText("选择一个表情查看详情")).toBeVisible();
   await page.getByRole("button", { name: "显示名" }).click();
@@ -531,6 +781,28 @@ test("builds, saves, checks, and plays a branching Galgame slice", async ({
   await expect(
     page.getByRole("button", { name: /galgame-workshop-mark/ }),
   ).toBeVisible({ timeout: 3000 });
+  await expect(page.getByText("舞台显示", { exact: true })).toBeVisible();
+  await expect(page.getByText("呈现方式", { exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Spine" })).toBeDisabled();
+  await expect(page.getByRole("button", { name: "Live2D" })).toBeDisabled();
+  await page
+    .locator("label.galgame-expression-setting-toggle")
+    .filter({ hasText: "左右翻转" })
+    .click();
+  await page.getByRole("button", { name: "自定义" }).click();
+  await page.getByRole("spinbutton", { name: "自定义画面高度" }).fill("135");
+  await expect.poll(() => JSON.stringify(document)).toContain('"flipX":true');
+  await expect
+    .poll(() => JSON.stringify(document))
+    .toContain('"heightPercent":135');
+  await page.getByText("高级设置", { exact: true }).click();
+  await expect(
+    page.getByRole("spinbutton", { name: "缩略图裁剪 X" }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "替换图片" }).click();
+  const replacePicker = page.getByRole("dialog", { name: "替换角色立绘" });
+  await replacePicker.getByRole("button", { name: "全局文件库" }).click();
+  await replacePicker.getByRole("button", { name: /雨夜.png/ }).click();
   await page.getByRole("button", { name: "添加表情" }).click();
   const assetPicker = page.getByRole("dialog", { name: "添加角色表情" });
   await assetPicker.getByRole("button", { name: "全局文件库" }).click();
@@ -860,13 +1132,63 @@ test("builds, saves, checks, and plays a branching Galgame slice", async ({
   });
 
   await openAssetSection(page, "角色");
+  await page
+    .locator(".galgame-character-list")
+    .getByRole("button", { name: /调查员/ })
+    .click();
+  await page.getByRole("button", { name: /galgame-workshop-mark/ }).click();
   for (const viewport of [
+    { width: 1920, height: 1080 },
     { width: 1536, height: 960 },
     { width: 1280, height: 800 },
     { width: 900, height: 900 },
   ]) {
     await page.setViewportSize(viewport);
     await expect(page.locator(".galgame-character-workspace")).toBeVisible();
+    const [
+      expressionPreviewBounds,
+      expressionSettingsBounds,
+      expressionRailBounds,
+      flipControlBounds,
+      portraitImageBounds,
+    ] = await Promise.all([
+      page.locator(".galgame-expression-detail-preview").boundingBox(),
+      page.locator(".galgame-expression-form").boundingBox(),
+      page.locator(".galgame-expression-grid").boundingBox(),
+      page.locator(".galgame-expression-setting-toggle").boundingBox(),
+      page.locator(".galgame-portrait-stage-image").boundingBox(),
+    ]);
+    expect(expressionPreviewBounds).not.toBeNull();
+    expect(expressionSettingsBounds).not.toBeNull();
+    expect(expressionRailBounds).not.toBeNull();
+    expect(flipControlBounds).not.toBeNull();
+    expect(portraitImageBounds).not.toBeNull();
+    expect(portraitImageBounds!.width).toBeLessThanOrEqual(
+      expressionPreviewBounds!.width,
+    );
+    expect(portraitImageBounds!.height).toBeLessThanOrEqual(
+      expressionPreviewBounds!.height,
+    );
+    await expect(page.locator(".galgame-portrait-stage-image")).toHaveCSS(
+      "object-fit",
+      "contain",
+    );
+    expect(expressionPreviewBounds!.width).toBeLessThanOrEqual(
+      expressionSettingsBounds!.width,
+    );
+    if (viewport.width >= 1500) {
+      expect(expressionSettingsBounds!.width).toBeGreaterThanOrEqual(700);
+      expect(expressionPreviewBounds!.width).toBeGreaterThanOrEqual(630);
+    }
+    expect(expressionRailBounds!.width).toBeLessThanOrEqual(261);
+    expect(flipControlBounds!.height).toBeLessThanOrEqual(71);
+    const expressionPreviewCenter =
+      expressionPreviewBounds!.x + expressionPreviewBounds!.width / 2;
+    const expressionSettingsCenter =
+      expressionSettingsBounds!.x + expressionSettingsBounds!.width / 2;
+    expect(
+      Math.abs(expressionSettingsCenter - expressionPreviewCenter),
+    ).toBeLessThanOrEqual(36);
     expect(
       await page.evaluate(() => document.documentElement.scrollWidth),
     ).toBeLessThanOrEqual(viewport.width);
@@ -879,6 +1201,42 @@ test("builds, saves, checks, and plays a branching Galgame slice", async ({
       });
     }
   }
+
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.getByRole("button", { name: "序列帧" }).click();
+  const frameChooserPromise = page.waitForEvent("filechooser");
+  await page.getByRole("button", { name: "从本地导入" }).click();
+  const frameChooser = await frameChooserPromise;
+  await frameChooser.setFiles("public/brand/galgame-workshop-mark.png");
+  await page.getByRole("spinbutton", { name: "播放帧率" }).fill("13");
+  await page.getByRole("checkbox", { name: "循环播放" }).click();
+  await expect
+    .poll(() => JSON.stringify(document))
+    .toContain('"renderMode":"frameSequence"');
+  await expect.poll(() => JSON.stringify(document)).toContain('"fps":13');
+  await expect.poll(() => JSON.stringify(document)).toContain('"loop":false');
+  await expect
+    .poll(
+      () => document.characters?.[0]?.expressions?.[0]?.sequence?.frames.length,
+    )
+    .toBe(2);
+  const thirdFrameChooserPromise = page.waitForEvent("filechooser");
+  await page.getByRole("button", { name: "从本地导入" }).click();
+  const thirdFrameChooser = await thirdFrameChooserPromise;
+  await thirdFrameChooser.setFiles("public/brand/galgame-workshop-mark.png");
+  await expect
+    .poll(
+      () => document.characters?.[0]?.expressions?.[0]?.sequence?.frames.length,
+    )
+    .toBe(3);
+  await page.getByRole("button", { name: "语音口型" }).click();
+  await expect
+    .poll(
+      () => document.characters?.[0]?.expressions?.[0]?.sequence?.playbackMode,
+    )
+    .toBe("lipSync");
+  await expect(page.getByRole("checkbox", { name: "循环播放" })).toHaveCount(0);
+  await expect(page.getByText("语音驱动", { exact: true })).toBeVisible();
 
   await openAssetSection(page, "场景");
   for (const viewport of [
@@ -1255,6 +1613,15 @@ test("opens Block insertion from the selected card and closes it from the outsid
   await expect(
     palette.getByRole("button", { name: "在右侧属性中编辑" }),
   ).toBeVisible();
+  const hideDialogue = palette.getByRole("button", {
+    name: "本句后隐藏对话框",
+  });
+  await hideDialogue.click();
+  await expect(palette).toBeVisible();
+  await expect(hideDialogue).toHaveAttribute("aria-pressed", "true");
+  await expect
+    .poll(() => document.chapters[0].fragments[0].blocks[0].hideDialogueAfter)
+    .toBe(true);
   for (const group of ["角色", "文本", "演出", "逻辑"])
     await expect(palette.getByText(group, { exact: true })).toBeVisible();
   await page.keyboard.press("Escape");

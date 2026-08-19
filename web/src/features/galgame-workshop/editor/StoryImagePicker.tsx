@@ -23,7 +23,7 @@ import {
 import { StoryAssetImage } from "@features/galgame-workshop/editor/StoryAssetImage";
 
 export type StoryImagePickerState = {
-  mode: "add" | "replace";
+  mode: "add" | "replace" | "sequence";
   source: "project" | "library";
 };
 
@@ -33,10 +33,12 @@ export function StoryImagePicker({
   usedFileIds,
   addTitle,
   replaceTitle,
+  sequenceTitle,
   searchLabel,
   projectEmptyCopy,
   onState,
   onChoose,
+  onChooseMany,
   onUpload,
   onClose,
 }: {
@@ -45,10 +47,12 @@ export function StoryImagePicker({
   usedFileIds: Set<string>;
   addTitle: string;
   replaceTitle: string;
+  sequenceTitle?: string;
   searchLabel: string;
   projectEmptyCopy: string;
   onState: (state: StoryImagePickerState) => void;
   onChoose: (fileId: string, name: string) => void;
+  onChooseMany?: (files: Array<{ fileId: string; name: string }>) => void;
   onUpload: () => void;
   onClose: () => void;
 }) {
@@ -56,6 +60,7 @@ export function StoryImagePicker({
   const [query, setQuery] = useState("");
   const [error, setError] = useState("");
   const [libraryFolderId, setLibraryFolderId] = useState<string>();
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const projectQuery = useQuery({
     queryKey: ["galgame-project-assets", projectId, query],
     queryFn: () => getGalgameProjectAssets(projectId, query),
@@ -119,7 +124,13 @@ export function StoryImagePicker({
       : libraryQuery.isLoading;
   const loadError =
     state.source === "project" ? projectQuery.error : libraryQuery.error;
-  const title = state.mode === "add" ? addTitle : replaceTitle;
+  const title =
+    state.mode === "add"
+      ? addTitle
+      : state.mode === "sequence"
+        ? (sequenceTitle ?? "添加序列帧")
+        : replaceTitle;
+  const multiSelect = state.mode === "sequence";
 
   return (
     <div className="galgame-asset-picker-backdrop" role="presentation">
@@ -177,6 +188,22 @@ export function StoryImagePicker({
           <button type="button" onClick={onUpload}>
             <Upload aria-hidden /> 上传新图片
           </button>
+          {multiSelect ? (
+            <button
+              type="button"
+              disabled={!selectedIds.size}
+              onClick={() => {
+                const selected = assets.flatMap((asset) =>
+                  selectedIds.has(asset.id)
+                    ? [{ fileId: asset.id, name: asset.display_name }]
+                    : [],
+                );
+                onChooseMany?.(selected);
+              }}
+            >
+              添加所选（{selectedIds.size}）
+            </button>
+          ) : null}
         </div>
         {error || loadError ? (
           <p className="galgame-asset-picker-error">
@@ -212,7 +239,21 @@ export function StoryImagePicker({
                 <button
                   type="button"
                   className="galgame-asset-picker-choice"
-                  onClick={() => onChoose(file.id, file.display_name)}
+                  aria-pressed={
+                    multiSelect ? selectedIds.has(file.id) : undefined
+                  }
+                  onClick={() => {
+                    if (!multiSelect) {
+                      onChoose(file.id, file.display_name);
+                      return;
+                    }
+                    setSelectedIds((current) => {
+                      const next = new Set(current);
+                      if (next.has(file.id)) next.delete(file.id);
+                      else next.add(file.id);
+                      return next;
+                    });
+                  }}
                 >
                   <span>
                     <StoryAssetImage

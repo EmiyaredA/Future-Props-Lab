@@ -8,8 +8,8 @@
 }
 
 .galgame-json-view > header {
-  min-height: 44px;
-  padding: 7px 14px;
+  min-height: 40px;
+  padding: 4px 14px;
   border-bottom: 1px solid var(--gal-line);
   display: flex;
   align-items: center;
@@ -30,7 +30,7 @@
 }
 
 .galgame-json-view button {
-  min-height: 30px;
+  min-height: 28px;
   padding: 0 9px;
   border: 1px solid var(--gal-line);
   border-radius: 6px;

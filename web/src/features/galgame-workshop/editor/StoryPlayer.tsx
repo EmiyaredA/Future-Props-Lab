@@ -53,10 +53,11 @@ import {
 import { characterExpressionAssetId } from "@features/galgame-workshop/editor/richText";
 import { dialogueSpeakerIds } from "@features/galgame-workshop/editor/dialogue";
 import { StoryAssetImage } from "@features/galgame-workshop/editor/StoryAssetImage";
+import { ExpressionPortrait } from "@features/galgame-workshop/editor/ExpressionPortrait";
 import {
   createAudioLevelMonitor,
   LipSyncLevelTracker,
-  resolveLipSyncExpressionId,
+  resolveLipSyncPresentation,
   type AudioLevelMonitor,
   type LipSyncFrame,
 } from "@features/galgame-workshop/editor/lipSync";
@@ -795,6 +796,17 @@ export const StoryPlayer = forwardRef<StoryPlayerHandle, StoryPlayerProps>(
       ...DEFAULT_STAGE_STYLE,
       ...document.presentation?.stage,
     };
+    const activeDialogueExpressionId =
+      activeInlineExpressionId ??
+      activeDialogue?.expressionId ??
+      activeDialogueCharacter?.defaultExpressionId;
+    const activeDialogueExpression = activeDialogueCharacter?.expressions?.find(
+      (expression) => expression.id === activeDialogueExpressionId,
+    );
+    const lipSyncFps =
+      activeDialogueExpression?.sequence?.playbackMode === "lipSync"
+        ? activeDialogueExpression.sequence.fps
+        : 2;
     useEffect(() => {
       if (mode !== "play" || !displayFrame.stage.autoPlay) return;
       setAdvanceMode(displayFrame.stage.autoPlay.enabled ? "auto" : "manual");
@@ -812,9 +824,15 @@ export const StoryPlayer = forwardRef<StoryPlayerHandle, StoryPlayerProps>(
         currentAudioLevelDb ?? -100,
         speaking,
         performance.now(),
+        lipSyncFps,
       );
       setMouthFrame(next);
-    }, [currentAudioLevelDb, lipSyncSpeaking]);
+    }, [currentAudioLevelDb, lipSyncFps, lipSyncSpeaking]);
+
+    useEffect(() => {
+      lipSyncTrackerRef.current.reset();
+      setMouthFrame(0);
+    }, [activeDialogueExpressionId]);
 
     const stageActors = visibleStageActors(displayFrame.stage).flatMap(
       (actor) => {
@@ -826,19 +844,20 @@ export const StoryPlayer = forwardRef<StoryPlayerHandle, StoryPlayerProps>(
             : undefined) ??
           actor.expressionId ??
           character.defaultExpressionId;
-        const renderedExpressionId = resolveLipSyncExpressionId(
+        const lipSyncPresentation = resolveLipSyncPresentation(
           character,
           authoredExpressionId,
           activeDialogueSpeakerIds.includes(actor.characterId) ? mouthFrame : 0,
         );
-        const expressionAssetId = characterExpressionAssetId(
-          character,
-          renderedExpressionId,
-          actor.skinId,
-        );
-        const asset = (document.assets ?? []).find(
-          (candidate) => candidate.id === expressionAssetId,
-        );
+        const renderedExpressionId = lipSyncPresentation.expressionId;
+        const skinAssetId = character.portraitSkins
+          ?.find(
+            (skin) =>
+              skin.id === (actor.skinId ?? character.defaultPortraitSkinId),
+          )
+          ?.overrides?.find(
+            (override) => override.expressionId === renderedExpressionId,
+          )?.assetId;
         const expression = character.expressions?.find(
           (candidate) => candidate.id === renderedExpressionId,
         );
@@ -854,20 +873,14 @@ export const StoryPlayer = forwardRef<StoryPlayerHandle, StoryPlayerProps>(
           {
             actor,
             character,
-            asset,
             renderedExpressionId,
+            controlledFrameIndex: lipSyncPresentation.controlledFrameIndex,
             expression,
+            skinAssetId,
             overlays,
           },
         ];
       },
-    );
-    const activeDialogueExpressionId =
-      activeInlineExpressionId ??
-      activeDialogue?.expressionId ??
-      activeDialogueCharacter?.defaultExpressionId;
-    const activeDialogueExpression = activeDialogueCharacter?.expressions?.find(
-      (expression) => expression.id === activeDialogueExpressionId,
     );
     const activeDialogueAvatar = activeDialogueExpression?.dialogueAvatar;
     const dialogueAvatarAssetId =
@@ -1517,7 +1530,6 @@ export const StoryPlayer = forwardRef<StoryPlayerHandle, StoryPlayerProps>(
         return;
       }
       if (
-        mode === "edit" ||
         (typewriterFrame.mode === "content" &&
           typewriterFrame.block.type === "storyParagraph" &&
           runtimeRef.current.paragraph.revealEffect === "instant") ||
@@ -2053,9 +2065,10 @@ export const StoryPlayer = forwardRef<StoryPlayerHandle, StoryPlayerProps>(
               ({
                 actor,
                 character,
-                asset,
                 renderedExpressionId,
+                controlledFrameIndex,
                 expression,
+                skinAssetId,
                 overlays,
               }) => {
                 const focused =
@@ -2076,6 +2089,8 @@ export const StoryPlayer = forwardRef<StoryPlayerHandle, StoryPlayerProps>(
                   mode === "edit" && actor.characterId === editableCharacterId;
                 const spriteAnimation =
                   displayFrame.stage.spriteAnimations?.[actor.characterId];
+                const effectiveFlipX =
+                  Boolean(expression?.flipX) !== actor.transform.flipX;
                 return (
                   <div
                     key={actor.characterId}
@@ -2185,7 +2200,7 @@ export const StoryPlayer = forwardRef<StoryPlayerHandle, StoryPlayerProps>(
                           : actor.transform.anchor === "topLeft"
                             ? "translate(0, 0)"
                             : "translate(-50%, -100%)"
-                      } scale(${actor.transform.scale}) scaleX(${actor.transform.flipX ? -1 : 1})`,
+                      } scale(${actor.transform.scale}) scaleX(${effectiveFlipX ? -1 : 1})`,
                       transitionDuration: `${actor.transition.durationMs}ms, ${actor.transition.durationMs}ms, ${actor.transition.durationMs}ms, ${stageStyle.focusTransitionMs}ms, ${actor.transition.durationMs}ms`,
                       animationDuration: spriteAnimation
                         ? `${spriteAnimation.durationMs}ms`
@@ -2193,11 +2208,14 @@ export const StoryPlayer = forwardRef<StoryPlayerHandle, StoryPlayerProps>(
                       animationIterationCount: spriteAnimation?.loop
                         ? "infinite"
                         : undefined,
-                      height: `${expression?.heightPercent ?? character.portraitHeightPercent ?? document.settings?.characterStage?.defaultHeightPercent ?? 100}%`,
+                      height: `${expression?.heightPercent ?? document.settings?.characterStageOverrides?.[character.id]?.defaultHeightPercent ?? character.portraitHeightPercent ?? document.settings?.characterStage?.defaultHeightPercent ?? 100}%`,
                     }}
                   >
-                    <StoryAssetImage
-                      fileId={asset?.fileId}
+                    <ExpressionPortrait
+                      expression={expression}
+                      assets={document.assets ?? []}
+                      skinAssetId={skinAssetId}
+                      controlledFrameIndex={controlledFrameIndex}
                       alt=""
                       className="galgame-player-portrait-image"
                       fallback={

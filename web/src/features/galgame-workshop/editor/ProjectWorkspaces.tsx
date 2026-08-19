@@ -1,5 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
-import { Monitor, Save, Settings2, SlidersHorizontal } from "lucide-react";
+import {
+  MessageSquareText,
+  Minus,
+  Monitor,
+  Plus,
+  Save,
+  Settings2,
+  SlidersHorizontal,
+  Type,
+} from "lucide-react";
 import type { GalgameStoryProject } from "@features/galgame-workshop/api";
 import { DialogueStyleInspector } from "@features/galgame-workshop/editor/DialogueStyleInspector";
 import { DEFAULT_STORY_SETTINGS } from "@features/galgame-workshop/editor/model";
@@ -7,6 +16,61 @@ import { stableId } from "@features/galgame-workshop/editor/model";
 import { StoryPlayer } from "@features/galgame-workshop/editor/StoryPlayer";
 import { CustomColorPicker } from "@shared/ui/CustomColorPicker";
 import { CustomSelect } from "@shared/ui/CustomSelect";
+
+function PersonalizationNumberField({
+  ariaLabel,
+  value,
+  min,
+  max,
+  step,
+  unit,
+  onChange,
+}: {
+  ariaLabel: string;
+  value: number;
+  min: number;
+  max: number;
+  step: number;
+  unit: string;
+  onChange: (value: number) => void;
+}) {
+  const update = (next: number) => onChange(Math.min(max, Math.max(min, next)));
+
+  return (
+    <div className="galgame-personalization-number-field">
+      <button
+        type="button"
+        aria-label={`减少${ariaLabel}`}
+        disabled={value <= min}
+        onClick={() => update(value - step)}
+      >
+        <Minus aria-hidden />
+      </button>
+      <input
+        type="number"
+        inputMode="numeric"
+        aria-label={ariaLabel}
+        min={min}
+        max={max}
+        step={step}
+        value={value}
+        onChange={(event) => {
+          const next = event.target.valueAsNumber;
+          if (Number.isFinite(next)) update(next);
+        }}
+      />
+      <span>{unit}</span>
+      <button
+        type="button"
+        aria-label={`增加${ariaLabel}`}
+        disabled={value >= max}
+        onClick={() => update(value + step)}
+      >
+        <Plus aria-hidden />
+      </button>
+    </div>
+  );
+}
 
 export function PersonalizationWorkspace({
   projectId,
@@ -45,27 +109,43 @@ export function PersonalizationWorkspace({
           onDocument={onDocument}
         />
         <section className="galgame-personalization-official">
-          <h3>文字与剧情段落</h3>
-          <label>
-            <span>全局打字速度（字/秒）</span>
-            <input
-              type="number"
-              min="1"
-              max="240"
+          <header className="galgame-personalization-card-heading">
+            <span>
+              <Type aria-hidden />
+            </span>
+            <div>
+              <h3>文字与剧情段落</h3>
+              <p>设置全局阅读节奏，以及旁白与剧情正文的默认排版。</p>
+            </div>
+          </header>
+          <div className="galgame-personalization-setting-row">
+            <span className="galgame-personalization-setting-copy">
+              <strong>全局打字速度</strong>
+              <small>未单独设置的正文会使用这个速度</small>
+            </span>
+            <PersonalizationNumberField
+              ariaLabel="全局打字速度（字/秒）"
+              min={1}
+              max={240}
+              step={5}
+              unit="字/秒"
               value={document.presentation?.text?.defaultSpeedCps ?? 40}
-              onChange={(event) =>
+              onChange={(defaultSpeedCps) =>
                 onDocument({
                   ...document,
                   presentation: {
                     ...document.presentation,
-                    text: { defaultSpeedCps: Number(event.target.value) },
+                    text: { defaultSpeedCps },
                   },
                 })
               }
             />
-          </label>
-          <label>
-            <span>默认段落样式</span>
+          </div>
+          <div className="galgame-personalization-setting-row">
+            <span className="galgame-personalization-setting-copy">
+              <strong>默认段落样式</strong>
+              <small>用于旁白和 story paragraph</small>
+            </span>
             <CustomSelect
               ariaLabel="默认段落样式"
               value={`${document.presentation?.paragraph?.defaultStyleRef?.source ?? "builtin"}:${document.presentation?.paragraph?.defaultStyleRef?.id ?? "classic"}`}
@@ -104,9 +184,10 @@ export function PersonalizationWorkspace({
                 ),
               ]}
             />
-          </label>
+          </div>
           <button
             type="button"
+            className="galgame-personalization-create-button"
             onClick={() => {
               const id = stableId();
               onDocument({
@@ -134,6 +215,7 @@ export function PersonalizationWorkspace({
               });
             }}
           >
+            <Plus aria-hidden />
             新建项目段落样式
           </button>
           {(document.presentation?.paragraph?.customStyles ?? []).map(
@@ -207,42 +289,58 @@ export function PersonalizationWorkspace({
           )}
         </section>
         <section className="galgame-personalization-official">
-          <h3>标准系统消息</h3>
-          <CustomSelect
-            ariaLabel="系统消息框来源"
-            value={`${document.presentation?.systemMessage?.binding?.source ?? "builtin"}:${document.presentation?.systemMessage?.binding?.id ?? "standard-message"}`}
-            onChange={(value) => {
-              const [source, id] = value.split(":", 2);
-              onDocument({
-                ...document,
-                presentation: {
-                  ...document.presentation,
-                  systemMessage: {
-                    binding: {
-                      source: source as "builtin" | "project" | "extension",
-                      id,
+          <header className="galgame-personalization-card-heading">
+            <span>
+              <MessageSquareText aria-hidden />
+            </span>
+            <div>
+              <h3>标准系统消息</h3>
+              <p>统一提示、通知与系统反馈在游戏内的显示方式。</p>
+            </div>
+          </header>
+          <div className="galgame-personalization-setting-row">
+            <span className="galgame-personalization-setting-copy">
+              <strong>消息框样式</strong>
+              <small>应用于所有标准系统消息</small>
+            </span>
+            <CustomSelect
+              ariaLabel="系统消息框来源"
+              value={`${document.presentation?.systemMessage?.binding?.source ?? "builtin"}:${document.presentation?.systemMessage?.binding?.id ?? "standard-message"}`}
+              onChange={(value) => {
+                const [source, id] = value.split(":", 2);
+                onDocument({
+                  ...document,
+                  presentation: {
+                    ...document.presentation,
+                    systemMessage: {
+                      binding: {
+                        source: source as "builtin" | "project" | "extension",
+                        id,
+                      },
+                      customStyles:
+                        document.presentation?.systemMessage?.customStyles ??
+                        [],
                     },
-                    customStyles:
-                      document.presentation?.systemMessage?.customStyles ?? [],
                   },
+                });
+              }}
+              options={[
+                {
+                  value: "builtin:standard-message",
+                  label: "内置 · 标准消息框",
                 },
-              });
-            }}
-            options={[
-              {
-                value: "builtin:standard-message",
-                label: "内置 · 标准消息框",
-              },
-              ...(document.presentation?.systemMessage?.customStyles ?? []).map(
-                (style) => ({
+                ...(
+                  document.presentation?.systemMessage?.customStyles ?? []
+                ).map((style) => ({
                   value: `project:${style.id}`,
                   label: `项目 · ${style.name}`,
-                }),
-              ),
-            ]}
-          />
+                })),
+              ]}
+            />
+          </div>
           <button
             type="button"
+            className="galgame-personalization-create-button"
             onClick={() => {
               const id = stableId();
               onDocument({
@@ -270,6 +368,7 @@ export function PersonalizationWorkspace({
               });
             }}
           >
+            <Plus aria-hidden />
             新建项目消息框
           </button>
         </section>

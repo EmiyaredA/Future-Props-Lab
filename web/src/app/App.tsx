@@ -38,6 +38,11 @@ const ToolNavigationPage = lazy(() =>
     default: module.ToolNavigationPage,
   })),
 );
+const VideoFrameExporterPage = lazy(() =>
+  import("@features/tools/VideoFrameExporterPage").then((module) => ({
+    default: module.VideoFrameExporterPage,
+  })),
+);
 const ModelTestPage = lazy(() =>
   import("@features/models/conversation").then((module) => ({
     default: module.ModelTestPage,
@@ -212,6 +217,8 @@ export default function App() {
             <FileManagementPage />
           ) : page === "tools" ? (
             <ToolNavigationPage onOpenInternal={navigatePath} />
+          ) : page === "video-frame-exporter" ? (
+            <VideoFrameExporterPage onBack={() => navigate("tools")} />
           ) : page === "model-test" ? (
             <ModelTestPage />
           ) : page === "model-service" ? (

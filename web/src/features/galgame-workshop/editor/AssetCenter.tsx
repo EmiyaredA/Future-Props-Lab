@@ -153,6 +153,7 @@ export function AssetCenter({
             projectId={projectId}
             document={document}
             onDocument={onDocument}
+            onCommitDocument={onCommitDocument}
             onNotice={onNotice}
             focusCharacterId={focusCharacterId}
             onLocate={locate}

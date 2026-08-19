@@ -140,7 +140,10 @@ export function characterExpressionAssetId(
   const targetExpression =
     expressionId ?? character.defaultExpressionId ?? undefined;
   if (!targetExpression) return undefined;
-  const skin = character.portraitSkins?.find((item) => item.id === skinId);
+  const resolvedSkinId = skinId ?? character.defaultPortraitSkinId;
+  const skin = character.portraitSkins?.find(
+    (item) => item.id === resolvedSkinId,
+  );
   const override = skin?.overrides?.find(
     (item) => item.expressionId === targetExpression,
   );
@@ -156,8 +159,9 @@ export function dialogueDisplayName(
   variables: Record<string, string | number | boolean>,
 ) {
   if (!character) return "未知角色";
+  const resolvedDisplayNameId = displayNameId ?? character.defaultDisplayNameId;
   const scheme = character.displayNames?.find(
-    (candidate) => candidate.id === displayNameId,
+    (candidate) => candidate.id === resolvedDisplayNameId,
   );
   if (!scheme) return character.name;
   if (scheme.source === "variable") {

@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useRef, useState, type CSSProperties } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   FolderOpen,
@@ -76,6 +76,11 @@ const VISIBILITY_OPTIONS: Array<{
   { value: "dialogue", label: "对白与旁白时" },
   { value: "choices", label: "分支选择时" },
 ];
+
+const rangeProgress = (value: number, min: number, max: number) =>
+  ({
+    "--range-progress": `${((value - min) / (max - min)) * 100}%`,
+  }) as CSSProperties;
 
 type PickerContext = {
   target: AssetTarget;
@@ -390,6 +395,7 @@ export function DialogueStyleInspector({
             max="1"
             step="0.05"
             value={stageStyle.inactiveBrightness}
+            style={rangeProgress(stageStyle.inactiveBrightness, 0, 1)}
             onChange={(event) =>
               updateStageStyle({
                 inactiveBrightness: Number(event.target.value),
@@ -408,6 +414,7 @@ export function DialogueStyleInspector({
             max="5000"
             step="50"
             value={stageStyle.focusTransitionMs}
+            style={rangeProgress(stageStyle.focusTransitionMs, 0, 5000)}
             onChange={(event) =>
               updateStageStyle({
                 focusTransitionMs: Number(event.target.value),
@@ -695,6 +702,11 @@ export function DialogueStyleInspector({
           min="20"
           max="100"
           value={Math.round(style.backgroundOpacity * 100)}
+          style={rangeProgress(
+            Math.round(style.backgroundOpacity * 100),
+            20,
+            100,
+          )}
           onChange={(event) =>
             updateStyle({
               preset: "custom",
@@ -713,6 +725,7 @@ export function DialogueStyleInspector({
           min="0"
           max="32"
           value={style.borderRadius}
+          style={rangeProgress(style.borderRadius, 0, 32)}
           onChange={(event) =>
             updateStyle({
               preset: "custom",
@@ -731,6 +744,7 @@ export function DialogueStyleInspector({
           min="80"
           max="140"
           value={Math.round(style.fontScale * 100)}
+          style={rangeProgress(Math.round(style.fontScale * 100), 80, 140)}
           onChange={(event) =>
             updateStyle({
               preset: "custom",

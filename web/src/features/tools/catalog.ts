@@ -5,6 +5,7 @@ import {
   Calculator,
   Clock3,
   Diff,
+  Film,
   MessageSquareText,
   Palette,
   PlugZap,
@@ -42,6 +43,15 @@ export const TOOL_CATEGORIES: Array<{
 export const POPULAR_TAGS = ["JSON", "接口", "Token", "编码", "转换"];
 
 export const TOOLS: ToolDefinition[] = [
+  {
+    id: "video-frame-exporter",
+    name: "视频帧导出",
+    description: "定位视频时间点并导出高清图片帧",
+    category: "data",
+    tags: ["视频", "截帧", "图片", "格式", "转换"],
+    icon: Film,
+    target: { kind: "internal", path: "/tools/video-frame-exporter" },
+  },
   {
     id: "json-formatter",
     name: "JSON 格式化",

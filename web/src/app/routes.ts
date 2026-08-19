@@ -3,6 +3,7 @@ export type StudioPage =
   | "apps"
   | "files"
   | "tools"
+  | "video-frame-exporter"
   | "model-test"
   | "model-service"
   | "model-call-logs";
@@ -56,6 +57,8 @@ export function parseRoute(pathname = window.location.pathname): AppRoute {
   if (application) return application as AppRoute;
   if (pathname.startsWith("/apps")) return { page: "apps" };
   if (pathname.startsWith("/files")) return { page: "files" };
+  if (pathname.startsWith("/tools/video-frame-exporter"))
+    return { page: "video-frame-exporter" };
   if (pathname.startsWith("/tools")) return { page: "tools" };
   if (pathname.startsWith("/model-test")) return { page: "model-test" };
   if (pathname.startsWith("/model-call-logs"))
@@ -72,6 +75,7 @@ export function pathFor(page: AppPage, projectId?: string): string {
     apps: "/apps",
     files: "/files",
     tools: "/tools",
+    "video-frame-exporter": "/tools/video-frame-exporter",
     "model-test": "/model-test",
     "model-service": "/model-service",
     "model-call-logs": "/model-call-logs",

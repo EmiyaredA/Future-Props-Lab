@@ -31,6 +31,7 @@ const character: GalgameStoryCharacter = {
       variableId: "player-name",
     },
   ],
+  defaultDisplayNameId: "alias",
   expressions: [
     { id: "neutral", label: "平静", assetId: "portrait-default" },
     { id: "smile", label: "微笑", assetId: "portrait-smile" },
@@ -43,6 +44,7 @@ const character: GalgameStoryCharacter = {
       overrides: [{ expressionId: "smile", assetId: "portrait-winter" }],
     },
   ],
+  defaultPortraitSkinId: "winter",
   attributes: {},
 };
 
@@ -88,6 +90,7 @@ describe("official rich text document", () => {
   });
 
   it("resolves display names and skin overrides with safe fallbacks", () => {
+    expect(dialogueDisplayName(character, undefined, {})).toBe("凤凰院凶真");
     expect(dialogueDisplayName(character, "alias", {})).toBe("凤凰院凶真");
     expect(
       dialogueDisplayName(character, "variable-name", {
@@ -96,6 +99,9 @@ describe("official rich text document", () => {
     ).toBe("助手");
     expect(dialogueDisplayName(character, "missing", {})).toBe("本名");
     expect(characterExpressionAssetId(character, "smile", "winter")).toBe(
+      "portrait-winter",
+    );
+    expect(characterExpressionAssetId(character, "smile", undefined)).toBe(
       "portrait-winter",
     );
     expect(characterExpressionAssetId(character, "neutral", "winter")).toBe(

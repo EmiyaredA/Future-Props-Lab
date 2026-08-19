@@ -1030,7 +1030,12 @@ export function BlockInspector({
                   ariaLabel="对白显示名方案"
                   value={block.displayNameId ?? ""}
                   options={[
-                    { value: "", label: "主名称" },
+                    {
+                      value: "",
+                      label: dialogueCharacter?.defaultDisplayNameId
+                        ? "跟随角色默认显示名"
+                        : "角色主名称",
+                    },
                     ...(dialogueCharacter?.displayNames ?? []).map((item) => ({
                       value: item.id,
                       label: item.label,
@@ -1045,7 +1050,9 @@ export function BlockInspector({
                   }
                 />
               </div>
-              <small>仅改变这句对白显示的名字；角色、立绘与配音不变。</small>
+              <small>
+                未单独指定时跟随角色默认显示名；逐句选择只覆盖这句对白。
+              </small>
             </div>
             <DialogueVoiceBinding
               projectId={projectId}
