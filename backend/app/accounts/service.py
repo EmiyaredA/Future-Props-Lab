@@ -1,0 +1,603 @@
+from __future__ import annotations
+
+from datetime import timedelta
+
+from sqlalchemy import func, or_, select, update
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.accounts.passwords import (
+    generate_temporary_password,
+    hash_password,
+    normalize_username,
+    validate_password,
+    verify_password,
+)
+from app.accounts.principal import StudioPrincipal
+from app.accounts.security import (
+    SESSION_ABSOLUTE_DAYS,
+    SESSION_IDLE_HOURS,
+    hash_secret,
+    new_management_api_key,
+    new_session_secrets,
+)
+from app.core.time import utc_now
+from app.llm.catalog.seed import ensure_workspace_model_catalog
+from app.models import (
+    AuthSession,
+    ManagementApiKey,
+    SecurityAuditEvent,
+    User,
+    Workspace,
+    WorkspaceMembership,
+)
+from app.models.workspace import DEFAULT_WORKSPACE_ID
+
+
+class AccountError(Exception):
+    def __init__(self, code: str, *, current: object | None = None) -> None:
+        super().__init__(code)
+        self.code = code
+        self.current = current
+
+
+def add_audit_event(
+    session: AsyncSession,
+    event_type: str,
+    *,
+    actor_user_id: str | None = None,
+    target_user_id: str | None = None,
+    workspace_id: str | None = None,
+    client_ip: str = "",
+    user_agent: str = "",
+    outcome: str = "success",
+    metadata: dict | None = None,
+) -> None:
+    session.add(
+        SecurityAuditEvent(
+            actor_user_id=actor_user_id,
+            target_user_id=target_user_id,
+            workspace_id=workspace_id,
+            event_type=event_type,
+            outcome=outcome,
+            client_ip=client_ip,
+            user_agent=user_agent[:500],
+            metadata_json=metadata or {},
+        )
+    )
+
+
+async def create_account(
+    session: AsyncSession,
+    *,
+    username: str,
+    display_name: str,
+    is_platform_admin: bool,
+    actor_user_id: str | None = None,
+    client_ip: str = "",
+) -> tuple[User, Workspace, str]:
+    normalized = normalize_username(username)
+    exists = await session.scalar(select(User.id).where(User.username_normalized == normalized))
+    if exists:
+        raise AccountError("username_conflict")
+    temporary_password = generate_temporary_password()
+    user = User(
+        username=username.strip(),
+        username_normalized=normalized,
+        display_name=display_name.strip() or username.strip(),
+        password_hash=hash_password(temporary_password),
+        is_platform_admin=is_platform_admin,
+        must_change_password=True,
+    )
+    session.add(user)
+    await session.flush()
+
+    workspace: Workspace | None = None
+    if is_platform_admin:
+        claimed = await session.scalar(
+            select(WorkspaceMembership.id).where(
+                WorkspaceMembership.workspace_id == DEFAULT_WORKSPACE_ID,
+                WorkspaceMembership.role == "owner",
+                WorkspaceMembership.status == "active",
+            )
+        )
+        if claimed is None:
+            workspace = await session.get(Workspace, DEFAULT_WORKSPACE_ID)
+    created_workspace = workspace is None
+    if workspace is None:
+        workspace = Workspace(name=f"{user.display_name} 的工作区")
+        session.add(workspace)
+        await session.flush()
+    session.add(
+        WorkspaceMembership(
+            user_id=user.id,
+            workspace_id=workspace.id,
+            role="owner",
+            status="active",
+        )
+    )
+    add_audit_event(
+        session,
+        "account.created",
+        actor_user_id=actor_user_id,
+        target_user_id=user.id,
+        workspace_id=workspace.id,
+        client_ip=client_ip,
+        metadata={"platform_admin": is_platform_admin},
+    )
+    await session.commit()
+    if created_workspace:
+        await ensure_workspace_model_catalog(session, workspace.id)
+    await session.refresh(user)
+    return user, workspace, temporary_password
+
+
+async def complete_login(
+    session: AsyncSession,
+    *,
+    username: str,
+    password: str,
+    client_ip: str,
+    user_agent: str,
+) -> tuple[User, Workspace, AuthSession, str, str] | None:
+    try:
+        normalized = normalize_username(username)
+    except ValueError:
+        normalized = username.strip().lower()[:64]
+    user = await session.scalar(select(User).where(User.username_normalized == normalized))
+    valid = False
+    upgraded = None
+    if user is not None:
+        valid, upgraded = verify_password(user.password_hash, password)
+    if user is None or not valid or user.status != "active":
+        add_audit_event(
+            session,
+            "auth.login",
+            client_ip=client_ip,
+            user_agent=user_agent,
+            outcome="failure",
+            metadata={"username": normalized},
+        )
+        await session.commit()
+        return None
+    membership = await session.scalar(
+        select(WorkspaceMembership)
+        .where(
+            WorkspaceMembership.user_id == user.id,
+            WorkspaceMembership.role == "owner",
+            WorkspaceMembership.status == "active",
+        )
+        .order_by(WorkspaceMembership.created_at)
+    )
+    if membership is None:
+        return None
+    workspace = await session.get(Workspace, membership.workspace_id)
+    if workspace is None:
+        return None
+    if upgraded:
+        user.password_hash = upgraded
+    now = utc_now()
+    raw_token, raw_csrf = new_session_secrets()
+    auth_session = AuthSession(
+        user_id=user.id,
+        active_workspace_id=workspace.id,
+        token_hash=hash_secret(raw_token),
+        csrf_hash=hash_secret(raw_csrf),
+        created_at=now,
+        last_seen_at=now,
+        idle_expires_at=now + timedelta(hours=SESSION_IDLE_HOURS),
+        absolute_expires_at=now + timedelta(days=SESSION_ABSOLUTE_DAYS),
+        reauthenticated_at=now,
+        client_ip=client_ip,
+        user_agent=user_agent[:500],
+    )
+    user.last_login_at = now
+    session.add(auth_session)
+    add_audit_event(
+        session,
+        "auth.login",
+        actor_user_id=user.id,
+        workspace_id=workspace.id,
+        client_ip=client_ip,
+        user_agent=user_agent,
+    )
+    await session.commit()
+    return user, workspace, auth_session, raw_token, raw_csrf
+
+
+async def load_current_auth(
+    session: AsyncSession, principal: StudioPrincipal
+) -> tuple[User, Workspace, AuthSession | None]:
+    user = await session.get(User, principal.user_id)
+    workspace = await session.get(Workspace, principal.workspace_id)
+    auth_session = (
+        await session.get(AuthSession, principal.session_id) if principal.session_id else None
+    )
+    if user is None or workspace is None:
+        raise AccountError("studio_auth_required")
+    return user, workspace, auth_session
+
+
+async def complete_logout(
+    session: AsyncSession, principal: StudioPrincipal, *, client_ip: str
+) -> None:
+    if principal.session_id is None:
+        return
+    row = await session.get(AuthSession, principal.session_id)
+    if row is not None and row.revoked_at is None:
+        row.revoked_at = utc_now()
+        add_audit_event(
+            session,
+            "auth.logout",
+            actor_user_id=principal.user_id,
+            workspace_id=principal.workspace_id,
+            client_ip=client_ip,
+        )
+        await session.commit()
+
+
+async def list_active_sessions(
+    session: AsyncSession, principal: StudioPrincipal
+) -> list[AuthSession]:
+    now = utc_now()
+    return list(
+        (
+            await session.execute(
+                select(AuthSession)
+                .where(
+                    AuthSession.user_id == principal.user_id,
+                    AuthSession.revoked_at.is_(None),
+                    AuthSession.idle_expires_at > now,
+                    AuthSession.absolute_expires_at > now,
+                )
+                .order_by(AuthSession.last_seen_at.desc())
+            )
+        )
+        .scalars()
+        .all()
+    )
+
+
+async def list_api_keys(
+    session: AsyncSession, principal: StudioPrincipal
+) -> list[ManagementApiKey]:
+    return list(
+        (
+            await session.execute(
+                select(ManagementApiKey)
+                .where(
+                    ManagementApiKey.user_id == principal.user_id,
+                    ManagementApiKey.workspace_id == principal.workspace_id,
+                )
+                .order_by(ManagementApiKey.created_at.desc())
+            )
+        )
+        .scalars()
+        .all()
+    )
+
+
+async def list_accounts(session: AsyncSession) -> list[User]:
+    return list((await session.execute(select(User).order_by(User.created_at))).scalars().all())
+
+
+async def change_password(
+    session: AsyncSession,
+    principal: StudioPrincipal,
+    *,
+    current_password: str,
+    new_password: str,
+    client_ip: str,
+) -> tuple[str, str]:
+    if principal.session_id is None:
+        raise AccountError("browser_session_required")
+    user = await session.get(User, principal.user_id)
+    auth_session = await session.get(AuthSession, principal.session_id)
+    if user is None or auth_session is None:
+        raise AccountError("studio_auth_required")
+    if not verify_password(user.password_hash, current_password)[0]:
+        raise AccountError("invalid_credentials")
+    validate_password(new_password)
+    user.password_hash = hash_password(new_password)
+    user.must_change_password = False
+    user.revision += 1
+    now = utc_now()
+    await session.execute(
+        update(AuthSession)
+        .where(
+            AuthSession.user_id == user.id,
+            AuthSession.id != auth_session.id,
+            AuthSession.revoked_at.is_(None),
+        )
+        .values(revoked_at=now)
+    )
+    raw_token, raw_csrf = new_session_secrets()
+    auth_session.token_hash = hash_secret(raw_token)
+    auth_session.csrf_hash = hash_secret(raw_csrf)
+    auth_session.last_seen_at = now
+    auth_session.idle_expires_at = min(
+        now + timedelta(hours=SESSION_IDLE_HOURS), auth_session.absolute_expires_at
+    )
+    auth_session.reauthenticated_at = now
+    add_audit_event(
+        session,
+        "account.password_changed",
+        actor_user_id=user.id,
+        target_user_id=user.id,
+        client_ip=client_ip,
+    )
+    await session.commit()
+    return raw_token, raw_csrf
+
+
+async def reauthenticate(
+    session: AsyncSession, principal: StudioPrincipal, *, password: str, client_ip: str
+) -> bool:
+    if principal.session_id is None:
+        return False
+    user = await session.get(User, principal.user_id)
+    auth_session = await session.get(AuthSession, principal.session_id)
+    if user is None or auth_session is None or not verify_password(user.password_hash, password)[0]:
+        add_audit_event(
+            session,
+            "auth.reauthenticated",
+            actor_user_id=principal.user_id,
+            client_ip=client_ip,
+            outcome="failure",
+        )
+        await session.commit()
+        return False
+    auth_session.reauthenticated_at = utc_now()
+    add_audit_event(
+        session,
+        "auth.reauthenticated",
+        actor_user_id=user.id,
+        client_ip=client_ip,
+    )
+    await session.commit()
+    return True
+
+
+async def revoke_session(
+    session: AsyncSession,
+    principal: StudioPrincipal,
+    *,
+    session_id: str,
+    client_ip: str,
+) -> bool:
+    row = await session.scalar(
+        select(AuthSession).where(
+            AuthSession.id == session_id,
+            AuthSession.user_id == principal.user_id,
+            AuthSession.revoked_at.is_(None),
+        )
+    )
+    if row is None:
+        return False
+    row.revoked_at = utc_now()
+    add_audit_event(
+        session,
+        "auth.session_revoked",
+        actor_user_id=principal.user_id,
+        client_ip=client_ip,
+        metadata={"session_id": row.id, "current": row.id == principal.session_id},
+    )
+    await session.commit()
+    return True
+
+
+async def revoke_other_sessions(
+    session: AsyncSession, principal: StudioPrincipal, *, client_ip: str
+) -> int:
+    now = utc_now()
+    result = await session.execute(
+        update(AuthSession)
+        .where(
+            AuthSession.user_id == principal.user_id,
+            AuthSession.id != principal.session_id,
+            AuthSession.revoked_at.is_(None),
+        )
+        .values(revoked_at=now)
+    )
+    add_audit_event(
+        session,
+        "auth.other_sessions_revoked",
+        actor_user_id=principal.user_id,
+        client_ip=client_ip,
+        metadata={"count": result.rowcount},
+    )
+    await session.commit()
+    return int(result.rowcount or 0)
+
+
+async def create_api_key(
+    session: AsyncSession,
+    principal: StudioPrincipal,
+    *,
+    name: str,
+    scopes: list[str],
+    expires_in_days: int,
+    client_ip: str,
+) -> tuple[ManagementApiKey, str]:
+    allowed = {"studio:read", "studio:write"}
+    normalized = set(scopes)
+    if not normalized or not normalized <= allowed:
+        raise AccountError("invalid_api_key_scopes")
+    if "studio:write" in normalized:
+        normalized.add("studio:read")
+    raw = new_management_api_key()
+    key = ManagementApiKey(
+        user_id=principal.user_id,
+        workspace_id=principal.workspace_id,
+        name=name.strip(),
+        key_hash=hash_secret(raw),
+        key_prefix=raw[:12],
+        scopes=sorted(normalized),
+        expires_at=utc_now() + timedelta(days=expires_in_days),
+    )
+    session.add(key)
+    add_audit_event(
+        session,
+        "management_api_key.created",
+        actor_user_id=principal.user_id,
+        workspace_id=principal.workspace_id,
+        client_ip=client_ip,
+        metadata={"key_id": key.id, "scopes": key.scopes},
+    )
+    await session.commit()
+    return key, raw
+
+
+async def revoke_api_key(
+    session: AsyncSession,
+    principal: StudioPrincipal,
+    *,
+    key_id: str,
+    expected_revision: int,
+    client_ip: str,
+) -> ManagementApiKey:
+    key = await session.scalar(
+        select(ManagementApiKey).where(
+            ManagementApiKey.id == key_id,
+            ManagementApiKey.user_id == principal.user_id,
+            ManagementApiKey.workspace_id == principal.workspace_id,
+        )
+    )
+    if key is None:
+        raise AccountError("api_key_not_found")
+    if key.revision != expected_revision:
+        raise AccountError("revision_conflict", current=key)
+    key.revoked_at = utc_now()
+    key.revision += 1
+    add_audit_event(
+        session,
+        "management_api_key.revoked",
+        actor_user_id=principal.user_id,
+        workspace_id=principal.workspace_id,
+        client_ip=client_ip,
+        metadata={"key_id": key.id},
+    )
+    await session.commit()
+    return key
+
+
+async def patch_account_status(
+    session: AsyncSession,
+    principal: StudioPrincipal,
+    *,
+    user_id: str,
+    status: str,
+    expected_revision: int,
+    client_ip: str,
+) -> User:
+    user = await session.get(User, user_id)
+    if user is None:
+        raise AccountError("account_not_found")
+    if user.revision != expected_revision:
+        raise AccountError("revision_conflict", current=user)
+    if user.id == principal.user_id and status == "disabled":
+        raise AccountError("cannot_disable_self")
+    if user.is_platform_admin and status == "disabled" and user.status == "active":
+        count = await session.scalar(
+            select(func.count(User.id)).where(
+                User.status == "active", User.is_platform_admin.is_(True)
+            )
+        )
+        if int(count or 0) <= 1:
+            raise AccountError("last_platform_admin")
+    user.status = status
+    user.revision += 1
+    if status == "disabled":
+        now = utc_now()
+        await session.execute(
+            update(AuthSession)
+            .where(AuthSession.user_id == user.id, AuthSession.revoked_at.is_(None))
+            .values(revoked_at=now)
+        )
+        await session.execute(
+            update(ManagementApiKey)
+            .where(ManagementApiKey.user_id == user.id, ManagementApiKey.revoked_at.is_(None))
+            .values(revoked_at=now, revision=ManagementApiKey.revision + 1)
+        )
+    add_audit_event(
+        session,
+        f"account.{status}",
+        actor_user_id=principal.user_id,
+        target_user_id=user.id,
+        client_ip=client_ip,
+    )
+    await session.commit()
+    return user
+
+
+async def reset_password(
+    session: AsyncSession,
+    *,
+    user: User,
+    actor_user_id: str | None,
+    client_ip: str = "",
+    event_type: str = "account.password_reset",
+) -> str:
+    temporary_password = generate_temporary_password()
+    user.password_hash = hash_password(temporary_password)
+    user.must_change_password = True
+    user.revision += 1
+    now = utc_now()
+    await session.execute(
+        update(AuthSession)
+        .where(AuthSession.user_id == user.id, AuthSession.revoked_at.is_(None))
+        .values(revoked_at=now)
+    )
+    add_audit_event(
+        session,
+        event_type,
+        actor_user_id=actor_user_id,
+        target_user_id=user.id,
+        client_ip=client_ip,
+    )
+    await session.commit()
+    return temporary_password
+
+
+async def audit_page(
+    session: AsyncSession,
+    *,
+    principal: StudioPrincipal,
+    platform: bool,
+    page: int,
+    page_size: int,
+    event_type: str,
+    outcome: str,
+) -> tuple[list[tuple[SecurityAuditEvent, str | None, str | None]], int]:
+    actor = User.__table__.alias("audit_actor")
+    target = User.__table__.alias("audit_target")
+    conditions = []
+    if not platform:
+        conditions.append(
+            or_(
+                SecurityAuditEvent.actor_user_id == principal.user_id,
+                SecurityAuditEvent.target_user_id == principal.user_id,
+            )
+        )
+    if event_type:
+        conditions.append(SecurityAuditEvent.event_type == event_type)
+    if outcome:
+        conditions.append(SecurityAuditEvent.outcome == outcome)
+    statement = (
+        select(
+            SecurityAuditEvent,
+            actor.c.username,
+            target.c.username,
+        )
+        .outerjoin(actor, actor.c.id == SecurityAuditEvent.actor_user_id)
+        .outerjoin(target, target.c.id == SecurityAuditEvent.target_user_id)
+        .where(*conditions)
+    )
+    total = int(await session.scalar(select(func.count()).select_from(statement.subquery())) or 0)
+    rows = (
+        await session.execute(
+            statement.order_by(SecurityAuditEvent.created_at.desc(), SecurityAuditEvent.id.desc())
+            .offset((page - 1) * page_size)
+            .limit(page_size)
+        )
+    ).all()
+    return list(rows), total

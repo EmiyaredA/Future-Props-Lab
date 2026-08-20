@@ -283,6 +283,8 @@ def test_documented_core_directories_exist() -> None:
         "backend/app/visual_workshop",
         "db/migrations/versions",
         "docs/architecture",
+        "docs/operations",
+        ".github/workflows",
         "scripts",
         "tests",
         "web/e2e",
@@ -328,11 +330,31 @@ def test_project_applications_have_modules_routes_and_storage_roots() -> None:
         assert module.stem in registry or application.replace("-", "_").upper() in registry
 
 
-def test_galgame_css_is_split_into_reviewable_files() -> None:
-    root = WEB_SRC / "features" / "galgame-workshop"
-    oversized = [
-        f"{_relative(path)}: {len(path.read_text(encoding='utf-8').splitlines())}"
-        for path in root.rglob("*.css")
-        if len(path.read_text(encoding="utf-8").splitlines()) > 2_000
-    ]
-    assert not oversized, "Galgame CSS 单文件不得超过 2,000 行：\n" + "\n".join(oversized)
+def test_source_modules_are_split_into_reviewable_files() -> None:
+    generated_root = WEB_SRC / "generated"
+    limits = {
+        ".ts": 1_500,
+        ".tsx": 1_500,
+        ".css": 1_500,
+    }
+    oversized: list[str] = []
+    for path in sorted(WEB_SRC.rglob("*")):
+        if not path.is_file() or path.suffix not in limits or _is_within(path, generated_root):
+            continue
+        line_count = len(path.read_text(encoding="utf-8").splitlines())
+        if line_count > limits[path.suffix]:
+            oversized.append(f"{_relative(path)}: {line_count} > {limits[path.suffix]}")
+    assert not oversized, "生产源码单文件超过评审上限：\n" + "\n".join(oversized)
+
+
+def test_test_modules_are_split_into_reviewable_files() -> None:
+    roots = (REPO_ROOT / "tests", REPO_ROOT / "web" / "tests", REPO_ROOT / "web" / "e2e")
+    oversized: list[str] = []
+    for root in roots:
+        for path in sorted(root.rglob("*")):
+            if path.suffix not in {".py", ".ts", ".tsx"}:
+                continue
+            line_count = len(path.read_text(encoding="utf-8").splitlines())
+            if line_count > 2_000:
+                oversized.append(f"{_relative(path)}: {line_count} > 2000")
+    assert not oversized, "测试文件超过评审上限：\n" + "\n".join(oversized)

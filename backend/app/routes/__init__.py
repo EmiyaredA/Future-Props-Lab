@@ -1,17 +1,23 @@
 from fastapi import APIRouter, Depends
 
 from app.deps import require_studio_auth
+from app.routes.accounts import router as accounts_router
 from app.routes.file_management import router as file_management_router
 from app.routes.galgame_workshop import router as galgame_workshop_router
 from app.routes.models import call_logs, catalog, model_test, model_test_generation
-from app.routes.system import router as system_router
+from app.routes.public_workspace import router as public_workspace_router
 from app.routes.tool_navigation import router as tool_navigation_router
 from app.routes.visual_assistant import router as visual_assistant_router
 from app.routes.visual_generation import router as visual_generation_router
 from app.routes.visual_workshop import router as visual_workshop_router
+from app.routes.workspaces import invitation_router
+from app.routes.workspaces import router as workspaces_router
 
 api_router = APIRouter(prefix="/v1")
-api_router.include_router(system_router)
+api_router.include_router(accounts_router)
+api_router.include_router(workspaces_router)
+api_router.include_router(invitation_router)
+api_router.include_router(public_workspace_router)
 api_router.include_router(catalog.router, dependencies=[Depends(require_studio_auth)])
 api_router.include_router(call_logs.router, dependencies=[Depends(require_studio_auth)])
 api_router.include_router(model_test.router, dependencies=[Depends(require_studio_auth)])

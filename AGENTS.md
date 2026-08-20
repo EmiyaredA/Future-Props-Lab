@@ -3,8 +3,8 @@
 ## 开始前
 
 - 每次正式处理仓库任务前先阅读本文件；所有命令默认在仓库根目录执行。
-- 本项目定位为单机模型基础设施管理台，不默认引入 Bot、知识库、实时语音、浏览器扩展、
-  多租户、用户权限或多实例部署能力。
+- 本项目定位为单机部署的模型基础设施管理台，支持同一进程和同一 SQLite 内的多账号与逻辑多
+  Workspace 隔离；不默认引入 Bot、知识库、实时语音、浏览器扩展或多实例部署能力。
 - 目录职责以 [`docs/architecture/project-layout.md`](docs/architecture/project-layout.md)
   为唯一完整索引；新增目录或改变职责时同步更新该文件。
 - Python 命令与临时诊断优先通过 `uv run` 执行。
@@ -45,6 +45,12 @@
 - 模型与供应商差异在 `backend/app/llm/providers/` 的适配边界内归一化。公共 REST/SSE、模型
   测试和调用日志契约保持供应商无关；供应商管理页面可以展示配置，但前端运行流程不得依赖
   供应商原始事件。
+- 账号、Session、审计、Management API Key 与 Workspace 治理归属 `backend/app/accounts/`；
+  `StudioPrincipal` 是业务请求的唯一租户来源，业务 API 不接受客户端提交 `workspace_id`。
+  根资源必须直接保存 `workspace_id`，子资源通过已校验的根资源继承；跨 Workspace 的 ID 一律
+  按不存在处理。后台执行器必须从任务记录恢复 Workspace，不能依赖请求上下文。
+- Web 不保存密码、Session、CSRF 或 Management API Key 明文；Session 只使用 HttpOnly Cookie，
+  写请求统一携带可读 CSRF Cookie 对应的请求头。API Key 明文和临时密码只允许展示一次。
 - 修改安装、启动、环境变量、依赖或目录路径时，同步检查根与 Web 的 `package.json`、
   `pyproject.toml`、脚本、README 和 CI/测试入口。
 
@@ -59,6 +65,8 @@
   经所属功能模块执行业务校验、事务、并发控制和错误映射；Web、测试工具与运维流程统一调用
   该 API，不得把直接操作持久数据库作为实现方案或故障恢复步骤。仅允许存储层和迁移测试在
   各自创建的临时隔离数据库中直接构造测试状态，测试结束后不得影响任何持久数据库。
+- `npm run account -- create-admin|create-user|reset-password` 是账号恢复的离线入口，但只能调用
+  `accounts/` 中与 HTTP 共用的正式用例，不得执行裸 SQL；首个管理员负责认领 `default` Workspace。
 - `db/migrations/` 是唯一 schema 迁移入口。已登记迁移的 ID、顺序和 SQL 不得改写；修复或
   扩展只能在 `versions/` 追加新版本并更新 `registry.py`。
 - schema 演进只能通过新增并登记 migration 完成；migration 可以承担 schema 所必需的确定性
@@ -70,8 +78,9 @@
   不得放在已经开始写入的长事务中；流式生成应使用独立短事务准备和结算状态。
 - 整体 JSON、配置和会话等 revisioned 资源使用数据库 CAS：缺少 revision 返回 422，冲突
   返回 409 与当前快照，客户端不得静默覆盖。
-- 备份数据库前先停止应用，并同时复制 SQLite 主文件、`library/assets/`、`applications/` 与
-  `model-test/attachments/`、`model-test/references/`、`model-test/generated/`；不要把
+- 备份数据库前先停止应用，并同时复制 SQLite 主文件、`workspaces/`、`profiles/`、
+  `library/assets/`、`applications/` 与 `model-test/attachments/`、`model-test/references/`、
+  `model-test/generated/`；不要把
   `.runtime/` 当作可提交的代码、
   迁移或测试资产。
 

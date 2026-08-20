@@ -13,6 +13,7 @@ from app.concurrency.revisions import RevisionConflictError
 from app.core.config import Settings, get_settings
 from app.core.credentials import decrypt_secret
 from app.core.db import SessionLocal
+from app.core.tenant_context import bind_workspace
 from app.core.time import iso_utc, utc_now
 from app.files import AssetError
 from app.files.storage import AssetStorage
@@ -372,6 +373,14 @@ class GalgameAsrRunner(PollingGenerationRunner):
         self.storage = AssetStorage(self.settings)
         self.transport = transport
 
+    async def _load_task(
+        self, session: AsyncSession, task_id: str
+    ) -> GalgameAssetTranscriptionTask | None:
+        task = await session.get(GalgameAssetTranscriptionTask, task_id)
+        if task is not None:
+            bind_workspace(session, task.workspace_id)
+        return task
+
     async def recover(self) -> None:
         async with self.session_factory() as session:
             interrupted = list(
@@ -424,7 +433,7 @@ class GalgameAsrRunner(PollingGenerationRunner):
     async def _process_task(self, task_id: str) -> None:
         try:
             async with self.session_factory() as session:
-                task = await session.get(GalgameAssetTranscriptionTask, task_id)
+                task = await self._load_task(session, task_id)
                 if task is None or task.status != "queued":
                     return
                 asset = await session.get(VisualAsset, task.asset_id)
@@ -488,7 +497,7 @@ class GalgameAsrRunner(PollingGenerationRunner):
             if not isinstance(text, str):
                 raise ValueError("语音识别响应缺少文本")
             async with self.session_factory() as session:
-                task = await session.get(GalgameAssetTranscriptionTask, task_id)
+                task = await self._load_task(session, task_id)
                 metadata = await session.get(GalgameAssetMetadata, task.asset_id) if task else None
                 if task is None or metadata is None:
                     return
@@ -508,7 +517,7 @@ class GalgameAsrRunner(PollingGenerationRunner):
             raise
         except Exception as exc:
             async with self.session_factory() as session:
-                task = await session.get(GalgameAssetTranscriptionTask, task_id)
+                task = await self._load_task(session, task_id)
                 if task is None:
                     return
                 metadata = await session.get(GalgameAssetMetadata, task.asset_id)

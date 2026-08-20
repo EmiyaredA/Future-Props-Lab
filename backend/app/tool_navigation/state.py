@@ -23,6 +23,10 @@ class ToolNavigationState:
     def __init__(self, session: AsyncSession) -> None:
         self.session = session
 
+    @property
+    def workspace_id(self) -> str:
+        return str(self.session.info.get("workspace_id") or "default")
+
     async def list(self) -> ToolNavigationStateOut:
         rows = (
             (
@@ -43,6 +47,7 @@ class ToolNavigationState:
         now = utc_now()
         favorite_updated_at = now if is_favorite else None
         statement = insert(ToolNavigationItem).values(
+            workspace_id=self.workspace_id,
             tool_id=tool_id,
             is_favorite=is_favorite,
             favorite_updated_at=favorite_updated_at,
@@ -51,7 +56,7 @@ class ToolNavigationState:
         )
         await self.session.execute(
             statement.on_conflict_do_update(
-                index_elements=[ToolNavigationItem.tool_id],
+                index_elements=[ToolNavigationItem.workspace_id, ToolNavigationItem.tool_id],
                 set_={
                     "is_favorite": is_favorite,
                     "favorite_updated_at": favorite_updated_at,
@@ -65,6 +70,7 @@ class ToolNavigationState:
     async def record_use(self, tool_id: str) -> ToolNavigationItemOut:
         now = utc_now()
         statement = insert(ToolNavigationItem).values(
+            workspace_id=self.workspace_id,
             tool_id=tool_id,
             is_favorite=False,
             last_used_at=now,
@@ -73,7 +79,7 @@ class ToolNavigationState:
         )
         await self.session.execute(
             statement.on_conflict_do_update(
-                index_elements=[ToolNavigationItem.tool_id],
+                index_elements=[ToolNavigationItem.workspace_id, ToolNavigationItem.tool_id],
                 set_={
                     "last_used_at": now,
                     "use_count": ToolNavigationItem.use_count + 1,
@@ -85,7 +91,7 @@ class ToolNavigationState:
         return await self._get(tool_id)
 
     async def _get(self, tool_id: str) -> ToolNavigationItemOut:
-        row = await self.session.get(ToolNavigationItem, tool_id)
+        row = await self.session.get(ToolNavigationItem, (self.workspace_id, tool_id))
         if row is None:  # pragma: no cover - protected by the upsert paths
             raise RuntimeError("工具状态写入失败")
         return _item_out(row)

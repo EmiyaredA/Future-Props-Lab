@@ -5,7 +5,7 @@ from pathlib import Path
 from urllib.parse import urlsplit
 
 from cryptography.fernet import Fernet
-from pydantic import model_validator
+from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 ENV_FILE = Path(__file__).resolve().parents[2] / ".env"
@@ -17,12 +17,13 @@ class Settings(BaseSettings):
         env_file=str(ENV_FILE), env_file_encoding="utf-8", extra="ignore"
     )
 
-    app_host: str = "127.0.0.1"
-    app_port: int = 9000
     fpl_database_path: str = ".runtime/future-props.db"
     cors_origins: str = "http://127.0.0.1:3000,http://localhost:3000"
     fpl_secrets_key: str = ""
-    fpl_studio_token: str = ""
+    legacy_fpl_studio_token: str = Field(
+        default="", validation_alias="FPL_STUDIO_TOKEN", exclude=True
+    )
+    fpl_auth_cookie_secure: bool = False
     fpl_visual_asset_max_bytes: int = 200 * 1024 * 1024
     fpl_temp_media_upload_url: str = "https://temp.sh/upload"
 
@@ -32,8 +33,11 @@ class Settings(BaseSettings):
             Fernet(self.fpl_secrets_key.encode("ascii"))
         except Exception as exc:
             raise ValueError("FPL_SECRETS_KEY must be a valid Fernet key") from exc
-        if self.fpl_studio_token and len(self.fpl_studio_token) < 32:
-            raise ValueError("FPL_STUDIO_TOKEN must contain at least 32 characters")
+        if self.legacy_fpl_studio_token.strip():
+            raise ValueError(
+                "FPL_STUDIO_TOKEN is no longer supported; migrate to an account session "
+                "or FPL_MANAGEMENT_API_KEY"
+            )
         if self.fpl_visual_asset_max_bytes < 1:
             raise ValueError("FPL_VISUAL_ASSET_MAX_BYTES must be positive")
         parsed_upload_url = urlsplit(self.fpl_temp_media_upload_url)
@@ -68,6 +72,26 @@ class Settings(BaseSettings):
     @property
     def runtime_path(self) -> Path:
         return self.database_path.parent.resolve()
+
+    @property
+    def auth_cookie_secure(self) -> bool:
+        return self.fpl_auth_cookie_secure
+
+    def workspace_path(self, workspace_id: str) -> Path:
+        if not workspace_id or Path(workspace_id).name != workspace_id:
+            raise ValueError("invalid workspace id")
+        return (self.runtime_path / "workspaces" / workspace_id).resolve()
+
+    def workspace_model_test_path(self, workspace_id: str, kind: str) -> Path:
+        if kind not in {"attachments", "generated", "references"}:
+            raise ValueError("invalid model-test storage kind")
+        if workspace_id == "default":
+            return (self.runtime_path / "model-test" / kind).resolve()
+        return (self.workspace_path(workspace_id) / "model-test" / kind).resolve()
+
+    @property
+    def profiles_path(self) -> Path:
+        return (self.runtime_path / "profiles").resolve()
 
     @property
     def library_asset_path(self) -> Path:

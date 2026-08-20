@@ -166,9 +166,16 @@ web/playwright-report/
 
 # Local runtime state
 .runtime/
+web/e2e/.auth-state.json
 
 # Local scratch media and working drafts (not product assets)
 .scratch/
+/output/
+/tmp/
+/docs/assets/kurisu-lab-music/downloaded-video/
+
+# macOS metadata
+.DS_Store
 
 # Spyder project settings
 .spyderproject

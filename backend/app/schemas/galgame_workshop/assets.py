@@ -12,7 +12,7 @@ class GalgameProjectAssetOut(BaseModel):
 
     id: str
     display_name: str
-    media_kind: Literal["image", "audio", "video", "font"]
+    media_kind: Literal["image", "audio", "video", "font", "document"]
     mime_type: str
     byte_size: int
     revision: int

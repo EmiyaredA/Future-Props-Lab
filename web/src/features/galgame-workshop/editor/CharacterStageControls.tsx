@@ -3,12 +3,9 @@ import type {
   GalgameStoryCharacterTransition,
 } from "@features/galgame-workshop/api";
 import {
-  CHARACTER_POSITION_MAX,
-  CHARACTER_POSITION_MIN,
   characterTransform,
   characterTransition,
 } from "@features/galgame-workshop/editor/stage";
-import { CustomSelect } from "@shared/ui/CustomSelect";
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(Math.max(value, min), max);
@@ -67,9 +64,6 @@ export function CharacterTransformFields({
 }) {
   const value = characterTransform(transform);
   const fields = [
-    ["x", "X 位置", CHARACTER_POSITION_MIN, CHARACTER_POSITION_MAX, 1, "%"],
-    ["y", "Y 位置", CHARACTER_POSITION_MIN, CHARACTER_POSITION_MAX, 1, "%"],
-    ["scale", "比例", 0.25, 3, 0.05, "×"],
     ["brightness", "亮度", 0, 2, 0.05, "×"],
     ["opacity", "透明度", 0, 1, 0.05, ""],
     ["layer", "层级", 0, 20, 1, ""],
@@ -77,39 +71,9 @@ export function CharacterTransformFields({
 
   return (
     <div className="galgame-character-transform-fields">
-      <div className="galgame-position-presets" aria-label="角色站位预设">
-        {[
-          ["左", 25],
-          ["中", 50],
-          ["右", 75],
-        ].map(([label, x]) => (
-          <button
-            key={label}
-            type="button"
-            onClick={() => onTransform({ ...value, x: Number(x), y: 100 })}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
-      <label className="galgame-stage-field">
-        <span>图片锚点</span>
-        <CustomSelect
-          ariaLabel="角色图片锚点"
-          value={value.anchor}
-          onChange={(anchor) =>
-            onTransform({
-              ...value,
-              anchor: anchor as GalgameStoryCharacterTransform["anchor"],
-            })
-          }
-          options={[
-            { value: "center", label: "居中" },
-            { value: "topLeft", label: "左上" },
-            { value: "bottomCenter", label: "底部居中（兼容）" },
-          ]}
-        />
-      </label>
+      <p className="galgame-field-hint">
+        角色距离与位置在对白卡片中选择；坐标、锚点和基准尺寸遵循角色资产的“位置与尺寸”配置。
+      </p>
       {fields.map(([key, label, min, max, step, suffix]) => (
         <label key={key} className="galgame-stage-range">
           <span>

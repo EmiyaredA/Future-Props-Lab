@@ -1,4 +1,11 @@
-import { useEffect, useId, useRef, useState, type ReactNode } from "react";
+import {
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  type KeyboardEvent,
+  type ReactNode,
+} from "react";
 import "@shared/ui/custom-select.css";
 
 export type SelectOption = {
@@ -40,31 +47,129 @@ export function CustomSelect({
   showChevron?: boolean;
 }) {
   const [open, setOpen] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(-1);
   const root = useRef<HTMLDivElement>(null);
+  const trigger = useRef<HTMLButtonElement>(null);
+  const optionRefs = useRef<Array<HTMLButtonElement | null>>([]);
   const listId = useId();
   const selected = options.find((option) => option.value === value);
 
+  const firstEnabledIndex = () =>
+    options.findIndex((option) => !option.disabled);
+  const lastEnabledIndex = () => {
+    for (let index = options.length - 1; index >= 0; index -= 1) {
+      if (!options[index]?.disabled) return index;
+    }
+    return -1;
+  };
+  const selectedIndex = options.findIndex(
+    (option) => option.value === value && !option.disabled,
+  );
+
+  const openMenu = (preferredIndex = selectedIndex) => {
+    const nextIndex =
+      preferredIndex >= 0 ? preferredIndex : firstEnabledIndex();
+    setActiveIndex(nextIndex);
+    setOpen(true);
+  };
+
+  const closeMenu = (restoreFocus = false) => {
+    setOpen(false);
+    setActiveIndex(-1);
+    if (restoreFocus) trigger.current?.focus();
+  };
+
+  const moveActive = (direction: 1 | -1) => {
+    if (!options.length) return;
+    let next = activeIndex;
+    for (let attempt = 0; attempt < options.length; attempt += 1) {
+      next = (next + direction + options.length) % options.length;
+      if (!options[next]?.disabled) {
+        setActiveIndex(next);
+        return;
+      }
+    }
+  };
+
+  const choose = (index: number) => {
+    const option = options[index];
+    if (!option || option.disabled) return;
+    onChange(option.value);
+    closeMenu(true);
+  };
+
+  const handleListKeyDown = (event: KeyboardEvent) => {
+    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+      event.preventDefault();
+      moveActive(event.key === "ArrowDown" ? 1 : -1);
+    } else if (event.key === "Home" || event.key === "End") {
+      event.preventDefault();
+      setActiveIndex(
+        event.key === "Home" ? firstEnabledIndex() : lastEnabledIndex(),
+      );
+    } else if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      choose(activeIndex);
+    } else if (event.key === "Escape") {
+      event.preventDefault();
+      closeMenu(true);
+    }
+  };
+
   useEffect(() => {
     const close = (event: MouseEvent) => {
-      if (!root.current?.contains(event.target as Node)) setOpen(false);
+      if (!root.current?.contains(event.target as Node)) {
+        setOpen(false);
+        setActiveIndex(-1);
+      }
     };
     document.addEventListener("mousedown", close);
     return () => document.removeEventListener("mousedown", close);
   }, []);
 
+  useEffect(() => {
+    if (open && activeIndex >= 0) optionRefs.current[activeIndex]?.focus();
+  }, [activeIndex, open]);
+
   return (
     <div className={`custom-select ${className}`} ref={root}>
       <button
+        ref={trigger}
         type="button"
+        role="combobox"
         className="custom-select-trigger"
         aria-label={ariaLabel}
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-controls={listId}
         disabled={disabled}
-        onClick={() => setOpen((current) => !current)}
+        aria-activedescendant={
+          open && activeIndex >= 0
+            ? `${listId}-option-${activeIndex}`
+            : undefined
+        }
+        onClick={() => (open ? closeMenu() : openMenu())}
         onKeyDown={(event) => {
-          if (event.key === "Escape") setOpen(false);
+          if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+            event.preventDefault();
+            const boundary =
+              event.key === "ArrowDown"
+                ? firstEnabledIndex()
+                : lastEnabledIndex();
+            openMenu(selectedIndex >= 0 ? selectedIndex : boundary);
+          } else if (event.key === "Home" || event.key === "End") {
+            event.preventDefault();
+            openMenu(
+              event.key === "Home" ? firstEnabledIndex() : lastEnabledIndex(),
+            );
+          } else if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            if (open) choose(activeIndex);
+            else openMenu();
+          } else if (event.key === "Escape" && open) {
+            event.preventDefault();
+            closeMenu(true);
+          }
         }}
       >
         <span className="custom-select-trigger-content">
@@ -74,18 +179,33 @@ export function CustomSelect({
         {showChevron ? <Chevron open={open} /> : null}
       </button>
       {open ? (
-        <div className="custom-select-menu" id={listId} role="listbox">
-          {options.map((option) => (
+        <div
+          className="custom-select-menu"
+          id={listId}
+          role="listbox"
+          aria-label={ariaLabel}
+          onKeyDown={handleListKeyDown}
+        >
+          {options.map((option, index) => (
             <button
+              ref={(node) => {
+                optionRefs.current[index] = node;
+              }}
+              id={`${listId}-option-${index}`}
               type="button"
               role="option"
               aria-selected={option.value === value}
-              className={option.value === value ? "selected" : ""}
+              className={
+                option.value === value || index === activeIndex
+                  ? "selected"
+                  : ""
+              }
               disabled={option.disabled}
+              tabIndex={-1}
               key={option.value}
-              onClick={() => {
-                onChange(option.value);
-                setOpen(false);
+              onClick={() => choose(index)}
+              onMouseEnter={() => {
+                if (!option.disabled) setActiveIndex(index);
               }}
             >
               <span>{option.label}</span>

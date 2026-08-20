@@ -4,15 +4,20 @@ import type {
   GalgameStoryProject,
   GeneratedGalgameStoryProject,
 } from "./types";
+import {
+  normalizeStoryDocument,
+  normalizeStoryProject,
+} from "./storyNormalization";
 
 export async function getGalgameStoryDocument(
   projectId: string,
 ): Promise<GalgameStoryDocument> {
-  return (await unwrap(
+  const response = await unwrap(
     await api.GET("/v1/galgame-workshop/projects/{project_id}/story", {
       params: { path: { project_id: projectId } },
     }),
-  )) as GalgameStoryDocument;
+  );
+  return normalizeStoryDocument(response);
 }
 
 export async function putGalgameStoryDocument(
@@ -20,21 +25,16 @@ export async function putGalgameStoryDocument(
   document: GalgameStoryProject,
   expectedRevision: number,
 ) {
-  const requestDocument = {
-    ...document,
-    characters: (document.characters ?? []).map((character, index) => ({
-      ...character,
-      themeColor:
-        character.themeColor ??
-        ["#E75B55", "#4AA3DF", "#46B978", "#A56DE2"][index % 4],
-    })),
-  } as GeneratedGalgameStoryProject;
-  return (await unwrap(
+  const requestDocument = normalizeStoryProject(
+    document,
+  ) satisfies GeneratedGalgameStoryProject;
+  const response = await unwrap(
     await api.PUT("/v1/galgame-workshop/projects/{project_id}/story", {
       params: { path: { project_id: projectId } },
       body: { document: requestDocument, expected_revision: expectedRevision },
     }),
-  )) as GalgameStoryDocument;
+  );
+  return normalizeStoryDocument(response);
 }
 
 export async function getGalgameStoryReport(projectId: string) {
@@ -58,7 +58,7 @@ export async function applyGalgamePortraitUpgrade(
   projectId: string,
   expectedStoryRevision: number,
 ) {
-  return (await unwrap(
+  const response = await unwrap(
     await api.POST(
       "/v1/galgame-workshop/projects/{project_id}/story/portrait-upgrade",
       {
@@ -66,7 +66,8 @@ export async function applyGalgamePortraitUpgrade(
         body: { expectedStoryRevision },
       },
     ),
-  )) as GalgameStoryDocument;
+  );
+  return normalizeStoryDocument(response);
 }
 
 export async function listGalgamePortraitSnapshots(projectId: string) {
@@ -83,7 +84,7 @@ export async function restoreGalgamePortraitSnapshot(
   snapshotId: string,
   expectedStoryRevision: number,
 ) {
-  return (await unwrap(
+  const response = await unwrap(
     await api.POST(
       "/v1/galgame-workshop/projects/{project_id}/story/snapshots/{snapshot_id}/restore",
       {
@@ -93,5 +94,6 @@ export async function restoreGalgamePortraitSnapshot(
         body: { expectedStoryRevision },
       },
     ),
-  )) as GalgameStoryDocument;
+  );
+  return normalizeStoryDocument(response);
 }

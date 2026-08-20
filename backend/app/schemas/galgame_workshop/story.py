@@ -129,19 +129,21 @@ class GalgameStoryProject(GalgameStoryModel):
             legacy_y = character_stage.pop("anchorY", 100 if has_legacy_positions else 50)
             character_stage.pop("anchorX", None)
             position_defaults = (
+                ("position-outer-left", "极左", None, 12),
                 ("position-left", "左", "left", 25),
                 ("position-center-left", "中左", "centerLeft", 37.5),
                 ("position-center", "中", "center", 50),
                 ("position-center-right", "中右", "centerRight", 62.5),
                 ("position-right", "右", "right", 75),
+                ("position-outer-right", "极右", None, 88),
             )
             character_stage["positionPresets"] = [
                 {
                     "id": preset_id,
                     "name": name,
-                    "x": legacy_positions.get(key, default_x),
+                    "x": legacy_positions.get(key, default_x) if key else default_x,
                     "y": legacy_y,
-                    "builtinKey": key,
+                    **({"builtinKey": key} if key else {}),
                 }
                 for preset_id, name, key, default_x in position_defaults
             ]

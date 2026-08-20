@@ -337,12 +337,14 @@ class VisualAssets:
         if project_id:
             await self._project(project_id)
         await self._validate_folder_scope(folder_id, project_id)
-        scope_condition = (
-            VisualAsset.project_id == project_id
+        conditions = (
+            [VisualAsset.project_id == project_id]
             if project_id is not None
-            else VisualAsset.project_id.is_(None)
+            else [
+                VisualAsset.project_id.is_(None),
+                VisualAsset.galgame_project_id.is_(None),
+            ]
         )
-        conditions = [scope_condition]
         conditions.append(
             VisualAsset.folder_id == folder_id
             if folder_id is not None

@@ -11,13 +11,9 @@ import {
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AlertTriangle,
-  Boxes,
   ChevronDown,
   ChevronRight,
   ChevronUp,
-  CircleDot,
-  File,
-  FileImage,
   FileText,
   Film,
   Folder,
@@ -26,21 +22,15 @@ import {
   Layers3,
   List,
   LocateFixed,
-  Music2,
   PanelLeftOpen,
   Plus,
   RefreshCcw,
   Search,
-  Sparkles,
   Trash2,
-  Type,
   Upload,
-  Volume2,
-  WandSparkles,
   X,
-  type LucideIcon,
 } from "lucide-react";
-import { ApiError, fetchApiBlob } from "@platform/api/client";
+import { fetchApiBlob } from "@platform/api/client";
 import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
 import { CustomSelect } from "@shared/ui/CustomSelect";
 import {
@@ -53,184 +43,36 @@ import {
   previewGalgameAssetImport,
   scanGalgameAssetMetadata,
   type GalgameAssetCategory,
-  type GalgameAssetOverview,
   type GalgameProjectAsset,
   type GalgameStoryProject,
 } from "@features/galgame-workshop/api";
 import { StoryAssetImage } from "@features/galgame-workshop/editor/StoryAssetImage";
 import { StoryAudioPreview } from "@features/galgame-workshop/editor/StoryAudioPreview";
 
-type AssetItem = GalgameAssetOverview["items"][number];
-type AssetDisplayKind =
-  | "image"
-  | "audio"
-  | "video"
-  | "font"
-  | "particle"
-  | "ui"
-  | "transition"
-  | "other";
-type AssetStatus = "all" | "referenced" | "orphaned" | "include" | "exclude";
-type AssetSelection =
-  { kind: "asset"; id: string } | { kind: "missing"; id: string };
-
-const SUMMARY_HEIGHT_KEY = "future_props_galgame_asset_summary_height";
-const MIN_SUMMARY_HEIGHT = 180;
-const MIN_BROWSER_HEIGHT = 180;
-const SUMMARY_RESIZER_HEIGHT = 8;
-const ASSET_TOOLBAR_HEIGHT = 46;
-
-function loadSummaryHeight() {
-  try {
-    const stored = Number(localStorage.getItem(SUMMARY_HEIGHT_KEY));
-    return Number.isFinite(stored) && stored >= MIN_SUMMARY_HEIGHT
-      ? stored
-      : null;
-  } catch {
-    return null;
-  }
-}
-
-interface DirectoryNode {
-  name: string;
-  path: string;
-  count: number;
-  children: DirectoryNode[];
-}
-
-const CATEGORY_OPTIONS: Array<{ value: GalgameAssetCategory; label: string }> =
-  [
-    { value: "character", label: "角色" },
-    { value: "scene", label: "场景" },
-    { value: "cg", label: "剧情 CG" },
-    { value: "bgm", label: "BGM" },
-    { value: "ambient", label: "环境音" },
-    { value: "sfx", label: "音效" },
-    { value: "voice", label: "语音" },
-    { value: "video", label: "视频" },
-    { value: "font", label: "字体" },
-    { value: "other", label: "其他" },
-  ];
-
-const KIND_META: Record<
-  AssetDisplayKind,
-  { label: string; icon: LucideIcon; className: string }
-> = {
-  image: { label: "图片", icon: FileImage, className: "is-image" },
-  audio: { label: "音频", icon: Music2, className: "is-audio" },
-  video: { label: "视频", icon: Film, className: "is-video" },
-  font: { label: "字体", icon: Type, className: "is-font" },
-  particle: { label: "粒子", icon: Sparkles, className: "is-particle" },
-  ui: { label: "界面", icon: Grid2X2, className: "is-ui" },
-  transition: {
-    label: "过渡图",
-    icon: Layers3,
-    className: "is-transition",
-  },
-  other: { label: "其他", icon: File, className: "is-other" },
-};
-
-const STATUS_OPTIONS: Array<{
-  value: AssetStatus;
-  label: string;
-  icon: LucideIcon;
-}> = [
-  { value: "all", label: "全部", icon: Grid2X2 },
-  { value: "referenced", label: "已引用", icon: CircleDot },
-  { value: "orphaned", label: "游离", icon: CircleDot },
-  { value: "include", label: "强制打包", icon: CircleDot },
-  { value: "exclude", label: "强制排除", icon: CircleDot },
-];
-
-const MODULES: Array<{
-  label: string;
-  categories: GalgameAssetCategory[];
-  icon: LucideIcon;
-}> = [
-  { label: "角色", categories: ["character"], icon: Boxes },
-  { label: "场景", categories: ["scene"], icon: FileImage },
-  { label: "CG", categories: ["cg"], icon: Layers3 },
-  { label: "BGM", categories: ["bgm"], icon: Music2 },
-  { label: "音效", categories: ["ambient", "sfx"], icon: Volume2 },
-  { label: "语音", categories: ["voice"], icon: WandSparkles },
-  { label: "视频", categories: ["video"], icon: Film },
-];
-
-function bytes(value: number) {
-  if (value < 1024) return `${value} B`;
-  if (value < 1024 ** 2) return `${(value / 1024).toFixed(1)} KB`;
-  return `${(value / 1024 ** 2).toFixed(1)} MB`;
-}
-
-function duration(value?: number | null) {
-  if (!value) return "—";
-  const seconds = Math.round(value / 1000);
-  return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
-}
-
-function cleanPath(value?: string | null) {
-  return (value ?? "")
-    .replace(/^\/+/, "")
-    .replace(/^assets\//i, "")
-    .replace(/\/{2,}/g, "/");
-}
-
-function displayKind(item: AssetItem): AssetDisplayKind {
-  const root = cleanPath(item.virtualPath).split("/")[0]?.toLowerCase();
-  if (root === "particles") return "particle";
-  if (root === "ui") return "ui";
-  if (root === "transitions") return "transition";
-  if (item.media_kind === "image") return "image";
-  if (item.media_kind === "audio") return "audio";
-  if (item.media_kind === "video") return "video";
-  if (item.media_kind === "font") return "font";
-  return "other";
-}
-
-function directoryTree(items: AssetItem[]): DirectoryNode {
-  const root: DirectoryNode = {
-    name: "assets",
-    path: "",
-    count: items.length,
-    children: [],
-  };
-  for (const item of items) {
-    const parts = cleanPath(item.virtualPath).split("/").filter(Boolean);
-    parts.pop();
-    let parent = root;
-    let path = "";
-    for (const part of parts) {
-      path = path ? `${path}/${part}` : part;
-      let node = parent.children.find((candidate) => candidate.name === part);
-      if (!node) {
-        node = { name: part, path, count: 0, children: [] };
-        parent.children.push(node);
-      }
-      node.count += 1;
-      parent = node;
-    }
-  }
-  const sort = (node: DirectoryNode) => {
-    node.children.sort((a, b) => a.name.localeCompare(b.name, "zh-CN"));
-    node.children.forEach(sort);
-  };
-  sort(root);
-  return root;
-}
-
-function matchesStatus(item: AssetItem, status: AssetStatus) {
-  if (status === "referenced") return item.reference_count > 0;
-  if (status === "orphaned") return item.orphaned;
-  if (status === "include") return item.packagingPolicy === "include";
-  if (status === "exclude") return item.packagingPolicy === "exclude";
-  return true;
-}
-
-function assetError(error: unknown) {
-  if (error instanceof ApiError && error.status === 409)
-    return "素材已在其他操作中更新，已重新载入最新数据。";
-  return error instanceof Error ? error.message : "操作失败，请稍后重试。";
-}
+import {
+  ASSET_TOOLBAR_HEIGHT,
+  CATEGORY_OPTIONS,
+  KIND_META,
+  MIN_BROWSER_HEIGHT,
+  MIN_SUMMARY_HEIGHT,
+  MODULES,
+  STATUS_OPTIONS,
+  SUMMARY_HEIGHT_KEY,
+  SUMMARY_RESIZER_HEIGHT,
+  assetError,
+  bytes,
+  cleanPath,
+  directoryTree,
+  displayKind,
+  duration,
+  loadSummaryHeight,
+  matchesStatus,
+  type AssetDisplayKind,
+  type AssetItem,
+  type AssetSelection,
+  type AssetStatus,
+  type DirectoryNode,
+} from "@features/galgame-workshop/editor/assetOverviewModel";
 
 function VideoPreview({ fileId, label }: { fileId: string; label: string }) {
   const [url, setUrl] = useState("");
@@ -543,6 +385,7 @@ export function AssetOverviewWorkspace({
           audio: 0,
           video: 0,
           font: 0,
+          document: 0,
           particle: 0,
           ui: 0,
           transition: 0,
@@ -1497,7 +1340,7 @@ export function AssetOverviewWorkspace({
                   ? `已选择 ${importFiles.length} 个文件`
                   : "选择要导入的资源"}
               </strong>
-              <span>支持一次选择多个图片、音频、视频或字体文件。</span>
+              <span>支持一次选择多个图片、音频、视频、字体或文档文件。</span>
               <input
                 ref={fileInput}
                 type="file"

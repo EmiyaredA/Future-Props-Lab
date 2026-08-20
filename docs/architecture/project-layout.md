@@ -5,10 +5,12 @@
 
 ```text
 Future-Props-Lab/
+├── .github/workflows/ # 冻结依赖的 Python/Web 质量检查与 Chromium E2E
 ├── backend/app/
 │   ├── main.py        # FastAPI 装配、生命周期与健康探针
 │   ├── deps.py        # 请求级会话和 Studio 鉴权依赖
 │   ├── problem_details.py # 统一协议错误映射
+│   ├── accounts/      # 账号、Session、审计、API Key、Workspace 与公开投影
 │   ├── concurrency/   # revision/CAS 并发语义
 │   ├── core/          # 配置、数据库、时间与密钥基础设施
 │   ├── files/         # 文件策略、落盘、公共库、项目引用与旧布局迁移
@@ -29,16 +31,21 @@ Future-Props-Lab/
 │   ├── docs/          # 数据驱动的双工坊使用指南、搜索、目录与深链接
 │   ├── features/      # 首页、AI 应用、文件管理、视觉工坊、Galgame 工坊、工具导航与模型功能
 │   ├── generated/     # OpenAPI 生成物
-│   ├── platform/      # API 与管理令牌基础设施
+│   ├── platform/      # Cookie/CSRF、API 客户端与认证事件基础设施
 │   └── shared/        # 品牌与主题 UI
 ├── web/public/docs/   # 文档中心使用的当前真实界面截图
 ├── web/tests/         # Web 组件测试
 ├── web/e2e/           # Playwright 浏览器旅程
 │   └── fixtures/      # 人物旅程的确定性 API mock 与测试数据；真实烟测不使用
 ├── tests/             # 后端单元、API、存储与架构测试
-├── scripts/           # OpenAPI 契约导出
+├── scripts/           # OpenAPI 导出、离线账号命令与 E2E 账号引导
+├── docs/operations/   # 故障排查、备份与恢复说明
+├── CONTRIBUTING.md    # 开发流程、边界、测试矩阵与交付检查表
+├── CHANGELOG.md       # 交付批次的用户可见变化与工程治理记录
 ├── .runtime/          # 本机 SQLite 与运行期素材（已忽略，不提交）
-└── .scratch/          # 本地临时分镜、场景图与工作草稿（已忽略，不提交）
+├── .scratch/          # 本地临时分镜、场景图与工作草稿（已忽略，不提交）
+├── output/            # 本地导出结果（已忽略，不提交）
+└── tmp/               # 本地临时处理目录（已忽略，不提交）
 ```
 
 ## 目录与依赖边界
@@ -69,12 +76,20 @@ Future-Props-Lab/
 - `web/src/docs/` 是独立文档入口的数据与展示边界，按页面和章节驱动视觉创作工坊、Galgame
   工坊指南，负责本地全文搜索、`docs.html?page=...#section` 深链接、响应式导航和主题；配套截图只
   存放于 `web/public/docs/`，不作为产品状态或测试数据源。
+- `.github/workflows/` 使用锁文件安装依赖：后端验证 Python 3.11 与 3.14，Web 使用 Node.js 24，
+  Chromium E2E 使用隔离临时数据库和确定性 fixture，不携带真实供应商凭证。
 - 根 `/health`、`/ready` 是无版本探针，其他业务路由由统一的 `/v1` router 注册。
+- `accounts/` 负责账号与 Workspace 用例；请求通过 Cookie Session 或绑定单一 Workspace 的
+  Management API Key 生成 `StudioPrincipal`。业务模块只从 Principal 取得当前 Workspace，
+  平台管理员切换到其他空间时也不会自动创建成员关系。
 
 ## 数据与运行边界
 
 数据库是仓库根目录 `.runtime/future-props.db` 下的单机 SQLite 文件，也是项目状态唯一真源。
-公共文件保存在 `library/assets/`；视觉项目使用
+部署仍是单进程、单 SQLite，但账号之间按 `workspace_id` 做逻辑隔离。历史 `default` Workspace
+继续读取原有目录；其他 Workspace 的新文件保存在
+`workspaces/<workspace-id>/` 下，个人头像位于 `profiles/<user-id>/`。历史公共文件保存在
+`library/assets/`；视觉项目使用
 `applications/visual-workshop/projects/<project-id>/{assets,generated}/`；Galgame 项目使用
 `applications/galgame-workshop/projects/<project-id>/{assets,derived,exports}/`。项目目录只保存素材、
 派生文件和导出快照，标题变化不改变目录。模型测试对话图片保存在 `model-test/attachments/`，生成参考
@@ -98,8 +113,9 @@ Agent 是通用 Harness 的首个消费者：读取画布、素材和生成任�
 写工具复用视觉工坊校验与短事务，批量节点变更只执行一次画布 CAS，生成任务与占位节点原子创建，
 且不与 `model_test_*` 数据混用。
 
-模型测试对话、图片附件及生成结果是独立的单机调试数据，不进入视觉工坊文件管理，也不参与 Bot 或业务编排。当前工程也刻意不包含 Bot 会话、
-知识库、实时语音、浏览器扩展、多租户和用户权限表。
+模型测试对话、图片附件及生成结果是独立的 Workspace 调试数据，不进入视觉工坊文件管理，也不参与
+Bot 或业务编排。当前工程包含单机账号和逻辑多 Workspace，但仍刻意不包含 Bot 会话、知识库、
+实时语音、浏览器扩展或多实例租户部署。
 
 ## 按需扩展
 

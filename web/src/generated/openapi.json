@@ -1,6 +1,436 @@
 {
   "components": {
     "schemas": {
+      "AccountAvatarDeleteIn": {
+        "properties": {
+          "expected_revision": {
+            "minimum": 0.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "expected_revision"
+        ],
+        "title": "AccountAvatarDeleteIn",
+        "type": "object"
+      },
+      "AccountCreateIn": {
+        "properties": {
+          "display_name": {
+            "default": "",
+            "title": "Display Name",
+            "type": "string"
+          },
+          "username": {
+            "title": "Username",
+            "type": "string"
+          }
+        },
+        "required": [
+          "username"
+        ],
+        "title": "AccountCreateIn",
+        "type": "object"
+      },
+      "AccountCreatedOut": {
+        "properties": {
+          "account": {
+            "$ref": "#/components/schemas/AccountOut"
+          },
+          "temporary_password": {
+            "title": "Temporary Password",
+            "type": "string"
+          }
+        },
+        "required": [
+          "account",
+          "temporary_password"
+        ],
+        "title": "AccountCreatedOut",
+        "type": "object"
+      },
+      "AccountListOut": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/AccountOut"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total"
+        ],
+        "title": "AccountListOut",
+        "type": "object"
+      },
+      "AccountOut": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "display_name": {
+            "title": "Display Name",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "is_platform_admin": {
+            "title": "Is Platform Admin",
+            "type": "boolean"
+          },
+          "last_login_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Login At"
+          },
+          "must_change_password": {
+            "title": "Must Change Password",
+            "type": "boolean"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          },
+          "status": {
+            "enum": [
+              "active",
+              "disabled"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "username": {
+            "title": "Username",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "username",
+          "display_name",
+          "status",
+          "is_platform_admin",
+          "must_change_password",
+          "revision",
+          "last_login_at",
+          "created_at"
+        ],
+        "title": "AccountOut",
+        "type": "object"
+      },
+      "AccountPatchIn": {
+        "properties": {
+          "expected_revision": {
+            "minimum": 0.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "status": {
+            "enum": [
+              "active",
+              "disabled"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "expected_revision"
+        ],
+        "title": "AccountPatchIn",
+        "type": "object"
+      },
+      "AccountProfilePatchIn": {
+        "properties": {
+          "display_name": {
+            "anyOf": [
+              {
+                "maxLength": 120,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Display Name"
+          },
+          "email": {
+            "anyOf": [
+              {
+                "maxLength": 254,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email"
+          },
+          "expected_revision": {
+            "minimum": 0.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "expected_revision"
+        ],
+        "title": "AccountProfilePatchIn",
+        "type": "object"
+      },
+      "AccountSessionListOut": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/AccountSessionOut"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total"
+        ],
+        "title": "AccountSessionListOut",
+        "type": "object"
+      },
+      "AccountSessionOut": {
+        "properties": {
+          "absolute_expires_at": {
+            "format": "date-time",
+            "title": "Absolute Expires At",
+            "type": "string"
+          },
+          "client_ip": {
+            "title": "Client Ip",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "idle_expires_at": {
+            "format": "date-time",
+            "title": "Idle Expires At",
+            "type": "string"
+          },
+          "is_current": {
+            "title": "Is Current",
+            "type": "boolean"
+          },
+          "last_seen_at": {
+            "format": "date-time",
+            "title": "Last Seen At",
+            "type": "string"
+          },
+          "user_agent": {
+            "title": "User Agent",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "created_at",
+          "last_seen_at",
+          "idle_expires_at",
+          "absolute_expires_at",
+          "client_ip",
+          "user_agent",
+          "is_current"
+        ],
+        "title": "AccountSessionOut",
+        "type": "object"
+      },
+      "ApiKeyCreateIn": {
+        "properties": {
+          "expires_in_days": {
+            "default": 90,
+            "maximum": 365.0,
+            "minimum": 1.0,
+            "title": "Expires In Days",
+            "type": "integer"
+          },
+          "name": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "scopes": {
+            "items": {
+              "enum": [
+                "studio:read",
+                "studio:write"
+              ],
+              "type": "string"
+            },
+            "title": "Scopes",
+            "type": "array"
+          }
+        },
+        "required": [
+          "name",
+          "scopes"
+        ],
+        "title": "ApiKeyCreateIn",
+        "type": "object"
+      },
+      "ApiKeyCreatedOut": {
+        "properties": {
+          "api_key": {
+            "$ref": "#/components/schemas/ApiKeyOut"
+          },
+          "secret": {
+            "title": "Secret",
+            "type": "string"
+          }
+        },
+        "required": [
+          "api_key",
+          "secret"
+        ],
+        "title": "ApiKeyCreatedOut",
+        "type": "object"
+      },
+      "ApiKeyOut": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "expires_at": {
+            "format": "date-time",
+            "title": "Expires At",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "key_prefix": {
+            "title": "Key Prefix",
+            "type": "string"
+          },
+          "last_used_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Used At"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          },
+          "revoked_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Revoked At"
+          },
+          "scopes": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Scopes",
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "key_prefix",
+          "scopes",
+          "expires_at",
+          "last_used_at",
+          "revoked_at",
+          "revision",
+          "created_at"
+        ],
+        "title": "ApiKeyOut",
+        "type": "object"
+      },
+      "AuthMeOut": {
+        "properties": {
+          "must_change_password": {
+            "title": "Must Change Password",
+            "type": "boolean"
+          },
+          "session_expires_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Session Expires At"
+          },
+          "user": {
+            "$ref": "#/components/schemas/CurrentUserOut"
+          },
+          "workspace": {
+            "$ref": "#/components/schemas/WorkspaceOut"
+          }
+        },
+        "required": [
+          "user",
+          "workspace",
+          "must_change_password",
+          "session_expires_at"
+        ],
+        "title": "AuthMeOut",
+        "type": "object"
+      },
       "BatchDeleteIn": {
         "properties": {
           "ids": {
@@ -47,6 +477,26 @@
           "category"
         ],
         "title": "Body_batch_upload_project_assets_v1_galgame_workshop_projects__project_id__assets_batch_post",
+        "type": "object"
+      },
+      "Body_put_avatar_v1_account_profile_avatar_put": {
+        "properties": {
+          "expected_revision": {
+            "minimum": 0.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "file": {
+            "contentMediaType": "application/octet-stream",
+            "title": "File",
+            "type": "string"
+          }
+        },
+        "required": [
+          "file",
+          "expected_revision"
+        ],
+        "title": "Body_put_avatar_v1_account_profile_avatar_put",
         "type": "object"
       },
       "Body_upload_attachments_v1_model_test_conversations__conversation_id__attachments_post": {
@@ -383,6 +833,81 @@
         "title": "CallLogStatsOut",
         "type": "object"
       },
+      "ChangePasswordIn": {
+        "properties": {
+          "current_password": {
+            "title": "Current Password",
+            "type": "string"
+          },
+          "new_password": {
+            "title": "New Password",
+            "type": "string"
+          }
+        },
+        "required": [
+          "current_password",
+          "new_password"
+        ],
+        "title": "ChangePasswordIn",
+        "type": "object"
+      },
+      "CurrentUserOut": {
+        "properties": {
+          "avatar_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avatar Url"
+          },
+          "display_name": {
+            "title": "Display Name",
+            "type": "string"
+          },
+          "email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "is_platform_admin": {
+            "title": "Is Platform Admin",
+            "type": "boolean"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          },
+          "username": {
+            "title": "Username",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "username",
+          "display_name",
+          "email",
+          "avatar_url",
+          "is_platform_admin",
+          "revision"
+        ],
+        "title": "CurrentUserOut",
+        "type": "object"
+      },
       "DeleteMutationOut": {
         "properties": {
           "deleted": {
@@ -687,7 +1212,8 @@
               "image",
               "audio",
               "video",
-              "font"
+              "font",
+              "document"
             ],
             "title": "Media Kind",
             "type": "string"
@@ -1338,7 +1864,8 @@
               "image",
               "audio",
               "video",
-              "font"
+              "font",
+              "document"
             ],
             "title": "Media Kind",
             "type": "string"
@@ -3165,6 +3692,16 @@
       "GalgameStoryDialoguePortrait": {
         "additionalProperties": false,
         "properties": {
+          "distance": {
+            "default": "medium",
+            "enum": [
+              "far",
+              "medium",
+              "near"
+            ],
+            "title": "Distance",
+            "type": "string"
+          },
           "keepAfter": {
             "default": true,
             "title": "Keepafter",
@@ -3179,6 +3716,18 @@
             ],
             "title": "Mode",
             "type": "string"
+          },
+          "positionId": {
+            "anyOf": [
+              {
+                "pattern": "^[a-z0-9][a-z0-9-]{0,63}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Positionid"
           },
           "skinId": {
             "anyOf": [
@@ -5383,6 +5932,16 @@
             "title": "Characterid",
             "type": "string"
           },
+          "distance": {
+            "default": "medium",
+            "enum": [
+              "far",
+              "medium",
+              "near"
+            ],
+            "title": "Distance",
+            "type": "string"
+          },
           "expressionId": {
             "anyOf": [
               {
@@ -5399,6 +5958,18 @@
             "pattern": "^[a-z0-9][a-z0-9-]{0,63}$",
             "title": "Id",
             "type": "string"
+          },
+          "positionId": {
+            "anyOf": [
+              {
+                "pattern": "^[a-z0-9][a-z0-9-]{0,63}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Positionid"
           },
           "transform": {
             "$ref": "#/components/schemas/GalgameStoryCharacterTransform"
@@ -7096,6 +7667,24 @@
         "title": "ImageGenerationTaskCreateIn",
         "type": "object"
       },
+      "LoginIn": {
+        "properties": {
+          "password": {
+            "title": "Password",
+            "type": "string"
+          },
+          "username": {
+            "title": "Username",
+            "type": "string"
+          }
+        },
+        "required": [
+          "username",
+          "password"
+        ],
+        "title": "LoginIn",
+        "type": "object"
+      },
       "ModelCatalogOut": {
         "properties": {
           "providers": {
@@ -8460,6 +9049,337 @@
         "title": "ProviderOut",
         "type": "object"
       },
+      "PublicAssetOut": {
+        "properties": {
+          "byte_size": {
+            "title": "Byte Size",
+            "type": "integer"
+          },
+          "display_name": {
+            "title": "Display Name",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "media_kind": {
+            "title": "Media Kind",
+            "type": "string"
+          },
+          "mime_type": {
+            "title": "Mime Type",
+            "type": "string"
+          },
+          "preview_url": {
+            "title": "Preview Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "display_name",
+          "media_kind",
+          "mime_type",
+          "byte_size",
+          "preview_url"
+        ],
+        "title": "PublicAssetOut",
+        "type": "object"
+      },
+      "PublicGalgameProjectOut": {
+        "properties": {
+          "assets": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/PublicAssetOut"
+            },
+            "title": "Assets",
+            "type": "array"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "status",
+          "updated_at"
+        ],
+        "title": "PublicGalgameProjectOut",
+        "type": "object"
+      },
+      "PublicGalgameStoryOut": {
+        "properties": {
+          "document": {
+            "additionalProperties": true,
+            "title": "Document",
+            "type": "object"
+          },
+          "project_id": {
+            "title": "Project Id",
+            "type": "string"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "project_id",
+          "revision",
+          "document"
+        ],
+        "title": "PublicGalgameStoryOut",
+        "type": "object"
+      },
+      "PublicVisualProjectOut": {
+        "properties": {
+          "assets": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/PublicAssetOut"
+            },
+            "title": "Assets",
+            "type": "array"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "kind",
+          "status",
+          "updated_at"
+        ],
+        "title": "PublicVisualProjectOut",
+        "type": "object"
+      },
+      "PublicWorkspaceProjectionOut": {
+        "properties": {
+          "galgame_projects": {
+            "items": {
+              "$ref": "#/components/schemas/PublicGalgameProjectOut"
+            },
+            "title": "Galgame Projects",
+            "type": "array"
+          },
+          "visual_projects": {
+            "items": {
+              "$ref": "#/components/schemas/PublicVisualProjectOut"
+            },
+            "title": "Visual Projects",
+            "type": "array"
+          },
+          "workspace_id": {
+            "title": "Workspace Id",
+            "type": "string"
+          },
+          "workspace_name": {
+            "title": "Workspace Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "workspace_id",
+          "workspace_name",
+          "visual_projects",
+          "galgame_projects"
+        ],
+        "title": "PublicWorkspaceProjectionOut",
+        "type": "object"
+      },
+      "ReauthIn": {
+        "properties": {
+          "password": {
+            "title": "Password",
+            "type": "string"
+          }
+        },
+        "required": [
+          "password"
+        ],
+        "title": "ReauthIn",
+        "type": "object"
+      },
+      "ResetPasswordOut": {
+        "properties": {
+          "account": {
+            "$ref": "#/components/schemas/AccountOut"
+          },
+          "temporary_password": {
+            "title": "Temporary Password",
+            "type": "string"
+          }
+        },
+        "required": [
+          "account",
+          "temporary_password"
+        ],
+        "title": "ResetPasswordOut",
+        "type": "object"
+      },
+      "RevokeApiKeyIn": {
+        "properties": {
+          "expected_revision": {
+            "minimum": 0.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "expected_revision"
+        ],
+        "title": "RevokeApiKeyIn",
+        "type": "object"
+      },
+      "SecurityAuditEventOut": {
+        "properties": {
+          "actor_username": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actor Username"
+          },
+          "client_ip": {
+            "title": "Client Ip",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "event_type": {
+            "title": "Event Type",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "metadata": {
+            "additionalProperties": true,
+            "title": "Metadata",
+            "type": "object"
+          },
+          "outcome": {
+            "title": "Outcome",
+            "type": "string"
+          },
+          "target_username": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Username"
+          },
+          "user_agent": {
+            "title": "User Agent",
+            "type": "string"
+          },
+          "workspace_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Workspace Id"
+          }
+        },
+        "required": [
+          "id",
+          "event_type",
+          "outcome",
+          "actor_username",
+          "target_username",
+          "workspace_id",
+          "client_ip",
+          "user_agent",
+          "metadata",
+          "created_at"
+        ],
+        "title": "SecurityAuditEventOut",
+        "type": "object"
+      },
+      "SecurityAuditListOut": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/SecurityAuditEventOut"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "page": {
+            "title": "Page",
+            "type": "integer"
+          },
+          "page_size": {
+            "title": "Page Size",
+            "type": "integer"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total",
+          "page",
+          "page_size"
+        ],
+        "title": "SecurityAuditListOut",
+        "type": "object"
+      },
       "StorageLayoutIssueOut": {
         "properties": {
           "asset_id": {
@@ -8596,19 +9516,6 @@
           "complete"
         ],
         "title": "StorageLayoutStatusOut",
-        "type": "object"
-      },
-      "StudioAuthStatus": {
-        "properties": {
-          "auth_required": {
-            "title": "Auth Required",
-            "type": "boolean"
-          }
-        },
-        "required": [
-          "auth_required"
-        ],
-        "title": "StudioAuthStatus",
         "type": "object"
       },
       "TestModelOut": {
@@ -10712,6 +11619,435 @@
         ],
         "title": "VisualWorkshopProjectPatchIn",
         "type": "object"
+      },
+      "WorkspaceInvitationActionIn": {
+        "properties": {
+          "expected_revision": {
+            "minimum": 0.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "expected_revision"
+        ],
+        "title": "WorkspaceInvitationActionIn",
+        "type": "object"
+      },
+      "WorkspaceInvitationCreateIn": {
+        "properties": {
+          "username": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Username",
+            "type": "string"
+          }
+        },
+        "required": [
+          "username"
+        ],
+        "title": "WorkspaceInvitationCreateIn",
+        "type": "object"
+      },
+      "WorkspaceInvitationListOut": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/WorkspaceInvitationOut"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total"
+        ],
+        "title": "WorkspaceInvitationListOut",
+        "type": "object"
+      },
+      "WorkspaceInvitationOut": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "expires_at": {
+            "format": "date-time",
+            "title": "Expires At",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "invitee_display_name": {
+            "title": "Invitee Display Name",
+            "type": "string"
+          },
+          "invitee_user_id": {
+            "title": "Invitee User Id",
+            "type": "string"
+          },
+          "invitee_username": {
+            "title": "Invitee Username",
+            "type": "string"
+          },
+          "inviter_username": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Inviter Username"
+          },
+          "responded_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Responded At"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          },
+          "status": {
+            "enum": [
+              "pending",
+              "accepted",
+              "declined",
+              "revoked",
+              "expired"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "workspace_id": {
+            "title": "Workspace Id",
+            "type": "string"
+          },
+          "workspace_name": {
+            "title": "Workspace Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "workspace_id",
+          "workspace_name",
+          "invitee_user_id",
+          "invitee_username",
+          "invitee_display_name",
+          "inviter_username",
+          "status",
+          "expires_at",
+          "responded_at",
+          "revision",
+          "created_at"
+        ],
+        "title": "WorkspaceInvitationOut",
+        "type": "object"
+      },
+      "WorkspaceListItem": {
+        "properties": {
+          "access_kind": {
+            "enum": [
+              "owner",
+              "member",
+              "platform_admin",
+              "public_viewer"
+            ],
+            "title": "Access Kind",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "owner_display_name": {
+            "title": "Owner Display Name",
+            "type": "string"
+          },
+          "owner_username": {
+            "title": "Owner Username",
+            "type": "string"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          },
+          "role": {
+            "anyOf": [
+              {
+                "enum": [
+                  "owner",
+                  "member"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Role"
+          },
+          "visibility": {
+            "enum": [
+              "private",
+              "public"
+            ],
+            "title": "Visibility",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "visibility",
+          "revision",
+          "access_kind",
+          "role",
+          "owner_username",
+          "owner_display_name"
+        ],
+        "title": "WorkspaceListItem",
+        "type": "object"
+      },
+      "WorkspaceListOut": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/WorkspaceListItem"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "page": {
+            "title": "Page",
+            "type": "integer"
+          },
+          "page_size": {
+            "title": "Page Size",
+            "type": "integer"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total",
+          "page",
+          "page_size"
+        ],
+        "title": "WorkspaceListOut",
+        "type": "object"
+      },
+      "WorkspaceMemberListOut": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/WorkspaceMemberOut"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total"
+        ],
+        "title": "WorkspaceMemberListOut",
+        "type": "object"
+      },
+      "WorkspaceMemberOut": {
+        "properties": {
+          "display_name": {
+            "title": "Display Name",
+            "type": "string"
+          },
+          "joined_at": {
+            "format": "date-time",
+            "title": "Joined At",
+            "type": "string"
+          },
+          "membership_id": {
+            "title": "Membership Id",
+            "type": "string"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          },
+          "role": {
+            "enum": [
+              "owner",
+              "member"
+            ],
+            "title": "Role",
+            "type": "string"
+          },
+          "user_id": {
+            "title": "User Id",
+            "type": "string"
+          },
+          "username": {
+            "title": "Username",
+            "type": "string"
+          }
+        },
+        "required": [
+          "membership_id",
+          "user_id",
+          "username",
+          "display_name",
+          "role",
+          "revision",
+          "joined_at"
+        ],
+        "title": "WorkspaceMemberOut",
+        "type": "object"
+      },
+      "WorkspaceMemberRemoveIn": {
+        "properties": {
+          "expected_revision": {
+            "minimum": 0.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "expected_revision"
+        ],
+        "title": "WorkspaceMemberRemoveIn",
+        "type": "object"
+      },
+      "WorkspaceOut": {
+        "properties": {
+          "access_kind": {
+            "enum": [
+              "owner",
+              "member",
+              "platform_admin",
+              "public_viewer"
+            ],
+            "title": "Access Kind",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          },
+          "role": {
+            "anyOf": [
+              {
+                "enum": [
+                  "owner",
+                  "member"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Role"
+          },
+          "visibility": {
+            "enum": [
+              "private",
+              "public"
+            ],
+            "title": "Visibility",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "visibility",
+          "revision",
+          "access_kind",
+          "role"
+        ],
+        "title": "WorkspaceOut",
+        "type": "object"
+      },
+      "WorkspacePatchIn": {
+        "properties": {
+          "expected_revision": {
+            "minimum": 0.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "name": {
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "visibility": {
+            "enum": [
+              "private",
+              "public"
+            ],
+            "title": "Visibility",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "visibility",
+          "expected_revision"
+        ],
+        "title": "WorkspacePatchIn",
+        "type": "object"
+      },
+      "WorkspaceSwitchIn": {
+        "properties": {
+          "workspace_id": {
+            "maxLength": 36,
+            "minLength": 1,
+            "title": "Workspace Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "workspace_id"
+        ],
+        "title": "WorkspaceSwitchIn",
+        "type": "object"
       }
     }
   },
@@ -10766,6 +12102,1002 @@
         "summary": "Ready"
       }
     },
+    "/v1/account/api-keys": {
+      "get": {
+        "operationId": "api_keys_v1_account_api_keys_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ApiKeyOut"
+                  },
+                  "title": "Response Api Keys V1 Account Api Keys Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Api Keys",
+        "tags": [
+          "accounts"
+        ]
+      },
+      "post": {
+        "operationId": "add_api_key_v1_account_api_keys_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApiKeyCreateIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiKeyCreatedOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Add Api Key",
+        "tags": [
+          "accounts"
+        ]
+      }
+    },
+    "/v1/account/api-keys/{key_id}/revoke": {
+      "post": {
+        "operationId": "remove_api_key_v1_account_api_keys__key_id__revoke_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "key_id",
+            "required": true,
+            "schema": {
+              "title": "Key Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RevokeApiKeyIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiKeyOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Remove Api Key",
+        "tags": [
+          "accounts"
+        ]
+      }
+    },
+    "/v1/account/profile": {
+      "get": {
+        "operationId": "get_profile_v1_account_profile_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CurrentUserOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Get Profile",
+        "tags": [
+          "accounts"
+        ]
+      },
+      "patch": {
+        "operationId": "patch_profile_v1_account_profile_patch",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AccountProfilePatchIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CurrentUserOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Patch Profile",
+        "tags": [
+          "accounts"
+        ]
+      }
+    },
+    "/v1/account/profile/avatar": {
+      "delete": {
+        "operationId": "remove_avatar_v1_account_profile_avatar_delete",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AccountAvatarDeleteIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CurrentUserOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Remove Avatar",
+        "tags": [
+          "accounts"
+        ]
+      },
+      "get": {
+        "operationId": "get_avatar_v1_account_profile_avatar_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Get Avatar",
+        "tags": [
+          "accounts"
+        ]
+      },
+      "put": {
+        "operationId": "put_avatar_v1_account_profile_avatar_put",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_put_avatar_v1_account_profile_avatar_put"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CurrentUserOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Put Avatar",
+        "tags": [
+          "accounts"
+        ]
+      }
+    },
+    "/v1/account/security-events": {
+      "get": {
+        "operationId": "own_audit_v1_account_security_events_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 1,
+              "minimum": 1,
+              "title": "Page",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page_size",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Page Size",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "event_type",
+            "required": false,
+            "schema": {
+              "default": "",
+              "maxLength": 64,
+              "title": "Event Type",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "outcome",
+            "required": false,
+            "schema": {
+              "default": "",
+              "maxLength": 16,
+              "title": "Outcome",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SecurityAuditListOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Own Audit",
+        "tags": [
+          "accounts"
+        ]
+      }
+    },
+    "/v1/account/sessions": {
+      "get": {
+        "operationId": "sessions_v1_account_sessions_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountSessionListOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Sessions",
+        "tags": [
+          "accounts"
+        ]
+      }
+    },
+    "/v1/account/sessions/revoke-others": {
+      "post": {
+        "operationId": "delete_other_sessions_v1_account_sessions_revoke_others_post",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Delete Other Sessions",
+        "tags": [
+          "accounts"
+        ]
+      }
+    },
+    "/v1/account/sessions/{session_id}": {
+      "delete": {
+        "operationId": "delete_session_v1_account_sessions__session_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "session_id",
+            "required": true,
+            "schema": {
+              "title": "Session Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Session",
+        "tags": [
+          "accounts"
+        ]
+      }
+    },
+    "/v1/account/workspace-invitations": {
+      "get": {
+        "operationId": "my_invitations_v1_account_workspace_invitations_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkspaceInvitationListOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "My Invitations",
+        "tags": [
+          "account-workspaces"
+        ]
+      }
+    },
+    "/v1/account/workspace-invitations/{invitation_id}/accept": {
+      "post": {
+        "operationId": "accept_invitation_v1_account_workspace_invitations__invitation_id__accept_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "invitation_id",
+            "required": true,
+            "schema": {
+              "title": "Invitation Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WorkspaceInvitationActionIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Accept Invitation",
+        "tags": [
+          "account-workspaces"
+        ]
+      }
+    },
+    "/v1/account/workspace-invitations/{invitation_id}/decline": {
+      "post": {
+        "operationId": "decline_invitation_v1_account_workspace_invitations__invitation_id__decline_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "invitation_id",
+            "required": true,
+            "schema": {
+              "title": "Invitation Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WorkspaceInvitationActionIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Decline Invitation",
+        "tags": [
+          "account-workspaces"
+        ]
+      }
+    },
+    "/v1/account/workspaces": {
+      "get": {
+        "operationId": "accessible_workspaces_v1_account_workspaces_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "default": "",
+              "maxLength": 200,
+              "title": "Q",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 1,
+              "minimum": 1,
+              "title": "Page",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page_size",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Page Size",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkspaceListOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Accessible Workspaces",
+        "tags": [
+          "account-workspaces"
+        ]
+      }
+    },
+    "/v1/account/workspaces/current": {
+      "patch": {
+        "operationId": "update_workspace_v1_account_workspaces_current_patch",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WorkspacePatchIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkspaceOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Update Workspace",
+        "tags": [
+          "account-workspaces"
+        ]
+      }
+    },
+    "/v1/account/workspaces/current/invitations": {
+      "get": {
+        "operationId": "workspace_invitations_v1_account_workspaces_current_invitations_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkspaceInvitationListOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Workspace Invitations",
+        "tags": [
+          "account-workspaces"
+        ]
+      },
+      "post": {
+        "operationId": "invite_member_v1_account_workspaces_current_invitations_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WorkspaceInvitationCreateIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkspaceInvitationOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Invite Member",
+        "tags": [
+          "account-workspaces"
+        ]
+      }
+    },
+    "/v1/account/workspaces/current/invitations/{invitation_id}": {
+      "delete": {
+        "operationId": "revoke_invitation_v1_account_workspaces_current_invitations__invitation_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "invitation_id",
+            "required": true,
+            "schema": {
+              "title": "Invitation Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WorkspaceInvitationActionIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Revoke Invitation",
+        "tags": [
+          "account-workspaces"
+        ]
+      }
+    },
+    "/v1/account/workspaces/current/members": {
+      "get": {
+        "operationId": "members_v1_account_workspaces_current_members_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkspaceMemberListOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Members",
+        "tags": [
+          "account-workspaces"
+        ]
+      }
+    },
+    "/v1/account/workspaces/current/members/{membership_id}": {
+      "delete": {
+        "operationId": "delete_member_v1_account_workspaces_current_members__membership_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "membership_id",
+            "required": true,
+            "schema": {
+              "title": "Membership Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WorkspaceMemberRemoveIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Member",
+        "tags": [
+          "account-workspaces"
+        ]
+      }
+    },
+    "/v1/account/workspaces/switch": {
+      "post": {
+        "operationId": "set_active_workspace_v1_account_workspaces_switch_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WorkspaceSwitchIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkspaceOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Set Active Workspace",
+        "tags": [
+          "account-workspaces"
+        ]
+      }
+    },
+    "/v1/auth/change-password": {
+      "post": {
+        "operationId": "change_current_password_v1_auth_change_password_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangePasswordIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Change Current Password",
+        "tags": [
+          "accounts"
+        ]
+      }
+    },
+    "/v1/auth/login": {
+      "post": {
+        "operationId": "login_v1_auth_login_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthMeOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Login",
+        "tags": [
+          "accounts"
+        ]
+      }
+    },
+    "/v1/auth/logout": {
+      "post": {
+        "operationId": "logout_v1_auth_logout_post",
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Logout",
+        "tags": [
+          "accounts"
+        ]
+      }
+    },
+    "/v1/auth/me": {
+      "get": {
+        "operationId": "me_v1_auth_me_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthMeOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Me",
+        "tags": [
+          "accounts"
+        ]
+      }
+    },
+    "/v1/auth/reauth": {
+      "post": {
+        "operationId": "reauth_v1_auth_reauth_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReauthIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Reauth",
+        "tags": [
+          "accounts"
+        ]
+      }
+    },
     "/v1/file-folders": {
       "get": {
         "operationId": "list_file_folders_v1_file_folders_get",
@@ -10784,22 +13116,6 @@
                 }
               ],
               "title": "Project Id"
-            }
-          },
-          {
-            "in": "header",
-            "name": "X-Studio-Token",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Studio-Token"
             }
           }
         ],
@@ -10832,24 +13148,6 @@
       },
       "post": {
         "operationId": "create_file_folder_v1_file_folders_post",
-        "parameters": [
-          {
-            "in": "header",
-            "name": "X-Studio-Token",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Studio-Token"
-            }
-          }
-        ],
         "requestBody": {
           "content": {
             "application/json": {
@@ -10910,22 +13208,6 @@
               "title": "Expected Revision",
               "type": "integer"
             }
-          },
-          {
-            "in": "header",
-            "name": "X-Studio-Token",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Studio-Token"
-            }
           }
         ],
         "responses": {
@@ -10970,22 +13252,6 @@
               "title": "Folder Id",
               "type": "string"
             }
-          },
-          {
-            "in": "header",
-            "name": "X-Studio-Token",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Studio-Token"
-            }
           }
         ],
         "requestBody": {
@@ -11029,24 +13295,6 @@
     "/v1/file-storage/layout": {
       "get": {
         "operationId": "storage_layout_status_v1_file_storage_layout_get",
-        "parameters": [
-          {
-            "in": "header",
-            "name": "X-Studio-Token",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Studio-Token"
-            }
-          }
-        ],
         "responses": {
           "200": {
             "content": {
@@ -11057,16 +13305,6 @@
               }
             },
             "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
           }
         },
         "summary": "Storage Layout Status",
@@ -11089,22 +13327,6 @@
               "minimum": 1,
               "title": "Limit",
               "type": "integer"
-            }
-          },
-          {
-            "in": "header",
-            "name": "X-Studio-Token",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Studio-Token"
             }
           }
         ],
@@ -11229,22 +13451,6 @@
               "title": "Include References",
               "type": "boolean"
             }
-          },
-          {
-            "in": "header",
-            "name": "X-Studio-Token",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Studio-Token"
-            }
           }
         ],
         "responses": {
@@ -11276,24 +13482,6 @@
       },
       "post": {
         "operationId": "upload_file_v1_files_post",
-        "parameters": [
-          {
-            "in": "header",
-            "name": "X-Studio-Token",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Studio-Token"
-            }
-          }
-        ],
         "requestBody": {
           "content": {
             "multipart/form-data": {
@@ -11354,22 +13542,6 @@
               "title": "Expected Revision",
               "type": "integer"
             }
-          },
-          {
-            "in": "header",
-            "name": "X-Studio-Token",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Studio-Token"
-            }
           }
         ],
         "responses": {
@@ -11413,22 +13585,6 @@
             "schema": {
               "title": "Asset Id",
               "type": "string"
-            }
-          },
-          {
-            "in": "header",
-            "name": "X-Studio-Token",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Studio-Token"
             }
           }
         ],
@@ -11482,22 +13638,6 @@
               "title": "Asset Id",
               "type": "string"
             }
-          },
-          {
-            "in": "header",
-            "name": "X-Studio-Token",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Studio-Token"
-            }
           }
         ],
         "responses": {
@@ -11538,22 +13678,6 @@
               "title": "Asset Id",
               "type": "string"
             }
-          },
-          {
-            "in": "header",
-            "name": "X-Studio-Token",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Studio-Token"
-            }
           }
         ],
         "responses": {
@@ -11585,24 +13709,6 @@
     "/v1/galgame-workshop/projects": {
       "get": {
         "operationId": "list_projects_v1_galgame_workshop_projects_get",
-        "parameters": [
-          {
-            "in": "header",
-            "name": "X-Studio-Token",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Studio-Token"
-            }
-          }
-        ],
         "responses": {
           "200": {
             "content": {
@@ -11613,16 +13719,6 @@
               }
             },
             "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
           }
         },
         "summary": "List Projects",
@@ -11632,24 +13728,6 @@
       },
       "post": {
         "operationId": "create_project_v1_galgame_workshop_projects_post",
-        "parameters": [
-          {
-            "in": "header",
-            "name": "X-Studio-Token",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Studio-Token"
-            }
-          }
-        ],
         "requestBody": {
           "content": {
             "application/json": {
@@ -11710,22 +13788,6 @@
               "title": "Expected Revision",
               "type": "integer"
             }
-          },
-          {
-            "in": "header",
-            "name": "X-Studio-Token",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Studio-Token"
-            }
           }
         ],
         "responses": {
@@ -11770,22 +13832,6 @@
               "title": "Project Id",
               "type": "string"
             }
-          },
-          {
-            "in": "header",
-            "name": "X-Studio-Token",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Studio-Token"
-            }
           }
         ],
         "responses": {
@@ -11825,22 +13871,6 @@
             "schema": {
               "title": "Project Id",
               "type": "string"
-            }
-          },
-          {
-            "in": "header",
-            "name": "X-Studio-Token",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Studio-Token"
             }
           }
         ],
@@ -11905,22 +13935,6 @@
               "title": "Query",
               "type": "string"
             }
-          },
-          {
-            "in": "header",
-            "name": "X-Studio-Token",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Studio-Token"
-            }
           }
         ],
         "responses": {
@@ -11960,22 +13974,6 @@
             "schema": {
               "title": "Project Id",
               "type": "string"
-            }
-          },
-          {
-            "in": "header",
-            "name": "X-Studio-Token",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Studio-Token"
             }
           }
         ],
@@ -12029,22 +14027,6 @@
               "title": "Project Id",
               "type": "string"
             }
-          },
-          {
-            "in": "header",
-            "name": "X-Studio-Token",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Studio-Token"
-            }
           }
         ],
         "requestBody": {
@@ -12097,22 +14079,6 @@
               "title": "Project Id",
               "type": "string"
             }
-          },
-          {
-            "in": "header",
-            "name": "X-Studio-Token",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Studio-Token"
-            }
           }
         ],
         "responses": {
@@ -12152,22 +14118,6 @@
             "schema": {
               "title": "Project Id",
               "type": "string"
-            }
-          },
-          {
-            "in": "header",
-            "name": "X-Studio-Token",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Studio-Token"
             }
           }
         ],
@@ -12221,22 +14171,6 @@
               "title": "Project Id",
               "type": "string"
             }
-          },
-          {
-            "in": "header",
-            "name": "X-Studio-Token",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Studio-Token"
-            }
           }
         ],
         "responses": {
@@ -12276,22 +14210,6 @@
             "schema": {
               "title": "Project Id",
               "type": "string"
-            }
-          },
-          {
-            "in": "header",
-            "name": "X-Studio-Token",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Studio-Token"
             }
           }
         ],
@@ -12345,22 +14263,6 @@
               "title": "Project Id",
               "type": "string"
             }
-          },
-          {
-            "in": "header",
-            "name": "X-Studio-Token",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Studio-Token"
-            }
           }
         ],
         "requestBody": {
@@ -12412,22 +14314,6 @@
             "schema": {
               "title": "Project Id",
               "type": "string"
-            }
-          },
-          {
-            "in": "header",
-            "name": "X-Studio-Token",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Studio-Token"
             }
           }
         ],
@@ -12481,22 +14367,6 @@
               "title": "Project Id",
               "type": "string"
             }
-          },
-          {
-            "in": "header",
-            "name": "X-Studio-Token",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Studio-Token"
-            }
           }
         ],
         "responses": {
@@ -12538,22 +14408,6 @@
             "schema": {
               "title": "Project Id",
               "type": "string"
-            }
-          },
-          {
-            "in": "header",
-            "name": "X-Studio-Token",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Studio-Token"
             }
           }
         ],
@@ -12597,22 +14451,6 @@
               "title": "Project Id",
               "type": "string"
             }
-          },
-          {
-            "in": "header",
-            "name": "X-Studio-Token",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Studio-Token"
-            }
           }
         ],
         "responses": {
@@ -12654,22 +14492,6 @@
             "schema": {
               "title": "Project Id",
               "type": "string"
-            }
-          },
-          {
-            "in": "header",
-            "name": "X-Studio-Token",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Studio-Token"
             }
           }
         ],
@@ -12742,22 +14564,6 @@
               "title": "Expected Revision",
               "type": "integer"
             }
-          },
-          {
-            "in": "header",
-            "name": "X-Studio-Token",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Studio-Token"
-            }
           }
         ],
         "responses": {
@@ -12810,22 +14616,6 @@
             "schema": {
               "title": "Asset Id",
               "type": "string"
-            }
-          },
-          {
-            "in": "header",
-            "name": "X-Studio-Token",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Studio-Token"
             }
           }
         ],
@@ -12888,22 +14678,6 @@
               "title": "Asset Id",
               "type": "string"
             }
-          },
-          {
-            "in": "header",
-            "name": "X-Studio-Token",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Studio-Token"
-            }
           }
         ],
         "requestBody": {
@@ -12956,22 +14730,6 @@
               "title": "Project Id",
               "type": "string"
             }
-          },
-          {
-            "in": "header",
-            "name": "X-Studio-Token",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Studio-Token"
-            }
           }
         ],
         "responses": {
@@ -13011,22 +14769,6 @@
             "schema": {
               "title": "Project Id",
               "type": "string"
-            }
-          },
-          {
-            "in": "header",
-            "name": "X-Studio-Token",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Studio-Token"
             }
           }
         ],
@@ -13080,22 +14822,6 @@
               "title": "Project Id",
               "type": "string"
             }
-          },
-          {
-            "in": "header",
-            "name": "X-Studio-Token",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Studio-Token"
-            }
           }
         ],
         "responses": {
@@ -13135,22 +14861,6 @@
             "schema": {
               "title": "Project Id",
               "type": "string"
-            }
-          },
-          {
-            "in": "header",
-            "name": "X-Studio-Token",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Studio-Token"
             }
           }
         ],
@@ -13204,22 +14914,6 @@
               "title": "Project Id",
               "type": "string"
             }
-          },
-          {
-            "in": "header",
-            "name": "X-Studio-Token",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Studio-Token"
-            }
           }
         ],
         "responses": {
@@ -13261,22 +14955,6 @@
             "schema": {
               "title": "Project Id",
               "type": "string"
-            }
-          },
-          {
-            "in": "header",
-            "name": "X-Studio-Token",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Studio-Token"
             }
           }
         ],
@@ -13332,22 +15010,6 @@
             "schema": {
               "title": "Snapshot Id",
               "type": "string"
-            }
-          },
-          {
-            "in": "header",
-            "name": "X-Studio-Token",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Studio-Token"
             }
           }
         ],
@@ -13502,22 +15164,6 @@
               "title": "Page Size",
               "type": "integer"
             }
-          },
-          {
-            "in": "header",
-            "name": "X-Studio-Token",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Studio-Token"
-            }
           }
         ],
         "responses": {
@@ -13551,24 +15197,6 @@
     "/v1/llm-call-logs/batch-delete": {
       "post": {
         "operationId": "batch_delete_v1_llm_call_logs_batch_delete_post",
-        "parameters": [
-          {
-            "in": "header",
-            "name": "X-Studio-Token",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Studio-Token"
-            }
-          }
-        ],
         "requestBody": {
           "content": {
             "application/json": {
@@ -13614,24 +15242,6 @@
     "/v1/llm-call-logs/stats": {
       "get": {
         "operationId": "stats_v1_llm_call_logs_stats_get",
-        "parameters": [
-          {
-            "in": "header",
-            "name": "X-Studio-Token",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Studio-Token"
-            }
-          }
-        ],
         "responses": {
           "200": {
             "content": {
@@ -13642,16 +15252,6 @@
               }
             },
             "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
           }
         },
         "summary": "Stats",
@@ -13671,22 +15271,6 @@
             "schema": {
               "title": "Log Id",
               "type": "string"
-            }
-          },
-          {
-            "in": "header",
-            "name": "X-Studio-Token",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Studio-Token"
             }
           }
         ],
@@ -13732,22 +15316,6 @@
               "title": "Log Id",
               "type": "string"
             }
-          },
-          {
-            "in": "header",
-            "name": "X-Studio-Token",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Studio-Token"
-            }
           }
         ],
         "responses": {
@@ -13781,24 +15349,6 @@
     "/v1/model-categories": {
       "get": {
         "operationId": "list_model_categories_v1_model_categories_get",
-        "parameters": [
-          {
-            "in": "header",
-            "name": "X-Studio-Token",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Studio-Token"
-            }
-          }
-        ],
         "responses": {
           "200": {
             "content": {
@@ -13809,16 +15359,6 @@
               }
             },
             "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
           }
         },
         "summary": "List Model Categories",
@@ -13848,22 +15388,6 @@
               "minimum": 0,
               "title": "Expected Catalog Revision",
               "type": "integer"
-            }
-          },
-          {
-            "in": "header",
-            "name": "X-Studio-Token",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Studio-Token"
             }
           }
         ],
@@ -13904,22 +15428,6 @@
             "schema": {
               "title": "Model Id",
               "type": "string"
-            }
-          },
-          {
-            "in": "header",
-            "name": "X-Studio-Token",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Studio-Token"
             }
           }
         ],
@@ -13973,22 +15481,6 @@
               "title": "Model Id",
               "type": "string"
             }
-          },
-          {
-            "in": "header",
-            "name": "X-Studio-Token",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Studio-Token"
-            }
           }
         ],
         "responses": {
@@ -14022,24 +15514,6 @@
     "/v1/model-providers": {
       "get": {
         "operationId": "list_providers_v1_model_providers_get",
-        "parameters": [
-          {
-            "in": "header",
-            "name": "X-Studio-Token",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Studio-Token"
-            }
-          }
-        ],
         "responses": {
           "200": {
             "content": {
@@ -14050,16 +15524,6 @@
               }
             },
             "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
           }
         },
         "summary": "List Providers",
@@ -14069,24 +15533,6 @@
       },
       "post": {
         "operationId": "create_provider_v1_model_providers_post",
-        "parameters": [
-          {
-            "in": "header",
-            "name": "X-Studio-Token",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Studio-Token"
-            }
-          }
-        ],
         "requestBody": {
           "content": {
             "application/json": {
@@ -14147,22 +15593,6 @@
               "title": "Expected Catalog Revision",
               "type": "integer"
             }
-          },
-          {
-            "in": "header",
-            "name": "X-Studio-Token",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Studio-Token"
-            }
           }
         ],
         "responses": {
@@ -14202,22 +15632,6 @@
             "schema": {
               "title": "Provider Id",
               "type": "string"
-            }
-          },
-          {
-            "in": "header",
-            "name": "X-Studio-Token",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Studio-Token"
             }
           }
         ],
@@ -14271,22 +15685,6 @@
               "title": "Provider Id",
               "type": "string"
             }
-          },
-          {
-            "in": "header",
-            "name": "X-Studio-Token",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Studio-Token"
-            }
           }
         ],
         "requestBody": {
@@ -14339,22 +15737,6 @@
               "title": "Provider Id",
               "type": "string"
             }
-          },
-          {
-            "in": "header",
-            "name": "X-Studio-Token",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Studio-Token"
-            }
           }
         ],
         "requestBody": {
@@ -14398,24 +15780,6 @@
     "/v1/model-test/conversations": {
       "get": {
         "operationId": "list_conversations_v1_model_test_conversations_get",
-        "parameters": [
-          {
-            "in": "header",
-            "name": "X-Studio-Token",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Studio-Token"
-            }
-          }
-        ],
         "responses": {
           "200": {
             "content": {
@@ -14426,16 +15790,6 @@
               }
             },
             "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
           }
         },
         "summary": "List Conversations",
@@ -14445,24 +15799,6 @@
       },
       "post": {
         "operationId": "create_conversation_v1_model_test_conversations_post",
-        "parameters": [
-          {
-            "in": "header",
-            "name": "X-Studio-Token",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Studio-Token"
-            }
-          }
-        ],
         "requestBody": {
           "content": {
             "application/json": {
@@ -14523,22 +15859,6 @@
               "title": "Expected Revision",
               "type": "integer"
             }
-          },
-          {
-            "in": "header",
-            "name": "X-Studio-Token",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Studio-Token"
-            }
           }
         ],
         "responses": {
@@ -14583,22 +15903,6 @@
               "title": "Conversation Id",
               "type": "string"
             }
-          },
-          {
-            "in": "header",
-            "name": "X-Studio-Token",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Studio-Token"
-            }
           }
         ],
         "responses": {
@@ -14638,22 +15942,6 @@
             "schema": {
               "title": "Conversation Id",
               "type": "string"
-            }
-          },
-          {
-            "in": "header",
-            "name": "X-Studio-Token",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Studio-Token"
             }
           }
         ],
@@ -14706,22 +15994,6 @@
             "schema": {
               "title": "Conversation Id",
               "type": "string"
-            }
-          },
-          {
-            "in": "header",
-            "name": "X-Studio-Token",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Studio-Token"
             }
           }
         ],
@@ -14784,22 +16056,6 @@
               "title": "Attachment Id",
               "type": "string"
             }
-          },
-          {
-            "in": "header",
-            "name": "X-Studio-Token",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Studio-Token"
-            }
           }
         ],
         "responses": {
@@ -14855,22 +16111,6 @@
               "title": "Attachment Id",
               "type": "string"
             }
-          },
-          {
-            "in": "header",
-            "name": "X-Studio-Token",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Studio-Token"
-            }
           }
         ],
         "responses": {
@@ -14910,22 +16150,6 @@
             "schema": {
               "title": "Conversation Id",
               "type": "string"
-            }
-          },
-          {
-            "in": "header",
-            "name": "X-Studio-Token",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Studio-Token"
             }
           }
         ],
@@ -14977,22 +16201,6 @@
               "title": "Conversation Id",
               "type": "string"
             }
-          },
-          {
-            "in": "header",
-            "name": "X-Studio-Token",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Studio-Token"
-            }
           }
         ],
         "requestBody": {
@@ -15034,24 +16242,6 @@
     "/v1/model-test/generation-assets": {
       "post": {
         "operationId": "upload_generation_assets_v1_model_test_generation_assets_post",
-        "parameters": [
-          {
-            "in": "header",
-            "name": "X-Studio-Token",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Studio-Token"
-            }
-          }
-        ],
         "requestBody": {
           "content": {
             "multipart/form-data": {
@@ -15105,22 +16295,6 @@
               "title": "Limit",
               "type": "integer"
             }
-          },
-          {
-            "in": "header",
-            "name": "X-Studio-Token",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Studio-Token"
-            }
           }
         ],
         "responses": {
@@ -15154,24 +16328,6 @@
     "/v1/model-test/generation-assets/backfill-status": {
       "get": {
         "operationId": "generation_asset_backfill_status_v1_model_test_generation_assets_backfill_status_get",
-        "parameters": [
-          {
-            "in": "header",
-            "name": "X-Studio-Token",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Studio-Token"
-            }
-          }
-        ],
         "responses": {
           "200": {
             "content": {
@@ -15182,16 +16338,6 @@
               }
             },
             "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
           }
         },
         "summary": "Generation Asset Backfill Status",
@@ -15203,24 +16349,6 @@
     "/v1/model-test/generation-assets/cleanup": {
       "post": {
         "operationId": "cleanup_generation_assets_v1_model_test_generation_assets_cleanup_post",
-        "parameters": [
-          {
-            "in": "header",
-            "name": "X-Studio-Token",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Studio-Token"
-            }
-          }
-        ],
         "responses": {
           "200": {
             "content": {
@@ -15231,16 +16359,6 @@
               }
             },
             "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
           }
         },
         "summary": "Cleanup Generation Assets",
@@ -15260,22 +16378,6 @@
             "schema": {
               "title": "Asset Id",
               "type": "string"
-            }
-          },
-          {
-            "in": "header",
-            "name": "X-Studio-Token",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Studio-Token"
             }
           }
         ],
@@ -15314,24 +16416,6 @@
     "/v1/model-test/generation-options": {
       "get": {
         "operationId": "generation_options_v1_model_test_generation_options_get",
-        "parameters": [
-          {
-            "in": "header",
-            "name": "X-Studio-Token",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Studio-Token"
-            }
-          }
-        ],
         "responses": {
           "200": {
             "content": {
@@ -15342,16 +16426,6 @@
               }
             },
             "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
           }
         },
         "summary": "Generation Options",
@@ -15402,22 +16476,6 @@
               "title": "Page Size",
               "type": "integer"
             }
-          },
-          {
-            "in": "header",
-            "name": "X-Studio-Token",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Studio-Token"
-            }
           }
         ],
         "responses": {
@@ -15449,24 +16507,6 @@
       },
       "post": {
         "operationId": "create_generation_task_v1_model_test_generation_tasks_post",
-        "parameters": [
-          {
-            "in": "header",
-            "name": "X-Studio-Token",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Studio-Token"
-            }
-          }
-        ],
         "requestBody": {
           "content": {
             "application/json": {
@@ -15542,22 +16582,6 @@
               "title": "Expected Revision",
               "type": "integer"
             }
-          },
-          {
-            "in": "header",
-            "name": "X-Studio-Token",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Studio-Token"
-            }
           }
         ],
         "responses": {
@@ -15602,22 +16626,6 @@
               "title": "Task Id",
               "type": "string"
             }
-          },
-          {
-            "in": "header",
-            "name": "X-Studio-Token",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Studio-Token"
-            }
           }
         ],
         "responses": {
@@ -15660,22 +16668,6 @@
               "title": "Task Id",
               "type": "string"
             }
-          },
-          {
-            "in": "header",
-            "name": "X-Studio-Token",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Studio-Token"
-            }
           }
         ],
         "responses": {
@@ -15716,22 +16708,6 @@
               "title": "Task Id",
               "type": "string"
             }
-          },
-          {
-            "in": "header",
-            "name": "X-Studio-Token",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Studio-Token"
-            }
           }
         ],
         "responses": {
@@ -15762,33 +16738,44 @@
         ]
       }
     },
-    "/v1/studio/auth/check": {
+    "/v1/platform/accounts": {
       "get": {
-        "operationId": "auth_check_v1_studio_auth_check_get",
-        "parameters": [
-          {
-            "in": "header",
-            "name": "X-Studio-Token",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Studio-Token"
-            }
-          }
-        ],
+        "operationId": "platform_accounts_v1_platform_accounts_get",
         "responses": {
           "200": {
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/StudioAuthStatus"
+                  "$ref": "#/components/schemas/AccountListOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Platform Accounts",
+        "tags": [
+          "accounts"
+        ]
+      },
+      "post": {
+        "operationId": "add_account_v1_platform_accounts_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AccountCreateIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountCreatedOut"
                 }
               }
             },
@@ -15805,39 +16792,42 @@
             "description": "Validation Error"
           }
         },
-        "summary": "Auth Check",
+        "summary": "Add Account",
         "tags": [
-          "system"
+          "accounts"
         ]
       }
     },
-    "/v1/tool-navigation/state": {
-      "get": {
-        "operationId": "get_state_v1_tool_navigation_state_get",
+    "/v1/platform/accounts/{user_id}": {
+      "patch": {
+        "operationId": "update_account_v1_platform_accounts__user_id__patch",
         "parameters": [
           {
-            "in": "header",
-            "name": "X-Studio-Token",
-            "required": false,
+            "in": "path",
+            "name": "user_id",
+            "required": true,
             "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Studio-Token"
+              "title": "User Id",
+              "type": "string"
             }
           }
         ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AccountPatchIn"
+              }
+            }
+          },
+          "required": true
+        },
         "responses": {
           "200": {
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ToolNavigationStateOut"
+                  "$ref": "#/components/schemas/AccountOut"
                 }
               }
             },
@@ -15852,6 +16842,250 @@
               }
             },
             "description": "Validation Error"
+          }
+        },
+        "summary": "Update Account",
+        "tags": [
+          "accounts"
+        ]
+      }
+    },
+    "/v1/platform/accounts/{user_id}/reset-password": {
+      "post": {
+        "operationId": "reset_account_password_v1_platform_accounts__user_id__reset_password_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "title": "User Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResetPasswordOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Reset Account Password",
+        "tags": [
+          "accounts"
+        ]
+      }
+    },
+    "/v1/platform/security-events": {
+      "get": {
+        "operationId": "platform_audit_v1_platform_security_events_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 1,
+              "minimum": 1,
+              "title": "Page",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page_size",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Page Size",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "event_type",
+            "required": false,
+            "schema": {
+              "default": "",
+              "maxLength": 64,
+              "title": "Event Type",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "outcome",
+            "required": false,
+            "schema": {
+              "default": "",
+              "maxLength": 16,
+              "title": "Outcome",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SecurityAuditListOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Platform Audit",
+        "tags": [
+          "accounts"
+        ]
+      }
+    },
+    "/v1/public-workspace": {
+      "get": {
+        "operationId": "projection_v1_public_workspace_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicWorkspaceProjectionOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Projection",
+        "tags": [
+          "public-workspace"
+        ]
+      }
+    },
+    "/v1/public-workspace/assets/{asset_id}/content": {
+      "get": {
+        "operationId": "asset_content_v1_public_workspace_assets__asset_id__content_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "asset_id",
+            "required": true,
+            "schema": {
+              "title": "Asset Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Asset Content",
+        "tags": [
+          "public-workspace"
+        ]
+      }
+    },
+    "/v1/public-workspace/galgame-projects/{project_id}/story": {
+      "get": {
+        "operationId": "story_v1_public_workspace_galgame_projects__project_id__story_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicGalgameStoryOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Story",
+        "tags": [
+          "public-workspace"
+        ]
+      }
+    },
+    "/v1/tool-navigation/state": {
+      "get": {
+        "operationId": "get_state_v1_tool_navigation_state_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ToolNavigationStateOut"
+                }
+              }
+            },
+            "description": "Successful Response"
           }
         },
         "summary": "Get State",
@@ -15874,22 +17108,6 @@
               "pattern": "^[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$",
               "title": "Tool Id",
               "type": "string"
-            }
-          },
-          {
-            "in": "header",
-            "name": "X-Studio-Token",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Studio-Token"
             }
           }
         ],
@@ -15946,22 +17164,6 @@
               "title": "Tool Id",
               "type": "string"
             }
-          },
-          {
-            "in": "header",
-            "name": "X-Studio-Token",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Studio-Token"
-            }
           }
         ],
         "responses": {
@@ -15995,24 +17197,6 @@
     "/v1/visual-workshop/generation-options": {
       "get": {
         "operationId": "generation_options_v1_visual_workshop_generation_options_get",
-        "parameters": [
-          {
-            "in": "header",
-            "name": "X-Studio-Token",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Studio-Token"
-            }
-          }
-        ],
         "responses": {
           "200": {
             "content": {
@@ -16023,16 +17207,6 @@
               }
             },
             "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
           }
         },
         "summary": "Generation Options",
@@ -16127,22 +17301,6 @@
               "title": "Page Size",
               "type": "integer"
             }
-          },
-          {
-            "in": "header",
-            "name": "X-Studio-Token",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Studio-Token"
-            }
           }
         ],
         "responses": {
@@ -16184,22 +17342,6 @@
             "schema": {
               "title": "Task Id",
               "type": "string"
-            }
-          },
-          {
-            "in": "header",
-            "name": "X-Studio-Token",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Studio-Token"
             }
           }
         ],
@@ -16243,22 +17385,6 @@
               "title": "Task Id",
               "type": "string"
             }
-          },
-          {
-            "in": "header",
-            "name": "X-Studio-Token",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Studio-Token"
-            }
           }
         ],
         "responses": {
@@ -16292,24 +17418,6 @@
     "/v1/visual-workshop/projects": {
       "get": {
         "operationId": "list_projects_v1_visual_workshop_projects_get",
-        "parameters": [
-          {
-            "in": "header",
-            "name": "X-Studio-Token",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Studio-Token"
-            }
-          }
-        ],
         "responses": {
           "200": {
             "content": {
@@ -16320,16 +17428,6 @@
               }
             },
             "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
           }
         },
         "summary": "List Projects",
@@ -16339,24 +17437,6 @@
       },
       "post": {
         "operationId": "create_project_v1_visual_workshop_projects_post",
-        "parameters": [
-          {
-            "in": "header",
-            "name": "X-Studio-Token",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Studio-Token"
-            }
-          }
-        ],
         "requestBody": {
           "content": {
             "application/json": {
@@ -16417,22 +17497,6 @@
               "title": "Expected Revision",
               "type": "integer"
             }
-          },
-          {
-            "in": "header",
-            "name": "X-Studio-Token",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Studio-Token"
-            }
           }
         ],
         "responses": {
@@ -16477,22 +17541,6 @@
               "title": "Project Id",
               "type": "string"
             }
-          },
-          {
-            "in": "header",
-            "name": "X-Studio-Token",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Studio-Token"
-            }
           }
         ],
         "responses": {
@@ -16532,22 +17580,6 @@
             "schema": {
               "title": "Project Id",
               "type": "string"
-            }
-          },
-          {
-            "in": "header",
-            "name": "X-Studio-Token",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Studio-Token"
             }
           }
         ],
@@ -16601,22 +17633,6 @@
               "title": "Project Id",
               "type": "string"
             }
-          },
-          {
-            "in": "header",
-            "name": "X-Studio-Token",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Studio-Token"
-            }
           }
         ],
         "requestBody": {
@@ -16668,22 +17684,6 @@
             "schema": {
               "title": "Project Id",
               "type": "string"
-            }
-          },
-          {
-            "in": "header",
-            "name": "X-Studio-Token",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Studio-Token"
             }
           }
         ],
@@ -16756,22 +17756,6 @@
               "title": "Expected Revision",
               "type": "integer"
             }
-          },
-          {
-            "in": "header",
-            "name": "X-Studio-Token",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Studio-Token"
-            }
           }
         ],
         "responses": {
@@ -16825,22 +17809,6 @@
               "title": "Reference Id",
               "type": "string"
             }
-          },
-          {
-            "in": "header",
-            "name": "X-Studio-Token",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Studio-Token"
-            }
           }
         ],
         "requestBody": {
@@ -16893,22 +17861,6 @@
               "title": "Project Id",
               "type": "string"
             }
-          },
-          {
-            "in": "header",
-            "name": "X-Studio-Token",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Studio-Token"
-            }
           }
         ],
         "responses": {
@@ -16948,22 +17900,6 @@
             "schema": {
               "title": "Project Id",
               "type": "string"
-            }
-          },
-          {
-            "in": "header",
-            "name": "X-Studio-Token",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Studio-Token"
             }
           }
         ],
@@ -17017,22 +17953,6 @@
               "title": "Project Id",
               "type": "string"
             }
-          },
-          {
-            "in": "header",
-            "name": "X-Studio-Token",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Studio-Token"
-            }
           }
         ],
         "responses": {
@@ -17072,22 +17992,6 @@
             "schema": {
               "title": "Project Id",
               "type": "string"
-            }
-          },
-          {
-            "in": "header",
-            "name": "X-Studio-Token",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Studio-Token"
             }
           }
         ],
@@ -17130,22 +18034,6 @@
             "schema": {
               "title": "Project Id",
               "type": "string"
-            }
-          },
-          {
-            "in": "header",
-            "name": "X-Studio-Token",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Studio-Token"
             }
           }
         ],
@@ -17208,22 +18096,6 @@
               "title": "Expected Revision",
               "type": "integer"
             }
-          },
-          {
-            "in": "header",
-            "name": "X-Studio-Token",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Studio-Token"
-            }
           }
         ],
         "responses": {
@@ -17277,22 +18149,6 @@
               "title": "Conversation Id",
               "type": "string"
             }
-          },
-          {
-            "in": "header",
-            "name": "X-Studio-Token",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Studio-Token"
-            }
           }
         ],
         "responses": {
@@ -17341,22 +18197,6 @@
             "schema": {
               "title": "Conversation Id",
               "type": "string"
-            }
-          },
-          {
-            "in": "header",
-            "name": "X-Studio-Token",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Studio-Token"
             }
           }
         ],
@@ -17418,22 +18258,6 @@
             "schema": {
               "title": "Conversation Id",
               "type": "string"
-            }
-          },
-          {
-            "in": "header",
-            "name": "X-Studio-Token",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Studio-Token"
             }
           }
         ],
@@ -17512,22 +18336,6 @@
               "title": "Approval Id",
               "type": "string"
             }
-          },
-          {
-            "in": "header",
-            "name": "X-Studio-Token",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Studio-Token"
-            }
           }
         ],
         "requestBody": {
@@ -17579,22 +18387,6 @@
             "schema": {
               "title": "Project Id",
               "type": "string"
-            }
-          },
-          {
-            "in": "header",
-            "name": "X-Studio-Token",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "X-Studio-Token"
             }
           }
         ],

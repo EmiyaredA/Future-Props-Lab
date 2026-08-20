@@ -4,19 +4,34 @@ import type {
   GalgameStoryAudioAsset,
   GalgameStoryBranchBlock,
   GalgameStoryChapter,
-  GalgameStoryCharacterStageSettings,
-  GalgameStoryDialogueBoxStyle,
   GalgameStoryFragment,
   GalgameStoryProject,
-  GalgameStoryStageStyle,
-  GalgameStoryUiStyle,
 } from "@features/galgame-workshop/api";
+import {
+  normalizeStoryProject,
+  DEFAULT_DIALOGUE_BOX_STYLE,
+  DEFAULT_STAGE_STYLE,
+  DEFAULT_UI_STYLE,
+} from "@features/galgame-workshop/api/storyNormalization";
 import { dialogueSpeakerIds } from "@features/galgame-workshop/editor/dialogue";
 import {
   DEFAULT_CHARACTER_TRANSFORM,
   DEFAULT_CHARACTER_TRANSITION,
 } from "@features/galgame-workshop/editor/stage";
 import { BLOCK_REGISTRY } from "@features/galgame-workshop/editor/blockRegistry";
+import { characterStageSettings } from "@features/galgame-workshop/editor/characterStageSettings";
+import {
+  suggestCharacterPresentation,
+  type CharacterPresentationStage,
+} from "@features/galgame-workshop/editor/characterPresentation";
+
+export {
+  characterStageSettings,
+  DEFAULT_CHARACTER_POSITION_PRESETS,
+  DEFAULT_STORY_SETTINGS,
+  normalizeCharacterStageSettings,
+  type ResolvedCharacterStageSettings,
+} from "@features/galgame-workshop/editor/characterStageSettings";
 
 export type EditorWorkspace =
   "script" | "assets" | "narrative" | "personalization" | "settings";
@@ -40,118 +55,7 @@ export const AUDIO_CHANNEL_ROLES: Record<AudioChannel, AudioRole> = {
   sfx: "soundEffect",
 };
 
-export const DEFAULT_DIALOGUE_BOX_STYLE: GalgameStoryDialogueBoxStyle = {
-  preset: "dark",
-  assetId: null,
-  backgroundColor: "#080E18",
-  textColor: "#FFFFFF",
-  nameColor: "#FFFFFF",
-  backgroundOpacity: 0.82,
-  borderRadius: 12,
-  fontScale: 1,
-};
-
-export const DEFAULT_UI_STYLE: GalgameStoryUiStyle = {
-  components: [],
-};
-
-export const DEFAULT_STAGE_STYLE: GalgameStoryStageStyle = {
-  speakerFocusEnabled: true,
-  inactiveBrightness: 0.6,
-  focusTransitionMs: 180,
-  lipSyncEnabled: false,
-};
-
-export const DEFAULT_TEXT_PLAYBACK_STYLE = { defaultSpeedCps: 40 } as const;
-export const DEFAULT_PARAGRAPH_PRESENTATION = {
-  defaultStyleRef: { source: "builtin" as const, id: "classic" },
-  customStyles: [],
-};
-export const DEFAULT_SYSTEM_MESSAGE_PRESENTATION = {
-  binding: { source: "builtin" as const, id: "standard-message" },
-  customStyles: [],
-};
-
-export const DEFAULT_CHARACTER_POSITION_PRESETS = [
-  {
-    id: "position-left",
-    name: "左",
-    x: 25,
-    y: 50,
-    builtinKey: "left" as const,
-  },
-  {
-    id: "position-center-left",
-    name: "中左",
-    x: 37.5,
-    y: 50,
-    builtinKey: "centerLeft" as const,
-  },
-  {
-    id: "position-center",
-    name: "中",
-    x: 50,
-    y: 50,
-    builtinKey: "center" as const,
-  },
-  {
-    id: "position-center-right",
-    name: "中右",
-    x: 62.5,
-    y: 50,
-    builtinKey: "centerRight" as const,
-  },
-  {
-    id: "position-right",
-    name: "右",
-    x: 75,
-    y: 50,
-    builtinKey: "right" as const,
-  },
-];
-
-export const DEFAULT_STORY_SETTINGS = {
-  canvas: { width: 1920, height: 1080 },
-  characterStage: {
-    anchor: "center" as const,
-    defaultPositionId: "position-center",
-    defaultHeightPercent: 100,
-    positionPresets: DEFAULT_CHARACTER_POSITION_PRESETS,
-  },
-} satisfies NonNullable<GalgameStoryProject["settings"]>;
-
-export type ResolvedCharacterStageSettings = Omit<
-  GalgameStoryCharacterStageSettings,
-  "positionPresets"
-> & {
-  positionPresets: NonNullable<
-    GalgameStoryCharacterStageSettings["positionPresets"]
-  >;
-};
-
-export function normalizeCharacterStageSettings(
-  settings?: GalgameStoryCharacterStageSettings,
-): ResolvedCharacterStageSettings {
-  return {
-    ...DEFAULT_STORY_SETTINGS.characterStage,
-    ...settings,
-    positionPresets: settings?.positionPresets?.length
-      ? settings.positionPresets.map((preset) => ({ ...preset }))
-      : DEFAULT_CHARACTER_POSITION_PRESETS.map((preset) => ({ ...preset })),
-  };
-}
-
-export function characterStageSettings(
-  document: GalgameStoryProject,
-  characterId?: string,
-): ResolvedCharacterStageSettings {
-  const override = characterId
-    ? document.settings?.characterStageOverrides?.[characterId]
-    : undefined;
-  return normalizeCharacterStageSettings(
-    override ?? document.settings?.characterStage,
-  );
-}
+export { DEFAULT_DIALOGUE_BOX_STYLE, DEFAULT_STAGE_STYLE, DEFAULT_UI_STYLE };
 
 export function stableId() {
   return crypto.randomUUID().toLowerCase();
@@ -160,139 +64,7 @@ export function stableId() {
 export function completeStoryDocument(
   document: GalgameStoryProject,
 ): GalgameStoryProject {
-  return {
-    ...document,
-    schemaVersion: "1.4",
-    entryChapterId:
-      document.entryChapterId ??
-      [...(document.chapters ?? [])].sort((a, b) => a.order - b.order)[0]?.id ??
-      "chapter-1",
-    characterAttributeTemplates: document.characterAttributeTemplates ?? [],
-    settings: {
-      canvas: {
-        ...DEFAULT_STORY_SETTINGS.canvas,
-        ...document.settings?.canvas,
-      },
-      characterStage: normalizeCharacterStageSettings(
-        document.settings?.characterStage,
-      ),
-      characterStageOverrides: Object.fromEntries(
-        Object.entries(document.settings?.characterStageOverrides ?? {}).map(
-          ([characterId, settings]) => [
-            characterId,
-            normalizeCharacterStageSettings(settings),
-          ],
-        ),
-      ),
-    },
-    presentation: {
-      ...document.presentation,
-      dialogueBox: {
-        ...DEFAULT_DIALOGUE_BOX_STYLE,
-        ...document.presentation?.dialogueBox,
-      },
-      ui: {
-        ...DEFAULT_UI_STYLE,
-        ...document.presentation?.ui,
-        components: document.presentation?.ui?.components ?? [],
-      },
-      stage: {
-        ...DEFAULT_STAGE_STYLE,
-        ...document.presentation?.stage,
-      },
-      text: {
-        ...DEFAULT_TEXT_PLAYBACK_STYLE,
-        ...document.presentation?.text,
-      },
-      paragraph: {
-        ...DEFAULT_PARAGRAPH_PRESENTATION,
-        ...document.presentation?.paragraph,
-        defaultStyleRef: {
-          ...DEFAULT_PARAGRAPH_PRESENTATION.defaultStyleRef,
-          ...document.presentation?.paragraph?.defaultStyleRef,
-        },
-        customStyles: document.presentation?.paragraph?.customStyles ?? [],
-      },
-      systemMessage: {
-        ...DEFAULT_SYSTEM_MESSAGE_PRESENTATION,
-        ...document.presentation?.systemMessage,
-        binding: {
-          ...DEFAULT_SYSTEM_MESSAGE_PRESENTATION.binding,
-          ...document.presentation?.systemMessage?.binding,
-        },
-        customStyles: document.presentation?.systemMessage?.customStyles ?? [],
-      },
-    },
-    sceneGroups: document.sceneGroups ?? [],
-    scenes: (document.scenes ?? []).map((scene) => ({
-      ...scene,
-      layers:
-        scene.layers ??
-        (scene.backgrounds ?? []).map((background) => ({
-          id: background.id,
-          name: background.label,
-          assetId: background.assetId,
-          distance: 1,
-          offsetX: 0,
-          offsetY: 0,
-        })),
-      backgrounds: undefined,
-      defaultBackgroundId: undefined,
-    })),
-    cgs: (document.cgs ?? []).map((cg) => ({
-      ...cg,
-      variants: cg.variants ?? [],
-      defaultVariantId: cg.defaultVariantId ?? null,
-    })),
-    variables: document.variables ?? [],
-    assets: document.assets ?? [],
-    characters: (document.characters ?? []).map((character, index) => ({
-      ...character,
-      themeColor:
-        character.themeColor ??
-        [
-          "#E75B55",
-          "#4AA3DF",
-          "#46B978",
-          "#A56DE2",
-          "#E59B3D",
-          "#D85E9D",
-          "#32A6A0",
-          "#7586E5",
-        ][index % 8],
-      expressions: (character.expressions ?? []).map((expression) => ({
-        ...expression,
-        renderMode: expression.renderMode ?? "staticImage",
-        flipX: expression.flipX ?? false,
-        thumbnailCrop: expression.thumbnailCrop ?? { x: 50, y: 25, scale: 1.8 },
-        dialogueAvatar: expression.dialogueAvatar ?? {
-          source: "portrait",
-          crop: { x: 50, y: 25, scale: 1.8 },
-        },
-        overlays: expression.overlays ?? [],
-      })),
-      defaultExpressionId: character.defaultExpressionId ?? null,
-      displayNames: character.displayNames ?? [],
-      defaultDisplayNameId: character.defaultDisplayNameId ?? null,
-      dialogueAvatar: {
-        enabled: character.dialogueAvatar?.enabled ?? false,
-      },
-      portraitSkins: character.portraitSkins ?? [],
-      defaultPortraitSkinId: character.defaultPortraitSkinId ?? null,
-    })),
-    chapters: (document.chapters ?? []).map((chapter) => ({
-      ...chapter,
-      disabled: chapter.disabled ?? false,
-      fragments: (chapter.fragments ?? []).map((fragment) => ({
-        ...fragment,
-        blocks: (fragment.blocks ?? []).map((block) =>
-          block.type === "curtain"
-            ? { ...block, mode: block.mode ?? "fullscreen" }
-            : block,
-        ),
-      })),
-    })),
-  };
+  return normalizeStoryProject(document);
 }
 
 export function firstChapter(document: GalgameStoryProject) {
@@ -332,6 +104,7 @@ export function makeBlock(
   document: GalgameStoryProject,
   chapter: GalgameStoryChapter,
   fragment: GalgameStoryFragment,
+  presentationStage?: CharacterPresentationStage,
 ): GalgameStoryBlock | undefined {
   const characters = document.characters ?? [];
   const scenes = document.scenes ?? [];
@@ -377,15 +150,22 @@ export function makeBlock(
   if (kind === "showCharacter") {
     if (!characters[0]) return undefined;
     const stageSettings = characterStageSettings(document, characters[0].id);
+    const presentation = suggestCharacterPresentation(
+      document,
+      characters[0].id,
+      presentationStage,
+    );
     const defaultPosition =
       stageSettings.positionPresets.find(
-        (preset) => preset.id === stageSettings.defaultPositionId,
+        (preset) => preset.id === presentation.positionId,
       ) ?? stageSettings.positionPresets[0];
     return {
       id: stableId(),
       type: "showCharacter",
       characterId: characters[0].id,
       expressionId: null,
+      distance: presentation.distance,
+      positionId: presentation.positionId,
       transform: {
         ...DEFAULT_CHARACTER_TRANSFORM,
         x: defaultPosition.x,
@@ -408,6 +188,11 @@ export function makeBlock(
   }
   if (kind === "dialogue") {
     if (!characters[0]) return undefined;
+    const presentation = suggestCharacterPresentation(
+      document,
+      characters[0].id,
+      presentationStage,
+    );
     return {
       id: stableId(),
       type: "dialogue",
@@ -418,6 +203,8 @@ export function makeBlock(
       portrait: {
         mode: "stage",
         visible: true,
+        distance: presentation.distance,
+        positionId: presentation.positionId,
         keepAfter: true,
         transform: null,
         transition: DEFAULT_CHARACTER_TRANSITION,

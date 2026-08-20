@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.ids import new_id
 from app.models import ModelCatalogState, ModelEntry, ModelProvider
 
 
@@ -229,18 +230,32 @@ SAYFLOW_TEXT_CATALOG = (
 )
 
 
-async def seed_sayflow_text_catalog(session: AsyncSession) -> bool:
-    """仅向全新目录播种内置供应商，不覆盖后续用户配置。"""
-    state = await session.get(ModelCatalogState, "default")
-    providers = (await session.execute(select(ModelProvider))).scalars().all()
+async def ensure_workspace_model_catalog(session: AsyncSession, workspace_id: str) -> bool:
+    """向指定 Workspace 的全新目录播种无密钥内置供应商。"""
+    state = await session.get(ModelCatalogState, workspace_id)
+    providers = (
+        (
+            await session.execute(
+                select(ModelProvider).where(ModelProvider.workspace_id == workspace_id)
+            )
+        )
+        .scalars()
+        .all()
+    )
+    if state is None:
+        state = ModelCatalogState(workspace_id=workspace_id, revision=0)
+        session.add(state)
+        await session.flush()
     if state is None or state.revision != 0 or providers:
         await session.rollback()
         return False
 
     providers_by_id: dict[str, ModelProvider] = {}
     for provider_seed in SAYFLOW_TEXT_CATALOG:
+        provider_id = provider_seed.id if workspace_id == "default" else new_id()
         provider = ModelProvider(
-            id=provider_seed.id,
+            id=provider_id,
+            workspace_id=workspace_id,
             name=provider_seed.name,
             kind=provider_seed.kind,
             base_url=provider_seed.base_url,
@@ -257,7 +272,8 @@ async def seed_sayflow_text_catalog(session: AsyncSession) -> bool:
         for sort_order, model_seed in enumerate(provider_seed.models):
             session.add(
                 ModelEntry(
-                    id=model_seed.id,
+                    id=model_seed.id if workspace_id == "default" else new_id(),
+                    workspace_id=workspace_id,
                     provider_id=provider.id,
                     slug=model_seed.slug,
                     label=model_seed.label,
@@ -271,3 +287,8 @@ async def seed_sayflow_text_catalog(session: AsyncSession) -> bool:
     state.revision = 1
     await session.commit()
     return True
+
+
+async def seed_sayflow_text_catalog(session: AsyncSession) -> bool:
+    """向历史 default Workspace 播种内置供应商。"""
+    return await ensure_workspace_model_catalog(session, "default")

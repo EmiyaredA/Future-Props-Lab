@@ -13,6 +13,7 @@ from sqlalchemy import select, update
 from app.agents.harness import AgentEvent, AgentHarness, RunStatus
 from app.core.credentials import decrypt_secret
 from app.core.db import SessionLocal
+from app.core.tenant_context import bind_workspace
 from app.core.time import utc_now
 from app.llm.providers.agent import AgentMessage, HttpAgentAdapter
 from app.models import (
@@ -70,6 +71,7 @@ async def _settle(
 ) -> tuple[VisualAssistantMessage, list, LlmCallLog, int]:
     latency_ms = max(0, round((time.monotonic() - started) * 1000))
     async with SessionLocal() as session:
+        bind_workspace(session.sync_session, prepared.workspace_id)
         message = await session.get(VisualAssistantMessage, prepared.assistant_message_id)
         conversation = await session.get(VisualAssistantConversation, prepared.conversation_id)
         if message is None or conversation is None:
@@ -124,6 +126,7 @@ async def _settle(
             "actions": action_log,
         }
         log = LlmCallLog(
+            workspace_id=prepared.workspace_id,
             call_source="visual_workshop_assistant",
             provider_kind=prepared.provider_kind,
             model=prepared.model_slug,
@@ -159,6 +162,7 @@ async def assistant_events(
     started = time.monotonic()
     key = decrypt_secret(prepared.api_key_ciphertext) if prepared.api_key_ciphertext else ""
     definition = build_visual_agent_definition(
+        workspace_id=prepared.workspace_id,
         project_id=prepared.project_id,
         model=prepared.model_slug,
         tools_enabled=prepared.tools_enabled,
@@ -172,6 +176,7 @@ async def assistant_events(
         adapter=adapter,
         definition=definition,
         scope={
+            "workspace_id": prepared.workspace_id,
             "project_id": prepared.project_id,
             "conversation_id": prepared.conversation_id,
             "canvas_revision": prepared.canvas_revision,
@@ -245,7 +250,9 @@ async def assistant_events(
                     "approval_resolved",
                     "run_cancelled",
                 }:
-                    actions = await persist_agent_event(prepared.assistant_message_id, event)
+                    actions = await persist_agent_event(
+                        prepared.workspace_id, prepared.assistant_message_id, event
+                    )
                     yield _event(
                         "step",
                         sequence,
@@ -337,7 +344,9 @@ async def assistant_events(
                 )
                 return
             error_message = result.reason or "Agent 未完成本轮任务"
-            await cancel_active_actions(prepared.assistant_message_id, error_message)
+            await cancel_active_actions(
+                prepared.workspace_id, prepared.assistant_message_id, error_message
+            )
             message, actions, log, revision = await _settle(
                 prepared,
                 run_id=harness.run_id,
@@ -371,7 +380,9 @@ async def assistant_events(
     except asyncio.CancelledError:
         await harness.abort()
         task.cancel()
-        await cancel_active_actions(prepared.assistant_message_id, "用户停止生成")
+        await cancel_active_actions(
+            prepared.workspace_id, prepared.assistant_message_id, "用户停止生成"
+        )
         await asyncio.shield(
             _settle(
                 prepared,
@@ -399,7 +410,9 @@ async def assistant_events(
             or str(exc) == "model_turn_timeout"
         )
         message_text = "模型调用超时" if timeout else "Agent 运行失败"
-        await cancel_active_actions(prepared.assistant_message_id, message_text)
+        await cancel_active_actions(
+            prepared.workspace_id, prepared.assistant_message_id, message_text
+        )
         message, actions, log, revision = await _settle(
             prepared,
             run_id=harness.run_id,

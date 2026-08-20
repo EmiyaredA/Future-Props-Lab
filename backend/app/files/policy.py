@@ -48,6 +48,10 @@ GALGAME_EXTENSIONS = {
     ".otf",
     ".woff",
     ".woff2",
+    ".pdf",
+    ".txt",
+    ".md",
+    ".json",
 }
 
 

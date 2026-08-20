@@ -4,6 +4,7 @@ from sqlalchemy import func, select, update
 
 from app.agents.harness import AgentEvent
 from app.core.db import SessionLocal
+from app.core.tenant_context import bind_workspace
 from app.core.time import iso_utc, utc_now
 from app.models import (
     VisualAssistantAction,
@@ -50,8 +51,11 @@ def _safe_result(payload: dict) -> tuple[dict, int | None, str | None]:
     return result, normalized_revision, generation_task_id
 
 
-async def persist_agent_event(message_id: str, event: AgentEvent) -> list[VisualAssistantActionOut]:
+async def persist_agent_event(
+    workspace_id: str, message_id: str, event: AgentEvent
+) -> list[VisualAssistantActionOut]:
     async with SessionLocal() as session:
+        bind_workspace(session.sync_session, workspace_id)
         payload = event.payload
         action_id = str(payload.get("action_id") or "")
         row = None
@@ -153,8 +157,9 @@ async def persist_agent_event(message_id: str, event: AgentEvent) -> list[Visual
         return [action_out(item) for item in rows]
 
 
-async def cancel_active_actions(message_id: str, reason: str) -> None:
+async def cancel_active_actions(workspace_id: str, message_id: str, reason: str) -> None:
     async with SessionLocal() as session:
+        bind_workspace(session.sync_session, workspace_id)
         await session.execute(
             update(VisualAssistantAction)
             .where(

@@ -1,5 +1,5 @@
 import { ApiError, type ProblemDetail } from "@platform/api/client";
-import { getStudioToken, notifyAuthRequired } from "@platform/api/studioAuth";
+import { getCsrfToken, notifyAuthRequired } from "@platform/api/studioAuth";
 
 type PostSseOptions<TEvent> = {
   path: string;
@@ -50,14 +50,15 @@ export async function postSse<TEvent>({
   defaultErrorMessage,
 }: PostSseOptions<TEvent>) {
   const base = String(import.meta.env.VITE_API_BASE || "").replace(/\/$/, "");
-  const token = getStudioToken();
+  const csrf = getCsrfToken();
   const response = await fetch(`${base}${path}`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       Accept: "text/event-stream",
-      ...(token ? { "X-Studio-Token": token } : {}),
+      ...(csrf ? { "X-CSRF-Token": csrf } : {}),
     },
+    credentials: "include",
     body: JSON.stringify(body),
     signal,
   });

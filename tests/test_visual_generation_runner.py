@@ -146,7 +146,7 @@ async def test_video_submit_materializes_asset_ids_and_keeps_legacy_urls(
         return f"https://temp.sh/{kind}-{asset_id}"
 
     runner = VisualGenerationRunner()
-    monkeypatch.setattr("app.visual_workshop.generation_runner.create_video_task", fake_create)
+    monkeypatch.setattr("app.visual_workshop.generation_runner.submit_generation_task", fake_create)
     monkeypatch.setattr(runner, "_asset_data_uri", fake_image)
     monkeypatch.setattr(runner, "_temporary_asset_url", fake_temporary)
 
@@ -171,7 +171,7 @@ async def test_video_submit_materializes_asset_ids_and_keeps_legacy_urls(
         },
     )
 
-    assert submitted["content"] == [
+    assert submitted["video_content"] == [
         {"type": "text", "text": "参考运镜"},
         {
             "type": "image",
@@ -200,7 +200,7 @@ async def test_temporary_upload_failure_happens_before_provider_submission(
         raise TemporaryMediaError("private upstream response")
 
     runner = VisualGenerationRunner()
-    monkeypatch.setattr("app.visual_workshop.generation_runner.create_video_task", fake_create)
+    monkeypatch.setattr("app.visual_workshop.generation_runner.submit_generation_task", fake_create)
     monkeypatch.setattr(runner, "_temporary_asset_url", failed_upload)
 
     with pytest.raises(TemporaryMediaError):

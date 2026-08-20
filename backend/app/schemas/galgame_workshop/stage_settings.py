@@ -37,6 +37,7 @@ class GalgameStoryPositionPreset(GalgameStoryModel):
 
 def default_character_position_presets() -> list[GalgameStoryPositionPreset]:
     return [
+        GalgameStoryPositionPreset(id="position-outer-left", name="极左", x=12, y=50),
         GalgameStoryPositionPreset(id="position-left", name="左", x=25, y=50, builtinKey="left"),
         GalgameStoryPositionPreset(
             id="position-center-left", name="中左", x=37.5, y=50, builtinKey="centerLeft"
@@ -48,6 +49,7 @@ def default_character_position_presets() -> list[GalgameStoryPositionPreset]:
             id="position-center-right", name="中右", x=62.5, y=50, builtinKey="centerRight"
         ),
         GalgameStoryPositionPreset(id="position-right", name="右", x=75, y=50, builtinKey="right"),
+        GalgameStoryPositionPreset(id="position-outer-right", name="极右", x=88, y=50),
     ]
 
 

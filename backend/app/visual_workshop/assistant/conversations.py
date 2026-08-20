@@ -79,6 +79,7 @@ class AssistantAssetError(Exception):
 
 @dataclass(frozen=True)
 class PreparedAssistantGeneration:
+    workspace_id: str
     project_id: str
     conversation_id: str
     assistant_message_id: str
@@ -881,6 +882,7 @@ class VisualAssistantConversations:
         ]
         await self.session.commit()
         return PreparedAssistantGeneration(
+            workspace_id=project.workspace_id,
             project_id=project_id,
             conversation_id=conversation_id,
             assistant_message_id=assistant.id,

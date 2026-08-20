@@ -170,7 +170,7 @@ test("uses styled filters and keeps successful upload feedback concise", async (
     expect.stringContaining(".json"),
   );
 
-  await user.click(screen.getByRole("button", { name: "文件类型" }));
+  await user.click(screen.getByRole("combobox", { name: "文件类型" }));
   await user.click(screen.getByRole("option", { name: "图片" }));
   await waitFor(() =>
     expect(getFiles).toHaveBeenLastCalledWith(
@@ -221,13 +221,13 @@ test("filters and sorts folders alongside files", async () => {
     ).map((item) => item.textContent);
   expect(folderNames()).toEqual(["B 文件夹", "A 文件夹"]);
 
-  await user.click(screen.getByRole("button", { name: "文件排序" }));
+  await user.click(screen.getByRole("combobox", { name: "文件排序" }));
   await user.click(screen.getByRole("option", { name: "按名称" }));
   await waitFor(() => expect(folderNames()).toEqual(["A 文件夹", "B 文件夹"]));
 
   await user.type(screen.getByLabelText("搜索文件或文件夹"), "A");
   expect(screen.getByText("A 文件夹")).toBeInTheDocument();
-  expect(screen.queryByText("B 文件夹")).toBeNull();
+  await waitFor(() => expect(screen.queryByText("B 文件夹")).toBeNull());
 });
 
 test("keeps uploading remaining files and explains a failed video upload", async () => {
@@ -275,7 +275,7 @@ test("uses the compact asset controls without losing upload and folder actions",
 
   await user.click(screen.getByRole("button", { name: "筛选素材" }));
   expect(screen.getByRole("dialog", { name: "素材筛选" })).toBeInTheDocument();
-  await user.click(screen.getByRole("button", { name: "文件类型" }));
+  await user.click(screen.getByRole("combobox", { name: "文件类型" }));
   await user.click(screen.getByRole("option", { name: "图片" }));
   await waitFor(() =>
     expect(getFiles).toHaveBeenLastCalledWith(
@@ -324,7 +324,7 @@ test("uses custom dialogs for creating, renaming, moving, and deleting folders",
 
   await user.click(screen.getByRole("button", { name: "更多操作 A 文件夹" }));
   await user.click(screen.getByRole("menuitem", { name: "移动到" }));
-  await user.click(screen.getByRole("button", { name: "目标文件夹" }));
+  await user.click(screen.getByRole("combobox", { name: "目标文件夹" }));
   await user.click(screen.getByRole("option", { name: "B 文件夹" }));
   await user.click(screen.getByRole("button", { name: "确认移动" }));
   await waitFor(() =>

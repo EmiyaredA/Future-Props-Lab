@@ -20,8 +20,8 @@ async def test_image_generation_test_is_created_and_managed_through_v1_api(
     async def fake_status(**_kwargs) -> ProviderTaskStatus:
         return ProviderTaskStatus(status="failed", error_message="测试上游失败")
 
-    monkeypatch.setattr("app.llm.playground.generation_runner.create_image_task", fake_create)
-    monkeypatch.setattr("app.llm.playground.generation_runner.get_image_task", fake_status)
+    monkeypatch.setattr("app.llm.playground.generation_runner.submit_generation_task", fake_create)
+    monkeypatch.setattr("app.llm.playground.generation_runner.poll_generation_task", fake_status)
     transport = httpx.ASGITransport(app=app)
     async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
         catalog = (await client.get("/v1/model-providers")).json()
@@ -121,9 +121,11 @@ async def test_video_generation_accepts_uploaded_reference_audio_and_video(
         suffix = "audio.mp3" if mime_type.startswith("audio/") else "video.mp4"
         return f"https://temp.sh/{suffix}"
 
-    monkeypatch.setattr("app.llm.playground.generation_runner.create_video_task", fake_create)
-    monkeypatch.setattr("app.llm.playground.generation_runner.get_video_task", fake_status)
-    monkeypatch.setattr("app.llm.playground.generation_runner.upload_temporary_media", fake_upload)
+    monkeypatch.setattr("app.llm.playground.generation_runner.submit_generation_task", fake_create)
+    monkeypatch.setattr("app.llm.playground.generation_runner.poll_generation_task", fake_status)
+    monkeypatch.setattr(
+        "app.llm.playground.generation_runner.upload_temporary_reference", fake_upload
+    )
     transport = httpx.ASGITransport(app=app)
     async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
         catalog = (await client.get("/v1/model-providers")).json()
@@ -203,7 +205,7 @@ async def test_video_generation_accepts_uploaded_reference_audio_and_video(
 
         runner = ModelTestGenerationRunner()
         await runner.process_once()
-        content = submitted["content"]
+        content = submitted["video_content"]
         assert content[0] == {"type": "text", "text": "保留视频运镜并跟随音乐节奏"}
         assert content[1]["type"] == "audio"
         assert content[1]["audio_url"] == "https://temp.sh/audio.mp3"

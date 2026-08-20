@@ -10,13 +10,7 @@ import {
 import {
   Images,
   MapPinned,
-  Maximize2,
   Music2,
-  Pause,
-  Play,
-  Repeat2,
-  SkipBack,
-  SkipForward,
   Unlink2,
   UserRound,
   Users,
@@ -58,44 +52,13 @@ import {
   type TimelinePreferences,
 } from "@features/galgame-workshop/editor/timelinePreferences";
 import { TimelineClock } from "@features/galgame-workshop/editor/timelineClock";
-import { TimelineAdvancedSettings } from "@features/galgame-workshop/editor/TimelineAdvancedSettings";
 import { TimelineTrackLabels } from "@features/galgame-workshop/editor/TimelineTrackLabels";
+import { StoryTimelineToolbar } from "@features/galgame-workshop/editor/StoryTimelineToolbar";
+import { timelineStateSegments } from "@features/galgame-workshop/editor/timelineStateSegments";
+import { timelineCharacterColor } from "@features/galgame-workshop/editor/timelineCharacterColor";
+import type { TimelineDragState as DragState } from "@features/galgame-workshop/editor/timelineDragState";
 
 const TIMELINE_LABEL_WIDTH = 168;
-
-function characterColor(characterId: string) {
-  const palette = [
-    "#6d8dff",
-    "#d36cff",
-    "#ff7b8b",
-    "#f4a84d",
-    "#4ec9a4",
-    "#4aaee8",
-    "#b5c94c",
-    "#df72b0",
-  ];
-  let hash = 0;
-  for (const character of characterId)
-    hash = (hash * 31 + character.charCodeAt(0)) | 0;
-  return palette[Math.abs(hash) % palette.length];
-}
-
-type DragState = {
-  kind:
-    | "cue"
-    | "point"
-    | "boundary"
-    | "cue-start"
-    | "cue-end"
-    | "gap-start"
-    | "gap-end"
-    | "cg-range"
-    | "cg-start"
-    | "cg-end";
-  itemId: string;
-  startX: number;
-  source: GalgameStoryFragment;
-};
 
 export function StoryTimelineEditor({
   document,
@@ -261,80 +224,10 @@ export function StoryTimelineEditor({
     ) * laneHeight;
   const dialogueTop = laneTop("dialogue");
   const trackHeight = lanes.length * laneHeight;
-  const stateSegments = pointEvents.flatMap((event, eventIndex) => {
-    const block = event.block;
-    const laneId =
-      block.type === "scene"
-        ? "scene"
-        : block.type === "showCg"
-          ? "cg"
-          : block.type === "showCharacter"
-            ? `character:${block.characterId}`
-            : block.type === "audio" &&
-                block.action === "play" &&
-                (block.channel === "bgm" || block.channel === "ambient")
-              ? block.channel
-              : undefined;
-    if (!laneId) return [];
-    const next = pointEvents.slice(eventIndex + 1).find((candidate) => {
-      if (candidate.timeMs <= event.timeMs) return false;
-      if (block.type === "scene") return candidate.block.type === "scene";
-      if (block.type === "showCg")
-        return (
-          candidate.block.type === "showCg" || candidate.block.type === "hideCg"
-        );
-      if (block.type === "showCharacter")
-        return (
-          (candidate.block.type === "scene" &&
-            candidate.block.clearCharacters !== false) ||
-          ((candidate.block.type === "showCharacter" ||
-            candidate.block.type === "removeCharacter") &&
-            (candidate.block.type !== "removeCharacter" ||
-              candidate.block.all ||
-              candidate.block.characterId === block.characterId) &&
-            (candidate.block.type !== "showCharacter" ||
-              candidate.block.characterId === block.characterId))
-        );
-      if (block.type !== "audio") return false;
-      return (
-        candidate.block.type === "audio" &&
-        candidate.block.channel === block.channel
-      );
-    });
-    const asset =
-      block.type === "audio"
-        ? (document.assets ?? []).find((item) => item.id === block.assetId)
-        : undefined;
-    const label =
-      block.type === "scene"
-        ? ((document.scenes ?? []).find((scene) => scene.id === block.sceneId)
-            ?.name ?? "场景")
-        : block.type === "showCharacter"
-          ? (characters.get(block.characterId)?.name ?? "角色")
-          : block.type === "showCg"
-            ? (cgs.get(block.cgId)?.name ?? "剧情 CG")
-            : asset?.type === "audio"
-              ? asset.label
-              : "声音";
-    return [
-      {
-        id: `state:${block.id}`,
-        laneId,
-        label,
-        kind:
-          block.type === "scene"
-            ? ("scene" as const)
-            : block.type === "showCharacter"
-              ? ("character" as const)
-              : block.type === "showCg"
-                ? ("cg" as const)
-                : block.type === "audio"
-                  ? block.channel
-                  : ("scene" as const),
-        startMs: event.timeMs,
-        endMs: next?.timeMs ?? durationMs,
-      },
-    ];
+  const stateSegments = timelineStateSegments({
+    pointEvents,
+    document,
+    durationMs,
   });
 
   useEffect(() => {
@@ -912,175 +805,36 @@ export function StoryTimelineEditor({
       aria-label={readOnly ? "试玩剧情时间轴" : "多轨剧情时间轴"}
     >
       <div className="galgame-timeline-controls">
-        <header className="galgame-timeline-toolbar">
-          <div className="galgame-timeline-transport">
-            <span className="galgame-timeline-mode-label">
-              {readOnly ? "跟随试玩" : "时间轴试听"}
-            </span>
-            {!readOnly ? (
-              <>
-                <button
-                  type="button"
-                  aria-label="上一句"
-                  onClick={() => skip(-1)}
-                >
-                  <SkipBack aria-hidden />
-                </button>
-                <button
-                  type="button"
-                  aria-label={playing ? "暂停编辑时间轴" : "播放编辑时间轴"}
-                  disabled={!ready}
-                  onClick={() => void toggle()}
-                >
-                  {playing ? <Pause aria-hidden /> : <Play aria-hidden />}
-                </button>
-                <button
-                  type="button"
-                  aria-label="下一句"
-                  onClick={() => skip(1)}
-                >
-                  <SkipForward aria-hidden />
-                </button>
-              </>
-            ) : null}
-            <strong>
-              {formatTimecode(positionMs)} / {formatTimecode(durationMs)}
-            </strong>
-            {estimated ? <em>估算时间 · 编辑后保存</em> : null}
-          </div>
-          {!readOnly ? addControl : null}
-          {!readOnly && selectedBlockId ? (
-            <details className="galgame-timeline-context-menu">
-              <summary>内容项工具</summary>
-              <div className="galgame-timeline-calibration">
-                <button
-                  type="button"
-                  disabled={!ready}
-                  onClick={() => void auditionSelected()}
-                >
-                  <Play aria-hidden /> 预听所选
-                </button>
-                <small>提前 300ms</small>
-                <label>
-                  <input
-                    type="checkbox"
-                    checked={loop}
-                    onChange={(event) =>
-                      onPreferencesChange({
-                        ...preferences,
-                        loop: event.target.checked,
-                      })
-                    }
-                  />
-                  <Repeat2 aria-hidden /> 循环所选
-                </label>
-                <button
-                  type="button"
-                  onClick={() => setSelectedEdgeAtPlayhead("start")}
-                >
-                  设为开始
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setSelectedEdgeAtPlayhead("end")}
-                >
-                  设为结束
-                </button>
-              </div>
-            </details>
-          ) : null}
-          <label className="galgame-timeline-zoom">
-            <span>缩放</span>
-            <input
-              type="range"
-              min={MIN_TIMELINE_ZOOM}
-              max={MAX_TIMELINE_ZOOM}
-              step="60"
-              value={zoom}
-              aria-label="时间轴缩放"
-              onChange={(event) =>
-                onPreferencesChange({
-                  ...preferences,
-                  zoom: Number(event.target.value),
-                })
-              }
-            />
-          </label>
-          <button
-            type="button"
-            className="galgame-timeline-fit"
-            aria-label="适配时间轴宽度"
-            title="在当前窗口中显示完整剧情"
-            onClick={fitTimelineWidth}
-          >
-            <Maximize2 aria-hidden />
-            适配宽度
-          </button>
-          {characterTrackIds.length ? (
-            <label
-              className="galgame-timeline-performance-details"
-              title="展开逐角色轨道，检查独立或精确角色演出"
-            >
-              <input
-                type="checkbox"
-                checked={characterTracksExpanded}
-                onChange={(event) =>
-                  onPreferencesChange({
-                    ...preferences,
-                    characterTracksExpanded: event.target.checked,
-                  })
-                }
-              />
-              <span>演出细节</span>
-            </label>
-          ) : null}
-          {!readOnly ? (
-            <>
-              <label
-                className="galgame-timeline-ripple"
-                title="移动对白或拉伸右边界时，同步推移后续对白"
-              >
-                <input
-                  type="checkbox"
-                  checked={ripple}
-                  onChange={(event) =>
-                    onPreferencesChange({
-                      ...preferences,
-                      ripple: event.target.checked,
-                    })
-                  }
-                />
-                <span>波纹编辑</span>
-              </label>
-              <TimelineAdvancedSettings
-                durationInput={durationInput}
-                readOnly={readOnly}
-                characterTrackIds={characterTrackIds}
-                visibleCharacterTrackIds={visibleCharacterTrackIds}
-                characterNames={
-                  new Map(
-                    Array.from(characters, ([id, character]) => [
-                      id,
-                      character.name,
-                    ]),
-                  )
-                }
-                onDurationInput={(value) => {
-                  setDurationInput(value);
-                  setDurationHint("");
-                }}
-                onDurationCommit={commitDuration}
-                onCharacterTrackVisible={setCharacterTrackVisible}
-                onShowAllCharacterTracks={() =>
-                  setHiddenCharacterTrackIds(new Set())
-                }
-                onHideAllCharacterTracks={() =>
-                  setHiddenCharacterTrackIds(new Set(characterTrackIds))
-                }
-              />
-            </>
-          ) : null}
-        </header>
+        <StoryTimelineToolbar
+          readOnly={readOnly}
+          playing={playing}
+          ready={ready}
+          positionMs={positionMs}
+          durationMs={durationMs}
+          estimated={estimated}
+          addControl={addControl}
+          selectedBlockId={selectedBlockId}
+          loop={loop}
+          preferences={preferences}
+          zoom={zoom}
+          characterTrackIds={characterTrackIds}
+          characterTracksExpanded={characterTracksExpanded}
+          ripple={ripple}
+          durationInput={durationInput}
+          visibleCharacterTrackIds={visibleCharacterTrackIds}
+          characters={characters}
+          skip={skip}
+          toggle={toggle}
+          auditionSelected={auditionSelected}
+          setSelectedEdgeAtPlayhead={setSelectedEdgeAtPlayhead}
+          onPreferencesChange={onPreferencesChange}
+          fitTimelineWidth={fitTimelineWidth}
+          setDurationInput={setDurationInput}
+          setDurationHint={setDurationHint}
+          commitDuration={commitDuration}
+          setCharacterTrackVisible={setCharacterTrackVisible}
+          setHiddenCharacterTrackIds={setHiddenCharacterTrackIds}
+        />
         <div className="galgame-timeline-ruler-row">
           <strong>时间</strong>
           <div ref={rulerScrollRef} className="galgame-timeline-ruler-scroll">
@@ -1585,7 +1339,7 @@ export function StoryTimelineEditor({
                       width: `${width}%`,
                       top: `${dialogueTop + 8}px`,
                       height: `${laneHeight - 16}px`,
-                      backgroundColor: characterColor(characterId),
+                      backgroundColor: timelineCharacterColor(characterId),
                     }}
                     aria-label={`${speakerName} ${formatTimecode(cue.startMs)} 到 ${formatTimecode(cue.endMs)}`}
                     title={`${speakerName} · ${cue.block.text}\n${formatTimecode(cue.startMs)}–${formatTimecode(cue.endMs)}`}

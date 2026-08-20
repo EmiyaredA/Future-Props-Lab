@@ -1,0 +1,119 @@
+@media (max-width: 700px) {
+  .galgame-global-search {
+    display: flex;
+  }
+  .galgame-editor-tabs {
+    gap: 20px;
+  }
+  .galgame-editor-tabs button {
+    font-size: 0;
+  }
+  .galgame-editor-tabs button svg {
+    width: 18px;
+    height: 18px;
+  }
+  .galgame-narrative-workspace {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    overflow: visible;
+  }
+  .galgame-narrative-sidebar {
+    max-height: 460px;
+    border-right: 0;
+    border-bottom: 1px solid var(--gal-line);
+  }
+  .galgame-narrative-canvas {
+    min-height: 620px;
+  }
+  .galgame-settings-workspace {
+    padding: 16px 10px;
+  }
+  .galgame-settings-workspace > header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .galgame-settings-pair,
+  .galgame-settings-title-field {
+    grid-template-columns: 1fr;
+  }
+  .galgame-settings-positions > div {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.galgame-character-global-settings {
+  margin: 0 12px 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--border-soft);
+  border-radius: 10px;
+}
+
+.galgame-character-global-settings summary {
+  cursor: pointer;
+  font-weight: 650;
+}
+
+.galgame-character-global-settings > div,
+.galgame-expression-crop-settings,
+.galgame-expression-overlays {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.galgame-character-global-settings > button {
+  width: 100%;
+  margin-top: 10px;
+}
+
+.galgame-portrait-upgrade-preview {
+  padding-top: 8px;
+  border-top: 1px solid var(--gal-line);
+}
+
+.galgame-portrait-upgrade-preview ul {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--gal-muted);
+  font-size: 11px;
+}
+
+.galgame-character-global-settings label,
+.galgame-expression-crop-settings label {
+  display: grid;
+  grid-template-columns: minmax(80px, 1fr) 88px;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.galgame-expression-crop-settings {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  padding: 10px;
+  border: 1px solid var(--border-soft);
+  border-radius: 10px;
+}
+
+.galgame-expression-crop-settings legend {
+  padding: 0 5px;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.galgame-expression-crop-settings label {
+  grid-template-columns: auto minmax(0, 1fr);
+}
+
+.galgame-expression-overlays header,
+.galgame-expression-overlays > div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.galgame-expression-overlays header .custom-select,
+.galgame-expression-overlays > div input {
+  min-width: 0;
+  flex: 1;
+}

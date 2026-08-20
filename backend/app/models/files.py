@@ -17,6 +17,7 @@ class VisualAssetFolder(Base):
     )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    workspace_id: Mapped[str] = mapped_column(String(36), index=True, default="default")
     project_id: Mapped[str | None] = mapped_column(
         String(36), ForeignKey("visual_workshop_projects.id", ondelete="CASCADE")
     )
@@ -42,6 +43,7 @@ class VisualAsset(Base):
     )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    workspace_id: Mapped[str] = mapped_column(String(36), index=True, default="default")
     project_id: Mapped[str | None] = mapped_column(
         String(36), ForeignKey("visual_workshop_projects.id", ondelete="CASCADE")
     )
@@ -75,6 +77,7 @@ class VisualProjectAssetReference(Base):
     )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    workspace_id: Mapped[str] = mapped_column(String(36), index=True, default="default")
     project_id: Mapped[str] = mapped_column(
         String(36), ForeignKey("visual_workshop_projects.id", ondelete="CASCADE")
     )

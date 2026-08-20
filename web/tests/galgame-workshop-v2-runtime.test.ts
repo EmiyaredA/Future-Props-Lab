@@ -5,6 +5,7 @@ import { evaluateStoryExpression } from "@features/galgame-workshop/editor/story
 import {
   applyAutomaticStageBlock,
   emptyStageState,
+  enterContentBlock,
 } from "@features/galgame-workshop/editor/stage";
 import {
   advanceRuntime,
@@ -121,6 +122,91 @@ function story(): GalgameStoryProject {
 }
 
 describe("Galgame workbench v2 runtime", () => {
+  it("uses character asset presets instead of stale Block coordinates", () => {
+    const document = story();
+    document.settings = {
+      canvas: { width: 1920, height: 1080 },
+      characterStage: {
+        anchor: "center",
+        defaultPositionId: "position-center",
+        defaultHeightPercent: 100,
+        positionPresets: [
+          { id: "position-left", name: "左", x: 22, y: 48 },
+          { id: "position-center", name: "中", x: 51, y: 52 },
+        ],
+      },
+    };
+    const shown = applyAutomaticStageBlock(
+      emptyStageState(),
+      {
+        id: "show-hero",
+        type: "showCharacter",
+        characterId: "hero",
+        expressionId: null,
+        distance: "near",
+        positionId: "position-left",
+        transform: {
+          x: 99,
+          y: 97,
+          anchor: "bottomCenter",
+          scale: 2.5,
+          brightness: 0.8,
+          opacity: 1,
+          flipX: false,
+          layer: 10,
+        },
+        transition: { durationMs: 240, fade: true },
+      },
+      document,
+    );
+
+    expect(shown.actors.hero).toMatchObject({
+      distance: "near",
+      positionId: "position-left",
+      transform: {
+        x: 22,
+        y: 48,
+        anchor: "center",
+        scale: 1,
+        brightness: 0.8,
+      },
+    });
+
+    const dialogue = enterContentBlock(
+      shown,
+      {
+        id: "dialogue",
+        type: "dialogue",
+        characterId: "hero",
+        text: "换到中景中间。",
+        portrait: {
+          mode: "stage",
+          visible: true,
+          distance: "medium",
+          positionId: "position-center",
+          keepAfter: true,
+          transform: {
+            x: -400,
+            y: 800,
+            anchor: "bottomCenter",
+            scale: 3,
+            brightness: 1,
+            opacity: 1,
+            flipX: false,
+            layer: 10,
+          },
+          transition: { durationMs: 240, fade: true },
+        },
+      },
+      document,
+    );
+    expect(dialogue.actors.hero).toMatchObject({
+      distance: "medium",
+      positionId: "position-center",
+      transform: { x: 51, y: 52, anchor: "center", scale: 1 },
+    });
+  });
+
   it("registers every built-in block in one capability table", () => {
     expect(Object.keys(BLOCK_REGISTRY)).toHaveLength(32);
     expect(BLOCK_REGISTRY.returnToEntry.timing).toBe("terminal");

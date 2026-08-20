@@ -1,0 +1,951 @@
+.galgame-visual-tree-root > i {
+  width: 4px;
+  height: 18px;
+  border-radius: 3px;
+}
+
+.galgame-visual-browser-item {
+  position: relative;
+  width: calc(100% - 14px);
+  min-height: 55px;
+  margin: 3px 0 3px 14px;
+  padding: 5px 5px 5px 8px;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--gal-text);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 25px;
+  align-items: center;
+  gap: 4px;
+  text-align: left;
+  cursor: grab;
+}
+
+.galgame-visual-browser-item::before {
+  position: absolute;
+  inset-block: 5px;
+  left: -1px;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: transparent;
+  content: "";
+}
+
+.galgame-visual-browser-item:hover {
+  background: var(--gal-soft);
+}
+
+.galgame-visual-browser-item.active {
+  border-color: color-mix(in srgb, var(--gal-accent) 25%, var(--gal-line));
+  background: var(--gal-accent-soft);
+}
+
+.galgame-visual-browser-item.active::before {
+  background: var(--gal-accent);
+}
+
+.galgame-visual-browser-open {
+  min-width: 0;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr);
+  align-items: center;
+  gap: 9px;
+  text-align: left;
+}
+
+button.galgame-visual-browser-open {
+  cursor: pointer;
+}
+
+.galgame-visual-browser-open > span {
+  width: 56px;
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  border-radius: 5px;
+  background: var(--gal-soft);
+  display: grid;
+  place-items: center;
+}
+
+.galgame-visual-browser-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.galgame-visual-browser-open > em {
+  min-width: 0;
+  font-style: normal;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.galgame-visual-browser-open > em strong,
+.galgame-visual-browser-open > em small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.galgame-visual-browser-open > em small {
+  color: var(--gal-faint);
+}
+
+.galgame-visual-browser-open > em input {
+  min-width: 0;
+  width: 100%;
+  height: 27px;
+  padding: 0 6px;
+  border: 1px solid var(--gal-accent-line);
+  border-radius: 5px;
+  background: var(--gal-surface);
+  color: var(--gal-text);
+  font: inherit;
+  font-weight: 650;
+  outline: none;
+}
+
+.galgame-visual-browser-menu-trigger {
+  width: 25px;
+  height: 30px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--gal-faint);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.galgame-visual-browser-menu-trigger:hover,
+.galgame-visual-browser-menu-trigger[aria-expanded="true"] {
+  border-color: var(--gal-accent-line);
+  background: var(--gal-surface);
+  color: var(--gal-text);
+}
+
+.galgame-visual-browser-menu-trigger svg {
+  width: 15px;
+  height: 15px;
+}
+
+.galgame-visual-item-menu {
+  position: fixed;
+  z-index: 1200;
+  width: 236px;
+  max-height: calc(100vh - 16px);
+  padding: 6px;
+  overflow-y: auto;
+  border: 1px solid var(--gal-line);
+  border-radius: 10px;
+  background: var(--gal-surface);
+  box-shadow: 0 12px 34px rgb(15 23 42 / 18%);
+}
+
+.galgame-visual-item-menu > button {
+  width: 100%;
+  min-height: 36px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--gal-text);
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.galgame-visual-item-menu > button:hover,
+.galgame-visual-item-menu > button:focus-visible {
+  background: var(--gal-soft);
+  outline: none;
+}
+
+.galgame-visual-item-menu > button svg {
+  width: 16px;
+  height: 16px;
+  color: var(--gal-muted);
+}
+
+.galgame-visual-item-menu > button.danger {
+  color: var(--gal-danger);
+}
+
+.galgame-visual-item-menu > button.danger svg {
+  color: currentcolor;
+}
+
+.galgame-visual-item-menu > button:disabled {
+  color: var(--gal-faint);
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.galgame-visual-item-menu > i {
+  height: 1px;
+  margin: 5px 7px;
+  background: var(--gal-line);
+  display: block;
+}
+
+.galgame-visual-tree-empty {
+  padding: 24px 12px;
+  color: var(--gal-muted);
+  text-align: center;
+}
+
+.galgame-visual-stage-panel {
+  grid-column: 2;
+  grid-row: 1;
+  overflow: hidden;
+  background: #0d0f13;
+  color: #f4f5f7;
+  display: flex;
+  flex-direction: column;
+}
+
+.galgame-visual-stage-panel > header {
+  min-height: 47px;
+  padding: 0 12px 0 15px;
+  border-bottom: 1px solid rgb(255 255 255 / 0.08);
+  background: #101217;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.galgame-visual-stage-panel > header > div:first-child {
+  min-width: 130px;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.galgame-visual-stage-panel > header .galgame-inline-editable-name {
+  color: #f4f5f7;
+}
+
+.galgame-visual-stage-panel > header .galgame-inline-editable-name input {
+  width: min(280px, 100%);
+  border-color: #5f8fe8;
+  background: #090b0e;
+  box-shadow: 0 0 0 2px rgb(95 143 232 / 0.22);
+}
+
+.galgame-visual-stage-panel > header span {
+  color: #777d88;
+  font-size: 10px;
+}
+
+.galgame-visual-stage-panel > header nav,
+.galgame-visual-zoom-controls {
+  height: 33px;
+  padding: 3px;
+  border: 1px solid rgb(255 255 255 / 0.1);
+  border-radius: 7px;
+  background: #090b0e;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.galgame-visual-stage-panel > header nav button {
+  height: 25px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: #777d88;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+}
+
+.galgame-visual-stage-panel > header nav button.active {
+  background: #25282e;
+  color: #f4f5f7;
+}
+
+.galgame-visual-stage-panel > header nav svg {
+  width: 13px;
+  height: 13px;
+}
+
+.galgame-visual-zoom-controls strong {
+  min-width: 43px;
+  color: #b7bbc2;
+  font-size: 10px;
+  text-align: center;
+}
+
+.galgame-visual-zoom-controls button {
+  color: #858b95;
+}
+
+.galgame-visual-zoom-controls button:hover {
+  background: #25282e;
+  color: #f4f5f7;
+}
+
+.galgame-visual-zoom-controls button:focus-visible {
+  outline: 2px solid var(--gal-accent);
+  outline-offset: -2px;
+}
+
+.galgame-visual-stage-shell {
+  min-height: 0;
+  flex: 1;
+  padding: 26px 28px 10px;
+  overflow: auto;
+  background-color: #0d0f13;
+  background-image: radial-gradient(#23262e 1px, transparent 1px);
+  background-size: 18px 18px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+}
+
+.galgame-visual-stage {
+  position: relative;
+  width: min(100%, 1100px);
+  max-height: calc(100% - 24px);
+  overflow: hidden;
+  border: 1px solid rgb(255 255 255 / 0.14);
+  border-radius: 6px;
+  background: repeating-conic-gradient(#23262c 0 25%, #191c21 0 50%) 50% / 22px
+    22px;
+  box-shadow: 0 14px 34px rgb(0 0 0 / 0.3);
+  touch-action: none;
+  cursor: grab;
+}
+
+.galgame-visual-stage.is-layer {
+  cursor: move;
+}
+
+.galgame-visual-stage:active {
+  cursor: grabbing;
+}
+
+.galgame-visual-stage-layer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform-origin: center;
+  pointer-events: none;
+  user-select: none;
+  will-change: transform;
+}
+
+.galgame-visual-stage-layer.is-cg {
+  object-fit: contain;
+  background: #000;
+}
+
+.galgame-visual-stage-missing {
+  position: absolute;
+  inset: 0;
+  border: 1px dashed rgb(255 255 255 / 0.24);
+  background: rgb(10 12 16 / 0.72);
+  color: #8e949e;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 8px;
+  text-align: center;
+  transform-origin: center;
+  pointer-events: none;
+}
+
+.galgame-visual-stage-missing svg {
+  width: 28px;
+  height: 28px;
+}
+
+.galgame-visual-stage-missing span {
+  max-width: 70%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.galgame-visual-stage-empty {
+  position: absolute;
+  inset: 0;
+  color: #777d88;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 8px;
+  text-align: center;
+}
+
+.galgame-visual-stage-empty svg {
+  width: 30px;
+  height: 30px;
+}
+
+.galgame-visual-stage-empty strong {
+  color: #c6cad0;
+}
+
+.galgame-visual-camera-readout,
+.galgame-visual-isolation {
+  position: absolute;
+  bottom: 10px;
+  z-index: 110;
+  min-height: 28px;
+  padding: 0 9px;
+  border: 1px solid rgb(255 255 255 / 0.12);
+  border-radius: 5px;
+  background: rgb(17 20 25 / 0.76);
+  color: #c9cdd3;
+  backdrop-filter: blur(7px);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+}
+
+.galgame-visual-camera-readout {
+  left: 10px;
+}
+
+.galgame-visual-isolation {
+  right: 10px;
+  cursor: pointer;
+}
+
+.galgame-visual-camera-readout svg,
+.galgame-visual-isolation svg {
+  width: 13px;
+  height: 13px;
+}
+
+.galgame-visual-stage-shell > small {
+  color: #666b74;
+  font-size: 9px;
+}
+
+.galgame-visual-stack-panel {
+  grid-column: 3;
+  grid-row: 1;
+  border-left: 1px solid var(--gal-line);
+}
+
+.galgame-visual-stack-panel > header {
+  min-height: 48px;
+  padding: 0 12px;
+  border-bottom: 1px solid var(--gal-line);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.galgame-visual-stack-panel > header strong {
+  flex: 1;
+}
+
+.galgame-visual-stack-panel > header span {
+  color: var(--gal-faint);
+  font-size: 10px;
+}
+
+.galgame-visual-stack-search {
+  margin: 8px 10px;
+  flex: none;
+}
+
+.galgame-visual-stack-list {
+  min-height: 0;
+  flex: 1;
+  padding: 0 7px;
+  overflow: auto;
+}
+
+.galgame-visual-stack-list article {
+  min-height: 62px;
+  padding: 6px 4px;
+  border-bottom: 1px solid color-mix(in srgb, var(--gal-line) 70%, transparent);
+  display: grid;
+  grid-template-columns: 13px 20px 50px minmax(70px, 1fr) 64px repeat(3, 25px);
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+}
+
+.galgame-visual-stack-list article.is-cg {
+  grid-template-columns: 13px 20px 50px minmax(70px, 1fr) repeat(3, 25px);
+}
+
+.galgame-visual-stack-list article.active {
+  background: color-mix(in srgb, var(--gal-accent) 7%, transparent);
+}
+
+.galgame-visual-stack-list article > svg {
+  width: 12px;
+  height: 12px;
+  color: var(--gal-faint);
+}
+
+.galgame-visual-stack-list article > em {
+  color: var(--gal-faint);
+  font-size: 9px;
+  font-style: normal;
+  text-align: center;
+}
+
+.galgame-visual-stack-list article > span {
+  width: 50px;
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  border-radius: 4px;
+  background: #111318;
+  display: grid;
+  place-items: center;
+}
+
+.galgame-visual-stack-list article > span img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.galgame-visual-stack-list article > div {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.galgame-visual-stack-list article > div input {
+  width: 100%;
+  height: 23px;
+  padding: 0 3px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--gal-text);
+  font-weight: 600;
+}
+
+.galgame-visual-stack-list article > div input:focus {
+  border-color: var(--gal-accent-line);
+  background: var(--gal-surface);
+}
+
+.galgame-visual-stack-list article > div small {
+  overflow: hidden;
+  color: var(--gal-faint);
+  font-size: 8px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.galgame-visual-stack-list article > label {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.galgame-visual-stack-list article > label span {
+  display: none;
+}
+
+.galgame-visual-stack-list article > label input {
+  width: 62px;
+  height: 28px;
+  padding: 0 5px;
+  border: 1px solid var(--gal-line);
+  border-radius: 5px;
+  background: var(--gal-surface);
+  color: var(--gal-text);
+  text-align: center;
+}
+
+.galgame-visual-stack-list article > button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.galgame-visual-stack-actions {
+  padding: 8px 10px;
+  border-top: 1px solid var(--gal-line);
+  display: flex;
+  gap: 7px;
+}
+
+.galgame-visual-stack-actions button {
+  min-width: 0;
+  min-height: 32px;
+  flex: 1;
+  padding: 0 7px;
+  border: 1px solid var(--gal-line);
+  border-radius: 6px;
+  background: var(--gal-surface);
+  color: var(--gal-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  cursor: pointer;
+}
+
+.galgame-visual-stack-actions svg {
+  width: 13px;
+  height: 13px;
+}
+
+.galgame-visual-bottom-panel {
+  grid-column: 2 / 4;
+  grid-row: 2;
+  border-top: 1px solid var(--gal-line);
+  background: var(--gal-panel);
+  display: grid;
+  grid-template-columns: 310px minmax(0, 1fr);
+  overflow: hidden;
+}
+
+.galgame-visual-properties {
+  min-width: 0;
+  min-height: 0;
+  border-right: 1px solid var(--gal-line);
+  overflow-x: hidden;
+  overflow-y: auto;
+  display: grid;
+  grid-template-rows: minmax(165px, 1fr) minmax(110px, auto);
+}
+
+.galgame-visual-properties > section {
+  padding: 12px 14px;
+}
+
+.galgame-visual-properties > section + section {
+  border-top: 1px solid var(--gal-line);
+}
+
+.galgame-visual-properties header {
+  min-height: 24px;
+  margin-bottom: 9px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.galgame-visual-properties header svg {
+  width: 14px;
+  height: 14px;
+  color: var(--gal-faint);
+}
+
+.galgame-visual-properties header span {
+  margin-left: auto;
+  color: var(--gal-faint);
+  font-size: 9px;
+}
+
+.galgame-visual-properties label {
+  margin-top: 8px;
+  display: grid;
+  gap: 4px;
+}
+
+.galgame-visual-properties label > span {
+  color: var(--gal-muted);
+  font-size: 10px;
+}
+
+.galgame-visual-properties input,
+.galgame-visual-properties textarea,
+.galgame-visual-properties .custom-select-trigger {
+  width: 100%;
+  min-height: 32px;
+  padding: 6px 8px;
+  border: 1px solid var(--gal-line);
+  border-radius: 6px;
+  background: var(--gal-surface);
+  color: var(--gal-text);
+}
+
+.galgame-visual-properties textarea {
+  min-height: 54px;
+  resize: vertical;
+}
+
+.galgame-visual-properties p {
+  color: var(--gal-muted);
+  font-size: 10px;
+}
+
+.galgame-visual-references > div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.galgame-visual-references > div button {
+  min-height: 28px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--gal-muted);
+  overflow: hidden;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.galgame-visual-references > .danger {
+  min-height: 30px;
+  margin-top: 9px;
+  padding: 0 9px;
+  border: 1px solid color-mix(in srgb, var(--gal-danger) 35%, var(--gal-line));
+  border-radius: 6px;
+  background: transparent;
+  color: var(--gal-danger);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.galgame-visual-references > .danger svg {
+  width: 13px;
+  height: 13px;
+}
+
+.galgame-visual-parameters {
+  min-width: 0;
+  min-height: 0;
+  padding: 0 20px 12px;
+  overflow: auto;
+}
+
+.galgame-visual-parameters > nav {
+  min-height: 45px;
+  border-bottom: 1px solid var(--gal-line);
+  display: flex;
+  align-items: end;
+  gap: 20px;
+}
+
+.galgame-visual-parameters > nav button {
+  position: relative;
+  min-height: 44px;
+  padding: 0 2px;
+  border: 0;
+  background: transparent;
+  color: var(--gal-muted);
+  cursor: pointer;
+}
+
+.galgame-visual-parameters > nav button::after {
+  position: absolute;
+  right: 0;
+  bottom: -1px;
+  left: 0;
+  height: 2px;
+  background: transparent;
+  content: "";
+}
+
+.galgame-visual-parameters > nav button.active {
+  color: var(--gal-text);
+  font-weight: 650;
+}
+
+.galgame-visual-parameters > nav button.active::after {
+  background: var(--gal-text);
+}
+
+.galgame-distance-editor {
+  min-height: 190px;
+  padding: 18px 12px 0;
+}
+
+.galgame-distance-axis {
+  position: relative;
+  height: 120px;
+  margin: 0 18px;
+}
+
+.galgame-distance-axis > i {
+  position: absolute;
+  right: 0;
+  bottom: 30px;
+  left: 0;
+  height: 3px;
+  border-radius: 4px;
+  background: var(--gal-line);
+}
+
+.galgame-distance-axis > button {
+  position: absolute;
+  width: 22px;
+  height: 84px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--gal-muted);
+  transform: translateX(-50%);
+  cursor: ew-resize;
+  touch-action: none;
+}
+
+.galgame-distance-axis > button > span {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  max-width: 145px;
+  padding: 4px 7px;
+  border: 1px solid var(--gal-line);
+  border-radius: 12px;
+  background: var(--gal-surface);
+  overflow: hidden;
+  color: var(--gal-muted);
+  font-size: 9px;
+  text-overflow: ellipsis;
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+
+.galgame-distance-axis > button > i {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  width: 13px;
+  height: 13px;
+  border: 2px solid var(--gal-muted);
+  border-radius: 50%;
+  background: var(--gal-panel);
+  transform: translateX(-50%);
+}
+
+.galgame-distance-axis > button.active > span {
+  border-color: var(--gal-accent-line);
+  background: var(--gal-accent-soft);
+  color: var(--gal-accent);
+}
+
+.galgame-distance-axis > button.active > i {
+  border-color: var(--gal-accent);
+}
+
+.galgame-distance-axis > small {
+  position: absolute;
+  bottom: 7px;
+  color: var(--gal-faint);
+  font-size: 9px;
+}
+
+.galgame-distance-axis > small.near {
+  left: 0;
+}
+
+.galgame-distance-axis > small.middle {
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.galgame-distance-axis > small.far {
+  right: 0;
+}
+
+.galgame-distance-editor > p {
+  margin: 4px 0 0;
+  color: var(--gal-faint);
+  font-size: 9px;
+}
+
+.galgame-offset-editor {
+  max-width: 700px;
+  padding: 24px 10px;
+  display: grid;
+  gap: 14px;
+}
+
+.galgame-offset-editor label {
+  display: grid;
+  grid-template-columns: 65px minmax(140px, 1fr) 76px 16px;
+  align-items: center;
+  gap: 9px;
+}
+
+.galgame-offset-editor label > span {
+  color: var(--gal-muted);
+}
+
+.galgame-offset-editor input[type="number"] {
+  min-height: 31px;
+  border: 1px solid var(--gal-line);
+  border-radius: 6px;
+  background: var(--gal-surface);
+  color: var(--gal-text);
+  text-align: center;
+}
+
+.galgame-offset-editor em {
+  color: var(--gal-faint);
+  font-style: normal;
+}
+
+.galgame-offset-editor > button {
+  width: fit-content;
+  min-height: 31px;
+  padding: 0 10px;
+  border: 1px solid var(--gal-line);
+  border-radius: 6px;
+  background: var(--gal-surface);
+  color: var(--gal-muted);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.galgame-offset-editor > button svg {
+  width: 13px;
+  height: 13px;
+}
+
+.galgame-visual-parameter-empty,
+.galgame-visual-cg-help {
+  color: var(--gal-muted);
+}
+
+.galgame-visual-cg-help {
+  padding: 28px;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 9px;
+  text-align: center;
+}
+
+.galgame-visual-cg-help svg {
+  width: 32px;
+  height: 32px;
+  color: var(--gal-faint);
+}
+
+.galgame-visual-cg-help span {
+  max-width: 540px;
+  font-size: 11px;
+  line-height: 1.7;
+}

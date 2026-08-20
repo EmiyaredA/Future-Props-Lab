@@ -1,0 +1,894 @@
+/* Shared player stage and visual-workspace foundations. */
+.galgame-player-portrait {
+  position: absolute;
+  inset: 18px 8% 42px;
+  z-index: 2;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.galgame-stage-actor {
+  position: absolute;
+  width: auto;
+  height: calc(100% - 18px);
+  transform-origin: bottom center;
+  transition-property: left, top, transform, filter, opacity;
+  transition-timing-function: ease;
+  pointer-events: none;
+}
+
+.galgame-stage-actor[data-entering="true"] {
+  animation: galgame-stage-actor-enter var(--galgame-stage-duration, 240ms) ease
+    both;
+}
+
+@keyframes galgame-stage-actor-enter {
+  from {
+    opacity: 0;
+  }
+}
+
+.galgame-player-portrait-image {
+  width: auto;
+  height: 100%;
+  object-fit: contain;
+  object-position: bottom center;
+  filter: drop-shadow(0 6px 14px rgb(0 0 0 / 0.3));
+}
+
+.galgame-preview-mode {
+  display: inline-flex;
+  padding: 2px;
+  border: 1px solid var(--gal-line);
+  border-radius: 8px;
+  background: var(--gal-panel);
+}
+
+.galgame-preview-mode button,
+.galgame-position-presets button {
+  min-height: 30px;
+  border: 1px solid var(--gal-line);
+  border-radius: 7px;
+  background: var(--gal-surface);
+  color: var(--gal-muted);
+  cursor: pointer;
+}
+
+.galgame-player-header-actions .galgame-preview-mode button {
+  width: auto;
+  min-width: 62px;
+  height: 28px;
+  min-height: 28px;
+  padding: 0 13px;
+  border: 0;
+  border-radius: 6px;
+  display: inline-flex;
+  white-space: nowrap;
+}
+
+.galgame-preview-mode button.active,
+.galgame-position-presets button:hover {
+  border-color: var(--gal-accent-line);
+  background: var(--gal-accent-soft);
+  color: var(--gal-accent);
+}
+
+.galgame-character-transform-fields,
+.galgame-character-transition-fields,
+.galgame-stage-style-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.galgame-position-presets {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+.galgame-stage-range {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  color: var(--gal-muted);
+  font-size: 11px;
+}
+
+.galgame-stage-range > span {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 7px;
+}
+
+.galgame-stage-range > span > input[type="range"],
+.galgame-stage-range > input[type="range"] {
+  min-width: 0;
+  flex: 1;
+}
+
+.galgame-stage-range input[type="number"] {
+  width: 64px;
+  min-height: 28px;
+  padding: 0 6px;
+  border: 1px solid var(--gal-line);
+  border-radius: 6px;
+  background: var(--gal-surface-strong);
+  color: var(--gal-text);
+}
+
+.galgame-stage-checkbox,
+.galgame-character-transition-fields > label:first-child {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--gal-muted);
+  font-size: 11px;
+}
+
+.galgame-dialogue-portrait-advanced {
+  margin: 2px 0 12px;
+  border: 1px solid var(--gal-line);
+  border-radius: 8px;
+  background: var(--gal-surface);
+}
+
+.galgame-dialogue-portrait-advanced > summary {
+  padding: 8px 10px;
+  color: var(--gal-muted);
+  font-size: 10px;
+  cursor: pointer;
+}
+
+.galgame-dialogue-portrait-advanced[open] > summary {
+  border-bottom: 1px solid var(--gal-line);
+  color: var(--gal-text);
+}
+
+.galgame-dialogue-portrait-advanced > div {
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.galgame-player-portrait-fallback {
+  width: 64px;
+  height: 64px;
+  border: 1px solid rgb(255 255 255 / 0.34);
+  border-radius: 50%;
+  background: rgb(7 12 22 / 0.6);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  font-size: 24px;
+  backdrop-filter: blur(8px);
+}
+
+.galgame-stage .galgame-dialogue-box {
+  /* 背景 0、后景 CG 5、角色 10–30、前景 CG 35、自定义 UI 40–60。 */
+  z-index: 80;
+}
+
+.galgame-player-background {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.galgame-player-background-layer {
+  pointer-events: none;
+  will-change: transform;
+}
+
+.galgame-player-character-overlay {
+  position: absolute;
+  height: auto;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.galgame-scene-workspace {
+  display: grid;
+  grid-template-columns: minmax(190px, 250px) minmax(0, 1fr) minmax(
+      250px,
+      320px
+    );
+  height: 100%;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.galgame-scene-workspace.is-narrow {
+  grid-template-columns: 56px minmax(0, 1fr) minmax(250px, 320px);
+}
+
+.galgame-scene-browser,
+.galgame-scene-layers-panel {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  overflow: hidden;
+  background: var(--gal-panel);
+}
+
+.galgame-scene-browser {
+  border-right: 1px solid var(--gal-line);
+}
+
+.galgame-scene-layers-panel {
+  border-left: 1px solid var(--gal-line);
+}
+
+.galgame-scene-browser > header,
+.galgame-scene-layers-panel > header,
+.galgame-scene-stage-panel > header,
+.galgame-scene-browser-actions,
+.galgame-scene-layer-add,
+.galgame-scene-layer-detail > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.galgame-scene-list,
+.galgame-scene-layer-list {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 6px;
+  overflow: auto;
+}
+
+.galgame-scene-list section > button:not(.galgame-scene-group),
+.galgame-scene-layer-list article {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 9px;
+  padding: 7px;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  text-align: left;
+}
+
+.galgame-scene-list section > button.active,
+.galgame-scene-layer-list article.active {
+  border-color: color-mix(in srgb, var(--gal-accent) 55%, transparent);
+  background: color-mix(in srgb, var(--gal-accent) 12%, transparent);
+}
+
+.galgame-scene-list button > span,
+.galgame-scene-layer-list article > span {
+  display: grid;
+  width: 42px;
+  aspect-ratio: 16 / 10;
+  flex: none;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 6px;
+  background: var(--gal-soft);
+}
+
+.galgame-scene-list img,
+.galgame-scene-layer-list img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.galgame-scene-list em,
+.galgame-scene-layer-list article > div {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+}
+
+.galgame-scene-group {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 7px;
+  padding: 7px;
+}
+
+.galgame-scene-group i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.galgame-scene-stage-panel {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  padding: 16px;
+  overflow: auto;
+  background: var(--gal-canvas);
+}
+
+.galgame-scene-stage-panel > header {
+  align-items: flex-end;
+}
+
+.galgame-scene-stage-panel > header > div,
+.galgame-scene-stage-panel > header label {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.galgame-scene-stage {
+  position: relative;
+  width: min(100%, 1200px);
+  aspect-ratio: 16 / 9;
+  margin: auto;
+  overflow: hidden;
+  border: 1px solid var(--gal-line);
+  border-radius: 12px;
+  background: repeating-conic-gradient(#202735 0 25%, #171d28 0 50%) 50% / 24px
+    24px;
+}
+
+.galgame-scene-stage-layer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform-origin: center;
+}
+
+.galgame-scene-stage > div {
+  display: grid;
+  height: 100%;
+  place-content: center;
+  justify-items: center;
+  gap: 7px;
+}
+
+.galgame-scene-stage-panel > footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.galgame-scene-layer-detail {
+  display: grid;
+  gap: 8px;
+  padding-top: 10px;
+  border-top: 1px solid var(--gal-line);
+}
+
+.galgame-scene-layer-detail label {
+  display: grid;
+  grid-template-columns: 70px 1fr;
+  align-items: center;
+}
+
+@media (max-width: 1100px) {
+  .galgame-scene-workspace,
+  .galgame-scene-workspace.is-narrow {
+    grid-template-columns: 56px minmax(0, 1fr) 260px;
+  }
+}
+
+@media (max-width: 760px) {
+  .galgame-scene-workspace,
+  .galgame-scene-workspace.is-narrow {
+    grid-template-columns: 48px minmax(0, 1fr);
+  }
+
+  .galgame-scene-layers-panel {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    z-index: 8;
+    width: min(82vw, 300px);
+    max-height: 48%;
+  }
+}
+
+.galgame-stage::after {
+  z-index: 1;
+}
+
+.galgame-stage > span {
+  z-index: 3;
+}
+
+.galgame-player-cg {
+  position: absolute;
+  overflow: hidden;
+  opacity: var(--galgame-cg-opacity, 1);
+  pointer-events: none;
+  transition-property: opacity;
+  transition-timing-function: ease;
+}
+
+.galgame-player-cg[data-display-mode="fullscreen"] {
+  inset: 0;
+}
+
+.galgame-player-cg[data-display-mode="overlay"] {
+  overflow: visible;
+  transform: translate(-50%, -50%);
+}
+
+.galgame-player-cg[data-display-mode="fullscreen"][data-fit="contain"] {
+  background: #000;
+}
+
+.galgame-player-cg-image {
+  display: block;
+}
+
+.galgame-player-cg[data-display-mode="fullscreen"] .galgame-player-cg-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.galgame-player-cg[data-display-mode="fullscreen"][data-fit="contain"]
+  .galgame-player-cg-image {
+  object-fit: contain;
+}
+
+.galgame-player-cg[data-display-mode="overlay"] .galgame-player-cg-image {
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+}
+
+.galgame-player-cg.is-editable {
+  pointer-events: auto;
+  cursor: move;
+  outline: 1px solid rgb(255 255 255 / 0.86);
+  outline-offset: 3px;
+  box-shadow: 0 0 0 4px rgb(241 107 100 / 0.4);
+}
+
+.galgame-player-cg-resize {
+  position: absolute;
+  right: -8px;
+  bottom: -8px;
+  width: 16px;
+  height: 16px;
+  border: 2px solid #fff;
+  border-radius: 4px;
+  background: var(--gal-accent);
+  box-shadow: 0 2px 8px rgb(0 0 0 / 0.35);
+  cursor: nwse-resize;
+}
+
+.galgame-player-cg-resize:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
+.galgame-player-cg[data-entering="true"] {
+  animation: galgame-player-cg-enter 400ms ease both;
+}
+
+.galgame-player-cg[data-exiting="true"] {
+  opacity: 0;
+}
+
+@keyframes galgame-player-cg-enter {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: var(--galgame-cg-opacity, 1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .galgame-player-cg {
+    animation-duration: 0ms !important;
+    transition-duration: 0ms !important;
+  }
+}
+
+.galgame-player-start,
+.galgame-ending,
+.galgame-player-error,
+.galgame-choices {
+  z-index: 80;
+}
+
+/* Visual, scene, background and CG workspaces */
+
+.galgame-visual-workspace {
+  min-height: 0;
+}
+
+.galgame-visual-workspace > nav {
+  height: 44px;
+  padding: 7px 14px;
+  border-bottom: 1px solid var(--gal-line);
+  background: var(--gal-panel);
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.galgame-visual-workspace > nav button {
+  min-height: 30px;
+  padding: 0 12px;
+  border: 1px solid var(--gal-line);
+  border-radius: 7px;
+  background: var(--gal-surface);
+  color: var(--gal-muted);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.galgame-visual-workspace > nav button.active {
+  border-color: var(--gal-accent-line);
+  background: var(--gal-accent-soft);
+  color: var(--gal-accent);
+}
+
+.galgame-visual-workspace > nav svg {
+  width: 15px;
+  height: 15px;
+}
+
+.galgame-visual-workspace > .galgame-scene-workspace {
+  height: calc(100vh - 153px);
+}
+
+.galgame-scene-workspace {
+  height: calc(100vh - 109px);
+  min-height: 580px;
+  display: grid;
+  grid-template-columns: 250px minmax(560px, 1fr) 350px;
+  overflow: hidden;
+}
+
+.galgame-cg-stage {
+  background: #000;
+}
+
+.galgame-scene-list-panel,
+.galgame-scene-detail-panel,
+.galgame-scene-reference-panel {
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+}
+
+.galgame-scene-list-panel {
+  padding: 15px 12px;
+  border-right: 1px solid var(--gal-line);
+  background: var(--gal-panel);
+}
+
+.galgame-scene-list-panel > header,
+.galgame-scene-detail-panel > header,
+.galgame-background-state-column > header,
+.galgame-scene-reference-panel section > header,
+.galgame-background-form > div {
+  display: flex;
+  align-items: center;
+}
+
+.galgame-scene-list-panel > header {
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.galgame-scene-list-panel > header strong {
+  font-size: 14px;
+}
+
+.galgame-scene-list-panel > header em,
+.galgame-background-state-column > header span {
+  min-width: 24px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: var(--gal-surface-strong);
+  color: var(--gal-muted);
+  font-size: 10px;
+  font-style: normal;
+  text-align: center;
+}
+
+.galgame-scene-search {
+  min-height: 35px;
+  padding: 0 9px;
+  border: 1px solid var(--gal-line);
+  border-radius: 8px;
+  background: var(--gal-surface);
+  color: var(--gal-faint);
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.galgame-scene-search input {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--gal-text);
+}
+
+.galgame-scene-create {
+  width: 100%;
+  min-height: 35px;
+  margin: 9px 0 12px;
+  border: 1px solid var(--gal-accent-line);
+  border-radius: 8px;
+  background: var(--gal-accent-soft);
+  color: var(--gal-accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.galgame-scene-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.galgame-scene-list > button {
+  width: 100%;
+  min-height: 62px;
+  padding: 7px;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--gal-text);
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr) 16px;
+  align-items: center;
+  gap: 9px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.galgame-scene-list > button:hover {
+  background: var(--gal-surface-strong);
+}
+
+.galgame-scene-list > button.active {
+  border-color: var(--gal-accent-line);
+  background: var(--gal-accent-soft);
+  box-shadow: inset 3px 0 var(--gal-accent);
+}
+
+.galgame-scene-list > button > span:nth-child(2) {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.galgame-scene-list > button strong,
+.galgame-scene-list > button small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.galgame-scene-list > button small {
+  color: var(--gal-muted);
+  font-size: 10px;
+}
+
+.galgame-scene-list > button > svg {
+  color: var(--gal-faint);
+}
+
+.galgame-scene-thumbnail {
+  width: 64px;
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  border: 1px solid var(--gal-line);
+  border-radius: 8px;
+  background: linear-gradient(
+    145deg,
+    var(--gal-accent-soft),
+    var(--gal-surface)
+  );
+  color: var(--gal-accent);
+  display: grid;
+  place-items: center;
+}
+
+.galgame-scene-thumbnail img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.galgame-scene-detail-panel {
+  background:
+    radial-gradient(circle at 50% 0%, var(--gal-accent-soft), transparent 34%),
+    var(--gal-bg);
+}
+
+.galgame-scene-detail-panel > header {
+  min-height: 66px;
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--gal-line);
+  background: color-mix(in srgb, var(--gal-panel) 86%, transparent);
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.galgame-scene-detail-panel > header > div {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.galgame-scene-detail-panel > header span {
+  color: var(--gal-muted);
+  font-size: 11px;
+}
+
+.galgame-scene-detail-panel > header nav {
+  padding: 3px;
+  border: 1px solid var(--gal-line);
+  border-radius: 8px;
+  background: var(--gal-surface-strong);
+  display: flex;
+  gap: 2px;
+}
+
+.galgame-scene-detail-panel > header nav button {
+  min-height: 29px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--gal-muted);
+  cursor: pointer;
+}
+
+.galgame-scene-detail-panel > header nav button.active {
+  background: var(--gal-surface);
+  color: var(--gal-text);
+  box-shadow: 0 1px 4px rgb(0 0 0 / 0.1);
+}
+
+.galgame-scene-base-form {
+  width: min(720px, calc(100% - 36px));
+  margin: 18px auto;
+  padding: 18px;
+  border: 1px solid var(--gal-line);
+  border-radius: 12px;
+  background: var(--gal-panel);
+  display: grid;
+  gap: 15px;
+}
+
+.galgame-scene-base-form textarea {
+  min-height: 160px;
+}
+
+.galgame-scene-base-form > small {
+  color: var(--gal-muted);
+}
+
+.galgame-background-editor {
+  min-height: calc(100% - 66px);
+  padding: 18px;
+  display: grid;
+  grid-template-columns: minmax(330px, 1.12fr) minmax(280px, 0.88fr);
+  gap: 18px;
+}
+
+.galgame-background-stage-column,
+.galgame-background-state-column {
+  min-width: 0;
+}
+
+.galgame-background-stage-column {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.galgame-background-stage {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border: 1px solid var(--gal-line);
+  border-radius: 14px;
+  background: radial-gradient(
+    circle at 50% 25%,
+    var(--gal-accent-soft),
+    var(--gal-surface)
+  );
+  box-shadow: var(--gal-shadow);
+  display: grid;
+  place-items: center;
+}
+
+.galgame-background-stage > img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.galgame-background-stage > span {
+  padding: 20px;
+  color: var(--gal-muted);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+  text-align: center;
+}
+
+.galgame-background-stage > span svg {
+  width: 44px;
+  height: 44px;
+  color: var(--gal-faint);
+}
+
+.galgame-background-stage > span small {
+  font-size: 10px;
+}
+
+.galgame-background-stage > em {
+  position: absolute;
+  right: 11px;
+  bottom: 10px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: rgb(3 8 15 / 0.58);
+  color: #fff;
+  font-size: 9px;
+  font-style: normal;
+  backdrop-filter: blur(6px);
+}
+
+.galgame-background-actions {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 7px;
+}
+
+.galgame-background-actions button,
+.galgame-background-form button,
+.galgame-scene-locate,
+.galgame-scene-danger-zone button {
+  min-height: 34px;
+  padding: 0 10px;
+  border: 1px solid var(--gal-line);
+  border-radius: 8px;
+  background: var(--gal-surface);
+  color: var(--gal-text);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  cursor: pointer;
+}

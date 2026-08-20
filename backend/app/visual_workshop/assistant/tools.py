@@ -16,6 +16,7 @@ from app.agents.harness import (
     ToolExecutionContext,
 )
 from app.core.db import SessionLocal
+from app.core.tenant_context import bind_workspace, current_workspace_id
 from app.models import (
     VisualAsset,
     VisualGenerationTask,
@@ -32,6 +33,10 @@ from app.visual_workshop.generation import GenerationError, VisualGeneration, ge
 CANVAS_CONTEXT_LIMIT = 32_000
 TEXT_NODE_LIMIT = 4_000
 _generation_input = TypeAdapter(GenerationTaskCreateIn)
+
+
+def _scope_workspace(context: ToolExecutionContext) -> str:
+    return str(context.scope.get("workspace_id") or current_workspace_id())
 
 
 def _json_text(value: Any, limit: int = 12_000) -> str:
@@ -61,8 +66,9 @@ def _compact_node(node: dict[str, Any]) -> dict[str, Any]:
     return item
 
 
-async def visual_context_source(project_id: str) -> list[ContextFragment]:
+async def visual_context_source(workspace_id: str, project_id: str) -> list[ContextFragment]:
     async with SessionLocal() as session:
+        bind_workspace(session.sync_session, workspace_id)
         project = await session.get(VisualWorkshopProject, project_id)
         canvas = await VisualCanvasDocuments(session).get(project_id)
         reference_ids = select(VisualProjectAssetReference.asset_id).where(
@@ -162,6 +168,7 @@ async def _read_canvas(arguments: dict[str, Any], context: ToolExecutionContext)
     del arguments
     project_id = str(context.scope["project_id"])
     async with SessionLocal() as session:
+        bind_workspace(session.sync_session, _scope_workspace(context))
         canvas = await VisualCanvasDocuments(session).get(project_id)
     data = {
         "canvas_revision": canvas.revision,
@@ -182,6 +189,7 @@ async def _list_assets(arguments: dict[str, Any], context: ToolExecutionContext)
     query = str(arguments.get("query") or "").strip()
     limit = min(50, max(1, int(arguments.get("limit") or 20)))
     async with SessionLocal() as session:
+        bind_workspace(session.sync_session, _scope_workspace(context))
         reference_ids = select(VisualProjectAssetReference.asset_id).where(
             VisualProjectAssetReference.project_id == project_id
         )
@@ -223,6 +231,7 @@ async def _list_generation_options(
 ) -> Observation:
     del arguments
     async with SessionLocal() as session:
+        bind_workspace(session.sync_session, _scope_workspace(context))
         options = await VisualGeneration(session).options()
     data = options.model_dump(mode="json")
     return Observation(
@@ -240,6 +249,7 @@ async def _inspect_generation_task(
     project_id = str(context.scope["project_id"])
     task_id = str(arguments.get("task_id") or "")
     async with SessionLocal() as session:
+        bind_workspace(session.sync_session, _scope_workspace(context))
         task = await session.get(VisualGenerationTask, task_id)
         if task is None or task.project_id != project_id:
             return Observation(
@@ -294,6 +304,7 @@ async def _apply_canvas_changes(
     project_id = str(context.scope["project_id"])
     operations = list(arguments.get("operations") or [])
     async with SessionLocal() as session:
+        bind_workspace(session.sync_session, _scope_workspace(context))
         documents = VisualCanvasDocuments(session)
         current = await documents.get(project_id)
         if context.approved_canvas_revision != current.revision:
@@ -347,6 +358,7 @@ async def _start_generation_on_canvas(
     if generation_kind in {"image", "video"} and configured_model_id:
         task_payload["model_id"] = str(configured_model_id)
     async with SessionLocal() as session:
+        bind_workspace(session.sync_session, _scope_workspace(context))
         documents = VisualCanvasDocuments(session)
         current = await documents.get(project_id)
         if context.approved_canvas_revision != current.revision:
@@ -525,6 +537,7 @@ def visual_agent_tools(
 
 def build_visual_agent_definition(
     *,
+    workspace_id: str,
     project_id: str,
     model: str,
     tools_enabled: bool,
@@ -569,6 +582,6 @@ def build_visual_agent_definition(
             if tools_enabled
             else ()
         ),
-        context_sources=(lambda: visual_context_source(project_id),),
+        context_sources=(lambda: visual_context_source(workspace_id, project_id),),
         budgets=RunBudgets(),
     )

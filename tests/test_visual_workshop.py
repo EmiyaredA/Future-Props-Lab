@@ -1,11 +1,9 @@
-from types import SimpleNamespace
 from uuid import uuid4
 
 import httpx
 import pytest
 from sqlalchemy import delete
 
-import app.deps as deps
 import app.files.assets as asset_module
 from app.core.config import get_settings
 from app.core.credentials import encrypt_secret
@@ -167,23 +165,11 @@ async def test_visual_workshop_project_crud_validation_sorting_and_conflicts() -
 
 
 @pytest.mark.asyncio
-async def test_visual_workshop_routes_use_studio_auth(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    token = "v" * 32
-    monkeypatch.setattr(
-        deps,
-        "get_settings",
-        lambda: SimpleNamespace(fpl_studio_token=token),
-    )
+@pytest.mark.real_auth
+async def test_visual_workshop_routes_use_studio_auth() -> None:
     transport = httpx.ASGITransport(app=app)
     async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
         assert (await client.get("/v1/visual-workshop/projects")).status_code == 401
-        authorized = await client.get(
-            "/v1/visual-workshop/projects",
-            headers={"X-Studio-Token": token},
-        )
-        assert authorized.status_code == 200
 
 
 @pytest.mark.asyncio

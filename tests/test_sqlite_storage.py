@@ -40,14 +40,14 @@ def test_sqlite_migration_is_repeatable_and_detects_drift(tmp_path: Path) -> Non
     database_path = tmp_path / "nested" / "catalog.db"
 
     assert apply_migrations(database_path) == (
-        "r0019_project_storage_layout",
+        "r0020_accounts_and_workspaces",
         True,
     )
     assert apply_migrations(database_path) == (
-        "r0019_project_storage_layout",
+        "r0020_accounts_and_workspaces",
         False,
     )
-    assert check_migrations(database_path) == "r0019_project_storage_layout"
+    assert check_migrations(database_path) == "r0020_accounts_and_workspaces"
 
     with connect_database(database_path) as connection:
         connection.execute(
@@ -73,7 +73,7 @@ def test_existing_r0001_database_upgrades_without_rewriting_history(tmp_path: Pa
         connection.commit()
 
     assert apply_migrations(database_path) == (
-        "r0019_project_storage_layout",
+        "r0020_accounts_and_workspaces",
         True,
     )
     with connect_database(database_path) as connection:
@@ -100,6 +100,7 @@ def test_existing_r0001_database_upgrades_without_rewriting_history(tmp_path: Pa
             ("r0017_galgame_character_assets",),
             ("r0018_galgame_asset_management",),
             ("r0019_project_storage_layout",),
+            ("r0020_accounts_and_workspaces",),
         ]
         assert connection.execute("SELECT COUNT(*) FROM model_test_conversations").fetchone() == (
             0,
@@ -142,6 +143,119 @@ def test_existing_r0001_database_upgrades_without_rewriting_history(tmp_path: Pa
             "storage_key",
             "legacy_visual_asset_id",
         } <= generation_asset_columns
+
+
+def test_r0020_assigns_complete_r0019_history_to_default_workspace(
+    tmp_path: Path,
+) -> None:
+    database_path = tmp_path / "r0019-history.db"
+    _create_database_at_migration(database_path, len(MIGRATIONS) - 1)
+    with connect_database(database_path) as connection:
+        connection.execute(
+            """
+            INSERT INTO model_providers (
+              id, name, kind, base_url, api_key_ciphertext, enabled
+            ) VALUES ('provider-history', '历史网关', 'openai', '', 'encrypted-history', 1)
+            """
+        )
+        connection.execute(
+            """
+            INSERT INTO llm_call_logs (
+              id, call_source, provider_kind, model, trace_id,
+              request_payload, response_payload, status
+            ) VALUES (
+              'log-history', 'model_diagnostic', 'openai', 'history-model',
+              'trace-history', '{"prompt":"保留"}', '{"answer":"保留"}', 'success'
+            )
+            """
+        )
+        connection.execute(
+            """
+            INSERT INTO visual_workshop_projects (id, title, kind)
+            VALUES ('visual-history', '历史视觉项目', 'canvas')
+            """
+        )
+        connection.execute(
+            """
+            INSERT INTO galgame_workshop_projects (id, title)
+            VALUES ('galgame-history', '历史 Galgame')
+            """
+        )
+        connection.execute(
+            """
+            INSERT INTO visual_asset_folders (id, name)
+            VALUES ('folder-history', '历史文件夹')
+            """
+        )
+        connection.execute(
+            """
+            INSERT INTO visual_assets (
+              id, folder_id, original_filename, display_name, storage_key,
+              media_kind, mime_type, byte_size
+            ) VALUES (
+              'asset-history', 'folder-history', 'old.png', 'old.png',
+              'legacy-storage-key', 'image', 'image/png', 128
+            )
+            """
+        )
+        connection.execute(
+            """
+            INSERT INTO model_test_conversations (id, title, system_prompt)
+            VALUES ('conversation-history', '历史对话', '历史系统提示')
+            """
+        )
+        connection.execute(
+            """
+            INSERT INTO tool_navigation_items (tool_id, is_favorite, use_count)
+            VALUES ('json-formatter', 1, 7)
+            """
+        )
+        connection.commit()
+
+    assert apply_migrations(database_path) == (
+        "r0020_accounts_and_workspaces",
+        True,
+    )
+    workspace_tables = (
+        "model_providers",
+        "model_entries",
+        "llm_call_logs",
+        "visual_workshop_projects",
+        "visual_generation_tasks",
+        "visual_assistant_conversations",
+        "galgame_workshop_projects",
+        "galgame_asset_transcription_tasks",
+        "visual_asset_folders",
+        "visual_assets",
+        "visual_project_asset_references",
+        "model_test_conversations",
+        "model_test_generation_tasks",
+        "model_test_generation_assets",
+        "tool_navigation_items",
+    )
+    with connect_database(database_path) as connection:
+        for table in workspace_tables:
+            columns = {
+                row[1] for row in connection.execute(f"PRAGMA table_info({table})").fetchall()
+            }
+            assert "workspace_id" in columns
+            assert connection.execute(
+                f"SELECT COUNT(*) FROM {table} WHERE workspace_id != 'default'"
+            ).fetchone() == (0,)
+        assert connection.execute(
+            "SELECT api_key_ciphertext FROM model_providers WHERE id = 'provider-history'"
+        ).fetchone() == ("encrypted-history",)
+        assert connection.execute(
+            "SELECT request_payload, response_payload FROM llm_call_logs WHERE id = 'log-history'"
+        ).fetchone() == ('{"prompt":"保留"}', '{"answer":"保留"}')
+        assert connection.execute(
+            "SELECT storage_key, storage_version FROM visual_assets WHERE id = 'asset-history'"
+        ).fetchone() == ("legacy-storage-key", 1)
+        assert connection.execute(
+            "SELECT workspace_id, use_count FROM tool_navigation_items "
+            "WHERE tool_id = 'json-formatter'"
+        ).fetchone() == ("default", 7)
+        assert connection.execute("PRAGMA foreign_key_check").fetchall() == []
 
 
 def test_r0014_adds_empty_content_parts_to_existing_messages(tmp_path: Path) -> None:
@@ -205,11 +319,11 @@ def test_r0015_upgrades_r0014_and_enforces_private_asset_ownership(tmp_path: Pat
         connection.commit()
 
     assert apply_migrations(database_path) == (
-        "r0019_project_storage_layout",
+        "r0020_accounts_and_workspaces",
         True,
     )
     assert apply_migrations(database_path) == (
-        "r0019_project_storage_layout",
+        "r0020_accounts_and_workspaces",
         False,
     )
     with connect_database(database_path) as connection:
@@ -318,7 +432,7 @@ def test_existing_default_catalog_is_extended_without_overwriting_user_data(
         connection.commit()
 
     assert apply_migrations(database_path) == (
-        "r0019_project_storage_layout",
+        "r0020_accounts_and_workspaces",
         True,
     )
 
@@ -407,7 +521,7 @@ def test_existing_default_catalog_is_extended_without_overwriting_user_data(
     assert stored_categories == {"[]"}
 
     assert apply_migrations(database_path) == (
-        "r0019_project_storage_layout",
+        "r0020_accounts_and_workspaces",
         False,
     )
     with connect_database(database_path) as connection:
@@ -425,7 +539,7 @@ def test_catalog_upgrade_does_not_recreate_deleted_default_provider(tmp_path: Pa
         connection.commit()
 
     assert apply_migrations(database_path) == (
-        "r0019_project_storage_layout",
+        "r0020_accounts_and_workspaces",
         True,
     )
     with connect_database(database_path) as connection:
@@ -461,7 +575,7 @@ def test_r0007_upgrade_adds_visual_tasks_and_preserves_provider_credentials(
         connection.commit()
 
     assert apply_migrations(database_path) == (
-        "r0019_project_storage_layout",
+        "r0020_accounts_and_workspaces",
         True,
     )
     with connect_database(database_path) as connection:

@@ -149,8 +149,8 @@ describe("Block context settings", () => {
       },
       transition: { durationMs: 240, fade: true },
     };
-    expect(find(character, "左侧").apply(character)).toMatchObject({
-      transform: { x: 25 },
+    expect(find(character, "水平翻转").apply(character)).toMatchObject({
+      transform: { flipX: true },
     });
 
     const scene: GalgameStoryBlock = {

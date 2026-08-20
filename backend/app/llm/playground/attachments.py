@@ -12,6 +12,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import Settings
+from app.core.tenant_context import current_workspace_id
 from app.core.time import iso_utc
 from app.models import ModelTestAttachment, ModelTestConversation
 from app.schemas.model_test import ModelTestAttachmentListOut, ModelTestAttachmentOut
@@ -95,6 +96,9 @@ class ModelTestAttachments:
         self.session = session
         self.settings = settings
 
+    def _root(self) -> Path:
+        return self.settings.workspace_model_test_path(current_workspace_id(), "attachments")
+
     async def _conversation(self, conversation_id: str) -> ModelTestConversation:
         row = await self.session.get(ModelTestConversation, conversation_id)
         if row is None:
@@ -132,7 +136,7 @@ class ModelTestAttachments:
             )
         ).scalar_one()
         next_position = int(current_position if current_position is not None else -1) + 1
-        root = self.settings.model_test_attachment_path
+        root = self._root()
         temp_root = root / ".tmp"
         temp_root.mkdir(parents=True, exist_ok=True)
         staged: list[tuple[Path, Path, ModelTestAttachment]] = []
@@ -215,7 +219,7 @@ class ModelTestAttachments:
                 code="attachment_already_sent",
                 status=409,
             )
-        path = self.settings.model_test_attachment_path / row.storage_key
+        path = self._root() / row.storage_key
         await self.session.delete(row)
         await self.session.commit()
         path.unlink(missing_ok=True)
@@ -224,13 +228,13 @@ class ModelTestAttachments:
         self, conversation_id: str, attachment_id: str
     ) -> tuple[ModelTestAttachment, Path]:
         row = await self._attachment(conversation_id, attachment_id)
-        path = self.settings.model_test_attachment_path / row.storage_key
+        path = self._root() / row.storage_key
         if not path.is_file():
             raise AttachmentError("图片文件不存在", code="attachment_missing", status=404)
         return row, path
 
     async def encoded(self, row: ModelTestAttachment) -> str:
-        path = self.settings.model_test_attachment_path / row.storage_key
+        path = self._root() / row.storage_key
         return await asyncio.to_thread(_read_base64, path)
 
     async def paths_for_conversation(self, conversation_id: str) -> list[Path]:
@@ -245,4 +249,4 @@ class ModelTestAttachments:
             .scalars()
             .all()
         )
-        return [self.settings.model_test_attachment_path / row.storage_key for row in rows]
+        return [self._root() / row.storage_key for row in rows]

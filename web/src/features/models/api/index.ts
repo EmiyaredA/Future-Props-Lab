@@ -1,7 +1,7 @@
 import type { components } from "@generated/api";
 import { api, fetchApiBlob, unwrap } from "@platform/api/client";
 import { ApiError } from "@platform/api/client";
-import { getStudioToken, notifyAuthRequired } from "@platform/api/studioAuth";
+import { getCsrfToken, notifyAuthRequired } from "@platform/api/studioAuth";
 import { postSse } from "@platform/api/sse";
 
 export type Catalog = components["schemas"]["ModelCatalogOut"];
@@ -253,12 +253,13 @@ export async function uploadModelTestAttachments(id: string, files: File[]) {
   const form = new FormData();
   for (const file of files) form.append("files", file);
   const base = String(import.meta.env.VITE_API_BASE || "").replace(/\/$/, "");
-  const token = getStudioToken();
+  const csrf = getCsrfToken();
   const response = await fetch(
     `${base}/v1/model-test/conversations/${encodeURIComponent(id)}/attachments`,
     {
       method: "POST",
-      headers: token ? { "X-Studio-Token": token } : {},
+      headers: csrf ? { "X-CSRF-Token": csrf } : {},
+      credentials: "include",
       body: form,
     },
   );

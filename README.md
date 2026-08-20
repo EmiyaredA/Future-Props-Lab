@@ -2,11 +2,14 @@
 
 未来道具研究所的模型基础设施管理台。项目从 Sayflow 的工程边界中提取了模型目录、模型调用日志、管理端主题与文档中心壳，删除了 Bot、知识库、语音和部署等业务。
 
+运行环境要求 Node.js 24 与 Python 3.11 或更高版本；持续集成同时验证 Python 3.11 最低支持版本和 Python 3.14。
+
 ## 快速开始
 
 1. 安装依赖：`npm run setup`
 2. 创建配置：`cp backend/.env.example backend/.env`，并替换 `FPL_SECRETS_KEY`
-3. 启动前后端：`npm run dev`
+3. 创建首个管理员：`npm run account -- create-admin --username admin`
+4. 启动前后端：`npm run dev`，使用命令输出的一次性临时密码登录并立即改密
 
 首次启动会自动创建 `.runtime/future-props.db` 并执行迁移，不需要 Docker 或独立数据库服务。`npm run db:migrate` 与 `npm run db:migrate:check` 仍可用于手动诊断。
 
@@ -20,14 +23,14 @@
 启停状态、模型描述或其他手工配置，也不会重新加入此前删除的旧文本模型。默认清单是随代码
 发布的审核快照，应用启动时不会联网同步官网；完成迁移后，后续编辑和删除不会被启动流程覆盖。
 
-Studio 默认地址为 <http://127.0.0.1:3000>，打开后进入首页；API 文档为 <http://127.0.0.1:9000/docs>。一级“文件管理”保存可被视觉项目引用的图片、视频、音频与文档；工具导航聚合站内模型能力与常用公开研发工具，并将收藏和最近使用记录持久化到本机 SQLite。基模型菜单包含持久化多轮“模型测试”、供应商与模型管理，以及可按快速诊断/模型测试区分的调用日志。
+Studio 默认地址为 <http://127.0.0.1:3000>，打开后进入账号登录页；API 文档为 <http://127.0.0.1:9000/docs>。应用保持单机 SQLite 与单进程运行，同时支持多个账号和逻辑隔离的 Workspace。一级“文件管理”保存可被视觉项目引用的图片、视频、音频与文档；工具导航聚合站内模型能力与常用公开研发工具，并按 Workspace 持久化收藏和最近使用记录。基模型菜单包含持久化多轮“模型测试”、供应商与模型管理，以及可按快速诊断/模型测试区分的调用日志。
 
-Galgame 工坊使用 Story 1.2 管理角色表情/皮肤、真实多层场景、剧情 CG、BGM、音效、语音、视频和资源总览。项目素材拥有稳定虚拟路径、媒体元数据与打包策略；语音识别通过已启用且声明 `speech_recognition` 能力的 OpenAI 兼容模型服务执行，不随应用捆绑大型本地模型。
+Galgame 工坊使用 Story 1.4 管理角色表情/皮肤、真实多层场景、剧情 CG、BGM、音效、语音、视频和资源总览。项目素材拥有稳定虚拟路径、媒体元数据与打包策略；语音识别通过已启用且声明 `speech_recognition` 能力的 OpenAI 兼容模型服务执行，不随应用捆绑大型本地模型。
 
 备份时先停止应用，再同时复制 `.runtime/future-props.db`、`.runtime/library/assets/`、
 `.runtime/applications/`、
 `.runtime/model-test/attachments/`、`.runtime/model-test/references/` 与
-`.runtime/model-test/generated/`。数据库路径可通过
+`.runtime/model-test/generated/`、`.runtime/workspaces/` 与 `.runtime/profiles/`。数据库路径可通过
 `FPL_DATABASE_PATH` 调整，这些文件目录都位于数据库所在目录下。
 
-详细说明见 [项目结构](docs/architecture/project-layout.md)、[环境变量](docs/reference/configuration.md) 和 [API 参考](docs/reference/api.md)。
+详细说明见 [贡献指南](CONTRIBUTING.md)、[项目结构](docs/architecture/project-layout.md)、[环境变量](docs/reference/configuration.md)、[故障排查](docs/operations/troubleshooting.md) 和 [API 参考](docs/reference/api.md)。

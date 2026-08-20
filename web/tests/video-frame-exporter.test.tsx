@@ -112,7 +112,7 @@ test("invalidates the preview when format or quality changes", async () => {
   await user.click(screen.getByRole("button", { name: "生成预览" }));
   expect(await screen.findByText("已生成")).toBeInTheDocument();
 
-  await user.click(screen.getByRole("button", { name: "选择图片格式" }));
+  await user.click(screen.getByRole("combobox", { name: "选择图片格式" }));
   await user.click(screen.getByRole("option", { name: /JPEG/ }));
   expect(screen.getByLabelText("图片质量")).toHaveValue("92");
   expect(screen.getByText(/设置或时间点已变化/)).toBeInTheDocument();

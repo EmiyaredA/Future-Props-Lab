@@ -1,6 +1,25 @@
 # API 参考
 
-交互式 OpenAPI 位于后端 `/docs`。所有业务接口注册在 `/v1`；配置 `FPL_STUDIO_TOKEN` 后携带 `X-Studio-Token`。
+交互式 OpenAPI 位于后端 `/docs`。所有业务接口注册在 `/v1`。浏览器使用 Cookie Session；写请求
+同时校验 `fpl_csrf`/`X-CSRF-Token` 与精确 Origin。自动化可使用绑定单一 Workspace、以 `fpm_`
+开头的 Bearer Management API Key，scope 仅有 `studio:read` 和 `studio:write`。
+
+## 账号与 Workspace
+
+- `POST /v1/auth/login`、`GET /v1/auth/me`、`POST /v1/auth/reauth`
+- `POST /v1/auth/change-password`、`POST /v1/auth/logout`
+- `PATCH /v1/account/profile` 与头像 GET/PUT/DELETE
+- `GET/DELETE /v1/account/sessions/{session_id}`、`POST /v1/account/sessions/revoke-others`
+- `GET/POST /v1/account/api-keys`、`POST /v1/account/api-keys/{key_id}/revoke`
+- `GET /v1/account/security-events`
+- `GET/POST /v1/platform/accounts`、账号状态更新、密码重置和全局安全审计
+- `GET /v1/account/workspaces`、`POST .../switch`、`PATCH .../current`
+- 当前 Workspace 的成员与邀请治理，以及本人邀请的接受/拒绝接口
+- `GET /v1/public-workspace`、公开 Galgame Story 与受项目可达性约束的 inline 素材预览
+
+业务请求不接受 `workspace_id`；当前空间只能来自已验证 Session 或 API Key。跨空间资源 ID 统一按
+404 处理。公开 Workspace 也要求先登录，访客只获得独立只读作品投影，不能访问模型、提示词、
+测试对话、任务、日志、账号或安全信息。
 
 ## 模型目录
 
@@ -73,7 +92,7 @@ error`；成功、失败、超时或取消都会保存消息状态并写入调�
 - `POST /v1/tool-navigation/tools/{tool_id}/use`：原子递增使用次数并更新最近使用时间。
 
 工具目录本身由 Web 注册表维护，后端只保存由小写字母、数字和连字符组成的稳定工具 ID。
-状态属于当前单机 Studio 全局数据，不建立用户或多租户归属。
+状态属于当前 Workspace，同一工具可在不同空间保存独立偏好。
 
 ## 视觉创作工坊
 
@@ -149,7 +168,7 @@ ID、消息数量、画布摘要和素材 ID；不保存图片 Base64、临时�
 - `GET/PATCH/DELETE /v1/galgame-workshop/projects/{project_id}`：读取、修改或删除单个工程。
 - `GET/PUT /v1/galgame-workshop/projects/{project_id}/story`：读取或整份 CAS 保存 Story 1.4 故事文档。
 - `GET /v1/galgame-workshop/projects/{project_id}/story/report`：按章节顺序、调用栈与真实控制流检查可达性、停止点和递归。
-- `GET/POST /v1/galgame-workshop/projects/{project_id}/assets`：搜索或上传工程私有的图片、音视频与字体；上传可指定素材分类。
+- `GET/POST /v1/galgame-workshop/projects/{project_id}/assets`：搜索或上传工程私有的图片、音视频、字体与参考文档；上传可指定素材分类。
 - `POST /v1/galgame-workshop/projects/{project_id}/assets/import-preview|batch`：预检批量改名和虚拟路径，或原子导入一批素材。
 - `PATCH /v1/galgame-workshop/projects/{project_id}/assets/{asset_id}`：以素材 revision CAS 修改显示名、分类、虚拟路径与打包策略。
 - `GET /v1/galgame-workshop/projects/{project_id}/assets/overview`：返回数量、体积、类型分布、打包估算、引用位置、游离与缺失文件。
@@ -175,8 +194,9 @@ ID、消息数量、画布摘要和素材 ID；不保存图片 Base64、临时�
 7680×4320 的画布尺寸（默认 1920×1080）；`settings.characterStage` 保存全局锚点、基准画面高度、
 默认位置 ID 与 1–20 个可排序的二维百分比位置预设，其中左、中左、中、中右、右五个内置预设必须保留。
 `settings.characterStageOverrides` 可按角色 ID 保存同形的独立方案；键必须引用现有角色，删除条目后角色恢复跟随全局方案。
-旧版标量站位会结合共享 Y 坐标自动转换为二维预设。它们只作为新建 Block 与资产预览的默认值，
-不会改写已有角色 transform。角色的 `themeColor` 使用六位十六进制颜色；旧文档按角色顺序补入
+旧版标量站位会结合共享 Y 坐标自动转换为二维预设。角色舞台配置是运行时站位、锚点与基准尺寸的
+唯一事实源；对白人物呈现和角色登场 Block 只保存 `positionId` 与 `far / medium / near` 距离档位。
+角色的 `themeColor` 使用六位十六进制颜色；旧文档按角色顺序补入
 确定性色板。角色可选
 `expressions[]` 和 `defaultExpressionId`，表情通过故事
 `assets[]` 中的 `characterPortrait` 记录引用文件，并可用 `flipX` 保存表情在舞台上的默认水平朝向；
@@ -191,8 +211,10 @@ Story 1.4 的表情可用 `renderMode: frameSequence` 和
 对白可用 `expressionId` 覆盖角色默认表情。场景统一使用
 `sceneGroups + scenes[].layers[]`；每层保存稳定 ID、名称、`sceneLayer` 素材、距离和偏移，单层与多层共享模型。
 旧多背景场景会确定性拆分为多个场景并重写 Scene Block 引用；`clearCharacters` 控制切换场景时是否清空舞台角色。
-`showCharacter` Block 以 `characterId` 为舞台唯一实例进行登场或调整，保存表情、图片锚点、百分比位置（X/Y 均为 -1000%–1000%）、比例、亮度、
-透明度、水平翻转、层级与基础过渡；`removeCharacter` 可让指定角色或全部角色退场。故事保存使用独立
+`showCharacter` Block 以 `characterId` 为舞台唯一实例进行登场或调整，保存表情、资产位置预设 ID、
+距离档位、亮度、透明度、水平翻转、层级与基础过渡；`removeCharacter` 可让指定角色或全部角色退场。
+旧 `transform.x / y / anchor / scale` 字段继续接受和原样保存以兼容既有 Story，但播放器不再用它们覆盖
+角色资产配置。故事保存使用独立
 `expected_revision`，严格拒绝重复 ID、悬空引用、跨角色表情、越界角色变换、跨场景背景和少于两个选项的分支；冲突快照包含服务器当前完整故事，
 旧版 V1 缺少立绘或背景字段时在读取中补默认空值，首次保存后自然写入扩展格式。项目变量声明
 `boolean / number / string` 类型、默认值和 `session / persistent` 生命周期；角色属性只能使用项目属性模板中
@@ -288,8 +310,9 @@ Dialogue Block 的 `characterId` 继续表示主说话角色；可选 `speakerId
 仍按兼容规则解释：首句前为 0，对白之间锚定下一句开始，尾部锚定剧情结尾。时间轴中的正式 BGM 会跟随播放、暂停与跳转；
 非循环 BGM 超过媒体时长后保持结束状态。
 
-角色舞台位置以百分比坐标保存，`x / y` 均允许 `-1000` 到 `1000`；`y = 100` 表示角色脚底锚点
-位于舞台底边，更大的值可继续把带透明留白或高倍率缩放的立绘向画面外移动。
+角色舞台位置由角色资产的二维百分比预设保存，运行时 Block 通过 `positionId` 引用；对白卡片可选择
+远、中、近距离档位与位置预设。位置预设被删除或旧引用无法解析时自动回到该角色的默认位置。旧 Block
+的自由坐标仅作格式兼容，不参与新的舞台布局。
 
 剧本编辑器使用章节树、卡片正文和舞台/检查器三栏布局。“卡片 / JSON”位于主视图标签组，
 “演出”作为独立工作区入口；三者读取同一组 Block。JSON OP 是当前 Fragment 的顶层只读检查视图，
@@ -388,4 +411,5 @@ Markdown 与 JSON；服务端同时校验扩展名、MIME、文件头和配置�
 
 - `GET /health`
 - `GET /ready`
-- `GET /v1/studio/auth/check`
+
+健康探针保持匿名；所有 `/v1` 业务接口按本页“账号与 Workspace”规则鉴权。

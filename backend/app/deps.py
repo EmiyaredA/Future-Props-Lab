@@ -1,31 +1,234 @@
 from __future__ import annotations
 
 import secrets
+from datetime import timedelta
 from typing import Annotated
 
-from fastapi import Depends, Header, HTTPException, status
+from fastapi import Depends, HTTPException, Request, status
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.accounts.principal import StudioPrincipal
+from app.accounts.security import (
+    CSRF_COOKIE,
+    REAUTH_MINUTES,
+    SESSION_ACTIVITY_WRITE_SECONDS,
+    SESSION_COOKIE,
+    SESSION_IDLE_HOURS,
+    hash_secret,
+)
+from app.accounts.workspaces import active_membership, owner_membership, resolve_access
 from app.core.config import get_settings
 from app.core.db import get_session
+from app.core.tenant_context import bind_workspace
+from app.core.time import utc_now
+from app.models import AuthSession, ManagementApiKey, User, Workspace
 
-SessionDep = Annotated[AsyncSession, Depends(get_session)]
+
+async def db_session():
+    async for session in get_session():
+        yield session
 
 
-def verify_studio_token(raw: str | None) -> None:
-    configured = get_settings().fpl_studio_token.strip()
-    if not configured:
+SessionDep = Annotated[AsyncSession, Depends(db_session)]
+_UNSAFE_METHODS = {"POST", "PUT", "PATCH", "DELETE"}
+
+
+def client_ip(request: Request) -> str:
+    return request.client.host if request.client else ""
+
+
+def _unauthorized() -> HTTPException:
+    return HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail={"code": "studio_auth_required", "message": "需要登录"},
+        headers={"WWW-Authenticate": "Session, Bearer"},
+    )
+
+
+def _forbidden(code: str, message: str) -> HTTPException:
+    return HTTPException(status_code=403, detail={"code": code, "message": message})
+
+
+def _validate_session_request(request: Request, auth_session: AuthSession) -> None:
+    if request.method not in _UNSAFE_METHODS:
         return
-    candidate = (raw or "").strip()
-    if not candidate or not secrets.compare_digest(candidate, configured):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail={"code": "studio_auth_required", "message": "管理令牌无效或已失效"},
-            headers={"WWW-Authenticate": "StudioToken"},
+    csrf_cookie = request.cookies.get(CSRF_COOKIE, "")
+    csrf_header = request.headers.get("X-CSRF-Token", "")
+    if (
+        not csrf_cookie
+        or not csrf_header
+        or not secrets.compare_digest(csrf_cookie, csrf_header)
+        or not secrets.compare_digest(hash_secret(csrf_cookie), auth_session.csrf_hash)
+    ):
+        raise _forbidden("csrf_failed", "CSRF 校验失败")
+    origin = request.headers.get("Origin", "").rstrip("/")
+    request_origin = f"{request.url.scheme}://{request.url.netloc}".rstrip("/")
+    allowed = {*get_settings().cors_origin_list, request_origin}
+    if not origin or origin not in allowed:
+        raise _forbidden("origin_not_allowed", "请求来源不受信任")
+
+
+async def authenticate_studio_request(
+    request: Request,
+    session: AsyncSession,
+    *,
+    required_scope: str,
+    allow_forced_password_change: bool = False,
+) -> StudioPrincipal:
+    now = utc_now()
+    raw_session = request.cookies.get(SESSION_COOKIE, "")
+    if raw_session:
+        row = (
+            await session.execute(
+                select(AuthSession, User)
+                .join(User, User.id == AuthSession.user_id)
+                .where(AuthSession.token_hash == hash_secret(raw_session))
+            )
+        ).first()
+        if row is None:
+            raise _unauthorized()
+        auth_session, user = row
+        if (
+            user.status != "active"
+            or auth_session.revoked_at is not None
+            or auth_session.idle_expires_at <= now
+            or auth_session.absolute_expires_at <= now
+        ):
+            raise _unauthorized()
+        _validate_session_request(request, auth_session)
+        if user.must_change_password and not allow_forced_password_change:
+            raise _forbidden("password_change_required", "必须先修改临时密码")
+        workspace = await session.get(Workspace, auth_session.active_workspace_id)
+        if workspace is None:
+            raise _unauthorized()
+        try:
+            access, membership = await resolve_access(session, user=user, workspace=workspace)
+        except Exception as exc:
+            if request.url.path.rstrip("/") != "/v1/auth/me":
+                raise HTTPException(
+                    409,
+                    detail={
+                        "code": "workspace_access_changed",
+                        "message": "当前 Workspace 的访问权限已变化",
+                    },
+                ) from exc
+            owner = await owner_membership(session, user_id=user.id)
+            if owner is None:
+                raise _unauthorized() from exc
+            workspace = await session.get(Workspace, owner.workspace_id)
+            if workspace is None:
+                raise _unauthorized() from exc
+            auth_session.active_workspace_id = workspace.id
+            access, membership = "owner", owner
+            await session.commit()
+        scopes = (
+            frozenset({"studio:read"})
+            if access == "public_viewer"
+            else frozenset({"studio:read", "studio:private_read", "studio:write"})
         )
+        if (now - auth_session.last_seen_at).total_seconds() >= SESSION_ACTIVITY_WRITE_SECONDS:
+            auth_session.last_seen_at = now
+            auth_session.idle_expires_at = min(
+                now + timedelta(hours=SESSION_IDLE_HOURS), auth_session.absolute_expires_at
+            )
+            await session.commit()
+        principal = StudioPrincipal(
+            user_id=user.id,
+            workspace_id=workspace.id,
+            membership_id=membership.id if membership else None,
+            workspace_access=access,
+            member_role=membership.role if membership else None,
+            is_platform_admin=bool(user.is_platform_admin),
+            must_change_password=bool(user.must_change_password),
+            auth_kind="session",
+            scopes=scopes,
+            session_id=auth_session.id,
+            reauthenticated_at=auth_session.reauthenticated_at,
+        )
+    else:
+        authorization = request.headers.get("Authorization", "")
+        if not authorization.lower().startswith("bearer "):
+            raise _unauthorized()
+        raw_key = authorization[7:].strip()
+        if not raw_key.startswith("fpm_"):
+            raise _unauthorized()
+        row = (
+            await session.execute(
+                select(ManagementApiKey, User)
+                .join(User, User.id == ManagementApiKey.user_id)
+                .where(ManagementApiKey.key_hash == hash_secret(raw_key))
+            )
+        ).first()
+        if row is None:
+            raise _unauthorized()
+        api_key, user = row
+        membership = await active_membership(
+            session, user_id=user.id, workspace_id=api_key.workspace_id
+        )
+        if (
+            user.status != "active"
+            or user.must_change_password
+            or api_key.revoked_at is not None
+            or api_key.expires_at <= now
+            or (membership is None and not user.is_platform_admin)
+        ):
+            raise _unauthorized()
+        raw_scopes = {str(value) for value in api_key.scopes}
+        scopes = set(raw_scopes)
+        if "studio:read" in scopes:
+            scopes.add("studio:private_read")
+        if "studio:write" in scopes:
+            scopes.update({"studio:read", "studio:private_read"})
+        access = (
+            "owner"
+            if membership and membership.role == "owner"
+            else "platform_admin"
+            if user.is_platform_admin
+            else "member"
+        )
+        principal = StudioPrincipal(
+            user_id=user.id,
+            workspace_id=api_key.workspace_id,
+            membership_id=membership.id if membership else None,
+            workspace_access=access,
+            member_role=membership.role if membership else None,
+            is_platform_admin=bool(user.is_platform_admin),
+            must_change_password=False,
+            auth_kind="management_api_key",
+            scopes=frozenset(scopes),
+            api_key_id=api_key.id,
+        )
+        if api_key.last_used_at is None or (now - api_key.last_used_at).total_seconds() >= 300:
+            api_key.last_used_at = now
+            await session.commit()
+    if not principal.permits(required_scope):
+        raise _forbidden("insufficient_scope", f"缺少 {required_scope} 权限")
+    request.state.studio_principal = principal
+    bind_workspace(session, principal.workspace_id)
+    return principal
 
 
-async def require_studio_auth(
-    x_studio_token: Annotated[str | None, Header(alias="X-Studio-Token")] = None,
-) -> None:
-    verify_studio_token(x_studio_token)
+async def require_studio_auth(request: Request, session: SessionDep) -> StudioPrincipal:
+    required = "studio:private_read" if request.method == "GET" else "studio:write"
+    return await authenticate_studio_request(request, session, required_scope=required)
+
+
+async def require_public_studio_auth(request: Request, session: SessionDep) -> StudioPrincipal:
+    principal = await authenticate_studio_request(request, session, required_scope="studio:read")
+    if principal.auth_kind != "session":
+        raise _forbidden("browser_session_required", "公开展台必须使用浏览器 Session")
+    return principal
+
+
+StudioAuth = Annotated[StudioPrincipal, Depends(require_studio_auth)]
+PublicStudioAuth = Annotated[StudioPrincipal, Depends(require_public_studio_auth)]
+
+
+def require_recent_reauthentication(principal: StudioPrincipal) -> None:
+    if principal.auth_kind != "session":
+        raise _forbidden("browser_session_required", "必须使用浏览器 Session")
+    if principal.reauthenticated_at is None or utc_now() - principal.reauthenticated_at > timedelta(
+        minutes=REAUTH_MINUTES
+    ):
+        raise _forbidden("reauthentication_required", "请重新验证密码")

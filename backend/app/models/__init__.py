@@ -1,3 +1,11 @@
+from app.models.accounts import (
+    AuthSession,
+    ManagementApiKey,
+    SecurityAuditEvent,
+    User,
+    WorkspaceInvitation,
+    WorkspaceMembership,
+)
 from app.models.base import Base
 from app.models.call_log import LlmCallLog
 from app.models.files import VisualAsset, VisualAssetFolder, VisualProjectAssetReference
@@ -28,9 +36,11 @@ from app.models.visual_workshop import (
     VisualGenerationTask,
     VisualWorkshopProject,
 )
+from app.models.workspace import Workspace
 
 __all__ = [
     "Base",
+    "AuthSession",
     "GalgameStoryDocument",
     "GalgameAssetMetadata",
     "GalgameAssetSettings",
@@ -39,6 +49,7 @@ __all__ = [
     "GalgameStorySnapshot",
     "GalgameWorkshopProject",
     "LlmCallLog",
+    "ManagementApiKey",
     "ModelCatalogState",
     "ModelEntry",
     "ModelProvider",
@@ -48,6 +59,8 @@ __all__ = [
     "ModelTestAttachment",
     "ModelTestMessage",
     "ToolNavigationItem",
+    "SecurityAuditEvent",
+    "User",
     "VisualAssistantConversation",
     "VisualAssistantAction",
     "VisualAssistantMessage",
@@ -58,4 +71,7 @@ __all__ = [
     "VisualGenerationTask",
     "VisualProjectAssetReference",
     "VisualWorkshopProject",
+    "Workspace",
+    "WorkspaceInvitation",
+    "WorkspaceMembership",
 ]

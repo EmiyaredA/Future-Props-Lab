@@ -7,9 +7,9 @@ type GeneratedGalgameStoryDocument =
   components["schemas"]["GalgameStoryDocumentOut"];
 export type GeneratedGalgameStoryProject =
   components["schemas"]["GalgameStoryProject"];
-type GeneratedGalgameStoryFragment =
+export type GeneratedGalgameStoryFragment =
   components["schemas"]["GalgameStoryFragment"];
-type GeneratedGalgameStoryBlock = NonNullable<
+export type GeneratedGalgameStoryBlock = NonNullable<
   GeneratedGalgameStoryFragment["blocks"]
 >[number];
 type CompatibleGalgameStoryBlock<T> = T extends { type: "dialogue" }
@@ -17,22 +17,27 @@ type CompatibleGalgameStoryBlock<T> = T extends { type: "dialogue" }
       hideDialogueAfter?: boolean;
       portrait?: T extends { portrait?: infer P }
         ? P extends object
-          ? Omit<P, "visible"> & { visible?: boolean }
+          ? Omit<P, "visible" | "distance"> & {
+              visible?: boolean;
+              distance?: P extends { distance: infer D } ? D : never;
+            }
           : P
         : never;
     }
-  : T extends { type: "scene" }
-    ? T & { backgroundId?: string | null }
-    : T extends { type: "narration" }
-      ? Omit<T, "hideDialogueAfter"> & { hideDialogueAfter?: boolean }
-      : T;
+  : T extends { type: "showCharacter"; distance: infer D }
+    ? Omit<T, "distance"> & { distance?: D }
+    : T extends { type: "scene" }
+      ? T & { backgroundId?: string | null }
+      : T extends { type: "narration" }
+        ? Omit<T, "hideDialogueAfter"> & { hideDialogueAfter?: boolean }
+        : T;
 export type GalgameStorySettings =
   components["schemas"]["GalgameStorySettings"];
 export type GalgameStoryCharacterStageSettings =
   components["schemas"]["GalgameStoryCharacterStageSettings"];
 export type GalgameStoryPositionPreset =
   components["schemas"]["GalgameStoryPositionPreset"];
-type GeneratedGalgameStoryCharacterExpression =
+export type GeneratedGalgameStoryCharacterExpression =
   components["schemas"]["GalgameStoryCharacterExpression"];
 export type GalgameStoryCharacterExpression = Omit<
   GeneratedGalgameStoryCharacterExpression,
@@ -68,6 +73,48 @@ export type GalgameStoryProject = Omit<
   assets?: GalgameStoryAsset[];
   schemaVersion: "1.0" | "1.1" | "1.2" | "1.3" | "1.4";
 };
+export type CurrentGalgameStoryFragment = Omit<
+  GeneratedGalgameStoryFragment,
+  "blocks"
+> & { blocks: GeneratedGalgameStoryBlock[] };
+export type CurrentGalgameStoryChapter = Omit<
+  components["schemas"]["GalgameStoryChapter"],
+  "fragments"
+> & { fragments: CurrentGalgameStoryFragment[] };
+export type CurrentGalgameStoryCharacter = Omit<
+  components["schemas"]["GalgameStoryCharacter"],
+  "expressions"
+> & { expressions: GeneratedGalgameStoryCharacterExpression[] };
+export type CurrentGalgameStoryScene = Omit<
+  components["schemas"]["GalgameStoryScene"],
+  "layers"
+> & { layers: GalgameStorySceneLayer[] };
+export type CurrentGalgameStoryCg = Omit<
+  components["schemas"]["GalgameStoryCg"],
+  "variants"
+> & { variants: GalgameStoryCgVariant[] };
+export type CurrentGalgameStoryProject = Omit<
+  GeneratedGalgameStoryProject,
+  | "assets"
+  | "cgs"
+  | "chapters"
+  | "characterAttributeTemplates"
+  | "characters"
+  | "sceneGroups"
+  | "scenes"
+  | "schemaVersion"
+  | "variables"
+> & {
+  assets: NonNullable<GeneratedGalgameStoryProject["assets"]>;
+  cgs: CurrentGalgameStoryCg[];
+  chapters: CurrentGalgameStoryChapter[];
+  characterAttributeTemplates: GalgameStoryCharacterAttributeTemplate[];
+  characters: CurrentGalgameStoryCharacter[];
+  sceneGroups: GalgameStorySceneGroup[];
+  scenes: CurrentGalgameStoryScene[];
+  schemaVersion: "1.4";
+  variables: GalgameStoryVariable[];
+};
 export type GalgameStoryDocument = Omit<
   GeneratedGalgameStoryDocument,
   "document"
@@ -91,7 +138,7 @@ export type GalgameStoryAudioAsset =
   components["schemas"]["GalgameStoryAudioAsset"];
 export type GalgameStoryVideoAsset =
   components["schemas"]["GalgameStoryVideoAsset"];
-type GeneratedGalgameStoryImageAsset =
+export type GeneratedGalgameStoryImageAsset =
   components["schemas"]["GalgameStoryImageAsset"];
 export type GalgameStoryImageAsset = Omit<
   GeneratedGalgameStoryImageAsset,

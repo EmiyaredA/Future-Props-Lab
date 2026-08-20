@@ -21,6 +21,7 @@ class VisualWorkshopProject(Base):
     )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    workspace_id: Mapped[str] = mapped_column(String(36), index=True, default="default")
     title: Mapped[str] = mapped_column(String(120))
     kind: Mapped[str] = mapped_column(String(16))
     status: Mapped[str] = mapped_column(String(16), default="draft")
@@ -51,6 +52,7 @@ class VisualGenerationTask(Base):
     )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    workspace_id: Mapped[str] = mapped_column(String(36), index=True, default="default")
     project_id: Mapped[str] = mapped_column(
         String(36), ForeignKey("visual_workshop_projects.id", ondelete="CASCADE")
     )
@@ -91,6 +93,7 @@ class VisualAssistantConversation(Base):
     )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    workspace_id: Mapped[str] = mapped_column(String(36), index=True, default="default")
     project_id: Mapped[str] = mapped_column(
         String(36), ForeignKey("visual_workshop_projects.id", ondelete="CASCADE")
     )

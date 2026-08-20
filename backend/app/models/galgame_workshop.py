@@ -31,6 +31,7 @@ class GalgameWorkshopProject(Base):
     )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    workspace_id: Mapped[str] = mapped_column(String(36), index=True, default="default")
     title: Mapped[str] = mapped_column(String(120))
     status: Mapped[str] = mapped_column(String(16), default="draft")
     revision: Mapped[int] = mapped_column(Integer, default=0)
@@ -144,6 +145,7 @@ class GalgameAssetTranscriptionTask(Base):
     )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    workspace_id: Mapped[str] = mapped_column(String(36), index=True, default="default")
     project_id: Mapped[str] = mapped_column(
         String(36), ForeignKey("galgame_workshop_projects.id", ondelete="CASCADE")
     )

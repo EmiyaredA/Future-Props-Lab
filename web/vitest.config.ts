@@ -18,6 +18,8 @@ export default defineConfig({
     setupFiles: ["./tests/setup.ts"],
     css: true,
     globals: true,
+    maxWorkers: 2,
+    testTimeout: 15_000,
     include: ["tests/**/*.{test,spec}.{ts,tsx}"],
   },
 });

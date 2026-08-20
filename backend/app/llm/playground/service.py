@@ -48,6 +48,7 @@ class RegenerateUnavailableError(Exception):
 
 @dataclass(frozen=True)
 class PreparedGeneration:
+    workspace_id: str
     conversation_id: str
     assistant_message_id: str
     turn_id: str
@@ -459,6 +460,7 @@ class ModelTestService:
         user_log = self._log_message(user, drafts)
         await self.session.commit()
         return PreparedGeneration(
+            workspace_id=row.workspace_id,
             conversation_id=conversation_id,
             assistant_message_id=assistant.id,
             turn_id=turn_id,
@@ -552,6 +554,7 @@ class ModelTestService:
         request_messages = [*context, user_input]
         await self.session.commit()
         return PreparedGeneration(
+            workspace_id=row.workspace_id,
             conversation_id=conversation_id,
             assistant_message_id=assistant.id,
             turn_id=old.turn_id,

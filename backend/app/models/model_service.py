@@ -24,6 +24,7 @@ class ModelProvider(Base):
     __tablename__ = "model_providers"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    workspace_id: Mapped[str] = mapped_column(String(36), index=True, default="default")
     name: Mapped[str] = mapped_column(String(120))
     kind: Mapped[str] = mapped_column(String(24))
     base_url: Mapped[str] = mapped_column(String(512), default="")
@@ -42,6 +43,7 @@ class ModelEntry(Base):
     )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    workspace_id: Mapped[str] = mapped_column(String(36), index=True, default="default")
     provider_id: Mapped[str] = mapped_column(
         String(36), ForeignKey("model_providers.id", ondelete="CASCADE"), index=True
     )
@@ -59,6 +61,6 @@ class ModelEntry(Base):
 class ModelCatalogState(Base):
     __tablename__ = "model_catalog_state"
 
-    id: Mapped[str] = mapped_column(String(32), primary_key=True, default="default")
+    workspace_id: Mapped[str] = mapped_column("id", String(36), primary_key=True, default="default")
     revision: Mapped[int] = mapped_column(Integer, default=0)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, onupdate=utc_now)

@@ -2,6 +2,8 @@ import { lazy, Suspense, useEffect, useState, type ReactNode } from "react";
 import { GalgameWorkshopShell } from "@app/layout/GalgameWorkshopShell";
 import { StudioSidebar } from "@app/layout/StudioSidebar";
 import { VisualWorkshopShell } from "@app/layout/VisualWorkshopShell";
+import { PublicWorkspaceShowcase } from "@app/PublicWorkspaceShowcase";
+import { useStudioSession } from "@app/StudioSession";
 import {
   APPLICATION_DEFINITIONS,
   GALGAME_WORKSHOP_MODULE,
@@ -80,6 +82,7 @@ function PageBoundary({ children }: { children: ReactNode }) {
 }
 
 export default function App() {
+  const { me } = useStudioSession();
   const [route, setRoute] = useState<AppRoute>(parseRoute);
   const page = route.page;
   useEffect(() => {
@@ -99,6 +102,10 @@ export default function App() {
     const next = parseRoute(path);
     navigate(next.page, next.projectId);
   };
+
+  if (me.workspace.access_kind === "public_viewer") {
+    return <PublicWorkspaceShowcase />;
+  }
 
   if (page === "visual-workshop-canvas" && route.projectId) {
     return (

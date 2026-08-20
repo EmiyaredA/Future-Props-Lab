@@ -67,9 +67,7 @@ test("创作者从其他项目复制参考图后可直接提交生成任务", as
   await page.getByRole("menuitem", { name: /跨项目素材/ }).click();
 
   const dialog = page.getByRole("dialog", { name: "选择跨项目素材" });
-  await expect(dialog.getByLabel("来源项目")).toHaveValue(
-    "persona-source-project",
-  );
+  await expect(dialog.getByLabel("来源项目")).toContainText("跨项目素材源");
   await dialog.getByRole("option", { name: "跨项目参考图.png" }).click();
   await dialog.getByRole("button", { name: "导入并选择" }).click();
   await expect(

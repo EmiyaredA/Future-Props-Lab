@@ -10,6 +10,7 @@ from sqlalchemy import text
 from sqlalchemy.exc import OperationalError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
+from app.accounts.profile import reconcile_profile_avatars
 from app.concurrency.revisions import RevisionConflictError
 from app.core.config import get_settings
 from app.core.db import SessionLocal, engine
@@ -36,6 +37,7 @@ settings = get_settings()
 @asynccontextmanager
 async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
     apply_migrations(settings.database_path)
+    await reconcile_profile_avatars()
     async with SessionLocal() as session:
         await reconcile_project_trash(session, AssetStorage(settings))
         await seed_sayflow_text_catalog(session)
@@ -84,5 +86,5 @@ async def health() -> dict[str, str]:
 async def ready() -> dict[str, str]:
     async with SessionLocal() as session:
         await session.execute(text("SELECT 1 FROM schema_migrations LIMIT 1"))
-        await session.execute(text("SELECT 1 FROM model_catalog_state WHERE id = 'default'"))
+        await session.execute(text("SELECT 1 FROM workspaces WHERE id = 'default'"))
     return {"status": "ready", "schema": LATEST_MIGRATION_ID}

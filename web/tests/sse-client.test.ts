@@ -1,10 +1,6 @@
 import { ApiError } from "@platform/api/client";
 import { postSse } from "@platform/api/sse";
-import {
-  AUTH_REQUIRED_EVENT,
-  getStudioToken,
-  setStudioToken,
-} from "@platform/api/studioAuth";
+import { AUTH_REQUIRED_EVENT, getCsrfToken } from "@platform/api/studioAuth";
 
 function sseResponse(chunks: string[]) {
   const encoder = new TextEncoder();
@@ -19,7 +15,10 @@ function sseResponse(chunks: string[]) {
   );
 }
 
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => {
+  vi.unstubAllGlobals();
+  document.cookie = "fpl_csrf=; Max-Age=0; Path=/";
+});
 
 describe("postSse", () => {
   test("parses split chunks, CRLF, multiline data, comments and a trailing frame", async () => {
@@ -51,8 +50,8 @@ describe("postSse", () => {
     ]);
   });
 
-  test("sends auth and JSON headers", async () => {
-    setStudioToken("secret-token");
+  test("sends CSRF, cookie credentials and JSON headers", async () => {
+    document.cookie = "fpl_csrf=csrf-token; Path=/";
     const fetchMock = vi.fn().mockResolvedValue(sseResponse([]));
     vi.stubGlobal("fetch", fetchMock);
 
@@ -72,14 +71,14 @@ describe("postSse", () => {
         headers: expect.objectContaining({
           Accept: "text/event-stream",
           "Content-Type": "application/json",
-          "X-Studio-Token": "secret-token",
+          "X-CSRF-Token": "csrf-token",
         }),
+        credentials: "include",
       }),
     );
   });
 
   test("normalizes structured API errors and notifies on 401", async () => {
-    setStudioToken("expired-token");
     const authRequired = vi.fn();
     window.addEventListener(AUTH_REQUIRED_EVENT, authRequired);
     vi.stubGlobal(
@@ -108,7 +107,7 @@ describe("postSse", () => {
       status: 401,
     });
     expect(authRequired).toHaveBeenCalledOnce();
-    expect(getStudioToken()).toBe("");
+    expect(getCsrfToken()).toBe("");
     window.removeEventListener(AUTH_REQUIRED_EVENT, authRequired);
   });
 

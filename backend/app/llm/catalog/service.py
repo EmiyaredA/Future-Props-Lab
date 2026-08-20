@@ -105,7 +105,8 @@ class ModelCatalogService:
         return ModelCategoryListOut(items=list(MODEL_CATEGORIES))
 
     async def catalog(self) -> ModelCatalogOut:
-        state = await self.session.get(ModelCatalogState, "default")
+        workspace_id = str(self.session.info.get("workspace_id") or "default")
+        state = await self.session.get(ModelCatalogState, workspace_id)
         revision = int(state.revision if state else 0)
         providers = (
             (
@@ -154,7 +155,8 @@ class ModelCatalogService:
         result = await self.session.execute(
             update(ModelCatalogState)
             .where(
-                ModelCatalogState.id == "default",
+                ModelCatalogState.workspace_id
+                == str(self.session.info.get("workspace_id") or "default"),
                 ModelCatalogState.revision == expected,
             )
             .values(revision=ModelCatalogState.revision + 1)

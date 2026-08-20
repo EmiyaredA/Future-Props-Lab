@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from app.core.config import Settings, get_settings
 from app.core.credentials import decrypt_secret
 from app.core.db import SessionLocal
+from app.core.tenant_context import bind_workspace
 from app.core.time import utc_now
 from app.files.storage import AssetStorage
 from app.llm.generation_runtime import (
@@ -20,12 +21,14 @@ from app.llm.generation_runtime import (
     assert_public_https,
     download_generated_media,
     generated_type,
+    poll_generation_task,
     read_data_uri,
+    safe_generation_error,
+    submit_generation_task,
+    upload_temporary_reference,
 )
 from app.llm.playground.generation import ACTIVE_GENERATION_STATUSES
-from app.llm.providers import create_image_task, create_video_task, get_image_task, get_video_task
-from app.llm.providers._senseaudio import SenseAudioProviderError, sanitize_provider_message
-from app.llm.providers.temporary_media import TemporaryMediaError, upload_temporary_media
+from app.llm.providers.temporary_media import TemporaryMediaError
 from app.models import (
     LlmCallLog,
     ModelProvider,
@@ -40,13 +43,7 @@ _generated_type = generated_type
 
 
 def _safe_error(exc: Exception) -> str:
-    if isinstance(exc, TemporaryMediaError):
-        return "参考素材临时上传失败，请重新生成"
-    if isinstance(exc, (ModelTestMaterializationError, SenseAudioProviderError, ValueError)):
-        return sanitize_provider_message(str(exc))
-    if isinstance(exc, httpx.TimeoutException):
-        return "SenseAudio 请求超时"
-    return f"任务处理失败（{type(exc).__name__}）"
+    return safe_generation_error(exc)
 
 
 class ModelTestGenerationRunner(PollingGenerationRunner):
@@ -65,6 +62,14 @@ class ModelTestGenerationRunner(PollingGenerationRunner):
         self.storage = AssetStorage(self.settings)
         self.download_transport = download_transport
         self.temporary_media_transport = temporary_media_transport
+
+    async def _load_task(
+        self, session: AsyncSession, task_id: str
+    ) -> ModelTestGenerationTask | None:
+        task = await session.get(ModelTestGenerationTask, task_id)
+        if task is not None:
+            bind_workspace(session, task.workspace_id)
+        return task
 
     async def recover(self) -> None:
         async with self.session_factory() as session:
@@ -107,7 +112,7 @@ class ModelTestGenerationRunner(PollingGenerationRunner):
     async def _process_task(self, task_id: str) -> None:
         try:
             async with self.session_factory() as session:
-                task = await session.get(ModelTestGenerationTask, task_id)
+                task = await self._load_task(session, task_id)
                 if task is None or task.status not in ACTIVE_GENERATION_STATUSES:
                     return
                 if task.status == "submitting":
@@ -141,13 +146,12 @@ class ModelTestGenerationRunner(PollingGenerationRunner):
 
             if status == "queued":
                 if provider_kind == "senseaudio_image":
-                    provider_task_id = await create_image_task(
+                    provider_task_id = await submit_generation_task(
+                        provider_kind=provider_kind,
                         base_url=base_url,
                         api_key=api_key,
-                        model=model_slug,
-                        prompt=str(payload["prompt"]),
-                        size=str(payload["size"]),
-                        seed=payload.get("seed"),
+                        model_slug=model_slug,
+                        payload=payload,
                     )
                 else:
                     content: list[dict[str, object]] = [
@@ -179,21 +183,16 @@ class ModelTestGenerationRunner(PollingGenerationRunner):
                                 ),
                             }
                         )
-                    if len(str(content).encode("utf-8")) > 64 * 1024 * 1024:
-                        raise ValueError("参考素材请求体超过 SenseAudio 的 64 MB 限制")
-                    provider_task_id = await create_video_task(
+                    provider_task_id = await submit_generation_task(
+                        provider_kind=provider_kind,
                         base_url=base_url,
                         api_key=api_key,
-                        model=model_slug,
-                        content=content,
-                        duration=int(payload["duration"]),
-                        resolution=str(payload["resolution"]),
-                        ratio=str(payload["ratio"]),
-                        watermark=bool(payload["watermark"]),
-                        generate_audio=bool(payload["generate_audio"]),
+                        model_slug=model_slug,
+                        payload=payload,
+                        video_content=content,
                     )
                 async with self.session_factory() as session:
-                    current = await session.get(ModelTestGenerationTask, task_id)
+                    current = await self._load_task(session, task_id)
                     if current is None:
                         return
                     current.provider_task_id = provider_task_id
@@ -205,17 +204,16 @@ class ModelTestGenerationRunner(PollingGenerationRunner):
                     await session.commit()
                 return
 
-            provider_status = (
-                await get_image_task(base_url=base_url, api_key=api_key, task_id=provider_task_id)
-                if provider_kind == "senseaudio_image"
-                else await get_video_task(
-                    base_url=base_url, api_key=api_key, task_id=provider_task_id
-                )
+            provider_status = await poll_generation_task(
+                provider_kind=provider_kind,
+                base_url=base_url,
+                api_key=api_key,
+                provider_task_id=provider_task_id,
             )
             if provider_status.status == "failed":
                 await self._fail(
                     task_id,
-                    sanitize_provider_message(provider_status.error_message)
+                    safe_generation_error(ValueError(provider_status.error_message))
                     if provider_status.error_message
                     else "SenseAudio 生成任务失败",
                 )
@@ -225,7 +223,7 @@ class ModelTestGenerationRunner(PollingGenerationRunner):
                     await self._fail(task_id, "SenseAudio 已完成任务但未返回结果地址")
                     return
                 async with self.session_factory() as session:
-                    current = await session.get(ModelTestGenerationTask, task_id)
+                    current = await self._load_task(session, task_id)
                     if current is None:
                         return
                     current.status = "processing"
@@ -237,7 +235,7 @@ class ModelTestGenerationRunner(PollingGenerationRunner):
                 await self._materialize(task_id, provider_status.result_url)
                 return
             async with self.session_factory() as session:
-                current = await session.get(ModelTestGenerationTask, task_id)
+                current = await self._load_task(session, task_id)
                 if current is None:
                     return
                 current.status = (
@@ -260,12 +258,16 @@ class ModelTestGenerationRunner(PollingGenerationRunner):
         self, task_id: str, asset_id: str, expected_kind: str
     ) -> tuple[Path, str]:
         async with self.session_factory() as session:
+            task = await self._load_task(session, task_id)
+            if task is None:
+                raise ValueError("生成任务已不存在")
             private = await session.get(ModelTestGenerationAsset, asset_id)
             if private is not None:
                 if private.task_id != task_id or private.media_kind != expected_kind:
                     raise ValueError("参考素材已不存在或类型不匹配")
                 return (
-                    self.settings.model_test_reference_path / private.storage_key,
+                    self.settings.workspace_model_test_path(private.workspace_id, "references")
+                    / private.storage_key,
                     private.mime_type,
                 )
             has_private = await session.scalar(
@@ -285,7 +287,7 @@ class ModelTestGenerationRunner(PollingGenerationRunner):
             path, mime_type = await self._asset_path(task_id, asset_id, expected_kind)
         except ValueError as exc:
             raise TemporaryMediaError(str(exc)) from None
-        return await upload_temporary_media(
+        return await upload_temporary_reference(
             path=path,
             mime_type=mime_type,
             upload_url=self.settings.fpl_temp_media_upload_url,
@@ -294,7 +296,7 @@ class ModelTestGenerationRunner(PollingGenerationRunner):
 
     async def _fail(self, task_id: str, message: str, *, result_url: str = "") -> None:
         async with self.session_factory() as session:
-            row = await session.get(ModelTestGenerationTask, task_id)
+            row = await self._load_task(session, task_id)
             if row is None or row.status in {"completed", "failed"}:
                 return
             row.status = "failed"
@@ -313,6 +315,7 @@ class ModelTestGenerationRunner(PollingGenerationRunner):
         log_id = str(uuid4())
         log = LlmCallLog(
             id=log_id,
+            workspace_id=row.workspace_id,
             call_source="model_playground",
             provider_kind=row.provider_kind,
             model=row.model_slug,
@@ -339,7 +342,12 @@ class ModelTestGenerationRunner(PollingGenerationRunner):
         )
 
     async def _materialize(self, task_id: str, result_url: str) -> None:
-        root = self.settings.model_test_generated_path
+        async with self.session_factory() as session:
+            task = await self._load_task(session, task_id)
+            if task is None:
+                return
+            workspace_id = task.workspace_id
+        root = self.settings.workspace_model_test_path(workspace_id, "generated")
         temp_dir = root / ".tmp"
         temp_dir.mkdir(parents=True, exist_ok=True)
         storage_key = uuid4().hex
@@ -349,7 +357,7 @@ class ModelTestGenerationRunner(PollingGenerationRunner):
             size, media_kind, mime_type, extension = await self._download(result_url, temp_path)
             os.replace(temp_path, final_path)
             async with self.session_factory() as session:
-                task = await session.get(ModelTestGenerationTask, task_id)
+                task = await self._load_task(session, task_id)
                 if task is None:
                     final_path.unlink(missing_ok=True)
                     return

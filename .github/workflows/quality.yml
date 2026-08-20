@@ -1,0 +1,76 @@
+name: Quality
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    name: Backend (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.14"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+          enable-cache: true
+      - run: uv sync --frozen --all-groups
+      - run: uv run ruff check backend db scripts tests
+      - run: uv run ruff format --check backend db scripts tests
+      - run: uv run pytest -q
+        env:
+          FPL_SECRETS_KEY: Q3kT62dvbHHXXulO5XPCR84_yXK6t-6LXz7BcIYONys=
+          FPL_STUDIO_TOKEN: ci-studio-token-for-deterministic-tests
+
+  web:
+    name: Web quality
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.11"
+          enable-cache: true
+      - run: uv sync --frozen --all-groups
+      - run: npm ci
+      - run: npm run contracts:check
+        env:
+          FPL_SECRETS_KEY: Q3kT62dvbHHXXulO5XPCR84_yXK6t-6LXz7BcIYONys=
+      - run: npm run lint --workspace web
+      - run: npm run format:check --workspace web
+      - run: npm run test --workspace web
+      - run: npm run build
+
+  e2e:
+    name: Chromium E2E
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.11"
+          enable-cache: true
+      - run: uv sync --frozen --all-groups
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+        working-directory: web
+      - run: npm run test:e2e
+        env:
+          FPL_SECRETS_KEY: Q3kT62dvbHHXXulO5XPCR84_yXK6t-6LXz7BcIYONys=
+          FPL_STUDIO_TOKEN: ci-studio-token-for-deterministic-tests

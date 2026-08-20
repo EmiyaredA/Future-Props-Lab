@@ -13,6 +13,7 @@ from sqlalchemy import delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import Settings, get_settings
+from app.core.tenant_context import current_workspace_id
 from app.core.time import iso_utc, utc_now
 from app.files.storage import AssetStorage
 from app.models import ModelTestGenerationAsset, ModelTestGenerationTask, VisualAsset
@@ -65,6 +66,7 @@ class LegacyAssetSource:
 @dataclass(frozen=True)
 class LegacyTaskSnapshot:
     id: str
+    workspace_id: str
     status: str
     revision: int
     request_payload: dict
@@ -98,10 +100,15 @@ class ModelTestGenerationAssets:
         self.settings = settings or get_settings()
         self.storage = AssetStorage(self.settings)
 
+    def _root(self, workspace_id: str | None = None) -> Path:
+        return self.settings.workspace_model_test_path(
+            workspace_id or current_workspace_id(), "references"
+        )
+
     async def upload(self, files: list[UploadFile]) -> ModelTestGenerationAssetListOut:
         if not files or len(files) > MAX_DRAFT_ASSETS:
             raise GenerationAssetError("每次可上传 1 至 15 个参考素材")
-        root = self.settings.model_test_reference_path
+        root = self._root()
         temp_dir = root / ".tmp"
         temp_dir.mkdir(parents=True, exist_ok=True)
         created: list[tuple[ModelTestGenerationAsset, Path]] = []
@@ -174,7 +181,7 @@ class ModelTestGenerationAssets:
             raise GenerationAssetError("参考素材不存在", code="not_found", status=404)
         if row.task_id is not None:
             raise GenerationAssetError("参考素材已被任务使用", code="asset_claimed", status=409)
-        path = self.settings.model_test_reference_path / row.storage_key
+        path = self._root(row.workspace_id) / row.storage_key
         await self.session.delete(row)
         await self.session.commit()
         path.unlink(missing_ok=True)
@@ -213,7 +220,7 @@ class ModelTestGenerationAssets:
                     )
                 if row.media_kind != expected_kind:
                     raise GenerationAssetError("参考素材类型不匹配")
-                if not (self.settings.model_test_reference_path / row.storage_key).is_file():
+                if not (self._root(row.workspace_id) / row.storage_key).is_file():
                     raise GenerationAssetError(
                         "参考素材文件不存在", code="reference_asset_missing", status=404
                     )
@@ -266,7 +273,7 @@ class ModelTestGenerationAssets:
             .scalars()
             .all()
         )
-        deleted_paths = [self.settings.model_test_reference_path / row.storage_key for row in rows]
+        deleted_paths = [self._root(row.workspace_id) / row.storage_key for row in rows]
         if rows:
             await self.session.execute(
                 delete(ModelTestGenerationAsset).where(
@@ -279,7 +286,7 @@ class ModelTestGenerationAssets:
         known = set(
             (await self.session.execute(select(ModelTestGenerationAsset.storage_key))).scalars()
         )
-        root = self.settings.model_test_reference_path
+        root = self._root()
         orphan_count = 0
         if root.is_dir():
             for path in root.iterdir():
@@ -339,7 +346,7 @@ class ModelTestGenerationAssets:
             payload = dict(task.request_payload)
             try:
                 await self.session.rollback()
-                root = self.settings.model_test_reference_path
+                root = self._root(task.workspace_id)
                 temp_dir = root / ".tmp"
                 temp_dir.mkdir(parents=True, exist_ok=True)
                 for field, role, _kind in ROLE_FIELDS:
@@ -432,6 +439,7 @@ class ModelTestGenerationAssets:
         return [
             LegacyTaskSnapshot(
                 id=task.id,
+                workspace_id=task.workspace_id,
                 status=task.status,
                 revision=task.revision,
                 request_payload=dict(task.request_payload or {}),

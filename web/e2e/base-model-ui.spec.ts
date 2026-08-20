@@ -120,7 +120,7 @@ test("model test workspace keeps panels readable on desktop and narrow screens",
   await expect(
     page.getByRole("heading", { name: "模型测试", exact: true }),
   ).toBeVisible();
-  await expect(page.getByRole("button", { name: "测试模型" })).toContainText(
+  await expect(page.getByRole("combobox", { name: "测试模型" })).toContainText(
     "Demo Chat",
   );
   await expect(page.locator("select")).toHaveCount(0);

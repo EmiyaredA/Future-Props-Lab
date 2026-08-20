@@ -9,6 +9,7 @@ import type {
   GalgameStoryProject,
 } from "@features/galgame-workshop/api";
 import { dialogueSpeakerIds } from "@features/galgame-workshop/editor/dialogue";
+import { characterStageSettings } from "@features/galgame-workshop/editor/characterStageSettings";
 import {
   activeTimelineCue,
   timelineEvents,
@@ -35,6 +36,14 @@ export const DEFAULT_CHARACTER_TRANSITION: Required<GalgameStoryCharacterTransit
     fade: true,
   };
 
+export type CharacterDistance = "far" | "medium" | "near";
+
+export const CHARACTER_DISTANCE_SCALE: Record<CharacterDistance, number> = {
+  far: 0.78,
+  medium: 1,
+  near: 1.28,
+};
+
 export const DEFAULT_CG_TRANSITION: Required<GalgameStoryCgTransition> = {
   durationMs: 400,
   fade: true,
@@ -52,6 +61,8 @@ export type StageActor = {
   characterId: string;
   expressionId?: string;
   skinId?: string;
+  distance: CharacterDistance;
+  positionId?: string;
   transform: Required<GalgameStoryCharacterTransform>;
   transition: Required<GalgameStoryCharacterTransition>;
   entering: boolean;
@@ -131,6 +142,30 @@ export function characterTransform(
   return { ...DEFAULT_CHARACTER_TRANSFORM, ...value };
 }
 
+export function characterAssetTransform(
+  document: GalgameStoryProject,
+  characterId: string,
+  value?: GalgameStoryCharacterTransform | null,
+  positionId?: string | null,
+): Required<GalgameStoryCharacterTransform> {
+  const stageSettings = characterStageSettings(document, characterId);
+  const defaultPosition =
+    stageSettings.positionPresets.find(
+      (preset) => preset.id === (positionId ?? stageSettings.defaultPositionId),
+    ) ??
+    stageSettings.positionPresets.find(
+      (preset) => preset.id === stageSettings.defaultPositionId,
+    ) ??
+    stageSettings.positionPresets[0];
+  return {
+    ...characterTransform(value),
+    x: defaultPosition?.x ?? 50,
+    y: defaultPosition?.y ?? 50,
+    anchor: stageSettings.anchor,
+    scale: stageSettings.legacyDefaultScale ?? 1,
+  };
+}
+
 export function characterTransition(
   value?: GalgameStoryCharacterTransition | null,
 ): Required<GalgameStoryCharacterTransition> {
@@ -171,13 +206,19 @@ function actorFromPortrait(
   portrait: GalgameStoryDialoguePortrait,
   existing?: StageActor,
 ): StageActor {
+  const positionId = portrait.positionId ?? existing?.positionId;
   return {
     characterId,
     expressionId: resolvedExpression(document, characterId, expressionId),
     skinId: portrait.skinId ?? undefined,
-    transform: portrait.transform
-      ? characterTransform(portrait.transform)
-      : (existing?.transform ?? characterTransform()),
+    distance: portrait.distance ?? existing?.distance ?? "medium",
+    positionId,
+    transform: characterAssetTransform(
+      document,
+      characterId,
+      portrait.transform ?? existing?.transform,
+      positionId,
+    ),
     transition: characterTransition(portrait.transition),
     entering: !existing,
     exiting: false,
@@ -315,7 +356,14 @@ export function applyAutomaticStageBlock(
             block.characterId,
             block.expressionId,
           ),
-          transform: characterTransform(block.transform),
+          distance: block.distance ?? "medium",
+          positionId: block.positionId ?? undefined,
+          transform: characterAssetTransform(
+            document,
+            block.characterId,
+            block.transform,
+            block.positionId,
+          ),
           transition: characterTransition(block.transition),
           entering: !existing,
           exiting: false,
@@ -486,12 +534,17 @@ export function enterContentBlock(
 
   const speakerIds = dialogueSpeakerIds(block);
   const portrait: GalgameStoryDialoguePortrait | undefined = block.portrait
-    ? { ...block.portrait, visible: block.portrait.visible ?? true }
+    ? {
+        ...block.portrait,
+        visible: block.portrait.visible ?? true,
+        distance: block.portrait.distance ?? "medium",
+      }
     : undefined;
   if (!portrait || portrait.mode === "soloLegacy") {
     const soloPortrait: GalgameStoryDialoguePortrait = portrait ?? {
       mode: "soloLegacy",
       visible: true,
+      distance: "medium",
       keepAfter: false,
       transition: DEFAULT_CHARACTER_TRANSITION,
     };

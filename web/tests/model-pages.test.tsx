@@ -383,7 +383,9 @@ test("renders persistent model test workspace with safe markdown", async () => {
     "title",
     "model-x",
   );
-  expect(screen.getByRole("button", { name: "测试模型" })).toBeInTheDocument();
+  expect(
+    screen.getByRole("combobox", { name: "测试模型" }),
+  ).toBeInTheDocument();
   const copyCodeButton = screen.getByRole("button", { name: "复制代码" });
   expect(copyCodeButton).toBeInTheDocument();
   expect(container.querySelector("code.hljs")).toBeInTheDocument();
@@ -439,7 +441,7 @@ test("switches the unified workspace to video and submits custom controls", asyn
   expect(
     await screen.findByPlaceholderText("描述镜头、动作和氛围…"),
   ).toBeInTheDocument();
-  await user.click(screen.getByRole("button", { name: "时长" }));
+  await user.click(screen.getByRole("combobox", { name: "时长" }));
   await user.click(screen.getByRole("option", { name: "8 秒" }));
   await user.click(screen.getByRole("button", { name: "1080p" }));
   await user.click(screen.getByRole("button", { name: "9:16" }));

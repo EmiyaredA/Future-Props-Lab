@@ -611,9 +611,25 @@ test("keeps a voice-driven mouth sequence closed when no voice is playing", asyn
   }
 });
 
-test("renders center and top-left character anchors at their saved coordinates", async () => {
+test("renders character placement from the character asset settings", async () => {
   const user = userEvent.setup();
   const anchorStory = structuredClone(story);
+  anchorStory.settings = {
+    canvas: { width: 1920, height: 1080 },
+    characterStage: {
+      anchor: "center",
+      defaultPositionId: "asset-position",
+      defaultHeightPercent: 100,
+      positionPresets: [
+        {
+          id: "asset-position",
+          name: "资产站位",
+          x: 40,
+          y: 60,
+        },
+      ],
+    },
+  };
   anchorStory.chapters![0].fragments![0].blocks = [
     { id: "scene", type: "scene", sceneId: "lab" },
     {
@@ -655,13 +671,61 @@ test("renders center and top-left character anchors at their saved coordinates",
   const showBlock = anchorStory.chapters![0].fragments![0].blocks![1];
   if (showBlock.type !== "showCharacter")
     throw new Error("expected showCharacter");
-  showBlock.transform!.anchor = "topLeft";
+  showBlock.transform!.x = 95;
+  showBlock.transform!.y = 90;
+  showBlock.transform!.anchor = "bottomCenter";
+  anchorStory.settings!.characterStage!.anchor = "topLeft";
   const second = render(<StoryPlayer document={anchorStory} />);
   await user.click(screen.getByRole("button", { name: "开始试玩" }));
   expect(second.container.querySelector(".galgame-stage-actor")).toHaveStyle({
     transform: "translate(0, 0) scale(1) scaleX(1)",
     transformOrigin: "top left",
   });
+});
+
+test("keeps characters non-interactive in the script edit preview", () => {
+  const previewStory = structuredClone(story);
+  previewStory.chapters![0].fragments![0].blocks = [
+    { id: "scene", type: "scene", sceneId: "lab" },
+    {
+      id: "show-hero",
+      type: "showCharacter",
+      characterId: "hero",
+      expressionId: null,
+      transform: {
+        x: 40,
+        y: 60,
+        anchor: "center",
+        scale: 1,
+        brightness: 1,
+        opacity: 1,
+        flipX: false,
+        layer: 10,
+      },
+      transition: { durationMs: 0, fade: false },
+    },
+    {
+      id: "line",
+      type: "dialogue",
+      characterId: "hero",
+      text: "只读舞台预览",
+    },
+  ];
+
+  const rendered = render(
+    <StoryPlayer
+      document={previewStory}
+      mode="edit"
+      editFragment={previewStory.chapters![0].fragments![0]}
+      editBlockIndex={2}
+    />,
+  );
+  const actor = rendered.container.querySelector('[data-character-id="hero"]');
+
+  expect(actor).toBeInTheDocument();
+  expect(actor).not.toHaveClass("is-editable");
+  expect(actor).not.toHaveAttribute("tabindex");
+  expect(actor).not.toHaveAttribute("aria-label");
 });
 
 test.each([
@@ -923,6 +987,18 @@ test("keeps multiple staged characters, applies speaker focus, and removes actor
       lipSyncEnabled: false,
     },
   };
+  stageStory.settings = {
+    canvas: { width: 1920, height: 1080 },
+    characterStage: {
+      anchor: "center",
+      defaultPositionId: "position-left",
+      defaultHeightPercent: 100,
+      positionPresets: [
+        { id: "position-left", name: "左", x: 25, y: 50 },
+        { id: "position-right", name: "右", x: 75, y: 50 },
+      ],
+    },
+  };
   stageStory.chapters![0].fragments = [
     {
       id: "main",
@@ -934,6 +1010,7 @@ test("keeps multiple staged characters, applies speaker focus, and removes actor
           type: "showCharacter",
           characterId: "hero",
           expressionId: "calm",
+          positionId: "position-left",
           transform: {
             x: 25,
             y: 100,
@@ -951,6 +1028,7 @@ test("keeps multiple staged characters, applies speaker focus, and removes actor
           type: "showCharacter",
           characterId: "partner",
           expressionId: "neutral",
+          positionId: "position-right",
           transform: {
             x: 75,
             y: 100,
@@ -972,6 +1050,7 @@ test("keeps multiple staged characters, applies speaker focus, and removes actor
           voiceVolume: 100,
           portrait: {
             mode: "stage",
+            positionId: "position-left",
             keepAfter: true,
             transform: null,
             transition: { durationMs: 180, fade: true },

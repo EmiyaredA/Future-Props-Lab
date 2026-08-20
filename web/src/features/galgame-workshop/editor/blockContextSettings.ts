@@ -2,128 +2,25 @@ import type {
   GalgameStoryBlock,
   GalgameStoryProject,
 } from "@features/galgame-workshop/api";
-import type { BlockKind } from "@features/galgame-workshop/editor/model";
 import {
   CURTAIN_MODE_OPTIONS,
   WAIT_DURATION_PRESETS,
 } from "@features/galgame-workshop/editor/blockRegistry";
 
-type BlockOf<K extends BlockKind> = Extract<GalgameStoryBlock, { type: K }>;
-
-export type BlockContextSetting = {
-  id: string;
-  label: string;
-  checked?: boolean;
-  disabled?: boolean;
-  description: string;
-  apply: (block: GalgameStoryBlock) => GalgameStoryBlock;
-};
-
-export type BlockContextSection = {
-  label: string;
-  settings: BlockContextSetting[];
-};
-
-export type BlockContextSettings = {
-  sections: BlockContextSection[];
-  includeInspector: boolean;
-};
-
-type Context = { story: GalgameStoryProject };
-type Factory<K extends BlockKind> = (
-  block: BlockOf<K>,
-  context: Context,
-) => BlockContextSettings;
-type Registry = { [K in BlockKind]: Factory<K> };
-
-const option = <K extends BlockKind>(
-  block: BlockOf<K>,
-  id: string,
-  label: string,
-  checked: boolean,
-  description: string,
-  update: (block: BlockOf<K>) => BlockOf<K>,
-  disabled = false,
-): BlockContextSetting => ({
-  id: `context-${block.type}-${id}`,
-  label,
-  checked,
-  disabled,
-  description,
-  apply: (current) =>
-    current.type === block.type ? update(current as BlockOf<K>) : current,
-});
-
-const section = (
-  label: string,
-  settings: BlockContextSetting[],
-): BlockContextSection => ({ label, settings });
-
-const bool = <K extends BlockKind>(
-  block: BlockOf<K>,
-  id: string,
-  label: string,
-  checked: boolean,
-  description: string,
-  update: (block: BlockOf<K>, value: boolean) => BlockOf<K>,
-) =>
-  option(block, id, label, checked, description, (current) =>
-    update(current, !checked),
-  );
-
-const durationOptions = <K extends BlockKind>(
-  block: BlockOf<K>,
-  currentMs: number | null | undefined,
-  values: number[],
-  update: (block: BlockOf<K>, durationMs: number) => BlockOf<K>,
-) =>
-  values.map((durationMs) =>
-    option(
-      block,
-      `duration-${durationMs}`,
-      durationMs === 0 ? "立即" : `${durationMs}ms`,
-      currentMs === durationMs,
-      `将当前${block.type}卡片的时长设置为 ${durationMs}ms。`,
-      (current) => update(current, durationMs),
-    ),
-  );
-
-const audioRole = {
-  bgm: "backgroundMusic",
-  ambient: "ambientSound",
-  sfx: "soundEffect",
-} as const;
-
-const characterTransform = (value: BlockOf<"showCharacter">["transform"]) => ({
-  x: 50,
-  y: 100,
-  anchor: "bottomCenter" as const,
-  scale: 1,
-  brightness: 1,
-  opacity: 1,
-  flipX: false,
-  layer: 10,
-  ...value,
-});
-
-const characterTransition = (
-  value:
-    | BlockOf<"showCharacter">["transition"]
-    | BlockOf<"removeCharacter">["transition"],
-) => ({ durationMs: 240, fade: true, ...value });
-
-const cgOverlay = (value: BlockOf<"showCg">["overlay"]) => ({
-  x: 50,
-  y: 50,
-  width: 60,
-  opacity: 1,
-  placement: "frontOfCharacters" as const,
-  ...value,
-});
-
-const cgTransition = (
-  value: BlockOf<"showCg">["transition"] | BlockOf<"hideCg">["transition"],
-) => ({ durationMs: 400, fade: true, ...value });
+import {
+  audioRole,
+  bool,
+  cgOverlay,
+  cgTransition,
+  characterTransform,
+  characterTransition,
+  durationOptions,
+  option,
+  section,
+  type Context,
+  type BlockContextSettings,
+  type Registry,
+} from "@features/galgame-workshop/editor/blockContextSettingBuilders";
 
 const registry = {
   narration: (block) => ({
@@ -447,29 +344,6 @@ const registry = {
   showCharacter: (block) => ({
     includeInspector: true,
     sections: [
-      section(
-        "站位",
-        [
-          [25, "左侧"],
-          [50, "中间"],
-          [75, "右侧"],
-        ].map(([x, label]) =>
-          option(
-            block,
-            `position-${x}`,
-            String(label),
-            characterTransform(block.transform).x === x,
-            `将角色快速移动到${label}。`,
-            (current) => ({
-              ...current,
-              transform: {
-                ...characterTransform(current.transform),
-                x: Number(x),
-              },
-            }),
-          ),
-        ),
-      ),
       section("立绘外观", [
         bool(
           block,

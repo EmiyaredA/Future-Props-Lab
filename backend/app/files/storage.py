@@ -8,11 +8,13 @@ from typing import Protocol
 from uuid import uuid4
 
 from app.core.config import Settings
+from app.core.tenant_context import current_workspace_id
 
 TARGET_STORAGE_VERSION = 2
 
 
 class StoredAsset(Protocol):
+    workspace_id: str
     storage_key: str
     storage_version: int | None
     project_id: str | None
@@ -35,8 +37,14 @@ class AssetStorage:
             raise ValueError("invalid storage path segment")
         return value
 
-    def project_root(self, application_id: str, project_id: str) -> Path:
+    def project_root(
+        self, application_id: str, project_id: str, *, workspace_id: str | None = None
+    ) -> Path:
         project_id = self._segment(project_id)
+        workspace_id = workspace_id or current_workspace_id()
+        if workspace_id != "default":
+            root = self.settings.workspace_path(workspace_id) / "applications"
+            return (root / application_id / "projects" / project_id).resolve()
         if application_id == "visual-workshop":
             return self.settings.visual_project_path(project_id)
         if application_id == "galgame-workshop":
@@ -48,13 +56,23 @@ class AssetStorage:
         *,
         visual_project_id: str | None,
         galgame_project_id: str | None,
+        workspace_id: str | None = None,
     ) -> Path:
         if visual_project_id and galgame_project_id:
             raise ValueError("asset cannot belong to two project applications")
         if visual_project_id:
-            return self.project_root("visual-workshop", visual_project_id) / "assets"
+            return (
+                self.project_root("visual-workshop", visual_project_id, workspace_id=workspace_id)
+                / "assets"
+            )
         if galgame_project_id:
-            return self.project_root("galgame-workshop", galgame_project_id) / "assets"
+            return (
+                self.project_root("galgame-workshop", galgame_project_id, workspace_id=workspace_id)
+                / "assets"
+            )
+        workspace_id = workspace_id or current_workspace_id()
+        if workspace_id != "default":
+            return self.settings.workspace_path(workspace_id) / "library" / "assets"
         return self.settings.library_asset_path
 
     def target_path(
@@ -63,10 +81,12 @@ class AssetStorage:
         *,
         visual_project_id: str | None,
         galgame_project_id: str | None,
+        workspace_id: str | None = None,
     ) -> Path:
         return self.target_root(
             visual_project_id=visual_project_id,
             galgame_project_id=galgame_project_id,
+            workspace_id=workspace_id,
         ) / self._segment(storage_key)
 
     def legacy_path(self, storage_key: str) -> Path:
@@ -78,6 +98,7 @@ class AssetStorage:
                 asset.storage_key,
                 visual_project_id=asset.project_id,
                 galgame_project_id=asset.galgame_project_id,
+                workspace_id=asset.workspace_id,
             )
         return self.legacy_path(asset.storage_key)
 
@@ -87,11 +108,13 @@ class AssetStorage:
         *,
         visual_project_id: str | None,
         galgame_project_id: str | None,
+        workspace_id: str | None = None,
     ) -> tuple[Path, Path]:
         final_path = self.target_path(
             storage_key,
             visual_project_id=visual_project_id,
             galgame_project_id=galgame_project_id,
+            workspace_id=workspace_id,
         )
         temp_dir = final_path.parent / ".tmp"
         temp_dir.mkdir(parents=True, exist_ok=True)

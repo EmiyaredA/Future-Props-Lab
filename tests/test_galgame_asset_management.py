@@ -40,6 +40,85 @@ def wav_bytes() -> bytes:
     return target.getvalue()
 
 
+@pytest.mark.asyncio
+async def test_library_listing_excludes_galgame_assets_and_project_accepts_documents() -> None:
+    transport = httpx.ASGITransport(app=app)
+    async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+        project = (
+            await client.post(
+                "/v1/galgame-workshop/projects",
+                json={"title": "项目文件归属测试"},
+            )
+        ).json()
+        private_image = await client.post(
+            f"/v1/galgame-workshop/projects/{project['id']}/assets",
+            files={
+                "upload": (
+                    "scope-private.png",
+                    image_bytes(),
+                    "image/png",
+                )
+            },
+        )
+        assert private_image.status_code == 200, private_image.text
+        project_document = await client.post(
+            f"/v1/galgame-workshop/projects/{project['id']}/assets",
+            files={
+                "upload": (
+                    "scope-transcript.json",
+                    b'{"kind":"audio-transcript","entries":[]}',
+                    "application/json",
+                )
+            },
+        )
+        assert project_document.status_code == 200, project_document.text
+        document = project_document.json()
+        assert document["media_kind"] == "document"
+
+        organized = await client.patch(
+            f"/v1/galgame-workshop/projects/{project['id']}/assets/{document['id']}",
+            json={
+                "expectedRevision": document["revision"],
+                "virtualPath": "references/transcripts/scope-transcript.json",
+                "packagingPolicy": "exclude",
+            },
+        )
+        assert organized.status_code == 200, organized.text
+        assert organized.json()["packagingPolicy"] == "exclude"
+
+        library_image = await client.post(
+            "/v1/files",
+            files={
+                "upload": (
+                    "scope-shared.png",
+                    image_bytes(),
+                    "image/png",
+                )
+            },
+        )
+        assert library_image.status_code == 200, library_image.text
+        library_asset = library_image.json()
+
+        listed = await client.get("/v1/files", params={"query": "scope-"})
+        assert listed.status_code == 200, listed.text
+        assert [item["id"] for item in listed.json()["items"]] == [library_asset["id"]]
+
+        content = await client.get(f"/v1/files/{document['id']}/content")
+        assert content.status_code == 200
+        assert content.json()["kind"] == "audio-transcript"
+
+        removed_project = await client.delete(
+            f"/v1/galgame-workshop/projects/{project['id']}",
+            params={"expected_revision": project["revision"]},
+        )
+        assert removed_project.status_code == 200, removed_project.text
+        removed_library = await client.delete(
+            f"/v1/files/{library_asset['id']}",
+            params={"expected_revision": library_asset["revision"]},
+        )
+        assert removed_library.status_code == 200, removed_library.text
+
+
 def story_with_dialogue() -> dict:
     return {
         "schemaVersion": "1.2",

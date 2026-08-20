@@ -277,7 +277,7 @@ test("creates an image task with model-linked sizes and a project reference", as
   const { container } = renderWithClient(
     <GenerationDrawer projectId="project-1" onClose={vi.fn()} />,
   );
-  const generationModel = await screen.findByRole("button", {
+  const generationModel = await screen.findByRole("combobox", {
     name: "生成模型",
   });
   await waitFor(() =>
@@ -334,7 +334,9 @@ test("uses the compact image node composer with reference, size, and seed contro
     />,
   );
 
-  const modelMenu = await screen.findByRole("button", { name: "生成模型" });
+  const modelMenu = await screen.findByRole("button", {
+    name: "生成模型",
+  });
   await waitFor(() =>
     expect(modelMenu).toHaveTextContent("SenseAudio Image 2.0"),
   );
@@ -616,9 +618,9 @@ test("uses the compact video node composer for image-to-video tasks", async () =
   expect(durationSlider).toHaveAttribute("min", "4");
   expect(durationSlider).toHaveAttribute("max", "15");
   fireEvent.change(durationSlider, { target: { value: "8" } });
-  await user.click(screen.getByRole("button", { name: "清晰度" }));
+  await user.click(screen.getByRole("combobox", { name: "清晰度" }));
   await user.click(screen.getByRole("option", { name: "1080P" }));
-  await user.click(screen.getByRole("button", { name: "画面比例" }));
+  await user.click(screen.getByRole("combobox", { name: "画面比例" }));
   await user.click(screen.getByRole("option", { name: "9:16" }));
   expect(screen.getByText("9:16 · 8S · 1080P")).toBeInTheDocument();
   expect(
@@ -813,7 +815,7 @@ test("shows the official video modes and conditional reference fields", async ()
     <GenerationDrawer projectId="project-1" onClose={vi.fn()} />,
   );
   await user.click(await screen.findByRole("tab", { name: "视频" }));
-  expect(screen.getByRole("button", { name: "生成模型" })).toHaveTextContent(
+  expect(screen.getByRole("combobox", { name: "生成模型" })).toHaveTextContent(
     "Doubao Seedance 2.0",
   );
   await user.click(screen.getByRole("button", { name: "首尾帧" }));
@@ -844,7 +846,9 @@ test("uploads local reference media, auto-selects it and submits asset ids", asy
       onClose={vi.fn()}
     />,
   );
-  const modelMenu = await screen.findByRole("button", { name: "生成模型" });
+  const modelMenu = await screen.findByRole("button", {
+    name: "生成模型",
+  });
   await waitFor(() =>
     expect(modelMenu).toHaveTextContent("Doubao Seedance 2.0"),
   );

@@ -1,10 +1,7 @@
-from types import SimpleNamespace
-
 import httpx
 import pytest
 from sqlalchemy import delete
 
-import app.deps as deps
 from app.core.db import SessionLocal
 from app.main import app
 from app.models import ToolNavigationItem
@@ -65,20 +62,11 @@ async def test_tool_navigation_state_is_persisted() -> None:
 
 
 @pytest.mark.asyncio
-async def test_tool_navigation_routes_use_studio_auth(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    token = "t" * 32
-    monkeypatch.setattr(
-        deps,
-        "get_settings",
-        lambda: SimpleNamespace(fpl_studio_token=token),
-    )
+@pytest.mark.real_auth
+async def test_tool_navigation_routes_use_studio_auth() -> None:
     transport = httpx.ASGITransport(app=app)
     async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
         assert (await client.get("/v1/tool-navigation/state")).status_code == 401
-        authorized = await client.get(
-            "/v1/tool-navigation/state",
-            headers={"X-Studio-Token": token},
-        )
-        assert authorized.status_code == 200
+        assert (
+            await client.get("/v1/tool-navigation/state", headers={"X-Studio-Token": "legacy"})
+        ).status_code == 401

@@ -224,7 +224,9 @@ class ModelTestGeneration:
             .all()
         )
         asset_paths = [
-            self.settings.model_test_reference_path / asset.storage_key for asset in assets
+            self.settings.workspace_model_test_path(asset.workspace_id, "references")
+            / asset.storage_key
+            for asset in assets
         ]
         result = await self.session.execute(
             delete(ModelTestGenerationTask).where(
@@ -281,4 +283,7 @@ class ModelTestGeneration:
     def _result_path(self, row: ModelTestGenerationTask) -> Path | None:
         if not row.result_storage_key:
             return None
-        return self.settings.model_test_generated_path / row.result_storage_key
+        return (
+            self.settings.workspace_model_test_path(row.workspace_id, "generated")
+            / row.result_storage_key
+        )

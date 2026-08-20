@@ -2,6 +2,10 @@
   "name": "future-props-lab",
   "private": true,
   "description": "未来道具研究所模型基础设施管理台",
+  "engines": {
+    "node": "24.x",
+    "npm": ">=11"
+  },
   "workspaces": ["web"],
   "scripts": {
     "setup": "uv sync --all-groups && npm install",
@@ -10,6 +14,7 @@
     "dev:web": "npm run dev --workspace web",
     "db:migrate": "uv run python -m db.migrations --apply",
     "db:migrate:check": "uv run python -m db.migrations --check",
+    "account": "uv run python scripts/account.py",
     "contracts:generate": "uv run python scripts/export_openapi.py && npm run contracts:generate --workspace web",
     "contracts:check": "uv run python scripts/export_openapi.py --check && npm run contracts:check --workspace web",
     "test": "uv run pytest -q && npm run test --workspace web",

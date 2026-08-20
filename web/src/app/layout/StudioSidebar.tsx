@@ -2,6 +2,7 @@ import { useState } from "react";
 import { BrandMark } from "@shared/ui/BrandMark";
 import { ThemeToggle } from "@shared/ui/ThemeToggle";
 import type { StudioPage } from "@app/routes";
+import { AccountWorkspacePanel } from "@app/AccountWorkspacePanel";
 
 function HomeIcon() {
   return (
@@ -181,6 +182,7 @@ export function StudioSidebar({
         ) : null}
       </nav>
       <footer className="sidebar-footer">
+        <AccountWorkspacePanel />
         <div className="sidebar-rule" />
         <button
           className="docs-entry"

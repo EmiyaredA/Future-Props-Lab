@@ -82,6 +82,13 @@ class GalgameStoryCharacterTransition(GalgameStoryModel):
 class GalgameStoryDialoguePortrait(GalgameStoryModel):
     mode: Literal["stage", "dialogueAvatar", "soloLegacy"] = "stage"
     visible: bool = True
+    distance: Literal["far", "medium", "near"] = "medium"
+    position_id: str | None = Field(
+        default=None,
+        alias="positionId",
+        pattern=STABLE_ID_PATTERN,
+        exclude_if=lambda value: value is None,
+    )
     skin_id: str | None = Field(
         default=None,
         alias="skinId",
@@ -118,6 +125,13 @@ class GalgameStoryShowCharacterBlock(GalgameStoryBlockBase):
     )
     character_id: str = Field(alias="characterId", pattern=STABLE_ID_PATTERN)
     expression_id: str | None = Field(default=None, alias="expressionId", pattern=STABLE_ID_PATTERN)
+    distance: Literal["far", "medium", "near"] = "medium"
+    position_id: str | None = Field(
+        default=None,
+        alias="positionId",
+        pattern=STABLE_ID_PATTERN,
+        exclude_if=lambda value: value is None,
+    )
     transform: GalgameStoryCharacterTransform = Field(
         default_factory=GalgameStoryCharacterTransform
     )
