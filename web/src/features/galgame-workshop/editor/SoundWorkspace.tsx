@@ -89,6 +89,22 @@ function formatDuration(durationMs?: number | null) {
     .padStart(2, "0")}`;
 }
 
+function formatTranscriptTime(durationMs: number) {
+  const seconds = Math.max(0, durationMs) / 1000;
+  const wholeSeconds = Math.floor(seconds);
+  const milliseconds = Math.round((seconds - wholeSeconds) * 1000);
+  return `${Math.floor(wholeSeconds / 60)}:${(wholeSeconds % 60)
+    .toString()
+    .padStart(2, "0")}.${milliseconds.toString().padStart(3, "0")}`;
+}
+
+function speakerTone(speaker: string) {
+  let hash = 0;
+  for (const character of speaker)
+    hash = (hash * 31 + character.charCodeAt(0)) | 0;
+  return Math.abs(hash) % 6;
+}
+
 function formatBytes(bytes?: number | null) {
   if (bytes === undefined || bytes === null) return "—";
   if (bytes < 1024) return `${bytes} B`;
@@ -226,7 +242,7 @@ export function SoundWorkspace({
   const references = selected ? audioReferences(document, selected.id) : [];
   const selectedFile = selected ? filesById.get(selected.fileId) : undefined;
   const asrModels = (catalog.data?.providers ?? []).flatMap((provider) =>
-    provider.kind === "openai" && provider.enabled
+    ["openai", "senseaudio_asr"].includes(provider.kind) && provider.enabled
       ? provider.models.filter(
           (model) =>
             model.enabled &&
@@ -544,7 +560,7 @@ export function SoundWorkspace({
                 ariaLabel="语音识别模型"
                 className="galgame-asr-model-select"
                 options={[
-                  { value: "", label: "选择 OpenAI 兼容识别模型" },
+                  { value: "", label: "选择语音识别模型" },
                   ...asrModels.map((model) => ({
                     value: model.id,
                     label: model.label || model.slug,
@@ -762,6 +778,40 @@ export function SoundWorkspace({
                           manualTranscript.mutate(event.target.value);
                       }}
                     />
+                    <section className="galgame-transcript-segments">
+                      <header>
+                        <strong>说话人分段</strong>
+                        <span>
+                          {selectedFile?.transcriptSegments?.length ?? 0} 段
+                        </span>
+                      </header>
+                      {selectedFile?.transcriptSegments?.length ? (
+                        <ol>
+                          {selectedFile.transcriptSegments.map(
+                            (segment, index) => (
+                              <li
+                                key={`${segment.speaker}-${segment.startMs}-${index}`}
+                                className={`speaker-tone-${speakerTone(segment.speaker)}`}
+                              >
+                                <header>
+                                  <strong>{segment.speaker}</strong>
+                                  <time>
+                                    {formatTranscriptTime(segment.startMs)}–
+                                    {formatTranscriptTime(segment.endMs)}
+                                  </time>
+                                </header>
+                                <p>{segment.text}</p>
+                              </li>
+                            ),
+                          )}
+                        </ol>
+                      ) : (
+                        <small>
+                          暂无说话人分段；使用 SenseAudio ASR Pro
+                          重新识别后可生成。
+                        </small>
+                      )}
+                    </section>
                     <small>
                       {selectedFile?.virtualPath ?? "voice/"} ·{" "}
                       {selectedFile?.durationMs

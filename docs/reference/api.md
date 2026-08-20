@@ -35,6 +35,8 @@
 模型的 `capabilities` 描述实际输入和调用能力，`categories` 描述模型用途并允许多选；两者都只通过
 模型创建/更新 API 写入。类别字典参考 SiliconFlow 的 `type/sub_type` 语义，当前包含文本生成、
 其他通用模型、语音合成、语音识别、音乐生成、视频生成、图片生成和端到端语音模型。
+供应商类型额外包含 `senseaudio_asr`；内置但默认停用的 SenseAudio ASR Pro 1.5 使用独立凭证，
+不会复用图片或视频供应商的 API Key。
 
 测试调用使用固定提示词、16 个最大输出 Token 和 30 秒超时；无论上游成功、失败或超时均记录日志，API Key 不进入请求或日志 payload。
 
@@ -93,6 +95,21 @@ error`；成功、失败、超时或取消都会保存消息状态并写入调�
 
 工具目录本身由 Web 注册表维护，后端只保存由小写字母、数字和连字符组成的稳定工具 ID。
 状态属于当前 Workspace，同一工具可在不同空间保存独立偏好。
+
+## 录音分段标注
+
+- `GET/POST /v1/audio-annotation/projects`：搜索或创建当前 Workspace 的录音标注任务。
+- `GET/PATCH/DELETE /v1/audio-annotation/projects/{project_id}`：读取、重命名或删除任务。
+- `GET/PUT /v1/audio-annotation/projects/{project_id}/document`：读取或完整保存说话人和片段文档。
+- `GET/PUT /v1/audio-annotation/projects/{project_id}/waveform`：读取或保存浏览器生成的预计算峰值。
+- `POST /v1/audio-annotation/imports`：把版本化项目 JSON 与选定的文件库音频原子导入为新任务。
+
+创建和导入只接受当前 Workspace 公共文件库中的音频，单文件最多 100 MiB、时长最多 60 分钟；
+音频时长由服务端读取。文档固定使用 `schema_version: "1.0"`，最多 64 位说话人和 5000 个片段。
+片段最短 100 毫秒，允许留空白但必须按时间排序且不能重叠，说话人引用必须存在。文档和波形
+分别通过 `expected_revision` 做完整资源 CAS，冲突返回 `409 revision_conflict` 和服务器当前快照。
+波形最多双声道、每声道最多 36,000 个峰值。删除任务只删除标注数据；原音频继续保留，且在被
+任务引用期间从文件管理删除会返回 `409 asset_in_use`。
 
 ## 视觉创作工坊
 
@@ -179,6 +196,12 @@ ID、消息数量、画布摘要和素材 ID；不保存图片 Base64、临时�
 - `GET/POST /v1/galgame-workshop/projects/{project_id}/assets/asr/transcriptions`：读取任务或批量创建待处理/强制识别任务。
 - `PATCH /v1/galgame-workshop/projects/{project_id}/assets/{asset_id}/transcript`：以文本 revision CAS 手工修正识别文本。
 - `POST /v1/galgame-workshop/projects/{project_id}/assets/asr/match-dialogue`：归一化文本后稳定匹配对白并以 Story CAS 绑定语音；可通过 `blockIds` 只匹配指定对白，省略时匹配全项目。
+
+项目素材响应的 `transcriptSegments[]` 与转写任务的 `resultSegments[]` 使用统一的
+`{ speaker, startMs, endMs, text }` 形状。SenseAudio ASR Pro 请求启用说话人分离、自动标点和
+句级时间戳；大于 10 MB 的音频在本地标记为失败且不会提交供应商。手工修正整段文本会清空旧分段，
+避免结构化结果与新文本不一致；检测得到的 `speaker_*` 仅用于展示，不自动绑定剧本角色。
+
 - `GET/POST /v1/galgame-workshop/projects/{project_id}/story/portrait-upgrade`：预览或应用旧立绘尺寸升级；应用前自动保存快照。
 - `GET /v1/galgame-workshop/projects/{project_id}/story/snapshots` 与 `POST .../{snapshot_id}/restore`：列出并以 Story revision 恢复维护快照。
 - `DELETE /v1/galgame-workshop/projects/{project_id}/assets/{asset_id}`：按素材 revision 删除未被故事使用的工程素材；引用冲突返回可定位的角色、Fragment 与 Block 信息。

@@ -1,5 +1,24 @@
 import { expect, test } from "@playwright/test";
 
+function wavFixture(seconds = 1) {
+  const sampleRate = 8_000;
+  const dataSize = sampleRate * seconds * 2;
+  const buffer = Buffer.alloc(44 + dataSize);
+  buffer.write("RIFF", 0);
+  buffer.writeUInt32LE(36 + dataSize, 4);
+  buffer.write("WAVEfmt ", 8);
+  buffer.writeUInt32LE(16, 16);
+  buffer.writeUInt16LE(1, 20);
+  buffer.writeUInt16LE(1, 22);
+  buffer.writeUInt32LE(sampleRate, 24);
+  buffer.writeUInt32LE(sampleRate * 2, 28);
+  buffer.writeUInt16LE(2, 32);
+  buffer.writeUInt16LE(16, 34);
+  buffer.write("data", 36);
+  buffer.writeUInt32LE(dataSize, 40);
+  return buffer;
+}
+
 test.beforeEach(async ({ page }) => {
   await page.route("**/v1/tool-navigation/state", async (route) => {
     await route.fulfill({
@@ -115,4 +134,55 @@ test("opens the local video frame exporter", async ({ page }) => {
   );
   await page.getByRole("button", { name: "返回工具导航" }).click();
   await expect(page).toHaveURL(/\/tools$/);
+});
+
+test("creates and edits an audio annotation task", async ({ page }) => {
+  await page.goto("/tools");
+  await page.getByRole("button", { name: "打开录音分段标注" }).click();
+  await expect(page).toHaveURL(/\/tools\/audio-annotation$/);
+
+  await page.getByRole("button", { name: "新建任务" }).click();
+  await page.getByLabel("上传录音文件").setInputFiles({
+    name: `e2e-annotation-${Date.now()}.wav`,
+    mimeType: "audio/wav",
+    buffer: wavFixture(),
+  });
+  await expect(
+    page.getByRole("option", { name: /e2e-annotation-/ }),
+  ).toHaveAttribute("aria-selected", "true");
+  await page.getByRole("button", { name: "创建并打开" }).click();
+
+  await expect(page).toHaveURL(/\/tools\/audio-annotation\/.+$/);
+  await expect(
+    page.getByRole("complementary", { name: "片段编辑器" }),
+  ).toBeVisible();
+  await expect(page.getByLabel("录音波形时间轴")).toBeVisible();
+
+  await page.getByRole("button", { name: "管理", exact: true }).click();
+  await page.getByRole("button", { name: "添加说话人" }).click();
+  await page.getByRole("button", { name: "完成", exact: true }).click();
+  await page.getByRole("combobox", { name: "选择说话人" }).click();
+  await page.getByRole("option", { name: "说话人 1" }).click();
+  await page
+    .getByPlaceholder("输入这个片段中说出的内容…")
+    .fill("自动化验收片段");
+  await page.getByRole("checkbox", { name: "标记为已校对" }).click();
+  await expect(page.getByText(/已自动保存/)).toBeVisible({ timeout: 5_000 });
+
+  await page
+    .getByPlaceholder("输入这个片段中说出的内容…")
+    .fill("这段内容还没有保存");
+  await page.getByRole("button", { name: "工具导航", exact: true }).click();
+  await expect(
+    page.getByRole("alertdialog", { name: "离开并放弃未保存内容？" }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "取消", exact: true }).click();
+  await expect(page).toHaveURL(/\/tools\/audio-annotation\/.+$/);
+
+  await page.setViewportSize({ width: 900, height: 800 });
+  await expect(page.locator(".annotation-editor-grid")).toHaveCSS(
+    "grid-template-columns",
+    /\S+px/,
+  );
+  await expect(page.getByRole("button", { name: "删除片段" })).toBeVisible();
 });

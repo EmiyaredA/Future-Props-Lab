@@ -349,6 +349,96 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/audio-annotation/imports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Import Project */
+        post: operations["import_project_v1_audio_annotation_imports_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/audio-annotation/projects": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Projects */
+        get: operations["list_projects_v1_audio_annotation_projects_get"];
+        put?: never;
+        /** Create Project */
+        post: operations["create_project_v1_audio_annotation_projects_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/audio-annotation/projects/{project_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Project */
+        get: operations["get_project_v1_audio_annotation_projects__project_id__get"];
+        put?: never;
+        post?: never;
+        /** Delete Project */
+        delete: operations["delete_project_v1_audio_annotation_projects__project_id__delete"];
+        options?: never;
+        head?: never;
+        /** Patch Project */
+        patch: operations["patch_project_v1_audio_annotation_projects__project_id__patch"];
+        trace?: never;
+    };
+    "/v1/audio-annotation/projects/{project_id}/document": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Document */
+        get: operations["get_document_v1_audio_annotation_projects__project_id__document_get"];
+        /** Put Document */
+        put: operations["put_document_v1_audio_annotation_projects__project_id__document_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/audio-annotation/projects/{project_id}/waveform": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Waveform */
+        get: operations["get_waveform_v1_audio_annotation_projects__project_id__waveform_get"];
+        /** Put Waveform */
+        put: operations["put_waveform_v1_audio_annotation_projects__project_id__waveform_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/auth/change-password": {
         parameters: {
             query?: never;
@@ -2003,6 +2093,161 @@ export interface components {
             /** Scopes */
             scopes: string[];
         };
+        /** AudioAnnotationDocumentOut */
+        AudioAnnotationDocumentOut: {
+            /** Project Id */
+            project_id: string;
+            /** Revision */
+            revision: number;
+            /**
+             * Schema Version
+             * @constant
+             */
+            schema_version: "1.0";
+            /** Segments */
+            segments: components["schemas"]["AudioAnnotationSegment"][];
+            /** Speakers */
+            speakers: components["schemas"]["AudioAnnotationSpeaker"][];
+            /** Updated At */
+            updated_at: string;
+        };
+        /** AudioAnnotationDocumentPutIn */
+        AudioAnnotationDocumentPutIn: {
+            /** Expected Revision */
+            expected_revision: number;
+            /**
+             * Schema Version
+             * @default 1.0
+             * @constant
+             */
+            schema_version: "1.0";
+            /** Segments */
+            segments?: components["schemas"]["AudioAnnotationSegment"][];
+            /** Speakers */
+            speakers?: components["schemas"]["AudioAnnotationSpeaker"][];
+        };
+        /** AudioAnnotationImportIn */
+        AudioAnnotationImportIn: {
+            /** Asset Id */
+            asset_id: string;
+            /**
+             * Schema Version
+             * @default 1.0
+             * @constant
+             */
+            schema_version: "1.0";
+            /** Segments */
+            segments?: components["schemas"]["AudioAnnotationSegment"][];
+            /** Speakers */
+            speakers?: components["schemas"]["AudioAnnotationSpeaker"][];
+            /** Title */
+            title: string;
+        };
+        /** AudioAnnotationProjectCreateIn */
+        AudioAnnotationProjectCreateIn: {
+            /** Asset Id */
+            asset_id: string;
+            /** Title */
+            title: string;
+        };
+        /** AudioAnnotationProjectListOut */
+        AudioAnnotationProjectListOut: {
+            /** Items */
+            items: components["schemas"]["AudioAnnotationProjectOut"][];
+        };
+        /** AudioAnnotationProjectOut */
+        AudioAnnotationProjectOut: {
+            /** Asset Display Name */
+            asset_display_name: string;
+            /** Asset Id */
+            asset_id: string;
+            /** Byte Size */
+            byte_size: number;
+            /** Created At */
+            created_at: string;
+            /** Document Revision */
+            document_revision: number;
+            /** Duration Ms */
+            duration_ms: number;
+            /** Id */
+            id: string;
+            /** Mime Type */
+            mime_type: string;
+            /** Original Filename */
+            original_filename: string;
+            /** Reviewed Segment Count */
+            reviewed_segment_count: number;
+            /** Revision */
+            revision: number;
+            /** Segment Count */
+            segment_count: number;
+            /** Title */
+            title: string;
+            /** Updated At */
+            updated_at: string;
+            /** Waveform Ready */
+            waveform_ready: boolean;
+        };
+        /** AudioAnnotationProjectPatchIn */
+        AudioAnnotationProjectPatchIn: {
+            /** Expected Revision */
+            expected_revision: number;
+            /** Title */
+            title: string;
+        };
+        /** AudioAnnotationSegment */
+        AudioAnnotationSegment: {
+            /** End Ms */
+            end_ms: number;
+            /** Id */
+            id: string;
+            /** Speaker Id */
+            speaker_id?: string | null;
+            /** Start Ms */
+            start_ms: number;
+            /**
+             * Status
+             * @default draft
+             * @enum {string}
+             */
+            status: "draft" | "reviewed";
+            /**
+             * Text
+             * @default
+             */
+            text: string;
+        };
+        /** AudioAnnotationSpeaker */
+        AudioAnnotationSpeaker: {
+            /** Color */
+            color: string;
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+        };
+        /** AudioAnnotationWaveformOut */
+        AudioAnnotationWaveformOut: {
+            /** Duration Ms */
+            duration_ms: number;
+            /** Peaks */
+            peaks: number[][];
+            /** Project Id */
+            project_id: string;
+            /** Revision */
+            revision: number;
+            /** Updated At */
+            updated_at: string;
+        };
+        /** AudioAnnotationWaveformPutIn */
+        AudioAnnotationWaveformPutIn: {
+            /** Duration Ms */
+            duration_ms: number;
+            /** Expected Revision */
+            expected_revision: number;
+            /** Peaks */
+            peaks: number[][];
+        };
         /** AuthMeOut */
         AuthMeOut: {
             /** Must Change Password */
@@ -2297,6 +2542,8 @@ export interface components {
              * @default 0
              */
             transcriptRevision: number;
+            /** Transcriptsegments */
+            transcriptSegments?: components["schemas"]["GalgameTranscriptSegmentOut"][];
             /** Transcriptsource */
             transcriptSource?: ("asr" | "manual") | null;
             /**
@@ -2512,6 +2759,8 @@ export interface components {
              * @default 0
              */
             transcriptRevision: number;
+            /** Transcriptsegments */
+            transcriptSegments?: components["schemas"]["GalgameTranscriptSegmentOut"][];
             /** Transcriptsource */
             transcriptSource?: ("asr" | "manual") | null;
             /**
@@ -4505,6 +4754,17 @@ export interface components {
             /** Text */
             text: string;
         };
+        /** GalgameTranscriptSegmentOut */
+        GalgameTranscriptSegmentOut: {
+            /** Endms */
+            endMs: number;
+            /** Speaker */
+            speaker: string;
+            /** Startms */
+            startMs: number;
+            /** Text */
+            text: string;
+        };
         /** GalgameTranscriptionCreateIn */
         GalgameTranscriptionCreateIn: {
             /** Assetids */
@@ -4545,6 +4805,8 @@ export interface components {
             modelSlug: string;
             /** Providername */
             providerName: string;
+            /** Resultsegments */
+            resultSegments?: components["schemas"]["GalgameTranscriptSegmentOut"][];
             /** Resulttext */
             resultText?: string | null;
             /** Revision */
@@ -5209,7 +5471,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "openai" | "anthropic" | "senseaudio_image" | "senseaudio_video";
+            kind: "openai" | "anthropic" | "senseaudio_image" | "senseaudio_video" | "senseaudio_asr";
             /** Name */
             name: string;
         };
@@ -5235,7 +5497,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "openai" | "anthropic" | "senseaudio_image" | "senseaudio_video";
+            kind: "openai" | "anthropic" | "senseaudio_image" | "senseaudio_video" | "senseaudio_asr";
             /** Models */
             models: components["schemas"]["ModelEntryOut"][];
             /** Name */
@@ -6993,6 +7255,336 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["WorkspaceOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    import_project_v1_audio_annotation_imports_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AudioAnnotationImportIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AudioAnnotationProjectOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_projects_v1_audio_annotation_projects_get: {
+        parameters: {
+            query?: {
+                query?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AudioAnnotationProjectListOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_project_v1_audio_annotation_projects_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AudioAnnotationProjectCreateIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AudioAnnotationProjectOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_project_v1_audio_annotation_projects__project_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AudioAnnotationProjectOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_project_v1_audio_annotation_projects__project_id__delete: {
+        parameters: {
+            query: {
+                expected_revision: number;
+            };
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: boolean;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    patch_project_v1_audio_annotation_projects__project_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AudioAnnotationProjectPatchIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AudioAnnotationProjectOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_document_v1_audio_annotation_projects__project_id__document_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AudioAnnotationDocumentOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    put_document_v1_audio_annotation_projects__project_id__document_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AudioAnnotationDocumentPutIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AudioAnnotationDocumentOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_waveform_v1_audio_annotation_projects__project_id__waveform_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AudioAnnotationWaveformOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    put_waveform_v1_audio_annotation_projects__project_id__waveform_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AudioAnnotationWaveformPutIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AudioAnnotationWaveformOut"];
                 };
             };
             /** @description Validation Error */

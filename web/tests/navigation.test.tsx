@@ -55,9 +55,19 @@ test("uses home as the default and parses deep application routes", () => {
   expect(parsePage("/files")).toBe("files");
   expect(parsePage("/tools")).toBe("tools");
   expect(parsePage("/tools/video-frame-exporter")).toBe("video-frame-exporter");
+  expect(parsePage("/tools/audio-annotation")).toBe(
+    "audio-annotation-projects",
+  );
+  expect(parsePage("/tools/audio-annotation/project-1")).toBe(
+    "audio-annotation-editor",
+  );
   expect(pathFor("home")).toBe("/home");
   expect(pathFor("tools")).toBe("/tools");
   expect(pathFor("video-frame-exporter")).toBe("/tools/video-frame-exporter");
+  expect(pathFor("audio-annotation-projects")).toBe("/tools/audio-annotation");
+  expect(pathFor("audio-annotation-editor", "project-1")).toBe(
+    "/tools/audio-annotation/project-1",
+  );
   expect(pathFor("files")).toBe("/files");
   expect(pathFor("visual-workshop-canvas", "project-1")).toBe(
     "/apps/visual-workshop/projects/project-1/canvas",

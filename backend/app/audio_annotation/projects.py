@@ -1,0 +1,326 @@
+from __future__ import annotations
+
+from sqlalchemy import delete, select, update
+from sqlalchemy.ext.asyncio import AsyncSession
+from tinytag import TinyTag
+
+from app.concurrency.revisions import RevisionConflictError
+from app.core.config import get_settings
+from app.core.ids import new_id
+from app.core.time import iso_utc, utc_now
+from app.files.storage import AssetStorage
+from app.models import (
+    AudioAnnotationDocument,
+    AudioAnnotationProject,
+    AudioAnnotationWaveform,
+    VisualAsset,
+)
+from app.schemas.audio_annotation import (
+    AudioAnnotationDocumentOut,
+    AudioAnnotationDocumentPutIn,
+    AudioAnnotationImportIn,
+    AudioAnnotationProjectCreateIn,
+    AudioAnnotationProjectListOut,
+    AudioAnnotationProjectOut,
+    AudioAnnotationProjectPatchIn,
+    AudioAnnotationSegment,
+    AudioAnnotationWaveformOut,
+    AudioAnnotationWaveformPutIn,
+)
+
+MAX_AUDIO_BYTES = 100 * 1024 * 1024
+MAX_DURATION_MS = 60 * 60 * 1000
+MIN_SEGMENT_MS = 100
+
+
+class AudioAnnotationError(Exception):
+    def __init__(self, message: str, *, code: str = "audio_annotation_error", status: int = 422):
+        super().__init__(message)
+        self.code = code
+        self.status = status
+
+
+class AudioAnnotationProjects:
+    def __init__(self, session: AsyncSession) -> None:
+        self.session = session
+        self.storage = AssetStorage(get_settings())
+
+    async def _project(self, project_id: str) -> AudioAnnotationProject:
+        row = await self.session.get(AudioAnnotationProject, project_id)
+        if row is None:
+            raise AudioAnnotationError("标注任务不存在", code="not_found", status=404)
+        return row
+
+    async def _asset(self, asset_id: str) -> VisualAsset:
+        row = await self.session.get(VisualAsset, asset_id)
+        if row is None:
+            raise AudioAnnotationError("音频文件不存在", code="not_found", status=404)
+        if row.project_id is not None or row.galgame_project_id is not None:
+            raise AudioAnnotationError("只能使用 Workspace 文件库中的音频", code="scope_mismatch")
+        if row.media_kind != "audio":
+            raise AudioAnnotationError("标注任务只能使用音频文件", code="invalid_audio")
+        if row.byte_size > MAX_AUDIO_BYTES:
+            raise AudioAnnotationError("音频不能超过 100 MiB", code="audio_too_large", status=413)
+        return row
+
+    def _duration(self, asset: VisualAsset) -> int:
+        path = self.storage.path_for(asset)
+        if not path.is_file():
+            raise AudioAnnotationError("音频文件内容不存在", code="file_missing", status=404)
+        try:
+            tag = TinyTag.get(path)
+            duration_ms = round(float(tag.duration or 0) * 1000)
+        except (OSError, ValueError) as exc:
+            raise AudioAnnotationError("无法读取音频时长", code="audio_metadata_invalid") from exc
+        if duration_ms <= 0:
+            raise AudioAnnotationError("音频时长无效", code="audio_metadata_invalid")
+        if duration_ms > MAX_DURATION_MS:
+            raise AudioAnnotationError("音频不能超过 60 分钟", code="audio_too_long", status=413)
+        return duration_ms
+
+    @staticmethod
+    def _document_out(row: AudioAnnotationDocument) -> AudioAnnotationDocumentOut:
+        return AudioAnnotationDocumentOut(
+            project_id=row.project_id,
+            schema_version=row.schema_version,
+            speakers=row.speakers,
+            segments=row.segments,
+            revision=row.revision,
+            updated_at=iso_utc(row.updated_at),
+        )
+
+    @staticmethod
+    def _waveform_out(row: AudioAnnotationWaveform) -> AudioAnnotationWaveformOut:
+        return AudioAnnotationWaveformOut(
+            project_id=row.project_id,
+            duration_ms=row.duration_ms,
+            peaks=row.peaks,
+            revision=row.revision,
+            updated_at=iso_utc(row.updated_at),
+        )
+
+    async def _project_out(self, row: AudioAnnotationProject) -> AudioAnnotationProjectOut:
+        asset = await self.session.get(VisualAsset, row.asset_id)
+        document = await self.session.get(AudioAnnotationDocument, row.id)
+        waveform = await self.session.get(AudioAnnotationWaveform, row.id)
+        if asset is None or document is None or waveform is None:
+            raise AudioAnnotationError("标注任务数据不完整", code="project_corrupt", status=500)
+        reviewed = sum(1 for segment in document.segments if segment.get("status") == "reviewed")
+        return AudioAnnotationProjectOut(
+            id=row.id,
+            title=row.title,
+            asset_id=asset.id,
+            asset_display_name=asset.display_name,
+            original_filename=asset.original_filename,
+            mime_type=asset.mime_type,
+            byte_size=asset.byte_size,
+            duration_ms=row.duration_ms,
+            segment_count=len(document.segments),
+            reviewed_segment_count=reviewed,
+            waveform_ready=bool(waveform.peaks),
+            document_revision=document.revision,
+            revision=row.revision,
+            created_at=iso_utc(row.created_at),
+            updated_at=iso_utc(row.updated_at),
+        )
+
+    def _validate_document(
+        self,
+        duration_ms: int,
+        body: AudioAnnotationDocumentPutIn | AudioAnnotationImportIn,
+    ) -> None:
+        speaker_ids = {speaker.id for speaker in body.speakers}
+        previous_end = 0
+        previous_start = -1
+        for segment in body.segments:
+            if segment.end_ms - segment.start_ms < MIN_SEGMENT_MS:
+                raise AudioAnnotationError("片段长度不能小于 100 毫秒", code="segment_too_short")
+            if segment.end_ms > duration_ms:
+                raise AudioAnnotationError("片段超出音频时长", code="segment_out_of_range")
+            if segment.start_ms < previous_start:
+                raise AudioAnnotationError("片段必须按开始时间排序", code="segments_unsorted")
+            if segment.start_ms < previous_end:
+                raise AudioAnnotationError("音频片段不能重叠", code="segments_overlap")
+            if segment.speaker_id is not None and segment.speaker_id not in speaker_ids:
+                raise AudioAnnotationError("片段引用了不存在的说话人", code="speaker_not_found")
+            previous_start = segment.start_ms
+            previous_end = segment.end_ms
+
+    async def list(self, query: str = "") -> AudioAnnotationProjectListOut:
+        statement = select(AudioAnnotationProject).order_by(
+            AudioAnnotationProject.updated_at.desc(),
+            AudioAnnotationProject.created_at.desc(),
+        )
+        if query:
+            statement = statement.where(AudioAnnotationProject.title.ilike(f"%{query}%"))
+        rows = (await self.session.execute(statement)).scalars().all()
+        return AudioAnnotationProjectListOut(items=[await self._project_out(row) for row in rows])
+
+    async def get(self, project_id: str) -> AudioAnnotationProjectOut:
+        return await self._project_out(await self._project(project_id))
+
+    async def create(self, body: AudioAnnotationProjectCreateIn) -> AudioAnnotationProjectOut:
+        asset = await self._asset(body.asset_id)
+        duration_ms = self._duration(asset)
+        row = AudioAnnotationProject(
+            title=body.title,
+            asset_id=asset.id,
+            duration_ms=duration_ms,
+        )
+        self.session.add(row)
+        await self.session.flush()
+        segment = AudioAnnotationSegment(
+            id=new_id(), start_ms=0, end_ms=duration_ms, speaker_id=None, text="", status="draft"
+        )
+        self.session.add(
+            AudioAnnotationDocument(
+                project_id=row.id,
+                schema_version="1.0",
+                speakers=[],
+                segments=[segment.model_dump(mode="json")],
+            )
+        )
+        self.session.add(
+            AudioAnnotationWaveform(project_id=row.id, duration_ms=duration_ms, peaks=[])
+        )
+        await self.session.commit()
+        await self.session.refresh(row)
+        return await self._project_out(row)
+
+    async def import_project(self, body: AudioAnnotationImportIn) -> AudioAnnotationProjectOut:
+        asset = await self._asset(body.asset_id)
+        duration_ms = self._duration(asset)
+        self._validate_document(duration_ms, body)
+        row = AudioAnnotationProject(
+            title=body.title,
+            asset_id=asset.id,
+            duration_ms=duration_ms,
+        )
+        self.session.add(row)
+        await self.session.flush()
+        self.session.add(
+            AudioAnnotationDocument(
+                project_id=row.id,
+                schema_version=body.schema_version,
+                speakers=[speaker.model_dump(mode="json") for speaker in body.speakers],
+                segments=[segment.model_dump(mode="json") for segment in body.segments],
+            )
+        )
+        self.session.add(
+            AudioAnnotationWaveform(project_id=row.id, duration_ms=duration_ms, peaks=[])
+        )
+        await self.session.commit()
+        await self.session.refresh(row)
+        return await self._project_out(row)
+
+    async def patch(
+        self, project_id: str, body: AudioAnnotationProjectPatchIn
+    ) -> AudioAnnotationProjectOut:
+        await self._project(project_id)
+        result = await self.session.execute(
+            update(AudioAnnotationProject)
+            .where(
+                AudioAnnotationProject.id == project_id,
+                AudioAnnotationProject.revision == body.expected_revision,
+            )
+            .values(
+                title=body.title,
+                revision=body.expected_revision + 1,
+                updated_at=utc_now(),
+            )
+        )
+        if result.rowcount != 1:
+            await self.session.rollback()
+            current = await self.get(project_id)
+            raise RevisionConflictError(
+                body.expected_revision, current.revision, current.model_dump(mode="json")
+            )
+        await self.session.commit()
+        return await self.get(project_id)
+
+    async def delete(self, project_id: str, expected_revision: int) -> None:
+        await self._project(project_id)
+        result = await self.session.execute(
+            delete(AudioAnnotationProject).where(
+                AudioAnnotationProject.id == project_id,
+                AudioAnnotationProject.revision == expected_revision,
+            )
+        )
+        if result.rowcount != 1:
+            await self.session.rollback()
+            current = await self.get(project_id)
+            raise RevisionConflictError(
+                expected_revision, current.revision, current.model_dump(mode="json")
+            )
+        await self.session.commit()
+
+    async def get_document(self, project_id: str) -> AudioAnnotationDocumentOut:
+        await self._project(project_id)
+        row = await self.session.get(AudioAnnotationDocument, project_id)
+        if row is None:
+            raise AudioAnnotationError("标注文档不存在", code="project_corrupt", status=500)
+        return self._document_out(row)
+
+    async def put_document(
+        self, project_id: str, body: AudioAnnotationDocumentPutIn
+    ) -> AudioAnnotationDocumentOut:
+        project = await self._project(project_id)
+        self._validate_document(project.duration_ms, body)
+        result = await self.session.execute(
+            update(AudioAnnotationDocument)
+            .where(
+                AudioAnnotationDocument.project_id == project_id,
+                AudioAnnotationDocument.revision == body.expected_revision,
+            )
+            .values(
+                schema_version=body.schema_version,
+                speakers=[speaker.model_dump(mode="json") for speaker in body.speakers],
+                segments=[segment.model_dump(mode="json") for segment in body.segments],
+                revision=body.expected_revision + 1,
+                updated_at=utc_now(),
+            )
+        )
+        if result.rowcount != 1:
+            await self.session.rollback()
+            current = await self.get_document(project_id)
+            raise RevisionConflictError(
+                body.expected_revision, current.revision, current.model_dump(mode="json")
+            )
+        project.updated_at = utc_now()
+        await self.session.commit()
+        return await self.get_document(project_id)
+
+    async def get_waveform(self, project_id: str) -> AudioAnnotationWaveformOut:
+        await self._project(project_id)
+        row = await self.session.get(AudioAnnotationWaveform, project_id)
+        if row is None:
+            raise AudioAnnotationError("波形数据不存在", code="project_corrupt", status=500)
+        return self._waveform_out(row)
+
+    async def put_waveform(
+        self, project_id: str, body: AudioAnnotationWaveformPutIn
+    ) -> AudioAnnotationWaveformOut:
+        project = await self._project(project_id)
+        if abs(body.duration_ms - project.duration_ms) > 100:
+            raise AudioAnnotationError("波形时长与音频不一致", code="waveform_duration_mismatch")
+        result = await self.session.execute(
+            update(AudioAnnotationWaveform)
+            .where(
+                AudioAnnotationWaveform.project_id == project_id,
+                AudioAnnotationWaveform.revision == body.expected_revision,
+            )
+            .values(
+                duration_ms=project.duration_ms,
+                peaks=body.peaks,
+                revision=body.expected_revision + 1,
+                updated_at=utc_now(),
+            )
+        )
+        if result.rowcount != 1:
+            await self.session.rollback()
+            current = await self.get_waveform(project_id)
+            raise RevisionConflictError(
+                body.expected_revision, current.revision, current.model_dump(mode="json")
+            )
+        await self.session.commit()
+        return await self.get_waveform(project_id)

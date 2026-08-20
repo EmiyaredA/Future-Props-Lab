@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.concurrency.revisions import RevisionConflictError
 from app.core.credentials import decrypt_secret, encrypt_secret
 from app.models import (
+    GalgameAssetTranscriptionTask,
     ModelCatalogState,
     ModelEntry,
     ModelProvider,
@@ -227,7 +228,7 @@ class ModelCatalogService:
     ) -> tuple[int, ProviderOut]:
         row = await self.get_provider(provider_id)
         if not enabled and await self._provider_has_active_tasks(provider_id):
-            raise CatalogResourceBusyError("供应商仍有进行中的生成任务")
+            raise CatalogResourceBusyError("供应商仍有进行中的任务")
         body = ProviderIn(
             expected_catalog_revision=expected,
             name=row.name,
@@ -239,7 +240,7 @@ class ModelCatalogService:
 
     async def delete_provider(self, provider_id: str, expected: int) -> int:
         if await self._provider_has_active_tasks(provider_id):
-            raise CatalogResourceBusyError("供应商仍有进行中的生成任务")
+            raise CatalogResourceBusyError("供应商仍有进行中的任务")
         revision = await self._bump(expected)
         row = await self.get_provider(provider_id)
         await self.session.delete(row)
@@ -312,8 +313,14 @@ class ModelCatalogService:
                 ModelTestGenerationTask.status.in_(ACTIVE_GENERATION_STATUSES),
             )
         )
-        if active or test_active:
-            raise CatalogResourceBusyError("模型仍有进行中的生成任务")
+        asr_active = await self.session.scalar(
+            select(func.count(GalgameAssetTranscriptionTask.id)).where(
+                GalgameAssetTranscriptionTask.model_id == model_id,
+                GalgameAssetTranscriptionTask.status.in_(("queued", "running")),
+            )
+        )
+        if active or test_active or asr_active:
+            raise CatalogResourceBusyError("模型仍有进行中的任务")
         revision = await self._bump(expected)
         await self.session.execute(delete(ModelEntry).where(ModelEntry.id == model_id))
         await self.session.commit()
@@ -332,7 +339,13 @@ class ModelCatalogService:
                 ModelTestGenerationTask.status.in_(ACTIVE_GENERATION_STATUSES),
             )
         )
-        return bool(count or test_count)
+        asr_count = await self.session.scalar(
+            select(func.count(GalgameAssetTranscriptionTask.id)).where(
+                GalgameAssetTranscriptionTask.provider_id == provider_id,
+                GalgameAssetTranscriptionTask.status.in_(("queued", "running")),
+            )
+        )
+        return bool(count or test_count or asr_count)
 
 
 def _categories_for_provider_kind(kind: str) -> list[str]:
@@ -340,4 +353,6 @@ def _categories_for_provider_kind(kind: str) -> list[str]:
         return ["image_generation"]
     if kind == "senseaudio_video":
         return ["video_generation"]
+    if kind == "senseaudio_asr":
+        return ["speech_recognition"]
     return ["text_generation"]

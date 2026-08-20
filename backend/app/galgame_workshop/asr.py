@@ -19,6 +19,11 @@ from app.files import AssetError
 from app.files.storage import AssetStorage
 from app.galgame_workshop.story import GalgameStoryDocuments
 from app.llm.generation_runtime import PollingGenerationRunner
+from app.llm.providers._senseaudio import SenseAudioProviderError
+from app.llm.providers.senseaudio_asr import (
+    SenseAudioAsrFileTooLarge,
+    transcribe_audio,
+)
 from app.models import (
     GalgameAssetMetadata,
     GalgameAssetSettings,
@@ -52,6 +57,7 @@ def _task_out(row: GalgameAssetTranscriptionTask) -> GalgameTranscriptionTaskOut
         force=row.force,
         status=row.status,
         resultText=row.result_text,
+        resultSegments=list(row.result_segments or []),
         error=row.error,
         revision=row.revision,
         createdAt=iso_utc(row.created_at),
@@ -63,7 +69,7 @@ def _task_out(row: GalgameAssetTranscriptionTask) -> GalgameTranscriptionTaskOut
 def _model_supports_asr(model: ModelEntry, provider: ModelProvider | None) -> bool:
     return bool(
         provider is not None
-        and provider.kind == "openai"
+        and provider.kind in {"openai", "senseaudio_asr"}
         and provider.enabled
         and model.enabled
         and (
@@ -120,7 +126,7 @@ class GalgameAsrService:
             )
             if model is None or not _model_supports_asr(model, provider):
                 raise AssetError(
-                    "只能选择已启用的 OpenAI 兼容语音识别模型",
+                    "只能选择已启用的 OpenAI 兼容或 SenseAudio 语音识别模型",
                     code="asr_model_unavailable",
                 )
         values: dict[str, object] = {
@@ -241,6 +247,7 @@ class GalgameAsrService:
                 transcript_status="ready",
                 transcript_source="manual",
                 transcript_revision=body.expected_revision + 1,
+                transcript_segments=[],
                 updated_at=utc_now(),
             )
         )
@@ -476,26 +483,52 @@ class GalgameAsrRunner(PollingGenerationRunner):
                 file_path = self.storage.path_for(asset)
                 mime_type = asset.mime_type
                 force = task.force
+                provider_kind = provider.kind
+                byte_size = asset.byte_size
                 await session.commit()
 
-            data = {"model": model_slug, "response_format": "json"}
-            if language != "auto":
-                data["language"] = language
+            segments: list[dict[str, object]] = []
             with file_path.open("rb") as source:
-                async with httpx.AsyncClient(
-                    timeout=httpx.Timeout(300.0), transport=self.transport
-                ) as client:
-                    response = await client.post(
-                        f"{base_url}/audio/transcriptions",
-                        headers={"Authorization": f"Bearer {api_key}"},
-                        data=data,
-                        files={"file": (filename, source, mime_type)},
+                if provider_kind == "senseaudio_asr":
+                    transcription = await transcribe_audio(
+                        base_url=base_url,
+                        api_key=api_key,
+                        model=model_slug,
+                        filename=filename,
+                        source=source,
+                        mime_type=mime_type,
+                        byte_size=byte_size,
+                        language=language,
+                        transport=self.transport,
                     )
-                    response.raise_for_status()
-                    payload = response.json()
-            text = payload.get("text") if isinstance(payload, dict) else None
-            if not isinstance(text, str):
-                raise ValueError("语音识别响应缺少文本")
+                    text = transcription.text
+                    segments = [
+                        {
+                            "speaker": segment.speaker,
+                            "startMs": segment.start_ms,
+                            "endMs": segment.end_ms,
+                            "text": segment.text,
+                        }
+                        for segment in transcription.segments
+                    ]
+                else:
+                    data = {"model": model_slug, "response_format": "json"}
+                    if language != "auto":
+                        data["language"] = language
+                    async with httpx.AsyncClient(
+                        timeout=httpx.Timeout(300.0), transport=self.transport
+                    ) as client:
+                        response = await client.post(
+                            f"{base_url}/audio/transcriptions",
+                            headers={"Authorization": f"Bearer {api_key}"},
+                            data=data,
+                            files={"file": (filename, source, mime_type)},
+                        )
+                        response.raise_for_status()
+                        payload = response.json()
+                    text = payload.get("text") if isinstance(payload, dict) else None
+                    if not isinstance(text, str):
+                        raise ValueError("语音识别响应缺少文本")
             async with self.session_factory() as session:
                 task = await self._load_task(session, task_id)
                 metadata = await session.get(GalgameAssetMetadata, task.asset_id) if task else None
@@ -503,6 +536,7 @@ class GalgameAsrRunner(PollingGenerationRunner):
                     return
                 task.status = "completed"
                 task.result_text = text
+                task.result_segments = segments
                 task.error = None
                 task.finished_at = utc_now()
                 task.revision += 1
@@ -511,6 +545,7 @@ class GalgameAsrRunner(PollingGenerationRunner):
                     metadata.transcript_language = language
                     metadata.transcript_source = "asr"
                     metadata.transcript_revision += 1
+                    metadata.transcript_segments = segments
                 metadata.transcript_status = "ready"
                 await session.commit()
         except asyncio.CancelledError:
@@ -523,8 +558,12 @@ class GalgameAsrRunner(PollingGenerationRunner):
                 metadata = await session.get(GalgameAssetMetadata, task.asset_id)
                 task.status = "failed"
                 task.error = (
-                    "语音识别请求超时"
+                    str(exc)
+                    if isinstance(exc, SenseAudioAsrFileTooLarge)
+                    else "语音识别请求超时"
                     if isinstance(exc, httpx.TimeoutException)
+                    else str(exc)
+                    if isinstance(exc, SenseAudioProviderError)
                     else f"语音识别失败（{type(exc).__name__}）"
                 )
                 task.finished_at = utc_now()

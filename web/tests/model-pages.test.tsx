@@ -285,6 +285,22 @@ test("does not repeat a capability that is already shown as a category", async (
   expect(screen.getAllByText("图片生成")).toHaveLength(1);
 });
 
+test("offers the SenseAudio speaker recognition provider and ASR capability", async () => {
+  const user = userEvent.setup();
+  renderWithQuery(<ModelServicePage />);
+  await screen.findByText("主模型网关");
+
+  await user.click(screen.getByRole("button", { name: /添加供应商/ }));
+  await user.click(screen.getByRole("combobox", { name: "通道类型" }));
+  expect(
+    screen.getByRole("option", { name: "SenseAudio 专业说话人识别" }),
+  ).toBeInTheDocument();
+  await user.click(screen.getByRole("button", { name: "关闭" }));
+
+  await user.click(screen.getByRole("button", { name: /添加模型/ }));
+  expect(screen.getByRole("button", { name: "语音识别" })).toBeInTheDocument();
+});
+
 test("shows a useful empty state for call logs", async () => {
   renderWithQuery(<ModelCallLogsPage />);
   expect(await screen.findByText("暂无调用日志")).toBeInTheDocument();

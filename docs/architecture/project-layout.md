@@ -17,6 +17,7 @@ Future-Props-Lab/
 │   ├── agents/        # 供应商无关 Agent Harness、Reactive 工具循环与内存审批
 │   ├── llm/           # 模型目录、供应商适配、共享生成运行时、测试工作台和调用日志
 │   ├── tool_navigation/ # 工具收藏与最近使用状态规则
+│   ├── audio_annotation/ # Workspace 录音标注任务、文档/波形 CAS 与导入校验
 │   ├── visual_workshop/ # 视觉工坊项目、画布、助手、生成任务与领域适配器
 │   ├── galgame_workshop/ # Galgame 工程、Story 1.4 CAS、素材/ASR/尺寸维护与线路分析
 │   ├── models/        # SQLAlchemy 持久化形状
@@ -61,6 +62,9 @@ Future-Props-Lab/
   时，按具体业务能力在所属功能包内命名，避免同一职责出现多个事实源。
 - 工具目录由 Web 静态注册表维护；后端 `tool_navigation/` 只持久化稳定工具 ID 对应的收藏与
   最近使用状态，不复制工具名称、分类或外部网址。
+- `audio_annotation/` 管理 Workspace 级录音标注任务，根项目直接保存 `workspace_id` 并引用
+  公共文件库中的音频；说话人/片段文档与最多双声道的预计算波形分别使用独立 revision CAS。
+  删除任务不会删除原音频，被任务引用的音频不能从文件库删除。
 - AI 应用目录同样由 Web 静态注册表维护，应用最近访问记录只保存在浏览器本地。视觉创作工坊
   与 Galgame 工坊各自使用独立页面壳；后端 `files/` 负责公共文件元数据、文件夹、存储校验与项目引用，
   `visual_workshop/` 负责真实项目、revisioned 节点画布、项目对话与图片/视频异步生成任务，

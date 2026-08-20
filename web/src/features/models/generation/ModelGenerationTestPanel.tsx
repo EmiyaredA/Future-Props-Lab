@@ -54,7 +54,11 @@ type TestModel = {
   label: string;
   description: string;
   providerKind:
-    "openai" | "anthropic" | "senseaudio_image" | "senseaudio_video";
+    | "openai"
+    | "anthropic"
+    | "senseaudio_image"
+    | "senseaudio_video"
+    | "senseaudio_asr";
 };
 
 const statusLabel: Record<ModelTestGenerationTask["status"], string> = {

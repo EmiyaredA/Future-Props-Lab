@@ -17,6 +17,7 @@ from app.files.library import AssetError, AssetLibrary
 from app.files.policy import display_name_without_original_extension
 from app.files.storage import TARGET_STORAGE_VERSION, AssetStorage
 from app.models import (
+    AudioAnnotationProject,
     GalgameProjectAssetReference,
     VisualAsset,
     VisualAssetFolder,
@@ -284,6 +285,17 @@ class VisualAssets:
                 )
         global_ids = [item.id for item in assets if item.project_id is None]
         if global_ids:
+            audio_annotation = await self.session.scalar(
+                select(AudioAnnotationProject.id)
+                .where(AudioAnnotationProject.asset_id.in_(global_ids))
+                .limit(1)
+            )
+            if audio_annotation:
+                raise AssetError(
+                    "文件夹内有音频正在被录音标注任务使用，请先删除相关任务",
+                    code="asset_in_use",
+                    status=409,
+                )
             referenced = await self.session.scalar(
                 select(VisualProjectAssetReference.id)
                 .where(VisualProjectAssetReference.asset_id.in_(global_ids))
@@ -468,6 +480,17 @@ class VisualAssets:
                 status=409,
             )
         if row.project_id is None:
+            audio_annotation = await self.session.scalar(
+                select(AudioAnnotationProject.id)
+                .where(AudioAnnotationProject.asset_id == asset_id)
+                .limit(1)
+            )
+            if audio_annotation:
+                raise AssetError(
+                    "音频正在被录音标注任务使用，请先删除相关任务",
+                    code="asset_in_use",
+                    status=409,
+                )
             reference = await self.session.scalar(
                 select(VisualProjectAssetReference.id)
                 .where(VisualProjectAssetReference.asset_id == asset_id)

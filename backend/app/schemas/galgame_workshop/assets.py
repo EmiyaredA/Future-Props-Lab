@@ -4,6 +4,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from app.schemas.galgame_workshop.asr import GalgameTranscriptSegmentOut
 from app.schemas.galgame_workshop.base import STABLE_ID_PATTERN, GalgameStoryModel
 
 
@@ -38,6 +39,9 @@ class GalgameProjectAssetOut(BaseModel):
         default=None, alias="transcriptSource"
     )
     transcript_revision: int = Field(default=0, alias="transcriptRevision")
+    transcript_segments: list[GalgameTranscriptSegmentOut] = Field(
+        default_factory=list, alias="transcriptSegments"
+    )
 
 
 class GalgameProjectAssetListOut(BaseModel):

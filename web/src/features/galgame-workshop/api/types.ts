@@ -177,6 +177,7 @@ type GalgameAssetMetadataKeys =
   | "category"
   | "packagingPolicy"
   | "transcriptRevision"
+  | "transcriptSegments"
   | "transcriptStatus"
   | "virtualPath";
 export type GalgameProjectAsset = Omit<

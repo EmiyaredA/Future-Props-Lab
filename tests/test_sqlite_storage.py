@@ -40,14 +40,14 @@ def test_sqlite_migration_is_repeatable_and_detects_drift(tmp_path: Path) -> Non
     database_path = tmp_path / "nested" / "catalog.db"
 
     assert apply_migrations(database_path) == (
-        "r0020_accounts_and_workspaces",
+        "r0023_senseaudio_asr_fresh_catalog",
         True,
     )
     assert apply_migrations(database_path) == (
-        "r0020_accounts_and_workspaces",
+        "r0023_senseaudio_asr_fresh_catalog",
         False,
     )
-    assert check_migrations(database_path) == "r0020_accounts_and_workspaces"
+    assert check_migrations(database_path) == "r0023_senseaudio_asr_fresh_catalog"
 
     with connect_database(database_path) as connection:
         connection.execute(
@@ -73,7 +73,7 @@ def test_existing_r0001_database_upgrades_without_rewriting_history(tmp_path: Pa
         connection.commit()
 
     assert apply_migrations(database_path) == (
-        "r0020_accounts_and_workspaces",
+        "r0023_senseaudio_asr_fresh_catalog",
         True,
     )
     with connect_database(database_path) as connection:
@@ -101,6 +101,9 @@ def test_existing_r0001_database_upgrades_without_rewriting_history(tmp_path: Pa
             ("r0018_galgame_asset_management",),
             ("r0019_project_storage_layout",),
             ("r0020_accounts_and_workspaces",),
+            ("r0021_senseaudio_asr",),
+            ("r0022_audio_annotation",),
+            ("r0023_senseaudio_asr_fresh_catalog",),
         ]
         assert connection.execute("SELECT COUNT(*) FROM model_test_conversations").fetchone() == (
             0,
@@ -213,7 +216,7 @@ def test_r0020_assigns_complete_r0019_history_to_default_workspace(
         connection.commit()
 
     assert apply_migrations(database_path) == (
-        "r0020_accounts_and_workspaces",
+        "r0023_senseaudio_asr_fresh_catalog",
         True,
     )
     workspace_tables = (
@@ -256,6 +259,88 @@ def test_r0020_assigns_complete_r0019_history_to_default_workspace(
             "WHERE tool_id = 'json-formatter'"
         ).fetchone() == ("default", 7)
         assert connection.execute("PRAGMA foreign_key_check").fetchall() == []
+
+
+def test_r0021_adds_senseaudio_asr_to_each_existing_workspace(tmp_path: Path) -> None:
+    database_path = tmp_path / "r0020-multi-workspace.db"
+    _create_database_at_migration(database_path, len(MIGRATIONS) - 3)
+    workspace_id = "12345678-1234-5678-9abc-def012345678"
+    with connect_database(database_path) as connection:
+        connection.execute(
+            "INSERT INTO workspaces (id, name) VALUES (?, ?)",
+            (workspace_id, "第二工作区"),
+        )
+        connection.execute(
+            "INSERT INTO model_catalog_state (id, revision) VALUES (?, 3)",
+            (workspace_id,),
+        )
+        connection.execute("UPDATE model_catalog_state SET revision = 1 WHERE id = 'default'")
+        default_revision = connection.execute(
+            "SELECT revision FROM model_catalog_state WHERE id = 'default'"
+        ).fetchone()[0]
+        connection.commit()
+
+    assert apply_migrations(database_path) == (
+        "r0023_senseaudio_asr_fresh_catalog",
+        True,
+    )
+    with connect_database(database_path) as connection:
+        providers = connection.execute(
+            """
+            SELECT workspace_id, id, base_url, api_key_ciphertext, enabled
+            FROM model_providers
+            WHERE kind = 'senseaudio_asr'
+            ORDER BY CASE workspace_id WHEN 'default' THEN 0 ELSE 1 END
+            """
+        ).fetchall()
+        models = connection.execute(
+            """
+            SELECT entry.workspace_id, entry.slug, entry.capabilities,
+                   entry.categories, entry.enabled
+            FROM model_entries AS entry
+            JOIN model_providers AS provider ON provider.id = entry.provider_id
+            WHERE provider.kind = 'senseaudio_asr'
+            ORDER BY CASE entry.workspace_id WHEN 'default' THEN 0 ELSE 1 END
+            """
+        ).fetchall()
+        revisions = dict(connection.execute("SELECT id, revision FROM model_catalog_state"))
+        metadata_columns = {
+            row[1] for row in connection.execute("PRAGMA table_info(galgame_asset_metadata)")
+        }
+        task_columns = {
+            row[1]
+            for row in connection.execute("PRAGMA table_info(galgame_asset_transcription_tasks)")
+        }
+        assert connection.execute("PRAGMA foreign_key_check").fetchall() == []
+
+    assert len(providers) == 2
+    assert len({row[1] for row in providers}) == 2
+    assert all(len(row[1]) == 36 for row in providers)
+    assert all(row[2:] == ("https://api.senseaudio.cn/v1", "", 0) for row in providers)
+    assert models == [
+        (
+            "default",
+            "senseaudio-asr-pro-1.5-260319",
+            '["speech_recognition"]',
+            '["speech_recognition"]',
+            1,
+        ),
+        (
+            workspace_id,
+            "senseaudio-asr-pro-1.5-260319",
+            '["speech_recognition"]',
+            '["speech_recognition"]',
+            1,
+        ),
+    ]
+    assert revisions["default"] == default_revision + 1
+    assert revisions[workspace_id] == 4
+    assert "transcript_segments" in metadata_columns
+    assert "result_segments" in task_columns
+    assert apply_migrations(database_path) == (
+        "r0023_senseaudio_asr_fresh_catalog",
+        False,
+    )
 
 
 def test_r0014_adds_empty_content_parts_to_existing_messages(tmp_path: Path) -> None:
@@ -319,11 +404,11 @@ def test_r0015_upgrades_r0014_and_enforces_private_asset_ownership(tmp_path: Pat
         connection.commit()
 
     assert apply_migrations(database_path) == (
-        "r0020_accounts_and_workspaces",
+        "r0023_senseaudio_asr_fresh_catalog",
         True,
     )
     assert apply_migrations(database_path) == (
-        "r0020_accounts_and_workspaces",
+        "r0023_senseaudio_asr_fresh_catalog",
         False,
     )
     with connect_database(database_path) as connection:
@@ -432,7 +517,7 @@ def test_existing_default_catalog_is_extended_without_overwriting_user_data(
         connection.commit()
 
     assert apply_migrations(database_path) == (
-        "r0020_accounts_and_workspaces",
+        "r0023_senseaudio_asr_fresh_catalog",
         True,
     )
 
@@ -517,18 +602,18 @@ def test_existing_default_catalog_is_extended_without_overwriting_user_data(
     ]
     assert "senseaudio-vl-1.0-260319" not in all_slugs
     assert len(all_slugs) == 15
-    assert revision == (9,)
-    assert stored_categories == {"[]"}
+    assert revision == (10,)
+    assert stored_categories == {"[]", '["speech_recognition"]'}
 
     assert apply_migrations(database_path) == (
-        "r0020_accounts_and_workspaces",
+        "r0023_senseaudio_asr_fresh_catalog",
         False,
     )
     with connect_database(database_path) as connection:
         assert connection.execute(
             "SELECT revision FROM model_catalog_state WHERE id = 'default'"
-        ).fetchone() == (9,)
-        assert connection.execute("SELECT COUNT(*) FROM model_entries").fetchone() == (20,)
+        ).fetchone() == (10,)
+        assert connection.execute("SELECT COUNT(*) FROM model_entries").fetchone() == (21,)
 
 
 def test_catalog_upgrade_does_not_recreate_deleted_default_provider(tmp_path: Path) -> None:
@@ -539,15 +624,20 @@ def test_catalog_upgrade_does_not_recreate_deleted_default_provider(tmp_path: Pa
         connection.commit()
 
     assert apply_migrations(database_path) == (
-        "r0020_accounts_and_workspaces",
+        "r0023_senseaudio_asr_fresh_catalog",
         True,
     )
     with connect_database(database_path) as connection:
-        assert connection.execute("SELECT COUNT(*) FROM model_providers").fetchone() == (0,)
-        assert connection.execute("SELECT COUNT(*) FROM model_entries").fetchone() == (0,)
+        assert connection.execute(
+            "SELECT COUNT(*) FROM model_providers WHERE kind = 'openai'"
+        ).fetchone() == (0,)
+        assert connection.execute(
+            "SELECT COUNT(*) FROM model_providers WHERE kind = 'senseaudio_asr'"
+        ).fetchone() == (1,)
+        assert connection.execute("SELECT COUNT(*) FROM model_entries").fetchone() == (1,)
         assert connection.execute(
             "SELECT revision FROM model_catalog_state WHERE id = 'default'"
-        ).fetchone() == (4,)
+        ).fetchone() == (5,)
 
 
 def test_r0007_upgrade_adds_visual_tasks_and_preserves_provider_credentials(
@@ -575,7 +665,7 @@ def test_r0007_upgrade_adds_visual_tasks_and_preserves_provider_credentials(
         connection.commit()
 
     assert apply_migrations(database_path) == (
-        "r0020_accounts_and_workspaces",
+        "r0023_senseaudio_asr_fresh_catalog",
         True,
     )
     with connect_database(database_path) as connection:

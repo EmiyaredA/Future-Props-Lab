@@ -23,6 +23,8 @@ def _categories_for_provider(kind: str) -> list[str]:
         return ["image_generation"]
     if kind == "senseaudio_video":
         return ["video_generation"]
+    if kind == "senseaudio_asr":
+        return ["speech_recognition"]
     return ["text_generation"]
 
 
@@ -224,6 +226,22 @@ SAYFLOW_TEXT_CATALOG = (
                 label="Doubao Seedance 2.0",
                 description="支持文本、首尾帧与多模态参考素材的视频生成模型",
                 capabilities=("video_generation",),
+            ),
+        ),
+    ),
+    SeedProvider(
+        id="f0000000-0000-4000-8000-000000000005",
+        name="SenseAudio 专业说话人识别",
+        kind="senseaudio_asr",
+        base_url="https://api.senseaudio.cn/v1",
+        sort_order=4,
+        models=(
+            SeedModel(
+                id="f2000000-0000-4000-8000-000000000006",
+                slug="senseaudio-asr-pro-1.5-260319",
+                label="SenseAudio ASR Pro 1.5",
+                description="支持说话人分离与句级时间戳的专业语音识别模型",
+                capabilities=("speech_recognition",),
             ),
         ),
     ),

@@ -397,6 +397,426 @@
         "title": "ApiKeyOut",
         "type": "object"
       },
+      "AudioAnnotationDocumentOut": {
+        "properties": {
+          "project_id": {
+            "title": "Project Id",
+            "type": "string"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          },
+          "schema_version": {
+            "const": "1.0",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "segments": {
+            "items": {
+              "$ref": "#/components/schemas/AudioAnnotationSegment"
+            },
+            "title": "Segments",
+            "type": "array"
+          },
+          "speakers": {
+            "items": {
+              "$ref": "#/components/schemas/AudioAnnotationSpeaker"
+            },
+            "title": "Speakers",
+            "type": "array"
+          },
+          "updated_at": {
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "project_id",
+          "schema_version",
+          "speakers",
+          "segments",
+          "revision",
+          "updated_at"
+        ],
+        "title": "AudioAnnotationDocumentOut",
+        "type": "object"
+      },
+      "AudioAnnotationDocumentPutIn": {
+        "properties": {
+          "expected_revision": {
+            "minimum": 0.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "schema_version": {
+            "const": "1.0",
+            "default": "1.0",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "segments": {
+            "items": {
+              "$ref": "#/components/schemas/AudioAnnotationSegment"
+            },
+            "maxItems": 5000,
+            "title": "Segments",
+            "type": "array"
+          },
+          "speakers": {
+            "items": {
+              "$ref": "#/components/schemas/AudioAnnotationSpeaker"
+            },
+            "maxItems": 64,
+            "title": "Speakers",
+            "type": "array"
+          }
+        },
+        "required": [
+          "expected_revision"
+        ],
+        "title": "AudioAnnotationDocumentPutIn",
+        "type": "object"
+      },
+      "AudioAnnotationImportIn": {
+        "properties": {
+          "asset_id": {
+            "maxLength": 36,
+            "minLength": 1,
+            "title": "Asset Id",
+            "type": "string"
+          },
+          "schema_version": {
+            "const": "1.0",
+            "default": "1.0",
+            "title": "Schema Version",
+            "type": "string"
+          },
+          "segments": {
+            "items": {
+              "$ref": "#/components/schemas/AudioAnnotationSegment"
+            },
+            "maxItems": 5000,
+            "title": "Segments",
+            "type": "array"
+          },
+          "speakers": {
+            "items": {
+              "$ref": "#/components/schemas/AudioAnnotationSpeaker"
+            },
+            "maxItems": 64,
+            "title": "Speakers",
+            "type": "array"
+          },
+          "title": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "title",
+          "asset_id"
+        ],
+        "title": "AudioAnnotationImportIn",
+        "type": "object"
+      },
+      "AudioAnnotationProjectCreateIn": {
+        "properties": {
+          "asset_id": {
+            "maxLength": 36,
+            "minLength": 1,
+            "title": "Asset Id",
+            "type": "string"
+          },
+          "title": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "title",
+          "asset_id"
+        ],
+        "title": "AudioAnnotationProjectCreateIn",
+        "type": "object"
+      },
+      "AudioAnnotationProjectListOut": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/AudioAnnotationProjectOut"
+            },
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "title": "AudioAnnotationProjectListOut",
+        "type": "object"
+      },
+      "AudioAnnotationProjectOut": {
+        "properties": {
+          "asset_display_name": {
+            "title": "Asset Display Name",
+            "type": "string"
+          },
+          "asset_id": {
+            "title": "Asset Id",
+            "type": "string"
+          },
+          "byte_size": {
+            "title": "Byte Size",
+            "type": "integer"
+          },
+          "created_at": {
+            "title": "Created At",
+            "type": "string"
+          },
+          "document_revision": {
+            "title": "Document Revision",
+            "type": "integer"
+          },
+          "duration_ms": {
+            "title": "Duration Ms",
+            "type": "integer"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "mime_type": {
+            "title": "Mime Type",
+            "type": "string"
+          },
+          "original_filename": {
+            "title": "Original Filename",
+            "type": "string"
+          },
+          "reviewed_segment_count": {
+            "title": "Reviewed Segment Count",
+            "type": "integer"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          },
+          "segment_count": {
+            "title": "Segment Count",
+            "type": "integer"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "updated_at": {
+            "title": "Updated At",
+            "type": "string"
+          },
+          "waveform_ready": {
+            "title": "Waveform Ready",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "asset_id",
+          "asset_display_name",
+          "original_filename",
+          "mime_type",
+          "byte_size",
+          "duration_ms",
+          "segment_count",
+          "reviewed_segment_count",
+          "waveform_ready",
+          "document_revision",
+          "revision",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "AudioAnnotationProjectOut",
+        "type": "object"
+      },
+      "AudioAnnotationProjectPatchIn": {
+        "properties": {
+          "expected_revision": {
+            "minimum": 0.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "title": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "expected_revision",
+          "title"
+        ],
+        "title": "AudioAnnotationProjectPatchIn",
+        "type": "object"
+      },
+      "AudioAnnotationSegment": {
+        "properties": {
+          "end_ms": {
+            "exclusiveMinimum": 0.0,
+            "title": "End Ms",
+            "type": "integer"
+          },
+          "id": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,63}$",
+            "title": "Id",
+            "type": "string"
+          },
+          "speaker_id": {
+            "anyOf": [
+              {
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,63}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Speaker Id"
+          },
+          "start_ms": {
+            "minimum": 0.0,
+            "title": "Start Ms",
+            "type": "integer"
+          },
+          "status": {
+            "default": "draft",
+            "enum": [
+              "draft",
+              "reviewed"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "text": {
+            "default": "",
+            "maxLength": 20000,
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "start_ms",
+          "end_ms"
+        ],
+        "title": "AudioAnnotationSegment",
+        "type": "object"
+      },
+      "AudioAnnotationSpeaker": {
+        "properties": {
+          "color": {
+            "pattern": "^#[0-9A-Fa-f]{6}$",
+            "title": "Color",
+            "type": "string"
+          },
+          "id": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,63}$",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "color"
+        ],
+        "title": "AudioAnnotationSpeaker",
+        "type": "object"
+      },
+      "AudioAnnotationWaveformOut": {
+        "properties": {
+          "duration_ms": {
+            "title": "Duration Ms",
+            "type": "integer"
+          },
+          "peaks": {
+            "items": {
+              "items": {
+                "type": "number"
+              },
+              "type": "array"
+            },
+            "title": "Peaks",
+            "type": "array"
+          },
+          "project_id": {
+            "title": "Project Id",
+            "type": "string"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          },
+          "updated_at": {
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "project_id",
+          "duration_ms",
+          "peaks",
+          "revision",
+          "updated_at"
+        ],
+        "title": "AudioAnnotationWaveformOut",
+        "type": "object"
+      },
+      "AudioAnnotationWaveformPutIn": {
+        "properties": {
+          "duration_ms": {
+            "exclusiveMinimum": 0.0,
+            "maximum": 3600000.0,
+            "title": "Duration Ms",
+            "type": "integer"
+          },
+          "expected_revision": {
+            "minimum": 0.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "peaks": {
+            "items": {
+              "items": {
+                "type": "number"
+              },
+              "type": "array"
+            },
+            "maxItems": 2,
+            "minItems": 1,
+            "title": "Peaks",
+            "type": "array"
+          }
+        },
+        "required": [
+          "expected_revision",
+          "duration_ms",
+          "peaks"
+        ],
+        "title": "AudioAnnotationWaveformPutIn",
+        "type": "object"
+      },
       "AuthMeOut": {
         "properties": {
           "must_change_password": {
@@ -1307,6 +1727,13 @@
             "title": "Transcriptrevision",
             "type": "integer"
           },
+          "transcriptSegments": {
+            "items": {
+              "$ref": "#/components/schemas/GalgameTranscriptSegmentOut"
+            },
+            "title": "Transcriptsegments",
+            "type": "array"
+          },
           "transcriptSource": {
             "anyOf": [
               {
@@ -1914,6 +2341,13 @@
             "default": 0,
             "title": "Transcriptrevision",
             "type": "integer"
+          },
+          "transcriptSegments": {
+            "items": {
+              "$ref": "#/components/schemas/GalgameTranscriptSegmentOut"
+            },
+            "title": "Transcriptsegments",
+            "type": "array"
           },
           "transcriptSource": {
             "anyOf": [
@@ -6934,6 +7368,36 @@
         "title": "GalgameTranscriptPatchIn",
         "type": "object"
       },
+      "GalgameTranscriptSegmentOut": {
+        "properties": {
+          "endMs": {
+            "minimum": 0.0,
+            "title": "Endms",
+            "type": "integer"
+          },
+          "speaker": {
+            "title": "Speaker",
+            "type": "string"
+          },
+          "startMs": {
+            "minimum": 0.0,
+            "title": "Startms",
+            "type": "integer"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "speaker",
+          "startMs",
+          "endMs",
+          "text"
+        ],
+        "title": "GalgameTranscriptSegmentOut",
+        "type": "object"
+      },
       "GalgameTranscriptionCreateIn": {
         "additionalProperties": false,
         "properties": {
@@ -7049,6 +7513,13 @@
           "providerName": {
             "title": "Providername",
             "type": "string"
+          },
+          "resultSegments": {
+            "items": {
+              "$ref": "#/components/schemas/GalgameTranscriptSegmentOut"
+            },
+            "title": "Resultsegments",
+            "type": "array"
           },
           "resultText": {
             "anyOf": [
@@ -8955,7 +9426,8 @@
               "openai",
               "anthropic",
               "senseaudio_image",
-              "senseaudio_video"
+              "senseaudio_video",
+              "senseaudio_asr"
             ],
             "title": "Kind",
             "type": "string"
@@ -9019,7 +9491,8 @@
               "openai",
               "anthropic",
               "senseaudio_image",
-              "senseaudio_video"
+              "senseaudio_video",
+              "senseaudio_asr"
             ],
             "title": "Kind",
             "type": "string"
@@ -12951,6 +13424,460 @@
         "summary": "Set Active Workspace",
         "tags": [
           "account-workspaces"
+        ]
+      }
+    },
+    "/v1/audio-annotation/imports": {
+      "post": {
+        "operationId": "import_project_v1_audio_annotation_imports_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AudioAnnotationImportIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AudioAnnotationProjectOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Import Project",
+        "tags": [
+          "audio-annotation"
+        ]
+      }
+    },
+    "/v1/audio-annotation/projects": {
+      "get": {
+        "operationId": "list_projects_v1_audio_annotation_projects_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "query",
+            "required": false,
+            "schema": {
+              "default": "",
+              "maxLength": 255,
+              "title": "Query",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AudioAnnotationProjectListOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Projects",
+        "tags": [
+          "audio-annotation"
+        ]
+      },
+      "post": {
+        "operationId": "create_project_v1_audio_annotation_projects_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AudioAnnotationProjectCreateIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AudioAnnotationProjectOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Project",
+        "tags": [
+          "audio-annotation"
+        ]
+      }
+    },
+    "/v1/audio-annotation/projects/{project_id}": {
+      "delete": {
+        "operationId": "delete_project_v1_audio_annotation_projects__project_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "expected_revision",
+            "required": true,
+            "schema": {
+              "minimum": 0,
+              "title": "Expected Revision",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "boolean"
+                  },
+                  "title": "Response Delete Project V1 Audio Annotation Projects  Project Id  Delete",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Project",
+        "tags": [
+          "audio-annotation"
+        ]
+      },
+      "get": {
+        "operationId": "get_project_v1_audio_annotation_projects__project_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AudioAnnotationProjectOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Project",
+        "tags": [
+          "audio-annotation"
+        ]
+      },
+      "patch": {
+        "operationId": "patch_project_v1_audio_annotation_projects__project_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AudioAnnotationProjectPatchIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AudioAnnotationProjectOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Patch Project",
+        "tags": [
+          "audio-annotation"
+        ]
+      }
+    },
+    "/v1/audio-annotation/projects/{project_id}/document": {
+      "get": {
+        "operationId": "get_document_v1_audio_annotation_projects__project_id__document_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AudioAnnotationDocumentOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Document",
+        "tags": [
+          "audio-annotation"
+        ]
+      },
+      "put": {
+        "operationId": "put_document_v1_audio_annotation_projects__project_id__document_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AudioAnnotationDocumentPutIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AudioAnnotationDocumentOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Put Document",
+        "tags": [
+          "audio-annotation"
+        ]
+      }
+    },
+    "/v1/audio-annotation/projects/{project_id}/waveform": {
+      "get": {
+        "operationId": "get_waveform_v1_audio_annotation_projects__project_id__waveform_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AudioAnnotationWaveformOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Waveform",
+        "tags": [
+          "audio-annotation"
+        ]
+      },
+      "put": {
+        "operationId": "put_waveform_v1_audio_annotation_projects__project_id__waveform_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AudioAnnotationWaveformPutIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AudioAnnotationWaveformOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Put Waveform",
+        "tags": [
+          "audio-annotation"
         ]
       }
     },

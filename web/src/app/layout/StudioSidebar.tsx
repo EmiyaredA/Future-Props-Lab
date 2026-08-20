@@ -98,7 +98,11 @@ export function StudioSidebar({
   navigate: (page: StudioPage) => void;
 }) {
   const [expanded, setExpanded] = useState(true);
-  const toolsActive = page === "tools" || page === "video-frame-exporter";
+  const toolsActive =
+    page === "tools" ||
+    page === "video-frame-exporter" ||
+    page === "audio-annotation-projects" ||
+    page === "audio-annotation-editor";
   return (
     <aside className="studio-sidebar">
       <div className="sidebar-brand">

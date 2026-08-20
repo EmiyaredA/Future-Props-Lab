@@ -76,6 +76,7 @@ async def test_sayflow_text_catalog_seed_is_complete_and_idempotent(tmp_path: Pa
             ("Anthropic", "anthropic"),
             ("SenseAudio 图片生成", "senseaudio_image"),
             ("SenseAudio 视频生成", "senseaudio_video"),
+            ("SenseAudio 专业说话人识别", "senseaudio_asr"),
         }
         assert all(item.api_key_ciphertext == "" for item in providers)
         assert {item.kind: item.enabled for item in providers} == {
@@ -83,6 +84,7 @@ async def test_sayflow_text_catalog_seed_is_complete_and_idempotent(tmp_path: Pa
             "anthropic": True,
             "senseaudio_image": False,
             "senseaudio_video": False,
+            "senseaudio_asr": False,
         }
         openai_models = sorted(
             (item for item in models if item.provider_id == "f0000000-0000-4000-8000-000000000001"),
@@ -128,6 +130,17 @@ async def test_sayflow_text_catalog_seed_is_complete_and_idempotent(tmp_path: Pa
             for item in models
             if item.provider_id == "f0000000-0000-4000-8000-000000000004"
         } == {("video_generation",)}
+        assert {
+            (item.slug, tuple(item.capabilities), tuple(item.categories))
+            for item in models
+            if item.provider_id == "f0000000-0000-4000-8000-000000000005"
+        } == {
+            (
+                "senseaudio-asr-pro-1.5-260319",
+                ("speech_recognition",),
+                ("speech_recognition",),
+            )
+        }
         assert state is not None and state.revision == 1
     finally:
         await engine.dispose()

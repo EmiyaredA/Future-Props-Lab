@@ -26,6 +26,15 @@ class GalgameAsrSettingsOut(BaseModel):
     revision: int
 
 
+class GalgameTranscriptSegmentOut(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    speaker: str
+    start_ms: int = Field(alias="startMs", ge=0)
+    end_ms: int = Field(alias="endMs", ge=0)
+    text: str
+
+
 class GalgameTranscriptionCreateIn(GalgameStoryModel):
     asset_ids: list[str] | None = Field(default=None, alias="assetIds", max_length=500)
     language: Literal["auto", "zh", "ja"] | None = None
@@ -43,6 +52,9 @@ class GalgameTranscriptionTaskOut(BaseModel):
     force: bool
     status: Literal["queued", "running", "completed", "failed"]
     result_text: str | None = Field(default=None, alias="resultText")
+    result_segments: list[GalgameTranscriptSegmentOut] = Field(
+        default_factory=list, alias="resultSegments"
+    )
     error: str | None = None
     revision: int
     created_at: str = Field(alias="createdAt")

@@ -113,6 +113,7 @@ class GalgameAssetMetadata(Base):
     transcript_status: Mapped[str] = mapped_column(String(16), default="pending")
     transcript_source: Mapped[str | None] = mapped_column(String(16))
     transcript_revision: Mapped[int] = mapped_column(Integer, default=0)
+    transcript_segments: Mapped[list[dict]] = mapped_column(JSON, default=list)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, onupdate=utc_now)
 
 
@@ -160,6 +161,7 @@ class GalgameAssetTranscriptionTask(Base):
     force: Mapped[bool] = mapped_column(Boolean, default=False)
     status: Mapped[str] = mapped_column(String(16), default="queued")
     result_text: Mapped[str | None] = mapped_column(Text)
+    result_segments: Mapped[list[dict]] = mapped_column(JSON, default=list)
     error: Mapped[str | None] = mapped_column(Text)
     revision: Mapped[int] = mapped_column(Integer, default=0)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)

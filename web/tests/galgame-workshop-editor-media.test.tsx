@@ -1002,6 +1002,14 @@ test("uses aligned table workspaces for BGM, sound effects, and voice", async ()
         transcript: "你终于来了。",
         transcriptStatus: "ready",
         transcriptRevision: 1,
+        transcriptSegments: [
+          {
+            speaker: "speaker_0",
+            startMs: 0,
+            endMs: 1250,
+            text: "你终于来了。",
+          },
+        ],
         revision: 0,
         created_at: "2026-08-05T08:00:00Z",
         updated_at: "2026-08-05T08:00:00Z",
@@ -1063,6 +1071,10 @@ test("uses aligned table workspaces for BGM, sound effects, and voice", async ()
   });
   expect(await screen.findByText("001.wav")).toBeInTheDocument();
   expect(screen.getByText("你终于来了。")).toBeInTheDocument();
+  await user.click(screen.getByRole("button", { name: "选择声音 白羽对白" }));
+  expect(screen.getByText("说话人分段")).toBeInTheDocument();
+  expect(screen.getByText("speaker_0")).toBeInTheDocument();
+  expect(screen.getByText("0:00.000–0:01.250")).toBeInTheDocument();
   await user.click(within(speakers).getByRole("button", { name: /未知/ }));
   expect(screen.getByText("002.wav")).toBeInTheDocument();
   expect(screen.queryByText("001.wav")).not.toBeInTheDocument();

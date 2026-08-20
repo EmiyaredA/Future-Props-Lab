@@ -6,6 +6,7 @@ from sqlalchemy import event
 from sqlalchemy.orm import Session, with_loader_criteria
 
 from app.models import (
+    AudioAnnotationProject,
     GalgameAssetTranscriptionTask,
     GalgameWorkshopProject,
     LlmCallLog,
@@ -24,6 +25,7 @@ from app.models import (
 )
 
 TENANT_MODELS = (
+    AudioAnnotationProject,
     ModelProvider,
     ModelEntry,
     LlmCallLog,

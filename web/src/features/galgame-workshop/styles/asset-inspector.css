@@ -281,6 +281,82 @@
   resize: vertical;
 }
 
+.galgame-transcript-segments {
+  display: grid;
+  gap: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--gal-line);
+}
+
+.galgame-transcript-segments > header,
+.galgame-transcript-segments li > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.galgame-transcript-segments > header span,
+.galgame-transcript-segments time,
+.galgame-transcript-segments > small {
+  color: var(--gal-muted);
+  font-size: 11px;
+}
+
+.galgame-transcript-segments ol {
+  display: grid;
+  max-height: 320px;
+  gap: 7px;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.galgame-transcript-segments li {
+  display: grid;
+  gap: 5px;
+  padding: 8px 9px;
+  border-left: 3px solid var(--speaker-color);
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--speaker-color) 8%, var(--gal-soft));
+}
+
+.galgame-transcript-segments li > header strong {
+  color: var(--speaker-color);
+  font-size: 12px;
+}
+
+.galgame-transcript-segments li p {
+  margin: 0;
+  color: var(--gal-text);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.galgame-transcript-segments .speaker-tone-0 {
+  --speaker-color: #ef8354;
+}
+
+.galgame-transcript-segments .speaker-tone-1 {
+  --speaker-color: #4ea8de;
+}
+
+.galgame-transcript-segments .speaker-tone-2 {
+  --speaker-color: #59c38c;
+}
+
+.galgame-transcript-segments .speaker-tone-3 {
+  --speaker-color: #b98ae8;
+}
+
+.galgame-transcript-segments .speaker-tone-4 {
+  --speaker-color: #e6b84a;
+}
+
+.galgame-transcript-segments .speaker-tone-5 {
+  --speaker-color: #e56b9f;
+}
+
 @media (max-width: 1400px) {
   .galgame-assets-summary {
     grid-template-columns: minmax(330px, 1.5fr) minmax(240px, 1fr);

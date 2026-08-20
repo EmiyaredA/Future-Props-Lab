@@ -1,4 +1,12 @@
-import { lazy, Suspense, useEffect, useState, type ReactNode } from "react";
+import {
+  lazy,
+  Suspense,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import { GalgameWorkshopShell } from "@app/layout/GalgameWorkshopShell";
 import { StudioSidebar } from "@app/layout/StudioSidebar";
 import { VisualWorkshopShell } from "@app/layout/VisualWorkshopShell";
@@ -45,6 +53,20 @@ const VideoFrameExporterPage = lazy(() =>
     default: module.VideoFrameExporterPage,
   })),
 );
+const AudioAnnotationProjectsPage = lazy(() =>
+  import("@features/audio-annotation/AudioAnnotationProjectsPage").then(
+    (module) => ({
+      default: module.AudioAnnotationProjectsPage,
+    }),
+  ),
+);
+const AudioAnnotationEditorPage = lazy(() =>
+  import("@features/audio-annotation/AudioAnnotationEditorPage").then(
+    (module) => ({
+      default: module.AudioAnnotationEditorPage,
+    }),
+  ),
+);
 const ModelTestPage = lazy(() =>
   import("@features/models/conversation").then((module) => ({
     default: module.ModelTestPage,
@@ -84,6 +106,9 @@ function PageBoundary({ children }: { children: ReactNode }) {
 export default function App() {
   const { me } = useStudioSession();
   const [route, setRoute] = useState<AppRoute>(parseRoute);
+  const navigationGuard = useRef<
+    ((continueNavigation: () => void) => boolean) | null
+  >(null);
   const page = route.page;
   useEffect(() => {
     if (window.location.pathname === "/")
@@ -92,12 +117,23 @@ export default function App() {
     window.addEventListener("popstate", pop);
     return () => window.removeEventListener("popstate", pop);
   }, []);
-  const navigate = (next: AppPage, projectId?: string) => {
+  const commitNavigation = (next: AppPage, projectId?: string) => {
     const path = pathFor(next, projectId);
     if (path !== window.location.pathname)
       window.history.pushState({}, "", path);
     setRoute({ page: next, projectId });
   };
+  const navigate = (next: AppPage, projectId?: string) => {
+    const commit = () => commitNavigation(next, projectId);
+    if (navigationGuard.current?.(commit)) return;
+    commit();
+  };
+  const registerNavigationGuard = useCallback(
+    (guard: ((continueNavigation: () => void) => boolean) | null) => {
+      navigationGuard.current = guard;
+    },
+    [],
+  );
   const navigatePath = (path: string) => {
     const next = parseRoute(path);
     navigate(next.page, next.projectId);
@@ -226,6 +262,19 @@ export default function App() {
             <ToolNavigationPage onOpenInternal={navigatePath} />
           ) : page === "video-frame-exporter" ? (
             <VideoFrameExporterPage onBack={() => navigate("tools")} />
+          ) : page === "audio-annotation-projects" ? (
+            <AudioAnnotationProjectsPage
+              onBack={() => navigate("tools")}
+              onOpen={(projectId) =>
+                navigate("audio-annotation-editor", projectId)
+              }
+            />
+          ) : page === "audio-annotation-editor" && route.projectId ? (
+            <AudioAnnotationEditorPage
+              projectId={route.projectId}
+              onBack={() => navigate("audio-annotation-projects")}
+              registerNavigationGuard={registerNavigationGuard}
+            />
           ) : page === "model-test" ? (
             <ModelTestPage />
           ) : page === "model-service" ? (

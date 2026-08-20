@@ -23,6 +23,9 @@ from db.migrations.versions import (
     r0018_galgame_asset_management,
     r0019_project_storage_layout,
     r0020_accounts_and_workspaces,
+    r0021_senseaudio_asr,
+    r0022_audio_annotation,
+    r0023_senseaudio_asr_fresh_catalog,
 )
 
 
@@ -109,6 +112,16 @@ MIGRATIONS = (
         r0020_accounts_and_workspaces.MIGRATION_ID,
         r0020_accounts_and_workspaces.SQL,
         foreign_keys_off=True,
+    ),
+    Migration(
+        r0021_senseaudio_asr.MIGRATION_ID,
+        r0021_senseaudio_asr.SQL,
+        foreign_keys_off=True,
+    ),
+    Migration(r0022_audio_annotation.MIGRATION_ID, r0022_audio_annotation.SQL),
+    Migration(
+        r0023_senseaudio_asr_fresh_catalog.MIGRATION_ID,
+        r0023_senseaudio_asr_fresh_catalog.SQL,
     ),
 )
 

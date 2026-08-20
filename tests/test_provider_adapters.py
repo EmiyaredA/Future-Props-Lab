@@ -1,7 +1,13 @@
+from io import BytesIO
+
 import httpx
 import pytest
 
 from app.llm.providers._senseaudio import SenseAudioProviderError
+from app.llm.providers.senseaudio_asr import (
+    SenseAudioAsrFileTooLarge,
+    transcribe_audio,
+)
 from app.llm.providers.senseaudio_image import create_image_task, get_image_task
 from app.llm.providers.senseaudio_video import create_video_task, get_video_task
 from app.llm.providers.streaming import ChatMessageInput, ImageInput, stream_text_completion
@@ -101,6 +107,116 @@ async def test_senseaudio_video_adapter_maps_create_and_status() -> None:
     )
     assert status.status == "processing"
     assert status.progress == 48
+
+
+@pytest.mark.asyncio
+async def test_senseaudio_asr_adapter_requests_and_normalizes_speaker_segments() -> None:
+    async def handler(request: httpx.Request) -> httpx.Response:
+        assert request.url == "https://gateway.example/v1/audio/transcriptions"
+        assert request.headers["authorization"] == "Bearer asr-secret"
+        body = (await request.aread()).decode()
+        for value in (
+            'name="model"',
+            "senseaudio-asr-pro-1.5-260319",
+            'name="response_format"',
+            "verbose_json",
+            'name="enable_speaker_diarization"',
+            'name="enable_punctuation"',
+            'name="timestamp_granularities[]"',
+            "segment",
+            'name="language"',
+            "zh",
+            'filename="meeting.wav"',
+        ):
+            assert value in body
+        return httpx.Response(
+            200,
+            json={
+                "text": "你好。欢迎。",
+                "segments": [
+                    {"start": 1.235, "end": 2.5, "text": "欢迎。", "speaker": "speaker_1"},
+                    {"start": 0, "end": 1.2346, "text": "你好。", "speaker": "speaker_0"},
+                    {"start": "bad", "end": 4, "text": "忽略", "speaker": "speaker_2"},
+                ],
+            },
+        )
+
+    result = await transcribe_audio(
+        base_url="https://gateway.example/v1/",
+        api_key="asr-secret",
+        model="senseaudio-asr-pro-1.5-260319",
+        filename="meeting.wav",
+        source=BytesIO(b"RIFFaudio"),
+        mime_type="audio/wav",
+        byte_size=9,
+        language="zh",
+        transport=httpx.MockTransport(handler),
+    )
+
+    assert result.text == "你好。欢迎。"
+    assert [(item.speaker, item.start_ms, item.end_ms, item.text) for item in result.segments] == [
+        ("speaker_0", 0, 1235, "你好。"),
+        ("speaker_1", 1235, 2500, "欢迎。"),
+    ]
+
+
+@pytest.mark.asyncio
+async def test_senseaudio_asr_adapter_omits_auto_language_and_accepts_no_segments() -> None:
+    async def handler(request: httpx.Request) -> httpx.Response:
+        body = (await request.aread()).decode()
+        assert 'name="language"' not in body
+        return httpx.Response(200, json={"text": "只有整段文本。"})
+
+    result = await transcribe_audio(
+        base_url="https://gateway.example/v1",
+        api_key="asr-secret",
+        model="senseaudio-asr-pro-1.5-260319",
+        filename="meeting.wav",
+        source=BytesIO(b"RIFFaudio"),
+        mime_type="audio/wav",
+        byte_size=9,
+        language="auto",
+        transport=httpx.MockTransport(handler),
+    )
+
+    assert result.text == "只有整段文本。"
+    assert result.segments == ()
+
+
+@pytest.mark.asyncio
+async def test_senseaudio_asr_adapter_rejects_oversized_files_before_request() -> None:
+    async def unexpected(_request: httpx.Request) -> httpx.Response:
+        raise AssertionError("oversized files must not reach the provider")
+
+    with pytest.raises(SenseAudioAsrFileTooLarge, match="10 MB"):
+        await transcribe_audio(
+            base_url="https://gateway.example/v1",
+            api_key="asr-secret",
+            model="senseaudio-asr-pro-1.5-260319",
+            filename="large.wav",
+            source=BytesIO(b"audio"),
+            mime_type="audio/wav",
+            byte_size=10 * 1024 * 1024 + 1,
+            transport=httpx.MockTransport(unexpected),
+        )
+
+
+@pytest.mark.asyncio
+async def test_senseaudio_asr_adapter_maps_provider_errors() -> None:
+    async def handler(_request: httpx.Request) -> httpx.Response:
+        return httpx.Response(400, json={"message": "invalid audio"})
+
+    with pytest.raises(SenseAudioProviderError, match="invalid audio"):
+        await transcribe_audio(
+            base_url="https://gateway.example/v1",
+            api_key="asr-secret",
+            model="senseaudio-asr-pro-1.5-260319",
+            filename="broken.wav",
+            source=BytesIO(b"broken"),
+            mime_type="audio/wav",
+            byte_size=6,
+            transport=httpx.MockTransport(handler),
+        )
 
 
 @pytest.mark.asyncio

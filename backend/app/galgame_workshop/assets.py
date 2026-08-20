@@ -101,6 +101,7 @@ def galgame_asset_out(
         transcriptStatus=metadata.transcript_status if metadata else "pending",
         transcriptSource=metadata.transcript_source if metadata else None,
         transcriptRevision=metadata.transcript_revision if metadata else 0,
+        transcriptSegments=list(metadata.transcript_segments or []) if metadata else [],
     )
 
 

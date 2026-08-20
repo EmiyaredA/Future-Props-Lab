@@ -4,6 +4,8 @@ export type StudioPage =
   | "files"
   | "tools"
   | "video-frame-exporter"
+  | "audio-annotation-projects"
+  | "audio-annotation-editor"
   | "model-test"
   | "model-service"
   | "model-call-logs";
@@ -59,6 +61,13 @@ export function parseRoute(pathname = window.location.pathname): AppRoute {
   if (pathname.startsWith("/files")) return { page: "files" };
   if (pathname.startsWith("/tools/video-frame-exporter"))
     return { page: "video-frame-exporter" };
+  const audioAnnotation = pathname.match(
+    /^\/tools\/audio-annotation\/([^/]+)\/?$/,
+  );
+  if (audioAnnotation)
+    return { page: "audio-annotation-editor", projectId: audioAnnotation[1] };
+  if (pathname.startsWith("/tools/audio-annotation"))
+    return { page: "audio-annotation-projects" };
   if (pathname.startsWith("/tools")) return { page: "tools" };
   if (pathname.startsWith("/model-test")) return { page: "model-test" };
   if (pathname.startsWith("/model-call-logs"))
@@ -70,12 +79,16 @@ export function parseRoute(pathname = window.location.pathname): AppRoute {
 export function pathFor(page: AppPage, projectId?: string): string {
   const applicationPath = applicationPathFor(page, projectId);
   if (applicationPath) return applicationPath;
+  if (page === "audio-annotation-editor" && projectId)
+    return `/tools/audio-annotation/${encodeURIComponent(projectId)}`;
   const paths: Record<AppPage, string> = {
     home: "/home",
     apps: "/apps",
     files: "/files",
     tools: "/tools",
     "video-frame-exporter": "/tools/video-frame-exporter",
+    "audio-annotation-projects": "/tools/audio-annotation",
+    "audio-annotation-editor": "/tools/audio-annotation",
     "model-test": "/model-test",
     "model-service": "/model-service",
     "model-call-logs": "/model-call-logs",

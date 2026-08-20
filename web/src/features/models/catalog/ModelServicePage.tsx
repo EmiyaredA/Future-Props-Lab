@@ -41,6 +41,7 @@ const providerKindLabel = {
   anthropic: "Anthropic",
   senseaudio_image: "SenseAudio 图片",
   senseaudio_video: "SenseAudio 视频",
+  senseaudio_asr: "SenseAudio 语音识别",
 } as const;
 const capabilityLabel = {
   chat: "对话",
@@ -166,6 +167,7 @@ function ProviderForm({
             { value: "anthropic", label: "Anthropic" },
             { value: "senseaudio_image", label: "SenseAudio 图片生成" },
             { value: "senseaudio_video", label: "SenseAudio 视频生成" },
+            { value: "senseaudio_asr", label: "SenseAudio 专业说话人识别" },
           ]}
         />
       </label>
@@ -316,6 +318,7 @@ function ModelForm({
               "tools",
               "image_generation",
               "video_generation",
+              "speech_recognition",
             ] as const
           ).map((capability) => (
             <button

@@ -483,6 +483,19 @@ async def test_asr_runner_manual_override_force_and_dialogue_match() -> None:
             json={"assetIds": [uploaded["id"]], "language": "zh", "force": False},
         )
         assert created.status_code == 200, created.text
+        catalog_revision = (await client.get("/v1/model-providers")).json()["revision"]
+        blocked = await client.post(
+            f"/v1/model-providers/{provider.id}/enabled",
+            json={"expected_catalog_revision": catalog_revision, "enabled": False},
+        )
+        assert blocked.status_code == 409
+        assert blocked.json()["code"] == "resource_busy"
+        blocked_delete = await client.delete(
+            f"/v1/model-providers/{provider.id}",
+            params={"expected_catalog_revision": catalog_revision},
+        )
+        assert blocked_delete.status_code == 409
+        assert blocked_delete.json()["code"] == "resource_busy"
 
     response_text = "你好，欢迎回来。"
 
@@ -537,6 +550,127 @@ async def test_asr_runner_manual_override_force_and_dialogue_match() -> None:
 
         await session.execute(delete(GalgameAssetTranscriptionTask))
         await session.execute(delete(GalgameAssetSettings))
+        await session.execute(delete(ModelEntry).where(ModelEntry.id == model.id))
+        await session.execute(delete(ModelProvider).where(ModelProvider.id == provider.id))
+        await session.commit()
+
+
+@pytest.mark.asyncio
+async def test_senseaudio_asr_runner_persists_segments_and_manual_edit_clears_them() -> None:
+    async with SessionLocal() as session:
+        provider = ModelProvider(
+            name="SenseAudio 测试 ASR",
+            kind="senseaudio_asr",
+            base_url="https://api.senseaudio.test/v1",
+            api_key_ciphertext=encrypt_secret("senseaudio-asr-key"),
+            enabled=True,
+        )
+        session.add(provider)
+        await session.flush()
+        model = ModelEntry(
+            provider_id=provider.id,
+            slug="senseaudio-asr-pro-1.5-260319",
+            label="SenseAudio ASR Pro 1.5",
+            capabilities=["speech_recognition"],
+            categories=["speech_recognition"],
+            enabled=True,
+        )
+        session.add(model)
+        await session.commit()
+
+    api_transport = httpx.ASGITransport(app=app)
+    async with httpx.AsyncClient(transport=api_transport, base_url="http://test") as client:
+        project = (
+            await client.post("/v1/galgame-workshop/projects", json={"title": "说话人识别工程"})
+        ).json()
+        uploaded = (
+            await client.post(
+                f"/v1/galgame-workshop/projects/{project['id']}/assets",
+                data={"category": "voice"},
+                files={"upload": ("meeting.wav", wav_bytes(), "audio/wav")},
+            )
+        ).json()
+        settings = await client.patch(
+            f"/v1/galgame-workshop/projects/{project['id']}/assets/asr/settings",
+            json={"expectedRevision": 0, "modelId": model.id, "defaultLanguage": "zh"},
+        )
+        assert settings.status_code == 200, settings.text
+        created = await client.post(
+            f"/v1/galgame-workshop/projects/{project['id']}/assets/asr/transcriptions",
+            json={"assetIds": [uploaded["id"]], "language": "zh"},
+        )
+        assert created.status_code == 200, created.text
+
+    async def fake_asr(request: httpx.Request) -> httpx.Response:
+        assert request.url == "https://api.senseaudio.test/v1/audio/transcriptions"
+        assert request.headers["authorization"] == "Bearer senseaudio-asr-key"
+        body = (await request.aread()).decode(errors="ignore")
+        assert "verbose_json" in body
+        assert 'name="enable_speaker_diarization"' in body
+        assert 'name="timestamp_granularities[]"' in body
+        return httpx.Response(
+            200,
+            json={
+                "text": "你好。欢迎回来。",
+                "segments": [
+                    {"start": 0, "end": 1.25, "text": "你好。", "speaker": "speaker_0"},
+                    {
+                        "start": 1.25,
+                        "end": 2.8,
+                        "text": "欢迎回来。",
+                        "speaker": "speaker_1",
+                    },
+                ],
+            },
+        )
+
+    await GalgameAsrRunner(transport=httpx.MockTransport(fake_asr)).process_once()
+
+    expected_segments = [
+        {"speaker": "speaker_0", "startMs": 0, "endMs": 1250, "text": "你好。"},
+        {
+            "speaker": "speaker_1",
+            "startMs": 1250,
+            "endMs": 2800,
+            "text": "欢迎回来。",
+        },
+    ]
+    async with httpx.AsyncClient(transport=api_transport, base_url="http://test") as client:
+        assets = (await client.get(f"/v1/galgame-workshop/projects/{project['id']}/assets")).json()[
+            "items"
+        ]
+        recognized = next(item for item in assets if item["id"] == uploaded["id"])
+        tasks = (
+            await client.get(
+                f"/v1/galgame-workshop/projects/{project['id']}/assets/asr/transcriptions"
+            )
+        ).json()["items"]
+        assert tasks[0]["status"] == "completed", tasks[0]["error"]
+        assert recognized["transcript"] == "你好。欢迎回来。"
+        assert recognized["transcriptSegments"] == expected_segments
+        assert tasks[0]["resultSegments"] == expected_segments
+
+        manual = await client.patch(
+            f"/v1/galgame-workshop/projects/{project['id']}/assets/{uploaded['id']}/transcript",
+            json={"expectedRevision": 1, "text": "人工修订文本", "language": "zh"},
+        )
+        assert manual.status_code == 200, manual.text
+        refreshed = (
+            await client.get(f"/v1/galgame-workshop/projects/{project['id']}/assets")
+        ).json()["items"]
+        manually_edited = next(item for item in refreshed if item["id"] == uploaded["id"])
+        assert manually_edited["transcript"] == "人工修订文本"
+        assert manually_edited["transcriptSegments"] == []
+
+    async with SessionLocal() as session:
+        await session.execute(
+            delete(GalgameAssetTranscriptionTask).where(
+                GalgameAssetTranscriptionTask.provider_id == provider.id
+            )
+        )
+        await session.execute(
+            delete(GalgameAssetSettings).where(GalgameAssetSettings.project_id == project["id"])
+        )
         await session.execute(delete(ModelEntry).where(ModelEntry.id == model.id))
         await session.execute(delete(ModelProvider).where(ModelProvider.id == provider.id))
         await session.commit()

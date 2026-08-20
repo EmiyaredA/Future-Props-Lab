@@ -4,7 +4,9 @@ from typing import Literal
 
 from pydantic import BaseModel, Field, HttpUrl, field_validator
 
-ProviderKind = Literal["openai", "anthropic", "senseaudio_image", "senseaudio_video"]
+ProviderKind = Literal[
+    "openai", "anthropic", "senseaudio_image", "senseaudio_video", "senseaudio_asr"
+]
 ModelCapability = Literal[
     "chat",
     "vision",

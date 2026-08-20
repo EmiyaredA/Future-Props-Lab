@@ -2,7 +2,12 @@ export function ProviderIcon({
   kind,
   size = 20,
 }: {
-  kind: "openai" | "anthropic" | "senseaudio_image" | "senseaudio_video";
+  kind:
+    | "openai"
+    | "anthropic"
+    | "senseaudio_image"
+    | "senseaudio_video"
+    | "senseaudio_asr";
   size?: number;
 }) {
   if (kind.startsWith("senseaudio_"))

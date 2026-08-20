@@ -6,6 +6,11 @@ from app.models.accounts import (
     WorkspaceInvitation,
     WorkspaceMembership,
 )
+from app.models.audio_annotation import (
+    AudioAnnotationDocument,
+    AudioAnnotationProject,
+    AudioAnnotationWaveform,
+)
 from app.models.base import Base
 from app.models.call_log import LlmCallLog
 from app.models.files import VisualAsset, VisualAssetFolder, VisualProjectAssetReference
@@ -41,6 +46,9 @@ from app.models.workspace import Workspace
 __all__ = [
     "Base",
     "AuthSession",
+    "AudioAnnotationDocument",
+    "AudioAnnotationProject",
+    "AudioAnnotationWaveform",
     "GalgameStoryDocument",
     "GalgameAssetMetadata",
     "GalgameAssetSettings",
