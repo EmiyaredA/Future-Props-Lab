@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Annotated, Literal
+from typing import Annotated
 
 from fastapi import APIRouter, File, Form, HTTPException, Query, UploadFile
 from fastapi.responses import FileResponse
@@ -13,6 +13,7 @@ from app.llm.playground.transcription import (
 from app.schemas.model_test import (
     ModelTestTranscriptionCreateIn,
     ModelTestTranscriptionOptionListOut,
+    ModelTestTranscriptionParametersIn,
     ModelTestTranscriptionTaskListOut,
     ModelTestTranscriptionTaskOut,
 )
@@ -34,11 +35,31 @@ async def upload_transcription_task(
     session: SessionDep,
     upload: Annotated[UploadFile, File()],
     model_id: Annotated[str, Form()],
-    language: Annotated[Literal["auto", "zh", "ja"], Form()] = "auto",
+    language: Annotated[str | None, Form()] = None,
+    target_language: Annotated[str | None, Form()] = None,
+    enable_word_timestamps: Annotated[bool | None, Form()] = None,
+    enable_text_edit: Annotated[bool | None, Form()] = None,
+    enable_speaker_diarization: Annotated[bool | None, Form()] = None,
+    max_speakers: Annotated[int | None, Form(ge=1, le=20)] = None,
+    enable_punctuation: Annotated[bool | None, Form()] = None,
+    hotwords: Annotated[str | None, Form()] = None,
+    abbreviations: Annotated[bool | None, Form()] = None,
 ) -> ModelTestTranscriptionTaskOut:
     try:
         return await ModelTestTranscription(session).create_upload(
-            upload, model_id=model_id, language=language
+            upload,
+            model_id=model_id,
+            parameters=ModelTestTranscriptionParametersIn(
+                language=language,
+                target_language=target_language,
+                enable_word_timestamps=enable_word_timestamps,
+                enable_text_edit=enable_text_edit,
+                enable_speaker_diarization=enable_speaker_diarization,
+                max_speakers=max_speakers,
+                enable_punctuation=enable_punctuation,
+                hotwords=hotwords,
+                abbreviations=abbreviations,
+            ),
         )
     except ModelTestTranscriptionError as exc:
         raise _translate(exc) from None

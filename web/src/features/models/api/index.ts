@@ -46,6 +46,8 @@ export type ModelTestTranscriptionOptions =
   components["schemas"]["ModelTestTranscriptionOptionListOut"];
 export type ModelTestTranscriptionLanguage =
   ModelTestTranscriptionTask["language"];
+export type ModelTestTranscriptionParameters =
+  components["schemas"]["ModelTestTranscriptionParametersOut"];
 export type ModelTestLibraryAudio = components["schemas"]["VisualAssetOut"];
 export type ModelTestLibraryFolder =
   components["schemas"]["VisualAssetFolderOut"];
@@ -411,20 +413,22 @@ export async function getModelTestTranscriptionTasks(modelId?: string) {
 export async function uploadModelTestTranscription(
   file: File,
   modelId: string,
-  language: ModelTestTranscriptionLanguage,
+  parameters: ModelTestTranscriptionParameters,
 ) {
   return unwrap(
     await api.POST("/v1/model-test/transcription-tasks/upload", {
       body: {
         upload: file as unknown as string,
         model_id: modelId,
-        language,
+        ...parameters,
       },
       bodySerializer() {
         const form = new FormData();
         form.set("upload", file);
         form.set("model_id", modelId);
-        form.set("language", language);
+        for (const [key, value] of Object.entries(parameters)) {
+          if (value !== null) form.set(key, String(value));
+        }
         return form;
       },
     }),
@@ -434,14 +438,14 @@ export async function uploadModelTestTranscription(
 export async function createModelTestTranscriptionFromLibrary(
   sourceAssetId: string,
   modelId: string,
-  language: ModelTestTranscriptionLanguage,
+  parameters: ModelTestTranscriptionParameters,
 ) {
   return unwrap(
     await api.POST("/v1/model-test/transcription-tasks", {
       body: {
         source_asset_id: sourceAssetId,
         model_id: modelId,
-        language,
+        ...parameters,
       },
     }),
   );

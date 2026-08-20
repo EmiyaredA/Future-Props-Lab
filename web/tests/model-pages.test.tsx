@@ -2,6 +2,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { vi } from "vitest";
+import { importAudioAnnotationTranscriptionTask } from "@features/audio-annotation";
 import { ModelServicePage } from "@features/models/catalog";
 import { ModelTestPage } from "@features/models/conversation";
 import { ModelCallLogsPage } from "@features/models/logs";
@@ -27,6 +28,18 @@ import {
   uploadModelTestTranscription,
   type ModelTestConversation,
 } from "@features/models/api";
+
+vi.mock("@features/audio-annotation", async () => {
+  const actual = await vi.importActual<
+    typeof import("@features/audio-annotation")
+  >("@features/audio-annotation");
+  return {
+    ...actual,
+    importAudioAnnotationTranscriptionTask: vi.fn().mockResolvedValue({
+      id: "annotation-import",
+    }),
+  };
+});
 
 vi.mock("@features/models/api", async () => {
   const actual = await vi.importActual<typeof import("@features/models/api")>(
@@ -73,6 +86,16 @@ vi.mock("@features/models/api", async () => {
               slug: "senseaudio-asr-pro-1.5-260319",
               label: "SenseAudio ASR",
               description: "说话人识别与时间戳",
+              capabilities: ["speech_recognition"],
+              categories: ["speech_recognition"],
+              enabled: true,
+            },
+            {
+              id: "m-asr-custom",
+              provider_id: "p-asr",
+              slug: "pro-asr",
+              label: "Custom Pro ASR",
+              description: "自定义专业识别端点",
               capabilities: ["speech_recognition"],
               categories: ["speech_recognition"],
               enabled: true,
@@ -182,6 +205,77 @@ vi.mock("@features/models/api", async () => {
           slug: "senseaudio-asr-pro-1.5-260319",
           label: "SenseAudio ASR",
           description: "说话人识别与时间戳",
+          max_input_bytes: 100 * 1024 * 1024,
+          parameter_capabilities: {
+            language_mode: "select",
+            language_options: [
+              { value: "auto", label: "自动识别" },
+              { value: "zh", label: "中文" },
+              { value: "ja", label: "日语" },
+            ],
+            target_language_options: [
+              { value: "zh", label: "中文" },
+              { value: "en", label: "英语" },
+            ],
+            supports_word_timestamps: true,
+            supports_text_edit: false,
+            supports_speaker_diarization: true,
+            supports_max_speakers: true,
+            supports_punctuation: true,
+            supports_hotwords: false,
+            supports_abbreviations: true,
+            defaults: {
+              language: "auto",
+              target_language: null,
+              enable_word_timestamps: false,
+              enable_text_edit: false,
+              enable_speaker_diarization: true,
+              max_speakers: null,
+              enable_punctuation: true,
+              hotwords: null,
+              abbreviations: false,
+            },
+          },
+        },
+        {
+          id: "m-asr-custom",
+          provider_id: "p-asr",
+          provider_name: "语音识别供应商",
+          provider_kind: "senseaudio_asr",
+          slug: "pro-asr",
+          label: "Custom Pro ASR",
+          description: "自定义专业识别端点",
+          max_input_bytes: 100 * 1024 * 1024,
+          parameter_capabilities: {
+            language_mode: "candidates",
+            language_options: [
+              { value: "auto", label: "自动识别" },
+              { value: "Chinese", label: "简体中文" },
+              { value: "English", label: "English" },
+            ],
+            target_language_options: [
+              { value: "Chinese", label: "简体中文" },
+              { value: "English", label: "English" },
+            ],
+            supports_word_timestamps: true,
+            supports_text_edit: true,
+            supports_speaker_diarization: true,
+            supports_max_speakers: false,
+            supports_punctuation: false,
+            supports_hotwords: false,
+            supports_abbreviations: false,
+            defaults: {
+              language: "auto",
+              target_language: null,
+              enable_word_timestamps: false,
+              enable_text_edit: true,
+              enable_speaker_diarization: true,
+              max_speakers: null,
+              enable_punctuation: false,
+              hotwords: null,
+              abbreviations: false,
+            },
+          },
         },
       ],
       max_input_bytes: 10 * 1024 * 1024,
@@ -370,6 +464,16 @@ function renderWithQuery(ui: React.ReactNode) {
   return render(
     <QueryClientProvider client={client}>{ui}</QueryClientProvider>,
   );
+}
+
+function readBlobText(blob: Blob) {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result ?? ""));
+    reader.onerror = () =>
+      reject(reader.error ?? new Error("Blob read failed"));
+    reader.readAsText(blob);
+  });
 }
 
 test("shows provider catalog categories without the redundant diagnostics entry", async () => {
@@ -564,6 +668,17 @@ test("runs speech recognition with a custom player and speaker timestamps", asyn
     provider_name: "语音识别供应商",
     model_slug: "senseaudio-asr-pro-1.5-260319",
     language: "zh" as const,
+    parameters: {
+      language: "zh",
+      target_language: "en",
+      enable_word_timestamps: true,
+      enable_text_edit: false,
+      enable_speaker_diarization: true,
+      max_speakers: 2,
+      enable_punctuation: true,
+      hotwords: null,
+      abbreviations: false,
+    },
     status: "completed" as const,
     source: {
       kind: "upload" as const,
@@ -580,14 +695,39 @@ test("runs speech recognition with a custom player and speaker timestamps", asyn
         start_ms: 0,
         end_ms: 1250,
         text: "你好。",
+        translation: "Hello.",
+        speaker_candidates: ["speaker_0", "speaker_1"],
+        is_overlap: true,
       },
       {
         speaker: "speaker_1",
         start_ms: 1250,
         end_ms: 2600,
         text: "欢迎收听。",
+        is_overlap: false,
+      },
+      {
+        speaker: "speaker_2",
+        start_ms: 2600,
+        end_ms: 2699,
+        text: "短片段",
+        is_overlap: false,
       },
     ],
+    result_detail: {
+      processing_status: "degraded" as const,
+      words: [{ word: "你好", start_ms: 0, end_ms: 500 }],
+      warnings: [
+        {
+          code: "speaker_fallback",
+          message: "说话人识别已降级",
+          stage: "diarization",
+        },
+      ],
+      stages: [],
+      overlap_intervals: [{ start_ms: 0, end_ms: 1250 }],
+      audio_info: { duration_ms: 2600, format: "mp3" },
+    },
     error_message: null,
     log_id: "log-asr",
     revision: 2,
@@ -612,7 +752,10 @@ test("runs speech recognition with a custom player and speaker timestamps", asyn
   });
 
   const user = userEvent.setup();
-  const view = renderWithQuery(<ModelTestPage />);
+  const onOpenAudioAnnotation = vi.fn();
+  const view = renderWithQuery(
+    <ModelTestPage onOpenAudioAnnotation={onOpenAudioAnnotation} />,
+  );
   await screen.findByText("测试对话");
   await user.click(screen.getByRole("tab", { name: "语音识别" }));
 
@@ -620,9 +763,50 @@ test("runs speech recognition with a custom player and speaker timestamps", asyn
   expect(screen.getByText("你好，欢迎收听。")).toBeInTheDocument();
   expect(screen.getByText("speaker_0")).toBeInTheDocument();
   expect(screen.getByText("00:00 – 00:01")).toBeInTheDocument();
+  expect(screen.getByText("译文：Hello.")).toBeInTheDocument();
+  expect(screen.getByText("重叠")).toBeInTheDocument();
+  expect(
+    screen.getByText("导入时会忽略 1 个短于 100 毫秒的识别片段"),
+  ).toBeInTheDocument();
+  expect(screen.getByText("说话人识别已降级")).toBeInTheDocument();
+  expect(screen.getByText("字词时间戳（1 项）")).toBeInTheDocument();
   expect(screen.getByRole("button", { name: "播放音频" })).toBeInTheDocument();
+  expect(screen.getByRole("slider", { name: "音频播放进度" })).toHaveValue("0");
+  expect(screen.getByRole("slider", { name: "音频播放进度" })).toHaveAttribute(
+    "max",
+    "1",
+  );
+  expect(
+    view.container.querySelector(".transcription-progress-track > i"),
+  ).toHaveStyle({ width: "0%" });
   expect(view.container.querySelector("audio[controls]")).toBeNull();
   expect(view.container.querySelector("select")).toBeNull();
+  const downloadClick = vi
+    .spyOn(HTMLAnchorElement.prototype, "click")
+    .mockImplementation(() => undefined);
+  await user.click(screen.getByRole("button", { name: "导出 JSON" }));
+  downloadClick.mockRestore();
+  const exportedBlob = createObjectUrl.mock.calls
+    .map(([blob]) => blob as Blob)
+    .find((blob) => blob.type === "application/json;charset=utf-8");
+  expect(exportedBlob).toBeDefined();
+  expect(JSON.parse(await readBlobText(exportedBlob!))).toMatchObject({
+    kind: "future-props-transcription",
+    schema_version: "1.1",
+    recognition: {
+      task_id: task.id,
+      text: "你好，欢迎收听。",
+      parameters: { target_language: "en" },
+      result_detail: { processing_status: "degraded" },
+    },
+  });
+  await user.click(screen.getByRole("button", { name: "导入标注" }));
+  await waitFor(() =>
+    expect(
+      vi.mocked(importAudioAnnotationTranscriptionTask),
+    ).toHaveBeenCalledWith(task.id),
+  );
+  expect(onOpenAudioAnnotation).toHaveBeenCalledWith("annotation-import");
   await user.click(screen.getByRole("button", { name: "复制完整转写" }));
   expect(await navigator.clipboard.readText()).toBe("你好，欢迎收听。");
   await user.click(screen.getByRole("button", { name: "删除识别任务" }));
@@ -635,7 +819,7 @@ test("runs speech recognition with a custom player and speaker timestamps", asyn
   expect(revokeObjectUrl).toHaveBeenCalledWith("blob:transcription-audio");
 });
 
-test("chooses library audio and disables the oversized full drama", async () => {
+test("uses the selected Pro ASR model's 100 MB audio limit", async () => {
   const user = userEvent.setup();
   renderWithQuery(<ModelTestPage />);
   await screen.findByText("测试对话");
@@ -648,8 +832,10 @@ test("chooses library audio and disables the oversized full drama", async () => 
     await screen.findByRole("dialog", { name: "从文件管理选择音频" }),
   ).toBeInTheDocument();
   expect(screen.getByRole("button", { name: /广播剧.*文件夹/ })).toBeEnabled();
-  expect(screen.getByRole("button", { name: /完整广播剧/ })).toBeDisabled();
-  expect(screen.getByText(/28\.7 MB · 超过 10 MB/)).toBeInTheDocument();
+  expect(screen.getByText("单文件最大 100 MB")).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: /完整广播剧/ })).toBeEnabled();
+  expect(screen.getByText(/28\.7 MB/)).toBeInTheDocument();
+  expect(screen.queryByText(/超过 10 MB/)).not.toBeInTheDocument();
   await user.type(
     screen.getByRole("searchbox", { name: "搜索文件管理音频" }),
     "片段",
@@ -663,9 +849,67 @@ test("chooses library audio and disables the oversized full drama", async () => 
   await waitFor(() =>
     expect(
       vi.mocked(createModelTestTranscriptionFromLibrary),
-    ).toHaveBeenCalledWith("audio-small", "m-asr", "ja"),
+    ).toHaveBeenCalledWith("audio-small", "m-asr", {
+      language: "ja",
+      target_language: null,
+      enable_word_timestamps: false,
+      enable_text_edit: false,
+      enable_speaker_diarization: true,
+      max_speakers: null,
+      enable_punctuation: true,
+      hotwords: null,
+      abbreviations: false,
+    }),
   );
   expect(uploadModelTestTranscription).not.toHaveBeenCalled();
+});
+
+test("resets dynamic transcription controls when switching ASR models", async () => {
+  const user = userEvent.setup();
+  renderWithQuery(<ModelTestPage />);
+  await screen.findByText("测试对话");
+  await user.click(screen.getByRole("tab", { name: "语音识别" }));
+
+  expect(screen.getByRole("switch", { name: /说话人识别/ })).toHaveAttribute(
+    "aria-checked",
+    "true",
+  );
+  expect(
+    screen.getByRole("combobox", { name: "最大说话人数" }),
+  ).toBeInTheDocument();
+  await user.click(screen.getByRole("switch", { name: /说话人识别/ }));
+  expect(
+    screen.queryByRole("combobox", { name: "最大说话人数" }),
+  ).not.toBeInTheDocument();
+
+  await user.click(screen.getByRole("combobox", { name: "测试模型" }));
+  await user.click(screen.getByRole("option", { name: /Custom Pro ASR/ }));
+  const candidateInput = await screen.findByRole("textbox", {
+    name: "识别语言",
+  });
+  expect(candidateInput).toHaveValue("auto");
+  expect(screen.getByRole("switch", { name: /文本整理/ })).toHaveAttribute(
+    "aria-checked",
+    "true",
+  );
+  expect(
+    screen.queryByRole("switch", { name: /自动标点/ }),
+  ).not.toBeInTheDocument();
+  await user.clear(candidateInput);
+  await user.type(candidateInput, "Chinese,English");
+
+  await user.click(screen.getByRole("combobox", { name: "测试模型" }));
+  await user.click(screen.getByRole("option", { name: /SenseAudio ASR/ }));
+  expect(
+    await screen.findByRole("combobox", { name: "识别语言" }),
+  ).toHaveTextContent("自动识别");
+  expect(screen.getByRole("switch", { name: /自动标点/ })).toHaveAttribute(
+    "aria-checked",
+    "true",
+  );
+  expect(
+    screen.queryByRole("switch", { name: /文本整理/ }),
+  ).not.toBeInTheDocument();
 });
 
 test("switches the unified workspace to video and submits custom controls", async () => {

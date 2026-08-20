@@ -14,12 +14,24 @@ class TranscriptSegment:
     start_ms: int
     end_ms: int
     text: str
+    translation: str | None = None
+    speaker_candidates: tuple[str, ...] = ()
+    is_overlap: bool = False
+
+
+@dataclass(frozen=True)
+class TranscriptWord:
+    word: str
+    start_ms: int
+    end_ms: int
 
 
 @dataclass(frozen=True)
 class TranscriptionResult:
     text: str
     segments: tuple[TranscriptSegment, ...] = ()
+    words: tuple[TranscriptWord, ...] = ()
+    detail: dict[str, object] | None = None
 
 
 async def transcribe_model_audio(
@@ -33,9 +45,11 @@ async def transcribe_model_audio(
     mime_type: str,
     byte_size: int,
     language: str = "auto",
+    parameters: dict[str, object] | None = None,
     transport: httpx.AsyncBaseTransport | None = None,
 ) -> TranscriptionResult:
     """Normalize supported ASR providers to text plus optional diarized segments."""
+    options = parameters or {}
     if provider_kind == "senseaudio_asr":
         result = await transcribe_audio(
             base_url=base_url,
@@ -46,6 +60,20 @@ async def transcribe_model_audio(
             mime_type=mime_type,
             byte_size=byte_size,
             language=language,
+            target_language=options.get("target_language") or None,
+            enable_word_timestamps=options.get("enable_word_timestamps") is True,
+            enable_text_edit=options.get("enable_text_edit") is True,
+            enable_speaker_diarization=options.get("enable_speaker_diarization") is True,
+            max_speakers=(
+                int(options["max_speakers"])
+                if isinstance(options.get("max_speakers"), int)
+                else None
+            ),
+            enable_punctuation=options.get("enable_punctuation") is True,
+            hotwords=(
+                str(options["hotwords"]) if isinstance(options.get("hotwords"), str) else None
+            ),
+            abbreviations=options.get("abbreviations") is True,
             transport=transport,
         )
         return TranscriptionResult(
@@ -56,9 +84,17 @@ async def transcribe_model_audio(
                     start_ms=item.start_ms,
                     end_ms=item.end_ms,
                     text=item.text,
+                    translation=item.translation,
+                    speaker_candidates=item.speaker_candidates,
+                    is_overlap=item.is_overlap,
                 )
                 for item in result.segments
             ),
+            words=tuple(
+                TranscriptWord(word=item.word, start_ms=item.start_ms, end_ms=item.end_ms)
+                for item in result.words
+            ),
+            detail=result.detail,
         )
     if provider_kind != "openai":
         raise ValueError("当前供应商不支持语音识别")

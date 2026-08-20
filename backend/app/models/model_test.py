@@ -189,10 +189,12 @@ class ModelTestTranscriptionTask(Base):
     input_filename: Mapped[str] = mapped_column(String(255))
     input_mime_type: Mapped[str] = mapped_column(String(120))
     input_byte_size: Mapped[int] = mapped_column(Integer)
-    language: Mapped[str] = mapped_column(String(8), default="auto")
+    language: Mapped[str] = mapped_column(String(128), default="auto")
+    request_options: Mapped[dict] = mapped_column(JSON, default=dict)
     status: Mapped[str] = mapped_column(String(16), default="queued")
     result_text: Mapped[str | None] = mapped_column(Text)
     result_segments: Mapped[list[dict]] = mapped_column(JSON, default=list)
+    result_detail: Mapped[dict] = mapped_column(JSON, default=dict)
     error_message: Mapped[str | None] = mapped_column(Text)
     log_id: Mapped[str | None] = mapped_column(
         String(36), ForeignKey("llm_call_logs.id", ondelete="SET NULL")

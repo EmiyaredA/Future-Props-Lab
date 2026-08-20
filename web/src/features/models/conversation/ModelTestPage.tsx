@@ -370,7 +370,11 @@ function MessageCard({
   );
 }
 
-export function ModelTestPage() {
+export function ModelTestPage({
+  onOpenAudioAnnotation = () => undefined,
+}: {
+  onOpenAudioAnnotation?: (projectId: string) => void;
+}) {
   const queryClient = useQueryClient();
   const catalogQuery = useQuery({
     queryKey: ["model-catalog"],
@@ -810,6 +814,7 @@ export function ModelTestPage() {
       <ModelTranscriptionTestPanel
         models={availableModels}
         modelId={generationModel.value}
+        onOpenAudioAnnotation={onOpenAudioAnnotation}
         onSelectMode={selectMode}
         onSelectModel={(modelId) => {
           const next = availableModels.find(

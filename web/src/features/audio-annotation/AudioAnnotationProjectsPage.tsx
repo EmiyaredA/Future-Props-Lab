@@ -19,16 +19,18 @@ import {
   createAudioAnnotationProject,
   deleteAudioAnnotationProject,
   importAudioAnnotationProject,
+  importAudioAnnotationTranscriptionJson,
   listAudioAnnotationProjects,
   renameAudioAnnotationProject,
 } from "@features/audio-annotation/api";
 import {
   formatDuration,
   MAX_AUDIO_BYTES,
-  parseProjectFile,
+  MIN_SEGMENT_MS,
+  parseAudioAnnotationImportFile,
 } from "@features/audio-annotation/model";
 import type {
-  AnnotationProjectFile,
+  AudioAnnotationImportFile,
   AudioAnnotationProject,
 } from "@features/audio-annotation/types";
 import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
@@ -42,6 +44,23 @@ function bytes(value: number) {
     : `${(value / 1024 / 1024).toFixed(1)} MB`;
 }
 
+function readTextFile(file: Blob) {
+  if (typeof file.text === "function") return file.text();
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result ?? ""));
+    reader.onerror = () => reject(reader.error ?? new Error("文件读取失败"));
+    reader.readAsText(file);
+  });
+}
+
+function importedTitle(imported: AudioAnnotationImportFile | null) {
+  if (!imported) return "";
+  if (imported.kind === "future-props-audio-annotation")
+    return imported.project.title;
+  return imported.source.filename.replace(/\.[^.]+$/, "") || "录音标注";
+}
+
 function ProjectDialog({
   open,
   imported,
@@ -49,14 +68,16 @@ function ProjectDialog({
   onCreated,
 }: {
   open: boolean;
-  imported: AnnotationProjectFile | null;
+  imported: AudioAnnotationImportFile | null;
   onClose: () => void;
   onCreated: (project: AudioAnnotationProject) => void;
 }) {
   const fileInput = useRef<HTMLInputElement>(null);
-  const [title, setTitle] = useState(imported?.project.title ?? "");
+  const [title, setTitle] = useState(importedTitle(imported));
   const [selectedId, setSelectedId] = useState(
-    imported?.project.source.asset_id ?? "",
+    imported?.kind === "future-props-audio-annotation"
+      ? imported.project.source.asset_id
+      : "",
   );
   const [query, setQuery] = useState("");
   const [error, setError] = useState("");
@@ -67,11 +88,21 @@ function ProjectDialog({
   });
   const files = filesQuery.data?.items ?? [];
   const selected = files.find((file) => file.id === selectedId);
+  const shortImportSegmentCount =
+    imported?.kind === "future-props-transcription"
+      ? imported.recognition.segments.filter(
+          (segment) => segment.end_ms - segment.start_ms < MIN_SEGMENT_MS,
+        ).length
+      : 0;
 
   useEffect(() => {
     if (!open) return;
-    setTitle(imported?.project.title ?? "");
-    setSelectedId(imported?.project.source.asset_id ?? "");
+    setTitle(importedTitle(imported));
+    setSelectedId(
+      imported?.kind === "future-props-audio-annotation"
+        ? imported.project.source.asset_id
+        : "",
+    );
     setQuery("");
     setError("");
   }, [imported, open]);
@@ -80,6 +111,13 @@ function ProjectDialog({
     mutationFn: async () => {
       if (!selectedId) throw new Error("请选择录音文件");
       const finalTitle = title.trim() || selected?.display_name || "录音标注";
+      if (imported?.kind === "future-props-transcription")
+        return importAudioAnnotationTranscriptionJson(
+          finalTitle,
+          selectedId,
+          imported.recognition.text,
+          imported.recognition.segments,
+        );
       return imported
         ? importAudioAnnotationProject(finalTitle, selectedId, {
             schema_version: "1.0",
@@ -131,7 +169,11 @@ function ProjectDialog({
         <header>
           <div>
             <span className="eyebrow">
-              {imported ? "导入项目 JSON" : "Workspace 任务"}
+              {imported?.kind === "future-props-transcription"
+                ? "导入识别 JSON"
+                : imported
+                  ? "导入项目 JSON"
+                  : "Workspace 任务"}
             </span>
             <h2>{imported ? "选择对应录音" : "新建录音标注"}</h2>
           </div>
@@ -153,6 +195,14 @@ function ProjectDialog({
             onChange={(event) => setTitle(event.target.value)}
           />
         </label>
+        {imported?.kind === "future-props-transcription" ? (
+          <p className="annotation-import-note" role="note">
+            导入时会自动忽略
+            {shortImportSegmentCount ? ` ${shortImportSegmentCount} 个` : ""}
+            短于 {MIN_SEGMENT_MS}{" "}
+            毫秒的识别片段，其余片段的时间和说话人会原样保留。
+          </p>
+        ) : null}
         <div className="annotation-source-actions">
           <input
             ref={fileInput}
@@ -250,7 +300,9 @@ export function AudioAnnotationProjectsPage({
   const importInput = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [imported, setImported] = useState<AnnotationProjectFile | null>(null);
+  const [imported, setImported] = useState<AudioAnnotationImportFile | null>(
+    null,
+  );
   const [renaming, setRenaming] = useState<AudioAnnotationProject | null>(null);
   const [renameValue, setRenameValue] = useState("");
   const [deleting, setDeleting] = useState<AudioAnnotationProject | null>(null);
@@ -292,7 +344,9 @@ export function AudioAnnotationProjectsPage({
     event.target.value = "";
     if (!file) return;
     try {
-      const parsed = parseProjectFile(JSON.parse(await file.text()));
+      const parsed = parseAudioAnnotationImportFile(
+        JSON.parse(await readTextFile(file)),
+      );
       setImported(parsed);
       setDialogOpen(true);
       setNotice("");

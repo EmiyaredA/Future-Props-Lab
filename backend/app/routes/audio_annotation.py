@@ -10,6 +10,7 @@ from app.schemas.audio_annotation import (
     AudioAnnotationProjectListOut,
     AudioAnnotationProjectOut,
     AudioAnnotationProjectPatchIn,
+    AudioAnnotationTranscriptionImportIn,
     AudioAnnotationWaveformOut,
     AudioAnnotationWaveformPutIn,
 )
@@ -44,6 +45,16 @@ async def import_project(
 ) -> AudioAnnotationProjectOut:
     try:
         return await AudioAnnotationProjects(session).import_project(body)
+    except AudioAnnotationError as exc:
+        raise _error(exc) from None
+
+
+@router.post("/transcription-imports", response_model=AudioAnnotationProjectOut)
+async def import_transcription(
+    session: SessionDep, body: AudioAnnotationTranscriptionImportIn
+) -> AudioAnnotationProjectOut:
+    try:
+        return await AudioAnnotationProjects(session).import_transcription(body)
     except AudioAnnotationError as exc:
         raise _error(exc) from None
 

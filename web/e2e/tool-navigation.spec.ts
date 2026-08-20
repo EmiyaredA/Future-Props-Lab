@@ -157,6 +157,28 @@ test("creates and edits an audio annotation task", async ({ page }) => {
     page.getByRole("complementary", { name: "片段编辑器" }),
   ).toBeVisible();
   await expect(page.getByLabel("录音波形时间轴")).toBeVisible();
+  await page.getByRole("button", { name: "播放当前片段" }).click();
+  await expect(
+    page.getByRole("button", { name: "暂停当前片段" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "播放当前片段" }),
+  ).toBeVisible({ timeout: 3_000 });
+
+  await page.setViewportSize({ width: 1440, height: 900 });
+  const transport = page.locator(".annotation-transport");
+  await expect(transport).toBeVisible();
+  await expect
+    .poll(() =>
+      transport.evaluate(
+        (element) => element.scrollWidth <= element.clientWidth,
+      ),
+    )
+    .toBe(true);
+  await expect(page.locator(".annotation-playback-time")).toHaveCSS(
+    "white-space",
+    "nowrap",
+  );
 
   await page.getByRole("button", { name: "管理", exact: true }).click();
   await page.getByRole("button", { name: "添加说话人" }).click();
@@ -164,13 +186,13 @@ test("creates and edits an audio annotation task", async ({ page }) => {
   await page.getByRole("combobox", { name: "选择说话人" }).click();
   await page.getByRole("option", { name: "说话人 1" }).click();
   await page
-    .getByPlaceholder("输入这个片段中说出的内容…")
+    .getByRole("textbox", { name: "原文说话内容" })
     .fill("自动化验收片段");
   await page.getByRole("checkbox", { name: "标记为已校对" }).click();
   await expect(page.getByText(/已自动保存/)).toBeVisible({ timeout: 5_000 });
 
   await page
-    .getByPlaceholder("输入这个片段中说出的内容…")
+    .getByRole("textbox", { name: "原文说话内容" })
     .fill("这段内容还没有保存");
   await page.getByRole("button", { name: "工具导航", exact: true }).click();
   await expect(

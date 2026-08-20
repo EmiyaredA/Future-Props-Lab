@@ -27,6 +27,9 @@ from db.migrations.versions import (
     r0022_audio_annotation,
     r0023_senseaudio_asr_fresh_catalog,
     r0024_model_test_transcription,
+    r0025_pro_asr_provider,
+    r0026_transcription_100mb,
+    r0027_transcription_parameters,
 )
 
 
@@ -127,6 +130,17 @@ MIGRATIONS = (
     Migration(
         r0024_model_test_transcription.MIGRATION_ID,
         r0024_model_test_transcription.SQL,
+    ),
+    Migration(r0025_pro_asr_provider.MIGRATION_ID, r0025_pro_asr_provider.SQL),
+    Migration(
+        r0026_transcription_100mb.MIGRATION_ID,
+        r0026_transcription_100mb.SQL,
+        foreign_keys_off=True,
+    ),
+    Migration(
+        r0027_transcription_parameters.MIGRATION_ID,
+        r0027_transcription_parameters.SQL,
+        foreign_keys_off=True,
     ),
 )
 

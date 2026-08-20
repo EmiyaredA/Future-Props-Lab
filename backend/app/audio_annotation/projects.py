@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+from pathlib import Path
+
+from pydantic import ValidationError
 from sqlalchemy import delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from tinytag import TinyTag
@@ -8,11 +11,13 @@ from app.concurrency.revisions import RevisionConflictError
 from app.core.config import get_settings
 from app.core.ids import new_id
 from app.core.time import iso_utc, utc_now
+from app.files.library import AssetError, AssetLibrary
 from app.files.storage import AssetStorage
 from app.models import (
     AudioAnnotationDocument,
     AudioAnnotationProject,
     AudioAnnotationWaveform,
+    ModelTestTranscriptionTask,
     VisualAsset,
 )
 from app.schemas.audio_annotation import (
@@ -24,6 +29,9 @@ from app.schemas.audio_annotation import (
     AudioAnnotationProjectOut,
     AudioAnnotationProjectPatchIn,
     AudioAnnotationSegment,
+    AudioAnnotationSpeaker,
+    AudioAnnotationTranscriptionImportIn,
+    AudioAnnotationTranscriptionSegmentIn,
     AudioAnnotationWaveformOut,
     AudioAnnotationWaveformPutIn,
 )
@@ -31,6 +39,17 @@ from app.schemas.audio_annotation import (
 MAX_AUDIO_BYTES = 100 * 1024 * 1024
 MAX_DURATION_MS = 60 * 60 * 1000
 MIN_SEGMENT_MS = 100
+TRANSCRIPTION_AUDIO_EXTENSIONS = {".mp3", ".wav", ".m4a", ".ogg"}
+TRANSCRIPTION_SPEAKER_COLORS = (
+    "#28B8A7",
+    "#4C8FE8",
+    "#9B62D0",
+    "#E7A72F",
+    "#ED7A52",
+    "#D85E9D",
+    "#7586E5",
+    "#46B978",
+)
 
 
 class AudioAnnotationError(Exception):
@@ -43,7 +62,9 @@ class AudioAnnotationError(Exception):
 class AudioAnnotationProjects:
     def __init__(self, session: AsyncSession) -> None:
         self.session = session
-        self.storage = AssetStorage(get_settings())
+        self.settings = get_settings()
+        self.storage = AssetStorage(self.settings)
+        self.library = AssetLibrary(session, self.settings)
 
     async def _project(self, project_id: str) -> AudioAnnotationProject:
         row = await self.session.get(AudioAnnotationProject, project_id)
@@ -130,7 +151,6 @@ class AudioAnnotationProjects:
         body: AudioAnnotationDocumentPutIn | AudioAnnotationImportIn,
     ) -> None:
         speaker_ids = {speaker.id for speaker in body.speakers}
-        previous_end = 0
         previous_start = -1
         for segment in body.segments:
             if segment.end_ms - segment.start_ms < MIN_SEGMENT_MS:
@@ -139,12 +159,9 @@ class AudioAnnotationProjects:
                 raise AudioAnnotationError("片段超出音频时长", code="segment_out_of_range")
             if segment.start_ms < previous_start:
                 raise AudioAnnotationError("片段必须按开始时间排序", code="segments_unsorted")
-            if segment.start_ms < previous_end:
-                raise AudioAnnotationError("音频片段不能重叠", code="segments_overlap")
             if segment.speaker_id is not None and segment.speaker_id not in speaker_ids:
                 raise AudioAnnotationError("片段引用了不存在的说话人", code="speaker_not_found")
             previous_start = segment.start_ms
-            previous_end = segment.end_ms
 
     async def list(self, query: str = "") -> AudioAnnotationProjectListOut:
         statement = select(AudioAnnotationProject).order_by(
@@ -162,56 +179,255 @@ class AudioAnnotationProjects:
     async def create(self, body: AudioAnnotationProjectCreateIn) -> AudioAnnotationProjectOut:
         asset = await self._asset(body.asset_id)
         duration_ms = self._duration(asset)
-        row = AudioAnnotationProject(
-            title=body.title,
-            asset_id=asset.id,
-            duration_ms=duration_ms,
-        )
-        self.session.add(row)
-        await self.session.flush()
         segment = AudioAnnotationSegment(
             id=new_id(), start_ms=0, end_ms=duration_ms, speaker_id=None, text="", status="draft"
         )
-        self.session.add(
-            AudioAnnotationDocument(
-                project_id=row.id,
-                schema_version="1.0",
-                speakers=[],
-                segments=[segment.model_dump(mode="json")],
-            )
+        return await self._create_project_record(
+            title=body.title,
+            asset=asset,
+            duration_ms=duration_ms,
+            speakers=[],
+            segments=[segment],
         )
-        self.session.add(
-            AudioAnnotationWaveform(project_id=row.id, duration_ms=duration_ms, peaks=[])
-        )
-        await self.session.commit()
-        await self.session.refresh(row)
-        return await self._project_out(row)
 
     async def import_project(self, body: AudioAnnotationImportIn) -> AudioAnnotationProjectOut:
         asset = await self._asset(body.asset_id)
         duration_ms = self._duration(asset)
         self._validate_document(duration_ms, body)
-        row = AudioAnnotationProject(
+        return await self._create_project_record(
             title=body.title,
+            asset=asset,
+            duration_ms=duration_ms,
+            speakers=body.speakers,
+            segments=body.segments,
+        )
+
+    async def _create_project_record(
+        self,
+        *,
+        title: str,
+        asset: VisualAsset,
+        duration_ms: int,
+        speakers: list[AudioAnnotationSpeaker],
+        segments: list[AudioAnnotationSegment],
+        cleanup_path: Path | None = None,
+    ) -> AudioAnnotationProjectOut:
+        row = AudioAnnotationProject(
+            title=title,
             asset_id=asset.id,
             duration_ms=duration_ms,
         )
         self.session.add(row)
-        await self.session.flush()
-        self.session.add(
-            AudioAnnotationDocument(
-                project_id=row.id,
-                schema_version=body.schema_version,
-                speakers=[speaker.model_dump(mode="json") for speaker in body.speakers],
-                segments=[segment.model_dump(mode="json") for segment in body.segments],
+        try:
+            await self.session.flush()
+            self.session.add(
+                AudioAnnotationDocument(
+                    project_id=row.id,
+                    schema_version="1.0",
+                    speakers=[speaker.model_dump(mode="json") for speaker in speakers],
+                    segments=[segment.model_dump(mode="json") for segment in segments],
+                )
             )
-        )
-        self.session.add(
-            AudioAnnotationWaveform(project_id=row.id, duration_ms=duration_ms, peaks=[])
-        )
-        await self.session.commit()
+            self.session.add(
+                AudioAnnotationWaveform(project_id=row.id, duration_ms=duration_ms, peaks=[])
+            )
+            await self.session.commit()
+        except Exception:
+            await self.session.rollback()
+            if cleanup_path is not None:
+                cleanup_path.unlink(missing_ok=True)
+            raise
         await self.session.refresh(row)
         return await self._project_out(row)
+
+    def _transcription_document(
+        self,
+        *,
+        text: str,
+        segments: list[AudioAnnotationTranscriptionSegmentIn],
+        duration_ms: int,
+    ) -> tuple[list[AudioAnnotationSpeaker], list[AudioAnnotationSegment]]:
+        if not segments:
+            complete_text = text.strip()
+            if not complete_text:
+                raise AudioAnnotationError(
+                    "识别结果没有可导入的文本或时间戳片段",
+                    code="transcription_empty",
+                )
+            try:
+                converted = [
+                    AudioAnnotationSegment(
+                        id=new_id(),
+                        start_ms=0,
+                        end_ms=duration_ms,
+                        speaker_id=None,
+                        text=complete_text,
+                        status="draft",
+                    )
+                ]
+            except ValidationError as exc:
+                raise AudioAnnotationError(
+                    "识别全文超过单个标注片段允许的长度",
+                    code="transcription_text_too_long",
+                ) from exc
+            document = AudioAnnotationImportIn(
+                title="识别导入校验",
+                asset_id="validation",
+                schema_version="1.0",
+                speakers=[],
+                segments=converted,
+            )
+            self._validate_document(duration_ms, document)
+            return [], converted
+
+        ordered = sorted(
+            (
+                item
+                for item in segments
+                if item.end_ms < item.start_ms or item.end_ms - item.start_ms >= MIN_SEGMENT_MS
+            ),
+            key=lambda item: (item.start_ms, item.end_ms),
+        )
+        speakers: list[AudioAnnotationSpeaker] = []
+        speaker_ids: dict[str, str] = {}
+        converted: list[AudioAnnotationSegment] = []
+        for item in ordered:
+            label = item.speaker.strip()
+            normalized_label = label.casefold()
+            speaker_id: str | None = None
+            if label and normalized_label != "unknown":
+                speaker_id = speaker_ids.get(normalized_label)
+                if speaker_id is None:
+                    if len(speakers) >= 64:
+                        raise AudioAnnotationError(
+                            "识别结果中的说话人超过 64 个",
+                            code="too_many_speakers",
+                        )
+                    speaker_id = new_id()
+                    speaker_ids[normalized_label] = speaker_id
+                    speakers.append(
+                        AudioAnnotationSpeaker(
+                            id=speaker_id,
+                            name=label,
+                            color=TRANSCRIPTION_SPEAKER_COLORS[
+                                len(speakers) % len(TRANSCRIPTION_SPEAKER_COLORS)
+                            ],
+                        )
+                    )
+            try:
+                converted.append(
+                    AudioAnnotationSegment(
+                        id=new_id(),
+                        start_ms=item.start_ms,
+                        end_ms=item.end_ms,
+                        speaker_id=speaker_id,
+                        text=item.text,
+                        status="draft",
+                    )
+                )
+            except ValidationError as exc:
+                raise AudioAnnotationError(
+                    "识别结果包含无效的时间戳或片段内容",
+                    code="transcription_segments_invalid",
+                ) from exc
+        document = AudioAnnotationImportIn(
+            title="识别导入校验",
+            asset_id="validation",
+            schema_version="1.0",
+            speakers=speakers,
+            segments=converted,
+        )
+        self._validate_document(duration_ms, document)
+        return speakers, converted
+
+    async def import_transcription(
+        self, body: AudioAnnotationTranscriptionImportIn
+    ) -> AudioAnnotationProjectOut:
+        cleanup_path: Path | None = None
+        if body.source_kind == "json":
+            asset = await self._asset(body.asset_id)
+            title = body.title
+            text = body.text
+            segments = body.segments
+        else:
+            task = await self.session.get(ModelTestTranscriptionTask, body.task_id)
+            if task is None:
+                raise AudioAnnotationError("识别任务不存在", code="not_found", status=404)
+            if task.status != "completed":
+                raise AudioAnnotationError(
+                    "只有已完成的识别任务可以导入标注",
+                    code="transcription_not_completed",
+                    status=409,
+                )
+            filename = task.input_filename
+            mime_type = task.input_mime_type
+            text = task.result_text or ""
+            try:
+                segments = [
+                    AudioAnnotationTranscriptionSegmentIn.model_validate(item)
+                    for item in list(task.result_segments or [])
+                ]
+            except ValidationError as exc:
+                raise AudioAnnotationError(
+                    "识别任务的分段数据格式无效",
+                    code="transcription_segments_invalid",
+                ) from exc
+            title = body.title or Path(filename).stem.strip() or "录音标注"
+            title = title[:120]
+            asset = (
+                await self.session.get(VisualAsset, task.source_asset_id)
+                if task.source_asset_id
+                else None
+            )
+            if asset is not None and (
+                asset.project_id is not None
+                or asset.galgame_project_id is not None
+                or asset.media_kind != "audio"
+                or asset.byte_size > MAX_AUDIO_BYTES
+            ):
+                asset = None
+            if asset is None:
+                source_path = (
+                    self.settings.workspace_model_test_path(task.workspace_id, "references")
+                    / task.input_storage_key
+                )
+                if not source_path.is_file():
+                    raise AudioAnnotationError(
+                        "识别任务的源音频已不存在",
+                        code="source_not_found",
+                        status=404,
+                    )
+                await self.session.rollback()
+                try:
+                    asset, cleanup_path = await self.library.stage_local_copy(
+                        source_path,
+                        filename=filename,
+                        content_type=mime_type,
+                        allowed_extensions=TRANSCRIPTION_AUDIO_EXTENSIONS,
+                    )
+                except AssetError as exc:
+                    raise AudioAnnotationError(str(exc), code=exc.code, status=exc.status) from exc
+
+        try:
+            duration_ms = self._duration(asset)
+            speakers, converted = self._transcription_document(
+                text=text,
+                segments=segments,
+                duration_ms=duration_ms,
+            )
+            return await self._create_project_record(
+                title=title,
+                asset=asset,
+                duration_ms=duration_ms,
+                speakers=speakers,
+                segments=converted,
+                cleanup_path=cleanup_path,
+            )
+        except Exception:
+            if cleanup_path is not None:
+                await self.session.rollback()
+                cleanup_path.unlink(missing_ok=True)
+            raise
 
     async def patch(
         self, project_id: str, body: AudioAnnotationProjectPatchIn

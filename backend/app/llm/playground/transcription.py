@@ -15,12 +15,20 @@ from app.core.tenant_context import current_workspace_id
 from app.core.time import iso_utc
 from app.files.policy import ALLOWED_FILES, looks_like
 from app.files.storage import AssetStorage
-from app.llm.providers.senseaudio_asr import MAX_ASR_FILE_BYTES
+from app.llm.playground.transcription_parameters import (
+    TranscriptionParameterError,
+    parameter_capabilities,
+    resolve_parameters,
+)
+from app.llm.providers.senseaudio_asr import MAX_ASR_FILE_BYTES, max_asr_file_bytes
 from app.models import ModelEntry, ModelProvider, ModelTestTranscriptionTask, VisualAsset
 from app.schemas.model_test import (
     ModelTestTranscriptionCreateIn,
     ModelTestTranscriptionOptionListOut,
     ModelTestTranscriptionOptionOut,
+    ModelTestTranscriptionParametersIn,
+    ModelTestTranscriptionParametersOut,
+    ModelTestTranscriptionResultDetailOut,
     ModelTestTranscriptionSourceOut,
     ModelTestTranscriptionTaskListOut,
     ModelTestTranscriptionTaskOut,
@@ -62,6 +70,20 @@ def transcription_task_out(
     path = (
         settings.workspace_model_test_path(row.workspace_id, "references") / row.input_storage_key
     )
+    custom_pro = row.model_slug == "pro-asr"
+    senseaudio = row.provider_kind == "senseaudio_asr"
+    stored_parameters = {
+        "language": row.language,
+        "target_language": None,
+        "enable_word_timestamps": False,
+        "enable_text_edit": custom_pro,
+        "enable_speaker_diarization": senseaudio,
+        "max_speakers": None,
+        "enable_punctuation": senseaudio and not custom_pro,
+        "hotwords": None,
+        "abbreviations": False,
+        **dict(row.request_options or {}),
+    }
     return ModelTestTranscriptionTaskOut(
         id=row.id,
         provider_id=row.provider_id,
@@ -70,6 +92,7 @@ def transcription_task_out(
         provider_name=row.provider_name,
         model_slug=row.model_slug,
         language=row.language,
+        parameters=ModelTestTranscriptionParametersOut.model_validate(stored_parameters),
         status=row.status,
         source=ModelTestTranscriptionSourceOut(
             kind=row.source_kind,
@@ -81,6 +104,9 @@ def transcription_task_out(
         ),
         result_text=row.result_text,
         result_segments=list(row.result_segments or []),
+        result_detail=ModelTestTranscriptionResultDetailOut.model_validate(
+            dict(row.result_detail or {})
+        ),
         error_message=row.error_message,
         log_id=row.log_id,
         revision=row.revision,
@@ -105,12 +131,22 @@ def _validate_file_metadata(filename: str, content_type: str) -> tuple[str, str]
     return extension, normalized_mime if normalized_mime in mime_types else sorted(mime_types)[0]
 
 
-def _validate_staged_file(path: Path, extension: str, size: int) -> None:
+def _max_input_bytes(provider: ModelProvider) -> int:
+    if provider.kind == "senseaudio_asr":
+        return max_asr_file_bytes(provider.base_url)
+    return MAX_ASR_FILE_BYTES
+
+
+def _limit_message(max_bytes: int) -> str:
+    return f"单个音频不能超过 {max_bytes // (1024 * 1024)} MB"
+
+
+def _validate_staged_file(path: Path, extension: str, size: int, max_bytes: int) -> None:
     if size <= 0:
         raise ModelTestTranscriptionError("音频文件不能为空", code="empty_file")
-    if size > MAX_ASR_FILE_BYTES:
+    if size > max_bytes:
         raise ModelTestTranscriptionError(
-            "单个音频不能超过 10 MB", code="file_too_large", status=413
+            _limit_message(max_bytes), code="file_too_large", status=413
         )
     with path.open("rb") as source:
         head = source.read(512)
@@ -120,14 +156,14 @@ def _validate_staged_file(path: Path, extension: str, size: int) -> None:
         )
 
 
-def _copy_limited(source_path: Path, target_path: Path) -> int:
+def _copy_limited(source_path: Path, target_path: Path, max_bytes: int) -> int:
     size = 0
     with source_path.open("rb") as source, target_path.open("xb") as target:
         while chunk := source.read(1024 * 1024):
             size += len(chunk)
-            if size > MAX_ASR_FILE_BYTES:
+            if size > max_bytes:
                 raise ModelTestTranscriptionError(
-                    "单个音频不能超过 10 MB", code="file_too_large", status=413
+                    _limit_message(max_bytes), code="file_too_large", status=413
                 )
             target.write(chunk)
     return size
@@ -177,6 +213,8 @@ class ModelTestTranscription:
                     slug=model.slug,
                     label=model.label or model.slug,
                     description=model.description,
+                    max_input_bytes=_max_input_bytes(provider),
+                    parameter_capabilities=parameter_capabilities(model, provider),
                 )
                 for model, provider in rows
                 if model_supports_transcription(model, provider)
@@ -187,7 +225,11 @@ class ModelTestTranscription:
         )
 
     async def create_upload(
-        self, upload: UploadFile, *, model_id: str, language: str
+        self,
+        upload: UploadFile,
+        *,
+        model_id: str,
+        parameters: ModelTestTranscriptionParametersIn,
     ) -> ModelTestTranscriptionTaskOut:
         try:
             filename = Path(upload.filename or "").name
@@ -195,10 +237,17 @@ class ModelTestTranscription:
                 filename, upload.content_type or "application/octet-stream"
             )
             model, provider = await self._model(model_id)
+            resolved_parameters = resolve_parameters(parameters, model, provider)
+        except TranscriptionParameterError as exc:
+            await upload.close()
+            raise ModelTestTranscriptionError(
+                str(exc), code="invalid_transcription_parameters"
+            ) from exc
         except Exception:
             await upload.close()
             raise
         snapshots = (model.id, model.slug, provider.id, provider.name, provider.kind)
+        max_bytes = _max_input_bytes(provider)
         await self.session.rollback()
         workspace_id = current_workspace_id()
         storage_key, temp_path, final_path = self._paths(workspace_id)
@@ -207,12 +256,12 @@ class ModelTestTranscription:
             with temp_path.open("xb") as target:
                 while chunk := await upload.read(1024 * 1024):
                     size += len(chunk)
-                    if size > MAX_ASR_FILE_BYTES:
+                    if size > max_bytes:
                         raise ModelTestTranscriptionError(
-                            "单个音频不能超过 10 MB", code="file_too_large", status=413
+                            _limit_message(max_bytes), code="file_too_large", status=413
                         )
                     target.write(chunk)
-            _validate_staged_file(temp_path, extension, size)
+            _validate_staged_file(temp_path, extension, size, max_bytes)
             os.replace(temp_path, final_path)
             return await self._create_row(
                 snapshots=snapshots,
@@ -220,7 +269,7 @@ class ModelTestTranscription:
                 filename=filename,
                 mime_type=mime_type,
                 byte_size=size,
-                language=language,
+                parameters=resolved_parameters,
                 source_kind="upload",
                 source_asset_id=None,
                 final_path=final_path,
@@ -236,6 +285,12 @@ class ModelTestTranscription:
         self, body: ModelTestTranscriptionCreateIn
     ) -> ModelTestTranscriptionTaskOut:
         model, provider = await self._model(body.model_id)
+        try:
+            resolved_parameters = resolve_parameters(body, model, provider)
+        except TranscriptionParameterError as exc:
+            raise ModelTestTranscriptionError(
+                str(exc), code="invalid_transcription_parameters"
+            ) from exc
         asset = await self.session.get(VisualAsset, body.source_asset_id)
         if (
             asset is None
@@ -247,9 +302,10 @@ class ModelTestTranscription:
                 "文件管理中的音频不存在", code="source_not_found", status=404
             )
         extension, mime_type = _validate_file_metadata(asset.original_filename, asset.mime_type)
-        if asset.byte_size > MAX_ASR_FILE_BYTES:
+        max_bytes = _max_input_bytes(provider)
+        if asset.byte_size > max_bytes:
             raise ModelTestTranscriptionError(
-                "单个音频不能超过 10 MB", code="file_too_large", status=413
+                _limit_message(max_bytes), code="file_too_large", status=413
             )
         source_path = self.asset_storage.path_for(asset)
         if not source_path.is_file():
@@ -263,8 +319,8 @@ class ModelTestTranscription:
         await self.session.rollback()
         storage_key, temp_path, final_path = self._paths(workspace_id)
         try:
-            size = await asyncio.to_thread(_copy_limited, source_path, temp_path)
-            _validate_staged_file(temp_path, extension, size)
+            size = await asyncio.to_thread(_copy_limited, source_path, temp_path, max_bytes)
+            _validate_staged_file(temp_path, extension, size, max_bytes)
             os.replace(temp_path, final_path)
             return await self._create_row(
                 snapshots=snapshots,
@@ -272,7 +328,7 @@ class ModelTestTranscription:
                 filename=filename,
                 mime_type=mime_type,
                 byte_size=size,
-                language=body.language,
+                parameters=resolved_parameters,
                 source_kind="library",
                 source_asset_id=source_asset_id,
                 final_path=final_path,
@@ -297,7 +353,7 @@ class ModelTestTranscription:
         filename: str,
         mime_type: str,
         byte_size: int,
-        language: str,
+        parameters: ModelTestTranscriptionParametersOut,
         source_kind: str,
         source_asset_id: str | None,
         final_path: Path,
@@ -315,7 +371,8 @@ class ModelTestTranscription:
             input_filename=filename,
             input_mime_type=mime_type,
             input_byte_size=byte_size,
-            language=language,
+            language=parameters.language,
+            request_options=parameters.model_dump(mode="json"),
         )
         try:
             self.session.add(row)

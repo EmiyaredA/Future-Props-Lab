@@ -19,6 +19,7 @@ from app.llm.providers._senseaudio import SenseAudioProviderError
 from app.llm.providers.senseaudio_asr import SenseAudioAsrFileTooLarge
 from app.llm.providers.transcription import transcribe_model_audio
 from app.models import LlmCallLog, ModelEntry, ModelProvider, ModelTestTranscriptionTask
+from app.schemas.model_test import ModelTestTranscriptionResultDetailOut
 
 
 def _safe_error(exc: Exception) -> str:
@@ -110,6 +111,7 @@ class ModelTestTranscriptionRunner(PollingGenerationRunner):
                 mime_type,
                 byte_size,
                 language,
+                parameters,
             ) = prepared
             with path.open("rb") as source:
                 result = await transcribe_model_audio(
@@ -122,6 +124,7 @@ class ModelTestTranscriptionRunner(PollingGenerationRunner):
                     mime_type=mime_type,
                     byte_size=byte_size,
                     language=language,
+                    parameters=parameters,
                     transport=self.transport,
                 )
             async with self.session_factory() as session:
@@ -136,9 +139,25 @@ class ModelTestTranscriptionRunner(PollingGenerationRunner):
                         "start_ms": segment.start_ms,
                         "end_ms": segment.end_ms,
                         "text": segment.text,
+                        "translation": segment.translation,
+                        "speaker_candidates": list(segment.speaker_candidates),
+                        "is_overlap": segment.is_overlap,
                     }
                     for segment in result.segments
                 ]
+                row.result_detail = ModelTestTranscriptionResultDetailOut.model_validate(
+                    {
+                        **dict(result.detail or {}),
+                        "words": [
+                            {
+                                "word": word.word,
+                                "start_ms": word.start_ms,
+                                "end_ms": word.end_ms,
+                            }
+                            for word in result.words
+                        ],
+                    }
+                ).model_dump(mode="json")
                 row.error_message = None
                 row.completed_at = utc_now()
                 row.updated_at = row.completed_at
@@ -152,7 +171,7 @@ class ModelTestTranscriptionRunner(PollingGenerationRunner):
 
     async def _prepare(
         self, task_id: str
-    ) -> tuple[str, str, str, str, str, Path, str, int, str] | None:
+    ) -> tuple[str, str, str, str, str, Path, str, int, str, dict[str, object]] | None:
         async with self.session_factory() as session:
             row = await self._load_task(session, task_id)
             if row is None or row.status != "queued":
@@ -197,6 +216,7 @@ class ModelTestTranscriptionRunner(PollingGenerationRunner):
                 row.input_mime_type,
                 row.input_byte_size,
                 row.language,
+                dict(row.request_options or {}),
             )
             await session.commit()
             return prepared
@@ -231,6 +251,7 @@ class ModelTestTranscriptionRunner(PollingGenerationRunner):
                 request_payload={
                     "model": row.model_slug,
                     "language": row.language,
+                    "parameters": dict(row.request_options or {}),
                     "messages": [
                         {
                             "role": "user",
@@ -249,6 +270,7 @@ class ModelTestTranscriptionRunner(PollingGenerationRunner):
                     "status": row.status,
                     "content": row.result_text or "",
                     "segments": list(row.result_segments or []),
+                    "detail": dict(row.result_detail or {}),
                 },
                 latency_ms=max(0, round((finished_at - started_at).total_seconds() * 1000)),
                 status="success" if row.status == "completed" else "error",

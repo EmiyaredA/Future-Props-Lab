@@ -23,6 +23,11 @@ import {
   ZoomOut,
 } from "lucide-react";
 import {
+  getGalgameStoryDocument,
+  getGalgameWorkshopProjects,
+  type GalgameWorkshopProject,
+} from "@features/galgame-workshop";
+import {
   getAudioAnnotationDocument,
   getAudioAnnotationProject,
   getAudioAnnotationWaveform,
@@ -32,17 +37,26 @@ import {
 import {
   buildProjectFile,
   buildSrt,
-  createSegmentInGap,
+  ANNOTATION_LANGUAGES,
+  createSegment,
+  duplicateSegmentForOverlap,
   formatDuration,
   formatTimestamp,
   incompleteSegments,
+  languageColor,
+  languageLabel,
+  mergeImportedSpeakers,
   mergeWithNext,
   parseTimestamp,
   safeFileBase,
+  segmentLanguageCodes,
+  segmentSearchableText,
   SPEAKER_COLORS,
   splitSegment,
+  type ImportedAudioAnnotationSpeaker,
   updateSegmentBounds,
 } from "@features/audio-annotation/model";
+import { LanguageAnnotationEditor } from "@features/audio-annotation/LanguageAnnotationEditor";
 import type {
   AnnotationSnapshot,
   AudioAnnotationDocument,
@@ -58,6 +72,8 @@ import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
 import { CustomColorPicker } from "@shared/ui/CustomColorPicker";
 import { CustomSelect } from "@shared/ui/CustomSelect";
 import "@features/audio-annotation/audio-annotation.css";
+
+const EMPTY_GALGAME_PROJECTS: GalgameWorkshopProject[] = [];
 
 function snapshot(document: AudioAnnotationDocument): AnnotationSnapshot {
   return {
@@ -78,17 +94,77 @@ function downloadBlob(contents: BlobPart[], type: string, filename: string) {
 
 function SpeakerManager({
   open,
+  projectTitle,
   speakers,
   onChange,
+  onImport,
   onDelete,
   onClose,
 }: {
   open: boolean;
+  projectTitle: string;
   speakers: AudioAnnotationSpeaker[];
   onChange: (speakers: AudioAnnotationSpeaker[]) => void;
+  onImport: (speakers: ImportedAudioAnnotationSpeaker[]) => number;
   onDelete: (speaker: AudioAnnotationSpeaker) => void;
   onClose: () => void;
 }) {
+  const [sourceProjectId, setSourceProjectId] = useState("");
+  const [importNotice, setImportNotice] = useState("");
+  const projectsQuery = useQuery({
+    queryKey: ["galgame-speaker-import-projects"],
+    queryFn: getGalgameWorkshopProjects,
+    enabled: open,
+  });
+  const projects = projectsQuery.data?.items ?? EMPTY_GALGAME_PROJECTS;
+  const matchingProject = useMemo(() => {
+    const normalizedTitle = projectTitle.trim().toLocaleLowerCase("zh-CN");
+    if (!normalizedTitle) return undefined;
+    return projects.find((project) => {
+      const title = project.title.trim().toLocaleLowerCase("zh-CN");
+      return (
+        title &&
+        (normalizedTitle.includes(title) || title.includes(normalizedTitle))
+      );
+    });
+  }, [projectTitle, projects]);
+
+  useEffect(() => {
+    if (!open) {
+      setSourceProjectId("");
+      setImportNotice("");
+      return;
+    }
+    if (!sourceProjectId && projects.length)
+      setSourceProjectId(matchingProject?.id ?? projects[0]!.id);
+  }, [matchingProject, open, projects, sourceProjectId]);
+
+  const storyQuery = useQuery({
+    queryKey: ["galgame-speaker-import-story", sourceProjectId],
+    queryFn: () => getGalgameStoryDocument(sourceProjectId),
+    enabled: open && Boolean(sourceProjectId),
+  });
+
+  const importCharacters = () => {
+    const characters = storyQuery.data?.document.characters ?? [];
+    if (!characters.length) {
+      setImportNotice("这个 Galgame 工程还没有角色。");
+      return;
+    }
+    const addedCount = onImport(
+      characters.map((character) => ({
+        id: character.id,
+        name: character.name,
+        color: character.themeColor,
+      })),
+    );
+    setImportNotice(
+      addedCount
+        ? `已加入 ${addedCount} 个角色名，重复名称会自动跳过。`
+        : "没有新增角色名，现有名单已包含这些角色。",
+    );
+  };
+
   const add = () => {
     if (speakers.length >= 64) return;
     const used = new Set(
@@ -145,6 +221,45 @@ function SpeakerManager({
             <X aria-hidden />
           </button>
         </header>
+        <section className="annotation-speaker-import">
+          <div>
+            <strong>从 Galgame 工坊导入角色</strong>
+            <small>沿用角色名和主题色，导入后仍可继续编辑。</small>
+          </div>
+          {projectsQuery.isLoading ? (
+            <p>正在读取 Galgame 工程…</p>
+          ) : projects.length ? (
+            <div className="annotation-speaker-import-controls">
+              <CustomSelect
+                ariaLabel="角色来源工程"
+                value={sourceProjectId}
+                options={projects.map((project: GalgameWorkshopProject) => ({
+                  value: project.id,
+                  label: project.title,
+                  description:
+                    project.status === "completed" ? "已完成" : "草稿",
+                }))}
+                onChange={(value) => {
+                  setSourceProjectId(value);
+                  setImportNotice("");
+                }}
+              />
+              <button
+                type="button"
+                className="btn"
+                disabled={storyQuery.isLoading || !storyQuery.data}
+                onClick={importCharacters}
+              >
+                <Users aria-hidden />
+                {storyQuery.isLoading ? "读取角色…" : "导入角色名"}
+              </button>
+            </div>
+          ) : (
+            <p>暂无可导入的 Galgame 工程。</p>
+          )}
+          {storyQuery.isError ? <p>角色读取失败，请稍后重试。</p> : null}
+          {importNotice ? <small role="status">{importNotice}</small> : null}
+        </section>
         <div className="annotation-speaker-list">
           {speakers.map((speaker, index) => (
             <div key={speaker.id}>
@@ -219,10 +334,14 @@ export function AudioAnnotationEditorPage({
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [currentMs, setCurrentMs] = useState(0);
   const [playing, setPlaying] = useState(false);
+  const [previewingSegmentId, setPreviewingSegmentId] = useState<string | null>(
+    null,
+  );
   const [rate, setRate] = useState("1");
   const [volume, setVolume] = useState(0.8);
   const [zoomIndex, setZoomIndex] = useState(0);
   const [search, setSearch] = useState("");
+  const [languageFilter, setLanguageFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [dirty, setDirty] = useState(false);
   const dirtyRef = useRef(dirty);
@@ -373,15 +492,27 @@ export function AudioAnnotationEditorPage({
     return document.segments.filter((segment) => {
       if (statusFilter !== "all" && segment.status !== statusFilter)
         return false;
+      const languages = segmentLanguageCodes(segment);
+      if (
+        languageFilter !== "all" &&
+        (languageFilter === "unlabeled"
+          ? languages.length > 0
+          : !languages.includes(languageFilter))
+      )
+        return false;
       const speaker = segment.speaker_id
         ? (speakerById.get(segment.speaker_id)?.name ?? "")
         : "未指定";
       return (
         !needle ||
-        `${speaker} ${segment.text}`.toLocaleLowerCase("zh-CN").includes(needle)
+        `${speaker} ${segmentSearchableText(segment)} ${languages
+          .map(languageLabel)
+          .join(" ")}`
+          .toLocaleLowerCase("zh-CN")
+          .includes(needle)
       );
     });
-  }, [document, search, speakerById, statusFilter]);
+  }, [document, languageFilter, search, speakerById, statusFilter]);
 
   const undo = () => {
     if (!document || !undoStack.length) return;
@@ -407,6 +538,14 @@ export function AudioAnnotationEditorPage({
     }
     mutateSegments(next);
   };
+  const addOverlappingSegment = () => {
+    if (!document || !selected) return;
+    const id = crypto.randomUUID();
+    mutateSegments(
+      duplicateSegmentForOverlap(document.segments, selected.id, () => id),
+    );
+    setSelectedId(id);
+  };
   const doMerge = () => {
     if (!document || !selected || !nextSegment) return;
     if (
@@ -418,6 +557,17 @@ export function AudioAnnotationEditorPage({
       return;
     }
     mutateSegments(mergeWithNext(document.segments, selected.id));
+  };
+
+  const toggleSelectedPreview = () => {
+    if (!selected) return;
+    if (playing && previewingSegmentId === selected.id) {
+      waveformRef.current?.pause();
+      setPreviewingSegmentId(null);
+      return;
+    }
+    setPreviewingSegmentId(selected.id);
+    waveformRef.current?.playRange(selected.start_ms, selected.end_ms);
   };
 
   useEffect(() => {
@@ -641,7 +791,11 @@ export function AudioAnnotationEditorPage({
               segments={document.segments}
               speakers={document.speakers}
               selectedId={selectedId}
-              onSelect={setSelectedId}
+              onSelect={(segmentId) => {
+                if (previewingSegmentId) waveformRef.current?.pause();
+                setPreviewingSegmentId(null);
+                setSelectedId(segmentId);
+              }}
               onUpdate={(id, start, end) =>
                 mutateSegments(
                   updateSegmentBounds(
@@ -654,12 +808,13 @@ export function AudioAnnotationEditorPage({
                 )
               }
               onCreate={(start, end) =>
-                mutateSegments(
-                  createSegmentInGap(document.segments, start, end),
-                )
+                mutateSegments(createSegment(document.segments, start, end))
               }
               onTime={setCurrentMs}
-              onPlayState={setPlaying}
+              onPlayState={(nextPlaying) => {
+                setPlaying(nextPlaying);
+                if (!nextPlaying) setPreviewingSegmentId(null);
+              }}
               onReadyPeaks={(peaks) => {
                 if (!waveform.peaks.length && !savePeaks.isPending)
                   savePeaks.mutate(peaks);
@@ -691,8 +846,10 @@ export function AudioAnnotationEditorPage({
                   waveformRef.current?.setRate(Number(value));
                 }}
               />
-              <strong>{formatTimestamp(currentMs)}</strong>
-              <span>/ {formatTimestamp(project.duration_ms)}</span>
+              <div className="annotation-playback-time">
+                <strong>{formatTimestamp(currentMs)}</strong>
+                <span>/ {formatTimestamp(project.duration_ms)}</span>
+              </div>
               <label className="annotation-volume">
                 <Volume2 aria-hidden />
                 <input
@@ -712,6 +869,13 @@ export function AudioAnnotationEditorPage({
               <div className="annotation-edit-actions">
                 <button type="button" disabled={!selected} onClick={doSplit}>
                   <Scissors aria-hidden /> 在此切分
+                </button>
+                <button
+                  type="button"
+                  disabled={!selected}
+                  onClick={addOverlappingSegment}
+                >
+                  <Plus aria-hidden /> 添加重叠片段
                 </button>
                 <button
                   type="button"
@@ -756,6 +920,19 @@ export function AudioAnnotationEditorPage({
                 />
               </label>
               <CustomSelect
+                ariaLabel="筛选片段语言"
+                value={languageFilter}
+                options={[
+                  { value: "all", label: "全部语言" },
+                  ...ANNOTATION_LANGUAGES.map((language) => ({
+                    value: language.code,
+                    label: language.label,
+                  })),
+                  { value: "unlabeled", label: "未标注语言" },
+                ]}
+                onChange={setLanguageFilter}
+              />
+              <CustomSelect
                 ariaLabel="筛选片段状态"
                 value={statusFilter}
                 options={[
@@ -793,6 +970,7 @@ export function AudioAnnotationEditorPage({
                 <span>片段</span>
                 <span>时间范围</span>
                 <span>说话人</span>
+                <span>语言</span>
                 <span>内容</span>
                 <span>状态</span>
               </div>
@@ -803,6 +981,7 @@ export function AudioAnnotationEditorPage({
                 const speaker = segment.speaker_id
                   ? speakerById.get(segment.speaker_id)
                   : undefined;
+                const languageCodes = segmentLanguageCodes(segment);
                 return (
                   <button
                     type="button"
@@ -810,6 +989,8 @@ export function AudioAnnotationEditorPage({
                     key={segment.id}
                     className={selectedId === segment.id ? "selected" : ""}
                     onClick={() => {
+                      if (previewingSegmentId) waveformRef.current?.pause();
+                      setPreviewingSegmentId(null);
                       setSelectedId(segment.id);
                       waveformRef.current?.seekMs(segment.start_ms);
                     }}
@@ -822,6 +1003,20 @@ export function AudioAnnotationEditorPage({
                     <span>
                       <i style={{ background: speaker?.color ?? "#8b9189" }} />
                       {speaker?.name ?? "未指定"}
+                    </span>
+                    <span className="annotation-language-badges">
+                      {languageCodes.length ? (
+                        languageCodes.map((code) => (
+                          <i
+                            key={code}
+                            className={`language-${languageColor(code)}`}
+                          >
+                            {languageLabel(code)}
+                          </i>
+                        ))
+                      ) : (
+                        <em>未标注</em>
+                      )}
                     </span>
                     <span>{segment.text || "（尚未填写内容）"}</span>
                     <span className={segment.status}>
@@ -852,6 +1047,27 @@ export function AudioAnnotationEditorPage({
               </header>
               <div className="annotation-mini-wave">
                 <i />
+                <button
+                  type="button"
+                  className="annotation-segment-preview"
+                  aria-label={
+                    playing && previewingSegmentId === selected.id
+                      ? "暂停当前片段"
+                      : "播放当前片段"
+                  }
+                  onClick={toggleSelectedPreview}
+                >
+                  {playing && previewingSegmentId === selected.id ? (
+                    <Pause aria-hidden />
+                  ) : (
+                    <Play aria-hidden />
+                  )}
+                  <span>
+                    {playing && previewingSegmentId === selected.id
+                      ? "暂停"
+                      : "试听片段"}
+                  </span>
+                </button>
                 <span>
                   {formatTimestamp(selected.start_ms)} —{" "}
                   {formatTimestamp(selected.end_ms)}
@@ -939,31 +1155,29 @@ export function AudioAnnotationEditorPage({
                   </button>
                 </div>
               </label>
-              <label className="annotation-inspector-field annotation-transcript-field">
-                <span>说话内容</span>
-                <textarea
-                  value={selected.text}
-                  maxLength={20_000}
-                  placeholder="输入这个片段中说出的内容…"
-                  onFocus={() => {
-                    textBase.current = snapshot(document);
-                  }}
-                  onChange={(event) =>
-                    updateSelected(
-                      { text: event.target.value, status: "draft" },
-                      false,
-                    )
-                  }
-                  onBlur={() => {
-                    if (textBase.current)
-                      setUndoStack((current) =>
-                        [...current, textBase.current!].slice(-100),
-                      );
-                    textBase.current = null;
-                  }}
-                />
-                <small>{selected.text.length} 字</small>
-              </label>
+              <LanguageAnnotationEditor
+                key={selected.id}
+                segment={selected}
+                onFocus={() => {
+                  if (!textBase.current) textBase.current = snapshot(document);
+                }}
+                onChange={(changes, record) =>
+                  updateSelected(
+                    {
+                      ...changes,
+                      status: "draft",
+                    },
+                    record,
+                  )
+                }
+                onBlur={() => {
+                  if (textBase.current)
+                    setUndoStack((current) =>
+                      [...current, textBase.current!].slice(-100),
+                    );
+                  textBase.current = null;
+                }}
+              />
               <button
                 type="button"
                 role="checkbox"
@@ -992,14 +1206,14 @@ export function AudioAnnotationEditorPage({
               </button>
               <footer>
                 <kbd>空格</kbd> 播放/暂停 · <kbd>S</kbd> 切分 · <kbd>⌘Z</kbd>{" "}
-                撤销
+                撤销 · 同一片段可维护多个语言版本
               </footer>
             </>
           ) : (
             <div className="annotation-inspector-empty">
               <Scissors aria-hidden />
               <strong>选择一个片段</strong>
-              <span>也可以在波形空白处拖动创建新片段。</span>
+              <span>也可以在波形上拖动创建新片段，片段可以重叠。</span>
             </div>
           )}
         </aside>
@@ -1007,11 +1221,17 @@ export function AudioAnnotationEditorPage({
 
       <SpeakerManager
         open={speakerManager}
+        projectTitle={project.title}
         speakers={document.speakers}
         onClose={() => setSpeakerManager(false)}
         onChange={(speakers) =>
           applySnapshot({ ...snapshot(document), speakers })
         }
+        onImport={(imported) => {
+          const speakers = mergeImportedSpeakers(document.speakers, imported);
+          applySnapshot({ ...snapshot(document), speakers });
+          return speakers.length - document.speakers.length;
+        }}
         onDelete={(speaker) => {
           setDeleteSpeakerReplacement("unassigned");
           setDeleteSpeaker(speaker);

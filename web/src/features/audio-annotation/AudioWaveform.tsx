@@ -18,6 +18,8 @@ import type {
 
 export type AudioWaveformHandle = {
   playPause: () => void;
+  playRange: (startMs: number, endMs: number) => void;
+  pause: () => void;
   seekMs: (milliseconds: number) => void;
   setRate: (rate: number) => void;
   setVolume: (volume: number) => void;
@@ -93,6 +95,18 @@ export const AudioWaveform = forwardRef<
 
   useImperativeHandle(ref, () => ({
     playPause: () => void waveSurfer.current?.playPause(),
+    playRange: (startMs, endMs) => {
+      const instance = waveSurfer.current;
+      if (!instance) return;
+      void instance
+        .play(startMs / 1000, endMs / 1000)
+        .catch((error: unknown) =>
+          callbacks.current.onError(
+            error instanceof Error ? error.message : "片段播放失败",
+          ),
+        );
+    },
+    pause: () => waveSurfer.current?.pause(),
     seekMs: (milliseconds) => waveSurfer.current?.setTime(milliseconds / 1000),
     setRate: (rate) => waveSurfer.current?.setPlaybackRate(rate),
     setVolume: (volume) => waveSurfer.current?.setVolume(volume),
@@ -218,45 +232,52 @@ export const AudioWaveform = forwardRef<
     const speakerById = new Map(
       speakers.map((speaker) => [speaker.id, speaker]),
     );
-    segments.forEach((segment, index) => {
-      const speaker = segment.speaker_id
-        ? speakerById.get(segment.speaker_id)
-        : undefined;
-      const label = document.createElement("span");
-      label.className = "annotation-region-label";
-      label.textContent = `${String(index + 1).padStart(2, "0")}  ${speaker?.name ?? "未指定"}`;
-      Object.assign(label.style, {
-        position: "absolute",
-        zIndex: "4",
-        top: "8px",
-        left: "8px",
-        maxWidth: "calc(100% - 16px)",
-        padding: "3px 7px",
-        overflow: "hidden",
-        border: "1px solid rgba(255, 255, 255, 0.22)",
-        borderRadius: "5px",
-        background: "rgba(24, 27, 24, 0.76)",
-        color: "#f4f3ef",
-        fontSize: "10px",
-        lineHeight: "1.25",
-        textOverflow: "ellipsis",
-        whiteSpace: "nowrap",
-        pointerEvents: "none",
+    segments
+      .map((segment, index) => ({ segment, index }))
+      .sort(
+        (left, right) =>
+          Number(left.segment.id === selectedId) -
+          Number(right.segment.id === selectedId),
+      )
+      .forEach(({ segment, index }) => {
+        const speaker = segment.speaker_id
+          ? speakerById.get(segment.speaker_id)
+          : undefined;
+        const label = document.createElement("span");
+        label.className = "annotation-region-label";
+        label.textContent = `${String(index + 1).padStart(2, "0")}  ${speaker?.name ?? "未指定"}`;
+        Object.assign(label.style, {
+          position: "absolute",
+          zIndex: "4",
+          top: "8px",
+          left: "8px",
+          maxWidth: "calc(100% - 16px)",
+          padding: "3px 7px",
+          overflow: "hidden",
+          border: "1px solid rgba(255, 255, 255, 0.22)",
+          borderRadius: "5px",
+          background: "rgba(24, 27, 24, 0.76)",
+          color: "#f4f3ef",
+          fontSize: "10px",
+          lineHeight: "1.25",
+          textOverflow: "ellipsis",
+          whiteSpace: "nowrap",
+          pointerEvents: "none",
+        });
+        regions.current?.addRegion({
+          id: segment.id,
+          start: segment.start_ms / 1000,
+          end: segment.end_ms / 1000,
+          color: regionColor(
+            speaker?.color ?? "#8b9189",
+            selectedId === segment.id,
+          ),
+          content: label,
+          minLength: 0.1,
+          drag: true,
+          resize: true,
+        });
       });
-      regions.current?.addRegion({
-        id: segment.id,
-        start: segment.start_ms / 1000,
-        end: segment.end_ms / 1000,
-        color: regionColor(
-          speaker?.color ?? "#8b9189",
-          selectedId === segment.id,
-        ),
-        content: label,
-        minLength: 0.1,
-        drag: true,
-        resize: true,
-      });
-    });
     syncing.current = false;
   }, [ready, segments, speakers, selectedId]);
 

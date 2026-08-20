@@ -241,14 +241,72 @@ class ModelTestGenerationOptionListOut(BaseModel):
     items: list[ModelTestGenerationOptionOut]
 
 
-TranscriptionLanguage = Literal["auto", "zh", "ja"]
 TranscriptionTaskStatus = Literal["queued", "running", "completed", "failed"]
 
 
-class ModelTestTranscriptionCreateIn(BaseModel):
+class ModelTestTranscriptionParametersIn(BaseModel):
+    language: str | None = Field(default=None, max_length=128)
+    target_language: str | None = Field(default=None, max_length=64)
+    enable_word_timestamps: bool | None = None
+    enable_text_edit: bool | None = None
+    enable_speaker_diarization: bool | None = None
+    max_speakers: int | None = Field(default=None, ge=1, le=20)
+    enable_punctuation: bool | None = None
+    hotwords: str | None = Field(default=None, max_length=500)
+    abbreviations: bool | None = None
+
+
+class ModelTestTranscriptionParametersOut(BaseModel):
+    language: str
+    target_language: str | None
+    enable_word_timestamps: bool
+    enable_text_edit: bool
+    enable_speaker_diarization: bool
+    max_speakers: int | None
+    enable_punctuation: bool
+    hotwords: str | None
+    abbreviations: bool
+
+
+class ModelTestTranscriptionCreateIn(ModelTestTranscriptionParametersIn):
     model_id: str
     source_asset_id: str
-    language: TranscriptionLanguage = "auto"
+
+
+class ModelTestTranscriptionWordOut(BaseModel):
+    word: str
+    start_ms: int = Field(ge=0)
+    end_ms: int = Field(ge=0)
+
+
+class ModelTestTranscriptionWarningOut(BaseModel):
+    stage: str | None = None
+    code: str
+    message: str
+
+
+class ModelTestTranscriptionStageOut(BaseModel):
+    name: str
+    status: Literal["success", "degraded", "failed", "skipped", "unknown"]
+
+
+class ModelTestTranscriptionIntervalOut(BaseModel):
+    start_ms: int = Field(ge=0)
+    end_ms: int = Field(ge=0)
+
+
+class ModelTestTranscriptionAudioInfoOut(BaseModel):
+    duration_ms: int | None = Field(default=None, ge=0)
+    format: str | None = None
+
+
+class ModelTestTranscriptionResultDetailOut(BaseModel):
+    audio_info: ModelTestTranscriptionAudioInfoOut | None = None
+    words: list[ModelTestTranscriptionWordOut] = Field(default_factory=list)
+    processing_status: Literal["success", "degraded", "failed", "unknown"] = "unknown"
+    stages: list[ModelTestTranscriptionStageOut] = Field(default_factory=list)
+    warnings: list[ModelTestTranscriptionWarningOut] = Field(default_factory=list)
+    overlap_intervals: list[ModelTestTranscriptionIntervalOut] = Field(default_factory=list)
 
 
 class ModelTestTranscriptionSegmentOut(BaseModel):
@@ -256,6 +314,9 @@ class ModelTestTranscriptionSegmentOut(BaseModel):
     start_ms: int = Field(ge=0)
     end_ms: int = Field(ge=0)
     text: str
+    translation: str | None = None
+    speaker_candidates: list[str] = Field(default_factory=list)
+    is_overlap: bool = False
 
 
 class ModelTestTranscriptionSourceOut(BaseModel):
@@ -274,11 +335,13 @@ class ModelTestTranscriptionTaskOut(BaseModel):
     provider_kind: Literal["openai", "senseaudio_asr"]
     provider_name: str
     model_slug: str
-    language: TranscriptionLanguage
+    language: str
+    parameters: ModelTestTranscriptionParametersOut
     status: TranscriptionTaskStatus
     source: ModelTestTranscriptionSourceOut
     result_text: str | None
     result_segments: list[ModelTestTranscriptionSegmentOut]
+    result_detail: ModelTestTranscriptionResultDetailOut
     error_message: str | None
     log_id: str | None
     revision: int
@@ -293,6 +356,25 @@ class ModelTestTranscriptionTaskListOut(BaseModel):
     total: int
 
 
+class ModelTestTranscriptionLanguageOptionOut(BaseModel):
+    value: str
+    label: str
+
+
+class ModelTestTranscriptionParameterCapabilitiesOut(BaseModel):
+    language_mode: Literal["select", "candidates"]
+    language_options: list[ModelTestTranscriptionLanguageOptionOut]
+    target_language_options: list[ModelTestTranscriptionLanguageOptionOut]
+    supports_word_timestamps: bool = False
+    supports_text_edit: bool = False
+    supports_speaker_diarization: bool = False
+    supports_max_speakers: bool = False
+    supports_punctuation: bool = False
+    supports_hotwords: bool = False
+    supports_abbreviations: bool = False
+    defaults: ModelTestTranscriptionParametersOut
+
+
 class ModelTestTranscriptionOptionOut(BaseModel):
     id: str
     provider_id: str
@@ -301,6 +383,8 @@ class ModelTestTranscriptionOptionOut(BaseModel):
     slug: str
     label: str
     description: str
+    max_input_bytes: int = Field(gt=0)
+    parameter_capabilities: ModelTestTranscriptionParameterCapabilitiesOut
 
 
 class ModelTestTranscriptionOptionListOut(BaseModel):

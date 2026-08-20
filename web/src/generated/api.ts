@@ -439,6 +439,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/audio-annotation/transcription-imports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Import Transcription */
+        post: operations["import_transcription_v1_audio_annotation_transcription_imports_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/auth/change-password": {
         parameters: {
             query?: never;
@@ -2230,6 +2247,16 @@ export interface components {
             /** Title */
             title: string;
         };
+        /** AudioAnnotationLocalizedText */
+        AudioAnnotationLocalizedText: {
+            /** Language */
+            language: string;
+            /**
+             * Text
+             * @default
+             */
+            text: string;
+        };
         /** AudioAnnotationProjectCreateIn */
         AudioAnnotationProjectCreateIn: {
             /** Asset Id */
@@ -2288,6 +2315,10 @@ export interface components {
             end_ms: number;
             /** Id */
             id: string;
+            /** Language */
+            language?: string | null;
+            /** Localized Texts */
+            localized_texts?: components["schemas"]["AudioAnnotationLocalizedText"][];
             /** Speaker Id */
             speaker_id?: string | null;
             /** Start Ms */
@@ -2312,6 +2343,54 @@ export interface components {
             id: string;
             /** Name */
             name: string;
+        };
+        /** AudioAnnotationTranscriptionJsonImportIn */
+        AudioAnnotationTranscriptionJsonImportIn: {
+            /** Asset Id */
+            asset_id: string;
+            /** Segments */
+            segments?: components["schemas"]["AudioAnnotationTranscriptionSegmentIn"][];
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            source_kind: "json";
+            /**
+             * Text
+             * @default
+             */
+            text: string;
+            /** Title */
+            title: string;
+        };
+        /** AudioAnnotationTranscriptionSegmentIn */
+        AudioAnnotationTranscriptionSegmentIn: {
+            /** End Ms */
+            end_ms: number;
+            /**
+             * Speaker
+             * @default unknown
+             */
+            speaker: string;
+            /** Start Ms */
+            start_ms: number;
+            /**
+             * Text
+             * @default
+             */
+            text: string;
+        };
+        /** AudioAnnotationTranscriptionTaskImportIn */
+        AudioAnnotationTranscriptionTaskImportIn: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            source_kind: "task";
+            /** Task Id */
+            task_id: string;
+            /** Title */
+            title?: string | null;
         };
         /** AudioAnnotationWaveformOut */
         AudioAnnotationWaveformOut: {
@@ -2394,14 +2473,26 @@ export interface components {
         };
         /** Body_upload_transcription_task_v1_model_test_transcription_tasks_upload_post */
         Body_upload_transcription_task_v1_model_test_transcription_tasks_upload_post: {
-            /**
-             * Language
-             * @default auto
-             * @enum {string}
-             */
-            language: "auto" | "zh" | "ja";
+            /** Abbreviations */
+            abbreviations?: boolean | null;
+            /** Enable Punctuation */
+            enable_punctuation?: boolean | null;
+            /** Enable Speaker Diarization */
+            enable_speaker_diarization?: boolean | null;
+            /** Enable Text Edit */
+            enable_text_edit?: boolean | null;
+            /** Enable Word Timestamps */
+            enable_word_timestamps?: boolean | null;
+            /** Hotwords */
+            hotwords?: string | null;
+            /** Language */
+            language?: string | null;
+            /** Max Speakers */
+            max_speakers?: number | null;
             /** Model Id */
             model_id: string;
+            /** Target Language */
+            target_language?: string | null;
             /** Upload */
             upload: string;
         };
@@ -5496,18 +5587,51 @@ export interface components {
             /** Expected Revision */
             expected_revision: number;
         };
+        /** ModelTestTranscriptionAudioInfoOut */
+        ModelTestTranscriptionAudioInfoOut: {
+            /** Duration Ms */
+            duration_ms?: number | null;
+            /** Format */
+            format?: string | null;
+        };
         /** ModelTestTranscriptionCreateIn */
         ModelTestTranscriptionCreateIn: {
-            /**
-             * Language
-             * @default auto
-             * @enum {string}
-             */
-            language: "auto" | "zh" | "ja";
+            /** Abbreviations */
+            abbreviations?: boolean | null;
+            /** Enable Punctuation */
+            enable_punctuation?: boolean | null;
+            /** Enable Speaker Diarization */
+            enable_speaker_diarization?: boolean | null;
+            /** Enable Text Edit */
+            enable_text_edit?: boolean | null;
+            /** Enable Word Timestamps */
+            enable_word_timestamps?: boolean | null;
+            /** Hotwords */
+            hotwords?: string | null;
+            /** Language */
+            language?: string | null;
+            /** Max Speakers */
+            max_speakers?: number | null;
             /** Model Id */
             model_id: string;
             /** Source Asset Id */
             source_asset_id: string;
+            /** Target Language */
+            target_language?: string | null;
+        };
+        /** ModelTestTranscriptionIntervalOut */
+        ModelTestTranscriptionIntervalOut: {
+            /** End Ms */
+            end_ms: number;
+            /** Start Ms */
+            start_ms: number;
+        };
+        /** ModelTestTranscriptionLanguageOptionOut */
+        ModelTestTranscriptionLanguageOptionOut: {
+            /** Label */
+            label: string;
+            /** Value */
+            value: string;
         };
         /** ModelTestTranscriptionOptionListOut */
         ModelTestTranscriptionOptionListOut: {
@@ -5528,6 +5652,9 @@ export interface components {
             id: string;
             /** Label */
             label: string;
+            /** Max Input Bytes */
+            max_input_bytes: number;
+            parameter_capabilities: components["schemas"]["ModelTestTranscriptionParameterCapabilitiesOut"];
             /** Provider Id */
             provider_id: string;
             /**
@@ -5540,16 +5667,112 @@ export interface components {
             /** Slug */
             slug: string;
         };
+        /** ModelTestTranscriptionParameterCapabilitiesOut */
+        ModelTestTranscriptionParameterCapabilitiesOut: {
+            defaults: components["schemas"]["ModelTestTranscriptionParametersOut"];
+            /**
+             * Language Mode
+             * @enum {string}
+             */
+            language_mode: "select" | "candidates";
+            /** Language Options */
+            language_options: components["schemas"]["ModelTestTranscriptionLanguageOptionOut"][];
+            /**
+             * Supports Abbreviations
+             * @default false
+             */
+            supports_abbreviations: boolean;
+            /**
+             * Supports Hotwords
+             * @default false
+             */
+            supports_hotwords: boolean;
+            /**
+             * Supports Max Speakers
+             * @default false
+             */
+            supports_max_speakers: boolean;
+            /**
+             * Supports Punctuation
+             * @default false
+             */
+            supports_punctuation: boolean;
+            /**
+             * Supports Speaker Diarization
+             * @default false
+             */
+            supports_speaker_diarization: boolean;
+            /**
+             * Supports Text Edit
+             * @default false
+             */
+            supports_text_edit: boolean;
+            /**
+             * Supports Word Timestamps
+             * @default false
+             */
+            supports_word_timestamps: boolean;
+            /** Target Language Options */
+            target_language_options: components["schemas"]["ModelTestTranscriptionLanguageOptionOut"][];
+        };
+        /** ModelTestTranscriptionParametersOut */
+        ModelTestTranscriptionParametersOut: {
+            /** Abbreviations */
+            abbreviations: boolean;
+            /** Enable Punctuation */
+            enable_punctuation: boolean;
+            /** Enable Speaker Diarization */
+            enable_speaker_diarization: boolean;
+            /** Enable Text Edit */
+            enable_text_edit: boolean;
+            /** Enable Word Timestamps */
+            enable_word_timestamps: boolean;
+            /** Hotwords */
+            hotwords: string | null;
+            /** Language */
+            language: string;
+            /** Max Speakers */
+            max_speakers: number | null;
+            /** Target Language */
+            target_language: string | null;
+        };
+        /** ModelTestTranscriptionResultDetailOut */
+        ModelTestTranscriptionResultDetailOut: {
+            audio_info?: components["schemas"]["ModelTestTranscriptionAudioInfoOut"] | null;
+            /** Overlap Intervals */
+            overlap_intervals?: components["schemas"]["ModelTestTranscriptionIntervalOut"][];
+            /**
+             * Processing Status
+             * @default unknown
+             * @enum {string}
+             */
+            processing_status: "success" | "degraded" | "failed" | "unknown";
+            /** Stages */
+            stages?: components["schemas"]["ModelTestTranscriptionStageOut"][];
+            /** Warnings */
+            warnings?: components["schemas"]["ModelTestTranscriptionWarningOut"][];
+            /** Words */
+            words?: components["schemas"]["ModelTestTranscriptionWordOut"][];
+        };
         /** ModelTestTranscriptionSegmentOut */
         ModelTestTranscriptionSegmentOut: {
             /** End Ms */
             end_ms: number;
+            /**
+             * Is Overlap
+             * @default false
+             */
+            is_overlap: boolean;
             /** Speaker */
             speaker: string;
+            /** Speaker Candidates */
+            speaker_candidates?: string[];
             /** Start Ms */
             start_ms: number;
             /** Text */
             text: string;
+            /** Translation */
+            translation?: string | null;
         };
         /** ModelTestTranscriptionSourceOut */
         ModelTestTranscriptionSourceOut: {
@@ -5569,6 +5792,16 @@ export interface components {
             /** Source Asset Id */
             source_asset_id: string | null;
         };
+        /** ModelTestTranscriptionStageOut */
+        ModelTestTranscriptionStageOut: {
+            /** Name */
+            name: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "success" | "degraded" | "failed" | "skipped" | "unknown";
+        };
         /** ModelTestTranscriptionTaskListOut */
         ModelTestTranscriptionTaskListOut: {
             /** Items */
@@ -5586,17 +5819,15 @@ export interface components {
             error_message: string | null;
             /** Id */
             id: string;
-            /**
-             * Language
-             * @enum {string}
-             */
-            language: "auto" | "zh" | "ja";
+            /** Language */
+            language: string;
             /** Log Id */
             log_id: string | null;
             /** Model Id */
             model_id: string | null;
             /** Model Slug */
             model_slug: string;
+            parameters: components["schemas"]["ModelTestTranscriptionParametersOut"];
             /** Provider Id */
             provider_id: string | null;
             /**
@@ -5606,6 +5837,7 @@ export interface components {
             provider_kind: "openai" | "senseaudio_asr";
             /** Provider Name */
             provider_name: string;
+            result_detail: components["schemas"]["ModelTestTranscriptionResultDetailOut"];
             /** Result Segments */
             result_segments: components["schemas"]["ModelTestTranscriptionSegmentOut"][];
             /** Result Text */
@@ -5622,6 +5854,24 @@ export interface components {
             status: "queued" | "running" | "completed" | "failed";
             /** Updated At */
             updated_at: string;
+        };
+        /** ModelTestTranscriptionWarningOut */
+        ModelTestTranscriptionWarningOut: {
+            /** Code */
+            code: string;
+            /** Message */
+            message: string;
+            /** Stage */
+            stage?: string | null;
+        };
+        /** ModelTestTranscriptionWordOut */
+        ModelTestTranscriptionWordOut: {
+            /** End Ms */
+            end_ms: number;
+            /** Start Ms */
+            start_ms: number;
+            /** Word */
+            word: string;
         };
         /** ModelTestVideoGenerationIn */
         ModelTestVideoGenerationIn: {
@@ -7812,6 +8062,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AudioAnnotationWaveformOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    import_transcription_v1_audio_annotation_transcription_imports_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AudioAnnotationTranscriptionTaskImportIn"] | components["schemas"]["AudioAnnotationTranscriptionJsonImportIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AudioAnnotationProjectOut"];
                 };
             };
             /** @description Validation Error */

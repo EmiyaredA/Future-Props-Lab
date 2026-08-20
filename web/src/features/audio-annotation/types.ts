@@ -8,6 +8,8 @@ export type AudioAnnotationSpeaker =
   components["schemas"]["AudioAnnotationSpeaker"];
 export type AudioAnnotationSegment =
   components["schemas"]["AudioAnnotationSegment"];
+export type AudioAnnotationLocalizedText =
+  components["schemas"]["AudioAnnotationLocalizedText"];
 export type AudioAnnotationWaveform =
   components["schemas"]["AudioAnnotationWaveformOut"];
 
@@ -31,3 +33,42 @@ export type AnnotationProjectFile = AnnotationSnapshot & {
     };
   };
 };
+
+export type PortableTranscriptionSegment = {
+  speaker: string;
+  start_ms: number;
+  end_ms: number;
+  text: string;
+  translation?: string | null;
+  speaker_candidates?: string[];
+  is_overlap?: boolean;
+};
+
+export type PortableTranscriptionFile = {
+  kind: "future-props-transcription";
+  schema_version: "1.0" | "1.1";
+  exported_at: string;
+  source: {
+    kind: "upload" | "library";
+    asset_id: string | null;
+    filename: string;
+    mime_type: string;
+    byte_size: number;
+  };
+  recognition: {
+    task_id: string;
+    provider_kind: "openai" | "senseaudio_asr";
+    provider_name: string;
+    model_slug: string;
+    language: string;
+    created_at: string;
+    completed_at: string | null;
+    text: string;
+    segments: PortableTranscriptionSegment[];
+    parameters?: components["schemas"]["ModelTestTranscriptionParametersOut"];
+    result_detail?: components["schemas"]["ModelTestTranscriptionResultDetailOut"];
+  };
+};
+
+export type AudioAnnotationImportFile =
+  AnnotationProjectFile | PortableTranscriptionFile;

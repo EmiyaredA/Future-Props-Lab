@@ -76,11 +76,13 @@ const overview: GuidePage = {
       id: "model-test-speech",
       title: "测试语音识别模型",
       steps: [
-        "在模型服务中启用 SenseAudio ASR，或为 OpenAI 兼容模型声明 speech_recognition 能力并配置 API Key。",
+        "在模型服务中启用 SenseAudio ASR Pro 或 ASR API 专业语音识别；也可以为 OpenAI 兼容模型声明 speech_recognition 能力并配置 API Key。",
         "进入模型测试并切换到“语音识别”，上传本地音频或从当前 Workspace 的文件管理中选择。",
-        "选择自动、中文或日语后开始识别；任务会在后台运行，完成后可试听音频、复制全文并查看说话人与句级时间戳。",
+        "参数区会按当前模型显示真正生效的语言、翻译、字词时间戳、文本整理、说话人、最大人数、标点、热词和缩写设置；切换模型后会恢复该模型默认值。",
+        "任务会在后台运行；完成后可试听、复制全文，并查看任务参数、译文、说话人、重叠候选、处理提示和默认收起的字词时间戳。",
+        "完成后可以导出可移植的识别 JSON 1.1，或直接创建录音标注任务；录音标注的“导入项目”兼容识别 JSON 1.0/1.1，并要求选择对应音频。标注只使用原语言识别文本。",
       ],
-      note: "支持 MP3、WAV、M4A、OGG，单文件最大 10 MB 且不会自动切片；超限文件会在选择器中禁用。",
+      note: "支持 MP3、WAV、M4A、OGG 且不会自动切片；ASR API 专业语音识别最大 100 MB，其余当前模型最大 10 MB，超限文件会在选择器中禁用。",
     },
     {
       id: "reading-path",
@@ -413,7 +415,7 @@ const galgameStory: GuidePage = {
       bullets: [
         "资源总览展示总数量/体积、引用与游离、预计打包体积、类型分布和健康摘要；详情可维护虚拟路径、Hash、元数据与自动/强制打包/强制排除策略。",
         "角色页区分编辑器缩略图与逐表情对白头像，并支持皮肤矩阵、画面高度和图形覆盖；旧尺寸维护会先预览，再保存快照后应用。",
-        "语音模块按角色、旁白和未知分组；可选择已启用的 OpenAI 兼容或 SenseAudio ASR 模型、自动/中文/日语与 1–8 并发，支持待处理识别、强制重识别、手工修正和对白自动匹配。SenseAudio ASR Pro 会在详情中显示带说话人和起止时间的句级分段。",
+        "语音模块按角色、旁白和未知分组；可选择已启用的 OpenAI 兼容、SenseAudio ASR Pro 或 ASR API 专业语音识别模型、自动/中文/日语与 1–8 并发，支持待处理识别、强制重识别、手工修正和对白自动匹配。两种专业 ASR 都会在详情中显示带说话人和起止时间的句级分段。",
         "backgroundMusic、ambientSound 和 soundEffect 由声音 Block 播放、停止和淡入淡出。",
         "MP4、WebM 与 MOV 可批量导入并在视频工作区预览；浏览器无法解码时保留原文件并提示转码，再通过 Video Block 选择、播放或停止。",
         "顺序执行的 Fragment 不保存 timeline、startMs、endMs 或 atMs。进入精确演出后，对白/旁白使用 startMs 和 endMs；场景、CG 与声音事件可使用 atMs。角色事件不写 atMs 时跟随对白，写入后表示独立演出；时间轴只用 durationMs 定义剧情总长。",

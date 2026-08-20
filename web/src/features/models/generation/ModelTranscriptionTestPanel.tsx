@@ -1,10 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  AlertTriangle,
   CheckCircle2,
   ChevronLeft,
   Copy,
+  Download,
   FileAudio2,
+  FileInput,
   Folder,
   FolderOpen,
   LoaderCircle,
@@ -16,6 +19,12 @@ import {
   Upload,
   X,
 } from "lucide-react";
+import {
+  buildTranscriptionFile,
+  importAudioAnnotationTranscriptionTask,
+  MIN_SEGMENT_MS,
+  safeFileBase,
+} from "@features/audio-annotation";
 import { CustomSelect, type SelectOption } from "@shared/ui/CustomSelect";
 import {
   createModelTestTranscriptionFromLibrary,
@@ -27,7 +36,7 @@ import {
   getModelTestTranscriptionTasks,
   uploadModelTestTranscription,
   type ModelTestLibraryAudio,
-  type ModelTestTranscriptionLanguage,
+  type ModelTestTranscriptionParameters,
   type ModelTestTranscriptionTask,
 } from "@features/models/api";
 import {
@@ -58,11 +67,17 @@ const statusLabels: Record<ModelTestTranscriptionTask["status"], string> = {
   completed: "已完成",
   failed: "失败",
 };
-const languageOptions: SelectOption[] = [
-  { value: "auto", label: "自动识别" },
-  { value: "zh", label: "中文" },
-  { value: "ja", label: "日语" },
-];
+const fallbackParameters: ModelTestTranscriptionParameters = {
+  language: "auto",
+  target_language: null,
+  enable_word_timestamps: false,
+  enable_text_edit: false,
+  enable_speaker_diarization: false,
+  max_speakers: null,
+  enable_punctuation: false,
+  hotwords: null,
+  abbreviations: false,
+};
 
 function formatBytes(bytes: number) {
   return bytes >= 1024 * 1024
@@ -91,6 +106,83 @@ function segmentTime(milliseconds: number) {
   return formatPosition(milliseconds / 1000);
 }
 
+function downloadTranscriptionJson(task: ModelTestTranscriptionTask) {
+  const output = buildTranscriptionFile(task);
+  const url = URL.createObjectURL(
+    new Blob([JSON.stringify(output, null, 2)], {
+      type: "application/json;charset=utf-8",
+    }),
+  );
+  const anchor = document.createElement("a");
+  const basename = task.source.filename.replace(/\.[^.]+$/, "");
+  anchor.href = url;
+  anchor.download = `${safeFileBase(basename)}.transcription.json`;
+  anchor.click();
+  setTimeout(() => URL.revokeObjectURL(url), 0);
+}
+
+function ParameterSwitch({
+  label,
+  description,
+  checked,
+  onChange,
+}: {
+  label: string;
+  description: string;
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+}) {
+  return (
+    <button
+      type="button"
+      className="transcription-parameter-switch"
+      role="switch"
+      aria-checked={checked}
+      onClick={() => onChange(!checked)}
+    >
+      <span>
+        <strong>{label}</strong>
+        <small>{description}</small>
+      </span>
+      <i className={checked ? "active" : ""} aria-hidden>
+        <b />
+      </i>
+    </button>
+  );
+}
+
+function TaskParameterSummary({ task }: { task: ModelTestTranscriptionTask }) {
+  const values = [
+    `语言：${task.parameters.language}`,
+    task.parameters.target_language
+      ? `翻译：${task.parameters.target_language}`
+      : null,
+    task.parameters.enable_punctuation ? "标点" : null,
+    task.parameters.enable_text_edit ? "文本整理" : null,
+    task.parameters.enable_speaker_diarization
+      ? `说话人识别${task.parameters.max_speakers ? `（最多 ${task.parameters.max_speakers} 人）` : ""}`
+      : null,
+    task.parameters.enable_word_timestamps ? "字词时间戳" : null,
+    task.parameters.hotwords ? `热词：${task.parameters.hotwords}` : null,
+    task.parameters.abbreviations ? "缩写替换" : null,
+  ].filter((value): value is string => Boolean(value));
+  return (
+    <section className="transcription-parameter-summary">
+      <header>
+        <div>
+          <strong>任务参数</strong>
+          <span>提交时快照</span>
+        </div>
+      </header>
+      <div>
+        {values.map((value) => (
+          <span key={value}>{value}</span>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 function AudioPlayer({ task }: { task: ModelTestTranscriptionTask }) {
   const audioRef = useRef<HTMLAudioElement>(null);
   const [url, setUrl] = useState("");
@@ -98,6 +190,9 @@ function AudioPlayer({ task }: { task: ModelTestTranscriptionTask }) {
   const [position, setPosition] = useState(0);
   const [duration, setDuration] = useState(0);
   const [error, setError] = useState("");
+  const rangeMax = duration > 0 ? duration : 1;
+  const rangeValue = duration > 0 ? Math.min(position, duration) : 0;
+  const progressPercent = duration > 0 ? (rangeValue / duration) * 100 : 0;
 
   useEffect(() => {
     let objectUrl = "";
@@ -156,20 +251,25 @@ function AudioPlayer({ task }: { task: ModelTestTranscriptionTask }) {
         <strong>{task.source.filename}</strong>
         <span>{formatBytes(task.source.byte_size)}</span>
       </div>
-      <input
-        type="range"
-        aria-label="音频播放进度"
-        min="0"
-        max={duration || 0}
-        step="0.1"
-        value={Math.min(position, duration || 0)}
-        disabled={!url || !duration}
-        onChange={(event) => {
-          const next = Number(event.target.value);
-          if (audioRef.current) audioRef.current.currentTime = next;
-          setPosition(next);
-        }}
-      />
+      <div className="transcription-progress-control">
+        <span className="transcription-progress-track" aria-hidden>
+          <i style={{ width: `${progressPercent}%` }} />
+        </span>
+        <input
+          type="range"
+          aria-label="音频播放进度"
+          min="0"
+          max={rangeMax}
+          step="0.1"
+          value={rangeValue}
+          disabled={!url || !duration}
+          onChange={(event) => {
+            const next = Number(event.target.value);
+            if (audioRef.current) audioRef.current.currentTime = next;
+            setPosition(next);
+          }}
+        />
+      </div>
       <time>
         {formatPosition(position)} / {formatPosition(duration)}
       </time>
@@ -189,6 +289,7 @@ function LibraryPicker({
   onClose: () => void;
   onSelect: (file: ModelTestLibraryAudio) => void;
 }) {
+  const maxLabel = `${Math.round(maxBytes / 1024 / 1024)} MB`;
   const [folderId, setFolderId] = useState<string | undefined>();
   const [search, setSearch] = useState("");
   const foldersQuery = useQuery({
@@ -278,7 +379,7 @@ function LibraryPicker({
                 type="button"
                 key={file.id}
                 disabled={tooLarge}
-                title={tooLarge ? "超过 10 MB，不能用于识别" : undefined}
+                title={tooLarge ? `超过 ${maxLabel}，不能用于识别` : undefined}
                 onClick={() => onSelect(file)}
               >
                 <FileAudio2 aria-hidden />
@@ -286,7 +387,7 @@ function LibraryPicker({
                   <strong>{file.display_name}</strong>
                   <small>
                     {file.original_filename} · {formatBytes(file.byte_size)}
-                    {tooLarge ? " · 超过 10 MB" : ""}
+                    {tooLarge ? ` · 超过 ${maxLabel}` : ""}
                   </small>
                 </span>
               </button>
@@ -310,17 +411,19 @@ export function ModelTranscriptionTestPanel({
   modelId,
   onSelectModel,
   onSelectMode,
+  onOpenAudioAnnotation,
 }: {
   models: TestModel[];
   modelId: string;
   onSelectModel: (modelId: string) => void;
   onSelectMode: (mode: ModelTestMode) => void;
+  onOpenAudioAnnotation: (projectId: string) => void;
 }) {
   const client = useQueryClient();
   const [activeId, setActiveId] = useState<string | null>(null);
   const [taskSearch, setTaskSearch] = useState("");
-  const [language, setLanguage] =
-    useState<ModelTestTranscriptionLanguage>("auto");
+  const [parameters, setParameters] =
+    useState<ModelTestTranscriptionParameters>(fallbackParameters);
   const [localFile, setLocalFile] = useState<File | null>(null);
   const [libraryFile, setLibraryFile] = useState<ModelTestLibraryAudio | null>(
     null,
@@ -356,7 +459,27 @@ export function ModelTranscriptionTestPanel({
     queryKey: ["model-test-transcription-options"],
     queryFn: getModelTestTranscriptionOptions,
   });
-  const maxBytes = optionsQuery.data?.max_input_bytes ?? 10 * 1024 * 1024;
+  const selectedTranscriptionOption = optionsQuery.data?.items.find(
+    (option) => option.id === modelId,
+  );
+  const capabilities = selectedTranscriptionOption?.parameter_capabilities;
+  const languageOptions: SelectOption[] =
+    capabilities?.language_options.map((option) => ({
+      value: option.value,
+      label: option.label,
+    })) ?? [];
+  const targetLanguageOptions: SelectOption[] = [
+    { value: "", label: "不翻译" },
+    ...(capabilities?.target_language_options.map((option) => ({
+      value: option.value,
+      label: option.label,
+    })) ?? []),
+  ];
+  const maxBytes =
+    selectedTranscriptionOption?.max_input_bytes ??
+    optionsQuery.data?.max_input_bytes ??
+    10 * 1024 * 1024;
+  const maxLabel = `${Math.round(maxBytes / 1024 / 1024)} MB`;
   const tasksQuery = useQuery({
     queryKey: ["model-test-transcription-tasks", modelId],
     queryFn: () => getModelTestTranscriptionTasks(modelId),
@@ -382,7 +505,22 @@ export function ModelTranscriptionTestPanel({
     setActiveId(null);
     setTaskSearch("");
     setError("");
+    setLocalFile(null);
+    setLibraryFile(null);
+    if (localInputRef.current) localInputRef.current.value = "";
   }, [modelId]);
+
+  useEffect(() => {
+    if (selectedTranscriptionOption)
+      setParameters(
+        selectedTranscriptionOption.parameter_capabilities.defaults,
+      );
+  }, [selectedTranscriptionOption]);
+
+  const setParameter = <Key extends keyof ModelTestTranscriptionParameters>(
+    key: Key,
+    value: ModelTestTranscriptionParameters[Key],
+  ) => setParameters((current) => ({ ...current, [key]: value }));
 
   const refresh = async () => {
     await Promise.all([
@@ -393,12 +531,12 @@ export function ModelTranscriptionTestPanel({
   const createMutation = useMutation({
     mutationFn: () => {
       if (localFile)
-        return uploadModelTestTranscription(localFile, modelId, language);
+        return uploadModelTestTranscription(localFile, modelId, parameters);
       if (libraryFile)
         return createModelTestTranscriptionFromLibrary(
           libraryFile.id,
           modelId,
-          language,
+          parameters,
         );
       throw new Error("请先选择一个音频文件");
     },
@@ -423,11 +561,22 @@ export function ModelTranscriptionTestPanel({
     onError: (cause) =>
       setError(cause instanceof Error ? cause.message : String(cause)),
   });
+  const importMutation = useMutation({
+    mutationFn: (task: ModelTestTranscriptionTask) =>
+      importAudioAnnotationTranscriptionTask(task.id),
+    onSuccess: (project) => onOpenAudioAnnotation(project.id),
+    onError: (cause) =>
+      setError(cause instanceof Error ? cause.message : String(cause)),
+  });
+  const shortImportSegmentCount =
+    activeTask?.result_segments.filter(
+      (segment) => segment.end_ms - segment.start_ms < MIN_SEGMENT_MS,
+    ).length ?? 0;
   const chooseLocal = (files: FileList | null) => {
     const file = files?.[0];
     if (!file) return;
     if (file.size > maxBytes) {
-      setError(`音频「${file.name}」超过 10 MB，不能提交。`);
+      setError(`音频「${file.name}」超过 ${maxLabel}，不能提交。`);
       if (localInputRef.current) localInputRef.current.value = "";
       return;
     }
@@ -523,16 +672,48 @@ export function ModelTranscriptionTestPanel({
                     {statusLabels[activeTask.status]}
                   </span>
                 </div>
-                {!pendingStatuses.includes(activeTask.status) ? (
-                  <button
-                    type="button"
-                    aria-label="删除识别任务"
-                    disabled={deleteMutation.isPending}
-                    onClick={() => deleteMutation.mutate(activeTask)}
-                  >
-                    <Trash2 aria-hidden />
-                  </button>
-                ) : null}
+                <div className="transcription-result-actions">
+                  {activeTask.status === "completed" ? (
+                    <>
+                      <small className="transcription-import-note" role="note">
+                        导入时会忽略
+                        {shortImportSegmentCount
+                          ? ` ${shortImportSegmentCount} 个`
+                          : ""}
+                        短于 {MIN_SEGMENT_MS} 毫秒的识别片段
+                      </small>
+                      <button
+                        type="button"
+                        onClick={() => downloadTranscriptionJson(activeTask)}
+                      >
+                        <Download aria-hidden /> 导出 JSON
+                      </button>
+                      <button
+                        type="button"
+                        disabled={importMutation.isPending}
+                        onClick={() => importMutation.mutate(activeTask)}
+                      >
+                        {importMutation.isPending ? (
+                          <LoaderCircle className="spinning" aria-hidden />
+                        ) : (
+                          <FileInput aria-hidden />
+                        )}
+                        {importMutation.isPending ? "正在导入" : "导入标注"}
+                      </button>
+                    </>
+                  ) : null}
+                  {!pendingStatuses.includes(activeTask.status) ? (
+                    <button
+                      type="button"
+                      className="icon-only"
+                      aria-label="删除识别任务"
+                      disabled={deleteMutation.isPending}
+                      onClick={() => deleteMutation.mutate(activeTask)}
+                    >
+                      <Trash2 aria-hidden />
+                    </button>
+                  ) : null}
+                </div>
               </div>
               <AudioPlayer task={activeTask} />
               {pendingStatuses.includes(activeTask.status) ? (
@@ -548,6 +729,31 @@ export function ModelTranscriptionTestPanel({
                 </div>
               ) : (
                 <div className="transcription-copy">
+                  <TaskParameterSummary task={activeTask} />
+                  {activeTask.result_detail.warnings?.length ? (
+                    <section className="transcription-warnings">
+                      <header>
+                        <div>
+                          <strong>
+                            <AlertTriangle aria-hidden /> 处理提示
+                          </strong>
+                          <span>
+                            {activeTask.result_detail.processing_status}
+                          </span>
+                        </div>
+                      </header>
+                      <ul>
+                        {activeTask.result_detail.warnings.map(
+                          (warning, index) => (
+                            <li key={`${warning.code}-${index}`}>
+                              <strong>{warning.stage ?? warning.code}</strong>
+                              {warning.message}
+                            </li>
+                          ),
+                        )}
+                      </ul>
+                    </section>
+                  ) : null}
                   <section>
                     <header>
                       <div>
@@ -589,11 +795,27 @@ export function ModelTranscriptionTestPanel({
                                   ? "未知说话人"
                                   : segment.speaker}
                               </strong>
+                              {segment.is_overlap ? (
+                                <span className="transcription-overlap-badge">
+                                  重叠
+                                </span>
+                              ) : null}
                               <time>
                                 {segmentTime(segment.start_ms)} –{" "}
                                 {segmentTime(segment.end_ms)}
                               </time>
                               <p>{segment.text}</p>
+                              {segment.speaker_candidates?.length ? (
+                                <small className="transcription-candidates">
+                                  候选说话人：
+                                  {segment.speaker_candidates.join("、")}
+                                </small>
+                              ) : null}
+                              {segment.translation ? (
+                                <p className="transcription-translation">
+                                  译文：{segment.translation}
+                                </p>
+                              ) : null}
                             </div>
                           </article>
                         ))}
@@ -604,6 +826,24 @@ export function ModelTranscriptionTestPanel({
                       当前供应商未返回说话人分段或句级时间戳。
                     </p>
                   )}
+                  {activeTask.result_detail.words?.length ? (
+                    <details className="transcription-word-details">
+                      <summary>
+                        字词时间戳（{activeTask.result_detail.words.length} 项）
+                      </summary>
+                      <div>
+                        {activeTask.result_detail.words.map((word, index) => (
+                          <span key={`${word.start_ms}-${index}`}>
+                            <strong>{word.word}</strong>
+                            <time>
+                              {segmentTime(word.start_ms)}–
+                              {segmentTime(word.end_ms)}
+                            </time>
+                          </span>
+                        ))}
+                      </div>
+                    </details>
+                  ) : null}
                 </div>
               )}
             </>
@@ -620,7 +860,7 @@ export function ModelTranscriptionTestPanel({
         <aside className="transcription-settings">
           <div className="transcription-settings-head">
             <strong>识别参数</strong>
-            <span>单文件最大 10 MB</span>
+            <span>单文件最大 {maxLabel}</span>
           </div>
           <div className="transcription-source-options">
             <button
@@ -672,21 +912,133 @@ export function ModelTranscriptionTestPanel({
               </button>
             </div>
           ) : null}
-          <label className="transcription-language-field">
-            <span>识别语言</span>
-            <CustomSelect
-              ariaLabel="识别语言"
-              value={language}
-              options={languageOptions}
-              onChange={(value) =>
-                setLanguage(value as ModelTestTranscriptionLanguage)
-              }
-            />
-          </label>
+          {capabilities ? (
+            <div className="transcription-parameter-fields">
+              <label className="transcription-language-field">
+                <span>识别语言</span>
+                {capabilities.language_mode === "candidates" ? (
+                  <>
+                    <input
+                      type="text"
+                      aria-label="识别语言"
+                      value={parameters.language}
+                      placeholder="auto 或 Chinese,English"
+                      onChange={(event) =>
+                        setParameter("language", event.target.value)
+                      }
+                    />
+                    <small>支持 auto 或逗号分隔的语言候选名称。</small>
+                  </>
+                ) : (
+                  <CustomSelect
+                    ariaLabel="识别语言"
+                    value={parameters.language}
+                    options={languageOptions}
+                    onChange={(value) => setParameter("language", value)}
+                  />
+                )}
+              </label>
+              {capabilities.target_language_options.length ? (
+                <label className="transcription-language-field">
+                  <span>翻译语言</span>
+                  <CustomSelect
+                    ariaLabel="翻译语言"
+                    value={parameters.target_language ?? ""}
+                    options={targetLanguageOptions}
+                    onChange={(value) =>
+                      setParameter("target_language", value || null)
+                    }
+                  />
+                </label>
+              ) : null}
+              {capabilities.supports_punctuation ? (
+                <ParameterSwitch
+                  label="自动标点"
+                  description="补充适合阅读的标点符号"
+                  checked={parameters.enable_punctuation}
+                  onChange={(value) =>
+                    setParameter("enable_punctuation", value)
+                  }
+                />
+              ) : null}
+              {capabilities.supports_text_edit ? (
+                <ParameterSwitch
+                  label="文本整理"
+                  description="整理口语文本和格式"
+                  checked={parameters.enable_text_edit}
+                  onChange={(value) => setParameter("enable_text_edit", value)}
+                />
+              ) : null}
+              {capabilities.supports_speaker_diarization ? (
+                <ParameterSwitch
+                  label="说话人识别"
+                  description="区分音频中的不同说话人"
+                  checked={parameters.enable_speaker_diarization}
+                  onChange={(value) => {
+                    setParameter("enable_speaker_diarization", value);
+                    if (!value) setParameter("max_speakers", null);
+                  }}
+                />
+              ) : null}
+              {capabilities.supports_max_speakers &&
+              parameters.enable_speaker_diarization ? (
+                <label className="transcription-language-field">
+                  <span>最大说话人数</span>
+                  <CustomSelect
+                    ariaLabel="最大说话人数"
+                    value={parameters.max_speakers?.toString() ?? ""}
+                    options={[
+                      { value: "", label: "自动判断" },
+                      ...Array.from({ length: 20 }, (_, index) => ({
+                        value: String(index + 1),
+                        label: `${index + 1} 人`,
+                      })),
+                    ]}
+                    onChange={(value) =>
+                      setParameter("max_speakers", value ? Number(value) : null)
+                    }
+                  />
+                </label>
+              ) : null}
+              {capabilities.supports_word_timestamps ? (
+                <ParameterSwitch
+                  label="字词时间戳"
+                  description="返回更细粒度的字词时间位置"
+                  checked={parameters.enable_word_timestamps}
+                  onChange={(value) =>
+                    setParameter("enable_word_timestamps", value)
+                  }
+                />
+              ) : null}
+              {capabilities.supports_hotwords ? (
+                <label className="transcription-language-field">
+                  <span>热词</span>
+                  <input
+                    type="text"
+                    aria-label="热词"
+                    value={parameters.hotwords ?? ""}
+                    placeholder="输入人名、术语或专有词"
+                    onChange={(event) =>
+                      setParameter("hotwords", event.target.value || null)
+                    }
+                  />
+                </label>
+              ) : null}
+              {capabilities.supports_abbreviations ? (
+                <ParameterSwitch
+                  label="缩写替换"
+                  description="启用模型的缩写规范化能力"
+                  checked={parameters.abbreviations}
+                  onChange={(value) => setParameter("abbreviations", value)}
+                />
+              ) : null}
+            </div>
+          ) : null}
           <div className="transcription-limit-note">
             <strong>不会自动切片</strong>
             <p>
-              超过 10 MB 的音频会显示为超限并禁止提交，请先在外部压缩或裁剪。
+              超过 {maxLabel}{" "}
+              的音频会显示为超限并禁止提交，请先在外部压缩或裁剪。
             </p>
           </div>
           <button

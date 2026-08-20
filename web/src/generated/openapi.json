@@ -522,6 +522,27 @@
         "title": "AudioAnnotationImportIn",
         "type": "object"
       },
+      "AudioAnnotationLocalizedText": {
+        "properties": {
+          "language": {
+            "maxLength": 35,
+            "pattern": "^[A-Za-z]{2,3}(?:-[A-Za-z0-9]{2,8})*$",
+            "title": "Language",
+            "type": "string"
+          },
+          "text": {
+            "default": "",
+            "maxLength": 20000,
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "language"
+        ],
+        "title": "AudioAnnotationLocalizedText",
+        "type": "object"
+      },
       "AudioAnnotationProjectCreateIn": {
         "properties": {
           "asset_id": {
@@ -676,6 +697,27 @@
             "title": "Id",
             "type": "string"
           },
+          "language": {
+            "anyOf": [
+              {
+                "maxLength": 35,
+                "pattern": "^[A-Za-z]{2,3}(?:-[A-Za-z0-9]{2,8})*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Language"
+          },
+          "localized_texts": {
+            "items": {
+              "$ref": "#/components/schemas/AudioAnnotationLocalizedText"
+            },
+            "maxItems": 32,
+            "title": "Localized Texts",
+            "type": "array"
+          },
           "speaker_id": {
             "anyOf": [
               {
@@ -742,6 +784,112 @@
           "color"
         ],
         "title": "AudioAnnotationSpeaker",
+        "type": "object"
+      },
+      "AudioAnnotationTranscriptionJsonImportIn": {
+        "properties": {
+          "asset_id": {
+            "maxLength": 36,
+            "minLength": 1,
+            "title": "Asset Id",
+            "type": "string"
+          },
+          "segments": {
+            "items": {
+              "$ref": "#/components/schemas/AudioAnnotationTranscriptionSegmentIn"
+            },
+            "maxItems": 5000,
+            "title": "Segments",
+            "type": "array"
+          },
+          "source_kind": {
+            "const": "json",
+            "title": "Source Kind",
+            "type": "string"
+          },
+          "text": {
+            "default": "",
+            "title": "Text",
+            "type": "string"
+          },
+          "title": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "source_kind",
+          "title",
+          "asset_id"
+        ],
+        "title": "AudioAnnotationTranscriptionJsonImportIn",
+        "type": "object"
+      },
+      "AudioAnnotationTranscriptionSegmentIn": {
+        "properties": {
+          "end_ms": {
+            "minimum": 0.0,
+            "title": "End Ms",
+            "type": "integer"
+          },
+          "speaker": {
+            "default": "unknown",
+            "maxLength": 80,
+            "title": "Speaker",
+            "type": "string"
+          },
+          "start_ms": {
+            "minimum": 0.0,
+            "title": "Start Ms",
+            "type": "integer"
+          },
+          "text": {
+            "default": "",
+            "maxLength": 20000,
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "start_ms",
+          "end_ms"
+        ],
+        "title": "AudioAnnotationTranscriptionSegmentIn",
+        "type": "object"
+      },
+      "AudioAnnotationTranscriptionTaskImportIn": {
+        "properties": {
+          "source_kind": {
+            "const": "task",
+            "title": "Source Kind",
+            "type": "string"
+          },
+          "task_id": {
+            "maxLength": 36,
+            "minLength": 1,
+            "title": "Task Id",
+            "type": "string"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "maxLength": 120,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          }
+        },
+        "required": [
+          "source_kind",
+          "task_id"
+        ],
+        "title": "AudioAnnotationTranscriptionTaskImportIn",
         "type": "object"
       },
       "AudioAnnotationWaveformOut": {
@@ -1028,19 +1176,110 @@
       },
       "Body_upload_transcription_task_v1_model_test_transcription_tasks_upload_post": {
         "properties": {
-          "language": {
-            "default": "auto",
-            "enum": [
-              "auto",
-              "zh",
-              "ja"
+          "abbreviations": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
             ],
-            "title": "Language",
-            "type": "string"
+            "title": "Abbreviations"
+          },
+          "enable_punctuation": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Enable Punctuation"
+          },
+          "enable_speaker_diarization": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Enable Speaker Diarization"
+          },
+          "enable_text_edit": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Enable Text Edit"
+          },
+          "enable_word_timestamps": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Enable Word Timestamps"
+          },
+          "hotwords": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hotwords"
+          },
+          "language": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Language"
+          },
+          "max_speakers": {
+            "anyOf": [
+              {
+                "maximum": 20.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Speakers"
           },
           "model_id": {
             "title": "Model Id",
             "type": "string"
+          },
+          "target_language": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Language"
           },
           "upload": {
             "contentMediaType": "application/octet-stream",
@@ -9319,17 +9558,128 @@
         "title": "ModelTestSendIn",
         "type": "object"
       },
+      "ModelTestTranscriptionAudioInfoOut": {
+        "properties": {
+          "duration_ms": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Duration Ms"
+          },
+          "format": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Format"
+          }
+        },
+        "title": "ModelTestTranscriptionAudioInfoOut",
+        "type": "object"
+      },
       "ModelTestTranscriptionCreateIn": {
         "properties": {
-          "language": {
-            "default": "auto",
-            "enum": [
-              "auto",
-              "zh",
-              "ja"
+          "abbreviations": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
             ],
-            "title": "Language",
-            "type": "string"
+            "title": "Abbreviations"
+          },
+          "enable_punctuation": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Enable Punctuation"
+          },
+          "enable_speaker_diarization": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Enable Speaker Diarization"
+          },
+          "enable_text_edit": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Enable Text Edit"
+          },
+          "enable_word_timestamps": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Enable Word Timestamps"
+          },
+          "hotwords": {
+            "anyOf": [
+              {
+                "maxLength": 500,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hotwords"
+          },
+          "language": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Language"
+          },
+          "max_speakers": {
+            "anyOf": [
+              {
+                "maximum": 20.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Speakers"
           },
           "model_id": {
             "title": "Model Id",
@@ -9338,6 +9688,18 @@
           "source_asset_id": {
             "title": "Source Asset Id",
             "type": "string"
+          },
+          "target_language": {
+            "anyOf": [
+              {
+                "maxLength": 64,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Language"
           }
         },
         "required": [
@@ -9345,6 +9707,44 @@
           "source_asset_id"
         ],
         "title": "ModelTestTranscriptionCreateIn",
+        "type": "object"
+      },
+      "ModelTestTranscriptionIntervalOut": {
+        "properties": {
+          "end_ms": {
+            "minimum": 0.0,
+            "title": "End Ms",
+            "type": "integer"
+          },
+          "start_ms": {
+            "minimum": 0.0,
+            "title": "Start Ms",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "start_ms",
+          "end_ms"
+        ],
+        "title": "ModelTestTranscriptionIntervalOut",
+        "type": "object"
+      },
+      "ModelTestTranscriptionLanguageOptionOut": {
+        "properties": {
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "value": {
+            "title": "Value",
+            "type": "string"
+          }
+        },
+        "required": [
+          "value",
+          "label"
+        ],
+        "title": "ModelTestTranscriptionLanguageOptionOut",
         "type": "object"
       },
       "ModelTestTranscriptionOptionListOut": {
@@ -9398,6 +9798,14 @@
             "title": "Label",
             "type": "string"
           },
+          "max_input_bytes": {
+            "exclusiveMinimum": 0.0,
+            "title": "Max Input Bytes",
+            "type": "integer"
+          },
+          "parameter_capabilities": {
+            "$ref": "#/components/schemas/ModelTestTranscriptionParameterCapabilitiesOut"
+          },
           "provider_id": {
             "title": "Provider Id",
             "type": "string"
@@ -9426,9 +9834,212 @@
           "provider_kind",
           "slug",
           "label",
-          "description"
+          "description",
+          "max_input_bytes",
+          "parameter_capabilities"
         ],
         "title": "ModelTestTranscriptionOptionOut",
+        "type": "object"
+      },
+      "ModelTestTranscriptionParameterCapabilitiesOut": {
+        "properties": {
+          "defaults": {
+            "$ref": "#/components/schemas/ModelTestTranscriptionParametersOut"
+          },
+          "language_mode": {
+            "enum": [
+              "select",
+              "candidates"
+            ],
+            "title": "Language Mode",
+            "type": "string"
+          },
+          "language_options": {
+            "items": {
+              "$ref": "#/components/schemas/ModelTestTranscriptionLanguageOptionOut"
+            },
+            "title": "Language Options",
+            "type": "array"
+          },
+          "supports_abbreviations": {
+            "default": false,
+            "title": "Supports Abbreviations",
+            "type": "boolean"
+          },
+          "supports_hotwords": {
+            "default": false,
+            "title": "Supports Hotwords",
+            "type": "boolean"
+          },
+          "supports_max_speakers": {
+            "default": false,
+            "title": "Supports Max Speakers",
+            "type": "boolean"
+          },
+          "supports_punctuation": {
+            "default": false,
+            "title": "Supports Punctuation",
+            "type": "boolean"
+          },
+          "supports_speaker_diarization": {
+            "default": false,
+            "title": "Supports Speaker Diarization",
+            "type": "boolean"
+          },
+          "supports_text_edit": {
+            "default": false,
+            "title": "Supports Text Edit",
+            "type": "boolean"
+          },
+          "supports_word_timestamps": {
+            "default": false,
+            "title": "Supports Word Timestamps",
+            "type": "boolean"
+          },
+          "target_language_options": {
+            "items": {
+              "$ref": "#/components/schemas/ModelTestTranscriptionLanguageOptionOut"
+            },
+            "title": "Target Language Options",
+            "type": "array"
+          }
+        },
+        "required": [
+          "language_mode",
+          "language_options",
+          "target_language_options",
+          "defaults"
+        ],
+        "title": "ModelTestTranscriptionParameterCapabilitiesOut",
+        "type": "object"
+      },
+      "ModelTestTranscriptionParametersOut": {
+        "properties": {
+          "abbreviations": {
+            "title": "Abbreviations",
+            "type": "boolean"
+          },
+          "enable_punctuation": {
+            "title": "Enable Punctuation",
+            "type": "boolean"
+          },
+          "enable_speaker_diarization": {
+            "title": "Enable Speaker Diarization",
+            "type": "boolean"
+          },
+          "enable_text_edit": {
+            "title": "Enable Text Edit",
+            "type": "boolean"
+          },
+          "enable_word_timestamps": {
+            "title": "Enable Word Timestamps",
+            "type": "boolean"
+          },
+          "hotwords": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hotwords"
+          },
+          "language": {
+            "title": "Language",
+            "type": "string"
+          },
+          "max_speakers": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Speakers"
+          },
+          "target_language": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Language"
+          }
+        },
+        "required": [
+          "language",
+          "target_language",
+          "enable_word_timestamps",
+          "enable_text_edit",
+          "enable_speaker_diarization",
+          "max_speakers",
+          "enable_punctuation",
+          "hotwords",
+          "abbreviations"
+        ],
+        "title": "ModelTestTranscriptionParametersOut",
+        "type": "object"
+      },
+      "ModelTestTranscriptionResultDetailOut": {
+        "properties": {
+          "audio_info": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ModelTestTranscriptionAudioInfoOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "overlap_intervals": {
+            "items": {
+              "$ref": "#/components/schemas/ModelTestTranscriptionIntervalOut"
+            },
+            "title": "Overlap Intervals",
+            "type": "array"
+          },
+          "processing_status": {
+            "default": "unknown",
+            "enum": [
+              "success",
+              "degraded",
+              "failed",
+              "unknown"
+            ],
+            "title": "Processing Status",
+            "type": "string"
+          },
+          "stages": {
+            "items": {
+              "$ref": "#/components/schemas/ModelTestTranscriptionStageOut"
+            },
+            "title": "Stages",
+            "type": "array"
+          },
+          "warnings": {
+            "items": {
+              "$ref": "#/components/schemas/ModelTestTranscriptionWarningOut"
+            },
+            "title": "Warnings",
+            "type": "array"
+          },
+          "words": {
+            "items": {
+              "$ref": "#/components/schemas/ModelTestTranscriptionWordOut"
+            },
+            "title": "Words",
+            "type": "array"
+          }
+        },
+        "title": "ModelTestTranscriptionResultDetailOut",
         "type": "object"
       },
       "ModelTestTranscriptionSegmentOut": {
@@ -9438,9 +10049,21 @@
             "title": "End Ms",
             "type": "integer"
           },
+          "is_overlap": {
+            "default": false,
+            "title": "Is Overlap",
+            "type": "boolean"
+          },
           "speaker": {
             "title": "Speaker",
             "type": "string"
+          },
+          "speaker_candidates": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Speaker Candidates",
+            "type": "array"
           },
           "start_ms": {
             "minimum": 0.0,
@@ -9450,6 +10073,17 @@
           "text": {
             "title": "Text",
             "type": "string"
+          },
+          "translation": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Translation"
           }
         },
         "required": [
@@ -9510,6 +10144,31 @@
         "title": "ModelTestTranscriptionSourceOut",
         "type": "object"
       },
+      "ModelTestTranscriptionStageOut": {
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "success",
+              "degraded",
+              "failed",
+              "skipped",
+              "unknown"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "status"
+        ],
+        "title": "ModelTestTranscriptionStageOut",
+        "type": "object"
+      },
       "ModelTestTranscriptionTaskListOut": {
         "properties": {
           "items": {
@@ -9564,11 +10223,6 @@
             "type": "string"
           },
           "language": {
-            "enum": [
-              "auto",
-              "zh",
-              "ja"
-            ],
             "title": "Language",
             "type": "string"
           },
@@ -9598,6 +10252,9 @@
             "title": "Model Slug",
             "type": "string"
           },
+          "parameters": {
+            "$ref": "#/components/schemas/ModelTestTranscriptionParametersOut"
+          },
           "provider_id": {
             "anyOf": [
               {
@@ -9620,6 +10277,9 @@
           "provider_name": {
             "title": "Provider Name",
             "type": "string"
+          },
+          "result_detail": {
+            "$ref": "#/components/schemas/ModelTestTranscriptionResultDetailOut"
           },
           "result_segments": {
             "items": {
@@ -9680,10 +10340,12 @@
           "provider_name",
           "model_slug",
           "language",
+          "parameters",
           "status",
           "source",
           "result_text",
           "result_segments",
+          "result_detail",
           "error_message",
           "log_id",
           "revision",
@@ -9693,6 +10355,60 @@
           "completed_at"
         ],
         "title": "ModelTestTranscriptionTaskOut",
+        "type": "object"
+      },
+      "ModelTestTranscriptionWarningOut": {
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "stage": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stage"
+          }
+        },
+        "required": [
+          "code",
+          "message"
+        ],
+        "title": "ModelTestTranscriptionWarningOut",
+        "type": "object"
+      },
+      "ModelTestTranscriptionWordOut": {
+        "properties": {
+          "end_ms": {
+            "minimum": 0.0,
+            "title": "End Ms",
+            "type": "integer"
+          },
+          "start_ms": {
+            "minimum": 0.0,
+            "title": "Start Ms",
+            "type": "integer"
+          },
+          "word": {
+            "title": "Word",
+            "type": "string"
+          }
+        },
+        "required": [
+          "word",
+          "start_ms",
+          "end_ms"
+        ],
+        "title": "ModelTestTranscriptionWordOut",
         "type": "object"
       },
       "ModelTestVideoGenerationIn": {
@@ -14281,6 +14997,62 @@
           }
         },
         "summary": "Put Waveform",
+        "tags": [
+          "audio-annotation"
+        ]
+      }
+    },
+    "/v1/audio-annotation/transcription-imports": {
+      "post": {
+        "operationId": "import_transcription_v1_audio_annotation_transcription_imports_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "discriminator": {
+                  "mapping": {
+                    "json": "#/components/schemas/AudioAnnotationTranscriptionJsonImportIn",
+                    "task": "#/components/schemas/AudioAnnotationTranscriptionTaskImportIn"
+                  },
+                  "propertyName": "source_kind"
+                },
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/AudioAnnotationTranscriptionTaskImportIn"
+                  },
+                  {
+                    "$ref": "#/components/schemas/AudioAnnotationTranscriptionJsonImportIn"
+                  }
+                ],
+                "title": "Body"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AudioAnnotationProjectOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Import Transcription",
         "tags": [
           "audio-annotation"
         ]

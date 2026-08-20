@@ -127,18 +127,32 @@ async def test_senseaudio_asr_adapter_requests_and_normalizes_speaker_segments()
             "segment",
             'name="language"',
             "zh",
+            'name="target_language"',
+            'name="max_speakers"',
+            'name="abbreviations"',
+            'name="hotwords"',
+            "Future Props",
             'filename="meeting.wav"',
         ):
             assert value in body
+        assert body.count('name="timestamp_granularities[]"') == 2
         return httpx.Response(
             200,
             json={
                 "text": "你好。欢迎。",
                 "segments": [
-                    {"start": 1.235, "end": 2.5, "text": "欢迎。", "speaker": "speaker_1"},
+                    {
+                        "start": 1.235,
+                        "end": 2.5,
+                        "text": "欢迎。",
+                        "translation": "Welcome.",
+                        "speaker": "speaker_1",
+                    },
                     {"start": 0, "end": 1.2346, "text": "你好。", "speaker": "speaker_0"},
                     {"start": "bad", "end": 4, "text": "忽略", "speaker": "speaker_2"},
                 ],
+                "words": [{"word": "你好", "start": 0, "end": 0.5}],
+                "duration": 2.5,
             },
         )
 
@@ -151,6 +165,11 @@ async def test_senseaudio_asr_adapter_requests_and_normalizes_speaker_segments()
         mime_type="audio/wav",
         byte_size=9,
         language="zh",
+        target_language="en",
+        enable_word_timestamps=True,
+        max_speakers=3,
+        hotwords="Future Props",
+        abbreviations=True,
         transport=httpx.MockTransport(handler),
     )
 
@@ -159,6 +178,123 @@ async def test_senseaudio_asr_adapter_requests_and_normalizes_speaker_segments()
         ("speaker_0", 0, 1235, "你好。"),
         ("speaker_1", 1235, 2500, "欢迎。"),
     ]
+    assert result.segments[1].translation == "Welcome."
+    assert [(item.word, item.start_ms, item.end_ms) for item in result.words] == [("你好", 0, 500)]
+    assert result.detail == {
+        "audio_info": {"duration_ms": 2500, "format": None},
+        "processing_status": "success",
+        "stages": [],
+        "warnings": [],
+        "overlap_intervals": [],
+    }
+
+
+@pytest.mark.asyncio
+async def test_pro_asr_adapter_reuses_provider_and_normalizes_nested_result() -> None:
+    async def handler(request: httpx.Request) -> httpx.Response:
+        assert request.url == "http://180.184.148.131:30002/api/v2/asr/pro"
+        assert request.headers["authorization"] == "Bearer asr-secret"
+        body = (await request.aread()).decode()
+        for value in (
+            'name="language"',
+            "Chinese",
+            'name="enable_word_timestamps"',
+            'name="enable_text_edit"',
+            'name="enable_speaker_diarization"',
+            'name="target_lang"',
+            "Japanese",
+            'filename="meeting.wav"',
+        ):
+            assert value in body
+        assert 'name="model"' not in body
+        assert 'name="response_format"' not in body
+        return httpx.Response(
+            200,
+            json={
+                "result": {
+                    "text": "你好。欢迎。",
+                    "utterances": [
+                        {
+                            "start_time": 1235,
+                            "end_time": 2500,
+                            "text": "欢迎。",
+                            "speaker_ids": ["SPK_1", "SPK_0", "SPK_1"],
+                            "is_overlap": True,
+                            "translation": "ようこそ。",
+                            "words": [{"word": "欢迎", "start_time": 1235, "end_time": 1800}],
+                        },
+                        {
+                            "start_time": 0,
+                            "end_time": 1234.6,
+                            "text": "你好。",
+                            "speaker_id": "SPK_0",
+                        },
+                        {
+                            "start_time": "bad",
+                            "end_time": 4000,
+                            "text": "忽略",
+                        },
+                    ],
+                },
+                "pipeline": {
+                    "status": "degraded",
+                    "asr": {"status": "success"},
+                    "diarization": {"status": "degraded"},
+                    "warnings": [
+                        {
+                            "stage": "diarization",
+                            "code": "speaker_fallback",
+                            "message": "说话人识别已降级",
+                        }
+                    ],
+                },
+                "audio_info": {"duration_ms": 2500, "format": "wav"},
+                "diarization": {"overlap_intervals": [{"start_time": 1235, "end_time": 2500}]},
+            },
+        )
+
+    result = await transcribe_audio(
+        base_url="http://180.184.148.131:30002/#pro-asr",
+        api_key="asr-secret",
+        model="senseaudio-asr-pro-1.5-260319",
+        filename="meeting.wav",
+        source=BytesIO(b"RIFFaudio"),
+        mime_type="audio/wav",
+        byte_size=10 * 1024 * 1024 + 1,
+        language="Chinese,English",
+        target_language="Japanese",
+        enable_word_timestamps=True,
+        enable_text_edit=False,
+        transport=httpx.MockTransport(handler),
+    )
+
+    assert result.text == "你好。欢迎。"
+    assert [(item.speaker, item.start_ms, item.end_ms, item.text) for item in result.segments] == [
+        ("SPK_0", 0, 1235, "你好。"),
+        ("SPK_1/SPK_0", 1235, 2500, "欢迎。"),
+    ]
+    assert result.segments[1].translation == "ようこそ。"
+    assert result.segments[1].speaker_candidates == ("SPK_1", "SPK_0")
+    assert result.segments[1].is_overlap is True
+    assert [(item.word, item.start_ms, item.end_ms) for item in result.words] == [
+        ("欢迎", 1235, 1800)
+    ]
+    assert result.detail == {
+        "audio_info": {"duration_ms": 2500, "format": "wav"},
+        "processing_status": "degraded",
+        "stages": [
+            {"name": "asr", "status": "success"},
+            {"name": "diarization", "status": "degraded"},
+        ],
+        "warnings": [
+            {
+                "stage": "diarization",
+                "code": "speaker_fallback",
+                "message": "说话人识别已降级",
+            }
+        ],
+        "overlap_intervals": [{"start_ms": 1235, "end_ms": 2500}],
+    }
 
 
 @pytest.mark.asyncio

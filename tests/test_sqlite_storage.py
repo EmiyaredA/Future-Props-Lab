@@ -40,14 +40,14 @@ def test_sqlite_migration_is_repeatable_and_detects_drift(tmp_path: Path) -> Non
     database_path = tmp_path / "nested" / "catalog.db"
 
     assert apply_migrations(database_path) == (
-        "r0024_model_test_transcription",
+        "r0027_transcription_parameters",
         True,
     )
     assert apply_migrations(database_path) == (
-        "r0024_model_test_transcription",
+        "r0027_transcription_parameters",
         False,
     )
-    assert check_migrations(database_path) == "r0024_model_test_transcription"
+    assert check_migrations(database_path) == "r0027_transcription_parameters"
 
     with connect_database(database_path) as connection:
         connection.execute(
@@ -73,7 +73,7 @@ def test_existing_r0001_database_upgrades_without_rewriting_history(tmp_path: Pa
         connection.commit()
 
     assert apply_migrations(database_path) == (
-        "r0024_model_test_transcription",
+        "r0027_transcription_parameters",
         True,
     )
     with connect_database(database_path) as connection:
@@ -105,6 +105,9 @@ def test_existing_r0001_database_upgrades_without_rewriting_history(tmp_path: Pa
             ("r0022_audio_annotation",),
             ("r0023_senseaudio_asr_fresh_catalog",),
             ("r0024_model_test_transcription",),
+            ("r0025_pro_asr_provider",),
+            ("r0026_transcription_100mb",),
+            ("r0027_transcription_parameters",),
         ]
         assert connection.execute("SELECT COUNT(*) FROM model_test_conversations").fetchone() == (
             0,
@@ -153,7 +156,7 @@ def test_r0020_assigns_complete_r0019_history_to_default_workspace(
     tmp_path: Path,
 ) -> None:
     database_path = tmp_path / "r0019-history.db"
-    _create_database_at_migration(database_path, len(MIGRATIONS) - 1)
+    _create_database_at_migration(database_path, len(MIGRATIONS) - 2)
     with connect_database(database_path) as connection:
         connection.execute(
             """
@@ -217,7 +220,7 @@ def test_r0020_assigns_complete_r0019_history_to_default_workspace(
         connection.commit()
 
     assert apply_migrations(database_path) == (
-        "r0024_model_test_transcription",
+        "r0027_transcription_parameters",
         True,
     )
     workspace_tables = (
@@ -265,7 +268,7 @@ def test_r0020_assigns_complete_r0019_history_to_default_workspace(
 
 def test_r0021_adds_senseaudio_asr_to_each_existing_workspace(tmp_path: Path) -> None:
     database_path = tmp_path / "r0020-multi-workspace.db"
-    _create_database_at_migration(database_path, len(MIGRATIONS) - 4)
+    _create_database_at_migration(database_path, len(MIGRATIONS) - 7)
     workspace_id = "12345678-1234-5678-9abc-def012345678"
     with connect_database(database_path) as connection:
         connection.execute(
@@ -283,7 +286,7 @@ def test_r0021_adds_senseaudio_asr_to_each_existing_workspace(tmp_path: Path) ->
         connection.commit()
 
     assert apply_migrations(database_path) == (
-        "r0024_model_test_transcription",
+        "r0027_transcription_parameters",
         True,
     )
     with connect_database(database_path) as connection:
@@ -292,7 +295,8 @@ def test_r0021_adds_senseaudio_asr_to_each_existing_workspace(tmp_path: Path) ->
             SELECT workspace_id, id, base_url, api_key_ciphertext, enabled
             FROM model_providers
             WHERE kind = 'senseaudio_asr'
-            ORDER BY CASE workspace_id WHEN 'default' THEN 0 ELSE 1 END
+            ORDER BY CASE workspace_id WHEN 'default' THEN 0 ELSE 1 END,
+                     sort_order
             """
         ).fetchall()
         models = connection.execute(
@@ -302,7 +306,8 @@ def test_r0021_adds_senseaudio_asr_to_each_existing_workspace(tmp_path: Path) ->
             FROM model_entries AS entry
             JOIN model_providers AS provider ON provider.id = entry.provider_id
             WHERE provider.kind = 'senseaudio_asr'
-            ORDER BY CASE entry.workspace_id WHEN 'default' THEN 0 ELSE 1 END
+            ORDER BY CASE entry.workspace_id WHEN 'default' THEN 0 ELSE 1 END,
+                     provider.sort_order
             """
         ).fetchall()
         revisions = dict(connection.execute("SELECT id, revision FROM model_catalog_state"))
@@ -315,14 +320,26 @@ def test_r0021_adds_senseaudio_asr_to_each_existing_workspace(tmp_path: Path) ->
         }
         assert connection.execute("PRAGMA foreign_key_check").fetchall() == []
 
-    assert len(providers) == 2
-    assert len({row[1] for row in providers}) == 2
+    assert len(providers) == 4
+    assert len({row[1] for row in providers}) == 4
     assert all(len(row[1]) == 36 for row in providers)
-    assert all(row[2:] == ("https://api.senseaudio.cn/v1", "", 0) for row in providers)
+    assert [(row[0], row[2], row[3], row[4]) for row in providers] == [
+        ("default", "https://api.senseaudio.cn/v1", "", 0),
+        ("default", "http://180.184.148.131:30002/api/v2/asr/pro", "", 0),
+        (workspace_id, "https://api.senseaudio.cn/v1", "", 0),
+        (workspace_id, "http://180.184.148.131:30002/api/v2/asr/pro", "", 0),
+    ]
     assert models == [
         (
             "default",
             "senseaudio-asr-pro-1.5-260319",
+            '["speech_recognition"]',
+            '["speech_recognition"]',
+            1,
+        ),
+        (
+            "default",
+            "pro-asr",
             '["speech_recognition"]',
             '["speech_recognition"]',
             1,
@@ -334,15 +351,209 @@ def test_r0021_adds_senseaudio_asr_to_each_existing_workspace(tmp_path: Path) ->
             '["speech_recognition"]',
             1,
         ),
+        (
+            workspace_id,
+            "pro-asr",
+            '["speech_recognition"]',
+            '["speech_recognition"]',
+            1,
+        ),
     ]
-    assert revisions["default"] == default_revision + 1
-    assert revisions[workspace_id] == 4
+    assert revisions["default"] == default_revision + 2
+    assert revisions[workspace_id] == 5
     assert "transcript_segments" in metadata_columns
     assert "result_segments" in task_columns
     assert apply_migrations(database_path) == (
-        "r0024_model_test_transcription",
+        "r0027_transcription_parameters",
         False,
     )
+
+
+def test_r0025_clones_existing_asr_credentials_and_enabled_state(tmp_path: Path) -> None:
+    database_path = tmp_path / "r0024-pro-asr-upgrade.db"
+    _create_database_at_migration(database_path, len(MIGRATIONS) - 3)
+    with connect_database(database_path) as connection:
+        connection.execute(
+            """
+            INSERT INTO model_providers (
+              id, workspace_id, name, kind, base_url,
+              api_key_ciphertext, enabled, sort_order
+            ) VALUES (?, 'default', ?, 'senseaudio_asr', ?, ?, 1, 7)
+            """,
+            (
+                "source-asr-provider",
+                "用户 ASR",
+                "https://api.senseaudio.cn/v1",
+                "encrypted-asr-key",
+            ),
+        )
+        connection.execute(
+            """
+            INSERT INTO model_entries (
+              id, workspace_id, provider_id, slug, label, description,
+              capabilities, categories, enabled, sort_order
+            ) VALUES (?, 'default', ?, ?, ?, '', ?, ?, 1, 0)
+            """,
+            (
+                "source-asr-model",
+                "source-asr-provider",
+                "senseaudio-asr-pro-1.5-260319",
+                "SenseAudio ASR Pro 1.5",
+                '["speech_recognition"]',
+                '["speech_recognition"]',
+            ),
+        )
+        before_revision = connection.execute(
+            "SELECT revision FROM model_catalog_state WHERE id = 'default'"
+        ).fetchone()[0]
+        connection.commit()
+
+    assert apply_migrations(database_path) == ("r0027_transcription_parameters", True)
+    with connect_database(database_path) as connection:
+        cloned = connection.execute(
+            """
+            SELECT provider.name, provider.kind, provider.base_url,
+                   provider.api_key_ciphertext, provider.enabled,
+                   entry.slug, entry.capabilities, entry.categories
+            FROM model_providers AS provider
+            JOIN model_entries AS entry ON entry.provider_id = provider.id
+            WHERE provider.base_url = ?
+            """,
+            ("http://180.184.148.131:30002/api/v2/asr/pro",),
+        ).fetchone()
+        revision = connection.execute(
+            "SELECT revision FROM model_catalog_state WHERE id = 'default'"
+        ).fetchone()[0]
+        assert connection.execute("PRAGMA foreign_key_check").fetchall() == []
+
+    assert cloned == (
+        "ASR API 专业语音识别",
+        "senseaudio_asr",
+        "http://180.184.148.131:30002/api/v2/asr/pro",
+        "encrypted-asr-key",
+        1,
+        "pro-asr",
+        '["speech_recognition"]',
+        '["speech_recognition"]',
+    )
+    assert revision == before_revision + 1
+
+
+def test_r0026_expands_transcription_storage_limit_and_preserves_tasks(tmp_path: Path) -> None:
+    database_path = tmp_path / "r0025-transcription-limit.db"
+    _create_database_at_migration(database_path, len(MIGRATIONS) - 2)
+    insert_sql = """
+        INSERT INTO model_test_transcription_tasks (
+          id, workspace_id, provider_kind, provider_name, model_slug,
+          source_kind, input_storage_key, input_filename, input_mime_type,
+          input_byte_size, language, status
+        ) VALUES (?, 'default', 'senseaudio_asr', 'ASR', 'pro-asr',
+                  'upload', ?, ?, 'audio/mpeg', ?, 'zh', 'completed')
+    """
+    with connect_database(database_path) as connection:
+        connection.execute(
+            insert_sql,
+            ("existing-transcription", "existing-key", "existing.mp3", 10 * 1024 * 1024),
+        )
+        connection.commit()
+
+    assert apply_migrations(database_path) == ("r0027_transcription_parameters", True)
+    with connect_database(database_path) as connection:
+        assert connection.execute(
+            "SELECT input_filename, input_byte_size FROM model_test_transcription_tasks "
+            "WHERE id = 'existing-transcription'"
+        ).fetchone() == ("existing.mp3", 10 * 1024 * 1024)
+        connection.execute(
+            insert_sql,
+            ("max-transcription", "max-key", "max.mp3", 100 * 1024 * 1024),
+        )
+        with pytest.raises(sqlite3.IntegrityError):
+            connection.execute(
+                insert_sql,
+                (
+                    "oversized-transcription",
+                    "oversized-key",
+                    "oversized.mp3",
+                    100 * 1024 * 1024 + 1,
+                ),
+            )
+        assert connection.execute("PRAGMA foreign_key_check").fetchall() == []
+
+
+def test_r0027_backfills_transcription_parameter_snapshots(tmp_path: Path) -> None:
+    database_path = tmp_path / "r0026-transcription-parameters.db"
+    _create_database_at_migration(database_path, len(MIGRATIONS) - 1)
+    with connect_database(database_path) as connection:
+        connection.executemany(
+            """
+            INSERT INTO model_test_transcription_tasks (
+              id, workspace_id, provider_kind, provider_name, model_slug,
+              source_kind, input_storage_key, input_filename, input_mime_type,
+              input_byte_size, language, status
+            ) VALUES (?, 'default', ?, '历史供应商', ?, 'upload', ?, ?,
+                      'audio/mpeg', 128, ?, 'completed')
+            """,
+            [
+                (
+                    "custom-pro",
+                    "senseaudio_asr",
+                    "pro-asr",
+                    "key-pro",
+                    "pro.mp3",
+                    "zh",
+                ),
+                (
+                    "official-standard",
+                    "senseaudio_asr",
+                    "senseaudio-asr-standard-1.0",
+                    "key-standard",
+                    "standard.mp3",
+                    "zh",
+                ),
+                ("openai-asr", "openai", "whisper-1", "key-openai", "openai.mp3", "ja"),
+            ],
+        )
+        connection.commit()
+
+    assert apply_migrations(database_path) == ("r0027_transcription_parameters", True)
+    with connect_database(database_path) as connection:
+        columns = {
+            row[1]: row[2]
+            for row in connection.execute(
+                "PRAGMA table_info(model_test_transcription_tasks)"
+            ).fetchall()
+        }
+        rows = connection.execute(
+            "SELECT id, request_options, result_detail "
+            "FROM model_test_transcription_tasks ORDER BY id"
+        ).fetchall()
+        snapshots = {row[0]: json.loads(row[1]) for row in rows}
+        assert columns["language"] == "VARCHAR(128)"
+        assert columns["request_options"] == "JSON"
+        assert columns["result_detail"] == "JSON"
+        assert snapshots["custom-pro"] == {
+            "language": "zh",
+            "target_language": None,
+            "enable_word_timestamps": 0,
+            "enable_text_edit": 1,
+            "enable_speaker_diarization": 1,
+            "max_speakers": None,
+            "enable_punctuation": 0,
+            "hotwords": None,
+            "abbreviations": 0,
+        }
+        assert snapshots["official-standard"]["enable_punctuation"] == 1
+        assert snapshots["official-standard"]["enable_speaker_diarization"] == 1
+        assert snapshots["openai-asr"]["enable_speaker_diarization"] == 0
+        assert all(json.loads(row[2]) == {} for row in rows)
+        connection.execute(
+            "UPDATE model_test_transcription_tasks "
+            "SET language = 'Chinese,English' WHERE id = 'custom-pro'"
+        )
+        assert connection.execute(
+            "SELECT language FROM model_test_transcription_tasks WHERE id = 'custom-pro'"
+        ).fetchone() == ("Chinese,English",)
+        assert connection.execute("PRAGMA foreign_key_check").fetchall() == []
 
 
 def test_r0014_adds_empty_content_parts_to_existing_messages(tmp_path: Path) -> None:
@@ -382,7 +593,7 @@ def test_r0014_adds_empty_content_parts_to_existing_messages(tmp_path: Path) -> 
 
 def test_r0015_upgrades_r0014_and_enforces_private_asset_ownership(tmp_path: Path) -> None:
     database_path = tmp_path / "generation-assets-upgrade.db"
-    _create_database_at_migration(database_path, len(MIGRATIONS) - 1)
+    _create_database_at_migration(database_path, len(MIGRATIONS) - 2)
     with connect_database(database_path) as connection:
         connection.execute(
             """
@@ -406,11 +617,11 @@ def test_r0015_upgrades_r0014_and_enforces_private_asset_ownership(tmp_path: Pat
         connection.commit()
 
     assert apply_migrations(database_path) == (
-        "r0024_model_test_transcription",
+        "r0027_transcription_parameters",
         True,
     )
     assert apply_migrations(database_path) == (
-        "r0024_model_test_transcription",
+        "r0027_transcription_parameters",
         False,
     )
     with connect_database(database_path) as connection:
@@ -519,7 +730,7 @@ def test_existing_default_catalog_is_extended_without_overwriting_user_data(
         connection.commit()
 
     assert apply_migrations(database_path) == (
-        "r0024_model_test_transcription",
+        "r0027_transcription_parameters",
         True,
     )
 
@@ -604,18 +815,18 @@ def test_existing_default_catalog_is_extended_without_overwriting_user_data(
     ]
     assert "senseaudio-vl-1.0-260319" not in all_slugs
     assert len(all_slugs) == 15
-    assert revision == (10,)
+    assert revision == (11,)
     assert stored_categories == {"[]", '["speech_recognition"]'}
 
     assert apply_migrations(database_path) == (
-        "r0024_model_test_transcription",
+        "r0027_transcription_parameters",
         False,
     )
     with connect_database(database_path) as connection:
         assert connection.execute(
             "SELECT revision FROM model_catalog_state WHERE id = 'default'"
-        ).fetchone() == (10,)
-        assert connection.execute("SELECT COUNT(*) FROM model_entries").fetchone() == (21,)
+        ).fetchone() == (11,)
+        assert connection.execute("SELECT COUNT(*) FROM model_entries").fetchone() == (22,)
 
 
 def test_catalog_upgrade_does_not_recreate_deleted_default_provider(tmp_path: Path) -> None:
@@ -626,7 +837,7 @@ def test_catalog_upgrade_does_not_recreate_deleted_default_provider(tmp_path: Pa
         connection.commit()
 
     assert apply_migrations(database_path) == (
-        "r0024_model_test_transcription",
+        "r0027_transcription_parameters",
         True,
     )
     with connect_database(database_path) as connection:
@@ -635,11 +846,11 @@ def test_catalog_upgrade_does_not_recreate_deleted_default_provider(tmp_path: Pa
         ).fetchone() == (0,)
         assert connection.execute(
             "SELECT COUNT(*) FROM model_providers WHERE kind = 'senseaudio_asr'"
-        ).fetchone() == (1,)
-        assert connection.execute("SELECT COUNT(*) FROM model_entries").fetchone() == (1,)
+        ).fetchone() == (2,)
+        assert connection.execute("SELECT COUNT(*) FROM model_entries").fetchone() == (2,)
         assert connection.execute(
             "SELECT revision FROM model_catalog_state WHERE id = 'default'"
-        ).fetchone() == (5,)
+        ).fetchone() == (6,)
 
 
 def test_r0007_upgrade_adds_visual_tasks_and_preserves_provider_credentials(
@@ -667,7 +878,7 @@ def test_r0007_upgrade_adds_visual_tasks_and_preserves_provider_credentials(
         connection.commit()
 
     assert apply_migrations(database_path) == (
-        "r0024_model_test_transcription",
+        "r0027_transcription_parameters",
         True,
     )
     with connect_database(database_path) as connection:
@@ -719,10 +930,10 @@ def test_r0007_upgrade_adds_visual_tasks_and_preserves_provider_credentials(
 
 def test_r0024_adds_private_model_test_transcription_tasks(tmp_path: Path) -> None:
     database_path = tmp_path / "r0023-transcription-upgrade.db"
-    _create_database_at_migration(database_path, len(MIGRATIONS) - 1)
+    _create_database_at_migration(database_path, len(MIGRATIONS) - 4)
 
     assert apply_migrations(database_path) == (
-        "r0024_model_test_transcription",
+        "r0027_transcription_parameters",
         True,
     )
     with connect_database(database_path) as connection:

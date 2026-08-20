@@ -35,8 +35,10 @@
 模型的 `capabilities` 描述实际输入和调用能力，`categories` 描述模型用途并允许多选；两者都只通过
 模型创建/更新 API 写入。类别字典参考 SiliconFlow 的 `type/sub_type` 语义，当前包含文本生成、
 其他通用模型、语音合成、语音识别、音乐生成、视频生成、图片生成和端到端语音模型。
-供应商类型额外包含 `senseaudio_asr`；内置但默认停用的 SenseAudio ASR Pro 1.5 使用独立凭证，
-不会复用图片或视频供应商的 API Key。
+供应商类型额外包含 `senseaudio_asr`；内置但默认停用的 SenseAudio ASR Pro 1.5 与 ASR API
+专业语音识别共用这一适配类型，仍不复用图片或视频供应商的 API Key。历史 Workspace 升级时，
+ASR API 供应商会复制原 ASR 供应商的加密凭证与启用状态，仅把地址切换为
+`/api/v2/asr/pro`；新 Workspace 的两项 ASR 供应商都默认停用且不包含凭证。
 
 测试调用使用固定提示词、16 个最大输出 Token 和 30 秒超时；无论上游成功、失败或超时均记录日志，API Key 不进入请求或日志 payload。
 
@@ -71,9 +73,9 @@
 - `POST /v1/model-test/generation-assets/cleanup`：清理超过 24 小时的草稿和遗留文件。
 - `GET /v1/model-test/generation-assets/backfill-status`：检查仍引用旧公共文件的历史任务。
 - `POST /v1/model-test/generation-assets/backfill`：幂等复制历史素材并通过任务 CAS 完成认领。
-- `GET /v1/model-test/transcription-options`：返回已启用且声明 `speech_recognition` 的 SenseAudio ASR 或 OpenAI 兼容模型，以及支持格式和 10 MB 上限。
-- `POST /v1/model-test/transcription-tasks/upload`：multipart 上传 `upload`、`model_id` 与 `language` 并创建持久化识别任务。
-- `POST /v1/model-test/transcription-tasks`：通过 `model_id`、`source_asset_id` 与 `language` 从当前 Workspace 文件管理复制音频并创建任务。
+- `GET /v1/model-test/transcription-options`：返回已启用且声明 `speech_recognition` 的 SenseAudio ASR 或 OpenAI 兼容模型、支持格式、每个模型的上传上限，以及供应商无关的参数能力和默认值；ASR API 专业语音识别为 100 MB，其余当前模型为 10 MB。
+- `POST /v1/model-test/transcription-tasks/upload`：multipart 上传 `upload`、`model_id` 与识别参数并创建持久化任务。
+- `POST /v1/model-test/transcription-tasks`：通过 `model_id`、`source_asset_id` 与同名识别参数从当前 Workspace 文件管理复制音频并创建任务。
 - `GET /v1/model-test/transcription-tasks`、`GET /v1/model-test/transcription-tasks/{task_id}`：分页查询或读取识别任务。
 - `GET /v1/model-test/transcription-tasks/{task_id}/input-content`：鉴权试听任务的私有输入副本。
 - `DELETE /v1/model-test/transcription-tasks/{task_id}?expected_revision=...`：CAS 删除完成或失败任务及其私有音频。
@@ -93,12 +95,28 @@ error`；成功、失败、超时或取消都会保存消息状态并写入调�
 文件保持不动。任务结果下载到 `model-test/generated/`，不创建视觉工坊项目或素材。任务与模型
 目录都通过 `/v1` API 管理，活动任务不可删除或随模型一起停用；终态删除使用 revision/CAS。
 
-语音识别测试接受 MP3、WAV、M4A 与 OGG，扩展名、MIME 和文件头必须一致；文件非空且不得超过
-10 MB，不自动切片。本地上传与文件管理来源都会复制到当前 Workspace 的
+语音识别测试接受 MP3、WAV、M4A 与 OGG，扩展名、MIME 和文件头必须一致；文件非空且不自动
+切片。ASR API 专业语音识别允许 100 MB，其余当前模型允许 10 MB；前后端都按所选模型校验。
+两类创建接口统一接受可选的 `language`、`target_language`、`enable_word_timestamps`、
+`enable_text_edit`、`enable_speaker_diarization`、`max_speakers`、`enable_punctuation`、
+`hotwords` 与 `abbreviations`。上传接口使用同名 multipart 字段，文件库接口使用 JSON 字段。
+不支持的非默认参数、非法语言、未开启说话人识别却设置人数，以及 1–20 之外的人数返回 `422`。
+`stream=false`、`response_format=verbose_json`、模型名和同步模式由系统控制，始终请求句级时间轴。
+
+参数能力按端点和模型返回：自定义 Pro 端点提供语言候选、翻译、字词时间戳、文本整理和说话人
+识别；官方 Lite 提供热词，Standard 提供标点、说话人和时间戳，官方 Pro 增加翻译与最大说话
+人数，DeepThink 只暴露同步请求有效的能力；OpenAI 兼容模型只显示其兼容项。默认开启自定义
+Pro 的文本整理与说话人识别，以及官方 Standard/Pro 的标点和说话人识别；翻译、字词时间戳、
+热词和缩写替换默认关闭。
+
+本地上传与文件管理来源都会复制到当前 Workspace 的
 `model-test/references/`，因此源文件删除后任务仍可试听。单机 Runner 执行
 `queued → running → completed/failed`；启动时将中断的运行中任务标记失败，避免重复付费。
-SenseAudio 结果包含全文、说话人和句级起止时间；OpenAI 兼容供应商未返回分段时使用空数组。
-完成或失败均写入 `model_playground` 调用日志，日志不保存 API Key、音频字节或磁盘路径。
+SenseAudio 结果包含全文、说话人和句级起止时间；ASR API 的嵌套 `result.utterances`、毫秒时间戳
+与重叠说话人候选会归一化为同一分段结构。任务详情还保存译文、字词时间戳、音频信息、处理
+阶段、重叠区间和脱敏警告；OpenAI 兼容供应商未返回分段时使用空数组。任务和调用日志保存提交
+时的完整参数快照，不受后续表单默认值或模型配置变化影响。完成或失败均写入
+`model_playground` 调用日志，日志不保存 API Key、音频字节、供应商原始响应或磁盘路径。
 
 ## 工具导航
 
@@ -116,13 +134,26 @@ SenseAudio 结果包含全文、说话人和句级起止时间；OpenAI 兼容�
 - `GET/PUT /v1/audio-annotation/projects/{project_id}/document`：读取或完整保存说话人和片段文档。
 - `GET/PUT /v1/audio-annotation/projects/{project_id}/waveform`：读取或保存浏览器生成的预计算峰值。
 - `POST /v1/audio-annotation/imports`：把版本化项目 JSON 与选定的文件库音频原子导入为新任务。
+- `POST /v1/audio-annotation/transcription-imports`：从已完成的模型测试识别任务直接创建标注任务，
+  或把 `future-props-transcription` 1.0/1.1 JSON 与选定音频转换为新任务。
 
 创建和导入只接受当前 Workspace 公共文件库中的音频，单文件最多 100 MiB、时长最多 60 分钟；
 音频时长由服务端读取。文档固定使用 `schema_version: "1.0"`，最多 64 位说话人和 5000 个片段。
-片段最短 100 毫秒，允许留空白但必须按时间排序且不能重叠，说话人引用必须存在。文档和波形
+片段最短 100 毫秒，允许留空白和时间重叠，但必须按开始时间排序，说话人引用必须存在。
+多人同时说话用各自的重叠片段表示。每个片段的 `text` 可通过 `language` 指定原文语言，并用
+`localized_texts` 保存最多 32 份其他语言文本；同一片段内语言不得重复，未提供时兼容旧文档。
+文档和波形
 分别通过 `expected_revision` 做完整资源 CAS，冲突返回 `409 revision_conflict` 和服务器当前快照。
 波形最多双声道、每声道最多 36,000 个峰值。删除任务只删除标注数据；原音频继续保留，且在被
 任务引用期间从文件管理删除会返回 `409 asset_in_use`。
+
+模型测试识别结果导出供应商无关的 `future-props-transcription` 1.1 JSON，文件保存源音频元数据、
+模型和完整参数快照、全文、毫秒级分段，以及标准化的译文、字词时间戳、重叠和处理信息；导入
+仍兼容 1.0。导入时已知说话人按名称去重，`unknown` 映射为未指定，译文和高级详情不进入标注，
+标注始终使用原语言识别文本，
+所有片段均标记为待校对；只有全文而没有时间戳时创建覆盖完整音频的单片段。直接导入优先复用仍
+存在的文件库源音频，否则把任务私有输入副本复制到文件库根目录。重叠的识别分段会原样保留，
+短于 100 毫秒的识别分段会自动忽略；无内容或越界的分段返回 `422`，不会静默修改。
 
 ## 视觉创作工坊
 
@@ -212,7 +243,7 @@ ID、消息数量、画布摘要和素材 ID；不保存图片 Base64、临时�
 
 项目素材响应的 `transcriptSegments[]` 与转写任务的 `resultSegments[]` 使用统一的
 `{ speaker, startMs, endMs, text }` 形状。SenseAudio ASR Pro 请求启用说话人分离、自动标点和
-句级时间戳；大于 10 MB 的音频在本地标记为失败且不会提交供应商。手工修正整段文本会清空旧分段，
+句级时间戳；音频按所选模型的 10 MB 或 100 MB 上限校验，超限时不会提交供应商。手工修正整段文本会清空旧分段，
 避免结构化结果与新文本不一致；检测得到的 `speaker_*` 仅用于展示，不自动绑定剧本角色。
 
 - `GET/POST /v1/galgame-workshop/projects/{project_id}/story/portrait-upgrade`：预览或应用旧立绘尺寸升级；应用前自动保存快照。

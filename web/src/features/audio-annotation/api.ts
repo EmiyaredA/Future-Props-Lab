@@ -4,6 +4,7 @@ import type {
   AnnotationSnapshot,
   AudioAnnotationProject,
   AudioAnnotationWaveform,
+  PortableTranscriptionSegment,
 } from "@features/audio-annotation/types";
 
 export async function listAudioAnnotationProjects(query = "") {
@@ -41,6 +42,40 @@ export async function importAudioAnnotationProject(
   return unwrap(
     await api.POST("/v1/audio-annotation/imports", {
       body: { title, asset_id: assetId, ...document },
+    }),
+  );
+}
+
+export async function importAudioAnnotationTranscriptionTask(
+  taskId: string,
+  title?: string,
+) {
+  return unwrap(
+    await api.POST("/v1/audio-annotation/transcription-imports", {
+      body: {
+        source_kind: "task",
+        task_id: taskId,
+        title,
+      },
+    }),
+  );
+}
+
+export async function importAudioAnnotationTranscriptionJson(
+  title: string,
+  assetId: string,
+  text: string,
+  segments: PortableTranscriptionSegment[],
+) {
+  return unwrap(
+    await api.POST("/v1/audio-annotation/transcription-imports", {
+      body: {
+        source_kind: "json",
+        title,
+        asset_id: assetId,
+        text,
+        segments,
+      },
     }),
   );
 }

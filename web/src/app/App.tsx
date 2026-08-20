@@ -276,7 +276,11 @@ export default function App() {
               registerNavigationGuard={registerNavigationGuard}
             />
           ) : page === "model-test" ? (
-            <ModelTestPage />
+            <ModelTestPage
+              onOpenAudioAnnotation={(projectId) =>
+                navigate("audio-annotation-editor", projectId)
+              }
+            />
           ) : page === "model-service" ? (
             <ModelServicePage />
           ) : (
