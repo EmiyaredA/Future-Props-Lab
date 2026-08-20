@@ -12,6 +12,10 @@ export type AudioAnnotationLocalizedText =
   components["schemas"]["AudioAnnotationLocalizedText"];
 export type AudioAnnotationWaveform =
   components["schemas"]["AudioAnnotationWaveformOut"];
+export type AudioAnnotationTranscriptionOption =
+  components["schemas"]["ModelTestTranscriptionOptionOut"];
+export type AudioAnnotationSegmentTranscription =
+  components["schemas"]["AudioAnnotationSegmentTranscriptionOut"];
 
 export type AnnotationSnapshot = Pick<
   AudioAnnotationDocument,

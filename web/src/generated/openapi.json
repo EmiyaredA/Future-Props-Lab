@@ -759,6 +759,46 @@
         "title": "AudioAnnotationSegment",
         "type": "object"
       },
+      "AudioAnnotationSegmentTranscriptionOut": {
+        "properties": {
+          "log_id": {
+            "title": "Log Id",
+            "type": "string"
+          },
+          "model_id": {
+            "title": "Model Id",
+            "type": "string"
+          },
+          "requested_language": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Requested Language"
+          },
+          "resolved_language": {
+            "title": "Resolved Language",
+            "type": "string"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "text",
+          "model_id",
+          "requested_language",
+          "resolved_language",
+          "log_id"
+        ],
+        "title": "AudioAnnotationSegmentTranscriptionOut",
+        "type": "object"
+      },
       "AudioAnnotationSpeaker": {
         "properties": {
           "color": {
@@ -1065,6 +1105,57 @@
           "expected_revision"
         ],
         "title": "Body_put_avatar_v1_account_profile_avatar_put",
+        "type": "object"
+      },
+      "Body_transcribe_segment_v1_audio_annotation_projects__project_id__segment_transcriptions_post": {
+        "properties": {
+          "end_ms": {
+            "exclusiveMinimum": 0.0,
+            "title": "End Ms",
+            "type": "integer"
+          },
+          "language_tag": {
+            "anyOf": [
+              {
+                "maxLength": 35,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Language Tag"
+          },
+          "model_id": {
+            "maxLength": 36,
+            "minLength": 1,
+            "title": "Model Id",
+            "type": "string"
+          },
+          "segment_id": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,63}$",
+            "title": "Segment Id",
+            "type": "string"
+          },
+          "start_ms": {
+            "minimum": 0.0,
+            "title": "Start Ms",
+            "type": "integer"
+          },
+          "upload": {
+            "contentMediaType": "application/octet-stream",
+            "title": "Upload",
+            "type": "string"
+          }
+        },
+        "required": [
+          "upload",
+          "model_id",
+          "segment_id",
+          "start_ms",
+          "end_ms"
+        ],
+        "title": "Body_transcribe_segment_v1_audio_annotation_projects__project_id__segment_transcriptions_post",
         "type": "object"
       },
       "Body_upload_attachments_v1_model_test_conversations__conversation_id__attachments_post": {
@@ -14910,6 +15001,58 @@
         ]
       }
     },
+    "/v1/audio-annotation/projects/{project_id}/segment-transcriptions": {
+      "post": {
+        "operationId": "transcribe_segment_v1_audio_annotation_projects__project_id__segment_transcriptions_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_transcribe_segment_v1_audio_annotation_projects__project_id__segment_transcriptions_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AudioAnnotationSegmentTranscriptionOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Transcribe Segment",
+        "tags": [
+          "audio-annotation"
+        ]
+      }
+    },
     "/v1/audio-annotation/projects/{project_id}/waveform": {
       "get": {
         "operationId": "get_waveform_v1_audio_annotation_projects__project_id__waveform_get",
@@ -17176,7 +17319,7 @@
             "required": false,
             "schema": {
               "default": "",
-              "pattern": "^(|model_diagnostic|model_playground)$",
+              "pattern": "^(|model_diagnostic|model_playground|visual_workshop_assistant|visual_workshop_generation|audio_annotation)$",
               "title": "Call Source",
               "type": "string"
             }
@@ -17187,7 +17330,7 @@
             "required": false,
             "schema": {
               "default": "",
-              "pattern": "^(|openai|anthropic)$",
+              "pattern": "^(|openai|anthropic|senseaudio_asr)$",
               "title": "Provider Kind",
               "type": "string"
             }

@@ -40,6 +40,7 @@ type TraceMessage = {
 const sourceLabels: Record<string, string> = {
   model_diagnostic: "快速诊断",
   model_playground: "模型测试",
+  audio_annotation: "录音标注",
   visual_workshop_assistant: "视觉助手",
   visual_workshop_generation: "视觉生成",
 };

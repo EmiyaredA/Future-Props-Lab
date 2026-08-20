@@ -5,6 +5,7 @@ import type {
   AudioAnnotationProject,
   AudioAnnotationSegment,
   AudioAnnotationSpeaker,
+  AudioAnnotationTranscriptionOption,
   PortableTranscriptionFile,
 } from "@features/audio-annotation/types";
 import type { components } from "@generated/api";
@@ -55,6 +56,65 @@ export function segmentLanguageCodes(
       ...(segment.localized_texts ?? []).map((item) => item.language),
     ]),
   ];
+}
+
+const TRANSCRIPTION_LANGUAGE_ALIASES: Record<string, string[]> = {
+  zh: ["zh", "chinese"],
+  en: ["en", "english"],
+  ja: ["ja", "japanese"],
+  ko: ["ko", "korean"],
+  fr: ["fr", "french"],
+  de: ["de", "german"],
+  es: ["es", "spanish"],
+  pt: ["pt", "portuguese"],
+};
+
+export function transcriptionLanguageMatch(
+  option: AudioAnnotationTranscriptionOption | undefined,
+  languageTag: string | null,
+): { value: string; label: string; fallback: boolean } {
+  const languageOptions = option?.parameter_capabilities.language_options ?? [];
+  const matched = matchTranscriptionLanguage(languageOptions, languageTag);
+  if (matched) return { ...matched, fallback: false };
+  const automatic = languageOptions.find(
+    (item) => item.value.toLocaleLowerCase() === "auto",
+  );
+  return {
+    value: automatic?.value ?? "auto",
+    label: automatic?.label ?? "自动识别",
+    fallback: true,
+  };
+}
+
+export function transcriptionTargetLanguageMatch(
+  option: AudioAnnotationTranscriptionOption | undefined,
+  languageTag: string | null,
+): { value: string; label: string } | null {
+  return matchTranscriptionLanguage(
+    option?.parameter_capabilities.target_language_options ?? [],
+    languageTag,
+  );
+}
+
+function matchTranscriptionLanguage(
+  languageOptions: { value: string; label: string }[],
+  languageTag: string | null,
+): { value: string; label: string } | null {
+  const values = new Map(
+    languageOptions.map((item) => [item.value.toLocaleLowerCase(), item]),
+  );
+  const normalized = languageTag?.trim().replaceAll("_", "-").toLowerCase();
+  const primary = normalized?.split("-", 1)[0] ?? "";
+  const candidates = [
+    normalized,
+    primary,
+    ...(TRANSCRIPTION_LANGUAGE_ALIASES[primary] ?? []),
+  ].filter(Boolean) as string[];
+  for (const candidate of candidates) {
+    const matched = values.get(candidate.toLocaleLowerCase());
+    if (matched) return { value: matched.value, label: matched.label };
+  }
+  return null;
 }
 
 export function segmentSearchableText(segment: AudioAnnotationSegment): string {

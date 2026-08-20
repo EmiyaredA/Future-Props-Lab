@@ -136,6 +136,11 @@ SenseAudio 结果包含全文、说话人和句级起止时间；ASR API 的嵌�
 - `POST /v1/audio-annotation/imports`：把版本化项目 JSON 与选定的文件库音频原子导入为新任务。
 - `POST /v1/audio-annotation/transcription-imports`：从已完成的模型测试识别任务直接创建标注任务，
   或把 `future-props-transcription` 1.0/1.1 JSON 与选定音频转换为新任务。
+- `POST /v1/audio-annotation/projects/{project_id}/segment-transcriptions`：接收浏览器从当前片段
+  裁剪出的单声道 PCM WAV，使用指定的已启用语音识别模型返回一次性转写文本。请求携带片段范围
+  和当前语言标签；服务端按模型支持项匹配完整标签、主语言或供应商语言别名，无法匹配时使用
+  `auto`。该接口不直接修改标注文档，也不创建模型测试任务，调用结果通过 `audio_annotation`
+  来源写入模型调用日志。
 
 创建和导入只接受当前 Workspace 公共文件库中的音频，单文件最多 100 MiB、时长最多 60 分钟；
 音频时长由服务端读取。文档固定使用 `schema_version: "1.0"`，最多 64 位说话人和 5000 个片段。

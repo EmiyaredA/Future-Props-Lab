@@ -14,26 +14,13 @@ from app.core.db import SessionLocal
 from app.core.tenant_context import bind_workspace
 from app.core.time import utc_now
 from app.llm.generation_runtime import PollingGenerationRunner
-from app.llm.playground.transcription import model_supports_transcription
-from app.llm.providers._senseaudio import SenseAudioProviderError
-from app.llm.providers.senseaudio_asr import SenseAudioAsrFileTooLarge
 from app.llm.providers.transcription import transcribe_model_audio
+from app.llm.transcription_support import (
+    model_supports_transcription,
+    safe_transcription_error,
+)
 from app.models import LlmCallLog, ModelEntry, ModelProvider, ModelTestTranscriptionTask
 from app.schemas.model_test import ModelTestTranscriptionResultDetailOut
-
-
-def _safe_error(exc: Exception) -> str:
-    if isinstance(exc, SenseAudioAsrFileTooLarge):
-        return str(exc)
-    if isinstance(exc, httpx.TimeoutException):
-        return "语音识别请求超时"
-    if isinstance(exc, SenseAudioProviderError):
-        return str(exc)[:4000]
-    if isinstance(exc, httpx.HTTPStatusError):
-        return f"语音识别供应商返回错误（HTTP {exc.response.status_code}）"
-    if isinstance(exc, ValueError):
-        return str(exc)[:4000]
-    return f"语音识别失败（{type(exc).__name__}）"
 
 
 class ModelTestTranscriptionRunner(PollingGenerationRunner):
@@ -167,7 +154,7 @@ class ModelTestTranscriptionRunner(PollingGenerationRunner):
         except asyncio.CancelledError:
             raise
         except Exception as exc:
-            await self._fail(task_id, _safe_error(exc))
+            await self._fail(task_id, safe_transcription_error(exc))
 
     async def _prepare(
         self, task_id: str

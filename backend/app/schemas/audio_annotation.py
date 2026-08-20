@@ -219,6 +219,16 @@ class AudioAnnotationTranscriptionJsonImportIn(BaseModel):
         return _clean_title(value)
 
 
+class AudioAnnotationSegmentTranscriptionOut(BaseModel):
+    text: str
+    model_id: str
+    requested_language: str | None
+    resolved_language: str
+    requested_target_language: str | None
+    resolved_target_language: str | None
+    log_id: str
+
+
 AudioAnnotationTranscriptionImportIn = Annotated[
     AudioAnnotationTranscriptionTaskImportIn | AudioAnnotationTranscriptionJsonImportIn,
     Field(discriminator="source_kind"),

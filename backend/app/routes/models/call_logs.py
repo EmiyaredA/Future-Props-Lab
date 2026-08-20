@@ -31,8 +31,14 @@ def _date(value: str | None, *, end: bool = False) -> datetime | None:
 async def list_logs(
     session: SessionDep,
     q: str = Query("", max_length=200),
-    call_source: str = Query("", pattern="^(|model_diagnostic|model_playground)$"),
-    provider_kind: str = Query("", pattern="^(|openai|anthropic)$"),
+    call_source: str = Query(
+        "",
+        pattern=(
+            "^(|model_diagnostic|model_playground|visual_workshop_assistant|"
+            "visual_workshop_generation|audio_annotation)$"
+        ),
+    ),
+    provider_kind: str = Query("", pattern="^(|openai|anthropic|senseaudio_asr)$"),
     model: str = Query("", max_length=160),
     status: str = Query("", pattern="^(|success|error)$"),
     from_: str | None = Query(None, alias="from"),

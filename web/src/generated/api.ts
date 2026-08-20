@@ -421,6 +421,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/audio-annotation/projects/{project_id}/segment-transcriptions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Transcribe Segment */
+        post: operations["transcribe_segment_v1_audio_annotation_projects__project_id__segment_transcriptions_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/audio-annotation/projects/{project_id}/waveform": {
         parameters: {
             query?: never;
@@ -2335,6 +2352,19 @@ export interface components {
              */
             text: string;
         };
+        /** AudioAnnotationSegmentTranscriptionOut */
+        AudioAnnotationSegmentTranscriptionOut: {
+            /** Log Id */
+            log_id: string;
+            /** Model Id */
+            model_id: string;
+            /** Requested Language */
+            requested_language: string | null;
+            /** Resolved Language */
+            resolved_language: string;
+            /** Text */
+            text: string;
+        };
         /** AudioAnnotationSpeaker */
         AudioAnnotationSpeaker: {
             /** Color */
@@ -2444,6 +2474,21 @@ export interface components {
             expected_revision: number;
             /** File */
             file: string;
+        };
+        /** Body_transcribe_segment_v1_audio_annotation_projects__project_id__segment_transcriptions_post */
+        Body_transcribe_segment_v1_audio_annotation_projects__project_id__segment_transcriptions_post: {
+            /** End Ms */
+            end_ms: number;
+            /** Language Tag */
+            language_tag?: string | null;
+            /** Model Id */
+            model_id: string;
+            /** Segment Id */
+            segment_id: string;
+            /** Start Ms */
+            start_ms: number;
+            /** Upload */
+            upload: string;
         };
         /** Body_upload_attachments_v1_model_test_conversations__conversation_id__attachments_post */
         Body_upload_attachments_v1_model_test_conversations__conversation_id__attachments_post: {
@@ -7996,6 +8041,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AudioAnnotationDocumentOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    transcribe_segment_v1_audio_annotation_projects__project_id__segment_transcriptions_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_transcribe_segment_v1_audio_annotation_projects__project_id__segment_transcriptions_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AudioAnnotationSegmentTranscriptionOut"];
                 };
             };
             /** @description Validation Error */

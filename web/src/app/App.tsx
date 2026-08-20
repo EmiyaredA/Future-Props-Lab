@@ -272,6 +272,7 @@ export default function App() {
           ) : page === "audio-annotation-editor" && route.projectId ? (
             <AudioAnnotationEditorPage
               projectId={route.projectId}
+              workspaceId={me.workspace.id}
               onBack={() => navigate("audio-annotation-projects")}
               registerNavigationGuard={registerNavigationGuard}
             />

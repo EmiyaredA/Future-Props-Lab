@@ -6,7 +6,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Download,
-  FileJson,
   Merge,
   Pause,
   Play,
@@ -17,7 +16,6 @@ import {
   Search,
   Trash2,
   Undo2,
-  Upload,
   Users,
   Volume2,
   X,
@@ -37,20 +35,16 @@ import {
   putAudioAnnotationWaveform,
 } from "@features/audio-annotation/api";
 import {
-  buildProjectFile,
-  buildSrt,
   ANNOTATION_LANGUAGES,
   createSegment,
   duplicateSegmentForOverlap,
   formatDuration,
   formatTimestamp,
-  incompleteSegments,
   languageColor,
   languageLabel,
   mergeImportedSpeakers,
   mergeWithNext,
   parseTimestamp,
-  safeFileBase,
   segmentLanguageCodes,
   segmentSearchableText,
   SPEAKER_COLORS,
@@ -75,6 +69,9 @@ import { ApiError } from "@platform/api/client";
 import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
 import { CustomColorPicker } from "@shared/ui/CustomColorPicker";
 import { CustomSelect } from "@shared/ui/CustomSelect";
+import { useSegmentTranscription } from "@features/audio-annotation/segmentTranscription";
+import { SegmentTranscriptionDialogs } from "@features/audio-annotation/SegmentTranscriptionDialogs";
+import { AudioAnnotationExportDialog } from "@features/audio-annotation/AudioAnnotationExportDialog";
 import "@features/audio-annotation/audio-annotation.css";
 
 const EMPTY_GALGAME_PROJECTS: GalgameWorkshopProject[] = [];
@@ -85,15 +82,6 @@ function snapshot(document: AudioAnnotationDocument): AnnotationSnapshot {
     speakers: document.speakers,
     segments: document.segments,
   };
-}
-
-function downloadBlob(contents: BlobPart[], type: string, filename: string) {
-  const url = URL.createObjectURL(new Blob(contents, { type }));
-  const anchor = document.createElement("a");
-  anchor.href = url;
-  anchor.download = filename;
-  anchor.click();
-  setTimeout(() => URL.revokeObjectURL(url), 0);
 }
 
 function SpeakerManager({
@@ -319,10 +307,12 @@ function SpeakerManager({
 
 export function AudioAnnotationEditorPage({
   projectId,
+  workspaceId,
   onBack,
   registerNavigationGuard,
 }: {
   projectId: string;
+  workspaceId: string;
   onBack: () => void;
   registerNavigationGuard: (
     guard: ((continueNavigation: () => void) => boolean) | null,
@@ -330,6 +320,7 @@ export function AudioAnnotationEditorPage({
 }) {
   const queryClient = useQueryClient();
   const waveformRef = useRef<AudioWaveformHandle>(null);
+  const documentRef = useRef<AudioAnnotationDocument | null>(null);
   const version = useRef(0);
   const textBase = useRef<AnnotationSnapshot | null>(null);
   const [document, setDocument] = useState<AudioAnnotationDocument | null>(
@@ -370,6 +361,7 @@ export function AudioAnnotationEditorPage({
   >(null);
   const [exportOpen, setExportOpen] = useState(false);
   dirtyRef.current = dirty;
+  documentRef.current = document;
 
   const projectQuery = useQuery({
     queryKey: ["audio-annotation-project", projectId],
@@ -620,35 +612,27 @@ export function AudioAnnotationEditorPage({
     }
   };
 
+  const segmentTranscription = useSegmentTranscription({
+    projectId,
+    workspaceId,
+    documentRef,
+    selected,
+    conflict,
+    waveformRef,
+    version,
+    setDocument,
+    setUndoStack,
+    setRedoStack,
+    setDirty,
+    setNotice,
+  });
+
   const savePeaks = useMutation({
     mutationFn: (peaks: number[][]) =>
       putAudioAnnotationWaveform(projectId, waveform!, peaks),
     onSuccess: () => void waveformQuery.refetch(),
     onError: () => setNotice("波形缓存保存失败，下次打开时会重新生成。"),
   });
-
-  const exportJson = () => {
-    if (!project || !document) return;
-    const output = buildProjectFile(project, snapshot(document));
-    downloadBlob(
-      [JSON.stringify(output, null, 2)],
-      "application/json;charset=utf-8",
-      `${safeFileBase(project.title)}.annotation.json`,
-    );
-  };
-  const exportSrt = () => {
-    if (!project || !document) return;
-    try {
-      downloadBlob(
-        ["\ufeff", buildSrt(document.segments, document.speakers)],
-        "application/x-subrip;charset=utf-8",
-        `${safeFileBase(project.title)}.srt`,
-      );
-      setNotice("");
-    } catch (caught) {
-      setNotice(caught instanceof Error ? caught.message : "SRT 导出失败");
-    }
-  };
 
   const reloadServer = async () => {
     const result = await documentQuery.refetch();
@@ -694,7 +678,6 @@ export function AudioAnnotationEditorPage({
       : dirty
         ? "等待保存"
         : "已自动保存";
-  const srtMissing = incompleteSegments(document.segments).length;
   const viewportDurationMs = project.duration_ms / zoomRatio;
   const maxViewportStartMs = Math.max(
     0,
@@ -758,7 +741,7 @@ export function AudioAnnotationEditorPage({
       {conflict ? (
         <div className="annotation-conflict" role="alert">
           <span>服务器上的标注已被其他操作更新。本地内容不会被自动覆盖。</span>
-          <button type="button" onClick={exportJson}>
+          <button type="button" onClick={() => setExportOpen(true)}>
             导出本地 JSON
           </button>
           <button type="button" onClick={() => void reloadServer()}>
@@ -899,6 +882,7 @@ export function AudioAnnotationEditorPage({
                 if (!waveform.peaks.length && !savePeaks.isPending)
                   savePeaks.mutate(peaks);
               }}
+              onAudioReady={segmentTranscription.setAudioReady}
               onError={setNotice}
             />
             <div className="annotation-waveform-navigator">
@@ -1298,6 +1282,7 @@ export function AudioAnnotationEditorPage({
                     );
                   textBase.current = null;
                 }}
+                transcription={segmentTranscription.controls}
               />
               <button
                 type="button"
@@ -1436,6 +1421,7 @@ export function AudioAnnotationEditorPage({
           </section>
         </div>
       ) : null}
+      <SegmentTranscriptionDialogs controller={segmentTranscription} />
       <ConfirmDialog
         open={confirmMerge}
         title="合并不同说话人的片段？"
@@ -1467,57 +1453,13 @@ export function AudioAnnotationEditorPage({
           else onBack();
         }}
       />
-      {exportOpen ? (
-        <div className="annotation-modal-backdrop" role="presentation">
-          <section
-            className="annotation-modal annotation-export-modal"
-            role="dialog"
-            aria-modal="true"
-            aria-label="导出标注"
-          >
-            <header>
-              <div>
-                <span className="eyebrow">导出标注</span>
-                <h2>选择文件格式</h2>
-              </div>
-              <button
-                type="button"
-                className="icon-btn"
-                aria-label="关闭"
-                onClick={() => setExportOpen(false)}
-              >
-                <X aria-hidden />
-              </button>
-            </header>
-            <div className="annotation-export-options">
-              <button type="button" onClick={exportJson}>
-                <FileJson aria-hidden />
-                <span>
-                  <strong>项目 JSON</strong>
-                  <small>保留说话人、片段和校对状态，可重新导入。</small>
-                </span>
-                <Download aria-hidden />
-              </button>
-              <button
-                type="button"
-                disabled={srtMissing > 0}
-                onClick={exportSrt}
-              >
-                <Upload aria-hidden />
-                <span>
-                  <strong>SRT 字幕</strong>
-                  <small>
-                    {srtMissing
-                      ? `还有 ${srtMissing} 个片段缺少说话人或内容`
-                      : "使用“说话人：内容”格式输出字幕。"}
-                  </small>
-                </span>
-                <Download aria-hidden />
-              </button>
-            </div>
-          </section>
-        </div>
-      ) : null}
+      <AudioAnnotationExportDialog
+        open={exportOpen}
+        project={project}
+        document={document}
+        onClose={() => setExportOpen(false)}
+        onNotice={setNotice}
+      />
     </section>
   );
 }

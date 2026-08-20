@@ -151,5 +151,52 @@ export async function putAudioAnnotationWaveform(
   );
 }
 
+export async function getAudioAnnotationTranscriptionOptions() {
+  return unwrap(await api.GET("/v1/model-test/transcription-options"));
+}
+
+export async function transcribeAudioAnnotationSegment(
+  projectId: string,
+  input: {
+    wav: Blob;
+    modelId: string;
+    segmentId: string;
+    startMs: number;
+    endMs: number;
+    languageTag: string | null;
+    targetLanguageTag: string | null;
+  },
+) {
+  return unwrap(
+    await api.POST(
+      "/v1/audio-annotation/projects/{project_id}/segment-transcriptions",
+      {
+        params: { path: { project_id: projectId } },
+        body: {
+          upload: input.wav as unknown as string,
+          model_id: input.modelId,
+          segment_id: input.segmentId,
+          start_ms: input.startMs,
+          end_ms: input.endMs,
+          language_tag: input.languageTag,
+          target_language_tag: input.targetLanguageTag,
+        },
+        bodySerializer() {
+          const form = new FormData();
+          form.set("upload", input.wav, `segment-${input.segmentId}.wav`);
+          form.set("model_id", input.modelId);
+          form.set("segment_id", input.segmentId);
+          form.set("start_ms", String(input.startMs));
+          form.set("end_ms", String(input.endMs));
+          if (input.languageTag) form.set("language_tag", input.languageTag);
+          if (input.targetLanguageTag)
+            form.set("target_language_tag", input.targetLanguageTag);
+          return form;
+        },
+      },
+    ),
+  );
+}
+
 export type AudioAnnotationImportBody =
   components["schemas"]["AudioAnnotationImportIn"];

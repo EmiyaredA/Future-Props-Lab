@@ -1,8 +1,12 @@
-from fastapi import APIRouter, HTTPException, Query
+from typing import Annotated
+
+from fastapi import APIRouter, File, Form, HTTPException, Query, UploadFile
 
 from app.audio_annotation import AudioAnnotationError, AudioAnnotationProjects
+from app.audio_annotation.transcription import AudioAnnotationTranscription
 from app.deps import SessionDep
 from app.schemas.audio_annotation import (
+    STABLE_ID_PATTERN,
     AudioAnnotationDocumentOut,
     AudioAnnotationDocumentPutIn,
     AudioAnnotationImportIn,
@@ -10,6 +14,7 @@ from app.schemas.audio_annotation import (
     AudioAnnotationProjectListOut,
     AudioAnnotationProjectOut,
     AudioAnnotationProjectPatchIn,
+    AudioAnnotationSegmentTranscriptionOut,
     AudioAnnotationTranscriptionImportIn,
     AudioAnnotationWaveformOut,
     AudioAnnotationWaveformPutIn,
@@ -114,6 +119,36 @@ async def put_document(
 ) -> AudioAnnotationDocumentOut:
     try:
         return await AudioAnnotationProjects(session).put_document(project_id, body)
+    except AudioAnnotationError as exc:
+        raise _error(exc) from None
+
+
+@router.post(
+    "/projects/{project_id}/segment-transcriptions",
+    response_model=AudioAnnotationSegmentTranscriptionOut,
+)
+async def transcribe_segment(
+    session: SessionDep,
+    project_id: str,
+    upload: Annotated[UploadFile, File()],
+    model_id: Annotated[str, Form(min_length=1, max_length=36)],
+    segment_id: Annotated[str, Form(pattern=STABLE_ID_PATTERN)],
+    start_ms: Annotated[int, Form(ge=0)],
+    end_ms: Annotated[int, Form(gt=0)],
+    language_tag: Annotated[str | None, Form(max_length=35)] = None,
+    target_language_tag: Annotated[str | None, Form(max_length=35)] = None,
+) -> AudioAnnotationSegmentTranscriptionOut:
+    try:
+        return await AudioAnnotationTranscription(session).transcribe(
+            project_id,
+            upload=upload,
+            model_id=model_id,
+            segment_id=segment_id,
+            start_ms=start_ms,
+            end_ms=end_ms,
+            language_tag=language_tag,
+            target_language_tag=target_language_tag,
+        )
     except AudioAnnotationError as exc:
         raise _error(exc) from None
 

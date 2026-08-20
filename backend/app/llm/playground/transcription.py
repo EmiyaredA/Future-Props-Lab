@@ -20,7 +20,11 @@ from app.llm.playground.transcription_parameters import (
     parameter_capabilities,
     resolve_parameters,
 )
-from app.llm.providers.senseaudio_asr import MAX_ASR_FILE_BYTES, max_asr_file_bytes
+from app.llm.providers.senseaudio_asr import MAX_ASR_FILE_BYTES
+from app.llm.transcription_support import (
+    max_transcription_input_bytes,
+    model_supports_transcription,
+)
 from app.models import ModelEntry, ModelProvider, ModelTestTranscriptionTask, VisualAsset
 from app.schemas.model_test import (
     ModelTestTranscriptionCreateIn,
@@ -48,20 +52,6 @@ class ModelTestTranscriptionError(Exception):
         super().__init__(message)
         self.code = code
         self.status = status
-
-
-def model_supports_transcription(model: ModelEntry, provider: ModelProvider | None) -> bool:
-    declared = {
-        *[str(value) for value in list(model.capabilities or [])],
-        *[str(value) for value in list(model.categories or [])],
-    }
-    return bool(
-        provider is not None
-        and provider.kind in {"openai", "senseaudio_asr"}
-        and provider.enabled
-        and model.enabled
-        and "speech_recognition" in declared
-    )
 
 
 def transcription_task_out(
@@ -132,9 +122,7 @@ def _validate_file_metadata(filename: str, content_type: str) -> tuple[str, str]
 
 
 def _max_input_bytes(provider: ModelProvider) -> int:
-    if provider.kind == "senseaudio_asr":
-        return max_asr_file_bytes(provider.base_url)
-    return MAX_ASR_FILE_BYTES
+    return max_transcription_input_bytes(provider)
 
 
 def _limit_message(max_bytes: int) -> str:

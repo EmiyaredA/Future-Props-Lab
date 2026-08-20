@@ -1,0 +1,277 @@
+.annotation-language-badges {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.annotation-language-badges i {
+  padding: 3px 6px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  font-size: 9px;
+  font-style: normal;
+  line-height: 1;
+}
+.annotation-language-badges em {
+  color: var(--faint);
+  font-size: 10px;
+  font-style: normal;
+}
+.annotation-language-badges .language-purple {
+  border-color: color-mix(in srgb, var(--annotation-purple) 48%, transparent);
+  background: color-mix(in srgb, var(--annotation-purple) 10%, transparent);
+  color: var(--annotation-purple);
+}
+.annotation-language-badges .language-blue {
+  border-color: color-mix(
+    in srgb,
+    var(--annotation-language-blue) 48%,
+    transparent
+  );
+  background: color-mix(
+    in srgb,
+    var(--annotation-language-blue) 10%,
+    transparent
+  );
+  color: var(--annotation-language-blue);
+}
+.annotation-language-badges .language-teal {
+  border-color: color-mix(
+    in srgb,
+    var(--annotation-language-teal) 48%,
+    transparent
+  );
+  background: color-mix(
+    in srgb,
+    var(--annotation-language-teal) 10%,
+    transparent
+  );
+  color: var(--annotation-language-teal);
+}
+.annotation-language-badges .language-yellow {
+  border-color: color-mix(
+    in srgb,
+    var(--annotation-language-yellow) 48%,
+    transparent
+  );
+  background: color-mix(
+    in srgb,
+    var(--annotation-language-yellow) 10%,
+    transparent
+  );
+  color: var(--annotation-language-yellow);
+}
+.annotation-language-badges .language-neutral {
+  color: var(--muted);
+}
+.annotation-language-editor {
+  margin-top: 16px;
+}
+.annotation-transcript-heading {
+  margin-bottom: 7px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--text);
+  font-size: 11px;
+  font-weight: 650;
+}
+.annotation-transcript-heading small {
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 500;
+}
+.annotation-transcript-input {
+  position: relative;
+}
+.annotation-transcript-input textarea {
+  width: 100%;
+  min-height: 154px;
+  padding: 11px 11px 27px;
+  resize: vertical;
+  border: 1px solid var(--border-strong);
+  border-radius: 9px;
+  outline: 0;
+  background: var(--surface-soft);
+  color: var(--text);
+  font: inherit;
+  font-size: 12px;
+  line-height: 1.75;
+}
+.annotation-transcript-input textarea:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-soft);
+}
+.annotation-transcript-input > small {
+  position: absolute;
+  right: 9px;
+  bottom: 8px;
+  color: var(--faint);
+  font-weight: 400;
+}
+.annotation-language-versions {
+  overflow: visible;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface);
+}
+.annotation-language-version-tabs {
+  min-height: 47px;
+  padding: 7px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  overflow: visible;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-soft);
+}
+.annotation-language-version-tabs > button {
+  min-height: 31px;
+  padding: 0 9px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 10px;
+  white-space: nowrap;
+}
+.annotation-language-version-tabs > button:hover {
+  background: var(--surface-hover);
+}
+.annotation-language-version-tabs > button[aria-selected="true"] {
+  border-color: currentColor;
+  background: var(--surface);
+  color: var(--text-strong);
+}
+.annotation-language-version-tabs > button i {
+  width: 6px;
+  height: 6px;
+  flex: none;
+  border-radius: 50%;
+  background: currentColor;
+}
+.annotation-language-version-tabs .language-purple {
+  color: var(--annotation-purple);
+}
+.annotation-language-version-tabs .language-blue {
+  color: var(--annotation-language-blue);
+}
+.annotation-language-version-tabs .language-teal {
+  color: var(--annotation-language-teal);
+}
+.annotation-language-version-tabs .language-yellow {
+  color: var(--annotation-language-yellow);
+}
+.annotation-language-version-tabs .language-neutral {
+  color: var(--muted);
+}
+.annotation-language-version-tabs > .annotation-add-language {
+  width: 108px;
+  margin-left: auto;
+  flex: none;
+}
+.annotation-add-language .custom-select-trigger {
+  min-height: 31px;
+  background: var(--surface);
+  font-size: 10px;
+}
+.annotation-language-version-toolbar {
+  min-height: 48px;
+  padding: 7px 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.annotation-language-version-toolbar > span {
+  color: var(--muted);
+  font-size: 10px;
+  white-space: nowrap;
+}
+.annotation-language-version-toolbar > span strong {
+  color: var(--text-strong);
+}
+.annotation-language-version-toolbar > .custom-select {
+  width: 142px;
+}
+.annotation-delete-language {
+  margin-left: auto;
+  padding: 4px 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 0;
+  background: transparent;
+  color: var(--danger);
+  font-size: 9px;
+}
+.annotation-delete-language svg {
+  width: 12px;
+  height: 12px;
+}
+.annotation-language-versions .annotation-transcript-input {
+  margin: 0 10px;
+}
+.annotation-language-versions .annotation-transcript-input textarea {
+  min-height: 145px;
+}
+.annotation-segment-transcription {
+  margin: 10px;
+  padding: 9px;
+  display: grid;
+  gap: 7px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-soft);
+}
+.annotation-segment-transcription-controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 7px;
+}
+.annotation-transcription-model {
+  min-width: 0;
+}
+.annotation-transcription-model .custom-select-trigger {
+  min-height: 35px;
+  background: var(--surface);
+  font-size: 10px;
+}
+.annotation-transcribe-segment {
+  min-height: 35px;
+  padding-inline: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+  color: var(--accent);
+  font-size: 10px;
+  line-height: 1;
+  white-space: nowrap;
+}
+.annotation-transcribe-segment svg {
+  width: 14px;
+  height: 14px;
+}
+.annotation-transcribe-segment .spinning {
+  animation: annotation-spin 0.8s linear infinite;
+}
+.annotation-segment-transcription > small {
+  color: var(--muted);
+  font-size: 9px;
+  line-height: 1.45;
+}
+@keyframes annotation-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.annotation-language-help {
+  margin: 7px 10px 10px;
+  color: var(--faint);
+  font-size: 9px;
+  line-height: 1.5;
+}

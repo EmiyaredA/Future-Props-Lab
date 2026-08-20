@@ -11,8 +11,10 @@ from app.audio_annotation.projects import AudioAnnotationError, AudioAnnotationP
 from app.core.config import get_settings
 from app.core.db import SessionLocal
 from app.core.tenant_context import bind_workspace
+from app.llm.providers.transcription import TranscriptionResult
+from app.llm.transcription_support import resolve_transcription_language
 from app.main import app
-from app.models import ModelTestTranscriptionTask, Workspace
+from app.models import ModelEntry, ModelProvider, ModelTestTranscriptionTask, Workspace
 
 
 def wav_bytes(seconds: float = 1.0) -> bytes:
@@ -32,6 +34,37 @@ async def upload_audio(client: httpx.AsyncClient, name: str = "annotation.wav") 
     )
     assert response.status_code == 200, response.text
     return response.json()
+
+
+async def create_asr_model(client: httpx.AsyncClient) -> tuple[dict, dict]:
+    catalog = (await client.get("/v1/model-providers")).json()
+    provider_response = await client.post(
+        "/v1/model-providers",
+        json={
+            "expected_catalog_revision": catalog["revision"],
+            "name": f"annotation-asr-{uuid4()}",
+            "kind": "openai",
+            "base_url": "https://asr.example/v1",
+            "api_key": "annotation-secret",
+            "enabled": True,
+        },
+    )
+    assert provider_response.status_code == 200, provider_response.text
+    provider_body = provider_response.json()
+    model_response = await client.post(
+        f"/v1/model-providers/{provider_body['provider']['id']}/models",
+        json={
+            "expected_catalog_revision": provider_body["revision"],
+            "slug": f"annotation-model-{uuid4()}",
+            "label": "标注片段识别模型",
+            "description": "",
+            "capabilities": ["speech_recognition"],
+            "categories": ["speech_recognition"],
+            "enabled": True,
+        },
+    )
+    assert model_response.status_code == 200, model_response.text
+    return provider_body["provider"], model_response.json()["model"]
 
 
 async def seed_transcription_task(
@@ -244,6 +277,192 @@ async def test_audio_annotation_project_document_waveform_and_asset_guard() -> N
             params={"expected_revision": asset["revision"]},
         )
         assert removed_asset.status_code == 200, removed_asset.text
+
+
+@pytest.mark.asyncio
+async def test_audio_annotation_transcribes_selected_range_with_language_and_log(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls: list[dict] = []
+
+    async def fake_transcribe(**kwargs) -> TranscriptionResult:
+        kwargs["source_head"] = kwargs["source"].read(4)
+        kwargs["source"].seek(0)
+        calls.append(kwargs)
+        return TranscriptionResult(text="  片段识别完成。  ")
+
+    monkeypatch.setattr(
+        "app.audio_annotation.transcription.transcribe_model_audio",
+        fake_transcribe,
+    )
+    transport = httpx.ASGITransport(app=app)
+    async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+        provider, model = await create_asr_model(client)
+        asset = await upload_audio(client, "segment-source.wav")
+        project = (
+            await client.post(
+                "/v1/audio-annotation/projects",
+                json={"title": "片段转写", "asset_id": asset["id"]},
+            )
+        ).json()
+
+        response = await client.post(
+            f"/v1/audio-annotation/projects/{project['id']}/segment-transcriptions",
+            data={
+                "model_id": model["id"],
+                "segment_id": "segment-one",
+                "start_ms": "0",
+                "end_ms": "1000",
+                "language_tag": "ja-JP",
+            },
+            files={"upload": ("segment.wav", wav_bytes(), "audio/wav")},
+        )
+        assert response.status_code == 200, response.text
+        result = response.json()
+        assert result["text"] == "片段识别完成。"
+        assert result["requested_language"] == "ja-JP"
+        assert result["resolved_language"] == "ja"
+        assert calls[0]["language"] == "ja"
+        assert calls[0]["filename"] == "segment-segment-one.wav"
+        assert calls[0]["source_head"] == b"RIFF"
+
+        log = await client.get(f"/v1/llm-call-logs/{result['log_id']}")
+        assert log.status_code == 200, log.text
+        assert log.json()["call_source"] == "audio_annotation"
+        assert log.json()["request_payload"]["segment_id"] == "segment-one"
+
+        automatic = await client.post(
+            f"/v1/audio-annotation/projects/{project['id']}/segment-transcriptions",
+            data={
+                "model_id": model["id"],
+                "segment_id": "segment-two",
+                "start_ms": "0",
+                "end_ms": "1000",
+                "language_tag": "xx-ZZ",
+            },
+            files={"upload": ("segment.wav", wav_bytes(), "audio/wav")},
+        )
+        assert automatic.status_code == 200, automatic.text
+        assert automatic.json()["resolved_language"] == "auto"
+        assert calls[1]["language"] == "auto"
+
+        async def failing_transcribe(**_kwargs) -> TranscriptionResult:
+            raise httpx.ReadTimeout("timed out")
+
+        monkeypatch.setattr(
+            "app.audio_annotation.transcription.transcribe_model_audio",
+            failing_transcribe,
+        )
+        failed = await client.post(
+            f"/v1/audio-annotation/projects/{project['id']}/segment-transcriptions",
+            data={
+                "model_id": model["id"],
+                "segment_id": "segment-failed",
+                "start_ms": "0",
+                "end_ms": "1000",
+                "language_tag": "ja",
+            },
+            files={"upload": ("segment.wav", wav_bytes(), "audio/wav")},
+        )
+        assert failed.status_code == 502
+        assert failed.json()["detail"] == "语音识别请求超时"
+        error_logs = await client.get(
+            "/v1/llm-call-logs",
+            params={"call_source": "audio_annotation", "status": "error"},
+        )
+        assert error_logs.status_code == 200, error_logs.text
+        assert error_logs.json()["items"][0]["model"] == model["slug"]
+
+        async def empty_transcribe(**_kwargs) -> TranscriptionResult:
+            return TranscriptionResult(text="   ")
+
+        monkeypatch.setattr(
+            "app.audio_annotation.transcription.transcribe_model_audio",
+            empty_transcribe,
+        )
+        empty = await client.post(
+            f"/v1/audio-annotation/projects/{project['id']}/segment-transcriptions",
+            data={
+                "model_id": model["id"],
+                "segment_id": "segment-empty",
+                "start_ms": "0",
+                "end_ms": "1000",
+                "language_tag": "ja",
+            },
+            files={"upload": ("segment.wav", wav_bytes(), "audio/wav")},
+        )
+        assert empty.status_code == 200, empty.text
+        assert empty.json()["text"] == ""
+        empty_log = await client.get(f"/v1/llm-call-logs/{empty.json()['log_id']}")
+        assert empty_log.status_code == 200, empty_log.text
+        assert empty_log.json()["status"] == "success"
+
+        mismatch = await client.post(
+            f"/v1/audio-annotation/projects/{project['id']}/segment-transcriptions",
+            data={
+                "model_id": model["id"],
+                "segment_id": "segment-three",
+                "start_ms": "0",
+                "end_ms": "500",
+            },
+            files={"upload": ("segment.wav", wav_bytes(), "audio/wav")},
+        )
+        assert mismatch.status_code == 422
+        assert mismatch.json()["code"] == "segment_audio_duration_mismatch"
+
+        invalid = await client.post(
+            f"/v1/audio-annotation/projects/{project['id']}/segment-transcriptions",
+            data={
+                "model_id": model["id"],
+                "segment_id": "segment-four",
+                "start_ms": "0",
+                "end_ms": "1000",
+            },
+            files={"upload": ("segment.wav", b"not-wave", "audio/wav")},
+        )
+        assert invalid.status_code == 422
+        assert invalid.json()["code"] == "invalid_segment_audio"
+
+        assert (
+            await client.delete(
+                f"/v1/audio-annotation/projects/{project['id']}",
+                params={"expected_revision": project["revision"]},
+            )
+        ).status_code == 200
+        assert (
+            await client.delete(
+                f"/v1/files/{asset['id']}",
+                params={"expected_revision": asset["revision"]},
+            )
+        ).status_code == 200
+        catalog_revision = (await client.get("/v1/model-providers")).json()["revision"]
+        assert (
+            await client.delete(
+                f"/v1/model-providers/{provider['id']}",
+                params={"expected_catalog_revision": catalog_revision},
+            )
+        ).status_code == 200
+
+
+def test_transcription_language_supports_pro_aliases_and_auto_fallback() -> None:
+    provider = ModelProvider(
+        id="provider",
+        name="Pro ASR",
+        kind="senseaudio_asr",
+        base_url="https://asr.example/v1#pro-asr",
+        enabled=True,
+    )
+    model = ModelEntry(
+        id="model",
+        provider_id=provider.id,
+        slug="pro-asr",
+        capabilities=["speech_recognition"],
+        categories=["speech_recognition"],
+        enabled=True,
+    )
+    assert resolve_transcription_language(model, provider, "ja-JP") == "Japanese"
+    assert resolve_transcription_language(model, provider, "fr-CA") == "French"
+    assert resolve_transcription_language(model, provider, "yue-HK") == "auto"
 
 
 @pytest.mark.asyncio

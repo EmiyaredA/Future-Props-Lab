@@ -137,6 +137,66 @@ test("opens the local video frame exporter", async ({ page }) => {
 });
 
 test("creates and edits an audio annotation task", async ({ page }) => {
+  await page.route("**/v1/model-test/transcription-options", async (route) =>
+    route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        items: [
+          {
+            id: "e2e-asr-model",
+            provider_id: "e2e-provider",
+            provider_name: "E2E 识别供应商",
+            provider_kind: "openai",
+            slug: "e2e-asr",
+            label: "E2E 片段识别",
+            description: "",
+            max_input_bytes: 10 * 1024 * 1024,
+            parameter_capabilities: {
+              language_mode: "select",
+              language_options: [
+                { value: "auto", label: "自动识别" },
+                { value: "ja", label: "日本語" },
+              ],
+              target_language_options: [],
+              supports_word_timestamps: false,
+              supports_text_edit: false,
+              supports_speaker_diarization: false,
+              supports_max_speakers: false,
+              supports_punctuation: false,
+              supports_hotwords: false,
+              supports_abbreviations: false,
+              defaults: {
+                language: "auto",
+                target_language: null,
+                enable_word_timestamps: false,
+                enable_text_edit: false,
+                enable_speaker_diarization: false,
+                max_speakers: null,
+                enable_punctuation: false,
+                hotwords: null,
+                abbreviations: false,
+              },
+            },
+          },
+        ],
+        max_input_bytes: 10 * 1024 * 1024,
+        accepted_extensions: [".wav"],
+        accepted_mime_types: ["audio/wav"],
+      }),
+    }),
+  );
+  await page.route("**/segment-transcriptions", async (route) =>
+    route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        text: "自动转写片段",
+        model_id: "e2e-asr-model",
+        requested_language: null,
+        resolved_language: "auto",
+        log_id: "e2e-log",
+      }),
+    }),
+  );
   await page.goto("/tools");
   await page.getByRole("button", { name: "打开录音分段标注" }).click();
   await expect(page).toHaveURL(/\/tools\/audio-annotation$/);
@@ -192,6 +252,20 @@ test("creates and edits an audio annotation task", async ({ page }) => {
   await expect(
     page.getByRole("button", { name: "播放当前片段" }),
   ).toBeVisible();
+
+  const transcribeButton = page.getByRole("button", {
+    name: "转写当前片段到原文",
+  });
+  await expect(transcribeButton).toBeEnabled();
+  await transcribeButton.click();
+  await expect(page.getByRole("textbox", { name: "原文说话内容" })).toHaveValue(
+    "自动转写片段",
+  );
+  await transcribeButton.click();
+  await expect(
+    page.getByRole("alertdialog", { name: "替换原文内容？" }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "取消", exact: true }).click();
 
   await page.setViewportSize({ width: 1440, height: 900 });
   const transport = page.locator(".annotation-transport");

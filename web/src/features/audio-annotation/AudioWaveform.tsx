@@ -19,6 +19,7 @@ import {
   clampWaveformZoom,
   waveformViewport,
 } from "@features/audio-annotation/model";
+import { audioBufferRangeToWav } from "@features/audio-annotation/audioClip";
 
 export type AudioWaveformViewport = {
   startMs: number;
@@ -35,7 +36,17 @@ export type AudioWaveformHandle = {
   zoom: (ratio: number, anchorMs?: number) => void;
   scrollTo: (startMs: number) => void;
   panBy: (viewportFraction: number) => void;
+  exportRangeWav: (startMs: number, endMs: number) => Blob | null;
 };
+
+async function decodeAudioBlob(blob: Blob): Promise<AudioBuffer> {
+  const context = new AudioContext();
+  try {
+    return await context.decodeAudioData(await blob.arrayBuffer());
+  } finally {
+    await context.close();
+  }
+}
 
 function regionColor(color: string, selected: boolean) {
   return selected
@@ -61,6 +72,7 @@ export const AudioWaveform = forwardRef<
     onViewport: (viewport: AudioWaveformViewport) => void;
     onFocusRange: (startMs: number, endMs: number) => void;
     onReadyPeaks: (peaks: number[][]) => void;
+    onAudioReady: (ready: boolean) => void;
     onError: (message: string) => void;
   }
 >(function AudioWaveform(
@@ -80,12 +92,14 @@ export const AudioWaveform = forwardRef<
     onViewport,
     onFocusRange,
     onReadyPeaks,
+    onAudioReady,
     onError,
   },
   ref,
 ) {
   const container = useRef<HTMLDivElement>(null);
   const waveSurfer = useRef<WaveSurfer | null>(null);
+  const decodedAudio = useRef<AudioBuffer | null>(null);
   const regions = useRef<RegionsPlugin | null>(null);
   const syncing = useRef(false);
   const focusSelectionModeRef = useRef(focusSelectionMode);
@@ -104,6 +118,7 @@ export const AudioWaveform = forwardRef<
     onViewport,
     onFocusRange,
     onReadyPeaks,
+    onAudioReady,
     onError,
   });
   const [ready, setReady] = useState(false);
@@ -118,6 +133,7 @@ export const AudioWaveform = forwardRef<
     onViewport,
     onFocusRange,
     onReadyPeaks,
+    onAudioReady,
     onError,
   };
 
@@ -187,6 +203,10 @@ export const AudioWaveform = forwardRef<
         viewport.current = nextViewport;
         callbacks.current.onViewport(nextViewport);
       },
+      exportRangeWav: (startMs, endMs) => {
+        const decoded = decodedAudio.current;
+        return decoded ? audioBufferRangeToWav(decoded, startMs, endMs) : null;
+      },
     }),
     [durationMs],
   );
@@ -195,6 +215,8 @@ export const AudioWaveform = forwardRef<
     if (!container.current) return;
     let active = true;
     setReady(false);
+    decodedAudio.current = null;
+    callbacks.current.onAudioReady(false);
     const instance = WaveSurfer.create({
       container: container.current,
       height: 236,
@@ -257,9 +279,10 @@ export const AudioWaveform = forwardRef<
         viewport.current = nextViewport;
         callbacks.current.onViewport(nextViewport);
       }),
-      instance.on("error", (error) =>
-        callbacks.current.onError(error.message || "波形加载失败"),
-      ),
+      instance.on("error", (error) => {
+        callbacks.current.onAudioReady(false);
+        callbacks.current.onError(error.message || "波形加载失败");
+      }),
       regionPlugin.on("region-clicked", (region, event) => {
         event.stopPropagation();
         callbacks.current.onSelect(region.id);
@@ -300,13 +323,21 @@ export const AudioWaveform = forwardRef<
     ];
 
     void fetchApiBlob(`/v1/files/${encodeURIComponent(assetId)}/content`)
-      .then((blob) =>
-        instance.loadBlob(
-          blob,
-          peaks.length ? peaks : undefined,
-          durationMs / 1000,
-        ),
-      )
+      .then(async (blob) => {
+        const [, explicitlyDecoded] = await Promise.all([
+          instance.loadBlob(
+            blob,
+            peaks.length ? peaks : undefined,
+            durationMs / 1000,
+          ),
+          peaks.length ? decodeAudioBlob(blob) : Promise.resolve(null),
+        ]);
+        if (!active) return;
+        const decoded = explicitlyDecoded ?? instance.getDecodedData();
+        if (!decoded) throw new Error("音频解码失败");
+        decodedAudio.current = decoded;
+        callbacks.current.onAudioReady(true);
+      })
       .catch((error) =>
         callbacks.current.onError(
           error instanceof Error ? error.message : "音频加载失败",
@@ -315,6 +346,8 @@ export const AudioWaveform = forwardRef<
 
     return () => {
       active = false;
+      callbacks.current.onAudioReady(false);
+      decodedAudio.current = null;
       subscriptions.forEach((unsubscribe) => unsubscribe());
       instance.destroy();
       waveSurfer.current = null;
