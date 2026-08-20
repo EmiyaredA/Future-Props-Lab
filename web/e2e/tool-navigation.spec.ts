@@ -137,6 +137,7 @@ test("opens the local video frame exporter", async ({ page }) => {
 });
 
 test("creates and edits an audio annotation task", async ({ page }) => {
+  const transcriptionBodies: string[] = [];
   await page.route("**/v1/model-test/transcription-options", async (route) =>
     route.fulfill({
       contentType: "application/json",
@@ -146,8 +147,8 @@ test("creates and edits an audio annotation task", async ({ page }) => {
             id: "e2e-asr-model",
             provider_id: "e2e-provider",
             provider_name: "E2E 识别供应商",
-            provider_kind: "openai",
-            slug: "e2e-asr",
+            provider_kind: "senseaudio_asr",
+            slug: "senseaudio-asr-pro-1.5-260319",
             label: "E2E 片段识别",
             description: "",
             max_input_bytes: 10 * 1024 * 1024,
@@ -157,7 +158,7 @@ test("creates and edits an audio annotation task", async ({ page }) => {
                 { value: "auto", label: "自动识别" },
                 { value: "ja", label: "日本語" },
               ],
-              target_language_options: [],
+              target_language_options: [{ value: "zh", label: "中文" }],
               supports_word_timestamps: false,
               supports_text_edit: false,
               supports_speaker_diarization: false,
@@ -185,18 +186,23 @@ test("creates and edits an audio annotation task", async ({ page }) => {
       }),
     }),
   );
-  await page.route("**/segment-transcriptions", async (route) =>
-    route.fulfill({
+  await page.route("**/segment-transcriptions", async (route) => {
+    transcriptionBodies.push(
+      route.request().postDataBuffer()?.toString("latin1") ?? "",
+    );
+    await route.fulfill({
       contentType: "application/json",
       body: JSON.stringify({
         text: "自动转写片段",
         model_id: "e2e-asr-model",
         requested_language: null,
         resolved_language: "auto",
+        requested_target_language: null,
+        resolved_target_language: null,
         log_id: "e2e-log",
       }),
-    }),
-  );
+    });
+  });
   await page.goto("/tools");
   await page.getByRole("button", { name: "打开录音分段标注" }).click();
   await expect(page).toHaveURL(/\/tools\/audio-annotation$/);
@@ -253,19 +259,68 @@ test("creates and edits an audio annotation task", async ({ page }) => {
     page.getByRole("button", { name: "播放当前片段" }),
   ).toBeVisible();
 
+  await page.getByRole("combobox", { name: "选择原文语言" }).click();
+  await page.getByRole("option", { name: "日语" }).click();
+  await expect(
+    page.getByRole("combobox", { name: "选择转写原语言" }),
+  ).toContainText("日本語");
+  await expect(
+    page.getByRole("combobox", { name: "选择转写目标语言" }),
+  ).toContainText("原文（日语）");
   const transcribeButton = page.getByRole("button", {
-    name: "转写当前片段到原文",
+    name: "转写当前片段到日语",
   });
   await expect(transcribeButton).toBeEnabled();
   await transcribeButton.click();
-  await expect(page.getByRole("textbox", { name: "原文说话内容" })).toHaveValue(
+  await expect(page.getByRole("textbox", { name: "日语说话内容" })).toHaveValue(
     "自动转写片段",
   );
   await transcribeButton.click();
   await expect(
-    page.getByRole("alertdialog", { name: "替换原文内容？" }),
+    page.getByRole("alertdialog", { name: "替换日语内容？" }),
   ).toBeVisible();
   await page.getByRole("button", { name: "取消", exact: true }).click();
+
+  const outputLanguage = page.getByRole("combobox", {
+    name: "选择转写目标语言",
+  });
+  await outputLanguage.click();
+  await page.getByRole("option", { name: /中文 创建并写入中文版本/ }).click();
+  await expect(outputLanguage).toContainText("中文");
+  const chineseTranscribeButton = page.getByRole("button", {
+    name: "转写当前片段到中文",
+  });
+  await expect(chineseTranscribeButton).toBeEnabled();
+  await chineseTranscribeButton.click();
+  const chineseTranscript = page.getByRole("textbox", {
+    name: "中文说话内容",
+  });
+  await expect(chineseTranscript).toHaveValue("自动转写片段");
+  const firstRegionLabel = page.locator(".annotation-region-label").first();
+  await expect(firstRegionLabel).toBeVisible();
+  await firstRegionLabel.evaluate((label) =>
+    label.parentElement?.setAttribute("data-e2e-region-stability", "preserved"),
+  );
+  const transcriptSave = page.waitForResponse(
+    (response) =>
+      response.request().method() === "PUT" &&
+      response.url().includes("/audio-annotation/projects/") &&
+      response.url().endsWith("/document") &&
+      response.ok(),
+  );
+  await chineseTranscript.fill("连续编辑不会重建波形区域");
+  await transcriptSave;
+  await expect(
+    page.locator('[data-e2e-region-stability="preserved"]'),
+  ).toHaveCount(1);
+  expect(transcriptionBodies).toHaveLength(2);
+  expect(transcriptionBodies[0]).toContain('name="language_tag"\r\n\r\nja\r\n');
+  expect(transcriptionBodies[0]).not.toContain('name="target_language_tag"');
+  expect(transcriptionBodies[1]).toContain('name="language_tag"\r\n\r\nja\r\n');
+  expect(transcriptionBodies[1]).toContain(
+    'name="target_language_tag"\r\n\r\nzh\r\n',
+  );
+  await page.getByRole("tab", { name: "日语" }).click();
 
   await page.setViewportSize({ width: 1440, height: 900 });
   const transport = page.locator(".annotation-transport");
@@ -288,13 +343,13 @@ test("creates and edits an audio annotation task", async ({ page }) => {
   await page.getByRole("combobox", { name: "选择说话人" }).click();
   await page.getByRole("option", { name: "说话人 1" }).click();
   await page
-    .getByRole("textbox", { name: "原文说话内容" })
+    .getByRole("textbox", { name: "日语说话内容" })
     .fill("自动化验收片段");
   await page.getByRole("checkbox", { name: "标记为已校对" }).click();
   await expect(page.getByText(/已自动保存/)).toBeVisible({ timeout: 5_000 });
 
   await page
-    .getByRole("textbox", { name: "原文说话内容" })
+    .getByRole("textbox", { name: "日语说话内容" })
     .fill("这段内容还没有保存");
   await page.getByRole("button", { name: "工具导航", exact: true }).click();
   await expect(

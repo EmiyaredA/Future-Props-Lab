@@ -17,7 +17,13 @@ import type {
 } from "@features/audio-annotation/types";
 import {
   clampWaveformZoom,
+  stabilizeWaveformRegionSegments,
+  stabilizeWaveformRegionSpeakers,
   waveformViewport,
+} from "@features/audio-annotation/model";
+import type {
+  WaveformRegionSegment,
+  WaveformRegionSpeaker,
 } from "@features/audio-annotation/model";
 import { audioBufferRangeToWav } from "@features/audio-annotation/audioClip";
 
@@ -109,6 +115,8 @@ export const AudioWaveform = forwardRef<
     endMs: durationMs,
   });
   const segmentsRef = useRef(segments);
+  const renderedSegmentsRef = useRef<WaveformRegionSegment[]>([]);
+  const renderedSpeakersRef = useRef<WaveformRegionSpeaker[]>([]);
   const callbacks = useRef({
     onSelect,
     onUpdate,
@@ -123,6 +131,16 @@ export const AudioWaveform = forwardRef<
   });
   const [ready, setReady] = useState(false);
   segmentsRef.current = segments;
+  renderedSegmentsRef.current = stabilizeWaveformRegionSegments(
+    renderedSegmentsRef.current,
+    segments,
+  );
+  renderedSpeakersRef.current = stabilizeWaveformRegionSpeakers(
+    renderedSpeakersRef.current,
+    speakers,
+  );
+  const renderedSegments = renderedSegmentsRef.current;
+  const renderedSpeakers = renderedSpeakersRef.current;
   focusSelectionModeRef.current = focusSelectionMode;
   callbacks.current = {
     onSelect,
@@ -360,9 +378,9 @@ export const AudioWaveform = forwardRef<
     syncing.current = true;
     regions.current.clearRegions();
     const speakerById = new Map(
-      speakers.map((speaker) => [speaker.id, speaker]),
+      renderedSpeakers.map((speaker) => [speaker.id, speaker]),
     );
-    segments
+    renderedSegments
       .map((segment, index) => ({ segment, index }))
       .sort(
         (left, right) =>
@@ -411,7 +429,13 @@ export const AudioWaveform = forwardRef<
           renderedRegion.element.style.pointerEvents = "none";
       });
     syncing.current = false;
-  }, [focusSelectionMode, ready, segments, speakers, selectedId]);
+  }, [
+    focusSelectionMode,
+    ready,
+    renderedSegments,
+    renderedSpeakers,
+    selectedId,
+  ]);
 
   return (
     <div

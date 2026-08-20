@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { LoaderCircle, Mic2, Trash2 } from "lucide-react";
 import {
   ANNOTATION_LANGUAGES,
   languageColor,
   languageLabel,
   segmentLanguageCodes,
+  transcriptionLanguageMatch,
   transcriptionTargetLanguageMatch,
 } from "@features/audio-annotation/model";
 import type {
@@ -18,6 +19,7 @@ const PRIMARY_VERSION = "primary";
 
 export type LanguageTranscriptionTarget = {
   version: string;
+  sourceLanguage: string | null;
   targetLanguage: string | null;
   label: string;
   text: string;
@@ -60,14 +62,58 @@ export function LanguageAnnotationEditor({
   const transcriptionOption = transcription?.options.find(
     (option) => option.id === transcription.modelId,
   );
-  const transcriptionTargetLanguage = activeLanguage
-    ? transcriptionTargetLanguageMatch(transcriptionOption, activeLanguage)
-    : null;
+  const isLocalizedVersion = activeVersion !== PRIMARY_VERSION;
+  const defaultTranscriptionSourceLanguage = transcriptionLanguageMatch(
+    transcriptionOption,
+    segment.language ?? null,
+  );
+  const [sourceLanguage, setSourceLanguage] = useState(
+    defaultTranscriptionSourceLanguage.value,
+  );
+  const sourceLanguageOptions =
+    transcriptionOption?.parameter_capabilities.language_options ?? [];
+  const transcriptionSourceLanguage =
+    sourceLanguageOptions.find((option) => option.value === sourceLanguage) ??
+    defaultTranscriptionSourceLanguage;
+  const transcriptionTargetLanguage =
+    isLocalizedVersion && activeLanguage
+      ? transcriptionTargetLanguageMatch(transcriptionOption, activeLanguage)
+      : null;
   const targetLanguageUnsupported = Boolean(
     transcriptionOption &&
-      activeLanguage &&
-      !transcriptionTargetLanguage,
+    isLocalizedVersion &&
+    activeLanguage &&
+    !transcriptionTargetLanguage,
   );
+
+  useEffect(() => {
+    setSourceLanguage(defaultTranscriptionSourceLanguage.value);
+  }, [
+    defaultTranscriptionSourceLanguage.value,
+    segment.id,
+    transcription?.modelId,
+  ]);
+
+  useEffect(() => {
+    if (
+      !transcription ||
+      transcription.pending ||
+      !isLocalizedVersion ||
+      !activeLanguage ||
+      !targetLanguageUnsupported
+    )
+      return;
+    const fallback = transcription.options.find((option) =>
+      transcriptionTargetLanguageMatch(option, activeLanguage),
+    );
+    if (fallback && fallback.id !== transcription.modelId)
+      transcription.onModelChange(fallback.id);
+  }, [
+    activeLanguage,
+    isLocalizedVersion,
+    targetLanguageUnsupported,
+    transcription,
+  ]);
 
   const addLanguage = (language: string) => {
     if (language === "add" || usedLanguages.includes(language)) return;
@@ -94,6 +140,55 @@ export function LanguageAnnotationEditor({
       false,
     );
   };
+
+  const selectOutputLanguage = (language: string) => {
+    if (language === PRIMARY_VERSION) {
+      setActiveVersion(PRIMARY_VERSION);
+      return;
+    }
+    if (!localizedTexts.some((item) => item.language === language)) {
+      onChange(
+        {
+          localized_texts: [...localizedTexts, { language, text: "" }],
+        },
+        true,
+      );
+    }
+    setActiveVersion(language);
+  };
+
+  const outputLanguageCodes = [
+    ...new Set([
+      ...localizedTexts.map((item) => item.language),
+      ...ANNOTATION_LANGUAGES.filter(
+        (language) => language.code !== segment.language,
+      ).map((language) => language.code),
+    ]),
+  ];
+  const outputLanguageOptions = [
+    {
+      value: PRIMARY_VERSION,
+      label: segment.language
+        ? `原文（${languageLabel(segment.language)}）`
+        : "原文（不翻译）",
+      description: "只识别语音，不请求翻译",
+    },
+    ...outputLanguageCodes.map((language) => {
+      const target = transcriptionTargetLanguageMatch(
+        transcriptionOption,
+        language,
+      );
+      const exists = localizedTexts.some((item) => item.language === language);
+      return {
+        value: language,
+        label: languageLabel(language),
+        description: target
+          ? `${exists ? "翻译并写入" : "创建并写入"}${languageLabel(language)}版本`
+          : "所选模型不支持这个目标语言",
+        disabled: !target,
+      };
+    }),
+  ];
 
   return (
     <div className="annotation-language-editor">
@@ -237,6 +332,7 @@ export function LanguageAnnotationEditor({
                         value: option.id,
                         label: option.label,
                         description:
+                          isLocalizedVersion &&
                           activeLanguage &&
                           !transcriptionTargetLanguageMatch(
                             option,
@@ -245,6 +341,7 @@ export function LanguageAnnotationEditor({
                             ? `${option.provider_name} · 不支持转写为${activeLabel}`
                             : `${option.provider_name} · 最多 ${Math.round(option.max_input_bytes / 1024 / 1024)} MB`,
                         disabled:
+                          isLocalizedVersion &&
                           Boolean(activeLanguage) &&
                           !transcriptionTargetLanguageMatch(
                             option,
@@ -268,7 +365,8 @@ export function LanguageAnnotationEditor({
                 onClick={() =>
                   transcription.onTranscribe({
                     version: activeVersion,
-                    targetLanguage: activeLanguage,
+                    sourceLanguage: transcriptionSourceLanguage.value,
+                    targetLanguage: isLocalizedVersion ? activeLanguage : null,
                     label: activeLabel,
                     text: activeText,
                   })
@@ -282,15 +380,53 @@ export function LanguageAnnotationEditor({
                 {transcription.pending ? "正在转写…" : "转写当前片段"}
               </button>
             </div>
+            <div
+              className="annotation-transcription-language-controls"
+              aria-label="片段转写语言设置"
+            >
+              <div className="annotation-transcription-language-field">
+                <span>原语言</span>
+                <CustomSelect
+                  ariaLabel="选择转写原语言"
+                  value={transcriptionSourceLanguage.value}
+                  disabled={transcription.pending || !transcriptionOption}
+                  options={
+                    sourceLanguageOptions.length
+                      ? sourceLanguageOptions
+                      : [{ value: "auto", label: "自动识别" }]
+                  }
+                  onChange={setSourceLanguage}
+                />
+              </div>
+              <span
+                className="annotation-transcription-language-arrow"
+                aria-hidden
+              >
+                →
+              </span>
+              <div className="annotation-transcription-language-field">
+                <span>目标语言</span>
+                <CustomSelect
+                  ariaLabel="选择转写目标语言"
+                  value={activeVersion}
+                  disabled={transcription.pending || !transcriptionOption}
+                  options={outputLanguageOptions}
+                  onChange={selectOutputLanguage}
+                />
+              </div>
+            </div>
             <small>
               {transcription.disabledReason ??
                 (!transcription.options.length
                   ? "请先在模型服务中启用支持语音识别的模型。"
                   : targetLanguageUnsupported
                     ? `所选模型不支持转写为${activeLabel}。`
-                  : transcriptionTargetLanguage
-                    ? `模型将自动识别语音并转写为${transcriptionTargetLanguage.label}。`
-                    : "模型将自动识别语音语言。" )}
+                    : isLocalizedVersion && transcriptionTargetLanguage
+                      ? `模型将按${transcriptionSourceLanguage.label}识别语音并翻译为${transcriptionTargetLanguage.label}。`
+                      : transcriptionSourceLanguage.value.toLocaleLowerCase() ===
+                          "auto"
+                        ? "模型将自动识别语音语言。"
+                        : `模型将按${transcriptionSourceLanguage.label}识别当前片段。`)}
             </small>
           </div>
         ) : null}

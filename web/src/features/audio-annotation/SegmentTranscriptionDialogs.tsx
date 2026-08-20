@@ -33,7 +33,7 @@ export function SegmentTranscriptionDialogs({
             controller.applyText(completed.target, completed.text)
           )
             controller.setNotice(
-              `已使用${completed.resolvedLanguage === "auto" ? "自动语言识别" : completed.resolvedLanguage}转写到${completed.target.label}。`,
+              `已自动识别语音并转写到${completed.target.label}。`,
             );
         }}
       />

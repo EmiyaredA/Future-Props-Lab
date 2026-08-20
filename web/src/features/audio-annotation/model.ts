@@ -26,6 +26,59 @@ export const SPEAKER_COLORS = [
   "#46B978",
 ];
 
+export type WaveformRegionSegment = Pick<
+  AudioAnnotationSegment,
+  "id" | "start_ms" | "end_ms" | "speaker_id"
+>;
+export type WaveformRegionSpeaker = Pick<
+  AudioAnnotationSpeaker,
+  "id" | "name" | "color"
+>;
+
+export function stabilizeWaveformRegionSegments(
+  previous: WaveformRegionSegment[],
+  segments: AudioAnnotationSegment[],
+): WaveformRegionSegment[] {
+  if (
+    previous.length === segments.length &&
+    segments.every((segment, index) => {
+      const rendered = previous[index];
+      return (
+        rendered?.id === segment.id &&
+        rendered.start_ms === segment.start_ms &&
+        rendered.end_ms === segment.end_ms &&
+        rendered.speaker_id === segment.speaker_id
+      );
+    })
+  )
+    return previous;
+  return segments.map(({ id, start_ms, end_ms, speaker_id }) => ({
+    id,
+    start_ms,
+    end_ms,
+    speaker_id,
+  }));
+}
+
+export function stabilizeWaveformRegionSpeakers(
+  previous: WaveformRegionSpeaker[],
+  speakers: AudioAnnotationSpeaker[],
+): WaveformRegionSpeaker[] {
+  if (
+    previous.length === speakers.length &&
+    speakers.every((speaker, index) => {
+      const rendered = previous[index];
+      return (
+        rendered?.id === speaker.id &&
+        rendered.name === speaker.name &&
+        rendered.color === speaker.color
+      );
+    })
+  )
+    return previous;
+  return speakers.map(({ id, name, color }) => ({ id, name, color }));
+}
+
 export const ANNOTATION_LANGUAGES = [
   { code: "zh", label: "中文", color: "teal" },
   { code: "ja", label: "日语", color: "purple" },

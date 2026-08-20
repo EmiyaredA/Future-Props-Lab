@@ -14,6 +14,8 @@ import {
   segmentLanguageCodes,
   segmentSearchableText,
   splitSegment,
+  stabilizeWaveformRegionSegments,
+  stabilizeWaveformRegionSpeakers,
   updateSegmentBounds,
   waveformFocusZoom,
   waveformViewport,
@@ -73,6 +75,41 @@ test("calculates bounded waveform zoom and viewport around a selected range", ()
     startMs: 0,
     endMs: 18_000,
   });
+});
+
+test("keeps waveform regions stable while only transcript content changes", () => {
+  const rendered = stabilizeWaveformRegionSegments([], segments);
+  const afterTextEdit = stabilizeWaveformRegionSegments(rendered, [
+    {
+      ...segments[0]!,
+      text: "正在连续输入的新内容",
+      localized_texts: [{ language: "ja", text: "編集中" }],
+      status: "draft",
+    },
+    segments[1]!,
+  ]);
+  expect(afterTextEdit).toBe(rendered);
+
+  const afterBoundsEdit = stabilizeWaveformRegionSegments(rendered, [
+    { ...segments[0]!, end_ms: 1_100 },
+    segments[1]!,
+  ]);
+  expect(afterBoundsEdit).not.toBe(rendered);
+  expect(afterBoundsEdit[0]).toMatchObject({ end_ms: 1_100 });
+
+  const renderedSpeakers = stabilizeWaveformRegionSpeakers([], speakers);
+  expect(
+    stabilizeWaveformRegionSpeakers(
+      renderedSpeakers,
+      speakers.map((speaker) => ({ ...speaker })),
+    ),
+  ).toBe(renderedSpeakers);
+  expect(
+    stabilizeWaveformRegionSpeakers(renderedSpeakers, [
+      { ...speakers[0]!, name: "新主持人" },
+      speakers[1]!,
+    ]),
+  ).not.toBe(renderedSpeakers);
 });
 
 test("collects and searches every language version of one audio segment", () => {

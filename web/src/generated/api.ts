@@ -2360,8 +2360,12 @@ export interface components {
             model_id: string;
             /** Requested Language */
             requested_language: string | null;
+            /** Requested Target Language */
+            requested_target_language: string | null;
             /** Resolved Language */
             resolved_language: string;
+            /** Resolved Target Language */
+            resolved_target_language: string | null;
             /** Text */
             text: string;
         };
@@ -2487,6 +2491,8 @@ export interface components {
             segment_id: string;
             /** Start Ms */
             start_ms: number;
+            /** Target Language Tag */
+            target_language_tag?: string | null;
             /** Upload */
             upload: string;
         };

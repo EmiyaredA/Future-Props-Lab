@@ -35,7 +35,6 @@ type SegmentTranscriptionTarget = LanguageTranscriptionTarget & {
 type CompletedSegmentTranscription = {
   target: SegmentTranscriptionTarget;
   text: string;
-  resolvedLanguage: string;
 };
 
 export type SegmentTranscriptionController = ReturnType<
@@ -160,7 +159,7 @@ export function useSegmentTranscription({
         segmentId: input.target.segmentId,
         startMs: input.target.startMs,
         endMs: input.target.endMs,
-        languageTag: null,
+        languageTag: input.target.sourceLanguage,
         targetLanguageTag: input.target.targetLanguage,
       }),
     onSuccess: (result, input) => {
@@ -175,12 +174,9 @@ export function useSegmentTranscription({
         setCompleted({
           target: input.target,
           text: result.text,
-          resolvedLanguage: result.resolved_language,
         });
       } else if (applyText(input.target, result.text)) {
-        setNotice(
-          `已使用${result.resolved_language === "auto" ? "自动语言识别" : result.resolved_language}转写到${input.target.label}。`,
-        );
+        setNotice(`已自动识别语音并转写到${input.target.label}。`);
       }
     },
     onError: (error) =>

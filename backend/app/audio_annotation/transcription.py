@@ -12,7 +12,7 @@ from app.core.credentials import decrypt_secret
 from app.llm.playground.transcription_parameters import (
     resolve_parameters,
 )
-from app.llm.providers.transcription import transcribe_model_audio
+from app.llm.providers.transcription import TranscriptionResult, transcribe_model_audio
 from app.llm.transcription_support import (
     max_transcription_input_bytes,
     model_supports_transcription,
@@ -26,6 +26,15 @@ from app.schemas.model_test import ModelTestTranscriptionParametersIn
 
 _WAV_MIME_TYPES = {"audio/wav", "audio/x-wav", "application/octet-stream"}
 _MAX_TEXT_LENGTH = 20_000
+
+
+def _translated_text(result: TranscriptionResult) -> str:
+    if not result.segments:
+        raise ValueError("语音识别供应商未返回目标语言译文")
+    translations = [(segment.translation or "").strip() for segment in result.segments]
+    if any(not text for text in translations):
+        raise ValueError("语音识别供应商未返回完整的目标语言译文")
+    return "\n".join(translations)
 
 
 class AudioAnnotationTranscription:
@@ -211,7 +220,7 @@ class AudioAnnotationTranscription:
                     language=resolved_language,
                     parameters=request_options,
                 )
-                text = result.text.strip()
+                text = _translated_text(result) if resolved_target_language else result.text.strip()
                 if len(text) > _MAX_TEXT_LENGTH:
                     raise ValueError("语音识别文本超过单个标注片段允许的长度")
             except Exception as exc:

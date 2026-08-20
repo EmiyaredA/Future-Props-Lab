@@ -11,8 +11,11 @@ from app.audio_annotation.projects import AudioAnnotationError, AudioAnnotationP
 from app.core.config import get_settings
 from app.core.db import SessionLocal
 from app.core.tenant_context import bind_workspace
-from app.llm.providers.transcription import TranscriptionResult
-from app.llm.transcription_support import resolve_transcription_language
+from app.llm.providers.transcription import TranscriptionResult, TranscriptSegment
+from app.llm.transcription_support import (
+    resolve_transcription_language,
+    resolve_transcription_target_language,
+)
 from app.main import app
 from app.models import ModelEntry, ModelProvider, ModelTestTranscriptionTask, Workspace
 
@@ -43,8 +46,8 @@ async def create_asr_model(client: httpx.AsyncClient) -> tuple[dict, dict]:
         json={
             "expected_catalog_revision": catalog["revision"],
             "name": f"annotation-asr-{uuid4()}",
-            "kind": "openai",
-            "base_url": "https://asr.example/v1",
+            "kind": "senseaudio_asr",
+            "base_url": "https://dashscope.aliyuncs.com/api/v1/services/audio/asr/transcription",
             "api_key": "annotation-secret",
             "enabled": True,
         },
@@ -55,7 +58,7 @@ async def create_asr_model(client: httpx.AsyncClient) -> tuple[dict, dict]:
         f"/v1/model-providers/{provider_body['provider']['id']}/models",
         json={
             "expected_catalog_revision": provider_body["revision"],
-            "slug": f"annotation-model-{uuid4()}",
+            "slug": f"senseaudio-asr-pro-{uuid4()}",
             "label": "标注片段识别模型",
             "description": "",
             "capabilities": ["speech_recognition"],
@@ -280,7 +283,7 @@ async def test_audio_annotation_project_document_waveform_and_asset_guard() -> N
 
 
 @pytest.mark.asyncio
-async def test_audio_annotation_transcribes_selected_range_with_language_and_log(
+async def test_audio_annotation_transcribes_selected_range_to_target_language_and_logs(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     calls: list[dict] = []
@@ -289,7 +292,20 @@ async def test_audio_annotation_transcribes_selected_range_with_language_and_log
         kwargs["source_head"] = kwargs["source"].read(4)
         kwargs["source"].seek(0)
         calls.append(kwargs)
-        return TranscriptionResult(text="  片段识别完成。  ")
+        if kwargs["parameters"]["target_language"]:
+            return TranscriptionResult(
+                text="  Original transcription.  ",
+                segments=(
+                    TranscriptSegment(
+                        speaker="speaker",
+                        start_ms=0,
+                        end_ms=1000,
+                        text="Original transcription.",
+                        translation="  片段翻译完成。  ",
+                    ),
+                ),
+            )
+        return TranscriptionResult(text="  日本語の書き起こし。  ")
 
     monkeypatch.setattr(
         "app.audio_annotation.transcription.transcribe_model_audio",
@@ -314,15 +330,19 @@ async def test_audio_annotation_transcribes_selected_range_with_language_and_log
                 "start_ms": "0",
                 "end_ms": "1000",
                 "language_tag": "ja-JP",
+                "target_language_tag": "zh-CN",
             },
             files={"upload": ("segment.wav", wav_bytes(), "audio/wav")},
         )
         assert response.status_code == 200, response.text
         result = response.json()
-        assert result["text"] == "片段识别完成。"
+        assert result["text"] == "片段翻译完成。"
         assert result["requested_language"] == "ja-JP"
         assert result["resolved_language"] == "ja"
+        assert result["requested_target_language"] == "zh-CN"
+        assert result["resolved_target_language"] == "zh"
         assert calls[0]["language"] == "ja"
+        assert calls[0]["parameters"]["target_language"] == "zh"
         assert calls[0]["filename"] == "segment-segment-one.wav"
         assert calls[0]["source_head"] == b"RIFF"
 
@@ -330,21 +350,87 @@ async def test_audio_annotation_transcribes_selected_range_with_language_and_log
         assert log.status_code == 200, log.text
         assert log.json()["call_source"] == "audio_annotation"
         assert log.json()["request_payload"]["segment_id"] == "segment-one"
+        assert log.json()["request_payload"]["language"] == "ja"
+        assert log.json()["request_payload"]["target_language"] == "zh"
 
-        automatic = await client.post(
+        original = await client.post(
             f"/v1/audio-annotation/projects/{project['id']}/segment-transcriptions",
             data={
                 "model_id": model["id"],
                 "segment_id": "segment-two",
                 "start_ms": "0",
                 "end_ms": "1000",
-                "language_tag": "xx-ZZ",
+                "language_tag": "ja-JP",
+            },
+            files={"upload": ("segment.wav", wav_bytes(), "audio/wav")},
+        )
+        assert original.status_code == 200, original.text
+        assert original.json()["text"] == "日本語の書き起こし。"
+        assert original.json()["resolved_language"] == "ja"
+        assert original.json()["resolved_target_language"] is None
+        assert calls[1]["language"] == "ja"
+        assert calls[1]["parameters"]["target_language"] is None
+
+        automatic = await client.post(
+            f"/v1/audio-annotation/projects/{project['id']}/segment-transcriptions",
+            data={
+                "model_id": model["id"],
+                "segment_id": "segment-auto",
+                "start_ms": "0",
+                "end_ms": "1000",
             },
             files={"upload": ("segment.wav", wav_bytes(), "audio/wav")},
         )
         assert automatic.status_code == 200, automatic.text
         assert automatic.json()["resolved_language"] == "auto"
-        assert calls[1]["language"] == "auto"
+        assert automatic.json()["resolved_target_language"] is None
+        assert calls[2]["language"] == "auto"
+
+        unsupported_target = await client.post(
+            f"/v1/audio-annotation/projects/{project['id']}/segment-transcriptions",
+            data={
+                "model_id": model["id"],
+                "segment_id": "segment-unsupported-target",
+                "start_ms": "0",
+                "end_ms": "1000",
+                "target_language_tag": "xx-ZZ",
+            },
+            files={"upload": ("segment.wav", wav_bytes(), "audio/wav")},
+        )
+        assert unsupported_target.status_code == 409
+        assert unsupported_target.json()["code"] == "target_language_unsupported"
+
+        async def incomplete_translation(**_kwargs) -> TranscriptionResult:
+            return TranscriptionResult(
+                text="English source text.",
+                segments=(
+                    TranscriptSegment(
+                        speaker="speaker",
+                        start_ms=0,
+                        end_ms=1000,
+                        text="English source text.",
+                    ),
+                ),
+            )
+
+        monkeypatch.setattr(
+            "app.audio_annotation.transcription.transcribe_model_audio",
+            incomplete_translation,
+        )
+        untranslated = await client.post(
+            f"/v1/audio-annotation/projects/{project['id']}/segment-transcriptions",
+            data={
+                "model_id": model["id"],
+                "segment_id": "segment-untranslated",
+                "start_ms": "0",
+                "end_ms": "1000",
+                "language_tag": "ja",
+                "target_language_tag": "zh",
+            },
+            files={"upload": ("segment.wav", wav_bytes(), "audio/wav")},
+        )
+        assert untranslated.status_code == 502
+        assert untranslated.json()["detail"] == "语音识别供应商未返回完整的目标语言译文"
 
         async def failing_transcribe(**_kwargs) -> TranscriptionResult:
             raise httpx.ReadTimeout("timed out")
@@ -360,7 +446,6 @@ async def test_audio_annotation_transcribes_selected_range_with_language_and_log
                 "segment_id": "segment-failed",
                 "start_ms": "0",
                 "end_ms": "1000",
-                "language_tag": "ja",
             },
             files={"upload": ("segment.wav", wav_bytes(), "audio/wav")},
         )
@@ -387,7 +472,6 @@ async def test_audio_annotation_transcribes_selected_range_with_language_and_log
                 "segment_id": "segment-empty",
                 "start_ms": "0",
                 "end_ms": "1000",
-                "language_tag": "ja",
             },
             files={"upload": ("segment.wav", wav_bytes(), "audio/wav")},
         )
@@ -463,6 +547,9 @@ def test_transcription_language_supports_pro_aliases_and_auto_fallback() -> None
     assert resolve_transcription_language(model, provider, "ja-JP") == "Japanese"
     assert resolve_transcription_language(model, provider, "fr-CA") == "French"
     assert resolve_transcription_language(model, provider, "yue-HK") == "auto"
+    assert resolve_transcription_target_language(model, provider, "zh-CN") == "Chinese"
+    assert resolve_transcription_target_language(model, provider, "ja-JP") == "Japanese"
+    assert resolve_transcription_target_language(model, provider, "yue-HK") is None
 
 
 @pytest.mark.asyncio

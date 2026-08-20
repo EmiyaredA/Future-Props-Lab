@@ -780,9 +780,31 @@
             ],
             "title": "Requested Language"
           },
+          "requested_target_language": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Requested Target Language"
+          },
           "resolved_language": {
             "title": "Resolved Language",
             "type": "string"
+          },
+          "resolved_target_language": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resolved Target Language"
           },
           "text": {
             "title": "Text",
@@ -794,6 +816,8 @@
           "model_id",
           "requested_language",
           "resolved_language",
+          "requested_target_language",
+          "resolved_target_language",
           "log_id"
         ],
         "title": "AudioAnnotationSegmentTranscriptionOut",
@@ -1141,6 +1165,18 @@
             "minimum": 0.0,
             "title": "Start Ms",
             "type": "integer"
+          },
+          "target_language_tag": {
+            "anyOf": [
+              {
+                "maxLength": 35,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Language Tag"
           },
           "upload": {
             "contentMediaType": "application/octet-stream",
