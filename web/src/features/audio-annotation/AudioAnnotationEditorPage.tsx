@@ -3,6 +3,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeft,
   Check,
+  ChevronLeft,
+  ChevronRight,
   Download,
   FileJson,
   Merge,
@@ -55,6 +57,8 @@ import {
   splitSegment,
   type ImportedAudioAnnotationSpeaker,
   updateSegmentBounds,
+  waveformFocusZoom,
+  WAVEFORM_ZOOM_RATIOS,
 } from "@features/audio-annotation/model";
 import { LanguageAnnotationEditor } from "@features/audio-annotation/LanguageAnnotationEditor";
 import type {
@@ -339,7 +343,12 @@ export function AudioAnnotationEditorPage({
   );
   const [rate, setRate] = useState("1");
   const [volume, setVolume] = useState(0.8);
-  const [zoomIndex, setZoomIndex] = useState(0);
+  const [zoomRatio, setZoomRatio] = useState(1);
+  const [waveformViewport, setWaveformViewport] = useState({
+    startMs: 0,
+    endMs: 0,
+  });
+  const [focusSelectionMode, setFocusSelectionMode] = useState(false);
   const [search, setSearch] = useState("");
   const [languageFilter, setLanguageFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -587,6 +596,8 @@ export function AudioAnnotationEditorPage({
         event.preventDefault();
         if (event.shiftKey) redo();
         else undo();
+      } else if (event.key === "Escape") {
+        setFocusSelectionMode(false);
       }
     };
     window.addEventListener("keydown", keyDown);
@@ -683,8 +694,24 @@ export function AudioAnnotationEditorPage({
       : dirty
         ? "等待保存"
         : "已自动保存";
-  const zoomLevels = [0, 12, 28, 60];
   const srtMissing = incompleteSegments(document.segments).length;
+  const viewportDurationMs = project.duration_ms / zoomRatio;
+  const maxViewportStartMs = Math.max(
+    0,
+    project.duration_ms - viewportDurationMs,
+  );
+  const zoomCenterMs =
+    waveformViewport.endMs > waveformViewport.startMs
+      ? (waveformViewport.startMs + waveformViewport.endMs) / 2
+      : currentMs;
+  const applyZoom = (nextRatio: number, anchorMs = zoomCenterMs) => {
+    const next = Math.min(
+      WAVEFORM_ZOOM_RATIOS.at(-1)!,
+      Math.max(WAVEFORM_ZOOM_RATIOS[0], nextRatio),
+    );
+    setZoomRatio(next);
+    waveformRef.current?.zoom(next, anchorMs);
+  };
 
   return (
     <section className="page annotation-editor-page">
@@ -755,31 +782,72 @@ export function AudioAnnotationEditorPage({
                   {(project.byte_size / 1024 / 1024).toFixed(1)} MB
                 </span>
               </div>
-              <div className="annotation-zoom-controls">
+              <div className="annotation-waveform-tools">
+                <div className="annotation-zoom-controls">
+                  <button
+                    type="button"
+                    aria-label="缩小波形"
+                    disabled={zoomRatio <= 1}
+                    onClick={() => applyZoom(zoomRatio / 2)}
+                  >
+                    <ZoomOut aria-hidden />
+                  </button>
+                  <input
+                    type="range"
+                    min="0"
+                    max="8"
+                    step="0.05"
+                    value={Math.log2(zoomRatio)}
+                    aria-label="波形缩放比例"
+                    onChange={(event) =>
+                      applyZoom(2 ** Number(event.target.value))
+                    }
+                  />
+                  <span>{zoomRatio.toFixed(zoomRatio < 10 ? 1 : 0)}×</span>
+                  <button
+                    type="button"
+                    aria-label="放大波形"
+                    disabled={zoomRatio >= WAVEFORM_ZOOM_RATIOS.at(-1)!}
+                    onClick={() => applyZoom(zoomRatio * 2)}
+                  >
+                    <ZoomIn aria-hidden />
+                  </button>
+                </div>
                 <button
                   type="button"
-                  aria-label="缩小波形"
-                  disabled={zoomIndex === 0}
-                  onClick={() => {
-                    const next = Math.max(0, zoomIndex - 1);
-                    setZoomIndex(next);
-                    waveformRef.current?.zoom(zoomLevels[next]!);
-                  }}
+                  className="annotation-view-action"
+                  disabled={zoomRatio === 1}
+                  onClick={() => applyZoom(1, 0)}
                 >
-                  <ZoomOut aria-hidden />
+                  适应全长
                 </button>
-                <span>{["100%", "200%", "400%", "800%"][zoomIndex]}</span>
                 <button
                   type="button"
-                  aria-label="放大波形"
-                  disabled={zoomIndex === 3}
+                  className="annotation-view-action"
+                  disabled={!selected}
                   onClick={() => {
-                    const next = Math.min(3, zoomIndex + 1);
-                    setZoomIndex(next);
-                    waveformRef.current?.zoom(zoomLevels[next]!);
+                    if (!selected) return;
+                    const next = waveformFocusZoom(
+                      project.duration_ms,
+                      selected.start_ms,
+                      selected.end_ms,
+                    );
+                    applyZoom(next, (selected.start_ms + selected.end_ms) / 2);
                   }}
                 >
-                  <ZoomIn aria-hidden />
+                  聚焦所选
+                </button>
+                <button
+                  type="button"
+                  className="annotation-view-action"
+                  aria-pressed={focusSelectionMode}
+                  onClick={() => {
+                    const next = !focusSelectionMode;
+                    setFocusSelectionMode(next);
+                    if (next) applyZoom(1, 0);
+                  }}
+                >
+                  {focusSelectionMode ? "取消框选" : "框选放大"}
                 </button>
               </div>
             </header>
@@ -791,6 +859,7 @@ export function AudioAnnotationEditorPage({
               segments={document.segments}
               speakers={document.speakers}
               selectedId={selectedId}
+              focusSelectionMode={focusSelectionMode}
               onSelect={(segmentId) => {
                 if (previewingSegmentId) waveformRef.current?.pause();
                 setPreviewingSegmentId(null);
@@ -815,12 +884,64 @@ export function AudioAnnotationEditorPage({
                 setPlaying(nextPlaying);
                 if (!nextPlaying) setPreviewingSegmentId(null);
               }}
+              onViewport={setWaveformViewport}
+              onFocusRange={(startMs, endMs) => {
+                const next = waveformFocusZoom(
+                  project.duration_ms,
+                  startMs,
+                  endMs,
+                );
+                setFocusSelectionMode(false);
+                setZoomRatio(next);
+                waveformRef.current?.zoom(next, (startMs + endMs) / 2);
+              }}
               onReadyPeaks={(peaks) => {
                 if (!waveform.peaks.length && !savePeaks.isPending)
                   savePeaks.mutate(peaks);
               }}
               onError={setNotice}
             />
+            <div className="annotation-waveform-navigator">
+              <button
+                type="button"
+                aria-label="向左浏览波形"
+                disabled={zoomRatio === 1 || waveformViewport.startMs <= 0}
+                onClick={() => waveformRef.current?.panBy(-0.8)}
+              >
+                <ChevronLeft aria-hidden />
+              </button>
+              <label>
+                <span>左右浏览</span>
+                <input
+                  type="range"
+                  min="0"
+                  max={maxViewportStartMs}
+                  step="100"
+                  value={Math.min(maxViewportStartMs, waveformViewport.startMs)}
+                  aria-label="波形浏览位置"
+                  disabled={zoomRatio === 1}
+                  onChange={(event) =>
+                    waveformRef.current?.scrollTo(Number(event.target.value))
+                  }
+                />
+              </label>
+              <button
+                type="button"
+                aria-label="向右浏览波形"
+                disabled={
+                  zoomRatio === 1 ||
+                  waveformViewport.startMs >= maxViewportStartMs
+                }
+                onClick={() => waveformRef.current?.panBy(0.8)}
+              >
+                <ChevronRight aria-hidden />
+              </button>
+              <span className="annotation-viewport-time">
+                当前窗口 {formatTimestamp(waveformViewport.startMs)} –{" "}
+                {formatTimestamp(waveformViewport.endMs || project.duration_ms)}
+              </span>
+              <small>拖动滑杆，或在波形上横向滚动</small>
+            </div>
             <div className="annotation-transport">
               <button
                 type="button"

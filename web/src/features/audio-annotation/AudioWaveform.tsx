@@ -15,6 +15,15 @@ import type {
   AudioAnnotationSegment,
   AudioAnnotationSpeaker,
 } from "@features/audio-annotation/types";
+import {
+  clampWaveformZoom,
+  waveformViewport,
+} from "@features/audio-annotation/model";
+
+export type AudioWaveformViewport = {
+  startMs: number;
+  endMs: number;
+};
 
 export type AudioWaveformHandle = {
   playPause: () => void;
@@ -23,7 +32,9 @@ export type AudioWaveformHandle = {
   seekMs: (milliseconds: number) => void;
   setRate: (rate: number) => void;
   setVolume: (volume: number) => void;
-  zoom: (pixelsPerSecond: number) => void;
+  zoom: (ratio: number, anchorMs?: number) => void;
+  scrollTo: (startMs: number) => void;
+  panBy: (viewportFraction: number) => void;
 };
 
 function regionColor(color: string, selected: boolean) {
@@ -41,11 +52,14 @@ export const AudioWaveform = forwardRef<
     segments: AudioAnnotationSegment[];
     speakers: AudioAnnotationSpeaker[];
     selectedId: string | null;
+    focusSelectionMode: boolean;
     onSelect: (segmentId: string) => void;
     onUpdate: (segmentId: string, startMs: number, endMs: number) => void;
     onCreate: (startMs: number, endMs: number) => void;
     onTime: (milliseconds: number) => void;
     onPlayState: (playing: boolean) => void;
+    onViewport: (viewport: AudioWaveformViewport) => void;
+    onFocusRange: (startMs: number, endMs: number) => void;
     onReadyPeaks: (peaks: number[][]) => void;
     onError: (message: string) => void;
   }
@@ -57,11 +71,14 @@ export const AudioWaveform = forwardRef<
     segments,
     speakers,
     selectedId,
+    focusSelectionMode,
     onSelect,
     onUpdate,
     onCreate,
     onTime,
     onPlayState,
+    onViewport,
+    onFocusRange,
     onReadyPeaks,
     onError,
   },
@@ -71,6 +88,12 @@ export const AudioWaveform = forwardRef<
   const waveSurfer = useRef<WaveSurfer | null>(null);
   const regions = useRef<RegionsPlugin | null>(null);
   const syncing = useRef(false);
+  const focusSelectionModeRef = useRef(focusSelectionMode);
+  const zoomRatio = useRef(1);
+  const viewport = useRef<AudioWaveformViewport>({
+    startMs: 0,
+    endMs: durationMs,
+  });
   const segmentsRef = useRef(segments);
   const callbacks = useRef({
     onSelect,
@@ -78,40 +101,95 @@ export const AudioWaveform = forwardRef<
     onCreate,
     onTime,
     onPlayState,
+    onViewport,
+    onFocusRange,
     onReadyPeaks,
     onError,
   });
   const [ready, setReady] = useState(false);
   segmentsRef.current = segments;
+  focusSelectionModeRef.current = focusSelectionMode;
   callbacks.current = {
     onSelect,
     onUpdate,
     onCreate,
     onTime,
     onPlayState,
+    onViewport,
+    onFocusRange,
     onReadyPeaks,
     onError,
   };
 
-  useImperativeHandle(ref, () => ({
-    playPause: () => void waveSurfer.current?.playPause(),
-    playRange: (startMs, endMs) => {
-      const instance = waveSurfer.current;
-      if (!instance) return;
-      void instance
-        .play(startMs / 1000, endMs / 1000)
-        .catch((error: unknown) =>
-          callbacks.current.onError(
-            error instanceof Error ? error.message : "片段播放失败",
-          ),
+  useImperativeHandle(
+    ref,
+    () => ({
+      playPause: () => void waveSurfer.current?.playPause(),
+      playRange: (startMs, endMs) => {
+        const instance = waveSurfer.current;
+        if (!instance) return;
+        void instance
+          .play(startMs / 1000, endMs / 1000)
+          .catch((error: unknown) =>
+            callbacks.current.onError(
+              error instanceof Error ? error.message : "片段播放失败",
+            ),
+          );
+      },
+      pause: () => waveSurfer.current?.pause(),
+      seekMs: (milliseconds) =>
+        waveSurfer.current?.setTime(milliseconds / 1000),
+      setRate: (rate) => waveSurfer.current?.setPlaybackRate(rate),
+      setVolume: (volume) => waveSurfer.current?.setVolume(volume),
+      zoom: (ratio, anchorMs) => {
+        const instance = waveSurfer.current;
+        if (!instance) return;
+        const nextRatio = clampWaveformZoom(ratio);
+        const centerMs =
+          anchorMs ?? (viewport.current.startMs + viewport.current.endMs) / 2;
+        const nextViewport = waveformViewport(durationMs, nextRatio, centerMs);
+        zoomRatio.current = nextRatio;
+        instance.zoom((instance.getWidth() / (durationMs / 1000)) * nextRatio);
+        if (nextRatio === 1) instance.setScroll(0);
+        else instance.setScrollTime(nextViewport.startMs / 1000);
+        viewport.current = nextViewport;
+        callbacks.current.onViewport(nextViewport);
+      },
+      scrollTo: (startMs) => {
+        const instance = waveSurfer.current;
+        if (!instance) return;
+        const visibleMs = durationMs / zoomRatio.current;
+        const safeStart = Math.min(
+          Math.max(0, startMs),
+          Math.max(0, durationMs - visibleMs),
         );
-    },
-    pause: () => waveSurfer.current?.pause(),
-    seekMs: (milliseconds) => waveSurfer.current?.setTime(milliseconds / 1000),
-    setRate: (rate) => waveSurfer.current?.setPlaybackRate(rate),
-    setVolume: (volume) => waveSurfer.current?.setVolume(volume),
-    zoom: (pixelsPerSecond) => waveSurfer.current?.zoom(pixelsPerSecond),
-  }));
+        const nextViewport = {
+          startMs: safeStart,
+          endMs: Math.min(durationMs, safeStart + visibleMs),
+        };
+        instance.setScrollTime(safeStart / 1000);
+        viewport.current = nextViewport;
+        callbacks.current.onViewport(nextViewport);
+      },
+      panBy: (viewportFraction) => {
+        const instance = waveSurfer.current;
+        if (!instance) return;
+        const visibleMs = durationMs / zoomRatio.current;
+        const safeStart = Math.min(
+          Math.max(0, viewport.current.startMs + visibleMs * viewportFraction),
+          Math.max(0, durationMs - visibleMs),
+        );
+        const nextViewport = {
+          startMs: safeStart,
+          endMs: Math.min(durationMs, safeStart + visibleMs),
+        };
+        instance.setScrollTime(safeStart / 1000);
+        viewport.current = nextViewport;
+        callbacks.current.onViewport(nextViewport);
+      },
+    }),
+    [durationMs],
+  );
 
   useEffect(() => {
     if (!container.current) return;
@@ -148,6 +226,9 @@ export const AudioWaveform = forwardRef<
       instance.on("ready", () => {
         if (!active) return;
         setReady(true);
+        const initialViewport = { startMs: 0, endMs: durationMs };
+        viewport.current = initialViewport;
+        callbacks.current.onViewport(initialViewport);
         regionPlugin.enableDragSelection(
           { color: "rgba(237, 122, 82, 0.18)", minLength: 0.1 },
           4,
@@ -168,6 +249,14 @@ export const AudioWaveform = forwardRef<
       instance.on("play", () => callbacks.current.onPlayState(true)),
       instance.on("pause", () => callbacks.current.onPlayState(false)),
       instance.on("finish", () => callbacks.current.onPlayState(false)),
+      instance.on("scroll", (visibleStartTime, visibleEndTime) => {
+        const nextViewport = {
+          startMs: Math.round(visibleStartTime * 1000),
+          endMs: Math.round(visibleEndTime * 1000),
+        };
+        viewport.current = nextViewport;
+        callbacks.current.onViewport(nextViewport);
+      }),
       instance.on("error", (error) =>
         callbacks.current.onError(error.message || "波形加载失败"),
       ),
@@ -194,6 +283,14 @@ export const AudioWaveform = forwardRef<
           segmentsRef.current.some((item) => item.id === region.id)
         )
           return;
+        if (focusSelectionModeRef.current) {
+          callbacks.current.onFocusRange(
+            Math.round(region.start * 1000),
+            Math.round(region.end * 1000),
+          );
+          region.remove();
+          return;
+        }
         callbacks.current.onCreate(
           Math.round(region.start * 1000),
           Math.round(region.end * 1000),
@@ -264,7 +361,7 @@ export const AudioWaveform = forwardRef<
           whiteSpace: "nowrap",
           pointerEvents: "none",
         });
-        regions.current?.addRegion({
+        const renderedRegion = regions.current?.addRegion({
           id: segment.id,
           start: segment.start_ms / 1000,
           end: segment.end_ms / 1000,
@@ -274,15 +371,19 @@ export const AudioWaveform = forwardRef<
           ),
           content: label,
           minLength: 0.1,
-          drag: true,
-          resize: true,
+          drag: !focusSelectionMode,
+          resize: !focusSelectionMode,
         });
+        if (focusSelectionMode && renderedRegion?.element)
+          renderedRegion.element.style.pointerEvents = "none";
       });
     syncing.current = false;
-  }, [ready, segments, speakers, selectedId]);
+  }, [focusSelectionMode, ready, segments, speakers, selectedId]);
 
   return (
-    <div className="annotation-waveform-shell">
+    <div
+      className={`annotation-waveform-shell${focusSelectionMode ? " is-focus-selecting" : ""}`}
+    >
       <div
         ref={container}
         className="annotation-waveform"
@@ -290,6 +391,11 @@ export const AudioWaveform = forwardRef<
       />
       {!ready ? (
         <div className="annotation-waveform-loading">正在准备音频波形…</div>
+      ) : null}
+      {ready && focusSelectionMode ? (
+        <div className="annotation-waveform-selection-hint" role="status">
+          在波形上拖拽框选，松手后只显示该时间范围
+        </div>
       ) : null}
     </div>
   );

@@ -2,6 +2,7 @@ import {
   buildProjectFile,
   buildSrt,
   buildTranscriptionFile,
+  clampWaveformZoom,
   createSegment,
   duplicateSegmentForOverlap,
   formatSrtTimestamp,
@@ -14,6 +15,8 @@ import {
   segmentSearchableText,
   splitSegment,
   updateSegmentBounds,
+  waveformFocusZoom,
+  waveformViewport,
 } from "@features/audio-annotation/model";
 import type {
   AudioAnnotationProject,
@@ -55,6 +58,21 @@ test("formats and parses millisecond timestamps", () => {
   expect(parseTimestamp("01:60.000")).toBeNull();
   expect(formatSrtTimestamp(0)).toBe("00:00:00,000");
   expect(formatSrtTimestamp(3_662_345)).toBe("01:01:02,345");
+});
+
+test("calculates bounded waveform zoom and viewport around a selected range", () => {
+  expect(clampWaveformZoom(0)).toBe(1);
+  expect(clampWaveformZoom(999)).toBe(256);
+  expect(waveformFocusZoom(1_800_000, 900_000, 910_000)).toBe(100);
+  expect(waveformFocusZoom(1_800_000, 10_000, 10_100)).toBe(256);
+  expect(waveformViewport(1_800_000, 100, 905_000)).toEqual({
+    startMs: 896_000,
+    endMs: 914_000,
+  });
+  expect(waveformViewport(1_800_000, 100, 2_000)).toEqual({
+    startMs: 0,
+    endMs: 18_000,
+  });
 });
 
 test("collects and searches every language version of one audio segment", () => {

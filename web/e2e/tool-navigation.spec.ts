@@ -145,7 +145,7 @@ test("creates and edits an audio annotation task", async ({ page }) => {
   await page.getByLabel("上传录音文件").setInputFiles({
     name: `e2e-annotation-${Date.now()}.wav`,
     mimeType: "audio/wav",
-    buffer: wavFixture(),
+    buffer: wavFixture(12),
   });
   await expect(
     page.getByRole("option", { name: /e2e-annotation-/ }),
@@ -157,13 +157,41 @@ test("creates and edits an audio annotation task", async ({ page }) => {
     page.getByRole("complementary", { name: "片段编辑器" }),
   ).toBeVisible();
   await expect(page.getByLabel("录音波形时间轴")).toBeVisible();
+  await expect(page.getByLabel("波形缩放比例")).toHaveValue("0");
+  await page.getByRole("button", { name: "框选放大" }).click();
+  await expect(
+    page.getByText("在波形上拖拽框选，松手后只显示该时间范围"),
+  ).toBeVisible();
+  const waveformBox = await page.getByLabel("录音波形时间轴").boundingBox();
+  expect(waveformBox).not.toBeNull();
+  await page.mouse.move(
+    waveformBox!.x + waveformBox!.width * 0.25,
+    waveformBox!.y + waveformBox!.height * 0.7,
+  );
+  await page.mouse.down();
+  await page.mouse.move(
+    waveformBox!.x + waveformBox!.width * 0.45,
+    waveformBox!.y + waveformBox!.height * 0.7,
+    { steps: 8 },
+  );
+  await page.mouse.up();
+  await expect(page.getByRole("button", { name: "框选放大" })).toBeVisible();
+  await expect(page.getByLabel("波形缩放比例")).not.toHaveValue("0");
+  await expect(page.getByLabel("波形浏览位置")).toBeEnabled();
+  await page.getByRole("button", { name: "向右浏览波形" }).click();
+  await page.getByRole("button", { name: "适应全长" }).click();
+  await expect(page.getByLabel("波形缩放比例")).toHaveValue("0");
+  await expect(page.locator(".annotation-viewport-time")).toContainText(
+    "00:12.000",
+  );
   await page.getByRole("button", { name: "播放当前片段" }).click();
   await expect(
     page.getByRole("button", { name: "暂停当前片段" }),
   ).toBeVisible();
+  await page.getByRole("button", { name: "暂停当前片段" }).click();
   await expect(
     page.getByRole("button", { name: "播放当前片段" }),
-  ).toBeVisible({ timeout: 3_000 });
+  ).toBeVisible();
 
   await page.setViewportSize({ width: 1440, height: 900 });
   const transport = page.locator(".annotation-transport");

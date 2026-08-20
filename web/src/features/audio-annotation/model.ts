@@ -12,6 +12,8 @@ import type { components } from "@generated/api";
 export const MIN_SEGMENT_MS = 100;
 export const MAX_AUDIO_BYTES = 100 * 1024 * 1024;
 export const MAX_AUDIO_DURATION_MS = 60 * 60 * 1000;
+export const WAVEFORM_ZOOM_RATIOS = [1, 2, 4, 8, 16, 32, 64, 128, 256] as const;
+export const MAX_WAVEFORM_ZOOM = WAVEFORM_ZOOM_RATIOS.at(-1)!;
 export const SPEAKER_COLORS = [
   "#28B8A7",
   "#4C8FE8",
@@ -122,6 +124,34 @@ export function formatTimestamp(milliseconds: number): string {
   const minutes = Math.floor((safe % 3_600_000) / 60_000);
   const seconds = Math.floor((safe % 60_000) / 1000);
   return `${hours ? `${pad(hours)}:` : ""}${pad(minutes)}:${pad(seconds)}.${pad(safe % 1000, 3)}`;
+}
+
+export function clampWaveformZoom(ratio: number): number {
+  if (!Number.isFinite(ratio)) return 1;
+  return Math.min(MAX_WAVEFORM_ZOOM, Math.max(1, ratio));
+}
+
+export function waveformFocusZoom(
+  durationMs: number,
+  startMs: number,
+  endMs: number,
+): number {
+  const rangeMs = Math.max(MIN_SEGMENT_MS, endMs - startMs);
+  return clampWaveformZoom(durationMs / Math.max(2_000, rangeMs * 1.8));
+}
+
+export function waveformViewport(
+  durationMs: number,
+  zoomRatio: number,
+  centerMs: number,
+): { startMs: number; endMs: number } {
+  const safeDuration = Math.max(0, durationMs);
+  const visibleMs = safeDuration / clampWaveformZoom(zoomRatio);
+  const startMs = Math.min(
+    Math.max(0, centerMs - visibleMs / 2),
+    Math.max(0, safeDuration - visibleMs),
+  );
+  return { startMs, endMs: Math.min(safeDuration, startMs + visibleMs) };
 }
 
 export function parseTimestamp(value: string): number | null {
