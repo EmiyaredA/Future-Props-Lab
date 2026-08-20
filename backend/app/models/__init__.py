@@ -30,6 +30,7 @@ from app.models.model_test import (
     ModelTestGenerationAsset,
     ModelTestGenerationTask,
     ModelTestMessage,
+    ModelTestTranscriptionTask,
 )
 from app.models.tool_navigation import ToolNavigationItem
 from app.models.visual_workshop import (
@@ -66,6 +67,7 @@ __all__ = [
     "ModelTestGenerationAsset",
     "ModelTestAttachment",
     "ModelTestMessage",
+    "ModelTestTranscriptionTask",
     "ToolNavigationItem",
     "SecurityAuditEvent",
     "User",

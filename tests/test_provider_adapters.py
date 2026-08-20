@@ -12,6 +12,7 @@ from app.llm.providers.senseaudio_image import create_image_task, get_image_task
 from app.llm.providers.senseaudio_video import create_video_task, get_video_task
 from app.llm.providers.streaming import ChatMessageInput, ImageInput, stream_text_completion
 from app.llm.providers.text import invoke_diagnostic
+from app.llm.providers.transcription import transcribe_model_audio
 
 
 @pytest.mark.asyncio
@@ -158,6 +159,36 @@ async def test_senseaudio_asr_adapter_requests_and_normalizes_speaker_segments()
         ("speaker_0", 0, 1235, "你好。"),
         ("speaker_1", 1235, 2500, "欢迎。"),
     ]
+
+
+@pytest.mark.asyncio
+async def test_openai_compatible_transcription_adapter_returns_plain_text() -> None:
+    async def handler(request: httpx.Request) -> httpx.Response:
+        assert request.url == "https://gateway.example/v1/audio/transcriptions"
+        assert request.headers["authorization"] == "Bearer openai-secret"
+        body = (await request.aread()).decode()
+        assert 'name="model"' in body
+        assert "whisper-compatible" in body
+        assert 'name="language"' in body
+        assert "ja" in body
+        assert 'filename="voice.ogg"' in body
+        return httpx.Response(200, json={"text": "こんにちは。"})
+
+    result = await transcribe_model_audio(
+        provider_kind="openai",
+        base_url="https://gateway.example/v1/",
+        api_key="openai-secret",
+        model="whisper-compatible",
+        filename="voice.ogg",
+        source=BytesIO(b"OggSvoice"),
+        mime_type="audio/ogg",
+        byte_size=9,
+        language="ja",
+        transport=httpx.MockTransport(handler),
+    )
+
+    assert result.text == "こんにちは。"
+    assert result.segments == ()
 
 
 @pytest.mark.asyncio

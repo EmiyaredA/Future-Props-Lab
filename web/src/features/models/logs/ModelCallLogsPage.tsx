@@ -49,6 +49,7 @@ const providerLabels: Record<string, string> = {
   anthropic: "Anthropic",
   senseaudio_image: "SenseAudio 图片",
   senseaudio_video: "SenseAudio 视频",
+  senseaudio_asr: "SenseAudio 语音识别",
 };
 
 const roleLabels: Record<TraceRole, string> = {

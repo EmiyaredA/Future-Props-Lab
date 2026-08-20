@@ -8,7 +8,9 @@ import { ModelCallLogsPage } from "@features/models/logs";
 import {
   createModelTestConversation,
   createModelTestGenerationTask,
+  createModelTestTranscriptionFromLibrary,
   deleteModelTestGenerationTask,
+  deleteModelTestTranscriptionTask,
   deleteModelTestReferenceAsset,
   deleteModelTestAttachment,
   getLog,
@@ -17,10 +19,12 @@ import {
   getModelTestConversations,
   getModelTestGenerationResult,
   getModelTestGenerationTasks,
+  getModelTestTranscriptionTasks,
   patchModelTestConversation,
   streamModelTest,
   uploadModelTestAttachments,
   uploadModelTestReferenceAssets,
+  uploadModelTestTranscription,
   type ModelTestConversation,
 } from "@features/models/api";
 
@@ -50,6 +54,27 @@ vi.mock("@features/models/api", async () => {
               description: "",
               capabilities: ["chat", "vision"],
               categories: ["text_generation"],
+              enabled: true,
+            },
+          ],
+        },
+        {
+          id: "p-asr",
+          name: "语音识别供应商",
+          kind: "senseaudio_asr",
+          base_url: "https://example.test/v1",
+          enabled: true,
+          has_api_key: true,
+          api_key_hint: "3456",
+          models: [
+            {
+              id: "m-asr",
+              provider_id: "p-asr",
+              slug: "senseaudio-asr-pro-1.5-260319",
+              label: "SenseAudio ASR",
+              description: "说话人识别与时间戳",
+              capabilities: ["speech_recognition"],
+              categories: ["speech_recognition"],
               enabled: true,
             },
           ],
@@ -147,6 +172,88 @@ vi.mock("@features/models/api", async () => {
     getModelTestGenerationTasks: vi
       .fn()
       .mockResolvedValue({ items: [], total: 0 }),
+    getModelTestTranscriptionOptions: vi.fn().mockResolvedValue({
+      items: [
+        {
+          id: "m-asr",
+          provider_id: "p-asr",
+          provider_name: "语音识别供应商",
+          provider_kind: "senseaudio_asr",
+          slug: "senseaudio-asr-pro-1.5-260319",
+          label: "SenseAudio ASR",
+          description: "说话人识别与时间戳",
+        },
+      ],
+      max_input_bytes: 10 * 1024 * 1024,
+      accepted_extensions: [".mp3", ".wav", ".m4a", ".ogg"],
+      accepted_mime_types: ["audio/mpeg", "audio/wav", "audio/ogg"],
+    }),
+    getModelTestTranscriptionTasks: vi
+      .fn()
+      .mockResolvedValue({ items: [], total: 0 }),
+    uploadModelTestTranscription: vi.fn().mockResolvedValue({
+      id: "transcription-upload",
+      status: "queued",
+    }),
+    createModelTestTranscriptionFromLibrary: vi.fn().mockResolvedValue({
+      id: "transcription-library",
+      status: "queued",
+    }),
+    deleteModelTestTranscriptionTask: vi
+      .fn()
+      .mockResolvedValue({ deleted: true }),
+    getModelTestTranscriptionAudio: vi
+      .fn()
+      .mockResolvedValue(new Blob(["audio"], { type: "audio/mpeg" })),
+    getModelTestLibraryFolders: vi.fn().mockResolvedValue({
+      items: [
+        {
+          id: "folder-audio",
+          project_id: null,
+          parent_id: null,
+          name: "广播剧",
+          revision: 0,
+          created_at: "2026-08-03T00:00:00Z",
+          updated_at: "2026-08-03T00:00:00Z",
+        },
+      ],
+    }),
+    getModelTestLibraryAudioFiles: vi.fn().mockResolvedValue({
+      items: [
+        {
+          id: "audio-small",
+          project_id: null,
+          folder_id: null,
+          original_filename: "episode.ogg",
+          display_name: "广播剧片段",
+          media_kind: "audio",
+          mime_type: "audio/ogg",
+          byte_size: 2048,
+          revision: 0,
+          created_at: "2026-08-03T00:00:00Z",
+          updated_at: "2026-08-03T00:00:00Z",
+          source: "library",
+          is_reference: false,
+          reference_id: null,
+        },
+        {
+          id: "audio-large",
+          project_id: null,
+          folder_id: null,
+          original_filename: "full-drama.mp3",
+          display_name: "完整广播剧",
+          media_kind: "audio",
+          mime_type: "audio/mpeg",
+          byte_size: 28.7 * 1024 * 1024,
+          revision: 0,
+          created_at: "2026-08-03T00:00:00Z",
+          updated_at: "2026-08-03T00:00:00Z",
+          source: "library",
+          is_reference: false,
+          reference_id: null,
+        },
+      ],
+    }),
     createModelTestGenerationTask: vi.fn().mockResolvedValue({
       id: "task-image",
       provider_id: "p-image",
@@ -433,7 +540,7 @@ test("switches the shared model selector to an image generation test", async () 
     "aria-selected",
     "true",
   );
-  expect(screen.getByRole("tab", { name: /音频生成/ })).toBeDisabled();
+  expect(screen.getByRole("tab", { name: "语音识别" })).toBeEnabled();
   expect(container.querySelector("select")).toBeNull();
   await user.type(screen.getByPlaceholderText("描述要生成的画面…"), "未来城市");
   await user.click(screen.getByRole("button", { name: "开始测试" }));
@@ -446,6 +553,119 @@ test("switches the shared model selector to an image generation test", async () 
       seed: null,
     }),
   );
+});
+
+test("runs speech recognition with a custom player and speaker timestamps", async () => {
+  const task = {
+    id: "transcription-completed",
+    provider_id: "p-asr",
+    model_id: "m-asr",
+    provider_kind: "senseaudio_asr" as const,
+    provider_name: "语音识别供应商",
+    model_slug: "senseaudio-asr-pro-1.5-260319",
+    language: "zh" as const,
+    status: "completed" as const,
+    source: {
+      kind: "upload" as const,
+      source_asset_id: null,
+      filename: "episode.mp3",
+      mime_type: "audio/mpeg",
+      byte_size: 2048,
+      available: true,
+    },
+    result_text: "你好，欢迎收听。",
+    result_segments: [
+      {
+        speaker: "speaker_0",
+        start_ms: 0,
+        end_ms: 1250,
+        text: "你好。",
+      },
+      {
+        speaker: "speaker_1",
+        start_ms: 1250,
+        end_ms: 2600,
+        text: "欢迎收听。",
+      },
+    ],
+    error_message: null,
+    log_id: "log-asr",
+    revision: 2,
+    created_at: "2026-08-03T00:00:00Z",
+    updated_at: "2026-08-03T00:00:03Z",
+    started_at: "2026-08-03T00:00:01Z",
+    completed_at: "2026-08-03T00:00:03Z",
+  };
+  vi.mocked(getModelTestTranscriptionTasks).mockResolvedValueOnce({
+    items: [task],
+    total: 1,
+  });
+  const createObjectUrl = vi.fn().mockReturnValue("blob:transcription-audio");
+  const revokeObjectUrl = vi.fn();
+  Object.defineProperty(URL, "createObjectURL", {
+    configurable: true,
+    value: createObjectUrl,
+  });
+  Object.defineProperty(URL, "revokeObjectURL", {
+    configurable: true,
+    value: revokeObjectUrl,
+  });
+
+  const user = userEvent.setup();
+  const view = renderWithQuery(<ModelTestPage />);
+  await screen.findByText("测试对话");
+  await user.click(screen.getByRole("tab", { name: "语音识别" }));
+
+  expect(await screen.findByText("完整转写")).toBeInTheDocument();
+  expect(screen.getByText("你好，欢迎收听。")).toBeInTheDocument();
+  expect(screen.getByText("speaker_0")).toBeInTheDocument();
+  expect(screen.getByText("00:00 – 00:01")).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "播放音频" })).toBeInTheDocument();
+  expect(view.container.querySelector("audio[controls]")).toBeNull();
+  expect(view.container.querySelector("select")).toBeNull();
+  await user.click(screen.getByRole("button", { name: "复制完整转写" }));
+  expect(await navigator.clipboard.readText()).toBe("你好，欢迎收听。");
+  await user.click(screen.getByRole("button", { name: "删除识别任务" }));
+  await waitFor(() =>
+    expect(vi.mocked(deleteModelTestTranscriptionTask)).toHaveBeenCalledWith(
+      task,
+    ),
+  );
+  view.unmount();
+  expect(revokeObjectUrl).toHaveBeenCalledWith("blob:transcription-audio");
+});
+
+test("chooses library audio and disables the oversized full drama", async () => {
+  const user = userEvent.setup();
+  renderWithQuery(<ModelTestPage />);
+  await screen.findByText("测试对话");
+  await user.click(screen.getByRole("tab", { name: "语音识别" }));
+  await user.click(
+    await screen.findByRole("button", { name: /从文件管理选择/ }),
+  );
+
+  expect(
+    await screen.findByRole("dialog", { name: "从文件管理选择音频" }),
+  ).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: /广播剧.*文件夹/ })).toBeEnabled();
+  expect(screen.getByRole("button", { name: /完整广播剧/ })).toBeDisabled();
+  expect(screen.getByText(/28\.7 MB · 超过 10 MB/)).toBeInTheDocument();
+  await user.type(
+    screen.getByRole("searchbox", { name: "搜索文件管理音频" }),
+    "片段",
+  );
+  await user.click(screen.getByRole("button", { name: /广播剧片段/ }));
+  expect(screen.getByText(/2 KB · 文件管理/)).toBeInTheDocument();
+
+  await user.click(screen.getByRole("combobox", { name: "识别语言" }));
+  await user.click(screen.getByRole("option", { name: "日语" }));
+  await user.click(screen.getByRole("button", { name: "开始识别" }));
+  await waitFor(() =>
+    expect(
+      vi.mocked(createModelTestTranscriptionFromLibrary),
+    ).toHaveBeenCalledWith("audio-small", "m-asr", "ja"),
+  );
+  expect(uploadModelTestTranscription).not.toHaveBeenCalled();
 });
 
 test("switches the unified workspace to video and submits custom controls", async () => {

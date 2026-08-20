@@ -22,8 +22,8 @@ from app.llm.generation_runtime import PollingGenerationRunner
 from app.llm.providers._senseaudio import SenseAudioProviderError
 from app.llm.providers.senseaudio_asr import (
     SenseAudioAsrFileTooLarge,
-    transcribe_audio,
 )
+from app.llm.providers.transcription import transcribe_model_audio
 from app.models import (
     GalgameAssetMetadata,
     GalgameAssetSettings,
@@ -487,48 +487,29 @@ class GalgameAsrRunner(PollingGenerationRunner):
                 byte_size = asset.byte_size
                 await session.commit()
 
-            segments: list[dict[str, object]] = []
             with file_path.open("rb") as source:
-                if provider_kind == "senseaudio_asr":
-                    transcription = await transcribe_audio(
-                        base_url=base_url,
-                        api_key=api_key,
-                        model=model_slug,
-                        filename=filename,
-                        source=source,
-                        mime_type=mime_type,
-                        byte_size=byte_size,
-                        language=language,
-                        transport=self.transport,
-                    )
-                    text = transcription.text
-                    segments = [
-                        {
-                            "speaker": segment.speaker,
-                            "startMs": segment.start_ms,
-                            "endMs": segment.end_ms,
-                            "text": segment.text,
-                        }
-                        for segment in transcription.segments
-                    ]
-                else:
-                    data = {"model": model_slug, "response_format": "json"}
-                    if language != "auto":
-                        data["language"] = language
-                    async with httpx.AsyncClient(
-                        timeout=httpx.Timeout(300.0), transport=self.transport
-                    ) as client:
-                        response = await client.post(
-                            f"{base_url}/audio/transcriptions",
-                            headers={"Authorization": f"Bearer {api_key}"},
-                            data=data,
-                            files={"file": (filename, source, mime_type)},
-                        )
-                        response.raise_for_status()
-                        payload = response.json()
-                    text = payload.get("text") if isinstance(payload, dict) else None
-                    if not isinstance(text, str):
-                        raise ValueError("语音识别响应缺少文本")
+                transcription = await transcribe_model_audio(
+                    provider_kind=provider_kind,
+                    base_url=base_url,
+                    api_key=api_key,
+                    model=model_slug,
+                    filename=filename,
+                    source=source,
+                    mime_type=mime_type,
+                    byte_size=byte_size,
+                    language=language,
+                    transport=self.transport,
+                )
+            text = transcription.text
+            segments = [
+                {
+                    "speaker": segment.speaker,
+                    "startMs": segment.start_ms,
+                    "endMs": segment.end_ms,
+                    "text": segment.text,
+                }
+                for segment in transcription.segments
+            ]
             async with self.session_factory() as session:
                 task = await self._load_task(session, task_id)
                 metadata = await session.get(GalgameAssetMetadata, task.asset_id) if task else None

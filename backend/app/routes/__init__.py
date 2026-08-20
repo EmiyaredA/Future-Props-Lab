@@ -5,7 +5,13 @@ from app.routes.accounts import router as accounts_router
 from app.routes.audio_annotation import router as audio_annotation_router
 from app.routes.file_management import router as file_management_router
 from app.routes.galgame_workshop import router as galgame_workshop_router
-from app.routes.models import call_logs, catalog, model_test, model_test_generation
+from app.routes.models import (
+    call_logs,
+    catalog,
+    model_test,
+    model_test_generation,
+    model_test_transcription,
+)
 from app.routes.public_workspace import router as public_workspace_router
 from app.routes.tool_navigation import router as tool_navigation_router
 from app.routes.visual_assistant import router as visual_assistant_router
@@ -23,6 +29,9 @@ api_router.include_router(catalog.router, dependencies=[Depends(require_studio_a
 api_router.include_router(call_logs.router, dependencies=[Depends(require_studio_auth)])
 api_router.include_router(model_test.router, dependencies=[Depends(require_studio_auth)])
 api_router.include_router(model_test_generation.router, dependencies=[Depends(require_studio_auth)])
+api_router.include_router(
+    model_test_transcription.router, dependencies=[Depends(require_studio_auth)]
+)
 api_router.include_router(tool_navigation_router, dependencies=[Depends(require_studio_auth)])
 api_router.include_router(audio_annotation_router, dependencies=[Depends(require_studio_auth)])
 api_router.include_router(file_management_router, dependencies=[Depends(require_studio_auth)])

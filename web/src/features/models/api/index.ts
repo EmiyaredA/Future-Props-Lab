@@ -40,6 +40,15 @@ export type ModelTestVideoGenerationInput =
   components["schemas"]["ModelTestVideoGenerationIn"];
 export type ModelTestGenerationInput =
   ModelTestImageGenerationInput | ModelTestVideoGenerationInput;
+export type ModelTestTranscriptionTask =
+  components["schemas"]["ModelTestTranscriptionTaskOut"];
+export type ModelTestTranscriptionOptions =
+  components["schemas"]["ModelTestTranscriptionOptionListOut"];
+export type ModelTestTranscriptionLanguage =
+  ModelTestTranscriptionTask["language"];
+export type ModelTestLibraryAudio = components["schemas"]["VisualAssetOut"];
+export type ModelTestLibraryFolder =
+  components["schemas"]["VisualAssetFolderOut"];
 
 export async function getCatalog(): Promise<Catalog> {
   return unwrap(await api.GET("/v1/model-providers"));
@@ -385,6 +394,99 @@ export async function getModelTestGenerationResult(id: string) {
   return fetchApiBlob(
     `/v1/model-test/generation-tasks/${encodeURIComponent(id)}/content`,
   );
+}
+
+export async function getModelTestTranscriptionOptions() {
+  return unwrap(await api.GET("/v1/model-test/transcription-options"));
+}
+
+export async function getModelTestTranscriptionTasks(modelId?: string) {
+  return unwrap(
+    await api.GET("/v1/model-test/transcription-tasks", {
+      params: { query: { model_id: modelId, page: 1, page_size: 100 } },
+    }),
+  );
+}
+
+export async function uploadModelTestTranscription(
+  file: File,
+  modelId: string,
+  language: ModelTestTranscriptionLanguage,
+) {
+  return unwrap(
+    await api.POST("/v1/model-test/transcription-tasks/upload", {
+      body: {
+        upload: file as unknown as string,
+        model_id: modelId,
+        language,
+      },
+      bodySerializer() {
+        const form = new FormData();
+        form.set("upload", file);
+        form.set("model_id", modelId);
+        form.set("language", language);
+        return form;
+      },
+    }),
+  );
+}
+
+export async function createModelTestTranscriptionFromLibrary(
+  sourceAssetId: string,
+  modelId: string,
+  language: ModelTestTranscriptionLanguage,
+) {
+  return unwrap(
+    await api.POST("/v1/model-test/transcription-tasks", {
+      body: {
+        source_asset_id: sourceAssetId,
+        model_id: modelId,
+        language,
+      },
+    }),
+  );
+}
+
+export async function deleteModelTestTranscriptionTask(
+  task: ModelTestTranscriptionTask,
+) {
+  return unwrap(
+    await api.DELETE("/v1/model-test/transcription-tasks/{task_id}", {
+      params: {
+        path: { task_id: task.id },
+        query: { expected_revision: task.revision },
+      },
+    }),
+  );
+}
+
+export async function getModelTestTranscriptionAudio(id: string) {
+  return fetchApiBlob(
+    `/v1/model-test/transcription-tasks/${encodeURIComponent(id)}/input-content`,
+  );
+}
+
+export async function getModelTestLibraryAudioFiles(options: {
+  folderId?: string;
+  query?: string;
+}) {
+  return unwrap(
+    await api.GET("/v1/files", {
+      params: {
+        query: {
+          folder_id: options.folderId,
+          query: options.query,
+          media_kind: "audio",
+          sort: "name",
+          include_references: false,
+        },
+      },
+    }),
+  );
+}
+
+export async function getModelTestLibraryFolders() {
+  return unwrap(await api.GET("/v1/file-folders"));
 }
 
 export type ModelStreamEvent = {

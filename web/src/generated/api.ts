@@ -1481,6 +1481,93 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/model-test/transcription-options": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Transcription Options */
+        get: operations["transcription_options_v1_model_test_transcription_options_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/model-test/transcription-tasks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Transcription Tasks */
+        get: operations["list_transcription_tasks_v1_model_test_transcription_tasks_get"];
+        put?: never;
+        /** Create Transcription Task */
+        post: operations["create_transcription_task_v1_model_test_transcription_tasks_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/model-test/transcription-tasks/upload": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Upload Transcription Task */
+        post: operations["upload_transcription_task_v1_model_test_transcription_tasks_upload_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/model-test/transcription-tasks/{task_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Transcription Task */
+        get: operations["get_transcription_task_v1_model_test_transcription_tasks__task_id__get"];
+        put?: never;
+        post?: never;
+        /** Delete Transcription Task */
+        delete: operations["delete_transcription_task_v1_model_test_transcription_tasks__task_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/model-test/transcription-tasks/{task_id}/input-content": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Transcription Input Content */
+        get: operations["transcription_input_content_v1_model_test_transcription_tasks__task_id__input_content_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/platform/accounts": {
         parameters: {
             query?: never;
@@ -2302,6 +2389,19 @@ export interface components {
         Body_upload_project_asset_v1_galgame_workshop_projects__project_id__assets_post: {
             /** Category */
             category?: ("character" | "scene" | "cg" | "bgm" | "ambient" | "sfx" | "voice" | "video" | "font" | "other") | null;
+            /** Upload */
+            upload: string;
+        };
+        /** Body_upload_transcription_task_v1_model_test_transcription_tasks_upload_post */
+        Body_upload_transcription_task_v1_model_test_transcription_tasks_upload_post: {
+            /**
+             * Language
+             * @default auto
+             * @enum {string}
+             */
+            language: "auto" | "zh" | "ja";
+            /** Model Id */
+            model_id: string;
             /** Upload */
             upload: string;
         };
@@ -5395,6 +5495,133 @@ export interface components {
             content: string;
             /** Expected Revision */
             expected_revision: number;
+        };
+        /** ModelTestTranscriptionCreateIn */
+        ModelTestTranscriptionCreateIn: {
+            /**
+             * Language
+             * @default auto
+             * @enum {string}
+             */
+            language: "auto" | "zh" | "ja";
+            /** Model Id */
+            model_id: string;
+            /** Source Asset Id */
+            source_asset_id: string;
+        };
+        /** ModelTestTranscriptionOptionListOut */
+        ModelTestTranscriptionOptionListOut: {
+            /** Accepted Extensions */
+            accepted_extensions: string[];
+            /** Accepted Mime Types */
+            accepted_mime_types: string[];
+            /** Items */
+            items: components["schemas"]["ModelTestTranscriptionOptionOut"][];
+            /** Max Input Bytes */
+            max_input_bytes: number;
+        };
+        /** ModelTestTranscriptionOptionOut */
+        ModelTestTranscriptionOptionOut: {
+            /** Description */
+            description: string;
+            /** Id */
+            id: string;
+            /** Label */
+            label: string;
+            /** Provider Id */
+            provider_id: string;
+            /**
+             * Provider Kind
+             * @enum {string}
+             */
+            provider_kind: "openai" | "senseaudio_asr";
+            /** Provider Name */
+            provider_name: string;
+            /** Slug */
+            slug: string;
+        };
+        /** ModelTestTranscriptionSegmentOut */
+        ModelTestTranscriptionSegmentOut: {
+            /** End Ms */
+            end_ms: number;
+            /** Speaker */
+            speaker: string;
+            /** Start Ms */
+            start_ms: number;
+            /** Text */
+            text: string;
+        };
+        /** ModelTestTranscriptionSourceOut */
+        ModelTestTranscriptionSourceOut: {
+            /** Available */
+            available: boolean;
+            /** Byte Size */
+            byte_size: number;
+            /** Filename */
+            filename: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "upload" | "library";
+            /** Mime Type */
+            mime_type: string;
+            /** Source Asset Id */
+            source_asset_id: string | null;
+        };
+        /** ModelTestTranscriptionTaskListOut */
+        ModelTestTranscriptionTaskListOut: {
+            /** Items */
+            items: components["schemas"]["ModelTestTranscriptionTaskOut"][];
+            /** Total */
+            total: number;
+        };
+        /** ModelTestTranscriptionTaskOut */
+        ModelTestTranscriptionTaskOut: {
+            /** Completed At */
+            completed_at: string | null;
+            /** Created At */
+            created_at: string;
+            /** Error Message */
+            error_message: string | null;
+            /** Id */
+            id: string;
+            /**
+             * Language
+             * @enum {string}
+             */
+            language: "auto" | "zh" | "ja";
+            /** Log Id */
+            log_id: string | null;
+            /** Model Id */
+            model_id: string | null;
+            /** Model Slug */
+            model_slug: string;
+            /** Provider Id */
+            provider_id: string | null;
+            /**
+             * Provider Kind
+             * @enum {string}
+             */
+            provider_kind: "openai" | "senseaudio_asr";
+            /** Provider Name */
+            provider_name: string;
+            /** Result Segments */
+            result_segments: components["schemas"]["ModelTestTranscriptionSegmentOut"][];
+            /** Result Text */
+            result_text: string | null;
+            /** Revision */
+            revision: number;
+            source: components["schemas"]["ModelTestTranscriptionSourceOut"];
+            /** Started At */
+            started_at: string | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "queued" | "running" | "completed" | "failed";
+            /** Updated At */
+            updated_at: string;
         };
         /** ModelTestVideoGenerationIn */
         ModelTestVideoGenerationIn: {
@@ -10173,6 +10400,222 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ModelTestGenerationTaskOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    transcription_options_v1_model_test_transcription_options_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModelTestTranscriptionOptionListOut"];
+                };
+            };
+        };
+    };
+    list_transcription_tasks_v1_model_test_transcription_tasks_get: {
+        parameters: {
+            query?: {
+                model_id?: string | null;
+                page?: number;
+                page_size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModelTestTranscriptionTaskListOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_transcription_task_v1_model_test_transcription_tasks_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ModelTestTranscriptionCreateIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModelTestTranscriptionTaskOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    upload_transcription_task_v1_model_test_transcription_tasks_upload_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_upload_transcription_task_v1_model_test_transcription_tasks_upload_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModelTestTranscriptionTaskOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_transcription_task_v1_model_test_transcription_tasks__task_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                task_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModelTestTranscriptionTaskOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_transcription_task_v1_model_test_transcription_tasks__task_id__delete: {
+        parameters: {
+            query: {
+                expected_revision: number;
+            };
+            header?: never;
+            path: {
+                task_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: boolean;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    transcription_input_content_v1_model_test_transcription_tasks__task_id__input_content_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                task_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */

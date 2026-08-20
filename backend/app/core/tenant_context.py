@@ -15,6 +15,7 @@ from app.models import (
     ModelTestConversation,
     ModelTestGenerationAsset,
     ModelTestGenerationTask,
+    ModelTestTranscriptionTask,
     ToolNavigationItem,
     VisualAsset,
     VisualAssetFolder,
@@ -41,6 +42,7 @@ TENANT_MODELS = (
     ModelTestConversation,
     ModelTestGenerationTask,
     ModelTestGenerationAsset,
+    ModelTestTranscriptionTask,
 )
 
 _CURRENT_WORKSPACE: ContextVar[str] = ContextVar(

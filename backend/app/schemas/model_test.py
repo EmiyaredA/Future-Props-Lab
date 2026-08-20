@@ -239,3 +239,72 @@ class ModelTestGenerationOptionOut(BaseModel):
 
 class ModelTestGenerationOptionListOut(BaseModel):
     items: list[ModelTestGenerationOptionOut]
+
+
+TranscriptionLanguage = Literal["auto", "zh", "ja"]
+TranscriptionTaskStatus = Literal["queued", "running", "completed", "failed"]
+
+
+class ModelTestTranscriptionCreateIn(BaseModel):
+    model_id: str
+    source_asset_id: str
+    language: TranscriptionLanguage = "auto"
+
+
+class ModelTestTranscriptionSegmentOut(BaseModel):
+    speaker: str
+    start_ms: int = Field(ge=0)
+    end_ms: int = Field(ge=0)
+    text: str
+
+
+class ModelTestTranscriptionSourceOut(BaseModel):
+    kind: Literal["upload", "library"]
+    source_asset_id: str | None
+    filename: str
+    mime_type: str
+    byte_size: int
+    available: bool
+
+
+class ModelTestTranscriptionTaskOut(BaseModel):
+    id: str
+    provider_id: str | None
+    model_id: str | None
+    provider_kind: Literal["openai", "senseaudio_asr"]
+    provider_name: str
+    model_slug: str
+    language: TranscriptionLanguage
+    status: TranscriptionTaskStatus
+    source: ModelTestTranscriptionSourceOut
+    result_text: str | None
+    result_segments: list[ModelTestTranscriptionSegmentOut]
+    error_message: str | None
+    log_id: str | None
+    revision: int
+    created_at: str
+    updated_at: str
+    started_at: str | None
+    completed_at: str | None
+
+
+class ModelTestTranscriptionTaskListOut(BaseModel):
+    items: list[ModelTestTranscriptionTaskOut]
+    total: int
+
+
+class ModelTestTranscriptionOptionOut(BaseModel):
+    id: str
+    provider_id: str
+    provider_name: str
+    provider_kind: Literal["openai", "senseaudio_asr"]
+    slug: str
+    label: str
+    description: str
+
+
+class ModelTestTranscriptionOptionListOut(BaseModel):
+    items: list[ModelTestTranscriptionOptionOut]
+    max_input_bytes: int
+    accepted_extensions: list[str]
+    accepted_mime_types: list[str]

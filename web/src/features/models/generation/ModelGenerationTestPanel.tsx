@@ -59,6 +59,7 @@ type TestModel = {
     | "senseaudio_image"
     | "senseaudio_video"
     | "senseaudio_asr";
+  capabilities?: string[];
 };
 
 const statusLabel: Record<ModelTestGenerationTask["status"], string> = {
@@ -250,12 +251,18 @@ export function ModelGenerationTestPanel({
     [generationKind, models],
   );
   const availableModes: Record<ModelTestMode, boolean> = {
-    chat: models.some((model) =>
-      ["openai", "anthropic"].includes(model.providerKind),
+    chat: models.some(
+      (model) =>
+        ["openai", "anthropic"].includes(model.providerKind) &&
+        (model.capabilities?.includes("chat") ?? true),
     ),
     image: models.some((model) => modelGenerationKind(model) === "image"),
     video: models.some((model) => modelGenerationKind(model) === "video"),
-    audio: false,
+    speech: models.some(
+      (model) =>
+        ["openai", "senseaudio_asr"].includes(model.providerKind) &&
+        model.capabilities?.includes("speech_recognition"),
+    ),
   };
   const modelOptions: SelectOption[] = useMemo(
     () =>

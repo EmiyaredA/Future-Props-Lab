@@ -53,6 +53,7 @@ import { fetchApiBlob } from "@platform/api/client";
 import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
 import type { SelectOption } from "@shared/ui/CustomSelect";
 import { ModelGenerationTestPanel } from "@features/models/generation/ModelGenerationTestPanel";
+import { ModelTranscriptionTestPanel } from "@features/models/generation/ModelTranscriptionTestPanel";
 import {
   ModelTestWorkspaceHeader,
   type ModelTestMode,
@@ -409,7 +410,7 @@ export function ModelTestPage() {
     null,
   );
   const lastGenerationModelByMode = useRef<
-    Partial<Record<"image" | "video", string>>
+    Partial<Record<"image" | "video" | "speech", string>>
   >({});
   const abortRef = useRef<AbortController | null>(null);
   const activeMessageIdRef = useRef<string | null>(null);
@@ -426,7 +427,9 @@ export function ModelTestPage() {
                 value: model.id,
                 label: model.label || model.slug,
                 description: `${provider.name} · ${model.slug}`,
-                capabilities: model.capabilities,
+                capabilities: Array.from(
+                  new Set([...model.capabilities, ...model.categories]),
+                ),
                 providerKind: provider.kind,
               }))
           : [],
@@ -435,8 +438,10 @@ export function ModelTestPage() {
   );
   const textModels = useMemo(
     () =>
-      availableModels.filter((model) =>
-        ["openai", "anthropic"].includes(model.providerKind),
+      availableModels.filter(
+        (model) =>
+          ["openai", "anthropic"].includes(model.providerKind) &&
+          model.capabilities.includes("chat"),
       ),
     [availableModels],
   );
@@ -771,18 +776,23 @@ export function ModelTestPage() {
     video: availableModels.some(
       (model) => model.providerKind === "senseaudio_video",
     ),
-    audio: false,
+    speech: availableModels.some(
+      (model) =>
+        ["openai", "senseaudio_asr"].includes(model.providerKind) &&
+        model.capabilities.includes("speech_recognition"),
+    ),
   };
   const selectMode = (mode: ModelTestMode) => {
     if (mode === "chat") {
       setGenerationModelId(null);
       return;
     }
-    if (mode === "audio") return;
-    const providerKind =
-      mode === "image" ? "senseaudio_image" : "senseaudio_video";
-    const candidates = availableModels.filter(
-      (model) => model.providerKind === providerKind,
+    const candidates = availableModels.filter((model) =>
+      mode === "speech"
+        ? ["openai", "senseaudio_asr"].includes(model.providerKind) &&
+          model.capabilities.includes("speech_recognition")
+        : model.providerKind ===
+          (mode === "image" ? "senseaudio_image" : "senseaudio_video"),
     );
     const remembered = lastGenerationModelByMode.current[mode];
     const next =
@@ -791,6 +801,30 @@ export function ModelTestPage() {
     lastGenerationModelByMode.current[mode] = next.value;
     setGenerationModelId(next.value);
   };
+  if (
+    generationModel &&
+    ["openai", "senseaudio_asr"].includes(generationModel.providerKind) &&
+    generationModel.capabilities.includes("speech_recognition")
+  ) {
+    return (
+      <ModelTranscriptionTestPanel
+        models={availableModels}
+        modelId={generationModel.value}
+        onSelectMode={selectMode}
+        onSelectModel={(modelId) => {
+          const next = availableModels.find(
+            (model) =>
+              model.value === modelId &&
+              ["openai", "senseaudio_asr"].includes(model.providerKind) &&
+              model.capabilities.includes("speech_recognition"),
+          );
+          if (!next) return;
+          lastGenerationModelByMode.current.speech = next.value;
+          setGenerationModelId(next.value);
+        }}
+      />
+    );
+  }
   if (
     generationModel &&
     ["senseaudio_image", "senseaudio_video"].includes(

@@ -97,7 +97,7 @@ Future-Props-Lab/
 `applications/visual-workshop/projects/<project-id>/{assets,generated}/`；Galgame 项目使用
 `applications/galgame-workshop/projects/<project-id>/{assets,derived,exports}/`。项目目录只保存素材、
 派生文件和导出快照，标题变化不改变目录。模型测试对话图片保存在 `model-test/attachments/`，生成参考
-素材保存在 `model-test/references/`，生成结果保存在 `model-test/generated/`。本地临时分镜、场景图与未定稿草稿放在仓库根目录 `.scratch/`，与 `.runtime/`
+素材及语音识别输入的任务私有副本保存在 `model-test/references/`，生成结果保存在 `model-test/generated/`。本地临时分镜、场景图与未定稿草稿放在仓库根目录 `.scratch/`，与 `.runtime/`
 一样被 git 忽略，不进入文档资产或产品素材真源。FastAPI 启动时自动创建
 目录并执行 `registry.py` 中已登记、带 checksum 的 migration；每个连接启用外键约束、WAL
 与忙等待。迁移历史只追加且不导入运行时 `app`，schema 变化必须同时更新 ORM、注册表、测试

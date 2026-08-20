@@ -160,3 +160,45 @@ class ModelTestGenerationAsset(Base):
     byte_size: Mapped[int] = mapped_column(Integer)
     legacy_visual_asset_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)
+
+
+class ModelTestTranscriptionTask(Base):
+    __tablename__ = "model_test_transcription_tasks"
+    __table_args__ = (
+        Index("ix_model_test_transcription_workspace_created", "workspace_id", "created_at"),
+        Index("ix_model_test_transcription_status_created", "status", "created_at"),
+        Index("ix_model_test_transcription_model_created", "model_id", "created_at"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    workspace_id: Mapped[str] = mapped_column(String(36), index=True, default="default")
+    provider_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("model_providers.id", ondelete="SET NULL")
+    )
+    model_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("model_entries.id", ondelete="SET NULL")
+    )
+    provider_kind: Mapped[str] = mapped_column(String(24))
+    provider_name: Mapped[str] = mapped_column(String(120))
+    model_slug: Mapped[str] = mapped_column(String(160))
+    source_kind: Mapped[str] = mapped_column(String(16))
+    source_asset_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("visual_assets.id", ondelete="SET NULL")
+    )
+    input_storage_key: Mapped[str] = mapped_column(String(64), unique=True)
+    input_filename: Mapped[str] = mapped_column(String(255))
+    input_mime_type: Mapped[str] = mapped_column(String(120))
+    input_byte_size: Mapped[int] = mapped_column(Integer)
+    language: Mapped[str] = mapped_column(String(8), default="auto")
+    status: Mapped[str] = mapped_column(String(16), default="queued")
+    result_text: Mapped[str | None] = mapped_column(Text)
+    result_segments: Mapped[list[dict]] = mapped_column(JSON, default=list)
+    error_message: Mapped[str | None] = mapped_column(Text)
+    log_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("llm_call_logs.id", ondelete="SET NULL")
+    )
+    revision: Mapped[int] = mapped_column(Integer, default=0)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, onupdate=utc_now)
+    started_at: Mapped[datetime | None] = mapped_column(DateTime)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime)

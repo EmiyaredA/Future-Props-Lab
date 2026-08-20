@@ -71,6 +71,12 @@
 - `POST /v1/model-test/generation-assets/cleanup`：清理超过 24 小时的草稿和遗留文件。
 - `GET /v1/model-test/generation-assets/backfill-status`：检查仍引用旧公共文件的历史任务。
 - `POST /v1/model-test/generation-assets/backfill`：幂等复制历史素材并通过任务 CAS 完成认领。
+- `GET /v1/model-test/transcription-options`：返回已启用且声明 `speech_recognition` 的 SenseAudio ASR 或 OpenAI 兼容模型，以及支持格式和 10 MB 上限。
+- `POST /v1/model-test/transcription-tasks/upload`：multipart 上传 `upload`、`model_id` 与 `language` 并创建持久化识别任务。
+- `POST /v1/model-test/transcription-tasks`：通过 `model_id`、`source_asset_id` 与 `language` 从当前 Workspace 文件管理复制音频并创建任务。
+- `GET /v1/model-test/transcription-tasks`、`GET /v1/model-test/transcription-tasks/{task_id}`：分页查询或读取识别任务。
+- `GET /v1/model-test/transcription-tasks/{task_id}/input-content`：鉴权试听任务的私有输入副本。
+- `DELETE /v1/model-test/transcription-tasks/{task_id}?expected_revision=...`：CAS 删除完成或失败任务及其私有音频。
 
 修改、删除、发送和重新生成使用会话 `expected_revision` 做 CAS 保护。发送请求可携带最多 5 个
 `attachment_ids`，文本和图片至少提供一项。图片仅支持 JPEG、PNG、WebP 与静态 GIF，单张
@@ -80,12 +86,19 @@
 与大小，不记录图片内容或磁盘路径。流式接口返回 SSE v2 envelope，事件为 `start / delta / done /
 error`；成功、失败、超时或取消都会保存消息状态并写入调用日志。
 
-模型测试页按供应商协议自适应：OpenAI/Anthropic 模型进入多轮对话，SenseAudio 图片/视频模型进入
+模型测试页按能力与供应商协议自适应：只有声明 `chat` 的 OpenAI/Anthropic 模型进入多轮对话，SenseAudio 图片/视频模型进入
 独立异步生成测试。图片测试支持提示词、尺寸和种子；视频测试支持提示词、时长、分辨率、比例、
 水印、生成音频，以及上传最多 9 张图片、3 个音频和 3 个视频到模型测试私有草稿区。创建任务会在
 同一事务认领这些草稿；新任务不能引用公共 `visual_assets`。历史任务由显式回填 API 迁移，原公共
 文件保持不动。任务结果下载到 `model-test/generated/`，不创建视觉工坊项目或素材。任务与模型
 目录都通过 `/v1` API 管理，活动任务不可删除或随模型一起停用；终态删除使用 revision/CAS。
+
+语音识别测试接受 MP3、WAV、M4A 与 OGG，扩展名、MIME 和文件头必须一致；文件非空且不得超过
+10 MB，不自动切片。本地上传与文件管理来源都会复制到当前 Workspace 的
+`model-test/references/`，因此源文件删除后任务仍可试听。单机 Runner 执行
+`queued → running → completed/failed`；启动时将中断的运行中任务标记失败，避免重复付费。
+SenseAudio 结果包含全文、说话人和句级起止时间；OpenAI 兼容供应商未返回分段时使用空数组。
+完成或失败均写入 `model_playground` 调用日志，日志不保存 API Key、音频字节或磁盘路径。
 
 ## 工具导航
 

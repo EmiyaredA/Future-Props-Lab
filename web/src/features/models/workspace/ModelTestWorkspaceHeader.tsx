@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { Image, MessageSquareText, Mic2, Video } from "lucide-react";
 import { CustomSelect, type SelectOption } from "@shared/ui/CustomSelect";
 
-export type ModelTestMode = "chat" | "image" | "video" | "audio";
+export type ModelTestMode = "chat" | "image" | "video" | "speech";
 
 const modes: Array<{
   id: ModelTestMode;
@@ -12,7 +12,7 @@ const modes: Array<{
   { id: "chat", label: "文本对话", icon: MessageSquareText },
   { id: "image", label: "图片生成", icon: Image },
   { id: "video", label: "视频生成", icon: Video },
-  { id: "audio", label: "音频生成", icon: Mic2 },
+  { id: "speech", label: "语音识别", icon: Mic2 },
 ];
 
 export function ModelTestWorkspaceHeader({
@@ -60,7 +60,6 @@ export function ModelTestWorkspaceHeader({
             >
               <Icon aria-hidden />
               <span>{mode.label}</span>
-              {mode.id === "audio" && !available ? <small>待接入</small> : null}
             </button>
           );
         })}

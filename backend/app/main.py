@@ -19,6 +19,7 @@ from app.files.storage import AssetStorage
 from app.galgame_workshop.asr import GalgameAsrRunner
 from app.llm.catalog.seed import seed_sayflow_text_catalog
 from app.llm.playground.generation_runner import ModelTestGenerationRunner
+from app.llm.playground.transcription_runner import ModelTestTranscriptionRunner
 from app.problem_details import (
     http_exception_handler,
     revision_conflict_handler,
@@ -44,14 +45,17 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
     await recover_interrupted_visual_assistant_runs()
     runner = VisualGenerationRunner()
     model_test_runner = ModelTestGenerationRunner()
+    transcription_runner = ModelTestTranscriptionRunner()
     asr_runner = GalgameAsrRunner()
     await runner.start()
     await model_test_runner.start()
+    await transcription_runner.start()
     await asr_runner.start()
     try:
         yield
     finally:
         await asr_runner.stop()
+        await transcription_runner.stop()
         await model_test_runner.stop()
         await runner.stop()
         await engine.dispose()

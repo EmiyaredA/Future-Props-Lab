@@ -73,6 +73,16 @@ const overview: GuidePage = {
       note: "文档以当前可见功能和实际界面为准；模型能力、时长和分辨率选项取决于已配置的生成模型。",
     },
     {
+      id: "model-test-speech",
+      title: "测试语音识别模型",
+      steps: [
+        "在模型服务中启用 SenseAudio ASR，或为 OpenAI 兼容模型声明 speech_recognition 能力并配置 API Key。",
+        "进入模型测试并切换到“语音识别”，上传本地音频或从当前 Workspace 的文件管理中选择。",
+        "选择自动、中文或日语后开始识别；任务会在后台运行，完成后可试听音频、复制全文并查看说话人与句级时间戳。",
+      ],
+      note: "支持 MP3、WAV、M4A、OGG，单文件最大 10 MB 且不会自动切片；超限文件会在选择器中禁用。",
+    },
+    {
       id: "reading-path",
       title: "推荐阅读顺序",
       steps: [

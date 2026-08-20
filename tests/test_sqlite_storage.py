@@ -40,14 +40,14 @@ def test_sqlite_migration_is_repeatable_and_detects_drift(tmp_path: Path) -> Non
     database_path = tmp_path / "nested" / "catalog.db"
 
     assert apply_migrations(database_path) == (
-        "r0023_senseaudio_asr_fresh_catalog",
+        "r0024_model_test_transcription",
         True,
     )
     assert apply_migrations(database_path) == (
-        "r0023_senseaudio_asr_fresh_catalog",
+        "r0024_model_test_transcription",
         False,
     )
-    assert check_migrations(database_path) == "r0023_senseaudio_asr_fresh_catalog"
+    assert check_migrations(database_path) == "r0024_model_test_transcription"
 
     with connect_database(database_path) as connection:
         connection.execute(
@@ -73,7 +73,7 @@ def test_existing_r0001_database_upgrades_without_rewriting_history(tmp_path: Pa
         connection.commit()
 
     assert apply_migrations(database_path) == (
-        "r0023_senseaudio_asr_fresh_catalog",
+        "r0024_model_test_transcription",
         True,
     )
     with connect_database(database_path) as connection:
@@ -104,6 +104,7 @@ def test_existing_r0001_database_upgrades_without_rewriting_history(tmp_path: Pa
             ("r0021_senseaudio_asr",),
             ("r0022_audio_annotation",),
             ("r0023_senseaudio_asr_fresh_catalog",),
+            ("r0024_model_test_transcription",),
         ]
         assert connection.execute("SELECT COUNT(*) FROM model_test_conversations").fetchone() == (
             0,
@@ -216,7 +217,7 @@ def test_r0020_assigns_complete_r0019_history_to_default_workspace(
         connection.commit()
 
     assert apply_migrations(database_path) == (
-        "r0023_senseaudio_asr_fresh_catalog",
+        "r0024_model_test_transcription",
         True,
     )
     workspace_tables = (
@@ -234,6 +235,7 @@ def test_r0020_assigns_complete_r0019_history_to_default_workspace(
         "model_test_conversations",
         "model_test_generation_tasks",
         "model_test_generation_assets",
+        "model_test_transcription_tasks",
         "tool_navigation_items",
     )
     with connect_database(database_path) as connection:
@@ -263,7 +265,7 @@ def test_r0020_assigns_complete_r0019_history_to_default_workspace(
 
 def test_r0021_adds_senseaudio_asr_to_each_existing_workspace(tmp_path: Path) -> None:
     database_path = tmp_path / "r0020-multi-workspace.db"
-    _create_database_at_migration(database_path, len(MIGRATIONS) - 3)
+    _create_database_at_migration(database_path, len(MIGRATIONS) - 4)
     workspace_id = "12345678-1234-5678-9abc-def012345678"
     with connect_database(database_path) as connection:
         connection.execute(
@@ -281,7 +283,7 @@ def test_r0021_adds_senseaudio_asr_to_each_existing_workspace(tmp_path: Path) ->
         connection.commit()
 
     assert apply_migrations(database_path) == (
-        "r0023_senseaudio_asr_fresh_catalog",
+        "r0024_model_test_transcription",
         True,
     )
     with connect_database(database_path) as connection:
@@ -338,7 +340,7 @@ def test_r0021_adds_senseaudio_asr_to_each_existing_workspace(tmp_path: Path) ->
     assert "transcript_segments" in metadata_columns
     assert "result_segments" in task_columns
     assert apply_migrations(database_path) == (
-        "r0023_senseaudio_asr_fresh_catalog",
+        "r0024_model_test_transcription",
         False,
     )
 
@@ -404,11 +406,11 @@ def test_r0015_upgrades_r0014_and_enforces_private_asset_ownership(tmp_path: Pat
         connection.commit()
 
     assert apply_migrations(database_path) == (
-        "r0023_senseaudio_asr_fresh_catalog",
+        "r0024_model_test_transcription",
         True,
     )
     assert apply_migrations(database_path) == (
-        "r0023_senseaudio_asr_fresh_catalog",
+        "r0024_model_test_transcription",
         False,
     )
     with connect_database(database_path) as connection:
@@ -517,7 +519,7 @@ def test_existing_default_catalog_is_extended_without_overwriting_user_data(
         connection.commit()
 
     assert apply_migrations(database_path) == (
-        "r0023_senseaudio_asr_fresh_catalog",
+        "r0024_model_test_transcription",
         True,
     )
 
@@ -606,7 +608,7 @@ def test_existing_default_catalog_is_extended_without_overwriting_user_data(
     assert stored_categories == {"[]", '["speech_recognition"]'}
 
     assert apply_migrations(database_path) == (
-        "r0023_senseaudio_asr_fresh_catalog",
+        "r0024_model_test_transcription",
         False,
     )
     with connect_database(database_path) as connection:
@@ -624,7 +626,7 @@ def test_catalog_upgrade_does_not_recreate_deleted_default_provider(tmp_path: Pa
         connection.commit()
 
     assert apply_migrations(database_path) == (
-        "r0023_senseaudio_asr_fresh_catalog",
+        "r0024_model_test_transcription",
         True,
     )
     with connect_database(database_path) as connection:
@@ -665,7 +667,7 @@ def test_r0007_upgrade_adds_visual_tasks_and_preserves_provider_credentials(
         connection.commit()
 
     assert apply_migrations(database_path) == (
-        "r0023_senseaudio_asr_fresh_catalog",
+        "r0024_model_test_transcription",
         True,
     )
     with connect_database(database_path) as connection:
@@ -713,6 +715,46 @@ def test_r0007_upgrade_adds_visual_tasks_and_preserves_provider_credentials(
         "provider_task_id",
         "result_asset_id",
     } <= task_columns
+
+
+def test_r0024_adds_private_model_test_transcription_tasks(tmp_path: Path) -> None:
+    database_path = tmp_path / "r0023-transcription-upgrade.db"
+    _create_database_at_migration(database_path, len(MIGRATIONS) - 1)
+
+    assert apply_migrations(database_path) == (
+        "r0024_model_test_transcription",
+        True,
+    )
+    with connect_database(database_path) as connection:
+        columns = {
+            row[1]
+            for row in connection.execute("PRAGMA table_info(model_test_transcription_tasks)")
+        }
+        foreign_keys = {
+            (row[3], row[2], row[4], row[6])
+            for row in connection.execute("PRAGMA foreign_key_list(model_test_transcription_tasks)")
+        }
+        indexes = {
+            row[1]
+            for row in connection.execute("PRAGMA index_list(model_test_transcription_tasks)")
+        }
+
+    assert {
+        "workspace_id",
+        "provider_kind",
+        "source_asset_id",
+        "input_storage_key",
+        "language",
+        "result_text",
+        "result_segments",
+        "log_id",
+        "revision",
+        "started_at",
+        "completed_at",
+    } <= columns
+    assert ("workspace_id", "workspaces", "id", "CASCADE") in foreign_keys
+    assert ("source_asset_id", "visual_assets", "id", "SET NULL") in foreign_keys
+    assert "ix_model_test_transcription_workspace_created" in indexes
 
 
 def test_sqlite_pragmas_json_and_foreign_key_cascade(tmp_path: Path) -> None:
