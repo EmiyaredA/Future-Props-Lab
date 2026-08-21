@@ -47,6 +47,8 @@ import {
   parseTimestamp,
   segmentLanguageCodes,
   segmentSearchableText,
+  snapSegmentToNext,
+  snapSegmentToPrevious,
   SPEAKER_COLORS,
   splitSegment,
   type ImportedAudioAnnotationSpeaker,
@@ -482,6 +484,26 @@ export function AudioAnnotationEditorPage({
     document?.segments.findIndex((segment) => segment.id === selectedId) ?? -1;
   const nextSegment =
     selectedIndex >= 0 ? document?.segments[selectedIndex + 1] : undefined;
+  const previousSegment =
+    selectedIndex > 0 ? document?.segments[selectedIndex - 1] : undefined;
+  const snappedToPrevious =
+    Boolean(previousSegment && selected) &&
+    previousSegment!.end_ms === selected!.start_ms;
+  const snappedToNext =
+    Boolean(nextSegment && selected) &&
+    nextSegment!.start_ms === selected!.end_ms;
+  const overlapsPrevious =
+    Boolean(previousSegment && selected) &&
+    previousSegment!.end_ms > selected!.start_ms;
+  const overlapsNext =
+    Boolean(nextSegment && selected) &&
+    nextSegment!.start_ms < selected!.end_ms;
+  const canSnapToPrevious =
+    Boolean(previousSegment && selected) &&
+    !snappedToPrevious &&
+    !overlapsPrevious;
+  const canSnapToNext =
+    Boolean(nextSegment && selected) && !snappedToNext && !overlapsNext;
   const speakerById = useMemo(
     () =>
       new Map(document?.speakers.map((speaker) => [speaker.id, speaker]) ?? []),
@@ -1224,6 +1246,59 @@ export function AudioAnnotationEditorPage({
                     }}
                   />
                 </label>
+              </div>
+              <div
+                className="annotation-time-snap-actions"
+                aria-label="片段衔接"
+              >
+                <button
+                  type="button"
+                  disabled={!canSnapToPrevious}
+                  title={
+                    snappedToPrevious
+                      ? "当前片段已紧接上一片段"
+                      : !previousSegment
+                        ? "当前片段没有上一片段"
+                        : overlapsPrevious
+                          ? "当前片段与上一片段已有重叠"
+                          : "将开始时间设为上一片段的结束时间"
+                  }
+                  onClick={() =>
+                    mutateSegments(
+                      snapSegmentToPrevious(
+                        document.segments,
+                        selected.id,
+                        project.duration_ms,
+                      ),
+                    )
+                  }
+                >
+                  <ChevronLeft aria-hidden /> 紧接上一段
+                </button>
+                <button
+                  type="button"
+                  disabled={!canSnapToNext}
+                  title={
+                    snappedToNext
+                      ? "当前片段已紧接下一片段"
+                      : !nextSegment
+                        ? "当前片段没有下一片段"
+                        : overlapsNext
+                          ? "当前片段与下一片段已有重叠"
+                          : "将结束时间设为下一片段的开始时间"
+                  }
+                  onClick={() =>
+                    mutateSegments(
+                      snapSegmentToNext(
+                        document.segments,
+                        selected.id,
+                        project.duration_ms,
+                      ),
+                    )
+                  }
+                >
+                  紧接下一段 <ChevronRight aria-hidden />
+                </button>
               </div>
               <label className="annotation-inspector-field">
                 <span>说话人</span>

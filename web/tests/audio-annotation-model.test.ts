@@ -13,6 +13,8 @@ import {
   parseTimestamp,
   segmentLanguageCodes,
   segmentSearchableText,
+  snapSegmentToNext,
+  snapSegmentToPrevious,
   splitSegment,
   stabilizeWaveformRegionSegments,
   stabilizeWaveformRegionSpeakers,
@@ -216,6 +218,47 @@ test("creates overlapping segments and only clamps bounds to the audio", () => {
     end_ms: 2_200,
     status: "draft",
   });
+});
+
+test("snaps the selected segment exactly to its previous or next neighbor", () => {
+  expect(snapSegmentToPrevious(segments, "two", 3_000)?.[1]).toMatchObject({
+    id: "two",
+    start_ms: 1_000,
+    end_ms: 2_000,
+    status: "draft",
+  });
+  expect(snapSegmentToNext(segments, "one", 3_000)?.[0]).toMatchObject({
+    id: "one",
+    start_ms: 0,
+    end_ms: 1_200,
+    status: "draft",
+  });
+});
+
+test("does not snap when there is no neighbor, the edge is already aligned, or the segments overlap", () => {
+  expect(snapSegmentToPrevious(segments, "one", 3_000)).toBeNull();
+  expect(snapSegmentToNext(segments, "two", 3_000)).toBeNull();
+  expect(
+    snapSegmentToNext(
+      [segments[0]!, { ...segments[1]!, start_ms: 1_000 }],
+      "one",
+      3_000,
+    ),
+  ).toBeNull();
+  expect(
+    snapSegmentToPrevious(
+      [segments[0]!, { ...segments[1]!, start_ms: 900 }],
+      "two",
+      3_000,
+    ),
+  ).toBeNull();
+  expect(
+    snapSegmentToNext(
+      [segments[0]!, { ...segments[1]!, start_ms: 900 }],
+      "one",
+      3_000,
+    ),
+  ).toBeNull();
 });
 
 test("merging a segment with a contained overlapping segment does not shorten it", () => {

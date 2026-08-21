@@ -426,6 +426,44 @@ export function updateSegmentBounds(
   return sortSegments(sorted);
 }
 
+export function snapSegmentToPrevious(
+  segments: AudioAnnotationSegment[],
+  segmentId: string,
+  durationMs: number,
+): AudioAnnotationSegment[] | null {
+  const sorted = sortSegments(segments);
+  const index = sorted.findIndex((segment) => segment.id === segmentId);
+  const previous = sorted[index - 1];
+  const current = sorted[index];
+  if (!previous || !current || previous.end_ms >= current.start_ms) return null;
+  return updateSegmentBounds(
+    sorted,
+    segmentId,
+    previous.end_ms,
+    current.end_ms,
+    durationMs,
+  );
+}
+
+export function snapSegmentToNext(
+  segments: AudioAnnotationSegment[],
+  segmentId: string,
+  durationMs: number,
+): AudioAnnotationSegment[] | null {
+  const sorted = sortSegments(segments);
+  const index = sorted.findIndex((segment) => segment.id === segmentId);
+  const current = sorted[index];
+  const next = sorted[index + 1];
+  if (!current || !next || current.end_ms >= next.start_ms) return null;
+  return updateSegmentBounds(
+    sorted,
+    segmentId,
+    current.start_ms,
+    next.start_ms,
+    durationMs,
+  );
+}
+
 export function buildProjectFile(
   project: AudioAnnotationProject,
   document: AnnotationSnapshot,
