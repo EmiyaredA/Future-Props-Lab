@@ -136,6 +136,35 @@ test("assigns the original language and adds another text version", async () => 
   expect(screen.getByText("2 个语言版本")).toBeInTheDocument();
 });
 
+test("opens the preferred localized language when it exists", () => {
+  render(
+    <LanguageAnnotationEditor
+      segment={{
+        id: "segment-preferred",
+        start_ms: 0,
+        end_ms: 1_000,
+        speaker_id: null,
+        text: "大丈夫。",
+        language: "ja",
+        localized_texts: [{ language: "zh", text: "没问题。" }],
+        status: "draft",
+      }}
+      preferredLanguage="zh"
+      onChange={vi.fn()}
+      onFocus={vi.fn()}
+      onBlur={vi.fn()}
+    />,
+  );
+
+  expect(screen.getByRole("tab", { name: "中文" })).toHaveAttribute(
+    "aria-selected",
+    "true",
+  );
+  expect(screen.getByRole("textbox", { name: "中文说话内容" })).toHaveValue(
+    "没问题。",
+  );
+});
+
 test("uses the original language for transcription and target language only for translations", async () => {
   const user = userEvent.setup();
   const onTranscribe = vi.fn();

@@ -884,6 +884,9 @@
 .annotation-segment-table-card > header > .custom-select {
   width: 120px;
 }
+.annotation-segment-table-card > header > .annotation-display-language {
+  width: 142px;
+}
 .annotation-history {
   margin-left: auto;
   gap: 4px;

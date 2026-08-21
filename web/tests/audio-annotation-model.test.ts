@@ -8,11 +8,15 @@ import {
   formatSrtTimestamp,
   mergeImportedSpeakers,
   mergeWithNext,
+  loadPreferredDisplayLanguage,
   parseAudioAnnotationImportFile,
   parseProjectFile,
   parseTimestamp,
   segmentLanguageCodes,
+  segmentDisplayText,
+  segmentEditorVersion,
   segmentSearchableText,
+  storePreferredDisplayLanguage,
   snapSegmentToNext,
   snapSegmentToPrevious,
   splitSegment,
@@ -128,6 +132,51 @@ test("collects and searches every language version of one audio segment", () => 
   expect(segmentSearchableText(multilingual)).toBe(
     "大丈夫。 没问题。 Don't worry.",
   );
+});
+
+test("prefers the selected display language and falls back to available text", () => {
+  const multilingual = {
+    ...segments[0]!,
+    language: "ja",
+    text: "大丈夫。",
+    localized_texts: [
+      { language: "zh", text: "没问题。" },
+      { language: "en", text: "Don't worry." },
+    ],
+  };
+  expect(segmentDisplayText(multilingual, "zh")).toBe("没问题。");
+  expect(segmentDisplayText(multilingual, "primary")).toBe("大丈夫。");
+  expect(
+    segmentDisplayText(
+      { ...multilingual, localized_texts: [{ language: "zh", text: "" }] },
+      "zh",
+    ),
+  ).toBe("大丈夫。");
+  expect(
+    segmentDisplayText(
+      {
+        ...multilingual,
+        text: "",
+        localized_texts: [{ language: "en", text: "Don't worry." }],
+      },
+      "zh",
+    ),
+  ).toBe("Don't worry.");
+  expect(segmentEditorVersion(multilingual, "zh")).toBe("zh");
+  expect(segmentEditorVersion(multilingual, "ja")).toBe("primary");
+  expect(segmentEditorVersion(multilingual, "ko")).toBe("primary");
+});
+
+test("stores a valid display language per annotation project", () => {
+  storePreferredDisplayLanguage("project-one", "zh", localStorage);
+  storePreferredDisplayLanguage("project-two", "ja", localStorage);
+  expect(loadPreferredDisplayLanguage("project-one", localStorage)).toBe("zh");
+  expect(loadPreferredDisplayLanguage("project-two", localStorage)).toBe("ja");
+  localStorage.setItem(
+    "future_props_audio_annotation_display_language:project-one",
+    "unsupported",
+  );
+  expect(loadPreferredDisplayLanguage("project-one", localStorage)).toBeNull();
 });
 
 test("imports Galgame character names without duplicating existing speakers", () => {

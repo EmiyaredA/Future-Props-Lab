@@ -42,14 +42,18 @@ import {
   formatTimestamp,
   languageColor,
   languageLabel,
+  loadPreferredDisplayLanguage,
   mergeImportedSpeakers,
   mergeWithNext,
   parseTimestamp,
   segmentLanguageCodes,
+  segmentDisplayText,
   segmentSearchableText,
   snapSegmentToNext,
   snapSegmentToPrevious,
   SPEAKER_COLORS,
+  PRIMARY_DISPLAY_LANGUAGE,
+  storePreferredDisplayLanguage,
   splitSegment,
   type ImportedAudioAnnotationSpeaker,
   updateSegmentBounds,
@@ -344,6 +348,12 @@ export function AudioAnnotationEditorPage({
   const [focusSelectionMode, setFocusSelectionMode] = useState(false);
   const [search, setSearch] = useState("");
   const [languageFilter, setLanguageFilter] = useState("all");
+  const storedDisplayLanguage = useRef(
+    loadPreferredDisplayLanguage(projectId, window.localStorage),
+  );
+  const [preferredDisplayLanguage, setPreferredDisplayLanguage] = useState(
+    storedDisplayLanguage.current ?? PRIMARY_DISPLAY_LANGUAGE,
+  );
   const [statusFilter, setStatusFilter] = useState("all");
   const [dirty, setDirty] = useState(false);
   const dirtyRef = useRef(dirty);
@@ -384,8 +394,22 @@ export function AudioAnnotationEditorPage({
     if (!document && documentQuery.data) {
       setDocument(documentQuery.data);
       setSelectedId(documentQuery.data.segments[0]?.id ?? null);
+      if (!storedDisplayLanguage.current) {
+        const initialLanguage = documentQuery.data.segments.some((segment) =>
+          segmentLanguageCodes(segment).includes("zh"),
+        )
+          ? "zh"
+          : PRIMARY_DISPLAY_LANGUAGE;
+        storedDisplayLanguage.current = initialLanguage;
+        setPreferredDisplayLanguage(initialLanguage);
+        storePreferredDisplayLanguage(
+          projectId,
+          initialLanguage,
+          window.localStorage,
+        );
+      }
     }
-  }, [document, documentQuery.data]);
+  }, [document, documentQuery.data, projectId]);
 
   const save = useMutation({
     mutationFn: async (input: {
@@ -1047,6 +1071,26 @@ export function AudioAnnotationEditorPage({
                 />
               </label>
               <CustomSelect
+                ariaLabel="优先展示语言"
+                className="annotation-display-language"
+                value={preferredDisplayLanguage}
+                options={[
+                  { value: PRIMARY_DISPLAY_LANGUAGE, label: "原文优先" },
+                  ...ANNOTATION_LANGUAGES.map((language) => ({
+                    value: language.code,
+                    label: `${language.label}优先`,
+                  })),
+                ]}
+                onChange={(language) => {
+                  setPreferredDisplayLanguage(language);
+                  storePreferredDisplayLanguage(
+                    projectId,
+                    language,
+                    window.localStorage,
+                  );
+                }}
+              />
+              <CustomSelect
                 ariaLabel="筛选片段语言"
                 value={languageFilter}
                 options={[
@@ -1145,7 +1189,10 @@ export function AudioAnnotationEditorPage({
                         <em>未标注</em>
                       )}
                     </span>
-                    <span>{segment.text || "（尚未填写内容）"}</span>
+                    <span>
+                      {segmentDisplayText(segment, preferredDisplayLanguage) ||
+                        "（尚未填写内容）"}
+                    </span>
                     <span className={segment.status}>
                       {segment.status === "reviewed" ? "已校对" : "待校对"}
                     </span>
@@ -1338,6 +1385,7 @@ export function AudioAnnotationEditorPage({
               <LanguageAnnotationEditor
                 key={selected.id}
                 segment={selected}
+                preferredLanguage={preferredDisplayLanguage}
                 onFocus={() => {
                   if (!textBase.current) textBase.current = snapshot(document);
                 }}

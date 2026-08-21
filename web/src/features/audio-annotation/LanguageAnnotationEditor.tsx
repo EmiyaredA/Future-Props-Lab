@@ -4,6 +4,8 @@ import {
   ANNOTATION_LANGUAGES,
   languageColor,
   languageLabel,
+  PRIMARY_DISPLAY_LANGUAGE,
+  segmentEditorVersion,
   segmentLanguageCodes,
   transcriptionLanguageMatch,
   transcriptionTargetLanguageMatch,
@@ -15,7 +17,7 @@ import type {
 import { CustomSelect } from "@shared/ui/CustomSelect";
 import "@features/audio-annotation/audio-annotation-language.css";
 
-const PRIMARY_VERSION = "primary";
+const PRIMARY_VERSION = PRIMARY_DISPLAY_LANGUAGE;
 
 export type LanguageTranscriptionTarget = {
   version: string;
@@ -39,15 +41,18 @@ export function LanguageAnnotationEditor({
   onChange,
   onFocus,
   onBlur,
+  preferredLanguage = PRIMARY_DISPLAY_LANGUAGE,
   transcription,
 }: {
   segment: AudioAnnotationSegment;
   onChange: (changes: Partial<AudioAnnotationSegment>, record: boolean) => void;
   onFocus: () => void;
   onBlur: () => void;
+  preferredLanguage?: string;
   transcription?: LanguageTranscriptionControls;
 }) {
-  const [activeVersion, setActiveVersion] = useState(PRIMARY_VERSION);
+  const preferredVersion = segmentEditorVersion(segment, preferredLanguage);
+  const [activeVersion, setActiveVersion] = useState(() => preferredVersion);
   const localizedTexts = segment.localized_texts ?? [];
   const activeLocalized = localizedTexts.find(
     (item) => item.language === activeVersion,
@@ -93,6 +98,10 @@ export function LanguageAnnotationEditor({
     segment.id,
     transcription?.modelId,
   ]);
+
+  useEffect(() => {
+    setActiveVersion(preferredVersion);
+  }, [preferredVersion, segment.id]);
 
   useEffect(() => {
     if (
