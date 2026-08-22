@@ -1,0 +1,303 @@
+.galgame-stage-maintenance-result {
+  margin-top: 10px;
+  color: var(--gal-muted);
+  font-size: 10px;
+}
+
+.galgame-stage-maintenance-result ul {
+  padding-left: 18px;
+}
+
+.galgame-stage-settings-workspace button:focus-visible,
+.galgame-stage-settings-workspace input:focus-visible,
+.galgame-stage-preview-canvas:focus-visible {
+  outline: 2px solid var(--gal-accent);
+  outline-offset: 2px;
+}
+
+@media (max-width: 1240px) {
+  .galgame-stage-settings-header {
+    flex-wrap: wrap;
+  }
+
+  .galgame-stage-settings-title {
+    min-width: 220px;
+  }
+
+  .galgame-stage-scope-trigger {
+    min-width: 210px;
+  }
+
+  .galgame-stage-preview-toolbar {
+    flex-wrap: wrap;
+  }
+
+  .galgame-stage-background-controls {
+    order: 2;
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .galgame-stage-preview-metrics {
+    margin-left: auto;
+  }
+
+  .galgame-stage-parameter-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .galgame-stage-parameter-panel.is-presets {
+    grid-column: 1 / -1;
+    min-height: 0;
+    border-bottom: 1px solid var(--gal-line);
+  }
+
+  .galgame-stage-parameter-panel.is-position {
+    border-left: 0;
+  }
+}
+
+@media (max-width: 1100px) {
+  .galgame-character-workspace.is-stage-settings {
+    min-width: 1030px;
+    grid-template-columns: 240px 790px;
+  }
+
+  .galgame-stage-settings-workspace {
+    padding-inline: 16px;
+  }
+
+  .galgame-stage-parameter-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .galgame-stage-parameter-panel.is-presets,
+  .galgame-stage-parameter-panel.is-position,
+  .galgame-stage-parameter-panel.is-size {
+    grid-column: 1;
+    min-height: 0;
+    border-left: 0;
+    border-bottom: 1px solid var(--gal-line);
+  }
+}
+
+/* LetsGal-aligned audio Block inspector. The story model keeps environment
+   audio as its third persistent channel, so the visual treatment mirrors the
+   reference while retaining the editor's BGM / SE / AMBIENT semantics. */
+
+.galgame-audio-inspector {
+  --galgame-audio-accent: #e75b8f;
+  --galgame-audio-accent-soft: color-mix(
+    in srgb,
+    var(--galgame-audio-accent) 9%,
+    var(--gal-surface)
+  );
+
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding-top: 2px;
+}
+
+.galgame-audio-inspector .galgame-field,
+.galgame-audio-control-row {
+  gap: 8px;
+  margin: 0 !important;
+}
+
+.galgame-audio-inspector-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.galgame-audio-inspector-label,
+.galgame-audio-control-row > span {
+  color: var(--gal-muted);
+  font-size: 11px;
+}
+
+.galgame-audio-action-tabs,
+.galgame-audio-type-tabs {
+  display: grid;
+  gap: 6px;
+}
+
+.galgame-audio-action-tabs {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.galgame-audio-type-tabs {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.galgame-audio-action-tabs button,
+.galgame-audio-type-tabs button {
+  min-width: 0;
+  min-height: 36px;
+  padding: 7px 9px;
+  border: 1px solid var(--gal-line);
+  border-radius: 7px;
+  background: var(--gal-surface);
+  color: var(--gal-muted);
+  cursor: pointer;
+}
+
+.galgame-audio-action-tabs button {
+  font-size: 11px;
+}
+
+.galgame-audio-type-tabs button {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 4px;
+}
+
+.galgame-audio-type-tabs button span {
+  overflow: hidden;
+  font-size: 11px;
+  font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.galgame-audio-type-tabs button small {
+  color: var(--gal-faint);
+  font-size: 8px;
+  letter-spacing: 0.04em;
+}
+
+.galgame-audio-action-tabs button.active,
+.galgame-audio-type-tabs button.active {
+  border-color: var(--galgame-audio-accent);
+  background: var(--galgame-audio-accent-soft);
+  color: var(--galgame-audio-accent);
+}
+
+.galgame-audio-type-tabs button.active small {
+  color: currentcolor;
+}
+
+.galgame-audio-action-tabs button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.galgame-audio-inspector .custom-select-trigger {
+  min-height: 40px;
+}
+
+.galgame-audio-inspector .galgame-field > input[readonly] {
+  min-height: 40px;
+  background: var(--gal-s-strong);
+  color: var(--gal-muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+.galgame-audio-track-hint {
+  color: var(--gal-faint);
+  font-size: 9px;
+  line-height: 1.5;
+}
+
+.galgame-audio-control-row {
+  display: flex;
+  flex-direction: column;
+}
+
+.galgame-audio-control-row > div {
+  display: grid;
+  grid-template-columns: 52px 25px minmax(80px, 1fr);
+  align-items: center;
+  gap: 7px;
+}
+
+.galgame-audio-control-row .galgame-audio-number {
+  width: 52px;
+  min-height: 34px;
+  padding: 6px 7px;
+  border: 1px solid var(--gal-line);
+  border-radius: 7px;
+  background: var(--gal-surface);
+  color: var(--gal-text);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.galgame-audio-control-row em {
+  color: var(--gal-muted);
+  font-size: 10px;
+  font-style: normal;
+}
+
+.galgame-audio-control-row input[type="range"] {
+  width: 100%;
+  min-width: 0;
+  accent-color: var(--galgame-audio-accent);
+}
+
+.galgame-audio-switch {
+  min-height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--gal-muted);
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.galgame-audio-switch input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+
+.galgame-audio-switch i {
+  position: relative;
+  width: 34px;
+  height: 20px;
+  border-radius: 999px;
+  background: var(--gal-line);
+  transition: background 140ms ease;
+}
+
+.galgame-audio-switch i::after {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.22);
+  content: "";
+  transition: transform 140ms ease;
+}
+
+.galgame-audio-switch input:checked + i {
+  background: var(--galgame-audio-accent);
+}
+
+.galgame-audio-switch input:checked + i::after {
+  transform: translateX(14px);
+}
+
+.galgame-audio-switch input:focus-visible + i {
+  outline: 2px solid var(--galgame-audio-accent);
+  outline-offset: 2px;
+}
+
+@media (max-width: 1180px) {
+  .galgame-audio-type-tabs {
+    grid-template-columns: 1fr;
+  }
+
+  .galgame-audio-type-tabs button {
+    justify-content: flex-start;
+  }
+}

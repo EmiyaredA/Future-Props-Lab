@@ -1,0 +1,66 @@
+.transcription-library-list strong {
+  font-size: 10px;
+}
+
+.transcription-library-list small {
+  margin-top: 3px;
+  color: var(--faint);
+  font-size: 8px;
+}
+
+.transcription-library-empty {
+  min-height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  color: var(--muted);
+  font-size: 10px;
+}
+
+@media (max-width: 1180px) {
+  .transcription-test-page {
+    height: auto;
+    min-height: 100vh;
+    overflow: auto;
+  }
+  .transcription-test-grid {
+    min-height: 720px;
+    flex: none;
+    grid-template-columns: 240px minmax(0, 1fr);
+  }
+  .transcription-settings {
+    min-height: 360px;
+    grid-column: 1 / -1;
+    border-top: 1px solid var(--border);
+    border-left: 0;
+  }
+}
+
+@media (max-width: 760px) {
+  .transcription-test-grid {
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  .transcription-history {
+    max-height: 340px;
+    border-right: 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .transcription-result {
+    min-height: 540px;
+  }
+  .transcription-player {
+    grid-template-columns: 42px minmax(0, 1fr) auto;
+  }
+  .transcription-progress-control {
+    grid-column: 1 / -1;
+  }
+  .transcription-library-tools {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+  .transcription-library-tools label {
+    grid-column: 1 / -1;
+  }
+}

@@ -1,0 +1,496 @@
+.project-assistant-notice button {
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+}
+
+.project-assistant-notice svg {
+  width: 12px;
+}
+
+.project-assistant-composer {
+  position: relative;
+  margin: 0 12px 12px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: var(--surface);
+  box-shadow: 0 12px 32px rgb(0 0 0 / 10%);
+}
+
+.project-assistant-composer:focus-within {
+  border-color: var(--accent-line);
+  box-shadow: 0 12px 32px rgb(0 0 0 / 12%);
+}
+
+.project-assistant-rich-editor-shell {
+  position: relative;
+}
+
+.project-assistant-rich-editor {
+  width: 100%;
+  min-height: 76px;
+  max-height: 180px;
+  padding: 0;
+  overflow-y: auto;
+  border: 0;
+  background: transparent;
+  color: var(--text-strong);
+  font: inherit;
+  font-size: 13px;
+  line-height: 1.6;
+  outline: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.project-assistant-rich-editor[data-empty="true"]::before {
+  position: absolute;
+  color: var(--faint);
+  content: attr(data-placeholder);
+  pointer-events: none;
+}
+
+.project-assistant-rich-editor[contenteditable="false"] {
+  cursor: not-allowed;
+  opacity: 0.68;
+}
+
+.project-assistant-inline-content {
+  white-space: pre-wrap !important;
+}
+
+.project-assistant-inline-asset {
+  position: relative;
+  max-width: min(190px, 80%);
+  min-height: 25px;
+  margin: 0 3px;
+  padding: 2px 7px 2px 3px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  overflow: visible;
+  vertical-align: -7px;
+  border: 1px solid var(--border-strong);
+  border-radius: 9px;
+  background: var(--surface-soft);
+  color: var(--text);
+  font-size: 10px;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.project-assistant-inline-asset > span:nth-child(2) {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.project-assistant-inline-asset.is-editable {
+  border-color: var(--accent-line);
+  background: var(--accent-soft);
+  color: var(--text-strong);
+}
+
+.project-assistant-inline-asset-preview {
+  width: 20px;
+  height: 20px;
+  overflow: hidden;
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  border-radius: 6px;
+  background: var(--surface-hover);
+  color: var(--muted);
+}
+
+.project-assistant-inline-asset-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.project-assistant-inline-asset-preview svg {
+  width: 11px;
+}
+
+.project-assistant-inline-asset > button {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  width: 15px;
+  height: 15px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgb(255 255 255 / 86%);
+  border-radius: 50%;
+  background: rgb(26 28 32 / 82%);
+  color: #fff;
+  line-height: 0;
+  opacity: 0.72;
+  transform: scale(1);
+  box-shadow: 0 2px 5px rgb(0 0 0 / 22%);
+  transition:
+    opacity 120ms ease,
+    transform 120ms ease,
+    background 120ms ease;
+}
+
+.project-assistant-inline-asset:hover > button,
+.project-assistant-inline-asset:focus-within > button {
+  opacity: 1;
+}
+
+.project-assistant-inline-asset > button:hover:not(:disabled) {
+  background: var(--danger);
+  color: #fff;
+}
+
+.project-assistant-inline-asset > button svg {
+  width: 8px;
+  height: 8px;
+  display: block;
+  stroke-width: 2.4;
+}
+
+.project-assistant-mention-menu {
+  position: absolute;
+  z-index: 9;
+  right: 0;
+  bottom: calc(100% + 10px);
+  left: 0;
+  max-height: 280px;
+  padding: 6px;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: 13px;
+  background: color-mix(in srgb, var(--surface) 98%, transparent);
+  box-shadow: 0 18px 46px rgb(0 0 0 / 30%);
+  backdrop-filter: blur(22px);
+}
+
+.project-assistant-mention-menu > span {
+  min-height: 54px;
+  padding: 0 12px;
+  display: flex;
+  align-items: center;
+  color: var(--faint);
+  font-size: 10px;
+}
+
+.project-assistant-mention-menu > button {
+  width: 100%;
+  min-height: 50px;
+  padding: 5px 8px 5px 5px;
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) 16px;
+  align-items: center;
+  gap: 9px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--muted);
+  text-align: left;
+}
+
+.project-assistant-mention-menu > button:hover:not(:disabled),
+.project-assistant-mention-menu > button[aria-selected="true"] {
+  background: var(--surface-hover);
+}
+
+.project-assistant-mention-menu > button:disabled {
+  opacity: 0.42;
+}
+
+.project-assistant-mention-menu > button > span:nth-child(2) {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.project-assistant-mention-menu strong,
+.project-assistant-mention-menu small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.project-assistant-mention-menu strong {
+  color: var(--text);
+  font-size: 10px;
+}
+
+.project-assistant-mention-menu small {
+  color: var(--faint);
+  font-size: 8px;
+}
+
+.project-assistant-mention-menu > button > svg {
+  width: 14px;
+  color: var(--accent);
+}
+
+.project-assistant-composer-actions {
+  min-height: 36px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto 36px;
+  align-items: center;
+  gap: 8px;
+}
+
+.project-assistant-composer-actions > div {
+  display: flex;
+  gap: 3px;
+}
+
+.project-assistant-composer-actions > div button {
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted);
+}
+
+.project-assistant-composer-actions > div button:hover:not(:disabled) {
+  background: var(--surface-hover);
+  color: var(--text-strong);
+}
+
+.project-assistant-composer-actions svg {
+  width: 15px;
+}
+
+.project-assistant-composer-actions > span {
+  color: var(--faint);
+  font-size: 10px;
+}
+
+.project-assistant-send {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 5px 14px color-mix(in srgb, var(--accent) 22%, transparent);
+  color: white;
+}
+
+.project-assistant-send:disabled {
+  background: var(--border-strong);
+  box-shadow: none;
+  color: var(--faint);
+}
+
+.project-assistant-send.stop {
+  background: var(--danger);
+  color: white;
+}
+
+.project-assistant-picker {
+  position: absolute;
+  z-index: 7;
+  right: 0;
+  bottom: calc(100% + 8px);
+  left: 0;
+  max-height: min(440px, calc(100vh - 180px));
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 13px;
+  background: color-mix(in srgb, var(--surface) 97%, transparent);
+  box-shadow: 0 18px 46px rgb(0 0 0 / 34%);
+  backdrop-filter: blur(22px);
+}
+
+.project-assistant-picker > header {
+  min-height: 48px;
+  padding: 0 10px 0 13px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.project-assistant-picker > header > span {
+  min-width: 0;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  flex: 1;
+}
+
+.project-assistant-picker > header strong {
+  color: var(--text-strong);
+  font-size: 12px;
+}
+
+.project-assistant-picker > header small {
+  color: var(--faint);
+  font-size: 9px;
+}
+
+.project-assistant-picker > header button {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+}
+
+.project-assistant-picker > header button.project-assistant-upload {
+  width: 30px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-soft);
+}
+
+.project-assistant-picker
+  > header
+  button.project-assistant-upload:hover:not(:disabled) {
+  border-color: var(--accent-line);
+  color: var(--accent);
+}
+
+.project-assistant-picker > header svg {
+  width: 13px;
+}
+
+.project-assistant-picker-search {
+  height: 42px;
+  margin: 9px 9px 0;
+  padding: 0 10px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-soft);
+  color: var(--faint);
+}
+
+.project-assistant-picker-search svg {
+  width: 14px;
+  flex: none;
+}
+
+.project-assistant-picker-search input {
+  min-width: 0;
+  height: 100%;
+  padding: 0;
+  flex: 1;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 10px;
+  outline: 0;
+}
+
+.project-assistant-picker-list {
+  max-height: 328px;
+  padding: 8px 9px 10px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.project-assistant-picker-list > button {
+  min-width: 0;
+  min-height: 50px;
+  padding: 5px 8px 5px 5px;
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) 16px;
+  align-items: center;
+  gap: 9px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--muted);
+  text-align: left;
+}
+
+.project-assistant-picker-list > button:hover {
+  background: var(--surface-hover);
+}
+
+.project-assistant-picker-list > button.selected {
+  border-color: var(--accent-line);
+  background: var(--accent-soft);
+}
+
+.project-assistant-picker-preview {
+  width: 40px;
+  height: 40px;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface-soft);
+  color: var(--faint);
+}
+
+.project-assistant-picker-list > button > span:nth-child(2) {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.project-assistant-picker-list strong,
+.project-assistant-picker-list small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.project-assistant-picker-list strong {
+  color: var(--text);
+  font-size: 10px;
+}
+
+.project-assistant-picker-list small {
+  color: var(--faint);
+  font-size: 8px;
+}
+
+.project-assistant-picker-list > button > svg {
+  width: 14px;
+  color: var(--accent);
+}
+
+.project-assistant-picker-empty {
+  padding: 28px 0;
+  color: var(--faint);
+  font-size: 10px;
+  text-align: center;
+}
+
+.assistant-model-backdrop {
+  position: fixed;
+  z-index: 90;
+  inset: 0;
+  padding: 24px;
+  display: grid;
+  place-items: center;
+  background: rgb(5 6 8 / 58%);
+  backdrop-filter: blur(12px) saturate(115%);
+}

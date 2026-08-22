@@ -1,6 +1,6 @@
 import { CustomColorPicker } from "@shared/ui/CustomColorPicker";
 import { CURTAIN_MODE_OPTIONS } from "@features/galgame-workshop/editor/blockRegistry";
-import "@features/galgame-workshop/galgame-workshop.css";
+import "@features/galgame-workshop/galgameStyles";
 import "@features/galgame-workshop/galgame-script-workbench.css";
 import type { BlockInspectorViewModel } from "@features/galgame-workshop/editor/InspectorFieldControls";
 export function CurtainInspectorFields({

@@ -42,44 +42,6 @@
   }
 }
 
-.galgame-character-global-settings {
-  margin: 0 12px 12px;
-  padding: 10px 12px;
-  border: 1px solid var(--border-soft);
-  border-radius: 10px;
-}
-
-.galgame-character-global-settings summary {
-  cursor: pointer;
-  font-weight: 650;
-}
-
-.galgame-character-global-settings > div,
-.galgame-expression-crop-settings,
-.galgame-expression-overlays {
-  display: grid;
-  gap: 8px;
-  margin-top: 10px;
-}
-
-.galgame-character-global-settings > button {
-  width: 100%;
-  margin-top: 10px;
-}
-
-.galgame-portrait-upgrade-preview {
-  padding-top: 8px;
-  border-top: 1px solid var(--gal-line);
-}
-
-.galgame-portrait-upgrade-preview ul {
-  margin: 0;
-  padding-left: 18px;
-  color: var(--gal-muted);
-  font-size: 11px;
-}
-
-.galgame-character-global-settings label,
 .galgame-expression-crop-settings label {
   display: grid;
   grid-template-columns: minmax(80px, 1fr) 88px;

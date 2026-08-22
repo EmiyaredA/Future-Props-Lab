@@ -1,0 +1,250 @@
+.galgame-character-global-workspace > header button:disabled {
+  opacity: 0.42;
+  cursor: not-allowed;
+}
+
+.galgame-character-global-workspace > header button svg {
+  width: 15px;
+  height: 15px;
+}
+
+.galgame-character-template-workspace > p {
+  margin: 16px 0;
+}
+
+.galgame-character-template-table {
+  border: 1px solid var(--gal-line);
+  border-radius: 10px;
+  background: var(--gal-panel);
+}
+
+.galgame-character-template-table > header,
+.galgame-character-template-table > div:not(.galgame-character-template-empty) {
+  display: grid;
+  grid-template-columns: 1.1fr 110px 1fr 1.5fr 38px;
+  align-items: center;
+  gap: 9px;
+  padding: 10px 12px;
+}
+
+.galgame-character-template-table > header {
+  border-bottom: 1px solid var(--gal-line);
+  color: var(--gal-faint);
+  font-size: 10px;
+}
+
+.galgame-character-template-table > div + div {
+  border-top: 1px solid var(--gal-line);
+}
+
+.galgame-character-template-table button.danger {
+  width: 34px;
+  padding: 0;
+  color: var(--gal-danger);
+}
+
+.galgame-character-template-empty,
+.galgame-character-attribute-empty {
+  padding: 44px 20px;
+  color: var(--gal-muted);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  text-align: center;
+}
+
+.galgame-character-base-form {
+  width: auto;
+  max-width: 820px;
+  margin: 22px auto;
+  overflow: visible;
+}
+
+.galgame-character-base-form.is-attributes > .galgame-field,
+.galgame-character-base-form.is-attributes
+  > .galgame-character-official-settings,
+.galgame-character-base-form.is-displayNames > .galgame-character-attributes {
+  display: none;
+}
+
+.galgame-character-attributes > header > span,
+.galgame-character-attributes > div > span {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.galgame-character-attributes > header small,
+.galgame-character-attributes > div small {
+  color: var(--gal-muted);
+  font-size: 10px;
+}
+
+.galgame-character-attributes > div {
+  grid-template-columns: minmax(160px, 1fr) minmax(220px, 1.5fr);
+}
+
+.galgame-portrait-editor {
+  min-height: 0;
+  flex: 1;
+  overflow: auto;
+}
+
+.galgame-portrait-editor.is-expressions {
+  padding: 0;
+  grid-template-columns: 270px minmax(0, 1fr);
+  grid-template-rows: 54px auto auto;
+  gap: 0;
+}
+
+.galgame-portrait-editor.is-expressions > .galgame-portrait-stage-column {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  padding: 24px 24px 10px;
+}
+
+.galgame-portrait-editor.is-expressions > .galgame-expression-column {
+  display: contents;
+}
+
+.galgame-portrait-editor.is-expressions .galgame-expression-column > header {
+  grid-column: 1;
+  grid-row: 1;
+  min-height: 54px;
+  margin: 0;
+  padding: 10px 12px;
+  border-right: 1px solid var(--gal-line);
+  border-bottom: 1px solid var(--gal-line);
+  background: var(--gal-panel);
+}
+
+.galgame-portrait-editor.is-expressions
+  .galgame-expression-column
+  > header
+  button {
+  max-width: 112px;
+  padding: 5px 7px;
+  border: 0;
+  background: transparent;
+  color: var(--gal-danger);
+  font-size: 9px;
+}
+
+.galgame-portrait-editor.is-expressions .galgame-expression-grid {
+  grid-column: 1;
+  grid-row: 2 / span 2;
+  min-height: 360px;
+  padding: 9px 10px 16px;
+  overflow: auto;
+  border-right: 1px solid var(--gal-line);
+  background: var(--gal-panel);
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.galgame-portrait-editor.is-expressions .galgame-expression-grid > button {
+  min-height: 54px;
+  padding: 6px 8px;
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  grid-template-rows: 1fr;
+  align-items: center;
+  gap: 9px;
+}
+
+.galgame-portrait-editor.is-expressions
+  .galgame-expression-grid
+  > button
+  > span {
+  width: 42px;
+  height: 42px;
+  aspect-ratio: auto;
+  grid-column: 1;
+}
+
+.galgame-portrait-editor.is-expressions
+  .galgame-expression-grid
+  > button
+  strong {
+  grid-column: 2;
+  padding: 0;
+}
+
+.galgame-portrait-editor.is-expressions .galgame-expression-grid > button em {
+  top: 6px;
+  right: 6px;
+}
+
+.galgame-portrait-editor.is-expressions
+  .galgame-expression-grid
+  > button.galgame-expression-add {
+  min-height: 48px;
+  display: flex;
+  flex-direction: row;
+}
+
+.galgame-portrait-editor.is-expressions
+  .galgame-expression-grid
+  > button.galgame-expression-add
+  svg {
+  width: 18px;
+  height: 18px;
+}
+
+.galgame-portrait-editor.is-expressions .galgame-expression-form {
+  grid-column: 2;
+  grid-row: 3;
+  margin: 0 24px 24px;
+  padding: 18px;
+  border: 1px solid var(--gal-line);
+  border-radius: 10px;
+  background: var(--gal-panel);
+}
+
+.galgame-portrait-editor.is-expressions .galgame-expression-column > footer {
+  grid-column: 1;
+  grid-row: 4;
+  margin: 0;
+  border-radius: 0;
+}
+
+.galgame-portrait-editor.is-expressions .galgame-portrait-skins {
+  display: none;
+}
+
+.galgame-portrait-editor.is-skins {
+  display: block;
+  padding: 22px;
+}
+
+.galgame-portrait-editor.is-skins > .galgame-portrait-stage-column,
+.galgame-portrait-editor.is-skins .galgame-expression-column > header,
+.galgame-portrait-editor.is-skins .galgame-expression-grid,
+.galgame-portrait-editor.is-skins .galgame-expression-form,
+.galgame-portrait-editor.is-skins .galgame-expression-column > footer {
+  display: none;
+}
+
+.galgame-portrait-editor.is-skins .galgame-expression-column {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.galgame-portrait-editor.is-skins .galgame-portrait-skins {
+  padding: 16px;
+  border: 1px solid var(--gal-line);
+  border-radius: 10px;
+  background: var(--gal-panel);
+}
+
+.galgame-character-reference-panel {
+  padding: 0;
+  gap: 0;
+  overflow: hidden;
+}

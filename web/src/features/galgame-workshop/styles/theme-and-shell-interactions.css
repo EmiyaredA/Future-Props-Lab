@@ -1,0 +1,64 @@
+@keyframes galgame-camera-vertical {
+  25% {
+    translate: 0 -2%;
+  }
+  50% {
+    translate: 0 2%;
+  }
+  75% {
+    translate: 0 -1%;
+  }
+}
+
+@keyframes galgame-camera-blur {
+  50% {
+    filter: blur(8px);
+  }
+}
+
+@keyframes galgame-camera-focus {
+  from {
+    filter: blur(8px);
+  }
+}
+
+@keyframes galgame-camera-fade-black {
+  50% {
+    filter: brightness(0);
+  }
+}
+
+@keyframes galgame-camera-fade-white {
+  50% {
+    filter: brightness(3) saturate(0);
+  }
+}
+
+@keyframes galgame-camera-pan {
+  from {
+    translate: -4% 0;
+  }
+}
+
+@keyframes galgame-camera-zoom {
+  from {
+    scale: 0.92;
+  }
+}
+
+@keyframes galgame-camera-roll {
+  50% {
+    rotate: 4deg;
+  }
+}
+
+@keyframes galgame-stage-animation {
+  0% {
+    opacity: 0.35;
+    scale: 0.98;
+  }
+  100% {
+    opacity: 1;
+    scale: 1;
+  }
+}

@@ -1,0 +1,319 @@
+.galgame-timeline-calibration > small {
+  color: var(--gal-faint);
+  font-size: 8px;
+  white-space: nowrap;
+}
+
+.galgame-timeline-calibration button,
+.galgame-timeline-calibration label {
+  min-height: 28px;
+  padding: 0 8px;
+  border: 1px solid var(--gal-line);
+  border-radius: 6px;
+  background: var(--gal-surface);
+  color: var(--gal-muted);
+  font-size: 9px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.galgame-timeline-calibration button:disabled {
+  opacity: 0.45;
+}
+
+.galgame-timeline-calibration svg {
+  width: 12px;
+  height: 12px;
+}
+
+.galgame-timeline-ruler-row {
+  height: 34px;
+  border-bottom: 1px solid var(--gal-line-strong);
+  background: color-mix(in srgb, var(--gal-panel) 92%, var(--gal-bg));
+  display: grid;
+  grid-template-columns:
+    var(--galgame-timeline-label-width)
+    minmax(0, 1fr);
+}
+
+.galgame-timeline-ruler-row > strong {
+  padding: 0 12px;
+  border-right: 1px solid var(--gal-line-strong);
+  background: color-mix(in srgb, var(--gal-panel) 96%, var(--gal-bg));
+  color: var(--gal-muted);
+  display: flex;
+  align-items: center;
+  font-size: 9px;
+}
+
+.galgame-timeline-ruler-scroll {
+  min-width: 0;
+  overflow: hidden;
+}
+
+.galgame-timeline-error {
+  padding: 7px 10px;
+  border-bottom: 1px solid
+    color-mix(in srgb, var(--gal-danger) 30%, transparent);
+  background: color-mix(in srgb, var(--gal-danger) 10%, transparent);
+  color: var(--gal-danger);
+}
+
+.galgame-timeline-scroll {
+  min-height: 0;
+  overflow: auto;
+  background: linear-gradient(180deg, var(--gal-surface), var(--gal-bg));
+  flex: 1 1 0;
+}
+
+.galgame-timeline-track {
+  position: relative;
+  min-width: 100%;
+  cursor: crosshair;
+}
+
+.galgame-timeline-time-area {
+  position: absolute;
+  top: 0;
+  left: var(--galgame-timeline-label-width);
+}
+
+.galgame-timeline-track-labels {
+  position: sticky;
+  left: 0;
+  z-index: 12;
+  display: block;
+  width: var(--galgame-timeline-label-width);
+  height: 100%;
+  border-right: 1px solid var(--gal-line-strong);
+  background: color-mix(in srgb, var(--gal-panel) 96%, var(--gal-bg));
+  box-shadow: 8px 0 18px rgb(0 0 0 / 0.16);
+}
+
+.galgame-timeline-track-labels > strong,
+.galgame-timeline-track-labels > span {
+  position: absolute;
+  right: 0;
+  left: 0;
+  padding: 0 12px;
+  border-bottom: 1px solid var(--gal-line);
+  color: var(--gal-muted);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 9px;
+}
+
+.galgame-timeline-track-labels > span:nth-of-type(even) {
+  background: color-mix(in srgb, var(--gal-s-strong) 44%, transparent);
+}
+
+.galgame-timeline-track-labels svg {
+  width: 13px;
+  height: 13px;
+  color: var(--gal-faint);
+  flex: 0 0 auto;
+}
+
+.galgame-timeline-track-labels > span.galgame-timeline-character-group {
+  padding: 0;
+  background: color-mix(in srgb, var(--gal-s-strong) 36%, transparent);
+}
+
+.galgame-timeline-track-labels
+  > span.galgame-timeline-character-group
+  > button {
+  appearance: none;
+  width: 100%;
+  height: 100%;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  color: var(--gal-muted);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 9px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.galgame-timeline-track-labels
+  > span.galgame-timeline-character-group
+  > button:hover {
+  background: color-mix(in srgb, var(--gal-accent) 5%, transparent);
+  color: var(--gal-text);
+}
+
+.galgame-timeline-track-labels > span.galgame-timeline-character-child {
+  padding-left: 28px;
+}
+
+.galgame-timeline-lanes {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.galgame-timeline-lane {
+  position: absolute;
+  right: 0;
+  left: 0;
+  border-bottom: 1px solid var(--gal-line);
+  background: color-mix(in srgb, var(--gal-surface) 72%, transparent);
+}
+
+.galgame-timeline-lane:nth-child(even) {
+  background: color-mix(in srgb, var(--gal-s-strong) 55%, transparent);
+}
+
+.galgame-timeline-point,
+.galgame-timeline-structure {
+  position: absolute;
+  z-index: 3;
+  height: 30px;
+  border: 1px solid var(--gal-line-strong);
+  border-radius: 6px;
+  background: var(--gal-panel);
+  color: var(--gal-muted);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 8px;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.galgame-timeline-state-segment {
+  position: absolute;
+  z-index: 1;
+  height: 24px;
+  min-width: 6px;
+  overflow: hidden;
+  padding: 0 30px;
+  border: 1px solid color-mix(in srgb, #6f91b8 46%, var(--gal-line));
+  border-radius: 8px;
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, #28425e 72%, var(--gal-surface)),
+    color-mix(in srgb, #203348 62%, var(--gal-surface))
+  );
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.09),
+    inset 0 -8px 18px rgb(0 0 0 / 0.1);
+  color: #b8cce1;
+  font-size: 9px;
+  line-height: 22px;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.galgame-timeline-state-segment > svg {
+  width: 11px;
+  height: 11px;
+  flex: 0 0 auto;
+}
+
+.galgame-timeline-state-segment > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.galgame-timeline-state-segment.is-character {
+  border-color: color-mix(in srgb, #6d9fc5 52%, var(--gal-line));
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, #274966 72%, var(--gal-surface)),
+    color-mix(in srgb, #20394f 64%, var(--gal-surface))
+  );
+  color: #bdd8ea;
+}
+
+.galgame-timeline-state-segment.is-bgm {
+  border-color: color-mix(in srgb, #cf7ba1 52%, var(--gal-line));
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, #693a55 68%, var(--gal-surface)),
+    color-mix(in srgb, #4d3041 62%, var(--gal-surface))
+  );
+  color: #e8bdd1;
+}
+
+.galgame-timeline-state-segment.is-ambient {
+  border-color: color-mix(in srgb, #65a98f 52%, var(--gal-line));
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, #2e5e50 68%, var(--gal-surface)),
+    color-mix(in srgb, #29483f 62%, var(--gal-surface))
+  );
+  color: #b9dfd1;
+}
+
+.galgame-timeline-cg-range {
+  position: absolute;
+  z-index: 2;
+  min-width: 6px;
+  padding: 0 30px;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, #bd91ff 72%, var(--gal-line));
+  border-radius: 8px;
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, #7148ad 78%, var(--gal-surface)),
+    color-mix(in srgb, #4c3575 70%, var(--gal-surface))
+  );
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.14),
+    inset 0 -8px 18px rgb(0 0 0 / 0.14);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 8px;
+  cursor: grab;
+}
+
+.galgame-timeline-cg-range:active {
+  cursor: grabbing;
+}
+
+.galgame-timeline-cg-range.selected {
+  border-color: color-mix(in srgb, var(--gal-accent) 76%, #fff);
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, var(--gal-accent) 72%, transparent),
+    inset 0 1px 0 rgb(255 255 255 / 0.18),
+    inset 0 -8px 18px rgb(0 0 0 / 0.14);
+}
+
+.galgame-timeline-cg-range > svg {
+  width: 11px;
+  height: 11px;
+  flex: 0 0 auto;
+}
+
+.galgame-timeline-cg-range > strong,
+.galgame-timeline-cg-range > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.galgame-timeline-cg-range > strong {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.galgame-timeline-cg-range > span {
+  min-width: 0;
+  flex: 0 1 auto;
+  margin-left: auto;
+  font-family: monospace;
+  font-variant-numeric: tabular-nums;
+}

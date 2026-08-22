@@ -2,7 +2,7 @@ import { Eye, EyeOff, LocateFixed, Trash2, UserRound, X } from "lucide-react";
 import { StoryAssetImage } from "@features/galgame-workshop/editor/StoryAssetImage";
 import { ExpressionPortrait } from "@features/galgame-workshop/editor/ExpressionPortrait";
 import { CustomSelect } from "@shared/ui/CustomSelect";
-import type { CharacterWorkspaceViewModel } from "@features/galgame-workshop/editor/CharacterWorkspaceView";
+import type { CharacterWorkspaceViewModel } from "@features/galgame-workshop/editor/characterWorkspaceViewModel";
 export function CharacterReferencePanel({
   model,
 }: {

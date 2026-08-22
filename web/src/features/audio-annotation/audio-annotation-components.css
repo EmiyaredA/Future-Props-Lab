@@ -1,0 +1,496 @@
+.annotation-editor-actions .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+}
+
+.annotation-editor-actions svg {
+  width: 16px;
+  height: 16px;
+}
+
+.annotation-back-square {
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  display: grid;
+  flex: none;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  background: var(--surface);
+  color: var(--text);
+}
+
+.annotation-back-square:hover {
+  border-color: var(--accent-line);
+  color: var(--accent);
+}
+
+.annotation-back-square svg {
+  width: 20px;
+}
+
+.annotation-conflict {
+  margin-bottom: 12px;
+  padding: 11px 13px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  border: 1px solid color-mix(in srgb, var(--warning) 42%, transparent);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--warning) 9%, var(--surface));
+  color: var(--text);
+  font-size: 12px;
+}
+
+.annotation-conflict span {
+  margin-right: auto;
+}
+
+.annotation-conflict button {
+  padding: 5px 8px;
+  border: 0;
+  background: transparent;
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.annotation-editor-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  align-items: start;
+  gap: 14px;
+}
+
+.annotation-editor-main {
+  min-width: 0;
+  display: grid;
+  gap: 14px;
+}
+
+.annotation-waveform-card,
+.annotation-segment-table-card,
+.annotation-inspector {
+  overflow: visible;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.annotation-waveform-card {
+  padding: 0;
+  overflow: hidden;
+  container-type: inline-size;
+}
+
+.annotation-waveform-meta {
+  min-height: 72px;
+  padding: 13px 16px;
+  gap: 28px;
+  border-bottom: 1px solid var(--border);
+}
+
+.annotation-waveform-meta > div:not(.annotation-waveform-tools) {
+  display: grid;
+  gap: 4px;
+}
+
+.annotation-waveform-meta small {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.annotation-waveform-meta strong {
+  color: var(--text-strong);
+  font-size: 20px;
+}
+
+.annotation-waveform-meta span {
+  color: var(--text);
+  font-size: 12px;
+}
+
+.annotation-zoom-controls {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.annotation-zoom-controls button {
+  width: 34px;
+  height: 32px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+}
+
+.annotation-zoom-controls button:hover:not(:disabled) {
+  background: var(--surface-hover);
+  color: var(--accent);
+}
+
+.annotation-zoom-controls button:disabled {
+  opacity: 0.35;
+}
+
+.annotation-zoom-controls button + span,
+.annotation-zoom-controls span + button {
+  border-left: 1px solid var(--border);
+}
+
+.annotation-zoom-controls input[type="range"] {
+  width: 112px;
+  margin: 0 9px;
+  accent-color: var(--accent);
+}
+
+.annotation-zoom-controls span {
+  min-width: 54px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+}
+
+.annotation-zoom-controls svg {
+  width: 15px;
+}
+
+.annotation-waveform-tools {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 7px;
+}
+
+.annotation-view-action {
+  min-height: 34px;
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.annotation-view-action:hover:not(:disabled),
+.annotation-view-action[aria-pressed="true"] {
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--border));
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.annotation-view-action:disabled {
+  opacity: 0.45;
+}
+
+.annotation-waveform-shell {
+  position: relative;
+  min-height: 260px;
+  overflow-x: auto;
+  background: color-mix(in srgb, var(--surface-soft) 76%, transparent);
+}
+
+.annotation-waveform {
+  min-width: 100%;
+}
+
+.annotation-waveform::part(scroll) {
+  scrollbar-width: auto;
+  scrollbar-color: var(--border-strong) transparent;
+}
+
+.annotation-waveform-shell.is-focus-selecting .annotation-waveform {
+  cursor: crosshair;
+}
+
+.annotation-waveform-selection-hint {
+  position: absolute;
+  z-index: 8;
+  top: 9px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 5px 10px;
+  border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--border));
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--surface) 90%, transparent);
+  color: var(--accent);
+  font-size: 11px;
+  box-shadow: var(--shadow);
+  pointer-events: none;
+}
+
+.annotation-region-label {
+  position: absolute;
+  z-index: 4;
+  top: 8px;
+  left: 8px;
+  max-width: calc(100% - 16px);
+  padding: 3px 7px;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, currentColor 22%, transparent);
+  border-radius: 5px;
+  background: color-mix(in srgb, var(--surface) 82%, transparent);
+  color: var(--text-strong);
+  font-size: 10px;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.annotation-waveform-loading {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: color-mix(in srgb, var(--surface) 82%, transparent);
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.annotation-waveform-navigator {
+  min-height: 46px;
+  padding: 8px 14px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  border-top: 1px solid var(--border);
+  background: color-mix(in srgb, var(--surface-soft) 58%, transparent);
+}
+
+.annotation-waveform-navigator > button {
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  display: grid;
+  flex: none;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--surface);
+  color: var(--text);
+}
+
+.annotation-waveform-navigator > button:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+  color: var(--accent);
+}
+
+.annotation-waveform-navigator > button:disabled {
+  opacity: 0.35;
+}
+
+.annotation-waveform-navigator > button svg {
+  width: 16px;
+}
+
+.annotation-waveform-navigator label {
+  min-width: 180px;
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 9px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.annotation-waveform-navigator label span {
+  white-space: nowrap;
+}
+
+.annotation-waveform-navigator input[type="range"] {
+  width: 100%;
+  min-width: 100px;
+  accent-color: var(--accent);
+}
+
+.annotation-viewport-time {
+  color: var(--text);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.annotation-waveform-navigator small {
+  color: var(--muted);
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+.annotation-transport {
+  min-height: 64px;
+  padding: 10px 14px;
+  gap: 10px;
+  border-top: 1px solid var(--border);
+}
+
+.annotation-play {
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  display: grid;
+  flex: none;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  box-shadow: 0 5px 16px color-mix(in srgb, var(--accent) 26%, transparent);
+}
+
+.annotation-play svg {
+  width: 18px;
+}
+
+.annotation-transport > .custom-select {
+  width: 90px;
+  min-width: 90px;
+  flex: none;
+}
+
+.annotation-playback-time {
+  margin-left: 8px;
+  display: inline-flex;
+  align-items: baseline;
+  flex: none;
+  gap: 6px;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.annotation-playback-time strong {
+  color: var(--text-strong);
+}
+
+.annotation-playback-time span {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.annotation-volume {
+  margin-left: 5px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--muted);
+}
+
+.annotation-volume svg {
+  width: 17px;
+}
+
+.annotation-volume input {
+  width: 64px;
+  accent-color: var(--accent);
+}
+
+.annotation-edit-actions {
+  margin-left: auto;
+  gap: 7px;
+}
+
+.annotation-edit-actions button {
+  min-height: 36px;
+  padding: 0 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-soft);
+  color: var(--text);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.annotation-edit-actions button:hover:not(:disabled) {
+  border-color: var(--accent-line);
+  color: var(--accent);
+}
+
+.annotation-edit-actions button.danger {
+  color: var(--danger);
+}
+
+.annotation-edit-actions button:disabled {
+  opacity: 0.4;
+}
+
+.annotation-edit-actions svg {
+  width: 14px;
+}
+
+@container (max-width: 900px) {
+  .annotation-transport {
+    flex-wrap: wrap;
+  }
+  .annotation-edit-actions {
+    width: 100%;
+    margin-left: 0;
+    flex: 1 0 100%;
+  }
+  .annotation-edit-actions button {
+    flex: 1 1 0;
+    justify-content: center;
+  }
+}
+
+@container (max-width: 520px) {
+  .annotation-edit-actions button {
+    flex-basis: calc(50% - 4px);
+  }
+}
+
+.annotation-segment-table-card {
+  padding: 0;
+  overflow: hidden;
+}
+
+.annotation-segment-table-card > header {
+  min-height: 57px;
+  padding: 9px 12px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  flex-wrap: wrap;
+  border-bottom: 1px solid var(--border);
+}
+
+.annotation-segment-table-card > header > label {
+  width: min(330px, 44%);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-soft);
+}
+
+.annotation-segment-table-card > header > label svg {
+  width: 15px;
+  color: var(--faint);
+}
+
+.annotation-segment-table-card > header input {
+  width: 100%;
+  min-height: 36px;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--text);
+}
+
+.annotation-segment-table-card > header > .custom-select {
+  width: 120px;
+}

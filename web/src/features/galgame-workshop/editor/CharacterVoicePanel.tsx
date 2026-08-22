@@ -1,6 +1,6 @@
 import { FolderOpen, Mic2, Trash2, Upload, Volume2 } from "lucide-react";
 import { StoryAudioPreview } from "@features/galgame-workshop/editor/StoryAudioPreview";
-import type { CharacterWorkspaceViewModel } from "@features/galgame-workshop/editor/CharacterWorkspaceView";
+import type { CharacterWorkspaceViewModel } from "@features/galgame-workshop/editor/characterWorkspaceViewModel";
 export function CharacterVoicePanel({
   model,
 }: {

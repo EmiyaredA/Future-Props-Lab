@@ -1,0 +1,497 @@
+.conflict-card {
+  text-align: center;
+}
+
+.conflict-card h2 {
+  color: var(--text-strong);
+}
+
+.conflict-card p {
+  color: var(--muted);
+  line-height: 1.7;
+}
+
+.conflict-icon {
+  width: 54px;
+  height: 54px;
+  margin: auto;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--warning-soft);
+  color: var(--warning);
+  font-size: 26px;
+}
+
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  margin-bottom: 18px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.stat-card {
+  min-height: 104px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  border-right: 1px solid var(--border);
+}
+
+.stat-card:last-child {
+  border-right: 0;
+}
+
+.stat-card span {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.stat-card strong {
+  color: var(--text-strong);
+  font-size: 26px;
+}
+
+.stat-card small {
+  color: var(--faint);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.danger-stat strong {
+  color: var(--danger);
+}
+
+.logs-card {
+  overflow: hidden;
+}
+
+.logs-toolbar {
+  padding: 18px;
+  border-bottom: 1px solid var(--border);
+}
+
+.search-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.search-box > span {
+  font-size: 23px;
+  color: var(--faint);
+}
+
+.search-box input {
+  flex: 1;
+}
+
+.filter-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.filter-row > .custom-select {
+  min-width: 145px;
+}
+
+.date-filter {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--faint);
+  font-size: 11px;
+}
+
+.table-meta {
+  min-height: 58px;
+  padding: 0 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.table-meta p {
+  color: var(--muted);
+}
+
+.table-wrap {
+  overflow-x: auto;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+
+table {
+  width: 100%;
+  min-width: 900px;
+  border-collapse: collapse;
+}
+
+th {
+  height: 47px;
+  padding: 0 12px;
+  background: var(--surface-soft);
+  color: var(--faint);
+  font-size: 11px;
+  text-align: left;
+}
+
+td {
+  height: 66px;
+  padding: 9px 12px;
+  border-top: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 12px;
+}
+
+td strong {
+  color: var(--text);
+}
+
+td time {
+  white-space: nowrap;
+}
+
+td input,
+th input {
+  min-height: 0;
+}
+
+.row-sub {
+  display: block;
+  margin-top: 4px;
+  color: var(--faint);
+  font-family: ui-monospace, monospace;
+}
+
+.status {
+  padding: 4px 8px;
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.status.success {
+  background: var(--ok-soft);
+  color: var(--ok);
+}
+
+.status.error {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.table-empty {
+  height: 260px;
+  text-align: center;
+}
+
+.table-empty > span,
+.table-empty > strong,
+.table-empty > small {
+  display: block;
+  margin: 7px auto;
+}
+
+.table-empty > span {
+  font-size: 28px;
+}
+
+.pagination {
+  min-height: 64px;
+  padding: 0 18px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  color: var(--muted);
+}
+
+.pagination .custom-select {
+  min-width: 70px;
+}
+
+.drawer-backdrop {
+  place-items: stretch end;
+  padding: 0;
+}
+
+.log-drawer {
+  width: min(720px, 100vw);
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid var(--border);
+  background: var(--surface);
+  box-shadow: -16px 0 60px rgb(0 0 0 / 18%);
+}
+
+.drawer-head {
+  min-height: 104px;
+  padding: 18px 22px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+}
+
+.drawer-head h2 {
+  margin: 5px 0 0;
+  font-size: 21px;
+}
+
+.log-detail-id {
+  margin-top: 11px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+}
+
+.log-detail-id code {
+  font-size: 11px;
+}
+
+.log-copy-button {
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--muted);
+}
+
+.log-copy-button:hover {
+  border-color: var(--accent-line);
+  color: var(--accent);
+}
+
+.log-copy-button svg,
+.log-copy-text svg {
+  width: 14px;
+  height: 14px;
+  stroke-width: 1.8;
+}
+
+.log-copy-text {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.log-close-button svg {
+  width: 21px;
+  height: 21px;
+}
+
+.drawer-content {
+  flex: 1;
+  overflow: auto;
+  padding: 18px 20px 26px;
+  background: color-mix(in srgb, var(--surface) 92%, var(--surface-soft));
+}
+
+.drawer-footer {
+  min-height: 76px;
+  padding: 15px 28px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 9px;
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.log-detail-state {
+  margin: 28px;
+  color: var(--muted);
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1px;
+  margin: 0 0 20px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--border);
+}
+
+.detail-grid div {
+  min-width: 0;
+  min-height: 82px;
+  padding: 16px;
+  background: var(--surface);
+}
+
+.detail-grid div.wide {
+  min-height: 68px;
+  grid-column: 1 / -1;
+}
+
+.detail-grid dt {
+  margin-bottom: 9px;
+  color: var(--faint);
+  font-size: 11px;
+}
+
+.detail-grid dd {
+  margin: 0;
+  color: var(--text);
+  overflow-wrap: anywhere;
+  font-size: 13px;
+}
+
+.log-trace {
+  margin-top: 24px;
+}
+
+.log-section-heading {
+  margin-bottom: 12px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+}
+
+.log-section-heading h3 {
+  margin: 3px 0 0;
+  color: var(--text-strong);
+  font-size: 16px;
+}
+
+.log-section-heading > span {
+  color: var(--faint);
+  font-size: 10px;
+}
+
+.log-section-kicker {
+  color: var(--accent);
+  font-size: 9px;
+  font-weight: 750;
+  letter-spacing: 0.12em;
+}
+
+.trace-message-list {
+  display: grid;
+  gap: 12px;
+}
+
+.trace-message {
+  --trace-color: var(--muted);
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--trace-color) 48%, var(--border));
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.trace-message.system {
+  --trace-color: var(--accent);
+}
+
+.trace-message.user {
+  --trace-color: var(--blue);
+}
+
+.trace-message.assistant {
+  --trace-color: var(--ok);
+}
+
+.trace-message.tool {
+  --trace-color: var(--warning);
+}
+
+.trace-message header {
+  min-height: 48px;
+  padding: 9px 12px 9px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  border-bottom: 1px solid
+    color-mix(in srgb, var(--trace-color) 22%, var(--border));
+  background: color-mix(in srgb, var(--trace-color) 10%, var(--surface));
+}
+
+.trace-message header strong {
+  color: var(--trace-color);
+  font-size: 12px;
+}
+
+.trace-message header > div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.trace-message header span {
+  color: var(--faint);
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+.trace-message pre {
+  max-height: 460px;
+  margin: 0;
+  padding: 18px 20px;
+  overflow: auto;
+  color: var(--text);
+  font:
+    13px/1.75 Inter,
+    system-ui,
+    sans-serif;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.trace-attachments {
+  padding: 0 18px 14px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.trace-attachments span {
+  padding: 5px 8px;
+  border-radius: 7px;
+  background: var(--surface-soft);
+  color: var(--muted);
+  font-size: 9px;
+}
+
+.raw-payloads {
+  margin-top: 20px;
+  padding: 0 16px 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.raw-payloads summary {
+  min-height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  cursor: pointer;
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.raw-payloads summary span {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}

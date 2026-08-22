@@ -1,0 +1,499 @@
+.annotation-projects-page,
+.annotation-editor-page {
+  --annotation-purple: #9b62d0;
+  --annotation-language-blue: #4c8fe8;
+  --annotation-language-teal: #28b8a7;
+  --annotation-language-yellow: #d99b2b;
+  min-width: 0;
+}
+
+.annotation-projects-header,
+.annotation-editor-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 22px;
+}
+
+.annotation-projects-header h1,
+.annotation-editor-header h1 {
+  margin: 8px 0 6px;
+  color: var(--text-strong);
+  font-size: 28px;
+  letter-spacing: -0.04em;
+}
+
+.annotation-projects-header p,
+.annotation-editor-header p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.annotation-back {
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+}
+
+.annotation-back:hover {
+  color: var(--accent);
+}
+
+.annotation-back svg {
+  width: 16px;
+}
+
+.annotation-project-actions,
+.annotation-source-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.annotation-project-actions .btn,
+.annotation-source-actions .btn,
+.annotation-modal .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+}
+
+.annotation-project-actions svg,
+.annotation-source-actions svg {
+  width: 16px;
+  height: 16px;
+}
+
+.annotation-project-summary {
+  min-height: 62px;
+  padding: 10px 12px 10px 18px;
+  display: flex;
+  align-items: center;
+  gap: 26px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.annotation-project-summary > span {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.annotation-project-summary > span strong {
+  margin-right: 5px;
+  color: var(--text-strong);
+  font-size: 16px;
+}
+
+.annotation-project-summary label,
+.annotation-library-search {
+  min-width: 220px;
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface-soft);
+}
+
+.annotation-project-summary label svg,
+.annotation-library-search svg {
+  width: 16px;
+  color: var(--faint);
+}
+
+.annotation-project-summary input,
+.annotation-library-search input {
+  width: 100%;
+  min-height: 38px;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--text);
+}
+
+.annotation-project-grid {
+  margin-top: 18px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 15px;
+}
+
+.annotation-project-card {
+  position: relative;
+  min-height: 190px;
+  padding: 19px;
+  border: 1px solid var(--border);
+  border-radius: 13px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.annotation-project-card:hover {
+  border-color: var(--accent-line);
+}
+
+.annotation-project-open {
+  width: 100%;
+  padding: 0 34px 18px 0;
+  display: flex;
+  gap: 13px;
+  border: 0;
+  background: transparent;
+  text-align: left;
+}
+
+.annotation-project-icon {
+  width: 46px;
+  height: 46px;
+  display: grid;
+  flex: none;
+  place-items: center;
+  border: 1px solid var(--accent-line);
+  border-radius: 11px;
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.annotation-project-icon svg {
+  width: 22px;
+}
+
+.annotation-project-copy {
+  min-width: 0;
+  display: grid;
+  gap: 7px;
+}
+
+.annotation-project-copy strong {
+  overflow: hidden;
+  color: var(--text-strong);
+  font-size: 15px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.annotation-project-copy small {
+  overflow: hidden;
+  color: var(--muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.annotation-project-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.annotation-project-meta span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.annotation-project-meta svg {
+  width: 13px;
+}
+
+.annotation-project-progress {
+  position: relative;
+  height: 28px;
+  margin-top: 18px;
+  overflow: hidden;
+  border-radius: 7px;
+  background: var(--surface-soft);
+}
+
+.annotation-project-progress i {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: var(--accent-soft);
+  border-right: 1px solid var(--accent-line);
+}
+
+.annotation-project-progress span {
+  position: relative;
+  z-index: 1;
+  height: 100%;
+  padding: 0 9px;
+  display: flex;
+  align-items: center;
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.annotation-project-card-actions {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: flex;
+  align-items: center;
+  color: var(--faint);
+}
+
+.annotation-project-card-actions button {
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--faint);
+}
+
+.annotation-project-card-actions button:hover {
+  background: var(--surface-hover);
+  color: var(--accent);
+}
+
+.annotation-project-card-actions svg {
+  width: 15px;
+}
+
+.annotation-project-card-actions > svg {
+  display: none;
+}
+
+.annotation-projects-empty {
+  grid-column: 1 / -1;
+  min-height: 300px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 10px;
+  border: 1px dashed var(--border);
+  border-radius: 14px;
+  color: var(--muted);
+}
+
+.annotation-projects-empty > svg {
+  width: 40px;
+  height: 40px;
+  color: var(--faint);
+}
+
+.annotation-projects-empty strong {
+  color: var(--text-strong);
+}
+
+.annotation-modal-backdrop {
+  position: fixed;
+  z-index: 95;
+  inset: 0;
+  padding: 24px;
+  display: grid;
+  place-items: center;
+  background: var(--overlay);
+  backdrop-filter: blur(3px);
+}
+
+.annotation-modal {
+  width: min(680px, 100%);
+  max-height: calc(100vh - 48px);
+  padding: 24px;
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: 0 24px 80px rgb(0 0 0 / 25%);
+}
+
+.annotation-modal > header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.annotation-modal h2 {
+  margin: 5px 0 18px;
+  color: var(--text-strong);
+  font-size: 21px;
+}
+
+.annotation-modal > footer {
+  margin-top: 20px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.annotation-field {
+  display: grid;
+  gap: 7px;
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.annotation-field input,
+.annotation-time-field input {
+  min-height: 40px;
+  padding: 0 11px;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  background: var(--surface-soft);
+  color: var(--text);
+  outline: 0;
+}
+
+.annotation-field input:focus,
+.annotation-time-field input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-soft);
+}
+
+.annotation-import-note {
+  margin: 12px 0 0;
+  padding: 10px 11px;
+  border: 1px solid var(--accent-line);
+  border-radius: 8px;
+  background: var(--accent-soft);
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.55;
+}
+
+.annotation-source-actions {
+  margin: 18px 0 12px;
+}
+
+.annotation-source-actions > span {
+  color: var(--faint);
+  font-size: 11px;
+}
+
+.annotation-library-search {
+  margin: 0 0 10px;
+}
+
+.annotation-audio-list {
+  max-height: 270px;
+  display: grid;
+  gap: 6px;
+  overflow: auto;
+}
+
+.annotation-audio-list > button {
+  width: 100%;
+  min-height: 58px;
+  padding: 9px 11px;
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr) 20px;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface-soft);
+  color: var(--text);
+  text-align: left;
+}
+
+.annotation-audio-list > button.selected {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.annotation-audio-list > button > svg {
+  width: 19px;
+  color: var(--accent);
+}
+
+.annotation-audio-list > button > span {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.annotation-audio-list strong,
+.annotation-audio-list small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.annotation-audio-list small {
+  color: var(--muted);
+}
+
+.annotation-empty-row {
+  padding: 24px;
+  text-align: center;
+  color: var(--muted);
+}
+
+.annotation-error {
+  padding: 9px 11px;
+  border: 1px solid color-mix(in srgb, var(--danger) 35%, transparent);
+  border-radius: 8px;
+  background: var(--danger-soft);
+  color: var(--danger);
+  font-size: 12px;
+}
+
+.annotation-rename-modal {
+  width: min(460px, 100%);
+}
+
+.annotation-editor-page {
+  max-width: 1680px;
+  margin: 0 auto;
+}
+
+.annotation-editor-header {
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.annotation-editor-title,
+.annotation-editor-actions,
+.annotation-waveform-meta,
+.annotation-transport,
+.annotation-edit-actions,
+.annotation-history,
+.annotation-speaker-field {
+  display: flex;
+  align-items: center;
+}
+
+.annotation-editor-title {
+  min-width: 0;
+  gap: 14px;
+}
+
+.annotation-editor-title > div {
+  min-width: 0;
+}
+
+.annotation-editor-title h1 {
+  margin: 0 0 3px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.annotation-editor-title p {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.annotation-editor-actions {
+  flex: none;
+  gap: 10px;
+}

@@ -30,7 +30,7 @@ import {
   plainRichText,
   richTextPlainText,
 } from "@features/galgame-workshop/editor/richText";
-import "@features/galgame-workshop/galgame-workshop.css";
+import "@features/galgame-workshop/galgameStyles";
 import "@features/galgame-workshop/galgame-script-workbench.css";
 import { DialogueInspectorFields } from "@features/galgame-workshop/editor/DialogueInspectorFields";
 import { WaitInspectorFields } from "@features/galgame-workshop/editor/WaitInspectorFields";

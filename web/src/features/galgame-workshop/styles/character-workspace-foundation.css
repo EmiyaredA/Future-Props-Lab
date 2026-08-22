@@ -1,0 +1,370 @@
+.galgame-route-report-dialog > footer > div {
+  display: flex;
+  gap: 7px;
+}
+
+.galgame-entity-workspace article .galgame-field + .galgame-field {
+  margin-top: 10px;
+}
+
+/* Character and portrait workspace */
+
+.galgame-character-workspace {
+  height: calc(100vh - 109px);
+  min-height: 580px;
+  display: grid;
+  grid-template-columns: 250px minmax(560px, 1fr) 350px;
+  overflow: hidden;
+}
+
+.galgame-character-list-panel,
+.galgame-character-detail-panel,
+.galgame-character-reference-panel {
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+}
+
+.galgame-character-list-panel {
+  padding: 15px 12px;
+  border-right: 1px solid var(--gal-line);
+  background: var(--gal-panel);
+}
+
+.galgame-character-list-panel > header,
+.galgame-character-detail-panel > header,
+.galgame-expression-column > header,
+.galgame-character-reference-panel section > header,
+.galgame-asset-picker > header,
+.galgame-asset-picker-toolbar,
+.galgame-expression-form > div {
+  display: flex;
+  align-items: center;
+}
+
+.galgame-character-list-panel > header {
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.galgame-character-list-panel > header strong {
+  font-size: 14px;
+}
+
+.galgame-character-list-panel > header em,
+.galgame-expression-column > header span {
+  min-width: 24px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: var(--gal-s-strong);
+  color: var(--gal-muted);
+  font-size: 10px;
+  font-style: normal;
+  text-align: center;
+}
+
+.galgame-character-search,
+.galgame-asset-picker-toolbar label {
+  min-height: 35px;
+  padding: 0 9px;
+  border: 1px solid var(--gal-line);
+  border-radius: 8px;
+  background: var(--gal-surface);
+  color: var(--gal-faint);
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.galgame-character-search input,
+.galgame-asset-picker-toolbar input {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--gal-text);
+}
+
+.galgame-character-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.galgame-character-list > button {
+  width: 100%;
+  min-height: 58px;
+  padding: 7px;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--gal-text);
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) 16px;
+  align-items: center;
+  gap: 9px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.galgame-character-list > button:hover {
+  background: var(--gal-s-strong);
+}
+
+.galgame-character-list > button.active {
+  border-color: var(--gal-accent-line);
+  background: var(--gal-a-soft);
+  box-shadow: inset 3px 0 var(--gal-accent);
+}
+
+.galgame-character-list > button > span:nth-child(2) {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.galgame-character-list > button strong,
+.galgame-character-list > button small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.galgame-character-list > button small {
+  color: var(--gal-muted);
+  font-size: 10px;
+}
+
+.galgame-character-list > button > svg {
+  color: var(--gal-faint);
+}
+
+.galgame-character-avatar {
+  width: 42px;
+  height: 42px;
+  overflow: hidden;
+  border: 1px solid var(--gal-line);
+  border-radius: 10px;
+  background: linear-gradient(145deg, var(--gal-a-soft), var(--gal-surface));
+  color: var(--gal-accent);
+  display: grid;
+  place-items: center;
+}
+
+.galgame-character-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: var(--thumbnail-x, 50%) var(--thumbnail-y, 25%);
+  transform-origin: var(--thumbnail-x, 50%) var(--thumbnail-y, 25%);
+  transform: scale(var(--thumbnail-scale, 1.8));
+}
+
+.galgame-character-detail-panel {
+  background:
+    radial-gradient(circle at 42% 0%, var(--gal-a-soft), transparent 34%),
+    var(--gal-bg);
+}
+
+.galgame-character-detail-panel > header {
+  min-height: 66px;
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--gal-line);
+  background: color-mix(in srgb, var(--gal-panel) 86%, transparent);
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.galgame-character-detail-panel > header > div {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.galgame-character-detail-panel > header span {
+  color: var(--gal-muted);
+  font-size: 11px;
+}
+
+.galgame-character-detail-panel > header nav {
+  padding: 3px;
+  border: 1px solid var(--gal-line);
+  border-radius: 8px;
+  background: var(--gal-s-strong);
+  display: flex;
+  gap: 2px;
+}
+
+.galgame-character-detail-panel > header nav button {
+  min-height: 29px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--gal-muted);
+  cursor: pointer;
+}
+
+.galgame-character-detail-panel > header nav button.active {
+  background: var(--gal-surface);
+  color: var(--gal-text);
+  box-shadow: 0 1px 4px rgb(0 0 0 / 0.1);
+}
+
+.galgame-character-base-form {
+  width: min(680px, calc(100% - 36px));
+  margin: 18px auto;
+  padding: 18px;
+  border: 1px solid var(--gal-line);
+  border-radius: 12px;
+  background: var(--gal-panel);
+  display: grid;
+  gap: 15px;
+}
+
+.galgame-character-base-form textarea {
+  min-height: 160px;
+}
+
+.galgame-character-base-form > small {
+  color: var(--gal-muted);
+}
+
+.galgame-portrait-editor {
+  min-height: calc(100% - 66px);
+  padding: 18px;
+  display: grid;
+  grid-template-columns: minmax(260px, 0.9fr) minmax(310px, 1.1fr);
+  gap: 18px;
+}
+
+.galgame-portrait-stage-column,
+.galgame-expression-column {
+  min-width: 0;
+}
+
+.galgame-portrait-stage-column {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.galgame-portrait-stage {
+  width: min(100%, 400px);
+  aspect-ratio: 4 / 5;
+  overflow: hidden;
+  border: 1px solid var(--gal-line);
+  border-radius: 14px;
+  background-color: var(--gal-surface);
+  background-image:
+    linear-gradient(45deg, var(--gal-s-strong) 25%, transparent 25%),
+    linear-gradient(-45deg, var(--gal-s-strong) 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, var(--gal-s-strong) 75%),
+    linear-gradient(-45deg, transparent 75%, var(--gal-s-strong) 75%);
+  background-position:
+    0 0,
+    0 10px,
+    10px -10px,
+    -10px 0;
+  background-size: 20px 20px;
+  box-shadow: var(--gal-shadow);
+  display: grid;
+  place-items: center;
+}
+
+.galgame-portrait-stage > img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: bottom center;
+}
+
+.galgame-portrait-stage > span {
+  padding: 20px;
+  color: var(--gal-muted);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+  text-align: center;
+}
+
+.galgame-portrait-stage > span svg {
+  width: 44px;
+  height: 44px;
+  color: var(--gal-faint);
+}
+
+.galgame-portrait-stage > span small {
+  font-size: 10px;
+}
+
+.galgame-portrait-stage-column > small {
+  color: var(--gal-muted);
+}
+
+.galgame-portrait-stage-column > small.danger {
+  color: var(--gal-danger);
+}
+
+.galgame-expression-column {
+  padding: 15px;
+  border: 1px solid var(--gal-line);
+  border-radius: 12px;
+  background: var(--gal-panel);
+  align-self: start;
+}
+
+.galgame-expression-column > header {
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.galgame-expression-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.galgame-expression-grid > button {
+  position: relative;
+  min-width: 0;
+  padding: 5px;
+  overflow: hidden;
+  border: 1px solid var(--gal-line);
+  border-radius: 9px;
+  background: var(--gal-surface);
+  color: var(--gal-text);
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.galgame-expression-grid > button.active {
+  border-color: var(--gal-accent);
+  box-shadow: 0 0 0 2px var(--gal-a-soft);
+}
+
+.galgame-expression-grid > button > span {
+  width: 100%;
+  aspect-ratio: 1;
+  overflow: hidden;
+  border-radius: 6px;
+  background: var(--gal-s-strong);
+  display: grid;
+  place-items: center;
+}
+
+.galgame-expression-grid > button > span img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: var(--thumbnail-x, 50%) var(--thumbnail-y, 25%);
+  transform-origin: var(--thumbnail-x, 50%) var(--thumbnail-y, 25%);
+  transform: scale(var(--thumbnail-scale, 1.8));
+}

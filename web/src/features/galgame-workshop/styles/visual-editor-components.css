@@ -1,0 +1,202 @@
+@media (max-width: 700px) {
+  .galgame-editor-header {
+    align-items: flex-start;
+  }
+  .galgame-editor-actions {
+    align-self: stretch;
+  }
+  .galgame-editor-actions > .theme-toggle button {
+    min-width: 30px;
+    padding: 0 7px;
+  }
+  .galgame-editor-actions > .theme-toggle span {
+    display: none;
+  }
+  .galgame-save-state {
+    padding: 0 8px;
+  }
+  .galgame-editor-project small {
+    display: none;
+  }
+  .galgame-editor-project strong {
+    max-width: 34vw;
+  }
+  .galgame-editor-tabs {
+    gap: 18px;
+  }
+  .galgame-character-detail-panel > header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .galgame-portrait-editor {
+    min-height: 0;
+    grid-template-columns: 1fr;
+  }
+  .galgame-portrait-stage {
+    max-height: 500px;
+  }
+  .galgame-expression-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .galgame-character-reference-panel {
+    grid-template-columns: 1fr;
+  }
+  .galgame-asset-picker-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .galgame-asset-picker-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .galgame-asset-picker-toolbar label {
+    max-width: none;
+  }
+  .galgame-block-panel {
+    padding-right: 12px;
+    padding-left: 12px;
+  }
+  .galgame-overview-hero {
+    padding: 22px;
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .galgame-overview-toolbar {
+    flex-direction: row;
+  }
+  .galgame-overview-toolbar button {
+    flex: 1;
+  }
+  .galgame-overview-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .galgame-overview-modules {
+    grid-template-columns: 1fr;
+  }
+  .galgame-route-report-backdrop {
+    padding: 12px;
+  }
+  .galgame-route-report-dialog {
+    max-height: calc(100vh - 24px);
+  }
+  .galgame-route-report-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .galgame-route-report-metrics article:nth-child(3) {
+    grid-column: 1 / -1;
+    border-top: 1px solid var(--gal-line);
+    border-left: 0;
+  }
+  .galgame-route-report-dialog > footer {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .galgame-route-report-dialog > footer > div {
+    width: 100%;
+  }
+  .galgame-route-report-dialog > footer button {
+    flex: 1;
+  }
+  .galgame-conflict {
+    align-items: stretch;
+    flex-wrap: wrap;
+  }
+  .galgame-conflict span {
+    flex-basis: 100%;
+  }
+}
+
+/* Official-style creator shell: shared topbar, wide preview and dedicated workspaces. */
+
+.galgame-editor-page {
+  height: 100vh;
+  min-height: 680px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.galgame-editor-header {
+  position: relative;
+  z-index: 200;
+  min-height: 62px;
+  padding: 9px 18px;
+  background: color-mix(in srgb, var(--gal-panel) 96%, transparent);
+}
+
+.galgame-global-search {
+  width: min(420px, 34vw);
+  min-height: 36px;
+  padding: 0 10px;
+  border: 1px solid var(--gal-line);
+  border-radius: 9px;
+  background: var(--gal-s-strong);
+  color: var(--gal-faint);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: text;
+}
+
+.galgame-global-search span {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.galgame-global-search kbd,
+.galgame-command-dialog kbd {
+  padding: 2px 6px;
+  border: 1px solid var(--gal-line);
+  border-radius: 5px;
+  background: var(--gal-surface);
+  color: var(--gal-muted);
+  font:
+    10px/1.4 ui-monospace,
+    monospace;
+}
+
+.galgame-run-menu {
+  position: relative;
+}
+
+.galgame-run-menu > summary {
+  list-style: none;
+}
+
+.galgame-run-menu > summary::-webkit-details-marker {
+  display: none;
+}
+
+.galgame-run-menu > div {
+  position: absolute;
+  top: calc(100% + 7px);
+  right: 0;
+  z-index: 100;
+  width: 210px;
+  padding: 6px;
+  border: 1px solid var(--gal-line);
+  border-radius: 10px;
+  background: var(--gal-surface);
+  box-shadow: var(--gal-shadow);
+}
+
+.galgame-run-menu > div button {
+  width: 100%;
+  min-height: 34px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--gal-text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.galgame-run-menu > div button:hover {
+  background: var(--gal-a-soft);
+  color: var(--gal-accent);
+}

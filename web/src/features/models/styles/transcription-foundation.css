@@ -1,0 +1,496 @@
+.transcription-test-grid {
+  min-width: 0;
+  min-height: 0;
+  flex: 1;
+  display: grid;
+  grid-template-columns: 270px minmax(520px, 1fr) 330px;
+  overflow: hidden;
+  background: var(--surface);
+}
+
+.transcription-history,
+.transcription-result,
+.transcription-settings {
+  min-width: 0;
+  min-height: 0;
+}
+
+.transcription-history,
+.transcription-settings {
+  display: flex;
+  flex-direction: column;
+  background: color-mix(in srgb, var(--surface-soft) 64%, var(--surface));
+}
+
+.transcription-history {
+  border-right: 1px solid var(--border);
+}
+
+.transcription-settings {
+  padding-bottom: 16px;
+  border-left: 1px solid var(--border);
+  overflow-y: auto;
+}
+
+.transcription-section-head,
+.transcription-settings-head,
+.transcription-result-head {
+  padding: 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.transcription-section-head > div,
+.transcription-settings-head,
+.transcription-result-head,
+.transcription-result-head > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.transcription-section-head strong,
+.transcription-settings-head strong,
+.transcription-result-head strong {
+  color: var(--text-strong);
+  font-size: 13px;
+}
+
+.transcription-section-head span,
+.transcription-settings-head span {
+  color: var(--faint);
+  font-size: 9px;
+}
+
+.transcription-section-head label {
+  position: relative;
+  display: block;
+  margin-top: 12px;
+}
+
+.transcription-section-head label svg,
+.transcription-library-tools label svg {
+  position: absolute;
+  top: 50%;
+  left: 10px;
+  width: 15px;
+  transform: translateY(-50%);
+  color: var(--faint);
+}
+
+.transcription-section-head input,
+.transcription-library-tools input {
+  width: 100%;
+  min-height: 38px;
+  padding: 0 10px 0 34px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 11px;
+}
+
+.transcription-task-list {
+  flex: 1;
+  overflow: auto;
+}
+
+.transcription-task-list > button {
+  width: 100%;
+  padding: 12px 14px;
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr);
+  gap: 10px;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  background: transparent;
+  color: var(--text);
+  text-align: left;
+}
+
+.transcription-task-list > button:hover,
+.transcription-task-list > button.active {
+  background: var(--surface);
+}
+
+.transcription-task-list > button.active {
+  box-shadow: inset 3px 0 var(--accent);
+}
+
+.transcription-task-icon {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.transcription-task-icon svg {
+  width: 19px;
+}
+
+.transcription-task-list > button > span:last-child,
+.transcription-task-list strong,
+.transcription-task-list small {
+  min-width: 0;
+  display: block;
+}
+
+.transcription-task-list strong {
+  overflow: hidden;
+  color: var(--text-strong);
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.transcription-task-list small {
+  margin-top: 4px;
+  color: var(--faint);
+  font-size: 8px;
+}
+
+.transcription-task-list em,
+.transcription-result-head span {
+  width: fit-content;
+  margin-top: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--muted);
+  font-size: 9px;
+  font-style: normal;
+}
+
+.transcription-task-list em.completed,
+.transcription-result-head span.completed {
+  color: var(--success);
+}
+
+.transcription-task-list em.failed,
+.transcription-result-head span.failed {
+  color: var(--danger);
+}
+
+.transcription-task-list em svg {
+  width: 12px;
+  height: 12px;
+}
+
+.transcription-result {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.transcription-result-head > div {
+  justify-content: flex-start;
+}
+
+.transcription-result-head > .transcription-result-actions {
+  margin-left: auto;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.transcription-import-note {
+  max-width: 180px;
+  align-self: center;
+  color: var(--faint);
+  font-size: 9px;
+  line-height: 1.4;
+  text-align: right;
+}
+
+.transcription-result-head span {
+  margin: 0;
+  padding: 4px 7px;
+  border-radius: 999px;
+  background: var(--surface-soft);
+}
+
+.transcription-result-actions button,
+.transcription-copy header button,
+.transcription-selected-file > button {
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+}
+
+.transcription-result-actions button {
+  min-height: 30px;
+  padding: 0 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border-radius: 7px;
+  font-size: 10px;
+}
+
+.transcription-result-actions button:hover:not(:disabled) {
+  background: var(--surface-soft);
+  color: var(--text-strong);
+}
+
+.transcription-result-actions button:disabled {
+  opacity: 0.5;
+}
+
+.transcription-result-actions button.icon-only {
+  width: 30px;
+  padding: 0;
+  justify-content: center;
+}
+
+.transcription-result-actions button svg {
+  width: 16px;
+}
+
+.transcription-player {
+  margin: 14px;
+  padding: 12px;
+  display: grid;
+  grid-template-columns: 42px minmax(130px, 0.7fr) minmax(160px, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-soft);
+}
+
+.transcription-native-audio {
+  display: none;
+}
+
+.transcription-player > button {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: var(--accent);
+  color: white;
+}
+
+.transcription-player > button:disabled {
+  opacity: 0.45;
+}
+
+.transcription-player > button svg {
+  width: 18px;
+}
+
+.transcription-player > div strong,
+.transcription-player > div span {
+  display: block;
+}
+
+.transcription-player > div strong {
+  overflow: hidden;
+  color: var(--text-strong);
+  font-size: 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.transcription-player > div span,
+.transcription-player time {
+  color: var(--faint);
+  font-size: 8px;
+}
+
+.transcription-progress-control {
+  --transcription-progress-thumb-size: 16px;
+  --transcription-progress-track-size: 4px;
+  position: relative;
+  height: var(--transcription-progress-thumb-size);
+  display: flex;
+  align-items: center;
+}
+
+.transcription-progress-track {
+  position: absolute;
+  box-sizing: border-box;
+  right: calc(var(--transcription-progress-thumb-size) / 2);
+  left: calc(var(--transcription-progress-thumb-size) / 2);
+  height: var(--transcription-progress-track-size);
+  overflow: hidden;
+  border: 1px solid var(--border-strong, var(--border));
+  border-radius: 999px;
+  background: var(--surface);
+  pointer-events: none;
+}
+
+.transcription-progress-track i {
+  width: 0;
+  height: 100%;
+  display: block;
+  background: var(--accent);
+}
+
+.transcription-progress-control input[type="range"] {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  height: var(--transcription-progress-thumb-size);
+  margin: 0;
+  padding: 0;
+  appearance: none;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.transcription-progress-control
+  input[type="range"]::-webkit-slider-runnable-track {
+  height: var(--transcription-progress-track-size);
+  background: transparent;
+}
+
+.transcription-progress-control input[type="range"]::-webkit-slider-thumb {
+  width: var(--transcription-progress-thumb-size);
+  height: var(--transcription-progress-thumb-size);
+  margin-top: -6px;
+  appearance: none;
+  border: 0;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 2px 7px rgb(0 0 0 / 20%);
+}
+
+.transcription-progress-control input[type="range"]::-moz-range-track {
+  height: var(--transcription-progress-track-size);
+  border: 0;
+  background: transparent;
+}
+
+.transcription-progress-control input[type="range"]::-moz-range-progress {
+  height: var(--transcription-progress-track-size);
+  background: transparent;
+}
+
+.transcription-progress-control input[type="range"]::-moz-range-thumb {
+  width: var(--transcription-progress-thumb-size);
+  height: var(--transcription-progress-thumb-size);
+  border: 0;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 2px 7px rgb(0 0 0 / 20%);
+}
+
+.transcription-progress-control:focus-within {
+  border-radius: 9px;
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.transcription-progress-control input[type="range"]:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+
+.transcription-player-error {
+  grid-column: 2 / -1;
+  color: var(--danger);
+}
+
+.transcription-copy {
+  padding: 0 14px 24px;
+  display: grid;
+  gap: 14px;
+  overflow: auto;
+}
+
+.transcription-copy > section {
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.transcription-copy header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.transcription-copy header strong,
+.transcription-copy header span {
+  display: block;
+}
+
+.transcription-copy header strong {
+  color: var(--text-strong);
+  font-size: 12px;
+}
+
+.transcription-copy header span {
+  margin-top: 3px;
+  color: var(--faint);
+  font-size: 8px;
+}
+
+.transcription-copy header button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 9px;
+}
+
+.transcription-copy header button svg {
+  width: 14px;
+}
+
+.transcription-copy > section > p {
+  margin: 14px 0 0;
+  color: var(--text);
+  font-size: 12px;
+  line-height: 1.9;
+  white-space: pre-wrap;
+}
+
+.transcription-parameter-summary > div {
+  margin-top: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.transcription-parameter-summary > div > span,
+.transcription-overlap-badge {
+  padding: 4px 7px;
+  border-radius: 999px;
+  background: var(--surface-soft);
+  color: var(--muted);
+  font-size: 8px;
+}
+
+.transcription-warnings {
+  border-color: color-mix(in srgb, #d5a344 45%, var(--border)) !important;
+  background: color-mix(in srgb, #d5a344 7%, var(--surface)) !important;
+}
+
+.transcription-warnings header strong {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.transcription-warnings header svg {
+  width: 14px;
+  color: #d5a344;
+}
+
+.transcription-warnings ul {
+  margin: 12px 0 0;
+  padding-left: 18px;
+  color: var(--muted);
+  font-size: 9px;
+  line-height: 1.65;
+}

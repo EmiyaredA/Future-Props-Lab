@@ -1,0 +1,485 @@
+.galgame-interface-skin-card {
+  min-width: 0;
+  padding: 7px;
+  border: 1px solid var(--gal-line);
+  border-radius: 8px;
+  background: var(--gal-panel);
+  display: grid;
+  grid-template-columns: 62px minmax(0, 1fr);
+  gap: 7px 8px;
+}
+
+.galgame-interface-skin-preview {
+  width: 62px;
+  height: 46px;
+  overflow: hidden;
+  border: 1px dashed var(--gal-line-strong);
+  border-radius: 6px;
+  background: var(--gal-surface);
+  color: var(--gal-faint);
+  display: grid;
+  place-items: center;
+}
+
+.galgame-interface-skin-preview > img,
+.galgame-interface-skin-preview > svg,
+.galgame-interface-skin-preview > span {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.galgame-interface-skin-preview > svg {
+  width: 20px;
+  height: 20px;
+}
+
+.galgame-interface-skin-copy {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 1px;
+}
+
+.galgame-interface-skin-copy strong {
+  font-size: 10px;
+}
+
+.galgame-interface-skin-copy input {
+  min-width: 0;
+  height: 28px;
+  padding: 0 7px;
+  border: 1px solid var(--gal-line);
+  border-radius: 6px;
+  background: var(--gal-surface);
+  color: var(--gal-text);
+  font: inherit;
+  font-size: 10px;
+  font-weight: 650;
+}
+
+.galgame-interface-skin-copy span,
+.galgame-interface-skin-copy small {
+  overflow: hidden;
+  color: var(--gal-muted);
+  font-size: 8px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.galgame-interface-skin-actions {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 5px;
+}
+
+.galgame-interface-skin-actions button {
+  min-height: 27px;
+  padding: 0 7px;
+  border: 1px solid var(--gal-line);
+  border-radius: 6px;
+  background: var(--gal-surface);
+  color: var(--gal-text);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  font-size: 8px;
+  cursor: pointer;
+}
+
+.galgame-interface-skin-actions button.danger {
+  color: var(--gal-danger);
+}
+
+.galgame-interface-skin-actions button.danger:first-of-type {
+  margin-left: auto;
+}
+
+.galgame-interface-skin-actions svg {
+  width: 12px;
+  height: 12px;
+}
+
+.galgame-interface-component-settings {
+  grid-column: 1 / -1;
+  padding-top: 7px;
+  border-top: 1px solid var(--gal-line);
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(58px, 1fr);
+  gap: 7px;
+}
+
+.galgame-interface-component-settings label {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+  color: var(--gal-muted);
+  font-size: 8px;
+}
+
+.galgame-interface-component-settings .custom-select-trigger,
+.galgame-interface-component-settings input[type="number"] {
+  width: 100%;
+  height: 27px;
+  padding: 0 6px;
+  border: 1px solid var(--gal-line);
+  border-radius: 6px;
+  background: var(--gal-surface);
+  color: var(--gal-text);
+  font: inherit;
+}
+
+.galgame-interface-component-settings .range {
+  grid-column: 1 / -1;
+}
+
+.galgame-interface-component-settings .range > span {
+  display: flex;
+  justify-content: space-between;
+}
+
+.galgame-interface-component-settings .range strong {
+  color: var(--gal-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.galgame-interface-component-settings input[type="range"] {
+  width: 100%;
+  accent-color: var(--gal-accent);
+}
+
+.galgame-interface-skin-empty {
+  min-height: 118px;
+  border-style: dashed;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 4px;
+}
+
+.galgame-interface-skin-empty svg {
+  width: 22px;
+  height: 22px;
+  color: var(--gal-faint);
+}
+
+.galgame-interface-skin-empty strong {
+  font-size: 10px;
+}
+
+.galgame-interface-skin-empty span {
+  color: var(--gal-muted);
+  font-size: 8px;
+}
+
+.galgame-dialogue-color-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.galgame-dialogue-color-grid label {
+  min-width: 0;
+  padding: 6px;
+  border: 1px solid var(--gal-line);
+  border-radius: 7px;
+  background: var(--gal-panel);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+}
+
+.galgame-dialogue-color-grid .custom-color-picker {
+  width: 112px;
+}
+
+.galgame-dialogue-color-grid .custom-color-picker-trigger {
+  min-height: 28px;
+}
+
+.galgame-dialogue-range {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.galgame-dialogue-range > span {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.galgame-dialogue-range strong {
+  color: var(--gal-text);
+  font-weight: 600;
+}
+
+.galgame-dialogue-range input[type="range"] {
+  width: 100%;
+  accent-color: var(--gal-accent);
+  cursor: pointer;
+}
+
+.galgame-dialogue-advanced-settings {
+  overflow: hidden;
+  border: 1px solid var(--gal-line);
+  border-radius: 8px;
+  background: var(--gal-panel);
+}
+
+.galgame-dialogue-advanced-settings > summary {
+  padding: 9px 10px;
+  color: var(--gal-text);
+  font-size: 10px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.galgame-dialogue-advanced-settings[open] > summary {
+  border-bottom: 1px solid var(--gal-line);
+}
+
+.galgame-dialogue-advanced-settings > :not(summary) {
+  margin: 10px;
+}
+
+.galgame-dialogue-advanced-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.galgame-dialogue-advanced-grid > label {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.galgame-dialogue-advanced-grid > label > span {
+  color: var(--gal-muted);
+  font-size: 9px;
+}
+
+.galgame-dialogue-advanced-checks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px 14px;
+}
+
+.galgame-dialogue-advanced-checks label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--gal-muted);
+  font-size: 9px;
+}
+
+.galgame-dialogue-advanced-checks input {
+  accent-color: var(--gal-accent);
+}
+
+.galgame-dialogue-style-reset {
+  width: 100%;
+  color: var(--gal-muted);
+}
+
+.galgame-dialogue-style-inspector .sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.galgame-inspector-empty svg {
+  width: 30px;
+  height: 30px;
+}
+
+.galgame-inspector-empty strong {
+  color: var(--gal-text);
+}
+
+.galgame-inspector-empty span {
+  max-width: 230px;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.galgame-block-inspector > header {
+  gap: 9px;
+  margin-bottom: 13px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--gal-line);
+}
+
+.galgame-block-inspector > header > span:last-child {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.galgame-block-inspector > header small {
+  overflow: hidden;
+  color: var(--gal-muted);
+  font-family: monospace;
+  font-size: 9px;
+  text-overflow: ellipsis;
+}
+
+.galgame-block-timing {
+  margin: -3px 0 12px;
+  padding: 8px 10px;
+  border: 1px solid var(--gal-accent-line);
+  border-radius: 8px;
+  background: var(--gal-a-soft);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.galgame-block-timing > header {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.galgame-block-timing > header svg {
+  width: 14px;
+  height: 14px;
+  color: var(--gal-accent);
+}
+
+.galgame-block-timing > header span {
+  display: flex;
+  flex-direction: column;
+}
+
+.galgame-block-timing small,
+.galgame-block-timing .galgame-field > span {
+  color: var(--gal-muted);
+  font-size: 9px;
+}
+
+.galgame-block-timing strong {
+  color: var(--gal-accent);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+.galgame-block-timing > div {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 7px;
+}
+
+.galgame-block-timing .galgame-field {
+  gap: 4px;
+}
+
+.galgame-block-timing .galgame-field input {
+  min-width: 0;
+  font-family: monospace;
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+.galgame-field.invalid input {
+  border-color: var(--gal-danger);
+}
+
+.galgame-field.invalid small {
+  color: var(--gal-danger);
+}
+
+.galgame-block-inspector .galgame-field + .galgame-field {
+  margin-top: 10px;
+}
+
+.galgame-choice-editor {
+  margin-top: 9px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.galgame-choice-editor > div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(112px, 0.8fr);
+  gap: 6px;
+}
+
+.galgame-inspector-report {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.galgame-report-status {
+  padding: 2px 0 12px;
+  border-bottom: 1px solid var(--gal-line);
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.galgame-report-status > svg {
+  width: 19px;
+  height: 19px;
+  color: var(--gal-ok);
+  flex: 0 0 auto;
+}
+
+.galgame-report-status.warning > svg {
+  color: var(--gal-warning);
+}
+
+.galgame-report-status.blocked > svg {
+  color: var(--gal-danger);
+}
+
+.galgame-report-status > span {
+  min-width: 0;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.galgame-report-status strong {
+  font-size: 12px;
+}
+
+.galgame-report-status small {
+  color: var(--gal-muted);
+  font-size: 9px;
+}
+
+.galgame-report-status > .spinning {
+  width: 15px;
+  height: 15px;
+  color: var(--gal-muted);
+}
+
+.galgame-inspector-metrics {
+  margin: 0 0 2px;
+  border-bottom: 1px solid var(--gal-line);
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.galgame-inspector-metrics > span {
+  padding: 12px 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}

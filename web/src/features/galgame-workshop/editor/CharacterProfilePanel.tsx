@@ -2,7 +2,7 @@ import { Check, Plus, RotateCcw, Trash2, UserRound } from "lucide-react";
 import { stableId } from "@features/galgame-workshop/editor/model";
 import { CustomColorPicker } from "@shared/ui/CustomColorPicker";
 import { CustomSelect } from "@shared/ui/CustomSelect";
-import type { CharacterWorkspaceViewModel } from "@features/galgame-workshop/editor/CharacterWorkspaceView";
+import type { CharacterWorkspaceViewModel } from "@features/galgame-workshop/editor/characterWorkspaceViewModel";
 import { CHARACTER_PALETTE } from "@features/galgame-workshop/editor/characterWorkspacePresentation";
 export function CharacterProfilePanel({
   model,

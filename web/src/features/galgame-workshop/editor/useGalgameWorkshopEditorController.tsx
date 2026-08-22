@@ -84,7 +84,7 @@ import {
   type GalgameStoryReportIssue,
   type StoryRoute,
 } from "@features/galgame-workshop/editor/RouteReport";
-import "@features/galgame-workshop/galgame-workshop.css";
+import "@features/galgame-workshop/galgameStyles";
 import "@features/galgame-workshop/galgame-script-workbench.css";
 import "@features/galgame-workshop/galgame-json-view.css";
 const STORY_KEY = (projectId: string) =>

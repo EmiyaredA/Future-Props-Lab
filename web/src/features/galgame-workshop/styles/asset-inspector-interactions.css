@@ -1,0 +1,50 @@
+.galgame-overview-module > svg {
+  width: 30px;
+  height: 30px;
+  padding: 6px;
+  border-radius: 8px;
+  background: var(--gal-a-soft);
+  color: var(--gal-accent);
+}
+
+.galgame-overview-module strong {
+  font-size: 15px;
+}
+
+.galgame-overview-module small {
+  color: var(--gal-muted);
+  line-height: 1.5;
+}
+
+.galgame-overview-module em {
+  margin-top: auto;
+  color: var(--gal-accent);
+  font-size: 11px;
+  font-style: normal;
+}
+
+/* Full-screen editor */
+
+.galgame-editor-page {
+  width: 100%;
+  min-height: 100vh;
+  background: var(--gal-bg);
+  color: var(--gal-text);
+}
+
+.galgame-editor-page *,
+.galgame-editor-page *::before,
+.galgame-editor-page *::after,
+.galgame-playhead-add-popover,
+.galgame-playhead-add-popover *,
+.galgame-playhead-add-popover *::before,
+.galgame-playhead-add-popover *::after {
+  box-sizing: border-box;
+}
+
+.galgame-editor-page button,
+.galgame-editor-page input,
+.galgame-editor-page textarea,
+.galgame-playhead-add-popover button {
+  font: inherit;
+}

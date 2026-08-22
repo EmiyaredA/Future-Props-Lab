@@ -15,17 +15,13 @@ import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
 import { InlineEditableName } from "@features/galgame-workshop/editor/EditorShared";
 import { CharacterAvatar } from "@features/galgame-workshop/editor/CharacterAvatar";
 import { characterThumbnailCropStyle } from "@features/galgame-workshop/editor/characterThumbnail";
-import type { useCharacterWorkspaceController } from "@features/galgame-workshop/editor/useCharacterWorkspaceController";
+import type { CharacterWorkspaceViewModel } from "@features/galgame-workshop/editor/characterWorkspaceViewModel";
 import { CharacterListPanel } from "@features/galgame-workshop/editor/CharacterListPanel";
 import { CharacterProfilePanel } from "@features/galgame-workshop/editor/CharacterProfilePanel";
 import { CharacterExpressionForm } from "@features/galgame-workshop/editor/CharacterExpressionForm";
 import { CharacterSkinPanel } from "@features/galgame-workshop/editor/CharacterSkinPanel";
 import { CharacterVoicePanel } from "@features/galgame-workshop/editor/CharacterVoicePanel";
 import { CharacterReferencePanel } from "@features/galgame-workshop/editor/CharacterReferencePanel";
-export type CharacterWorkspaceViewModel = ReturnType<
-  typeof useCharacterWorkspaceController
->;
-
 export function CharacterWorkspaceView({
   model,
 }: {

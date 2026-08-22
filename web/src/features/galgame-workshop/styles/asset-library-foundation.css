@@ -1,0 +1,496 @@
+.galgame-assets-filter-panel > section > small {
+  padding: 10px 8px 6px;
+  color: var(--gal-faint);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+}
+
+.galgame-assets-filter-panel nav button,
+.galgame-assets-filter-panel > section > button,
+.galgame-assets-tree-row > button:last-child {
+  display: grid;
+  min-width: 0;
+  min-height: 32px;
+  grid-template-columns: 20px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 9px;
+  border: 0;
+  border-radius: 6px;
+  text-align: left;
+  background: transparent;
+}
+
+.galgame-assets-filter-panel nav button span,
+.galgame-assets-filter-panel > section > button span,
+.galgame-assets-tree-row span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.galgame-assets-filter-panel button em,
+.galgame-assets-tree-row em {
+  min-width: 24px;
+  padding: 1px 6px;
+  border-radius: 10px;
+  background: var(--gal-s-strong);
+  color: var(--gal-faint);
+  font-size: 11px;
+  font-style: normal;
+  text-align: center;
+}
+
+.galgame-assets-filter-panel nav button.active,
+.galgame-assets-filter-panel > section > button.active,
+.galgame-assets-tree-row.active {
+  color: var(--gal-accent);
+  background: var(--gal-a-soft);
+  box-shadow: inset 3px 0 0 var(--gal-accent);
+}
+
+.galgame-assets-filter-panel button.active em,
+.galgame-assets-tree-row.active em {
+  background: var(--gal-accent);
+  color: #fff;
+}
+
+.galgame-assets-filter-panel .is-image svg,
+.galgame-assets-type-card .is-image {
+  color: #5e65e8;
+}
+
+.galgame-assets-filter-panel .is-audio svg,
+.galgame-assets-type-card .is-audio {
+  color: #ef5ca3;
+}
+
+.galgame-assets-filter-panel .is-video svg,
+.galgame-assets-type-card .is-video {
+  color: #f59e0b;
+}
+
+.galgame-assets-filter-panel .is-font svg,
+.galgame-assets-type-card .is-font {
+  color: #45b9a8;
+}
+
+.galgame-assets-filter-panel .is-particle svg,
+.galgame-assets-type-card .is-particle {
+  color: #a765e8;
+}
+
+.galgame-assets-filter-panel .is-ui svg,
+.galgame-assets-type-card .is-ui {
+  color: #35a9e7;
+}
+
+.galgame-assets-filter-panel .is-transition svg,
+.galgame-assets-type-card .is-transition {
+  color: #f4864b;
+}
+
+.galgame-assets-directory-tree {
+  border-top: 1px solid var(--gal-line);
+}
+
+.galgame-assets-directory-tree ul {
+  display: grid;
+  gap: 1px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.galgame-assets-tree-row {
+  display: grid;
+  grid-template-columns: 21px minmax(0, 1fr);
+  align-items: center;
+  padding-left: calc(var(--tree-depth) * 12px);
+  border-radius: 6px;
+}
+
+.galgame-assets-tree-row > button:last-child {
+  padding-left: 1px;
+}
+
+.galgame-assets-tree-toggle {
+  display: grid;
+  width: 21px;
+  height: 30px;
+  padding: 0;
+  place-items: center;
+  border: 0;
+  background: transparent;
+}
+
+.galgame-assets-tree-toggle:disabled {
+  opacity: 0;
+}
+
+.galgame-assets-tree-toggle svg {
+  width: 13px;
+  height: 13px;
+}
+
+.galgame-assets-workbench {
+  display: grid;
+  min-width: 0;
+  min-height: 0;
+  grid-template-rows: auto minmax(0, 1fr);
+  overflow: hidden;
+  background: var(--gal-surface);
+}
+
+.galgame-assets-workbench.summary-open {
+  grid-template-rows: auto auto 8px minmax(0, 1fr);
+}
+
+.galgame-assets-workbench.summary-open.summary-sized {
+  grid-template-rows: auto var(--asset-summary-height) 8px minmax(0, 1fr);
+}
+
+.galgame-assets-toolbar {
+  min-height: 46px;
+  padding: 7px 14px 7px 18px;
+  border-bottom: 1px solid var(--gal-line);
+}
+
+.galgame-assets-toolbar > div:first-child {
+  display: flex;
+  min-width: 0;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.galgame-assets-toolbar > div:first-child > span {
+  overflow: hidden;
+  color: var(--gal-muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.galgame-assets-view-switch {
+  padding: 2px;
+  border-radius: 7px;
+  background: var(--gal-s-strong);
+}
+
+.galgame-assets-view-switch button {
+  width: 27px;
+  height: 27px;
+}
+
+.galgame-assets-view-switch button.active {
+  color: var(--gal-accent);
+  background: var(--gal-surface);
+  box-shadow: 0 1px 4px rgb(20 30 45 / 0.12);
+}
+
+.galgame-assets-filter-open,
+.galgame-assets-filter-close {
+  display: none !important;
+}
+
+.galgame-assets-summary {
+  display: grid;
+  min-height: 0;
+  grid-template-columns:
+    minmax(330px, 1.65fr) minmax(230px, 1fr) minmax(170px, 0.72fr)
+    minmax(250px, 1.05fr);
+  overflow: auto;
+  background: var(--gal-surface);
+}
+
+.galgame-assets-summary-resizer {
+  position: relative;
+  z-index: 4;
+  min-height: 8px;
+  border-block: 1px solid var(--gal-line);
+  outline: 0;
+  background: var(--gal-panel);
+  cursor: row-resize;
+  touch-action: none;
+}
+
+.galgame-assets-summary-resizer::after {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 42px;
+  height: 3px;
+  border-radius: 999px;
+  background: var(--gal-line-strong);
+  content: "";
+  transform: translate(-50%, -50%);
+}
+
+.galgame-assets-summary-resizer:hover::after,
+.galgame-assets-summary-resizer:focus-visible::after {
+  background: var(--gal-accent);
+}
+
+body.galgame-assets-summary-resizing,
+body.galgame-assets-summary-resizing * {
+  cursor: row-resize !important;
+  user-select: none !important;
+}
+
+.galgame-assets-summary > article {
+  min-width: 0;
+  padding: 20px;
+  border-right: 1px solid var(--gal-line);
+}
+
+.galgame-assets-summary > article:last-child {
+  border-right: 0;
+}
+
+.galgame-assets-summary > article > small {
+  display: block;
+  margin-bottom: 14px;
+  color: var(--gal-faint);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+}
+
+.galgame-assets-overview-values {
+  display: flex;
+  gap: 28px;
+}
+
+.galgame-assets-overview-values > span {
+  display: grid;
+  align-content: start;
+}
+
+.galgame-assets-overview-values small {
+  color: var(--gal-muted);
+}
+
+.galgame-assets-overview-values strong {
+  margin-top: 4px;
+  font-size: 28px;
+  line-height: 1;
+}
+
+.galgame-assets-overview-values em {
+  margin-top: 5px;
+  color: var(--gal-muted);
+  font-style: normal;
+}
+
+.galgame-assets-package-card {
+  display: grid;
+  gap: 10px;
+  margin-top: 18px;
+  padding: 14px;
+  border: 1px solid var(--gal-line);
+  border-radius: 9px;
+  background: var(--gal-panel);
+}
+
+.galgame-assets-package-card > div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.galgame-assets-package-card del {
+  color: var(--gal-faint);
+}
+
+.galgame-assets-package-card strong {
+  color: var(--gal-accent);
+  font-size: 21px;
+}
+
+.galgame-assets-package-card em {
+  margin-left: auto;
+  color: var(--gal-accent);
+  font-size: 11px;
+  font-style: normal;
+}
+
+.galgame-assets-package-card progress,
+.galgame-assets-type-card progress,
+.galgame-assets-module-card progress {
+  width: 100%;
+  height: 5px;
+  border: 0;
+  border-radius: 10px;
+  overflow: hidden;
+  accent-color: var(--gal-accent);
+}
+
+.galgame-assets-package-card footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--gal-muted);
+  font-size: 11px;
+}
+
+.galgame-assets-package-card footer i {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-right: 4px;
+  border-radius: 50%;
+  background: var(--gal-accent);
+}
+
+.galgame-assets-issues {
+  display: grid;
+  gap: 3px;
+  margin-top: 10px;
+  color: var(--gal-danger);
+  font-size: 11px;
+}
+
+.galgame-assets-issues strong {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.galgame-assets-issues button {
+  overflow: hidden;
+  padding: 2px 0;
+  border: 0;
+  color: var(--gal-danger);
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  background: transparent;
+}
+
+.galgame-assets-type-card {
+  display: grid;
+  align-content: start;
+  gap: 9px;
+}
+
+.galgame-assets-type-card > small {
+  margin-bottom: 4px !important;
+}
+
+.galgame-assets-type-card > button {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: 22px minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 7px;
+  padding: 0;
+  border: 0;
+  text-align: left;
+  background: transparent;
+}
+
+.galgame-assets-type-card > button > span {
+  display: grid;
+  min-width: 0;
+  gap: 4px;
+}
+
+.galgame-assets-type-card > button strong {
+  font-size: 12px;
+}
+
+.galgame-assets-type-card > button em,
+.galgame-assets-type-card > button small {
+  color: var(--gal-muted);
+  font-size: 11px;
+  font-style: normal;
+}
+
+.galgame-assets-largest-card details {
+  position: relative;
+}
+
+.galgame-assets-largest-card summary {
+  display: flex;
+  min-height: 62px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid var(--gal-line);
+  border-radius: 8px;
+  text-align: center;
+  cursor: pointer;
+  background: var(--gal-panel);
+  list-style: none;
+}
+
+.galgame-assets-largest-card details > div {
+  position: absolute;
+  z-index: 5;
+  top: calc(100% + 6px);
+  right: 0;
+  left: 0;
+  display: grid;
+  gap: 3px;
+  padding: 7px;
+  border: 1px solid var(--gal-line);
+  border-radius: 8px;
+  background: var(--gal-surface);
+  box-shadow: var(--gal-shadow);
+}
+
+.galgame-assets-largest-card details > div button {
+  display: flex;
+  min-width: 0;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 6px;
+  border: 0;
+  border-radius: 5px;
+  text-align: left;
+  background: transparent;
+}
+
+.galgame-assets-largest-card details > div button:hover {
+  background: var(--gal-s-strong);
+}
+
+.galgame-assets-largest-card details > div span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.galgame-assets-largest-card details > div em {
+  flex: none;
+  color: var(--gal-muted);
+  font-size: 11px;
+  font-style: normal;
+}
+
+.galgame-assets-module-card > div {
+  display: grid;
+  gap: 6px;
+}
+
+.galgame-assets-module-card button {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 9px;
+  border: 1px solid var(--gal-line);
+  border-radius: 7px;
+  text-align: left;
+  background: var(--gal-surface);
+}
+
+.galgame-assets-module-card button.warning {
+  border-color: color-mix(in srgb, var(--gal-warning) 45%, var(--gal-line));
+}
+
+.galgame-assets-module-card button em,
+.galgame-assets-module-card button small {
+  color: var(--gal-muted);
+  font-size: 11px;
+  font-style: normal;
+}

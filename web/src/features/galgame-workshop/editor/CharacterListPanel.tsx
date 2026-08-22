@@ -1,7 +1,7 @@
 import { ChevronRight, Plus, Search, SlidersHorizontal } from "lucide-react";
 import { stableId } from "@features/galgame-workshop/editor/model";
 import { CharacterAvatar } from "@features/galgame-workshop/editor/CharacterAvatar";
-import type { CharacterWorkspaceViewModel } from "@features/galgame-workshop/editor/CharacterWorkspaceView";
+import type { CharacterWorkspaceViewModel } from "@features/galgame-workshop/editor/characterWorkspaceViewModel";
 import {
   CHARACTER_PALETTE,
   referencesForCharacter,

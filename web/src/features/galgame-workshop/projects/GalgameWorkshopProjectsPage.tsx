@@ -19,7 +19,7 @@ import {
   patchGalgameWorkshopProject,
   type GalgameWorkshopProject,
 } from "@features/galgame-workshop/api";
-import "@features/galgame-workshop/galgame-workshop.css";
+import "@features/galgame-workshop/galgameStyles";
 
 const PROJECTS_KEY = ["galgame-workshop-projects"] as const;
 type Editor =

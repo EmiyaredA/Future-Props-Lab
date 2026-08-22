@@ -1,0 +1,147 @@
+.generation-reference-fieldset legend small {
+  margin-left: 4px;
+  color: var(--faint);
+  font-size: 8px;
+  font-weight: 500;
+}
+
+.generation-reference-add {
+  width: 100%;
+  min-height: 64px;
+  padding: 10px 11px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px dashed var(--border-strong);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--surface) 72%, transparent);
+  color: var(--muted);
+  text-align: left;
+}
+
+.generation-reference-add:hover {
+  border-color: var(--accent-line);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.generation-reference-add > svg {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+}
+
+.generation-reference-add span,
+.generation-reference-add strong,
+.generation-reference-add small {
+  min-width: 0;
+  display: block;
+}
+
+.generation-reference-add strong {
+  color: var(--text);
+  font-size: 10px;
+}
+
+.generation-reference-add small {
+  margin-top: 4px;
+  color: var(--faint);
+  font-size: 8px;
+  font-weight: 400;
+}
+
+.generation-reference-list {
+  margin-top: 8px;
+  display: grid;
+  gap: 6px;
+}
+
+.generation-reference-item {
+  min-width: 0;
+  padding: 6px;
+  display: grid;
+  grid-template-columns: 46px minmax(0, 1fr) 26px;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface);
+}
+
+.generation-reference-preview {
+  width: 46px;
+  height: 38px;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  border-radius: 6px;
+  background: var(--surface-soft);
+  color: var(--accent);
+}
+
+.generation-reference-preview.video {
+  background: color-mix(in srgb, var(--text) 88%, var(--surface));
+}
+
+.generation-reference-preview img,
+.generation-reference-preview video {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+}
+
+.generation-reference-preview > svg {
+  width: 18px;
+  height: 18px;
+}
+
+.generation-reference-item > span,
+.generation-reference-item > span > * {
+  min-width: 0;
+  display: block;
+}
+
+.generation-reference-item > span strong {
+  overflow: hidden;
+  color: var(--text);
+  font-size: 9px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.generation-reference-item > span small {
+  margin-top: 4px;
+  color: var(--faint);
+  font-size: 8px;
+}
+
+.generation-reference-item > span small svg {
+  width: 10px;
+  height: 10px;
+  margin-right: 3px;
+  display: inline;
+  vertical-align: -2px;
+}
+
+.generation-reference-item > button {
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--faint);
+}
+
+.generation-reference-item > button:hover {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.generation-reference-item > button svg {
+  width: 14px;
+  height: 14px;
+}

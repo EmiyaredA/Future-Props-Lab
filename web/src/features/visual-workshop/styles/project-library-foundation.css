@@ -1,0 +1,496 @@
+.canvas-title {
+  max-width: min(460px, 40vw);
+  padding: 8px 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  overflow: hidden;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text-strong);
+  font-size: 17px;
+  font-weight: 780;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.canvas-title:hover {
+  background: var(--surface-hover);
+}
+
+.canvas-title svg {
+  width: 13px;
+  color: var(--faint);
+}
+
+.canvas-project-identity form input {
+  width: min(420px, 38vw);
+  height: 38px;
+  padding: 0 10px;
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text-strong);
+  font-weight: 700;
+  outline: 0;
+}
+
+.visual-canvas-surface {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  cursor: grab;
+  touch-action: none;
+  background-color: color-mix(in srgb, var(--bg) 58%, var(--surface));
+  background-image: radial-gradient(
+    circle,
+    var(--canvas-grid-dot) 1.15px,
+    transparent 1.35px
+  );
+  user-select: none;
+}
+
+.visual-canvas-surface.is-dragging {
+  cursor: grabbing;
+}
+
+.visual-canvas-world {
+  position: absolute;
+  z-index: 2;
+  top: 0;
+  left: 0;
+  transform-origin: 0 0;
+}
+
+.canvas-node {
+  position: absolute;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--border-strong) 82%, transparent);
+  border-radius: 13px;
+  background: color-mix(in srgb, var(--surface) 96%, transparent);
+  color: var(--text);
+  box-shadow: 0 12px 34px rgb(0 0 0 / 18%);
+  user-select: none;
+}
+
+.canvas-node.text {
+  width: 300px;
+  height: 180px;
+}
+
+.canvas-node.image {
+  width: 480px;
+  height: 304px;
+}
+
+.canvas-node.image,
+.canvas-node.video {
+  width: 480px;
+  height: 304px;
+  overflow: visible;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.canvas-node.audio {
+  width: 320px;
+  height: 150px;
+}
+
+.canvas-node.selected {
+  border-color: var(--accent);
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, var(--accent) 28%, transparent),
+    0 18px 44px rgb(0 0 0 / 24%);
+}
+
+.canvas-node.image.selected,
+.canvas-node.video.selected {
+  z-index: 5;
+  border: 0;
+  box-shadow: none;
+}
+
+.canvas-node > header {
+  height: 38px;
+  padding: 0 8px 0 11px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 7px;
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 75%, transparent);
+  cursor: grab;
+}
+
+.canvas-node > header:active {
+  cursor: grabbing;
+}
+
+.canvas-node.image > header,
+.canvas-node.video > header {
+  height: 34px;
+  padding: 0 4px;
+  justify-content: flex-start;
+  gap: 6px;
+  border: 0;
+}
+
+.canvas-node-kind-icon {
+  width: 15px;
+  height: 15px;
+  flex: none;
+  color: var(--text-strong);
+}
+
+.canvas-node-title-edit {
+  width: 12px;
+  height: 12px;
+  flex: none;
+  color: var(--faint);
+}
+
+.canvas-node.image > header strong,
+.canvas-node.image > header input,
+.canvas-node.video > header strong,
+.canvas-node.video > header input {
+  flex: 0 1 auto;
+}
+
+.canvas-node.image > header input,
+.canvas-node.video > header input {
+  width: min(260px, calc(100% - 92px));
+  border-color: transparent;
+  background: transparent;
+}
+
+.canvas-node.image > header input:focus,
+.canvas-node.video > header input:focus {
+  border-color: var(--accent);
+  background: var(--surface);
+}
+
+.canvas-node.image > header .canvas-node-actions,
+.canvas-node.video > header .canvas-node-actions {
+  margin-left: auto;
+}
+
+.canvas-node > header strong,
+.canvas-node > header input {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  color: var(--text-strong);
+  font-size: 12px;
+  font-weight: 750;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.canvas-node > header input {
+  height: 27px;
+  padding: 0 6px;
+  border: 1px solid var(--accent-line);
+  border-radius: 6px;
+  background: var(--bg);
+  outline: 0;
+  user-select: text;
+}
+
+.canvas-node-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.canvas-node-actions button {
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--faint);
+}
+
+.canvas-node-actions button:hover {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+
+.canvas-node-actions button:last-child:hover {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.canvas-node-actions svg {
+  width: 13px;
+}
+
+.canvas-node > textarea {
+  width: 100%;
+  height: calc(100% - 38px);
+  padding: 13px;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 12px;
+  line-height: 1.6;
+  outline: 0;
+  resize: none;
+  user-select: text;
+}
+
+.canvas-node-media {
+  position: relative;
+  width: 100%;
+  height: calc(100% - 38px);
+  display: grid;
+  place-items: center;
+  background: color-mix(in srgb, var(--surface-soft) 82%, #111);
+  cursor: grab;
+}
+
+.canvas-node-media:active {
+  cursor: grabbing;
+}
+
+.canvas-node-media > video,
+.canvas-node-media > audio {
+  cursor: default;
+}
+
+.canvas-node-media > button {
+  cursor: pointer;
+}
+
+.canvas-node.image > .canvas-node-media,
+.canvas-node.video > .canvas-node-media {
+  height: 270px;
+  overflow: hidden;
+  border: 1px solid var(--border-strong);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--surface-soft) 88%, #111);
+  box-shadow: 0 16px 38px rgb(0 0 0 / 18%);
+}
+
+.canvas-node.image.selected > .canvas-node-media,
+.canvas-node.video.selected > .canvas-node-media {
+  border-color: color-mix(in srgb, var(--accent) 78%, var(--border-strong));
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, var(--accent) 24%, transparent),
+    0 18px 44px rgb(0 0 0 / 22%);
+}
+
+.canvas-media-replace {
+  position: absolute;
+  bottom: 26px;
+  left: 50%;
+  min-height: 40px;
+  padding: 0 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border: 1px solid rgb(255 255 255 / 22%);
+  border-radius: 999px;
+  background: rgb(8 9 9 / 88%);
+  color: white;
+  font-size: 11px;
+  font-weight: 750;
+  transform: translateX(-50%);
+  backdrop-filter: blur(12px);
+}
+
+.canvas-media-replace:hover {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: white;
+}
+
+.canvas-media-replace svg {
+  width: 14px;
+  height: 14px;
+}
+
+.canvas-node-port {
+  position: absolute;
+  z-index: 2;
+  top: 169px;
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border: 2px solid color-mix(in srgb, var(--text-strong) 84%, transparent);
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--text-strong);
+  box-shadow: 0 8px 20px rgb(0 0 0 / 18%);
+  cursor: pointer;
+  transform: translateY(-50%);
+}
+
+.canvas-node-port.is-input {
+  left: -42px;
+}
+
+.canvas-node-port.is-output {
+  right: -42px;
+}
+
+.canvas-node-port svg {
+  width: 16px;
+  height: 16px;
+}
+
+.canvas-node-media > img,
+.canvas-node-media > video {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.canvas-node-media > audio {
+  width: calc(100% - 24px);
+}
+
+.canvas-media-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 8px;
+  color: var(--faint);
+  font-size: 10px;
+}
+
+.canvas-media-placeholder.is-missing {
+  color: var(--danger);
+}
+
+.canvas-media-placeholder svg {
+  width: 28px;
+  height: 28px;
+  opacity: 0.75;
+}
+
+.canvas-node.image .canvas-media-placeholder span,
+.canvas-node.video .canvas-media-placeholder span {
+  display: none;
+}
+
+.canvas-context-menu {
+  position: absolute;
+  z-index: 30;
+  width: 192px;
+  padding: 8px;
+  overflow: hidden;
+  border: 1px solid var(--border-strong);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--surface) 96%, transparent);
+  box-shadow: 0 22px 60px rgb(0 0 0 / 34%);
+  backdrop-filter: blur(20px);
+}
+
+.canvas-context-menu button {
+  width: 100%;
+  height: 39px;
+  padding: 0 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-strong);
+  font-size: 12px;
+  text-align: left;
+}
+
+.canvas-context-menu button:hover:not(:disabled) {
+  background: var(--surface-hover);
+}
+
+.canvas-context-menu button:disabled {
+  opacity: 0.38;
+}
+
+.canvas-context-menu button svg {
+  width: 16px;
+  color: var(--faint);
+}
+
+.canvas-context-menu > i {
+  display: block;
+  height: 1px;
+  margin: 5px 4px;
+  background: var(--border);
+}
+
+.canvas-save-state {
+  min-height: 26px;
+  padding: 0 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border-radius: 99px;
+  background: color-mix(in srgb, var(--surface) 72%, transparent);
+  color: var(--faint);
+  font-size: 9px;
+}
+
+.canvas-save-state.saving {
+  color: var(--blue);
+}
+
+.canvas-save-state.error,
+.canvas-save-state.conflict {
+  color: var(--danger);
+}
+
+.canvas-save-state svg {
+  width: 12px;
+}
+
+.canvas-node-inspector {
+  position: absolute;
+  z-index: 14;
+  top: 86px;
+  bottom: 24px;
+  left: 92px;
+  width: min(410px, calc(100vw - 116px));
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border);
+  border-radius: 22px;
+  background: color-mix(in srgb, var(--surface) 97%, transparent);
+  box-shadow: 18px 28px 70px rgb(0 0 0 / 24%);
+  backdrop-filter: blur(24px);
+  cursor: default;
+}
+
+.canvas-node-inspector.is-embedded {
+  top: calc(100% + 22px);
+  bottom: auto;
+  left: 50%;
+  width: 760px;
+  height: 460px;
+  max-width: calc(100vw - 120px);
+  border-radius: 20px;
+  transform: translateX(-50%);
+}
+
+.canvas-node-inspector.is-embedded.is-image {
+  height: 420px;
+}
+
+.canvas-node-inspector.is-embedded:has(.image-node-composer.is-expanded),
+.canvas-node-inspector.is-embedded:has(.video-node-composer.is-expanded) {
+  width: min(1040px, calc(100vw - 96px));
+  height: min(620px, calc(100vh - 100px));
+}

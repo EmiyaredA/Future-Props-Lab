@@ -21,7 +21,7 @@ import { stableId } from "@features/galgame-workshop/editor/model";
 import { StoryAssetImage } from "@features/galgame-workshop/editor/StoryAssetImage";
 import { ExpressionPortrait } from "@features/galgame-workshop/editor/ExpressionPortrait";
 import { CustomSelect } from "@shared/ui/CustomSelect";
-import type { CharacterWorkspaceViewModel } from "@features/galgame-workshop/editor/CharacterWorkspaceView";
+import type { CharacterWorkspaceViewModel } from "@features/galgame-workshop/editor/characterWorkspaceViewModel";
 export function CharacterExpressionForm({
   model,
 }: {

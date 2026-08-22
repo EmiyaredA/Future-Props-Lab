@@ -1,0 +1,402 @@
+.galgame-narrative-canvas > header output {
+  min-width: 46px;
+  text-align: center;
+  font-size: 10px;
+}
+
+.galgame-narrative-viewport {
+  min-height: 0;
+  flex: 1;
+  overflow: hidden;
+  cursor: grab;
+  background-color: var(--gal-bg);
+  background-image: radial-gradient(
+    var(--gal-line-strong) 0.7px,
+    transparent 0.7px
+  );
+  background-size: 18px 18px;
+  touch-action: none;
+}
+
+.galgame-narrative-viewport:active {
+  cursor: grabbing;
+}
+
+.galgame-narrative-viewport svg {
+  overflow: visible;
+  transform-origin: 0 0;
+}
+
+.galgame-map-edge path {
+  fill: none;
+  stroke: var(--gal-line-strong);
+  stroke-width: 1.5;
+}
+
+.galgame-map-edge.branch path {
+  stroke: var(--gal-accent);
+}
+
+.galgame-map-edge.condition path {
+  stroke: var(--gal-warning);
+}
+
+.galgame-map-edge.call path {
+  stroke: #7187d8;
+}
+
+.galgame-map-edge text {
+  fill: var(--gal-muted);
+  font-size: 9px;
+}
+
+.galgame-map-edge.muted {
+  opacity: 0.16;
+}
+
+#galgame-map-arrow path {
+  fill: var(--gal-line-strong);
+}
+
+.galgame-map-node {
+  width: 176px;
+  height: 72px;
+  padding: 9px 11px;
+  border: 1px solid var(--gal-line-strong);
+  border-radius: 9px;
+  background: var(--gal-surface);
+  color: var(--gal-text);
+  box-shadow: var(--gal-shadow-soft);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 3px;
+  text-align: left;
+}
+
+.galgame-map-node.chapter {
+  border-left: 4px solid var(--gal-accent);
+}
+
+.galgame-map-node.logic {
+  border-style: dashed;
+  background: var(--gal-s-strong);
+}
+
+.galgame-map-node small {
+  color: var(--gal-muted);
+  font-size: 9px;
+}
+
+.galgame-map-node.muted {
+  opacity: 0.24;
+}
+
+.galgame-map-node.selected {
+  outline: 2px solid var(--gal-accent);
+  outline-offset: 2px;
+}
+
+.galgame-personalization-workspace {
+  display: grid;
+  grid-template-columns: minmax(360px, 470px) minmax(520px, 1fr);
+}
+
+.galgame-personalization-workspace > aside {
+  min-height: 0;
+  padding: 18px;
+  overflow: auto;
+  border-right: 1px solid var(--gal-line);
+  background: var(--gal-panel);
+}
+
+.galgame-personalization-workspace > aside > header h2 {
+  margin: 4px 0;
+}
+
+.galgame-personalization-workspace > aside > header small {
+  color: var(--gal-accent);
+}
+
+.galgame-personalization-workspace > aside > header p {
+  margin: 0 0 15px;
+  color: var(--gal-muted);
+}
+
+.galgame-personalization-workspace > main {
+  min-width: 0;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+}
+
+.galgame-personalization-workspace > main > header {
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.galgame-personalization-workspace > main > header span {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.galgame-personalization-workspace > main > header small,
+.galgame-personalization-workspace > main > p {
+  color: var(--gal-muted);
+  font-size: 10px;
+}
+
+.galgame-personalization-preview {
+  min-height: 360px;
+  flex: 1;
+  overflow: hidden;
+  border: 1px solid var(--gal-line);
+  border-radius: 11px;
+  background: #05070a;
+  box-shadow: var(--gal-shadow);
+}
+
+.galgame-personalization-preview .galgame-player {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.galgame-personalization-preview .galgame-stage-host {
+  min-height: 0;
+  flex: 1;
+}
+
+.galgame-settings-workspace {
+  padding: 24px clamp(18px, 4vw, 64px);
+  overflow: auto;
+}
+
+.galgame-settings-workspace > header {
+  max-width: 1120px;
+  margin: 0 auto 18px;
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+}
+
+.galgame-settings-workspace > header span {
+  display: grid;
+  grid-template-columns: 26px 1fr;
+  align-items: center;
+}
+
+.galgame-settings-workspace > header span svg {
+  grid-row: 1 / 3;
+  width: 22px;
+  height: 22px;
+  color: var(--gal-accent);
+}
+
+.galgame-settings-workspace > header small {
+  color: var(--gal-accent);
+  letter-spacing: 0.12em;
+}
+
+.galgame-settings-workspace > header h2 {
+  margin: 2px 0 0;
+}
+
+.galgame-settings-workspace > header p {
+  color: var(--gal-muted);
+}
+
+.galgame-settings-grid {
+  max-width: 1120px;
+  margin: auto;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.galgame-settings-grid > section {
+  padding: 18px;
+  border: 1px solid var(--gal-line);
+  border-radius: 11px;
+  background: var(--gal-surface);
+  box-shadow: var(--gal-shadow-soft);
+}
+
+.galgame-settings-grid h3 {
+  margin: 0 0 14px;
+}
+
+.galgame-settings-grid label {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.galgame-settings-grid label > span {
+  color: var(--gal-muted);
+  font-size: 10px;
+}
+
+.galgame-settings-grid input,
+.galgame-settings-grid textarea,
+.galgame-settings-grid .custom-select-trigger {
+  width: 100%;
+  min-height: 38px;
+  padding: 8px 10px;
+  border: 1px solid var(--gal-line);
+  border-radius: 7px;
+  background: var(--gal-s-strong);
+  color: var(--gal-text);
+}
+
+.galgame-settings-grid textarea {
+  min-height: 110px;
+  resize: vertical;
+}
+
+.galgame-settings-title-field {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 7px;
+}
+
+.galgame-settings-title-field button {
+  padding: 0 12px;
+  border: 1px solid var(--gal-accent);
+  border-radius: 7px;
+  background: var(--gal-accent);
+  color: white;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.galgame-settings-title-field button:disabled {
+  opacity: 0.45;
+}
+
+.galgame-settings-pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 9px;
+}
+
+.galgame-settings-positions {
+  grid-column: 1 / -1;
+}
+
+.galgame-settings-positions h3 {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.galgame-settings-positions > p {
+  color: var(--gal-muted);
+}
+
+.galgame-settings-positions > div {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 9px;
+}
+
+@media (min-width: 1800px) {
+  .galgame-editor-grid {
+    --galgame-preview-width: 760px;
+  }
+  .galgame-character-workspace {
+    grid-template-columns: 270px minmax(620px, 1fr) 450px;
+  }
+}
+
+@media (max-width: 1279px) and (min-width: 981px) {
+  .galgame-editor-grid {
+    grid-template-columns:
+      minmax(180px, var(--galgame-fragment-width))
+      6px minmax(400px, 1fr) 6px minmax(420px, var(--galgame-preview-width));
+  }
+  .galgame-editor-actions > .theme-toggle {
+    display: none;
+  }
+  .galgame-save-state {
+    display: none;
+  }
+  .galgame-global-search {
+    width: min(310px, 28vw);
+  }
+  .galgame-character-workspace {
+    grid-template-columns: 220px minmax(480px, 1fr) 330px;
+  }
+}
+
+@media (max-width: 980px) {
+  .galgame-editor-page {
+    height: auto;
+    min-height: 100vh;
+    overflow: visible;
+  }
+  .galgame-global-search {
+    order: 3;
+    width: 100%;
+    flex-basis: 100%;
+  }
+  .galgame-editor-header {
+    flex-wrap: wrap;
+  }
+  .galgame-editor-tabs {
+    justify-content: flex-start;
+  }
+  .galgame-editor-grid {
+    flex: none;
+  }
+  .galgame-editor-grid .galgame-preview-focus {
+    order: 3;
+  }
+  .galgame-editor-grid > .galgame-block-panel {
+    order: 2;
+  }
+  .galgame-editor-grid .galgame-inspector-tabs {
+    order: 4;
+  }
+  .galgame-editor-grid .galgame-inspector-body {
+    order: 5;
+  }
+  .galgame-editor-statusbar {
+    position: sticky;
+    bottom: 0;
+    z-index: 70;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+  .galgame-narrative-workspace {
+    min-height: 760px;
+    grid-template-columns: 270px minmax(600px, 1fr);
+    overflow-x: auto;
+  }
+  .galgame-personalization-workspace {
+    grid-template-columns: 1fr;
+    overflow: visible;
+  }
+  .galgame-personalization-workspace > aside {
+    border-right: 0;
+    border-bottom: 1px solid var(--gal-line);
+  }
+  .galgame-personalization-workspace > main {
+    min-height: 620px;
+  }
+  .galgame-settings-grid {
+    grid-template-columns: 1fr;
+  }
+  .galgame-settings-positions {
+    grid-column: auto;
+  }
+  .galgame-settings-positions > div {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}

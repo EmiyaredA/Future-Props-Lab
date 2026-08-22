@@ -1,0 +1,425 @@
+.file-compact-menu > button,
+.file-compact-sort {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--muted);
+}
+
+.file-compact-menu > button:hover,
+.file-compact-menu > button.active,
+.file-compact-menu > button[aria-expanded="true"],
+.file-compact-sort:hover {
+  background: var(--surface-hover);
+  color: var(--text-strong);
+}
+
+.file-compact-menu > button.active {
+  color: var(--accent);
+}
+
+.file-compact-menu > button svg,
+.file-compact-sort svg {
+  width: 17px;
+  height: 17px;
+}
+
+.file-compact-filter-popover,
+.file-compact-add-popover {
+  position: absolute;
+  z-index: 24;
+  top: 40px;
+  right: 0;
+  width: 184px;
+  padding: 10px;
+  border: 1px solid var(--border-strong);
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: 0 18px 48px rgb(0 0 0 / 28%);
+}
+
+.file-compact-filter-popover > span {
+  margin: 0 2px 6px;
+  display: block;
+  color: var(--faint);
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.file-compact-filter-popover > span:not(:first-child) {
+  margin-top: 10px;
+}
+
+.file-compact-filter-popover .file-filter-select {
+  width: 100%;
+  min-width: 0;
+}
+
+.file-compact-filter-popover .custom-select-trigger {
+  min-height: 34px;
+  font-size: 10px;
+}
+
+.file-compact-add-popover {
+  width: 150px;
+  padding: 6px;
+}
+
+.file-compact-add-popover > button {
+  width: 100%;
+  min-height: 35px;
+  padding: 0 9px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text);
+  font-size: 10px;
+  text-align: left;
+}
+
+.file-compact-add-popover > button:hover:not(:disabled) {
+  background: var(--surface-hover);
+  color: var(--accent);
+}
+
+.file-compact-add-popover > button svg {
+  width: 15px;
+  height: 15px;
+}
+
+.file-compact-location {
+  min-height: 54px;
+  padding: 7px 17px 9px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.file-compact-location .file-breadcrumb {
+  flex: 1;
+}
+
+.file-compact-location .file-breadcrumb button {
+  min-height: 32px;
+  padding-inline: 2px;
+  color: var(--text-strong);
+  font-size: 13px;
+  font-weight: 760;
+}
+
+.file-compact-location .file-breadcrumb span button {
+  padding-inline: 5px;
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.file-compact-sort {
+  flex: none;
+}
+
+.is-compact .file-notice,
+.is-compact .file-upload-feedback {
+  margin: 8px 13px 0;
+}
+
+.is-compact .file-items {
+  padding: 0 13px 16px;
+}
+
+.is-compact .file-items.grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.is-compact .file-items.grid article {
+  min-height: 138px;
+}
+
+.is-compact .file-items.grid .file-item-main {
+  padding: 14px 38px 10px 11px;
+  grid-template-columns: 39px minmax(0, 1fr);
+  gap: 8px;
+}
+
+.is-compact .file-item-preview {
+  width: 39px;
+  height: 39px;
+  border-radius: 9px;
+}
+
+.is-compact .file-item-preview svg {
+  width: 18px;
+}
+
+.is-compact .file-item-copy {
+  gap: 5px;
+}
+
+.is-compact .file-item-copy > strong {
+  font-size: 9px;
+}
+
+.is-compact .file-item-tags {
+  gap: 3px;
+}
+
+.is-compact .file-item-tags small {
+  padding: 2px 5px;
+  font-size: 7px;
+}
+
+.is-compact .file-item-size {
+  font-size: 7px;
+}
+
+.is-compact .file-item-footer {
+  min-height: 39px;
+  padding: 5px 7px 5px 10px;
+}
+
+.is-compact .file-item-footer time,
+.is-compact .file-open-label {
+  font-size: 7px;
+}
+
+.is-compact .file-item-primary-action {
+  min-height: 25px;
+  padding: 0 6px;
+  font-size: 7px;
+}
+
+.is-compact .file-items.list {
+  gap: 2px;
+}
+
+.is-compact .file-items.list article {
+  min-height: 62px;
+  display: block;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  box-shadow: none;
+}
+
+.is-compact .file-items.list article:hover {
+  background: var(--surface-hover);
+}
+
+.is-compact .file-items.list .file-item-main {
+  min-height: 62px;
+  padding: 9px 40px 9px 6px;
+  grid-template-columns: 44px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+}
+
+.is-compact .file-items.list .file-item-preview {
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 8px;
+  color: var(--muted);
+  background: color-mix(in srgb, var(--surface-hover) 86%, var(--surface));
+}
+
+.is-compact .file-items.list .file-item-preview.folder {
+  color: color-mix(in srgb, var(--text) 58%, var(--surface));
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--muted) 74%, var(--surface)) 0%,
+    color-mix(in srgb, var(--faint) 48%, var(--surface)) 100%
+  );
+}
+
+.is-compact .file-items.list .file-item-preview svg {
+  width: 23px;
+  height: 23px;
+}
+
+.is-compact .file-items.list .file-item-copy {
+  gap: 0;
+}
+
+.is-compact .file-items.list .file-item-copy > strong {
+  font-size: 12px;
+}
+
+.is-compact .file-items.list .file-item-copy > :not(strong),
+.is-compact .file-items.list .file-item-footer {
+  display: none;
+}
+
+.is-compact .file-item-menu {
+  top: 50%;
+  right: 5px;
+  transform: translateY(-50%);
+}
+
+.is-compact .file-item-menu-trigger {
+  width: 26px;
+  height: 26px;
+}
+
+.is-compact .file-item-menu-popover {
+  top: 31px;
+}
+
+.is-compact .file-empty {
+  min-height: 260px;
+  margin: 0 13px;
+  border: 0;
+  color: var(--faint);
+}
+
+@media (max-width: 1100px) {
+  .file-items.grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .file-management-page {
+    padding: 22px 16px 36px;
+  }
+  .file-browser {
+    padding: 12px;
+  }
+  .file-browser-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .file-primary-actions {
+    justify-content: flex-end;
+  }
+  .file-browser-filters {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .file-browser-filters > label {
+    grid-column: 1 / -1;
+  }
+  .file-filter-select {
+    width: 100%;
+    min-width: 0;
+  }
+  .file-view-toggle {
+    grid-column: 1 / -1;
+  }
+  .file-view-toggle button {
+    width: auto;
+    flex: 1;
+  }
+  .file-items.grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .file-items.list article {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .file-items.list .file-item-footer {
+    min-width: 0;
+    min-height: 45px;
+    padding: 7px 52px 7px 12px;
+    border-top: 1px solid var(--border);
+    border-left: 0;
+    border-radius: 0 0 12px 12px;
+  }
+  .file-items.list .file-item-menu {
+    top: auto;
+    right: 10px;
+    bottom: 7px;
+    transform: none;
+  }
+  .file-items.list .file-item-menu-popover {
+    top: auto;
+    right: 0;
+    bottom: 35px;
+  }
+}
+
+@media (max-width: 520px) {
+  .file-management-page > header h1 {
+    font-size: 24px;
+  }
+  .file-browser-toolbar {
+    padding: 10px;
+  }
+  .file-primary-actions button {
+    flex: 1;
+  }
+  .file-items.grid,
+  .is-compact .file-items.grid {
+    grid-template-columns: 1fr;
+  }
+  .file-items.grid article {
+    min-height: 178px;
+  }
+  .file-dialog-backdrop {
+    padding: 12px;
+  }
+  .file-dialog form,
+  .file-delete-dialog {
+    padding: 16px;
+  }
+}
+
+/* Project storage layout maintenance */
+
+.file-storage-migration {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: center;
+  margin-bottom: 16px;
+  padding: 14px 16px;
+  border: 1px solid color-mix(in srgb, var(--accent) 32%, var(--border));
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--accent) 7%, var(--surface));
+}
+
+.file-storage-migration-icon,
+.file-storage-migration-complete svg {
+  display: grid;
+  place-items: center;
+  color: var(--accent);
+}
+
+.file-storage-migration-icon svg {
+  width: 22px;
+  height: 22px;
+}
+
+.file-storage-migration strong,
+.file-storage-migration p,
+.file-storage-migration small {
+  display: block;
+}
+
+.file-storage-migration p {
+  margin: 4px 0 0;
+  color: var(--muted);
+}
+
+.file-storage-migration small {
+  margin-top: 5px;
+  color: var(--danger);
+}
+
+.file-storage-migration button {
+  min-width: 96px;
+}
+
+.file-storage-migration-complete {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 16px;
+  color: var(--success, #2f9e67);
+}

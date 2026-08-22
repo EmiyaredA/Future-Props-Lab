@@ -1,0 +1,475 @@
+.galgame-inspector-metrics > span + span {
+  border-left: 1px solid var(--gal-line);
+}
+
+.galgame-inspector-metrics strong {
+  font-size: 20px;
+  line-height: 1;
+}
+
+.galgame-inspector-metrics small {
+  color: var(--gal-muted);
+  font-size: 9px;
+}
+
+.galgame-inspector-section {
+  padding: 11px 0;
+  border-bottom: 1px solid var(--gal-line);
+}
+
+.galgame-inspector-section > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.galgame-inspector-section > header strong {
+  font-size: 11px;
+}
+
+.galgame-inspector-section > header small {
+  color: var(--gal-muted);
+  font-size: 9px;
+}
+
+.galgame-report-save-note {
+  margin: auto 0 8px !important;
+  padding-top: 12px;
+  color: var(--gal-muted);
+  font-size: 9px !important;
+  line-height: 1.45;
+}
+
+.galgame-route-list {
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+}
+
+.galgame-route-list li {
+  min-width: 0;
+  gap: 8px;
+  padding: 7px 0;
+  border-top: 1px solid color-mix(in srgb, var(--gal-line) 65%, transparent);
+  font-size: 10px;
+}
+
+.galgame-route-list li span {
+  min-width: 0;
+  overflow: hidden;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.galgame-route-list li strong,
+.galgame-route-list li small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.galgame-route-list li strong {
+  font-weight: 600;
+}
+
+.galgame-route-list li small {
+  color: var(--gal-muted);
+  font-size: 9px;
+}
+
+.galgame-route-list li button {
+  padding: 2px 0;
+  border: 0;
+  background: transparent;
+  color: var(--gal-accent);
+  font-size: 9px;
+  cursor: pointer;
+}
+
+.galgame-inspector-issues {
+  margin-top: 5px;
+}
+
+.galgame-inspector-issue {
+  width: 100%;
+  min-height: 0;
+  padding: 7px 0;
+  border: 0;
+  border-top: 1px solid color-mix(in srgb, var(--gal-line) 65%, transparent);
+  border-radius: 0;
+  background: transparent;
+  color: var(--gal-text);
+  gap: 7px;
+  text-align: left;
+}
+
+button.galgame-inspector-issue {
+  cursor: pointer;
+}
+
+.galgame-inspector-issue > svg {
+  width: 14px;
+  height: 14px;
+  flex: 0 0 auto;
+}
+
+.galgame-inspector-issue.error svg {
+  color: var(--gal-danger);
+}
+
+.galgame-inspector-issue.warning svg {
+  color: var(--gal-warning);
+}
+
+.galgame-inspector-issue span {
+  min-width: 0;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.galgame-inspector-issue strong {
+  font-size: 10px;
+  font-weight: 500;
+}
+
+.galgame-inspector-issue small {
+  overflow: hidden;
+  color: var(--gal-muted);
+  font-size: 9px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.galgame-report-actions {
+  display: grid;
+  grid-template-columns: 1fr 1.2fr;
+  gap: 6px;
+}
+
+.galgame-report-actions button,
+.galgame-report-query-state button,
+.galgame-route-report-dialog button {
+  min-height: 30px;
+  padding: 0 9px;
+  border: 1px solid var(--gal-line);
+  border-radius: 7px;
+  background: var(--gal-surface);
+  color: var(--gal-text);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  cursor: pointer;
+}
+
+.galgame-report-actions button.primary,
+.galgame-route-report-dialog button.primary {
+  border-color: var(--gal-accent);
+  background: var(--gal-accent);
+  color: white;
+}
+
+.galgame-report-actions button:disabled,
+.galgame-route-report-dialog button:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+
+.galgame-report-actions svg,
+.galgame-report-query-state button svg,
+.galgame-route-report-dialog button svg {
+  width: 13px;
+  height: 13px;
+}
+
+.galgame-report-query-state {
+  min-height: 230px;
+  padding: 24px 12px;
+  color: var(--gal-muted);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  text-align: center;
+}
+
+.galgame-report-query-state > svg {
+  width: 26px;
+  height: 26px;
+  color: var(--gal-warning);
+}
+
+.galgame-report-query-state strong {
+  color: var(--gal-text);
+  font-size: 11px;
+}
+
+.galgame-route-report-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  padding: 24px;
+  background: rgb(3 8 18 / 0.68);
+  display: grid;
+  place-items: center;
+}
+
+.galgame-route-report-backdrop *,
+.galgame-route-report-backdrop *::before,
+.galgame-route-report-backdrop *::after {
+  box-sizing: border-box;
+}
+
+.galgame-route-report-dialog {
+  width: min(820px, 100%);
+  max-height: min(760px, calc(100vh - 48px));
+  overflow: hidden;
+  border: 1px solid var(--gal-line-strong);
+  border-radius: 11px;
+  background: var(--gal-surface);
+  color: var(--gal-text);
+  box-shadow: 0 24px 80px rgb(0 0 0 / 0.3);
+  display: flex;
+  flex-direction: column;
+}
+
+.galgame-route-report-dialog > header {
+  padding: 15px 17px 13px;
+  border-bottom: 1px solid var(--gal-line);
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.galgame-route-report-dialog > header h2 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.galgame-route-report-dialog > header p {
+  margin: 4px 0 0;
+  color: var(--gal-muted);
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.galgame-route-report-dialog > header > button {
+  width: 30px;
+  padding: 0;
+  flex: 0 0 auto;
+}
+
+.galgame-route-report-meta {
+  min-height: 35px;
+  padding: 0 17px;
+  border-bottom: 1px solid var(--gal-line);
+  background: var(--gal-panel);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 9px;
+}
+
+.galgame-route-report-meta span,
+.galgame-route-report-meta small {
+  color: var(--gal-muted);
+}
+
+.galgame-route-report-meta small {
+  margin-left: auto;
+}
+
+.galgame-route-report-content {
+  min-height: 0;
+  padding: 0 17px;
+  overflow: auto;
+}
+
+.galgame-route-report-section {
+  padding: 14px 0;
+  border-bottom: 1px solid var(--gal-line);
+}
+
+.galgame-route-report-section:last-child {
+  border-bottom: 0;
+}
+
+.galgame-route-report-section > header {
+  margin-bottom: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.galgame-route-report-section > header > span {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.galgame-route-report-section > header strong {
+  font-size: 12px;
+}
+
+.galgame-route-report-section > header small {
+  color: var(--gal-muted);
+  font-size: 9px;
+}
+
+.galgame-route-report-section em {
+  color: var(--gal-muted);
+  font-size: 9px;
+  font-style: normal;
+}
+
+.galgame-route-report-section em.clear {
+  color: var(--gal-ok);
+}
+
+.galgame-route-report-section em.warning {
+  color: var(--gal-warning);
+}
+
+.galgame-route-report-section em.blocked {
+  color: var(--gal-danger);
+}
+
+.galgame-route-report-metrics {
+  border-block: 1px solid var(--gal-line);
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.galgame-route-report-metrics article {
+  min-width: 0;
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.galgame-route-report-metrics article + article {
+  border-left: 1px solid var(--gal-line);
+}
+
+.galgame-route-report-metrics span {
+  color: var(--gal-muted);
+  font-size: 9px;
+}
+
+.galgame-route-report-metrics strong {
+  font-size: 16px;
+}
+
+.galgame-route-report-chapters > div,
+.galgame-route-report-routes li,
+.galgame-route-report-issues > div,
+.galgame-route-report-clear {
+  min-width: 0;
+  padding: 9px 2px;
+  border-bottom: 1px solid color-mix(in srgb, var(--gal-line) 70%, transparent);
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.galgame-route-report-chapters > div:last-child,
+.galgame-route-report-routes li:last-child,
+.galgame-route-report-issues > div:last-child,
+.galgame-route-report-clear:last-child {
+  border-bottom: 0;
+}
+
+.galgame-route-report-chapters > div > span,
+.galgame-route-report-routes li > span,
+.galgame-route-report-issues > div > span,
+.galgame-route-report-clear > span {
+  min-width: 0;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.galgame-route-report-chapters strong,
+.galgame-route-report-routes strong,
+.galgame-route-report-issues strong,
+.galgame-route-report-clear strong {
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.galgame-route-report-chapters small,
+.galgame-route-report-routes small,
+.galgame-route-report-issues small,
+.galgame-route-report-clear small {
+  overflow: hidden;
+  color: var(--gal-muted);
+  font-size: 9px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.galgame-route-report-routes {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.galgame-route-report-routes li > svg,
+.galgame-route-report-issues > div > svg,
+.galgame-route-report-clear > svg {
+  width: 15px;
+  height: 15px;
+  color: var(--gal-muted);
+  flex: 0 0 auto;
+}
+
+.galgame-route-report-routes button,
+.galgame-route-report-issues button {
+  min-height: 25px;
+  padding: 0 7px;
+  font-size: 9px;
+}
+
+.galgame-route-report-issues > div.error > svg,
+.galgame-route-report-issues > div.error > em {
+  color: var(--gal-danger);
+}
+
+.galgame-route-report-issues > div.warning > svg,
+.galgame-route-report-issues > div.warning > em {
+  color: var(--gal-warning);
+}
+
+.galgame-route-report-clear > svg,
+.galgame-route-report-clear > em {
+  color: var(--gal-ok);
+}
+
+.galgame-route-report-dialog > footer {
+  min-height: 54px;
+  padding: 10px 17px;
+  border-top: 1px solid var(--gal-line);
+  background: var(--gal-panel);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.galgame-route-report-dialog > footer > span {
+  color: var(--gal-muted);
+  font-size: 9px;
+}

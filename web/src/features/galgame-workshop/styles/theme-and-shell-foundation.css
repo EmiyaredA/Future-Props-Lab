@@ -1,0 +1,447 @@
+.galgame-workshop-shell,
+.galgame-editor-page,
+.galgame-route-report-backdrop,
+.galgame-block-command-backdrop,
+.galgame-playhead-add-popover,
+.galgame-dialogue-presentation-popover {
+  --gal-bg: #edf1f6;
+  --gal-panel: #f7f9fc;
+  --gal-surface: #ffffff;
+  --gal-s-strong: #f0f4f8;
+  --gal-line: #d9e1eb;
+  --gal-line-strong: #c5cfdd;
+  --gal-text: #172133;
+  --gal-muted: #6c788c;
+  --gal-faint: #929daf;
+  --gal-accent: #df6258;
+  --gal-accent-hover: #cb5048;
+  --gal-a-soft: #fff0ee;
+  --gal-accent-line: #f1aaa4;
+  --gal-ok: #24865e;
+  --gal-ok-soft: #e8f6ef;
+  --gal-warning: #bd7b26;
+  --gal-warning-soft: #fff6e8;
+  --gal-danger: #c74949;
+  --gal-danger-soft: #fff0f0;
+  --gal-shadow: 0 12px 32px rgb(33 48 70 / 0.08);
+  --gal-shadow-soft: 0 5px 18px rgb(33 48 70 / 0.06);
+  --border-soft: var(--gal-line);
+  --surface-muted: var(--gal-panel);
+  --surface-primary: var(--gal-surface);
+  --text-primary: var(--gal-text);
+  --text-secondary: var(--gal-muted);
+  --text-tertiary: var(--gal-faint);
+  --accent: var(--gal-accent);
+  --danger: var(--gal-danger);
+  color: var(--gal-text);
+}
+
+.galgame-system-message {
+  --message-panel: #fff;
+  --message-title: #111827;
+  --message-text: #374151;
+  --message-accent: #e75b55;
+  --message-radius: 12px;
+  --message-width: 520px;
+  position: absolute;
+  z-index: 80;
+  left: 50%;
+  top: 50%;
+  width: min(var(--message-width), calc(100% - 40px));
+  transform: translate(-50%, -50%);
+  padding: 22px;
+  border-radius: var(--message-radius);
+  background: var(--message-panel);
+  color: var(--message-text);
+  box-shadow: 0 20px 70px rgb(0 0 0 / 42%);
+}
+
+.galgame-system-message::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background: rgb(0 0 0 / 48%);
+}
+
+.galgame-system-message > strong {
+  display: block;
+  margin-bottom: 10px;
+  color: var(--message-title);
+  font-size: 1.2rem;
+}
+
+.galgame-system-message > p {
+  margin: 0 0 20px;
+  white-space: pre-wrap;
+  line-height: 1.7;
+}
+
+.galgame-system-message > footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.galgame-system-message button {
+  min-width: 88px;
+  border: 1px solid #d1d5db;
+  border-radius: 7px;
+  background: #fff;
+  color: #374151;
+  padding: 8px 14px;
+}
+
+.galgame-system-message button.primary {
+  border-color: var(--message-accent);
+  background: var(--message-accent);
+  color: #fff;
+}
+
+.galgame-system-message.tone-success {
+  --message-accent: #16a36a;
+}
+
+.galgame-system-message.tone-warning {
+  --message-accent: #d97706;
+}
+
+.galgame-system-message.tone-danger {
+  --message-accent: #dc2626;
+}
+
+.galgame-player-wait {
+  position: absolute;
+  left: 50%;
+  bottom: 8%;
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid rgb(255 255 255 / 22%);
+  border-radius: 999px;
+  background: rgb(8 14 24 / 78%);
+  color: #fff;
+  padding: 9px 16px;
+}
+
+.galgame-player-wait svg {
+  width: 16px;
+  height: 16px;
+}
+
+.galgame-player-wait small {
+  color: rgb(255 255 255 / 62%);
+}
+
+.galgame-story-paragraph {
+  position: absolute;
+  z-index: 45;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  border: 0;
+  background: rgb(5 9 16 / 92%);
+  color: #f8fafc;
+  text-align: left;
+}
+
+.galgame-story-paragraph > span {
+  width: min(72%, 980px);
+  max-height: 78%;
+  overflow: auto;
+  font-size: clamp(18px, 2.1cqw, 40px);
+  line-height: 1.8;
+}
+
+.galgame-story-paragraph p {
+  margin: 0 0 1em;
+  white-space: pre-wrap;
+}
+
+.galgame-story-paragraph p.is-read {
+  color: #9ca3af;
+}
+
+.galgame-story-paragraph > em {
+  position: absolute;
+  right: 4%;
+  bottom: 4%;
+  color: rgb(255 255 255 / 52%);
+  font-size: 12px;
+}
+
+.galgame-story-paragraph.style-minimal {
+  background: rgb(255 255 255 / 94%);
+  color: #1f2937;
+}
+
+.galgame-story-paragraph.style-cinema > span {
+  text-align: center;
+}
+
+.galgame-dialogue-runtime-avatar {
+  position: absolute;
+  left: 14px;
+  bottom: 14px;
+  width: 74px;
+  height: 74px;
+  overflow: hidden;
+  border-radius: 50%;
+  background: rgb(255 255 255 / 12%);
+}
+
+.galgame-dialogue-runtime-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: var(--avatar-x) var(--avatar-y);
+  transform: scale(var(--avatar-scale));
+}
+
+.galgame-dialogue-runtime-avatar ~ strong,
+.galgame-dialogue-runtime-avatar ~ strong + span {
+  margin-left: 88px;
+}
+
+.galgame-character-official-settings,
+.galgame-portrait-skins,
+.galgame-personalization-official {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-1);
+}
+
+.galgame-character-official-settings > header,
+.galgame-portrait-skins > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.galgame-display-name-row {
+  display: grid;
+  grid-template-columns: minmax(90px, 1fr) 110px minmax(120px, 1.3fr) 32px;
+  gap: 6px;
+}
+
+.galgame-avatar-crop-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.galgame-avatar-crop-grid label {
+  display: grid;
+  gap: 4px;
+}
+
+.galgame-portrait-skins details {
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 8px;
+}
+
+.galgame-portrait-skins details > label {
+  display: grid;
+  grid-template-columns: 100px minmax(0, 1fr);
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.galgame-personalization-official label {
+  display: grid;
+  gap: 5px;
+}
+
+/* Galgame workbench v2: chapter tree, shared script views and unified assets. */
+
+.galgame-structure-search {
+  width: calc(100% - 24px);
+  margin: 10px 12px;
+  padding: 9px 11px;
+  border: 1px solid var(--border-soft);
+  border-radius: 9px;
+  background: var(--surface-muted);
+  color: var(--text-primary);
+}
+
+.galgame-chapter-tree {
+  min-height: 0;
+  overflow: auto;
+}
+
+.galgame-chapter-tree > div {
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.galgame-chapter-tree .galgame-chapter-row {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.galgame-chapter-tree > div.active > .galgame-chapter-row {
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
+.galgame-chapter-row i {
+  margin-left: 6px;
+  padding: 2px 6px;
+  border-radius: 999px;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  font-size: 10px;
+  font-style: normal;
+}
+
+.galgame-fragment-actions input {
+  min-width: 0;
+  flex: 2 1 120px;
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  background: var(--surface-muted);
+  color: var(--text-primary);
+  padding: 0 8px;
+}
+
+.galgame-fragment-actions button[aria-label] {
+  flex: 0 0 32px;
+  padding: 0;
+}
+
+.galgame-script-view-switch {
+  max-width: min(100%, 620px);
+  overflow-x: auto;
+}
+
+.galgame-asset-center {
+  display: grid;
+  grid-template-columns: 210px minmax(0, 1fr);
+  min-height: 0;
+  flex: 1;
+  background: var(--surface-primary);
+}
+
+.galgame-asset-center > aside {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 16px 12px;
+  border-right: 1px solid var(--border-soft);
+  background: var(--surface-muted);
+}
+
+.galgame-asset-center > aside header {
+  display: flex;
+  flex-direction: column;
+  margin: 2px 8px 14px;
+}
+
+.galgame-asset-center > aside button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--text-secondary);
+  text-align: left;
+}
+
+.galgame-asset-center > aside button.active {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+.galgame-asset-center > main {
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+}
+
+.galgame-asset-overview {
+  padding: 22px;
+}
+
+.galgame-asset-overview > header {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.galgame-asset-overview h2 {
+  margin: 3px 0 0;
+}
+
+.galgame-asset-warning {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 16px;
+  padding: 12px;
+  border-radius: 10px;
+  color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 9%, transparent);
+}
+
+.galgame-generic-block-fields pre {
+  max-height: 180px;
+  overflow: auto;
+  font-size: 11px;
+}
+
+.galgame-character-attributes {
+  display: grid;
+  gap: 8px;
+  padding-top: 14px;
+  border-top: 1px solid var(--gal-line);
+}
+
+.galgame-character-attributes > header,
+.galgame-character-attributes > div {
+  display: grid;
+  grid-template-columns: minmax(120px, 1fr) 90px minmax(120px, 1fr) 34px;
+  gap: 7px;
+  align-items: center;
+}
+
+.galgame-character-attributes > header {
+  display: flex;
+  justify-content: space-between;
+}
+
+.galgame-character-attributes button,
+.galgame-character-attributes input,
+.galgame-character-attributes .custom-select-trigger {
+  min-height: 34px;
+  border: 1px solid var(--gal-line);
+  border-radius: 8px;
+  background: var(--gal-surface);
+  color: var(--gal-text);
+}
+
+.galgame-story-variables {
+  display: grid;
+  gap: 6px;
+  margin: 8px 0;
+}
+
+.galgame-story-variables > div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 64px 30px;
+  gap: 5px;
+  align-items: center;
+}
+
+.galgame-story-variables code {
+  color: var(--gal-muted);
+  font-size: 10px;
+}

@@ -1,0 +1,493 @@
+@media (max-width: 1500px) {
+  .galgame-asset-center > aside {
+    padding-top: 10px;
+  }
+
+  .galgame-asset-center > aside > header {
+    display: none;
+  }
+
+  .galgame-visual-editor-grid {
+    --galgame-visual-browser-width: 220px;
+    --galgame-visual-stack-width: 260px;
+
+    grid-template-columns:
+      var(--galgame-visual-browser-width) minmax(520px, 1fr)
+      var(--galgame-visual-stack-width);
+  }
+
+  .galgame-visual-editor-grid.is-browser-collapsed {
+    --galgame-visual-browser-width: 0px;
+  }
+
+  .galgame-visual-editor-grid.is-stack-collapsed {
+    --galgame-visual-stack-width: 0px;
+  }
+
+  .galgame-visual-bottom-panel {
+    grid-template-columns: 250px minmax(0, 1fr);
+  }
+
+  .galgame-visual-stack-list article {
+    grid-template-columns: 10px 16px 38px minmax(50px, 1fr) 48px repeat(3, 21px);
+    gap: 2px;
+  }
+
+  .galgame-visual-stack-list article.is-cg {
+    grid-template-columns: 10px 16px 38px minmax(50px, 1fr) repeat(3, 21px);
+  }
+
+  .galgame-visual-stack-list article > span {
+    width: 38px;
+  }
+
+  .galgame-visual-stack-list article > label input {
+    width: 46px;
+  }
+
+  .galgame-visual-stack-list article > button {
+    width: 21px;
+    height: 25px;
+  }
+
+  .galgame-visual-stack-list article > div small {
+    display: none;
+  }
+}
+
+@media (max-width: 1120px) {
+  .galgame-unified-visual-workspace {
+    min-width: 0;
+  }
+
+  .galgame-visual-editor-grid {
+    --galgame-visual-browser-width: 180px;
+
+    grid-template-columns: var(--galgame-visual-browser-width) minmax(0, 1fr);
+    grid-template-rows: minmax(360px, 1fr) 250px auto;
+    overflow: auto;
+  }
+
+  .galgame-visual-editor-grid.is-browser-collapsed {
+    --galgame-visual-browser-width: 0px;
+  }
+
+  .galgame-visual-browser {
+    grid-column: 1;
+    grid-row: 1 / 3;
+  }
+
+  .galgame-visual-stage-panel {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .galgame-visual-stack-panel {
+    grid-column: 2;
+    grid-row: 2;
+    border-top: 1px solid var(--gal-line);
+    border-left: 0;
+  }
+
+  .galgame-visual-bottom-panel {
+    grid-column: 1 / 3;
+    grid-row: 3;
+    min-height: 390px;
+    grid-template-columns: 250px minmax(0, 1fr);
+  }
+
+  .galgame-visual-editor-grid.is-stack-collapsed {
+    grid-template-rows: minmax(360px, 1fr) 0 auto;
+  }
+
+  .galgame-visual-stage-panel > header {
+    gap: 6px;
+  }
+
+  .galgame-visual-stage-panel > header > div:first-child {
+    min-width: 0;
+  }
+
+  .galgame-visual-stage-panel > header > div:first-child span {
+    display: none;
+  }
+
+  .galgame-visual-stage-panel > header nav button {
+    padding: 0 6px;
+  }
+
+  .galgame-visual-stage-panel > header nav button span {
+    display: none;
+  }
+}
+
+@media (max-width: 800px) {
+  .galgame-unified-visual-workspace {
+    min-width: 0;
+    overflow: auto;
+  }
+
+  .galgame-visual-editor-grid {
+    min-width: 0;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto 430px auto auto;
+    overflow: visible;
+  }
+
+  .galgame-visual-editor-grid.is-stack-collapsed {
+    grid-template-rows: auto 430px auto auto;
+  }
+
+  .galgame-visual-browser {
+    grid-column: 1;
+    grid-row: 1;
+    max-height: 320px;
+    border-right: 0;
+    border-bottom: 1px solid var(--gal-line);
+  }
+
+  .galgame-visual-stage-panel {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  .galgame-visual-stack-panel {
+    grid-column: 1;
+    grid-row: 3;
+    border-top: 1px solid var(--gal-line);
+    border-left: 0;
+    height: 280px;
+  }
+
+  .galgame-visual-bottom-panel {
+    grid-column: 1;
+    grid-row: 4;
+    min-height: 620px;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(300px, 1fr);
+  }
+
+  .galgame-visual-properties {
+    border-right: 0;
+    border-bottom: 1px solid var(--gal-line);
+  }
+}
+
+/* LetsGal-aligned BGM, sound-effect, and voice workspaces. This block is the
+   authoritative audio layout over the legacy card library rules above. */
+
+.galgame-sound-workspace {
+  --galgame-sound-tone: var(--gal-accent);
+  --galgame-sound-tone-soft: var(--gal-a-soft);
+
+  display: grid;
+  grid-template-areas:
+    "workspace-header workspace-header"
+    "sound-library sound-inspector";
+  grid-template-columns: minmax(460px, 1fr) minmax(300px, 38%);
+  grid-template-rows: 50px minmax(0, 1fr);
+  min-width: 0;
+  min-height: 0;
+  width: 100%;
+  height: 100%;
+  background: var(--gal-bg);
+}
+
+.galgame-sound-workspace.is-bgm {
+  --galgame-sound-tone: #a56de2;
+  --galgame-sound-tone-soft: color-mix(
+    in srgb,
+    #a56de2 10%,
+    var(--gal-surface)
+  );
+}
+
+.galgame-sound-workspace.is-sfx {
+  --galgame-sound-tone: #35b979;
+  --galgame-sound-tone-soft: color-mix(
+    in srgb,
+    #35b979 10%,
+    var(--gal-surface)
+  );
+}
+
+.galgame-sound-workspace.is-voice {
+  --galgame-sound-tone: #e75b7a;
+  --galgame-sound-tone-soft: color-mix(
+    in srgb,
+    #e75b7a 10%,
+    var(--gal-surface)
+  );
+
+  grid-template-areas:
+    "workspace-header workspace-header workspace-header"
+    "voice-speakers sound-library sound-inspector";
+  grid-template-columns: 210px minmax(440px, 1fr) minmax(300px, 38%);
+}
+
+.galgame-sound-workspace-header {
+  grid-area: workspace-header;
+  min-width: 0;
+  padding: 0 20px;
+  border-bottom: 1px solid var(--gal-line);
+  background: var(--gal-panel);
+  display: flex;
+  align-items: center;
+}
+
+.galgame-sound-workspace-header > span {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.galgame-sound-workspace-header svg {
+  width: 17px;
+  height: 17px;
+  color: var(--gal-muted);
+}
+
+.galgame-sound-workspace-header strong {
+  font-size: 15px;
+}
+
+.galgame-sound-workspace-header em {
+  color: var(--gal-muted);
+  font-size: 11px;
+  font-style: normal;
+}
+
+.galgame-voice-speakers {
+  grid-area: voice-speakers;
+  min-width: 0;
+  min-height: 0;
+  padding: 10px 8px;
+  overflow: auto;
+  border-right: 1px solid var(--gal-line);
+  background: color-mix(in srgb, var(--gal-panel) 94%, var(--gal-bg));
+}
+
+.galgame-voice-speakers > button {
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 38px;
+  padding: 0 9px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--gal-muted);
+  text-align: left;
+  cursor: pointer;
+}
+
+.galgame-voice-speakers > button + button {
+  margin-top: 2px;
+}
+
+.galgame-voice-speakers > button:hover {
+  background: var(--gal-soft);
+  color: var(--gal-text);
+}
+
+.galgame-voice-speakers > button.active {
+  border-color: color-mix(
+    in srgb,
+    var(--galgame-sound-tone) 20%,
+    var(--gal-line)
+  );
+  background: var(--galgame-sound-tone-soft);
+  color: var(--gal-text);
+}
+
+.galgame-voice-speakers strong {
+  overflow: hidden;
+  font-size: 12px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.galgame-voice-speakers em {
+  min-width: 22px;
+  padding: 2px 5px;
+  border-radius: 4px;
+  background: var(--gal-soft);
+  color: var(--gal-faint);
+  font-size: 9px;
+  font-style: normal;
+  text-align: center;
+}
+
+.galgame-voice-speaker-icon,
+.galgame-voice-speaker-avatar {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--gal-s-strong);
+  color: var(--gal-muted);
+  font-size: 10px;
+}
+
+.galgame-voice-speaker-icon svg {
+  width: 13px;
+  height: 13px;
+}
+
+.galgame-voice-speaker-icon.is-all {
+  border-radius: 6px;
+  background: var(--galgame-sound-tone);
+  color: #fff;
+}
+
+.galgame-voice-speaker-avatar {
+  color: var(--galgame-sound-tone);
+  background: var(--galgame-sound-tone-soft);
+  font-weight: 700;
+}
+
+.galgame-sound-library {
+  grid-area: sound-library;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--gal-bg);
+}
+
+.galgame-sound-library-toolbar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 60px;
+  padding: 0 18px;
+  border-bottom: 1px solid var(--gal-line);
+  background: var(--gal-panel);
+}
+
+.galgame-sound-library-toolbar > span {
+  min-width: 0;
+  margin-right: auto;
+  display: flex;
+  align-items: baseline;
+  gap: 11px;
+}
+
+.galgame-sound-library-toolbar strong {
+  color: var(--gal-text);
+  font-size: 14px;
+}
+
+.galgame-sound-library-toolbar small {
+  overflow: hidden;
+  color: var(--gal-muted);
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.galgame-sound-library-toolbar > button,
+.galgame-asr-toolbar button {
+  min-height: 34px;
+  padding: 0 12px;
+  border: 1px solid var(--gal-line);
+  border-radius: 6px;
+  background: var(--gal-surface);
+  color: var(--gal-text);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.galgame-sound-library-toolbar > button svg,
+.galgame-asr-toolbar button svg {
+  width: 14px;
+  height: 14px;
+}
+
+.galgame-sound-library-toolbar > button.primary,
+.galgame-asr-toolbar button.primary {
+  border-color: var(--galgame-sound-tone);
+  background: var(--galgame-sound-tone);
+  color: #fff;
+}
+
+.galgame-sound-search {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 46px;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--gal-line);
+  background: color-mix(in srgb, var(--gal-panel) 82%, var(--gal-bg));
+  color: var(--gal-muted);
+}
+
+.galgame-sound-search svg {
+  flex: none;
+  width: 15px;
+  height: 15px;
+}
+
+.galgame-sound-search input {
+  min-width: 0;
+  flex: 1;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--gal-text);
+}
+
+.galgame-sound-search > span {
+  color: var(--gal-faint);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+.galgame-sound-table-heading,
+.galgame-sound-list article {
+  display: grid;
+  grid-template-columns: 36px minmax(160px, 1fr) 68px 80px 28px;
+  align-items: center;
+  gap: 9px;
+}
+
+.galgame-sound-table-heading {
+  flex: none;
+  min-height: 34px;
+  padding: 0 14px;
+  border-bottom: 1px solid var(--gal-line);
+  color: var(--gal-faint);
+  font-size: 10px;
+}
+
+.galgame-sound-table-heading > span:first-child {
+  grid-column: 2;
+}
+
+.galgame-sound-list {
+  display: block;
+  min-height: 0;
+  flex: 1;
+  padding: 0;
+  overflow: auto;
+}
+
+.galgame-sound-list article {
+  min-height: 56px;
+  padding: 4px 14px;
+  border: 0;
+  border-bottom: 1px solid var(--gal-line);
+  border-radius: 0;
+  background: var(--gal-bg);
+}

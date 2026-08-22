@@ -1,0 +1,204 @@
+.galgame-switch-control > span::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--gal-muted);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.22);
+  transition:
+    transform 150ms ease,
+    background 150ms ease;
+}
+
+.galgame-switch-control input:checked + span {
+  border-color: var(--gal-accent);
+  background: var(--gal-accent);
+}
+
+.galgame-switch-control input:checked + span::after {
+  background: #fff;
+  transform: translateX(14px);
+}
+
+.galgame-switch-control input:focus-visible + span {
+  outline: 2px solid color-mix(in srgb, var(--gal-accent) 62%, transparent);
+  outline-offset: 2px;
+}
+
+.galgame-dialogue-portrait-advanced {
+  margin: 2px 0 12px;
+  border: 1px solid var(--gal-line);
+  border-radius: 8px;
+  background: var(--gal-surface);
+}
+
+.galgame-dialogue-portrait-advanced > summary {
+  padding: 8px 10px;
+  color: var(--gal-muted);
+  font-size: 10px;
+  cursor: pointer;
+}
+
+.galgame-dialogue-portrait-advanced[open] > summary {
+  border-bottom: 1px solid var(--gal-line);
+  color: var(--gal-text);
+}
+
+.galgame-dialogue-portrait-advanced > div {
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.galgame-player-portrait-fallback {
+  width: 64px;
+  height: 64px;
+  border: 1px solid rgb(255 255 255 / 0.34);
+  border-radius: 50%;
+  background: rgb(7 12 22 / 0.6);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  font-size: 24px;
+  backdrop-filter: blur(8px);
+}
+
+.galgame-stage .galgame-dialogue-box {
+  /* 背景 0、后景 CG 5、角色 10–30、前景 CG 35、自定义 UI 40–60。 */
+  z-index: 80;
+}
+
+.galgame-player-background {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.galgame-player-background-layer {
+  pointer-events: none;
+  will-change: transform;
+}
+
+.galgame-player-character-overlay {
+  position: absolute;
+  height: auto;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.galgame-stage::after {
+  z-index: 1;
+}
+
+.galgame-stage > span {
+  z-index: 3;
+}
+
+.galgame-player-cg {
+  position: absolute;
+  overflow: hidden;
+  opacity: var(--galgame-cg-opacity, 1);
+  pointer-events: none;
+  transition-property: opacity;
+  transition-timing-function: ease;
+}
+
+.galgame-player-cg[data-display-mode="fullscreen"] {
+  inset: 0;
+}
+
+.galgame-player-cg[data-display-mode="overlay"] {
+  overflow: visible;
+  transform: translate(-50%, -50%);
+}
+
+.galgame-player-cg[data-display-mode="fullscreen"][data-fit="contain"] {
+  background: #000;
+}
+
+.galgame-player-cg-image {
+  display: block;
+}
+
+.galgame-player-cg[data-display-mode="fullscreen"] .galgame-player-cg-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.galgame-player-cg[data-display-mode="fullscreen"][data-fit="contain"]
+  .galgame-player-cg-image {
+  object-fit: contain;
+}
+
+.galgame-player-cg[data-display-mode="overlay"] .galgame-player-cg-image {
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+}
+
+.galgame-player-cg.is-editable {
+  pointer-events: auto;
+  cursor: move;
+  outline: 1px solid rgb(255 255 255 / 0.86);
+  outline-offset: 3px;
+  box-shadow: 0 0 0 4px rgb(241 107 100 / 0.4);
+}
+
+.galgame-player-cg-resize {
+  position: absolute;
+  right: -8px;
+  bottom: -8px;
+  width: 16px;
+  height: 16px;
+  border: 2px solid #fff;
+  border-radius: 4px;
+  background: var(--gal-accent);
+  box-shadow: 0 2px 8px rgb(0 0 0 / 0.35);
+  cursor: nwse-resize;
+}
+
+.galgame-player-cg-resize:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
+.galgame-player-cg[data-entering="true"] {
+  animation: galgame-player-cg-enter 400ms ease both;
+}
+
+.galgame-player-cg[data-exiting="true"] {
+  opacity: 0;
+}
+
+@keyframes galgame-player-cg-enter {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: var(--galgame-cg-opacity, 1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .galgame-player-cg {
+    animation-duration: 0ms !important;
+    transition-duration: 0ms !important;
+  }
+}
+
+.galgame-player-start,
+.galgame-ending,
+.galgame-player-error,
+.galgame-choices {
+  z-index: 80;
+}
+
+/* Visual, scene, background and CG workspaces */

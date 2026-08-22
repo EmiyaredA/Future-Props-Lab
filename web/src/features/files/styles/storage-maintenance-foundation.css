@@ -1,0 +1,489 @@
+.file-upload-item.error {
+  background: var(--danger-soft);
+}
+
+.file-upload-item.error > svg,
+.file-upload-item.error small {
+  color: var(--danger);
+}
+
+.file-upload-item strong {
+  overflow: hidden;
+  color: var(--text);
+  font-size: 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.spin {
+  animation: file-spin 0.8s linear infinite;
+}
+
+@keyframes file-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.file-busy {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  display: grid;
+  place-items: center;
+  border-radius: inherit;
+  background: color-mix(in srgb, var(--surface) 76%, transparent);
+  color: var(--text-strong);
+  font-weight: 700;
+  backdrop-filter: blur(2px);
+}
+
+.file-dialog-backdrop {
+  position: fixed;
+  z-index: 80;
+  inset: 0;
+  padding: 24px;
+  display: grid;
+  place-items: center;
+  background: var(--overlay);
+  backdrop-filter: blur(3px);
+}
+
+.file-preview-backdrop {
+  position: fixed;
+  z-index: 90;
+  inset: 0;
+  padding: 24px;
+  display: grid;
+  place-items: center;
+  background: color-mix(in srgb, #111 62%, transparent);
+  backdrop-filter: blur(4px);
+}
+
+.file-preview-dialog {
+  width: min(920px, calc(100vw - 32px));
+  max-height: min(820px, calc(100vh - 48px));
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: 0 28px 90px rgb(0 0 0 / 32%);
+}
+
+.file-preview-dialog > header {
+  min-height: 62px;
+  padding: 12px 14px 12px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.file-preview-dialog > header > div {
+  min-width: 0;
+}
+
+.file-preview-dialog > header span {
+  color: var(--accent);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.file-preview-dialog > header h2 {
+  margin: 3px 0 0;
+  overflow: hidden;
+  color: var(--text-strong);
+  font-size: 14px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.file-preview-dialog > header button {
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  flex: none;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--muted);
+}
+
+.file-preview-dialog > header button:hover {
+  background: var(--surface-soft);
+  color: var(--text);
+}
+
+.file-preview-dialog > header button svg {
+  width: 18px;
+}
+
+.file-preview-stage {
+  min-height: 260px;
+  max-height: calc(100vh - 140px);
+  padding: 20px;
+  overflow: auto;
+  display: grid;
+  place-items: center;
+  background: color-mix(in srgb, var(--bg) 76%, #111);
+}
+
+.file-preview-stage img,
+.file-preview-stage video {
+  max-width: 100%;
+  max-height: calc(100vh - 184px);
+  display: block;
+  border-radius: 9px;
+  object-fit: contain;
+}
+
+.file-preview-stage video {
+  width: 100%;
+}
+
+.file-preview-state {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.file-preview-state svg {
+  width: 16px;
+}
+
+.file-preview-fallback {
+  width: min(420px, 100%);
+  padding: 36px 28px;
+  display: grid;
+  place-items: center;
+  gap: 12px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface);
+  text-align: center;
+}
+
+.file-preview-fallback svg {
+  width: 42px;
+  height: 42px;
+  color: var(--accent);
+}
+
+.file-preview-fallback > strong {
+  max-width: 100%;
+  overflow: hidden;
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.file-preview-fallback > p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.file-preview-fallback > button {
+  margin-top: 4px;
+  min-height: 34px;
+  padding: 0 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface-soft);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.file-preview-fallback > button:hover {
+  border-color: var(--accent-line);
+  color: var(--accent);
+}
+
+.file-preview-fallback > button svg {
+  width: 14px;
+  height: 14px;
+}
+
+.file-audio-preview {
+  width: min(560px, 100%);
+  padding: 34px 28px;
+  display: grid;
+  place-items: center;
+  gap: 15px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface);
+}
+
+.file-audio-preview > svg {
+  width: 42px;
+  height: 42px;
+  color: var(--accent);
+}
+
+.file-audio-preview > strong {
+  max-width: 100%;
+  overflow: hidden;
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.file-audio-preview audio {
+  width: 100%;
+}
+
+.file-dialog {
+  width: min(470px, 100%);
+  max-height: calc(100vh - 48px);
+  overflow: visible;
+  border: 1px solid var(--border);
+  border-radius: 15px;
+  background: var(--surface);
+  box-shadow: 0 24px 80px rgb(0 0 0 / 24%);
+}
+
+.file-dialog > header {
+  min-height: 74px;
+  padding: 16px 18px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.file-dialog > header span {
+  color: var(--accent);
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+
+.file-dialog h2 {
+  margin: 5px 0 0;
+  color: var(--text-strong);
+  font-size: 17px;
+}
+
+.file-dialog > header > button {
+  width: 31px;
+  height: 31px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted);
+}
+
+.file-dialog > header > button:hover:not(:disabled) {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+
+.file-dialog > header svg {
+  width: 16px;
+}
+
+.file-dialog form,
+.file-delete-dialog {
+  padding: 20px;
+}
+
+.file-dialog form > label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.file-dialog input {
+  min-height: 42px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--bg);
+}
+
+.file-dialog form > small {
+  margin-top: 8px;
+  display: block;
+  color: var(--faint);
+  font-size: 9px;
+}
+
+.file-move-select {
+  width: 100%;
+}
+
+.file-move-select .custom-select-trigger {
+  min-height: 42px;
+  border-color: var(--border);
+  border-radius: 9px;
+  background: var(--bg);
+}
+
+.file-move-select .custom-select-menu {
+  z-index: 3;
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.file-dialog-error {
+  margin: 10px 0 0;
+  padding: 8px 10px;
+  border: 1px solid color-mix(in srgb, var(--danger) 25%, var(--border));
+  border-radius: 8px;
+  background: var(--danger-soft);
+  color: var(--danger);
+  font-size: 9px;
+  line-height: 1.5;
+}
+
+.file-dialog-actions {
+  margin-top: 20px;
+  padding-top: 14px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  border-top: 1px solid var(--border);
+}
+
+.file-dialog-actions button {
+  min-height: 36px;
+  padding: 0 13px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 10px;
+  font-weight: 650;
+}
+
+.file-dialog-actions button.primary {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: white;
+}
+
+.file-dialog-actions button.danger {
+  border-color: var(--danger);
+  background: var(--danger);
+  color: white;
+}
+
+.file-delete-dialog {
+  text-align: center;
+}
+
+.file-delete-icon {
+  width: 48px;
+  height: 48px;
+  margin: 0 auto 12px;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.file-delete-icon svg {
+  width: 21px;
+}
+
+.file-delete-dialog > p:not(.file-dialog-error) {
+  margin: 0;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.7;
+}
+
+.file-delete-dialog .file-dialog-actions {
+  justify-content: center;
+}
+
+.is-compact .file-browser-controls {
+  margin: 0;
+  overflow: visible;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.file-compact-search-row {
+  min-height: 60px;
+  padding: 10px 13px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.file-compact-search-row > label {
+  min-width: 0;
+  min-height: 36px;
+  padding: 0 11px;
+  display: flex;
+  align-items: center;
+  flex: 1;
+  gap: 8px;
+  border: 1px solid var(--border-strong);
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--surface-soft) 72%, transparent);
+}
+
+.file-compact-search-row > label:focus-within {
+  border-color: var(--accent-line);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 9%, transparent);
+}
+
+.file-compact-search-row > label svg {
+  width: 15px;
+  height: 15px;
+  flex: none;
+  color: var(--faint);
+}
+
+.file-compact-search-row input {
+  min-width: 0;
+  width: 100%;
+  min-height: 34px;
+  padding: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  box-shadow: none;
+  color: var(--text);
+  font-size: 11px;
+}
+
+.file-compact-search-row input::placeholder {
+  color: var(--faint);
+}
+
+.file-compact-actions {
+  display: flex;
+  align-items: center;
+  flex: none;
+  gap: 2px;
+}
+
+.file-compact-menu {
+  position: relative;
+}

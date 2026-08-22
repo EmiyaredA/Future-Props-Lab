@@ -1,0 +1,178 @@
+.raw-payloads summary svg {
+  width: 15px;
+  color: var(--accent);
+}
+
+.raw-payloads summary small {
+  color: var(--faint);
+  font-size: 9px;
+  font-weight: 500;
+}
+
+.payload-card {
+  margin-top: 10px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 11px;
+}
+
+.payload-card > div {
+  min-height: 43px;
+  padding: 0 13px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--surface-soft);
+}
+
+.payload-card h3 {
+  margin: 0;
+  font-size: 12px;
+}
+
+.payload-card pre {
+  max-height: 300px;
+  margin: 0;
+  padding: 15px;
+  overflow: auto;
+  color: var(--text);
+  font:
+    11px/1.65 ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    monospace;
+  white-space: pre-wrap;
+}
+
+.trace-card {
+  margin-top: 20px;
+  padding: 13px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-radius: 9px;
+  background: var(--surface-soft);
+}
+
+.trace-card > div {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.trace-card span {
+  color: var(--faint);
+  font-size: 10px;
+}
+
+.trace-card code {
+  font-size: 11px;
+  overflow-wrap: anywhere;
+}
+
+.log-meta-card {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px 24px;
+  margin: 0;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-soft);
+}
+
+.log-meta-card div {
+  min-width: 0;
+}
+
+.log-meta-card dt {
+  margin-bottom: 5px;
+  color: var(--faint);
+  font-size: 10px;
+}
+
+.log-meta-card dd {
+  margin: 0;
+  color: var(--text);
+  font-size: 12px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.log-display-toolbar {
+  min-height: 50px;
+  margin: 12px 0;
+  padding: 7px 10px 7px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-soft);
+}
+
+.log-display-toolbar > span {
+  margin-right: 4px;
+  color: var(--faint);
+  font-size: 10px;
+}
+
+.log-segmented {
+  padding: 3px;
+  display: inline-flex;
+  gap: 2px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.log-segmented.text-mode {
+  margin-left: auto;
+}
+
+.log-segmented button {
+  min-height: 26px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.log-segmented button.active {
+  background: var(--surface-soft);
+  color: var(--text-strong);
+  font-weight: 700;
+}
+
+.log-inspector-section {
+  --section-color: var(--warning);
+  margin-top: 12px;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--section-color) 38%, var(--border));
+  border-left: 3px solid var(--section-color);
+  border-radius: 11px;
+  background: color-mix(in srgb, var(--section-color) 7%, var(--surface));
+}
+
+.log-inspector-section.response {
+  --section-color: var(--blue);
+}
+
+.log-inspector-section.metrics {
+  --section-color: var(--muted);
+}
+
+.log-inspector-section > summary {
+  min-height: 48px;
+  padding: 0 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  list-style: none;
+  color: var(--text-strong);
+}

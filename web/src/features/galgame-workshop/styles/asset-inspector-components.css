@@ -1,0 +1,492 @@
+@media (max-width: 900px) {
+  .galgame-assets-workbench.summary-open,
+  .galgame-assets-workbench.summary-open.summary-sized {
+    grid-template-rows: auto auto minmax(0, 1fr);
+  }
+
+  .galgame-assets-summary-resizer {
+    display: none;
+  }
+
+  .galgame-assets-toolbar {
+    align-items: flex-start;
+  }
+
+  .galgame-assets-toolbar > div:first-child {
+    align-items: center;
+  }
+
+  .galgame-assets-toolbar > div:first-child > span {
+    display: none;
+  }
+
+  .galgame-assets-summary {
+    max-height: 48vh;
+    grid-template-columns: 1fr;
+    overflow: auto;
+  }
+
+  .galgame-assets-summary > article {
+    border-right: 0;
+    border-bottom: 1px solid var(--gal-line);
+  }
+
+  .galgame-assets-results {
+    padding: 12px;
+  }
+
+  .galgame-assets-results.is-list > button {
+    grid-template-columns: 48px minmax(120px, 1fr) 72px;
+  }
+
+  .galgame-assets-results.is-list .galgame-assets-result-type,
+  .galgame-assets-results.is-list .galgame-assets-result-size {
+    display: none;
+  }
+
+  .galgame-assets-inspector-fields {
+    grid-template-columns: 1fr;
+  }
+
+  .galgame-assets-import-dialog > footer {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .galgame-assets-import-dialog > footer button.primary {
+    grid-column: 1 / -1;
+  }
+
+  .galgame-video-workspace {
+    grid-template-columns: 1fr;
+  }
+
+  .galgame-video-workspace > header {
+    grid-column: auto;
+  }
+}
+
+:root[data-theme="dark"] .galgame-workshop-shell,
+:root[data-theme="dark"] .galgame-editor-page,
+:root[data-theme="dark"] .galgame-route-report-backdrop,
+:root[data-theme="dark"] .galgame-block-command-backdrop,
+:root[data-theme="dark"] .galgame-playhead-add-popover,
+:root[data-theme="dark"] .galgame-dialogue-presentation-popover {
+  --gal-bg: #0c131e;
+  --gal-panel: #111a27;
+  --gal-surface: #172231;
+  --gal-s-strong: #1c2939;
+  --gal-line: #28374b;
+  --gal-line-strong: #394a61;
+  --gal-text: #edf3fb;
+  --gal-muted: #97a5b8;
+  --gal-faint: #6d7c90;
+  --gal-accent: #f16b64;
+  --gal-accent-hover: #ff7d76;
+  --gal-a-soft: #3a2428;
+  --gal-accent-line: #754047;
+  --gal-ok: #61c391;
+  --gal-ok-soft: #18372e;
+  --gal-warning: #e2ab61;
+  --gal-warning-soft: #382f21;
+  --gal-danger: #f17b7b;
+  --gal-danger-soft: #3d2529;
+  --gal-shadow: 0 18px 48px rgb(0 0 0 / 0.28);
+  --gal-shadow-soft: 0 7px 24px rgb(0 0 0 / 0.2);
+}
+
+/* Workshop shell, library and project overview */
+
+.galgame-workshop-shell {
+  background: var(--gal-bg);
+}
+
+.galgame-workshop-shell .workshop-sidebar {
+  border-right-color: var(--gal-line);
+  background: color-mix(in srgb, var(--gal-panel) 94%, transparent);
+  box-shadow: 1px 0 0 rgb(255 255 255 / 0.02);
+}
+
+.galgame-workshop-shell .workshop-brand > span {
+  display: grid;
+  place-items: center;
+  background: var(--gal-s-strong);
+}
+
+.galgame-workshop-shell .workshop-brand img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.galgame-workshop-shell .workshop-brand strong,
+.galgame-workshop-shell .workshop-back-copy strong,
+.galgame-workshop-shell .workshop-sidebar nav button {
+  color: var(--gal-text);
+}
+
+.galgame-workshop-shell .workshop-brand small,
+.galgame-workshop-shell .workshop-back-copy small {
+  color: var(--gal-muted);
+}
+
+.galgame-workshop-shell .workshop-back,
+.galgame-workshop-shell .workshop-sidebar nav button {
+  border-color: transparent;
+}
+
+.galgame-workshop-shell .workshop-sidebar nav button.active {
+  color: var(--gal-accent);
+  background: var(--gal-a-soft);
+}
+
+.galgame-workshop-shell .workshop-sidebar nav button.active::before {
+  background: var(--gal-accent);
+}
+
+.galgame-workshop-shell .workshop-main {
+  background:
+    radial-gradient(circle at 75% 0%, rgb(223 98 88 / 0.05), transparent 28%),
+    var(--gal-bg);
+}
+
+.galgame-workshop-shell .workshop-page {
+  color: var(--gal-text);
+}
+
+.galgame-workshop-shell .workshop-page-header > div > span,
+.galgame-overview-hero > div > span {
+  color: var(--gal-accent);
+  letter-spacing: 0.13em;
+}
+
+.galgame-workshop-shell .workshop-page-header h1,
+.galgame-workshop-shell .workshop-page-header p {
+  color: var(--gal-text);
+}
+
+.galgame-workshop-shell .workshop-page-header p {
+  color: var(--gal-muted);
+}
+
+.galgame-workshop-shell .workshop-primary,
+.galgame-overview-primary {
+  border: 1px solid var(--gal-accent);
+  background: var(--gal-accent);
+  color: #fff;
+  box-shadow: 0 8px 18px rgb(223 98 88 / 0.18);
+}
+
+.galgame-workshop-shell .workshop-primary:hover:not(:disabled),
+.galgame-overview-primary:hover:not(:disabled) {
+  border-color: var(--gal-accent-hover);
+  background: var(--gal-accent-hover);
+}
+
+.galgame-library-page {
+  max-width: 1360px;
+}
+
+.galgame-library-page .workshop-toolbar {
+  display: block;
+  margin: 0 0 20px;
+}
+
+.galgame-library-page .workshop-toolbar > label {
+  border-color: var(--gal-line);
+  background: var(--gal-surface);
+  color: var(--gal-muted);
+}
+
+.galgame-library-page .workshop-toolbar input {
+  color: var(--gal-text);
+}
+
+.galgame-library-page .workshop-project-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.galgame-library-page .workshop-project-card {
+  overflow: hidden;
+  border: 1px solid var(--gal-line);
+  border-radius: 17px;
+  background: var(--gal-surface);
+  box-shadow: var(--gal-shadow-soft);
+}
+
+.galgame-library-page .workshop-project-card:hover {
+  border-color: var(--gal-accent-line);
+  box-shadow: var(--gal-shadow);
+  transform: translateY(-2px);
+}
+
+.workshop-project-cover.galgame {
+  height: 148px;
+  color: var(--gal-accent);
+  background:
+    radial-gradient(
+      circle at 18% 18%,
+      color-mix(in srgb, var(--gal-accent) 15%, transparent),
+      transparent 36%
+    ),
+    linear-gradient(
+      145deg,
+      color-mix(in srgb, var(--gal-a-soft) 82%, var(--gal-surface)),
+      var(--gal-panel)
+    );
+}
+
+.workshop-project-cover.galgame .workshop-project-cover-label {
+  align-items: center;
+  text-align: center;
+}
+
+.workshop-project-cover.galgame .workshop-project-cover-label strong {
+  color: var(--gal-text);
+}
+
+.workshop-project-cover.galgame .workshop-project-cover-label small {
+  color: var(--gal-muted);
+}
+
+.galgame-library-page .workshop-project-copy {
+  background: var(--gal-surface);
+}
+
+.galgame-library-page .workshop-project-copy h2 {
+  color: var(--gal-text);
+}
+
+.galgame-library-page .workshop-project-meta small,
+.galgame-library-page .workshop-project-copy small {
+  color: var(--gal-muted);
+}
+
+.galgame-workshop-shell .workshop-status {
+  border: 1px solid var(--gal-line);
+  background: var(--gal-s-strong);
+}
+
+.galgame-workshop-shell .workshop-status.draft {
+  color: var(--gal-warning);
+}
+
+.galgame-workshop-shell .workshop-status.completed {
+  color: var(--gal-ok);
+}
+
+.galgame-library-page .workshop-project-actions {
+  border-top-color: var(--gal-line);
+}
+
+.galgame-library-page .workshop-project-actions button {
+  border-color: var(--gal-line);
+  background: var(--gal-panel);
+  color: var(--gal-text);
+}
+
+.galgame-library-page .workshop-project-actions button:hover {
+  border-color: var(--gal-accent-line);
+  background: var(--gal-a-soft);
+  color: var(--gal-accent);
+}
+
+.galgame-workshop-shell .workshop-notice,
+.galgame-workshop-shell .workshop-state,
+.galgame-workshop-shell .workshop-dialog {
+  border-color: var(--gal-line);
+  background: var(--gal-surface);
+  color: var(--gal-text);
+  box-shadow: var(--gal-shadow);
+}
+
+.galgame-workshop-shell .workshop-dialog input {
+  border-color: var(--gal-line);
+  background: var(--gal-panel);
+  color: var(--gal-text);
+}
+
+.workshop-back-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 12px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--gal-muted);
+  font: inherit;
+  cursor: pointer;
+}
+
+.workshop-back-inline:hover {
+  color: var(--gal-text);
+}
+
+.galgame-overview-page {
+  max-width: 1280px;
+}
+
+.galgame-overview-hero {
+  position: relative;
+  overflow: hidden;
+  min-height: 220px;
+  padding: 30px;
+  border: 1px solid var(--gal-line);
+  border-radius: 17px;
+  background:
+    radial-gradient(circle at 87% 20%, rgb(223 98 88 / 0.15), transparent 28%),
+    linear-gradient(135deg, var(--gal-surface), var(--gal-panel));
+  box-shadow: var(--gal-shadow-soft);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 32px;
+}
+
+.galgame-overview-hero::after {
+  content: "";
+  position: absolute;
+  right: 8%;
+  bottom: -60px;
+  width: 250px;
+  height: 160px;
+  border: 1px solid var(--gal-accent-line);
+  border-radius: 50%;
+  opacity: 0.35;
+  transform: rotate(-15deg);
+  pointer-events: none;
+}
+
+.galgame-overview-hero h1 {
+  margin: 7px 0 8px;
+  color: var(--gal-text);
+  font-size: clamp(28px, 4vw, 44px);
+  line-height: 1.08;
+}
+
+.galgame-overview-hero p {
+  max-width: 650px;
+  margin: 0;
+  color: var(--gal-muted);
+}
+
+.galgame-overview-health {
+  margin-top: 20px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 9px;
+}
+
+.galgame-overview-health > span:not(.workshop-status) {
+  min-height: 28px;
+  padding: 4px 10px;
+  border: 1px solid var(--gal-line);
+  border-radius: 999px;
+  background: var(--gal-s-strong);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--gal-muted);
+  font-size: 12px;
+}
+
+.galgame-overview-health > span.ready {
+  color: var(--gal-ok);
+}
+
+.galgame-overview-health > span.blocked {
+  color: var(--gal-warning);
+}
+
+.galgame-overview-health svg {
+  width: 14px;
+  height: 14px;
+}
+
+.galgame-overview-toolbar {
+  position: relative;
+  z-index: 1;
+  min-width: 160px;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.galgame-overview-toolbar button {
+  min-height: 42px;
+  padding: 0 15px;
+  border: 1px solid var(--gal-line);
+  border-radius: 9px;
+  background: var(--gal-surface);
+  color: var(--gal-text);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  font: inherit;
+  cursor: pointer;
+}
+
+.galgame-overview-toolbar button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.galgame-overview-stats {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 9px;
+  margin: 18px 0;
+}
+
+.galgame-overview-stat {
+  padding: 14px 16px;
+  border: 1px solid var(--gal-line);
+  border-radius: 11px;
+  background: var(--gal-surface);
+  box-shadow: var(--gal-shadow-soft);
+  display: flex;
+  align-items: baseline;
+  gap: 9px;
+}
+
+.galgame-overview-stat strong {
+  font-size: 25px;
+  line-height: 1;
+}
+
+.galgame-overview-stat span {
+  color: var(--gal-muted);
+  font-size: 12px;
+}
+
+.galgame-overview-modules {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.galgame-overview-module {
+  min-height: 170px;
+  padding: 17px;
+  border: 1px solid var(--gal-line);
+  border-radius: 12px;
+  background: var(--gal-surface);
+  color: var(--gal-text);
+  box-shadow: var(--gal-shadow-soft);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+}
+
+.galgame-overview-module:hover {
+  border-color: var(--gal-accent-line);
+  transform: translateY(-2px);
+}

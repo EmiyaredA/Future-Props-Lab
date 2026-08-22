@@ -1,7 +1,7 @@
 import { Check, FileImage, Plus, Trash2 } from "lucide-react";
 import { stableId } from "@features/galgame-workshop/editor/model";
 import { CustomSelect } from "@shared/ui/CustomSelect";
-import type { CharacterWorkspaceViewModel } from "@features/galgame-workshop/editor/CharacterWorkspaceView";
+import type { CharacterWorkspaceViewModel } from "@features/galgame-workshop/editor/characterWorkspaceViewModel";
 export function CharacterSkinPanel({
   model,
 }: {

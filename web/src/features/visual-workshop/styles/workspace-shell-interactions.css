@@ -1,0 +1,343 @@
+.workshop-state {
+  min-height: 330px;
+  padding: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 9px;
+  border: 1px dashed var(--border-strong);
+  border-radius: 14px;
+  background: var(--surface);
+  color: var(--faint);
+  text-align: center;
+}
+
+.workshop-state > svg {
+  width: 26px;
+}
+
+.workshop-state strong {
+  color: var(--text-strong);
+  font-size: 14px;
+}
+
+.workshop-state span,
+.workshop-state p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.workshop-state > button:not(.workshop-primary) {
+  min-height: 35px;
+  margin-top: 7px;
+  padding: 0 13px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--accent);
+}
+
+.workshop-state button svg {
+  width: 14px;
+}
+
+.workshop-empty-icon {
+  width: 50px;
+  height: 50px;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  background: var(--accent-soft);
+  color: var(--accent) !important;
+}
+
+.workshop-empty-icon svg {
+  width: 22px;
+}
+
+.workshop-feature-empty {
+  min-height: 420px;
+}
+
+.workshop-dialog-backdrop {
+  position: fixed;
+  z-index: 20;
+  inset: 0;
+  padding: 24px;
+  display: grid;
+  place-items: center;
+  background: var(--overlay);
+}
+
+.workshop-dialog {
+  width: min(500px, 100%);
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 15px;
+  background: var(--surface);
+  box-shadow: 0 24px 80px rgb(0 0 0 / 20%);
+}
+
+.workshop-dialog > header {
+  padding: 18px 20px 15px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+}
+
+.workshop-dialog > header span {
+  color: var(--accent);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+}
+
+.workshop-dialog h2 {
+  margin: 5px 0 0;
+  font-size: 18px;
+}
+
+.workshop-dialog > header button {
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted);
+}
+
+.workshop-dialog > header button:hover {
+  background: var(--surface-soft);
+}
+
+.workshop-dialog > header svg {
+  width: 17px;
+}
+
+.workshop-dialog form,
+.workshop-delete-copy {
+  padding: 20px;
+}
+
+.workshop-dialog form > label {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.workshop-dialog input {
+  min-height: 42px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--bg);
+  outline: none;
+}
+
+.workshop-dialog input:focus {
+  border-color: var(--accent);
+}
+
+.workshop-dialog fieldset {
+  margin: 18px 0 0;
+  padding: 0;
+  border: 0;
+}
+
+.workshop-dialog legend {
+  margin-bottom: 8px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.workshop-kind-options {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.workshop-kind-options button {
+  min-height: 74px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 7px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.workshop-kind-options button.active {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.workshop-kind-options svg {
+  width: 20px;
+}
+
+.workshop-dialog-actions,
+.workshop-delete-copy > div {
+  margin-top: 22px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 9px;
+}
+
+.workshop-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.workshop-header-actions > button:not(.workshop-primary) {
+  min-height: 40px;
+  padding: 0 13px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface);
+  color: var(--text);
+}
+
+.workshop-header-actions svg {
+  width: 15px;
+}
+
+.workshop-assets-tabs {
+  margin-bottom: 12px;
+  display: flex;
+  gap: 4px;
+}
+
+.workshop-assets-tabs button {
+  min-height: 38px;
+  padding: 0 13px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--muted);
+}
+
+.workshop-assets-tabs button.active {
+  border-color: var(--accent);
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.workshop-assets-tabs svg {
+  width: 16px;
+}
+
+.visual-canvas {
+  position: relative;
+  height: 100vh;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.visual-canvas-topbar {
+  position: absolute;
+  z-index: 16;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 76px;
+  padding: 0 26px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  pointer-events: none;
+}
+
+.canvas-project-identity,
+.canvas-top-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  pointer-events: auto;
+}
+
+.canvas-brand-mark {
+  width: 34px;
+  height: 34px;
+  margin-right: 2px;
+  object-fit: contain;
+}
+
+.canvas-project-identity > button:not(.canvas-title),
+.canvas-top-actions > button {
+  min-height: 40px;
+  padding: 0 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--surface) 84%, transparent);
+  color: var(--text);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 8%);
+  backdrop-filter: blur(16px);
+}
+
+.canvas-project-identity > button:not(.canvas-title) {
+  width: 38px;
+  padding: 0;
+  justify-content: center;
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+}
+
+.canvas-project-identity svg,
+.canvas-top-actions svg {
+  width: 15px;
+}
+
+.canvas-top-actions > .theme-toggle {
+  height: 40px;
+  padding: 3px;
+  border-color: color-mix(in srgb, var(--border) 82%, transparent);
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 8%);
+  backdrop-filter: blur(16px);
+}
+
+.canvas-top-actions > .theme-toggle button {
+  min-height: 32px;
+  padding: 0 10px;
+  gap: 5px;
+  font-size: 11px;
+}
+
+.canvas-top-actions > .theme-toggle svg {
+  width: 14px;
+  height: 14px;
+}
+
+.canvas-top-actions > button.active {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
+}

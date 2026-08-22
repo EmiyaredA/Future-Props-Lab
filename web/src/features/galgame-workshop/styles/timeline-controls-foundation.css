@@ -1,0 +1,472 @@
+.galgame-playhead-add-menu {
+  position: relative;
+}
+
+.galgame-playhead-add-menu[open] {
+  z-index: 101;
+}
+
+.galgame-playhead-add-menu > summary {
+  min-height: 30px;
+  padding: 0 9px;
+  border: 1px solid var(--gal-line);
+  border-radius: 7px;
+  background: var(--gal-panel);
+  color: var(--gal-muted);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 9px;
+  list-style: none;
+  cursor: pointer;
+}
+
+.galgame-playhead-add-menu > summary::-webkit-details-marker {
+  display: none;
+}
+
+.galgame-playhead-add-menu > summary:hover,
+.galgame-playhead-add-menu[open] > summary {
+  border-color: var(--gal-accent-line);
+  background: var(--gal-a-soft);
+  color: var(--gal-accent);
+}
+
+.galgame-playhead-add-menu > summary svg {
+  width: 12px;
+  height: 12px;
+}
+
+.galgame-playhead-add-menu > summary svg:last-child {
+  color: var(--gal-faint);
+  transition: transform 140ms ease;
+}
+
+.galgame-playhead-add-menu[open] > summary svg:last-child {
+  transform: rotate(180deg);
+}
+
+.galgame-playhead-add-menu > summary time,
+.galgame-playhead-add-popover time {
+  font-family: monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+.galgame-playhead-add-menu > summary time {
+  color: var(--gal-faint);
+  font-size: 8px;
+}
+
+.galgame-playhead-add-popover {
+  position: fixed;
+  z-index: 1000;
+  padding: 10px;
+  overflow: auto;
+  border: 1px solid var(--gal-line-strong);
+  border-radius: 10px;
+  background: var(--gal-surface);
+  box-shadow: var(--gal-shadow);
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+  pointer-events: auto;
+}
+
+.galgame-playhead-add-popover > header {
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--gal-line);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  grid-column: 1 / -1;
+}
+
+.galgame-playhead-add-popover > header strong {
+  font-size: 10px;
+}
+
+.galgame-playhead-add-popover > header time {
+  color: var(--gal-muted);
+  font-size: 9px;
+}
+
+.galgame-playhead-add-popover-note {
+  margin: 0;
+  padding: 7px 8px;
+  color: var(--gal-warning);
+  border: 1px solid color-mix(in srgb, var(--gal-warning) 35%, transparent);
+  border-radius: 7px;
+  background: var(--gal-warning-soft);
+  grid-column: 1 / -1;
+  font-size: 9px;
+  line-height: 1.45;
+}
+
+.galgame-playhead-add-popover section {
+  min-width: 0;
+  padding: 8px;
+  border: 1px solid var(--gal-line);
+  border-radius: 8px;
+  background: var(--gal-panel);
+}
+
+.galgame-playhead-add-popover section > strong {
+  margin-bottom: 6px;
+  color: var(--gal-muted);
+  display: block;
+  font-size: 8px;
+  letter-spacing: 0.08em;
+}
+
+.galgame-playhead-add-popover section > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.galgame-playhead-add-popover section button {
+  min-height: 28px;
+  padding: 0 8px;
+  border: 1px solid var(--gal-line);
+  border-radius: 6px;
+  background: var(--gal-surface);
+  color: var(--gal-text);
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 5px;
+  font-size: 8px;
+  cursor: pointer;
+}
+
+.galgame-playhead-add-popover section button:hover:not(:disabled) {
+  border-color: var(--gal-accent-line);
+  color: var(--gal-accent);
+}
+
+.galgame-playhead-add-popover section button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+@container galgame-timeline (max-width: 760px) {
+  .galgame-timeline-controls,
+  .galgame-timeline-scroll {
+    --galgame-timeline-label-width: 124px;
+  }
+
+  .galgame-timeline-toolbar,
+  .galgame-timeline-calibration,
+  .galgame-timeline-advanced-content {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: thin;
+  }
+
+  .galgame-timeline-toolbar:has(details[open]) {
+    overflow: visible;
+  }
+
+  .galgame-timeline-toolbar > *,
+  .galgame-timeline-calibration > *,
+  .galgame-timeline-advanced-content > * {
+    flex: 0 0 auto;
+  }
+}
+
+@container galgame-timeline (max-width: 840px) {
+  .galgame-timeline-zoom > span {
+    display: none;
+  }
+
+  .galgame-timeline-toolbar > label input[type="range"] {
+    width: 60px;
+  }
+
+  .galgame-timeline-fit {
+    width: 30px;
+    padding: 0;
+    justify-content: center;
+    font-size: 0;
+  }
+}
+
+.galgame-empty-blocks,
+.galgame-entity-empty {
+  min-height: 180px;
+  border: 1px dashed var(--gal-line-strong);
+  border-radius: 10px;
+  color: var(--gal-muted);
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 7px;
+  text-align: center;
+}
+
+.galgame-empty-blocks svg,
+.galgame-entity-empty svg {
+  width: 27px;
+  height: 27px;
+}
+
+.galgame-empty-blocks strong,
+.galgame-entity-empty strong {
+  color: var(--gal-text);
+}
+
+.galgame-empty-blocks span {
+  font-size: 11px;
+}
+
+.galgame-empty-blocks:focus-visible {
+  outline: 2px solid var(--gal-accent);
+  outline-offset: 2px;
+}
+
+.galgame-empty-blocks > button {
+  min-height: 32px;
+  padding: 0 12px;
+  border: 1px solid var(--gal-accent-line);
+  border-radius: 7px;
+  background: var(--gal-a-soft);
+  color: var(--gal-accent);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.galgame-empty-blocks > button:hover,
+.galgame-empty-blocks > button:focus-visible {
+  outline: 0;
+  border-color: var(--gal-accent);
+  background: color-mix(in srgb, var(--gal-accent) 16%, transparent);
+}
+
+.galgame-empty-blocks > button svg {
+  width: 14px;
+  height: 14px;
+}
+
+.galgame-preview-focus {
+  scroll-margin-top: 12px;
+}
+
+.galgame-preview-focus:focus {
+  outline: 0;
+}
+
+.galgame-preview-focus:focus-visible .galgame-player {
+  box-shadow: 0 0 0 2px var(--gal-accent);
+}
+
+.galgame-player {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--gal-line);
+  border-radius: 10px;
+  background: var(--gal-surface);
+  box-shadow: var(--gal-shadow-soft);
+}
+
+.galgame-player > header {
+  min-height: 38px;
+  padding: 6px 9px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.galgame-player > header > div {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.galgame-player > header strong {
+  font-size: 11px;
+}
+
+.galgame-player > header small {
+  overflow: hidden;
+  color: var(--gal-muted);
+  font-size: 9px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.galgame-player > header button {
+  width: 27px;
+  height: 27px;
+  padding: 0;
+  border: 1px solid var(--gal-line);
+  border-radius: 7px;
+  background: var(--gal-panel);
+  color: var(--gal-muted);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.galgame-stage {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  padding: 11px;
+  overflow: hidden;
+  color: #fff;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.galgame-stage[data-aspect="auto"] {
+  aspect-ratio: auto;
+}
+
+.galgame-stage::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 35%, rgb(5 10 18 / 0.22));
+  pointer-events: none;
+}
+
+.galgame-stage > span {
+  position: absolute;
+  top: 9px;
+  left: 9px;
+  z-index: 1;
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: rgb(3 8 15 / 0.4);
+  font-size: 9px;
+  backdrop-filter: blur(5px);
+}
+
+.galgame-player-start,
+.galgame-dialogue-box,
+.galgame-ending,
+.galgame-player-error,
+.galgame-choices {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  padding: 9px;
+  border: 1px solid rgb(255 255 255 / 0.22);
+  border-radius: 8px;
+  background: rgb(7 12 22 / 0.77);
+  color: #fff;
+  backdrop-filter: blur(9px);
+}
+
+.galgame-player-start {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.galgame-stage-advance {
+  position: absolute;
+  inset: 0;
+  z-index: 90;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 12px;
+  border: 0;
+  background: transparent;
+  color: rgb(255 255 255 / 0.68);
+  cursor: pointer;
+  font-size: 9px;
+}
+
+.galgame-dialogue-box {
+  width: var(--dialogue-width, 100%);
+  min-height: var(--dialogue-height, 22%);
+  max-height: 40%;
+  overflow: auto;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  line-height: 1.35;
+  cursor: pointer;
+}
+
+.galgame-dialogue-box.layout-bottomOverlay {
+  position: absolute;
+  left: 50%;
+  bottom: var(--dialogue-bottom, 0%);
+  width: var(--dialogue-width, 100%);
+  height: var(--dialogue-height, 30%);
+  min-height: 0;
+  max-height: none;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  border-radius: 0;
+  transform: translateX(-50%);
+  backdrop-filter: none;
+}
+
+.galgame-dialogue-box.top-rule-single::before,
+.galgame-dialogue-box.top-rule-double::before {
+  content: "";
+  position: absolute;
+  z-index: 3;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 1px;
+  background: var(--dialogue-rule-color);
+  pointer-events: none;
+}
+
+.galgame-dialogue-box.top-rule-double::after {
+  content: "";
+  position: absolute;
+  z-index: 3;
+  top: 3px;
+  right: 0;
+  left: 0;
+  height: 1px;
+  background: var(--dialogue-rule-color);
+  opacity: 0.58;
+  pointer-events: none;
+}
+
+.galgame-dialogue-box > :not(.galgame-dialogue-skin-image) {
+  position: relative;
+  z-index: 2;
+}
+
+.galgame-dialogue-speaker-name {
+  color: var(--dialogue-name-color);
+  font-size: var(--dialogue-name-font-size, 1em);
+  line-height: 1.25;
+}
+
+.galgame-dialogue-body {
+  width: min(100%, var(--dialogue-body-width, 100%));
+  color: inherit;
+  font-size: var(--dialogue-body-font-size, 1em);
+  line-height: var(--dialogue-line-height, 1.35);
+  text-align: left;
+  white-space: pre-wrap;
+}
+
+.galgame-dialogue-box.body-center .galgame-dialogue-body {
+  margin-inline: auto;
+  text-align: center;
+}
+
+.galgame-dialogue-box.body-right .galgame-dialogue-body {
+  margin-left: auto;
+  text-align: right;
+}

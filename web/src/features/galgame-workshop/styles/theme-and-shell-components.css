@@ -1,0 +1,488 @@
+.galgame-player-video,
+.galgame-player-particles,
+.galgame-player-curtain {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.galgame-player-video {
+  z-index: 4;
+}
+
+.galgame-player-particles {
+  z-index: 32;
+  pointer-events: none;
+  background-image:
+    radial-gradient(circle, rgb(255 255 255 / 0.9) 0 2px, transparent 3px),
+    radial-gradient(circle, rgb(255 255 255 / 0.65) 0 1px, transparent 2px);
+  background-size:
+    54px 54px,
+    31px 31px;
+  animation: galgame-particles-fall 2.4s linear infinite;
+}
+
+.galgame-player-particles.is-rain {
+  background-image: repeating-linear-gradient(
+    105deg,
+    transparent 0 25px,
+    rgb(180 215 255 / 0.55) 26px 28px,
+    transparent 29px 52px
+  );
+}
+
+.galgame-player-particles.is-fire {
+  filter: sepia(1) saturate(4);
+}
+
+.galgame-player-curtain {
+  z-index: 38;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.galgame-player-curtain-panel {
+  position: absolute;
+  display: none;
+  background: var(--curtain-color, #000);
+  opacity: var(--curtain-opacity, 1);
+  animation-duration: var(--curtain-duration, 400ms);
+  animation-fill-mode: both;
+  animation-timing-function: ease-in-out;
+}
+
+.galgame-player-curtain.is-fullscreen .is-fullscreen {
+  inset: 0;
+  display: block;
+}
+
+.galgame-player-curtain.is-letterbox .is-top,
+.galgame-player-curtain.is-letterbox .is-bottom,
+.galgame-player-curtain.is-frame .is-top,
+.galgame-player-curtain.is-frame .is-bottom {
+  left: 0;
+  right: 0;
+  height: 12%;
+  display: block;
+}
+
+.galgame-player-curtain .is-top {
+  top: 0;
+}
+
+.galgame-player-curtain .is-bottom {
+  bottom: 0;
+}
+
+.galgame-player-curtain.is-pillarbox .is-left,
+.galgame-player-curtain.is-pillarbox .is-right,
+.galgame-player-curtain.is-frame .is-left,
+.galgame-player-curtain.is-frame .is-right {
+  top: 0;
+  bottom: 0;
+  width: 12.5%;
+  display: block;
+}
+
+.galgame-player-curtain .is-left {
+  left: 0;
+}
+
+.galgame-player-curtain .is-right {
+  right: 0;
+}
+
+.galgame-player-curtain.is-show .is-fullscreen {
+  animation-name: galgame-curtain-fade-in;
+}
+
+.galgame-player-curtain.is-hide .is-fullscreen {
+  animation-name: galgame-curtain-fade-out;
+}
+
+.galgame-player-curtain.is-show .is-top {
+  animation-name: galgame-curtain-top-in;
+}
+
+.galgame-player-curtain.is-hide .is-top {
+  animation-name: galgame-curtain-top-out;
+}
+
+.galgame-player-curtain.is-show .is-bottom {
+  animation-name: galgame-curtain-bottom-in;
+}
+
+.galgame-player-curtain.is-hide .is-bottom {
+  animation-name: galgame-curtain-bottom-out;
+}
+
+.galgame-player-curtain.is-show .is-left {
+  animation-name: galgame-curtain-left-in;
+}
+
+.galgame-player-curtain.is-hide .is-left {
+  animation-name: galgame-curtain-left-out;
+}
+
+.galgame-player-curtain.is-show .is-right {
+  animation-name: galgame-curtain-right-in;
+}
+
+.galgame-player-curtain.is-hide .is-right {
+  animation-name: galgame-curtain-right-out;
+}
+
+@keyframes galgame-curtain-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: var(--curtain-opacity, 1);
+  }
+}
+
+@keyframes galgame-curtain-fade-out {
+  from {
+    opacity: var(--curtain-opacity, 1);
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes galgame-curtain-top-in {
+  from {
+    transform: translateY(-100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes galgame-curtain-top-out {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-100%);
+  }
+}
+
+@keyframes galgame-curtain-bottom-in {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes galgame-curtain-bottom-out {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(100%);
+  }
+}
+
+@keyframes galgame-curtain-left-in {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes galgame-curtain-left-out {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-100%);
+  }
+}
+
+@keyframes galgame-curtain-right-in {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes galgame-curtain-right-out {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+
+.galgame-player-floating-text {
+  position: absolute;
+  z-index: 39;
+  transform: translate(-50%, -50%);
+  font-size: clamp(18px, 3cqw, 48px);
+  font-weight: 700;
+  text-shadow: 0 2px 12px rgb(0 0 0 / 0.75);
+  animation: galgame-floating-text both ease-out;
+  pointer-events: none;
+}
+
+.galgame-camera-plane[data-camera-effect^="shake"],
+.galgame-camera-plane[data-camera-effect="quake"] {
+  animation: galgame-camera-shake 420ms ease-in-out;
+}
+
+.galgame-camera-plane[data-camera-effect="flash"] {
+  animation: galgame-camera-flash 500ms ease-out;
+}
+
+.galgame-camera-plane[data-camera-effect="heartbeat"],
+.galgame-camera-plane[data-camera-effect="pulse"] {
+  animation: galgame-camera-pulse 650ms ease-in-out;
+}
+
+.galgame-camera-plane[data-camera-effect="shakeHorizontal"],
+.galgame-camera-plane[data-camera-effect="swing"],
+.galgame-camera-plane[data-camera-effect="wobble"] {
+  animation: galgame-camera-horizontal 600ms ease-in-out;
+}
+
+.galgame-camera-plane[data-camera-effect="shakeVertical"],
+.galgame-camera-plane[data-camera-effect="bounce"] {
+  animation: galgame-camera-vertical 600ms ease-in-out;
+}
+
+.galgame-camera-plane[data-camera-effect="blur"] {
+  animation: galgame-camera-blur 600ms ease-in-out;
+}
+
+.galgame-camera-plane[data-camera-effect="focus"] {
+  animation: galgame-camera-focus 600ms ease-out;
+}
+
+.galgame-camera-plane[data-camera-effect="fade"],
+.galgame-camera-plane[data-camera-effect="fadeBlack"] {
+  animation: galgame-camera-fade-black 600ms ease-in-out;
+}
+
+.galgame-camera-plane[data-camera-effect="fadeWhite"] {
+  animation: galgame-camera-fade-white 600ms ease-in-out;
+}
+
+.galgame-camera-plane[data-camera-effect^="pan"] {
+  animation: galgame-camera-pan 600ms ease-out;
+}
+
+.galgame-camera-plane[data-camera-effect^="zoom"] {
+  animation: galgame-camera-zoom 600ms ease-out;
+}
+
+.galgame-camera-plane[data-camera-effect^="roll"] {
+  animation: galgame-camera-roll 600ms ease-in-out;
+}
+
+.galgame-stage.is-stage-animated {
+  animation-name: galgame-stage-animation;
+  animation-timing-function: ease-in-out;
+}
+
+.galgame-sprite-motion.is-sprite-animated {
+  animation-name: galgame-sprite-animation;
+  animation-fill-mode: both;
+}
+
+.galgame-sprite-motion[data-sprite-animation="idle"],
+.galgame-sprite-motion[data-sprite-animation="breathe"] {
+  animation-name: galgame-sprite-breathe;
+}
+
+.galgame-sprite-motion[data-sprite-animation="nod"] {
+  animation-name: galgame-sprite-nod;
+}
+
+.galgame-sprite-motion[data-sprite-animation="shake"] {
+  animation-name: galgame-sprite-shake;
+}
+
+.galgame-sprite-motion[data-sprite-animation="startle"] {
+  animation-name: galgame-sprite-startle;
+}
+
+.galgame-sprite-motion[data-sprite-animation="lean"] {
+  animation-name: galgame-sprite-lean;
+}
+
+.galgame-sprite-motion[data-sprite-animation="recoil"] {
+  animation-name: galgame-sprite-recoil;
+}
+
+.galgame-sprite-motion[data-sprite-animation="step"] {
+  animation-name: galgame-sprite-step;
+}
+
+.galgame-sprite-motion[data-sprite-animation="tug"] {
+  animation-name: galgame-sprite-tug;
+}
+
+.galgame-sprite-motion[data-sprite-animation="bounce"] {
+  animation-name: galgame-sprite-bounce;
+}
+
+@keyframes galgame-sprite-breathe {
+  50% {
+    transform: translateY(var(--galgame-sprite-y, -0.8%))
+      scale(var(--galgame-sprite-scale, 1.012));
+  }
+}
+
+@keyframes galgame-sprite-nod {
+  35% {
+    transform: translateY(var(--galgame-sprite-y-reverse, 0.5%)) rotate(1deg);
+  }
+  70% {
+    transform: translateY(var(--galgame-sprite-y, -2%));
+  }
+}
+
+@keyframes galgame-sprite-shake {
+  25% {
+    transform: translateX(var(--galgame-sprite-x-reverse, -2%));
+  }
+  50% {
+    transform: translateX(var(--galgame-sprite-x, 2%));
+  }
+  75% {
+    transform: translateX(var(--galgame-sprite-x-quarter, 0.5%));
+  }
+}
+
+@keyframes galgame-sprite-startle {
+  25% {
+    transform: translateY(var(--galgame-sprite-y, -4%))
+      scale(var(--galgame-sprite-scale, 1.025));
+  }
+  55% {
+    transform: translateY(var(--galgame-sprite-y-reverse, 1%));
+  }
+}
+
+@keyframes galgame-sprite-lean {
+  45%,
+  70% {
+    transform: translateX(var(--galgame-sprite-x, 4%))
+      rotate(var(--galgame-sprite-rotation, 1.5deg));
+  }
+}
+
+@keyframes galgame-sprite-recoil {
+  40%,
+  65% {
+    transform: translateX(var(--galgame-sprite-x, -4%))
+      rotate(var(--galgame-sprite-rotation, -1.5deg));
+  }
+}
+
+@keyframes galgame-sprite-step {
+  45%,
+  75% {
+    transform: translateX(var(--galgame-sprite-x, 5%))
+      translateY(var(--galgame-sprite-y-reverse, 1%));
+  }
+}
+
+@keyframes galgame-sprite-tug {
+  30% {
+    transform: translateX(var(--galgame-sprite-x, 6%))
+      rotate(var(--galgame-sprite-rotation, 2deg));
+  }
+  55% {
+    transform: translateX(var(--galgame-sprite-x-reverse, -6%));
+  }
+  75% {
+    transform: translateX(var(--galgame-sprite-x-quarter, 1.5%));
+  }
+}
+
+@keyframes galgame-sprite-bounce {
+  35% {
+    transform: translateY(var(--galgame-sprite-y, -5%));
+  }
+  65% {
+    transform: translateY(var(--galgame-sprite-y-reverse, 1%));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .galgame-camera-plane,
+  .galgame-sprite-motion,
+  .galgame-stage-actor {
+    animation: none !important;
+    transition-duration: 0ms !important;
+  }
+}
+
+@keyframes galgame-particles-fall {
+  to {
+    background-position:
+      20px 110px,
+      -16px 72px;
+  }
+}
+
+@keyframes galgame-floating-text {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -30%);
+  }
+  20%,
+  75% {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+    transform: translate(-50%, -80%);
+  }
+}
+
+@keyframes galgame-camera-shake {
+  25% {
+    translate: -1.2% 0;
+  }
+  50% {
+    translate: 1.2% 0;
+  }
+  75% {
+    translate: -0.6% 0;
+  }
+}
+
+@keyframes galgame-camera-flash {
+  35% {
+    filter: brightness(2.8);
+  }
+}
+
+@keyframes galgame-camera-pulse {
+  50% {
+    scale: 1.035;
+  }
+}
+
+@keyframes galgame-camera-horizontal {
+  25% {
+    translate: -2% 0;
+  }
+  50% {
+    translate: 2% 0;
+  }
+  75% {
+    translate: -1% 0;
+  }
+}

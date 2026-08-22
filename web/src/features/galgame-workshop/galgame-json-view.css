@@ -34,7 +34,7 @@
   padding: 0 9px;
   border: 1px solid var(--gal-line);
   border-radius: 6px;
-  background: var(--gal-surface-strong);
+  background: var(--gal-s-strong);
   color: var(--gal-text);
   display: inline-flex;
   align-items: center;
@@ -52,7 +52,7 @@
   margin: 0;
   padding: 18px 16px 28px;
   overflow: auto;
-  background: color-mix(in srgb, var(--gal-surface-strong) 82%, transparent);
+  background: color-mix(in srgb, var(--gal-s-strong) 82%, transparent);
   color: var(--gal-text);
   font:
     12px/1.7 ui-monospace,

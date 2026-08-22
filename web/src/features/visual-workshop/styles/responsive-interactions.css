@@ -1,0 +1,308 @@
+.assistant-model-summary {
+  min-width: 0;
+  padding: 5px 7px;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--surface-soft) 60%, transparent);
+}
+
+.assistant-model-summary small,
+.assistant-model-summary strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.assistant-model-summary small {
+  color: var(--faint);
+  font-size: 7px;
+}
+
+.assistant-model-dialog > footer .assistant-model-summary strong {
+  color: var(--text-strong);
+  font-size: 8px;
+}
+
+.assistant-model-save-state {
+  color: var(--faint);
+  font-size: 8px;
+  white-space: nowrap;
+}
+
+.assistant-model-save-state.error {
+  max-width: 150px;
+  overflow: hidden;
+  color: var(--red);
+  text-overflow: ellipsis;
+}
+
+@media (max-width: 1100px) {
+  .workshop-project-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1000px) and (max-width: 1500px) {
+  .canvas-controls.with-assets {
+    left: calc(50% + 230px);
+  }
+}
+
+@media (max-width: 800px) {
+  .workshop-shell {
+    grid-template-columns: 78px minmax(0, 1fr);
+  }
+  .workshop-sidebar {
+    padding-inline: 9px;
+  }
+  .workshop-brand div,
+  .workshop-back-copy,
+  .workshop-sidebar nav span {
+    display: none;
+  }
+  .workshop-brand {
+    justify-content: center;
+    padding-inline: 0;
+  }
+  .workshop-back,
+  .workshop-sidebar nav button {
+    justify-content: center;
+    padding: 0;
+  }
+  .workshop-back {
+    width: 42px;
+    min-height: 42px;
+    margin-inline: auto;
+  }
+  .workshop-sidebar .theme-toggle {
+    grid-template-columns: 1fr;
+  }
+  .workshop-sidebar .theme-toggle button {
+    font-size: 0;
+  }
+  .workshop-page {
+    padding: 24px 18px 40px;
+  }
+  .workshop-toolbar {
+    grid-template-columns: 1fr;
+  }
+  .generation-task-filters {
+    grid-template-columns: 1fr;
+  }
+  .generation-task-filters > span {
+    text-align: left;
+  }
+  .generation-task-card {
+    grid-template-columns: 150px minmax(0, 1fr);
+  }
+  .generation-task-preview,
+  .generation-task-placeholder {
+    width: 150px;
+  }
+  .workshop-filters button {
+    min-height: 34px;
+    flex: 1;
+  }
+}
+
+@media (max-width: 620px) {
+  .workshop-project-grid {
+    grid-template-columns: 1fr;
+  }
+  .workshop-page-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 700px) {
+  .visual-canvas-topbar {
+    height: 64px;
+    padding: 0 10px;
+  }
+  .canvas-top-actions > button {
+    width: 36px;
+    padding: 0;
+    justify-content: center;
+    font-size: 0;
+  }
+  .canvas-top-actions > .theme-toggle button {
+    width: 32px;
+    padding: 0;
+    font-size: 0;
+  }
+  .canvas-project-identity form input {
+    width: 42vw;
+  }
+  .canvas-title {
+    max-width: 40vw;
+  }
+  .canvas-tool-dock {
+    display: none;
+  }
+  .canvas-assets-drawer {
+    top: 68px;
+    right: 10px;
+    bottom: 10px;
+    left: 10px;
+    width: auto;
+    border-radius: 18px;
+  }
+  .canvas-generation-drawer {
+    top: 68px;
+    right: 10px;
+    bottom: 10px;
+    left: 10px;
+    width: auto;
+    border-radius: 18px;
+  }
+  .canvas-node-inspector {
+    top: 68px;
+    right: 10px;
+    bottom: 10px;
+    left: 10px;
+    width: auto;
+    border-radius: 18px;
+  }
+  .canvas-node-inspector.is-embedded,
+  .canvas-node-inspector.is-embedded.is-image {
+    position: fixed;
+    top: 68px;
+    right: 10px;
+    bottom: 10px;
+    left: 10px;
+    width: auto;
+    height: auto;
+    max-width: none;
+    border-radius: 18px;
+    transform: none;
+  }
+  .image-composer-footer,
+  .video-composer-footer {
+    overflow-x: auto;
+  }
+  .image-composer-body {
+    margin: 10px 10px 0;
+  }
+  .image-parameter-popover {
+    right: auto;
+    left: 0;
+    width: min(650px, calc(100vw - 36px));
+  }
+  .image-ratio-options > div {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+  .project-assistant-panel {
+    top: 68px;
+    right: 10px;
+    bottom: 10px;
+    left: 10px;
+    width: auto;
+    min-width: 0;
+    max-width: none;
+    border-radius: 18px;
+    transform: translateY(24px);
+  }
+  .project-assistant-panel.is-open {
+    transform: translateY(0);
+  }
+  .project-assistant-resize {
+    display: none;
+  }
+  .project-assistant-picker > div {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .assistant-model-backdrop {
+    padding: 10px;
+  }
+  .assistant-model-dialog {
+    max-height: calc(100vh - 20px);
+    border-radius: 18px;
+  }
+  .assistant-model-dialog > header {
+    padding: 14px;
+  }
+  .assistant-model-dialog > header p {
+    display: none;
+  }
+  .assistant-model-heading-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+  }
+  .assistant-model-browser {
+    margin: 8px;
+    grid-template-columns: 1fr;
+  }
+  .assistant-model-tabs {
+    margin: 8px 8px 0;
+  }
+  .assistant-model-tabs > button {
+    min-height: 42px;
+    padding-inline: 8px;
+  }
+  .assistant-model-tabs > button > svg {
+    display: none;
+  }
+  .assistant-model-browser > nav {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    border-right: 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .assistant-model-browser > nav button {
+    width: auto;
+    min-width: max-content;
+    min-height: 36px;
+    gap: 8px;
+  }
+  .assistant-model-list {
+    min-height: 0;
+  }
+  .assistant-model-dialog > footer {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+  }
+  .assistant-model-footer-label,
+  .assistant-model-save-state {
+    grid-column: 1 / -1;
+  }
+  .assistant-model-footer-label {
+    display: none;
+  }
+  .assistant-model-save-state {
+    text-align: right;
+  }
+  .canvas-save-state {
+    display: none;
+  }
+  .canvas-conflict {
+    right: 10px;
+    bottom: 78px;
+    left: 10px;
+    align-items: stretch;
+    flex-wrap: wrap;
+  }
+  .canvas-assets-drawer .file-browser-filters {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .canvas-assets-drawer .file-filter-select {
+    display: none;
+  }
+  .canvas-controls {
+    bottom: 14px;
+    min-height: 52px;
+    padding: 5px 7px;
+  }
+  .canvas-control-mode span {
+    width: 29px;
+    height: 29px;
+  }
+  .canvas-controls > i {
+    margin-inline: 3px;
+  }
+}

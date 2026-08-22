@@ -1,0 +1,412 @@
+.galgame-assets-module-card button progress {
+  grid-column: 2 / -1;
+  height: 3px;
+}
+
+.galgame-assets-browser {
+  display: grid;
+  min-height: 0;
+  grid-template-rows: auto minmax(0, 1fr);
+  overflow: hidden;
+}
+
+.galgame-assets-browser > header {
+  min-height: 48px;
+  padding: 8px 18px;
+  border-bottom: 1px solid var(--gal-line);
+}
+
+.galgame-assets-browser > header > div {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 7px;
+}
+
+.galgame-assets-browser > header strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.galgame-assets-browser > header span {
+  flex: none;
+  color: var(--gal-muted);
+}
+
+.galgame-assets-browser > header > button {
+  padding: 5px 9px;
+  border: 1px solid var(--gal-line);
+  border-radius: 6px;
+  background: var(--gal-panel);
+}
+
+.galgame-assets-results {
+  display: grid;
+  min-height: 0;
+  grid-template-columns: repeat(
+    auto-fill,
+    minmax(min(100%, var(--asset-card-width)), 1fr)
+  );
+  grid-auto-rows: max-content;
+  align-content: start;
+  gap: 14px;
+  padding: 16px 18px 28px;
+  overflow: auto;
+}
+
+.galgame-assets-results > button {
+  display: grid;
+  min-width: 0;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--gal-line);
+  border-radius: 8px;
+  text-align: left;
+  background: var(--gal-surface);
+  box-shadow: 0 1px 3px rgb(20 30 45 / 0.04);
+}
+
+.galgame-assets-results > button:hover,
+.galgame-assets-results > button.selected {
+  border-color: var(--gal-accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--gal-accent) 15%, transparent);
+}
+
+.galgame-assets-results > button.orphaned {
+  border-style: dashed;
+}
+
+.galgame-assets-result-preview {
+  position: relative;
+  display: grid;
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  place-items: center;
+  overflow: hidden;
+  background: var(--gal-s-strong);
+}
+
+.galgame-assets-result-preview > img,
+.galgame-assets-result-preview > video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.galgame-assets-result-preview > svg {
+  width: 42px;
+  height: 42px;
+  color: var(--gal-faint);
+}
+
+.galgame-assets-result-preview > .galgame-audio-preview {
+  width: calc(100% - 20px);
+}
+
+.galgame-assets-result-preview > small,
+.galgame-assets-result-preview > em {
+  position: absolute;
+  bottom: 8px;
+  padding: 2px 6px;
+  border-radius: 9px;
+  color: #fff;
+  font-size: 9px;
+  font-style: normal;
+  letter-spacing: 0.06em;
+  background: rgb(10 15 23 / 0.76);
+}
+
+.galgame-assets-result-preview > small {
+  left: 8px;
+}
+
+.galgame-assets-result-preview > em {
+  right: 8px;
+  color: var(--gal-accent);
+  background: color-mix(in srgb, var(--gal-surface) 94%, transparent);
+}
+
+.galgame-assets-result-copy {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+  padding: 10px 11px 4px;
+}
+
+.galgame-assets-result-copy strong,
+.galgame-assets-result-copy small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.galgame-assets-result-copy small,
+.galgame-assets-result-type,
+.galgame-assets-result-size,
+.galgame-assets-result-status {
+  color: var(--gal-muted);
+  font-size: 11px;
+}
+
+.galgame-assets-result-type,
+.galgame-assets-result-size {
+  display: none;
+}
+
+.galgame-assets-result-status {
+  padding: 0 11px 10px;
+  color: var(--gal-accent);
+}
+
+.galgame-assets-result-status.orphaned {
+  color: var(--gal-warning);
+}
+
+.galgame-assets-results.is-list {
+  grid-template-columns: 1fr;
+  gap: 7px;
+}
+
+.galgame-assets-results.is-list > button {
+  grid-template-columns: 54px minmax(180px, 1fr) 86px 86px 90px;
+  align-items: center;
+  padding: 6px 10px;
+}
+
+.galgame-assets-results.is-list .galgame-assets-result-preview {
+  width: 48px;
+  height: 48px;
+  aspect-ratio: 1;
+  border-radius: 5px;
+}
+
+.galgame-assets-results.is-list .galgame-assets-result-preview > small,
+.galgame-assets-results.is-list .galgame-assets-result-preview > em,
+.galgame-assets-results.is-list .galgame-audio-preview > span,
+.galgame-assets-results.is-list .galgame-audio-preview > svg {
+  display: none;
+}
+
+.galgame-assets-results.is-list .galgame-audio-preview {
+  display: grid;
+  width: 34px;
+  place-items: center;
+}
+
+.galgame-assets-results.is-list .galgame-assets-result-copy {
+  padding: 0;
+}
+
+.galgame-assets-results.is-list .galgame-assets-result-type,
+.galgame-assets-results.is-list .galgame-assets-result-size,
+.galgame-assets-results.is-list .galgame-assets-result-status {
+  display: block;
+  padding: 0;
+  text-align: right;
+}
+
+.galgame-assets-results-empty,
+.galgame-assets-inspector-empty,
+.galgame-assets-empty {
+  display: grid;
+  min-height: 240px;
+  place-content: center;
+  justify-items: center;
+  gap: 9px;
+  padding: 24px;
+  color: var(--gal-muted);
+  text-align: center;
+}
+
+.galgame-assets-results-empty svg,
+.galgame-assets-inspector-empty svg,
+.galgame-assets-empty svg {
+  width: 30px;
+  height: 30px;
+  padding: 10px;
+  box-sizing: content-box;
+  border-radius: 10px;
+  background: var(--gal-s-strong);
+}
+
+.galgame-assets-inspector {
+  position: relative;
+  z-index: 4;
+  min-width: 0;
+  padding: 18px;
+  overflow: auto;
+  border-left: 1px solid var(--gal-line);
+  background: var(--gal-surface);
+}
+
+.galgame-assets-inspector-close {
+  position: absolute;
+  z-index: 2;
+  top: 10px;
+  right: 10px;
+  visibility: hidden;
+}
+
+.galgame-assets-inspector > header {
+  display: grid;
+  gap: 4px;
+  padding-right: 30px;
+}
+
+.galgame-assets-inspector > header small,
+.galgame-assets-missing-inspector > small {
+  color: var(--gal-accent);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+}
+
+.galgame-assets-inspector > header span {
+  overflow-wrap: anywhere;
+  color: var(--gal-muted);
+  font-size: 11px;
+}
+
+.galgame-assets-inspector-preview {
+  display: grid;
+  min-height: 180px;
+  max-height: 280px;
+  margin: 16px 0;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 9px;
+  background: var(--gal-s-strong);
+}
+
+.galgame-assets-inspector-preview > img,
+.galgame-assets-inspector-preview > video {
+  width: 100%;
+  max-height: 280px;
+  object-fit: contain;
+}
+
+.galgame-assets-inspector-preview > svg {
+  width: 48px;
+  height: 48px;
+  color: var(--gal-faint);
+}
+
+.galgame-assets-inspector > form,
+.galgame-assets-missing-inspector {
+  display: grid;
+  gap: 11px;
+}
+
+.galgame-assets-inspector label,
+.galgame-assets-import-dialog > label,
+.galgame-assets-missing-inspector label {
+  display: grid;
+  min-width: 0;
+  gap: 5px;
+}
+
+.galgame-assets-inspector label > span,
+.galgame-assets-import-dialog label > span,
+.galgame-assets-missing-inspector label > span {
+  color: var(--gal-muted);
+  font-size: 11px;
+}
+
+.galgame-assets-inspector input,
+.galgame-assets-import-dialog input {
+  min-width: 0;
+  height: 36px;
+  padding: 0 9px;
+  border: 1px solid var(--gal-line);
+  border-radius: 7px;
+  outline: 0;
+  background: var(--gal-panel);
+  color: var(--gal-text);
+}
+
+.galgame-assets-inspector-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.galgame-assets-inspector .custom-select-trigger,
+.galgame-assets-import-dialog .custom-select-trigger,
+.galgame-assets-missing-inspector .custom-select-trigger {
+  min-height: 36px;
+  background: var(--gal-panel);
+}
+
+.galgame-assets-inspector .custom-select-menu,
+.galgame-assets-import-dialog .custom-select-menu,
+.galgame-assets-missing-inspector .custom-select-menu {
+  z-index: 120;
+}
+
+.galgame-editor-page .galgame-assets-import-dialog .custom-select-menu {
+  position: static;
+  width: 100%;
+  max-height: 220px;
+  margin-top: 5px;
+}
+
+.galgame-assets-inspector form > button,
+.galgame-assets-missing-inspector > button {
+  min-height: 36px;
+  border: 0;
+  border-radius: 7px;
+  color: #fff;
+  background: var(--gal-accent);
+}
+
+.galgame-assets-inspector dl {
+  display: grid;
+  gap: 0;
+  margin: 18px 0;
+  border-block: 1px solid var(--gal-line);
+}
+
+.galgame-assets-inspector dl > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--gal-line);
+}
+
+.galgame-assets-inspector dl > div:last-child {
+  border-bottom: 0;
+}
+
+.galgame-assets-inspector dt {
+  color: var(--gal-muted);
+}
+
+.galgame-assets-inspector dd {
+  max-width: 68%;
+  margin: 0;
+  overflow: hidden;
+  text-align: right;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.galgame-assets-references {
+  display: grid;
+  gap: 6px;
+}
+
+.galgame-assets-references > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.galgame-assets-references > header span {
+  min-width: 22px;
+  padding: 1px 6px;
+  border-radius: 10px;
+  color: var(--gal-accent);
+  text-align: center;
+  background: var(--gal-a-soft);
+}
