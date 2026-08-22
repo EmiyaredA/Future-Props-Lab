@@ -85,7 +85,6 @@ import {
   type StoryRoute,
 } from "@features/galgame-workshop/editor/RouteReport";
 import "@features/galgame-workshop/galgameStyles";
-import "@features/galgame-workshop/galgame-script-workbench.css";
 import "@features/galgame-workshop/galgame-json-view.css";
 const STORY_KEY = (projectId: string) =>
   ["galgame-workshop-story", projectId] as const;

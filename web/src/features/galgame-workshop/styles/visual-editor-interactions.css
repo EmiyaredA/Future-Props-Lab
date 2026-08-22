@@ -63,3 +63,10 @@
     ),
     var(--gal-surface);
 }
+
+@media (max-width: 980px) {
+  .galgame-timeline-controls {
+    position: static;
+    box-shadow: none;
+  }
+}

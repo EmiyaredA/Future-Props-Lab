@@ -25,7 +25,6 @@ import {
   richTextPlainText,
 } from "@features/galgame-workshop/editor/richText";
 import "@features/galgame-workshop/galgameStyles";
-import "@features/galgame-workshop/galgame-script-workbench.css";
 import type { BlockInspectorViewModel } from "@features/galgame-workshop/editor/InspectorFieldControls";
 import {
   Field,

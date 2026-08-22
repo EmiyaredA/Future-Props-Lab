@@ -61,7 +61,6 @@ import {
   FragmentOverviewInspector,
 } from "@features/galgame-workshop/editor/EditorShared";
 import "@features/galgame-workshop/galgameStyles";
-import "@features/galgame-workshop/galgame-script-workbench.css";
 import "@features/galgame-workshop/galgame-json-view.css";
 import type { EditorPageViewModel } from "@features/galgame-workshop/editor/editorViewModel";
 import {

@@ -10,7 +10,6 @@ import {
   type GalgameTimelineGap,
 } from "@features/galgame-workshop/editor/timeline";
 import "@features/galgame-workshop/galgameStyles";
-import "@features/galgame-workshop/galgame-script-workbench.css";
 import { TimecodeField } from "@features/galgame-workshop/editor/InspectorFieldControls";
 export function TimelineGapInspector({
   gap,

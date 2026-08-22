@@ -13,7 +13,6 @@ import {
 } from "@features/galgame-workshop/editor/timeline";
 import { dialogueDisplayName } from "@features/galgame-workshop/editor/richText";
 import "@features/galgame-workshop/galgameStyles";
-import "@features/galgame-workshop/galgame-script-workbench.css";
 export function useBlockInspectorController({
   projectId,
   block,

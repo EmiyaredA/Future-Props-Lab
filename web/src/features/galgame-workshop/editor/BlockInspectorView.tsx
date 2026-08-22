@@ -31,7 +31,6 @@ import {
   richTextPlainText,
 } from "@features/galgame-workshop/editor/richText";
 import "@features/galgame-workshop/galgameStyles";
-import "@features/galgame-workshop/galgame-script-workbench.css";
 import { DialogueInspectorFields } from "@features/galgame-workshop/editor/DialogueInspectorFields";
 import { WaitInspectorFields } from "@features/galgame-workshop/editor/WaitInspectorFields";
 import { AudioInspectorFields } from "@features/galgame-workshop/editor/AudioInspectorFields";

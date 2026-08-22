@@ -25,7 +25,6 @@ import {
   parseTimecode,
 } from "@features/galgame-workshop/editor/timeline";
 import "@features/galgame-workshop/galgameStyles";
-import "@features/galgame-workshop/galgame-script-workbench.css";
 import type { useBlockInspectorController } from "@features/galgame-workshop/editor/useBlockInspectorController";
 export const BLOCK_LABELS = Object.fromEntries(
   Object.entries(BLOCK_REGISTRY).map(([type, capability]) => [

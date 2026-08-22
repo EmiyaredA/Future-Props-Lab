@@ -1,6 +1,5 @@
 import { WAIT_DURATION_PRESETS } from "@features/galgame-workshop/editor/blockRegistry";
 import "@features/galgame-workshop/galgameStyles";
-import "@features/galgame-workshop/galgame-script-workbench.css";
 import type { BlockInspectorViewModel } from "@features/galgame-workshop/editor/InspectorFieldControls";
 export function WaitInspectorFields({
   model,
