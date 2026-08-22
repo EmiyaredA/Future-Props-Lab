@@ -1,9 +1,7 @@
 {
   "production": {
     "backend/app/files/assets.py": 756,
-    "backend/app/galgame_workshop/annotation_import.py": 982,
     "backend/app/galgame_workshop/assets.py": 906,
-    "backend/app/galgame_workshop/video_export.py": 1202,
     "backend/app/schemas/galgame_workshop/base.py": 773,
     "backend/app/schemas/galgame_workshop/blocks.py": 787,
     "backend/app/visual_workshop/assistant/conversations.py": 918,

@@ -84,6 +84,10 @@ Future-Props-Lab/
   “文件管理”和项目素材浏览器复用同一文件 API；Galgame 上传图片、音视频与字体也复用公共存储、内容签名和媒体元数据校验，
   但只能通过 Galgame 工程素材 API 修改或删除。公共文件被视觉或 Galgame 工程引用期间禁止删除，
   对话消息引用的项目素材也必须先解除引用才能删除。
+- Galgame 视频导出按 `video_export_planning.py` 路线/片段/试片纯规划、`video_export.py` 用例与
+  `video_export_runner.py` 后台媒体执行分层；广播剧导入由 `annotation_import.py` 负责预检和任务
+  用例，`annotation_import_runner.py` 负责 FFmpeg 裁切、验收、保存与补偿。HTTP 路由不直接依赖
+  Runner，应用生命周期只装配 Runner 模块。
 - Web 的依赖方向是 `app → features → shared/platform/generated`。`platform/` 与 `shared/`
   不依赖 `features/` 或 `app/`，`features/` 不依赖 `app/`；入口装配留在 `app/`，业务代码不
   放回 `web/src/` 根目录，生成契约不手工修改。
