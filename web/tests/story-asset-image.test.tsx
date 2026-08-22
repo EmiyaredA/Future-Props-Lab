@@ -106,4 +106,59 @@ describe("StoryAssetImage", () => {
     expect(screen.queryByAltText("角色")).not.toBeInTheDocument();
     expect(screen.getByText("加载中")).toBeInTheDocument();
   });
+
+  test("keeps only the latest asset during rapid character switches", async () => {
+    const pending = new Map<string, (blob: Blob) => void>();
+    vi.mocked(fetchApiBlob).mockImplementation(
+      (path) =>
+        new Promise((resolve) => {
+          pending.set(path, resolve);
+        }),
+    );
+
+    const { rerender } = render(
+      <StoryAssetImage
+        fileId="portrait-a"
+        alt="角色"
+        fallback={<span>加载中</span>}
+      />,
+    );
+    rerender(
+      <StoryAssetImage
+        fileId="portrait-b"
+        alt="角色"
+        fallback={<span>加载中</span>}
+      />,
+    );
+    rerender(
+      <StoryAssetImage
+        fileId="portrait-c"
+        alt="角色"
+        fallback={<span>加载中</span>}
+      />,
+    );
+
+    pending.get("/v1/files/portrait-c/content")?.(
+      new Blob(["c"], { type: "image/png" }),
+    );
+    await waitFor(() =>
+      expect(screen.getByAltText("角色")).toHaveAttribute(
+        "src",
+        "blob:story-asset-0",
+      ),
+    );
+
+    pending.get("/v1/files/portrait-a/content")?.(
+      new Blob(["a"], { type: "image/png" }),
+    );
+    pending.get("/v1/files/portrait-b/content")?.(
+      new Blob(["b"], { type: "image/png" }),
+    );
+
+    await waitFor(() => expect(URL.revokeObjectURL).toHaveBeenCalledTimes(2));
+    expect(screen.getByAltText("角色")).toHaveAttribute(
+      "src",
+      "blob:story-asset-0",
+    );
+  });
 });
