@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from types import SimpleNamespace
 from uuid import uuid4
 
 import httpx
@@ -10,6 +11,19 @@ from app.core.db import SessionLocal
 from app.llm.providers import DiagnosticResult
 from app.main import app
 from app.models import LlmCallLog, ModelProvider
+
+
+@pytest.mark.asyncio
+async def test_ready_rejects_unhealthy_background_runners() -> None:
+    previous = getattr(app.state, "runner_supervisor", None)
+    app.state.runner_supervisor = SimpleNamespace(is_healthy=False)
+    try:
+        transport = httpx.ASGITransport(app=app)
+        async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+            response = await client.get("/ready")
+        assert response.status_code == 503
+    finally:
+        app.state.runner_supervisor = previous
 
 
 @pytest.mark.asyncio

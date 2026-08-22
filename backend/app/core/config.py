@@ -27,7 +27,7 @@ class Settings(BaseSettings):
     fpl_visual_asset_max_bytes: int = 200 * 1024 * 1024
     fpl_galgame_export_max_bytes: int = 8 * 1024 * 1024 * 1024
     fpl_galgame_renderer_url: str = "http://127.0.0.1:3000/galgame-export.html"
-    fpl_temp_media_upload_url: str = "https://temp.sh/upload"
+    fpl_temp_media_upload_url: str = ""
 
     @model_validator(mode="after")
     def validate_security(self) -> Settings:
@@ -52,14 +52,17 @@ class Settings(BaseSettings):
             or parsed_renderer_url.password
         ):
             raise ValueError("FPL_GALGAME_RENDERER_URL must be a local HTTP(S) URL")
-        parsed_upload_url = urlsplit(self.fpl_temp_media_upload_url)
-        if (
-            parsed_upload_url.scheme != "https"
-            or not parsed_upload_url.hostname
-            or parsed_upload_url.username
-            or parsed_upload_url.password
-        ):
-            raise ValueError("FPL_TEMP_MEDIA_UPLOAD_URL must be an unauthenticated HTTPS URL")
+        if self.fpl_temp_media_upload_url:
+            parsed_upload_url = urlsplit(self.fpl_temp_media_upload_url)
+            if (
+                parsed_upload_url.scheme != "https"
+                or not parsed_upload_url.hostname
+                or parsed_upload_url.username
+                or parsed_upload_url.password
+            ):
+                raise ValueError(
+                    "FPL_TEMP_MEDIA_UPLOAD_URL must be empty or an unauthenticated HTTPS URL"
+                )
         return self
 
     @property

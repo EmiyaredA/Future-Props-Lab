@@ -2,7 +2,9 @@ from __future__ import annotations
 
 from typing import Literal
 
-from pydantic import BaseModel, Field, HttpUrl, field_validator
+from pydantic import BaseModel, Field, field_validator
+
+from app.core.outbound_urls import normalize_provider_base_url
 
 ProviderKind = Literal[
     "openai", "anthropic", "senseaudio_image", "senseaudio_video", "senseaudio_asr"
@@ -59,11 +61,7 @@ class ProviderIn(BaseModel):
     @field_validator("base_url")
     @classmethod
     def valid_base_url(cls, value: str) -> str:
-        raw = value.strip()
-        if not raw:
-            return raw
-        HttpUrl(raw)
-        return raw.rstrip("/")
+        return normalize_provider_base_url(value)
 
 
 class ProviderOut(BaseModel):

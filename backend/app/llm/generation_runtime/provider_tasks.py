@@ -5,6 +5,7 @@ from typing import Any
 
 import httpx
 
+from app.core.outbound_urls import require_safe_provider_base_url
 from app.llm.generation_runtime.media import GenerationMaterializationError
 from app.llm.providers import (
     create_image_task,
@@ -48,6 +49,7 @@ async def submit_generation_task(
     video_content: list[dict[str, object]] | None = None,
 ) -> str:
     """Submit a normalized image or video task through the provider boundary."""
+    base_url = require_safe_provider_base_url(base_url)
     if provider_kind == "senseaudio_image":
         return await create_image_task(
             base_url=base_url,
@@ -77,6 +79,7 @@ async def submit_generation_task(
 async def poll_generation_task(
     *, provider_kind: str, base_url: str, api_key: str, provider_task_id: str
 ):
+    base_url = require_safe_provider_base_url(base_url)
     if provider_kind == "senseaudio_image":
         return await get_image_task(
             base_url=base_url,

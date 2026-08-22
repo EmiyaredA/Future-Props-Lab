@@ -7,6 +7,8 @@ from typing import Any
 
 import httpx
 
+from app.core.outbound_urls import require_safe_provider_base_url
+
 
 @dataclass(frozen=True)
 class TextDelta:
@@ -62,6 +64,7 @@ async def stream_text_completion(
     max_tokens: int,
     transport: httpx.AsyncBaseTransport | None = None,
 ) -> AsyncIterator[TextDelta]:
+    base_url = require_safe_provider_base_url(base_url)
     timeout = httpx.Timeout(120.0, connect=15.0)
     async with httpx.AsyncClient(timeout=timeout, transport=transport) as client:
         if kind == "openai":

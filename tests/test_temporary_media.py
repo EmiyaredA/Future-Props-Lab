@@ -9,6 +9,26 @@ from app.llm.providers.temporary_media import TemporaryMediaError, upload_tempor
 
 
 @pytest.mark.asyncio
+async def test_upload_without_config_fails_before_network(tmp_path: Path) -> None:
+    source = tmp_path / "reference.mp4"
+    source.write_bytes(b"video")
+    requests: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        return httpx.Response(200, text="https://temp.example/reference.mp4")
+
+    with pytest.raises(TemporaryMediaError, match="未配置"):
+        await upload_temporary_media(
+            path=source,
+            mime_type="video/mp4",
+            upload_url="",
+            transport=httpx.MockTransport(handler),
+        )
+    assert requests == []
+
+
+@pytest.mark.asyncio
 async def test_upload_uses_random_filename_and_accepts_trailing_newline(tmp_path: Path) -> None:
     source = tmp_path / "private customer name.mp3"
     source.write_bytes(b"ID3example")

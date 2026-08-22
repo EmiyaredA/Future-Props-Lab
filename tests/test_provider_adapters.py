@@ -192,7 +192,7 @@ async def test_senseaudio_asr_adapter_requests_and_normalizes_speaker_segments()
 @pytest.mark.asyncio
 async def test_pro_asr_adapter_reuses_provider_and_normalizes_nested_result() -> None:
     async def handler(request: httpx.Request) -> httpx.Response:
-        assert request.url == "http://180.184.148.131:30002/api/v2/asr/pro"
+        assert request.url == "https://asr.example/api/v2/asr/pro"
         assert request.headers["authorization"] == "Bearer asr-secret"
         body = (await request.aread()).decode()
         for value in (
@@ -254,7 +254,7 @@ async def test_pro_asr_adapter_reuses_provider_and_normalizes_nested_result() ->
         )
 
     result = await transcribe_audio(
-        base_url="http://180.184.148.131:30002/#pro-asr",
+        base_url="https://asr.example/#pro-asr",
         api_key="asr-secret",
         model="senseaudio-asr-pro-1.5-260319",
         filename="meeting.wav",

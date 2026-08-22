@@ -42,6 +42,8 @@ async def upload_temporary_media(
     transport: httpx.AsyncBaseTransport | None = None,
     retry_delay: float = 0.25,
 ) -> str:
+    if not upload_url.strip():
+        raise TemporaryMediaError("未配置参考素材临时上传服务")
     if not path.is_file():
         raise TemporaryMediaError("参考素材文件已不存在")
     filename = f"{uuid4().hex}{path.suffix.lower()}"

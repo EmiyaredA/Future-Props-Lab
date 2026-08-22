@@ -7,6 +7,7 @@ from typing import Any, Protocol
 
 import httpx
 
+from app.core.outbound_urls import require_safe_provider_base_url
 from app.llm.providers.streaming import ImageInput, _data_lines, _integer
 
 
@@ -91,7 +92,7 @@ class HttpAgentAdapter:
         transport: httpx.AsyncBaseTransport | None = None,
     ) -> None:
         self.kind = kind
-        self.base_url = base_url
+        self.base_url = require_safe_provider_base_url(base_url)
         self.api_key = api_key
         self.transport = transport
 

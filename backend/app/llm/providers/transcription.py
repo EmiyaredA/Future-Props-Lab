@@ -5,6 +5,7 @@ from typing import BinaryIO
 
 import httpx
 
+from app.core.outbound_urls import require_safe_provider_base_url
 from app.llm.providers.senseaudio_asr import MAX_ASR_FILE_BYTES, transcribe_audio
 
 
@@ -49,6 +50,7 @@ async def transcribe_model_audio(
     transport: httpx.AsyncBaseTransport | None = None,
 ) -> TranscriptionResult:
     """Normalize supported ASR providers to text plus optional diarized segments."""
+    base_url = require_safe_provider_base_url(base_url)
     options = parameters or {}
     if provider_kind == "senseaudio_asr":
         result = await transcribe_audio(
