@@ -26,11 +26,12 @@ export function StoryAssetImage({
   const activeUrlRef = useRef("");
 
   useEffect(() => {
+    const previousUrl = activeUrlRef.current;
+    activeUrlRef.current = "";
+    setUrl("");
+    if (previousUrl) URL.revokeObjectURL(previousUrl);
+
     if (!fileId) {
-      const previousUrl = activeUrlRef.current;
-      activeUrlRef.current = "";
-      setUrl("");
-      if (previousUrl) URL.revokeObjectURL(previousUrl);
       return;
     }
     let active = true;
@@ -60,8 +61,7 @@ export function StoryAssetImage({
         preloader.src = nextUrl;
       })
       .catch(() => {
-        // Keep the previous image visible while a replacement is unavailable.
-        if (active && !activeUrlRef.current) setUrl("");
+        if (active) setUrl("");
       });
     return () => {
       active = false;

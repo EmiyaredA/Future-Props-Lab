@@ -33,7 +33,7 @@ describe("StoryAssetImage", () => {
 
   afterEach(() => vi.unstubAllGlobals());
 
-  test("keeps the current image visible while the replacement loads", async () => {
+  test("clears the previous asset while a replacement loads", async () => {
     let resolveNext: ((blob: Blob) => void) | undefined;
     vi.mocked(fetchApiBlob).mockImplementation((path) => {
       if (path.endsWith("file-next/content")) {
@@ -65,10 +65,9 @@ describe("StoryAssetImage", () => {
         fallback={<span>加载中</span>}
       />,
     );
-    expect(screen.getByAltText("角色")).toHaveAttribute(
-      "src",
-      "blob:story-asset-0",
-    );
+    expect(screen.queryByAltText("角色")).not.toBeInTheDocument();
+    expect(screen.getByText("加载中")).toBeInTheDocument();
+    expect(URL.revokeObjectURL).toHaveBeenCalledWith("blob:story-asset-0");
 
     resolveNext?.(new Blob(["next"], { type: "image/png" }));
     await waitFor(() =>
@@ -77,5 +76,34 @@ describe("StoryAssetImage", () => {
         "blob:story-asset-1",
       ),
     );
+  });
+
+  test("does not restore a previous asset when the replacement fails", async () => {
+    vi.mocked(fetchApiBlob)
+      .mockResolvedValueOnce(new Blob(["current"], { type: "image/png" }))
+      .mockRejectedValueOnce(new Error("unavailable"));
+
+    const { rerender } = render(
+      <StoryAssetImage
+        fileId="file-current"
+        alt="角色"
+        fallback={<span>加载中</span>}
+      />,
+    );
+    await screen.findByAltText("角色");
+
+    rerender(
+      <StoryAssetImage
+        fileId="file-next"
+        alt="角色"
+        fallback={<span>加载中</span>}
+      />,
+    );
+
+    await waitFor(() =>
+      expect(fetchApiBlob).toHaveBeenCalledWith("/v1/files/file-next/content"),
+    );
+    expect(screen.queryByAltText("角色")).not.toBeInTheDocument();
+    expect(screen.getByText("加载中")).toBeInTheDocument();
   });
 });

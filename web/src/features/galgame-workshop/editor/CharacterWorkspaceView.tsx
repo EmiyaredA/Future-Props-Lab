@@ -265,7 +265,7 @@ export function CharacterWorkspaceView({
                       const asset = assetsById.get(expression.assetId);
                       return (
                         <button
-                          key={expression.id}
+                          key={`${selectedCharacter.id}:${expression.id}`}
                           type="button"
                           draggable
                           aria-roledescription="可排序表情卡片"
