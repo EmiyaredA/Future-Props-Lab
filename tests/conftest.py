@@ -1,5 +1,6 @@
 import os
 import shutil
+import sys
 import tempfile
 from pathlib import Path
 
@@ -17,8 +18,13 @@ apply_migrations(TEST_DATABASE_PATH)
 
 @pytest.fixture(autouse=True)
 def authenticated_business_routes(request: pytest.FixtureRequest):
-    """Keep existing business tests focused while auth has dedicated matrix tests."""
-    if request.node.get_closest_marker("real_auth"):
+    """Override auth only for test modules that explicitly imported the ASGI app.
+
+    Pure unit and architecture tests must not import ``app.main`` as a side effect of
+    global test setup; this keeps configuration tests independent from application
+    startup settings.
+    """
+    if request.node.get_closest_marker("real_auth") or "app.main" not in sys.modules:
         yield
         return
     from app.accounts.principal import StudioPrincipal

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from contextvars import ContextVar
+from typing import Any
 
 from sqlalchemy import event
 from sqlalchemy.orm import Session, with_loader_criteria
@@ -55,18 +56,28 @@ def _scope_tenant_selects(execute_state) -> None:
     workspace_id = execute_state.session.info.get("workspace_id")
     if not workspace_id or execute_state.session.info.get("tenant_bypass"):
         return
-    if not execute_state.is_select:
-        return
     statement = execute_state.statement
-    for model in TENANT_MODELS:
-        statement = statement.options(
-            with_loader_criteria(
-                model,
-                lambda cls: cls.workspace_id == workspace_id,
-                include_aliases=True,
+    if execute_state.is_select:
+        for model in TENANT_MODELS:
+            statement = statement.options(
+                with_loader_criteria(
+                    model,
+                    lambda cls: cls.workspace_id == workspace_id,
+                    include_aliases=True,
+                )
             )
-        )
-    execute_state.statement = statement
+        execute_state.statement = statement
+        return
+
+    if not (execute_state.is_update or execute_state.is_delete):
+        return
+    mapper = execute_state.bind_mapper
+    if mapper is None or mapper.class_ not in TENANT_MODELS:
+        return
+    workspace_column = mapper.local_table.c.get("workspace_id")
+    if workspace_column is None:
+        return
+    execute_state.statement = statement.where(workspace_column == workspace_id)
 
 
 @event.listens_for(Session, "before_flush")
@@ -80,9 +91,16 @@ def _assign_workspace(session: Session, _flush_context, _instances) -> None:
             "default",
         }:
             row.workspace_id = workspace_id
+    for row in {*session.dirty, *session.deleted}:
+        if isinstance(row, TENANT_MODELS) and getattr(row, "workspace_id", None) != workspace_id:
+            raise TenantScopeError(f"{type(row).__name__} does not belong to the bound workspace")
 
 
-def bind_workspace(session, workspace_id: str) -> None:
+class TenantScopeError(RuntimeError):
+    """Raised when an ORM write crosses the workspace bound to its session."""
+
+
+def bind_workspace(session: Any, workspace_id: str) -> None:
     session.info["workspace_id"] = workspace_id
     _CURRENT_WORKSPACE.set(workspace_id)
 

@@ -38,7 +38,7 @@ class Settings(BaseSettings):
         if self.legacy_fpl_studio_token.strip():
             raise ValueError(
                 "FPL_STUDIO_TOKEN is no longer supported; migrate to an account session "
-                "or FPL_MANAGEMENT_API_KEY"
+                "or create a Management API Key through the account API"
             )
         if self.fpl_visual_asset_max_bytes < 1:
             raise ValueError("FPL_VISUAL_ASSET_MAX_BYTES must be positive")

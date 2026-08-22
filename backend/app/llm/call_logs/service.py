@@ -5,6 +5,7 @@ from datetime import UTC, datetime
 from sqlalchemy import and_, case, delete, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.tenant_context import current_workspace_id
 from app.core.time import iso_utc
 from app.models import LlmCallLog
 from app.schemas.call_log import (
@@ -136,13 +137,23 @@ class CallLogService:
         return _detail(row) if row else None
 
     async def delete(self, log_id: str) -> bool:
-        result = await self.session.execute(delete(LlmCallLog).where(LlmCallLog.id == log_id))
+        result = await self.session.execute(
+            delete(LlmCallLog).where(
+                LlmCallLog.id == log_id,
+                LlmCallLog.workspace_id == current_workspace_id(),
+            )
+        )
         await self.session.commit()
         return bool(result.rowcount)
 
     async def batch_delete(self, ids: list[str]) -> int:
         if not ids:
             return 0
-        result = await self.session.execute(delete(LlmCallLog).where(LlmCallLog.id.in_(ids)))
+        result = await self.session.execute(
+            delete(LlmCallLog).where(
+                LlmCallLog.id.in_(ids),
+                LlmCallLog.workspace_id == current_workspace_id(),
+            )
+        )
         await self.session.commit()
         return int(result.rowcount or 0)
