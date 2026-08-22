@@ -88,6 +88,9 @@ Future-Props-Lab/
   `video_export_runner.py` 后台媒体执行分层；广播剧导入由 `annotation_import.py` 负责预检和任务
   用例，`annotation_import_runner.py` 负责 FFmpeg 裁切、验收、保存与补偿。HTTP 路由不直接依赖
   Runner，应用生命周期只装配 Runner 模块。
+- Galgame 素材写入和 CAS 用例保留在 `assets.py`；文件命名、媒体元数据映射等纯规则位于
+  `asset_support.py`，引用分析、资源总览和打包清单位于 `asset_analysis.py`，避免 CRUD、Story
+  遍历和打包投影继续共享一个大型类文件。
 - Web 的依赖方向是 `app → features → shared/platform/generated`。`platform/` 与 `shared/`
   不依赖 `features/` 或 `app/`，`features/` 不依赖 `app/`；入口装配留在 `app/`，业务代码不
   放回 `web/src/` 根目录，生成契约不手工修改。
