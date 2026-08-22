@@ -4,7 +4,10 @@
 
 先确认 Node.js 24、npm 11+ 和 Python 3.11+，再运行 `npm run setup`。后端只读取 `backend/.env`；`FPL_SECRETS_KEY` 必须是有效 Fernet key。端口被占用时先停止占用 3000 或 9000 的本机进程，标准 `.env` 不支持 `APP_HOST`、`APP_PORT`。
 
-`/health` 只表示进程可响应，`/ready` 还会检查数据库。若 `/ready` 失败，运行 `npm run db:migrate:check` 查看迁移状态；不要直接修改 SQLite、`schema_migrations` 或 migration checksum。
+`/health` 只表示进程可响应，`/ready` 还会检查数据库和全部后台 Runner。若 `/ready` 失败，先查看
+应用日志中的 Runner 名称和异常类型，再运行 `npm run db:migrate:check` 检查迁移状态；不要直接修改
+SQLite、`schema_migrations` 或 migration checksum。Runner 退避与恢复流程见
+[后台 Runner 运维](background-runners.md)。
 
 首次升级账号系统后，运行 `npm run account -- create-admin --username <用户名>` 创建管理员并认领
 `default` Workspace。若环境里仍有 `FPL_STUDIO_TOKEN`，后端会拒绝启动；删除它后改用账号 Session
@@ -22,7 +25,9 @@ Story、画布和配置使用 revision/CAS。HTTP 409 表示服务器已有更�
 
 素材缺失时先在文件管理或项目素材页检查引用和实际文件，不要直接向运行期目录补写数据库记录。供应商生成失败时检查供应商是否启用、模型能力、加密密钥和调用日志；不要把 API Key、供应商原始响应正文或临时素材链接复制进 issue。
 
-视频参考素材会上传到 `FPL_TEMP_MEDIA_UPLOAD_URL`。组织禁止公网临时托管时，配置兼容 multipart `file` 字段且返回同主机 HTTPS 地址的内部服务。
+视频参考媒体只在管理员显式配置 `FPL_TEMP_MEDIA_UPLOAD_URL` 后外传。留空时系统不会产生上传网络
+请求，而会返回配置错误；配置该地址前应确认数据保留、访问控制和删除边界。端点必须兼容 multipart
+`file` 字段并返回同主机 HTTPS 地址。
 
 ## 备份与恢复
 

@@ -541,3 +541,6 @@ Markdown 与 JSON；服务端同时校验扩展名、MIME、文件头和配置�
 - `GET /ready`
 
 健康探针保持匿名；所有 `/v1` 业务接口按本页“账号与 Workspace”规则鉴权。
+`/ready` 成功响应继续返回 `status` 与当前 schema；数据库不可用、Runner 未启动或退出、或任一
+Runner 连续失败达到 3 次时返回 503。单轮 Runner 异常会被记录并按有上限指数退避重试，成功一轮后
+清零连续失败计数。

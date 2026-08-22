@@ -10,7 +10,10 @@
 
 新增代码前先阅读 `AGENTS.md` 和 `docs/architecture/project-layout.md`。后端按功能能力组织，路由只处理 HTTP/SSE 协议，不直接查询 ORM；不要增加通用 `services/`、`domain/`、`platform/` 或 `product/` 层。Web 保持 `app → features → shared/platform/generated` 的单向依赖，生成的 OpenAPI 文件不得手工编辑。
 
-新增目录或改变职责时，必须同步更新项目结构文档与架构测试。生产 TS/TSX 和业务 CSS 单文件最多 1,500 行，测试文件最多 2,000 行；超过限制时应按业务职责拆分，而不是关闭门禁。
+新增目录或改变职责时，必须同步更新项目结构文档与架构测试。生产 Python 单文件最多 700 行、
+TS/TSX 最多 800 行、CSS 最多 600 行，测试文件最多 1,200 行；生成契约排除。历史超限文件记录在
+`tests/architecture_size_baseline.json`，只能缩小、不能增长；新文件没有豁免。拆分必须按用例、状态、
+展示或基础能力命名，不能新增编号式分片。
 
 ## 数据库与契约
 

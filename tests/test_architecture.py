@@ -1,12 +1,16 @@
 from __future__ import annotations
 
 import ast
+import json
 import re
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 BACKEND_APP = REPO_ROOT / "backend" / "app"
 WEB_SRC = REPO_ROOT / "web" / "src"
+SIZE_BASELINE = json.loads(
+    (REPO_ROOT / "tests" / "architecture_size_baseline.json").read_text(encoding="utf-8")
+)
 
 FORBIDDEN_BACKEND_DIRECTORIES = {"domain", "platform", "product", "services"}
 ROUTE_FORBIDDEN_IMPORTS = ("app.models", "db", "sqlalchemy")
@@ -78,6 +82,20 @@ def _resolve_web_import(source: Path, specifier: str) -> Path | None:
     if specifier.startswith("."):
         return (source.parent / specifier).resolve()
     return None
+
+
+def _resolve_web_module(source: Path, specifier: str) -> Path | None:
+    target = _resolve_web_import(source, specifier)
+    if target is None:
+        return None
+    candidates = (
+        target,
+        target.with_suffix(".ts"),
+        target.with_suffix(".tsx"),
+        target / "index.ts",
+        target / "index.tsx",
+    )
+    return next((candidate for candidate in candidates if candidate.is_file()), None)
 
 
 def test_backend_routes_do_not_own_persistence() -> None:
@@ -246,6 +264,45 @@ def test_cross_feature_imports_use_public_entry() -> None:
     assert not violations, "跨 feature 只能导入目标 feature 公共入口：\n" + "\n".join(violations)
 
 
+def test_web_production_modules_have_no_import_cycles() -> None:
+    files = sorted(
+        path
+        for path in WEB_SRC.rglob("*")
+        if path.suffix in {".ts", ".tsx"} and not _is_within(path, WEB_SRC / "generated")
+    )
+    graph = {
+        path: {
+            target
+            for specifier in _web_imports(path)
+            if (target := _resolve_web_module(path, specifier)) in files
+        }
+        for path in files
+    }
+    visiting: list[Path] = []
+    visited: set[Path] = set()
+    cycles: set[tuple[str, ...]] = set()
+
+    def visit(path: Path) -> None:
+        if path in visited:
+            return
+        if path in visiting:
+            start = visiting.index(path)
+            cycle = visiting[start:] + [path]
+            cycles.add(tuple(_relative(item) for item in cycle))
+            return
+        visiting.append(path)
+        for target in sorted(graph[path]):
+            visit(target)
+        visiting.pop()
+        visited.add(path)
+
+    for path in files:
+        visit(path)
+    assert not cycles, "TypeScript 生产模块不得形成导入循环：\n" + "\n".join(
+        " -> ".join(cycle) for cycle in sorted(cycles)
+    )
+
+
 def test_feature_styles_do_not_reenter_the_app_shell() -> None:
     app_styles = (WEB_SRC / "app" / "styles.css").read_text(encoding="utf-8")
     assert not FEATURE_SELECTOR_PATTERN.search(app_styles), "业务样式不得重新堆入 app/styles.css"
@@ -332,18 +389,11 @@ def test_documented_core_directories_exist() -> None:
 
 def test_galgame_protocol_and_schema_modules_stay_split() -> None:
     route_root = BACKEND_APP / "routes" / "galgame_workshop"
-    schema_root = BACKEND_APP / "schemas" / "galgame_workshop"
     assert {"projects.py", "story.py", "assets.py", "asr.py", "maintenance.py"}.issubset(
         {path.name for path in route_root.glob("*.py")}
     )
     assert not (BACKEND_APP / "routes" / "galgame_workshop.py").exists()
     assert not (BACKEND_APP / "schemas" / "galgame_workshop.py").exists()
-    oversized = [
-        f"{_relative(path)}: {len(path.read_text(encoding='utf-8').splitlines())}"
-        for path in schema_root.glob("*.py")
-        if len(path.read_text(encoding="utf-8").splitlines()) > 800
-    ]
-    assert not oversized, "Galgame schema 单文件不得超过 800 行：\n" + "\n".join(oversized)
 
 
 def test_project_applications_have_modules_routes_and_storage_roots() -> None:
@@ -363,18 +413,27 @@ def test_project_applications_have_modules_routes_and_storage_roots() -> None:
 def test_source_modules_are_split_into_reviewable_files() -> None:
     generated_root = WEB_SRC / "generated"
     limits = {
-        ".ts": 1_500,
-        ".tsx": 1_500,
-        ".css": 1_500,
+        ".py": 700,
+        ".ts": 800,
+        ".tsx": 800,
+        ".css": 600,
     }
     oversized: list[str] = []
-    for path in sorted(WEB_SRC.rglob("*")):
-        if not path.is_file() or path.suffix not in limits or _is_within(path, generated_root):
-            continue
-        line_count = len(path.read_text(encoding="utf-8").splitlines())
-        if line_count > limits[path.suffix]:
-            oversized.append(f"{_relative(path)}: {line_count} > {limits[path.suffix]}")
-    assert not oversized, "生产源码单文件超过评审上限：\n" + "\n".join(oversized)
+    for root in (BACKEND_APP, WEB_SRC):
+        for path in sorted(root.rglob("*")):
+            if not path.is_file() or path.suffix not in limits or _is_within(path, generated_root):
+                continue
+            line_count = len(path.read_text(encoding="utf-8").splitlines())
+            limit = limits[path.suffix]
+            if line_count <= limit:
+                continue
+            relative = _relative(path)
+            baseline = SIZE_BASELINE["production"].get(relative)
+            if baseline is None or line_count > baseline:
+                oversized.append(f"{relative}: {line_count} > {limit}")
+    assert not oversized, "生产源码超过硬上限，既有基线文件也不得继续增长：\n" + "\n".join(
+        oversized
+    )
 
 
 def test_test_modules_are_split_into_reviewable_files() -> None:
@@ -385,6 +444,26 @@ def test_test_modules_are_split_into_reviewable_files() -> None:
             if path.suffix not in {".py", ".ts", ".tsx"}:
                 continue
             line_count = len(path.read_text(encoding="utf-8").splitlines())
-            if line_count > 2_000:
-                oversized.append(f"{_relative(path)}: {line_count} > 2000")
-    assert not oversized, "测试文件超过评审上限：\n" + "\n".join(oversized)
+            if line_count <= 1_200:
+                continue
+            relative = _relative(path)
+            baseline = SIZE_BASELINE["tests"].get(relative)
+            if baseline is None or line_count > baseline:
+                oversized.append(f"{relative}: {line_count} > 1200")
+    assert not oversized, "测试文件超过硬上限，既有基线文件也不得继续增长：\n" + "\n".join(
+        oversized
+    )
+
+
+def test_css_uses_semantic_source_files_and_read_only_bundle_budgets() -> None:
+    numbered = sorted(
+        _relative(path)
+        for path in WEB_SRC.rglob("*.css")
+        if re.fullmatch(r"part-\d+\.css", path.name)
+    )
+    assert not numbered, "不得新增编号式 CSS 分片：\n" + "\n".join(numbered)
+    budget_script = (REPO_ROOT / "web" / "scripts" / "check-bundle-budgets.mjs").read_text(
+        encoding="utf-8"
+    )
+    assert "writeFileSync" not in budget_script
+    assert "unlinkSync" not in budget_script

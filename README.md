@@ -1,6 +1,6 @@
 # Future Props Lab
 
-未来道具研究所的模型基础设施管理台。项目从 Sayflow 的工程边界中提取了模型目录、模型调用日志、管理端主题与文档中心壳，删除了 Bot、知识库、语音和部署等业务。
+未来道具研究所的模型基础设施管理台。项目从 Sayflow 的工程边界中提取了模型目录、模型调用日志、管理端主题与文档中心壳，不包含 Bot、知识库、实时语音、浏览器扩展和多实例部署；文件语音识别、录音分段标注与 Galgame 配音流程仍是正式能力。
 
 运行环境要求 Node.js 24 与 Python 3.11 或更高版本；持续集成同时验证 Python 3.11 最低支持版本和 Python 3.14。
 
@@ -35,4 +35,4 @@ Galgame 工坊使用 Story 1.4 管理角色表情/皮肤、真实多层场景、
 `.runtime/model-test/generated/`、`.runtime/workspaces/` 与 `.runtime/profiles/`。数据库路径可通过
 `FPL_DATABASE_PATH` 调整，这些文件目录都位于数据库所在目录下。
 
-详细说明见 [贡献指南](CONTRIBUTING.md)、[项目结构](docs/architecture/project-layout.md)、[环境变量](docs/reference/configuration.md)、[故障排查](docs/operations/troubleshooting.md) 和 [API 参考](docs/reference/api.md)。
+详细说明见 [贡献指南](CONTRIBUTING.md)、[项目结构](docs/architecture/project-layout.md)、[环境变量](docs/reference/configuration.md)、[故障排查](docs/operations/troubleshooting.md)、[后台 Runner 运维](docs/operations/background-runners.md)、[文件与事务约束](docs/operations/file-transactions.md) 和 [API 参考](docs/reference/api.md)。
