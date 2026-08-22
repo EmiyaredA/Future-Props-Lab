@@ -1,0 +1,95 @@
+@media (max-width: 1100px) {
+  .annotation-project-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .annotation-transport {
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .annotation-volume {
+    margin-left: auto;
+  }
+  .annotation-edit-actions {
+    width: 100%;
+    margin-left: 0;
+  }
+  .annotation-edit-actions button {
+    flex: 1;
+    justify-content: center;
+  }
+  .annotation-segment-table-card {
+    overflow-x: auto;
+  }
+  .annotation-segment-table-card > header {
+    min-width: 520px;
+  }
+}
+
+@media (max-width: 1320px) {
+  .annotation-editor-grid {
+    grid-template-columns: 1fr;
+  }
+  .annotation-inspector {
+    position: static;
+  }
+}
+
+@media (max-width: 760px) {
+  .annotation-projects-header,
+  .annotation-editor-header {
+    flex-direction: column;
+  }
+  .annotation-project-actions {
+    width: 100%;
+  }
+  .annotation-project-actions .btn {
+    flex: 1;
+  }
+  .annotation-project-summary {
+    align-items: stretch;
+    flex-wrap: wrap;
+  }
+  .annotation-project-summary label {
+    width: 100%;
+    margin-left: 0;
+  }
+  .annotation-project-grid {
+    grid-template-columns: 1fr;
+  }
+  .annotation-editor-actions {
+    width: 100%;
+  }
+  .annotation-editor-actions .btn {
+    flex: 1;
+  }
+  .annotation-waveform-meta {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+  .annotation-zoom-controls {
+    margin-left: 0;
+  }
+  .annotation-waveform-tools {
+    width: 100%;
+    margin-left: 0;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+  .annotation-waveform-navigator {
+    flex-wrap: wrap;
+  }
+  .annotation-waveform-navigator label {
+    min-width: calc(100% - 78px);
+  }
+  .annotation-viewport-time,
+  .annotation-waveform-navigator small {
+    width: 100%;
+  }
+  .annotation-conflict {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+  .annotation-conflict span {
+    width: 100%;
+  }
+}

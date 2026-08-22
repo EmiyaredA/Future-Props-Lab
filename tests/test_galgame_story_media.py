@@ -8,6 +8,7 @@ from app.core.db import SessionLocal
 from app.files.storage import AssetStorage
 from app.main import app
 from app.models import (
+    GalgameAssetMetadata,
     VisualAsset,
 )
 from app.schemas.galgame_workshop import GalgameStoryProject
@@ -444,6 +445,76 @@ async def test_galgame_cg_asset_delete_reports_variant_location() -> None:
             params={"expected_revision": project["revision"]},
         )
         assert removed.status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_galgame_timeline_master_readiness_checks_exact_media_duration() -> None:
+    transport = httpx.ASGITransport(app=app)
+    audio = b"\x00\x00\x00\x18ftypM4A complete-drama"
+    async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+        project = (
+            await client.post("/v1/galgame-workshop/projects", json={"title": "主音轨工程"})
+        ).json()
+        uploaded = (
+            await client.post(
+                f"/v1/galgame-workshop/projects/{project['id']}/assets",
+                files={"upload": ("complete.m4a", audio, "audio/mp4")},
+            )
+        ).json()
+        document = playable_story()
+        document["assets"] = [
+            {
+                "id": "complete-drama",
+                "type": "audio",
+                "role": "timelineMaster",
+                "label": "完整广播剧",
+                "fileId": uploaded["id"],
+                "status": "ready",
+            }
+        ]
+        fragment = document["chapters"][0]["fragments"][0]
+        fragment["timeline"] = {
+            "durationMs": 20_000,
+            "masterAudio": {"assetId": "complete-drama", "volume": 100},
+        }
+        fragment["blocks"][1].update({"startMs": 1_000, "endMs": 6_000})
+        saved = await client.put(
+            f"/v1/galgame-workshop/projects/{project['id']}/story",
+            json={"expected_revision": 0, "document": document},
+        )
+        assert saved.status_code == 200, saved.text
+
+    async with SessionLocal() as session:
+        metadata = await session.get(GalgameAssetMetadata, uploaded["id"])
+        assert metadata is not None
+        metadata.duration_ms = 20_002
+        await session.commit()
+
+    async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+        mismatch = (
+            await client.get(f"/v1/galgame-workshop/projects/{project['id']}/story/report")
+        ).json()
+        assert "timeline_master_audio_duration_mismatch" in {
+            issue["code"] for issue in mismatch["errors"]
+        }
+
+    async with SessionLocal() as session:
+        metadata = await session.get(GalgameAssetMetadata, uploaded["id"])
+        assert metadata is not None
+        metadata.duration_ms = 20_001
+        await session.commit()
+
+    async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+        exact = (
+            await client.get(f"/v1/galgame-workshop/projects/{project['id']}/story/report")
+        ).json()
+        assert "timeline_master_audio_duration_mismatch" not in {
+            issue["code"] for issue in exact["errors"]
+        }
+        await client.delete(
+            f"/v1/galgame-workshop/projects/{project['id']}",
+            params={"expected_revision": project["revision"]},
+        )
 
 
 @pytest.mark.asyncio

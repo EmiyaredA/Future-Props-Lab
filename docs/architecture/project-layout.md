@@ -19,7 +19,7 @@ Future-Props-Lab/
 │   ├── tool_navigation/ # 工具收藏与最近使用状态规则
 │   ├── audio_annotation/ # Workspace 录音标注任务、文档/波形 CAS 与导入校验
 │   ├── visual_workshop/ # 视觉工坊项目、画布、助手、生成任务与领域适配器
-│   ├── galgame_workshop/ # Galgame 工程、Story 1.4 CAS、素材/ASR/尺寸维护与线路分析
+│   ├── galgame_workshop/ # Galgame 工程、Story 1.4 CAS、标注导入/视频导出任务、素材/ASR/尺寸维护与线路分析
 │   ├── models/        # SQLAlchemy 持久化形状
 │   ├── routes/        # `/v1` HTTP/SSE 协议边界；Galgame 按五类协议模块汇总
 │   └── schemas/       # Pydantic 请求与响应形状；Galgame 按 Story/Block/素材/维护拆包
@@ -34,12 +34,14 @@ Future-Props-Lab/
 │   ├── generated/     # OpenAPI 生成物
 │   ├── platform/      # Cookie/CSRF、API 客户端与认证事件基础设施
 │   └── shared/        # 品牌与主题 UI
+├── web/galgame-export.html # 隔离的 Galgame 纯舞台渲染入口
+├── web/scripts/       # 后台 Chromium 录制与 FFmpeg 音画合成脚本
 ├── web/public/docs/   # 文档中心使用的当前真实界面截图
 ├── web/tests/         # Web 组件测试
 ├── web/e2e/           # Playwright 浏览器旅程
 │   └── fixtures/      # 人物旅程的确定性 API mock 与测试数据；真实烟测不使用
 ├── tests/             # 后端单元、API、存储与架构测试
-├── scripts/           # OpenAPI 导出、离线账号命令与 E2E 账号引导
+├── scripts/           # OpenAPI 导出、API 导入客户端、离线账号命令与 E2E 账号引导
 ├── docs/operations/   # 故障排查、备份与恢复说明
 ├── CONTRIBUTING.md    # 开发流程、边界、测试矩阵与交付检查表
 ├── CHANGELOG.md       # 交付批次的用户可见变化与工程治理记录
@@ -70,7 +72,8 @@ Future-Props-Lab/
   与 Galgame 工坊各自使用独立页面壳；后端 `files/` 负责公共文件元数据、文件夹、存储校验与项目引用，
   `visual_workshop/` 负责真实项目、revisioned 节点画布、项目对话与图片/视频异步生成任务，
   `galgame_workshop/` 负责 Galgame 工程元数据、Story 1.4 故事文档 CAS、剧情对话富文本、多人角色舞台演出、
-  角色/多层场景/音视频素材生命周期、虚拟打包路径、语音识别任务、立绘尺寸快照恢复与 Fragment 线路分析，
+  角色/多层场景/音视频素材生命周期、虚拟打包路径、语音识别任务、立绘尺寸快照恢复、Fragment 线路分析与
+  只读 Story 快照驱动的视频导出任务，
   均不预置项目或素材。Studio 一级
   “文件管理”和项目素材浏览器复用同一文件 API；Galgame 上传图片、音视频与字体也复用公共存储、内容签名和媒体元数据校验，
   但只能通过 Galgame 工程素材 API 修改或删除。公共文件被视觉或 Galgame 工程引用期间禁止删除，

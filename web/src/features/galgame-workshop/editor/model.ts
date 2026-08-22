@@ -44,6 +44,7 @@ export type AudioRole = GalgameStoryAudioAsset["role"];
 export const AUDIO_ROLE_LABELS: Record<AudioRole, string> = {
   voiceSample: "角色样本",
   voiceLine: "对白配音",
+  timelineMaster: "时间轴主音轨",
   backgroundMusic: "背景音乐",
   ambientSound: "环境音",
   soundEffect: "音效",

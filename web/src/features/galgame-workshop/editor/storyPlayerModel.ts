@@ -113,4 +113,25 @@ export type StoryPlayerProps = {
     positionMs: number;
     blockId?: string;
   }) => void;
+  exportMode?: {
+    branchSelections: Record<string, string>;
+    choiceDurationMs: number;
+    choiceHighlightMs: number;
+    onProgress?: (position: {
+      chapterId: string;
+      fragmentId: string;
+      positionMs: number;
+      blockId?: string;
+    }) => void;
+    onComplete?: (result: { ok: boolean; label: string }) => void;
+    onAudioEvent?: (event: {
+      action: "play" | "stop";
+      channel: "voice" | "bgm" | "ambient" | "sfx" | "video";
+      storyAssetId?: string;
+      offsetMs?: number;
+      volume?: number;
+      loop?: boolean;
+      fadeMs?: number;
+    }) => void;
+  };
 };

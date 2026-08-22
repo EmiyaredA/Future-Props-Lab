@@ -12,11 +12,22 @@ from app.schemas.galgame_workshop.localization import GalgameStoryLocalizations
 from app.schemas.galgame_workshop.stage_settings import GalgameStorySettings
 
 
+class GalgameStoryTimelineMasterAudio(GalgameStoryModel):
+    asset_id: str = Field(alias="assetId", pattern=STABLE_ID_PATTERN)
+    volume: int = Field(default=100, ge=0, le=100)
+
+
 class GalgameStoryFragmentTimeline(GalgameStoryModel):
     duration_ms: int = Field(
         alias="durationMs",
         ge=1,
         description="剧情时间轴总长（毫秒）",
+    )
+    master_audio: GalgameStoryTimelineMasterAudio | None = Field(
+        default=None,
+        alias="masterAudio",
+        exclude_if=lambda value: value is None,
+        description="驱动整段剧情时间轴的完整主音轨",
     )
 
 
@@ -443,6 +454,13 @@ class GalgameStoryProject(GalgameStoryModel):
             if chapter.entry_fragment_id not in known_fragments:
                 raise ValueError(f"章节“{chapter.title}”的入口 Fragment 不存在")
             for fragment in chapter.fragments:
+                master_audio = fragment.timeline.master_audio if fragment.timeline else None
+                if master_audio is not None:
+                    master_asset = assets_by_id.get(master_audio.asset_id)
+                    if master_asset is None:
+                        raise ValueError("时间轴主音轨引用了不存在的音频素材")
+                    if master_asset.type != "audio" or master_asset.role != "timelineMaster":
+                        raise ValueError("时间轴主音轨只能引用 timelineMaster 音频素材")
                 previous_end_ms = 0
                 scene_events_at: dict[int, bool] = {}
                 cg_events_at: dict[int, bool] = {}

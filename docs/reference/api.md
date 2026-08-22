@@ -147,7 +147,9 @@ SenseAudio 结果包含全文、说话人和句级起止时间；ASR API 的嵌�
 创建和导入只接受当前 Workspace 公共文件库中的音频，单文件最多 100 MiB、时长最多 60 分钟；
 音频时长由服务端读取。文档固定使用 `schema_version: "1.0"`，最多 64 位说话人和 5000 个片段。
 片段最短 100 毫秒，允许留空白和时间重叠，但必须按开始时间排序，说话人引用必须存在。
-多人同时说话用各自的重叠片段表示。每个片段的 `text` 可通过 `language` 指定原文语言，并用
+每个片段可通过 `speaker_ids` 按顺序关联多位说话人；`speaker_id` 保留为第一位主说话人并兼容
+旧文档，省略 `speaker_ids` 时会自动从 `speaker_id` 补齐。每个片段的 `text` 可通过 `language`
+指定原文语言，并用
 `localized_texts` 保存最多 32 份其他语言文本；同一片段内语言不得重复，未提供时兼容旧文档。
 文档和波形
 分别通过 `expected_revision` 做完整资源 CAS，冲突返回 `409 revision_conflict` 和服务器当前快照。
@@ -247,11 +249,36 @@ ID、消息数量、画布摘要和素材 ID；不保存图片 Base64、临时�
 - `GET/POST /v1/galgame-workshop/projects/{project_id}/assets/asr/transcriptions`：读取任务或批量创建待处理/强制识别任务。
 - `PATCH /v1/galgame-workshop/projects/{project_id}/assets/{asset_id}/transcript`：以文本 revision CAS 手工修正识别文本。
 - `POST /v1/galgame-workshop/projects/{project_id}/assets/asr/match-dialogue`：归一化文本后稳定匹配对白并以 Story CAS 绑定语音；可通过 `blockIds` 只匹配指定对白，省略时匹配全项目。
+- `POST /v1/galgame-workshop/projects/{project_id}/annotation-imports/preview`：只读核对广播剧标注、完整主音轨、说话人映射、Story 占位素材、对白时间/中文和演出数量。
+- `POST /v1/galgame-workshop/projects/{project_id}/annotation-imports`：以 `requestId` 幂等创建持久化导入任务；服务端从完整源音频裁切逐句配音、保存 Story 快照并执行 CAS 更新。
+- `GET /v1/galgame-workshop/projects/{project_id}/annotation-imports/{import_id}`：读取导入进度、音频内容校验、保存验收或自动回滚结果；`phase` 明确返回 `queued`、`cutting`、`validating`、`saving`、`accepting`、`rolling_back` 等阶段。
+- `POST /v1/galgame-workshop/projects/{project_id}/video-exports/preview`：按 Story revision、语言、画质和已有分支选择推演路线；逐次返回下一处待选分支、预计时长、结局、阻断问题与预览指纹。
+- `POST /v1/galgame-workshop/projects/{project_id}/video-exports`：以 `requestId` 和预览指纹幂等创建后台 MP4 导出任务，并保存只读 Story 快照。
+- `GET /v1/galgame-workshop/projects/{project_id}/video-exports` 与 `GET .../{export_id}`：读取导出历史、阶段、进度、已渲染时间和结果素材。
+- `POST /v1/galgame-workshop/projects/{project_id}/video-exports/{export_id}/cancel`：取消排队或运行中的任务；运行中会终止隔离渲染与编码进程并清理临时文件。
+- `GET /v1/galgame-workshop/projects/{project_id}/video-exports/{export_id}/download`：下载完成的 H.264/AAC MP4。
 
 项目素材响应的 `transcriptSegments[]` 与转写任务的 `resultSegments[]` 使用统一的
 `{ speaker, startMs, endMs, text }` 形状。SenseAudio ASR Pro 请求启用说话人分离、自动标点和
 句级时间戳；音频按所选模型的 10 MB 或 100 MB 上限校验，超限时不会提交供应商。手工修正整段文本会清空旧分段，
 避免结构化结果与新文本不一致；检测得到的 `speaker_*` 仅用于展示，不自动绑定剧本角色。
+
+广播剧导入请求中的 `document.assets` 使用标注 `segmentId` 作为待生成 `voiceLine.fileId`
+占位，服务端只在时间、中文、说话人和一一绑定均与标注文档一致时接受。完整源音频必须作为
+`timelineMaster` 直接引用，任务执行器使用采样时间裁切并核对编码时长和内容包络；最终 Story
+只由主音轨推进，逐句音频保留为检查器试听与审计素材。自动化客户端应使用绑定单一 Workspace
+且含 `studio:write` 的 Management API Key；`npm run galgame:import-annotation -- ...` 不读取
+浏览器 Cookie，也不直接访问数据库。
+极少数源片段未设置说话人时可通过 `segmentSpeakerOverrides` 显式补充；已有说话人标注的片段
+禁止覆盖，所有补充都会保存在任务请求和审计结果中。`masterAssetId` 可指向目标工程中已有的
+完整音频副本，但其时长和 SHA-256 必须与标注项目的源音频完全一致。
+
+视频导出支持 `720p30`、`1080p30` 与 `1080p60` 三档预设。后台只访问本机专用渲染页，使用
+任务创建时的 Story 快照，不读取用户浏览器 Cookie，也不改写 Story revision。分支固定显示
+2 秒，并在最后 0.5 秒高亮预选项；时间轴按 `durationMs`，普通剧情按播放器自动推进规则执行。
+主音轨 Story 只混入一次完整主音轨；普通 Story 会按实际播放事件混合逐句配音、BGM、环境音、
+音效及视频声音。成片验证通过后登记到项目 `exports/`，预览失效、路线循环、素材缺失、磁盘不足
+或媒体参数不符都会阻止创建或把任务标记为失败。
 
 - `GET/POST /v1/galgame-workshop/projects/{project_id}/story/portrait-upgrade`：预览或应用旧立绘尺寸升级；应用前自动保存快照。
 - `GET /v1/galgame-workshop/projects/{project_id}/story/snapshots` 与 `POST .../{snapshot_id}/restore`：列出并以 Story revision 恢复维护快照。
@@ -365,13 +392,17 @@ Dialogue Block 的 `characterId` 继续表示主说话角色；可选 `speakerId
 从文件库选择、替换和移除。旧版固定界面槽位在读取时会迁移为普通自定义组件。
 
 故事声音与图片共用 `assets[]`，音频素材使用 `type: audio` 和
-`voiceSample / voiceLine / backgroundMusic / ambientSound / soundEffect` 角色。角色可通过
+`voiceSample / voiceLine / timelineMaster / backgroundMusic / ambientSound / soundEffect` 角色。角色可通过
 `voiceProfile` 保存声线名称、语言、描述和试听样本；对白通过 `voiceAssetId` 与 `voiceVolume`
 绑定逐句配音。`audio` Block 显式控制 `bgm / ambient / sfx` 通道的播放、停止、音量、循环和
-淡入淡出；BGM 与环境音不会从场景隐式继承。Fragment 可选 `timeline: { durationMs }`，其中
+淡入淡出；BGM 与环境音不会从场景隐式继承。Fragment 可选
+`timeline: { durationMs, masterAudio?: { assetId, volume } }`，其中
 `durationMs` 是独立的剧情总长。对白、旁白、剧情段落或系统消息通过成对的 `startMs / endMs` 绑定剧情时间轴；`scene`、`showCharacter`、
 `removeCharacter`、`showCg`、`hideCg` 与 `audio` Block 可用 `atMs` 固定触发点。无时间轴的 Fragment 拒绝这些时间字段；
 有时间轴时所有显式时间都不能超过剧情总长，对白/旁白还必须有序且互不重叠。
+`masterAudio` 只能引用 `timelineMaster` 音频；配置后完整音频的播放位置成为剧情唯一时钟，加载、暂停、继续、拖动和结束
+均由它驱动，逐句 `voiceLine` 仍可绑定和单独试听，但试玩不会重复播放。线路报告要求主音轨文件存在，且媒体时长与
+`durationMs` 相差不超过 1ms。未配置主音轨的旧 Story 保持原逐句配音和独立剧情时钟行为。
 
 编辑器把一次 `showCg` 到下一个 `showCg`、`hideCg` 或时间轴末尾派生为可拖动、可调整双端的 CG 显示区间。
 调整没有显式结束事件的区间时会补充 `hideCg`；相邻 CG 的替换时间是共享边界，区间最短 100ms。

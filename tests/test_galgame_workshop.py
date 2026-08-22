@@ -16,6 +16,44 @@ from app.models import (
 from app.schemas.galgame_workshop import GalgameStoryProject
 
 
+def test_galgame_timeline_master_audio_schema_is_optional_and_role_checked() -> None:
+    legacy = GalgameStoryProject.model_validate(playable_story())
+    assert legacy.chapters[0].fragments[0].timeline is None
+
+    document = playable_story()
+    document["assets"] = [
+        {
+            "id": "complete-drama",
+            "type": "audio",
+            "role": "timelineMaster",
+            "label": "完整广播剧",
+            "fileId": "audio-file-id",
+            "status": "ready",
+        }
+    ]
+    fragment = document["chapters"][0]["fragments"][0]
+    fragment["timeline"] = {
+        "durationMs": 20_000,
+        "masterAudio": {"assetId": "complete-drama", "volume": 88},
+    }
+    fragment["blocks"][1].update({"startMs": 1_000, "endMs": 6_000})
+    normalized = GalgameStoryProject.model_validate(document).model_dump(mode="json", by_alias=True)
+    assert normalized["chapters"][0]["fragments"][0]["timeline"]["masterAudio"] == {
+        "assetId": "complete-drama",
+        "volume": 88,
+    }
+
+    missing = deepcopy(document)
+    missing["chapters"][0]["fragments"][0]["timeline"]["masterAudio"]["assetId"] = "missing"
+    with pytest.raises(ValueError, match="主音轨引用了不存在"):
+        GalgameStoryProject.model_validate(missing)
+
+    wrong_role = deepcopy(document)
+    wrong_role["assets"][0]["role"] = "voiceLine"
+    with pytest.raises(ValueError, match="timelineMaster"):
+        GalgameStoryProject.model_validate(wrong_role)
+
+
 def playable_story() -> dict:
     return {
         "schemaVersion": "1.0",

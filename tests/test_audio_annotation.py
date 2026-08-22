@@ -157,6 +157,7 @@ async def test_audio_annotation_project_document_waveform_and_asset_guard() -> N
         )
         assert saved.status_code == 200, saved.text
         assert saved.json()["revision"] == 1
+        assert saved.json()["segments"][0]["speaker_ids"] == ["speaker-host"]
         assert saved.json()["segments"][0]["language"] == "ja"
         assert saved.json()["segments"][0]["localized_texts"] == [
             {"language": "zh", "text": "没问题。"},
@@ -190,6 +191,7 @@ async def test_audio_annotation_project_document_waveform_and_asset_guard() -> N
                         "start_ms": 0,
                         "end_ms": 500,
                         "speaker_id": "speaker-a",
+                        "speaker_ids": ["speaker-a", "speaker-b"],
                         "text": "",
                         "status": "draft",
                     },
@@ -206,6 +208,31 @@ async def test_audio_annotation_project_document_waveform_and_asset_guard() -> N
         )
         assert overlapping.status_code == 200, overlapping.text
         assert overlapping.json()["segments"][1]["start_ms"] == 400
+        assert overlapping.json()["segments"][0]["speaker_ids"] == [
+            "speaker-a",
+            "speaker-b",
+        ]
+
+        unknown_secondary_speaker = await client.put(
+            f"/v1/audio-annotation/projects/{project['id']}/document",
+            json={
+                "expected_revision": overlapping.json()["revision"],
+                "schema_version": "1.0",
+                "speakers": [{"id": "speaker-a", "name": "说话人 A", "color": "#28B8A7"}],
+                "segments": [
+                    {
+                        "id": "unknown-secondary",
+                        "start_ms": 0,
+                        "end_ms": 500,
+                        "speaker_ids": ["speaker-a", "missing"],
+                        "text": "",
+                        "status": "draft",
+                    }
+                ],
+            },
+        )
+        assert unknown_secondary_speaker.status_code == 422
+        assert unknown_secondary_speaker.json()["code"] == "speaker_not_found"
 
         too_short = await client.put(
             f"/v1/audio-annotation/projects/{project['id']}/document",
@@ -723,6 +750,7 @@ async def test_transcription_import_reuses_library_audio_and_handles_plain_text_
                 "start_ms": 0,
                 "end_ms": task_project["duration_ms"],
                 "speaker_id": None,
+                "speaker_ids": [],
                 "text": "只有完整转写。",
                 "language": None,
                 "localized_texts": [],

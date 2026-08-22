@@ -1,0 +1,216 @@
+.galgame-video-export-backdrop {
+  position: fixed;
+  z-index: 1200;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgb(2 8 18 / 76%);
+  backdrop-filter: blur(8px);
+}
+
+.galgame-video-export-dialog {
+  width: min(760px, 96vw);
+  max-height: min(880px, 94vh);
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  color: var(--text);
+  background: var(--panel);
+  box-shadow: 0 32px 90px rgb(0 0 0 / 45%);
+}
+
+.galgame-video-export-dialog > header,
+.galgame-video-export-dialog > header > span,
+.galgame-video-export-route-ready,
+.galgame-video-history article {
+  display: flex;
+  align-items: center;
+}
+
+.galgame-video-export-dialog > header {
+  justify-content: space-between;
+  padding: 20px 22px;
+  border-bottom: 1px solid var(--line);
+}
+
+.galgame-video-export-dialog > header > span {
+  gap: 12px;
+}
+
+.galgame-video-export-dialog > header svg {
+  width: 22px;
+  color: var(--accent);
+}
+
+.galgame-video-export-dialog > header span span {
+  display: grid;
+  gap: 3px;
+}
+
+.galgame-video-export-dialog button {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  color: inherit;
+  background: var(--panel-raised);
+}
+
+.galgame-video-export-dialog > header > button {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+}
+
+.galgame-video-export-content {
+  display: grid;
+  gap: 20px;
+  max-height: calc(94vh - 82px);
+  padding: 22px;
+  overflow: auto;
+}
+
+.galgame-video-export-content h3 {
+  margin: 0 0 10px;
+  font-size: 14px;
+}
+
+.galgame-video-presets {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.galgame-video-languages {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.galgame-video-languages button {
+  padding: 9px 13px;
+}
+
+.galgame-video-languages button.active {
+  border-color: var(--accent);
+  color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+
+.galgame-video-presets button {
+  display: grid;
+  gap: 5px;
+  padding: 14px;
+  text-align: left;
+}
+
+.galgame-video-presets button.active {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+
+.galgame-video-presets small,
+.galgame-video-route-ready small,
+.galgame-video-history small,
+.galgame-video-empty {
+  color: var(--muted);
+}
+
+.galgame-video-decision,
+.galgame-video-export-issues,
+.galgame-video-route-ready {
+  padding: 15px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--panel-raised);
+}
+
+.galgame-video-decision > div {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.galgame-video-decision button {
+  padding: 11px;
+}
+
+.galgame-video-route-ready {
+  gap: 11px;
+}
+
+.galgame-video-route-ready > svg {
+  color: #42c99a;
+}
+
+.galgame-video-route-ready > span {
+  display: grid;
+  flex: 1;
+}
+
+.galgame-video-export-issues p,
+.galgame-video-export-error-text,
+.galgame-video-history article > p {
+  margin: 4px 0;
+  color: #f28a82;
+}
+
+.galgame-video-export-warning {
+  margin: 8px 0 0;
+  color: #d9a84e;
+}
+
+.galgame-video-export-start {
+  display: flex;
+  min-height: 48px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-color: transparent !important;
+  color: white !important;
+  background: var(--accent) !important;
+}
+
+.galgame-video-export-start:disabled {
+  opacity: 0.45;
+}
+
+.galgame-video-history {
+  border-top: 1px solid var(--line);
+  padding-top: 18px;
+}
+
+.galgame-video-history article {
+  display: grid;
+  grid-template-columns: minmax(160px, 1fr) minmax(120px, 1fr) auto auto;
+  gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.galgame-video-history article > div {
+  display: grid;
+}
+
+.galgame-video-history article button {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 10px;
+}
+
+.galgame-video-history article > p {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 680px) {
+  .galgame-video-presets,
+  .galgame-video-decision > div {
+    grid-template-columns: 1fr;
+  }
+
+  .galgame-video-history article {
+    grid-template-columns: 1fr auto;
+  }
+}

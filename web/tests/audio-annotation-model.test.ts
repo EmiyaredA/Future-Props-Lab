@@ -12,10 +12,14 @@ import {
   parseAudioAnnotationImportFile,
   parseProjectFile,
   parseTimestamp,
+  prepareTextOnlyAnnotationImport,
+  sameSegmentSpeakers,
+  segmentSpeakerIds,
   segmentLanguageCodes,
   segmentDisplayText,
   segmentEditorVersion,
   segmentSearchableText,
+  speakerAssignment,
   storePreferredDisplayLanguage,
   snapSegmentToNext,
   snapSegmentToPrevious,
@@ -23,6 +27,7 @@ import {
   stabilizeWaveformRegionSegments,
   stabilizeWaveformRegionSpeakers,
   updateSegmentBounds,
+  waveformSegmentSpeakerLabel,
   waveformFocusZoom,
   waveformViewport,
 } from "@features/audio-annotation/model";
@@ -102,6 +107,12 @@ test("keeps waveform regions stable while only transcript content changes", () =
   ]);
   expect(afterBoundsEdit).not.toBe(rendered);
   expect(afterBoundsEdit[0]).toMatchObject({ end_ms: 1_100 });
+  expect(
+    stabilizeWaveformRegionSegments(rendered, [
+      { ...segments[0]!, speaker_ids: ["host", "guest"] },
+      segments[1]!,
+    ]),
+  ).not.toBe(rendered);
 
   const renderedSpeakers = stabilizeWaveformRegionSpeakers([], speakers);
   expect(
@@ -116,6 +127,29 @@ test("keeps waveform regions stable while only transcript content changes", () =
       speakers[1]!,
     ]),
   ).not.toBe(renderedSpeakers);
+});
+
+test("normalizes legacy and multiple speaker assignments", () => {
+  expect(segmentSpeakerIds(segments[0]!)).toEqual(["host"]);
+  expect(
+    segmentSpeakerIds({
+      ...segments[0]!,
+      speaker_ids: ["host", "guest", "guest"],
+    }),
+  ).toEqual(["host", "guest"]);
+  expect(speakerAssignment(["guest", "host", "guest"])).toEqual({
+    speaker_id: "guest",
+    speaker_ids: ["guest", "host"],
+  });
+  expect(
+    sameSegmentSpeakers(segments[0]!, {
+      ...segments[0]!,
+      speaker_ids: ["host"],
+    }),
+  ).toBe(true);
+  expect(waveformSegmentSpeakerLabel(381, ["桥田至", "冈部伦太郎"])).toBe(
+    "382  桥田至、冈部伦太郎",
+  );
 });
 
 test("collects and searches every language version of one audio segment", () => {
@@ -179,6 +213,41 @@ test("stores a valid display language per annotation project", () => {
   expect(loadPreferredDisplayLanguage("project-one", localStorage)).toBeNull();
 });
 
+test("imports only annotation text when the segment structure is unchanged", () => {
+  const current = { schema_version: "1.0" as const, speakers, segments };
+  const imported = prepareTextOnlyAnnotationImport(current, {
+    schema_version: "1.0",
+    segments: segments.map((segment) => ({
+      ...segment,
+      text: "新日文",
+      language: "ja",
+      localized_texts: [{ language: "zh", text: "新中文" }],
+      status: "draft",
+    })),
+  });
+  expect(imported.speakers).toBe(speakers);
+  expect(imported.segments[0]).toMatchObject({
+    id: "one",
+    start_ms: 0,
+    end_ms: 1_000,
+    speaker_id: "host",
+    text: "新日文",
+    language: "ja",
+    localized_texts: [{ language: "zh", text: "新中文" }],
+    status: "draft",
+  });
+});
+
+test("rejects a text import that changes segment structure", () => {
+  const current = { schema_version: "1.0" as const, speakers, segments };
+  expect(() =>
+    prepareTextOnlyAnnotationImport(current, {
+      schema_version: "1.0",
+      segments: [{ ...segments[0], start_ms: 1 }, segments[1]],
+    }),
+  ).toThrow("片段 1 的结构与当前项目不一致");
+});
+
 test("imports Galgame character names without duplicating existing speakers", () => {
   expect(
     mergeImportedSpeakers(
@@ -220,6 +289,7 @@ test("duplicates a time range for assigning another overlapping speaker", () => 
       ...segments[0],
       id: "overlap",
       speaker_id: null,
+      speaker_ids: [],
       text: "",
       status: "draft",
     },
@@ -233,6 +303,7 @@ test("merges through a gap and retains the current speaker", () => {
     {
       ...segments[0],
       end_ms: 2_000,
+      speaker_ids: ["host"],
       text: "第一句\n第二句",
       status: "draft",
     },
@@ -245,6 +316,7 @@ test("creates overlapping segments and only clamps bounds to the audio", () => {
     start_ms: 1_025,
     end_ms: 1_175,
     speaker_id: null,
+    speaker_ids: [],
     text: "",
     language: null,
     localized_texts: [],
@@ -255,6 +327,7 @@ test("creates overlapping segments and only clamps bounds to the audio", () => {
     start_ms: 900,
     end_ms: 1_300,
     speaker_id: null,
+    speaker_ids: [],
     text: "",
     language: null,
     localized_texts: [],
@@ -347,6 +420,9 @@ test("exports versioned JSON and speaker-prefixed SRT", () => {
   expect(buildSrt(segments, speakers)).toContain(
     "00:00:00,000 --> 00:00:01,000\n主持人：第一句",
   );
+  expect(
+    buildSrt([{ ...segments[0]!, speaker_ids: ["host", "guest"] }], speakers),
+  ).toContain("主持人、嘉宾：第一句");
   expect(() => buildSrt([{ ...segments[0]!, text: "" }], speakers)).toThrow(
     "1 个片段缺少说话人或内容",
   );

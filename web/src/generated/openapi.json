@@ -730,6 +730,15 @@
             ],
             "title": "Speaker Id"
           },
+          "speaker_ids": {
+            "items": {
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,63}$",
+              "type": "string"
+            },
+            "maxItems": 64,
+            "title": "Speaker Ids",
+            "type": "array"
+          },
           "start_ms": {
             "minimum": 0.0,
             "title": "Start Ms",
@@ -1739,6 +1748,444 @@
           "revision"
         ],
         "title": "DeleteMutationOut",
+        "type": "object"
+      },
+      "GalgameAnnotationImportIn": {
+        "additionalProperties": false,
+        "properties": {
+          "assetPrefix": {
+            "pattern": "^[a-z0-9][a-z0-9-]{0,63}$",
+            "title": "Assetprefix",
+            "type": "string"
+          },
+          "document": {
+            "$ref": "#/components/schemas/GalgameStoryProject"
+          },
+          "expectedSourceRevision": {
+            "minimum": 0.0,
+            "title": "Expectedsourcerevision",
+            "type": "integer"
+          },
+          "expectedStoryRevision": {
+            "minimum": 0.0,
+            "title": "Expectedstoryrevision",
+            "type": "integer"
+          },
+          "language": {
+            "const": "zh",
+            "default": "zh",
+            "title": "Language",
+            "type": "string"
+          },
+          "masterAssetId": {
+            "maxLength": 36,
+            "minLength": 1,
+            "title": "Masterassetid",
+            "type": "string"
+          },
+          "requestId": {
+            "pattern": "^[a-z0-9][a-z0-9-]{0,63}$",
+            "title": "Requestid",
+            "type": "string"
+          },
+          "requirements": {
+            "$ref": "#/components/schemas/GalgameAnnotationImportRequirements"
+          },
+          "segmentSpeakerOverrides": {
+            "additionalProperties": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "maxProperties": 200,
+            "title": "Segmentspeakeroverrides",
+            "type": "object"
+          },
+          "sourceProjectId": {
+            "maxLength": 36,
+            "minLength": 1,
+            "title": "Sourceprojectid",
+            "type": "string"
+          },
+          "speakerMap": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "maxProperties": 200,
+            "minProperties": 1,
+            "title": "Speakermap",
+            "type": "object"
+          }
+        },
+        "required": [
+          "requestId",
+          "assetPrefix",
+          "sourceProjectId",
+          "masterAssetId",
+          "expectedSourceRevision",
+          "expectedStoryRevision",
+          "speakerMap",
+          "requirements",
+          "document"
+        ],
+        "title": "GalgameAnnotationImportIn",
+        "type": "object"
+      },
+      "GalgameAnnotationImportIssue": {
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "path": {
+            "default": "",
+            "title": "Path",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "message"
+        ],
+        "title": "GalgameAnnotationImportIssue",
+        "type": "object"
+      },
+      "GalgameAnnotationImportPreviewOut": {
+        "properties": {
+          "curtainIntervalCount": {
+            "title": "Curtainintervalcount",
+            "type": "integer"
+          },
+          "issues": {
+            "items": {
+              "$ref": "#/components/schemas/GalgameAnnotationImportIssue"
+            },
+            "title": "Issues",
+            "type": "array"
+          },
+          "masterAssetId": {
+            "title": "Masterassetid",
+            "type": "string"
+          },
+          "multiSpeakerCount": {
+            "title": "Multispeakercount",
+            "type": "integer"
+          },
+          "ready": {
+            "title": "Ready",
+            "type": "boolean"
+          },
+          "segmentCount": {
+            "title": "Segmentcount",
+            "type": "integer"
+          },
+          "segments": {
+            "items": {
+              "$ref": "#/components/schemas/GalgameAnnotationImportSegmentOut"
+            },
+            "title": "Segments",
+            "type": "array"
+          },
+          "sourceAssetId": {
+            "title": "Sourceassetid",
+            "type": "string"
+          },
+          "sourceChecksumSha256": {
+            "title": "Sourcechecksumsha256",
+            "type": "string"
+          },
+          "sourceProjectId": {
+            "title": "Sourceprojectid",
+            "type": "string"
+          },
+          "sourceRevision": {
+            "title": "Sourcerevision",
+            "type": "integer"
+          },
+          "speakerCount": {
+            "title": "Speakercount",
+            "type": "integer"
+          },
+          "stageTransitionCount": {
+            "title": "Stagetransitioncount",
+            "type": "integer"
+          },
+          "storyRevision": {
+            "title": "Storyrevision",
+            "type": "integer"
+          },
+          "timelineDurationMs": {
+            "title": "Timelinedurationms",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "ready",
+          "sourceProjectId",
+          "sourceRevision",
+          "storyRevision",
+          "sourceAssetId",
+          "masterAssetId",
+          "sourceChecksumSha256",
+          "timelineDurationMs",
+          "segmentCount",
+          "speakerCount",
+          "multiSpeakerCount",
+          "curtainIntervalCount",
+          "stageTransitionCount"
+        ],
+        "title": "GalgameAnnotationImportPreviewOut",
+        "type": "object"
+      },
+      "GalgameAnnotationImportRequirements": {
+        "additionalProperties": false,
+        "properties": {
+          "curtainIntervalCount": {
+            "maximum": 2000.0,
+            "minimum": 0.0,
+            "title": "Curtainintervalcount",
+            "type": "integer"
+          },
+          "lastDialogueEndMs": {
+            "minimum": 1.0,
+            "title": "Lastdialogueendms",
+            "type": "integer"
+          },
+          "maxDurationDifferenceMs": {
+            "default": 50,
+            "maximum": 1000.0,
+            "minimum": 0.0,
+            "title": "Maxdurationdifferencems",
+            "type": "integer"
+          },
+          "minContentCorrelation": {
+            "default": 0.9,
+            "maximum": 1.0,
+            "minimum": -1.0,
+            "title": "Mincontentcorrelation",
+            "type": "number"
+          },
+          "multiSpeakerCount": {
+            "maximum": 2000.0,
+            "minimum": 0.0,
+            "title": "Multispeakercount",
+            "type": "integer"
+          },
+          "segmentCount": {
+            "maximum": 2000.0,
+            "minimum": 1.0,
+            "title": "Segmentcount",
+            "type": "integer"
+          },
+          "sourceChecksumSha256": {
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Sourcechecksumsha256",
+            "type": "string"
+          },
+          "speakerCount": {
+            "maximum": 200.0,
+            "minimum": 1.0,
+            "title": "Speakercount",
+            "type": "integer"
+          },
+          "stageTransitionCount": {
+            "maximum": 500.0,
+            "minimum": 0.0,
+            "title": "Stagetransitioncount",
+            "type": "integer"
+          },
+          "timelineDurationMs": {
+            "minimum": 1.0,
+            "title": "Timelinedurationms",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "segmentCount",
+          "speakerCount",
+          "multiSpeakerCount",
+          "curtainIntervalCount",
+          "stageTransitionCount",
+          "timelineDurationMs",
+          "lastDialogueEndMs",
+          "sourceChecksumSha256"
+        ],
+        "title": "GalgameAnnotationImportRequirements",
+        "type": "object"
+      },
+      "GalgameAnnotationImportSegmentOut": {
+        "properties": {
+          "blockId": {
+            "title": "Blockid",
+            "type": "string"
+          },
+          "endMs": {
+            "title": "Endms",
+            "type": "integer"
+          },
+          "segmentId": {
+            "title": "Segmentid",
+            "type": "string"
+          },
+          "sourceSpeakerIds": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Sourcespeakerids",
+            "type": "array"
+          },
+          "startMs": {
+            "title": "Startms",
+            "type": "integer"
+          },
+          "storyAssetId": {
+            "title": "Storyassetid",
+            "type": "string"
+          },
+          "storySpeakerIds": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Storyspeakerids",
+            "type": "array"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "segmentId",
+          "blockId",
+          "storyAssetId",
+          "startMs",
+          "endMs",
+          "text",
+          "sourceSpeakerIds",
+          "storySpeakerIds"
+        ],
+        "title": "GalgameAnnotationImportSegmentOut",
+        "type": "object"
+      },
+      "GalgameAnnotationImportTaskOut": {
+        "properties": {
+          "createdAt": {
+            "title": "Createdat",
+            "type": "string"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "finishedAt": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finishedat"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "phase": {
+            "enum": [
+              "queued",
+              "cutting",
+              "validating",
+              "saving",
+              "accepting",
+              "rolling_back",
+              "completed",
+              "failed",
+              "conflict",
+              "rolled_back"
+            ],
+            "title": "Phase",
+            "type": "string"
+          },
+          "progress": {
+            "title": "Progress",
+            "type": "integer"
+          },
+          "projectId": {
+            "title": "Projectid",
+            "type": "string"
+          },
+          "requestId": {
+            "title": "Requestid",
+            "type": "string"
+          },
+          "result": {
+            "additionalProperties": true,
+            "title": "Result",
+            "type": "object"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          },
+          "sourceProjectId": {
+            "title": "Sourceprojectid",
+            "type": "string"
+          },
+          "startedAt": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Startedat"
+          },
+          "status": {
+            "enum": [
+              "queued",
+              "running",
+              "completed",
+              "failed",
+              "conflict",
+              "rolled_back"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "updatedAt": {
+            "title": "Updatedat",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "projectId",
+          "sourceProjectId",
+          "requestId",
+          "status",
+          "phase",
+          "progress",
+          "revision",
+          "createdAt",
+          "updatedAt"
+        ],
+        "title": "GalgameAnnotationImportTaskOut",
         "type": "object"
       },
       "GalgameAsrSettingsOut": {
@@ -2972,6 +3419,7 @@
             "enum": [
               "voiceSample",
               "voiceLine",
+              "timelineMaster",
               "backgroundMusic",
               "ambientSound",
               "soundEffect"
@@ -5023,6 +5471,17 @@
             "minimum": 1.0,
             "title": "Durationms",
             "type": "integer"
+          },
+          "masterAudio": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/GalgameStoryTimelineMasterAudio"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "驱动整段剧情时间轴的完整主音轨"
           }
         },
         "required": [
@@ -7361,6 +7820,28 @@
         "title": "GalgameStoryTextPlaybackStyle",
         "type": "object"
       },
+      "GalgameStoryTimelineMasterAudio": {
+        "additionalProperties": false,
+        "properties": {
+          "assetId": {
+            "pattern": "^[a-z0-9][a-z0-9-]{0,63}$",
+            "title": "Assetid",
+            "type": "string"
+          },
+          "volume": {
+            "default": 100,
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Volume",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "assetId"
+        ],
+        "title": "GalgameStoryTimelineMasterAudio",
+        "type": "object"
+      },
       "GalgameStoryUiComponent": {
         "additionalProperties": false,
         "properties": {
@@ -7965,6 +8446,488 @@
           "createdAt"
         ],
         "title": "GalgameTranscriptionTaskOut",
+        "type": "object"
+      },
+      "GalgameVideoExportBranchSelection": {
+        "properties": {
+          "branchBlockId": {
+            "pattern": "^[a-z0-9][a-z0-9-]{0,63}$",
+            "title": "Branchblockid",
+            "type": "string"
+          },
+          "choiceId": {
+            "pattern": "^[a-z0-9][a-z0-9-]{0,63}$",
+            "title": "Choiceid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "branchBlockId",
+          "choiceId"
+        ],
+        "title": "GalgameVideoExportBranchSelection",
+        "type": "object"
+      },
+      "GalgameVideoExportChoiceOut": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "targetFragmentId": {
+            "title": "Targetfragmentid",
+            "type": "string"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "text",
+          "targetFragmentId"
+        ],
+        "title": "GalgameVideoExportChoiceOut",
+        "type": "object"
+      },
+      "GalgameVideoExportCreateIn": {
+        "properties": {
+          "branchSelections": {
+            "items": {
+              "$ref": "#/components/schemas/GalgameVideoExportBranchSelection"
+            },
+            "maxItems": 256,
+            "title": "Branchselections",
+            "type": "array"
+          },
+          "expectedStoryRevision": {
+            "minimum": 0.0,
+            "title": "Expectedstoryrevision",
+            "type": "integer"
+          },
+          "locale": {
+            "default": "zh",
+            "maxLength": 32,
+            "minLength": 1,
+            "title": "Locale",
+            "type": "string"
+          },
+          "preset": {
+            "default": "1080p30",
+            "enum": [
+              "1080p30",
+              "720p30",
+              "1080p60"
+            ],
+            "title": "Preset",
+            "type": "string"
+          },
+          "previewFingerprint": {
+            "pattern": "^[a-f0-9]{64}$",
+            "title": "Previewfingerprint",
+            "type": "string"
+          },
+          "requestId": {
+            "pattern": "^[a-z0-9][a-z0-9-]{0,63}$",
+            "title": "Requestid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "expectedStoryRevision",
+          "requestId",
+          "previewFingerprint"
+        ],
+        "title": "GalgameVideoExportCreateIn",
+        "type": "object"
+      },
+      "GalgameVideoExportDecisionOut": {
+        "properties": {
+          "branchBlockId": {
+            "title": "Branchblockid",
+            "type": "string"
+          },
+          "choices": {
+            "items": {
+              "$ref": "#/components/schemas/GalgameVideoExportChoiceOut"
+            },
+            "title": "Choices",
+            "type": "array"
+          },
+          "prompt": {
+            "title": "Prompt",
+            "type": "string"
+          }
+        },
+        "required": [
+          "branchBlockId",
+          "prompt",
+          "choices"
+        ],
+        "title": "GalgameVideoExportDecisionOut",
+        "type": "object"
+      },
+      "GalgameVideoExportIssue": {
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "path": {
+            "default": "",
+            "title": "Path",
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "message"
+        ],
+        "title": "GalgameVideoExportIssue",
+        "type": "object"
+      },
+      "GalgameVideoExportPreviewIn": {
+        "properties": {
+          "branchSelections": {
+            "items": {
+              "$ref": "#/components/schemas/GalgameVideoExportBranchSelection"
+            },
+            "maxItems": 256,
+            "title": "Branchselections",
+            "type": "array"
+          },
+          "expectedStoryRevision": {
+            "minimum": 0.0,
+            "title": "Expectedstoryrevision",
+            "type": "integer"
+          },
+          "locale": {
+            "default": "zh",
+            "maxLength": 32,
+            "minLength": 1,
+            "title": "Locale",
+            "type": "string"
+          },
+          "preset": {
+            "default": "1080p30",
+            "enum": [
+              "1080p30",
+              "720p30",
+              "1080p60"
+            ],
+            "title": "Preset",
+            "type": "string"
+          }
+        },
+        "required": [
+          "expectedStoryRevision"
+        ],
+        "title": "GalgameVideoExportPreviewIn",
+        "type": "object"
+      },
+      "GalgameVideoExportPreviewOut": {
+        "properties": {
+          "blockers": {
+            "items": {
+              "$ref": "#/components/schemas/GalgameVideoExportIssue"
+            },
+            "title": "Blockers",
+            "type": "array"
+          },
+          "fps": {
+            "title": "Fps",
+            "type": "integer"
+          },
+          "height": {
+            "title": "Height",
+            "type": "integer"
+          },
+          "nextDecision": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/GalgameVideoExportDecisionOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "preset": {
+            "enum": [
+              "1080p30",
+              "720p30",
+              "1080p60"
+            ],
+            "title": "Preset",
+            "type": "string"
+          },
+          "previewFingerprint": {
+            "title": "Previewfingerprint",
+            "type": "string"
+          },
+          "ready": {
+            "title": "Ready",
+            "type": "boolean"
+          },
+          "route": {
+            "$ref": "#/components/schemas/GalgameVideoExportRouteOut"
+          },
+          "storyRevision": {
+            "title": "Storyrevision",
+            "type": "integer"
+          },
+          "warnings": {
+            "items": {
+              "$ref": "#/components/schemas/GalgameVideoExportIssue"
+            },
+            "title": "Warnings",
+            "type": "array"
+          },
+          "width": {
+            "title": "Width",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "ready",
+          "storyRevision",
+          "preset",
+          "width",
+          "height",
+          "fps",
+          "previewFingerprint",
+          "route"
+        ],
+        "title": "GalgameVideoExportPreviewOut",
+        "type": "object"
+      },
+      "GalgameVideoExportRouteOut": {
+        "properties": {
+          "branchBlockIds": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Branchblockids",
+            "type": "array"
+          },
+          "chapterIds": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Chapterids",
+            "type": "array"
+          },
+          "endingLabel": {
+            "title": "Endinglabel",
+            "type": "string"
+          },
+          "estimatedDurationMs": {
+            "minimum": 0.0,
+            "title": "Estimateddurationms",
+            "type": "integer"
+          },
+          "exactDuration": {
+            "title": "Exactduration",
+            "type": "boolean"
+          },
+          "fragmentIds": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Fragmentids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "chapterIds",
+          "fragmentIds",
+          "branchBlockIds",
+          "endingLabel",
+          "estimatedDurationMs",
+          "exactDuration"
+        ],
+        "title": "GalgameVideoExportRouteOut",
+        "type": "object"
+      },
+      "GalgameVideoExportTaskListOut": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/GalgameVideoExportTaskOut"
+            },
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "title": "GalgameVideoExportTaskListOut",
+        "type": "object"
+      },
+      "GalgameVideoExportTaskOut": {
+        "properties": {
+          "createdAt": {
+            "title": "Createdat",
+            "type": "string"
+          },
+          "endingLabel": {
+            "default": "",
+            "title": "Endinglabel",
+            "type": "string"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "finishedAt": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finishedat"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "outputAssetId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Outputassetid"
+          },
+          "outputFilename": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Outputfilename"
+          },
+          "phase": {
+            "enum": [
+              "queued",
+              "preparing",
+              "rendering",
+              "encoding",
+              "verifying",
+              "registering",
+              "completed",
+              "failed",
+              "cancelled"
+            ],
+            "title": "Phase",
+            "type": "string"
+          },
+          "preset": {
+            "enum": [
+              "1080p30",
+              "720p30",
+              "1080p60"
+            ],
+            "title": "Preset",
+            "type": "string"
+          },
+          "progress": {
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Progress",
+            "type": "integer"
+          },
+          "projectId": {
+            "title": "Projectid",
+            "type": "string"
+          },
+          "renderedMs": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Renderedms",
+            "type": "integer"
+          },
+          "requestId": {
+            "title": "Requestid",
+            "type": "string"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          },
+          "startedAt": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Startedat"
+          },
+          "status": {
+            "enum": [
+              "queued",
+              "running",
+              "completed",
+              "failed",
+              "cancelled"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "storyRevision": {
+            "title": "Storyrevision",
+            "type": "integer"
+          },
+          "totalMs": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Totalms",
+            "type": "integer"
+          },
+          "updatedAt": {
+            "title": "Updatedat",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "projectId",
+          "requestId",
+          "storyRevision",
+          "status",
+          "phase",
+          "progress",
+          "preset",
+          "revision",
+          "createdAt",
+          "updatedAt"
+        ],
+        "title": "GalgameVideoExportTaskOut",
         "type": "object"
       },
       "GalgameVoiceMatchIn": {
@@ -16195,6 +17158,161 @@
         ]
       }
     },
+    "/v1/galgame-workshop/projects/{project_id}/annotation-imports": {
+      "post": {
+        "operationId": "create_annotation_import_v1_galgame_workshop_projects__project_id__annotation_imports_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GalgameAnnotationImportIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GalgameAnnotationImportTaskOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Annotation Import",
+        "tags": [
+          "galgame-workshop"
+        ]
+      }
+    },
+    "/v1/galgame-workshop/projects/{project_id}/annotation-imports/preview": {
+      "post": {
+        "operationId": "preview_annotation_import_v1_galgame_workshop_projects__project_id__annotation_imports_preview_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GalgameAnnotationImportIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GalgameAnnotationImportPreviewOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Preview Annotation Import",
+        "tags": [
+          "galgame-workshop"
+        ]
+      }
+    },
+    "/v1/galgame-workshop/projects/{project_id}/annotation-imports/{import_id}": {
+      "get": {
+        "operationId": "get_annotation_import_v1_galgame_workshop_projects__project_id__annotation_imports__import_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "import_id",
+            "required": true,
+            "schema": {
+              "title": "Import Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GalgameAnnotationImportTaskOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Annotation Import",
+        "tags": [
+          "galgame-workshop"
+        ]
+      }
+    },
     "/v1/galgame-workshop/projects/{project_id}/assets": {
       "get": {
         "operationId": "list_project_assets_v1_galgame_workshop_projects__project_id__assets_get",
@@ -17329,6 +18447,301 @@
           }
         },
         "summary": "Restore Story Snapshot",
+        "tags": [
+          "galgame-workshop"
+        ]
+      }
+    },
+    "/v1/galgame-workshop/projects/{project_id}/video-exports": {
+      "get": {
+        "operationId": "list_video_exports_v1_galgame_workshop_projects__project_id__video_exports_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GalgameVideoExportTaskListOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Video Exports",
+        "tags": [
+          "galgame-workshop"
+        ]
+      },
+      "post": {
+        "operationId": "create_video_export_v1_galgame_workshop_projects__project_id__video_exports_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GalgameVideoExportCreateIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GalgameVideoExportTaskOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Video Export",
+        "tags": [
+          "galgame-workshop"
+        ]
+      }
+    },
+    "/v1/galgame-workshop/projects/{project_id}/video-exports/preview": {
+      "post": {
+        "operationId": "preview_video_export_v1_galgame_workshop_projects__project_id__video_exports_preview_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GalgameVideoExportPreviewIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GalgameVideoExportPreviewOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Preview Video Export",
+        "tags": [
+          "galgame-workshop"
+        ]
+      }
+    },
+    "/v1/galgame-workshop/projects/{project_id}/video-exports/{export_id}": {
+      "get": {
+        "operationId": "get_video_export_v1_galgame_workshop_projects__project_id__video_exports__export_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "export_id",
+            "required": true,
+            "schema": {
+              "title": "Export Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GalgameVideoExportTaskOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Video Export",
+        "tags": [
+          "galgame-workshop"
+        ]
+      }
+    },
+    "/v1/galgame-workshop/projects/{project_id}/video-exports/{export_id}/cancel": {
+      "post": {
+        "operationId": "cancel_video_export_v1_galgame_workshop_projects__project_id__video_exports__export_id__cancel_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "export_id",
+            "required": true,
+            "schema": {
+              "title": "Export Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GalgameVideoExportTaskOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Cancel Video Export",
+        "tags": [
+          "galgame-workshop"
+        ]
+      }
+    },
+    "/v1/galgame-workshop/projects/{project_id}/video-exports/{export_id}/download": {
+      "get": {
+        "operationId": "download_video_export_v1_galgame_workshop_projects__project_id__video_exports__export_id__download_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "export_id",
+            "required": true,
+            "schema": {
+              "title": "Export Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Download Video Export",
         "tags": [
           "galgame-workshop"
         ]

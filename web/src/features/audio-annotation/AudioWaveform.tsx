@@ -17,8 +17,10 @@ import type {
 } from "@features/audio-annotation/types";
 import {
   clampWaveformZoom,
+  segmentSpeakerIds,
   stabilizeWaveformRegionSegments,
   stabilizeWaveformRegionSpeakers,
+  waveformSegmentSpeakerLabel,
   waveformViewport,
 } from "@features/audio-annotation/model";
 import type {
@@ -388,19 +390,81 @@ export const AudioWaveform = forwardRef<
           Number(right.segment.id === selectedId),
       )
       .forEach(({ segment, index }) => {
-        const speaker = segment.speaker_id
-          ? speakerById.get(segment.speaker_id)
-          : undefined;
+        const segmentSpeakers = segmentSpeakerIds(segment)
+          .map((speakerId) => speakerById.get(speakerId))
+          .filter(
+            (speaker): speaker is WaveformRegionSpeaker =>
+              speaker !== undefined,
+          );
+        const speaker = segmentSpeakers[0];
+        const labelText = waveformSegmentSpeakerLabel(
+          index,
+          segmentSpeakers.map((item) => item.name),
+        );
         const label = document.createElement("span");
-        label.className = "annotation-region-label";
-        label.textContent = `${String(index + 1).padStart(2, "0")}  ${speaker?.name ?? "未指定"}`;
+        const multipleSpeakers = segmentSpeakers.length > 1;
+        const selected = selectedId === segment.id;
+        label.className = `annotation-region-label${multipleSpeakers ? " is-multiple" : ""}`;
+        label.title = labelText;
+        label.setAttribute("aria-label", labelText);
+
+        const number = document.createElement("strong");
+        number.textContent = String(index + 1).padStart(2, "0");
+        Object.assign(number.style, {
+          flex: "none",
+          fontWeight: "700",
+        });
+        label.append(number);
+
+        const dots = document.createElement("span");
+        dots.setAttribute("aria-hidden", "true");
+        Object.assign(dots.style, {
+          display: "inline-flex",
+          flex: "none",
+          paddingLeft: "2px",
+        });
+        const dotColors = segmentSpeakers.length
+          ? segmentSpeakers.map((item) => item.color)
+          : ["#8b9189"];
+        dotColors.slice(0, 4).forEach((color, dotIndex) => {
+          const dot = document.createElement("i");
+          Object.assign(dot.style, {
+            width: "7px",
+            height: "7px",
+            marginLeft: dotIndex ? "-2px" : "0",
+            border: "1px solid rgba(24, 27, 24, 0.8)",
+            borderRadius: "50%",
+            background: color,
+          });
+          dots.append(dot);
+        });
+        label.append(dots);
+
+        const names = document.createElement("span");
+        names.textContent = segmentSpeakers.length
+          ? segmentSpeakers.map((item) => item.name).join("、")
+          : "未指定";
+        Object.assign(names.style, {
+          minWidth: "0",
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+          whiteSpace: "nowrap",
+        });
+        label.append(names);
         Object.assign(label.style, {
           position: "absolute",
-          zIndex: "4",
+          zIndex: selected ? "6" : "4",
           top: "8px",
           left: "8px",
-          maxWidth: "calc(100% - 16px)",
+          maxWidth:
+            selected && multipleSpeakers
+              ? "min(320px, calc(100vw - 48px))"
+              : "calc(100% - 16px)",
+          width: selected && multipleSpeakers ? "max-content" : "auto",
           padding: "3px 7px",
+          display: "inline-flex",
+          alignItems: "center",
+          gap: "5px",
           overflow: "hidden",
           border: "1px solid rgba(255, 255, 255, 0.22)",
           borderRadius: "5px",
@@ -408,7 +472,6 @@ export const AudioWaveform = forwardRef<
           color: "#f4f3ef",
           fontSize: "10px",
           lineHeight: "1.25",
-          textOverflow: "ellipsis",
           whiteSpace: "nowrap",
           pointerEvents: "none",
         });
@@ -416,10 +479,7 @@ export const AudioWaveform = forwardRef<
           id: segment.id,
           start: segment.start_ms / 1000,
           end: segment.end_ms / 1000,
-          color: regionColor(
-            speaker?.color ?? "#8b9189",
-            selectedId === segment.id,
-          ),
+          color: regionColor(speaker?.color ?? "#8b9189", selected),
           content: label,
           minLength: 0.1,
           drag: !focusSelectionMode,

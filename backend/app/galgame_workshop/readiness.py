@@ -7,6 +7,7 @@ from app.files.storage import AssetStorage
 from app.galgame_workshop.assets import GalgameProjectAssets
 from app.galgame_workshop.errors import GalgameStoryDocumentInvalidError
 from app.galgame_workshop.story import GalgameStoryDocuments, build_route_report
+from app.models import GalgameAssetMetadata
 from app.schemas.galgame_workshop import (
     GalgameStoryReportIssue,
     GalgameStoryRouteReportOut,
@@ -51,6 +52,38 @@ class GalgameReadiness:
                 for asset in missing
             ],
         ]
+        assets_by_id = {asset.id: asset for asset in story.document.assets}
+        for chapter_index, chapter in enumerate(story.document.chapters):
+            for fragment_index, fragment in enumerate(chapter.fragments):
+                master = fragment.timeline.master_audio if fragment.timeline else None
+                if master is None:
+                    continue
+                story_asset = assets_by_id[master.asset_id]
+                metadata = await self.session.get(GalgameAssetMetadata, story_asset.file_id)
+                path = (
+                    f"/chapters/{chapter_index}/fragments/{fragment_index}"
+                    "/timeline/masterAudio/assetId"
+                )
+                if metadata is None or metadata.duration_ms is None:
+                    errors.append(
+                        GalgameStoryReportIssue(
+                            code="timeline_master_audio_duration_unknown",
+                            message="时间轴主音轨缺少可校验的媒体时长",
+                            path=path,
+                        )
+                    )
+                    continue
+                if abs(metadata.duration_ms - fragment.timeline.duration_ms) > 1:
+                    errors.append(
+                        GalgameStoryReportIssue(
+                            code="timeline_master_audio_duration_mismatch",
+                            message=(
+                                "时间轴主音轨时长与剧情时间轴不一致："
+                                f"{metadata.duration_ms}ms / {fragment.timeline.duration_ms}ms"
+                            ),
+                            path=path,
+                        )
+                    )
         manifest = await GalgameProjectAssets(self.session, self.settings).package_manifest(
             project_id
         )

@@ -361,6 +361,7 @@ class GalgameStoryAudioAsset(GalgameStoryModel):
     role: Literal[
         "voiceSample",
         "voiceLine",
+        "timelineMaster",
         "backgroundMusic",
         "ambientSound",
         "soundEffect",

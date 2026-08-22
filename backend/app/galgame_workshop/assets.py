@@ -461,6 +461,7 @@ class GalgameProjectAssets:
             "soundEffect": "sfx",
             "voiceSample": "voice",
             "voiceLine": "voice",
+            "timelineMaster": "voice",
             "video": "video",
         }
         items: list[GalgameAssetOverviewItem] = []
@@ -684,6 +685,21 @@ class GalgameProjectAssets:
                 )
         for chapter in document.chapters:
             for fragment in chapter.fragments:
+                master_asset_id = (
+                    fragment.timeline.master_audio.asset_id
+                    if fragment.timeline is not None and fragment.timeline.master_audio is not None
+                    else None
+                )
+                if master_asset_id in story_asset_ids:
+                    references.append(
+                        {
+                            "kind": "timelineMaster",
+                            "chapterId": chapter.id,
+                            "fragmentId": fragment.id,
+                            "storyAssetId": master_asset_id,
+                            "label": f"{chapter.title} · {fragment.title} · 时间轴主音轨",
+                        }
+                    )
                 for block in fragment.blocks:
                     asset_id = None
                     kind = ""

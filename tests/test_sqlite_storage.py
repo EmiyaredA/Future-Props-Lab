@@ -40,14 +40,14 @@ def test_sqlite_migration_is_repeatable_and_detects_drift(tmp_path: Path) -> Non
     database_path = tmp_path / "nested" / "catalog.db"
 
     assert apply_migrations(database_path) == (
-        "r0027_transcription_parameters",
+        "r0029_galgame_video_exports",
         True,
     )
     assert apply_migrations(database_path) == (
-        "r0027_transcription_parameters",
+        "r0029_galgame_video_exports",
         False,
     )
-    assert check_migrations(database_path) == "r0027_transcription_parameters"
+    assert check_migrations(database_path) == "r0029_galgame_video_exports"
 
     with connect_database(database_path) as connection:
         connection.execute(
@@ -73,7 +73,7 @@ def test_existing_r0001_database_upgrades_without_rewriting_history(tmp_path: Pa
         connection.commit()
 
     assert apply_migrations(database_path) == (
-        "r0027_transcription_parameters",
+        "r0029_galgame_video_exports",
         True,
     )
     with connect_database(database_path) as connection:
@@ -108,6 +108,8 @@ def test_existing_r0001_database_upgrades_without_rewriting_history(tmp_path: Pa
             ("r0025_pro_asr_provider",),
             ("r0026_transcription_100mb",),
             ("r0027_transcription_parameters",),
+            ("r0028_galgame_annotation_imports",),
+            ("r0029_galgame_video_exports",),
         ]
         assert connection.execute("SELECT COUNT(*) FROM model_test_conversations").fetchone() == (
             0,
@@ -156,7 +158,7 @@ def test_r0020_assigns_complete_r0019_history_to_default_workspace(
     tmp_path: Path,
 ) -> None:
     database_path = tmp_path / "r0019-history.db"
-    _create_database_at_migration(database_path, len(MIGRATIONS) - 2)
+    _create_database_at_migration(database_path, len(MIGRATIONS) - 4)
     with connect_database(database_path) as connection:
         connection.execute(
             """
@@ -220,7 +222,7 @@ def test_r0020_assigns_complete_r0019_history_to_default_workspace(
         connection.commit()
 
     assert apply_migrations(database_path) == (
-        "r0027_transcription_parameters",
+        "r0029_galgame_video_exports",
         True,
     )
     workspace_tables = (
@@ -268,7 +270,7 @@ def test_r0020_assigns_complete_r0019_history_to_default_workspace(
 
 def test_r0021_adds_senseaudio_asr_to_each_existing_workspace(tmp_path: Path) -> None:
     database_path = tmp_path / "r0020-multi-workspace.db"
-    _create_database_at_migration(database_path, len(MIGRATIONS) - 7)
+    _create_database_at_migration(database_path, len(MIGRATIONS) - 9)
     workspace_id = "12345678-1234-5678-9abc-def012345678"
     with connect_database(database_path) as connection:
         connection.execute(
@@ -286,7 +288,7 @@ def test_r0021_adds_senseaudio_asr_to_each_existing_workspace(tmp_path: Path) ->
         connection.commit()
 
     assert apply_migrations(database_path) == (
-        "r0027_transcription_parameters",
+        "r0029_galgame_video_exports",
         True,
     )
     with connect_database(database_path) as connection:
@@ -364,14 +366,14 @@ def test_r0021_adds_senseaudio_asr_to_each_existing_workspace(tmp_path: Path) ->
     assert "transcript_segments" in metadata_columns
     assert "result_segments" in task_columns
     assert apply_migrations(database_path) == (
-        "r0027_transcription_parameters",
+        "r0029_galgame_video_exports",
         False,
     )
 
 
 def test_r0025_clones_existing_asr_credentials_and_enabled_state(tmp_path: Path) -> None:
     database_path = tmp_path / "r0024-pro-asr-upgrade.db"
-    _create_database_at_migration(database_path, len(MIGRATIONS) - 3)
+    _create_database_at_migration(database_path, len(MIGRATIONS) - 5)
     with connect_database(database_path) as connection:
         connection.execute(
             """
@@ -408,7 +410,7 @@ def test_r0025_clones_existing_asr_credentials_and_enabled_state(tmp_path: Path)
         ).fetchone()[0]
         connection.commit()
 
-    assert apply_migrations(database_path) == ("r0027_transcription_parameters", True)
+    assert apply_migrations(database_path) == ("r0029_galgame_video_exports", True)
     with connect_database(database_path) as connection:
         cloned = connection.execute(
             """
@@ -441,7 +443,7 @@ def test_r0025_clones_existing_asr_credentials_and_enabled_state(tmp_path: Path)
 
 def test_r0026_expands_transcription_storage_limit_and_preserves_tasks(tmp_path: Path) -> None:
     database_path = tmp_path / "r0025-transcription-limit.db"
-    _create_database_at_migration(database_path, len(MIGRATIONS) - 2)
+    _create_database_at_migration(database_path, len(MIGRATIONS) - 4)
     insert_sql = """
         INSERT INTO model_test_transcription_tasks (
           id, workspace_id, provider_kind, provider_name, model_slug,
@@ -457,7 +459,7 @@ def test_r0026_expands_transcription_storage_limit_and_preserves_tasks(tmp_path:
         )
         connection.commit()
 
-    assert apply_migrations(database_path) == ("r0027_transcription_parameters", True)
+    assert apply_migrations(database_path) == ("r0029_galgame_video_exports", True)
     with connect_database(database_path) as connection:
         assert connection.execute(
             "SELECT input_filename, input_byte_size FROM model_test_transcription_tasks "
@@ -482,7 +484,7 @@ def test_r0026_expands_transcription_storage_limit_and_preserves_tasks(tmp_path:
 
 def test_r0027_backfills_transcription_parameter_snapshots(tmp_path: Path) -> None:
     database_path = tmp_path / "r0026-transcription-parameters.db"
-    _create_database_at_migration(database_path, len(MIGRATIONS) - 1)
+    _create_database_at_migration(database_path, len(MIGRATIONS) - 3)
     with connect_database(database_path) as connection:
         connection.executemany(
             """
@@ -515,7 +517,7 @@ def test_r0027_backfills_transcription_parameter_snapshots(tmp_path: Path) -> No
         )
         connection.commit()
 
-    assert apply_migrations(database_path) == ("r0027_transcription_parameters", True)
+    assert apply_migrations(database_path) == ("r0029_galgame_video_exports", True)
     with connect_database(database_path) as connection:
         columns = {
             row[1]: row[2]
@@ -593,7 +595,7 @@ def test_r0014_adds_empty_content_parts_to_existing_messages(tmp_path: Path) -> 
 
 def test_r0015_upgrades_r0014_and_enforces_private_asset_ownership(tmp_path: Path) -> None:
     database_path = tmp_path / "generation-assets-upgrade.db"
-    _create_database_at_migration(database_path, len(MIGRATIONS) - 2)
+    _create_database_at_migration(database_path, len(MIGRATIONS) - 4)
     with connect_database(database_path) as connection:
         connection.execute(
             """
@@ -617,11 +619,11 @@ def test_r0015_upgrades_r0014_and_enforces_private_asset_ownership(tmp_path: Pat
         connection.commit()
 
     assert apply_migrations(database_path) == (
-        "r0027_transcription_parameters",
+        "r0029_galgame_video_exports",
         True,
     )
     assert apply_migrations(database_path) == (
-        "r0027_transcription_parameters",
+        "r0029_galgame_video_exports",
         False,
     )
     with connect_database(database_path) as connection:
@@ -730,7 +732,7 @@ def test_existing_default_catalog_is_extended_without_overwriting_user_data(
         connection.commit()
 
     assert apply_migrations(database_path) == (
-        "r0027_transcription_parameters",
+        "r0029_galgame_video_exports",
         True,
     )
 
@@ -819,7 +821,7 @@ def test_existing_default_catalog_is_extended_without_overwriting_user_data(
     assert stored_categories == {"[]", '["speech_recognition"]'}
 
     assert apply_migrations(database_path) == (
-        "r0027_transcription_parameters",
+        "r0029_galgame_video_exports",
         False,
     )
     with connect_database(database_path) as connection:
@@ -837,7 +839,7 @@ def test_catalog_upgrade_does_not_recreate_deleted_default_provider(tmp_path: Pa
         connection.commit()
 
     assert apply_migrations(database_path) == (
-        "r0027_transcription_parameters",
+        "r0029_galgame_video_exports",
         True,
     )
     with connect_database(database_path) as connection:
@@ -878,7 +880,7 @@ def test_r0007_upgrade_adds_visual_tasks_and_preserves_provider_credentials(
         connection.commit()
 
     assert apply_migrations(database_path) == (
-        "r0027_transcription_parameters",
+        "r0029_galgame_video_exports",
         True,
     )
     with connect_database(database_path) as connection:
@@ -930,10 +932,10 @@ def test_r0007_upgrade_adds_visual_tasks_and_preserves_provider_credentials(
 
 def test_r0024_adds_private_model_test_transcription_tasks(tmp_path: Path) -> None:
     database_path = tmp_path / "r0023-transcription-upgrade.db"
-    _create_database_at_migration(database_path, len(MIGRATIONS) - 4)
+    _create_database_at_migration(database_path, len(MIGRATIONS) - 6)
 
     assert apply_migrations(database_path) == (
-        "r0027_transcription_parameters",
+        "r0029_galgame_video_exports",
         True,
     )
     with connect_database(database_path) as connection:

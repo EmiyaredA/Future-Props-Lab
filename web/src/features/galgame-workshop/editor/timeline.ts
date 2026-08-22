@@ -82,6 +82,27 @@ export type GalgameTimelineCue = {
   endMs: number;
 };
 
+type TimelineCueCacheEntry = {
+  blocks: GalgameStoryFragment["blocks"];
+  timeline: GalgameStoryFragment["timeline"];
+  cues: GalgameTimelineCue[];
+};
+
+type TimelineEventCacheEntry = {
+  blocks: GalgameStoryFragment["blocks"];
+  timeline: GalgameStoryFragment["timeline"];
+  events: GalgameTimelineEvent[];
+};
+
+const timelineCueCache = new WeakMap<
+  GalgameStoryFragment,
+  TimelineCueCacheEntry
+>();
+const timelineEventCache = new WeakMap<
+  GalgameStoryFragment,
+  TimelineEventCacheEntry
+>();
+
 export type GalgameTimelineGap = {
   id: string;
   kind: "leading" | "internal" | "trailing";
@@ -101,7 +122,14 @@ export type GalgameTimelineCgRange = {
 };
 
 export function timelineCues(fragment: GalgameStoryFragment) {
-  return (fragment.blocks ?? [])
+  const cached = timelineCueCache.get(fragment);
+  if (
+    cached &&
+    cached.blocks === fragment.blocks &&
+    cached.timeline === fragment.timeline
+  )
+    return cached.cues;
+  const cues = (fragment.blocks ?? [])
     .flatMap((block, blockIndex) => {
       if (
         !isTimelineCueBlock(block) ||
@@ -120,6 +148,12 @@ export function timelineCues(fragment: GalgameStoryFragment) {
       ];
     })
     .map((cue, cueIndex) => ({ ...cue, cueIndex }));
+  timelineCueCache.set(fragment, {
+    blocks: fragment.blocks,
+    timeline: fragment.timeline,
+    cues,
+  });
+  return cues;
 }
 
 function eventPriority(block: GalgameStoryBlock) {
@@ -236,7 +270,14 @@ export function attachTimelineCharacterEvent(
 }
 
 export function timelineEvents(fragment: GalgameStoryFragment) {
-  return (fragment.blocks ?? [])
+  const cached = timelineEventCache.get(fragment);
+  if (
+    cached &&
+    cached.blocks === fragment.blocks &&
+    cached.timeline === fragment.timeline
+  )
+    return cached.events;
+  const events = (fragment.blocks ?? [])
     .flatMap((block, blockIndex): GalgameTimelineEvent[] => {
       if (isTimelineCueBlock(block) && block.startMs != null)
         return [
@@ -267,6 +308,12 @@ export function timelineEvents(fragment: GalgameStoryFragment) {
         left.priority - right.priority ||
         left.blockIndex - right.blockIndex,
     );
+  timelineEventCache.set(fragment, {
+    blocks: fragment.blocks,
+    timeline: fragment.timeline,
+    events,
+  });
+  return events;
 }
 
 export function timelineCgRanges(

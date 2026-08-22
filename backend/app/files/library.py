@@ -121,7 +121,9 @@ class AssetLibrary:
         filename: str,
         content_type: str,
         folder_id: str | None = None,
+        galgame_project_id: str | None = None,
         allowed_extensions: set[str] | None = None,
+        max_bytes: int | None = None,
     ) -> tuple[VisualAsset, Path]:
         """Stage an existing local file for an enclosing atomic use case.
 
@@ -148,7 +150,7 @@ class AssetLibrary:
         temp_path, final_path = self.storage.prepare_write(
             storage_key,
             visual_project_id=None,
-            galgame_project_id=None,
+            galgame_project_id=galgame_project_id,
         )
 
         def copy_file() -> tuple[int, bytes]:
@@ -157,7 +159,7 @@ class AssetLibrary:
             with source_path.open("rb") as source, temp_path.open("xb") as target:
                 while chunk := source.read(1024 * 1024):
                     size += len(chunk)
-                    if size > self.settings.fpl_visual_asset_max_bytes:
+                    if size > (max_bytes or self.settings.fpl_visual_asset_max_bytes):
                         raise AssetError(
                             "文件超过上传大小限制",
                             code="file_too_large",
@@ -177,7 +179,7 @@ class AssetLibrary:
             os.replace(temp_path, final_path)
             row = VisualAsset(
                 project_id=None,
-                galgame_project_id=None,
+                galgame_project_id=galgame_project_id,
                 folder_id=folder_id,
                 original_filename=safe_name,
                 display_name=display_name_without_original_extension(safe_name, safe_name),

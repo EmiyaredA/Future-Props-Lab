@@ -45,6 +45,9 @@ class AudioAnnotationSegment(BaseModel):
     start_ms: int = Field(ge=0)
     end_ms: int = Field(gt=0)
     speaker_id: str | None = Field(default=None, pattern=STABLE_ID_PATTERN)
+    speaker_ids: list[Annotated[str, Field(pattern=STABLE_ID_PATTERN)]] = Field(
+        default_factory=list, max_length=64
+    )
     text: str = Field(default="", max_length=20_000)
     language: str | None = Field(default=None, pattern=LANGUAGE_CODE_PATTERN, max_length=35)
     localized_texts: list[AudioAnnotationLocalizedText] = Field(default_factory=list, max_length=32)
@@ -56,7 +59,14 @@ class AudioAnnotationSegment(BaseModel):
         return value.lower() if value is not None else None
 
     @model_validator(mode="after")
-    def localized_languages_are_unique(self) -> AudioAnnotationSegment:
+    def speaker_and_localized_languages_are_valid(self) -> AudioAnnotationSegment:
+        speaker_ids = self.speaker_ids or ([self.speaker_id] if self.speaker_id else [])
+        if len(speaker_ids) != len(set(speaker_ids)):
+            raise ValueError("同一片段的说话人不能重复")
+        if self.speaker_id is not None and speaker_ids and self.speaker_id != speaker_ids[0]:
+            raise ValueError("主说话人必须是说话人列表的第一项")
+        self.speaker_ids = speaker_ids
+        self.speaker_id = speaker_ids[0] if speaker_ids else None
         languages = [item.language for item in self.localized_texts]
         if len(languages) != len(set(languages)):
             raise ValueError("同一片段不能重复添加同一种语言")

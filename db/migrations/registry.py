@@ -30,6 +30,8 @@ from db.migrations.versions import (
     r0025_pro_asr_provider,
     r0026_transcription_100mb,
     r0027_transcription_parameters,
+    r0028_galgame_annotation_imports,
+    r0029_galgame_video_exports,
 )
 
 
@@ -141,6 +143,14 @@ MIGRATIONS = (
         r0027_transcription_parameters.MIGRATION_ID,
         r0027_transcription_parameters.SQL,
         foreign_keys_off=True,
+    ),
+    Migration(
+        r0028_galgame_annotation_imports.MIGRATION_ID,
+        r0028_galgame_annotation_imports.SQL,
+    ),
+    Migration(
+        r0029_galgame_video_exports.MIGRATION_ID,
+        r0029_galgame_video_exports.SQL,
     ),
 )
 

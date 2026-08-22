@@ -1,0 +1,50 @@
+html,
+body.galgame-export-body,
+body.galgame-export-body #root {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  background: #000;
+  cursor: none;
+}
+
+.galgame-export-body .galgame-player-export {
+  width: 100vw;
+  height: 100vh;
+  min-height: 0;
+  border: 0;
+  border-radius: 0;
+  background: #000;
+}
+
+.galgame-export-body .galgame-player-export .galgame-stage-host,
+.galgame-export-body .galgame-player-export .galgame-stage {
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  border-radius: 0;
+}
+
+.galgame-export-body .galgame-player-export .galgame-stage {
+  aspect-ratio: 16 / 9 !important;
+}
+
+.galgame-export-body .galgame-choices button.is-export-selected {
+  color: white;
+  border-color: #ff6f66;
+  background: rgb(239 82 78 / 82%);
+  transform: translateX(10px);
+}
+
+.galgame-export-error {
+  display: grid;
+  width: 100%;
+  height: 100%;
+  place-items: center;
+  color: white;
+  font:
+    24px system-ui,
+    sans-serif;
+}

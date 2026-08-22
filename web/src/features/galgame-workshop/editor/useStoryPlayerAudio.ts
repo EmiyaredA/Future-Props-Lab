@@ -6,6 +6,7 @@ import type {
   GalgameStoryProject,
 } from "@features/galgame-workshop/api";
 import {
+  createAudioLevelMonitor,
   LipSyncLevelTracker,
   type AudioLevelMonitor,
   type LipSyncFrame,
@@ -19,6 +20,7 @@ type PlayingAudio = {
   audio: HTMLAudioElement;
   baseVolume: number;
   sourceBlockId?: string;
+  storyAssetId?: string;
   levelMonitor?: AudioLevelMonitor;
 };
 
@@ -31,6 +33,15 @@ type TimelinePlayback = {
 export function useStoryPlayerAudio(
   document: GalgameStoryProject,
   mix: Record<StoryPlayerMixChannel, number>,
+  onExportAudioEvent?: (event: {
+    action: "play" | "stop";
+    channel: "voice" | "bgm" | "ambient" | "sfx";
+    storyAssetId?: string;
+    offsetMs?: number;
+    volume?: number;
+    loop?: boolean;
+    fadeMs?: number;
+  }) => void,
 ) {
   const [autoplayBlocked, setAutoplayBlocked] = useState(false);
   const [timelinePositionMs, setTimelinePositionMs] = useState(0);
@@ -41,6 +52,7 @@ export function useStoryPlayerAudio(
   const lipSyncTrackerRef = useRef(new LipSyncLevelTracker());
   const mixRef = useRef(mix);
   const voiceRef = useRef<PlayingAudio | null>(null);
+  const timelineMasterRef = useRef<PlayingAudio | null>(null);
   const timelineRef = useRef<TimelinePlayback | null>(null);
   const channelRefs = useRef<Record<"bgm" | "ambient", PlayingAudio | null>>({
     bgm: null,
@@ -59,6 +71,9 @@ export function useStoryPlayerAudio(
     if (voiceRef.current)
       voiceRef.current.audio.volume =
         voiceRef.current.baseVolume * (mix.voice / 100);
+    if (timelineMasterRef.current)
+      timelineMasterRef.current.audio.volume =
+        timelineMasterRef.current.baseVolume * (mix.voice / 100);
     for (const channel of ["bgm", "ambient"] as const) {
       const playing = channelRefs.current[channel];
       if (playing)
@@ -199,6 +214,8 @@ export function useStoryPlayerAudio(
       if (channel === "sfx") {
         const active = [...sfxRef.current];
         sfxRef.current = [];
+        if (active.length)
+          onExportAudioEvent?.({ action: "stop", channel, fadeMs });
         for (const playing of active) {
           if (fadeMs > 0) fadeAndStop(playing, fadeMs);
           else stopPlaying(playing);
@@ -208,10 +225,11 @@ export function useStoryPlayerAudio(
       const playing = channelRefs.current[channel];
       channelRefs.current[channel] = null;
       if (!playing) return;
+      onExportAudioEvent?.({ action: "stop", channel, fadeMs });
       if (fadeMs > 0) fadeAndStop(playing, fadeMs);
       else stopPlaying(playing);
     },
-    [fadeAndStop, stopPlaying],
+    [fadeAndStop, onExportAudioEvent, stopPlaying],
   );
 
   const executeAudioBlock = useCallback(
@@ -253,6 +271,7 @@ export function useStoryPlayerAudio(
             audio,
             baseVolume: block.volume / 100,
             sourceBlockId: block.id,
+            storyAssetId: asset.id,
           };
           audio.loop = block.loop;
           const target = playing.baseVolume * (mixRef.current[channel] / 100);
@@ -271,6 +290,21 @@ export function useStoryPlayerAudio(
               { once: true },
             );
           } else channelRefs.current[channel] = playing;
+          if (options.shouldPlay ?? true)
+            audio.addEventListener(
+              "play",
+              () =>
+                onExportAudioEvent?.({
+                  action: "play",
+                  channel,
+                  storyAssetId: asset.id,
+                  offsetMs: Math.max(0, options.offsetMs ?? 0),
+                  volume: target,
+                  loop: block.loop,
+                  fadeMs,
+                }),
+              { once: true },
+            );
           positionAudio(
             playing,
             Math.max(0, options.offsetMs ?? 0),
@@ -284,6 +318,7 @@ export function useStoryPlayerAudio(
       document.assets,
       fadeTo,
       objectUrl,
+      onExportAudioEvent,
       positionAudio,
       stopChannel,
       stopPlaying,
@@ -316,6 +351,106 @@ export function useStoryPlayerAudio(
     [executeAudioBlock, positionAudio, stopChannel],
   );
 
+  const syncTimelineMaster = useCallback(
+    async (
+      fragment: GalgameStoryFragment,
+      milliseconds: number,
+      shouldPlay: boolean,
+    ) => {
+      const config = fragment.timeline?.masterAudio;
+      if (!config) return true;
+      const asset = (document.assets ?? []).find(
+        (candidate) =>
+          candidate.type === "audio" &&
+          candidate.id === config.assetId &&
+          candidate.role === "timelineMaster",
+      );
+      if (!asset || asset.type !== "audio") return false;
+      const playerGeneration = generationRef.current;
+      let playing = timelineMasterRef.current;
+      if (playing?.storyAssetId !== asset.id) {
+        stopPlaying(playing);
+        const url = await objectUrl(asset.fileId).catch(() => undefined);
+        if (!url || playerGeneration !== generationRef.current) return false;
+        const audio = new Audio(url);
+        playing = {
+          audio,
+          storyAssetId: asset.id,
+          baseVolume: config.volume / 100,
+          levelMonitor: createAudioLevelMonitor(audio, setAudioLevelDb),
+        };
+        audio.volume = playing.baseVolume * (mixRef.current.voice / 100);
+        audio.addEventListener("play", () => setVoicePlaying(true));
+        audio.addEventListener("pause", () => setVoicePlaying(false));
+        audio.addEventListener("ended", () => setVoicePlaying(false));
+        timelineMasterRef.current = playing;
+      } else {
+        playing.baseVolume = config.volume / 100;
+        playing.audio.volume =
+          playing.baseVolume * (mixRef.current.voice / 100);
+      }
+      try {
+        playing.audio.currentTime = Math.max(0, milliseconds) / 1000;
+      } catch {
+        // loadedmetadata below retries the exact seek before playback starts.
+      }
+      if (playing.audio.readyState < 1) {
+        const loaded = await new Promise<boolean>((resolve) => {
+          const onLoaded = () => {
+            cleanup();
+            resolve(true);
+          };
+          const onError = () => {
+            cleanup();
+            resolve(false);
+          };
+          const cleanup = () => {
+            playing?.audio.removeEventListener("loadedmetadata", onLoaded);
+            playing?.audio.removeEventListener("error", onError);
+          };
+          playing?.audio.addEventListener("loadedmetadata", onLoaded, {
+            once: true,
+          });
+          playing?.audio.addEventListener("error", onError, { once: true });
+          playing?.audio.load();
+        });
+        if (!loaded || playerGeneration !== generationRef.current) return false;
+      }
+      try {
+        playing.audio.currentTime = Math.max(0, milliseconds) / 1000;
+      } catch {
+        return false;
+      }
+      if (!shouldPlay) {
+        playing.audio.pause();
+        return true;
+      }
+      await playing.levelMonitor?.resume().catch(() => undefined);
+      return tryPlay(playing.audio);
+    },
+    [
+      document.assets,
+      generationRef,
+      mixRef,
+      objectUrl,
+      setAudioLevelDb,
+      setVoicePlaying,
+      stopPlaying,
+      tryPlay,
+    ],
+  );
+
+  const pauseTimelineMaster = useCallback(() => {
+    timelineMasterRef.current?.audio.pause();
+  }, []);
+
+  const timelineMasterPositionMs = useCallback(() => {
+    const seconds = timelineMasterRef.current?.audio.currentTime;
+    return seconds != null && Number.isFinite(seconds)
+      ? Math.max(0, seconds * 1000)
+      : undefined;
+  }, []);
+
   const cleanupPlayback = useCallback(() => {
     generationRef.current += 1;
     for (const channel of ["voice", "bgm", "ambient", "sfx"] as const)
@@ -327,6 +462,8 @@ export function useStoryPlayerAudio(
     timelineRef.current = null;
     stopPlaying(voiceRef.current);
     voiceRef.current = null;
+    stopPlaying(timelineMasterRef.current);
+    timelineMasterRef.current = null;
     stopPlaying(channelRefs.current.bgm);
     stopPlaying(channelRefs.current.ambient);
     channelRefs.current = { bgm: null, ambient: null };
@@ -363,6 +500,7 @@ export function useStoryPlayerAudio(
     lipSyncTrackerRef,
     mixRef,
     voiceRef,
+    timelineMasterRef,
     timelineRef,
     channelRefs,
     sfxRef,
@@ -376,6 +514,9 @@ export function useStoryPlayerAudio(
     stopChannel,
     executeAudioBlock,
     syncTimelineBgm,
+    syncTimelineMaster,
+    pauseTimelineMaster,
+    timelineMasterPositionMs,
     cleanupPlayback,
   };
 }

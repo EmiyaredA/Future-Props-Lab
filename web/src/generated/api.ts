@@ -735,6 +735,57 @@ export interface paths {
         patch: operations["patch_project_v1_galgame_workshop_projects__project_id__patch"];
         trace?: never;
     };
+    "/v1/galgame-workshop/projects/{project_id}/annotation-imports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create Annotation Import */
+        post: operations["create_annotation_import_v1_galgame_workshop_projects__project_id__annotation_imports_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/galgame-workshop/projects/{project_id}/annotation-imports/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Preview Annotation Import */
+        post: operations["preview_annotation_import_v1_galgame_workshop_projects__project_id__annotation_imports_preview_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/galgame-workshop/projects/{project_id}/annotation-imports/{import_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Annotation Import */
+        get: operations["get_annotation_import_v1_galgame_workshop_projects__project_id__annotation_imports__import_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/galgame-workshop/projects/{project_id}/assets": {
         parameters: {
             query?: never;
@@ -1024,6 +1075,92 @@ export interface paths {
         put?: never;
         /** Restore Story Snapshot */
         post: operations["restore_story_snapshot_v1_galgame_workshop_projects__project_id__story_snapshots__snapshot_id__restore_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/galgame-workshop/projects/{project_id}/video-exports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Video Exports */
+        get: operations["list_video_exports_v1_galgame_workshop_projects__project_id__video_exports_get"];
+        put?: never;
+        /** Create Video Export */
+        post: operations["create_video_export_v1_galgame_workshop_projects__project_id__video_exports_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/galgame-workshop/projects/{project_id}/video-exports/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Preview Video Export */
+        post: operations["preview_video_export_v1_galgame_workshop_projects__project_id__video_exports_preview_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/galgame-workshop/projects/{project_id}/video-exports/{export_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Video Export */
+        get: operations["get_video_export_v1_galgame_workshop_projects__project_id__video_exports__export_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/galgame-workshop/projects/{project_id}/video-exports/{export_id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cancel Video Export */
+        post: operations["cancel_video_export_v1_galgame_workshop_projects__project_id__video_exports__export_id__cancel_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/galgame-workshop/projects/{project_id}/video-exports/{export_id}/download": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Download Video Export */
+        get: operations["download_video_export_v1_galgame_workshop_projects__project_id__video_exports__export_id__download_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -2338,6 +2475,8 @@ export interface components {
             localized_texts?: components["schemas"]["AudioAnnotationLocalizedText"][];
             /** Speaker Id */
             speaker_id?: string | null;
+            /** Speaker Ids */
+            speaker_ids?: string[];
             /** Start Ms */
             start_ms: number;
             /**
@@ -2655,6 +2794,169 @@ export interface components {
             deleted: boolean;
             /** Revision */
             revision: number;
+        };
+        /** GalgameAnnotationImportIn */
+        GalgameAnnotationImportIn: {
+            /** Assetprefix */
+            assetPrefix: string;
+            document: components["schemas"]["GalgameStoryProject"];
+            /** Expectedsourcerevision */
+            expectedSourceRevision: number;
+            /** Expectedstoryrevision */
+            expectedStoryRevision: number;
+            /**
+             * Language
+             * @default zh
+             * @constant
+             */
+            language: "zh";
+            /** Masterassetid */
+            masterAssetId: string;
+            /** Requestid */
+            requestId: string;
+            requirements: components["schemas"]["GalgameAnnotationImportRequirements"];
+            /** Segmentspeakeroverrides */
+            segmentSpeakerOverrides?: {
+                [key: string]: string[];
+            };
+            /** Sourceprojectid */
+            sourceProjectId: string;
+            /** Speakermap */
+            speakerMap: {
+                [key: string]: string;
+            };
+        };
+        /** GalgameAnnotationImportIssue */
+        GalgameAnnotationImportIssue: {
+            /** Code */
+            code: string;
+            /** Message */
+            message: string;
+            /**
+             * Path
+             * @default
+             */
+            path: string;
+        };
+        /** GalgameAnnotationImportPreviewOut */
+        GalgameAnnotationImportPreviewOut: {
+            /** Curtainintervalcount */
+            curtainIntervalCount: number;
+            /** Issues */
+            issues?: components["schemas"]["GalgameAnnotationImportIssue"][];
+            /** Masterassetid */
+            masterAssetId: string;
+            /** Multispeakercount */
+            multiSpeakerCount: number;
+            /** Ready */
+            ready: boolean;
+            /** Segmentcount */
+            segmentCount: number;
+            /** Segments */
+            segments?: components["schemas"]["GalgameAnnotationImportSegmentOut"][];
+            /** Sourceassetid */
+            sourceAssetId: string;
+            /** Sourcechecksumsha256 */
+            sourceChecksumSha256: string;
+            /** Sourceprojectid */
+            sourceProjectId: string;
+            /** Sourcerevision */
+            sourceRevision: number;
+            /** Speakercount */
+            speakerCount: number;
+            /** Stagetransitioncount */
+            stageTransitionCount: number;
+            /** Storyrevision */
+            storyRevision: number;
+            /** Timelinedurationms */
+            timelineDurationMs: number;
+        };
+        /** GalgameAnnotationImportRequirements */
+        GalgameAnnotationImportRequirements: {
+            /** Curtainintervalcount */
+            curtainIntervalCount: number;
+            /** Lastdialogueendms */
+            lastDialogueEndMs: number;
+            /**
+             * Maxdurationdifferencems
+             * @default 50
+             */
+            maxDurationDifferenceMs: number;
+            /**
+             * Mincontentcorrelation
+             * @default 0.9
+             */
+            minContentCorrelation: number;
+            /** Multispeakercount */
+            multiSpeakerCount: number;
+            /** Segmentcount */
+            segmentCount: number;
+            /** Sourcechecksumsha256 */
+            sourceChecksumSha256: string;
+            /** Speakercount */
+            speakerCount: number;
+            /** Stagetransitioncount */
+            stageTransitionCount: number;
+            /** Timelinedurationms */
+            timelineDurationMs: number;
+        };
+        /** GalgameAnnotationImportSegmentOut */
+        GalgameAnnotationImportSegmentOut: {
+            /** Blockid */
+            blockId: string;
+            /** Endms */
+            endMs: number;
+            /** Segmentid */
+            segmentId: string;
+            /** Sourcespeakerids */
+            sourceSpeakerIds: string[];
+            /** Startms */
+            startMs: number;
+            /** Storyassetid */
+            storyAssetId: string;
+            /** Storyspeakerids */
+            storySpeakerIds: string[];
+            /** Text */
+            text: string;
+        };
+        /** GalgameAnnotationImportTaskOut */
+        GalgameAnnotationImportTaskOut: {
+            /** Createdat */
+            createdAt: string;
+            /** Error */
+            error?: string | null;
+            /** Finishedat */
+            finishedAt?: string | null;
+            /** Id */
+            id: string;
+            /**
+             * Phase
+             * @enum {string}
+             */
+            phase: "queued" | "cutting" | "validating" | "saving" | "accepting" | "rolling_back" | "completed" | "failed" | "conflict" | "rolled_back";
+            /** Progress */
+            progress: number;
+            /** Projectid */
+            projectId: string;
+            /** Requestid */
+            requestId: string;
+            /** Result */
+            result?: {
+                [key: string]: unknown;
+            };
+            /** Revision */
+            revision: number;
+            /** Sourceprojectid */
+            sourceProjectId: string;
+            /** Startedat */
+            startedAt?: string | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "queued" | "running" | "completed" | "failed" | "conflict" | "rolled_back";
+            /** Updatedat */
+            updatedAt: string;
         };
         /** GalgameAsrSettingsOut */
         GalgameAsrSettingsOut: {
@@ -3080,7 +3382,7 @@ export interface components {
              * Role
              * @enum {string}
              */
-            role: "voiceSample" | "voiceLine" | "backgroundMusic" | "ambientSound" | "soundEffect";
+            role: "voiceSample" | "voiceLine" | "timelineMaster" | "backgroundMusic" | "ambientSound" | "soundEffect";
             /**
              * Status
              * @constant
@@ -3907,6 +4209,8 @@ export interface components {
              * @description 剧情时间轴总长（毫秒）
              */
             durationMs: number;
+            /** @description 驱动整段剧情时间轴的完整主音轨 */
+            masterAudio?: components["schemas"]["GalgameStoryTimelineMasterAudio"] | null;
         };
         /** GalgameStoryGalleryBlock */
         GalgameStoryGalleryBlock: {
@@ -4818,6 +5122,16 @@ export interface components {
              */
             defaultSpeedCps: number;
         };
+        /** GalgameStoryTimelineMasterAudio */
+        GalgameStoryTimelineMasterAudio: {
+            /** Assetid */
+            assetId: string;
+            /**
+             * Volume
+             * @default 100
+             */
+            volume: number;
+        };
         /** GalgameStoryUiComponent */
         GalgameStoryUiComponent: {
             /** Assetid */
@@ -5060,6 +5374,188 @@ export interface components {
              * @enum {string}
              */
             status: "queued" | "running" | "completed" | "failed";
+        };
+        /** GalgameVideoExportBranchSelection */
+        GalgameVideoExportBranchSelection: {
+            /** Branchblockid */
+            branchBlockId: string;
+            /** Choiceid */
+            choiceId: string;
+        };
+        /** GalgameVideoExportChoiceOut */
+        GalgameVideoExportChoiceOut: {
+            /** Id */
+            id: string;
+            /** Targetfragmentid */
+            targetFragmentId: string;
+            /** Text */
+            text: string;
+        };
+        /** GalgameVideoExportCreateIn */
+        GalgameVideoExportCreateIn: {
+            /** Branchselections */
+            branchSelections?: components["schemas"]["GalgameVideoExportBranchSelection"][];
+            /** Expectedstoryrevision */
+            expectedStoryRevision: number;
+            /**
+             * Locale
+             * @default zh
+             */
+            locale: string;
+            /**
+             * Preset
+             * @default 1080p30
+             * @enum {string}
+             */
+            preset: "1080p30" | "720p30" | "1080p60";
+            /** Previewfingerprint */
+            previewFingerprint: string;
+            /** Requestid */
+            requestId: string;
+        };
+        /** GalgameVideoExportDecisionOut */
+        GalgameVideoExportDecisionOut: {
+            /** Branchblockid */
+            branchBlockId: string;
+            /** Choices */
+            choices: components["schemas"]["GalgameVideoExportChoiceOut"][];
+            /** Prompt */
+            prompt: string;
+        };
+        /** GalgameVideoExportIssue */
+        GalgameVideoExportIssue: {
+            /** Code */
+            code: string;
+            /** Message */
+            message: string;
+            /**
+             * Path
+             * @default
+             */
+            path: string;
+        };
+        /** GalgameVideoExportPreviewIn */
+        GalgameVideoExportPreviewIn: {
+            /** Branchselections */
+            branchSelections?: components["schemas"]["GalgameVideoExportBranchSelection"][];
+            /** Expectedstoryrevision */
+            expectedStoryRevision: number;
+            /**
+             * Locale
+             * @default zh
+             */
+            locale: string;
+            /**
+             * Preset
+             * @default 1080p30
+             * @enum {string}
+             */
+            preset: "1080p30" | "720p30" | "1080p60";
+        };
+        /** GalgameVideoExportPreviewOut */
+        GalgameVideoExportPreviewOut: {
+            /** Blockers */
+            blockers?: components["schemas"]["GalgameVideoExportIssue"][];
+            /** Fps */
+            fps: number;
+            /** Height */
+            height: number;
+            nextDecision?: components["schemas"]["GalgameVideoExportDecisionOut"] | null;
+            /**
+             * Preset
+             * @enum {string}
+             */
+            preset: "1080p30" | "720p30" | "1080p60";
+            /** Previewfingerprint */
+            previewFingerprint: string;
+            /** Ready */
+            ready: boolean;
+            route: components["schemas"]["GalgameVideoExportRouteOut"];
+            /** Storyrevision */
+            storyRevision: number;
+            /** Warnings */
+            warnings?: components["schemas"]["GalgameVideoExportIssue"][];
+            /** Width */
+            width: number;
+        };
+        /** GalgameVideoExportRouteOut */
+        GalgameVideoExportRouteOut: {
+            /** Branchblockids */
+            branchBlockIds: string[];
+            /** Chapterids */
+            chapterIds: string[];
+            /** Endinglabel */
+            endingLabel: string;
+            /** Estimateddurationms */
+            estimatedDurationMs: number;
+            /** Exactduration */
+            exactDuration: boolean;
+            /** Fragmentids */
+            fragmentIds: string[];
+        };
+        /** GalgameVideoExportTaskListOut */
+        GalgameVideoExportTaskListOut: {
+            /** Items */
+            items: components["schemas"]["GalgameVideoExportTaskOut"][];
+        };
+        /** GalgameVideoExportTaskOut */
+        GalgameVideoExportTaskOut: {
+            /** Createdat */
+            createdAt: string;
+            /**
+             * Endinglabel
+             * @default
+             */
+            endingLabel: string;
+            /** Error */
+            error?: string | null;
+            /** Finishedat */
+            finishedAt?: string | null;
+            /** Id */
+            id: string;
+            /** Outputassetid */
+            outputAssetId?: string | null;
+            /** Outputfilename */
+            outputFilename?: string | null;
+            /**
+             * Phase
+             * @enum {string}
+             */
+            phase: "queued" | "preparing" | "rendering" | "encoding" | "verifying" | "registering" | "completed" | "failed" | "cancelled";
+            /**
+             * Preset
+             * @enum {string}
+             */
+            preset: "1080p30" | "720p30" | "1080p60";
+            /** Progress */
+            progress: number;
+            /** Projectid */
+            projectId: string;
+            /**
+             * Renderedms
+             * @default 0
+             */
+            renderedMs: number;
+            /** Requestid */
+            requestId: string;
+            /** Revision */
+            revision: number;
+            /** Startedat */
+            startedAt?: string | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "queued" | "running" | "completed" | "failed" | "cancelled";
+            /** Storyrevision */
+            storyRevision: number;
+            /**
+             * Totalms
+             * @default 0
+             */
+            totalMs: number;
+            /** Updatedat */
+            updatedAt: string;
         };
         /** GalgameVoiceMatchIn */
         GalgameVoiceMatchIn: {
@@ -8867,6 +9363,108 @@ export interface operations {
             };
         };
     };
+    create_annotation_import_v1_galgame_workshop_projects__project_id__annotation_imports_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GalgameAnnotationImportIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GalgameAnnotationImportTaskOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    preview_annotation_import_v1_galgame_workshop_projects__project_id__annotation_imports_preview_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GalgameAnnotationImportIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GalgameAnnotationImportPreviewOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_annotation_import_v1_galgame_workshop_projects__project_id__annotation_imports__import_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+                import_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GalgameAnnotationImportTaskOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_project_assets_v1_galgame_workshop_projects__project_id__assets_get: {
         parameters: {
             query?: {
@@ -9625,6 +10223,203 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["GalgameStoryDocumentOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_video_exports_v1_galgame_workshop_projects__project_id__video_exports_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GalgameVideoExportTaskListOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_video_export_v1_galgame_workshop_projects__project_id__video_exports_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GalgameVideoExportCreateIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GalgameVideoExportTaskOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    preview_video_export_v1_galgame_workshop_projects__project_id__video_exports_preview_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GalgameVideoExportPreviewIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GalgameVideoExportPreviewOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_video_export_v1_galgame_workshop_projects__project_id__video_exports__export_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+                export_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GalgameVideoExportTaskOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    cancel_video_export_v1_galgame_workshop_projects__project_id__video_exports__export_id__cancel_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+                export_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GalgameVideoExportTaskOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    download_video_export_v1_galgame_workshop_projects__project_id__video_exports__export_id__download_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+                export_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */

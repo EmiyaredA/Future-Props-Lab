@@ -965,6 +965,15 @@
   flex: none;
   border-radius: 50%;
 }
+.annotation-segment-speakers > .annotation-speaker-dots {
+  display: inline-flex;
+  flex: none;
+  padding: 0;
+}
+.annotation-speaker-dots i + i {
+  margin-left: -3px;
+  box-shadow: 0 0 0 1px var(--surface);
+}
 .annotation-segment-table .draft,
 .annotation-segment-table .reviewed {
   justify-self: start;
@@ -1169,11 +1178,65 @@
   margin-top: 16px;
 }
 .annotation-speaker-field {
+  align-items: flex-start;
   gap: 7px;
 }
-.annotation-speaker-field .custom-select {
+.annotation-speaker-options {
   min-width: 0;
   flex: 1;
+  max-height: 132px;
+  padding: 5px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-soft);
+}
+.annotation-speaker-options > button {
+  min-width: 0;
+  min-height: 28px;
+  padding: 4px 7px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 11px;
+}
+.annotation-speaker-options > button:hover {
+  border-color: var(--border-strong);
+  background: var(--surface-hover);
+  color: var(--text);
+}
+.annotation-speaker-options > button.selected {
+  border-color: var(--accent-line);
+  background: var(--accent-soft);
+  color: var(--text-strong);
+}
+.annotation-speaker-options > button:focus-visible,
+.annotation-speaker-manage:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+.annotation-speaker-options > button > i {
+  width: 9px;
+  height: 9px;
+  flex: none;
+  border-radius: 50%;
+}
+.annotation-speaker-options > button > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.annotation-speaker-options > button > svg {
+  width: 12px;
+  height: 12px;
+  flex: none;
 }
 .annotation-speaker-field > button {
   min-height: 38px;
@@ -1403,98 +1466,4 @@
 }
 .annotation-export-options small {
   color: var(--muted);
-}
-
-@media (max-width: 1100px) {
-  .annotation-project-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-  .annotation-transport {
-    align-items: center;
-    flex-wrap: wrap;
-  }
-  .annotation-volume {
-    margin-left: auto;
-  }
-  .annotation-edit-actions {
-    width: 100%;
-    margin-left: 0;
-  }
-  .annotation-edit-actions button {
-    flex: 1;
-    justify-content: center;
-  }
-  .annotation-segment-table-card {
-    overflow-x: auto;
-  }
-  .annotation-segment-table-card > header {
-    min-width: 520px;
-  }
-}
-@media (max-width: 1320px) {
-  .annotation-editor-grid {
-    grid-template-columns: 1fr;
-  }
-  .annotation-inspector {
-    position: static;
-  }
-}
-@media (max-width: 760px) {
-  .annotation-projects-header,
-  .annotation-editor-header {
-    flex-direction: column;
-  }
-  .annotation-project-actions {
-    width: 100%;
-  }
-  .annotation-project-actions .btn {
-    flex: 1;
-  }
-  .annotation-project-summary {
-    align-items: stretch;
-    flex-wrap: wrap;
-  }
-  .annotation-project-summary label {
-    width: 100%;
-    margin-left: 0;
-  }
-  .annotation-project-grid {
-    grid-template-columns: 1fr;
-  }
-  .annotation-editor-actions {
-    width: 100%;
-  }
-  .annotation-editor-actions .btn {
-    flex: 1;
-  }
-  .annotation-waveform-meta {
-    align-items: flex-start;
-    flex-wrap: wrap;
-  }
-  .annotation-zoom-controls {
-    margin-left: 0;
-  }
-  .annotation-waveform-tools {
-    width: 100%;
-    margin-left: 0;
-    justify-content: flex-start;
-    flex-wrap: wrap;
-  }
-  .annotation-waveform-navigator {
-    flex-wrap: wrap;
-  }
-  .annotation-waveform-navigator label {
-    min-width: calc(100% - 78px);
-  }
-  .annotation-viewport-time,
-  .annotation-waveform-navigator small {
-    width: 100%;
-  }
-  .annotation-conflict {
-    align-items: flex-start;
-    flex-wrap: wrap;
-  }
-  .annotation-conflict span {
-    width: 100%;
-  }
 }

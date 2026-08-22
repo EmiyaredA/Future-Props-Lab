@@ -4,6 +4,7 @@ type TimelineClockCallbacks = {
   onPosition: (milliseconds: number) => void;
   onPlayingChange?: (playing: boolean) => void;
   onFinish?: () => void;
+  positionSource?: () => number | undefined;
 };
 
 export class TimelineClock {
@@ -100,9 +101,12 @@ export class TimelineClock {
   private tick(allowFinish = true) {
     if (!this.playing) return;
     const limit = this.stopAtMs ?? this.durationMs;
+    const sourced = this.callbacks.positionSource?.();
     const next = Math.min(
       limit,
-      this.startedPositionMs + performance.now() - this.startedAtMs,
+      sourced != null && Number.isFinite(sourced)
+        ? Math.max(0, sourced)
+        : this.startedPositionMs + performance.now() - this.startedAtMs,
     );
     this.positionMs = Math.round(next);
     this.callbacks.onPosition(this.positionMs);

@@ -367,6 +367,45 @@ test("automatically advances an untimed legacy fragment", () => {
   }
 });
 
+test("exports a preselected route without player controls", async () => {
+  vi.useFakeTimers();
+  const onComplete = vi.fn();
+  try {
+    const rendered = render(
+      <StoryPlayer
+        document={story}
+        exportMode={{
+          branchSelections: { branch: "left" },
+          choiceDurationMs: 2000,
+          choiceHighlightMs: 500,
+          onComplete,
+        }}
+      />,
+    );
+    await act(async () => Promise.resolve());
+
+    expect(
+      screen.queryByRole("button", { name: "开始试玩" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "自动" }),
+    ).not.toBeInTheDocument();
+
+    act(() => vi.advanceTimersByTime(1600));
+    const chosen = screen.getByRole("button", { name: "设备" });
+    expect(chosen).not.toHaveClass("is-export-selected");
+    act(() => vi.advanceTimersByTime(1500));
+    expect(chosen).toHaveClass("is-export-selected");
+    act(() => vi.advanceTimersByTime(500));
+    expect(screen.getByText("发现干扰。")).toBeInTheDocument();
+    act(() => vi.advanceTimersByTime(1600));
+    expect(onComplete).toHaveBeenCalledWith({ ok: true, label: "设备结局" });
+    expect(rendered.container.querySelector(".galgame-ending")).toBeNull();
+  } finally {
+    vi.useRealTimers();
+  }
+});
+
 test("plays the opening performance before revealing the first timed line", () => {
   vi.useFakeTimers();
   try {

@@ -26,9 +26,48 @@ export const SPEAKER_COLORS = [
   "#46B978",
 ];
 
+export function segmentSpeakerIds(
+  segment: Pick<AudioAnnotationSegment, "speaker_id" | "speaker_ids">,
+): string[] {
+  const ids = segment.speaker_ids?.length
+    ? segment.speaker_ids
+    : segment.speaker_id
+      ? [segment.speaker_id]
+      : [];
+  return [...new Set(ids)];
+}
+
+export function speakerAssignment(speakerIds: string[]) {
+  const ids = [...new Set(speakerIds.filter(Boolean))];
+  return {
+    speaker_id: ids[0] ?? null,
+    speaker_ids: ids,
+  };
+}
+
+export function sameSegmentSpeakers(
+  left: Pick<AudioAnnotationSegment, "speaker_id" | "speaker_ids">,
+  right: Pick<AudioAnnotationSegment, "speaker_id" | "speaker_ids">,
+): boolean {
+  const leftIds = segmentSpeakerIds(left);
+  const rightIds = segmentSpeakerIds(right);
+  return (
+    leftIds.length === rightIds.length &&
+    leftIds.every((speakerId, index) => speakerId === rightIds[index])
+  );
+}
+
+export function waveformSegmentSpeakerLabel(
+  segmentIndex: number,
+  speakerNames: string[],
+): string {
+  const names = speakerNames.length ? speakerNames.join("、") : "未指定";
+  return `${String(segmentIndex + 1).padStart(2, "0")}  ${names}`;
+}
+
 export type WaveformRegionSegment = Pick<
   AudioAnnotationSegment,
-  "id" | "start_ms" | "end_ms" | "speaker_id"
+  "id" | "start_ms" | "end_ms" | "speaker_id" | "speaker_ids"
 >;
 export type WaveformRegionSpeaker = Pick<
   AudioAnnotationSpeaker,
@@ -47,16 +86,18 @@ export function stabilizeWaveformRegionSegments(
         rendered?.id === segment.id &&
         rendered.start_ms === segment.start_ms &&
         rendered.end_ms === segment.end_ms &&
-        rendered.speaker_id === segment.speaker_id
+        rendered.speaker_id === segment.speaker_id &&
+        sameSegmentSpeakers(rendered, segment)
       );
     })
   )
     return previous;
-  return segments.map(({ id, start_ms, end_ms, speaker_id }) => ({
+  return segments.map(({ id, start_ms, end_ms, speaker_id, speaker_ids }) => ({
     id,
     start_ms,
     end_ms,
     speaker_id,
+    speaker_ids,
   }));
 }
 
@@ -178,6 +219,56 @@ export function segmentEditorVersion(
   )
     ? preferredLanguage
     : PRIMARY_DISPLAY_LANGUAGE;
+}
+
+export function prepareTextOnlyAnnotationImport(
+  current: AnnotationSnapshot,
+  payload: unknown,
+): AnnotationSnapshot {
+  if (!payload || typeof payload !== "object")
+    throw new Error("JSON 内容不是有效的标注项目");
+  const imported = payload as Partial<AnnotationSnapshot>;
+  if (imported.schema_version !== "1.0" || !Array.isArray(imported.segments))
+    throw new Error("JSON 缺少有效的 1.0 标注文档");
+  if (imported.segments.length !== current.segments.length)
+    throw new Error("片段数量与当前项目不一致");
+
+  const segments = current.segments.map((segment, index) => {
+    const incoming = imported.segments![index];
+    if (
+      !incoming ||
+      incoming.id !== segment.id ||
+      incoming.start_ms !== segment.start_ms ||
+      incoming.end_ms !== segment.end_ms ||
+      !sameSegmentSpeakers(incoming, segment)
+    )
+      throw new Error(`片段 ${index + 1} 的结构与当前项目不一致`);
+    const localizedTexts = incoming.localized_texts ?? [];
+    const languages = localizedTexts.map((item) => item.language);
+    if (
+      languages.length !== new Set(languages).size ||
+      localizedTexts.some(
+        (item) =>
+          typeof item.language !== "string" || typeof item.text !== "string",
+      )
+    )
+      throw new Error(`片段 ${index + 1} 包含无效或重复的语言版本`);
+    if (
+      typeof incoming.text !== "string" ||
+      (incoming.language !== null && typeof incoming.language !== "string") ||
+      !["draft", "reviewed"].includes(incoming.status)
+    )
+      throw new Error(`片段 ${index + 1} 的文本字段无效`);
+    return {
+      ...segment,
+      text: incoming.text,
+      language: incoming.language,
+      localized_texts: localizedTexts,
+      status: incoming.status,
+    };
+  });
+
+  return { schema_version: "1.0", speakers: current.speakers, segments };
 }
 
 const TRANSCRIPTION_LANGUAGE_ALIASES: Record<string, string[]> = {
@@ -414,7 +505,7 @@ export function duplicateSegmentForOverlap(
     {
       ...selected,
       id: createId(),
-      speaker_id: null,
+      ...speakerAssignment([]),
       text: "",
       language: selected.language,
       localized_texts: [],
@@ -440,7 +531,7 @@ export function mergeWithNext(
     {
       ...current,
       end_ms: Math.max(current.end_ms, next.end_ms),
-      speaker_id: current.speaker_id,
+      ...speakerAssignment(segmentSpeakerIds(current)),
       text,
       localized_texts: [],
       status: "draft" as const,
@@ -464,7 +555,7 @@ export function createSegment(
       id: createId(),
       start_ms: start,
       end_ms: end,
-      speaker_id: null,
+      ...speakerAssignment([]),
       text: "",
       language: null,
       localized_texts: [],
@@ -671,7 +762,7 @@ export function incompleteSegments(
   segments: AudioAnnotationSegment[],
 ): AudioAnnotationSegment[] {
   return segments.filter(
-    (segment) => !segment.speaker_id || !segment.text.trim(),
+    (segment) => !segmentSpeakerIds(segment).length || !segment.text.trim(),
   );
 }
 
@@ -687,7 +778,10 @@ export function buildSrt(
     throw new Error(`还有 ${missing.length} 个片段缺少说话人或内容`);
   return sortSegments(segments)
     .map((segment, index) => {
-      const speaker = speakerById.get(segment.speaker_id!);
+      const speaker = segmentSpeakerIds(segment)
+        .map((speakerId) => speakerById.get(speakerId))
+        .filter(Boolean)
+        .join("、");
       return `${index + 1}\n${formatSrtTimestamp(segment.start_ms)} --> ${formatSrtTimestamp(segment.end_ms)}\n${speaker}：${segment.text.trim()}\n`;
     })
     .join("\n");

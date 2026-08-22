@@ -64,4 +64,24 @@ describe("Galgame independent timeline clock", () => {
     expect(clock.position).toBe(1000);
     expect(finished).toHaveBeenCalledOnce();
   });
+
+  test("uses an external media position without accumulating timer drift", () => {
+    vi.useFakeTimers();
+    let mediaPosition = 0;
+    const positions: number[] = [];
+    const clock = new TimelineClock(1000, {
+      onPosition: (position) => positions.push(position),
+      positionSource: () => mediaPosition,
+    });
+    clock.play();
+    vi.advanceTimersByTime(330);
+    expect(clock.position).toBe(0);
+    mediaPosition = 417;
+    vi.advanceTimersByTime(33);
+    expect(clock.position).toBe(417);
+    mediaPosition = 1000;
+    vi.advanceTimersByTime(33);
+    expect(clock.position).toBe(1000);
+    expect(positions.at(-1)).toBe(1000);
+  });
 });

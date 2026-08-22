@@ -3,6 +3,14 @@ import type { components } from "@generated/api";
 export type GalgameWorkshopProject =
   components["schemas"]["GalgameWorkshopProjectOut"];
 export type GalgameWorkshopProjectStatus = GalgameWorkshopProject["status"];
+export type GalgameVideoExportPreview =
+  components["schemas"]["GalgameVideoExportPreviewOut"];
+export type GalgameVideoExportTask =
+  components["schemas"]["GalgameVideoExportTaskOut"];
+export type GalgameVideoExportPreset =
+  components["schemas"]["GalgameVideoExportPreviewIn"]["preset"];
+export type GalgameVideoExportBranchSelection =
+  components["schemas"]["GalgameVideoExportBranchSelection"];
 type GeneratedGalgameStoryDocument =
   components["schemas"]["GalgameStoryDocumentOut"];
 export type GeneratedGalgameStoryProject =

@@ -15,12 +15,14 @@ from app.models.base import Base
 from app.models.call_log import LlmCallLog
 from app.models.files import VisualAsset, VisualAssetFolder, VisualProjectAssetReference
 from app.models.galgame_workshop import (
+    GalgameAnnotationImportTask,
     GalgameAssetMetadata,
     GalgameAssetSettings,
     GalgameAssetTranscriptionTask,
     GalgameProjectAssetReference,
     GalgameStoryDocument,
     GalgameStorySnapshot,
+    GalgameVideoExportTask,
     GalgameWorkshopProject,
 )
 from app.models.model_service import ModelCatalogState, ModelEntry, ModelProvider
@@ -51,11 +53,13 @@ __all__ = [
     "AudioAnnotationProject",
     "AudioAnnotationWaveform",
     "GalgameStoryDocument",
+    "GalgameAnnotationImportTask",
     "GalgameAssetMetadata",
     "GalgameAssetSettings",
     "GalgameAssetTranscriptionTask",
     "GalgameProjectAssetReference",
     "GalgameStorySnapshot",
+    "GalgameVideoExportTask",
     "GalgameWorkshopProject",
     "LlmCallLog",
     "ManagementApiKey",

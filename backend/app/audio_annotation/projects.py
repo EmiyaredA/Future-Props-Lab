@@ -159,7 +159,7 @@ class AudioAnnotationProjects:
                 raise AudioAnnotationError("片段超出音频时长", code="segment_out_of_range")
             if segment.start_ms < previous_start:
                 raise AudioAnnotationError("片段必须按开始时间排序", code="segments_unsorted")
-            if segment.speaker_id is not None and segment.speaker_id not in speaker_ids:
+            if any(speaker_id not in speaker_ids for speaker_id in segment.speaker_ids):
                 raise AudioAnnotationError("片段引用了不存在的说话人", code="speaker_not_found")
             previous_start = segment.start_ms
 

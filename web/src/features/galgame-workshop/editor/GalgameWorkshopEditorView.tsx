@@ -8,6 +8,7 @@ import {
   ChevronDown,
   Clock3,
   Copy,
+  Film,
   GitBranch,
   Languages,
   MapPinned,
@@ -47,6 +48,9 @@ import {
   updateFragment,
 } from "@features/galgame-workshop/editor/model";
 import { formatTimecode } from "@features/galgame-workshop/editor/timeline";
+import { VideoExportDialog } from "@features/galgame-workshop/editor/VideoExportDialog";
+import { videoExportLanguageOptions } from "@features/galgame-workshop/editor/videoExportLanguage";
+import { StoryConflictBanner } from "@features/galgame-workshop/editor/StoryConflictBanner";
 import { GlobalStorySearch } from "@features/galgame-workshop/editor/GlobalStorySearch";
 import {
   RouteReportDialog,
@@ -161,6 +165,8 @@ export function GalgameWorkshopEditorView({
     setConfirmOverwrite,
     reportOpen,
     setReportOpen,
+    videoExportOpen,
+    setVideoExportOpen,
     staleVoiceBlocks,
     setStaleVoiceBlocks,
     focusedCharacterId,
@@ -283,6 +289,13 @@ export function GalgameWorkshopEditorView({
                     ? "存在冲突"
                     : "保存失败"}
             </div>
+            <button
+              type="button"
+              className="galgame-editor-video-export"
+              onClick={() => setVideoExportOpen(true)}
+            >
+              <Film aria-hidden /> 导出视频
+            </button>
             <details className="galgame-run-menu">
               <summary
                 className="galgame-preview-launch"
@@ -1433,45 +1446,30 @@ export function GalgameWorkshopEditorView({
           onRefresh={() => void reportQuery.refetch()}
         />
 
-        {conflict ? (
-          <div className="galgame-conflict" role="alert">
-            <span>
-              <strong>故事存在更新冲突</strong>
-              本地草稿仍保留，请选择要使用的版本。
-            </span>
-            <button
-              type="button"
-              onClick={() => {
-                const next = completeStoryDocument(conflict.document);
-                const nextChapter = entryChapter(next);
-                const nextFragment = nextChapter?.fragments?.find(
-                  (fragment) => fragment.id === nextChapter.entryFragmentId,
-                );
-                revisionRef.current = conflict.revision;
-                documentRef.current = next;
-                conflictRef.current = false;
-                client.setQueryData(STORY_KEY(projectId), conflict);
-                setDocument(next);
-                setSelectedChapterId(nextChapter?.id ?? "chapter-1");
-                setSelectedFragmentId(
-                  nextFragment?.id ?? nextChapter?.fragments?.[0]?.id ?? "main",
-                );
-                setSelectedBlockId(undefined);
-                setConflict(undefined);
-                setSaveState("saved");
-              }}
-            >
-              载入服务器版本
-            </button>
-            <button
-              type="button"
-              className="danger"
-              onClick={() => setConfirmOverwrite(true)}
-            >
-              用本地版本覆盖
-            </button>
-          </div>
-        ) : null}
+        <StoryConflictBanner
+          open={Boolean(conflict)}
+          onLoadServer={() => {
+            if (!conflict) return;
+            const next = completeStoryDocument(conflict.document);
+            const nextChapter = entryChapter(next);
+            const nextFragment = nextChapter?.fragments?.find(
+              (fragment) => fragment.id === nextChapter.entryFragmentId,
+            );
+            revisionRef.current = conflict.revision;
+            documentRef.current = next;
+            conflictRef.current = false;
+            client.setQueryData(STORY_KEY(projectId), conflict);
+            setDocument(next);
+            setSelectedChapterId(nextChapter?.id ?? "chapter-1");
+            setSelectedFragmentId(
+              nextFragment?.id ?? nextChapter?.fragments?.[0]?.id ?? "main",
+            );
+            setSelectedBlockId(undefined);
+            setConflict(undefined);
+            setSaveState("saved");
+          }}
+          onOverwrite={() => setConfirmOverwrite(true)}
+        />
         <ConfirmDialog
           open={confirmOverwrite && Boolean(conflict)}
           title="用本地草稿覆盖服务器版本？"
@@ -1486,6 +1484,13 @@ export function GalgameWorkshopEditorView({
             setConfirmOverwrite(false);
             enqueueSave(documentRef.current!);
           }}
+        />
+        <VideoExportDialog
+          open={videoExportOpen}
+          projectId={projectId}
+          storyRevision={revisionRef.current}
+          languageOptions={videoExportLanguageOptions(document)}
+          onClose={() => setVideoExportOpen(false)}
         />
       </section>
     </Suspense>

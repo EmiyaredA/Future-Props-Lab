@@ -190,6 +190,7 @@ export function useGalgameWorkshopEditorController({
   const [conflict, setConflict] = useState<GalgameStoryDocument>();
   const [confirmOverwrite, setConfirmOverwrite] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
+  const [videoExportOpen, setVideoExportOpen] = useState(false);
   const [staleVoiceBlocks, setStaleVoiceBlocks] = useState<Set<string>>(
     () => new Set(),
   );
@@ -1327,6 +1328,8 @@ export function useGalgameWorkshopEditorController({
     setConfirmOverwrite,
     reportOpen,
     setReportOpen,
+    videoExportOpen,
+    setVideoExportOpen,
     staleVoiceBlocks,
     setStaleVoiceBlocks,
     focusedCharacterId,

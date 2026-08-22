@@ -183,3 +183,76 @@ class GalgameStorySnapshot(Base):
     reason: Mapped[str] = mapped_column(String(64))
     document: Mapped[dict] = mapped_column(JSON)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)
+
+
+class GalgameAnnotationImportTask(Base):
+    __tablename__ = "galgame_annotation_import_tasks"
+    __table_args__ = (
+        UniqueConstraint("workspace_id", "project_id", "request_id"),
+        Index(
+            "ix_galgame_annotation_import_tasks_project_status",
+            "project_id",
+            "status",
+            "created_at",
+        ),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    workspace_id: Mapped[str] = mapped_column(String(36), index=True, default="default")
+    project_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("galgame_workshop_projects.id", ondelete="CASCADE")
+    )
+    source_project_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("audio_annotation_projects.id", ondelete="RESTRICT")
+    )
+    request_id: Mapped[str] = mapped_column(String(64))
+    expected_source_revision: Mapped[int] = mapped_column(Integer)
+    expected_story_revision: Mapped[int] = mapped_column(Integer)
+    request_payload: Mapped[dict] = mapped_column(JSON)
+    status: Mapped[str] = mapped_column(String(24), default="queued")
+    progress: Mapped[int] = mapped_column(Integer, default=0)
+    result_detail: Mapped[dict] = mapped_column(JSON, default=dict)
+    error: Mapped[str | None] = mapped_column(Text)
+    revision: Mapped[int] = mapped_column(Integer, default=0)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, onupdate=utc_now)
+    started_at: Mapped[datetime | None] = mapped_column(DateTime)
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime)
+
+
+class GalgameVideoExportTask(Base):
+    __tablename__ = "galgame_video_export_tasks"
+    __table_args__ = (
+        UniqueConstraint("workspace_id", "project_id", "request_id"),
+        Index(
+            "ix_galgame_video_export_tasks_project_status",
+            "project_id",
+            "status",
+            "created_at",
+        ),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    workspace_id: Mapped[str] = mapped_column(String(36), index=True, default="default")
+    project_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("galgame_workshop_projects.id", ondelete="CASCADE")
+    )
+    snapshot_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("galgame_story_snapshots.id", ondelete="RESTRICT")
+    )
+    request_id: Mapped[str] = mapped_column(String(64))
+    story_revision: Mapped[int] = mapped_column(Integer)
+    request_payload: Mapped[dict] = mapped_column(JSON)
+    status: Mapped[str] = mapped_column(String(16), default="queued")
+    progress: Mapped[int] = mapped_column(Integer, default=0)
+    result_detail: Mapped[dict] = mapped_column(JSON, default=dict)
+    output_asset_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("visual_assets.id", ondelete="SET NULL")
+    )
+    cancel_requested: Mapped[bool] = mapped_column(Boolean, default=False)
+    error: Mapped[str | None] = mapped_column(Text)
+    revision: Mapped[int] = mapped_column(Integer, default=0)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, onupdate=utc_now)
+    started_at: Mapped[datetime | None] = mapped_column(DateTime)
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime)

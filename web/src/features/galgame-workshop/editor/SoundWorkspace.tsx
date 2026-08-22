@@ -50,7 +50,7 @@ type InspectorTab = "properties" | "references";
 const MODE_ROLES: Record<SoundMode, AudioRole[]> = {
   bgm: ["backgroundMusic"],
   sfx: ["soundEffect", "ambientSound"],
-  voice: ["voiceLine", "voiceSample"],
+  voice: ["voiceLine", "voiceSample", "timelineMaster"],
 };
 
 const MODE_COPY = {
@@ -114,7 +114,12 @@ function formatBytes(bytes?: number | null) {
 
 function modeForRole(role: AudioRole): SoundMode {
   if (role === "backgroundMusic") return "bgm";
-  if (role === "voiceLine" || role === "voiceSample") return "voice";
+  if (
+    role === "voiceLine" ||
+    role === "voiceSample" ||
+    role === "timelineMaster"
+  )
+    return "voice";
   return "sfx";
 }
 

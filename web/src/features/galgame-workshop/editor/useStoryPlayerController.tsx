@@ -29,10 +29,7 @@ import {
 } from "@features/galgame-workshop/editor/stage";
 import { characterExpressionAssetId } from "@features/galgame-workshop/editor/richText";
 import { dialogueSpeakerIds } from "@features/galgame-workshop/editor/dialogue";
-import {
-  createAudioLevelMonitor,
-  resolveLipSyncPresentation,
-} from "@features/galgame-workshop/editor/lipSync";
+import { resolveLipSyncPresentation } from "@features/galgame-workshop/editor/lipSync";
 import {
   loadStageViewportPreferences,
   resolveStageAspectParts,
@@ -41,6 +38,7 @@ import {
 } from "@features/galgame-workshop/editor/stageViewportPreferences";
 import { TimelineClock } from "@features/galgame-workshop/editor/timelineClock";
 import {
+  activeTimelineCue,
   estimatedCueDuration,
   effectivePointTime,
   projectFragmentTimeline,
@@ -68,6 +66,7 @@ import {
 } from "@features/galgame-workshop/editor/richText";
 import { localizedStoryDocument } from "@features/galgame-workshop/editor/localization";
 import { useStoryPlayerAudio } from "@features/galgame-workshop/editor/useStoryPlayerAudio";
+import { useStoryPlayerVoicePlayback } from "@features/galgame-workshop/editor/useStoryPlayerVoicePlayback";
 import {
   DEFAULT_STORY_PLAYER_MIX,
   playerContentText,
@@ -96,6 +95,7 @@ export function useStoryPlayerController(
     workbenchHeader = false,
     onCgOverlayChange,
     onPlaybackPosition,
+    exportMode,
   }: StoryPlayerProps,
   ref: ForwardedRef<StoryPlayerHandle>,
 ) {
@@ -157,9 +157,17 @@ export function useStoryPlayerController(
   const [visibleTextLength, setVisibleTextLength] = useState(0);
   const revealTextImmediatelyRef = useRef(false);
   const [inlinePlayerWait, setInlinePlayerWait] = useState(false);
+  const [selectedExportChoiceId, setSelectedExportChoiceId] =
+    useState<string>();
+  const exportCompletedRef = useRef(false);
   const inlineWaitReleaseRef = useRef<(() => void) | null>(null);
   const advanceRef = useRef<() => void>(() => undefined);
   const advanceModeRef = useRef(advanceMode);
+  const playerAudio = useStoryPlayerAudio(
+    document,
+    mix,
+    exportMode?.onAudioEvent,
+  );
   const {
     autoplayBlocked,
     setAutoplayBlocked,
@@ -170,25 +178,25 @@ export function useStoryPlayerController(
     voicePlaying,
     setVoicePlaying,
     audioLevelDb,
-    setAudioLevelDb,
     mouthFrame,
     setMouthFrame,
     lipSyncTrackerRef,
-    mixRef,
     voiceRef,
     timelineRef,
     pendingRef,
     generationRef,
     channelGenerationRef,
-    stopPlaying,
     fadeAndStop,
     objectUrl,
     tryPlay,
     stopChannel,
     executeAudioBlock,
     syncTimelineBgm,
+    syncTimelineMaster,
+    pauseTimelineMaster,
+    timelineMasterPositionMs,
     cleanupPlayback,
-  } = useStoryPlayerAudio(document, mix);
+  } = playerAudio;
   const chapter =
     chapterById(document, runtimeRef.current.chapterId) ??
     entryChapter(document);
@@ -256,13 +264,22 @@ export function useStoryPlayerController(
             ?.startMs ??
           0)
         : 0;
-    onPlaybackPosition?.({
+    const position = {
       chapterId: runtimeRef.current.chapterId,
       fragmentId: source.id,
       positionMs: source.timeline ? timelinePositionMs : projectedPosition,
       blockId,
-    });
-  }, [chapter, displayFrame, mode, onPlaybackPosition, timelinePositionMs]);
+    };
+    onPlaybackPosition?.(position);
+    exportMode?.onProgress?.(position);
+  }, [
+    chapter,
+    displayFrame,
+    exportMode,
+    mode,
+    onPlaybackPosition,
+    timelinePositionMs,
+  ]);
 
   useEffect(() => {
     advanceModeRef.current = advanceMode;
@@ -485,67 +502,17 @@ export function useStoryPlayerController(
     return visible && asset ? [{ component, asset }] : [];
   });
 
-  useEffect(() => {
-    if (mode === "edit") return;
-    channelGenerationRef.current.voice += 1;
-    const requestGeneration = channelGenerationRef.current.voice;
-    stopPlaying(voiceRef.current);
-    voiceRef.current = null;
-    if (!activeDialogue?.voiceAssetId || activeVoiceAsset?.type !== "audio")
-      return;
-    const playerGeneration = generationRef.current;
-    let autoAdvanceTimer: number | undefined;
-    void objectUrl(activeVoiceAsset.fileId)
-      .then((url) => {
-        if (
-          playerGeneration !== generationRef.current ||
-          requestGeneration !== channelGenerationRef.current.voice
-        )
-          return;
-        const audio = new Audio(url);
-        const playing = {
-          audio,
-          baseVolume: (activeDialogue.voiceVolume ?? 100) / 100,
-          levelMonitor: createAudioLevelMonitor(audio, setAudioLevelDb),
-        };
-        audio.volume = playing.baseVolume * (mixRef.current.voice / 100);
-        audio.addEventListener("play", () => setVoicePlaying(true));
-        audio.addEventListener("pause", () => setVoicePlaying(false));
-        audio.addEventListener("ended", () => {
-          setVoicePlaying(false);
-          if (advanceModeRef.current === "auto") {
-            autoAdvanceTimer = window.setTimeout(
-              () => advanceRef.current(),
-              400,
-            );
-          }
-        });
-        voiceRef.current = playing;
-        void (async () => {
-          await playing.levelMonitor?.resume().catch(() => undefined);
-          setVoicePlaying(await tryPlay(audio));
-        })();
-      })
-      .catch(() => undefined);
-    return () => {
-      if (autoAdvanceTimer != null) window.clearTimeout(autoAdvanceTimer);
-    };
-  }, [
-    activeDialogue?.id,
-    activeDialogue?.voiceAssetId,
-    activeDialogue?.voiceVolume,
-    activeVoiceAsset,
-    channelGenerationRef,
-    generationRef,
-    mixRef,
+  useStoryPlayerVoicePlayback({
     mode,
-    objectUrl,
-    setAudioLevelDb,
-    setVoicePlaying,
-    stopPlaying,
-    tryPlay,
-    voiceRef,
-  ]);
+    dialogue: activeDialogue,
+    voiceAsset:
+      activeVoiceAsset?.type === "audio" ? activeVoiceAsset : undefined,
+    hasTimelineMaster: Boolean(activeTimeline?.masterAudio),
+    advanceModeRef,
+    advanceRef,
+    exportAudioEvent: exportMode?.onAudioEvent,
+    audio: playerAudio,
+  });
 
   useEffect(() => {
     if (frame.mode === "ending" || frame.mode === "error") cleanupPlayback();
@@ -619,8 +586,24 @@ export function useStoryPlayerController(
     [document, setTimelinePlaying],
   );
 
+  const timelineVisualKeyRef = useRef("");
+  useEffect(() => {
+    timelineVisualKeyRef.current = "";
+  }, [document]);
+
   const showTimelinePosition = useCallback(
     (fragment: GalgameStoryFragment, milliseconds: number) => {
+      const events = timelineEvents(fragment);
+      let eventCount = 0;
+      while (
+        eventCount < events.length &&
+        events[eventCount]!.timeMs <= milliseconds
+      )
+        eventCount += 1;
+      const activeCue = activeTimelineCue(fragment, milliseconds);
+      const visualKey = `${fragment.id}:${eventCount}:${activeCue?.blockIndex ?? "stage"}`;
+      if (timelineVisualKeyRef.current === visualKey) return;
+      timelineVisualKeyRef.current = visualKey;
       const preview = replayStageAtTime(document, fragment, milliseconds);
       setFrame(
         preview.block && preview.blockIndex != null
@@ -652,8 +635,36 @@ export function useStoryPlayerController(
         milliseconds,
         timelineRef.current?.clock.isPlaying ?? false,
       );
+      void syncTimelineMaster(
+        fragment,
+        milliseconds,
+        timelineRef.current?.clock.isPlaying ?? false,
+      );
     },
-    [executeAudioBlock, stopChannel, syncTimelineBgm, timelineRef],
+    [
+      executeAudioBlock,
+      stopChannel,
+      syncTimelineBgm,
+      syncTimelineMaster,
+      timelineRef,
+    ],
+  );
+
+  const playTimeline = useCallback(
+    async (
+      fragment: GalgameStoryFragment,
+      clock: TimelineClock,
+      stopAtMs?: number,
+    ) => {
+      if (
+        fragment.timeline?.masterAudio &&
+        !(await syncTimelineMaster(fragment, clock.position, true))
+      )
+        return;
+      if (stopAtMs == null) clock.play();
+      else clock.playUntil(stopAtMs);
+    },
+    [syncTimelineMaster],
   );
 
   const startTimeline = useCallback(
@@ -695,6 +706,7 @@ export function useStoryPlayerController(
           if (timelineRef.current !== playing || !playing) return;
           setTimelinePlaying(next);
           syncTimelineBgm(fragment, Math.max(0, playing.lastPositionMs), next);
+          if (!next) pauseTimelineMaster();
         },
         onFinish: () => {
           const playing = playback.current;
@@ -706,6 +718,9 @@ export function useStoryPlayerController(
             return;
           finishTimeline(fragment);
         },
+        positionSource: fragment.timeline.masterAudio
+          ? timelineMasterPositionMs
+          : undefined,
       });
       const playing = {
         fragmentId: fragment.id,
@@ -715,20 +730,37 @@ export function useStoryPlayerController(
       playback.current = playing;
       timelineRef.current = playing;
       const firstStep = timelinePlaybackSteps(fragment)[0];
-      clock.seek(autoplay ? 0 : (firstStep?.startMs ?? 0));
-      if (autoplay) clock.play();
-      else if (firstStep)
-        clock.playUntil(Math.max(firstStep.startMs, firstStep.endMs - 1));
+      if (fragment.timeline.masterAudio) {
+        clock.seek(0);
+        void syncTimelineMaster(fragment, 0, false).then((ready) => {
+          if (
+            ready &&
+            autoplay &&
+            playerGeneration === generationRef.current &&
+            timelineRef.current === playing
+          )
+            void playTimeline(fragment, clock);
+        });
+      } else {
+        clock.seek(autoplay ? 0 : (firstStep?.startMs ?? 0));
+        if (autoplay) clock.play();
+        else if (firstStep)
+          clock.playUntil(Math.max(firstStep.startMs, firstStep.endMs - 1));
+      }
     },
     [
       advanceMode,
       executeAudioBlock,
       finishTimeline,
       generationRef,
+      pauseTimelineMaster,
+      playTimeline,
       setTimelinePlaying,
       setTimelinePositionMs,
       showTimelinePosition,
       syncTimelineBgm,
+      syncTimelineMaster,
+      timelineMasterPositionMs,
       timelineRef,
     ],
   );
@@ -769,7 +801,10 @@ export function useStoryPlayerController(
 
   const restart = () => {
     cleanupPlayback();
-    setAdvanceMode("manual");
+    exportCompletedRef.current = false;
+    setSelectedExportChoiceId(undefined);
+    setAdvanceMode(exportMode ? "auto" : "manual");
+    advanceModeRef.current = exportMode ? "auto" : "manual";
     const base = initialRuntime(document);
     const startChapter = startCursor
       ? chapterById(document, startCursor.chapterId)
@@ -801,13 +836,14 @@ export function useStoryPlayerController(
     }
     const entryFragment = fragmentById(initialChapter, initial.fragmentId);
     if (entryFragment?.timeline) {
-      startTimeline(entryFragment, false);
+      startTimeline(entryFragment, Boolean(exportMode));
       return;
     }
     presentRuntime(advanceRuntime(document, initial));
   };
   useImperativeHandle(ref, () => ({ restart }));
   const enterFragment = (fragmentId: string) => {
+    pauseTimelineMaster();
     timelineRef.current?.clock.dispose();
     timelineRef.current = null;
     const next = chooseRuntimeFragment(
@@ -826,6 +862,49 @@ export function useStoryPlayerController(
     }
     presentRuntime(advanceRuntime(document, next));
   };
+  useEffect(() => {
+    if (!exportMode) return;
+    restart();
+    // Export mode owns the complete player lifecycle and starts exactly once.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (
+      !exportMode ||
+      frame.mode !== "content" ||
+      frame.block.type !== "branch"
+    )
+      return;
+    const choiceId = exportMode.branchSelections[frame.block.id];
+    const choice = frame.block.choices.find((item) => item.id === choiceId);
+    if (!choice) {
+      if (!exportCompletedRef.current) {
+        exportCompletedRef.current = true;
+        exportMode.onComplete?.({ ok: false, label: "导出路线缺少分支选择" });
+      }
+      return;
+    }
+    const highlightAt = Math.max(
+      0,
+      exportMode.choiceDurationMs - exportMode.choiceHighlightMs,
+    );
+    const highlight = window.setTimeout(
+      () => setSelectedExportChoiceId(choice.id),
+      highlightAt,
+    );
+    const select = window.setTimeout(() => {
+      setSelectedExportChoiceId(undefined);
+      enterFragment(choice.targetFragmentId);
+    }, exportMode.choiceDurationMs);
+    return () => {
+      window.clearTimeout(highlight);
+      window.clearTimeout(select);
+    };
+    // The timer must remain tied to this rendered branch; enterFragment is
+    // intentionally read from the same render instead of restarting on every tick.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [exportMode, frame]);
   const seekTimeline = (milliseconds: number, triggerPointEffects = false) => {
     const playing = timelineRef.current;
     if (!playing || !activeFragment?.timeline) return;
@@ -846,6 +925,7 @@ export function useStoryPlayerController(
         )
           executeAudioBlock(event.block);
     playing.clock.seek(target);
+    void syncTimelineMaster(activeFragment, target, playing.clock.isPlaying);
     if (target >= activeFragment.timeline.durationMs) {
       finishTimeline(activeFragment);
     }
@@ -855,6 +935,12 @@ export function useStoryPlayerController(
     const playing = voiceRef.current;
     voiceRef.current = null;
     setVoicePlaying(false);
+    if (playing)
+      exportMode?.onAudioEvent?.({
+        action: "stop",
+        channel: "voice",
+        fadeMs: 80,
+      });
     if (playing) fadeAndStop(playing, 80);
   };
   const skipTimelineStep = (direction: -1 | 1) => {
@@ -886,7 +972,9 @@ export function useStoryPlayerController(
       const nextStep = steps[nextIndex];
       seekTimeline(nextStep?.startMs ?? 0, true);
       if (advanceModeRef.current === "manual" && nextStep)
-        timelineRef.current?.clock.playUntil(
+        void playTimeline(
+          activeFragment,
+          timelineRef.current!.clock,
           Math.max(nextStep.startMs, nextStep.endMs - 1),
         );
     }
@@ -899,7 +987,7 @@ export function useStoryPlayerController(
       if (clock.position >= (activeFragment?.timeline?.durationMs ?? 0))
         clock.seek(0);
       setAdvanceMode("auto");
-      clock.play();
+      if (activeFragment) void playTimeline(activeFragment, clock);
     } else {
       clock.pause();
       setAdvanceMode("manual");
@@ -912,7 +1000,7 @@ export function useStoryPlayerController(
     if (next === "auto" || next === "skip") {
       if (playing.clock.position >= (activeFragment?.timeline?.durationMs ?? 0))
         playing.clock.seek(0);
-      playing.clock.play();
+      if (activeFragment) void playTimeline(activeFragment, playing.clock);
     } else playing.clock.pause();
   };
   const paragraphSourceFragment =
@@ -1071,7 +1159,9 @@ export function useStoryPlayerController(
     frame.mode === "content" && !activeTimeline
       ? frame.block.type === "wait"
         ? frame.block.mode === "player"
-          ? null
+          ? exportMode
+            ? 1200
+            : null
           : advanceMode === "skip"
             ? 0
             : frame.block.durationMs
@@ -1090,6 +1180,35 @@ export function useStoryPlayerController(
     );
     return () => window.clearTimeout(timer);
   }, [displayBlockId, mode, waitDurationMs]);
+
+  useEffect(() => {
+    if (!exportMode || !inlinePlayerWait) return;
+    const timer = window.setTimeout(() => advanceRef.current(), 300);
+    return () => window.clearTimeout(timer);
+  }, [exportMode, inlinePlayerWait]);
+
+  useEffect(() => {
+    if (
+      !exportMode ||
+      frame.mode !== "content" ||
+      frame.block.type !== "systemMessage"
+    )
+      return;
+    const timer = window.setTimeout(() => resolveSystemMessage(true), 1200);
+    return () => window.clearTimeout(timer);
+    // resolveSystemMessage follows the current runtime frame by design.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [exportMode, displayBlockId]);
+
+  useEffect(() => {
+    if (!exportMode || exportCompletedRef.current) return;
+    if (frame.mode !== "ending" && frame.mode !== "error") return;
+    exportCompletedRef.current = true;
+    exportMode.onComplete?.({
+      ok: frame.mode === "ending",
+      label: frame.mode === "ending" ? frame.label : frame.message,
+    });
+  }, [exportMode, frame]);
 
   useEffect(() => {
     const typewriterContext = typewriterContextRef.current;
@@ -1118,11 +1237,25 @@ export function useStoryPlayerController(
       authoredSpeed ||
       runtimeRef.current.paragraph.textSpeedCps ||
       typewriterContext.defaultSpeedCps;
-    const durationMs = Math.max(50, (characters.length / speed) * 1000);
+    const authoredDurationMs = Math.max(50, (characters.length / speed) * 1000);
+    const durationMs =
+      advanceMode === "auto" && activeTimeline?.masterAudio
+        ? Math.min(300, authoredDurationMs)
+        : authoredDurationMs;
     const stepMs =
       advanceMode === "skip"
         ? 0
         : Math.max(16, durationMs / Math.max(1, characters.length));
+    const charactersPerStep =
+      advanceMode === "auto" && activeTimeline?.masterAudio
+        ? Math.max(
+            1,
+            Math.ceil(
+              characters.length /
+                Math.max(1, Math.floor(durationMs / Math.max(1, stepMs))),
+            ),
+          )
+        : 1;
     const waitEvents =
       typewriterFrame.mode === "content" &&
       (typewriterFrame.block.type === "dialogue" ||
@@ -1156,7 +1289,7 @@ export function useStoryPlayerController(
         schedule(advanceMode === "skip" ? 0 : (wait.node.durationMs ?? 0));
         return;
       }
-      visible = Math.min(characters.length, visible + 1);
+      visible = Math.min(characters.length, visible + charactersPerStep);
       setVisibleTextLength(visible);
       if (visible < characters.length) schedule(stepMs);
     };
@@ -1166,7 +1299,13 @@ export function useStoryPlayerController(
       if (timer != null) window.clearTimeout(timer);
       inlineWaitReleaseRef.current = null;
     };
-  }, [advanceMode, displayBlockId, displayText, mode]);
+  }, [
+    activeTimeline?.masterAudio,
+    advanceMode,
+    displayBlockId,
+    displayText,
+    mode,
+  ]);
 
   useEffect(() => {
     if (
@@ -1290,6 +1429,7 @@ export function useStoryPlayerController(
     runtimeVariables,
     activeTimeline,
     activeSceneLayers,
+    activeVideoAsset,
     videoUrl,
     stageCgs,
     dialogueStyle,
@@ -1314,5 +1454,7 @@ export function useStoryPlayerController(
     paragraphVisibleContents,
     systemMessageStyle,
     resolveSystemMessage,
+    exportMode,
+    selectedExportChoiceId,
   };
 }

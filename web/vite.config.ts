@@ -23,6 +23,7 @@ export default defineConfig({
       input: {
         studio: resolve(__dirname, "index.html"),
         docs: resolve(__dirname, "docs.html"),
+        galgameExport: resolve(__dirname, "galgame-export.html"),
       },
     },
   },

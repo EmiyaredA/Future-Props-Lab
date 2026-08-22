@@ -73,6 +73,7 @@ export function StoryPlayerView({ model }: { model: StoryPlayerViewModel }) {
     runtimeVariables,
     activeTimeline,
     activeSceneLayers,
+    activeVideoAsset,
     videoUrl,
     stageCgs,
     dialogueStyle,
@@ -97,10 +98,12 @@ export function StoryPlayerView({ model }: { model: StoryPlayerViewModel }) {
     paragraphVisibleContents,
     systemMessageStyle,
     resolveSystemMessage,
+    exportMode,
+    selectedExportChoiceId,
   } = model;
   return (
     <section
-      className="galgame-player"
+      className={`galgame-player${exportMode ? " galgame-player-export" : ""}`}
       aria-label="游戏预览"
       data-lip-sync-speaking={lipSyncSpeaking ? "true" : "false"}
       data-mouth-frame={mouthFrame}
@@ -108,86 +111,89 @@ export function StoryPlayerView({ model }: { model: StoryPlayerViewModel }) {
         currentAudioLevelDb == null ? undefined : currentAudioLevelDb.toFixed(1)
       }
     >
-      <header>
-        <div>
-          <strong>
-            {workbenchHeader
-              ? "实时预览"
-              : mode === "edit"
-                ? "舞台编辑"
-                : "游戏预览"}
-          </strong>
-          {workbenchHeader ? (
-            <i className="galgame-player-live">● LIVE</i>
-          ) : (
-            <>
-              <small>
-                {scenes.get(displayFrame.stage.sceneId ?? "")?.name ?? "空舞台"}
-              </small>
+      {!exportMode ? (
+        <header>
+          <div>
+            <strong>
+              {workbenchHeader
+                ? "实时预览"
+                : mode === "edit"
+                  ? "舞台编辑"
+                  : "游戏预览"}
+            </strong>
+            {workbenchHeader ? (
+              <i className="galgame-player-live">● LIVE</i>
+            ) : (
+              <>
+                <small>
+                  {scenes.get(displayFrame.stage.sceneId ?? "")?.name ??
+                    "空舞台"}
+                </small>
+                <em className="galgame-player-resolution">
+                  {document.settings?.canvas?.width ?? 1920} ×{" "}
+                  {document.settings?.canvas?.height ?? 1080}
+                </em>
+              </>
+            )}
+          </div>
+          <span className="galgame-player-header-actions">
+            {workbenchHeader ? (
               <em className="galgame-player-resolution">
                 {document.settings?.canvas?.width ?? 1920} ×{" "}
                 {document.settings?.canvas?.height ?? 1080}
               </em>
-            </>
-          )}
-        </div>
-        <span className="galgame-player-header-actions">
-          {workbenchHeader ? (
-            <em className="galgame-player-resolution">
-              {document.settings?.canvas?.width ?? 1920} ×{" "}
-              {document.settings?.canvas?.height ?? 1080}
-            </em>
-          ) : null}
-          {headerModeControl}
-          <button
-            type="button"
-            className={aspectMenuOpen ? "active" : ""}
-            onClick={() => {
-              setAspectMenuOpen((current) => !current);
-              setMixerOpen(false);
-            }}
-            aria-label="舞台比例"
-            aria-expanded={aspectMenuOpen}
-            title={`舞台比例：${stageAspectModeLabel(viewportPreferences.aspectMode)}`}
-          >
-            <Ratio aria-hidden />
-          </button>
-          {mode === "play" ? (
+            ) : null}
+            {headerModeControl}
             <button
               type="button"
-              className={mixerOpen ? "active" : ""}
+              className={aspectMenuOpen ? "active" : ""}
               onClick={() => {
-                setMixerOpen((current) => !current);
-                setAspectMenuOpen(false);
+                setAspectMenuOpen((current) => !current);
+                setMixerOpen(false);
               }}
-              aria-label="试玩混音"
+              aria-label="舞台比例"
+              aria-expanded={aspectMenuOpen}
+              title={`舞台比例：${stageAspectModeLabel(viewportPreferences.aspectMode)}`}
             >
-              <SlidersHorizontal aria-hidden />
+              <Ratio aria-hidden />
             </button>
-          ) : null}
-          {mode === "play" ? (
-            <button type="button" onClick={restart} aria-label="重新开始试玩">
-              <RotateCcw aria-hidden />
-            </button>
-          ) : null}
-          {onCollapsedChange ? (
-            <button
-              type="button"
-              onClick={() => onCollapsedChange(!collapsed)}
-              aria-label={collapsed ? "展开舞台预览" : "折叠舞台预览"}
-              aria-pressed={collapsed}
-              title={collapsed ? "展开舞台预览" : "折叠舞台预览"}
-            >
-              {collapsed ? (
-                <ChevronDown aria-hidden />
-              ) : (
-                <ChevronUp aria-hidden />
-              )}
-            </button>
-          ) : null}
-        </span>
-      </header>
-      {aspectMenuOpen ? (
+            {mode === "play" ? (
+              <button
+                type="button"
+                className={mixerOpen ? "active" : ""}
+                onClick={() => {
+                  setMixerOpen((current) => !current);
+                  setAspectMenuOpen(false);
+                }}
+                aria-label="试玩混音"
+              >
+                <SlidersHorizontal aria-hidden />
+              </button>
+            ) : null}
+            {mode === "play" ? (
+              <button type="button" onClick={restart} aria-label="重新开始试玩">
+                <RotateCcw aria-hidden />
+              </button>
+            ) : null}
+            {onCollapsedChange ? (
+              <button
+                type="button"
+                onClick={() => onCollapsedChange(!collapsed)}
+                aria-label={collapsed ? "展开舞台预览" : "折叠舞台预览"}
+                aria-pressed={collapsed}
+                title={collapsed ? "展开舞台预览" : "折叠舞台预览"}
+              >
+                {collapsed ? (
+                  <ChevronDown aria-hidden />
+                ) : (
+                  <ChevronUp aria-hidden />
+                )}
+              </button>
+            ) : null}
+          </span>
+        </header>
+      ) : null}
+      {!exportMode && aspectMenuOpen ? (
         <section className="galgame-player-aspect" aria-label="舞台比例选项">
           <header>
             <strong>舞台比例</strong>
@@ -383,6 +389,18 @@ export function StoryPlayerView({ model }: { model: StoryPlayerViewModel }) {
               autoPlay={mode === "play"}
               loop={displayFrame.stage.video.loop}
               muted={displayFrame.stage.video.volume === 0}
+              onPlay={() => {
+                if (!activeVideoAsset) return;
+                exportMode?.onAudioEvent?.({
+                  action: "play",
+                  channel: "video",
+                  storyAssetId: activeVideoAsset.id,
+                  offsetMs: 0,
+                  volume: (displayFrame.stage.video?.volume ?? 100) / 100,
+                  loop: displayFrame.stage.video?.loop ?? false,
+                  fadeMs: 0,
+                });
+              }}
               onLoadedMetadata={(event) => {
                 event.currentTarget.volume =
                   displayFrame.stage.video?.volume != null
@@ -743,23 +761,27 @@ export function StoryPlayerView({ model }: { model: StoryPlayerViewModel }) {
             );
           })}
           {displayFrame.mode === "idle" ? (
-            <button
-              className="galgame-player-start"
-              type="button"
-              onClick={restart}
-              disabled={mode === "edit"}
-            >
-              <Play aria-hidden />{" "}
-              {mode === "edit" ? "选择一个 Block" : "开始试玩"}
-            </button>
-          ) : displayFrame.mode === "ending" ? (
-            <div className="galgame-ending">
-              <small>ENDING</small>
-              <strong>{displayFrame.label}</strong>
-              <button type="button" onClick={restart}>
-                重新开始
+            exportMode ? null : (
+              <button
+                className="galgame-player-start"
+                type="button"
+                onClick={restart}
+                disabled={mode === "edit"}
+              >
+                <Play aria-hidden />{" "}
+                {mode === "edit" ? "选择一个 Block" : "开始试玩"}
               </button>
-            </div>
+            )
+          ) : displayFrame.mode === "ending" ? (
+            exportMode ? null : (
+              <div className="galgame-ending">
+                <small>ENDING</small>
+                <strong>{displayFrame.label}</strong>
+                <button type="button" onClick={restart}>
+                  重新开始
+                </button>
+              </div>
+            )
           ) : displayFrame.mode === "error" ? (
             <div className="galgame-player-error" role="alert">
               <strong>试玩已停止</strong>
@@ -769,7 +791,7 @@ export function StoryPlayerView({ model }: { model: StoryPlayerViewModel }) {
               </button>
             </div>
           ) : displayFrame.mode === "stageOnly" ? (
-            mode === "play" ? (
+            mode === "play" && !exportMode ? (
               <button
                 type="button"
                 className="galgame-stage-advance"
@@ -786,6 +808,11 @@ export function StoryPlayerView({ model }: { model: StoryPlayerViewModel }) {
                   key={choice.id}
                   type="button"
                   onClick={() => enterFragment(choice.targetFragmentId)}
+                  className={
+                    selectedExportChoiceId === choice.id
+                      ? "is-export-selected"
+                      : undefined
+                  }
                 >
                   {choice.text || "未命名选项"}
                 </button>
@@ -986,7 +1013,7 @@ export function StoryPlayerView({ model }: { model: StoryPlayerViewModel }) {
           ) : null}
         </div>
       </div>
-      {mode === "play" && displayFrame.mode !== "idle" ? (
+      {!exportMode && mode === "play" && displayFrame.mode !== "idle" ? (
         <div className="galgame-player-runtime-controls" aria-label="试玩控制">
           {activeTimeline &&
           (displayFrame.mode === "content" ||
