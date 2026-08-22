@@ -541,13 +541,14 @@ export function ProjectSettingsWorkspace({
                     ...settings,
                     characterStage: {
                       ...settings.characterStage,
-                      anchor: value as "center" | "topLeft",
+                      anchor: value as "center" | "topLeft" | "bottomCenter",
                     },
                   })
                 }
                 options={[
                   { value: "center", label: "居中" },
                   { value: "topLeft", label: "左上" },
+                  { value: "bottomCenter", label: "底部居中（立绘）" },
                 ]}
               />
             </label>

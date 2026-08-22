@@ -54,7 +54,7 @@ def default_character_position_presets() -> list[GalgameStoryPositionPreset]:
 
 
 class GalgameStoryCharacterStageSettings(GalgameStoryModel):
-    anchor: Literal["center", "topLeft"] = "center"
+    anchor: Literal["center", "topLeft", "bottomCenter"] = "center"
     position_presets: list[GalgameStoryPositionPreset] = Field(
         default_factory=default_character_position_presets,
         alias="positionPresets",

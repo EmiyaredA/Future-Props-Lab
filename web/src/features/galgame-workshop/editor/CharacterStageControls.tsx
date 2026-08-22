@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import type {
   GalgameStoryCharacterTransform,
   GalgameStoryCharacterTransition,
@@ -14,34 +15,48 @@ function clamp(value: number, min: number, max: number) {
 export function CharacterTransitionFields({
   transition,
   onChange,
+  fadeLabel = "登退场淡入淡出",
+  fadeDescription,
 }: {
   transition?: GalgameStoryCharacterTransition;
   onChange: (transition: GalgameStoryCharacterTransition) => void;
+  fadeLabel?: string;
+  fadeDescription?: string;
 }) {
   const value = characterTransition(transition);
+  const progress = `${(value.durationMs / 5000) * 100}%`;
   return (
     <div className="galgame-character-transition-fields">
-      <label>
-        <input
-          type="checkbox"
-          checked={value.fade}
-          onChange={(event) =>
-            onChange({ ...value, fade: event.target.checked })
-          }
-        />
-        <span>登退场淡入淡出</span>
+      <label className="galgame-transition-toggle">
+        <span className="galgame-transition-toggle-copy">
+          <strong>{fadeLabel}</strong>
+          {fadeDescription ? <small>{fadeDescription}</small> : null}
+        </span>
+        <span className="galgame-switch-control">
+          <input
+            type="checkbox"
+            aria-label={fadeLabel}
+            checked={value.fade}
+            onChange={(event) =>
+              onChange({ ...value, fade: event.target.checked })
+            }
+          />
+          <span aria-hidden />
+        </span>
       </label>
       <label className="galgame-stage-range">
         <span>
-          过渡时长 <em>{value.durationMs}ms</em>
+          <span>过渡时长</span>
+          <output>{value.durationMs}ms</output>
         </span>
         <input
           aria-label="角色过渡时长"
           type="range"
           min="0"
           max="5000"
-          step="50"
+          step="10"
           value={value.durationMs}
+          style={{ "--gal-range-progress": progress } as CSSProperties}
           onChange={(event) =>
             onChange({ ...value, durationMs: Number(event.target.value) })
           }
@@ -88,6 +103,11 @@ export function CharacterTransformFields({
               max={max}
               step={step}
               value={value[key]}
+              style={
+                {
+                  "--gal-range-progress": `${((value[key] - min) / (max - min)) * 100}%`,
+                } as CSSProperties
+              }
               onChange={(event) =>
                 onTransform({ ...value, [key]: Number(event.target.value) })
               }

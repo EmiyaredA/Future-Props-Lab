@@ -1,4 +1,5 @@
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Sparkles, Trash2, Users } from "lucide-react";
+import { useId } from "react";
 import { CustomSelect } from "@shared/ui/CustomSelect";
 import type {
   GalgameStoryProject,
@@ -51,6 +52,7 @@ export function StageCastInspectorFields({
   document: GalgameStoryProject;
   onChange: (block: GalgameStorySetStageCastBlock) => void;
 }) {
+  const exitTransitionHeadingId = useId();
   const members = block.members ?? [];
   const updateMember = (
     index: number,
@@ -70,13 +72,24 @@ export function StageCastInspectorFields({
   );
 
   return (
-    <>
+    <div className="galgame-stage-cast-inspector">
+      {members.length === 0 ? (
+        <div className="galgame-stage-cast-empty">
+          <span className="galgame-stage-cast-empty-icon">
+            <Users aria-hidden />
+          </span>
+          <span>
+            <strong>舞台暂时留空</strong>
+            <small>播放到这里时，会清空画面中的全部角色。</small>
+          </span>
+        </div>
+      ) : (
+        <div className="galgame-stage-cast-summary">
+          <span>舞台角色</span>
+          <strong>{members.length} / 3</strong>
+        </div>
+      )}
       <div className="galgame-stage-cast-list">
-        {members.length === 0 ? (
-          <p className="galgame-inspector-note">
-            这个构图会清空舞台上的全部角色。
-          </p>
-        ) : null}
         {members.map((member, index) => {
           const character = (document.characters ?? []).find(
             (candidate) => candidate.id === member.characterId,
@@ -88,7 +101,10 @@ export function StageCastInspectorFields({
               className="galgame-stage-cast-member"
             >
               <header>
-                <strong>角色 {index + 1}</strong>
+                <span>
+                  <strong>角色 {index + 1}</strong>
+                  <small>{character?.name ?? "未命名角色"}</small>
+                </span>
                 <button
                   type="button"
                   aria-label={`移除构图角色 ${index + 1}`}
@@ -213,7 +229,7 @@ export function StageCastInspectorFields({
       {members.length < 3 && availableCharacter ? (
         <button
           type="button"
-          className="galgame-secondary-action"
+          className="galgame-stage-cast-add"
           onClick={() =>
             onChange({
               ...block,
@@ -224,15 +240,35 @@ export function StageCastInspectorFields({
             })
           }
         >
-          <Plus aria-hidden /> 添加角色（最多三人）
+          <span className="galgame-stage-cast-add-icon">
+            <Plus aria-hidden />
+          </span>
+          <span>
+            <strong>添加舞台角色</strong>
+            <small>还可添加 {3 - members.length} 人</small>
+          </span>
         </button>
       ) : null}
-      <Field label="未保留角色的退场效果">
+      <section
+        className="galgame-stage-exit-card"
+        aria-labelledby={exitTransitionHeadingId}
+      >
+        <header>
+          <span className="galgame-stage-exit-icon">
+            <Sparkles aria-hidden />
+          </span>
+          <span>
+            <strong id={exitTransitionHeadingId}>退场动效</strong>
+            <small>应用于未保留在新构图中的角色</small>
+          </span>
+        </header>
         <CharacterTransitionFields
           transition={block.exitTransition}
+          fadeLabel="淡出离场"
+          fadeDescription="让角色自然离开画面"
           onChange={(exitTransition) => onChange({ ...block, exitTransition })}
         />
-      </Field>
-    </>
+      </section>
+    </div>
   );
 }

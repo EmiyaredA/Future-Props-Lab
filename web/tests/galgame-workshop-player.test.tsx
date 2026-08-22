@@ -710,12 +710,15 @@ test("renders character placement from the character asset settings", async () =
   showBlock.transform!.x = 95;
   showBlock.transform!.y = 90;
   showBlock.transform!.anchor = "bottomCenter";
-  anchorStory.settings!.characterStage!.anchor = "topLeft";
+  anchorStory.settings!.characterStage!.anchor = "bottomCenter";
+  anchorStory.settings!.characterStage!.positionPresets![0].y = 100;
   const second = render(<StoryPlayer document={anchorStory} />);
   await user.click(screen.getByRole("button", { name: "开始试玩" }));
   expect(second.container.querySelector(".galgame-stage-actor")).toHaveStyle({
-    transform: "translate(0, 0) scale(1) scaleX(1)",
-    transformOrigin: "top left",
+    left: "40%",
+    top: "100%",
+    transform: "translate(-50%, -100%) scale(1) scaleX(1)",
+    transformOrigin: "bottom center",
   });
 });
 

@@ -629,7 +629,9 @@ export function CharacterStageSettingsWorkspace({
               transform: `${
                 stageSettings.anchor === "center"
                   ? "translate(-50%, -50%)"
-                  : "translate(0, 0)"
+                  : stageSettings.anchor === "bottomCenter"
+                    ? "translate(-50%, -100%)"
+                    : "translate(0, 0)"
               } scaleX(${previewExpression?.flipX ? -1 : 1})`,
             }}
           >
@@ -981,6 +983,17 @@ export function CharacterStageSettingsWorkspace({
                 }
               >
                 左上角
+              </button>
+              <button
+                type="button"
+                className={
+                  stageSettings.anchor === "bottomCenter" ? "active" : ""
+                }
+                onClick={() =>
+                  replaceSettings({ ...stageSettings, anchor: "bottomCenter" })
+                }
+              >
+                底部居中
               </button>
             </span>
           </div>

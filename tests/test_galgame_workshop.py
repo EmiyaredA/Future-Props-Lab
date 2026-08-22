@@ -501,6 +501,24 @@ def test_galgame_story_defaults_character_themes_and_stage_settings() -> None:
         "positionPresets": default_position_presets(),
     }
 
+    bottom_anchored = deepcopy(document)
+    bottom_anchored["settings"] = {
+        "characterStage": {
+            "anchor": "bottomCenter",
+            "defaultPositionId": "position-center",
+            "defaultHeightPercent": 100,
+            "positionPresets": [{**preset, "y": 100} for preset in default_position_presets()],
+        }
+    }
+    parsed_bottom_anchored = GalgameStoryProject.model_validate(bottom_anchored).model_dump(
+        mode="json", by_alias=True
+    )
+    assert parsed_bottom_anchored["settings"]["characterStage"]["anchor"] == "bottomCenter"
+    assert {
+        preset["y"]
+        for preset in parsed_bottom_anchored["settings"]["characterStage"]["positionPresets"]
+    } == {100.0}
+
     unknown_override = deepcopy(character_override)
     unknown_override["settings"]["characterStageOverrides"] = {
         "missing-character": character_override["settings"]["characterStageOverrides"][

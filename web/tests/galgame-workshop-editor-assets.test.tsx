@@ -733,6 +733,14 @@ test("shows the selected portrait's real stage footprint for each anchor", async
     transform: "translate(-50%, -50%) scaleX(1)",
   });
 
+  await user.click(screen.getByRole("button", { name: "底部居中" }));
+  expect(container.querySelector(".galgame-stage-preview-actor")).toHaveClass(
+    "is-bottomCenter",
+  );
+  expect(preview).toHaveStyle({
+    transform: "translate(-50%, -100%) scaleX(1)",
+  });
+
   await user.click(screen.getByRole("button", { name: "左上角" }));
   expect(container.querySelector(".galgame-stage-preview-actor")).toHaveClass(
     "is-topLeft",

@@ -3822,7 +3822,7 @@ export interface components {
              * @default center
              * @enum {string}
              */
-            anchor: "center" | "topLeft";
+            anchor: "center" | "topLeft" | "bottomCenter";
             /**
              * Defaultheightpercent
              * @default 100

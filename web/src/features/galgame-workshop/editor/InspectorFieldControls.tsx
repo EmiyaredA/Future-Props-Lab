@@ -57,6 +57,7 @@ export function CgTransitionFields({
   onChange: (transition: GalgameStoryCgTransition) => void;
 }) {
   const value = { durationMs: 400, fade: true, ...transition };
+  const progress = `${(value.durationMs / 5000) * 100}%`;
   return (
     <div className="galgame-character-transition-fields">
       <label>
@@ -80,6 +81,7 @@ export function CgTransitionFields({
           max="5000"
           step="50"
           value={value.durationMs}
+          style={{ "--gal-range-progress": progress } as CSSProperties}
           onChange={(event) =>
             onChange({
               ...value,

@@ -4492,7 +4492,8 @@
             "default": "center",
             "enum": [
               "center",
-              "topLeft"
+              "topLeft",
+              "bottomCenter"
             ],
             "title": "Anchor",
             "type": "string"
