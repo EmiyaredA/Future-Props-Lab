@@ -57,11 +57,26 @@ const clipStory: GalgameStoryProject = {
   schemaVersion: "1.4",
   synopsis: "快速试片",
   entryChapterId: "chapter-1",
-  characters: [{ id: "hero", name: "调查员", description: "" }],
+  characters: [
+    {
+      id: "hero",
+      name: "调查员",
+      description: "",
+      expressions: [{ id: "calm", label: "平静", assetId: "hero-portrait" }],
+      defaultExpressionId: "calm",
+    },
+  ],
   scenes: [{ id: "lab", name: "夜间研究所", description: "" }],
   cgs: [],
   variables: [],
   assets: [
+    {
+      id: "hero-portrait",
+      type: "image",
+      role: "characterPortrait",
+      fileId: "file-hero-portrait",
+      status: "ready",
+    },
     {
       id: "clip-bgm",
       type: "audio",
