@@ -4,8 +4,8 @@ from app.visual_workshop.assistant.actions import (
     persist_agent_event,
     recover_interrupted_visual_assistant_runs,
 )
+from app.visual_workshop.assistant.attachments import AssistantAssetError
 from app.visual_workshop.assistant.conversations import (
-    AssistantAssetError,
     AssistantBusyError,
     AssistantModelUnavailableError,
     AssistantNotFoundError,

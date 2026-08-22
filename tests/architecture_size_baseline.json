@@ -3,7 +3,6 @@
     "backend/app/files/assets.py": 756,
     "backend/app/schemas/galgame_workshop/base.py": 773,
     "backend/app/schemas/galgame_workshop/blocks.py": 787,
-    "backend/app/visual_workshop/assistant/conversations.py": 918,
     "web/src/app/AccountWorkspacePanel.tsx": 1030,
     "web/src/features/audio-annotation/AudioAnnotationEditorPage.tsx": 1460,
     "web/src/features/audio-annotation/model.ts": 802,
