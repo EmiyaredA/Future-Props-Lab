@@ -128,7 +128,7 @@ describe("character presentation recommendations", () => {
     });
   });
 
-  it("falls back to the asset default when a referenced custom position was deleted", () => {
+  it("falls back to the asset position while preserving an explicit fine scale", () => {
     const transform = characterAssetTransform(
       document,
       "hero",
@@ -145,6 +145,6 @@ describe("character presentation recommendations", () => {
       "deleted-position",
     );
 
-    expect(transform).toMatchObject({ x: 50, y: 50, scale: 1 });
+    expect(transform).toMatchObject({ x: 50, y: 50, scale: 3 });
   });
 });

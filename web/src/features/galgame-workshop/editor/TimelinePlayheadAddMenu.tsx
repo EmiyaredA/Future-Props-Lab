@@ -18,6 +18,7 @@ const BLOCK_LABELS: Partial<Record<BlockKind, string>> = {
   showCg: "显示 CG",
   hideCg: "隐藏 CG",
   showCharacter: "角色登场 / 调整",
+  setStageCast: "舞台构图",
   removeCharacter: "角色退场",
   narration: "旁白",
   dialogue: "对白",
@@ -156,7 +157,11 @@ export const TimelinePlayheadAddMenu = forwardRef<
               <section>
                 <strong>高级角色演出</strong>
                 <div>
-                  {blockButtons(["showCharacter", "removeCharacter"])}
+                  {blockButtons([
+                    "setStageCast",
+                    "showCharacter",
+                    "removeCharacter",
+                  ])}
                   <button
                     type="button"
                     onClick={() => runAndClose(onAddAllCharacters)}

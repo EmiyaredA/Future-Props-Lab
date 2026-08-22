@@ -30,6 +30,7 @@ export type GalgameTimelinePointBlock = Extract<
       | "showCg"
       | "hideCg"
       | "showCharacter"
+      | "setStageCast"
       | "removeCharacter"
       | "audio";
   }
@@ -37,7 +38,7 @@ export type GalgameTimelinePointBlock = Extract<
 
 export type GalgameTimelineCharacterBlock = Extract<
   GalgameTimelinePointBlock,
-  { type: "showCharacter" | "removeCharacter" }
+  { type: "showCharacter" | "setStageCast" | "removeCharacter" }
 >;
 
 export type GalgameTimelineCharacterTiming =
@@ -159,6 +160,7 @@ export function timelineCues(fragment: GalgameStoryFragment) {
 function eventPriority(block: GalgameStoryBlock) {
   if (block.type === "scene") return 0;
   if (block.type === "removeCharacter") return 1;
+  if (block.type === "setStageCast") return 2;
   if (block.type === "showCharacter") return 2;
   if (block.type === "showCg" || block.type === "hideCg") return 3;
   if (block.type === "audio" && block.action === "stop") return 4;
@@ -184,6 +186,7 @@ export function effectivePointTime(
       block.type !== "showCg" &&
       block.type !== "hideCg" &&
       block.type !== "showCharacter" &&
+      block.type !== "setStageCast" &&
       block.type !== "removeCharacter" &&
       block.type !== "audio")
   )
@@ -193,7 +196,9 @@ export function effectivePointTime(
   const cues = timelineCues(fragment);
   const next = cues.find((cue) => cue.blockIndex > blockIndex);
   if (next)
-    return block.type === "showCharacter" || block.type === "removeCharacter"
+    return block.type === "showCharacter" ||
+      block.type === "setStageCast" ||
+      block.type === "removeCharacter"
       ? next.startMs
       : cues[0]?.blockIndex > blockIndex
         ? 0
@@ -210,7 +215,9 @@ export function timelineCharacterTiming(
   const block = blocks[blockIndex];
   if (
     !block ||
-    (block.type !== "showCharacter" && block.type !== "removeCharacter")
+    (block.type !== "showCharacter" &&
+      block.type !== "setStageCast" &&
+      block.type !== "removeCharacter")
   )
     return undefined;
   if (block.atMs != null) return { mode: "independent", timeMs: block.atMs };
@@ -237,7 +244,9 @@ export function attachTimelineCharacterEvent(
     blockIndex < 0 ||
     targetIndex < 0 ||
     !block ||
-    (block.type !== "showCharacter" && block.type !== "removeCharacter")
+    (block.type !== "showCharacter" &&
+      block.type !== "setStageCast" &&
+      block.type !== "removeCharacter")
   )
     return fragment;
 
@@ -481,6 +490,7 @@ export function appendBlockToTimeline(
         block.type === "showCg" ||
         block.type === "hideCg" ||
         block.type === "showCharacter" ||
+        block.type === "setStageCast" ||
         block.type === "removeCharacter" ||
         block.type === "audio"
       ? { ...block, atMs }
@@ -517,7 +527,11 @@ export function enableFragmentTimeline(fragment: GalgameStoryFragment) {
   return {
     ...withTimeline,
     blocks: (withTimeline.blocks ?? []).map((block, blockIndex) => {
-      if (block.type === "showCharacter" || block.type === "removeCharacter")
+      if (
+        block.type === "showCharacter" ||
+        block.type === "setStageCast" ||
+        block.type === "removeCharacter"
+      )
         return block;
       if (
         block.type !== "scene" &&
@@ -570,6 +584,7 @@ export function setTimelinePointTime(
           block.type === "showCg" ||
           block.type === "hideCg" ||
           block.type === "showCharacter" ||
+          block.type === "setStageCast" ||
           block.type === "removeCharacter" ||
           block.type === "audio")
           ? { ...block, atMs }
@@ -787,6 +802,7 @@ export function timelineStageMarkers(fragment: GalgameStoryFragment) {
       block.type === "showCg" ||
       block.type === "hideCg" ||
       block.type === "showCharacter" ||
+      block.type === "setStageCast" ||
       block.type === "removeCharacter"
     )
       pending.push(block);

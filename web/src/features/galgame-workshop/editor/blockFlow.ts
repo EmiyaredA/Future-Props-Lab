@@ -52,7 +52,10 @@ export type StoryBlockBundle = {
   primaryBlock: GalgameStoryBlock;
   blocks: GalgameStoryBlock[];
   attachedCharacterBlocks: Array<
-    Extract<GalgameStoryBlock, { type: "showCharacter" | "removeCharacter" }>
+    Extract<
+      GalgameStoryBlock,
+      { type: "showCharacter" | "setStageCast" | "removeCharacter" }
+    >
   >;
 };
 
@@ -69,9 +72,13 @@ function isCharacterBlock(
   block: GalgameStoryBlock,
 ): block is Extract<
   GalgameStoryBlock,
-  { type: "showCharacter" | "removeCharacter" }
+  { type: "showCharacter" | "setStageCast" | "removeCharacter" }
 > {
-  return block.type === "showCharacter" || block.type === "removeCharacter";
+  return (
+    block.type === "showCharacter" ||
+    block.type === "setStageCast" ||
+    block.type === "removeCharacter"
+  );
 }
 
 function isTerminator(block: GalgameStoryBlock) {

@@ -10,6 +10,9 @@ import {
   Upload,
 } from "lucide-react";
 import {
+  DIALOGUE_BOX_PRESETS,
+  dialogueBoxPresetStyle,
+  resolveDialogueBoxStyle,
   uploadGalgameProjectAsset,
   type GalgameStoryDialogueBoxStyle,
   type GalgameStoryProject,
@@ -33,35 +36,11 @@ import { CustomSelect } from "@shared/ui/CustomSelect";
 const PRESETS: Array<{
   id: Exclude<GalgameStoryDialogueBoxStyle["preset"], "custom">;
   label: string;
-  backgroundColor: string;
-  textColor: string;
-  nameColor: string;
-  backgroundOpacity: number;
 }> = [
-  {
-    id: "dark",
-    label: "暗夜",
-    backgroundColor: "#080E18",
-    textColor: "#FFFFFF",
-    nameColor: "#FFFFFF",
-    backgroundOpacity: 0.82,
-  },
-  {
-    id: "light",
-    label: "雾白",
-    backgroundColor: "#F7F3EA",
-    textColor: "#172033",
-    nameColor: "#B94A48",
-    backgroundOpacity: 0.92,
-  },
-  {
-    id: "accent",
-    label: "珊瑚",
-    backgroundColor: "#2F1720",
-    textColor: "#FFF8F6",
-    nameColor: "#FF8B84",
-    backgroundOpacity: 0.88,
-  },
+  { id: "dark", label: "暗夜" },
+  { id: "light", label: "雾白" },
+  { id: "accent", label: "珊瑚" },
+  { id: "classicGradient", label: "经典渐隐" },
 ];
 
 type AssetTarget =
@@ -102,10 +81,9 @@ export function DialogueStyleInspector({
   const [picker, setPicker] = useState<PickerContext>();
   const [uploadTarget, setUploadTarget] = useState<AssetTarget>();
   const [uploadError, setUploadError] = useState("");
-  const style = {
-    ...DEFAULT_DIALOGUE_BOX_STYLE,
-    ...document.presentation?.dialogueBox,
-  };
+  const style = resolveDialogueBoxStyle(
+    document.presentation?.dialogueBox ?? DEFAULT_DIALOGUE_BOX_STYLE,
+  );
   const uiStyle = {
     ...DEFAULT_UI_STYLE,
     ...document.presentation?.ui,
@@ -130,6 +108,47 @@ export function DialogueStyleInspector({
       },
     });
   };
+
+  const updateLayout = (
+    next: Partial<NonNullable<GalgameStoryDialogueBoxStyle["layout"]>>,
+  ) => updateStyle({ preset: "custom", layout: { ...style.layout, ...next } });
+  const updateBackground = (
+    next: Partial<NonNullable<GalgameStoryDialogueBoxStyle["background"]>>,
+  ) =>
+    updateStyle({
+      preset: "custom",
+      background: { ...style.background, ...next },
+    });
+  const updateBody = (
+    next: Partial<NonNullable<GalgameStoryDialogueBoxStyle["body"]>>,
+  ) => updateStyle({ preset: "custom", body: { ...style.body, ...next } });
+  const updateSpeakerName = (
+    next: Partial<NonNullable<GalgameStoryDialogueBoxStyle["speakerName"]>>,
+  ) =>
+    updateStyle({
+      preset: "custom",
+      speakerName: { ...style.speakerName, ...next },
+    });
+  const updateAdvanceIndicator = (
+    next: Partial<
+      NonNullable<GalgameStoryDialogueBoxStyle["advanceIndicator"]>
+    >,
+  ) =>
+    updateStyle({
+      preset: "custom",
+      advanceIndicator: { ...style.advanceIndicator, ...next },
+    });
+
+  const applyPreset = (
+    preset: Exclude<GalgameStoryDialogueBoxStyle["preset"], "custom">,
+  ) =>
+    onDocument({
+      ...document,
+      presentation: {
+        ...document.presentation,
+        dialogueBox: dialogueBoxPresetStyle(preset),
+      },
+    });
 
   const updateStageStyle = (next: Partial<GalgameStoryStageStyle>) => {
     onDocument({
@@ -344,7 +363,7 @@ export function DialogueStyleInspector({
         : document.assets,
       presentation: {
         ...document.presentation,
-        dialogueBox: { ...DEFAULT_DIALOGUE_BOX_STYLE },
+        dialogueBox: dialogueBoxPresetStyle("dark"),
         ui: uiStyle,
       },
     });
@@ -432,20 +451,15 @@ export function DialogueStyleInspector({
               key={preset.id}
               type="button"
               className={style.preset === preset.id ? "active" : ""}
-              onClick={() =>
-                updateStyle({
-                  preset: preset.id,
-                  backgroundColor: preset.backgroundColor,
-                  textColor: preset.textColor,
-                  nameColor: preset.nameColor,
-                  backgroundOpacity: preset.backgroundOpacity,
-                })
-              }
+              onClick={() => applyPreset(preset.id)}
             >
               <span
                 style={{
-                  background: preset.backgroundColor,
-                  color: preset.textColor,
+                  background:
+                    preset.id === "classicGradient"
+                      ? `linear-gradient(180deg, transparent, ${DIALOGUE_BOX_PRESETS[preset.id].backgroundColor})`
+                      : DIALOGUE_BOX_PRESETS[preset.id].backgroundColor,
+                  color: DIALOGUE_BOX_PRESETS[preset.id].textColor,
                 }}
               >
                 Aa
@@ -736,23 +750,325 @@ export function DialogueStyleInspector({
       </label>
       <label className="galgame-dialogue-range">
         <span>
-          字号 <strong>{Math.round(style.fontScale * 100)}%</strong>
+          正文字号{" "}
+          <strong>{style.body.fontSizePx ?? Math.round(24 * style.fontScale)}px</strong>
         </span>
         <input
           type="range"
-          aria-label="对话框字号"
-          min="80"
-          max="140"
-          value={Math.round(style.fontScale * 100)}
-          style={rangeProgress(Math.round(style.fontScale * 100), 80, 140)}
+          aria-label="对话框正文字号"
+          min="14"
+          max="60"
+          value={style.body.fontSizePx ?? Math.round(24 * style.fontScale)}
+          style={rangeProgress(
+            style.body.fontSizePx ?? Math.round(24 * style.fontScale),
+            14,
+            60,
+          )}
           onChange={(event) =>
-            updateStyle({
-              preset: "custom",
-              fontScale: Number(event.target.value) / 100,
-            })
+            updateBody({ fontSizePx: Number(event.target.value) })
           }
         />
       </label>
+      <label className="galgame-dialogue-range">
+        <span>
+          人物名字号{" "}
+          <strong>
+            {style.speakerName.fontSizePx ??
+              style.body.fontSizePx ??
+              Math.round(24 * style.fontScale)}
+            px
+          </strong>
+        </span>
+        <input
+          type="range"
+          aria-label="对话框人物名字号"
+          min="12"
+          max="48"
+          value={
+            style.speakerName.fontSizePx ??
+            style.body.fontSizePx ??
+            Math.round(24 * style.fontScale)
+          }
+          style={rangeProgress(
+            style.speakerName.fontSizePx ??
+              style.body.fontSizePx ??
+              Math.round(24 * style.fontScale),
+            12,
+            48,
+          )}
+          onChange={(event) =>
+            updateSpeakerName({ fontSizePx: Number(event.target.value) })
+          }
+        />
+      </label>
+
+      <details className="galgame-dialogue-advanced-settings">
+        <summary>高级布局与排版</summary>
+        <div className="galgame-dialogue-advanced-grid">
+          <label>
+            <span>对话框布局</span>
+            <CustomSelect
+              ariaLabel="对话框布局"
+              value={style.layout.mode}
+              onChange={(value) =>
+                updateLayout({
+                  mode: value as typeof style.layout.mode,
+                })
+              }
+              options={[
+                { value: "boxed", label: "底部面板" },
+                { value: "bottomOverlay", label: "底部渐隐覆盖" },
+              ]}
+            />
+          </label>
+          <label>
+            <span>背景方式</span>
+            <CustomSelect
+              ariaLabel="对话框背景方式"
+              value={style.background.mode}
+              onChange={(value) =>
+                updateBackground({
+                  mode: value as typeof style.background.mode,
+                })
+              }
+              options={[
+                { value: "solid", label: "纯色" },
+                { value: "verticalGradient", label: "纵向渐变" },
+              ]}
+            />
+          </label>
+          <label>
+            <span>正文对齐</span>
+            <CustomSelect
+              ariaLabel="对话框正文对齐"
+              value={style.body.align}
+              onChange={(value) =>
+                updateBody({ align: value as typeof style.body.align })
+              }
+              options={[
+                { value: "left", label: "左对齐" },
+                { value: "center", label: "居中" },
+                { value: "right", label: "右对齐" },
+              ]}
+            />
+          </label>
+          <label>
+            <span>人物名位置</span>
+            <CustomSelect
+              ariaLabel="对话框人物名位置"
+              value={style.speakerName.placement}
+              onChange={(value) =>
+                updateSpeakerName({
+                  placement: value as typeof style.speakerName.placement,
+                })
+              }
+              options={[
+                { value: "topLeft", label: "左上" },
+                { value: "topCenter", label: "上方居中" },
+                { value: "bottomLeft", label: "左下" },
+                { value: "bottomCenter", label: "下方居中" },
+                { value: "hidden", label: "隐藏" },
+              ]}
+            />
+          </label>
+          <label>
+            <span>姓名装饰</span>
+            <CustomSelect
+              ariaLabel="对话框姓名装饰"
+              value={style.speakerName.decoration}
+              onChange={(value) =>
+                updateSpeakerName({
+                  decoration: value as typeof style.speakerName.decoration,
+                })
+              }
+              options={[
+                { value: "none", label: "无" },
+                { value: "sideLines", label: "两侧细线" },
+              ]}
+            />
+          </label>
+          <label>
+            <span>顶部边线</span>
+            <CustomSelect
+              ariaLabel="对话框顶部边线"
+              value={style.background.topRule}
+              onChange={(value) =>
+                updateBackground({
+                  topRule: value as typeof style.background.topRule,
+                })
+              }
+              options={[
+                { value: "none", label: "无" },
+                { value: "single", label: "单线" },
+                { value: "double", label: "双线" },
+              ]}
+            />
+          </label>
+          <label>
+            <span>状态提示位置</span>
+            <CustomSelect
+              ariaLabel="对话框状态提示位置"
+              value={style.advanceIndicator.position}
+              onChange={(value) =>
+                updateAdvanceIndicator({
+                  position:
+                    value as typeof style.advanceIndicator.position,
+                })
+              }
+              options={[
+                { value: "topLeft", label: "左上" },
+                { value: "topRight", label: "右上" },
+                { value: "bottomLeft", label: "左下" },
+                { value: "bottomRight", label: "右下" },
+              ]}
+            />
+          </label>
+          <label>
+            <span>状态提示样式</span>
+            <CustomSelect
+              ariaLabel="对话框状态提示样式"
+              value={style.advanceIndicator.style}
+              onChange={(value) =>
+                updateAdvanceIndicator({
+                  style: value as typeof style.advanceIndicator.style,
+                })
+              }
+              options={[
+                { value: "descriptive", label: "说明文字" },
+                { value: "compact", label: "紧凑状态" },
+              ]}
+            />
+          </label>
+        </div>
+
+        {(
+          [
+            ["对话框宽度", style.layout.widthPercent, 40, 100, updateLayout, "widthPercent"],
+            ["对话框高度", style.layout.heightPercent, 12, 50, updateLayout, "heightPercent"],
+            ["底部偏移", style.layout.bottomOffsetPercent, 0, 30, updateLayout, "bottomOffsetPercent"],
+            ["左右安全边距", style.layout.contentInsetXPercent, 0, 25, updateLayout, "contentInsetXPercent"],
+            ["正文顶部位置", style.layout.contentInsetTopPercent, 0, 40, updateLayout, "contentInsetTopPercent"],
+            ["姓名底部位置", style.layout.contentInsetBottomPercent, 0, 30, updateLayout, "contentInsetBottomPercent"],
+            ["正文最大宽度", style.body.maxWidthPercent, 30, 100, updateBody, "maxWidthPercent"],
+          ] as const
+        ).map(([label, value, min, max, update, key]) => (
+          <label key={key} className="galgame-dialogue-range">
+            <span>
+              {label} <strong>{Math.round(value)}%</strong>
+            </span>
+            <input
+              type="range"
+              aria-label={`对话框${label}`}
+              min={min}
+              max={max}
+              value={value}
+              style={rangeProgress(value, min, max)}
+              onChange={(event) =>
+                update({ [key]: Number(event.target.value) })
+              }
+            />
+          </label>
+        ))}
+        <label className="galgame-dialogue-range">
+          <span>
+            正文行高 <strong>{style.body.lineHeight.toFixed(2)}</strong>
+          </span>
+          <input
+            type="range"
+            aria-label="对话框正文行高"
+            min="1"
+            max="2.5"
+            step="0.05"
+            value={style.body.lineHeight}
+            style={rangeProgress(style.body.lineHeight, 1, 2.5)}
+            onChange={(event) =>
+              updateBody({ lineHeight: Number(event.target.value) })
+            }
+          />
+        </label>
+        {style.background.mode === "verticalGradient" ? (
+          <>
+            <label className="galgame-dialogue-range">
+              <span>
+                渐变顶部透明度{" "}
+                <strong>
+                  {Math.round(style.background.gradientTopOpacity * 100)}%
+                </strong>
+              </span>
+              <input
+                type="range"
+                aria-label="对话框渐变顶部透明度"
+                min="0"
+                max="100"
+                value={Math.round(
+                  style.background.gradientTopOpacity * 100,
+                )}
+                style={rangeProgress(
+                  Math.round(style.background.gradientTopOpacity * 100),
+                  0,
+                  100,
+                )}
+                onChange={(event) =>
+                  updateBackground({
+                    gradientTopOpacity: Number(event.target.value) / 100,
+                  })
+                }
+              />
+            </label>
+            <label className="galgame-dialogue-range">
+              <span>
+                渐变底部透明度{" "}
+                <strong>
+                  {Math.round(style.background.gradientBottomOpacity * 100)}%
+                </strong>
+              </span>
+              <input
+                type="range"
+                aria-label="对话框渐变底部透明度"
+                min="0"
+                max="100"
+                value={Math.round(
+                  style.background.gradientBottomOpacity * 100,
+                )}
+                style={rangeProgress(
+                  Math.round(style.background.gradientBottomOpacity * 100),
+                  0,
+                  100,
+                )}
+                onChange={(event) =>
+                  updateBackground({
+                    gradientBottomOpacity: Number(event.target.value) / 100,
+                  })
+                }
+              />
+            </label>
+          </>
+        ) : null}
+        <div className="galgame-dialogue-advanced-checks">
+          <label>
+            <input
+              type="checkbox"
+              checked={style.advanceIndicator.visible}
+              onChange={(event) =>
+                updateAdvanceIndicator({ visible: event.target.checked })
+              }
+            />
+            <span>显示推进状态</span>
+          </label>
+          <label>
+            <input
+              type="checkbox"
+              checked={style.advanceIndicator.showInExport}
+              onChange={(event) =>
+                updateAdvanceIndicator({
+                  showInExport: event.target.checked,
+                })
+              }
+            />
+            <span>视频导出中保留状态</span>
+          </label>
+        </div>
+      </details>
 
       <button
         type="button"

@@ -2,28 +2,24 @@ from __future__ import annotations
 
 from typing import Annotated, Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
-GalgameWorkshopProjectStatus = Literal["draft", "completed"]
-STABLE_ID_PATTERN = r"^[a-z0-9][a-z0-9-]{0,63}$"
-HEX_COLOR_PATTERN = r"^#[0-9a-fA-F]{6}$"
-CHARACTER_THEME_PALETTE = (
-    "#E75B55",
-    "#4AA3DF",
-    "#46B978",
-    "#A56DE2",
-    "#E59B3D",
-    "#D85E9D",
-    "#32A6A0",
-    "#7586E5",
+from app.schemas.galgame_workshop.base_core import (
+    CHARACTER_THEME_PALETTE,
+    HEX_COLOR_PATTERN,
+    STABLE_ID_PATTERN,
+    GalgameStoryModel,
+    _clean_title,
+)
+from app.schemas.galgame_workshop.dialogue_box import (
+    GalgameStoryDialogueBoxAdvanceIndicator,
+    GalgameStoryDialogueBoxBackground,
+    GalgameStoryDialogueBoxBody,
+    GalgameStoryDialogueBoxLayout,
+    GalgameStoryDialogueBoxSpeakerName,
 )
 
-
-def _clean_title(value: str) -> str:
-    cleaned = value.strip()
-    if not cleaned:
-        raise ValueError("名称不能为空")
-    return cleaned
+GalgameWorkshopProjectStatus = Literal["draft", "completed"]
 
 
 class GalgameWorkshopProjectOut(BaseModel):
@@ -63,10 +59,6 @@ class GalgameWorkshopProjectPatchIn(BaseModel):
         if self.title is None and self.status is None:
             raise ValueError("至少需要提供一个修改字段")
         return self
-
-
-class GalgameStoryModel(BaseModel):
-    model_config = ConfigDict(populate_by_name=True, extra="forbid")
 
 
 class GalgameStoryImageCrop(GalgameStoryModel):
@@ -397,7 +389,7 @@ GalgameStoryAsset = Annotated[
 
 
 class GalgameStoryDialogueBoxStyle(GalgameStoryModel):
-    preset: Literal["dark", "light", "accent", "custom"] = "dark"
+    preset: Literal["dark", "light", "accent", "classicGradient", "custom"] = "dark"
     asset_id: str | None = Field(default=None, alias="assetId", pattern=STABLE_ID_PATTERN)
     background_color: str = Field(
         default="#080E18", alias="backgroundColor", pattern=HEX_COLOR_PATTERN
@@ -407,6 +399,18 @@ class GalgameStoryDialogueBoxStyle(GalgameStoryModel):
     background_opacity: float = Field(default=0.82, alias="backgroundOpacity", ge=0.2, le=1)
     border_radius: int = Field(default=12, alias="borderRadius", ge=0, le=32)
     font_scale: float = Field(default=1, alias="fontScale", ge=0.8, le=1.4)
+    layout: GalgameStoryDialogueBoxLayout = Field(default_factory=GalgameStoryDialogueBoxLayout)
+    background: GalgameStoryDialogueBoxBackground = Field(
+        default_factory=GalgameStoryDialogueBoxBackground
+    )
+    body: GalgameStoryDialogueBoxBody = Field(default_factory=GalgameStoryDialogueBoxBody)
+    speaker_name: GalgameStoryDialogueBoxSpeakerName = Field(
+        default_factory=GalgameStoryDialogueBoxSpeakerName, alias="speakerName"
+    )
+    advance_indicator: GalgameStoryDialogueBoxAdvanceIndicator = Field(
+        default_factory=GalgameStoryDialogueBoxAdvanceIndicator,
+        alias="advanceIndicator",
+    )
 
 
 class GalgameStoryUiComponent(GalgameStoryModel):

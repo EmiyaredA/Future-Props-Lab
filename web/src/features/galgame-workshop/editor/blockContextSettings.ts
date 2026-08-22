@@ -391,6 +391,10 @@ const registry = {
       ),
     ],
   }),
+  setStageCast: () => ({
+    includeInspector: true,
+    sections: [],
+  }),
   removeCharacter: (block) => ({
     includeInspector: true,
     sections: [

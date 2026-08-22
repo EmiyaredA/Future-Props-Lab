@@ -3359,6 +3359,18 @@
             "title": "Characterid",
             "type": "string"
           },
+          "direction": {
+            "default": "none",
+            "enum": [
+              "none",
+              "left",
+              "right",
+              "towardCenter",
+              "awayFromCenter"
+            ],
+            "title": "Direction",
+            "type": "string"
+          },
           "durationMs": {
             "default": 500,
             "maximum": 600000.0,
@@ -3366,10 +3378,29 @@
             "title": "Durationms",
             "type": "integer"
           },
+          "easing": {
+            "default": "easeInOut",
+            "enum": [
+              "linear",
+              "ease",
+              "easeIn",
+              "easeOut",
+              "easeInOut"
+            ],
+            "title": "Easing",
+            "type": "string"
+          },
           "id": {
             "pattern": "^[a-z0-9][a-z0-9-]{0,63}$",
             "title": "Id",
             "type": "string"
+          },
+          "intensity": {
+            "default": 1,
+            "maximum": 3.0,
+            "minimum": 0.1,
+            "title": "Intensity",
+            "type": "number"
           },
           "loop": {
             "default": false,
@@ -4897,9 +4928,245 @@
         "title": "GalgameStoryDialogueBlock",
         "type": "object"
       },
+      "GalgameStoryDialogueBoxAdvanceIndicator": {
+        "additionalProperties": false,
+        "properties": {
+          "position": {
+            "default": "bottomRight",
+            "enum": [
+              "topLeft",
+              "topRight",
+              "bottomLeft",
+              "bottomRight"
+            ],
+            "title": "Position",
+            "type": "string"
+          },
+          "showInExport": {
+            "default": true,
+            "title": "Showinexport",
+            "type": "boolean"
+          },
+          "style": {
+            "default": "descriptive",
+            "enum": [
+              "descriptive",
+              "compact"
+            ],
+            "title": "Style",
+            "type": "string"
+          },
+          "visible": {
+            "default": true,
+            "title": "Visible",
+            "type": "boolean"
+          }
+        },
+        "title": "GalgameStoryDialogueBoxAdvanceIndicator",
+        "type": "object"
+      },
+      "GalgameStoryDialogueBoxBackground": {
+        "additionalProperties": false,
+        "properties": {
+          "gradientBottomOpacity": {
+            "default": 0.94,
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Gradientbottomopacity",
+            "type": "number"
+          },
+          "gradientTopOpacity": {
+            "default": 0.2,
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Gradienttopopacity",
+            "type": "number"
+          },
+          "mode": {
+            "default": "solid",
+            "enum": [
+              "solid",
+              "verticalGradient"
+            ],
+            "title": "Mode",
+            "type": "string"
+          },
+          "topRule": {
+            "default": "none",
+            "enum": [
+              "none",
+              "single",
+              "double"
+            ],
+            "title": "Toprule",
+            "type": "string"
+          },
+          "topRuleColor": {
+            "default": "#FFFFFF",
+            "pattern": "^#[0-9a-fA-F]{6}$",
+            "title": "Toprulecolor",
+            "type": "string"
+          },
+          "topRuleOpacity": {
+            "default": 0.22,
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Topruleopacity",
+            "type": "number"
+          }
+        },
+        "title": "GalgameStoryDialogueBoxBackground",
+        "type": "object"
+      },
+      "GalgameStoryDialogueBoxBody": {
+        "additionalProperties": false,
+        "properties": {
+          "align": {
+            "default": "left",
+            "enum": [
+              "left",
+              "center",
+              "right"
+            ],
+            "title": "Align",
+            "type": "string"
+          },
+          "fontSizePx": {
+            "anyOf": [
+              {
+                "maximum": 96.0,
+                "minimum": 12.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fontsizepx"
+          },
+          "lineHeight": {
+            "default": 1.35,
+            "maximum": 2.5,
+            "minimum": 1.0,
+            "title": "Lineheight",
+            "type": "number"
+          },
+          "maxWidthPercent": {
+            "default": 100,
+            "maximum": 100.0,
+            "minimum": 30.0,
+            "title": "Maxwidthpercent",
+            "type": "number"
+          }
+        },
+        "title": "GalgameStoryDialogueBoxBody",
+        "type": "object"
+      },
+      "GalgameStoryDialogueBoxLayout": {
+        "additionalProperties": false,
+        "properties": {
+          "bottomOffsetPercent": {
+            "default": 0,
+            "maximum": 30.0,
+            "minimum": 0.0,
+            "title": "Bottomoffsetpercent",
+            "type": "number"
+          },
+          "contentInsetBottomPercent": {
+            "default": 0,
+            "maximum": 30.0,
+            "minimum": 0.0,
+            "title": "Contentinsetbottompercent",
+            "type": "number"
+          },
+          "contentInsetTopPercent": {
+            "default": 0,
+            "maximum": 40.0,
+            "minimum": 0.0,
+            "title": "Contentinsettoppercent",
+            "type": "number"
+          },
+          "contentInsetXPercent": {
+            "default": 0,
+            "maximum": 25.0,
+            "minimum": 0.0,
+            "title": "Contentinsetxpercent",
+            "type": "number"
+          },
+          "heightPercent": {
+            "default": 22,
+            "maximum": 50.0,
+            "minimum": 12.0,
+            "title": "Heightpercent",
+            "type": "number"
+          },
+          "mode": {
+            "default": "boxed",
+            "enum": [
+              "boxed",
+              "bottomOverlay"
+            ],
+            "title": "Mode",
+            "type": "string"
+          },
+          "widthPercent": {
+            "default": 100,
+            "maximum": 100.0,
+            "minimum": 40.0,
+            "title": "Widthpercent",
+            "type": "number"
+          }
+        },
+        "title": "GalgameStoryDialogueBoxLayout",
+        "type": "object"
+      },
+      "GalgameStoryDialogueBoxSpeakerName": {
+        "additionalProperties": false,
+        "properties": {
+          "decoration": {
+            "default": "none",
+            "enum": [
+              "none",
+              "sideLines"
+            ],
+            "title": "Decoration",
+            "type": "string"
+          },
+          "fontSizePx": {
+            "anyOf": [
+              {
+                "maximum": 72.0,
+                "minimum": 10.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fontsizepx"
+          },
+          "placement": {
+            "default": "topLeft",
+            "enum": [
+              "topLeft",
+              "topCenter",
+              "bottomLeft",
+              "bottomCenter",
+              "hidden"
+            ],
+            "title": "Placement",
+            "type": "string"
+          }
+        },
+        "title": "GalgameStoryDialogueBoxSpeakerName",
+        "type": "object"
+      },
       "GalgameStoryDialogueBoxStyle": {
         "additionalProperties": false,
         "properties": {
+          "advanceIndicator": {
+            "$ref": "#/components/schemas/GalgameStoryDialogueBoxAdvanceIndicator"
+          },
           "assetId": {
             "anyOf": [
               {
@@ -4911,6 +5178,9 @@
               }
             ],
             "title": "Assetid"
+          },
+          "background": {
+            "$ref": "#/components/schemas/GalgameStoryDialogueBoxBackground"
           },
           "backgroundColor": {
             "default": "#080E18",
@@ -4924,6 +5194,9 @@
             "minimum": 0.2,
             "title": "Backgroundopacity",
             "type": "number"
+          },
+          "body": {
+            "$ref": "#/components/schemas/GalgameStoryDialogueBoxBody"
           },
           "borderRadius": {
             "default": 12,
@@ -4939,6 +5212,9 @@
             "title": "Fontscale",
             "type": "number"
           },
+          "layout": {
+            "$ref": "#/components/schemas/GalgameStoryDialogueBoxLayout"
+          },
           "nameColor": {
             "default": "#FFFFFF",
             "pattern": "^#[0-9a-fA-F]{6}$",
@@ -4951,10 +5227,14 @@
               "dark",
               "light",
               "accent",
+              "classicGradient",
               "custom"
             ],
             "title": "Preset",
             "type": "string"
+          },
+          "speakerName": {
+            "$ref": "#/components/schemas/GalgameStoryDialogueBoxSpeakerName"
           },
           "textColor": {
             "default": "#FFFFFF",
@@ -5319,6 +5599,7 @@
                   "resetCamera": "#/components/schemas/GalgameStoryResetCameraBlock",
                   "returnToEntry": "#/components/schemas/GalgameStoryReturnToEntryBlock",
                   "scene": "#/components/schemas/GalgameStorySceneBlock",
+                  "setStageCast": "#/components/schemas/GalgameStorySetStageCastBlock",
                   "setVariable": "#/components/schemas/GalgameStorySetVariableBlock",
                   "showCg": "#/components/schemas/GalgameStoryShowCgBlock",
                   "showCharacter": "#/components/schemas/GalgameStoryShowCharacterBlock",
@@ -5343,6 +5624,9 @@
                 },
                 {
                   "$ref": "#/components/schemas/GalgameStoryShowCharacterBlock"
+                },
+                {
+                  "$ref": "#/components/schemas/GalgameStorySetStageCastBlock"
                 },
                 {
                   "$ref": "#/components/schemas/GalgameStoryRemoveCharacterBlock"
@@ -7044,6 +7328,50 @@
         "title": "GalgameStorySceneLayer",
         "type": "object"
       },
+      "GalgameStorySetStageCastBlock": {
+        "additionalProperties": false,
+        "properties": {
+          "atMs": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Atms"
+          },
+          "exitTransition": {
+            "$ref": "#/components/schemas/GalgameStoryCharacterTransition"
+          },
+          "id": {
+            "pattern": "^[a-z0-9][a-z0-9-]{0,63}$",
+            "title": "Id",
+            "type": "string"
+          },
+          "members": {
+            "items": {
+              "$ref": "#/components/schemas/GalgameStoryStageCastMember"
+            },
+            "maxItems": 3,
+            "title": "Members",
+            "type": "array"
+          },
+          "type": {
+            "const": "setStageCast",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "type"
+        ],
+        "title": "GalgameStorySetStageCastBlock",
+        "type": "object"
+      },
       "GalgameStorySetVariableBlock": {
         "additionalProperties": false,
         "properties": {
@@ -7407,6 +7735,73 @@
         "title": "GalgameStoryStageAnimationBlock",
         "type": "object"
       },
+      "GalgameStoryStageCastMember": {
+        "additionalProperties": false,
+        "properties": {
+          "characterId": {
+            "pattern": "^[a-z0-9][a-z0-9-]{0,63}$",
+            "title": "Characterid",
+            "type": "string"
+          },
+          "distance": {
+            "default": "medium",
+            "enum": [
+              "far",
+              "medium",
+              "near"
+            ],
+            "title": "Distance",
+            "type": "string"
+          },
+          "expressionId": {
+            "anyOf": [
+              {
+                "pattern": "^[a-z0-9][a-z0-9-]{0,63}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expressionid"
+          },
+          "positionId": {
+            "anyOf": [
+              {
+                "pattern": "^[a-z0-9][a-z0-9-]{0,63}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Positionid"
+          },
+          "skinId": {
+            "anyOf": [
+              {
+                "pattern": "^[a-z0-9][a-z0-9-]{0,63}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Skinid"
+          },
+          "transform": {
+            "$ref": "#/components/schemas/GalgameStoryCharacterTransform"
+          },
+          "transition": {
+            "$ref": "#/components/schemas/GalgameStoryCharacterTransition"
+          }
+        },
+        "required": [
+          "characterId"
+        ],
+        "title": "GalgameStoryStageCastMember",
+        "type": "object"
+      },
       "GalgameStoryStageStyle": {
         "additionalProperties": false,
         "properties": {
@@ -7520,6 +7915,7 @@
               "dark",
               "light",
               "accent",
+              "classicGradient",
               "custom"
             ],
             "title": "Preset",

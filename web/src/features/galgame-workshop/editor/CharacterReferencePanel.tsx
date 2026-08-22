@@ -245,7 +245,9 @@ export function CharacterReferencePanel({
                       ? "Dialogue"
                       : reference.kind === "showCharacter"
                         ? "角色登场"
-                        : "角色退场"}
+                        : reference.kind === "setStageCast"
+                          ? "舞台构图"
+                          : "角色退场"}
                   </strong>
                   <small>{reference.text || "（空对白）"}</small>
                 </span>

@@ -1,5 +1,4 @@
 import type {
-  GalgameStoryDialogueBoxStyle,
   GalgameStoryDocument,
   GalgameStoryBlock,
   GalgameStoryAsset,
@@ -14,17 +13,9 @@ import {
   DEFAULT_STORY_SETTINGS,
   normalizeCharacterStageSettings,
 } from "./storyDefaults";
+import { resolveDialogueBoxStyle } from "./dialogueBoxStyle";
 
-export const DEFAULT_DIALOGUE_BOX_STYLE: GalgameStoryDialogueBoxStyle = {
-  preset: "dark",
-  assetId: null,
-  backgroundColor: "#080E18",
-  textColor: "#FFFFFF",
-  nameColor: "#FFFFFF",
-  backgroundOpacity: 0.82,
-  borderRadius: 12,
-  fontScale: 1,
-};
+export { DEFAULT_DIALOGUE_BOX_STYLE } from "./dialogueBoxStyle";
 
 export const DEFAULT_UI_STYLE: GalgameStoryUiStyle = { components: [] };
 
@@ -113,8 +104,7 @@ export function normalizeStoryProject(
     presentation: {
       ...document.presentation,
       dialogueBox: {
-        ...DEFAULT_DIALOGUE_BOX_STYLE,
-        ...document.presentation?.dialogueBox,
+        ...resolveDialogueBoxStyle(document.presentation?.dialogueBox),
       },
       ui: {
         ...DEFAULT_UI_STYLE,

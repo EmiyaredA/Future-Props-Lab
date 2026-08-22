@@ -140,6 +140,51 @@ class GalgameStoryShowCharacterBlock(GalgameStoryBlockBase):
     )
 
 
+class GalgameStoryStageCastMember(GalgameStoryModel):
+    character_id: str = Field(alias="characterId", pattern=STABLE_ID_PATTERN)
+    expression_id: str | None = Field(default=None, alias="expressionId", pattern=STABLE_ID_PATTERN)
+    skin_id: str | None = Field(
+        default=None,
+        alias="skinId",
+        pattern=STABLE_ID_PATTERN,
+        exclude_if=lambda value: value is None,
+    )
+    distance: Literal["far", "medium", "near"] = "medium"
+    position_id: str | None = Field(
+        default=None,
+        alias="positionId",
+        pattern=STABLE_ID_PATTERN,
+        exclude_if=lambda value: value is None,
+    )
+    transform: GalgameStoryCharacterTransform = Field(
+        default_factory=GalgameStoryCharacterTransform
+    )
+    transition: GalgameStoryCharacterTransition = Field(
+        default_factory=GalgameStoryCharacterTransition
+    )
+
+
+class GalgameStorySetStageCastBlock(GalgameStoryBlockBase):
+    type: Literal["setStageCast"]
+    at_ms: int | None = Field(
+        default=None, alias="atMs", ge=0, exclude_if=lambda value: value is None
+    )
+    members: list[GalgameStoryStageCastMember] = Field(default_factory=list, max_length=3)
+    exit_transition: GalgameStoryCharacterTransition = Field(
+        default_factory=GalgameStoryCharacterTransition, alias="exitTransition"
+    )
+
+    @field_validator("members")
+    @classmethod
+    def members_are_unique(
+        cls, members: list[GalgameStoryStageCastMember]
+    ) -> list[GalgameStoryStageCastMember]:
+        character_ids = [member.character_id for member in members]
+        if len(character_ids) != len(set(character_ids)):
+            raise ValueError("同一舞台构图不能重复放置角色")
+        return members
+
+
 class GalgameStoryRemoveCharacterBlock(GalgameStoryBlockBase):
     type: Literal["removeCharacter"]
     at_ms: int | None = Field(
@@ -615,6 +660,9 @@ class GalgameStoryAnimateSpriteBlock(GalgameStoryBlockBase):
     at_ms: int | None = Field(default=None, alias="atMs", ge=0)
     character_id: str = Field(alias="characterId", pattern=STABLE_ID_PATTERN)
     animation: str = Field(default="idle", min_length=1, max_length=120)
+    direction: Literal["none", "left", "right", "towardCenter", "awayFromCenter"] = "none"
+    intensity: float = Field(default=1, ge=0.1, le=3)
+    easing: Literal["linear", "ease", "easeIn", "easeOut", "easeInOut"] = "easeInOut"
     duration_ms: int = Field(default=500, alias="durationMs", ge=0, le=600_000)
     loop: bool = False
     wait_for_completion: bool = Field(default=False, alias="waitForCompletion")
@@ -628,7 +676,7 @@ class GalgameStoryAutoPlayBlock(GalgameStoryBlockBase):
 
 class GalgameStorySwitchDialogueStyleBlock(GalgameStoryBlockBase):
     type: Literal["switchDialogueStyle"]
-    preset: Literal["dark", "light", "accent", "custom"] = "dark"
+    preset: Literal["dark", "light", "accent", "classicGradient", "custom"] = "dark"
 
 
 class GalgameStoryPortraitStyleRuleBlock(GalgameStoryBlockBase):
@@ -706,6 +754,7 @@ GalgameStoryBlock = Annotated[
     | GalgameStoryShowCgBlock
     | GalgameStoryHideCgBlock
     | GalgameStoryShowCharacterBlock
+    | GalgameStorySetStageCastBlock
     | GalgameStoryRemoveCharacterBlock
     | GalgameStoryNarrationBlock
     | GalgameStoryStoryParagraphBlock

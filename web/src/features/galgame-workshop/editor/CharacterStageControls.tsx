@@ -64,6 +64,7 @@ export function CharacterTransformFields({
 }) {
   const value = characterTransform(transform);
   const fields = [
+    ["scale", "精细距离", 0.25, 3, 0.05, "×"],
     ["brightness", "亮度", 0, 2, 0.05, "×"],
     ["opacity", "透明度", 0, 1, 0.05, ""],
     ["layer", "层级", 0, 20, 1, ""],
@@ -72,7 +73,7 @@ export function CharacterTransformFields({
   return (
     <div className="galgame-character-transform-fields">
       <p className="galgame-field-hint">
-        角色距离与位置在对白卡片中选择；坐标、锚点和基准尺寸遵循角色资产的“位置与尺寸”配置。
+        坐标、锚点和基准尺寸遵循角色资产；远中近景控制整体景别，精细距离可继续调整人物大小。
       </p>
       {fields.map(([key, label, min, max, step, suffix]) => (
         <label key={key} className="galgame-stage-range">

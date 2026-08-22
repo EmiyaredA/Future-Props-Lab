@@ -3348,12 +3348,29 @@ export interface components {
             /** Characterid */
             characterId: string;
             /**
+             * Direction
+             * @default none
+             * @enum {string}
+             */
+            direction: "none" | "left" | "right" | "towardCenter" | "awayFromCenter";
+            /**
              * Durationms
              * @default 500
              */
             durationMs: number;
+            /**
+             * Easing
+             * @default easeInOut
+             * @enum {string}
+             */
+            easing: "linear" | "ease" | "easeIn" | "easeOut" | "easeInOut";
             /** Id */
             id: string;
+            /**
+             * Intensity
+             * @default 1
+             */
+            intensity: number;
             /**
              * Loop
              * @default false
@@ -4005,10 +4022,149 @@ export interface components {
             /** Voicevolume */
             voiceVolume?: number | null;
         };
+        /** GalgameStoryDialogueBoxAdvanceIndicator */
+        GalgameStoryDialogueBoxAdvanceIndicator: {
+            /**
+             * Position
+             * @default bottomRight
+             * @enum {string}
+             */
+            position: "topLeft" | "topRight" | "bottomLeft" | "bottomRight";
+            /**
+             * Showinexport
+             * @default true
+             */
+            showInExport: boolean;
+            /**
+             * Style
+             * @default descriptive
+             * @enum {string}
+             */
+            style: "descriptive" | "compact";
+            /**
+             * Visible
+             * @default true
+             */
+            visible: boolean;
+        };
+        /** GalgameStoryDialogueBoxBackground */
+        GalgameStoryDialogueBoxBackground: {
+            /**
+             * Gradientbottomopacity
+             * @default 0.94
+             */
+            gradientBottomOpacity: number;
+            /**
+             * Gradienttopopacity
+             * @default 0.2
+             */
+            gradientTopOpacity: number;
+            /**
+             * Mode
+             * @default solid
+             * @enum {string}
+             */
+            mode: "solid" | "verticalGradient";
+            /**
+             * Toprule
+             * @default none
+             * @enum {string}
+             */
+            topRule: "none" | "single" | "double";
+            /**
+             * Toprulecolor
+             * @default #FFFFFF
+             */
+            topRuleColor: string;
+            /**
+             * Topruleopacity
+             * @default 0.22
+             */
+            topRuleOpacity: number;
+        };
+        /** GalgameStoryDialogueBoxBody */
+        GalgameStoryDialogueBoxBody: {
+            /**
+             * Align
+             * @default left
+             * @enum {string}
+             */
+            align: "left" | "center" | "right";
+            /** Fontsizepx */
+            fontSizePx?: number | null;
+            /**
+             * Lineheight
+             * @default 1.35
+             */
+            lineHeight: number;
+            /**
+             * Maxwidthpercent
+             * @default 100
+             */
+            maxWidthPercent: number;
+        };
+        /** GalgameStoryDialogueBoxLayout */
+        GalgameStoryDialogueBoxLayout: {
+            /**
+             * Bottomoffsetpercent
+             * @default 0
+             */
+            bottomOffsetPercent: number;
+            /**
+             * Contentinsetbottompercent
+             * @default 0
+             */
+            contentInsetBottomPercent: number;
+            /**
+             * Contentinsettoppercent
+             * @default 0
+             */
+            contentInsetTopPercent: number;
+            /**
+             * Contentinsetxpercent
+             * @default 0
+             */
+            contentInsetXPercent: number;
+            /**
+             * Heightpercent
+             * @default 22
+             */
+            heightPercent: number;
+            /**
+             * Mode
+             * @default boxed
+             * @enum {string}
+             */
+            mode: "boxed" | "bottomOverlay";
+            /**
+             * Widthpercent
+             * @default 100
+             */
+            widthPercent: number;
+        };
+        /** GalgameStoryDialogueBoxSpeakerName */
+        GalgameStoryDialogueBoxSpeakerName: {
+            /**
+             * Decoration
+             * @default none
+             * @enum {string}
+             */
+            decoration: "none" | "sideLines";
+            /** Fontsizepx */
+            fontSizePx?: number | null;
+            /**
+             * Placement
+             * @default topLeft
+             * @enum {string}
+             */
+            placement: "topLeft" | "topCenter" | "bottomLeft" | "bottomCenter" | "hidden";
+        };
         /** GalgameStoryDialogueBoxStyle */
         GalgameStoryDialogueBoxStyle: {
+            advanceIndicator?: components["schemas"]["GalgameStoryDialogueBoxAdvanceIndicator"];
             /** Assetid */
             assetId?: string | null;
+            background?: components["schemas"]["GalgameStoryDialogueBoxBackground"];
             /**
              * Backgroundcolor
              * @default #080E18
@@ -4019,6 +4175,7 @@ export interface components {
              * @default 0.82
              */
             backgroundOpacity: number;
+            body?: components["schemas"]["GalgameStoryDialogueBoxBody"];
             /**
              * Borderradius
              * @default 12
@@ -4029,6 +4186,7 @@ export interface components {
              * @default 1
              */
             fontScale: number;
+            layout?: components["schemas"]["GalgameStoryDialogueBoxLayout"];
             /**
              * Namecolor
              * @default #FFFFFF
@@ -4039,7 +4197,8 @@ export interface components {
              * @default dark
              * @enum {string}
              */
-            preset: "dark" | "light" | "accent" | "custom";
+            preset: "dark" | "light" | "accent" | "classicGradient" | "custom";
+            speakerName?: components["schemas"]["GalgameStoryDialogueBoxSpeakerName"];
             /**
              * Textcolor
              * @default #FFFFFF
@@ -4195,7 +4354,7 @@ export interface components {
         /** GalgameStoryFragment */
         GalgameStoryFragment: {
             /** Blocks */
-            blocks?: (components["schemas"]["GalgameStorySceneBlock"] | components["schemas"]["GalgameStoryShowCgBlock"] | components["schemas"]["GalgameStoryHideCgBlock"] | components["schemas"]["GalgameStoryShowCharacterBlock"] | components["schemas"]["GalgameStoryRemoveCharacterBlock"] | components["schemas"]["GalgameStoryNarrationBlock"] | components["schemas"]["GalgameStoryStoryParagraphBlock"] | components["schemas"]["GalgameStoryParagraphParamsBlock"] | components["schemas"]["GalgameStorySystemMessageBlock"] | components["schemas"]["GalgameStoryCommentBlock"] | components["schemas"]["GalgameStoryWaitBlock"] | components["schemas"]["GalgameStoryDialogueBlock"] | components["schemas"]["GalgameStoryAudioBlock"] | components["schemas"]["GalgameStoryDestroySceneBlock"] | components["schemas"]["GalgameStoryCameraBlock"] | components["schemas"]["GalgameStoryResetCameraBlock"] | components["schemas"]["GalgameStoryParticleBlock"] | components["schemas"]["GalgameStoryStageAnimationBlock"] | components["schemas"]["GalgameStoryFloatingTextBlock"] | components["schemas"]["GalgameStoryCurtainBlock"] | components["schemas"]["GalgameStoryVideoBlock"] | components["schemas"]["GalgameStoryAnimateSpriteBlock"] | components["schemas"]["GalgameStoryAutoPlayBlock"] | components["schemas"]["GalgameStorySwitchDialogueStyleBlock"] | components["schemas"]["GalgameStoryPortraitStyleRuleBlock"] | components["schemas"]["GalgameStoryGalleryBlock"] | components["schemas"]["GalgameStoryBranchBlock"] | components["schemas"]["GalgameStoryIfBlock"] | components["schemas"]["GalgameStorySetVariableBlock"] | components["schemas"]["GalgameStoryCallFragmentBlock"] | components["schemas"]["GalgameStoryEndChapterBlock"] | components["schemas"]["GalgameStoryReturnToEntryBlock"])[];
+            blocks?: (components["schemas"]["GalgameStorySceneBlock"] | components["schemas"]["GalgameStoryShowCgBlock"] | components["schemas"]["GalgameStoryHideCgBlock"] | components["schemas"]["GalgameStoryShowCharacterBlock"] | components["schemas"]["GalgameStorySetStageCastBlock"] | components["schemas"]["GalgameStoryRemoveCharacterBlock"] | components["schemas"]["GalgameStoryNarrationBlock"] | components["schemas"]["GalgameStoryStoryParagraphBlock"] | components["schemas"]["GalgameStoryParagraphParamsBlock"] | components["schemas"]["GalgameStorySystemMessageBlock"] | components["schemas"]["GalgameStoryCommentBlock"] | components["schemas"]["GalgameStoryWaitBlock"] | components["schemas"]["GalgameStoryDialogueBlock"] | components["schemas"]["GalgameStoryAudioBlock"] | components["schemas"]["GalgameStoryDestroySceneBlock"] | components["schemas"]["GalgameStoryCameraBlock"] | components["schemas"]["GalgameStoryResetCameraBlock"] | components["schemas"]["GalgameStoryParticleBlock"] | components["schemas"]["GalgameStoryStageAnimationBlock"] | components["schemas"]["GalgameStoryFloatingTextBlock"] | components["schemas"]["GalgameStoryCurtainBlock"] | components["schemas"]["GalgameStoryVideoBlock"] | components["schemas"]["GalgameStoryAnimateSpriteBlock"] | components["schemas"]["GalgameStoryAutoPlayBlock"] | components["schemas"]["GalgameStorySwitchDialogueStyleBlock"] | components["schemas"]["GalgameStoryPortraitStyleRuleBlock"] | components["schemas"]["GalgameStoryGalleryBlock"] | components["schemas"]["GalgameStoryBranchBlock"] | components["schemas"]["GalgameStoryIfBlock"] | components["schemas"]["GalgameStorySetVariableBlock"] | components["schemas"]["GalgameStoryCallFragmentBlock"] | components["schemas"]["GalgameStoryEndChapterBlock"] | components["schemas"]["GalgameStoryReturnToEntryBlock"])[];
             /** Id */
             id: string;
             timeline?: components["schemas"]["GalgameStoryFragmentTimeline"] | null;
@@ -4798,6 +4957,21 @@ export interface components {
              */
             offsetY: number;
         };
+        /** GalgameStorySetStageCastBlock */
+        GalgameStorySetStageCastBlock: {
+            /** Atms */
+            atMs?: number | null;
+            exitTransition?: components["schemas"]["GalgameStoryCharacterTransition"];
+            /** Id */
+            id: string;
+            /** Members */
+            members?: components["schemas"]["GalgameStoryStageCastMember"][];
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "setStageCast";
+        };
         /** GalgameStorySetVariableBlock */
         GalgameStorySetVariableBlock: {
             /** Id */
@@ -4942,6 +5116,25 @@ export interface components {
              */
             waitForCompletion: boolean;
         };
+        /** GalgameStoryStageCastMember */
+        GalgameStoryStageCastMember: {
+            /** Characterid */
+            characterId: string;
+            /**
+             * Distance
+             * @default medium
+             * @enum {string}
+             */
+            distance: "far" | "medium" | "near";
+            /** Expressionid */
+            expressionId?: string | null;
+            /** Positionid */
+            positionId?: string | null;
+            /** Skinid */
+            skinId?: string | null;
+            transform?: components["schemas"]["GalgameStoryCharacterTransform"];
+            transition?: components["schemas"]["GalgameStoryCharacterTransition"];
+        };
         /** GalgameStoryStageStyle */
         GalgameStoryStageStyle: {
             /**
@@ -4999,7 +5192,7 @@ export interface components {
              * @default dark
              * @enum {string}
              */
-            preset: "dark" | "light" | "accent" | "custom";
+            preset: "dark" | "light" | "accent" | "classicGradient" | "custom";
             /**
              * @description discriminator enum property added by openapi-typescript
              * @enum {string}

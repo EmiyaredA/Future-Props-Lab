@@ -174,6 +174,10 @@ export type GalgameStoryDialoguePortrait =
   components["schemas"]["GalgameStoryDialoguePortrait"];
 export type GalgameStoryShowCharacterBlock =
   components["schemas"]["GalgameStoryShowCharacterBlock"];
+export type GalgameStoryStageCastMember =
+  components["schemas"]["GalgameStoryStageCastMember"];
+export type GalgameStorySetStageCastBlock =
+  components["schemas"]["GalgameStorySetStageCastBlock"];
 export type GalgameStoryRemoveCharacterBlock =
   components["schemas"]["GalgameStoryRemoveCharacterBlock"];
 export type GalgameStoryUiStyle = components["schemas"]["GalgameStoryUiStyle"];

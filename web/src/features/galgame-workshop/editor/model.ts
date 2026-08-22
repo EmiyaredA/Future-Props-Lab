@@ -177,6 +177,40 @@ export function makeBlock(
       transition: DEFAULT_CHARACTER_TRANSITION,
     };
   }
+  if (kind === "setStageCast") {
+    if (!characters[0]) return undefined;
+    const stageSettings = characterStageSettings(document, characters[0].id);
+    const presentation = suggestCharacterPresentation(
+      document,
+      characters[0].id,
+      presentationStage,
+    );
+    const defaultPosition =
+      stageSettings.positionPresets.find(
+        (preset) => preset.id === presentation.positionId,
+      ) ?? stageSettings.positionPresets[0];
+    return {
+      id: stableId(),
+      type: "setStageCast",
+      members: [
+        {
+          characterId: characters[0].id,
+          expressionId: null,
+          distance: presentation.distance,
+          positionId: presentation.positionId,
+          transform: {
+            ...DEFAULT_CHARACTER_TRANSFORM,
+            x: defaultPosition.x,
+            y: defaultPosition.y,
+            anchor: stageSettings.anchor,
+            scale: stageSettings.legacyDefaultScale ?? 1,
+          },
+          transition: DEFAULT_CHARACTER_TRANSITION,
+        },
+      ],
+      exitTransition: DEFAULT_CHARACTER_TRANSITION,
+    };
+  }
   if (kind === "removeCharacter") {
     if (!characters[0]) return undefined;
     return {
@@ -254,6 +288,9 @@ export function makeBlock(
       type: "animateSprite",
       characterId: characters[0].id,
       animation: "idle",
+      direction: "none",
+      intensity: 1,
+      easing: "easeInOut",
       durationMs: 500,
       loop: false,
       waitForCompletion: false,

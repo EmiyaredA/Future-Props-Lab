@@ -5,7 +5,6 @@ import {
   useState,
   type KeyboardEvent,
   type PointerEvent,
-  type ReactNode,
 } from "react";
 import {
   Images,
@@ -18,10 +17,6 @@ import {
   Waves,
 } from "lucide-react";
 import { fetchApiBlob } from "@platform/api/client";
-import type {
-  GalgameStoryFragment,
-  GalgameStoryProject,
-} from "@features/galgame-workshop/api";
 import {
   activeTimelineCue,
   effectivePointTime,
@@ -49,7 +44,6 @@ import { dialogueSpeakerIds } from "@features/galgame-workshop/editor/dialogue";
 import {
   MAX_TIMELINE_ZOOM,
   MIN_TIMELINE_ZOOM,
-  type TimelinePreferences,
 } from "@features/galgame-workshop/editor/timelinePreferences";
 import { TimelineClock } from "@features/galgame-workshop/editor/timelineClock";
 import { TimelineTrackLabels } from "@features/galgame-workshop/editor/TimelineTrackLabels";
@@ -57,6 +51,7 @@ import { StoryTimelineToolbar } from "@features/galgame-workshop/editor/StoryTim
 import { timelineStateSegments } from "@features/galgame-workshop/editor/timelineStateSegments";
 import { timelineCharacterColor } from "@features/galgame-workshop/editor/timelineCharacterColor";
 import type { TimelineDragState as DragState } from "@features/galgame-workshop/editor/timelineDragState";
+import type { StoryTimelineEditorProps } from "@features/galgame-workshop/editor/storyTimelineEditorProps";
 
 const TIMELINE_LABEL_WIDTH = 168;
 
@@ -76,23 +71,7 @@ export function StoryTimelineEditor({
   readOnly = false,
   followPositionMs,
   estimated = false,
-}: {
-  document: GalgameStoryProject;
-  fragment: GalgameStoryFragment;
-  selectedBlockId?: string;
-  selectedGapId?: string;
-  onSelectBlock: (blockId: string) => void;
-  onSelectGap: (gapId: string) => void;
-  onFragment: (fragment: GalgameStoryFragment) => void;
-  onPreviewPosition: (milliseconds: number | null) => void;
-  preferences: TimelinePreferences;
-  onPreferencesChange: (preferences: TimelinePreferences) => void;
-  onRequestAddMenu?: () => void;
-  addControl?: ReactNode;
-  readOnly?: boolean;
-  followPositionMs?: number | null;
-  estimated?: boolean;
-}) {
+}: StoryTimelineEditorProps) {
   const { zoom, ripple, loop, characterTracksExpanded } = preferences;
   const [positionMs, setPositionMs] = useState(0);
   const [playing, setPlaying] = useState(false);
@@ -1280,6 +1259,7 @@ export function StoryTimelineEditor({
                 const cueMarkers = (markers.get(cue.block.id) ?? []).filter(
                   (block) =>
                     block.type !== "showCharacter" &&
+                    block.type !== "setStageCast" &&
                     block.type !== "removeCharacter",
                 );
                 const cueCharacterEvents = !characterTracksExpanded
@@ -1387,11 +1367,21 @@ export function StoryTimelineEditor({
                         className="galgame-timeline-character-markers"
                         title={cueCharacterEvents
                           .map((block) =>
-                            block.type === "showCharacter"
-                              ? `登场 · ${characters.get(block.characterId)?.name ?? "角色"}`
-                              : block.all
-                                ? "全部退场"
-                                : `退场 · ${characters.get(block.characterId ?? "")?.name ?? "角色"}`,
+                            block.type === "setStageCast"
+                              ? (block.members ?? []).length
+                                ? `构图 · ${(block.members ?? [])
+                                    .map(
+                                      (member) =>
+                                        characters.get(member.characterId)
+                                          ?.name ?? "角色",
+                                    )
+                                    .join("、")}`
+                                : "清空角色"
+                              : block.type === "showCharacter"
+                                ? `登场 · ${characters.get(block.characterId)?.name ?? "角色"}`
+                                : block.all
+                                  ? "全部退场"
+                                  : `退场 · ${characters.get(block.characterId ?? "")?.name ?? "角色"}`,
                           )
                           .join("\n")}
                       >

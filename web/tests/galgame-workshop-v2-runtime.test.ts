@@ -122,7 +122,7 @@ function story(): GalgameStoryProject {
 }
 
 describe("Galgame workbench v2 runtime", () => {
-  it("uses character asset presets instead of stale Block coordinates", () => {
+  it("uses position presets while preserving authored fine distance", () => {
     const document = story();
     document.settings = {
       canvas: { width: 1920, height: 1080 },
@@ -167,7 +167,7 @@ describe("Galgame workbench v2 runtime", () => {
         x: 22,
         y: 48,
         anchor: "center",
-        scale: 1,
+        scale: 2.5,
         brightness: 0.8,
       },
     });
@@ -203,12 +203,133 @@ describe("Galgame workbench v2 runtime", () => {
     expect(dialogue.actors.hero).toMatchObject({
       distance: "medium",
       positionId: "position-center",
-      transform: { x: 51, y: 52, anchor: "center", scale: 1 },
+      transform: { x: 51, y: 52, anchor: "center", scale: 3 },
+    });
+  });
+
+  it("atomically replaces a stage cast and preserves motion trigger identity", () => {
+    const document = story();
+    document.characters?.push({
+      id: "assistant",
+      name: "助手",
+      description: "",
+      expressions: [],
+      defaultExpressionId: null,
+      attributes: {},
+    });
+    const first = applyAutomaticStageBlock(
+      emptyStageState(),
+      {
+        id: "cast-one",
+        type: "setStageCast",
+        members: [
+          {
+            characterId: "hero",
+            distance: "near",
+            positionId: null,
+            transform: {
+              x: 35,
+              y: 100,
+              anchor: "bottomCenter",
+              scale: 1.1,
+              brightness: 1,
+              opacity: 1,
+              flipX: false,
+              layer: 10,
+            },
+            transition: { durationMs: 240, fade: true },
+          },
+          {
+            characterId: "assistant",
+            distance: "far",
+            positionId: null,
+            transform: {
+              x: 65,
+              y: 100,
+              anchor: "bottomCenter",
+              scale: 0.9,
+              brightness: 1,
+              opacity: 1,
+              flipX: false,
+              layer: 10,
+            },
+            transition: { durationMs: 240, fade: true },
+          },
+        ],
+        exitTransition: { durationMs: 300, fade: true },
+      },
+      document,
+    );
+    expect(Object.values(first.actors)).toHaveLength(2);
+    expect(first.actors.hero.transform.scale).toBe(1.1);
+
+    const cleared = applyAutomaticStageBlock(
+      first,
+      {
+        id: "cast-clear",
+        type: "setStageCast",
+        members: [],
+        exitTransition: { durationMs: 300, fade: true },
+      },
+      document,
+    );
+    expect(Object.values(cleared.actors)).toHaveLength(2);
+    expect(Object.values(cleared.actors).every((actor) => actor.exiting)).toBe(
+      true,
+    );
+
+    const moved = applyAutomaticStageBlock(
+      first,
+      {
+        id: "motion-one",
+        type: "animateSprite",
+        characterId: "hero",
+        animation: "tug",
+        direction: "right",
+        intensity: 1.5,
+        easing: "easeOut",
+        durationMs: 700,
+        loop: false,
+        waitForCompletion: false,
+      },
+      document,
+    );
+    expect(moved.spriteAnimations?.hero).toMatchObject({
+      sourceBlockId: "motion-one",
+      animation: "tug",
+      direction: "right",
+      intensity: 1.5,
+    });
+  });
+
+  it("keeps the authored camera target in replay state", () => {
+    const camera = applyAutomaticStageBlock(
+      emptyStageState(),
+      {
+        id: "background-push",
+        type: "camera",
+        target: "background",
+        effect: "zoomIn",
+        x: 2,
+        y: -1,
+        scale: 1.08,
+        rotation: 0,
+        intensity: 0.6,
+        durationMs: 4000,
+        easing: "easeInOut",
+        waitForCompletion: false,
+      },
+      story(),
+    );
+    expect(camera.camera).toMatchObject({
+      target: "background",
+      scale: 1.08,
+      durationMs: 4000,
     });
   });
 
   it("registers every built-in block in one capability table", () => {
-    expect(Object.keys(BLOCK_REGISTRY)).toHaveLength(32);
+    expect(Object.keys(BLOCK_REGISTRY)).toHaveLength(33);
     expect(BLOCK_REGISTRY.returnToEntry.timing).toBe("terminal");
     expect(BLOCK_REGISTRY.camera.category).toBe("stage");
   });

@@ -10,8 +10,8 @@ import type {
   GalgameStoryBlock,
   GalgameStoryFragment,
 } from "@features/galgame-workshop/api";
+import { resolveDialogueBoxStyle } from "@features/galgame-workshop/api";
 import {
-  DEFAULT_DIALOGUE_BOX_STYLE,
   DEFAULT_STAGE_STYLE,
   DEFAULT_UI_STYLE,
   chapterById,
@@ -362,10 +362,10 @@ export function useStoryPlayerController(
     );
     return asset?.type === "image" ? [{ ...entry, cg, variant, asset }] : [];
   });
-  const dialogueStyle = {
-    ...DEFAULT_DIALOGUE_BOX_STYLE,
-    ...document.presentation?.dialogueBox,
-  };
+  const dialogueStyle = resolveDialogueBoxStyle(
+    document.presentation?.dialogueBox,
+    displayFrame.stage.dialoguePreset,
+  );
   const dialogueSkinAsset = (document.assets ?? []).find(
     (asset) => asset.id === dialogueStyle.assetId,
   );

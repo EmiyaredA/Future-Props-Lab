@@ -21,11 +21,13 @@ export function timelineStateSegments({
           ? "cg"
           : block.type === "showCharacter"
             ? `character:${block.characterId}`
-            : block.type === "audio" &&
-                block.action === "play" &&
-                (block.channel === "bgm" || block.channel === "ambient")
-              ? block.channel
-              : undefined;
+            : block.type === "setStageCast"
+              ? "cast"
+              : block.type === "audio" &&
+                  block.action === "play" &&
+                  (block.channel === "bgm" || block.channel === "ambient")
+                ? block.channel
+                : undefined;
     if (!laneId) return [];
     const next = pointEvents.slice(eventIndex + 1).find((candidate) => {
       if (candidate.timeMs <= event.timeMs) return false;
@@ -46,6 +48,12 @@ export function timelineStateSegments({
             (candidate.block.type !== "showCharacter" ||
               candidate.block.characterId === block.characterId))
         );
+      if (block.type === "setStageCast")
+        return (
+          (candidate.block.type === "scene" &&
+            candidate.block.clearCharacters !== false) ||
+          candidate.block.type === "setStageCast"
+        );
       if (block.type !== "audio") return false;
       return (
         candidate.block.type === "audio" &&
@@ -64,12 +72,23 @@ export function timelineStateSegments({
           ? ((document.characters ?? []).find(
               (character) => character.id === block.characterId,
             )?.name ?? "角色")
-          : block.type === "showCg"
-            ? ((document.cgs ?? []).find((cg) => cg.id === block.cgId)?.name ??
-              "剧情 CG")
-            : asset?.type === "audio"
-              ? asset.label
-              : "声音";
+          : block.type === "setStageCast"
+            ? (block.members ?? []).length
+              ? (block.members ?? [])
+                  .map(
+                    (member) =>
+                      (document.characters ?? []).find(
+                        (character) => character.id === member.characterId,
+                      )?.name ?? "角色",
+                  )
+                  .join("、")
+              : "清空角色"
+            : block.type === "showCg"
+              ? ((document.cgs ?? []).find((cg) => cg.id === block.cgId)
+                  ?.name ?? "剧情 CG")
+              : asset?.type === "audio"
+                ? asset.label
+                : "声音";
     return [
       {
         id: `state:${block.id}`,
@@ -80,11 +99,13 @@ export function timelineStateSegments({
             ? ("scene" as const)
             : block.type === "showCharacter"
               ? ("character" as const)
-              : block.type === "showCg"
-                ? ("cg" as const)
-                : block.type === "audio"
-                  ? block.channel
-                  : ("scene" as const),
+              : block.type === "setStageCast"
+                ? ("character" as const)
+                : block.type === "showCg"
+                  ? ("cg" as const)
+                  : block.type === "audio"
+                    ? block.channel
+                    : ("scene" as const),
         startMs: event.timeMs,
         endMs: next?.timeMs ?? durationMs,
       },

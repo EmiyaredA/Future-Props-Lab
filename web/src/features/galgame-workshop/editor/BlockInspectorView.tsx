@@ -36,6 +36,11 @@ import { DialogueInspectorFields } from "@features/galgame-workshop/editor/Dialo
 import { WaitInspectorFields } from "@features/galgame-workshop/editor/WaitInspectorFields";
 import { AudioInspectorFields } from "@features/galgame-workshop/editor/AudioInspectorFields";
 import { CurtainInspectorFields } from "@features/galgame-workshop/editor/CurtainInspectorFields";
+import { StageCastInspectorFields } from "@features/galgame-workshop/editor/StageCastInspectorFields";
+import {
+  AnimateSpriteInspectorFields,
+  CameraInspectorFields,
+} from "@features/galgame-workshop/editor/MotionInspectorFields";
 import type { useBlockInspectorController } from "@features/galgame-workshop/editor/useBlockInspectorController";
 import {
   BLOCK_LABELS,
@@ -254,7 +259,9 @@ export function BlockInspectorView({
           </div>
         </div>
       ) : null}
-      {(block.type === "showCharacter" || block.type === "removeCharacter") &&
+      {(block.type === "showCharacter" ||
+        block.type === "setStageCast" ||
+        block.type === "removeCharacter") &&
       fragment?.timeline &&
       pointTime != null &&
       characterTiming ? (
@@ -677,6 +684,16 @@ export function BlockInspectorView({
             }
           />
         </>
+      ) : block.type === "setStageCast" ? (
+        <StageCastInspectorFields
+          block={block}
+          document={document}
+          onChange={(nextBlock) =>
+            patch((current) =>
+              current.type === "setStageCast" ? nextBlock : current,
+            )
+          }
+        />
       ) : block.type === "removeCharacter" ? (
         <>
           <Field label="退场目标">
@@ -712,6 +729,25 @@ export function BlockInspectorView({
             }
           />
         </>
+      ) : block.type === "camera" ? (
+        <CameraInspectorFields
+          block={block}
+          onChange={(nextBlock) =>
+            patch((current) =>
+              current.type === "camera" ? nextBlock : current,
+            )
+          }
+        />
+      ) : block.type === "animateSprite" ? (
+        <AnimateSpriteInspectorFields
+          block={block}
+          document={document}
+          onChange={(nextBlock) =>
+            patch((current) =>
+              current.type === "animateSprite" ? nextBlock : current,
+            )
+          }
+        />
       ) : block.type === "narration" ? (
         <>
           <div className="galgame-field">

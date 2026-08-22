@@ -340,8 +340,10 @@ test("creates and edits an audio annotation task", async ({ page }) => {
   await page.getByRole("button", { name: "管理", exact: true }).click();
   await page.getByRole("button", { name: "添加说话人" }).click();
   await page.getByRole("button", { name: "完成", exact: true }).click();
-  await page.getByRole("combobox", { name: "选择说话人" }).click();
-  await page.getByRole("option", { name: "说话人 1" }).click();
+  await page
+    .getByRole("group", { name: "选择一个或多个说话人" })
+    .getByRole("button", { name: "说话人 1" })
+    .click();
   await page
     .getByRole("textbox", { name: "日语说话内容" })
     .fill("自动化验收片段");

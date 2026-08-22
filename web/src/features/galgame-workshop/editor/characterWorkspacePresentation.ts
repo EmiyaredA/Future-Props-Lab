@@ -19,12 +19,20 @@ export function referencesForCharacter(
   return (document.chapters ?? []).flatMap((chapter) =>
     (chapter.fragments ?? []).flatMap((fragment) =>
       (fragment.blocks ?? []).flatMap((block, blockIndex) => {
+        const castMember =
+          block.type === "setStageCast"
+            ? (block.members ?? []).find(
+                (member) => member.characterId === characterId,
+              )
+            : undefined;
         const referenced =
           block.type === "dialogue"
             ? dialogueSpeakerIds(block).includes(characterId)
             : (block.type === "showCharacter" ||
-                block.type === "removeCharacter") &&
-              block.characterId === characterId;
+                  block.type === "removeCharacter") &&
+                block.characterId === characterId
+              ? true
+              : Boolean(castMember);
         if (!referenced) return [];
         return [
           {
@@ -40,11 +48,15 @@ export function referencesForCharacter(
                 ? block.text
                 : block.type === "showCharacter"
                   ? "角色登场 / 调整"
-                  : "角色退场",
+                  : block.type === "setStageCast"
+                    ? "舞台构图"
+                    : "角色退场",
             expressionId:
               block.type === "dialogue" || block.type === "showCharacter"
                 ? block.expressionId
-                : undefined,
+                : block.type === "setStageCast"
+                  ? castMember?.expressionId
+                  : undefined,
           },
         ];
       }),

@@ -138,6 +138,18 @@ export const BLOCK_REGISTRY = {
     summary: fixed("显示或调整角色"),
     assetIds: noAssets,
   },
+  setStageCast: {
+    label: "舞台构图",
+    category: "character",
+    timing: "point",
+    renpyKeyword: "studio setStageCast",
+    defaults: () => ({
+      members: [],
+      exitTransition: { durationMs: 240, fade: true },
+    }),
+    summary: fixed("一次设置最多三名舞台角色"),
+    assetIds: noAssets,
+  },
   removeCharacter: {
     label: "移除立绘",
     category: "character",
@@ -292,6 +304,9 @@ export const BLOCK_REGISTRY = {
     renpyKeyword: "studio animateSprite",
     defaults: () => ({
       animation: "idle",
+      direction: "none",
+      intensity: 1,
+      easing: "easeInOut",
       durationMs: 500,
       loop: false,
       waitForCompletion: false,

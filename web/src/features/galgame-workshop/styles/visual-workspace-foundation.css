@@ -19,6 +19,55 @@
   pointer-events: none;
 }
 
+.galgame-character-camera-plane {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  pointer-events: none;
+  transform-origin: center;
+  will-change: transform;
+}
+
+.galgame-sprite-motion {
+  position: relative;
+  height: 100%;
+  transform-origin: bottom center;
+}
+
+.galgame-stage-cast-list {
+  display: grid;
+  gap: 10px;
+}
+
+.galgame-stage-cast-member {
+  display: grid;
+  gap: 10px;
+  padding: 10px;
+  border: 1px solid var(--gal-line);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--gal-panel) 84%, transparent);
+}
+
+.galgame-stage-cast-member > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.galgame-stage-cast-member > header button,
+.galgame-secondary-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.galgame-stage-cast-member > header svg,
+.galgame-secondary-action svg {
+  width: 15px;
+  height: 15px;
+}
+
 .galgame-stage-actor[data-entering="true"] {
   animation: galgame-stage-actor-enter var(--galgame-stage-duration, 240ms) ease
     both;

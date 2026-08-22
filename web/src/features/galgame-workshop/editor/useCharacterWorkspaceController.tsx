@@ -25,7 +25,7 @@ import { CharacterStageSettingsWorkspace } from "@features/galgame-workshop/edit
 import { type StoryAudioPickerSource } from "@features/galgame-workshop/editor/StoryAudioPicker";
 import { CustomSelect } from "@shared/ui/CustomSelect";
 type Reference = {
-  kind: "dialogue" | "showCharacter" | "removeCharacter";
+  kind: "dialogue" | "showCharacter" | "setStageCast" | "removeCharacter";
   chapterId: string;
   chapterTitle: string;
   fragmentId: string;
@@ -98,13 +98,22 @@ function referencesForCharacter(
   for (const chapter of document.chapters ?? []) {
     for (const fragment of chapter.fragments ?? []) {
       for (const [blockIndex, block] of (fragment.blocks ?? []).entries()) {
+        const castMember =
+          block.type === "setStageCast"
+            ? (block.members ?? []).find(
+                (member) => member.characterId === characterId,
+              )
+            : undefined;
         if (
           (block.type !== "dialogue" &&
             block.type !== "showCharacter" &&
+            block.type !== "setStageCast" &&
             block.type !== "removeCharacter") ||
           (block.type === "dialogue"
             ? !dialogueSpeakerIds(block).includes(characterId)
-            : block.characterId !== characterId)
+            : block.type === "setStageCast"
+              ? !castMember
+              : block.characterId !== characterId)
         )
           continue;
         references.push({
@@ -120,11 +129,15 @@ function referencesForCharacter(
               ? block.text
               : block.type === "showCharacter"
                 ? "角色登场 / 调整"
-                : "角色退场",
+                : block.type === "setStageCast"
+                  ? "舞台构图"
+                  : "角色退场",
           expressionId:
             block.type === "dialogue" || block.type === "showCharacter"
               ? block.expressionId
-              : undefined,
+              : block.type === "setStageCast"
+                ? castMember?.expressionId
+                : undefined,
         });
       }
     }
@@ -374,10 +387,21 @@ export function useCharacterWorkspaceController({
         fragments: (chapter.fragments ?? []).map((fragment) => ({
           ...fragment,
           blocks: (fragment.blocks ?? []).map((block) =>
-            affectedBlockIds.has(block.id) &&
-            (block.type === "dialogue" || block.type === "showCharacter")
-              ? { ...block, expressionId: null }
-              : block,
+            !affectedBlockIds.has(block.id)
+              ? block
+              : block.type === "dialogue" || block.type === "showCharacter"
+                ? { ...block, expressionId: null }
+                : block.type === "setStageCast"
+                  ? {
+                      ...block,
+                      members: (block.members ?? []).map((member) =>
+                        member.characterId === selectedCharacter.id &&
+                        member.expressionId === previousDefaultId
+                          ? { ...member, expressionId: null }
+                          : member,
+                      ),
+                    }
+                  : block,
           ),
         })),
       })),

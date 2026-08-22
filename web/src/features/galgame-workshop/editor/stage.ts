@@ -5,8 +5,10 @@ import type {
   GalgameStoryCgOverlay,
   GalgameStoryCgTransition,
   GalgameStoryDialoguePortrait,
+  GalgameStoryDialogueBoxStyle,
   GalgameStoryFragment,
   GalgameStoryProject,
+  GalgameStoryStageCastMember,
 } from "@features/galgame-workshop/api";
 import { dialogueSpeakerIds } from "@features/galgame-workshop/editor/dialogue";
 import { characterStageSettings } from "@features/galgame-workshop/editor/characterStageSettings";
@@ -91,6 +93,7 @@ export type GalgameStageState = {
   activeSpeakerId?: string;
   activeSpeakerIds?: string[];
   camera?: {
+    target: "stage" | "background" | "characters" | "cg";
     x: number;
     y: number;
     scale: number;
@@ -130,10 +133,18 @@ export type GalgameStageState = {
   };
   spriteAnimations?: Record<
     string,
-    { animation: string; durationMs: number; loop: boolean }
+    {
+      sourceBlockId: string;
+      animation: string;
+      direction: "none" | "left" | "right" | "towardCenter" | "awayFromCenter";
+      intensity: number;
+      easing: string;
+      durationMs: number;
+      loop: boolean;
+    }
   >;
   autoPlay?: { enabled: boolean; delayMs: number };
-  dialoguePreset?: string;
+  dialoguePreset?: GalgameStoryDialogueBoxStyle["preset"];
 };
 
 export function characterTransform(
@@ -162,7 +173,7 @@ export function characterAssetTransform(
     x: defaultPosition?.x ?? 50,
     y: defaultPosition?.y ?? 50,
     anchor: stageSettings.anchor,
-    scale: stageSettings.legacyDefaultScale ?? 1,
+    scale: value?.scale ?? stageSettings.legacyDefaultScale ?? 1,
   };
 }
 
@@ -243,6 +254,33 @@ function removeActor(
         exiting: true,
       },
     },
+  };
+}
+
+function actorFromStageCastMember(
+  document: GalgameStoryProject,
+  member: GalgameStoryStageCastMember,
+  existing?: StageActor,
+): StageActor {
+  return {
+    characterId: member.characterId,
+    expressionId: resolvedExpression(
+      document,
+      member.characterId,
+      member.expressionId,
+    ),
+    skinId: member.skinId ?? undefined,
+    distance: member.distance ?? "medium",
+    positionId: member.positionId ?? undefined,
+    transform: characterAssetTransform(
+      document,
+      member.characterId,
+      member.transform,
+      member.positionId,
+    ),
+    transition: characterTransition(member.transition),
+    entering: !existing || existing.exiting,
+    exiting: false,
   };
 }
 
@@ -371,6 +409,44 @@ export function applyAutomaticStageBlock(
       },
     };
   }
+  if (block.type === "setStageCast") {
+    const castMembers = block.members ?? [];
+    const memberIds = new Set(castMembers.map((member) => member.characterId));
+    const exitingActors = Object.fromEntries(
+      Object.entries(state.actors)
+        .filter(
+          ([characterId, actor]) =>
+            !memberIds.has(characterId) && !actor.exiting,
+        )
+        .map(([characterId, actor]) => [
+          characterId,
+          {
+            ...actor,
+            transition: characterTransition(block.exitTransition),
+            entering: false,
+            exiting: true,
+          },
+        ]),
+    );
+    const members = Object.fromEntries(
+      castMembers.map((member) => [
+        member.characterId,
+        actorFromStageCastMember(
+          document,
+          member,
+          state.actors[member.characterId],
+        ),
+      ]),
+    );
+    return {
+      ...state,
+      actors: { ...exitingActors, ...members },
+      soloActor: undefined,
+      hiddenCharacterId: undefined,
+      activeSpeakerId: undefined,
+      activeSpeakerIds: undefined,
+    };
+  }
   if (block.type === "removeCharacter") {
     if (block.all) {
       return {
@@ -406,6 +482,7 @@ export function applyAutomaticStageBlock(
     return {
       ...state,
       camera: {
+        target: block.target,
         x: block.x,
         y: block.y,
         scale: block.scale,
@@ -420,6 +497,7 @@ export function applyAutomaticStageBlock(
     return {
       ...state,
       camera: {
+        target: "stage",
         x: 0,
         y: 0,
         scale: 1,
@@ -502,7 +580,11 @@ export function applyAutomaticStageBlock(
       spriteAnimations: {
         ...state.spriteAnimations,
         [block.characterId]: {
+          sourceBlockId: block.id,
           animation: block.animation,
+          direction: block.direction,
+          intensity: block.intensity,
+          easing: block.easing,
           durationMs: block.durationMs,
           loop: block.loop,
         },
@@ -626,6 +708,7 @@ export function replayStageToBlock(
       block.type === "showCg" ||
       block.type === "hideCg" ||
       block.type === "showCharacter" ||
+      block.type === "setStageCast" ||
       block.type === "removeCharacter" ||
       block.type === "destroyScene" ||
       block.type === "camera" ||
@@ -634,6 +717,8 @@ export function replayStageToBlock(
       block.type === "floatingText" ||
       block.type === "curtain" ||
       block.type === "video" ||
+      block.type === "stageAnimation" ||
+      block.type === "animateSprite" ||
       block.type === "autoPlay" ||
       block.type === "switchDialogueStyle"
     )
@@ -659,6 +744,7 @@ export function replayStageAtTime(
       event.block.type === "showCg" ||
       event.block.type === "hideCg" ||
       event.block.type === "showCharacter" ||
+      event.block.type === "setStageCast" ||
       event.block.type === "removeCharacter" ||
       event.block.type === "destroyScene" ||
       event.block.type === "camera" ||
@@ -667,6 +753,8 @@ export function replayStageAtTime(
       event.block.type === "floatingText" ||
       event.block.type === "curtain" ||
       event.block.type === "video" ||
+      event.block.type === "stageAnimation" ||
+      event.block.type === "animateSprite" ||
       event.block.type === "autoPlay" ||
       event.block.type === "switchDialogueStyle"
     )

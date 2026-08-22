@@ -314,8 +314,10 @@ Story 1.4 的表情可用 `renderMode: frameSequence` 和
 旧多背景场景会确定性拆分为多个场景并重写 Scene Block 引用；`clearCharacters` 控制切换场景时是否清空舞台角色。
 `showCharacter` Block 以 `characterId` 为舞台唯一实例进行登场或调整，保存表情、资产位置预设 ID、
 距离档位、亮度、透明度、水平翻转、层级与基础过渡；`removeCharacter` 可让指定角色或全部角色退场。
-旧 `transform.x / y / anchor / scale` 字段继续接受和原样保存以兼容既有 Story，但播放器不再用它们覆盖
-角色资产配置。故事保存使用独立
+`setStageCast` 会原子替换当前舞台构图，`members` 可为空并最多保存三名互不重复的角色；每名成员独立保存
+表情、皮肤、位置、远中近景、精细缩放、亮度、层级和进场效果，未保留角色统一使用 `exitTransition` 退场。
+位置预设继续决定 `x / y / anchor`，显式 `transform.scale` 作为当前演出的精细距离保留；缺少显式缩放时才
+回退角色资产基准尺寸。故事保存使用独立
 `expected_revision`，严格拒绝重复 ID、悬空引用、跨角色表情、越界角色变换、跨场景背景和少于两个选项的分支；冲突快照包含服务器当前完整故事，
 旧版 V1 缺少立绘或背景字段时在读取中补默认空值，首次保存后自然写入扩展格式。项目变量声明
 `boolean / number / string` 类型、默认值和 `session / persistent` 生命周期；角色属性只能使用项目属性模板中
@@ -331,9 +333,14 @@ Block，也不改变章节、Fragment、分支目标或时间轴。目标语言�
 
 Block 使用一个带 `type` 判别字段的联合契约。除既有场景、角色、CG、对白、声音、分支和章节结束外，
 还包含段落与参数、系统消息、注释、等待、销毁场景、镜头与复位、粒子、舞台动画、浮动文字、幕布、
-视频、精灵动画、自动播放、对话框样式、立绘发言规则、鉴赏、条件、变量赋值、调用 Fragment 和返回入口章。
+视频、原子舞台构图、精灵动画、自动播放、对话框样式、立绘发言规则、鉴赏、条件、变量赋值、调用 Fragment 和返回入口章。
 扩展方法、扩展界面与任意自定义运行时 Block 不在该联合类型中。条件表达式只允许读取已声明变量与角色属性，
 不会执行 JavaScript。
+
+`camera.target` 的 `stage / background / characters / cg` 在播放器中分别作用于全部视觉层、背景、角色或
+剧情 CG，对话框、选项和自定义 UI 不参与镜头变换；背景图层按 `distance` 产生视差。`animateSprite` 保留
+自由字符串兼容，并为 `breathe / nod / shake / startle / lean / recoil / step / tug / bounce` 提供标准动作，
+可配置方向、强度、缓动、时长和循环；每次 Block 触发都有独立标识，因此连续使用相同动作仍会重新播放。
 
 `cgs[]` 独立维护剧情 CG，不作为场景背景差分使用。每项 CG 最多包含 100 个 `variants[]`，图片必须引用
 `storyCg` 素材；存在差分时必须设置有效的 `defaultVariantId`。`showCg` Block 显式显示或替换 CG，
@@ -397,7 +404,7 @@ Dialogue Block 的 `characterId` 继续表示主说话角色；可选 `speakerId
 绑定逐句配音。`audio` Block 显式控制 `bgm / ambient / sfx` 通道的播放、停止、音量、循环和
 淡入淡出；BGM 与环境音不会从场景隐式继承。Fragment 可选
 `timeline: { durationMs, masterAudio?: { assetId, volume } }`，其中
-`durationMs` 是独立的剧情总长。对白、旁白、剧情段落或系统消息通过成对的 `startMs / endMs` 绑定剧情时间轴；`scene`、`showCharacter`、
+`durationMs` 是独立的剧情总长。对白、旁白、剧情段落或系统消息通过成对的 `startMs / endMs` 绑定剧情时间轴；`scene`、`showCharacter`、`setStageCast`、
 `removeCharacter`、`showCg`、`hideCg` 与 `audio` Block 可用 `atMs` 固定触发点。无时间轴的 Fragment 拒绝这些时间字段；
 有时间轴时所有显式时间都不能超过剧情总长，对白/旁白还必须有序且互不重叠。
 `masterAudio` 只能引用 `timelineMaster` 音频；配置后完整音频的播放位置成为剧情唯一时钟，加载、暂停、继续、拖动和结束
@@ -410,7 +417,7 @@ Dialogue Block 的 `characterId` 继续表示主说话角色；可选 `speakerId
 同一时刻允许一个场景状态、一个 CG 事件、多个不同角色和多个 SFX；BGM 与环境音各自只允许一条播放事件，但允许
 先停止再播放以交叉淡化。同一时刻的归约顺序固定为：场景切换、角色退场、角色登场/调整、CG
 显示/隐藏、持续声音停止、持续声音播放、SFX、对白/旁白，同类事件保持原 Block 顺序。缺少 `atMs` 的
-`showCharacter / removeCharacter` 跟随 Block 顺序中的下一句对白；没有后续对白时跟随剧情结尾。移动对白时这些
+`showCharacter / setStageCast / removeCharacter` 跟随 Block 顺序中的下一句对白；没有后续对白时跟随剧情结尾。移动对白时这些
 角色事件一起移动，只有单独拖动角色事件后才保存显式 `atMs` 并转为独立演出。其他缺少 `atMs` 的旧舞台或声音事件
 仍按兼容规则解释：首句前为 0，对白之间锚定下一句开始，尾部锚定剧情结尾。时间轴中的正式 BGM 会跟随播放、暂停与跳转；
 非循环 BGM 超过媒体时长后保持结束状态。

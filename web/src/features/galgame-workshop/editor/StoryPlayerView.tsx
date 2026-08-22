@@ -101,6 +101,62 @@ export function StoryPlayerView({ model }: { model: StoryPlayerViewModel }) {
     exportMode,
     selectedExportChoiceId,
   } = model;
+  const camera = displayFrame.stage.camera;
+  const cameraTargets = (target: "background" | "characters" | "cg") =>
+    Boolean(camera && (camera.target === "stage" || camera.target === target));
+  const cameraEasing = camera?.easing
+    .replace("easeInOut", "ease-in-out")
+    .replace("easeIn", "ease-in")
+    .replace("easeOut", "ease-out");
+  const cameraPlaneStyle = (
+    target: "background" | "characters" | "cg",
+  ): CSSProperties | undefined =>
+    cameraTargets(target) && camera
+      ? ({
+          transform: `translate(${camera.x}%, ${camera.y}%) scale(${camera.scale}) rotate(${camera.rotation}deg)`,
+          transition: `transform ${camera.durationMs}ms ${cameraEasing}`,
+          animationDuration: `${camera.durationMs}ms`,
+          "--galgame-camera-intensity": camera.intensity,
+        } as CSSProperties)
+      : undefined;
+  const canvasWidth = document.settings?.canvas?.width ?? 1920;
+  const logicalFontSize = (
+    logicalPixels: number | null | undefined,
+    fallback: string,
+    minimum: number,
+  ) =>
+    logicalPixels == null
+      ? fallback
+      : `clamp(${minimum}px, ${(logicalPixels / canvasWidth) * 100}cqw, ${logicalPixels}px)`;
+  const dialogueBodyFontSize = logicalFontSize(
+    dialogueStyle.body.fontSizePx,
+    `clamp(14px, ${dialogueStyle.fontScale * 1.25}cqw, 28px)`,
+    12,
+  );
+  const dialogueNameFontSize = logicalFontSize(
+    dialogueStyle.speakerName.fontSizePx,
+    "1em",
+    10,
+  );
+  const dialogueIndicatorVisible =
+    dialogueStyle.advanceIndicator.visible &&
+    (!exportMode || dialogueStyle.advanceIndicator.showInExport);
+  const dialogueIndicatorText =
+    dialogueStyle.advanceIndicator.style === "compact"
+      ? advanceMode === "auto"
+        ? "AUTO"
+        : visibleTextLength < Array.from(displayText).length
+          ? "TEXT"
+          : "NEXT"
+      : mode === "edit"
+        ? "编辑预览"
+        : inlinePlayerWait
+          ? "等待玩家继续"
+          : visibleTextLength < Array.from(displayText).length
+            ? "点击显示全文"
+            : advanceMode === "auto"
+              ? "自动播放"
+              : "点击继续";
   return (
     <section
       className={`galgame-player${exportMode ? " galgame-player-export" : ""}`}
@@ -290,19 +346,12 @@ export function StoryPlayerView({ model }: { model: StoryPlayerViewModel }) {
       >
         <div
           className={`galgame-stage${displayFrame.stage.stageAnimation ? " is-stage-animated" : ""}`}
-          data-camera-effect={displayFrame.stage.camera?.effect}
           data-stage-animation={displayFrame.stage.stageAnimation?.animation}
           data-aspect={
             aspectParts ? `${aspectParts.width}:${aspectParts.height}` : "auto"
           }
           style={{
             background: `radial-gradient(circle at 55% 25%, ${palette.first}, ${palette.second})`,
-            transform: displayFrame.stage.camera
-              ? `translate(${displayFrame.stage.camera.x}%, ${displayFrame.stage.camera.y}%) scale(${displayFrame.stage.camera.scale}) rotate(${displayFrame.stage.camera.rotation}deg)`
-              : undefined,
-            transition: displayFrame.stage.camera
-              ? `transform ${displayFrame.stage.camera.durationMs}ms ${displayFrame.stage.camera.easing.replace("easeInOut", "ease-in-out").replace("easeIn", "ease-in").replace("easeOut", "ease-out")}`
-              : undefined,
             ...(aspectParts
               ? {
                   aspectRatio: `${aspectParts.width} / ${aspectParts.height}`,
@@ -310,9 +359,7 @@ export function StoryPlayerView({ model }: { model: StoryPlayerViewModel }) {
               : null),
             animationDuration: displayFrame.stage.stageAnimation
               ? `${displayFrame.stage.stageAnimation.durationMs}ms`
-              : displayFrame.stage.camera
-                ? `${displayFrame.stage.camera.durationMs}ms`
-                : undefined,
+              : undefined,
           }}
         >
           {mixerOpen ? (
@@ -373,18 +420,35 @@ export function StoryPlayerView({ model }: { model: StoryPlayerViewModel }) {
               key={layer.id}
               fileId={asset.fileId}
               alt=""
-              className="galgame-player-background galgame-player-background-layer"
+              className="galgame-player-background galgame-player-background-layer galgame-camera-plane"
+              data-camera-effect={
+                cameraTargets("background") ? camera?.effect : undefined
+              }
               style={{
                 zIndex: index,
-                transform: `translate(${layer.offsetX}%, ${layer.offsetY}%) scale(${1 + ((displayFrame.stage.camera?.scale ?? 1) - 1) / layer.distance})`,
+                transform:
+                  cameraTargets("background") && camera
+                    ? `translate(${layer.offsetX + camera.x / layer.distance}%, ${layer.offsetY + camera.y / layer.distance}%) scale(${1 + (camera.scale - 1) / layer.distance}) rotate(${camera.rotation / layer.distance}deg)`
+                    : `translate(${layer.offsetX}%, ${layer.offsetY}%)`,
                 transformOrigin: "center",
+                transition:
+                  cameraTargets("background") && camera
+                    ? `transform ${camera.durationMs}ms ${cameraEasing}`
+                    : undefined,
+                animationDuration:
+                  cameraTargets("background") && camera
+                    ? `${camera.durationMs}ms`
+                    : undefined,
               }}
               fallback={null}
             />
           ))}
           {videoUrl && displayFrame.stage.video ? (
             <video
-              className="galgame-player-video"
+              className="galgame-player-video galgame-camera-plane"
+              data-camera-effect={
+                cameraTargets("background") ? camera?.effect : undefined
+              }
               src={videoUrl}
               autoPlay={mode === "play"}
               loop={displayFrame.stage.video.loop}
@@ -416,7 +480,10 @@ export function StoryPlayerView({ model }: { model: StoryPlayerViewModel }) {
                 )
                   advanceRef.current();
               }}
-              style={{ objectFit: displayFrame.stage.video.fit }}
+              style={{
+                objectFit: displayFrame.stage.video.fit,
+                ...cameraPlaneStyle("background"),
+              }}
             />
           ) : null}
           {displayFrame.stage.particle ? (
@@ -494,104 +561,167 @@ export function StoryPlayerView({ model }: { model: StoryPlayerViewModel }) {
                 "等待场景 Block"}
             </span>
           ) : null}
-          {stageActors.map(
-            ({
-              actor,
-              character,
-              renderedExpressionId,
-              controlledFrameIndex,
-              expression,
-              skinAssetId,
-              overlays,
-            }) => {
-              const focused =
-                displayFrame.stage.activeSpeakerIds?.includes(
-                  actor.characterId,
-                ) ?? displayFrame.stage.activeSpeakerId === actor.characterId;
-              const hasActiveSpeakers = Boolean(
-                displayFrame.stage.activeSpeakerIds?.length ??
-                displayFrame.stage.activeSpeakerId,
-              );
-              const focusMultiplier =
-                stageStyle.speakerFocusEnabled && hasActiveSpeakers && !focused
-                  ? stageStyle.inactiveBrightness
-                  : 1;
-              const spriteAnimation =
-                displayFrame.stage.spriteAnimations?.[actor.characterId];
-              const effectiveFlipX =
-                Boolean(expression?.flipX) !== actor.transform.flipX;
-              return (
-                <div
-                  key={actor.characterId}
-                  className={`galgame-stage-actor${spriteAnimation ? " is-sprite-animated" : ""}`}
-                  data-character-id={actor.characterId}
-                  data-sprite-animation={spriteAnimation?.animation}
-                  data-expression-id={renderedExpressionId ?? undefined}
-                  data-entering={
-                    actor.entering && actor.transition.fade ? "true" : undefined
-                  }
-                  data-exiting={actor.exiting ? "true" : undefined}
-                  style={{
-                    left: `${actor.transform.x}%`,
-                    top: `${actor.transform.y}%`,
-                    zIndex: actor.transform.layer + 10,
-                    opacity: actor.exiting ? 0 : actor.transform.opacity,
-                    filter: `brightness(${actor.transform.brightness * focusMultiplier}) drop-shadow(0 6px 14px rgb(0 0 0 / 0.3))`,
-                    transformOrigin:
-                      actor.transform.anchor === "center"
-                        ? "center"
-                        : actor.transform.anchor === "topLeft"
-                          ? "top left"
-                          : "bottom center",
-                    transform: `${
-                      actor.transform.anchor === "center"
-                        ? "translate(-50%, -50%)"
-                        : actor.transform.anchor === "topLeft"
-                          ? "translate(0, 0)"
-                          : "translate(-50%, -100%)"
-                    } scale(${actor.transform.scale}) scaleX(${effectiveFlipX ? -1 : 1})`,
-                    transitionDuration: `${actor.transition.durationMs}ms, ${actor.transition.durationMs}ms, ${actor.transition.durationMs}ms, ${stageStyle.focusTransitionMs}ms, ${actor.transition.durationMs}ms`,
-                    animationDuration: spriteAnimation
-                      ? `${spriteAnimation.durationMs}ms`
-                      : `${actor.transition.durationMs}ms`,
-                    animationIterationCount: spriteAnimation?.loop
-                      ? "infinite"
-                      : undefined,
-                    height: `${(expression?.heightPercent ?? document.settings?.characterStageOverrides?.[character.id]?.defaultHeightPercent ?? character.portraitHeightPercent ?? document.settings?.characterStage?.defaultHeightPercent ?? 100) * CHARACTER_DISTANCE_SCALE[actor.distance]}%`,
-                  }}
-                >
-                  <ExpressionPortrait
-                    expression={expression}
-                    assets={document.assets ?? []}
-                    skinAssetId={skinAssetId}
-                    controlledFrameIndex={controlledFrameIndex}
-                    alt=""
-                    className="galgame-player-portrait-image"
-                    fallback={
-                      <span className="galgame-player-portrait-fallback">
-                        {character.name.slice(0, 1) || "角"}
-                      </span>
+          <div
+            className="galgame-character-camera-plane galgame-camera-plane"
+            data-camera-effect={
+              cameraTargets("characters") ? camera?.effect : undefined
+            }
+            style={cameraPlaneStyle("characters")}
+          >
+            {stageActors.map(
+              ({
+                actor,
+                character,
+                renderedExpressionId,
+                controlledFrameIndex,
+                expression,
+                skinAssetId,
+                overlays,
+              }) => {
+                const focused =
+                  displayFrame.stage.activeSpeakerIds?.includes(
+                    actor.characterId,
+                  ) ?? displayFrame.stage.activeSpeakerId === actor.characterId;
+                const hasActiveSpeakers = Boolean(
+                  displayFrame.stage.activeSpeakerIds?.length ??
+                  displayFrame.stage.activeSpeakerId,
+                );
+                const focusMultiplier =
+                  stageStyle.speakerFocusEnabled &&
+                  hasActiveSpeakers &&
+                  !focused
+                    ? stageStyle.inactiveBrightness
+                    : 1;
+                const spriteAnimation =
+                  displayFrame.stage.spriteAnimations?.[actor.characterId];
+                const spriteDirection =
+                  spriteAnimation?.direction === "left" ||
+                  (spriteAnimation?.direction === "towardCenter" &&
+                    actor.transform.x > 50) ||
+                  (spriteAnimation?.direction === "awayFromCenter" &&
+                    actor.transform.x <= 50)
+                    ? -1
+                    : 1;
+                const spriteIntensity = spriteAnimation?.intensity ?? 1;
+                const spriteAmplitude =
+                  {
+                    breathe: 0.8,
+                    idle: 0.8,
+                    nod: 2,
+                    shake: 2,
+                    startle: 4,
+                    lean: 4,
+                    recoil: -4,
+                    step: 5,
+                    tug: 6,
+                    bounce: 5,
+                  }[spriteAnimation?.animation ?? ""] ?? 2.5;
+                const spriteX =
+                  spriteDirection * spriteIntensity * spriteAmplitude;
+                const spriteY = spriteIntensity * spriteAmplitude;
+                const effectiveFlipX =
+                  Boolean(expression?.flipX) !== actor.transform.flipX;
+                return (
+                  <div
+                    key={actor.characterId}
+                    className="galgame-stage-actor"
+                    data-character-id={actor.characterId}
+                    data-sprite-animation={spriteAnimation?.animation}
+                    data-expression-id={renderedExpressionId ?? undefined}
+                    data-entering={
+                      actor.entering && actor.transition.fade
+                        ? "true"
+                        : undefined
                     }
-                  />
-                  {overlays.map(({ overlay, asset: overlayAsset }) => (
-                    <StoryAssetImage
-                      key={overlay.id}
-                      fileId={overlayAsset.fileId}
-                      alt=""
-                      className="galgame-player-character-overlay"
-                      style={{
-                        left: `${overlay.x}%`,
-                        top: `${overlay.y}%`,
-                        width: `${overlay.width}%`,
-                        opacity: overlay.opacity,
-                      }}
-                      fallback={null}
-                    />
-                  ))}
-                </div>
-              );
-            },
-          )}
+                    data-exiting={actor.exiting ? "true" : undefined}
+                    style={{
+                      left: `${actor.transform.x}%`,
+                      top: `${actor.transform.y}%`,
+                      zIndex: actor.transform.layer + 10,
+                      opacity: actor.exiting ? 0 : actor.transform.opacity,
+                      filter: `brightness(${actor.transform.brightness * focusMultiplier}) drop-shadow(0 6px 14px rgb(0 0 0 / 0.3))`,
+                      transformOrigin:
+                        actor.transform.anchor === "center"
+                          ? "center"
+                          : actor.transform.anchor === "topLeft"
+                            ? "top left"
+                            : "bottom center",
+                      transform: `${
+                        actor.transform.anchor === "center"
+                          ? "translate(-50%, -50%)"
+                          : actor.transform.anchor === "topLeft"
+                            ? "translate(0, 0)"
+                            : "translate(-50%, -100%)"
+                      } scale(${actor.transform.scale}) scaleX(${effectiveFlipX ? -1 : 1})`,
+                      transitionDuration: `${actor.transition.durationMs}ms, ${actor.transition.durationMs}ms, ${actor.transition.durationMs}ms, ${stageStyle.focusTransitionMs}ms, ${actor.transition.durationMs}ms`,
+                      animationDuration: `${actor.transition.durationMs}ms`,
+                      height: `${(expression?.heightPercent ?? document.settings?.characterStageOverrides?.[character.id]?.defaultHeightPercent ?? character.portraitHeightPercent ?? document.settings?.characterStage?.defaultHeightPercent ?? 100) * CHARACTER_DISTANCE_SCALE[actor.distance]}%`,
+                    }}
+                  >
+                    <div
+                      key={spriteAnimation?.sourceBlockId ?? "still"}
+                      className={`galgame-sprite-motion${spriteAnimation ? " is-sprite-animated" : ""}`}
+                      data-sprite-animation={spriteAnimation?.animation}
+                      data-sprite-direction={spriteAnimation?.direction}
+                      style={
+                        spriteAnimation
+                          ? ({
+                              animationDuration: `${spriteAnimation.durationMs}ms`,
+                              animationIterationCount: spriteAnimation.loop
+                                ? "infinite"
+                                : undefined,
+                              animationTimingFunction: spriteAnimation.easing
+                                .replace("easeInOut", "ease-in-out")
+                                .replace("easeIn", "ease-in")
+                                .replace("easeOut", "ease-out"),
+                              "--galgame-sprite-intensity":
+                                spriteAnimation.intensity,
+                              "--galgame-sprite-x": `${spriteX}%`,
+                              "--galgame-sprite-x-reverse": `${-spriteX}%`,
+                              "--galgame-sprite-x-quarter": `${spriteX * 0.25}%`,
+                              "--galgame-sprite-y": `${-spriteY}%`,
+                              "--galgame-sprite-y-reverse": `${spriteY * 0.25}%`,
+                              "--galgame-sprite-rotation": `${spriteDirection * spriteIntensity * 1.5}deg`,
+                              "--galgame-sprite-scale":
+                                1 + 0.012 * spriteIntensity,
+                            } as CSSProperties)
+                          : undefined
+                      }
+                    >
+                      <ExpressionPortrait
+                        expression={expression}
+                        assets={document.assets ?? []}
+                        skinAssetId={skinAssetId}
+                        controlledFrameIndex={controlledFrameIndex}
+                        alt=""
+                        className="galgame-player-portrait-image"
+                        fallback={
+                          <span className="galgame-player-portrait-fallback">
+                            {character.name.slice(0, 1) || "角"}
+                          </span>
+                        }
+                      />
+                      {overlays.map(({ overlay, asset: overlayAsset }) => (
+                        <StoryAssetImage
+                          key={overlay.id}
+                          fileId={overlayAsset.fileId}
+                          alt=""
+                          className="galgame-player-character-overlay"
+                          style={{
+                            left: `${overlay.x}%`,
+                            top: `${overlay.y}%`,
+                            width: `${overlay.width}%`,
+                            opacity: overlay.opacity,
+                          }}
+                          fallback={null}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                );
+              },
+            )}
+          </div>
           {stageCgs.map(({ key, state, cg, variant, asset }) => {
             const overlay = state.displayMode === "overlay";
             const editable =
@@ -608,7 +738,10 @@ export function StoryPlayerView({ model }: { model: StoryPlayerViewModel }) {
             return (
               <div
                 key={`${key}:${state.cgId}:${state.variantId}`}
-                className={`galgame-player-cg${editable ? " is-editable" : ""}`}
+                className={`galgame-player-cg galgame-camera-plane${editable ? " is-editable" : ""}`}
+                data-camera-effect={
+                  cameraTargets("cg") ? camera?.effect : undefined
+                }
                 data-cg-id={state.cgId}
                 data-variant-id={state.variantId}
                 data-display-mode={state.displayMode}
@@ -629,7 +762,20 @@ export function StoryPlayerView({ model }: { model: StoryPlayerViewModel }) {
                         ? 5
                         : 35,
                     transitionDuration: `${state.transition.fade ? state.transition.durationMs : 0}ms`,
-                    animationDuration: `${state.transition.fade ? state.transition.durationMs : 0}ms`,
+                    transitionProperty: cameraTargets("cg")
+                      ? "opacity, transform"
+                      : "opacity",
+                    transitionTimingFunction: cameraTargets("cg")
+                      ? cameraEasing
+                      : undefined,
+                    transform:
+                      cameraTargets("cg") && camera
+                        ? `${overlay ? "translate(-50%, -50%) " : ""}translate(${camera.x}%, ${camera.y}%) scale(${camera.scale}) rotate(${camera.rotation}deg)`
+                        : undefined,
+                    animationDuration:
+                      cameraTargets("cg") && camera
+                        ? `${camera.durationMs}ms`
+                        : `${state.transition.fade ? state.transition.durationMs : 0}ms`,
                   } as CSSProperties
                 }
                 aria-label={`${editable ? "调整 " : ""}${cg?.name ?? "剧情 CG"} · ${variant?.label ?? "默认差分"}`}
@@ -924,21 +1070,43 @@ export function StoryPlayerView({ model }: { model: StoryPlayerViewModel }) {
             </button>
           ) : displayText ? (
             <button
-              className="galgame-dialogue-box"
+              className={`galgame-dialogue-box layout-${dialogueStyle.layout.mode} background-${dialogueStyle.background.mode} body-${dialogueStyle.body.align} name-${dialogueStyle.speakerName.placement} name-decoration-${dialogueStyle.speakerName.decoration} indicator-${dialogueStyle.advanceIndicator.position} indicator-style-${dialogueStyle.advanceIndicator.style} top-rule-${dialogueStyle.background.topRule}`}
               type="button"
               onClick={mode === "play" ? advance : undefined}
-              style={{
-                backgroundColor: playerHexToRgba(
-                  dialogueStyle.backgroundColor,
-                  dialogueStyle.backgroundOpacity,
-                ),
-                borderRadius: `${dialogueStyle.borderRadius}px`,
-                color: dialogueStyle.textColor,
-                // Keep dialogue readable while the responsive stage changes size.
-                // cqw follows the stage width, while the clamp prevents narrow
-                // previews from shrinking the text below a usable size.
-                fontSize: `clamp(14px, ${dialogueStyle.fontScale * 1.25}cqw, 28px)`,
-              }}
+              style={
+                {
+                  background:
+                    dialogueStyle.background.mode === "verticalGradient"
+                      ? `linear-gradient(180deg, ${playerHexToRgba(
+                          dialogueStyle.backgroundColor,
+                          dialogueStyle.background.gradientTopOpacity,
+                        )}, ${playerHexToRgba(
+                          dialogueStyle.backgroundColor,
+                          dialogueStyle.background.gradientBottomOpacity,
+                        )})`
+                      : playerHexToRgba(
+                          dialogueStyle.backgroundColor,
+                          dialogueStyle.backgroundOpacity,
+                        ),
+                  borderRadius: `${dialogueStyle.borderRadius}px`,
+                  color: dialogueStyle.textColor,
+                  "--dialogue-width": `${dialogueStyle.layout.widthPercent}%`,
+                  "--dialogue-height": `${dialogueStyle.layout.heightPercent}%`,
+                  "--dialogue-bottom": `${dialogueStyle.layout.bottomOffsetPercent}%`,
+                  "--dialogue-inset-x": `${dialogueStyle.layout.contentInsetXPercent}%`,
+                  "--dialogue-inset-top": `${dialogueStyle.layout.contentInsetTopPercent}%`,
+                  "--dialogue-inset-bottom": `${dialogueStyle.layout.contentInsetBottomPercent}%`,
+                  "--dialogue-body-width": `${dialogueStyle.body.maxWidthPercent}%`,
+                  "--dialogue-body-font-size": dialogueBodyFontSize,
+                  "--dialogue-name-font-size": dialogueNameFontSize,
+                  "--dialogue-line-height": dialogueStyle.body.lineHeight,
+                  "--dialogue-name-color": dialogueStyle.nameColor,
+                  "--dialogue-rule-color": playerHexToRgba(
+                    dialogueStyle.background.topRuleColor,
+                    dialogueStyle.background.topRuleOpacity,
+                  ),
+                } as CSSProperties
+              }
             >
               {dialogueSkinAsset ? (
                 <StoryAssetImage
@@ -969,7 +1137,7 @@ export function StoryPlayerView({ model }: { model: StoryPlayerViewModel }) {
                       />
                     </span>
                   ) : null}
-                  <strong style={{ color: dialogueStyle.nameColor }}>
+                  <strong className="galgame-dialogue-speaker-name">
                     {dialogueSpeakerIds(displayFrame.block)
                       .map((speakerId, index) => {
                         const character = characters.get(speakerId);
@@ -985,9 +1153,9 @@ export function StoryPlayerView({ model }: { model: StoryPlayerViewModel }) {
                   </strong>
                 </>
               ) : (
-                <small>旁白</small>
+                <small className="galgame-dialogue-speaker-name">旁白</small>
               )}
-              <span>
+              <span className="galgame-dialogue-body">
                 {visibleRichContent ? (
                   <RichTextView
                     content={visibleRichContent}
@@ -998,17 +1166,14 @@ export function StoryPlayerView({ model }: { model: StoryPlayerViewModel }) {
                   Array.from(displayText).slice(0, visibleTextLength).join("")
                 )}
               </span>
-              <em>
-                {mode === "edit"
-                  ? "编辑预览"
-                  : inlinePlayerWait
-                    ? "等待玩家继续"
-                    : visibleTextLength < Array.from(displayText).length
-                      ? "点击显示全文"
-                      : advanceMode === "auto"
-                        ? "自动播放"
-                        : "点击继续"}
-              </em>
+              {dialogueIndicatorVisible ? (
+                <em className="galgame-dialogue-advance-indicator">
+                  {dialogueStyle.advanceIndicator.style === "compact" ? (
+                    <i aria-hidden />
+                  ) : null}
+                  {dialogueIndicatorText}
+                </em>
+              ) : null}
             </button>
           ) : null}
         </div>

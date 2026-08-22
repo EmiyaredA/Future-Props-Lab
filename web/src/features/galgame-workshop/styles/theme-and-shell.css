@@ -731,57 +731,57 @@
   pointer-events: none;
 }
 
-.galgame-stage[data-camera-effect^="shake"],
-.galgame-stage[data-camera-effect="quake"] {
+.galgame-camera-plane[data-camera-effect^="shake"],
+.galgame-camera-plane[data-camera-effect="quake"] {
   animation: galgame-camera-shake 420ms ease-in-out;
 }
 
-.galgame-stage[data-camera-effect="flash"] {
+.galgame-camera-plane[data-camera-effect="flash"] {
   animation: galgame-camera-flash 500ms ease-out;
 }
 
-.galgame-stage[data-camera-effect="heartbeat"],
-.galgame-stage[data-camera-effect="pulse"] {
+.galgame-camera-plane[data-camera-effect="heartbeat"],
+.galgame-camera-plane[data-camera-effect="pulse"] {
   animation: galgame-camera-pulse 650ms ease-in-out;
 }
 
-.galgame-stage[data-camera-effect="shakeHorizontal"],
-.galgame-stage[data-camera-effect="swing"],
-.galgame-stage[data-camera-effect="wobble"] {
+.galgame-camera-plane[data-camera-effect="shakeHorizontal"],
+.galgame-camera-plane[data-camera-effect="swing"],
+.galgame-camera-plane[data-camera-effect="wobble"] {
   animation: galgame-camera-horizontal 600ms ease-in-out;
 }
 
-.galgame-stage[data-camera-effect="shakeVertical"],
-.galgame-stage[data-camera-effect="bounce"] {
+.galgame-camera-plane[data-camera-effect="shakeVertical"],
+.galgame-camera-plane[data-camera-effect="bounce"] {
   animation: galgame-camera-vertical 600ms ease-in-out;
 }
 
-.galgame-stage[data-camera-effect="blur"] {
+.galgame-camera-plane[data-camera-effect="blur"] {
   animation: galgame-camera-blur 600ms ease-in-out;
 }
 
-.galgame-stage[data-camera-effect="focus"] {
+.galgame-camera-plane[data-camera-effect="focus"] {
   animation: galgame-camera-focus 600ms ease-out;
 }
 
-.galgame-stage[data-camera-effect="fade"],
-.galgame-stage[data-camera-effect="fadeBlack"] {
+.galgame-camera-plane[data-camera-effect="fade"],
+.galgame-camera-plane[data-camera-effect="fadeBlack"] {
   animation: galgame-camera-fade-black 600ms ease-in-out;
 }
 
-.galgame-stage[data-camera-effect="fadeWhite"] {
+.galgame-camera-plane[data-camera-effect="fadeWhite"] {
   animation: galgame-camera-fade-white 600ms ease-in-out;
 }
 
-.galgame-stage[data-camera-effect^="pan"] {
+.galgame-camera-plane[data-camera-effect^="pan"] {
   animation: galgame-camera-pan 600ms ease-out;
 }
 
-.galgame-stage[data-camera-effect^="zoom"] {
+.galgame-camera-plane[data-camera-effect^="zoom"] {
   animation: galgame-camera-zoom 600ms ease-out;
 }
 
-.galgame-stage[data-camera-effect^="roll"] {
+.galgame-camera-plane[data-camera-effect^="roll"] {
   animation: galgame-camera-roll 600ms ease-in-out;
 }
 
@@ -790,9 +790,139 @@
   animation-timing-function: ease-in-out;
 }
 
-.galgame-stage-actor.is-sprite-animated {
+.galgame-sprite-motion.is-sprite-animated {
   animation-name: galgame-sprite-animation;
-  animation-timing-function: ease-in-out;
+  animation-fill-mode: both;
+}
+
+.galgame-sprite-motion[data-sprite-animation="idle"],
+.galgame-sprite-motion[data-sprite-animation="breathe"] {
+  animation-name: galgame-sprite-breathe;
+}
+
+.galgame-sprite-motion[data-sprite-animation="nod"] {
+  animation-name: galgame-sprite-nod;
+}
+
+.galgame-sprite-motion[data-sprite-animation="shake"] {
+  animation-name: galgame-sprite-shake;
+}
+
+.galgame-sprite-motion[data-sprite-animation="startle"] {
+  animation-name: galgame-sprite-startle;
+}
+
+.galgame-sprite-motion[data-sprite-animation="lean"] {
+  animation-name: galgame-sprite-lean;
+}
+
+.galgame-sprite-motion[data-sprite-animation="recoil"] {
+  animation-name: galgame-sprite-recoil;
+}
+
+.galgame-sprite-motion[data-sprite-animation="step"] {
+  animation-name: galgame-sprite-step;
+}
+
+.galgame-sprite-motion[data-sprite-animation="tug"] {
+  animation-name: galgame-sprite-tug;
+}
+
+.galgame-sprite-motion[data-sprite-animation="bounce"] {
+  animation-name: galgame-sprite-bounce;
+}
+
+@keyframes galgame-sprite-breathe {
+  50% {
+    transform: translateY(var(--galgame-sprite-y, -0.8%))
+      scale(var(--galgame-sprite-scale, 1.012));
+  }
+}
+
+@keyframes galgame-sprite-nod {
+  35% {
+    transform: translateY(var(--galgame-sprite-y-reverse, 0.5%)) rotate(1deg);
+  }
+  70% {
+    transform: translateY(var(--galgame-sprite-y, -2%));
+  }
+}
+
+@keyframes galgame-sprite-shake {
+  25% {
+    transform: translateX(var(--galgame-sprite-x-reverse, -2%));
+  }
+  50% {
+    transform: translateX(var(--galgame-sprite-x, 2%));
+  }
+  75% {
+    transform: translateX(var(--galgame-sprite-x-quarter, 0.5%));
+  }
+}
+
+@keyframes galgame-sprite-startle {
+  25% {
+    transform: translateY(var(--galgame-sprite-y, -4%))
+      scale(var(--galgame-sprite-scale, 1.025));
+  }
+  55% {
+    transform: translateY(var(--galgame-sprite-y-reverse, 1%));
+  }
+}
+
+@keyframes galgame-sprite-lean {
+  45%,
+  70% {
+    transform: translateX(var(--galgame-sprite-x, 4%))
+      rotate(var(--galgame-sprite-rotation, 1.5deg));
+  }
+}
+
+@keyframes galgame-sprite-recoil {
+  40%,
+  65% {
+    transform: translateX(var(--galgame-sprite-x, -4%))
+      rotate(var(--galgame-sprite-rotation, -1.5deg));
+  }
+}
+
+@keyframes galgame-sprite-step {
+  45%,
+  75% {
+    transform: translateX(var(--galgame-sprite-x, 5%))
+      translateY(var(--galgame-sprite-y-reverse, 1%));
+  }
+}
+
+@keyframes galgame-sprite-tug {
+  30% {
+    transform: translateX(var(--galgame-sprite-x, 6%))
+      rotate(var(--galgame-sprite-rotation, 2deg));
+  }
+  55% {
+    transform: translateX(var(--galgame-sprite-x-reverse, -6%));
+  }
+  75% {
+    transform: translateX(var(--galgame-sprite-x-quarter, 1.5%));
+  }
+}
+
+@keyframes galgame-sprite-bounce {
+  35% {
+    transform: translateY(var(--galgame-sprite-y, -5%));
+  }
+  65% {
+    transform: translateY(var(--galgame-sprite-y-reverse, 1%));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .galgame-camera-plane,
+  .galgame-sprite-motion,
+  .galgame-stage-actor {
+    animation: none !important;
+    transition-duration: 0ms !important;
+  }
 }
 
 @keyframes galgame-particles-fall {

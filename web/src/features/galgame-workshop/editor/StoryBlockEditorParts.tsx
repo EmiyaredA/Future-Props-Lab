@@ -66,6 +66,7 @@ import {
   Timer,
   Undo2,
   UserRound,
+  Users,
   UserRoundMinus,
   UserRoundPlus,
   Variable,
@@ -134,6 +135,7 @@ const BLOCK_ICONS = {
   scene: MapPinned,
   destroyScene: Eraser,
   showCharacter: UserRoundPlus,
+  setStageCast: Users,
   removeCharacter: UserRoundMinus,
   showCg: ImagePlus,
   hideCg: ImageOff,
@@ -695,6 +697,19 @@ function AttachedCharacterSummary({
   return (
     <span className="galgame-dialogue-attached-events">
       {bundle.attachedCharacterBlocks.map((block) => {
+        if (block.type === "setStageCast") {
+          const names = (block.members ?? []).map(
+            (member) =>
+              (document.characters ?? []).find(
+                (character) => character.id === member.characterId,
+              )?.name ?? "角色",
+          );
+          return (
+            <em key={block.id}>
+              {names.length ? `构图 · ${names.join("、")}` : "清空角色"}
+            </em>
+          );
+        }
         const name =
           block.type === "removeCharacter" && block.all
             ? "全部角色"

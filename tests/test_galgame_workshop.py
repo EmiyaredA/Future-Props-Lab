@@ -54,6 +54,75 @@ def test_galgame_timeline_master_audio_schema_is_optional_and_role_checked() -> 
         GalgameStoryProject.model_validate(wrong_role)
 
 
+def test_galgame_stage_cast_and_sprite_motion_contracts() -> None:
+    document = playable_story()
+    document["characters"].extend(
+        [
+            {"id": "character-two", "name": "助手"},
+            {"id": "character-three", "name": "访客"},
+        ]
+    )
+    document["chapters"][0]["fragments"][0]["blocks"].insert(
+        1,
+        {
+            "id": "cast",
+            "type": "setStageCast",
+            "members": [
+                {
+                    "characterId": "character-one",
+                    "distance": "near",
+                    "positionId": "position-left",
+                    "transform": {"scale": 1.15},
+                },
+                {
+                    "characterId": "character-two",
+                    "distance": "far",
+                    "positionId": "position-right",
+                },
+            ],
+            "exitTransition": {"durationMs": 320, "fade": True},
+        },
+    )
+    document["chapters"][0]["fragments"][0]["blocks"].insert(
+        2,
+        {
+            "id": "tug",
+            "type": "animateSprite",
+            "characterId": "character-one",
+            "animation": "tug",
+            "direction": "right",
+            "intensity": 1.4,
+            "easing": "easeOut",
+        },
+    )
+
+    normalized = GalgameStoryProject.model_validate(document).model_dump(mode="json", by_alias=True)
+    cast = normalized["chapters"][0]["fragments"][0]["blocks"][1]
+    motion = normalized["chapters"][0]["fragments"][0]["blocks"][2]
+    assert len(cast["members"]) == 2
+    assert cast["members"][0]["transform"]["scale"] == 1.15
+    assert motion["direction"] == "right"
+    assert motion["intensity"] == 1.4
+
+    duplicate = deepcopy(document)
+    duplicate["chapters"][0]["fragments"][0]["blocks"][1]["members"][1]["characterId"] = (
+        "character-one"
+    )
+    with pytest.raises(ValueError, match="不能重复放置角色"):
+        GalgameStoryProject.model_validate(duplicate)
+
+    overcrowded = deepcopy(document)
+    overcrowded["characters"].append({"id": "character-four", "name": "路人"})
+    overcrowded["chapters"][0]["fragments"][0]["blocks"][1]["members"].extend(
+        [
+            {"characterId": "character-three"},
+            {"characterId": "character-four"},
+        ]
+    )
+    with pytest.raises(ValueError):
+        GalgameStoryProject.model_validate(overcrowded)
+
+
 def playable_story() -> dict:
     return {
         "schemaVersion": "1.0",
@@ -864,6 +933,40 @@ async def test_galgame_workshop_story_edit_report_completion_and_conflicts() -> 
                     "backgroundOpacity": 0.82,
                     "borderRadius": 12,
                     "fontScale": 1.0,
+                    "layout": {
+                        "mode": "boxed",
+                        "widthPercent": 100.0,
+                        "heightPercent": 22.0,
+                        "bottomOffsetPercent": 0.0,
+                        "contentInsetXPercent": 0.0,
+                        "contentInsetTopPercent": 0.0,
+                        "contentInsetBottomPercent": 0.0,
+                    },
+                    "background": {
+                        "mode": "solid",
+                        "gradientTopOpacity": 0.2,
+                        "gradientBottomOpacity": 0.94,
+                        "topRule": "none",
+                        "topRuleColor": "#FFFFFF",
+                        "topRuleOpacity": 0.22,
+                    },
+                    "body": {
+                        "fontSizePx": None,
+                        "lineHeight": 1.35,
+                        "align": "left",
+                        "maxWidthPercent": 100.0,
+                    },
+                    "speakerName": {
+                        "placement": "topLeft",
+                        "fontSizePx": None,
+                        "decoration": "none",
+                    },
+                    "advanceIndicator": {
+                        "visible": True,
+                        "position": "bottomRight",
+                        "style": "descriptive",
+                        "showInExport": True,
+                    },
                 },
                 "ui": {"components": []},
                 "stage": {
@@ -1488,7 +1591,43 @@ async def test_galgame_dialogue_box_style_uses_a_typed_story_image() -> None:
         )
         assert saved.status_code == 200, saved.text
         presentation = saved.json()["document"]["presentation"]
-        assert presentation["dialogueBox"] == document["presentation"]["dialogueBox"]
+        assert presentation["dialogueBox"] == {
+            **document["presentation"]["dialogueBox"],
+            "layout": {
+                "mode": "boxed",
+                "widthPercent": 100.0,
+                "heightPercent": 22.0,
+                "bottomOffsetPercent": 0.0,
+                "contentInsetXPercent": 0.0,
+                "contentInsetTopPercent": 0.0,
+                "contentInsetBottomPercent": 0.0,
+            },
+            "background": {
+                "mode": "solid",
+                "gradientTopOpacity": 0.2,
+                "gradientBottomOpacity": 0.94,
+                "topRule": "none",
+                "topRuleColor": "#FFFFFF",
+                "topRuleOpacity": 0.22,
+            },
+            "body": {
+                "fontSizePx": None,
+                "lineHeight": 1.35,
+                "align": "left",
+                "maxWidthPercent": 100.0,
+            },
+            "speakerName": {
+                "placement": "topLeft",
+                "fontSizePx": None,
+                "decoration": "none",
+            },
+            "advanceIndicator": {
+                "visible": True,
+                "position": "bottomRight",
+                "style": "descriptive",
+                "showInExport": True,
+            },
+        }
         assert presentation["ui"] == document["presentation"]["ui"]
         assert presentation["stage"] == document["presentation"]["stage"]
         assert presentation["text"] == {"defaultSpeedCps": 40}
