@@ -107,6 +107,36 @@ def test_backend_avoids_generic_abstract_layer_directories() -> None:
     assert not violations, "请按具体能力命名后端目录：\n" + "\n".join(violations)
 
 
+def test_agent_harness_is_provider_independent() -> None:
+    violations = [
+        f"{_relative(path)} imports {module}"
+        for path in _python_files(BACKEND_APP / "agents" / "harness")
+        for module in _python_imports(path)
+        if _matches_module(module, "app.llm.providers")
+    ]
+    assert not violations, "Agent Harness 不得依赖具体供应商：\n" + "\n".join(violations)
+
+
+def test_transcription_consumers_do_not_depend_on_playground() -> None:
+    violations = [
+        f"{_relative(path)} imports {module}"
+        for root in (
+            BACKEND_APP / "audio_annotation",
+            BACKEND_APP / "galgame_workshop",
+        )
+        for path in _python_files(root)
+        for module in _python_imports(path)
+        if _matches_module(module, "app.llm.playground")
+    ]
+    assert not violations, "语音能力消费者不得依赖模型测试实现：\n" + "\n".join(violations)
+
+
+def test_account_service_does_not_own_catalog_provisioning() -> None:
+    imports = _python_imports(BACKEND_APP / "accounts" / "service.py")
+    assert not any(_matches_module(module, "app.llm") for module in imports)
+    assert (BACKEND_APP / "accounts" / "provisioning.py").is_file()
+
+
 def test_public_files_have_independent_ownership() -> None:
     required = (
         BACKEND_APP / "files" / "assets.py",

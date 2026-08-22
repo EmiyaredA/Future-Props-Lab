@@ -2,10 +2,13 @@ from uuid import uuid4
 
 import httpx
 import pytest
+from sqlalchemy import func, select
 
-from app.accounts.service import create_account
+from app.accounts.passwords import normalize_username
+from app.accounts.provisioning import create_account
 from app.core.db import SessionLocal
 from app.main import app
+from app.models import ModelProvider, SecurityAuditEvent, User, Workspace, WorkspaceMembership
 
 
 async def create_test_account(*, platform_admin: bool = False) -> tuple[str, str]:
@@ -18,6 +21,50 @@ async def create_test_account(*, platform_admin: bool = False) -> tuple[str, str
             is_platform_admin=platform_admin,
         )
     return username, temporary
+
+
+@pytest.mark.asyncio
+async def test_account_provisioning_rolls_back_when_catalog_seed_fails(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    username = f"rollback-{uuid4().hex[:12]}"
+    async with SessionLocal() as session:
+        before = {
+            "users": await session.scalar(select(func.count(User.id))),
+            "workspaces": await session.scalar(select(func.count(Workspace.id))),
+            "memberships": await session.scalar(select(func.count(WorkspaceMembership.id))),
+            "audits": await session.scalar(select(func.count(SecurityAuditEvent.id))),
+            "providers": await session.scalar(select(func.count(ModelProvider.id))),
+        }
+
+    async def fail_seed(_session, _workspace_id: str) -> bool:
+        raise RuntimeError("seed failed")
+
+    monkeypatch.setattr("app.accounts.provisioning.ensure_workspace_model_catalog", fail_seed)
+    async with SessionLocal() as session:
+        with pytest.raises(RuntimeError, match="seed failed"):
+            await create_account(
+                session,
+                username=username,
+                display_name="事务回滚",
+                is_platform_admin=False,
+            )
+
+    async with SessionLocal() as session:
+        assert (
+            await session.scalar(
+                select(User.id).where(User.username_normalized == normalize_username(username))
+            )
+            is None
+        )
+        after = {
+            "users": await session.scalar(select(func.count(User.id))),
+            "workspaces": await session.scalar(select(func.count(Workspace.id))),
+            "memberships": await session.scalar(select(func.count(WorkspaceMembership.id))),
+            "audits": await session.scalar(select(func.count(SecurityAuditEvent.id))),
+            "providers": await session.scalar(select(func.count(ModelProvider.id))),
+        }
+    assert after == before
 
 
 def unsafe_headers(client: httpx.AsyncClient) -> dict[str, str]:

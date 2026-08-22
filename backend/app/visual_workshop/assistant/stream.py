@@ -10,12 +10,12 @@ from uuid import uuid4
 import httpx
 from sqlalchemy import select, update
 
-from app.agents.harness import AgentEvent, AgentHarness, RunStatus
+from app.agents.harness import AgentEvent, AgentHarness, AgentMessage, RunStatus
 from app.core.credentials import decrypt_secret
 from app.core.db import SessionLocal
 from app.core.tenant_context import bind_workspace
 from app.core.time import utc_now
-from app.llm.providers.agent import AgentMessage, HttpAgentAdapter
+from app.llm.providers.agent import HttpAgentAdapter
 from app.models import (
     LlmCallLog,
     VisualAssistantAction,

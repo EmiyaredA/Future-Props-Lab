@@ -5,7 +5,7 @@ from dataclasses import dataclass, field
 from enum import StrEnum
 from typing import Any, Literal, Protocol
 
-from app.llm.providers.agent import AgentMessage, ToolCall, ToolSpec, Usage
+from app.agents.harness.contracts import AgentMessage, ToolCall, ToolSpec, Usage
 
 ToolEffect = Literal["read", "write", "external"]
 PolicyDecisionKind = Literal["allow", "deny", "require_approval"]

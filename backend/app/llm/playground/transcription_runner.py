@@ -15,7 +15,7 @@ from app.core.tenant_context import bind_workspace
 from app.core.time import utc_now
 from app.llm.generation_runtime import PollingGenerationRunner
 from app.llm.providers.transcription import transcribe_model_audio
-from app.llm.transcription_support import (
+from app.llm.transcription import (
     model_supports_transcription,
     safe_transcription_error,
 )

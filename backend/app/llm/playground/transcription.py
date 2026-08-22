@@ -15,15 +15,13 @@ from app.core.tenant_context import current_workspace_id
 from app.core.time import iso_utc
 from app.files.policy import ALLOWED_FILES, looks_like
 from app.files.storage import AssetStorage
-from app.llm.playground.transcription_parameters import (
-    TranscriptionParameterError,
-    parameter_capabilities,
-    resolve_parameters,
-)
 from app.llm.providers.senseaudio_asr import MAX_ASR_FILE_BYTES
-from app.llm.transcription_support import (
+from app.llm.transcription import (
+    TranscriptionParameterError,
     max_transcription_input_bytes,
     model_supports_transcription,
+    parameter_capabilities,
+    resolve_parameters,
 )
 from app.models import ModelEntry, ModelProvider, ModelTestTranscriptionTask, VisualAsset
 from app.schemas.model_test import (

@@ -13,6 +13,7 @@ from app.accounts.profile import (
     stage_avatar,
     update_profile,
 )
+from app.accounts.provisioning import create_account
 from app.accounts.rate_limit import allow_attempt, clear_attempts
 from app.accounts.security import CSRF_COOKIE, SESSION_ABSOLUTE_DAYS, SESSION_COOKIE
 from app.accounts.service import (
@@ -21,7 +22,6 @@ from app.accounts.service import (
     change_password,
     complete_login,
     complete_logout,
-    create_account,
     create_api_key,
     list_accounts,
     list_active_sessions,

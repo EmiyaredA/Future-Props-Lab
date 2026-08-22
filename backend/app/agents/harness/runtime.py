@@ -9,6 +9,13 @@ from uuid import uuid4
 
 from app.agents.harness.approval import ApprovalBroker, approval_broker
 from app.agents.harness.context import ContextCompiler
+from app.agents.harness.contracts import (
+    AgentMessage,
+    ModelAdapter,
+    ModelTextDelta,
+    ModelTurnEnd,
+    Usage,
+)
 from app.agents.harness.types import (
     AgentDefinition,
     AgentEvent,
@@ -20,7 +27,6 @@ from app.agents.harness.types import (
     ToolBinding,
     ToolExecutionContext,
 )
-from app.llm.providers.agent import AgentMessage, ModelAdapter, ModelTextDelta, ModelTurnEnd, Usage
 
 
 async def _maybe_emit(listener: EventListener | None, event: AgentEvent) -> None:

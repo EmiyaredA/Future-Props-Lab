@@ -17,7 +17,8 @@ os.environ["FPL_STUDIO_TOKEN"] = ""
 from sqlalchemy import select  # noqa: E402
 
 from app.accounts.passwords import normalize_username  # noqa: E402
-from app.accounts.service import create_account, reset_password  # noqa: E402
+from app.accounts.provisioning import create_account  # noqa: E402
+from app.accounts.service import reset_password  # noqa: E402
 from app.core.config import get_settings  # noqa: E402
 from app.core.db import SessionLocal  # noqa: E402
 from app.models import User  # noqa: E402

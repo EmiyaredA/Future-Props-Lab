@@ -7,6 +7,7 @@ from typing import Any
 
 import httpx
 
+from app.agents.harness.contracts import ImageInput
 from app.core.outbound_urls import require_safe_provider_base_url
 
 
@@ -17,13 +18,6 @@ class TextDelta:
     completion_tokens: int | None = None
     total_tokens: int | None = None
     finish_reason: str | None = None
-
-
-@dataclass(frozen=True)
-class ImageInput:
-    mime_type: str
-    data_base64: str
-    byte_size: int
 
 
 @dataclass(frozen=True)

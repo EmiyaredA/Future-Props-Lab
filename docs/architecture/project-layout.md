@@ -56,9 +56,13 @@ Future-Props-Lab/
 - 后端采用功能模块优先结构。`main.py` 负责装配，`routes/` 只负责认证、请求校验、调用功能
   边界和响应映射，不直接导入 SQLAlchemy、ORM 模型或 migration。查询、写入和事务由
   `llm/catalog/`、`llm/playground/`、`llm/call_logs/` 等所属能力负责。
-- `agents/harness/` 提供业务无关的 Agent Definition、上下文预算、Reactive 工具循环、Policy、
-  Verifier、事件订阅、取消和内存审批；不拥有项目数据，也不提供通用 `/v1/agents` 管理接口。
-  `llm/providers/` 是供应商协议差异的唯一实现边界。模型测试、诊断、REST/SSE 与 Web 消费端
+- `accounts/provisioning.py` 是 HTTP 管理接口和离线账号命令共用的账号开通用例；账号、Workspace、
+  Owner 成员关系、审计事件与新 Workspace 模型目录在同一事务内提交或回滚。`accounts/service.py`
+  不依赖模型目录实现。
+- `agents/harness/` 提供业务无关的 Agent Definition、消息/工具调用/Usage/适配器契约、上下文预算、
+  Reactive 工具循环、Policy、Verifier、事件订阅、取消和内存审批；不拥有项目数据，也不提供通用
+  `/v1/agents` 管理接口。`llm/providers/` 是供应商协议差异的唯一实现边界，并反向实现 Harness
+  定义的适配器契约。模型测试、诊断、REST/SSE 与 Web 消费端
   只依赖统一结果或事件，不根据供应商原始载荷控制运行行为；供应商管理界面展示配置属于例外。
 - 后端不增加通用 `services/`、`domain/`、`platform/` 或 `product/` 分层。需要拆分大型模块
   时，按具体业务能力在所属功能包内命名，避免同一职责出现多个事实源。
@@ -66,7 +70,8 @@ Future-Props-Lab/
   最近使用状态，不复制工具名称、分类或外部网址。
 - `audio_annotation/` 管理 Workspace 级录音标注任务，根项目直接保存 `workspace_id` 并引用
   公共文件库中的音频；说话人/片段文档与最多双声道的预计算波形分别使用独立 revision CAS，
-  选中片段可通过统一语音识别适配器执行一次性转写。
+  选中片段可通过统一语音识别适配器执行一次性转写。识别参数、语言能力、文件上限和安全错误
+  映射归属 `llm/transcription/`，录音标注、模型测试和 Galgame 只依赖该能力边界。
   删除任务不会删除原音频，被任务引用的音频不能从文件库删除。
 - AI 应用目录同样由 Web 静态注册表维护，应用最近访问记录只保存在浏览器本地。视觉创作工坊
   与 Galgame 工坊各自使用独立页面壳；后端 `files/` 负责公共文件元数据、文件夹、存储校验与项目引用，

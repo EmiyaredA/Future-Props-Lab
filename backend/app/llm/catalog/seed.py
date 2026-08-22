@@ -260,13 +260,12 @@ async def ensure_workspace_model_catalog(session: AsyncSession, workspace_id: st
         .scalars()
         .all()
     )
+    if (state is not None and state.revision != 0) or providers:
+        return False
     if state is None:
         state = ModelCatalogState(workspace_id=workspace_id, revision=0)
         session.add(state)
         await session.flush()
-    if state is None or state.revision != 0 or providers:
-        await session.rollback()
-        return False
 
     providers_by_id: dict[str, ModelProvider] = {}
     for provider_seed in SAYFLOW_TEXT_CATALOG:
@@ -303,10 +302,12 @@ async def ensure_workspace_model_catalog(session: AsyncSession, workspace_id: st
                 )
             )
     state.revision = 1
-    await session.commit()
+    await session.flush()
     return True
 
 
 async def seed_sayflow_text_catalog(session: AsyncSession) -> bool:
     """向历史 default Workspace 播种内置供应商。"""
-    return await ensure_workspace_model_catalog(session, "default")
+    changed = await ensure_workspace_model_catalog(session, "default")
+    await session.commit()
+    return changed

@@ -13,7 +13,8 @@ sys.path.insert(0, str(REPO_ROOT / "backend"))
 os.environ["FPL_STUDIO_TOKEN"] = ""
 
 from app.accounts.principal import StudioPrincipal  # noqa: E402
-from app.accounts.service import change_password, complete_login, create_account  # noqa: E402
+from app.accounts.provisioning import create_account  # noqa: E402
+from app.accounts.service import change_password, complete_login  # noqa: E402
 from app.core.config import get_settings  # noqa: E402
 from app.core.db import SessionLocal  # noqa: E402
 from db.migrations import apply_migrations  # noqa: E402

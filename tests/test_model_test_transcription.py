@@ -375,7 +375,7 @@ async def test_pro_asr_accepts_100_mb_model_limit(monkeypatch: pytest.MonkeyPatc
     async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
         provider, model = await _create_asr_model(
             client,
-            base_url="http://180.184.148.131:30002/api/v2/asr/pro",
+            base_url="https://asr.example/api/v2/asr/pro",
         )
         options = (await client.get("/v1/model-test/transcription-options")).json()
         option = next(item for item in options["items"] if item["id"] == model["id"])
