@@ -4,6 +4,7 @@ type TimelineClockCallbacks = {
   onPosition: (milliseconds: number) => void;
   onPlayingChange?: (playing: boolean) => void;
   onFinish?: () => void;
+  onBoundary?: (milliseconds: number) => void;
   positionSource?: () => number | undefined;
 };
 
@@ -117,6 +118,7 @@ export class TimelineClock {
     const stoppedAtBoundary = this.stopAtMs != null;
     const finished = !stoppedAtBoundary && this.positionMs >= this.durationMs;
     this.stopAtMs = undefined;
+    if (stoppedAtBoundary) this.callbacks.onBoundary?.(this.positionMs);
     if (finished) this.callbacks.onFinish?.();
   }
 

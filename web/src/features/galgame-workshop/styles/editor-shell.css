@@ -162,6 +162,42 @@
   background: var(--gal-accent-hover);
 }
 
+/* Keep the editor's primary actions aligned as one toolbar group. */
+.galgame-editor-actions > .galgame-editor-refresh,
+.galgame-editor-actions > .galgame-save-state,
+.galgame-editor-actions > .galgame-editor-video-export,
+.galgame-editor-actions > .galgame-run-menu > .galgame-preview-launch {
+  min-height: 34px;
+  height: 34px;
+}
+
+.galgame-editor-actions > .galgame-editor-refresh {
+  width: 34px;
+}
+
+.galgame-editor-video-export {
+  padding: 0 13px;
+  border: 1px solid var(--gal-accent-line);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--gal-accent) 10%, var(--gal-panel));
+  color: var(--gal-accent);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.galgame-editor-video-export:hover {
+  border-color: var(--gal-accent);
+  background: color-mix(in srgb, var(--gal-accent) 17%, var(--gal-panel));
+}
+
+.galgame-editor-video-export:active {
+  background: color-mix(in srgb, var(--gal-accent) 22%, var(--gal-panel));
+}
+
 .galgame-editor-tabs {
   min-height: 45px;
   padding: 0 18px;

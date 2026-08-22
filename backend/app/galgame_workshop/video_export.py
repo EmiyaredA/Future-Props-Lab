@@ -98,6 +98,7 @@ def _task_out(row: GalgameVideoExportTask) -> GalgameVideoExportTaskOut:
 class _RoutePlan:
     chapter_ids: list[str] = field(default_factory=list)
     fragment_ids: list[str] = field(default_factory=list)
+    fragment_durations_ms: list[int] = field(default_factory=list)
     branch_block_ids: list[str] = field(default_factory=list)
     duration_ms: int = 0
     exact_duration: bool = True
@@ -440,6 +441,124 @@ def _plan_route(
     return plan
 
 
+def _plan_fragments(
+    document: dict[str, Any],
+    fragment_ids: list[str],
+    asset_duration: dict[str, int],
+) -> _RoutePlan:
+    plan = _RoutePlan()
+    fragment_locations = {
+        fragment["id"]: (chapter, fragment)
+        for chapter in document.get("chapters", [])
+        for fragment in chapter.get("fragments", [])
+    }
+    selected: list[tuple[dict[str, Any], dict[str, Any]]] = []
+    for index, fragment_id in enumerate(fragment_ids):
+        location = fragment_locations.get(fragment_id)
+        if location is None:
+            plan.blockers.append(
+                GalgameVideoExportIssue(
+                    code="missing_selected_fragment",
+                    message=f"所选 Fragment“{fragment_id}”已不存在",
+                    path=f"/fragmentIds/{index}",
+                )
+            )
+            continue
+        selected.append(location)
+
+    if plan.blockers:
+        return plan
+    for chapter, fragment in selected:
+        plan.chapter_ids.append(chapter["id"])
+        plan.fragment_ids.append(fragment["id"])
+        duration_before = plan.duration_ms
+        timeline = fragment.get("timeline")
+        if timeline:
+            plan.duration_ms += max(0, int(timeline.get("durationMs", 0)))
+            plan.fragment_durations_ms.append(plan.duration_ms - duration_before)
+            continue
+        for block in fragment.get("blocks", []):
+            if block.get("type") in {
+                "branch",
+                "if",
+                "callFragment",
+                "endChapter",
+                "returnToEntry",
+            }:
+                continue
+            duration, exact = _estimate_block_ms(block, asset_duration)
+            plan.duration_ms += duration
+            plan.exact_duration = plan.exact_duration and exact
+        plan.fragment_durations_ms.append(plan.duration_ms - duration_before)
+    if len(selected) == 1:
+        plan.ending_label = selected[0][1].get("title") or "单个片段"
+    else:
+        plan.ending_label = f"{len(selected)} 个片段"
+    return plan
+
+
+def _clip_time_label(milliseconds: int) -> str:
+    value = max(0, milliseconds)
+    total_seconds, millis = divmod(value, 1000)
+    minutes, seconds = divmod(total_seconds, 60)
+    return f"{minutes:02d}m{seconds:02d}.{millis:03d}s"
+
+
+def _plan_clip(
+    document: dict[str, Any], fragment_id: str, start_ms: int, end_ms: int
+) -> _RoutePlan:
+    plan = _RoutePlan()
+    location = next(
+        (
+            (chapter, fragment)
+            for chapter in document.get("chapters", [])
+            for fragment in chapter.get("fragments", [])
+            if fragment.get("id") == fragment_id
+        ),
+        None,
+    )
+    if location is None:
+        plan.blockers.append(
+            GalgameVideoExportIssue(
+                code="missing_clip_fragment",
+                message=f"快速试片 Fragment“{fragment_id}”已不存在",
+                path="/clipRange/fragmentId",
+            )
+        )
+        return plan
+    chapter, fragment = location
+    timeline = fragment.get("timeline")
+    if not timeline:
+        plan.blockers.append(
+            GalgameVideoExportIssue(
+                code="clip_fragment_without_timeline",
+                message="快速试片只支持带时间轴的 Fragment",
+                path="/clipRange/fragmentId",
+            )
+        )
+        return plan
+    duration_ms = max(0, int(timeline.get("durationMs", 0)))
+    if start_ms >= duration_ms or end_ms > duration_ms:
+        plan.blockers.append(
+            GalgameVideoExportIssue(
+                code="clip_range_out_of_bounds",
+                message="快速试片范围超出了当前 Fragment 的时间轴",
+                path="/clipRange",
+            )
+        )
+        return plan
+    clip_duration_ms = end_ms - start_ms
+    plan.chapter_ids.append(chapter["id"])
+    plan.fragment_ids.append(fragment_id)
+    plan.fragment_durations_ms.append(clip_duration_ms)
+    plan.duration_ms = clip_duration_ms
+    plan.ending_label = (
+        f"{fragment.get('title') or fragment_id} · "
+        f"{_clip_time_label(start_ms)}-{_clip_time_label(end_ms)}"
+    )
+    return plan
+
+
 class GalgameVideoExports:
     def __init__(self, session: AsyncSession, settings: Settings | None = None) -> None:
         self.session = session
@@ -527,7 +646,17 @@ class GalgameVideoExports:
                 )
             )
         selections = {item.branch_block_id: item.choice_id for item in body.branch_selections}
-        plan = _plan_route(document, selections, asset_duration)
+        if body.scope == "fragments":
+            plan = _plan_fragments(document, body.fragment_ids, asset_duration)
+        elif body.scope == "clip" and body.clip_range is not None:
+            plan = _plan_clip(
+                document,
+                body.clip_range.fragment_id,
+                body.clip_range.start_ms,
+                body.clip_range.end_ms,
+            )
+        else:
+            plan = _plan_route(document, selections, asset_duration)
         blockers.extend(plan.blockers)
         warnings.extend(plan.warnings)
         bitrate_mbps = 6 if body.preset == "720p30" else (18 if body.preset == "1080p60" else 10)
@@ -565,6 +694,7 @@ class GalgameVideoExports:
         route = GalgameVideoExportRouteOut(
             chapterIds=plan.chapter_ids,
             fragmentIds=plan.fragment_ids,
+            fragmentDurationsMs=plan.fragment_durations_ms,
             branchBlockIds=plan.branch_block_ids,
             endingLabel=plan.ending_label,
             estimatedDurationMs=plan.duration_ms,
@@ -574,6 +704,13 @@ class GalgameVideoExports:
             "storyRevision": story.revision,
             "locale": body.locale,
             "preset": body.preset,
+            "scope": body.scope,
+            "fragmentIds": body.fragment_ids,
+            "clipRange": (
+                body.clip_range.model_dump(mode="json", by_alias=True)
+                if body.clip_range is not None
+                else None
+            ),
             "branchSelections": [
                 item.model_dump(mode="json", by_alias=True) for item in body.branch_selections
             ],
@@ -653,6 +790,7 @@ class GalgameVideoExports:
                 "renderedMs": 0,
                 "totalMs": preview.route.estimated_duration_ms,
                 "endingLabel": preview.route.ending_label,
+                "fragmentDurationsMs": preview.route.fragment_durations_ms,
             },
         )
         self.session.add(task)
@@ -858,6 +996,9 @@ class GalgameVideoExportRunner(PollingGenerationRunner):
                 payload = dict(task.request_payload)
                 total_ms = int((task.result_detail or {}).get("totalMs", 0))
                 ending_label = str((task.result_detail or {}).get("endingLabel", "故事结束"))
+                fragment_durations_ms = list(
+                    (task.result_detail or {}).get("fragmentDurationsMs", [])
+                )
                 file_ids = [
                     item.get("fileId") for item in document.get("assets", []) if item.get("fileId")
                 ]
@@ -890,6 +1031,9 @@ class GalgameVideoExportRunner(PollingGenerationRunner):
                             "assetPaths": asset_paths,
                             "locale": payload.get("locale", "zh"),
                             "preset": payload.get("preset", "1080p30"),
+                            "fragmentIds": payload.get("fragmentIds", []),
+                            "fragmentDurationsMs": fragment_durations_ms,
+                            "clipRange": payload.get("clipRange"),
                             "branchSelections": payload.get("branchSelections", []),
                             "choiceDurationMs": CHOICE_DURATION_MS,
                             "choiceHighlightMs": CHOICE_HIGHLIGHT_MS,

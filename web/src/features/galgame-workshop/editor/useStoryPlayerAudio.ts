@@ -28,6 +28,7 @@ type TimelinePlayback = {
   fragmentId: string;
   clock: TimelineClock;
   lastPositionMs: number;
+  lastPublishedPositionMs: number;
 };
 
 export function useStoryPlayerAudio(
@@ -290,21 +291,20 @@ export function useStoryPlayerAudio(
               { once: true },
             );
           } else channelRefs.current[channel] = playing;
-          if (options.shouldPlay ?? true)
-            audio.addEventListener(
-              "play",
-              () =>
-                onExportAudioEvent?.({
-                  action: "play",
-                  channel,
-                  storyAssetId: asset.id,
-                  offsetMs: Math.max(0, options.offsetMs ?? 0),
-                  volume: target,
-                  loop: block.loop,
-                  fadeMs,
-                }),
-              { once: true },
-            );
+          audio.addEventListener(
+            "play",
+            () =>
+              onExportAudioEvent?.({
+                action: "play",
+                channel,
+                storyAssetId: asset.id,
+                offsetMs: Math.max(0, audio.currentTime * 1000),
+                volume: target,
+                loop: block.loop,
+                fadeMs,
+              }),
+            { once: true },
+          );
           positionAudio(
             playing,
             Math.max(0, options.offsetMs ?? 0),
@@ -338,6 +338,35 @@ export function useStoryPlayerAudio(
       }
       const offsetMs = Math.max(0, milliseconds - state.startedAtMs);
       const current = channelRefs.current.bgm;
+      if (current?.sourceBlockId === state.block.id) {
+        positionAudio(current, offsetMs, shouldPlay);
+        return;
+      }
+      executeAudioBlock(state.block, {
+        offsetMs,
+        shouldPlay,
+        skipFade: true,
+      });
+    },
+    [executeAudioBlock, positionAudio, stopChannel],
+  );
+
+  const syncTimelineAmbient = useCallback(
+    (
+      fragment: GalgameStoryFragment,
+      milliseconds: number,
+      shouldPlay: boolean,
+    ) => {
+      const state = timelineAudioPlaybackStateAt(
+        fragment,
+        milliseconds,
+      ).ambient;
+      if (!state) {
+        stopChannel("ambient", 0);
+        return;
+      }
+      const offsetMs = Math.max(0, milliseconds - state.startedAtMs);
+      const current = channelRefs.current.ambient;
       if (current?.sourceBlockId === state.block.id) {
         positionAudio(current, offsetMs, shouldPlay);
         return;
@@ -440,6 +469,23 @@ export function useStoryPlayerAudio(
     ],
   );
 
+  const reconcileTimelineAudio = useCallback(
+    (fragment: GalgameStoryFragment, milliseconds: number) => {
+      const shouldPlay = timelineRef.current?.clock.isPlaying ?? false;
+      stopChannel("sfx", 0);
+      syncTimelineBgm(fragment, milliseconds, shouldPlay);
+      syncTimelineAmbient(fragment, milliseconds, shouldPlay);
+      void syncTimelineMaster(fragment, milliseconds, shouldPlay);
+    },
+    [
+      stopChannel,
+      syncTimelineAmbient,
+      syncTimelineBgm,
+      syncTimelineMaster,
+      timelineRef,
+    ],
+  );
+
   const pauseTimelineMaster = useCallback(() => {
     timelineMasterRef.current?.audio.pause();
   }, []);
@@ -514,7 +560,9 @@ export function useStoryPlayerAudio(
     stopChannel,
     executeAudioBlock,
     syncTimelineBgm,
+    syncTimelineAmbient,
     syncTimelineMaster,
+    reconcileTimelineAudio,
     pauseTimelineMaster,
     timelineMasterPositionMs,
     cleanupPlayback,

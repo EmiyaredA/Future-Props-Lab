@@ -49,6 +49,43 @@ async def test_video_export_preview_select_create_idempotency_and_cancel() -> No
         assert manifest["route"]["branchBlockIds"] == ["block-branch"]
         assert manifest["route"]["estimatedDurationMs"] >= 2000
 
+        fragment_preview = await client.post(
+            f"/v1/galgame-workshop/projects/{project_id}/video-exports/preview",
+            json={
+                "expectedStoryRevision": revision,
+                "locale": "zh",
+                "preset": "1080p30",
+                "scope": "fragments",
+                "fragmentIds": ["main", "device-ending"],
+                "branchSelections": [],
+            },
+        )
+        assert fragment_preview.status_code == 200, fragment_preview.text
+        fragment_manifest = fragment_preview.json()
+        assert fragment_manifest["ready"] is True
+        assert fragment_manifest["nextDecision"] is None
+        assert fragment_manifest["route"]["fragmentIds"] == ["main", "device-ending"]
+        assert fragment_manifest["route"]["branchBlockIds"] == []
+        assert fragment_manifest["route"]["endingLabel"] == "2 个片段"
+        assert len(fragment_manifest["route"]["fragmentDurationsMs"]) == 2
+        assert (
+            sum(fragment_manifest["route"]["fragmentDurationsMs"])
+            == fragment_manifest["route"]["estimatedDurationMs"]
+        )
+
+        single_fragment = await client.post(
+            f"/v1/galgame-workshop/projects/{project_id}/video-exports/preview",
+            json={
+                "expectedStoryRevision": revision,
+                "locale": "zh",
+                "preset": "720p30",
+                "scope": "fragments",
+                "fragmentIds": ["device-ending"],
+            },
+        )
+        assert single_fragment.status_code == 200, single_fragment.text
+        assert single_fragment.json()["route"]["endingLabel"] == "设备结局"
+
         request = {
             **preview_body,
             "requestId": "video-export-test",
@@ -101,3 +138,156 @@ async def test_video_export_rejects_stale_story_preview() -> None:
 
 def test_video_export_registers_outputs_with_a_supported_packaging_policy() -> None:
     assert EXPORT_PACKAGING_POLICY in {"auto", "include", "exclude"}
+
+
+@pytest.mark.asyncio
+async def test_video_export_fragment_scope_validates_selection() -> None:
+    transport = httpx.ASGITransport(app=app)
+    async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+        project = (
+            await client.post("/v1/galgame-workshop/projects", json={"title": "片段选择校验"})
+        ).json()
+        empty = await client.post(
+            f"/v1/galgame-workshop/projects/{project['id']}/video-exports/preview",
+            json={
+                "expectedStoryRevision": 0,
+                "scope": "fragments",
+                "fragmentIds": [],
+            },
+        )
+        assert empty.status_code == 422
+
+        missing = await client.post(
+            f"/v1/galgame-workshop/projects/{project['id']}/video-exports/preview",
+            json={
+                "expectedStoryRevision": 0,
+                "scope": "fragments",
+                "fragmentIds": ["missing-fragment"],
+            },
+        )
+        assert missing.status_code == 200
+        assert missing.json()["ready"] is False
+        assert any(
+            issue["code"] == "missing_selected_fragment" for issue in missing.json()["blockers"]
+        )
+
+
+@pytest.mark.asyncio
+async def test_video_export_clip_preview_and_create() -> None:
+    transport = httpx.ASGITransport(app=app)
+    async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+        project = (
+            await client.post("/v1/galgame-workshop/projects", json={"title": "快速试片"})
+        ).json()
+        document = playable_story()
+        main = document["chapters"][0]["fragments"][0]
+        main["timeline"] = {"durationMs": 1_780_000}
+        main["blocks"][0]["atMs"] = 0
+        main["blocks"][1].update({"startMs": 600_000, "endMs": 612_000})
+        saved = await client.put(
+            f"/v1/galgame-workshop/projects/{project['id']}/story",
+            json={"expected_revision": 0, "document": document},
+        )
+        assert saved.status_code == 200, saved.text
+        revision = saved.json()["revision"]
+        preview_body = {
+            "expectedStoryRevision": revision,
+            "scope": "clip",
+            "clipRange": {
+                "fragmentId": "main",
+                "startMs": 600_000,
+                "endMs": 610_000,
+            },
+        }
+        preview = await client.post(
+            f"/v1/galgame-workshop/projects/{project['id']}/video-exports/preview",
+            json=preview_body,
+        )
+        assert preview.status_code == 200, preview.text
+        manifest = preview.json()
+        assert manifest["ready"] is True
+        assert manifest["route"]["fragmentIds"] == ["main"]
+        assert manifest["route"]["fragmentDurationsMs"] == [10_000]
+        assert manifest["route"]["estimatedDurationMs"] == 10_000
+        assert manifest["route"]["exactDuration"] is True
+        assert "10m00.000s-10m10.000s" in manifest["route"]["endingLabel"]
+
+        created = await client.post(
+            f"/v1/galgame-workshop/projects/{project['id']}/video-exports",
+            json={
+                **preview_body,
+                "requestId": "clip-export-test",
+                "previewFingerprint": manifest["previewFingerprint"],
+            },
+        )
+        assert created.status_code == 202, created.text
+        assert created.json()["totalMs"] == 10_000
+
+        stale = await client.post(
+            f"/v1/galgame-workshop/projects/{project['id']}/video-exports",
+            json={
+                **preview_body,
+                "clipRange": {**preview_body["clipRange"], "endMs": 611_000},
+                "requestId": "clip-stale-preview",
+                "previewFingerprint": manifest["previewFingerprint"],
+            },
+        )
+        assert stale.status_code == 409
+        assert stale.json()["code"] == "preview_conflict"
+
+
+@pytest.mark.asyncio
+async def test_video_export_clip_rejects_invalid_ranges() -> None:
+    transport = httpx.ASGITransport(app=app)
+    async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+        project = (
+            await client.post("/v1/galgame-workshop/projects", json={"title": "试片范围校验"})
+        ).json()
+        document = playable_story()
+        main = document["chapters"][0]["fragments"][0]
+        main["timeline"] = {"durationMs": 30_000}
+        main["blocks"][0]["atMs"] = 0
+        main["blocks"][1].update({"startMs": 1_000, "endMs": 5_000})
+        saved = await client.put(
+            f"/v1/galgame-workshop/projects/{project['id']}/story",
+            json={"expected_revision": 0, "document": document},
+        )
+        assert saved.status_code == 200, saved.text
+        revision = saved.json()["revision"]
+        endpoint = f"/v1/galgame-workshop/projects/{project['id']}/video-exports/preview"
+
+        for fragment_id, start_ms, end_ms, code in (
+            ("missing-fragment", 0, 1000, "missing_clip_fragment"),
+            ("device-ending", 0, 1000, "clip_fragment_without_timeline"),
+            ("main", 29_000, 31_000, "clip_range_out_of_bounds"),
+        ):
+            response = await client.post(
+                endpoint,
+                json={
+                    "expectedStoryRevision": revision,
+                    "scope": "clip",
+                    "clipRange": {
+                        "fragmentId": fragment_id,
+                        "startMs": start_ms,
+                        "endMs": end_ms,
+                    },
+                },
+            )
+            assert response.status_code == 200, response.text
+            assert response.json()["ready"] is False
+            assert any(issue["code"] == code for issue in response.json()["blockers"])
+
+        for start_ms, end_ms in ((1000, 1000), (0, 300_001)):
+            response = await client.post(
+                endpoint,
+                json={
+                    "expectedStoryRevision": revision,
+                    "scope": "clip",
+                    "clipRange": {
+                        "fragmentId": "main",
+                        "startMs": start_ms,
+                        "endMs": end_ms,
+                    },
+                },
+            )
+            assert response.status_code == 422

@@ -48,8 +48,7 @@ import {
   updateFragment,
 } from "@features/galgame-workshop/editor/model";
 import { formatTimecode } from "@features/galgame-workshop/editor/timeline";
-import { VideoExportDialog } from "@features/galgame-workshop/editor/VideoExportDialog";
-import { videoExportLanguageOptions } from "@features/galgame-workshop/editor/videoExportLanguage";
+import { GalgameEditorVideoExportDialog } from "@features/galgame-workshop/editor/GalgameEditorVideoExportDialog";
 import { StoryConflictBanner } from "@features/galgame-workshop/editor/StoryConflictBanner";
 import { GlobalStorySearch } from "@features/galgame-workshop/editor/GlobalStorySearch";
 import {
@@ -64,11 +63,7 @@ import {
 import "@features/galgame-workshop/galgame-workshop.css";
 import "@features/galgame-workshop/galgame-script-workbench.css";
 import "@features/galgame-workshop/galgame-json-view.css";
-import type { useGalgameWorkshopEditorController } from "@features/galgame-workshop/editor/useGalgameWorkshopEditorController";
-type EditorPageViewModel = ReturnType<
-  typeof useGalgameWorkshopEditorController
->;
-
+import type { EditorPageViewModel } from "@features/galgame-workshop/editor/editorViewModel";
 import {
   AssetCenter,
   BlockInspector,
@@ -1390,7 +1385,6 @@ export function GalgameWorkshopEditorView({
             onDocument={replaceDocument}
           />
         )}
-
         <footer className="galgame-editor-statusbar">
           <span className={saveState}>
             <i />
@@ -1419,7 +1413,6 @@ export function GalgameWorkshopEditorView({
           </a>
           <span>Story {document.schemaVersion}</span>
         </footer>
-
         <GlobalStorySearch
           open={commandOpen}
           document={document}
@@ -1485,11 +1478,16 @@ export function GalgameWorkshopEditorView({
             enqueueSave(documentRef.current!);
           }}
         />
-        <VideoExportDialog
+        <GalgameEditorVideoExportDialog
           open={videoExportOpen}
           projectId={projectId}
           storyRevision={revisionRef.current}
-          languageOptions={videoExportLanguageOptions(document)}
+          document={document}
+          currentContext={[
+            playbackFollow,
+            selectedFragment?.id,
+            timelinePreviewMs,
+          ]}
           onClose={() => setVideoExportOpen(false)}
         />
       </section>

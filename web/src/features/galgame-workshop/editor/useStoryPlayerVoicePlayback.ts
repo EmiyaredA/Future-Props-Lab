@@ -15,6 +15,7 @@ export function useStoryPlayerVoicePlayback({
   dialogue,
   voiceAsset,
   hasTimelineMaster,
+  voiceOffsetMs = 0,
   advanceModeRef,
   advanceRef,
   exportAudioEvent,
@@ -24,6 +25,7 @@ export function useStoryPlayerVoicePlayback({
   dialogue?: Dialogue;
   voiceAsset?: GalgameStoryAudioAsset;
   hasTimelineMaster: boolean;
+  voiceOffsetMs?: number;
   advanceModeRef: RefObject<"manual" | "auto" | "skip">;
   advanceRef: RefObject<() => void>;
   exportAudioEvent?: NonNullable<
@@ -67,6 +69,7 @@ export function useStoryPlayerVoicePlayback({
           levelMonitor: createAudioLevelMonitor(element, setAudioLevelDb),
         };
         element.volume = playing.baseVolume * (mixRef.current.voice / 100);
+        element.currentTime = Math.max(0, voiceOffsetMs) / 1000;
         element.addEventListener("play", () => setVoicePlaying(true));
         element.addEventListener(
           "play",
@@ -75,7 +78,7 @@ export function useStoryPlayerVoicePlayback({
               action: "play",
               channel: "voice",
               storyAssetId: voiceAsset.id,
-              offsetMs: 0,
+              offsetMs: Math.max(0, voiceOffsetMs),
               volume: playing.baseVolume * (mixRef.current.voice / 100),
               loop: false,
               fadeMs: 0,
@@ -119,6 +122,7 @@ export function useStoryPlayerVoicePlayback({
     stopPlaying,
     tryPlay,
     voiceAsset,
+    voiceOffsetMs,
     voiceRef,
   ]);
 }

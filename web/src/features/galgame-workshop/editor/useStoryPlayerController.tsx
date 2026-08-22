@@ -40,10 +40,6 @@ import { TimelineClock } from "@features/galgame-workshop/editor/timelineClock";
 import {
   activeTimelineCue,
   estimatedCueDuration,
-  effectivePointTime,
-  projectFragmentTimeline,
-  timelineAudioStateAt,
-  timelineCues,
   timelineEvents,
   timelinePlaybackSteps,
 } from "@features/galgame-workshop/editor/timeline";
@@ -66,6 +62,13 @@ import {
 } from "@features/galgame-workshop/editor/richText";
 import { localizedStoryDocument } from "@features/galgame-workshop/editor/localization";
 import { useStoryPlayerAudio } from "@features/galgame-workshop/editor/useStoryPlayerAudio";
+import {
+  timelineExportBounds,
+  timelineExportVideoOffset,
+  timelineExportVoiceOffset,
+  useStoryPlayerPlaybackFollow,
+  useStoryPlayerVideoUrl,
+} from "@features/galgame-workshop/editor/useStoryPlayerPlaybackFollow";
 import { useStoryPlayerVoicePlayback } from "@features/galgame-workshop/editor/useStoryPlayerVoicePlayback";
 import {
   DEFAULT_STORY_PLAYER_MIX,
@@ -76,6 +79,9 @@ import {
   type TimelinePlayback,
 } from "@features/galgame-workshop/editor/storyPlayerModel";
 import type { ForwardedRef } from "react";
+
+const TIMELINE_UI_UPDATE_INTERVAL_MS = 100;
+
 export function useStoryPlayerController(
   {
     document: sourceDocument,
@@ -189,10 +195,11 @@ export function useStoryPlayerController(
     fadeAndStop,
     objectUrl,
     tryPlay,
-    stopChannel,
     executeAudioBlock,
     syncTimelineBgm,
+    syncTimelineAmbient,
     syncTimelineMaster,
+    reconcileTimelineAudio,
     pauseTimelineMaster,
     timelineMasterPositionMs,
     cleanupPlayback,
@@ -240,46 +247,15 @@ export function useStoryPlayerController(
     };
   }, [document, editBlockIndex, editFragment, editTimelinePositionMs]);
   const displayFrame = mode === "edit" ? editFrame : frame;
-
-  useEffect(() => {
-    if (
-      mode !== "play" ||
-      (displayFrame.mode !== "content" && displayFrame.mode !== "stageOnly")
-    )
-      return;
-    const source = chapter
-      ? fragmentById(chapter, displayFrame.fragmentId)
-      : undefined;
-    if (!source) return;
-    const projected = projectFragmentTimeline(source);
-    const blockId =
-      displayFrame.mode === "content" ? displayFrame.block.id : undefined;
-    const blockIndex = blockId
-      ? projected.blocks?.findIndex((block) => block.id === blockId)
-      : undefined;
-    const projectedPosition =
-      blockIndex != null && blockIndex >= 0
-        ? (effectivePointTime(projected, blockIndex) ??
-          timelineCues(projected).find((cue) => cue.block.id === blockId)
-            ?.startMs ??
-          0)
-        : 0;
-    const position = {
-      chapterId: runtimeRef.current.chapterId,
-      fragmentId: source.id,
-      positionMs: source.timeline ? timelinePositionMs : projectedPosition,
-      blockId,
-    };
-    onPlaybackPosition?.(position);
-    exportMode?.onProgress?.(position);
-  }, [
-    chapter,
-    displayFrame,
-    exportMode,
+  useStoryPlayerPlaybackFollow({
     mode,
-    onPlaybackPosition,
+    displayFrame,
+    chapter,
+    chapterId: runtimeRef.current.chapterId,
     timelinePositionMs,
-  ]);
+    onPlaybackPosition,
+    onExportProgress: exportMode?.onProgress,
+  });
 
   useEffect(() => {
     advanceModeRef.current = advanceMode;
@@ -317,6 +293,12 @@ export function useStoryPlayerController(
     (asset) =>
       asset.type === "audio" && asset.id === activeDialogue?.voiceAssetId,
   );
+  const exportTimelineRange = exportMode?.timelineRange;
+  const exportVoiceOffsetMs = timelineExportVoiceOffset(
+    exportTimelineRange,
+    activeFragment?.id,
+    activeDialogue?.startMs,
+  );
   const activeScene = scenes.get(displayFrame.stage.sceneId ?? "");
   const activeSceneLayers = (activeScene?.layers ?? []).flatMap((layer) => {
     const asset = (document.assets ?? []).find(
@@ -328,20 +310,13 @@ export function useStoryPlayerController(
     (asset) =>
       asset.type === "video" && asset.id === displayFrame.stage.video?.assetId,
   );
-  const [videoUrl, setVideoUrl] = useState<string>();
-  useEffect(() => {
-    let active = true;
-    if (!activeVideoAsset) {
-      setVideoUrl(undefined);
-      return;
-    }
-    void objectUrl(activeVideoAsset.fileId).then((url) => {
-      if (active) setVideoUrl(url);
-    });
-    return () => {
-      active = false;
-    };
-  }, [activeVideoAsset, objectUrl]);
+  const activeVideoOffsetMs = timelineExportVideoOffset(
+    activeFragment,
+    activeVideoAsset?.id,
+    timelinePositionMs,
+    exportTimelineRange,
+  );
+  const videoUrl = useStoryPlayerVideoUrl(activeVideoAsset?.fileId, objectUrl);
   const stageCgs = [
     displayFrame.stage.exitingCg
       ? { key: "exiting", state: displayFrame.stage.exitingCg }
@@ -508,6 +483,7 @@ export function useStoryPlayerController(
     voiceAsset:
       activeVoiceAsset?.type === "audio" ? activeVoiceAsset : undefined,
     hasTimelineMaster: Boolean(activeTimeline?.masterAudio),
+    voiceOffsetMs: exportVoiceOffsetMs,
     advanceModeRef,
     advanceRef,
     exportAudioEvent: exportMode?.onAudioEvent,
@@ -624,32 +600,6 @@ export function useStoryPlayerController(
     [document],
   );
 
-  const reconcileTimelineAudio = useCallback(
-    (fragment: GalgameStoryFragment, milliseconds: number) => {
-      stopChannel("sfx", 0);
-      stopChannel("ambient", 80);
-      const state = timelineAudioStateAt(fragment, milliseconds);
-      if (state.ambient) executeAudioBlock(state.ambient);
-      syncTimelineBgm(
-        fragment,
-        milliseconds,
-        timelineRef.current?.clock.isPlaying ?? false,
-      );
-      void syncTimelineMaster(
-        fragment,
-        milliseconds,
-        timelineRef.current?.clock.isPlaying ?? false,
-      );
-    },
-    [
-      executeAudioBlock,
-      stopChannel,
-      syncTimelineBgm,
-      syncTimelineMaster,
-      timelineRef,
-    ],
-  );
-
   const playTimeline = useCallback(
     async (
       fragment: GalgameStoryFragment,
@@ -671,8 +621,13 @@ export function useStoryPlayerController(
     (fragment: GalgameStoryFragment, autoplay = advanceMode === "auto") => {
       if (!fragment.timeline) return;
       const timelineDurationMs = fragment.timeline.durationMs;
-      showTimelinePosition(fragment, 0);
-      setTimelinePositionMs(0);
+      const {
+        range: exportRange,
+        startMs,
+        endMs,
+      } = timelineExportBounds(fragment, exportMode?.timelineRange);
+      showTimelinePosition(fragment, startMs);
+      setTimelinePositionMs(startMs);
       const playerGeneration = generationRef.current;
       const audioEvents = timelineEvents(fragment).filter(
         (event) => event.block.type === "audio",
@@ -698,15 +653,42 @@ export function useStoryPlayerController(
               executeAudioBlock(event.block);
             }
           playing.lastPositionMs = milliseconds;
-          setTimelinePositionMs(milliseconds);
+          if (
+            exportMode ||
+            milliseconds < playing.lastPublishedPositionMs ||
+            milliseconds - playing.lastPublishedPositionMs >=
+              TIMELINE_UI_UPDATE_INTERVAL_MS
+          ) {
+            playing.lastPublishedPositionMs = milliseconds;
+            setTimelinePositionMs(milliseconds);
+          }
           showTimelinePosition(fragment, milliseconds);
         },
         onPlayingChange: (next) => {
           const playing = playback.current;
           if (timelineRef.current !== playing || !playing) return;
           setTimelinePlaying(next);
+          if (!next) {
+            playing.lastPublishedPositionMs = playing.lastPositionMs;
+            setTimelinePositionMs(playing.lastPositionMs);
+          }
           syncTimelineBgm(fragment, Math.max(0, playing.lastPositionMs), next);
+          syncTimelineAmbient(
+            fragment,
+            Math.max(0, playing.lastPositionMs),
+            next,
+          );
           if (!next) pauseTimelineMaster();
+        },
+        onBoundary: (milliseconds) => {
+          if (
+            !exportRange ||
+            milliseconds < endMs ||
+            exportCompletedRef.current
+          )
+            return;
+          exportCompletedRef.current = true;
+          exportMode?.onComplete?.({ ok: true, label: "快速试片完成" });
         },
         onFinish: () => {
           const playing = playback.current;
@@ -725,25 +707,33 @@ export function useStoryPlayerController(
       const playing = {
         fragmentId: fragment.id,
         clock,
-        lastPositionMs: -1,
+        lastPositionMs: startMs,
+        lastPublishedPositionMs: Number.NEGATIVE_INFINITY,
       };
       playback.current = playing;
       timelineRef.current = playing;
       const firstStep = timelinePlaybackSteps(fragment)[0];
       if (fragment.timeline.masterAudio) {
-        clock.seek(0);
-        void syncTimelineMaster(fragment, 0, false).then((ready) => {
+        clock.seek(startMs);
+        syncTimelineBgm(fragment, startMs, false);
+        syncTimelineAmbient(fragment, startMs, false);
+        void syncTimelineMaster(fragment, startMs, false).then((ready) => {
           if (
             ready &&
             autoplay &&
             playerGeneration === generationRef.current &&
             timelineRef.current === playing
           )
-            void playTimeline(fragment, clock);
+            void playTimeline(fragment, clock, exportRange ? endMs : undefined);
         });
       } else {
-        clock.seek(autoplay ? 0 : (firstStep?.startMs ?? 0));
-        if (autoplay) clock.play();
+        clock.seek(
+          exportRange ? startMs : autoplay ? 0 : (firstStep?.startMs ?? 0),
+        );
+        syncTimelineBgm(fragment, startMs, false);
+        syncTimelineAmbient(fragment, startMs, false);
+        if (autoplay)
+          void playTimeline(fragment, clock, exportRange ? endMs : undefined);
         else if (firstStep)
           clock.playUntil(Math.max(firstStep.startMs, firstStep.endMs - 1));
       }
@@ -751,6 +741,7 @@ export function useStoryPlayerController(
     [
       advanceMode,
       executeAudioBlock,
+      exportMode,
       finishTimeline,
       generationRef,
       pauseTimelineMaster,
@@ -759,6 +750,7 @@ export function useStoryPlayerController(
       setTimelinePositionMs,
       showTimelinePosition,
       syncTimelineBgm,
+      syncTimelineAmbient,
       syncTimelineMaster,
       timelineMasterPositionMs,
       timelineRef,
@@ -914,6 +906,8 @@ export function useStoryPlayerController(
     );
     if (advanceModeRef.current === "manual") playing.clock.pause();
     playing.lastPositionMs = target;
+    playing.lastPublishedPositionMs = target;
+    setTimelinePositionMs(target);
     reconcileTimelineAudio(activeFragment, target);
     if (triggerPointEffects)
       for (const event of timelineEvents(activeFragment))
@@ -1222,6 +1216,11 @@ export function useStoryPlayerController(
       (typewriterFrame.mode === "content" &&
         typewriterFrame.block.type === "storyParagraph" &&
         runtimeRef.current.paragraph.revealEffect === "instant") ||
+      (typewriterFrame.mode === "content" &&
+        exportMode?.timelineRange?.fragmentId === typewriterFrame.fragmentId &&
+        "startMs" in typewriterFrame.block &&
+        typeof typewriterFrame.block.startMs === "number" &&
+        typewriterFrame.block.startMs < exportMode.timelineRange.startMs) ||
       globalThis.matchMedia?.("(prefers-reduced-motion: reduce)").matches
     ) {
       setVisibleTextLength(Array.from(displayText).length);
@@ -1304,6 +1303,7 @@ export function useStoryPlayerController(
     advanceMode,
     displayBlockId,
     displayText,
+    exportMode?.timelineRange,
     mode,
   ]);
 
@@ -1430,6 +1430,7 @@ export function useStoryPlayerController(
     activeTimeline,
     activeSceneLayers,
     activeVideoAsset,
+    activeVideoOffsetMs,
     videoUrl,
     stageCgs,
     dialogueStyle,

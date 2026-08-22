@@ -12,6 +12,12 @@ type ExportManifest = {
   branchSelections: Array<{ branchBlockId: string; choiceId: string }>;
   choiceDurationMs: number;
   choiceHighlightMs: number;
+  clipRange?: {
+    fragmentId: string;
+    startMs: number;
+    endMs: number;
+    captureStartMs?: number;
+  };
 };
 
 type ExportAudioEvent = {
@@ -72,6 +78,14 @@ function ExportPlayer({ manifest }: { manifest: ExportManifest }) {
         branchSelections: selections,
         choiceDurationMs: manifest.choiceDurationMs,
         choiceHighlightMs: manifest.choiceHighlightMs,
+        timelineRange: manifest.clipRange
+          ? {
+              fragmentId: manifest.clipRange.fragmentId,
+              startMs:
+                manifest.clipRange.captureStartMs ?? manifest.clipRange.startMs,
+              endMs: manifest.clipRange.endMs,
+            }
+          : undefined,
         onProgress: (position) => {
           if (window.__FPL_EXPORT_STATE__)
             window.__FPL_EXPORT_STATE__.position = position;

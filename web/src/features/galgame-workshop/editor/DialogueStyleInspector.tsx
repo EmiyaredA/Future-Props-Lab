@@ -751,7 +751,9 @@ export function DialogueStyleInspector({
       <label className="galgame-dialogue-range">
         <span>
           正文字号{" "}
-          <strong>{style.body.fontSizePx ?? Math.round(24 * style.fontScale)}px</strong>
+          <strong>
+            {style.body.fontSizePx ?? Math.round(24 * style.fontScale)}px
+          </strong>
         </span>
         <input
           type="range"
@@ -911,8 +913,7 @@ export function DialogueStyleInspector({
               value={style.advanceIndicator.position}
               onChange={(value) =>
                 updateAdvanceIndicator({
-                  position:
-                    value as typeof style.advanceIndicator.position,
+                  position: value as typeof style.advanceIndicator.position,
                 })
               }
               options={[
@@ -943,13 +944,62 @@ export function DialogueStyleInspector({
 
         {(
           [
-            ["对话框宽度", style.layout.widthPercent, 40, 100, updateLayout, "widthPercent"],
-            ["对话框高度", style.layout.heightPercent, 12, 50, updateLayout, "heightPercent"],
-            ["底部偏移", style.layout.bottomOffsetPercent, 0, 30, updateLayout, "bottomOffsetPercent"],
-            ["左右安全边距", style.layout.contentInsetXPercent, 0, 25, updateLayout, "contentInsetXPercent"],
-            ["正文顶部位置", style.layout.contentInsetTopPercent, 0, 40, updateLayout, "contentInsetTopPercent"],
-            ["姓名底部位置", style.layout.contentInsetBottomPercent, 0, 30, updateLayout, "contentInsetBottomPercent"],
-            ["正文最大宽度", style.body.maxWidthPercent, 30, 100, updateBody, "maxWidthPercent"],
+            [
+              "对话框宽度",
+              style.layout.widthPercent,
+              40,
+              100,
+              updateLayout,
+              "widthPercent",
+            ],
+            [
+              "对话框高度",
+              style.layout.heightPercent,
+              12,
+              50,
+              updateLayout,
+              "heightPercent",
+            ],
+            [
+              "底部偏移",
+              style.layout.bottomOffsetPercent,
+              0,
+              30,
+              updateLayout,
+              "bottomOffsetPercent",
+            ],
+            [
+              "左右安全边距",
+              style.layout.contentInsetXPercent,
+              0,
+              25,
+              updateLayout,
+              "contentInsetXPercent",
+            ],
+            [
+              "正文顶部位置",
+              style.layout.contentInsetTopPercent,
+              0,
+              40,
+              updateLayout,
+              "contentInsetTopPercent",
+            ],
+            [
+              "姓名底部位置",
+              style.layout.contentInsetBottomPercent,
+              0,
+              30,
+              updateLayout,
+              "contentInsetBottomPercent",
+            ],
+            [
+              "正文最大宽度",
+              style.body.maxWidthPercent,
+              30,
+              100,
+              updateBody,
+              "maxWidthPercent",
+            ],
           ] as const
         ).map(([label, value, min, max, update, key]) => (
           <label key={key} className="galgame-dialogue-range">
@@ -1000,9 +1050,7 @@ export function DialogueStyleInspector({
                 aria-label="对话框渐变顶部透明度"
                 min="0"
                 max="100"
-                value={Math.round(
-                  style.background.gradientTopOpacity * 100,
-                )}
+                value={Math.round(style.background.gradientTopOpacity * 100)}
                 style={rangeProgress(
                   Math.round(style.background.gradientTopOpacity * 100),
                   0,
@@ -1027,9 +1075,7 @@ export function DialogueStyleInspector({
                 aria-label="对话框渐变底部透明度"
                 min="0"
                 max="100"
-                value={Math.round(
-                  style.background.gradientBottomOpacity * 100,
-                )}
+                value={Math.round(style.background.gradientBottomOpacity * 100)}
                 style={rangeProgress(
                   Math.round(style.background.gradientBottomOpacity * 100),
                   0,

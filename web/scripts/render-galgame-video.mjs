@@ -4,7 +4,8 @@ import { spawn } from "node:child_process";
 import { chromium } from "@playwright/test";
 
 const [, , manifestFile, outputFile] = process.argv;
-if (!manifestFile || !outputFile) throw new Error("usage: render <manifest> <output>");
+if (!manifestFile || !outputFile)
+  throw new Error("usage: render <manifest> <output>");
 const manifest = JSON.parse(await readFile(manifestFile, "utf8"));
 const presets = {
   "1080p30": { width: 1920, height: 1080, fps: 30 },
@@ -13,6 +14,43 @@ const presets = {
 };
 const preset = presets[manifest.preset] ?? presets["1080p30"];
 const videoDir = join(dirname(outputFile), "browser-video");
+
+function fragmentExportDocument(document, fragmentIds) {
+  if (!fragmentIds?.length) return document;
+  const fragments = new Map(
+    (document.chapters ?? []).flatMap((chapter) =>
+      (chapter.fragments ?? []).map((fragment) => [fragment.id, fragment]),
+    ),
+  );
+  const chapters = fragmentIds.map((fragmentId, index) => {
+    const source = fragments.get(fragmentId);
+    if (!source) throw new Error(`所选 Fragment 已不存在：${fragmentId}`);
+    const blocks = (source.blocks ?? []).filter(
+      (block) =>
+        ![
+          "branch",
+          "if",
+          "callFragment",
+          "endChapter",
+          "returnToEntry",
+        ].includes(block.type),
+    );
+    blocks.push({
+      id: `export-end-${index + 1}`,
+      type: "endChapter",
+      label: index + 1 === fragmentIds.length ? source.title : "",
+    });
+    return {
+      id: `export-chapter-${index + 1}`,
+      title: source.title,
+      order: index + 1,
+      entryFragmentId: source.id,
+      disabled: false,
+      fragments: [{ ...source, blocks }],
+    };
+  });
+  return { ...document, entryChapterId: chapters[0].id, chapters };
+}
 
 function run(command, args) {
   return new Promise((resolve, reject) => {
@@ -70,6 +108,24 @@ function audioPlan(events, totalMs) {
   }
   return plays.filter((event) => event.endMs > event.atMs);
 }
+
+function cropAudioPlan(events, startMs, endMs) {
+  return events.flatMap((event) => {
+    const overlapStartMs = Math.max(startMs, event.atMs);
+    const overlapEndMs = Math.min(endMs, event.endMs);
+    if (overlapEndMs <= overlapStartMs) return [];
+    return [
+      {
+        ...event,
+        atMs: overlapStartMs - startMs,
+        endMs: overlapEndMs - startMs,
+        offsetMs:
+          Math.max(0, Number(event.offsetMs ?? 0)) +
+          (overlapStartMs - event.atMs),
+      },
+    ];
+  });
+}
 let browser;
 let context;
 let page;
@@ -94,38 +150,72 @@ try {
   });
   page = await context.newPage();
   await page.route("**/v1/files/*/content", async (route) => {
-    const match = new URL(route.request().url()).pathname.match(/\/v1\/files\/([^/]+)\/content$/);
-    const path = match ? manifest.assetPaths[decodeURIComponent(match[1])] : undefined;
+    const match = new URL(route.request().url()).pathname.match(
+      /\/v1\/files\/([^/]+)\/content$/,
+    );
+    const path = match
+      ? manifest.assetPaths[decodeURIComponent(match[1])]
+      : undefined;
     if (!path) return route.abort("failed");
     return route.fulfill({ path });
   });
-  await page.addInitScript((value) => {
-    window.__FPL_GALGAME_EXPORT__ = value;
-  }, {
-    document: manifest.document,
-    locale: manifest.locale,
-    branchSelections: manifest.branchSelections,
-    choiceDurationMs: manifest.choiceDurationMs,
-    choiceHighlightMs: manifest.choiceHighlightMs,
-  });
-  await page.goto(manifest.rendererUrl, { waitUntil: "networkidle", timeout: 60_000 });
-  await page.waitForFunction(() => window.__FPL_EXPORT_STATE__?.ready, undefined, {
+  const clipRange = manifest.clipRange;
+  const clipPreRollMs = clipRange ? Math.min(500, clipRange.startMs) : 0;
+  const captureStartMs = clipRange
+    ? Math.max(0, clipRange.startMs - clipPreRollMs)
+    : 0;
+  const selectedFragmentIds = clipRange
+    ? [clipRange.fragmentId]
+    : manifest.fragmentIds;
+  await page.addInitScript(
+    (value) => {
+      window.__FPL_GALGAME_EXPORT__ = value;
+    },
+    {
+      document: fragmentExportDocument(manifest.document, selectedFragmentIds),
+      locale: manifest.locale,
+      branchSelections: manifest.branchSelections,
+      choiceDurationMs: manifest.choiceDurationMs,
+      choiceHighlightMs: manifest.choiceHighlightMs,
+      clipRange: clipRange ? { ...clipRange, captureStartMs } : undefined,
+    },
+  );
+  await page.goto(manifest.rendererUrl, {
+    waitUntil: "networkidle",
     timeout: 60_000,
   });
+  await page.waitForFunction(
+    () => window.__FPL_EXPORT_STATE__?.ready,
+    undefined,
+    {
+      timeout: 60_000,
+    },
+  );
   const started = Date.now();
+  let lastProgressAt = Number.NEGATIVE_INFINITY;
   let complete = false;
   let result;
-  const timeoutMs = Math.max(120_000, Number(manifest.totalMs || 0) + 300_000);
+  const playbackMs = Number(manifest.totalMs || 0) + clipPreRollMs;
+  const timeoutMs = Math.max(120_000, playbackMs + 300_000);
   while (!complete) {
-    if (Date.now() - started > timeoutMs) throw new Error("Galgame 导出播放超时");
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    if (Date.now() - started > timeoutMs)
+      throw new Error("Galgame 导出播放超时");
+    await new Promise((resolve) => setTimeout(resolve, clipRange ? 50 : 1000));
     result = await page.evaluate(() => window.__FPL_EXPORT_STATE__);
     complete = Boolean(result?.complete);
-    const renderedMs = Math.min(
-      Number(manifest.totalMs || Date.now() - started),
-      Date.now() - started,
+    const renderedMs = Math.max(
+      0,
+      Math.min(
+        Number(manifest.totalMs || Date.now() - started),
+        Date.now() - started - clipPreRollMs,
+      ),
     );
-    process.stdout.write(`${JSON.stringify({ phase: "rendering", renderedMs })}\n`);
+    if (complete || Date.now() - lastProgressAt >= 500) {
+      lastProgressAt = Date.now();
+      process.stdout.write(
+        `${JSON.stringify({ phase: "rendering", renderedMs })}\n`,
+      );
+    }
   }
   if (!result?.ok) throw new Error(result?.label || "Galgame 播放失败");
   const video = page.video();
@@ -139,8 +229,56 @@ try {
   const masterAsset = manifest.document.assets?.find(
     (asset) => asset.type === "audio" && asset.role === "timelineMaster",
   );
-  const masterPath = masterAsset ? manifest.assetPaths[masterAsset.fileId] : undefined;
-  const seconds = Math.max(0.001, Number(manifest.totalMs || 1) / 1000).toFixed(3);
+  const masterPath = masterAsset
+    ? manifest.assetPaths[masterAsset.fileId]
+    : undefined;
+  const storyAssets = new Map(
+    (manifest.document.assets ?? []).map((asset) => [asset.id, asset]),
+  );
+  const storyFragments = new Map(
+    (manifest.document.chapters ?? []).flatMap((chapter) =>
+      (chapter.fragments ?? []).map((fragment) => [fragment.id, fragment]),
+    ),
+  );
+  const clipFragment = clipRange
+    ? storyFragments.get(clipRange.fragmentId)
+    : undefined;
+  const clipMasterConfig = clipFragment?.timeline?.masterAudio;
+  const clipMasterAsset = clipMasterConfig
+    ? storyAssets.get(clipMasterConfig.assetId)
+    : undefined;
+  const clipMasterPath = clipMasterAsset
+    ? manifest.assetPaths[clipMasterAsset.fileId]
+    : undefined;
+  let selectedOffsetMs = 0;
+  const selectedMasterPlays = (manifest.fragmentIds ?? []).flatMap(
+    (fragmentId, index) => {
+      const fragment = storyFragments.get(fragmentId);
+      const durationMs = Number(
+        manifest.fragmentDurationsMs?.[index] ??
+          fragment?.timeline?.durationMs ??
+          0,
+      );
+      const config = fragment?.timeline?.masterAudio;
+      const atMs = selectedOffsetMs;
+      selectedOffsetMs += durationMs;
+      return config
+        ? [
+            {
+              action: "play",
+              channel: "voice",
+              storyAssetId: config.assetId,
+              atMs,
+              endMs: atMs + durationMs,
+              volume: Math.max(0, Number(config.volume ?? 100)) / 100,
+            },
+          ]
+        : [];
+    },
+  );
+  const seconds = Math.max(0.001, Number(manifest.totalMs || 1) / 1000).toFixed(
+    3,
+  );
   const rawProbe = JSON.parse(
     await run("ffprobe", [
       "-v",
@@ -153,7 +291,8 @@ try {
     ]),
   );
   const rawDuration = Number(rawProbe.format?.duration || 0);
-  const trimStart = Math.max(0, rawDuration - Number(seconds) - 0.05);
+  const captureSeconds = Math.max(0.001, playbackMs / 1000);
+  const trimStart = Math.max(0, rawDuration - captureSeconds - 0.05);
   const ffmpegArgs = [
     "-hide_banner",
     "-loglevel",
@@ -165,33 +304,53 @@ try {
     rawVideo,
   ];
   let audioFilter = "";
-  if (masterPath) {
+  if (clipMasterPath && clipRange) {
+    ffmpegArgs.push(
+      "-ss",
+      (clipRange.startMs / 1000).toFixed(3),
+      "-i",
+      clipMasterPath,
+    );
+    const masterVolume = Number(clipMasterConfig?.volume ?? 100);
+    audioFilter = `[1:a]volume=${Math.max(0, masterVolume) / 100},apad=whole_dur=${seconds},atrim=duration=${seconds},asetpts=PTS-STARTPTS[aout]`;
+  } else if (masterPath && !manifest.fragmentIds?.length && !clipRange) {
     ffmpegArgs.push("-i", masterPath);
     const masterVolume = Number(
       manifest.document.chapters
         ?.flatMap((chapter) => chapter.fragments ?? [])
-        .find((fragment) => fragment.timeline?.masterAudio)?.timeline?.masterAudio
-        ?.volume ?? 100,
+        .find((fragment) => fragment.timeline?.masterAudio)?.timeline
+        ?.masterAudio?.volume ?? 100,
     );
     audioFilter = `[1:a]volume=${Math.max(0, masterVolume) / 100},apad=whole_dur=${seconds},atrim=duration=${seconds},asetpts=PTS-STARTPTS[aout]`;
   } else {
-    const assets = new Map(
-      (manifest.document.assets ?? []).map((asset) => [asset.id, asset]),
-    );
-    const plays = audioPlan(result.audioEvents ?? [], Number(manifest.totalMs || 0));
+    const rawPlays = [
+      ...audioPlan(result.audioEvents ?? [], playbackMs),
+      ...selectedMasterPlays,
+    ];
+    const plays = clipRange
+      ? cropAudioPlan(rawPlays, clipPreRollMs, playbackMs)
+      : rawPlays;
     const filters = [];
     const labels = [];
     for (const event of plays) {
-      const asset = assets.get(event.storyAssetId);
+      const asset = storyAssets.get(event.storyAssetId);
       const path = asset ? manifest.assetPaths[asset.fileId] : undefined;
       if (!path) continue;
       if (event.loop) ffmpegArgs.push("-stream_loop", "-1");
-      if (event.offsetMs) ffmpegArgs.push("-ss", (event.offsetMs / 1000).toFixed(3));
+      if (event.offsetMs)
+        ffmpegArgs.push("-ss", (event.offsetMs / 1000).toFixed(3));
       ffmpegArgs.push("-i", path);
-      const inputIndex = ffmpegArgs.filter((value) => value === "-i").length - 1;
+      const inputIndex =
+        ffmpegArgs.filter((value) => value === "-i").length - 1;
       const duration = Math.max(0.001, (event.endMs - event.atMs) / 1000);
-      const fadeIn = Math.min(duration, Math.max(0, Number(event.fadeMs || 0)) / 1000);
-      const fadeOut = Math.min(duration, Math.max(0, Number(event.stopFadeMs || 0)) / 1000);
+      const fadeIn = Math.min(
+        duration,
+        Math.max(0, Number(event.fadeMs || 0)) / 1000,
+      );
+      const fadeOut = Math.min(
+        duration,
+        Math.max(0, Number(event.stopFadeMs || 0)) / 1000,
+      );
       const label = `a${labels.length}`;
       let filter = `[${inputIndex}:a]atrim=duration=${duration.toFixed(3)},asetpts=PTS-STARTPTS,volume=${Math.max(0, Number(event.volume ?? 1))}`;
       if (fadeIn > 0) filter += `,afade=t=in:st=0:d=${fadeIn.toFixed(3)}`;
@@ -204,11 +363,22 @@ try {
     if (labels.length) {
       audioFilter = `${filters.join(";")};${labels.join("")}amix=inputs=${labels.length}:duration=longest:normalize=0,apad=whole_dur=${seconds},atrim=duration=${seconds},asetpts=PTS-STARTPTS[aout]`;
     } else {
-      ffmpegArgs.push("-f", "lavfi", "-i", "anullsrc=channel_layout=stereo:sample_rate=48000");
-      const silenceIndex = ffmpegArgs.filter((value) => value === "-i").length - 1;
+      ffmpegArgs.push(
+        "-f",
+        "lavfi",
+        "-i",
+        "anullsrc=channel_layout=stereo:sample_rate=48000",
+      );
+      const silenceIndex =
+        ffmpegArgs.filter((value) => value === "-i").length - 1;
       audioFilter = `[${silenceIndex}:a]atrim=duration=${seconds},asetpts=PTS-STARTPTS[aout]`;
     }
   }
+  const videoFilter = `${
+    clipPreRollMs > 0
+      ? `trim=start=${(clipPreRollMs / 1000).toFixed(3)},setpts=PTS-STARTPTS,`
+      : ""
+  }fps=${preset.fps},scale=${preset.width}:${preset.height}:flags=lanczos`;
   ffmpegArgs.push(
     "-filter_complex",
     audioFilter,
@@ -219,18 +389,28 @@ try {
     "-t",
     seconds,
     "-vf",
-    `fps=${preset.fps},scale=${preset.width}:${preset.height}:flags=lanczos`,
-    "-c:v", "libx264",
-    "-preset", "veryfast",
-    "-crf", "20",
-    "-pix_fmt", "yuv420p",
-    "-c:a", "aac",
-    "-b:a", "192k",
-    "-ar", "48000",
-    "-movflags", "+faststart",
+    videoFilter,
+    "-c:v",
+    "libx264",
+    "-preset",
+    "veryfast",
+    "-crf",
+    "20",
+    "-pix_fmt",
+    "yuv420p",
+    "-c:a",
+    "aac",
+    "-b:a",
+    "192k",
+    "-ar",
+    "48000",
+    "-movflags",
+    "+faststart",
     outputFile,
   );
-  process.stdout.write(`${JSON.stringify({ phase: "encoding", renderedMs: manifest.totalMs })}\n`);
+  process.stdout.write(
+    `${JSON.stringify({ phase: "encoding", renderedMs: manifest.totalMs })}\n`,
+  );
   await run("ffmpeg", ffmpegArgs);
 } finally {
   await page?.close().catch(() => undefined);

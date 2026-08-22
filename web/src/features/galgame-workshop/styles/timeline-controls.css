@@ -500,14 +500,12 @@
   left: var(--dialogue-inset-x, 0%);
 }
 
-.galgame-dialogue-box.layout-bottomOverlay.body-center
-  .galgame-dialogue-body {
+.galgame-dialogue-box.layout-bottomOverlay.body-center .galgame-dialogue-body {
   right: var(--dialogue-inset-x, 0%);
   left: var(--dialogue-inset-x, 0%);
 }
 
-.galgame-dialogue-box.layout-bottomOverlay.body-right
-  .galgame-dialogue-body {
+.galgame-dialogue-box.layout-bottomOverlay.body-right .galgame-dialogue-body {
   right: var(--dialogue-inset-x, 0%);
   left: auto;
 }
@@ -546,8 +544,7 @@
   left: var(--dialogue-inset-x, 0%);
 }
 
-.galgame-dialogue-box.name-decoration-sideLines
-  .galgame-dialogue-speaker-name {
+.galgame-dialogue-box.name-decoration-sideLines .galgame-dialogue-speaker-name {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -605,34 +602,30 @@
   align-self: flex-end;
 }
 
-.galgame-dialogue-box.layout-bottomOverlay
-  .galgame-dialogue-advance-indicator {
+.galgame-dialogue-box.layout-bottomOverlay .galgame-dialogue-advance-indicator {
   position: absolute;
   font-size: clamp(9px, 0.82cqw, 16px);
   line-height: 1;
 }
 
-.galgame-dialogue-box.indicator-topLeft
-  .galgame-dialogue-advance-indicator {
+.galgame-dialogue-box.indicator-topLeft .galgame-dialogue-advance-indicator {
   top: max(9px, var(--dialogue-inset-top, 0%));
   left: max(9px, var(--dialogue-inset-x, 0%));
 }
 
-.galgame-dialogue-box.indicator-topRight
-  .galgame-dialogue-advance-indicator {
+.galgame-dialogue-box.indicator-topRight .galgame-dialogue-advance-indicator {
   top: max(9px, var(--dialogue-inset-top, 0%));
   right: max(9px, var(--dialogue-inset-x, 0%));
 }
 
-.galgame-dialogue-box.indicator-bottomLeft
-  .galgame-dialogue-advance-indicator {
+.galgame-dialogue-box.indicator-bottomLeft .galgame-dialogue-advance-indicator {
   bottom: max(9px, var(--dialogue-inset-bottom, 0%));
-  left: max(9px, calc(var(--dialogue-inset-x, 0%) * 0.25));
+  left: max(9px, 2%);
 }
 
 .galgame-dialogue-box.indicator-bottomRight
   .galgame-dialogue-advance-indicator {
-  right: max(9px, calc(var(--dialogue-inset-x, 0%) * 0.25));
+  right: max(9px, 2%);
   bottom: max(9px, var(--dialogue-inset-bottom, 0%));
 }
 
@@ -943,7 +936,7 @@
 
 .galgame-dialogue-presets {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 6px;
 }
 

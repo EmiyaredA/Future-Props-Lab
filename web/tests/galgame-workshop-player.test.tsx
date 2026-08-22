@@ -2,7 +2,10 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { act, type ReactNode } from "react";
 import { StoryPlayer } from "@features/galgame-workshop/editor/StoryPlayer";
-import type { GalgameStoryProject } from "@features/galgame-workshop/api";
+import {
+  dialogueBoxPresetStyle,
+  type GalgameStoryProject,
+} from "@features/galgame-workshop/api";
 import { sourceFingerprint } from "@features/galgame-workshop/editor/localization";
 import { beforeEach, vi } from "vitest";
 
@@ -382,7 +385,9 @@ test("exports a preselected route without player controls", async () => {
         }}
       />,
     );
-    await act(async () => Promise.resolve());
+    await act(async () => {
+      for (let index = 0; index < 6; index += 1) await Promise.resolve();
+    });
 
     expect(
       screen.queryByRole("button", { name: "开始试玩" }),
@@ -406,7 +411,7 @@ test("exports a preselected route without player controls", async () => {
   }
 });
 
-test("plays the opening performance before revealing the first timed line", () => {
+test("throttles workbench playback position reports during timeline playback", () => {
   vi.useFakeTimers();
   try {
     const openingStory = structuredClone(story);
@@ -416,12 +421,7 @@ test("plays the opening performance before revealing the first timed line", () =
         title: "开场演出",
         timeline: { durationMs: 3000 },
         blocks: [
-          {
-            id: "scene",
-            type: "scene",
-            sceneId: "lab",
-            atMs: 0,
-          },
+          { id: "scene", type: "scene", sceneId: "lab", atMs: 0 },
           {
             id: "line",
             type: "narration",
@@ -429,25 +429,22 @@ test("plays the opening performance before revealing the first timed line", () =
             startMs: 1000,
             endMs: 2000,
           },
-          {
-            id: "end",
-            type: "endChapter",
-            endingId: "opening-ending",
-            label: "开场结局",
-          },
         ],
       },
     ];
+    const onPlaybackPosition = vi.fn();
 
-    render(<StoryPlayer document={openingStory} />);
+    render(
+      <StoryPlayer
+        document={openingStory}
+        onPlaybackPosition={onPlaybackPosition}
+      />,
+    );
     fireEvent.click(screen.getByRole("button", { name: "开始试玩" }));
     act(() => vi.advanceTimersByTime(1200));
 
-    expect(screen.queryByText("第一句。")).not.toBeInTheDocument();
     expect(screen.getByLabelText("剧情时间轴进度")).toHaveValue("999");
-
-    fireEvent.click(screen.getByRole("button", { name: "点击继续" }));
-    expect(screen.getByText("第一句。")).toBeInTheDocument();
+    expect(onPlaybackPosition.mock.calls.length).toBeLessThan(10);
   } finally {
     vi.useRealTimers();
   }
@@ -1415,13 +1412,17 @@ test("applies saved dialogue and custom Gal components in the preview", async ()
     width: "28%",
     zIndex: "44",
   });
+  expect(dialogue.style.background).toContain("rgba(23, 32, 51, 0.7)");
   expect(dialogue).toHaveStyle({
-    backgroundColor: "rgb(23 32 51 / 0.7)",
     borderRadius: "18px",
     color: "#F8FAFC",
-    fontSize: "clamp(14px, 1.375cqw, 28px)",
   });
-  expect(screen.getByText("调查员")).toHaveStyle({ color: "#FB7185" });
+  expect(dialogue.style.getPropertyValue("--dialogue-body-font-size")).toBe(
+    "clamp(14px, 1.375cqw, 28px)",
+  );
+  expect(dialogue.style.getPropertyValue("--dialogue-name-color")).toBe(
+    "#FB7185",
+  );
   await user.click(dialogue);
   expect(
     screen.getByTestId("ui-component-file-choice-decoration"),
@@ -1429,6 +1430,39 @@ test("applies saved dialogue and custom Gal components in the preview", async ()
   expect(
     screen.queryByTestId("ui-component-file-status-panel"),
   ).not.toBeInTheDocument();
+});
+
+test("renders the classic gradient dialogue preset with export-safe AUTO status", async () => {
+  const classicStory = structuredClone(story);
+  classicStory.presentation = {
+    ...classicStory.presentation,
+    dialogueBox: dialogueBoxPresetStyle("classicGradient"),
+  };
+
+  render(<StoryPlayer document={classicStory} />);
+  fireEvent.click(screen.getByRole("button", { name: "开始试玩" }));
+  fireEvent.click(screen.getByRole("button", { name: "自动" }));
+
+  const dialogue = screen.getByText("开始调查。").closest("button")!;
+  expect(dialogue).toHaveClass(
+    "layout-bottomOverlay",
+    "background-verticalGradient",
+    "body-left",
+    "name-bottomCenter",
+    "name-decoration-sideLines",
+    "indicator-bottomLeft",
+    "indicator-style-compact",
+    "top-rule-double",
+  );
+  expect(dialogue.querySelector(".galgame-dialogue-body")).toHaveTextContent(
+    "开始调查。",
+  );
+  expect(
+    dialogue.querySelector(".galgame-dialogue-advance-indicator"),
+  ).toHaveTextContent("AUTO");
+  expect(dialogue.style.getPropertyValue("--dialogue-body-font-size")).toBe(
+    "clamp(12px, 1.5625cqw, 30px)",
+  );
 });
 
 test("runs voice, persistent music, ambient and sound-effect channels and cleans them up", async () => {

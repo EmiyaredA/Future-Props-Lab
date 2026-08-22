@@ -134,12 +134,16 @@ export function StoryTimelineEditor({
       event.block.type === "audio",
   );
   const durationMs = fragment.timeline?.durationMs ?? 0;
+  const displayPositionMs =
+    readOnly && followPositionMs != null
+      ? Math.max(0, Math.min(durationMs, followPositionMs))
+      : positionMs;
   const durationRef = useRef(durationMs);
   durationRef.current = durationMs;
   const onPreviewPositionRef = useRef(onPreviewPosition);
   onPreviewPositionRef.current = onPreviewPosition;
   const trackWidth = Math.max(640, (durationMs / 60_000) * zoom);
-  const activeCue = activeTimelineCue(fragment, positionMs);
+  const activeCue = activeTimelineCue(fragment, displayPositionMs);
   const characters = new Map(
     (document.characters ?? []).map((character) => [character.id, character]),
   );
@@ -210,6 +214,7 @@ export function StoryTimelineEditor({
   });
 
   useEffect(() => {
+    if (readOnly) return;
     let active = true;
     let activeBlockId = "";
     const urls = new Map<string, string>();
@@ -338,19 +343,12 @@ export function StoryTimelineEditor({
       if (clockRef.current === clock) clockRef.current = null;
       onPreviewPositionRef.current(null);
     };
-  }, [bgmAssets, fragment.id]);
+  }, [bgmAssets, fragment.id, readOnly]);
 
   useEffect(() => {
     clockRef.current?.setDuration(durationMs);
     setDurationInput(formatTimecode(durationMs));
   }, [durationMs]);
-
-  useEffect(() => {
-    if (!readOnly || followPositionMs == null) return;
-    const target = Math.max(0, Math.min(durationMs, followPositionMs));
-    clockRef.current?.seek(target);
-    setPositionMs(target);
-  }, [durationMs, followPositionMs, readOnly]);
 
   useEffect(() => {
     if (!readOnly) return;
@@ -788,7 +786,7 @@ export function StoryTimelineEditor({
           readOnly={readOnly}
           playing={playing}
           ready={ready}
-          positionMs={positionMs}
+          positionMs={displayPositionMs}
           durationMs={durationMs}
           estimated={estimated}
           addControl={addControl}
@@ -1456,15 +1454,15 @@ export function StoryTimelineEditor({
             <div
               className="galgame-timeline-playhead"
               style={{
-                left: `${(positionMs / Math.max(1, durationMs)) * 100}%`,
+                left: `${(displayPositionMs / Math.max(1, durationMs)) * 100}%`,
               }}
               role="slider"
               tabIndex={readOnly ? -1 : 0}
               aria-label="时间轴播放头"
               aria-valuemin={0}
               aria-valuemax={durationMs}
-              aria-valuenow={Math.round(positionMs)}
-              aria-valuetext={formatTimecode(positionMs)}
+              aria-valuenow={Math.round(displayPositionMs)}
+              aria-valuetext={formatTimecode(displayPositionMs)}
               aria-disabled={readOnly || undefined}
               title={readOnly ? undefined : "拖动播放头跳转时间"}
               onPointerDown={startPlayheadDrag}

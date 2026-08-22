@@ -5584,12 +5584,24 @@ export interface components {
             /** Text */
             text: string;
         };
+        /** GalgameVideoExportClipRange */
+        GalgameVideoExportClipRange: {
+            /** Endms */
+            endMs: number;
+            /** Fragmentid */
+            fragmentId: string;
+            /** Startms */
+            startMs: number;
+        };
         /** GalgameVideoExportCreateIn */
         GalgameVideoExportCreateIn: {
             /** Branchselections */
             branchSelections?: components["schemas"]["GalgameVideoExportBranchSelection"][];
+            clipRange?: components["schemas"]["GalgameVideoExportClipRange"] | null;
             /** Expectedstoryrevision */
             expectedStoryRevision: number;
+            /** Fragmentids */
+            fragmentIds?: string[];
             /**
              * Locale
              * @default zh
@@ -5605,6 +5617,12 @@ export interface components {
             previewFingerprint: string;
             /** Requestid */
             requestId: string;
+            /**
+             * Scope
+             * @default route
+             * @enum {string}
+             */
+            scope: "route" | "fragments" | "clip";
         };
         /** GalgameVideoExportDecisionOut */
         GalgameVideoExportDecisionOut: {
@@ -5631,8 +5649,11 @@ export interface components {
         GalgameVideoExportPreviewIn: {
             /** Branchselections */
             branchSelections?: components["schemas"]["GalgameVideoExportBranchSelection"][];
+            clipRange?: components["schemas"]["GalgameVideoExportClipRange"] | null;
             /** Expectedstoryrevision */
             expectedStoryRevision: number;
+            /** Fragmentids */
+            fragmentIds?: string[];
             /**
              * Locale
              * @default zh
@@ -5644,6 +5665,12 @@ export interface components {
              * @enum {string}
              */
             preset: "1080p30" | "720p30" | "1080p60";
+            /**
+             * Scope
+             * @default route
+             * @enum {string}
+             */
+            scope: "route" | "fragments" | "clip";
         };
         /** GalgameVideoExportPreviewOut */
         GalgameVideoExportPreviewOut: {
@@ -5683,6 +5710,8 @@ export interface components {
             estimatedDurationMs: number;
             /** Exactduration */
             exactDuration: boolean;
+            /** Fragmentdurationsms */
+            fragmentDurationsMs?: number[];
             /** Fragmentids */
             fragmentIds: string[];
         };

@@ -1127,6 +1127,28 @@ test("uploads dialogue and custom Gal component images with auto-save", async ()
   const { container } = renderEditor();
   expect(await screen.findByText("纵向切片")).toBeInTheDocument();
   await user.click(screen.getByRole("button", { name: "样式" }));
+  await user.click(await screen.findByRole("button", { name: /经典渐隐/ }));
+  await waitFor(() =>
+    expect(
+      vi.mocked(putGalgameStoryDocument).mock.calls.at(-1)?.[1].presentation
+        ?.dialogueBox,
+    ).toMatchObject({
+      preset: "classicGradient",
+      layout: { mode: "bottomOverlay", heightPercent: 30 },
+      background: { mode: "verticalGradient", topRule: "double" },
+      body: { fontSizePx: 30, align: "left" },
+      speakerName: {
+        placement: "bottomCenter",
+        fontSizePx: 22,
+        decoration: "sideLines",
+      },
+      advanceIndicator: {
+        position: "bottomLeft",
+        style: "compact",
+        showInExport: true,
+      },
+    }),
+  );
   const uploadButton = await screen.findByRole("button", { name: "上传底图" });
 
   const uploadInput = container.querySelector<HTMLInputElement>(

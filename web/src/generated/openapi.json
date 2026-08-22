@@ -8887,6 +8887,32 @@
         "title": "GalgameVideoExportChoiceOut",
         "type": "object"
       },
+      "GalgameVideoExportClipRange": {
+        "properties": {
+          "endMs": {
+            "minimum": 1.0,
+            "title": "Endms",
+            "type": "integer"
+          },
+          "fragmentId": {
+            "pattern": "^[a-z0-9][a-z0-9-]{0,63}$",
+            "title": "Fragmentid",
+            "type": "string"
+          },
+          "startMs": {
+            "minimum": 0.0,
+            "title": "Startms",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "fragmentId",
+          "startMs",
+          "endMs"
+        ],
+        "title": "GalgameVideoExportClipRange",
+        "type": "object"
+      },
       "GalgameVideoExportCreateIn": {
         "properties": {
           "branchSelections": {
@@ -8897,10 +8923,29 @@
             "title": "Branchselections",
             "type": "array"
           },
+          "clipRange": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/GalgameVideoExportClipRange"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "expectedStoryRevision": {
             "minimum": 0.0,
             "title": "Expectedstoryrevision",
             "type": "integer"
+          },
+          "fragmentIds": {
+            "items": {
+              "pattern": "^[a-z0-9][a-z0-9-]{0,63}$",
+              "type": "string"
+            },
+            "maxItems": 500,
+            "title": "Fragmentids",
+            "type": "array"
           },
           "locale": {
             "default": "zh",
@@ -8927,6 +8972,16 @@
           "requestId": {
             "pattern": "^[a-z0-9][a-z0-9-]{0,63}$",
             "title": "Requestid",
+            "type": "string"
+          },
+          "scope": {
+            "default": "route",
+            "enum": [
+              "route",
+              "fragments",
+              "clip"
+            ],
+            "title": "Scope",
             "type": "string"
           }
         },
@@ -8997,10 +9052,29 @@
             "title": "Branchselections",
             "type": "array"
           },
+          "clipRange": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/GalgameVideoExportClipRange"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "expectedStoryRevision": {
             "minimum": 0.0,
             "title": "Expectedstoryrevision",
             "type": "integer"
+          },
+          "fragmentIds": {
+            "items": {
+              "pattern": "^[a-z0-9][a-z0-9-]{0,63}$",
+              "type": "string"
+            },
+            "maxItems": 500,
+            "title": "Fragmentids",
+            "type": "array"
           },
           "locale": {
             "default": "zh",
@@ -9017,6 +9091,16 @@
               "1080p60"
             ],
             "title": "Preset",
+            "type": "string"
+          },
+          "scope": {
+            "default": "route",
+            "enum": [
+              "route",
+              "fragments",
+              "clip"
+            ],
+            "title": "Scope",
             "type": "string"
           }
         },
@@ -9130,6 +9214,13 @@
           "exactDuration": {
             "title": "Exactduration",
             "type": "boolean"
+          },
+          "fragmentDurationsMs": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Fragmentdurationsms",
+            "type": "array"
           },
           "fragmentIds": {
             "items": {

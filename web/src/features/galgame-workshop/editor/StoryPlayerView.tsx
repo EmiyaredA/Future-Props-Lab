@@ -74,6 +74,7 @@ export function StoryPlayerView({ model }: { model: StoryPlayerViewModel }) {
     activeTimeline,
     activeSceneLayers,
     activeVideoAsset,
+    activeVideoOffsetMs,
     videoUrl,
     stageCgs,
     dialogueStyle,
@@ -459,7 +460,7 @@ export function StoryPlayerView({ model }: { model: StoryPlayerViewModel }) {
                   action: "play",
                   channel: "video",
                   storyAssetId: activeVideoAsset.id,
-                  offsetMs: 0,
+                  offsetMs: activeVideoOffsetMs,
                   volume: (displayFrame.stage.video?.volume ?? 100) / 100,
                   loop: displayFrame.stage.video?.loop ?? false,
                   fadeMs: 0,
@@ -470,6 +471,14 @@ export function StoryPlayerView({ model }: { model: StoryPlayerViewModel }) {
                   displayFrame.stage.video?.volume != null
                     ? displayFrame.stage.video.volume / 100
                     : 1;
+                const durationMs = Number.isFinite(event.currentTarget.duration)
+                  ? Math.max(0, event.currentTarget.duration * 1000)
+                  : 0;
+                const offsetMs =
+                  durationMs > 0 && displayFrame.stage.video?.loop
+                    ? activeVideoOffsetMs % durationMs
+                    : activeVideoOffsetMs;
+                event.currentTarget.currentTime = Math.max(0, offsetMs) / 1000;
               }}
               onEnded={() => {
                 if (

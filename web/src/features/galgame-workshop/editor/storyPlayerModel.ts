@@ -69,6 +69,7 @@ export type TimelinePlayback = {
   fragmentId: string;
   clock: TimelineClock;
   lastPositionMs: number;
+  lastPublishedPositionMs: number;
 };
 
 export function playerHexToRgba(color: string, opacity: number) {
@@ -117,6 +118,11 @@ export type StoryPlayerProps = {
     branchSelections: Record<string, string>;
     choiceDurationMs: number;
     choiceHighlightMs: number;
+    timelineRange?: {
+      fragmentId: string;
+      startMs: number;
+      endMs: number;
+    };
     onProgress?: (position: {
       chapterId: string;
       fragmentId: string;

@@ -1194,17 +1194,22 @@ const registry = {
     sections: [
       section(
         "对话框样式",
-        (["dark", "light", "accent", "custom"] as const).map((preset) =>
-          option(
-            block,
-            `preset-${preset}`,
-            { dark: "深色", light: "浅色", accent: "强调色", custom: "自定义" }[
-              preset
-            ],
-            block.preset === preset,
-            "切换后续对白使用的对话框样式。",
-            (current) => ({ ...current, preset }),
-          ),
+        (["dark", "light", "accent", "classicGradient", "custom"] as const).map(
+          (preset) =>
+            option(
+              block,
+              `preset-${preset}`,
+              {
+                dark: "深色",
+                light: "浅色",
+                accent: "强调色",
+                classicGradient: "经典渐隐",
+                custom: "自定义",
+              }[preset],
+              block.preset === preset,
+              "切换后续对白使用的对话框样式。",
+              (current) => ({ ...current, preset }),
+            ),
         ),
       ),
     ],

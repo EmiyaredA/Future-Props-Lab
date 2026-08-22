@@ -65,6 +65,20 @@ describe("Galgame independent timeline clock", () => {
     expect(finished).toHaveBeenCalledOnce();
   });
 
+  test("reports an explicit playback boundary", () => {
+    vi.useFakeTimers();
+    const boundary = vi.fn();
+    const clock = new TimelineClock(1000, {
+      onPosition: () => undefined,
+      onBoundary: boundary,
+    });
+    clock.seek(300);
+    clock.playUntil(450);
+    vi.advanceTimersByTime(200);
+    expect(boundary).toHaveBeenCalledOnce();
+    expect(boundary).toHaveBeenCalledWith(450);
+  });
+
   test("uses an external media position without accumulating timer drift", () => {
     vi.useFakeTimers();
     let mediaPosition = 0;

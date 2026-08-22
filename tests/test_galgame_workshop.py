@@ -54,6 +54,69 @@ def test_galgame_timeline_master_audio_schema_is_optional_and_role_checked() -> 
         GalgameStoryProject.model_validate(wrong_role)
 
 
+def test_galgame_dialogue_box_classic_gradient_schema_and_legacy_defaults() -> None:
+    legacy = GalgameStoryProject.model_validate(playable_story()).model_dump(
+        mode="json", by_alias=True
+    )
+    legacy_style = legacy["presentation"]["dialogueBox"]
+    assert legacy_style["layout"]["mode"] == "boxed"
+    assert legacy_style["background"]["mode"] == "solid"
+    assert legacy_style["speakerName"]["placement"] == "topLeft"
+
+    document = playable_story()
+    document.setdefault("presentation", {})["dialogueBox"] = {
+        "preset": "classicGradient",
+        "backgroundColor": "#05070B",
+        "textColor": "#F7F7F5",
+        "nameColor": "#F3F1EB",
+        "backgroundOpacity": 0.94,
+        "borderRadius": 0,
+        "fontScale": 1,
+        "layout": {
+            "mode": "bottomOverlay",
+            "widthPercent": 100,
+            "heightPercent": 30,
+            "bottomOffsetPercent": 0,
+            "contentInsetXPercent": 11,
+            "contentInsetTopPercent": 12,
+            "contentInsetBottomPercent": 6,
+        },
+        "background": {
+            "mode": "verticalGradient",
+            "gradientTopOpacity": 0.18,
+            "gradientBottomOpacity": 0.94,
+            "topRule": "double",
+            "topRuleColor": "#E6E4DD",
+            "topRuleOpacity": 0.24,
+        },
+        "body": {
+            "fontSizePx": 30,
+            "lineHeight": 1.55,
+            "align": "left",
+            "maxWidthPercent": 78,
+        },
+        "speakerName": {
+            "placement": "bottomCenter",
+            "fontSizePx": 22,
+            "decoration": "sideLines",
+        },
+        "advanceIndicator": {
+            "visible": True,
+            "position": "bottomLeft",
+            "style": "compact",
+            "showInExport": True,
+        },
+    }
+    normalized = GalgameStoryProject.model_validate(document).model_dump(mode="json", by_alias=True)
+    assert normalized["presentation"]["dialogueBox"]["preset"] == "classicGradient"
+    assert normalized["presentation"]["dialogueBox"]["body"]["align"] == "left"
+
+    invalid = deepcopy(document)
+    invalid["presentation"]["dialogueBox"]["body"]["fontSizePx"] = 120
+    with pytest.raises(ValueError):
+        GalgameStoryProject.model_validate(invalid)
+
+
 def test_galgame_stage_cast_and_sprite_motion_contracts() -> None:
     document = playable_story()
     document["characters"].extend(
