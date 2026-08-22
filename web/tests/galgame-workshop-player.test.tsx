@@ -341,6 +341,54 @@ test("reveals dialogue one character at a time in the edit preview", () => {
   }
 });
 
+test("keeps missing-portrait placeholders out of export frames", async () => {
+  const user = userEvent.setup();
+  const playable = render(<StoryPlayer document={story} />);
+
+  await user.click(screen.getByRole("button", { name: "开始试玩" }));
+  expect(screen.getByText("开始调查。")).toBeInTheDocument();
+  expect(
+    playable.container.querySelector(".galgame-player-portrait-fallback"),
+  ).toHaveTextContent("调");
+  expect(
+    playable.container.querySelector('[data-character-id="hero"]'),
+  ).toBeInTheDocument();
+  playable.unmount();
+
+  const exported = render(
+    <StoryPlayer
+      document={story}
+      exportMode={{
+        branchSelections: { branch: "left" },
+        choiceDurationMs: 2000,
+        choiceHighlightMs: 500,
+      }}
+    />,
+  );
+  await act(async () => {
+    for (let index = 0; index < 6; index += 1) await Promise.resolve();
+  });
+  expect(
+    exported.container.querySelector(".galgame-player-portrait-fallback"),
+  ).toBeNull();
+  expect(
+    exported.container.querySelector('[data-character-id="hero"]'),
+  ).toBeNull();
+  exported.unmount();
+
+  const edited = render(
+    <StoryPlayer
+      document={story}
+      mode="edit"
+      editFragment={story.chapters![0].fragments![0]}
+      editBlockIndex={1}
+    />,
+  );
+  expect(
+    edited.container.querySelector(".galgame-player-portrait-fallback"),
+  ).toHaveTextContent("调");
+});
+
 test("automatically advances an untimed legacy fragment", () => {
   vi.useFakeTimers();
   try {

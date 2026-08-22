@@ -396,6 +396,7 @@ export function useStoryPlayerController(
     setMouthFrame(0);
   }, [activeDialogueExpressionId, lipSyncTrackerRef, setMouthFrame]);
 
+  const showMissingPortraitFallback = !exportMode;
   const stageActors = visibleStageActors(displayFrame.stage).flatMap(
     (actor) => {
       const character = characters.get(actor.characterId);
@@ -423,6 +424,8 @@ export function useStoryPlayerController(
       const expression = character.expressions?.find(
         (candidate) => candidate.id === renderedExpressionId,
       );
+      if (!expression && !skinAssetId && !showMissingPortraitFallback)
+        return [];
       const overlays = (expression?.overlays ?? []).flatMap((overlay) => {
         const overlayAsset = (document.assets ?? []).find(
           (candidate) => candidate.id === overlay.assetId,
