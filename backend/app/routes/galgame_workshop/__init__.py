@@ -7,10 +7,12 @@ from app.routes.galgame_workshop import (
     maintenance,
     projects,
     story,
+    story_migrations,
     video_export,
 )
 
 router = APIRouter(tags=["galgame-workshop"])
+router.include_router(story_migrations.router, prefix="/galgame-workshop/story-migrations")
 prefix = "/galgame-workshop/projects"
 router.include_router(projects.router, prefix=prefix)
 router.include_router(story.router, prefix=prefix)

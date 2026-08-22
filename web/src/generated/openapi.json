@@ -1120,6 +1120,26 @@
         "title": "Body_batch_upload_project_assets_v1_galgame_workshop_projects__project_id__assets_batch_post",
         "type": "object"
       },
+      "Body_import_legacy_story_v1_galgame_workshop_projects__project_id__story_import_post": {
+        "properties": {
+          "expectedRevision": {
+            "minimum": 0.0,
+            "title": "Expectedrevision",
+            "type": "integer"
+          },
+          "file": {
+            "contentMediaType": "application/octet-stream",
+            "title": "File",
+            "type": "string"
+          }
+        },
+        "required": [
+          "expectedRevision",
+          "file"
+        ],
+        "title": "Body_import_legacy_story_v1_galgame_workshop_projects__project_id__story_import_post",
+        "type": "object"
+      },
       "Body_put_avatar_v1_account_profile_avatar_put": {
         "properties": {
           "expected_revision": {
@@ -6073,6 +6093,86 @@
           }
         },
         "title": "GalgameStoryLocalizations",
+        "type": "object"
+      },
+      "GalgameStoryMigrationRunIn": {
+        "additionalProperties": false,
+        "properties": {
+          "limit": {
+            "default": 100,
+            "maximum": 100.0,
+            "minimum": 1.0,
+            "title": "Limit",
+            "type": "integer"
+          }
+        },
+        "title": "GalgameStoryMigrationRunIn",
+        "type": "object"
+      },
+      "GalgameStoryMigrationRunOut": {
+        "properties": {
+          "conflicts": {
+            "title": "Conflicts",
+            "type": "integer"
+          },
+          "current": {
+            "title": "Current",
+            "type": "integer"
+          },
+          "invalid": {
+            "title": "Invalid",
+            "type": "integer"
+          },
+          "migrated": {
+            "title": "Migrated",
+            "type": "integer"
+          },
+          "remaining": {
+            "title": "Remaining",
+            "type": "integer"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "migrated",
+          "conflicts",
+          "invalid",
+          "remaining",
+          "current",
+          "total"
+        ],
+        "title": "GalgameStoryMigrationRunOut",
+        "type": "object"
+      },
+      "GalgameStoryMigrationStatusOut": {
+        "properties": {
+          "current": {
+            "title": "Current",
+            "type": "integer"
+          },
+          "invalid": {
+            "title": "Invalid",
+            "type": "integer"
+          },
+          "pending": {
+            "title": "Pending",
+            "type": "integer"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "pending",
+          "invalid",
+          "current",
+          "total"
+        ],
+        "title": "GalgameStoryMigrationStatusOut",
         "type": "object"
       },
       "GalgameStoryNarrationBlock": {
@@ -18699,6 +18799,58 @@
         ]
       }
     },
+    "/v1/galgame-workshop/projects/{project_id}/story/import": {
+      "post": {
+        "operationId": "import_legacy_story_v1_galgame_workshop_projects__project_id__story_import_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_import_legacy_story_v1_galgame_workshop_projects__project_id__story_import_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GalgameStoryDocumentOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Import Legacy Story",
+        "tags": [
+          "galgame-workshop"
+        ]
+      }
+    },
     "/v1/galgame-workshop/projects/{project_id}/story/portrait-upgrade": {
       "get": {
         "operationId": "preview_portrait_upgrade_v1_galgame_workshop_projects__project_id__story_portrait_upgrade_get",
@@ -19230,6 +19382,68 @@
           }
         },
         "summary": "Download Video Export",
+        "tags": [
+          "galgame-workshop"
+        ]
+      }
+    },
+    "/v1/galgame-workshop/story-migrations/run": {
+      "post": {
+        "operationId": "run_story_migrations_v1_galgame_workshop_story_migrations_run_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GalgameStoryMigrationRunIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GalgameStoryMigrationRunOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Run Story Migrations",
+        "tags": [
+          "galgame-workshop"
+        ]
+      }
+    },
+    "/v1/galgame-workshop/story-migrations/status": {
+      "get": {
+        "operationId": "get_story_migration_status_v1_galgame_workshop_story_migrations_status_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GalgameStoryMigrationStatusOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Get Story Migration Status",
         "tags": [
           "galgame-workshop"
         ]

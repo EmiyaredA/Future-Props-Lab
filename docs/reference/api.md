@@ -237,6 +237,9 @@ ID、消息数量、画布摘要和素材 ID；不保存图片 Base64、临时�
 - `GET/POST /v1/galgame-workshop/projects`：按最近更新时间读取工程或新建空白工程。
 - `GET/PATCH/DELETE /v1/galgame-workshop/projects/{project_id}`：读取、修改或删除单个工程。
 - `GET/PUT /v1/galgame-workshop/projects/{project_id}/story`：读取或整份 CAS 保存 Story 1.4 故事文档。
+- `GET /v1/galgame-workshop/story-migrations/status`：统计当前 Workspace 中待迁移、无效和当前格式的 Story 数量。
+- `POST /v1/galgame-workshop/story-migrations/run`：按 `limit`（1–100）幂等迁移一批 Story 1.0–1.3，并报告 CAS 冲突和剩余数量。
+- `POST /v1/galgame-workshop/projects/{project_id}/story/import`：以 multipart `expectedRevision` 和 `file` 导入不超过 10 MiB 的 Story 1.0–1.3 JSON，一次性转换为 1.4。
 - `GET /v1/galgame-workshop/projects/{project_id}/story/report`：按章节顺序、调用栈与真实控制流检查可达性、停止点和递归。
 - `GET/POST /v1/galgame-workshop/projects/{project_id}/assets`：搜索或上传工程私有的图片、音视频、字体与参考文档；上传可指定素材分类。
 - `POST /v1/galgame-workshop/projects/{project_id}/assets/import-preview|batch`：预检批量改名和虚拟路径，或原子导入一批素材。
@@ -297,8 +300,11 @@ ID、消息数量、画布摘要和素材 ID；不保存图片 Base64、临时�
 故事包含 `synopsis`、`entryChapterId`、类型化变量、角色属性模板、角色、场景、剧情 CG、项目级
 `settings` 及
 `chapters → fragments → blocks`。章节有稳定 ID、顺序、入口 Fragment 和禁用状态；入口章不能删除或禁用，
-`endChapter` 会进入下一启用章。旧 `schemaVersion: "1.0/1.1"` Story 读取时自动补齐这些字段并升级为
-`schemaVersion: "1.4"`，继续使用整份文档 revision CAS。`settings.canvas` 保存 640×360 至
+`endChapter` 会进入下一启用章。迁移阶段 A 仍兼容读取 `schemaVersion: "1.0"` 至 `"1.3"`，但主
+Story 真源应通过 Workspace 迁移 API 固化为 `schemaVersion: "1.4"`；外部旧文件只通过专用导入
+接口转换。批量迁移和导入均继续使用整份文档 revision CAS，不会静默覆盖并发编辑。完成备份、停止
+编辑且迁移状态达到 `pending=0`、`invalid=0` 前，不得移除旧格式读取兼容。完整流程见
+[`Story 迁移运维`](../operations/story-migrations.md)。`settings.canvas` 保存 640×360 至
 7680×4320 的画布尺寸（默认 1920×1080）；`settings.characterStage` 保存全局锚点、基准画面高度、
 默认位置 ID 与 1–20 个可排序的二维百分比位置预设，其中左、中左、中、中右、右五个内置预设必须保留。
 `settings.characterStageOverrides` 可按角色 ID 保存同形的独立方案；键必须引用现有角色，删除条目后角色恢复跟随全局方案。

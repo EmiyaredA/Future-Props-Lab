@@ -1012,6 +1012,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/galgame-workshop/projects/{project_id}/story/import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Import Legacy Story */
+        post: operations["import_legacy_story_v1_galgame_workshop_projects__project_id__story_import_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/galgame-workshop/projects/{project_id}/story/portrait-upgrade": {
         parameters: {
             query?: never;
@@ -1159,6 +1176,40 @@ export interface paths {
         };
         /** Download Video Export */
         get: operations["download_video_export_v1_galgame_workshop_projects__project_id__video_exports__export_id__download_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/galgame-workshop/story-migrations/run": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Run Story Migrations */
+        post: operations["run_story_migrations_v1_galgame_workshop_story_migrations_run_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/galgame-workshop/story-migrations/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Story Migration Status */
+        get: operations["get_story_migration_status_v1_galgame_workshop_story_migrations_status_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2610,6 +2661,13 @@ export interface components {
             category: "character" | "scene" | "cg" | "bgm" | "ambient" | "sfx" | "voice" | "video" | "font" | "other";
             /** Uploads */
             uploads: string[];
+        };
+        /** Body_import_legacy_story_v1_galgame_workshop_projects__project_id__story_import_post */
+        Body_import_legacy_story_v1_galgame_workshop_projects__project_id__story_import_post: {
+            /** Expectedrevision */
+            expectedRevision: number;
+            /** File */
+            file: string;
         };
         /** Body_put_avatar_v1_account_profile_avatar_put */
         Body_put_avatar_v1_account_profile_avatar_put: {
@@ -4495,6 +4553,40 @@ export interface components {
             sourceLocale: string;
             /** Targets */
             targets?: components["schemas"]["GalgameStoryLocalizationTarget"][];
+        };
+        /** GalgameStoryMigrationRunIn */
+        GalgameStoryMigrationRunIn: {
+            /**
+             * Limit
+             * @default 100
+             */
+            limit: number;
+        };
+        /** GalgameStoryMigrationRunOut */
+        GalgameStoryMigrationRunOut: {
+            /** Conflicts */
+            conflicts: number;
+            /** Current */
+            current: number;
+            /** Invalid */
+            invalid: number;
+            /** Migrated */
+            migrated: number;
+            /** Remaining */
+            remaining: number;
+            /** Total */
+            total: number;
+        };
+        /** GalgameStoryMigrationStatusOut */
+        GalgameStoryMigrationStatusOut: {
+            /** Current */
+            current: number;
+            /** Invalid */
+            invalid: number;
+            /** Pending */
+            pending: number;
+            /** Total */
+            total: number;
         };
         /** GalgameStoryNarrationBlock */
         GalgameStoryNarrationBlock: {
@@ -10294,6 +10386,41 @@ export interface operations {
             };
         };
     };
+    import_legacy_story_v1_galgame_workshop_projects__project_id__story_import_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_import_legacy_story_v1_galgame_workshop_projects__project_id__story_import_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GalgameStoryDocumentOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     preview_portrait_upgrade_v1_galgame_workshop_projects__project_id__story_portrait_upgrade_get: {
         parameters: {
             query?: never;
@@ -10651,6 +10778,59 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    run_story_migrations_v1_galgame_workshop_story_migrations_run_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GalgameStoryMigrationRunIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GalgameStoryMigrationRunOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_story_migration_status_v1_galgame_workshop_story_migrations_status_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GalgameStoryMigrationStatusOut"];
                 };
             };
         };
