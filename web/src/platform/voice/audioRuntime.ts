@@ -90,7 +90,7 @@ export type PlaybackReference = {
   startTimeSec: number;
 };
 
-/** 24 kHz PCM 播放器：400ms 起播，欠载后重新积攒 800ms。 */
+/** PCM 播放器：实时输出默认 24 kHz、400ms 起播，欠载后重新积攒 800ms。 */
 export class RealtimePcmPlayer {
   private generation = 0;
   private nextTime = 0;
@@ -107,14 +107,15 @@ export class RealtimePcmPlayer {
     private context: AudioContext,
     private onReference?: (reference: PlaybackReference) => void,
     buffering: PlaybackBufferSettings = DEFAULT_PLAYBACK_BUFFERING,
+    private sampleRate = VOICE_OUTPUT_SAMPLE_RATE,
   ) {
     this.gain = context.createGain();
     this.gain.connect(context.destination);
     this.primeSamples = Math.round(
-      (VOICE_OUTPUT_SAMPLE_RATE * buffering.startBufferMs) / 1_000,
+      (this.sampleRate * buffering.startBufferMs) / 1_000,
     );
     this.recoverySamples = Math.round(
-      (VOICE_OUTPUT_SAMPLE_RATE * buffering.recoveryBufferMs) / 1_000,
+      (this.sampleRate * buffering.recoveryBufferMs) / 1_000,
     );
   }
 
@@ -189,7 +190,7 @@ export class RealtimePcmPlayer {
     const buffer = this.context.createBuffer(
       1,
       samples.length,
-      VOICE_OUTPUT_SAMPLE_RATE,
+      this.sampleRate,
     );
     buffer.copyToChannel(samples, 0);
     const node = this.context.createBufferSource();
@@ -203,7 +204,7 @@ export class RealtimePcmPlayer {
     if (generation === this.generation) {
       this.onReference?.({
         samples: new Float32Array(samples),
-        sampleRate: VOICE_OUTPUT_SAMPLE_RATE,
+        sampleRate: this.sampleRate,
         startTimeSec,
       });
     }

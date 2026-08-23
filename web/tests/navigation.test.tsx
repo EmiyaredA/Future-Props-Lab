@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { vi } from "vitest";
-import { parsePage, pathFor } from "@app/routes";
+import { parsePage, parseRoute, pathFor } from "@app/routes";
 import { StudioSidebar } from "@app/layout/StudioSidebar";
 import { GalgameWorkshopShell } from "@app/layout/GalgameWorkshopShell";
 import { VisualWorkshopShell } from "@app/layout/VisualWorkshopShell";
@@ -36,6 +36,8 @@ test("renders integrations after tools and before the base model group", () => {
   expect(screen.getByRole("button", { name: "文档中心" })).toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: /模型测试/ }));
   expect(navigate).toHaveBeenCalledWith("model-test");
+  fireEvent.click(screen.getByRole("button", { name: /测试工具/ }));
+  expect(navigate).toHaveBeenCalledWith("model-test-tools");
   fireEvent.click(screen.getByRole("button", { name: /模型调用日志/ }));
   expect(navigate).toHaveBeenCalledWith("model-call-logs");
   fireEvent.click(screen.getByRole("button", { name: "基模型" }));
@@ -87,6 +89,14 @@ test("uses home as the default and parses deep application routes", () => {
     "/apps/galgame-workshop/projects/project-1/editor",
   );
   expect(pathFor("model-service")).toBe("/model-service");
+  expect(parseRoute("/model-test-tools/tool-1")).toEqual({
+    page: "model-test-tools",
+    projectId: "tool-1",
+  });
+  expect(pathFor("model-test-tools")).toBe("/model-test-tools");
+  expect(pathFor("model-test-tools", "tool-1")).toBe(
+    "/model-test-tools/tool-1",
+  );
 });
 
 test("keeps tool navigation active on the video frame exporter", () => {

@@ -71,6 +71,15 @@ function TestIcon() {
   );
 }
 
+function TestToolIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden>
+      <path d="M8 3h8M10 3v5l-5 9a2 2 0 0 0 1.8 3h10.4a2 2 0 0 0 1.8-3l-5-9V3" />
+      <path d="M8 15h8M12 12v6" />
+    </svg>
+  );
+}
+
 function Chevron({ open }: { open: boolean }) {
   return (
     <span className={`nav-chevron${open ? " open" : ""}`}>
@@ -175,6 +184,14 @@ export function StudioSidebar({
             >
               <TestIcon />
               <span>模型测试</span>
+            </button>
+            <button
+              className={page === "model-test-tools" ? "active" : ""}
+              aria-current={page === "model-test-tools" ? "page" : undefined}
+              onClick={() => navigate("model-test-tools")}
+            >
+              <TestToolIcon />
+              <span>测试工具</span>
             </button>
             <button
               className={page === "model-service" ? "active" : ""}

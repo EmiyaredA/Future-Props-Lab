@@ -9,21 +9,33 @@ import {
 } from "@platform/voice/audioRuntime";
 import { EchoAwareBargeInDetector } from "@platform/voice/echoBargeIn";
 import {
+  VOICE_INPUT_SAMPLE_RATE,
+  VOICE_OUTPUT_SAMPLE_RATE,
+} from "@platform/voice/pcm";
+import {
   createVoiceVad,
   type VoiceVad,
   type VoiceVadSettings,
 } from "@platform/voice/vad";
 import { VadEndpointCommitter } from "@platform/voice/vadEndpoint";
 import {
-  initialRealtimeVoiceState,
-  realtimeVoiceReducer,
-} from "@features/models/realtime/realtimeVoiceState";
+  appendRetainedTurnAudio,
+  clearRetainedRealtimeVoiceState,
+  getRetainedRealtimeVoiceState,
+  getRetainedTurnAudio,
+  getRetainedTurnAudioInfo,
+  pcm16Base64ByteLength,
+  type RealtimeVoiceAudioSide,
+  retainedRealtimeVoiceReducer,
+  retainEndedRealtimeVoiceState,
+} from "@features/models/realtime/realtimeVoiceMemory";
 
 export type RealtimeVoiceStartOptions = {
   modelId: string;
   voice: string;
   instructions: string;
   greeting: string;
+  toolIds: string[];
   vad: VoiceVadSettings;
   microphone: MicrophoneProcessingSettings;
   playback: PlaybackBufferSettings;
@@ -49,11 +61,12 @@ function permissionMessage(error: unknown) {
 
 export function useRealtimeVoiceCall() {
   const [state, dispatch] = useReducer(
-    realtimeVoiceReducer,
-    initialRealtimeVoiceState,
+    retainedRealtimeVoiceReducer,
+    getRetainedRealtimeVoiceState(),
   );
   const [micMuted, setMicMutedState] = useState(false);
   const [speakerMuted, setSpeakerMutedState] = useState(false);
+  const [replayingAudio, setReplayingAudio] = useState<string | null>(null);
   const socketRef = useRef<WebSocket | null>(null);
   const contextRef = useRef<AudioContext | null>(null);
   const captureRef = useRef<MicCapture | null>(null);
@@ -62,11 +75,38 @@ export function useRealtimeVoiceCall() {
   const detectorRef = useRef<EchoAwareBargeInDetector | null>(null);
   const endpointRef = useRef<VadEndpointCommitter | null>(null);
   const endingRef = useRef(false);
+  const pageHiddenRef = useRef(false);
+  const inputTurnRef = useRef<string | null>(null);
+  const micPreRollRef = useRef<Array<{ chunk: string; bytes: number }>>([]);
+  const micPreRollBytesRef = useRef(0);
+  const replayContextRef = useRef<AudioContext | null>(null);
+  const replayPlayerRef = useRef<RealtimePcmPlayer | null>(null);
+  const replayTimerRef = useRef<number | null>(null);
+  const replayingAudioRef = useRef<string | null>(null);
+  const stateRef = useRef(state);
+  stateRef.current = state;
 
   const send = useCallback((payload: Record<string, unknown>) => {
     const socket = socketRef.current;
     if (socket?.readyState === WebSocket.OPEN)
       socket.send(JSON.stringify(payload));
+  }, []);
+
+  const releaseReplay = useCallback(async (updateState = true) => {
+    if (replayTimerRef.current != null) {
+      window.clearTimeout(replayTimerRef.current);
+      replayTimerRef.current = null;
+    }
+    const player = replayPlayerRef.current;
+    replayPlayerRef.current = null;
+    const context = replayContextRef.current;
+    replayContextRef.current = null;
+    replayingAudioRef.current = null;
+    player?.destroy();
+    if (context && context.state !== "closed") {
+      await context.close().catch(() => undefined);
+    }
+    if (updateState) setReplayingAudio(null);
   }, []);
 
   const release = useCallback(async (closeSocket = true) => {
@@ -84,6 +124,9 @@ export function useRealtimeVoiceCall() {
     contextRef.current = null;
     const endpoint = endpointRef.current;
     endpointRef.current = null;
+    inputTurnRef.current = null;
+    micPreRollRef.current = [];
+    micPreRollBytesRef.current = 0;
     if (closeSocket && socket && socket.readyState < WebSocket.CLOSING)
       socket.close(1000);
     capture?.stop();
@@ -110,15 +153,34 @@ export function useRealtimeVoiceCall() {
 
   const start = useCallback(
     async (options: RealtimeVoiceStartOptions) => {
+      await releaseReplay();
       await release();
       endingRef.current = false;
-      dispatch({ type: "prepare" });
+      dispatch({ type: "prepare", toolIds: options.toolIds });
       try {
         const context = await createVoiceAudioContext();
         contextRef.current = context;
         const capture = await startMicCapture(
           context,
-          (data) => send({ type: "audio", data }),
+          (data) => {
+            send({ type: "audio", data });
+            const inputTurnId = inputTurnRef.current;
+            if (inputTurnId) {
+              appendRetainedTurnAudio(inputTurnId, "user", data);
+              return;
+            }
+            const bytes = pcm16Base64ByteLength(data);
+            micPreRollRef.current.push({ chunk: data, bytes });
+            micPreRollBytesRef.current += bytes;
+            const maxPreRollBytes =
+              Math.max(1_000, options.vad.preSpeechPadMs + 400) *
+              ((VOICE_INPUT_SAMPLE_RATE * 2) / 1_000);
+            while (micPreRollBytesRef.current > maxPreRollBytes) {
+              const removed = micPreRollRef.current.shift();
+              if (!removed) break;
+              micPreRollBytesRef.current -= removed.bytes;
+            }
+          },
           options.microphone,
         );
         captureRef.current = capture;
@@ -152,7 +214,10 @@ export function useRealtimeVoiceCall() {
                 detector.process(frame, player.hasActivePlayback());
             },
             onSpeechStart: () => undefined,
-            onSpeechEnd: () => endpoint.speechEnded(),
+            onSpeechEnd: () => {
+              endpoint.speechEnded();
+              inputTurnRef.current = null;
+            },
           });
         } catch (error) {
           throw new Error(
@@ -171,11 +236,10 @@ export function useRealtimeVoiceCall() {
               voice: options.voice,
               instructions: options.instructions,
               greeting: options.greeting,
+              tool_ids: options.toolIds,
               client_vad: {
-                positive_speech_threshold:
-                  options.vad.positiveSpeechThreshold,
-                negative_speech_threshold:
-                  options.vad.negativeSpeechThreshold,
+                positive_speech_threshold: options.vad.positiveSpeechThreshold,
+                negative_speech_threshold: options.vad.negativeSpeechThreshold,
                 min_speech_ms: options.vad.minSpeechMs,
                 pre_speech_pad_ms: options.vad.preSpeechPadMs,
                 commit_silence_ms: options.vad.commitSilenceMs,
@@ -202,7 +266,17 @@ export function useRealtimeVoiceCall() {
           }
           const turnId = String(event.turn_id || "") || null;
           if (event.type === "user_speech_started") {
-            if (turnId) endpoint.userSpeechStarted(turnId);
+            if (turnId) {
+              inputTurnRef.current = turnId;
+              for (const { chunk } of micPreRollRef.current) {
+                appendRetainedTurnAudio(turnId, "user", chunk);
+              }
+              micPreRollRef.current = [];
+              micPreRollBytesRef.current = 0;
+              endpoint.userSpeechStarted(turnId);
+            }
+          } else if (event.type === "user_speech_stopped") {
+            inputTurnRef.current = null;
           } else if (
             event.type === "assistant_transcript_delta" ||
             event.type === "assistant_transcript_done" ||
@@ -211,6 +285,9 @@ export function useRealtimeVoiceCall() {
             detector.setPlaybackTurn(turnId);
           }
           if (event.type === "audio" && typeof event.data === "string") {
+            if (turnId) {
+              appendRetainedTurnAudio(turnId, "assistant", event.data);
+            }
             player.enqueueBase64(event.data);
           }
           if (event.type === "interrupt") {
@@ -218,6 +295,7 @@ export function useRealtimeVoiceCall() {
             detector.setPlaybackTurn(null);
           }
           if (event.type === "turn_done") {
+            inputTurnRef.current = null;
             player.drain();
             endpoint.finishTurn();
           }
@@ -255,7 +333,41 @@ export function useRealtimeVoiceCall() {
         });
       }
     },
-    [micMuted, release, send, speakerMuted],
+    [micMuted, release, releaseReplay, send, speakerMuted],
+  );
+
+  const replayTurnAudio = useCallback(
+    async (turnId: string, side: RealtimeVoiceAudioSide) => {
+      const key = `${turnId}:${side}`;
+      if (replayingAudioRef.current === key) {
+        await releaseReplay();
+        return;
+      }
+      await releaseReplay(false);
+      const chunks = getRetainedTurnAudio(turnId, side);
+      if (!chunks.length) return;
+      const info = getRetainedTurnAudioInfo(turnId);
+      const durationMs =
+        side === "user" ? info.userDurationMs : info.assistantDurationMs;
+      const context = await createVoiceAudioContext();
+      const player = new RealtimePcmPlayer(
+        context,
+        undefined,
+        { startBufferMs: 0, recoveryBufferMs: 0 },
+        side === "user" ? VOICE_INPUT_SAMPLE_RATE : VOICE_OUTPUT_SAMPLE_RATE,
+      );
+      replayContextRef.current = context;
+      replayPlayerRef.current = player;
+      replayingAudioRef.current = key;
+      setReplayingAudio(key);
+      for (const chunk of chunks) player.enqueueBase64(chunk);
+      player.drain();
+      replayTimerRef.current = window.setTimeout(
+        () => void releaseReplay(),
+        Math.max(250, durationMs + 200),
+      );
+    },
+    [releaseReplay],
   );
 
   const setMicMuted = useCallback(
@@ -272,20 +384,32 @@ export function useRealtimeVoiceCall() {
   }, []);
 
   useEffect(() => {
-    const close = () => void stop();
+    const close = () => {
+      pageHiddenRef.current = true;
+      send({ type: "stop" });
+      clearRetainedRealtimeVoiceState();
+      void release();
+      void releaseReplay(false);
+    };
     window.addEventListener("pagehide", close);
     return () => {
       window.removeEventListener("pagehide", close);
+      if (pageHiddenRef.current) clearRetainedRealtimeVoiceState();
+      else retainEndedRealtimeVoiceState(stateRef.current);
       void release();
+      void releaseReplay(false);
     };
-  }, [release, stop]);
+  }, [release, releaseReplay, send]);
 
   return {
     state,
+    replayingAudio,
     micMuted,
     speakerMuted,
     start,
     stop,
+    replayTurnAudio,
+    getTurnAudioInfo: getRetainedTurnAudioInfo,
     setMicMuted,
     setSpeakerMuted,
   };

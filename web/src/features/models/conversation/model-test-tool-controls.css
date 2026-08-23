@@ -1,0 +1,287 @@
+.model-test-tools-setting {
+  padding: 15px;
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  background: var(--surface-hover);
+}
+
+.model-test-tools-setting-head,
+.model-test-tools-setting-head span {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.model-test-tools-setting-head svg,
+.model-test-tools-unavailable svg {
+  width: 16px;
+  color: var(--accent);
+}
+
+.model-test-tools-setting-head small,
+.model-test-selected-tools p {
+  color: var(--muted);
+}
+
+.model-test-selected-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 12px 0;
+}
+
+.model-test-selected-tools span {
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 12px;
+}
+
+.model-test-selected-tools span.disabled {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.model-test-tool-select-button {
+  width: 100%;
+  min-height: 38px;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.model-test-tools-unavailable {
+  display: flex;
+  gap: 7px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.model-test-tool-picker-backdrop {
+  position: fixed;
+  z-index: 1100;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgb(0 0 0 / 68%);
+}
+
+.model-test-tool-picker {
+  width: min(620px, 100%);
+  max-height: min(720px, calc(100vh - 40px));
+  overflow: hidden;
+  border: 1px solid var(--border-strong);
+  border-radius: 15px;
+  background: var(--surface);
+  box-shadow: 0 24px 70px rgb(0 0 0 / 40%);
+}
+
+.model-test-tool-picker header,
+.model-test-tool-picker footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 18px 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.model-test-tool-picker header h2,
+.model-test-tool-picker header p {
+  margin: 0;
+}
+
+.model-test-tool-picker header p,
+.model-test-tool-picker footer > span {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.model-test-tool-picker header > button {
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+}
+
+.model-test-tool-search {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin: 15px 20px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--bg);
+}
+
+.model-test-tool-search svg {
+  width: 16px;
+  color: var(--muted);
+}
+
+.model-test-tool-search input {
+  width: 100%;
+  min-height: 40px;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--text);
+}
+
+.model-test-tool-options {
+  display: grid;
+  gap: 8px;
+  max-height: 390px;
+  overflow: auto;
+  padding: 0 20px 18px;
+}
+
+.model-test-tool-options > button {
+  display: grid;
+  grid-template-columns: 22px 1fr auto;
+  gap: 11px;
+  align-items: center;
+  padding: 13px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-hover);
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.model-test-tool-options > button.selected {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.model-test-tool-options > button > span:nth-child(2) {
+  display: grid;
+  gap: 3px;
+}
+
+.model-test-tool-options small,
+.model-test-tool-options em {
+  color: var(--muted);
+  font-size: 12px;
+  font-style: normal;
+}
+
+.model-test-tool-check {
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border: 1px solid var(--border-strong);
+  border-radius: 5px;
+}
+
+.model-test-tool-check svg {
+  width: 13px;
+  color: var(--accent);
+}
+
+.model-test-tool-picker footer {
+  border-top: 1px solid var(--border);
+  border-bottom: 0;
+}
+
+.model-test-tool-picker footer div {
+  display: flex;
+  gap: 8px;
+}
+
+.model-test-tool-picker footer button {
+  min-height: 38px;
+  padding: 0 15px;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+}
+
+.model-test-tool-picker footer button.primary {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #fff;
+}
+
+.model-test-tool-calls {
+  display: grid;
+  gap: 7px;
+  margin: 10px 0 4px;
+}
+
+.model-test-tool-call {
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface-hover);
+}
+
+.model-test-tool-call.failed {
+  border-color: color-mix(in srgb, var(--danger) 50%, var(--border));
+}
+
+.model-test-tool-call > button {
+  display: grid;
+  grid-template-columns: 20px 1fr 18px;
+  gap: 9px;
+  align-items: center;
+  width: 100%;
+  padding: 10px 12px;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  text-align: left;
+}
+
+.model-test-tool-call > button > svg:first-child {
+  width: 16px;
+  color: var(--accent);
+}
+
+.model-test-tool-call > button > span {
+  display: grid;
+}
+
+.model-test-tool-call > button small {
+  color: var(--muted);
+}
+
+.model-test-tool-call > button .open {
+  transform: rotate(180deg);
+}
+
+.model-test-tool-call-detail {
+  padding: 0 12px 12px;
+}
+
+.model-test-tool-call-detail > span {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.model-test-tool-call-detail pre {
+  overflow: auto;
+  max-height: 180px;
+  padding: 10px;
+  border-radius: 7px;
+  background: var(--bg);
+  font-size: 12px;
+}
+
+.model-test-tool-call-detail p {
+  color: var(--danger);
+}
+
+.model-test-tool-call-detail p svg {
+  width: 15px;
+  vertical-align: -3px;
+}

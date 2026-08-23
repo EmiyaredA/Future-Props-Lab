@@ -216,8 +216,80 @@ test("realtime voice tab is capability-driven, keyboard reachable and responsive
             output_sample_rate: 24000,
             commit_silence_ms: 400,
             supports_interruption: true,
+            supports_tools: true,
+            instructions_max_chars: 20_000,
+            greeting_max_chars: 2_000,
+            input_format: "pcm_s16le",
+            output_format: "pcm_s16le",
+            channels: 1,
+            client_vad: {
+              positive_speech_threshold: {
+                default: 0.55,
+                minimum: 0.05,
+                maximum: 1,
+                step: 0.01,
+              },
+              negative_speech_threshold: {
+                default: 0.38,
+                minimum: 0,
+                maximum: 0.95,
+                step: 0.01,
+              },
+              min_speech_ms: {
+                default: 320,
+                minimum: 64,
+                maximum: 5_000,
+                step: 32,
+              },
+              pre_speech_pad_ms: {
+                default: 160,
+                minimum: 0,
+                maximum: 2_000,
+                step: 32,
+              },
+              commit_silence_ms: {
+                default: 400,
+                minimum: 100,
+                maximum: 5_000,
+                step: 50,
+              },
+            },
+            playback: {
+              start_buffer_ms: {
+                default: 400,
+                minimum: 0,
+                maximum: 2_000,
+                step: 50,
+              },
+              recovery_buffer_ms: {
+                default: 800,
+                minimum: 0,
+                maximum: 3_000,
+                step: 50,
+              },
+            },
+            microphone: {
+              echo_cancellation: true,
+              noise_suppression: true,
+              auto_gain_control: true,
+            },
           },
         ],
+      }),
+    });
+  });
+  await page.route("**/v1/model-test/tools", async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        revision: 0,
+        overview: {
+          total_tools: 0,
+          enabled_tools: 0,
+          today_runs: 0,
+          success_rate: null,
+        },
+        items: [],
       }),
     });
   });
@@ -236,15 +308,29 @@ test("realtime voice tab is capability-driven, keyboard reachable and responsive
     page.getByRole("combobox", { name: "实时语音音色" }),
   ).toContainText("气质学姐");
   await expect(page.getByRole("button", { name: "开始通话" })).toBeEnabled();
-  await expect(page.getByText("输入 16 kHz PCM16")).toBeVisible();
-  await expect(page.getByText("输出 24 kHz PCM16")).toBeVisible();
-  await expect(page.getByText(/只保留在当前页面内存中/)).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "选择测试工具" }),
+  ).toBeEnabled();
+  await expect(page.getByText("输入 16 kHz pcm_s16le")).toBeVisible();
+  await expect(page.getByText("输出 24 kHz pcm_s16le")).toBeVisible();
+  await expect(page.getByLabel("开场白")).toBeVisible();
+  await expect(page.getByLabel("静音断句")).toHaveValue("400");
+  await expect(page.getByRole("switch", { name: "说话打断" })).toHaveAttribute(
+    "aria-checked",
+    "true",
+  );
+  await expect(page.getByText(/工具调用详情会写入测试记录/)).toBeVisible();
   await expect(page.locator("select")).toHaveCount(0);
+  await page.getByRole("button", { name: "深色" }).click();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  await expect(page.locator(".realtime-voice-stage.chat-panel")).toBeVisible();
 
   await page.setViewportSize({ width: 600, height: 760 });
   await expect(page.locator(".realtime-voice-layout")).toHaveCSS(
     "flex-direction",
     "column",
   );
-  await expect(page.getByText("助手的回答会在这里同步显示。")).toBeVisible();
+  await expect(
+    page.getByText(/双方的实时转写会按文本对话的形式显示/),
+  ).toBeVisible();
 });

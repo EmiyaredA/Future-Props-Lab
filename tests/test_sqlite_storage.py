@@ -121,6 +121,8 @@ def test_existing_r0001_database_upgrades_without_rewriting_history(tmp_path: Pa
             ("r0030_senseaudio_realtime",),
             ("r0031_integration_center",),
             ("r0032_realtime_fresh_catalog",),
+            ("r0033_model_test_tools",),
+            ("r0034_realtime_tool_calls",),
         ]
         assert connection.execute("SELECT COUNT(*) FROM model_test_conversations").fetchone() == (
             0,

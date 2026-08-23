@@ -91,33 +91,22 @@ async def list_realtime_models(session: AsyncSession) -> RealtimeVoiceOptionsOut
                 output_sample_rate=VOICE_OUTPUT_SAMPLE_RATE,
                 commit_silence_ms=VOICE_COMMIT_SILENCE_MS,
                 supports_interruption=True,
+                supports_tools=True,
                 instructions_max_chars=VOICE_INSTRUCTIONS_MAX_CHARS,
                 greeting_max_chars=VOICE_GREETING_MAX_CHARS,
                 input_format="pcm_s16le",
                 output_format="pcm_s16le",
                 channels=1,
                 client_vad=RealtimeVoiceVadOut(
-                    positive_speech_threshold=_number(
-                        VOICE_VAD_POSITIVE_THRESHOLD, 0.05, 1, 0.01
-                    ),
-                    negative_speech_threshold=_number(
-                        VOICE_VAD_NEGATIVE_THRESHOLD, 0, 0.95, 0.01
-                    ),
+                    positive_speech_threshold=_number(VOICE_VAD_POSITIVE_THRESHOLD, 0.05, 1, 0.01),
+                    negative_speech_threshold=_number(VOICE_VAD_NEGATIVE_THRESHOLD, 0, 0.95, 0.01),
                     min_speech_ms=_number(VOICE_VAD_MIN_SPEECH_MS, 64, 5_000, 32),
-                    pre_speech_pad_ms=_number(
-                        VOICE_VAD_PRE_SPEECH_PAD_MS, 0, 2_000, 32
-                    ),
-                    commit_silence_ms=_number(
-                        VOICE_COMMIT_SILENCE_MS, 100, 5_000, 50
-                    ),
+                    pre_speech_pad_ms=_number(VOICE_VAD_PRE_SPEECH_PAD_MS, 0, 2_000, 32),
+                    commit_silence_ms=_number(VOICE_COMMIT_SILENCE_MS, 100, 5_000, 50),
                 ),
                 playback=RealtimeVoicePlaybackOut(
-                    start_buffer_ms=_number(
-                        VOICE_PLAYBACK_START_BUFFER_MS, 0, 2_000, 50
-                    ),
-                    recovery_buffer_ms=_number(
-                        VOICE_PLAYBACK_RECOVERY_BUFFER_MS, 0, 3_000, 50
-                    ),
+                    start_buffer_ms=_number(VOICE_PLAYBACK_START_BUFFER_MS, 0, 2_000, 50),
+                    recovery_buffer_ms=_number(VOICE_PLAYBACK_RECOVERY_BUFFER_MS, 0, 3_000, 50),
                 ),
                 microphone=RealtimeVoiceMicrophoneOut(
                     echo_cancellation=True,

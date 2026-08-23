@@ -35,6 +35,8 @@ from db.migrations.versions import (
     r0030_senseaudio_realtime,
     r0031_integration_center,
     r0032_realtime_fresh_catalog,
+    r0033_model_test_tools,
+    r0034_realtime_tool_calls,
 )
 
 
@@ -164,6 +166,12 @@ MIGRATIONS = (
     Migration(
         r0032_realtime_fresh_catalog.MIGRATION_ID,
         r0032_realtime_fresh_catalog.SQL,
+    ),
+    Migration(r0033_model_test_tools.MIGRATION_ID, r0033_model_test_tools.SQL),
+    Migration(
+        r0034_realtime_tool_calls.MIGRATION_ID,
+        r0034_realtime_tool_calls.SQL,
+        foreign_keys_off=True,
     ),
 )
 

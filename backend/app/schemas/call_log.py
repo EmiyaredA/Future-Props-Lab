@@ -19,6 +19,8 @@ class CallLogOut(BaseModel):
     latency_ms: int
     status: str
     error_message: str | None
+    reproduction_supported: bool
+    reproduction_reason: str
     created_at: str
 
 

@@ -10,6 +10,7 @@ export type StudioPage =
   | "audio-annotation-projects"
   | "audio-annotation-editor"
   | "model-test"
+  | "model-test-tools"
   | "model-service"
   | "model-call-logs";
 
@@ -79,6 +80,11 @@ export function parseRoute(pathname = window.location.pathname): AppRoute {
   if (pathname.startsWith("/tools/audio-annotation"))
     return { page: "audio-annotation-projects" };
   if (pathname.startsWith("/tools")) return { page: "tools" };
+  const modelTestTool = pathname.match(/^\/model-test-tools\/([^/]+)\/?$/);
+  if (modelTestTool)
+    return { page: "model-test-tools", projectId: modelTestTool[1] };
+  if (pathname.startsWith("/model-test-tools"))
+    return { page: "model-test-tools" };
   if (pathname.startsWith("/model-test")) return { page: "model-test" };
   if (pathname.startsWith("/model-call-logs"))
     return { page: "model-call-logs" };
@@ -103,6 +109,9 @@ export function pathFor(page: AppPage, projectId?: string): string {
     "audio-annotation-projects": "/tools/audio-annotation",
     "audio-annotation-editor": "/tools/audio-annotation",
     "model-test": "/model-test",
+    "model-test-tools": projectId
+      ? `/model-test-tools/${encodeURIComponent(projectId)}`
+      : "/model-test-tools",
     "model-service": "/model-service",
     "model-call-logs": "/model-call-logs",
     "visual-workshop-projects": "/apps/visual-workshop",

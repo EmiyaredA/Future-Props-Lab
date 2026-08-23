@@ -2,10 +2,10 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Response
 
 from app.deps import SessionDep
-from app.llm.call_logs import CallLogService
+from app.llm.call_logs import CallLogService, ReproductionUnavailableError
 from app.schemas.call_log import (
     BatchDeleteIn,
     CallLogListOut,
@@ -72,6 +72,28 @@ async def detail(session: SessionDep, log_id: str) -> CallLogOut:
     if row is None:
         raise HTTPException(404, {"code": "not_found", "message": "调用日志不存在"})
     return row
+
+
+@router.get(
+    "/{log_id}/reproduction-bundle",
+    response_class=Response,
+    responses={200: {"content": {"application/zip": {}}}},
+)
+async def reproduction_bundle(session: SessionDep, log_id: str) -> Response:
+    try:
+        bundle = await CallLogService(session).reproduction_bundle(log_id)
+    except ReproductionUnavailableError as exc:
+        raise HTTPException(
+            409,
+            {"code": "reproduction_unavailable", "message": str(exc)},
+        ) from exc
+    if bundle is None:
+        raise HTTPException(404, {"code": "not_found", "message": "调用日志不存在"})
+    return Response(
+        content=bundle.content,
+        media_type="application/zip",
+        headers={"Content-Disposition": f'attachment; filename="{bundle.filename}"'},
+    )
 
 
 @router.delete("/{log_id}")

@@ -16,13 +16,17 @@ from app.llm.playground.attachments import (
     ModelTestAttachments,
     attachment_out,
 )
+from app.llm.playground.test_tools import ModelTestTools, call_out, tool_snapshot
 from app.llm.providers import ChatMessageInput, ImageInput
 from app.models import (
     ModelEntry,
     ModelProvider,
     ModelTestAttachment,
     ModelTestConversation,
+    ModelTestConversationToolBinding,
     ModelTestMessage,
+    ModelTestTool,
+    ModelTestToolCall,
 )
 from app.schemas.model_test import (
     ModelTestConversationCreateIn,
@@ -62,12 +66,14 @@ class PreparedGeneration:
     max_tokens: int
     messages: list[ChatMessageInput]
     request_payload: dict
+    tool_snapshots: tuple[dict, ...] = ()
     replaced_message_id: str | None = None
 
 
 def message_out(
     row: ModelTestMessage,
     attachments: list[ModelTestAttachment] | None = None,
+    tool_calls: list[ModelTestToolCall] | None = None,
 ) -> ModelTestMessageOut:
     return ModelTestMessageOut(
         id=row.id,
@@ -79,6 +85,7 @@ def message_out(
         error_message=row.error_message,
         created_at=iso_utc(row.created_at),
         attachments=[attachment_out(item) for item in attachments or []],
+        tool_calls=[call_out(item) for item in tool_calls or []],
     )
 
 
@@ -168,14 +175,55 @@ class ModelTestService:
         by_message, drafts = self._attachments_by_message(
             await self._attachment_rows(conversation_id)
         )
+        tool_call_rows = list(
+            (
+                await self.session.execute(
+                    select(ModelTestToolCall)
+                    .where(ModelTestToolCall.conversation_id == conversation_id)
+                    .order_by(ModelTestToolCall.created_at)
+                )
+            )
+            .scalars()
+            .all()
+        )
+        calls_by_message: dict[str, list[ModelTestToolCall]] = {}
+        for call in tool_call_rows:
+            if call.message_id:
+                calls_by_message.setdefault(call.message_id, []).append(call)
+        selected_tools = await self._selected_tools(conversation_id)
         summary = await self._summary(row)
         return ModelTestConversationOut(
             **summary.model_dump(),
             system_prompt=row.system_prompt,
             temperature=row.temperature,
             max_tokens=row.max_tokens,
-            messages=[message_out(message, by_message.get(message.id)) for message in messages],
+            messages=[
+                message_out(
+                    message,
+                    by_message.get(message.id),
+                    calls_by_message.get(message.id),
+                )
+                for message in messages
+            ],
             draft_attachments=[attachment_out(item) for item in drafts],
+            tools=[await ModelTestTools(self.session).summary(item) for item in selected_tools],
+        )
+
+    async def _selected_tools(self, conversation_id: str) -> list[ModelTestTool]:
+        return list(
+            (
+                await self.session.execute(
+                    select(ModelTestTool)
+                    .join(
+                        ModelTestConversationToolBinding,
+                        ModelTestConversationToolBinding.tool_id == ModelTestTool.id,
+                    )
+                    .where(ModelTestConversationToolBinding.conversation_id == conversation_id)
+                    .order_by(ModelTestConversationToolBinding.position)
+                )
+            )
+            .scalars()
+            .all()
         )
 
     async def create(self, body: ModelTestConversationCreateIn) -> ModelTestConversationOut:
@@ -232,6 +280,17 @@ class ModelTestService:
                 body.model_id,
                 require_vision=await self._has_completed_image_context(conversation_id),
             )
+        selected_tools: list[ModelTestTool] | None = None
+        if body.tool_ids is not None:
+            selected_tools = []
+            for tool_id in body.tool_ids:
+                tool = await self.session.get(ModelTestTool, tool_id)
+                if tool is None or not tool.enabled:
+                    raise ModelUnavailableError("只能选择当前 Workspace 已启用的测试工具")
+                selected_tools.append(tool)
+            target_model_id = body.model_id if body.model_id is not None else row.model_id
+            if selected_tools:
+                await self._available_model(target_model_id, require_tools=True)
         await self._bump(row, body.expected_revision)
         if body.title is not None:
             row.title = body.title.strip()
@@ -243,6 +302,18 @@ class ModelTestService:
             row.temperature = body.temperature
         if body.max_tokens is not None:
             row.max_tokens = body.max_tokens
+        if selected_tools is not None:
+            await self.session.execute(
+                delete(ModelTestConversationToolBinding).where(
+                    ModelTestConversationToolBinding.conversation_id == conversation_id
+                )
+            )
+            self.session.add_all(
+                ModelTestConversationToolBinding(
+                    conversation_id=conversation_id, tool_id=tool.id, position=position
+                )
+                for position, tool in enumerate(selected_tools)
+            )
         await self.session.commit()
         return await self.get(row.id)
 
@@ -263,7 +334,11 @@ class ModelTestService:
                 pass
 
     async def _available_model(
-        self, model_id: str | None, *, require_vision: bool = False
+        self,
+        model_id: str | None,
+        *,
+        require_vision: bool = False,
+        require_tools: bool = False,
     ) -> tuple[ModelEntry, ModelProvider]:
         if not model_id:
             raise ModelUnavailableError("请先选择可用的文本模型")
@@ -281,6 +356,8 @@ class ModelTestService:
             raise ModelUnavailableError("当前模型不可用，请重新选择已启用的文本模型")
         if require_vision and "vision" not in capabilities:
             raise ModelUnavailableError("当前对话包含图片，请选择支持 vision 的模型")
+        if require_tools and "tools" not in capabilities:
+            raise ModelUnavailableError("当前会话已选择测试工具，请选择支持 tools 的模型")
         return model, provider
 
     async def _position(self, conversation_id: str) -> int:
@@ -410,6 +487,15 @@ class ModelTestService:
             ordered.append(attachment)
         return ordered
 
+    async def _tool_snapshots_for_run(self, conversation_id: str) -> tuple[dict, ...]:
+        tools = await self._selected_tools(conversation_id)
+        disabled = [tool.name for tool in tools if not tool.enabled]
+        if disabled:
+            raise ModelUnavailableError(
+                f"已选择的测试工具已停用：{', '.join(disabled)}，请移除或重新启用"
+            )
+        return tuple(tool_snapshot(tool) for tool in tools)
+
     async def prepare_send(
         self,
         conversation_id: str,
@@ -422,8 +508,13 @@ class ModelTestService:
             raise ConversationBusyError("当前对话正在生成，请稍候")
         context, context_log, context_has_images = await self._context(conversation_id)
         drafts = await self._drafts(conversation_id, attachment_ids or [])
+        tool_snapshots = await self._tool_snapshots_for_run(conversation_id)
         require_vision = context_has_images or bool(drafts)
-        model, provider = await self._available_model(row.model_id, require_vision=require_vision)
+        model, provider = await self._available_model(
+            row.model_id,
+            require_vision=require_vision,
+            require_tools=bool(tool_snapshots),
+        )
         draft_images = await self._images(drafts)
         revision = await self._bump(row, expected_revision)
         position = await self._position(conversation_id)
@@ -478,7 +569,9 @@ class ModelTestService:
                 "messages": [*context_log, user_log],
                 "temperature": row.temperature,
                 "max_tokens": row.max_tokens,
+                "tools": list(tool_snapshots),
             },
+            tool_snapshots=tool_snapshots,
         )
 
     async def prepare_regenerate(
@@ -534,9 +627,11 @@ class ModelTestService:
             .scalars()
             .all()
         )
+        tool_snapshots = await self._tool_snapshots_for_run(conversation_id)
         model, provider = await self._available_model(
             row.model_id,
             require_vision=context_has_images or bool(user_attachments),
+            require_tools=bool(tool_snapshots),
         )
         user_images = await self._images(user_attachments)
         revision = await self._bump(row, expected_revision)
@@ -573,6 +668,8 @@ class ModelTestService:
                 "temperature": row.temperature,
                 "max_tokens": row.max_tokens,
                 "regenerate": True,
+                "tools": list(tool_snapshots),
             },
+            tool_snapshots=tool_snapshots,
             replaced_message_id=old.id,
         )

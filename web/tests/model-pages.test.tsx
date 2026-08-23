@@ -565,9 +565,9 @@ test("renders call log payloads as a readable role-based message trace", async (
     latency_ms: 820,
     status: "success",
     error_message: null,
+    ...{ reproduction_supported: true, reproduction_reason: "" },
     created_at: "2026-08-04T07:43:52Z",
   });
-
   const { container } = renderWithQuery(<ModelCallLogsPage />);
   await user.click(await screen.findByRole("button", { name: "详情" }));
 

@@ -1,22 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { Waves } from "lucide-react";
 import {
-  AudioLines,
-  Clock3,
-  Headphones,
-  Mic,
-  MicOff,
-  Phone,
-  PhoneOff,
-  RefreshCw,
-  Volume2,
-  VolumeX,
-  Waves,
-} from "lucide-react";
-import {
+  getModelTestTools,
   getRealtimeVoiceOptions,
   type RealtimeVoiceModel,
 } from "@features/models/api";
+import { ModelTestToolSelector } from "@features/models/conversation/ModelTestToolControls";
+import { RealtimeVoiceConversation } from "@features/models/realtime/RealtimeVoiceConversation";
 import { useRealtimeVoiceCall } from "@features/models/realtime/useRealtimeVoiceCall";
 import {
   ModelTestWorkspaceHeader,
@@ -136,28 +127,6 @@ function ToggleSetting({
   );
 }
 
-const statusLabels = {
-  idle: "等待开始",
-  preparing: "正在初始化麦克风与 VAD",
-  connecting: "正在连接实时模型",
-  connected: "已连接，直接说话即可",
-  listening: "正在听你说话",
-  thinking: "模型正在思考",
-  speaking: "助手正在回答",
-  ended: "通话已结束",
-  error: "通话异常",
-} as const;
-
-function formatDuration(seconds: number) {
-  const minutes = Math.floor(seconds / 60)
-    .toString()
-    .padStart(2, "0");
-  const remainder = Math.floor(seconds % 60)
-    .toString()
-    .padStart(2, "0");
-  return `${minutes}:${remainder}`;
-}
-
 export function ModelRealtimeVoiceTestPanel({
   models,
   modelId,
@@ -173,6 +142,10 @@ export function ModelRealtimeVoiceTestPanel({
     queryKey: ["model-test-realtime-options"],
     queryFn: getRealtimeVoiceOptions,
   });
+  const toolsQuery = useQuery({
+    queryKey: ["model-test-tools"],
+    queryFn: getModelTestTools,
+  });
   const realtimeModels = optionsQuery.data?.models ?? [];
   const selectedModel = realtimeModels.find((model) => model.id === modelId);
   const [voice, setVoice] = useState("");
@@ -184,7 +157,13 @@ export function ModelRealtimeVoiceTestPanel({
     useState<CallParameters>(DEFAULT_PARAMETERS);
   const [elapsed, setElapsed] = useState(0);
   const call = useRealtimeVoiceCall();
+  const [selectedToolIds, setSelectedToolIds] = useState<string[]>(
+    () => call.state.toolIds,
+  );
   const active = !["idle", "ended", "error"].includes(call.state.status);
+  const selectedTools = (toolsQuery.data?.items ?? []).filter((tool) =>
+    selectedToolIds.includes(tool.id),
+  );
 
   useEffect(() => {
     if (!selectedModel) return;
@@ -262,10 +241,7 @@ export function ModelRealtimeVoiceTestPanel({
       ],
       [parameters.minSpeechMs, selectedModel.client_vad.min_speech_ms],
       [parameters.preSpeechPadMs, selectedModel.client_vad.pre_speech_pad_ms],
-      [
-        parameters.commitSilenceMs,
-        selectedModel.client_vad.commit_silence_ms,
-      ],
+      [parameters.commitSilenceMs, selectedModel.client_vad.commit_silence_ms],
       [parameters.startBufferMs, selectedModel.playback.start_buffer_ms],
       [parameters.recoveryBufferMs, selectedModel.playback.recovery_buffer_ms],
     ];
@@ -279,8 +255,7 @@ export function ModelRealtimeVoiceTestPanel({
     )
       return "参数超出允许范围，请检查后重试。";
     if (
-      parameters.negativeSpeechThreshold >=
-      parameters.positiveSpeechThreshold
+      parameters.negativeSpeechThreshold >= parameters.positiveSpeechThreshold
     )
       return "停口阈值必须小于开口阈值。";
     if (parameters.recoveryBufferMs < parameters.startBufferMs)
@@ -290,6 +265,11 @@ export function ModelRealtimeVoiceTestPanel({
   const canStart =
     Boolean(selectedModel && voice) &&
     !optionsQuery.isLoading &&
+    !toolsQuery.isLoading &&
+    (!selectedToolIds.length ||
+      (Boolean(selectedModel?.supports_tools) &&
+        selectedTools.length === selectedToolIds.length &&
+        selectedTools.every((tool) => tool.enabled))) &&
     !parameterError;
   const start = () => {
     if (!selectedModel || !voice) return;
@@ -298,6 +278,7 @@ export function ModelRealtimeVoiceTestPanel({
       voice,
       instructions,
       greeting,
+      toolIds: selectedToolIds,
       vad: {
         positiveSpeechThreshold: parameters.positiveSpeechThreshold,
         negativeSpeechThreshold: parameters.negativeSpeechThreshold,
@@ -389,6 +370,13 @@ export function ModelRealtimeVoiceTestPanel({
               {selectedModel?.instructions_max_chars ?? 20_000}
             </small>
           </label>
+          <ModelTestToolSelector
+            selected={selectedTools}
+            supported={Boolean(selectedModel?.supports_tools)}
+            disabled={active || toolsQuery.isLoading}
+            pickerDescription="保存后将在下一次通话开始时使用工具的最新定义；通话中不能更改。"
+            onSave={async (toolIds) => setSelectedToolIds(toolIds)}
+          />
           {selectedModel ? (
             <>
               <section className="realtime-parameter-section">
@@ -425,9 +413,7 @@ export function ModelRealtimeVoiceTestPanel({
                     parameter={selectedModel.client_vad.min_speech_ms}
                     value={parameters.minSpeechMs}
                     disabled={active}
-                    onChange={(value) =>
-                      updateParameter("minSpeechMs", value)
-                    }
+                    onChange={(value) => updateParameter("minSpeechMs", value)}
                   />
                   <NumberField
                     label="前置保留"
@@ -541,141 +527,14 @@ export function ModelRealtimeVoiceTestPanel({
           ) : null}
         </aside>
 
-        <main className="realtime-voice-stage">
-          <div
-            className={`realtime-call-orb status-${call.state.status}`}
-            aria-hidden
-          >
-            <span>
-              <AudioLines />
-            </span>
-            <i />
-            <i />
-            <i />
-          </div>
-          <div
-            className="realtime-call-status"
-            role="status"
-            aria-live="polite"
-          >
-            <strong>{statusLabels[call.state.status]}</strong>
-            <span>
-              {active
-                ? formatDuration(elapsed)
-                : "免按键全双工 · 自动断句 · 可打断"}
-            </span>
-          </div>
-
-          {call.state.error ? (
-            <div className="inline-alert danger realtime-error" role="alert">
-              <span>{call.state.error}</span>
-              {call.state.retryable ? (
-                <button type="button" onClick={start} disabled={!canStart}>
-                  <RefreshCw aria-hidden /> 重试
-                </button>
-              ) : null}
-            </div>
-          ) : null}
-
-          <div className="realtime-transcripts">
-            <article
-              className={call.state.status === "listening" ? "active" : ""}
-            >
-              <header>
-                <Mic aria-hidden />
-                <span>你</span>
-                <small>实时转写</small>
-              </header>
-              <p>
-                {call.state.userTranscript ||
-                  "开始通话后，直接对着麦克风说话。"}
-              </p>
-            </article>
-            <article
-              className={
-                call.state.status === "speaking"
-                  ? "active assistant"
-                  : "assistant"
-              }
-            >
-              <header>
-                <Headphones aria-hidden />
-                <span>助手</span>
-                <small>实时转写</small>
-              </header>
-              <p>
-                {call.state.assistantTranscript ||
-                  "助手的回答会在这里同步显示。"}
-              </p>
-            </article>
-          </div>
-
-          <div className="realtime-call-metrics">
-            <span>
-              <Clock3 aria-hidden /> 首包延迟{" "}
-              {call.state.firstAudioLatencyMs == null
-                ? "—"
-                : `${call.state.firstAudioLatencyMs} ms`}
-            </span>
-            <span>
-              {call.state.status === "speaking"
-                ? "可直接说话打断"
-                : "等待你的声音"}
-            </span>
-          </div>
-
-          <div className="realtime-call-controls">
-            <button
-              type="button"
-              className={call.micMuted ? "muted" : ""}
-              aria-label={call.micMuted ? "取消麦克风静音" : "麦克风静音"}
-              disabled={!active}
-              onClick={() => call.setMicMuted(!call.micMuted)}
-            >
-              {call.micMuted ? <MicOff aria-hidden /> : <Mic aria-hidden />}
-              <span>{call.micMuted ? "麦克风已静音" : "麦克风"}</span>
-            </button>
-            {active ? (
-              <button
-                type="button"
-                className="hangup"
-                onClick={() => void call.stop()}
-              >
-                <PhoneOff aria-hidden />
-                <span>结束通话</span>
-              </button>
-            ) : (
-              <button
-                type="button"
-                className="start-call"
-                disabled={!canStart}
-                onClick={start}
-              >
-                <Phone aria-hidden />
-                <span>
-                  {optionsQuery.isLoading ? "加载配置中" : "开始通话"}
-                </span>
-              </button>
-            )}
-            <button
-              type="button"
-              className={call.speakerMuted ? "muted" : ""}
-              aria-label={call.speakerMuted ? "取消扬声器静音" : "扬声器静音"}
-              disabled={!active}
-              onClick={() => call.setSpeakerMuted(!call.speakerMuted)}
-            >
-              {call.speakerMuted ? (
-                <VolumeX aria-hidden />
-              ) : (
-                <Volume2 aria-hidden />
-              )}
-              <span>{call.speakerMuted ? "扬声器已静音" : "扬声器"}</span>
-            </button>
-          </div>
-          <p className="realtime-privacy-note">
-            转写与原始音频只保留在当前页面内存中；结束通话或离开页面后立即清除。
-          </p>
-        </main>
+        <RealtimeVoiceConversation
+          call={call}
+          elapsed={elapsed}
+          canStart={canStart}
+          modelLabel={selectedModel?.label ?? "未选择实时语音模型"}
+          loading={optionsQuery.isLoading || toolsQuery.isLoading}
+          onStart={start}
+        />
       </div>
     </section>
   );

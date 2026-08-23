@@ -12,6 +12,7 @@ from app.routes.models import (
     model_test,
     model_test_generation,
     model_test_realtime,
+    model_test_tools,
     model_test_transcription,
 )
 from app.routes.public_workspace import router as public_workspace_router
@@ -30,6 +31,7 @@ api_router.include_router(public_workspace_router)
 api_router.include_router(catalog.router, dependencies=[Depends(require_studio_auth)])
 api_router.include_router(call_logs.router, dependencies=[Depends(require_studio_auth)])
 api_router.include_router(model_test.router, dependencies=[Depends(require_studio_auth)])
+api_router.include_router(model_test_tools.router, dependencies=[Depends(require_studio_auth)])
 api_router.include_router(model_test_generation.router, dependencies=[Depends(require_studio_auth)])
 api_router.include_router(model_test_realtime.router)
 api_router.include_router(

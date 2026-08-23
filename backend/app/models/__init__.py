@@ -42,6 +42,11 @@ from app.models.model_test import (
     ModelTestMessage,
     ModelTestTranscriptionTask,
 )
+from app.models.model_test_tools import (
+    ModelTestConversationToolBinding,
+    ModelTestTool,
+    ModelTestToolCall,
+)
 from app.models.tool_navigation import ToolNavigationItem
 from app.models.visual_workshop import (
     VisualAssistantAction,
@@ -83,6 +88,9 @@ __all__ = [
     "ModelTestAttachment",
     "ModelTestMessage",
     "ModelTestTranscriptionTask",
+    "ModelTestConversationToolBinding",
+    "ModelTestTool",
+    "ModelTestToolCall",
     "SecurityAuditEvent",
     "SkillIntegration",
     "SkillVersion",

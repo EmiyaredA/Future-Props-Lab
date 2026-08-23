@@ -1,0 +1,117 @@
+.test-tool-back {
+  min-height: 34px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+}
+
+.test-tool-detail-head {
+  align-items: center;
+  margin: 16px 0 28px;
+}
+
+.test-tool-detail-head > div:nth-child(2) {
+  flex: 1;
+}
+
+.test-tool-title-row,
+.test-tool-detail-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.test-tool-detail-actions button.danger {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.test-tool-detail-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(360px, 0.9fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.test-tool-detail-column {
+  display: grid;
+  gap: 18px;
+}
+
+.test-tool-card {
+  padding: 22px;
+}
+
+.test-tool-card h2 {
+  margin: 0 0 18px;
+}
+
+.test-tool-card h3 {
+  margin: 22px 0 10px;
+  font-size: 15px;
+}
+
+.test-tool-card dl {
+  margin: 0;
+}
+
+.test-tool-card dl div {
+  display: grid;
+  grid-template-columns: 125px 1fr;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.test-tool-card dt {
+  color: var(--muted);
+}
+
+.test-tool-card dd {
+  margin: 0;
+}
+
+.test-tool-card p svg {
+  width: 15px;
+  vertical-align: -3px;
+}
+
+.test-tool-table {
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.test-tool-table > div {
+  display: grid;
+  grid-template-columns: 1fr 0.8fr 0.8fr 1.4fr;
+  gap: 12px;
+  padding: 11px 13px;
+  border-bottom: 1px solid var(--border);
+}
+
+.test-tool-table > div:last-child {
+  border-bottom: 0;
+}
+
+.test-tool-table b,
+.test-tool-table span {
+  font-size: 13px;
+}
+
+.test-tool-table b {
+  color: var(--muted);
+}
+
+@media (max-width: 1100px) {
+  .test-tool-detail-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  .test-tool-detail-head {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}

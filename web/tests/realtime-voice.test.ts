@@ -26,9 +26,10 @@ type OrtConfigTarget = {
 };
 
 const micVadNew = vi.hoisted(() =>
-  vi.fn(async (_options: { ortConfig: (ort: OrtConfigTarget) => void }) => ({
-    destroy: vi.fn(async () => undefined),
-  })),
+  vi.fn(async (options: { ortConfig: (ort: OrtConfigTarget) => void }) => {
+    void options;
+    return { destroy: vi.fn(async () => undefined) };
+  }),
 );
 
 vi.mock("@ricky0123/vad-web", () => ({
@@ -122,9 +123,8 @@ test("VAD uses the bundled runtime module with a self-hosted WASM binary", async
     numThreads: 1,
     proxy: false,
     wasmPaths: {
-      wasm: expect.stringMatching(
-        /\/voice-vad\/ort-wasm-simd-threaded\.wasm$/,
-      ),
+      mjs: expect.stringMatching(/ort-wasm-simd-threaded\.mjs/),
+      wasm: expect.stringMatching(/\/voice-vad\/ort-wasm-simd-threaded\.wasm$/),
     },
   });
 });
@@ -180,7 +180,7 @@ test("echo-aware barge-in ignores playback echo and accepts near-end speech", ()
   expect(interrupted).toHaveBeenCalledWith("assistant-turn");
 });
 
-test("realtime reducer tracks streaming state and clears memory on end", () => {
+test("realtime reducer tracks streaming state and retains results on end", () => {
   let state = realtimeVoiceReducer(initialRealtimeVoiceState, {
     type: "server",
     event: { type: "call_started" },
@@ -209,6 +209,177 @@ test("realtime reducer tracks streaming state and clears memory on end", () => {
     now: 2_000,
   });
   expect(state.status).toBe("ended");
-  expect(state.userTranscript).toBe("");
+  expect(state.userTranscript).toBe("你好");
   expect(state.assistantTranscript).toBe("");
+  expect(state.turns).toEqual([
+    {
+      turnId: "u1",
+      userTranscript: "你好",
+      assistantTranscript: "",
+      toolCalls: [],
+    },
+  ]);
+});
+
+test("realtime reducer replaces cumulative user hypotheses without duplicating text", () => {
+  let state = realtimeVoiceReducer(initialRealtimeVoiceState, {
+    type: "server",
+    event: { type: "user_speech_started", turn_id: "u1" },
+    now: 1_000,
+  });
+  for (const text of ["你", "你现在", "你现在具体", "你现在具体有哪些内容"]) {
+    state = realtimeVoiceReducer(state, {
+      type: "server",
+      event: { type: "user_transcript_delta", turn_id: "u1", text },
+      now: 1_100,
+    });
+  }
+  expect(state.userTranscript).toBe("你现在具体有哪些内容");
+
+  state = realtimeVoiceReducer(state, {
+    type: "server",
+    event: { type: "user_transcript_delta", turn_id: "u1", text: "" },
+    now: 1_150,
+  });
+  expect(state.userTranscript).toBe("你现在具体有哪些内容");
+
+  state = realtimeVoiceReducer(state, {
+    type: "server",
+    event: {
+      type: "user_transcript_delta",
+      turn_id: "u1",
+      text: "你现在想了解哪些内容",
+    },
+    now: 1_200,
+  });
+  expect(state.userTranscript).toBe("你现在想了解哪些内容");
+
+  state = realtimeVoiceReducer(state, {
+    type: "server",
+    event: {
+      type: "assistant_transcript_delta",
+      turn_id: "u1",
+      text: "可以",
+    },
+    now: 1_300,
+  });
+  state = realtimeVoiceReducer(state, {
+    type: "server",
+    event: {
+      type: "assistant_transcript_delta",
+      turn_id: "u1",
+      text: "帮你",
+    },
+    now: 1_400,
+  });
+  expect(state.assistantTranscript).toBe("可以帮你");
+  expect(state.turns).toEqual([
+    {
+      turnId: "u1",
+      userTranscript: "你现在想了解哪些内容",
+      assistantTranscript: "可以帮你",
+      toolCalls: [],
+    },
+  ]);
+
+  state = realtimeVoiceReducer(state, {
+    type: "server",
+    event: { type: "turn_done", turn_id: "u1" },
+    now: 1_500,
+  });
+  state = realtimeVoiceReducer(state, {
+    type: "server",
+    event: { type: "user_speech_started", turn_id: "u2" },
+    now: 2_000,
+  });
+  state = realtimeVoiceReducer(state, {
+    type: "server",
+    event: { type: "user_transcript", turn_id: "u2", text: "第二个问题" },
+    now: 2_100,
+  });
+  state = realtimeVoiceReducer(state, {
+    type: "server",
+    event: {
+      type: "assistant_transcript_done",
+      turn_id: "u2",
+      text: "第二个回答",
+    },
+    now: 2_200,
+  });
+  expect(state.turns).toEqual([
+    {
+      turnId: "u1",
+      userTranscript: "你现在想了解哪些内容",
+      assistantTranscript: "可以帮你",
+      toolCalls: [],
+    },
+    {
+      turnId: "u2",
+      userTranscript: "第二个问题",
+      assistantTranscript: "第二个回答",
+      toolCalls: [],
+    },
+  ]);
+});
+
+test("realtime reducer merges tool progress into its assistant turn", () => {
+  let state = realtimeVoiceReducer(initialRealtimeVoiceState, {
+    type: "prepare",
+    toolIds: ["tool-weather"],
+  });
+  state = realtimeVoiceReducer(state, {
+    type: "server",
+    event: { type: "call_started" },
+    now: 1_000,
+  });
+  state = realtimeVoiceReducer(state, {
+    type: "server",
+    event: { type: "user_speech_started", turn_id: "turn-weather" },
+    now: 1_100,
+  });
+  state = realtimeVoiceReducer(state, {
+    type: "server",
+    event: {
+      type: "tool_call_update",
+      turn_id: "turn-weather",
+      call_id: "call-weather",
+      id: "stored-call",
+      tool_id: "tool-weather",
+      tool_name: "查询天气",
+      arguments: { city: "上海" },
+      status: "running",
+      success: null,
+      duration_ms: 0,
+    },
+    now: 1_200,
+  });
+  expect(state.status).toBe("thinking");
+  state = realtimeVoiceReducer(state, {
+    type: "server",
+    event: {
+      type: "tool_call_update",
+      turn_id: "turn-weather",
+      call_id: "call-weather",
+      id: "stored-call",
+      tool_id: "tool-weather",
+      tool_name: "查询天气",
+      arguments: { city: "上海" },
+      status: "completed",
+      success: true,
+      result: { weather: "晴" },
+      duration_ms: 128,
+    },
+    now: 1_328,
+  });
+  expect(state.toolIds).toEqual(["tool-weather"]);
+  expect(state.turns[0]?.toolCalls).toEqual([
+    expect.objectContaining({
+      id: "stored-call",
+      callId: "call-weather",
+      toolName: "查询天气",
+      status: "completed",
+      result: { weather: "晴" },
+      durationMs: 128,
+    }),
+  ]);
 });

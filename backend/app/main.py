@@ -22,6 +22,7 @@ from app.galgame_workshop.video_export_runner import GalgameVideoExportRunner
 from app.llm.catalog.seed import seed_sayflow_text_catalog
 from app.llm.generation_runtime import RunnerSupervisor
 from app.llm.playground.generation_runner import ModelTestGenerationRunner
+from app.llm.playground.tool_stream import recover_interrupted_model_test_runs
 from app.llm.playground.transcription_runner import ModelTestTranscriptionRunner
 from app.problem_details import (
     http_exception_handler,
@@ -46,6 +47,7 @@ async def lifespan(lifespan_app: FastAPI) -> AsyncIterator[None]:
         await reconcile_project_trash(session, AssetStorage(settings))
         await seed_sayflow_text_catalog(session)
     await recover_interrupted_visual_assistant_runs()
+    await recover_interrupted_model_test_runs()
     supervisor = RunnerSupervisor(
         (
             VisualGenerationRunner(),

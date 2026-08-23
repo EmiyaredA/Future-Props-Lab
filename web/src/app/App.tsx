@@ -77,6 +77,11 @@ const ModelTestPage = lazy(() =>
     default: module.ModelTestPage,
   })),
 );
+const ModelTestToolsPage = lazy(() =>
+  import("@features/models/tools").then((module) => ({
+    default: module.ModelTestToolsPage,
+  })),
+);
 const ModelServicePage = lazy(() =>
   import("@features/models/catalog").then((module) => ({
     default: module.ModelServicePage,
@@ -317,6 +322,12 @@ export default function App() {
               onOpenAudioAnnotation={(projectId) =>
                 navigate("audio-annotation-editor", projectId)
               }
+            />
+          ) : page === "model-test-tools" ? (
+            <ModelTestToolsPage
+              toolId={route.projectId}
+              onOpenTool={(toolId) => navigate("model-test-tools", toolId)}
+              onBack={() => navigate("model-test-tools")}
             />
           ) : page === "model-service" ? (
             <ModelServicePage />

@@ -4,6 +4,7 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, Field, model_validator
 
+from app.schemas.model_test_tools import ModelTestToolCallOut, ModelTestToolSummaryOut
 from app.schemas.transcription import (
     ModelTestTranscriptionLanguageOptionOut as ModelTestTranscriptionLanguageOptionOut,
 )
@@ -75,6 +76,7 @@ class ModelTestMessageOut(BaseModel):
     error_message: str | None
     created_at: str
     attachments: list[ModelTestAttachmentOut] = Field(default_factory=list)
+    tool_calls: list[ModelTestToolCallOut] = Field(default_factory=list)
 
 
 class ModelTestConversationSummaryOut(BaseModel):
@@ -93,6 +95,7 @@ class ModelTestConversationOut(ModelTestConversationSummaryOut):
     max_tokens: int
     messages: list[ModelTestMessageOut]
     draft_attachments: list[ModelTestAttachmentOut] = Field(default_factory=list)
+    tools: list[ModelTestToolSummaryOut] = Field(default_factory=list)
 
 
 class ModelTestConversationListOut(BaseModel):
@@ -110,6 +113,7 @@ class ModelTestConversationPatchIn(BaseModel):
     system_prompt: str | None = Field(default=None, max_length=20000)
     temperature: float | None = Field(default=None, ge=0, le=2)
     max_tokens: int | None = Field(default=None, ge=1, le=8192)
+    tool_ids: list[str] | None = Field(default=None, max_length=20)
 
     @model_validator(mode="after")
     def has_change(self) -> ModelTestConversationPatchIn:
@@ -121,9 +125,12 @@ class ModelTestConversationPatchIn(BaseModel):
                 self.system_prompt,
                 self.temperature,
                 self.max_tokens,
+                self.tool_ids,
             )
         ):
             raise ValueError("至少需要提供一个修改字段")
+        if self.tool_ids is not None and len(set(self.tool_ids)) != len(self.tool_ids):
+            raise ValueError("测试工具不能重复")
         return self
 
 

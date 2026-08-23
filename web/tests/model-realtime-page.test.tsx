@@ -27,8 +27,75 @@ vi.mock("@features/models/api", async () => {
           output_sample_rate: 24_000,
           commit_silence_ms: 400,
           supports_interruption: true,
+          supports_tools: true,
+          instructions_max_chars: 20_000,
+          greeting_max_chars: 2_000,
+          input_format: "pcm_s16le",
+          output_format: "pcm_s16le",
+          channels: 1,
+          client_vad: {
+            positive_speech_threshold: {
+              default: 0.55,
+              minimum: 0.05,
+              maximum: 1,
+              step: 0.01,
+            },
+            negative_speech_threshold: {
+              default: 0.38,
+              minimum: 0,
+              maximum: 0.95,
+              step: 0.01,
+            },
+            min_speech_ms: {
+              default: 320,
+              minimum: 64,
+              maximum: 5_000,
+              step: 32,
+            },
+            pre_speech_pad_ms: {
+              default: 160,
+              minimum: 0,
+              maximum: 2_000,
+              step: 32,
+            },
+            commit_silence_ms: {
+              default: 400,
+              minimum: 100,
+              maximum: 5_000,
+              step: 50,
+            },
+          },
+          playback: {
+            start_buffer_ms: {
+              default: 400,
+              minimum: 0,
+              maximum: 2_000,
+              step: 50,
+            },
+            recovery_buffer_ms: {
+              default: 800,
+              minimum: 0,
+              maximum: 3_000,
+              step: 50,
+            },
+          },
+          microphone: {
+            echo_cancellation: true,
+            noise_suppression: true,
+            auto_gain_control: true,
+          },
         },
       ],
+    }),
+    getModelTestTools: vi.fn().mockResolvedValue({
+      revision: 0,
+      overview: {
+        total_tools: 0,
+        enabled_tools: 0,
+        today_runs: 0,
+        success_rate: null,
+      },
+      items: [],
     }),
   };
 });
@@ -56,9 +123,7 @@ test("renders the hands-free realtime voice workspace without native selects", a
     </QueryClientProvider>,
   );
 
-  expect(
-    await screen.findByText("免按键全双工 · 自动断句 · 可打断"),
-  ).toBeInTheDocument();
+  expect(await screen.findByText("实时语音会话")).toBeInTheDocument();
   expect(screen.getByRole("tab", { name: "实时语音" })).toHaveAttribute(
     "aria-selected",
     "true",
@@ -69,9 +134,17 @@ test("renders the hands-free realtime voice workspace without native selects", a
     ).toHaveTextContent("气质学姐 · 开心"),
   );
   expect(screen.getByRole("button", { name: "开始通话" })).toBeEnabled();
-  expect(screen.getByText(/输入 16 kHz PCM16/)).toBeInTheDocument();
-  expect(screen.getByText(/输出 24 kHz PCM16/)).toBeInTheDocument();
-  expect(screen.getByText("400 ms 自动断句")).toBeInTheDocument();
-  expect(screen.getByText(/结束通话或离开页面后立即清除/)).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "选择测试工具" })).toBeEnabled();
+  expect(screen.getByText(/输入 16 kHz pcm_s16le/)).toBeInTheDocument();
+  expect(screen.getByText(/输出 24 kHz pcm_s16le/)).toBeInTheDocument();
+  expect(screen.getByRole("textbox", { name: /开场白/ })).toBeInTheDocument();
+  expect(screen.getByLabelText("开口阈值")).toHaveValue(0.55);
+  expect(screen.getByLabelText("静音断句")).toHaveValue(400);
+  expect(screen.getByLabelText("起播缓冲")).toHaveValue(400);
+  expect(screen.getByRole("switch", { name: "说话打断" })).toHaveAttribute(
+    "aria-checked",
+    "true",
+  );
+  expect(screen.getByText(/工具调用详情会写入测试记录/)).toBeInTheDocument();
   expect(container.querySelector("select")).toBeNull();
 });

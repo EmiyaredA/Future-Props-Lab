@@ -54,6 +54,11 @@ import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
 import type { SelectOption } from "@shared/ui/CustomSelect";
 import { ModelTestCapabilityPanel } from "@features/models/conversation/ModelTestCapabilityPanel";
 import {
+  ModelTestToolCallList,
+  ModelTestToolSelector,
+  ModelTestToolWarnings,
+} from "@features/models/conversation/ModelTestToolControls";
+import {
   ModelTestWorkspaceHeader,
   type ModelTestMode,
 } from "@features/models/workspace/ModelTestWorkspaceHeader";
@@ -276,6 +281,7 @@ function MessageCard({
             ))}
           </div>
         ) : null}
+        <ModelTestToolCallList calls={message.tool_calls ?? []} />
         {message.role === "assistant" ? (
           content ? (
             <div className="markdown-body">
@@ -509,12 +515,16 @@ export function ModelTestPage({
     enabled: Boolean(activeId),
   });
   const conversation = detailQuery.data;
+  const conversationTools = conversation?.tools ?? [];
   const draftAttachments = conversation?.draft_attachments ?? [];
   const selectedModel = textModels.find(
     (model) => model.value === conversation?.model_id,
   );
   const selectedModelSupportsVision = Boolean(
     selectedModel?.capabilities.includes("vision"),
+  );
+  const selectedModelSupportsTools = Boolean(
+    selectedModel?.capabilities.includes("tools"),
   );
 
   useEffect(() => {
@@ -551,7 +561,7 @@ export function ModelTestPage({
         ModelTestConversation,
         "title" | "model_id" | "system_prompt" | "temperature" | "max_tokens"
       >
-    >,
+    > & { tool_ids?: string[] },
   ) => {
     if (!conversation || streamingId) return;
     setError("");
@@ -683,6 +693,8 @@ export function ModelTestPage({
             setStreamedContent(
               (current) => current + String(event.payload.text || ""),
             );
+          } else if (event.type === "step") {
+            void detailQuery.refetch();
           } else if (event.type === "error") {
             const raw = String(event.payload.message || "模型调用失败");
             const friendly = errorPresentation(raw);
@@ -758,6 +770,10 @@ export function ModelTestPage({
     !uploadingAttachments &&
     Boolean(input.trim() || draftAttachments.length) &&
     (!draftAttachments.length || selectedModelSupportsVision);
+  const toolsCompatible =
+    !conversationTools.length ||
+    (selectedModelSupportsTools &&
+      conversationTools.every((tool) => tool.enabled));
   const conversationItems = conversationsQuery.data?.items ?? [];
   const normalizedSearch = conversationSearch.trim().toLowerCase();
   const filteredConversations = normalizedSearch
@@ -1017,6 +1033,10 @@ export function ModelTestPage({
                     当前对话包含图片，请选择支持 vision 的模型。
                   </p>
                 ) : null}
+                <ModelTestToolWarnings
+                  selected={conversationTools}
+                  supported={selectedModelSupportsTools}
+                />
                 <div className="composer">
                   {draftAttachments.length || uploadingAttachments ? (
                     <div
@@ -1121,7 +1141,7 @@ export function ModelTestPage({
                     <button
                       className="send-button"
                       aria-label="发送"
-                      disabled={!canSend}
+                      disabled={!canSend || !toolsCompatible}
                       onClick={() => void run(false)}
                     >
                       <Send aria-hidden />
@@ -1165,6 +1185,14 @@ export function ModelTestPage({
                   }}
                 />
               </label>
+              <ModelTestToolSelector
+                selected={conversationTools}
+                supported={selectedModelSupportsTools}
+                disabled={Boolean(streamingId)}
+                onSave={async (toolIds) => {
+                  await patch({ tool_ids: toolIds });
+                }}
+              />
               <label className="parameter-field temperature-field">
                 <span className="parameter-label">
                   Temperature

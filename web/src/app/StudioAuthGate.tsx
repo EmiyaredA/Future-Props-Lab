@@ -17,6 +17,7 @@ import {
   type SessionContextValue,
   sessionRequest,
 } from "@app/StudioSession";
+import { clearRetainedRealtimeVoiceState } from "@features/models/realtime/realtimeVoiceMemory";
 
 type Status = "checking" | "signed-out" | "signed-in";
 
@@ -45,6 +46,7 @@ export function StudioAuthGate({ children }: { children: ReactNode }) {
   useEffect(() => {
     void refresh();
     const signedOut = () => {
+      clearRetainedRealtimeVoiceState();
       setMe(null);
       setStatus("signed-out");
     };
@@ -72,6 +74,7 @@ export function StudioAuthGate({ children }: { children: ReactNode }) {
         method: "POST",
         body: JSON.stringify({ username, password }),
       });
+      clearRetainedRealtimeVoiceState();
       setMe(current);
       setStatus("signed-in");
       setUsername("");
@@ -117,6 +120,7 @@ export function StudioAuthGate({ children }: { children: ReactNode }) {
       refresh,
       logout: async () => {
         await sessionRequest<void>("/v1/auth/logout", { method: "POST" });
+        clearRetainedRealtimeVoiceState();
         queryClient.clear();
         setMe(null);
         setStatus("signed-out");
@@ -126,6 +130,7 @@ export function StudioAuthGate({ children }: { children: ReactNode }) {
           method: "POST",
           body: JSON.stringify({ workspace_id: workspaceId }),
         });
+        clearRetainedRealtimeVoiceState();
         queryClient.clear();
         if (typeof BroadcastChannel !== "undefined") {
           const channel = new BroadcastChannel("future-props-workspace");

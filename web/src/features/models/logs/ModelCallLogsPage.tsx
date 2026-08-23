@@ -21,6 +21,7 @@ import {
   logProviderKindOptions,
   providerLabels,
 } from "@features/models/logs/logOptions";
+import { LogReproductionButton } from "@features/models/logs/LogReproductionButton";
 
 function formatNumber(value: number | null | undefined): string {
   return value == null ? "—" : new Intl.NumberFormat("zh-CN").format(value);
@@ -562,6 +563,7 @@ function LogDetail({
           <p className="log-detail-state">日志不存在。</p>
         )}
         <div className="drawer-footer">
+          {log ? <LogReproductionButton log={log} /> : null}
           <button className="btn danger" onClick={() => onDelete(id)}>
             删除日志
           </button>

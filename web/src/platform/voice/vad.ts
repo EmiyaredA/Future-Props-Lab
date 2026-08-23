@@ -1,4 +1,5 @@
 import { MicVAD } from "@ricky0123/vad-web";
+import ortWasmModuleUrl from "onnxruntime-web/ort-wasm-simd-threaded.mjs?url";
 
 export type VadFrame = {
   probability: number;
@@ -58,9 +59,10 @@ export async function createVoiceVad(options: {
       ort.env.logLevel = "error";
       ort.env.wasm.numThreads = 1;
       ort.env.wasm.proxy = false;
-      // Keep the Emscripten module bundled by onnxruntime-web. Supplying only
-      // the binary override avoids Vite treating a public .mjs file as source.
-      ort.env.wasm.wasmPaths = { wasm: wasmUrl };
+      // The Emscripten loader itself must be part of Vite's module graph. A
+      // public-directory .mjs URL is rejected when onnxruntime dynamically
+      // imports it during development, so only the binary stays self-hosted.
+      ort.env.wasm.wasmPaths = { mjs: ortWasmModuleUrl, wasm: wasmUrl };
     },
     onFrameProcessed: (probabilities, frame) =>
       options.onFrame({

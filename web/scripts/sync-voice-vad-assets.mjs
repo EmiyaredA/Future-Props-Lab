@@ -12,7 +12,6 @@ const assets = [
     dependenciesRoot,
     "@ricky0123/vad-web/dist/vad.worklet.bundle.min.js",
   ),
-  resolve(dependenciesRoot, "onnxruntime-web/dist/ort-wasm-simd-threaded.mjs"),
   resolve(dependenciesRoot, "onnxruntime-web/dist/ort-wasm-simd-threaded.wasm"),
 ];
 

@@ -313,6 +313,30 @@ th input {
   background: var(--surface);
 }
 
+.log-reproduction-action {
+  min-width: 0;
+  margin-right: auto;
+  display: grid;
+  gap: 4px;
+}
+
+.log-reproduction-action .btn {
+  width: fit-content;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.log-reproduction-action .btn svg {
+  width: 14px;
+}
+
+.log-reproduction-action small {
+  max-width: 340px;
+  color: var(--faint);
+  font-size: 8px;
+}
+
 .log-detail-state {
   margin: 28px;
   color: var(--muted);

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import io
+import zipfile
 from types import SimpleNamespace
 from uuid import uuid4
 
@@ -122,7 +124,30 @@ async def test_model_catalog_diagnostic_and_logs(monkeypatch: pytest.MonkeyPatch
         detail = await client.get(f"/v1/llm-call-logs/{log_id}")
         assert detail.status_code == 200
         assert detail.json()["total_tokens"] == 6
+        assert detail.json()["reproduction_supported"] is True
         assert "sk-integration-secret" not in detail.text
+
+        reproduction = await client.get(f"/v1/llm-call-logs/{log_id}/reproduction-bundle")
+        assert reproduction.status_code == 200
+        assert reproduction.headers["content-type"] == "application/zip"
+        assert "model-repro-" in reproduction.headers["content-disposition"]
+        with zipfile.ZipFile(io.BytesIO(reproduction.content)) as archive:
+            assert set(archive.namelist()) == {
+                ".env.example",
+                "README.md",
+                "expected-response.json",
+                "request.json",
+                "run_repro.py",
+            }
+            request = archive.read("request.json").decode()
+            readme = archive.read("README.md").decode()
+            runner = archive.read("run_repro.py").decode()
+            assert "sk-integration-secret" not in request
+            assert "sk-integration-secret" not in readme
+            assert '"endpoint": "/chat/completions"' in request
+            assert "--mode sync --count 20" in readme
+            assert "--mode async --count 100 --concurrency 10" in readme
+            compile(runner, "run_repro.py", "exec")
 
         stats = await client.get("/v1/llm-call-logs/stats")
         assert stats.status_code == 200

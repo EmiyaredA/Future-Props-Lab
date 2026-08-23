@@ -54,12 +54,20 @@ HTTPS 或本机回环 HTTP 规则。
 - `GET /v1/llm-call-logs`：支持搜索、调用源、供应商、模型、状态、日期和分页。
 - `GET /v1/llm-call-logs/stats`
 - `GET/DELETE /v1/llm-call-logs/{log_id}`
+- `GET /v1/llm-call-logs/{log_id}/reproduction-bundle`：下载不含密钥的 ZIP 复现包。
 - `POST /v1/llm-call-logs/batch-delete`
 
 调用源 `model_diagnostic` 表示模型服务行内的固定 `OK` 快速诊断，`model_playground` 表示模型测试
 工作台，`visual_workshop_assistant` 表示视觉工坊 Agent。详情按请求上下文、模型回复、Token 与
 耗时分区展示，并支持可读/JSON、Markdown/原文切换。新产生的流式文本日志记录首 Token 耗时、
 结束原因和模型轮次；旧日志没有对应观测值时返回原 payload 并显示为空。
+
+复现包目前只对保存了完整纯文本消息的 OpenAI/Anthropic 调用开放。ZIP 包含脱敏后的
+`request.json`、原日志响应快照、无第三方依赖的 `run_repro.py`、`.env.example` 和中文 README；
+脚本支持单次调用、同步串行批量、异步限并发批量，并把逐次响应与成功率、min/mean/p50/p95/max
+耗时写入本地结果目录。API Key 只能通过 `REPRO_API_KEY` 环境变量传入，也可用
+`REPRO_BASE_URL` 覆盖当前供应商地址。带附件的文本调用以及实时语音、语音识别、图片和视频日志
+因没有持久化原始输入而返回 `409 reproduction_unavailable`，不会生成不等价的复现包。
 
 ## 模型测试
 
@@ -70,6 +78,9 @@ HTTPS 或本机回环 HTTP 规则。
 - `GET /v1/model-test/conversations/{conversation_id}/attachments/{attachment_id}/content`：鉴权预览图片。
 - `POST /v1/model-test/conversations/{conversation_id}/messages/stream`
 - `POST /v1/model-test/conversations/{conversation_id}/regenerate/stream`
+- `GET/POST /v1/model-test/tools`：查询概览或创建当前 Workspace 的本地 Mock 测试工具。
+- `GET/PATCH/DELETE /v1/model-test/tools/{tool_id}`：读取、CAS 更新或删除测试工具；已绑定会话的工具不可删除。
+- `POST /v1/model-test/tools/{tool_id}/execute`：使用 JSON 参数执行一次确定性试运行并保存调用记录。
 - `GET /v1/model-test/generation-options`：返回所有已启用图片/视频测试模型及图片尺寸。
 - `GET/POST /v1/model-test/generation-tasks`
 - `GET/DELETE /v1/model-test/generation-tasks/{task_id}`
@@ -86,30 +97,56 @@ HTTPS 或本机回环 HTTP 规则。
 - `GET /v1/model-test/transcription-tasks`、`GET /v1/model-test/transcription-tasks/{task_id}`：分页查询或读取识别任务。
 - `GET /v1/model-test/transcription-tasks/{task_id}/input-content`：鉴权试听任务的私有输入副本。
 - `DELETE /v1/model-test/transcription-tasks/{task_id}?expected_revision=...`：CAS 删除完成或失败任务及其私有音频。
-- `GET /v1/model-test/realtime-options`：返回已启用且声明 `voice` 能力的实时模型、15 个音色、默认音色、采样率、400 ms 自动提交和打断能力，不返回密钥。
+- `GET /v1/model-test/realtime-options`：返回已启用且声明 `voice` 能力的实时模型、15 个音色、默认音色、提示词/开场白长度限制、固定 PCM 协议，以及客户端 VAD、播放缓冲、麦克风处理和打断参数的默认值与数值范围；不返回密钥。
 - `WS /v1/model-test/realtime`：Cookie Session 鉴权的实时语音双工连接；握手同时校验当前 Workspace 与精确 Origin。
 
 实时 WebSocket 使用稳定的供应商无关 JSON 契约。客户端首条消息必须是
-`start {model_id, voice, instructions}`，之后可发送 `audio`（Base64 PCM16/16 kHz）、
+`start` 必须包含 `model_id`、`voice`、`instructions`，并可携带 `greeting`、
+`client_vad {positive_speech_threshold, negative_speech_threshold, min_speech_ms,
+pre_speech_pad_ms, commit_silence_ms}`、`playback {start_buffer_ms, recovery_buffer_ms}`、
+`microphone {echo_cancellation, noise_suppression, auto_gain_control}` 和
+`interruption_enabled`，以及最多 20 个当前 Workspace 已启用测试工具的 `tool_ids`。服务端读取工具
+最新快照并转换为 SenseAudio Function Schema，客户端不能直接提交工具 Schema。客户端之后可发送
+`audio`（Base64 PCM16/16 kHz）、
 `commit_input`、`interrupt`、`mute` 和 `stop`。服务端只返回 `call_started`、用户说话与转写事件、
-助手转写、`audio`（Base64 PCM16/24 kHz）、`turn_done`、`interrupt`、`error` 和 `call_ended`；
-供应商原始事件不会透传。未登录或 Session 失效以 4401 关闭，Origin 或 Workspace 校验失败以
+助手转写、`audio`（Base64 PCM16/24 kHz）、统一的 `tool_call_update`、`turn_done`、`interrupt`、
+`error` 和 `call_ended`；`tool_call_update` 包含 `turn_id`、`call_id`、工具 ID/名称、参数、状态、
+成功标记、结果或结构化错误及耗时。
+其中 `user_transcript_delta.text` 是可被后续事件整体替换的实时识别假设，
+`assistant_transcript_delta.text` 才是需要追加的文本片段。供应商原始事件不会透传。
+未登录或 Session 失效以 4401 关闭，Origin 或 Workspace 校验失败以
 4403 关闭。每个完成的助手回合复用同一 trace ID 写一条 `model_playground` 调用日志，只保存模型、
-音色、输入/输出音频时长、转写字符数、首音频延迟、总耗时、usage 与状态。转写正文和音频字节只在
-当前页面内存中存在，通话结束、离开页面或登出时立即清除，不进入数据库或日志。
+音色、输入/输出音频时长、转写字符数、首音频延迟、总耗时、usage 与状态。转写正文和双方 PCM 音频
+只在当前浏览器页面进程内存在，按 `turn_id` 关联并可分别回放；切换模型测试页签或站内导航后仍可
+返回查看。音频缓存总上限为 64 MiB；开始新通话、刷新或关闭页面、登出、切换 Workspace 后清除，
+转写正文和音频都不进入数据库或日志。实时工具调用以 `source=realtime_voice` 使用独立短事务保存
+完整工具快照、参数、结果、状态与耗时；调用日志只保存工具名称、状态与耗时摘要。
 
 修改、删除、发送和重新生成使用会话 `expected_revision` 做 CAS 保护。发送请求可携带最多 5 个
 `attachment_ids`，文本和图片至少提供一项。图片仅支持 JPEG、PNG、WebP 与静态 GIF，单张
 最多 8 MiB、宽高最多 8000 像素；只有同时具有 `chat`、`vision` 能力的模型可处理图片。
 图片随消息私有保存，成功轮次的历史图片会继续进入后续请求，重新生成复用原用户消息图片。
 调用日志记录脱敏文本上下文、最终文本回复、会话 ID、首 Token、结束原因和轮次；图片仅记录 MIME
-与大小，不记录图片内容或磁盘路径。流式接口返回 SSE v2 envelope，事件为 `start / delta / done /
-error`；成功、失败、超时或取消都会保存消息状态并写入调用日志。
+与大小，不记录图片内容或磁盘路径。流式接口返回 SSE v2 envelope，普通会话事件为 `start / delta /
+done / error`；工具会话另有 `step` 事件，按 `proposed / running / completed / failed / cancelled`
+更新工具步骤。成功、失败、超时或取消都会保存消息状态并写入调用日志。
+
+测试工具名称在 Workspace 内唯一，只允许 1–64 位字母、数字和下划线；输入必须是合法的 Draft
+2020-12 object JSON Schema，Schema 与成功返回分别不超过 64 KiB，延迟范围为 0–10,000 ms。
+会话通过 `tool_ids` 按顺序绑定最多 20 个已启用工具；工具和会话更新都使用 revision/CAS。发送时读取
+工具最新版并保存定义快照，历史调用不随工具修改而变化。选择工具后只允许同时声明 `chat` 与 `tools`
+能力的 OpenAI/Anthropic 模型，Tool Choice 固定为 `auto`，最多运行 6 个模型轮次并容忍 3 次工具失败。
+参数校验失败和配置的模拟失败都会作为工具结果交还模型；测试工具不访问网络，也不产生外部副作用。
 
 模型测试页按能力与供应商协议自适应：只有声明 `chat` 的 OpenAI/Anthropic 模型进入多轮对话，
 SenseAudio 图片/视频模型进入独立异步生成测试，声明 `voice` 的已启用模型进入实时语音测试。
-实时语音支持免按键自动断句、双方实时转写、流式播放、麦克风/扬声器静音和说话打断；模型、音色
-与系统提示词在通话中锁定。图片测试支持提示词、尺寸和种子；视频测试支持提示词、时长、分辨率、比例、
+实时语音使用与文本测试一致的纵向消息卡，工具卡嵌入对应助手消息并可展开参数、结果或失败原因；
+支持免按键自动断句、双方实时转写、流式播放、麦克风/扬声器静音和说话打断。模型、音色、测试工具、
+开场白、系统提示词、VAD、播放缓冲与麦克风处理参数在通话中锁定。SenseAudio 固定使用单声道
+PCM16 little-endian，输入 16 kHz、输出 24 kHz；页面不允许提交供应商不支持的音频格式。页面按
+`turn_id` 保留最近一次测试的多轮转写及双方语音；结束通话或离开实时语音页只关闭实时音频链路，
+切换页面后仍可返回查看和回放。开始新通话、刷新或关闭页面、登出、切换 Workspace 后统一清除。
+图片测试支持提示词、尺寸和种子；视频测试支持提示词、时长、分辨率、比例、
 水印、生成音频，以及上传最多 9 张图片、3 个音频和 3 个视频到模型测试私有草稿区。创建任务会在
 同一事务认领这些草稿；新任务不能引用公共 `visual_assets`。历史任务由显式回填 API 迁移，原公共
 文件保持不动。任务结果下载到 `model-test/generated/`，不创建视觉工坊项目或素材。任务与模型

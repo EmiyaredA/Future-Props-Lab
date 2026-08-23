@@ -1639,6 +1639,14 @@
             "title": "Provider Kind",
             "type": "string"
           },
+          "reproduction_reason": {
+            "title": "Reproduction Reason",
+            "type": "string"
+          },
+          "reproduction_supported": {
+            "title": "Reproduction Supported",
+            "type": "boolean"
+          },
           "request_payload": {
             "additionalProperties": true,
             "title": "Request Payload",
@@ -1683,6 +1691,8 @@
           "latency_ms",
           "status",
           "error_message",
+          "reproduction_supported",
+          "reproduction_reason",
           "created_at"
         ],
         "title": "CallLogOut",
@@ -11086,6 +11096,13 @@
             "title": "Title",
             "type": "string"
           },
+          "tools": {
+            "items": {
+              "$ref": "#/components/schemas/ModelTestToolSummaryOut"
+            },
+            "title": "Tools",
+            "type": "array"
+          },
           "updated_at": {
             "title": "Updated At",
             "type": "string"
@@ -11175,6 +11192,21 @@
               }
             ],
             "title": "Title"
+          },
+          "tool_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 20,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tool Ids"
           }
         },
         "required": [
@@ -11757,6 +11789,13 @@
             "title": "Status",
             "type": "string"
           },
+          "tool_calls": {
+            "items": {
+              "$ref": "#/components/schemas/ModelTestToolCallOut"
+            },
+            "title": "Tool Calls",
+            "type": "array"
+          },
           "turn_id": {
             "title": "Turn Id",
             "type": "string"
@@ -11815,6 +11854,539 @@
           "expected_revision"
         ],
         "title": "ModelTestSendIn",
+        "type": "object"
+      },
+      "ModelTestToolCallOut": {
+        "properties": {
+          "arguments": {
+            "additionalProperties": true,
+            "title": "Arguments",
+            "type": "object"
+          },
+          "configured_delay_ms": {
+            "title": "Configured Delay Ms",
+            "type": "integer"
+          },
+          "conversation_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Conversation Id"
+          },
+          "created_at": {
+            "title": "Created At",
+            "type": "string"
+          },
+          "duration_ms": {
+            "title": "Duration Ms",
+            "type": "integer"
+          },
+          "error_code": {
+            "title": "Error Code",
+            "type": "string"
+          },
+          "error_message": {
+            "title": "Error Message",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "message_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message Id"
+          },
+          "result": {
+            "anyOf": [
+              {},
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Result"
+          },
+          "round_index": {
+            "title": "Round Index",
+            "type": "integer"
+          },
+          "run_id": {
+            "title": "Run Id",
+            "type": "string"
+          },
+          "source": {
+            "enum": [
+              "dry_run",
+              "model_test",
+              "realtime_voice"
+            ],
+            "title": "Source",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "proposed",
+              "running",
+              "completed",
+              "failed",
+              "cancelled"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "success": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Success"
+          },
+          "tool_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tool Id"
+          },
+          "tool_name": {
+            "title": "Tool Name",
+            "type": "string"
+          },
+          "tool_revision": {
+            "title": "Tool Revision",
+            "type": "integer"
+          },
+          "updated_at": {
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "source",
+          "conversation_id",
+          "message_id",
+          "run_id",
+          "round_index",
+          "tool_id",
+          "tool_name",
+          "tool_revision",
+          "arguments",
+          "status",
+          "success",
+          "result",
+          "error_code",
+          "error_message",
+          "configured_delay_ms",
+          "duration_ms",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "ModelTestToolCallOut",
+        "type": "object"
+      },
+      "ModelTestToolCatalogOut": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ModelTestToolSummaryOut"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "overview": {
+            "$ref": "#/components/schemas/ModelTestToolOverviewOut"
+          }
+        },
+        "required": [
+          "items",
+          "overview"
+        ],
+        "title": "ModelTestToolCatalogOut",
+        "type": "object"
+      },
+      "ModelTestToolCreateIn": {
+        "properties": {
+          "delay_ms": {
+            "default": 0,
+            "maximum": 10000.0,
+            "minimum": 0.0,
+            "title": "Delay Ms",
+            "type": "integer"
+          },
+          "description": {
+            "default": "",
+            "maxLength": 1000,
+            "title": "Description",
+            "type": "string"
+          },
+          "enabled": {
+            "default": true,
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "error_code": {
+            "default": "mock_failure",
+            "maxLength": 120,
+            "title": "Error Code",
+            "type": "string"
+          },
+          "error_message": {
+            "default": "模拟工具执行失败",
+            "maxLength": 1000,
+            "title": "Error Message",
+            "type": "string"
+          },
+          "input_schema": {
+            "additionalProperties": true,
+            "title": "Input Schema",
+            "type": "object"
+          },
+          "mock_kind": {
+            "default": "success",
+            "enum": [
+              "success",
+              "failure"
+            ],
+            "title": "Mock Kind",
+            "type": "string"
+          },
+          "mock_result": {
+            "title": "Mock Result"
+          },
+          "name": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "ModelTestToolCreateIn",
+        "type": "object"
+      },
+      "ModelTestToolExecuteIn": {
+        "properties": {
+          "expected_revision": {
+            "minimum": 0.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "input": {
+            "additionalProperties": true,
+            "title": "Input",
+            "type": "object"
+          }
+        },
+        "required": [
+          "expected_revision"
+        ],
+        "title": "ModelTestToolExecuteIn",
+        "type": "object"
+      },
+      "ModelTestToolOut": {
+        "properties": {
+          "bound_conversation_count": {
+            "default": 0,
+            "title": "Bound Conversation Count",
+            "type": "integer"
+          },
+          "created_at": {
+            "title": "Created At",
+            "type": "string"
+          },
+          "delay_ms": {
+            "title": "Delay Ms",
+            "type": "integer"
+          },
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "enabled": {
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "error_code": {
+            "title": "Error Code",
+            "type": "string"
+          },
+          "error_message": {
+            "title": "Error Message",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "input_schema": {
+            "additionalProperties": true,
+            "title": "Input Schema",
+            "type": "object"
+          },
+          "last_used_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Used At"
+          },
+          "mock_kind": {
+            "enum": [
+              "success",
+              "failure"
+            ],
+            "title": "Mock Kind",
+            "type": "string"
+          },
+          "mock_result": {
+            "title": "Mock Result"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "parameter_count": {
+            "title": "Parameter Count",
+            "type": "integer"
+          },
+          "recent_calls": {
+            "items": {
+              "$ref": "#/components/schemas/ModelTestToolCallOut"
+            },
+            "title": "Recent Calls",
+            "type": "array"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          },
+          "updated_at": {
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "description",
+          "parameter_count",
+          "mock_kind",
+          "delay_ms",
+          "enabled",
+          "revision",
+          "last_used_at",
+          "created_at",
+          "updated_at",
+          "input_schema",
+          "mock_result",
+          "error_code",
+          "error_message"
+        ],
+        "title": "ModelTestToolOut",
+        "type": "object"
+      },
+      "ModelTestToolOverviewOut": {
+        "properties": {
+          "enabled": {
+            "title": "Enabled",
+            "type": "integer"
+          },
+          "failure": {
+            "title": "Failure",
+            "type": "integer"
+          },
+          "recent": {
+            "items": {
+              "$ref": "#/components/schemas/ModelTestToolSummaryOut"
+            },
+            "title": "Recent",
+            "type": "array"
+          },
+          "today_runs": {
+            "title": "Today Runs",
+            "type": "integer"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "total",
+          "enabled",
+          "failure",
+          "today_runs"
+        ],
+        "title": "ModelTestToolOverviewOut",
+        "type": "object"
+      },
+      "ModelTestToolPatchIn": {
+        "properties": {
+          "delay_ms": {
+            "default": 0,
+            "maximum": 10000.0,
+            "minimum": 0.0,
+            "title": "Delay Ms",
+            "type": "integer"
+          },
+          "description": {
+            "default": "",
+            "maxLength": 1000,
+            "title": "Description",
+            "type": "string"
+          },
+          "enabled": {
+            "default": true,
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "error_code": {
+            "default": "mock_failure",
+            "maxLength": 120,
+            "title": "Error Code",
+            "type": "string"
+          },
+          "error_message": {
+            "default": "模拟工具执行失败",
+            "maxLength": 1000,
+            "title": "Error Message",
+            "type": "string"
+          },
+          "expected_revision": {
+            "minimum": 0.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "input_schema": {
+            "additionalProperties": true,
+            "title": "Input Schema",
+            "type": "object"
+          },
+          "mock_kind": {
+            "default": "success",
+            "enum": [
+              "success",
+              "failure"
+            ],
+            "title": "Mock Kind",
+            "type": "string"
+          },
+          "mock_result": {
+            "title": "Mock Result"
+          },
+          "name": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "expected_revision"
+        ],
+        "title": "ModelTestToolPatchIn",
+        "type": "object"
+      },
+      "ModelTestToolSummaryOut": {
+        "properties": {
+          "created_at": {
+            "title": "Created At",
+            "type": "string"
+          },
+          "delay_ms": {
+            "title": "Delay Ms",
+            "type": "integer"
+          },
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "enabled": {
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "last_used_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Used At"
+          },
+          "mock_kind": {
+            "enum": [
+              "success",
+              "failure"
+            ],
+            "title": "Mock Kind",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "parameter_count": {
+            "title": "Parameter Count",
+            "type": "integer"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          },
+          "updated_at": {
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "description",
+          "parameter_count",
+          "mock_kind",
+          "delay_ms",
+          "enabled",
+          "revision",
+          "last_used_at",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "ModelTestToolSummaryOut",
         "type": "object"
       },
       "ModelTestTranscriptionAudioInfoOut": {
@@ -13079,8 +13651,66 @@
         "title": "PublicWorkspaceProjectionOut",
         "type": "object"
       },
+      "RealtimeNumberParameterOut": {
+        "properties": {
+          "default": {
+            "title": "Default",
+            "type": "number"
+          },
+          "maximum": {
+            "title": "Maximum",
+            "type": "number"
+          },
+          "minimum": {
+            "title": "Minimum",
+            "type": "number"
+          },
+          "step": {
+            "title": "Step",
+            "type": "number"
+          }
+        },
+        "required": [
+          "default",
+          "minimum",
+          "maximum",
+          "step"
+        ],
+        "title": "RealtimeNumberParameterOut",
+        "type": "object"
+      },
+      "RealtimeVoiceMicrophoneOut": {
+        "properties": {
+          "auto_gain_control": {
+            "title": "Auto Gain Control",
+            "type": "boolean"
+          },
+          "echo_cancellation": {
+            "title": "Echo Cancellation",
+            "type": "boolean"
+          },
+          "noise_suppression": {
+            "title": "Noise Suppression",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "echo_cancellation",
+          "noise_suppression",
+          "auto_gain_control"
+        ],
+        "title": "RealtimeVoiceMicrophoneOut",
+        "type": "object"
+      },
       "RealtimeVoiceModelOut": {
         "properties": {
+          "channels": {
+            "title": "Channels",
+            "type": "integer"
+          },
+          "client_vad": {
+            "$ref": "#/components/schemas/RealtimeVoiceVadOut"
+          },
           "commit_silence_ms": {
             "title": "Commit Silence Ms",
             "type": "integer"
@@ -13089,21 +13719,43 @@
             "title": "Default Voice",
             "type": "string"
           },
+          "greeting_max_chars": {
+            "title": "Greeting Max Chars",
+            "type": "integer"
+          },
           "id": {
             "title": "Id",
+            "type": "string"
+          },
+          "input_format": {
+            "title": "Input Format",
             "type": "string"
           },
           "input_sample_rate": {
             "title": "Input Sample Rate",
             "type": "integer"
           },
+          "instructions_max_chars": {
+            "title": "Instructions Max Chars",
+            "type": "integer"
+          },
           "label": {
             "title": "Label",
+            "type": "string"
+          },
+          "microphone": {
+            "$ref": "#/components/schemas/RealtimeVoiceMicrophoneOut"
+          },
+          "output_format": {
+            "title": "Output Format",
             "type": "string"
           },
           "output_sample_rate": {
             "title": "Output Sample Rate",
             "type": "integer"
+          },
+          "playback": {
+            "$ref": "#/components/schemas/RealtimeVoicePlaybackOut"
           },
           "provider_id": {
             "title": "Provider Id",
@@ -13133,6 +13785,10 @@
             "title": "Supports Interruption",
             "type": "boolean"
           },
+          "supports_tools": {
+            "title": "Supports Tools",
+            "type": "boolean"
+          },
           "voices": {
             "items": {
               "$ref": "#/components/schemas/RealtimeVoiceOptionOut"
@@ -13153,7 +13809,16 @@
           "input_sample_rate",
           "output_sample_rate",
           "commit_silence_ms",
-          "supports_interruption"
+          "supports_interruption",
+          "supports_tools",
+          "instructions_max_chars",
+          "greeting_max_chars",
+          "input_format",
+          "output_format",
+          "channels",
+          "client_vad",
+          "playback",
+          "microphone"
         ],
         "title": "RealtimeVoiceModelOut",
         "type": "object"
@@ -13190,6 +13855,50 @@
           "models"
         ],
         "title": "RealtimeVoiceOptionsOut",
+        "type": "object"
+      },
+      "RealtimeVoicePlaybackOut": {
+        "properties": {
+          "recovery_buffer_ms": {
+            "$ref": "#/components/schemas/RealtimeNumberParameterOut"
+          },
+          "start_buffer_ms": {
+            "$ref": "#/components/schemas/RealtimeNumberParameterOut"
+          }
+        },
+        "required": [
+          "start_buffer_ms",
+          "recovery_buffer_ms"
+        ],
+        "title": "RealtimeVoicePlaybackOut",
+        "type": "object"
+      },
+      "RealtimeVoiceVadOut": {
+        "properties": {
+          "commit_silence_ms": {
+            "$ref": "#/components/schemas/RealtimeNumberParameterOut"
+          },
+          "min_speech_ms": {
+            "$ref": "#/components/schemas/RealtimeNumberParameterOut"
+          },
+          "negative_speech_threshold": {
+            "$ref": "#/components/schemas/RealtimeNumberParameterOut"
+          },
+          "positive_speech_threshold": {
+            "$ref": "#/components/schemas/RealtimeNumberParameterOut"
+          },
+          "pre_speech_pad_ms": {
+            "$ref": "#/components/schemas/RealtimeNumberParameterOut"
+          }
+        },
+        "required": [
+          "positive_speech_threshold",
+          "negative_speech_threshold",
+          "min_speech_ms",
+          "pre_speech_pad_ms",
+          "commit_silence_ms"
+        ],
+        "title": "RealtimeVoiceVadOut",
         "type": "object"
       },
       "ReauthIn": {
@@ -21897,6 +22606,44 @@
         ]
       }
     },
+    "/v1/llm-call-logs/{log_id}/reproduction-bundle": {
+      "get": {
+        "operationId": "reproduction_bundle_v1_llm_call_logs__log_id__reproduction_bundle_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "log_id",
+            "required": true,
+            "schema": {
+              "title": "Log Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/zip": {}
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Reproduction Bundle",
+        "tags": [
+          "model-logs"
+        ]
+      }
+    },
     "/v1/model-categories": {
       "get": {
         "operationId": "list_model_categories_v1_model_categories_get",
@@ -23307,6 +24054,264 @@
         "summary": "Realtime Options",
         "tags": [
           "model-test"
+        ]
+      }
+    },
+    "/v1/model-test/tools": {
+      "get": {
+        "operationId": "list_tools_v1_model_test_tools_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModelTestToolCatalogOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Tools",
+        "tags": [
+          "model-test-tools"
+        ]
+      },
+      "post": {
+        "operationId": "create_tool_v1_model_test_tools_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ModelTestToolCreateIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModelTestToolOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Tool",
+        "tags": [
+          "model-test-tools"
+        ]
+      }
+    },
+    "/v1/model-test/tools/{tool_id}": {
+      "delete": {
+        "operationId": "delete_tool_v1_model_test_tools__tool_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "tool_id",
+            "required": true,
+            "schema": {
+              "title": "Tool Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "expected_revision",
+            "required": true,
+            "schema": {
+              "minimum": 0,
+              "title": "Expected Revision",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "boolean"
+                  },
+                  "title": "Response Delete Tool V1 Model Test Tools  Tool Id  Delete",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Tool",
+        "tags": [
+          "model-test-tools"
+        ]
+      },
+      "get": {
+        "operationId": "get_tool_v1_model_test_tools__tool_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "tool_id",
+            "required": true,
+            "schema": {
+              "title": "Tool Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModelTestToolOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Tool",
+        "tags": [
+          "model-test-tools"
+        ]
+      },
+      "patch": {
+        "operationId": "update_tool_v1_model_test_tools__tool_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "tool_id",
+            "required": true,
+            "schema": {
+              "title": "Tool Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ModelTestToolPatchIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModelTestToolOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Update Tool",
+        "tags": [
+          "model-test-tools"
+        ]
+      }
+    },
+    "/v1/model-test/tools/{tool_id}/execute": {
+      "post": {
+        "operationId": "execute_tool_v1_model_test_tools__tool_id__execute_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "tool_id",
+            "required": true,
+            "schema": {
+              "title": "Tool Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ModelTestToolExecuteIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModelTestToolCallOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Execute Tool",
+        "tags": [
+          "model-test-tools"
         ]
       }
     },

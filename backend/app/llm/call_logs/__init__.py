@@ -1,3 +1,4 @@
+from app.llm.call_logs.reproduction import ReproductionUnavailableError
 from app.llm.call_logs.service import CallLogService
 
-__all__ = ["CallLogService"]
+__all__ = ["CallLogService", "ReproductionUnavailableError"]
