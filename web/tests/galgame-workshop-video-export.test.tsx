@@ -78,6 +78,7 @@ function renderDialog({
 }
 
 beforeEach(() => {
+  localStorage.clear();
   vi.clearAllMocks();
   vi.mocked(listGalgameVideoExports).mockResolvedValue({ items: [] });
   vi.mocked(previewGalgameVideoExport).mockImplementation(
@@ -133,6 +134,31 @@ beforeEach(() => {
     createdAt: "2026-08-22T00:00:00Z",
     updatedAt: "2026-08-22T00:00:00Z",
   });
+});
+
+test("edits and persists a strict 16:9 capture frame in preview requests", async () => {
+  const user = userEvent.setup();
+  renderDialog();
+
+  await user.click(screen.getByRole("button", { name: /自定义取景/ }));
+  expect(screen.getByLabelText("宽度")).toHaveValue(1600);
+  expect(screen.getByLabelText("高度")).toHaveValue(900);
+  fireEvent.change(screen.getByLabelText("X"), { target: { value: "322" } });
+
+  await waitFor(() =>
+    expect(previewGalgameVideoExport).toHaveBeenLastCalledWith(
+      "project-one",
+      expect.objectContaining({
+        captureFrame: { x: 320, y: 90, width: 1600, height: 900 },
+      }),
+    ),
+  );
+  expect(
+    JSON.parse(
+      localStorage.getItem("fpl:galgame-video-capture:v1:project-one") ??
+        "null",
+    ),
+  ).toEqual({ x: 320, y: 90, width: 1600, height: 900 });
 });
 
 test("selects one or multiple fragments and submits them in story order", async () => {

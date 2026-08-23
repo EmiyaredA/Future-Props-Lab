@@ -1,0 +1,188 @@
+.galgame-block-scrollport {
+  position: relative;
+  height: 100%;
+  min-height: 0;
+  overflow: auto;
+  scrollbar-gutter: stable;
+}
+
+.galgame-script-workbench .galgame-story-block-editor {
+  height: calc(100% - 62px);
+  min-height: 0;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+}
+
+.galgame-stage-state-overview {
+  position: sticky;
+  z-index: 8;
+  top: 0;
+  width: min(100%, 700px);
+  margin: 0 auto 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--gal-line);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--gal-panel) 94%, transparent);
+  box-shadow: var(--gal-shadow-soft);
+  backdrop-filter: blur(14px);
+}
+
+.galgame-stage-state-overview > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.galgame-stage-state-overview > header strong {
+  font-size: 12px;
+}
+.galgame-stage-state-overview > header span {
+  color: var(--gal-muted);
+  font-size: 10px;
+}
+
+.galgame-stage-state-actors {
+  display: flex;
+  gap: 7px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+.galgame-stage-state-actors article {
+  flex: 0 0 190px;
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  padding: 7px;
+  border: 1px solid var(--gal-line);
+  border-radius: 9px;
+  background: var(--gal-surface);
+}
+
+.galgame-stage-state-actors article.is-speaking {
+  border-color: var(--gal-accent-line);
+}
+.galgame-stage-state-actors article > img,
+.galgame-stage-state-actors article > svg {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  color: var(--gal-muted);
+  background: var(--gal-panel);
+}
+.galgame-stage-state-actors article > span {
+  min-width: 0;
+  display: grid;
+}
+.galgame-stage-state-actors strong,
+.galgame-stage-state-actors small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.galgame-stage-state-actors small {
+  color: var(--gal-muted);
+  font-size: 9px;
+}
+.galgame-stage-state-actors em {
+  color: var(--gal-positive);
+  font-size: 9px;
+  font-style: normal;
+}
+.galgame-stage-state-actors article.is-speaking em {
+  color: var(--gal-accent);
+}
+.galgame-stage-state-actors > p {
+  margin: 3px 0;
+  color: var(--gal-muted);
+  font-size: 10px;
+}
+
+.galgame-virtual-block-canvas {
+  position: relative;
+  width: min(100%, 700px);
+  margin: 0 auto;
+}
+.galgame-virtual-block-row {
+  position: absolute;
+  inset-inline: 0;
+  padding: 0 4px 2px 42px;
+}
+.galgame-virtual-block-row::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 20px;
+  width: 1px;
+  background: var(--gal-line-strong);
+}
+
+.galgame-stage-command-card > .galgame-block-select {
+  min-height: 64px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) minmax(120px, auto);
+  gap: 10px;
+  align-items: center;
+  text-align: left;
+}
+.galgame-stage-command-icon {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  color: var(--gal-accent);
+  background: var(--gal-a-soft);
+}
+.galgame-stage-command-icon svg {
+  width: 17px;
+}
+.galgame-stage-command-copy {
+  min-width: 0;
+  display: grid;
+  gap: 6px;
+}
+.galgame-stage-command-copy > span {
+  display: flex;
+  gap: 5px;
+  overflow-x: auto;
+}
+.galgame-stage-command-copy em {
+  flex: 0 0 auto;
+  padding: 3px 6px;
+  border: 1px solid var(--gal-line);
+  border-radius: 999px;
+  color: var(--gal-muted);
+  font-size: 9px;
+  font-style: normal;
+}
+.galgame-stage-command-copy em.is-added {
+  border-color: var(--gal-positive);
+  color: var(--gal-positive);
+}
+.galgame-stage-command-diff {
+  display: grid;
+  justify-items: end;
+  gap: 3px;
+  color: var(--gal-muted);
+}
+.galgame-stage-command-diff small {
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.galgame-stage-command-diff small.is-added {
+  color: var(--gal-positive);
+}
+.galgame-stage-command-diff small.is-removed {
+  color: var(--gal-danger);
+}
+.galgame-stage-command-diff svg {
+  width: 14px;
+}

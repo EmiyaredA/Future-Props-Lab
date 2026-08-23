@@ -5667,6 +5667,32 @@ export interface components {
             /** Choiceid */
             choiceId: string;
         };
+        /**
+         * GalgameVideoExportCaptureFrame
+         * @description A normalized 16:9 crop on the canonical 1920x1080 stage.
+         */
+        GalgameVideoExportCaptureFrame: {
+            /**
+             * Height
+             * @default 1080
+             */
+            height: number;
+            /**
+             * Width
+             * @default 1920
+             */
+            width: number;
+            /**
+             * X
+             * @default 0
+             */
+            x: number;
+            /**
+             * Y
+             * @default 0
+             */
+            y: number;
+        };
         /** GalgameVideoExportChoiceOut */
         GalgameVideoExportChoiceOut: {
             /** Id */
@@ -5689,6 +5715,7 @@ export interface components {
         GalgameVideoExportCreateIn: {
             /** Branchselections */
             branchSelections?: components["schemas"]["GalgameVideoExportBranchSelection"][];
+            captureFrame?: components["schemas"]["GalgameVideoExportCaptureFrame"];
             clipRange?: components["schemas"]["GalgameVideoExportClipRange"] | null;
             /** Expectedstoryrevision */
             expectedStoryRevision: number;
@@ -5741,6 +5768,7 @@ export interface components {
         GalgameVideoExportPreviewIn: {
             /** Branchselections */
             branchSelections?: components["schemas"]["GalgameVideoExportBranchSelection"][];
+            captureFrame?: components["schemas"]["GalgameVideoExportCaptureFrame"];
             clipRange?: components["schemas"]["GalgameVideoExportClipRange"] | null;
             /** Expectedstoryrevision */
             expectedStoryRevision: number;

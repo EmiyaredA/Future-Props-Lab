@@ -17,7 +17,8 @@ export type WorkshopPage =
   | "visual-workshop-tasks"
   | "galgame-workshop-projects"
   | "galgame-workshop-overview"
-  | "galgame-workshop-editor";
+  | "galgame-workshop-editor"
+  | "galgame-workshop-preview";
 
 export type VisualWorkshopPage = Extract<
   WorkshopPage,
@@ -99,6 +100,7 @@ export function pathFor(page: AppPage, projectId?: string): string {
     "galgame-workshop-projects": "/apps/galgame-workshop",
     "galgame-workshop-overview": "/apps/galgame-workshop",
     "galgame-workshop-editor": "/apps/galgame-workshop",
+    "galgame-workshop-preview": "/apps/galgame-workshop",
   };
   return paths[page];
 }

@@ -8965,6 +8965,45 @@
         "title": "GalgameVideoExportBranchSelection",
         "type": "object"
       },
+      "GalgameVideoExportCaptureFrame": {
+        "description": "A normalized 16:9 crop on the canonical 1920x1080 stage.",
+        "properties": {
+          "height": {
+            "default": 1080,
+            "maximum": 1080.0,
+            "minimum": 180.0,
+            "multipleOf": 2.0,
+            "title": "Height",
+            "type": "integer"
+          },
+          "width": {
+            "default": 1920,
+            "maximum": 1920.0,
+            "minimum": 320.0,
+            "multipleOf": 2.0,
+            "title": "Width",
+            "type": "integer"
+          },
+          "x": {
+            "default": 0,
+            "maximum": 1600.0,
+            "minimum": 0.0,
+            "multipleOf": 2.0,
+            "title": "X",
+            "type": "integer"
+          },
+          "y": {
+            "default": 0,
+            "maximum": 900.0,
+            "minimum": 0.0,
+            "multipleOf": 2.0,
+            "title": "Y",
+            "type": "integer"
+          }
+        },
+        "title": "GalgameVideoExportCaptureFrame",
+        "type": "object"
+      },
       "GalgameVideoExportChoiceOut": {
         "properties": {
           "id": {
@@ -9023,6 +9062,9 @@
             "maxItems": 256,
             "title": "Branchselections",
             "type": "array"
+          },
+          "captureFrame": {
+            "$ref": "#/components/schemas/GalgameVideoExportCaptureFrame"
           },
           "clipRange": {
             "anyOf": [
@@ -9152,6 +9194,9 @@
             "maxItems": 256,
             "title": "Branchselections",
             "type": "array"
+          },
+          "captureFrame": {
+            "$ref": "#/components/schemas/GalgameVideoExportCaptureFrame"
           },
           "clipRange": {
             "anyOf": [

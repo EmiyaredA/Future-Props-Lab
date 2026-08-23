@@ -474,10 +474,9 @@ test("edits the selected Block in the inspector and starts the embedded player",
     screen.getByRole("button", { name: "暂停编辑时间轴" }),
   ).toBeInTheDocument();
   await user.click(screen.getAllByRole("button", { name: /^开始试玩$/ })[0]!);
-  expect(screen.getByLabelText("预览模式")).toContainElement(
-    screen.getByRole("button", { name: "试玩" }),
-  );
-  expect(screen.getByText("跟随试玩")).toBeInTheDocument();
+  expect(await screen.findByText("快速预演")).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: /退出预演/ })).toBeInTheDocument();
+  expect(screen.queryByLabelText("预览模式")).not.toBeInTheDocument();
   expect(
     screen.queryByRole("button", { name: "播放编辑时间轴" }),
   ).not.toBeInTheDocument();
@@ -485,12 +484,9 @@ test("edits the selected Block in the inspector and starts the embedded player",
   expect(screen.queryByLabelText("精确设置")).not.toBeInTheDocument();
   expect(editTimelineAudio.pause).toHaveBeenCalled();
   const player = screen.getByRole("region", { name: "游戏预览" });
-  expect(await within(player).findByLabelText("试玩控制")).toBeInTheDocument();
-  expect(within(player).getByLabelText("推进模式")).toBeInTheDocument();
-  expect(
-    within(player).queryByLabelText("剧情时间轴进度"),
-  ).not.toBeInTheDocument();
-  expect(await within(player).findByText("右侧属性已更新")).toBeInTheDocument();
+  expect(within(player).queryByLabelText("试玩控制")).not.toBeInTheDocument();
+  expect(screen.getByText(/步骤 1 \/ 2/)).toBeInTheDocument();
+  expect(await screen.findAllByText("右侧属性已更新")).not.toHaveLength(0);
 });
 
 test("opens the visual timeline and edits precise cue timing", async () => {

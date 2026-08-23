@@ -49,6 +49,16 @@ async def test_video_export_preview_select_create_idempotency_and_cancel() -> No
         assert manifest["route"]["branchBlockIds"] == ["block-branch"]
         assert manifest["route"]["estimatedDurationMs"] >= 2000
 
+        custom_frame = await client.post(
+            f"/v1/galgame-workshop/projects/{project_id}/video-exports/preview",
+            json={
+                **preview_body,
+                "captureFrame": {"x": 160, "y": 90, "width": 1600, "height": 900},
+            },
+        )
+        assert custom_frame.status_code == 200, custom_frame.text
+        assert custom_frame.json()["previewFingerprint"] != manifest["previewFingerprint"]
+
         fragment_preview = await client.post(
             f"/v1/galgame-workshop/projects/{project_id}/video-exports/preview",
             json={
@@ -138,6 +148,34 @@ async def test_video_export_rejects_stale_story_preview() -> None:
 
 def test_video_export_registers_outputs_with_a_supported_packaging_policy() -> None:
     assert EXPORT_PACKAGING_POLICY in {"auto", "include", "exclude"}
+
+
+@pytest.mark.asyncio
+async def test_video_export_capture_frame_validation_and_legacy_default() -> None:
+    transport = httpx.ASGITransport(app=app)
+    async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+        project = (
+            await client.post("/v1/galgame-workshop/projects", json={"title": "取景校验"})
+        ).json()
+        endpoint = f"/v1/galgame-workshop/projects/{project['id']}/video-exports/preview"
+        legacy = await client.post(endpoint, json={"expectedStoryRevision": 0})
+        assert legacy.status_code == 200, legacy.text
+        invalid_ratio = await client.post(
+            endpoint,
+            json={
+                "expectedStoryRevision": 0,
+                "captureFrame": {"x": 0, "y": 0, "width": 1000, "height": 600},
+            },
+        )
+        assert invalid_ratio.status_code == 422
+        invalid_bounds = await client.post(
+            endpoint,
+            json={
+                "expectedStoryRevision": 0,
+                "captureFrame": {"x": 322, "y": 180, "width": 1600, "height": 900},
+            },
+        )
+        assert invalid_bounds.status_code == 422
 
 
 @pytest.mark.asyncio

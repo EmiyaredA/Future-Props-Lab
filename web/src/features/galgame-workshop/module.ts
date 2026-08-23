@@ -17,14 +17,16 @@ const galgameWorkshopModule = {
   shell: "galgame-workshop",
   matchPath(pathname: string) {
     const project = pathname.match(
-      /^\/apps\/galgame-workshop\/projects\/([^/]+)\/(editor|overview)/,
+      /^\/apps\/galgame-workshop\/projects\/([^/]+)\/(editor|overview|preview)/,
     );
     if (project)
       return {
         page:
           project[2] === "editor"
             ? "galgame-workshop-editor"
-            : "galgame-workshop-overview",
+            : project[2] === "preview"
+              ? "galgame-workshop-preview"
+              : "galgame-workshop-overview",
         projectId: decodeURIComponent(project[1]),
       };
     if (pathname.startsWith("/apps/galgame-workshop"))
@@ -34,6 +36,8 @@ const galgameWorkshopModule = {
   pathFor(page: string, projectId?: string) {
     if (page === "galgame-workshop-editor" && projectId)
       return `/apps/galgame-workshop/projects/${encodeURIComponent(projectId)}/editor`;
+    if (page === "galgame-workshop-preview" && projectId)
+      return `/apps/galgame-workshop/projects/${encodeURIComponent(projectId)}/preview`;
     if (page === "galgame-workshop-overview" && projectId)
       return `/apps/galgame-workshop/projects/${encodeURIComponent(projectId)}/overview`;
     if (page === "galgame-workshop-projects") return "/apps/galgame-workshop";
@@ -52,6 +56,12 @@ const galgameWorkshopModule = {
       import("@features/galgame-workshop/editor").then((module) => ({
         default: module.GalgameWorkshopEditorPage,
       })),
+    preview: () =>
+      import("@features/galgame-workshop/editor/GalgameFastPreviewPage").then(
+        (module) => ({
+          default: module.GalgameFastPreviewPage,
+        }),
+      ),
   },
 } as const;
 

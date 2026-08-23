@@ -220,6 +220,10 @@ class GalgameVideoExportRunner(PollingGenerationRunner):
                             "fragmentIds": payload.get("fragmentIds", []),
                             "fragmentDurationsMs": fragment_durations_ms,
                             "clipRange": payload.get("clipRange"),
+                            "captureFrame": payload.get(
+                                "captureFrame",
+                                {"x": 0, "y": 0, "width": 1920, "height": 1080},
+                            ),
                             "branchSelections": payload.get("branchSelections", []),
                             "choiceDurationMs": CHOICE_DURATION_MS,
                             "choiceHighlightMs": CHOICE_HIGHLIGHT_MS,

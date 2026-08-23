@@ -24,6 +24,7 @@ import {
   STAGE_ASPECT_OPTIONS,
   clampPlayerValue,
   formatTimelineTime,
+  playerAdvanceIndicatorText,
   playerHexToRgba,
 } from "@features/galgame-workshop/editor/storyPlayerModel";
 type StoryPlayerViewModel = ReturnType<typeof useStoryPlayerController>;
@@ -31,6 +32,7 @@ type StoryPlayerViewModel = ReturnType<typeof useStoryPlayerController>;
 export function StoryPlayerView({ model }: { model: StoryPlayerViewModel }) {
   const {
     mode,
+    chrome,
     editableCgBlockId,
     collapsed,
     onCollapsedChange,
@@ -142,25 +144,17 @@ export function StoryPlayerView({ model }: { model: StoryPlayerViewModel }) {
   const dialogueIndicatorVisible =
     dialogueStyle.advanceIndicator.visible &&
     (!exportMode || dialogueStyle.advanceIndicator.showInExport);
-  const dialogueIndicatorText =
-    dialogueStyle.advanceIndicator.style === "compact"
-      ? advanceMode === "auto"
-        ? "AUTO"
-        : visibleTextLength < Array.from(displayText).length
-          ? "TEXT"
-          : "NEXT"
-      : mode === "edit"
-        ? "编辑预览"
-        : inlinePlayerWait
-          ? "等待玩家继续"
-          : visibleTextLength < Array.from(displayText).length
-            ? "点击显示全文"
-            : advanceMode === "auto"
-              ? "自动播放"
-              : "点击继续";
+  const dialogueIndicatorText = playerAdvanceIndicatorText({
+    compact: dialogueStyle.advanceIndicator.style === "compact",
+    advanceMode,
+    visibleTextLength,
+    textLength: Array.from(displayText).length,
+    editing: mode === "edit",
+    waiting: inlinePlayerWait,
+  });
   return (
     <section
-      className={`galgame-player${exportMode ? " galgame-player-export" : ""}`}
+      className={`galgame-player${exportMode ? " galgame-player-export" : ""}${chrome === "stage-only" ? " galgame-player-stage-only" : ""}`}
       aria-label="游戏预览"
       data-lip-sync-speaking={lipSyncSpeaking ? "true" : "false"}
       data-mouth-frame={mouthFrame}
@@ -168,7 +162,7 @@ export function StoryPlayerView({ model }: { model: StoryPlayerViewModel }) {
         currentAudioLevelDb == null ? undefined : currentAudioLevelDb.toFixed(1)
       }
     >
-      {!exportMode ? (
+      {!exportMode && chrome === "full" ? (
         <header>
           <div>
             <strong>
@@ -250,7 +244,7 @@ export function StoryPlayerView({ model }: { model: StoryPlayerViewModel }) {
           </span>
         </header>
       ) : null}
-      {!exportMode && aspectMenuOpen ? (
+      {!exportMode && chrome === "full" && aspectMenuOpen ? (
         <section className="galgame-player-aspect" aria-label="舞台比例选项">
           <header>
             <strong>舞台比例</strong>
@@ -1187,7 +1181,10 @@ export function StoryPlayerView({ model }: { model: StoryPlayerViewModel }) {
           ) : null}
         </div>
       </div>
-      {!exportMode && mode === "play" && displayFrame.mode !== "idle" ? (
+      {!exportMode &&
+      chrome === "full" &&
+      mode === "play" &&
+      displayFrame.mode !== "idle" ? (
         <div className="galgame-player-runtime-controls" aria-label="试玩控制">
           {activeTimeline &&
           (displayFrame.mode === "content" ||

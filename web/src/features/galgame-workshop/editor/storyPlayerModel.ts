@@ -87,9 +87,54 @@ export function formatTimelineTime(milliseconds: number) {
   return `${minutes}:${seconds.toString().padStart(2, "0")}`;
 }
 
+export function playerAdvanceIndicatorText({
+  compact,
+  advanceMode,
+  visibleTextLength,
+  textLength,
+  editing,
+  waiting,
+}: {
+  compact: boolean;
+  advanceMode: "manual" | "auto" | "skip";
+  visibleTextLength: number;
+  textLength: number;
+  editing: boolean;
+  waiting: boolean;
+}) {
+  if (compact)
+    return advanceMode === "auto"
+      ? "AUTO"
+      : visibleTextLength < textLength
+        ? "TEXT"
+        : "NEXT";
+  if (editing) return "编辑预览";
+  if (waiting) return "等待玩家继续";
+  if (visibleTextLength < textLength) return "点击显示全文";
+  return advanceMode === "auto" ? "自动播放" : "点击继续";
+}
+
 export interface StoryPlayerHandle {
   restart: () => void;
+  advance: () => void;
+  togglePlayback: () => void;
+  seekTimeline: (positionMs: number) => void;
+  previousDialogue: () => void;
+  nextDialogue: () => void;
 }
+
+export type StoryPlayerRuntimeSnapshot = {
+  frame: PlayerFrame;
+  stage: GalgameStageState;
+  variables: Record<string, string | number | boolean>;
+  chapterId: string;
+  fragmentId: string;
+  blockIndex: number;
+  positionMs: number;
+  durationMs?: number;
+  playing: boolean;
+  advanceMode: "manual" | "auto" | "skip";
+};
 
 export type StoryPlayerProps = {
   document: GalgameStoryProject;
@@ -97,6 +142,7 @@ export type StoryPlayerProps = {
   includeStaleTranslations?: boolean;
   startCursor?: { chapterId: string; fragmentId: string; blockIndex?: number };
   mode?: "edit" | "play";
+  chrome?: "full" | "stage-only";
   editFragment?: GalgameStoryFragment;
   editBlockIndex?: number;
   editTimelinePositionMs?: number | null;
@@ -114,6 +160,7 @@ export type StoryPlayerProps = {
     positionMs: number;
     blockId?: string;
   }) => void;
+  onRuntimeSnapshot?: (snapshot: StoryPlayerRuntimeSnapshot) => void;
   exportMode?: {
     branchSelections: Record<string, string>;
     choiceDurationMs: number;

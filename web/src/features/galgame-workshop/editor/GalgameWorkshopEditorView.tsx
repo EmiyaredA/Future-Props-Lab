@@ -1,4 +1,4 @@
-import { Suspense } from "react";
+import { Suspense, useState } from "react";
 import {
   ArrowDown,
   ArrowLeft,
@@ -64,6 +64,11 @@ import "@features/galgame-workshop/galgameStyles";
 import "@features/galgame-workshop/galgame-json-view.css";
 import type { EditorPageViewModel } from "@features/galgame-workshop/editor/editorViewModel";
 import {
+  EditorFastPreviewOverlay,
+  EditorFastPreviewRunMenu,
+} from "@features/galgame-workshop/editor/EditorFastPreviewOverlay";
+import type { EditorFastPreviewSession } from "@features/galgame-workshop/editor/editorFastPreviewSession";
+import {
   AssetCenter,
   BlockInspector,
   DialogueStyleInspector,
@@ -77,11 +82,13 @@ import {
   TimelineGapInspector,
   WORKSPACES,
 } from "@features/galgame-workshop/editor/editorWorkspaceModules";
+
 export function GalgameWorkshopEditorView({
   model,
 }: {
   model: EditorPageViewModel;
 }) {
+  const [fastPreview, setFastPreview] = useState<EditorFastPreviewSession>();
   if (model.status === "loading")
     return (
       <div className="workshop-state galgame-editor-state">
@@ -214,7 +221,6 @@ export function GalgameWorkshopEditorView({
     deleteSelected,
     locateIssue,
     locateRoute,
-    startPreview,
     locateSearchTarget,
     updateProjectTitle,
     startStageResize,
@@ -225,6 +231,14 @@ export function GalgameWorkshopEditorView({
     effectiveCenterRatio,
     editorGridStyle,
   } = model;
+  if (fastPreview)
+    return (
+      <EditorFastPreviewOverlay
+        session={fastPreview}
+        model={model}
+        onClose={() => setFastPreview(undefined)}
+      />
+    );
   return (
     <Suspense
       fallback={<div className="page-loading">正在加载编辑器模块…</div>}
@@ -290,31 +304,7 @@ export function GalgameWorkshopEditorView({
             >
               <Film aria-hidden /> 导出视频
             </button>
-            <details className="galgame-run-menu">
-              <summary
-                className="galgame-preview-launch"
-                role="button"
-                aria-label="开始试玩"
-                onClick={() => startPreview("project")}
-              >
-                <Play aria-hidden /> 运行 <ChevronDown aria-hidden />
-              </summary>
-              <div>
-                <button type="button" onClick={() => startPreview("project")}>
-                  从项目入口开始
-                </button>
-                <button type="button" onClick={() => startPreview("chapter")}>
-                  从当前章节开始
-                </button>
-                <button
-                  type="button"
-                  disabled={!selectedBlock}
-                  onClick={() => startPreview("block")}
-                >
-                  从当前 Block 开始
-                </button>
-              </div>
-            </details>
+            <EditorFastPreviewRunMenu model={model} onLaunch={setFastPreview} />
           </div>
         </header>
         <nav className="galgame-editor-tabs" aria-label="创作工作区">

@@ -1,0 +1,195 @@
+.galgame-capture-editor {
+  display: grid;
+  gap: 12px;
+}
+.galgame-capture-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 16px;
+}
+.galgame-capture-heading > span {
+  display: grid;
+  gap: 3px;
+}
+.galgame-capture-heading h3 {
+  margin: 0;
+}
+.galgame-capture-heading small {
+  color: var(--gal-muted);
+}
+.galgame-capture-heading > div,
+.galgame-capture-controls > div {
+  display: flex;
+  gap: 6px;
+}
+.galgame-capture-heading button,
+.galgame-capture-controls button {
+  padding: 7px 10px;
+}
+.galgame-capture-heading button.active,
+.galgame-capture-controls button.active {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.galgame-capture-surface {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border: 1px solid var(--gal-line-strong);
+  border-radius: 12px;
+  background: #02050a;
+  container-type: inline-size;
+}
+.galgame-capture-source {
+  position: absolute;
+  inset: 0;
+}
+.galgame-capture-source .galgame-player {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  border: 0;
+  border-radius: 0;
+}
+.galgame-capture-source .galgame-player-stage,
+.galgame-capture-source .galgame-player-stage-shell,
+.galgame-capture-source .galgame-player-stage-viewport {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+.galgame-capture-grid,
+.galgame-capture-safe-title,
+.galgame-capture-safe-dialogue {
+  position: absolute;
+  pointer-events: none;
+}
+.galgame-capture-grid {
+  inset: 0;
+  background-image:
+    linear-gradient(
+      to right,
+      transparent 33.2%,
+      rgb(255 255 255 / 22%) 33.3%,
+      transparent 33.5%,
+      transparent 66.5%,
+      rgb(255 255 255 / 22%) 66.6%,
+      transparent 66.8%
+    ),
+    linear-gradient(
+      to bottom,
+      transparent 33.2%,
+      rgb(255 255 255 / 22%) 33.3%,
+      transparent 33.5%,
+      transparent 66.5%,
+      rgb(255 255 255 / 22%) 66.6%,
+      transparent 66.8%
+    );
+}
+.galgame-capture-safe-title,
+.galgame-capture-safe-dialogue {
+  inset-inline: 5%;
+  border: 1px dashed rgb(255 255 255 / 38%);
+  color: rgb(255 255 255 / 70%);
+  font-size: 9px;
+}
+.galgame-capture-safe-title {
+  inset-block: 5% 10%;
+}
+.galgame-capture-safe-dialogue {
+  inset-block: 68% 5%;
+}
+.galgame-capture-frame {
+  position: absolute;
+  border: 2px solid var(--accent);
+  box-shadow: 0 0 0 9999px rgb(0 0 0 / 48%);
+  cursor: move;
+}
+.galgame-capture-frame > button {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  padding: 0;
+  border: 2px solid var(--gal-panel);
+  border-radius: 2px;
+  background: var(--accent);
+}
+.galgame-capture-frame .is-nw {
+  left: -7px;
+  top: -7px;
+  cursor: nwse-resize;
+}
+.galgame-capture-frame .is-n {
+  left: 50%;
+  top: -7px;
+  cursor: ns-resize;
+}
+.galgame-capture-frame .is-ne {
+  right: -7px;
+  top: -7px;
+  cursor: nesw-resize;
+}
+.galgame-capture-frame .is-e {
+  right: -7px;
+  top: 50%;
+  cursor: ew-resize;
+}
+.galgame-capture-frame .is-se {
+  right: -7px;
+  bottom: -7px;
+  cursor: nwse-resize;
+}
+.galgame-capture-frame .is-s {
+  left: 50%;
+  bottom: -7px;
+  cursor: ns-resize;
+}
+.galgame-capture-frame .is-sw {
+  left: -7px;
+  bottom: -7px;
+  cursor: nesw-resize;
+}
+.galgame-capture-frame .is-w {
+  left: -7px;
+  top: 50%;
+  cursor: ew-resize;
+}
+
+.galgame-capture-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 8px;
+}
+.galgame-capture-controls button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.galgame-capture-controls button svg {
+  width: 14px;
+}
+.galgame-capture-controls label {
+  display: grid;
+  gap: 4px;
+  color: var(--gal-muted);
+  font-size: 10px;
+}
+.galgame-capture-controls input {
+  width: 82px;
+  padding: 7px 8px;
+  border: 1px solid var(--gal-line);
+  border-radius: 8px;
+  color: var(--gal-text);
+  background: var(--gal-surface);
+}
+.galgame-capture-editor > p {
+  margin: 0;
+  color: var(--gal-positive);
+  font-size: 11px;
+}
+.galgame-capture-editor > p.is-warning {
+  color: var(--gal-warning);
+}

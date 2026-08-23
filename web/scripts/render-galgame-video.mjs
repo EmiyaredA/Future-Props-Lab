@@ -2,6 +2,7 @@ import { readFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { spawn } from "node:child_process";
 import { chromium } from "@playwright/test";
+import { captureVideoFilter } from "./galgame-capture-frame.mjs";
 
 const [, , manifestFile, outputFile] = process.argv;
 if (!manifestFile || !outputFile)
@@ -374,11 +375,14 @@ try {
       audioFilter = `[${silenceIndex}:a]atrim=duration=${seconds},asetpts=PTS-STARTPTS[aout]`;
     }
   }
-  const videoFilter = `${
+  const videoFilter = captureVideoFilter(
+    manifest.captureFrame,
+    preset,
+    preset.fps,
     clipPreRollMs > 0
       ? `trim=start=${(clipPreRollMs / 1000).toFixed(3)},setpts=PTS-STARTPTS,`
-      : ""
-  }fps=${preset.fps},scale=${preset.width}:${preset.height}:flags=lanczos`;
+      : "",
+  );
   ffmpegArgs.push(
     "-filter_complex",
     audioFilter,

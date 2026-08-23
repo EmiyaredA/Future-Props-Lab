@@ -1,11 +1,4 @@
-import {
-  useCallback,
-  useEffect,
-  useImperativeHandle,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type {
   GalgameStoryBlock,
   GalgameStoryFragment,
@@ -74,37 +67,33 @@ import {
   DEFAULT_STORY_PLAYER_MIX,
   playerContentText,
   type PlayerFrame,
-  type StoryPlayerHandle,
   type StoryPlayerProps,
   type TimelinePlayback,
 } from "@features/galgame-workshop/editor/storyPlayerModel";
-import type { ForwardedRef } from "react";
 
 const TIMELINE_UI_UPDATE_INTERVAL_MS = 100;
 
-export function useStoryPlayerController(
-  {
-    document: sourceDocument,
-    locale,
-    includeStaleTranslations = false,
-    startCursor,
-    mode = "play",
-    editFragment: sourceEditFragment,
-    editBlockIndex,
-    editTimelinePositionMs,
-    editableCgBlockId,
-    collapsed = false,
-    onCollapsedChange,
-    viewportPreferences: viewportPreferencesProp,
-    onViewportPreferencesChange,
-    headerModeControl,
-    workbenchHeader = false,
-    onCgOverlayChange,
-    onPlaybackPosition,
-    exportMode,
-  }: StoryPlayerProps,
-  ref: ForwardedRef<StoryPlayerHandle>,
-) {
+export function useStoryPlayerController({
+  document: sourceDocument,
+  locale,
+  includeStaleTranslations = false,
+  startCursor,
+  mode = "play",
+  chrome = "full",
+  editFragment: sourceEditFragment,
+  editBlockIndex,
+  editTimelinePositionMs,
+  editableCgBlockId,
+  collapsed = false,
+  onCollapsedChange,
+  viewportPreferences: viewportPreferencesProp,
+  onViewportPreferencesChange,
+  headerModeControl,
+  workbenchHeader = false,
+  onCgOverlayChange,
+  onPlaybackPosition,
+  exportMode,
+}: StoryPlayerProps) {
   const document = useMemo(
     () =>
       localizedStoryDocument(sourceDocument, locale, {
@@ -836,7 +825,6 @@ export function useStoryPlayerController(
     }
     presentRuntime(advanceRuntime(document, initial));
   };
-  useImperativeHandle(ref, () => ({ restart }));
   const enterFragment = (fragmentId: string) => {
     pauseTimelineMaster();
     timelineRef.current?.clock.dispose();
@@ -1390,6 +1378,7 @@ export function useStoryPlayerController(
 
   return {
     mode,
+    chrome,
     editableCgBlockId,
     collapsed,
     onCollapsedChange,

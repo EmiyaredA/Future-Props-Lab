@@ -19,74 +19,21 @@ import {
   type GalgameVideoExportPreset,
   type GalgameStoryProject,
 } from "@features/galgame-workshop/api";
-import {
-  formatTimecode,
-  parseTimecode,
-} from "@features/galgame-workshop/editor/timeline";
+import { formatTimecode } from "@features/galgame-workshop/editor/timeline";
+import { VideoClipTimecodeInput } from "@features/galgame-workshop/editor/VideoClipTimecodeInput";
 import {
   DEFAULT_VIDEO_CLIP_DURATION_MS,
   defaultVideoClipRange,
   MAX_VIDEO_CLIP_DURATION_MS,
   type VideoClipRange,
 } from "@features/galgame-workshop/editor/videoExportRange";
+import { VideoCaptureFrameEditor } from "@features/galgame-workshop/editor/VideoCaptureFrameEditor";
+import {
+  FULL_CAPTURE_FRAME,
+  normalizeCaptureFrame,
+  type CaptureFrame,
+} from "@features/galgame-workshop/editor/videoCaptureFrame";
 import "@features/galgame-workshop/editor/video-export.css";
-
-function ClipTimecodeInput({
-  label,
-  value,
-  onCommit,
-}: {
-  label: string;
-  value: number;
-  onCommit: (value: number) => void;
-}) {
-  const [draft, setDraft] = useState(() => formatTimecode(value));
-  const [invalid, setInvalid] = useState(false);
-
-  useEffect(() => {
-    setDraft(formatTimecode(value));
-    setInvalid(false);
-  }, [value]);
-
-  const commit = () => {
-    const parsed = parseTimecode(draft);
-    if (parsed == null) {
-      setInvalid(true);
-      return;
-    }
-    setInvalid(false);
-    onCommit(parsed);
-  };
-
-  return (
-    <label className={invalid ? "invalid" : ""}>
-      <span>{label}</span>
-      <input
-        aria-label={label}
-        aria-invalid={invalid || undefined}
-        value={draft}
-        placeholder="00:00.000"
-        onChange={(event) => {
-          setDraft(event.target.value);
-          setInvalid(false);
-        }}
-        onBlur={commit}
-        onKeyDown={(event) => {
-          if (event.key === "Enter") {
-            event.preventDefault();
-            commit();
-            event.currentTarget.blur();
-          }
-          if (event.key === "Escape") {
-            setDraft(formatTimecode(value));
-            setInvalid(false);
-          }
-        }}
-      />
-      {invalid ? <small>请输入如 01:23.456 的时间码</small> : null}
-    </label>
-  );
-}
 
 const PRESETS: Array<{
   id: GalgameVideoExportPreset;
@@ -151,6 +98,17 @@ export function VideoExportDialog({
 }) {
   const client = useQueryClient();
   const [preset, setPreset] = useState<GalgameVideoExportPreset>("1080p30");
+  const captureStorageKey = `fpl:galgame-video-capture:v1:${projectId}`;
+  const [captureFrame, setCaptureFrame] = useState<CaptureFrame>(() => {
+    try {
+      const stored = localStorage.getItem(captureStorageKey);
+      return stored
+        ? normalizeCaptureFrame(JSON.parse(stored) as Partial<CaptureFrame>)
+        : FULL_CAPTURE_FRAME;
+    } catch {
+      return FULL_CAPTURE_FRAME;
+    }
+  });
   const [scope, setScope] = useState<"route" | "fragments" | "clip">("route");
   const preferredLocale =
     languageOptions.find((item) => item.toLocaleLowerCase().startsWith("zh")) ??
@@ -223,6 +181,13 @@ export function VideoExportDialog({
     window.addEventListener("keydown", closeOnEscape);
     return () => window.removeEventListener("keydown", closeOnEscape);
   }, [onClose, open]);
+  useEffect(() => {
+    try {
+      localStorage.setItem(captureStorageKey, JSON.stringify(captureFrame));
+    } catch {
+      // Browser privacy modes may disable local preferences.
+    }
+  }, [captureFrame, captureStorageKey]);
   const clipError = useMemo(() => {
     if (currentTimelineDurationMs == null)
       return "当前 Fragment 没有时间轴，无法快速试片";
@@ -251,9 +216,11 @@ export function VideoExportDialog({
           }
         : {}),
       branchSelections: scope === "route" ? branchSelections : [],
+      captureFrame,
     }),
     [
       branchSelections,
+      captureFrame,
       clipRange.endMs,
       clipRange.startMs,
       currentFragmentId,
@@ -334,6 +301,13 @@ export function VideoExportDialog({
           </button>
         </header>
         <div className="galgame-video-export-content">
+          <VideoCaptureFrameEditor
+            document={document}
+            fragment={currentFragment}
+            timelinePositionMs={currentPlayheadMs}
+            value={captureFrame}
+            onChange={setCaptureFrame}
+          />
           <section>
             <h3>导出范围</h3>
             <div
@@ -548,7 +522,7 @@ export function VideoExportDialog({
                 />
               </div>
               <div className="galgame-video-clip-timecodes">
-                <ClipTimecodeInput
+                <VideoClipTimecodeInput
                   label="开始时间"
                   value={clipRange.startMs}
                   onCommit={(startMs) =>
@@ -556,7 +530,7 @@ export function VideoExportDialog({
                   }
                 />
                 <span aria-hidden>—</span>
-                <ClipTimecodeInput
+                <VideoClipTimecodeInput
                   label="结束时间"
                   value={clipRange.endMs}
                   onCommit={(endMs) =>

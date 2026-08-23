@@ -230,6 +230,7 @@ export function StageCastInspectorFields({
         <button
           type="button"
           className="galgame-stage-cast-add"
+          aria-label="添加舞台角色"
           onClick={() =>
             onChange({
               ...block,
@@ -243,9 +244,14 @@ export function StageCastInspectorFields({
           <span className="galgame-stage-cast-add-icon">
             <Plus aria-hidden />
           </span>
-          <span>
+          <span className="galgame-stage-cast-add-copy">
             <strong>添加舞台角色</strong>
-            <small>还可添加 {3 - members.length} 人</small>
+            <small>把角色加入当前构图</small>
+          </span>
+          <span className="galgame-stage-cast-add-count">
+            <small>还可添加</small>
+            <strong>{3 - members.length}</strong>
+            <small>人</small>
           </span>
         </button>
       ) : null}

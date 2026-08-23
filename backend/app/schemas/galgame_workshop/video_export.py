@@ -22,6 +22,23 @@ GalgameVideoExportPhase = Literal[
 ]
 
 
+class GalgameVideoExportCaptureFrame(BaseModel):
+    """A normalized 16:9 crop on the canonical 1920x1080 stage."""
+
+    x: int = Field(default=0, ge=0, le=1600, multiple_of=2)
+    y: int = Field(default=0, ge=0, le=900, multiple_of=2)
+    width: int = Field(default=1920, ge=320, le=1920, multiple_of=2)
+    height: int = Field(default=1080, ge=180, le=1080, multiple_of=2)
+
+    @model_validator(mode="after")
+    def frame_is_valid(self) -> GalgameVideoExportCaptureFrame:
+        if self.width * 9 != self.height * 16:
+            raise ValueError("视频取景框必须严格保持 16:9")
+        if self.x + self.width > 1920 or self.y + self.height > 1080:
+            raise ValueError("视频取景框必须完整位于 1920×1080 舞台内")
+        return self
+
+
 class GalgameVideoExportBranchSelection(BaseModel):
     branch_block_id: str = Field(alias="branchBlockId", pattern=STABLE_ID_PATTERN)
     choice_id: str = Field(alias="choiceId", pattern=STABLE_ID_PATTERN)
@@ -52,6 +69,9 @@ class GalgameVideoExportPreviewIn(BaseModel):
     clip_range: GalgameVideoExportClipRange | None = Field(default=None, alias="clipRange")
     branch_selections: list[GalgameVideoExportBranchSelection] = Field(
         default_factory=list, alias="branchSelections", max_length=256
+    )
+    capture_frame: GalgameVideoExportCaptureFrame = Field(
+        default_factory=GalgameVideoExportCaptureFrame, alias="captureFrame"
     )
 
     @field_validator("branch_selections")

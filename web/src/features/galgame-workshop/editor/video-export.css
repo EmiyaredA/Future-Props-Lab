@@ -10,7 +10,7 @@
 }
 
 .galgame-video-export-dialog {
-  width: min(760px, 96vw);
+  width: min(1120px, 96vw);
   max-height: min(880px, 94vh);
   overflow: hidden;
   border: 1px solid var(--gal-line);

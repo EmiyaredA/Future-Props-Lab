@@ -235,6 +235,7 @@ class GalgameVideoExports:
             "branchSelections": [
                 item.model_dump(mode="json", by_alias=True) for item in body.branch_selections
             ],
+            "captureFrame": body.capture_frame.model_dump(mode="json", by_alias=True),
             "route": route.model_dump(mode="json", by_alias=True),
             "decision": decision.model_dump(mode="json", by_alias=True) if decision else None,
         }

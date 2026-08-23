@@ -94,6 +94,7 @@ const GalgameWorkshopOverviewPage = lazy(
   GALGAME_WORKSHOP_MODULE.pages.overview,
 );
 const GalgameWorkshopEditorPage = lazy(GALGAME_WORKSHOP_MODULE.pages.editor);
+const GalgameFastPreviewPage = lazy(GALGAME_WORKSHOP_MODULE.pages.preview);
 
 function PageBoundary({ children }: { children: ReactNode }) {
   return (
@@ -164,6 +165,14 @@ export default function App() {
             navigate("galgame-workshop-overview", route.projectId)
           }
         />
+      </PageBoundary>
+    );
+  }
+
+  if (page === "galgame-workshop-preview" && route.projectId) {
+    return (
+      <PageBoundary>
+        <GalgameFastPreviewPage projectId={route.projectId} />
       </PageBoundary>
     );
   }
