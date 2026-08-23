@@ -692,7 +692,10 @@ export function useStoryPlayerController({
             return;
           finishTimeline(fragment);
         },
-        positionSource: fragment.timeline.masterAudio
+        // Export audio is muxed from the source asset after Chromium captures
+        // the stage. Driving the export clock from HTMLAudioElement.currentTime
+        // can stall indefinitely when headless media playback is throttled.
+        positionSource: fragment.timeline.masterAudio && !exportMode
           ? timelineMasterPositionMs
           : undefined,
       });

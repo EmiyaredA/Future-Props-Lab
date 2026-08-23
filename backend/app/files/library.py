@@ -48,6 +48,7 @@ class AssetLibrary:
         *,
         visual_project_id: str | None = None,
         galgame_project_id: str | None = None,
+        video_editor_project_id: str | None = None,
         folder_id: str | None = None,
         allowed_extensions: set[str] | None = None,
     ) -> VisualAsset:
@@ -70,6 +71,7 @@ class AssetLibrary:
             storage_key,
             visual_project_id=visual_project_id,
             galgame_project_id=galgame_project_id,
+            video_editor_project_id=video_editor_project_id,
         )
         size = 0
         head = bytearray()
@@ -94,6 +96,7 @@ class AssetLibrary:
             row = VisualAsset(
                 project_id=visual_project_id,
                 galgame_project_id=galgame_project_id,
+                video_editor_project_id=video_editor_project_id,
                 folder_id=folder_id,
                 original_filename=filename,
                 display_name=display_name_without_original_extension(filename, filename),
@@ -122,6 +125,7 @@ class AssetLibrary:
         content_type: str,
         folder_id: str | None = None,
         galgame_project_id: str | None = None,
+        video_editor_project_id: str | None = None,
         allowed_extensions: set[str] | None = None,
         max_bytes: int | None = None,
     ) -> tuple[VisualAsset, Path]:
@@ -151,6 +155,7 @@ class AssetLibrary:
             storage_key,
             visual_project_id=None,
             galgame_project_id=galgame_project_id,
+            video_editor_project_id=video_editor_project_id,
         )
 
         def copy_file() -> tuple[int, bytes]:
@@ -180,6 +185,7 @@ class AssetLibrary:
             row = VisualAsset(
                 project_id=None,
                 galgame_project_id=galgame_project_id,
+                video_editor_project_id=video_editor_project_id,
                 folder_id=folder_id,
                 original_filename=safe_name,
                 display_name=display_name_without_original_extension(safe_name, safe_name),

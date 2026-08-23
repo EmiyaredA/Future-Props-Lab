@@ -50,6 +50,9 @@ class VisualAsset(Base):
     galgame_project_id: Mapped[str | None] = mapped_column(
         String(36), ForeignKey("galgame_workshop_projects.id", ondelete="CASCADE")
     )
+    video_editor_project_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("video_editor_projects.id", ondelete="CASCADE")
+    )
     folder_id: Mapped[str | None] = mapped_column(
         String(36), ForeignKey("visual_asset_folders.id", ondelete="CASCADE")
     )

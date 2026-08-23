@@ -20,6 +20,7 @@ from app.routes.tool_navigation import router as tool_navigation_router
 from app.routes.visual_assistant import router as visual_assistant_router
 from app.routes.visual_generation import router as visual_generation_router
 from app.routes.visual_workshop import router as visual_workshop_router
+from app.routes.video_editor import router as video_editor_router
 from app.routes.workspaces import invitation_router
 from app.routes.workspaces import router as workspaces_router
 
@@ -45,3 +46,4 @@ api_router.include_router(visual_workshop_router, dependencies=[Depends(require_
 api_router.include_router(visual_assistant_router, dependencies=[Depends(require_studio_auth)])
 api_router.include_router(visual_generation_router, dependencies=[Depends(require_studio_auth)])
 api_router.include_router(galgame_workshop_router, dependencies=[Depends(require_studio_auth)])
+api_router.include_router(video_editor_router, dependencies=[Depends(require_studio_auth)])

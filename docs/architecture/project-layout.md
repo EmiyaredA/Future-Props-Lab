@@ -21,9 +21,10 @@ Future-Props-Lab/
 │   ├── audio_annotation/ # Workspace 录音标注任务、文档/波形 CAS 与导入校验
 │   ├── visual_workshop/ # 视觉工坊项目、画布、助手、生成任务与领域适配器
 │   ├── galgame_workshop/ # Galgame 工程、Story 1.4 CAS、标注导入/视频导出任务、素材/ASR/尺寸维护与线路分析
+│   ├── video_editor/ # API 驱动的多轨时间轴、代理/精确帧、RenderPlan 求值与 FFmpeg 后台合成
 │   ├── models/        # SQLAlchemy 持久化形状
 │   ├── routes/        # `/v1` HTTP/SSE 协议边界；Galgame 按五类协议模块汇总
-│   └── schemas/       # Pydantic 请求与响应形状；Galgame 按 Story/Block/素材/维护拆包
+│   └── schemas/       # Pydantic 请求与响应形状；Galgame 与视频剪辑按职责拆包
 ├── db/migrations/
 │   ├── versions/      # 只追加、不可改写的 SQLite migration
 │   ├── registry.py    # 有序 migration 注册表与最新版本
@@ -86,12 +87,16 @@ Future-Props-Lab/
   映射归属 `llm/transcription/`，录音标注、模型测试和 Galgame 只依赖该能力边界。
   删除任务不会删除原音频，被任务引用的音频不能从文件库删除。
 - AI 应用目录同样由 Web 静态注册表维护，应用最近访问记录只保存在浏览器本地。视觉创作工坊
-  与 Galgame 工坊各自使用独立页面壳；后端 `files/` 负责公共文件元数据、文件夹、存储校验与项目引用，
+  、Galgame 工坊与视频剪辑工坊各自使用独立页面壳；后端 `files/` 负责公共文件元数据、文件夹、存储校验与项目引用，
   `visual_workshop/` 负责真实项目、revisioned 节点画布、项目对话与图片/视频异步生成任务，
   `galgame_workshop/` 负责 Galgame 工程元数据、Story 1.4 故事文档 CAS、Workspace 级旧 Story
   批量迁移与旧文件导入用例、剧情对话富文本、多人角色舞台演出、
   角色/多层场景/音视频素材生命周期、虚拟打包路径、语音识别任务、立绘尺寸快照恢复、Fragment 线路分析与
   只读 Story 快照驱动的视频导出任务，
+  `video_editor/` 负责与 Story 解耦的微秒级多轨文档、类型化原子操作、项目素材快照、代理媒体、
+  后端精确停帧和固定帧网格的 FFmpeg/Pillow 合成。正式剪辑渲染只依赖不可变时间轴快照和原素材，
+  不启动 Chromium、Playwright 或浏览器录屏；Pillow 只承担文字透明层和二维像素合成，音频 PTS
+  与最终封装由 FFmpeg 统一处理。
   均不预置项目或素材。Studio 一级
   “文件管理”和项目素材浏览器复用同一文件 API；Galgame 上传图片、音视频与字体也复用公共存储、内容签名和媒体元数据校验，
   但只能通过 Galgame 工程素材 API 修改或删除。公共文件被视觉或 Galgame 工程引用期间禁止删除，
@@ -131,7 +136,8 @@ Future-Props-Lab/
 `workspaces/<workspace-id>/` 下，个人头像位于 `profiles/<user-id>/`。历史公共文件保存在
 `library/assets/`；视觉项目使用
 `applications/visual-workshop/projects/<project-id>/{assets,generated}/`；Galgame 项目使用
-`applications/galgame-workshop/projects/<project-id>/{assets,derived,exports}/`。项目目录只保存素材、
+`applications/galgame-workshop/projects/<project-id>/{assets,derived,exports}/`；视频剪辑项目使用
+`applications/video-editor/projects/<project-id>/{assets,derived,exports}/`。项目目录只保存素材、
 派生文件和导出快照，标题变化不改变目录。模型测试对话图片保存在 `model-test/attachments/`，生成参考
 素材及语音识别输入的任务私有副本保存在 `model-test/references/`，生成结果保存在 `model-test/generated/`。
 Skill 不可变版本保存在 `workspaces/<workspace-id>/integrations/skills/<skill-id>/<version>/`。

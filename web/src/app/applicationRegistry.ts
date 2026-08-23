@@ -1,9 +1,11 @@
 import { GALGAME_WORKSHOP_MODULE } from "@features/galgame-workshop/module";
 import { VISUAL_WORKSHOP_MODULE } from "@features/visual-workshop/module";
+import { VIDEO_EDITOR_MODULE } from "@features/video-editor/module";
 
 export const APPLICATION_MODULES = [
   VISUAL_WORKSHOP_MODULE,
   GALGAME_WORKSHOP_MODULE,
+  VIDEO_EDITOR_MODULE,
 ] as const;
 
 export const APPLICATION_DEFINITIONS = APPLICATION_MODULES.map(
@@ -26,4 +28,8 @@ export function applicationPathFor(page: string, projectId?: string) {
   return undefined;
 }
 
-export { GALGAME_WORKSHOP_MODULE, VISUAL_WORKSHOP_MODULE };
+export {
+  GALGAME_WORKSHOP_MODULE,
+  VIDEO_EDITOR_MODULE,
+  VISUAL_WORKSHOP_MODULE,
+};

@@ -2246,6 +2246,266 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/video-editor/import-sources": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Import Sources */
+        get: operations["import_sources_v1_video_editor_import_sources_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/video-editor/projects": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Projects */
+        get: operations["list_projects_v1_video_editor_projects_get"];
+        put?: never;
+        /** Create Project */
+        post: operations["create_project_v1_video_editor_projects_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/video-editor/projects/{project_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Project */
+        get: operations["get_project_v1_video_editor_projects__project_id__get"];
+        put?: never;
+        post?: never;
+        /** Delete Project */
+        delete: operations["delete_project_v1_video_editor_projects__project_id__delete"];
+        options?: never;
+        head?: never;
+        /** Patch Project */
+        patch: operations["patch_project_v1_video_editor_projects__project_id__patch"];
+        trace?: never;
+    };
+    "/v1/video-editor/projects/{project_id}/assets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Assets */
+        get: operations["list_assets_v1_video_editor_projects__project_id__assets_get"];
+        put?: never;
+        /** Upload Asset */
+        post: operations["upload_asset_v1_video_editor_projects__project_id__assets_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/video-editor/projects/{project_id}/assets/import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Import Assets */
+        post: operations["import_assets_v1_video_editor_projects__project_id__assets_import_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/video-editor/projects/{project_id}/assets/{asset_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete Asset */
+        delete: operations["delete_asset_v1_video_editor_projects__project_id__assets__asset_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/video-editor/projects/{project_id}/assets/{asset_id}/proxy/retry": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Retry Proxy */
+        post: operations["retry_proxy_v1_video_editor_projects__project_id__assets__asset_id__proxy_retry_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/video-editor/projects/{project_id}/assets/{asset_id}/{variant}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Asset Variant */
+        get: operations["asset_variant_v1_video_editor_projects__project_id__assets__asset_id___variant__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/video-editor/projects/{project_id}/preview/frame": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Exact Frame */
+        get: operations["exact_frame_v1_video_editor_projects__project_id__preview_frame_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/video-editor/projects/{project_id}/renders": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Renders */
+        get: operations["list_renders_v1_video_editor_projects__project_id__renders_get"];
+        put?: never;
+        /** Create Render */
+        post: operations["create_render_v1_video_editor_projects__project_id__renders_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/video-editor/projects/{project_id}/renders/preflight": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Render Preflight */
+        post: operations["render_preflight_v1_video_editor_projects__project_id__renders_preflight_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/video-editor/projects/{project_id}/renders/{task_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Render */
+        get: operations["get_render_v1_video_editor_projects__project_id__renders__task_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/video-editor/projects/{project_id}/renders/{task_id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cancel Render */
+        post: operations["cancel_render_v1_video_editor_projects__project_id__renders__task_id__cancel_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/video-editor/projects/{project_id}/timeline": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Timeline */
+        get: operations["get_timeline_v1_video_editor_projects__project_id__timeline_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/video-editor/projects/{project_id}/timeline/operations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Apply Timeline Operations */
+        post: operations["apply_timeline_operations_v1_video_editor_projects__project_id__timeline_operations_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/visual-workshop/generation-options": {
         parameters: {
             query?: never;
@@ -2642,6 +2902,24 @@ export interface components {
             /** User Agent */
             user_agent: string;
         };
+        /** AddClipOperation */
+        AddClipOperation: {
+            clip: components["schemas"]["VideoEditorClip"];
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "addClip";
+        };
+        /** AddTrackOperation */
+        AddTrackOperation: {
+            track: components["schemas"]["VideoEditorTrack"];
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "addTrack";
+        };
         /** ApiKeyCreateIn */
         ApiKeyCreateIn: {
             /**
@@ -2995,6 +3273,11 @@ export interface components {
             /** Upload */
             upload: string;
         };
+        /** Body_upload_asset_v1_video_editor_projects__project_id__assets_post */
+        Body_upload_asset_v1_video_editor_projects__project_id__assets_post: {
+            /** Upload */
+            upload: string;
+        };
         /** Body_upload_attachments_v1_model_test_conversations__conversation_id__attachments_post */
         Body_upload_attachments_v1_model_test_conversations__conversation_id__attachments_post: {
             /** Files */
@@ -3134,6 +3417,18 @@ export interface components {
             current_password: string;
             /** New Password */
             new_password: string;
+        };
+        /** ClipIdOperation */
+        ClipIdOperation: {
+            /** Clipid */
+            clipId: string;
+            /** Newclipid */
+            newClipId?: string | null;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "duplicateClip" | "removeClip" | "rippleDelete" | "unlinkClips";
         };
         /** CurrentUserOut */
         CurrentUserOut: {
@@ -6433,6 +6728,31 @@ export interface components {
             /** Tertiary Count */
             tertiary_count: number;
         };
+        /** KeyframeOperation */
+        KeyframeOperation: {
+            /** Clipid */
+            clipId: string;
+            keyframe?: components["schemas"]["VideoEditorKeyframe"] | null;
+            /** Keyframeid */
+            keyframeId?: string | null;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "addKeyframe" | "removeKeyframe" | "updateKeyframe";
+        };
+        /** LinkClipsOperation */
+        LinkClipsOperation: {
+            /** Clipids */
+            clipIds: string[];
+            /** Linkgroupid */
+            linkGroupId: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "linkClips";
+        };
         /** LoginIn */
         LoginIn: {
             /** Password */
@@ -7584,6 +7904,20 @@ export interface components {
              */
             watermark: boolean;
         };
+        /** MoveClipOperation */
+        MoveClipOperation: {
+            /** Clipid */
+            clipId: string;
+            /** Timelinestartus */
+            timelineStartUs: number;
+            /** Trackid */
+            trackId: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "moveClip";
+        };
         /** ProviderEnabledIn */
         ProviderEnabledIn: {
             /** Enabled */
@@ -7818,6 +8152,28 @@ export interface components {
             /** Password */
             password: string;
         };
+        /** RemoveTrackOperation */
+        RemoveTrackOperation: {
+            /** Trackid */
+            trackId: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "removeTrack";
+        };
+        /** ReorderTrackOperation */
+        ReorderTrackOperation: {
+            /** Order */
+            order: number;
+            /** Trackid */
+            trackId: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "reorderTrack";
+        };
         /** ResetPasswordOut */
         ResetPasswordOut: {
             account: components["schemas"]["AccountOut"];
@@ -7867,6 +8223,22 @@ export interface components {
             page_size: number;
             /** Total */
             total: number;
+        };
+        /** SetTransitionOperation */
+        SetTransitionOperation: {
+            /** Clipid */
+            clipId: string;
+            /**
+             * Edge
+             * @enum {string}
+             */
+            edge: "in" | "out";
+            transition?: components["schemas"]["VideoEditorTransition"] | null;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "setTransition";
         };
         /** SkillCatalogOut */
         SkillCatalogOut: {
@@ -7936,6 +8308,20 @@ export interface components {
             name: string;
             /** Version */
             version: string;
+        };
+        /** SplitClipOperation */
+        SplitClipOperation: {
+            /** Atus */
+            atUs: number;
+            /** Clipid */
+            clipId: string;
+            /** Newclipid */
+            newClipId: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "splitClip";
         };
         /** StorageLayoutIssueOut */
         StorageLayoutIssueOut: {
@@ -8214,6 +8600,50 @@ export interface components {
             /** Items */
             items: components["schemas"]["ToolNavigationItemOut"][];
         };
+        /** TrimClipOperation */
+        TrimClipOperation: {
+            /** Clipid */
+            clipId: string;
+            /** Durationus */
+            durationUs: number;
+            /** Sourceinus */
+            sourceInUs: number;
+            /** Timelinestartus */
+            timelineStartUs: number;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "trimClip";
+        };
+        /** UpdateClipOperation */
+        UpdateClipOperation: {
+            /** Clipid */
+            clipId: string;
+            /** Patch */
+            patch: {
+                [key: string]: unknown;
+            };
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "updateClip";
+        };
+        /** UpdateTrackOperation */
+        UpdateTrackOperation: {
+            /** Patch */
+            patch: {
+                [key: string]: unknown;
+            };
+            /** Trackid */
+            trackId: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "updateTrack";
+        };
         /** ValidationError */
         ValidationError: {
             /** Context */
@@ -8226,6 +8656,419 @@ export interface components {
             msg: string;
             /** Error Type */
             type: string;
+        };
+        /** VideoEditorAssetImportIn */
+        VideoEditorAssetImportIn: {
+            /** Assetids */
+            assetIds: string[];
+        };
+        /** VideoEditorAssetListOut */
+        VideoEditorAssetListOut: {
+            /** Items */
+            items: components["schemas"]["VideoEditorAssetOut"][];
+        };
+        /** VideoEditorAssetOut */
+        VideoEditorAssetOut: {
+            /** Bytesize */
+            byteSize: number;
+            /** Createdat */
+            createdAt: string;
+            /** Displayname */
+            displayName: string;
+            /** Error */
+            error?: string | null;
+            /** Id */
+            id: string;
+            /** Mediakind */
+            mediaKind: string;
+            /** Mimetype */
+            mimeType: string;
+            /** Originalfilename */
+            originalFilename: string;
+            /** Probe */
+            probe?: {
+                [key: string]: unknown;
+            };
+            /** Processingstatus */
+            processingStatus: string;
+            /** Proxyurl */
+            proxyUrl?: string | null;
+            /** Thumbnailurl */
+            thumbnailUrl?: string | null;
+            /** Waveformurl */
+            waveformUrl?: string | null;
+        };
+        /** VideoEditorAvailableAssetListOut */
+        VideoEditorAvailableAssetListOut: {
+            /** Items */
+            items: components["schemas"]["VideoEditorAvailableAssetOut"][];
+        };
+        /** VideoEditorAvailableAssetOut */
+        VideoEditorAvailableAssetOut: {
+            /** Displayname */
+            displayName: string;
+            /** Id */
+            id: string;
+            /** Mediakind */
+            mediaKind: string;
+            /** Mimetype */
+            mimeType: string;
+            /** Sourceapplication */
+            sourceApplication: string;
+        };
+        /** VideoEditorClip */
+        VideoEditorClip: {
+            /** Assetid */
+            assetId?: string | null;
+            /** Color */
+            color?: string | null;
+            /** Durationus */
+            durationUs: number;
+            /** Fontassetid */
+            fontAssetId?: string | null;
+            /**
+             * Fontsize
+             * @default 72
+             */
+            fontSize: number;
+            /** Id */
+            id: string;
+            /** Keyframes */
+            keyframes?: components["schemas"]["VideoEditorKeyframe"][];
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "video" | "image" | "audio" | "text" | "color";
+            /** Linkgroupid */
+            linkGroupId?: string | null;
+            /** Name */
+            name: string;
+            /**
+             * Sourceinus
+             * @default 0
+             */
+            sourceInUs: number;
+            /** Text */
+            text?: string | null;
+            /**
+             * Textcolor
+             * @default #ffffff
+             */
+            textColor: string;
+            /** Timelinestartus */
+            timelineStartUs: number;
+            /** Trackid */
+            trackId: string;
+            transform?: components["schemas"]["VideoEditorTransform"];
+            transitionIn?: components["schemas"]["VideoEditorTransition"] | null;
+            transitionOut?: components["schemas"]["VideoEditorTransition"] | null;
+            /**
+             * Volume
+             * @default 1
+             */
+            volume: number;
+        };
+        /** VideoEditorKeyframe */
+        VideoEditorKeyframe: {
+            /** Id */
+            id: string;
+            /**
+             * Interpolation
+             * @default linear
+             * @enum {string}
+             */
+            interpolation: "linear" | "ease-in" | "ease-out" | "ease-in-out";
+            /**
+             * Property
+             * @enum {string}
+             */
+            property: "x" | "y" | "scaleX" | "scaleY" | "rotation" | "opacity" | "volume";
+            /** Timeus */
+            timeUs: number;
+            /** Value */
+            value: number;
+        };
+        /** VideoEditorProjectCreateIn */
+        VideoEditorProjectCreateIn: {
+            /** Title */
+            title: string;
+        };
+        /** VideoEditorProjectListOut */
+        VideoEditorProjectListOut: {
+            /** Items */
+            items: components["schemas"]["VideoEditorProjectOut"][];
+        };
+        /** VideoEditorProjectOut */
+        VideoEditorProjectOut: {
+            /** Createdat */
+            createdAt: string;
+            /** Id */
+            id: string;
+            /** Revision */
+            revision: number;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "draft" | "completed";
+            /** Title */
+            title: string;
+            /** Updatedat */
+            updatedAt: string;
+        };
+        /** VideoEditorProjectPatchIn */
+        VideoEditorProjectPatchIn: {
+            /** Expectedrevision */
+            expectedRevision: number;
+            /** Status */
+            status?: ("draft" | "completed") | null;
+            /** Title */
+            title?: string | null;
+        };
+        /** VideoEditorProjectSettings */
+        VideoEditorProjectSettings: {
+            /**
+             * Backgroundcolor
+             * @default #000000
+             */
+            backgroundColor: string;
+            /**
+             * Fps
+             * @default 30
+             * @enum {integer}
+             */
+            fps: 30 | 60;
+            /**
+             * Height
+             * @default 1080
+             * @constant
+             */
+            height: 1080;
+            /**
+             * Width
+             * @default 1920
+             * @constant
+             */
+            width: 1920;
+        };
+        /** VideoEditorRenderCreateIn */
+        VideoEditorRenderCreateIn: {
+            /** Endus */
+            endUs?: number | null;
+            /** Expectedrevision */
+            expectedRevision: number;
+            /**
+             * Preset
+             * @default 1080p30
+             * @enum {string}
+             */
+            preset: "720p30" | "1080p30" | "720p60" | "1080p60";
+            /** Previewfingerprint */
+            previewFingerprint: string;
+            /** Requestid */
+            requestId: string;
+            /**
+             * Startus
+             * @default 0
+             */
+            startUs: number;
+        };
+        /** VideoEditorRenderIssue */
+        VideoEditorRenderIssue: {
+            /** Code */
+            code: string;
+            /** Endus */
+            endUs?: number | null;
+            /** Message */
+            message: string;
+            /** Startus */
+            startUs?: number | null;
+        };
+        /** VideoEditorRenderPreviewIn */
+        VideoEditorRenderPreviewIn: {
+            /** Endus */
+            endUs?: number | null;
+            /** Expectedrevision */
+            expectedRevision: number;
+            /**
+             * Preset
+             * @default 1080p30
+             * @enum {string}
+             */
+            preset: "720p30" | "1080p30" | "720p60" | "1080p60";
+            /**
+             * Startus
+             * @default 0
+             */
+            startUs: number;
+        };
+        /** VideoEditorRenderPreviewOut */
+        VideoEditorRenderPreviewOut: {
+            /** Blockers */
+            blockers?: components["schemas"]["VideoEditorRenderIssue"][];
+            /** Durationus */
+            durationUs: number;
+            /** Fingerprint */
+            fingerprint: string;
+            /** Framecount */
+            frameCount: number;
+            /**
+             * Preset
+             * @enum {string}
+             */
+            preset: "720p30" | "1080p30" | "720p60" | "1080p60";
+            /** Ready */
+            ready: boolean;
+            /** Revision */
+            revision: number;
+            /** Warnings */
+            warnings?: components["schemas"]["VideoEditorRenderIssue"][];
+        };
+        /** VideoEditorTaskListOut */
+        VideoEditorTaskListOut: {
+            /** Items */
+            items: components["schemas"]["VideoEditorTaskOut"][];
+        };
+        /** VideoEditorTaskOut */
+        VideoEditorTaskOut: {
+            /** Createdat */
+            createdAt: string;
+            /** Error */
+            error?: string | null;
+            /** Id */
+            id: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "media" | "render";
+            /** Outputassetid */
+            outputAssetId?: string | null;
+            /** Progress */
+            progress: number;
+            /** Projectid */
+            projectId: string;
+            /** Requestid */
+            requestId: string;
+            /** Resultdetail */
+            resultDetail?: {
+                [key: string]: unknown;
+            };
+            /** Revision */
+            revision: number;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "queued" | "running" | "completed" | "failed" | "cancelled";
+            /** Updatedat */
+            updatedAt: string;
+        };
+        /** VideoEditorTimelineBatchIn */
+        VideoEditorTimelineBatchIn: {
+            /** Expectedrevision */
+            expectedRevision: number;
+            /** Operations */
+            operations: (components["schemas"]["AddTrackOperation"] | components["schemas"]["UpdateTrackOperation"] | components["schemas"]["RemoveTrackOperation"] | components["schemas"]["ReorderTrackOperation"] | components["schemas"]["AddClipOperation"] | components["schemas"]["UpdateClipOperation"] | components["schemas"]["ClipIdOperation"] | components["schemas"]["MoveClipOperation"] | components["schemas"]["TrimClipOperation"] | components["schemas"]["SplitClipOperation"] | components["schemas"]["LinkClipsOperation"] | components["schemas"]["KeyframeOperation"] | components["schemas"]["SetTransitionOperation"])[];
+            /** Requestid */
+            requestId: string;
+        };
+        /** VideoEditorTimelineDocument */
+        VideoEditorTimelineDocument: {
+            /**
+             * Schemaversion
+             * @default 1.0
+             * @constant
+             */
+            schemaVersion: "1.0";
+            settings?: components["schemas"]["VideoEditorProjectSettings"];
+            /** Tracks */
+            tracks?: components["schemas"]["VideoEditorTrack"][];
+        };
+        /** VideoEditorTimelineOut */
+        VideoEditorTimelineOut: {
+            document: components["schemas"]["VideoEditorTimelineDocument"];
+            /** Projectid */
+            projectId: string;
+            /** Revision */
+            revision: number;
+            /** Updatedat */
+            updatedAt: string;
+        };
+        /** VideoEditorTrack */
+        VideoEditorTrack: {
+            /** Clips */
+            clips?: components["schemas"]["VideoEditorClip"][];
+            /**
+             * Hidden
+             * @default false
+             */
+            hidden: boolean;
+            /** Id */
+            id: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "visual" | "audio";
+            /**
+             * Locked
+             * @default false
+             */
+            locked: boolean;
+            /**
+             * Muted
+             * @default false
+             */
+            muted: boolean;
+            /** Name */
+            name: string;
+            /** Order */
+            order: number;
+        };
+        /** VideoEditorTransform */
+        VideoEditorTransform: {
+            /**
+             * Opacity
+             * @default 1
+             */
+            opacity: number;
+            /**
+             * Rotation
+             * @default 0
+             */
+            rotation: number;
+            /**
+             * Scalex
+             * @default 1
+             */
+            scaleX: number;
+            /**
+             * Scaley
+             * @default 1
+             */
+            scaleY: number;
+            /**
+             * X
+             * @default 960
+             */
+            x: number;
+            /**
+             * Y
+             * @default 540
+             */
+            y: number;
+        };
+        /** VideoEditorTransition */
+        VideoEditorTransition: {
+            /** Durationus */
+            durationUs: number;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "cut" | "crossfade" | "fade-black" | "fade-white" | "audio-crossfade";
         };
         /** VideoGenerationTaskCreateIn */
         VideoGenerationTaskCreateIn: {
@@ -14543,6 +15386,646 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ToolNavigationItemOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    import_sources_v1_video_editor_import_sources_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VideoEditorAvailableAssetListOut"];
+                };
+            };
+        };
+    };
+    list_projects_v1_video_editor_projects_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VideoEditorProjectListOut"];
+                };
+            };
+        };
+    };
+    create_project_v1_video_editor_projects_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VideoEditorProjectCreateIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VideoEditorProjectOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_project_v1_video_editor_projects__project_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VideoEditorProjectOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_project_v1_video_editor_projects__project_id__delete: {
+        parameters: {
+            query: {
+                expected_revision: number;
+            };
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: boolean;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    patch_project_v1_video_editor_projects__project_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VideoEditorProjectPatchIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VideoEditorProjectOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_assets_v1_video_editor_projects__project_id__assets_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VideoEditorAssetListOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    upload_asset_v1_video_editor_projects__project_id__assets_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_upload_asset_v1_video_editor_projects__project_id__assets_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VideoEditorAssetOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    import_assets_v1_video_editor_projects__project_id__assets_import_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VideoEditorAssetImportIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VideoEditorAssetListOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_asset_v1_video_editor_projects__project_id__assets__asset_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+                asset_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: boolean;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    retry_proxy_v1_video_editor_projects__project_id__assets__asset_id__proxy_retry_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+                asset_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VideoEditorAssetOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    asset_variant_v1_video_editor_projects__project_id__assets__asset_id___variant__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+                asset_id: string;
+                variant: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    exact_frame_v1_video_editor_projects__project_id__preview_frame_get: {
+        parameters: {
+            query: {
+                revision: number;
+                timeUs: number;
+                width?: number;
+            };
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_renders_v1_video_editor_projects__project_id__renders_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VideoEditorTaskListOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_render_v1_video_editor_projects__project_id__renders_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VideoEditorRenderCreateIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VideoEditorTaskOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    render_preflight_v1_video_editor_projects__project_id__renders_preflight_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VideoEditorRenderPreviewIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VideoEditorRenderPreviewOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_render_v1_video_editor_projects__project_id__renders__task_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+                task_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VideoEditorTaskOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    cancel_render_v1_video_editor_projects__project_id__renders__task_id__cancel_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+                task_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VideoEditorTaskOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_timeline_v1_video_editor_projects__project_id__timeline_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VideoEditorTimelineOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    apply_timeline_operations_v1_video_editor_projects__project_id__timeline_operations_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VideoEditorTimelineBatchIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VideoEditorTimelineOut"];
                 };
             };
             /** @description Validation Error */

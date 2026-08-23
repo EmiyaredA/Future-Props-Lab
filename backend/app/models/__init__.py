@@ -57,6 +57,13 @@ from app.models.visual_workshop import (
     VisualGenerationTask,
     VisualWorkshopProject,
 )
+from app.models.video_editor import (
+    VideoEditorAssetMetadata,
+    VideoEditorOperationBatch,
+    VideoEditorProject,
+    VideoEditorTask,
+    VideoEditorTimeline,
+)
 from app.models.workspace import Workspace
 
 __all__ = [
@@ -107,6 +114,11 @@ __all__ = [
     "VisualGenerationTask",
     "VisualProjectAssetReference",
     "VisualWorkshopProject",
+    "VideoEditorAssetMetadata",
+    "VideoEditorOperationBatch",
+    "VideoEditorProject",
+    "VideoEditorTask",
+    "VideoEditorTimeline",
     "Workspace",
     "WorkspaceInvitation",
     "WorkspaceMembership",

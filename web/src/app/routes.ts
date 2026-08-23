@@ -22,7 +22,10 @@ export type WorkshopPage =
   | "galgame-workshop-projects"
   | "galgame-workshop-overview"
   | "galgame-workshop-editor"
-  | "galgame-workshop-preview";
+  | "galgame-workshop-preview"
+  | "video-editor-projects"
+  | "video-editor-editor"
+  | "video-editor-tasks";
 
 export type VisualWorkshopPage = Extract<
   WorkshopPage,
@@ -32,6 +35,7 @@ export type GalgameWorkshopPage = Extract<
   WorkshopPage,
   `galgame-workshop-${string}`
 >;
+export type VideoEditorPage = Extract<WorkshopPage, `video-editor-${string}`>;
 
 export type AppPage = StudioPage | WorkshopPage;
 
@@ -39,7 +43,9 @@ export type AppRoute = { page: AppPage; projectId?: string };
 
 export function isWorkshopPage(page: AppPage): page is WorkshopPage {
   return (
-    page.startsWith("visual-workshop-") || page.startsWith("galgame-workshop-")
+    page.startsWith("visual-workshop-") ||
+    page.startsWith("galgame-workshop-") ||
+    page.startsWith("video-editor-")
   );
 }
 
@@ -53,6 +59,10 @@ export function isGalgameWorkshopPage(
   page: AppPage,
 ): page is GalgameWorkshopPage {
   return page.startsWith("galgame-workshop-");
+}
+
+export function isVideoEditorPage(page: AppPage): page is VideoEditorPage {
+  return page.startsWith("video-editor-");
 }
 
 export function parsePage(pathname = window.location.pathname): AppPage {
@@ -122,6 +132,9 @@ export function pathFor(page: AppPage, projectId?: string): string {
     "galgame-workshop-overview": "/apps/galgame-workshop",
     "galgame-workshop-editor": "/apps/galgame-workshop",
     "galgame-workshop-preview": "/apps/galgame-workshop",
+    "video-editor-projects": "/apps/video-editor",
+    "video-editor-editor": "/apps/video-editor",
+    "video-editor-tasks": "/apps/video-editor/tasks",
   };
   return paths[page];
 }

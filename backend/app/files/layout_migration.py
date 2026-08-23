@@ -12,7 +12,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import Settings
 from app.files.storage import TARGET_STORAGE_VERSION, AssetStorage
-from app.models import GalgameWorkshopProject, VisualAsset, VisualWorkshopProject
+from app.models import (
+    GalgameWorkshopProject,
+    VideoEditorProject,
+    VisualAsset,
+    VisualWorkshopProject,
+)
 from app.schemas.files import (
     StorageLayoutIssueOut,
     StorageLayoutMigrationOut,
@@ -32,6 +37,7 @@ class PendingAsset:
     storage_key: str
     project_id: str | None
     galgame_project_id: str | None
+    video_editor_project_id: str | None
     byte_size: int
 
 
@@ -43,6 +49,7 @@ async def reconcile_project_trash(session: AsyncSession, storage: AssetStorage) 
     project_models = {
         "visual-workshop": VisualWorkshopProject,
         "galgame-workshop": GalgameWorkshopProject,
+        "video-editor": VideoEditorProject,
     }
     for application_id, model in project_models.items():
         application_trash = root / application_id
@@ -92,7 +99,7 @@ class StorageLayoutMigration:
         self.session = session
         self.storage = AssetStorage(settings)
 
-    async def _projects(self) -> tuple[list[str], list[str]]:
+    async def _projects(self) -> tuple[list[str], list[str], list[str]]:
         visual_ids = list(
             (
                 await self.session.execute(
@@ -107,7 +114,14 @@ class StorageLayoutMigration:
                 )
             ).scalars()
         )
-        return visual_ids, galgame_ids
+        video_editor_ids = list(
+            (
+                await self.session.execute(
+                    select(VideoEditorProject.id).order_by(VideoEditorProject.created_at)
+                )
+            ).scalars()
+        )
+        return visual_ids, galgame_ids, video_editor_ids
 
     async def _pending(self, limit: int | None = None) -> list[PendingAsset]:
         statement = (
@@ -116,6 +130,7 @@ class StorageLayoutMigration:
                 VisualAsset.storage_key,
                 VisualAsset.project_id,
                 VisualAsset.galgame_project_id,
+                VisualAsset.video_editor_project_id,
                 VisualAsset.byte_size,
             )
             .where(VisualAsset.storage_version < TARGET_STORAGE_VERSION)
@@ -127,12 +142,13 @@ class StorageLayoutMigration:
         return [PendingAsset(*row) for row in rows]
 
     async def status(self) -> StorageLayoutStatusOut:
-        visual_ids, galgame_ids = await self._projects()
+        visual_ids, galgame_ids, video_editor_ids = await self._projects()
         pending_projects = sum(
             not self.storage.project_root(application_id, project_id).is_dir()
             for application_id, project_ids in (
                 ("visual-workshop", visual_ids),
                 ("galgame-workshop", galgame_ids),
+                ("video-editor", video_editor_ids),
             )
             for project_id in project_ids
         )
@@ -152,6 +168,7 @@ class StorageLayoutMigration:
                 asset.storage_key,
                 visual_project_id=asset.project_id,
                 galgame_project_id=asset.galgame_project_id,
+                video_editor_project_id=asset.video_editor_project_id,
             )
             if not source.is_file():
                 missing += 1
@@ -171,11 +188,12 @@ class StorageLayoutMigration:
         if _migration_lock.locked():
             raise LayoutMigrationBusyError("素材目录迁移正在进行")
         async with _migration_lock:
-            visual_ids, galgame_ids = await self._projects()
+            visual_ids, galgame_ids, video_editor_ids = await self._projects()
             migrated_projects = 0
             for application_id, project_ids in (
                 ("visual-workshop", visual_ids),
                 ("galgame-workshop", galgame_ids),
+                ("video-editor", video_editor_ids),
             ):
                 for project_id in project_ids:
                     if self.storage.ensure_project_layout(application_id, project_id):
@@ -191,6 +209,7 @@ class StorageLayoutMigration:
                     asset.storage_key,
                     visual_project_id=asset.project_id,
                     galgame_project_id=asset.galgame_project_id,
+                    video_editor_project_id=asset.video_editor_project_id,
                 )
                 temp_path: Path | None = None
                 created_target = False
@@ -223,6 +242,7 @@ class StorageLayoutMigration:
                             asset.storage_key,
                             visual_project_id=asset.project_id,
                             galgame_project_id=asset.galgame_project_id,
+                            video_editor_project_id=asset.video_editor_project_id,
                         )
                         await asyncio.to_thread(_copy_verified, source, temp_path, asset.byte_size)
                         os.replace(temp_path, target)

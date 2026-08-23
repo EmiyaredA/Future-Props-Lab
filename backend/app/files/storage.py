@@ -19,6 +19,7 @@ class StoredAsset(Protocol):
     storage_version: int | None
     project_id: str | None
     galgame_project_id: str | None
+    video_editor_project_id: str | None
 
 
 @dataclass(frozen=True)
@@ -49,6 +50,14 @@ class AssetStorage:
             return self.settings.visual_project_path(project_id)
         if application_id == "galgame-workshop":
             return self.settings.galgame_project_path(project_id)
+        if application_id == "video-editor":
+            return (
+                self.settings.runtime_path
+                / "applications"
+                / "video-editor"
+                / "projects"
+                / project_id
+            ).resolve()
         raise ValueError("unknown project application")
 
     def target_root(
@@ -56,10 +65,12 @@ class AssetStorage:
         *,
         visual_project_id: str | None,
         galgame_project_id: str | None,
+        video_editor_project_id: str | None = None,
         workspace_id: str | None = None,
     ) -> Path:
-        if visual_project_id and galgame_project_id:
-            raise ValueError("asset cannot belong to two project applications")
+        owners = (visual_project_id, galgame_project_id, video_editor_project_id)
+        if sum(owner is not None for owner in owners) > 1:
+            raise ValueError("asset cannot belong to multiple project applications")
         if visual_project_id:
             return (
                 self.project_root("visual-workshop", visual_project_id, workspace_id=workspace_id)
@@ -68,6 +79,13 @@ class AssetStorage:
         if galgame_project_id:
             return (
                 self.project_root("galgame-workshop", galgame_project_id, workspace_id=workspace_id)
+                / "assets"
+            )
+        if video_editor_project_id:
+            return (
+                self.project_root(
+                    "video-editor", video_editor_project_id, workspace_id=workspace_id
+                )
                 / "assets"
             )
         workspace_id = workspace_id or current_workspace_id()
@@ -81,11 +99,13 @@ class AssetStorage:
         *,
         visual_project_id: str | None,
         galgame_project_id: str | None,
+        video_editor_project_id: str | None = None,
         workspace_id: str | None = None,
     ) -> Path:
         return self.target_root(
             visual_project_id=visual_project_id,
             galgame_project_id=galgame_project_id,
+            video_editor_project_id=video_editor_project_id,
             workspace_id=workspace_id,
         ) / self._segment(storage_key)
 
@@ -98,6 +118,7 @@ class AssetStorage:
                 asset.storage_key,
                 visual_project_id=asset.project_id,
                 galgame_project_id=asset.galgame_project_id,
+                video_editor_project_id=asset.video_editor_project_id,
                 workspace_id=asset.workspace_id,
             )
         return self.legacy_path(asset.storage_key)
@@ -108,12 +129,14 @@ class AssetStorage:
         *,
         visual_project_id: str | None,
         galgame_project_id: str | None,
+        video_editor_project_id: str | None = None,
         workspace_id: str | None = None,
     ) -> tuple[Path, Path]:
         final_path = self.target_path(
             storage_key,
             visual_project_id=visual_project_id,
             galgame_project_id=galgame_project_id,
+            video_editor_project_id=video_editor_project_id,
             workspace_id=workspace_id,
         )
         temp_dir = final_path.parent / ".tmp"

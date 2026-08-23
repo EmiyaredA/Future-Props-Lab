@@ -10,16 +10,19 @@ import {
 import { GalgameWorkshopShell } from "@app/layout/GalgameWorkshopShell";
 import { StudioSidebar } from "@app/layout/StudioSidebar";
 import { VisualWorkshopShell } from "@app/layout/VisualWorkshopShell";
+import { VideoEditorShell } from "@app/layout/VideoEditorShell";
 import { PublicWorkspaceShowcase } from "@app/PublicWorkspaceShowcase";
 import { useStudioSession } from "@app/StudioSession";
 import {
   APPLICATION_DEFINITIONS,
   GALGAME_WORKSHOP_MODULE,
   VISUAL_WORKSHOP_MODULE,
+  VIDEO_EDITOR_MODULE,
 } from "@app/applicationRegistry";
 import {
   isGalgameWorkshopPage,
   isVisualWorkshopPage,
+  isVideoEditorPage,
   parseRoute,
   pathFor,
   type AppRoute,
@@ -105,6 +108,9 @@ const GalgameWorkshopOverviewPage = lazy(
 );
 const GalgameWorkshopEditorPage = lazy(GALGAME_WORKSHOP_MODULE.pages.editor);
 const GalgameFastPreviewPage = lazy(GALGAME_WORKSHOP_MODULE.pages.preview);
+const VideoEditorProjectsPage = lazy(VIDEO_EDITOR_MODULE.pages.projects);
+const VideoEditorPage = lazy(VIDEO_EDITOR_MODULE.pages.editor);
+const VideoEditorTasksPage = lazy(VIDEO_EDITOR_MODULE.pages.tasks);
 
 function PageBoundary({ children }: { children: ReactNode }) {
   return (
@@ -184,6 +190,43 @@ export default function App() {
       <PageBoundary>
         <GalgameFastPreviewPage projectId={route.projectId} />
       </PageBoundary>
+    );
+  }
+
+  if (page === "video-editor-editor" && route.projectId) {
+    return (
+      <PageBoundary>
+        <VideoEditorPage
+          projectId={route.projectId}
+          onBack={() => navigate("video-editor-projects")}
+        />
+      </PageBoundary>
+    );
+  }
+
+  if (isVideoEditorPage(page)) {
+    return (
+      <VideoEditorShell
+        page={page}
+        navigate={(next: WorkshopPage) => navigate(next)}
+        onBack={() => navigate("apps")}
+      >
+        <PageBoundary>
+          {page === "video-editor-tasks" ? (
+            <VideoEditorTasksPage
+              onOpenProject={(projectId) =>
+                navigate("video-editor-editor", projectId)
+              }
+            />
+          ) : (
+            <VideoEditorProjectsPage
+              onOpenProject={(projectId) =>
+                navigate("video-editor-editor", projectId)
+              }
+            />
+          )}
+        </PageBoundary>
+      </VideoEditorShell>
     );
   }
 

@@ -37,6 +37,7 @@ from db.migrations.versions import (
     r0032_realtime_fresh_catalog,
     r0033_model_test_tools,
     r0034_realtime_tool_calls,
+    r0035_video_editor,
 )
 
 
@@ -173,6 +174,7 @@ MIGRATIONS = (
         r0034_realtime_tool_calls.SQL,
         foreign_keys_off=True,
     ),
+    Migration(r0035_video_editor.MIGRATION_ID, r0035_video_editor.SQL),
 )
 
 LATEST_MIGRATION_ID = MIGRATIONS[-1].migration_id

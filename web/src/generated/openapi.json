@@ -272,6 +272,42 @@
         "title": "AccountSessionOut",
         "type": "object"
       },
+      "AddClipOperation": {
+        "properties": {
+          "clip": {
+            "$ref": "#/components/schemas/VideoEditorClip"
+          },
+          "type": {
+            "const": "addClip",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "clip"
+        ],
+        "title": "AddClipOperation",
+        "type": "object"
+      },
+      "AddTrackOperation": {
+        "properties": {
+          "track": {
+            "$ref": "#/components/schemas/VideoEditorTrack"
+          },
+          "type": {
+            "const": "addTrack",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "track"
+        ],
+        "title": "AddTrackOperation",
+        "type": "object"
+      },
       "ApiKeyCreateIn": {
         "properties": {
           "expires_in_days": {
@@ -1262,6 +1298,20 @@
         "title": "Body_transcribe_segment_v1_audio_annotation_projects__project_id__segment_transcriptions_post",
         "type": "object"
       },
+      "Body_upload_asset_v1_video_editor_projects__project_id__assets_post": {
+        "properties": {
+          "upload": {
+            "contentMediaType": "application/octet-stream",
+            "title": "Upload",
+            "type": "string"
+          }
+        },
+        "required": [
+          "upload"
+        ],
+        "title": "Body_upload_asset_v1_video_editor_projects__project_id__assets_post",
+        "type": "object"
+      },
       "Body_upload_attachments_v1_model_test_conversations__conversation_id__attachments_post": {
         "properties": {
           "files": {
@@ -1742,6 +1792,41 @@
           "new_password"
         ],
         "title": "ChangePasswordIn",
+        "type": "object"
+      },
+      "ClipIdOperation": {
+        "properties": {
+          "clipId": {
+            "title": "Clipid",
+            "type": "string"
+          },
+          "newClipId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Newclipid"
+          },
+          "type": {
+            "enum": [
+              "removeClip",
+              "duplicateClip",
+              "rippleDelete",
+              "unlinkClips"
+            ],
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "clipId"
+        ],
+        "title": "ClipIdOperation",
         "type": "object"
       },
       "CurrentUserOut": {
@@ -10283,6 +10368,78 @@
         "title": "IntegrationOverviewOut",
         "type": "object"
       },
+      "KeyframeOperation": {
+        "properties": {
+          "clipId": {
+            "title": "Clipid",
+            "type": "string"
+          },
+          "keyframe": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/VideoEditorKeyframe"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "keyframeId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Keyframeid"
+          },
+          "type": {
+            "enum": [
+              "addKeyframe",
+              "updateKeyframe",
+              "removeKeyframe"
+            ],
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "clipId"
+        ],
+        "title": "KeyframeOperation",
+        "type": "object"
+      },
+      "LinkClipsOperation": {
+        "properties": {
+          "clipIds": {
+            "items": {
+              "type": "string"
+            },
+            "minItems": 2,
+            "title": "Clipids",
+            "type": "array"
+          },
+          "linkGroupId": {
+            "title": "Linkgroupid",
+            "type": "string"
+          },
+          "type": {
+            "const": "linkClips",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "clipIds",
+          "linkGroupId"
+        ],
+        "title": "LinkClipsOperation",
+        "type": "object"
+      },
       "LoginIn": {
         "properties": {
           "password": {
@@ -13331,6 +13488,36 @@
         "title": "ModelTestVideoGenerationIn",
         "type": "object"
       },
+      "MoveClipOperation": {
+        "properties": {
+          "clipId": {
+            "title": "Clipid",
+            "type": "string"
+          },
+          "timelineStartUs": {
+            "minimum": 0.0,
+            "title": "Timelinestartus",
+            "type": "integer"
+          },
+          "trackId": {
+            "title": "Trackid",
+            "type": "string"
+          },
+          "type": {
+            "const": "moveClip",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "clipId",
+          "trackId",
+          "timelineStartUs"
+        ],
+        "title": "MoveClipOperation",
+        "type": "object"
+      },
       "ProviderEnabledIn": {
         "properties": {
           "enabled": {
@@ -13914,6 +14101,50 @@
         "title": "ReauthIn",
         "type": "object"
       },
+      "RemoveTrackOperation": {
+        "properties": {
+          "trackId": {
+            "title": "Trackid",
+            "type": "string"
+          },
+          "type": {
+            "const": "removeTrack",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "trackId"
+        ],
+        "title": "RemoveTrackOperation",
+        "type": "object"
+      },
+      "ReorderTrackOperation": {
+        "properties": {
+          "order": {
+            "minimum": 0.0,
+            "title": "Order",
+            "type": "integer"
+          },
+          "trackId": {
+            "title": "Trackid",
+            "type": "string"
+          },
+          "type": {
+            "const": "reorderTrack",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "trackId",
+          "order"
+        ],
+        "title": "ReorderTrackOperation",
+        "type": "object"
+      },
       "ResetPasswordOut": {
         "properties": {
           "account": {
@@ -14055,6 +14286,44 @@
           "page_size"
         ],
         "title": "SecurityAuditListOut",
+        "type": "object"
+      },
+      "SetTransitionOperation": {
+        "properties": {
+          "clipId": {
+            "title": "Clipid",
+            "type": "string"
+          },
+          "edge": {
+            "enum": [
+              "in",
+              "out"
+            ],
+            "title": "Edge",
+            "type": "string"
+          },
+          "transition": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/VideoEditorTransition"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "type": {
+            "const": "setTransition",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "clipId",
+          "edge"
+        ],
+        "title": "SetTransitionOperation",
         "type": "object"
       },
       "SkillCatalogOut": {
@@ -14234,6 +14503,36 @@
           "created_at"
         ],
         "title": "SkillVersionOut",
+        "type": "object"
+      },
+      "SplitClipOperation": {
+        "properties": {
+          "atUs": {
+            "exclusiveMinimum": 0.0,
+            "title": "Atus",
+            "type": "integer"
+          },
+          "clipId": {
+            "title": "Clipid",
+            "type": "string"
+          },
+          "newClipId": {
+            "title": "Newclipid",
+            "type": "string"
+          },
+          "type": {
+            "const": "splitClip",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "clipId",
+          "atUs",
+          "newClipId"
+        ],
+        "title": "SplitClipOperation",
         "type": "object"
       },
       "StorageLayoutIssueOut": {
@@ -14865,6 +15164,93 @@
         "title": "ToolNavigationStateOut",
         "type": "object"
       },
+      "TrimClipOperation": {
+        "properties": {
+          "clipId": {
+            "title": "Clipid",
+            "type": "string"
+          },
+          "durationUs": {
+            "exclusiveMinimum": 0.0,
+            "title": "Durationus",
+            "type": "integer"
+          },
+          "sourceInUs": {
+            "minimum": 0.0,
+            "title": "Sourceinus",
+            "type": "integer"
+          },
+          "timelineStartUs": {
+            "minimum": 0.0,
+            "title": "Timelinestartus",
+            "type": "integer"
+          },
+          "type": {
+            "const": "trimClip",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "clipId",
+          "timelineStartUs",
+          "durationUs",
+          "sourceInUs"
+        ],
+        "title": "TrimClipOperation",
+        "type": "object"
+      },
+      "UpdateClipOperation": {
+        "properties": {
+          "clipId": {
+            "title": "Clipid",
+            "type": "string"
+          },
+          "patch": {
+            "additionalProperties": true,
+            "title": "Patch",
+            "type": "object"
+          },
+          "type": {
+            "const": "updateClip",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "clipId",
+          "patch"
+        ],
+        "title": "UpdateClipOperation",
+        "type": "object"
+      },
+      "UpdateTrackOperation": {
+        "properties": {
+          "patch": {
+            "additionalProperties": true,
+            "title": "Patch",
+            "type": "object"
+          },
+          "trackId": {
+            "title": "Trackid",
+            "type": "string"
+          },
+          "type": {
+            "const": "updateTrack",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "trackId",
+          "patch"
+        ],
+        "title": "UpdateTrackOperation",
+        "type": "object"
+      },
       "ValidationError": {
         "properties": {
           "ctx": {
@@ -14903,6 +15289,1132 @@
           "type"
         ],
         "title": "ValidationError",
+        "type": "object"
+      },
+      "VideoEditorAssetImportIn": {
+        "properties": {
+          "assetIds": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 100,
+            "minItems": 1,
+            "title": "Assetids",
+            "type": "array"
+          }
+        },
+        "required": [
+          "assetIds"
+        ],
+        "title": "VideoEditorAssetImportIn",
+        "type": "object"
+      },
+      "VideoEditorAssetListOut": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/VideoEditorAssetOut"
+            },
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "title": "VideoEditorAssetListOut",
+        "type": "object"
+      },
+      "VideoEditorAssetOut": {
+        "properties": {
+          "byteSize": {
+            "title": "Bytesize",
+            "type": "integer"
+          },
+          "createdAt": {
+            "title": "Createdat",
+            "type": "string"
+          },
+          "displayName": {
+            "title": "Displayname",
+            "type": "string"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "mediaKind": {
+            "title": "Mediakind",
+            "type": "string"
+          },
+          "mimeType": {
+            "title": "Mimetype",
+            "type": "string"
+          },
+          "originalFilename": {
+            "title": "Originalfilename",
+            "type": "string"
+          },
+          "probe": {
+            "additionalProperties": true,
+            "title": "Probe",
+            "type": "object"
+          },
+          "processingStatus": {
+            "title": "Processingstatus",
+            "type": "string"
+          },
+          "proxyUrl": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Proxyurl"
+          },
+          "thumbnailUrl": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Thumbnailurl"
+          },
+          "waveformUrl": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Waveformurl"
+          }
+        },
+        "required": [
+          "id",
+          "displayName",
+          "originalFilename",
+          "mediaKind",
+          "mimeType",
+          "byteSize",
+          "processingStatus",
+          "createdAt"
+        ],
+        "title": "VideoEditorAssetOut",
+        "type": "object"
+      },
+      "VideoEditorAvailableAssetListOut": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/VideoEditorAvailableAssetOut"
+            },
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "title": "VideoEditorAvailableAssetListOut",
+        "type": "object"
+      },
+      "VideoEditorAvailableAssetOut": {
+        "properties": {
+          "displayName": {
+            "title": "Displayname",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "mediaKind": {
+            "title": "Mediakind",
+            "type": "string"
+          },
+          "mimeType": {
+            "title": "Mimetype",
+            "type": "string"
+          },
+          "sourceApplication": {
+            "title": "Sourceapplication",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "displayName",
+          "mediaKind",
+          "mimeType",
+          "sourceApplication"
+        ],
+        "title": "VideoEditorAvailableAssetOut",
+        "type": "object"
+      },
+      "VideoEditorClip": {
+        "properties": {
+          "assetId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Assetid"
+          },
+          "color": {
+            "anyOf": [
+              {
+                "pattern": "^#[0-9a-fA-F]{6}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Color"
+          },
+          "durationUs": {
+            "exclusiveMinimum": 0.0,
+            "title": "Durationus",
+            "type": "integer"
+          },
+          "fontAssetId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fontassetid"
+          },
+          "fontSize": {
+            "default": 72,
+            "maximum": 400.0,
+            "minimum": 8.0,
+            "title": "Fontsize",
+            "type": "integer"
+          },
+          "id": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Id",
+            "type": "string"
+          },
+          "keyframes": {
+            "items": {
+              "$ref": "#/components/schemas/VideoEditorKeyframe"
+            },
+            "maxItems": 1000,
+            "title": "Keyframes",
+            "type": "array"
+          },
+          "kind": {
+            "enum": [
+              "video",
+              "image",
+              "audio",
+              "text",
+              "color"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "linkGroupId": {
+            "anyOf": [
+              {
+                "maxLength": 64,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Linkgroupid"
+          },
+          "name": {
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "sourceInUs": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Sourceinus",
+            "type": "integer"
+          },
+          "text": {
+            "anyOf": [
+              {
+                "maxLength": 4000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Text"
+          },
+          "textColor": {
+            "default": "#ffffff",
+            "pattern": "^#[0-9a-fA-F]{6}$",
+            "title": "Textcolor",
+            "type": "string"
+          },
+          "timelineStartUs": {
+            "minimum": 0.0,
+            "title": "Timelinestartus",
+            "type": "integer"
+          },
+          "trackId": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Trackid",
+            "type": "string"
+          },
+          "transform": {
+            "$ref": "#/components/schemas/VideoEditorTransform"
+          },
+          "transitionIn": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/VideoEditorTransition"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "transitionOut": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/VideoEditorTransition"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "volume": {
+            "default": 1,
+            "maximum": 4.0,
+            "minimum": 0.0,
+            "title": "Volume",
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "trackId",
+          "kind",
+          "name",
+          "timelineStartUs",
+          "durationUs"
+        ],
+        "title": "VideoEditorClip",
+        "type": "object"
+      },
+      "VideoEditorKeyframe": {
+        "properties": {
+          "id": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Id",
+            "type": "string"
+          },
+          "interpolation": {
+            "default": "linear",
+            "enum": [
+              "linear",
+              "ease-in",
+              "ease-out",
+              "ease-in-out"
+            ],
+            "title": "Interpolation",
+            "type": "string"
+          },
+          "property": {
+            "enum": [
+              "x",
+              "y",
+              "scaleX",
+              "scaleY",
+              "rotation",
+              "opacity",
+              "volume"
+            ],
+            "title": "Property",
+            "type": "string"
+          },
+          "timeUs": {
+            "minimum": 0.0,
+            "title": "Timeus",
+            "type": "integer"
+          },
+          "value": {
+            "title": "Value",
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "property",
+          "timeUs",
+          "value"
+        ],
+        "title": "VideoEditorKeyframe",
+        "type": "object"
+      },
+      "VideoEditorProjectCreateIn": {
+        "properties": {
+          "title": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "title"
+        ],
+        "title": "VideoEditorProjectCreateIn",
+        "type": "object"
+      },
+      "VideoEditorProjectListOut": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/VideoEditorProjectOut"
+            },
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "title": "VideoEditorProjectListOut",
+        "type": "object"
+      },
+      "VideoEditorProjectOut": {
+        "properties": {
+          "createdAt": {
+            "title": "Createdat",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          },
+          "status": {
+            "enum": [
+              "draft",
+              "completed"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "updatedAt": {
+            "title": "Updatedat",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "status",
+          "revision",
+          "createdAt",
+          "updatedAt"
+        ],
+        "title": "VideoEditorProjectOut",
+        "type": "object"
+      },
+      "VideoEditorProjectPatchIn": {
+        "properties": {
+          "expectedRevision": {
+            "minimum": 0.0,
+            "title": "Expectedrevision",
+            "type": "integer"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "enum": [
+                  "draft",
+                  "completed"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "maxLength": 120,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          }
+        },
+        "required": [
+          "expectedRevision"
+        ],
+        "title": "VideoEditorProjectPatchIn",
+        "type": "object"
+      },
+      "VideoEditorProjectSettings": {
+        "properties": {
+          "backgroundColor": {
+            "default": "#000000",
+            "pattern": "^#[0-9a-fA-F]{6}$",
+            "title": "Backgroundcolor",
+            "type": "string"
+          },
+          "fps": {
+            "default": 30,
+            "enum": [
+              30,
+              60
+            ],
+            "title": "Fps",
+            "type": "integer"
+          },
+          "height": {
+            "const": 1080,
+            "default": 1080,
+            "title": "Height",
+            "type": "integer"
+          },
+          "width": {
+            "const": 1920,
+            "default": 1920,
+            "title": "Width",
+            "type": "integer"
+          }
+        },
+        "title": "VideoEditorProjectSettings",
+        "type": "object"
+      },
+      "VideoEditorRenderCreateIn": {
+        "properties": {
+          "endUs": {
+            "anyOf": [
+              {
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Endus"
+          },
+          "expectedRevision": {
+            "minimum": 0.0,
+            "title": "Expectedrevision",
+            "type": "integer"
+          },
+          "preset": {
+            "default": "1080p30",
+            "enum": [
+              "720p30",
+              "1080p30",
+              "720p60",
+              "1080p60"
+            ],
+            "title": "Preset",
+            "type": "string"
+          },
+          "previewFingerprint": {
+            "pattern": "^[a-f0-9]{64}$",
+            "title": "Previewfingerprint",
+            "type": "string"
+          },
+          "requestId": {
+            "maxLength": 64,
+            "minLength": 8,
+            "title": "Requestid",
+            "type": "string"
+          },
+          "startUs": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Startus",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "expectedRevision",
+          "requestId",
+          "previewFingerprint"
+        ],
+        "title": "VideoEditorRenderCreateIn",
+        "type": "object"
+      },
+      "VideoEditorRenderIssue": {
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "endUs": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Endus"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "startUs": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Startus"
+          }
+        },
+        "required": [
+          "code",
+          "message"
+        ],
+        "title": "VideoEditorRenderIssue",
+        "type": "object"
+      },
+      "VideoEditorRenderPreviewIn": {
+        "properties": {
+          "endUs": {
+            "anyOf": [
+              {
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Endus"
+          },
+          "expectedRevision": {
+            "minimum": 0.0,
+            "title": "Expectedrevision",
+            "type": "integer"
+          },
+          "preset": {
+            "default": "1080p30",
+            "enum": [
+              "720p30",
+              "1080p30",
+              "720p60",
+              "1080p60"
+            ],
+            "title": "Preset",
+            "type": "string"
+          },
+          "startUs": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Startus",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "expectedRevision"
+        ],
+        "title": "VideoEditorRenderPreviewIn",
+        "type": "object"
+      },
+      "VideoEditorRenderPreviewOut": {
+        "properties": {
+          "blockers": {
+            "items": {
+              "$ref": "#/components/schemas/VideoEditorRenderIssue"
+            },
+            "title": "Blockers",
+            "type": "array"
+          },
+          "durationUs": {
+            "title": "Durationus",
+            "type": "integer"
+          },
+          "fingerprint": {
+            "title": "Fingerprint",
+            "type": "string"
+          },
+          "frameCount": {
+            "title": "Framecount",
+            "type": "integer"
+          },
+          "preset": {
+            "enum": [
+              "720p30",
+              "1080p30",
+              "720p60",
+              "1080p60"
+            ],
+            "title": "Preset",
+            "type": "string"
+          },
+          "ready": {
+            "title": "Ready",
+            "type": "boolean"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          },
+          "warnings": {
+            "items": {
+              "$ref": "#/components/schemas/VideoEditorRenderIssue"
+            },
+            "title": "Warnings",
+            "type": "array"
+          }
+        },
+        "required": [
+          "ready",
+          "revision",
+          "preset",
+          "durationUs",
+          "frameCount",
+          "fingerprint"
+        ],
+        "title": "VideoEditorRenderPreviewOut",
+        "type": "object"
+      },
+      "VideoEditorTaskListOut": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/VideoEditorTaskOut"
+            },
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "title": "VideoEditorTaskListOut",
+        "type": "object"
+      },
+      "VideoEditorTaskOut": {
+        "properties": {
+          "createdAt": {
+            "title": "Createdat",
+            "type": "string"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "media",
+              "render"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "outputAssetId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Outputassetid"
+          },
+          "progress": {
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Progress",
+            "type": "integer"
+          },
+          "projectId": {
+            "title": "Projectid",
+            "type": "string"
+          },
+          "requestId": {
+            "title": "Requestid",
+            "type": "string"
+          },
+          "resultDetail": {
+            "additionalProperties": true,
+            "title": "Resultdetail",
+            "type": "object"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          },
+          "status": {
+            "enum": [
+              "queued",
+              "running",
+              "completed",
+              "failed",
+              "cancelled"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "updatedAt": {
+            "title": "Updatedat",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "projectId",
+          "requestId",
+          "kind",
+          "status",
+          "progress",
+          "revision",
+          "createdAt",
+          "updatedAt"
+        ],
+        "title": "VideoEditorTaskOut",
+        "type": "object"
+      },
+      "VideoEditorTimelineBatchIn": {
+        "properties": {
+          "expectedRevision": {
+            "minimum": 0.0,
+            "title": "Expectedrevision",
+            "type": "integer"
+          },
+          "operations": {
+            "items": {
+              "discriminator": {
+                "mapping": {
+                  "addClip": "#/components/schemas/AddClipOperation",
+                  "addKeyframe": "#/components/schemas/KeyframeOperation",
+                  "addTrack": "#/components/schemas/AddTrackOperation",
+                  "duplicateClip": "#/components/schemas/ClipIdOperation",
+                  "linkClips": "#/components/schemas/LinkClipsOperation",
+                  "moveClip": "#/components/schemas/MoveClipOperation",
+                  "removeClip": "#/components/schemas/ClipIdOperation",
+                  "removeKeyframe": "#/components/schemas/KeyframeOperation",
+                  "removeTrack": "#/components/schemas/RemoveTrackOperation",
+                  "reorderTrack": "#/components/schemas/ReorderTrackOperation",
+                  "rippleDelete": "#/components/schemas/ClipIdOperation",
+                  "setTransition": "#/components/schemas/SetTransitionOperation",
+                  "splitClip": "#/components/schemas/SplitClipOperation",
+                  "trimClip": "#/components/schemas/TrimClipOperation",
+                  "unlinkClips": "#/components/schemas/ClipIdOperation",
+                  "updateClip": "#/components/schemas/UpdateClipOperation",
+                  "updateKeyframe": "#/components/schemas/KeyframeOperation",
+                  "updateTrack": "#/components/schemas/UpdateTrackOperation"
+                },
+                "propertyName": "type"
+              },
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/AddTrackOperation"
+                },
+                {
+                  "$ref": "#/components/schemas/UpdateTrackOperation"
+                },
+                {
+                  "$ref": "#/components/schemas/RemoveTrackOperation"
+                },
+                {
+                  "$ref": "#/components/schemas/ReorderTrackOperation"
+                },
+                {
+                  "$ref": "#/components/schemas/AddClipOperation"
+                },
+                {
+                  "$ref": "#/components/schemas/UpdateClipOperation"
+                },
+                {
+                  "$ref": "#/components/schemas/ClipIdOperation"
+                },
+                {
+                  "$ref": "#/components/schemas/MoveClipOperation"
+                },
+                {
+                  "$ref": "#/components/schemas/TrimClipOperation"
+                },
+                {
+                  "$ref": "#/components/schemas/SplitClipOperation"
+                },
+                {
+                  "$ref": "#/components/schemas/LinkClipsOperation"
+                },
+                {
+                  "$ref": "#/components/schemas/KeyframeOperation"
+                },
+                {
+                  "$ref": "#/components/schemas/SetTransitionOperation"
+                }
+              ]
+            },
+            "maxItems": 200,
+            "minItems": 1,
+            "title": "Operations",
+            "type": "array"
+          },
+          "requestId": {
+            "maxLength": 64,
+            "minLength": 8,
+            "title": "Requestid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "expectedRevision",
+          "requestId",
+          "operations"
+        ],
+        "title": "VideoEditorTimelineBatchIn",
+        "type": "object"
+      },
+      "VideoEditorTimelineDocument": {
+        "properties": {
+          "schemaVersion": {
+            "const": "1.0",
+            "default": "1.0",
+            "title": "Schemaversion",
+            "type": "string"
+          },
+          "settings": {
+            "$ref": "#/components/schemas/VideoEditorProjectSettings"
+          },
+          "tracks": {
+            "items": {
+              "$ref": "#/components/schemas/VideoEditorTrack"
+            },
+            "title": "Tracks",
+            "type": "array"
+          }
+        },
+        "title": "VideoEditorTimelineDocument",
+        "type": "object"
+      },
+      "VideoEditorTimelineOut": {
+        "properties": {
+          "document": {
+            "$ref": "#/components/schemas/VideoEditorTimelineDocument"
+          },
+          "projectId": {
+            "title": "Projectid",
+            "type": "string"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          },
+          "updatedAt": {
+            "title": "Updatedat",
+            "type": "string"
+          }
+        },
+        "required": [
+          "projectId",
+          "revision",
+          "document",
+          "updatedAt"
+        ],
+        "title": "VideoEditorTimelineOut",
+        "type": "object"
+      },
+      "VideoEditorTrack": {
+        "properties": {
+          "clips": {
+            "items": {
+              "$ref": "#/components/schemas/VideoEditorClip"
+            },
+            "title": "Clips",
+            "type": "array"
+          },
+          "hidden": {
+            "default": false,
+            "title": "Hidden",
+            "type": "boolean"
+          },
+          "id": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "visual",
+              "audio"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "locked": {
+            "default": false,
+            "title": "Locked",
+            "type": "boolean"
+          },
+          "muted": {
+            "default": false,
+            "title": "Muted",
+            "type": "boolean"
+          },
+          "name": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "order": {
+            "minimum": 0.0,
+            "title": "Order",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "name",
+          "order"
+        ],
+        "title": "VideoEditorTrack",
+        "type": "object"
+      },
+      "VideoEditorTransform": {
+        "properties": {
+          "opacity": {
+            "default": 1,
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Opacity",
+            "type": "number"
+          },
+          "rotation": {
+            "default": 0,
+            "maximum": 3600.0,
+            "minimum": -3600.0,
+            "title": "Rotation",
+            "type": "number"
+          },
+          "scaleX": {
+            "default": 1,
+            "maximum": 20.0,
+            "minimum": 0.01,
+            "title": "Scalex",
+            "type": "number"
+          },
+          "scaleY": {
+            "default": 1,
+            "maximum": 20.0,
+            "minimum": 0.01,
+            "title": "Scaley",
+            "type": "number"
+          },
+          "x": {
+            "default": 960,
+            "title": "X",
+            "type": "number"
+          },
+          "y": {
+            "default": 540,
+            "title": "Y",
+            "type": "number"
+          }
+        },
+        "title": "VideoEditorTransform",
+        "type": "object"
+      },
+      "VideoEditorTransition": {
+        "properties": {
+          "durationUs": {
+            "maximum": 10000000.0,
+            "minimum": 0.0,
+            "title": "Durationus",
+            "type": "integer"
+          },
+          "kind": {
+            "enum": [
+              "cut",
+              "crossfade",
+              "fade-black",
+              "fade-white",
+              "audio-crossfade"
+            ],
+            "title": "Kind",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "durationUs"
+        ],
+        "title": "VideoEditorTransition",
         "type": "object"
       },
       "VideoGenerationTaskCreateIn": {
@@ -25077,6 +26589,953 @@
         "summary": "Record Use",
         "tags": [
           "tool-navigation"
+        ]
+      }
+    },
+    "/v1/video-editor/import-sources": {
+      "get": {
+        "operationId": "import_sources_v1_video_editor_import_sources_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VideoEditorAvailableAssetListOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Import Sources",
+        "tags": [
+          "video-editor"
+        ]
+      }
+    },
+    "/v1/video-editor/projects": {
+      "get": {
+        "operationId": "list_projects_v1_video_editor_projects_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VideoEditorProjectListOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Projects",
+        "tags": [
+          "video-editor"
+        ]
+      },
+      "post": {
+        "operationId": "create_project_v1_video_editor_projects_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VideoEditorProjectCreateIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VideoEditorProjectOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Project",
+        "tags": [
+          "video-editor"
+        ]
+      }
+    },
+    "/v1/video-editor/projects/{project_id}": {
+      "delete": {
+        "operationId": "delete_project_v1_video_editor_projects__project_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "expected_revision",
+            "required": true,
+            "schema": {
+              "minimum": 0,
+              "title": "Expected Revision",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "boolean"
+                  },
+                  "title": "Response Delete Project V1 Video Editor Projects  Project Id  Delete",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Project",
+        "tags": [
+          "video-editor"
+        ]
+      },
+      "get": {
+        "operationId": "get_project_v1_video_editor_projects__project_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VideoEditorProjectOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Project",
+        "tags": [
+          "video-editor"
+        ]
+      },
+      "patch": {
+        "operationId": "patch_project_v1_video_editor_projects__project_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VideoEditorProjectPatchIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VideoEditorProjectOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Patch Project",
+        "tags": [
+          "video-editor"
+        ]
+      }
+    },
+    "/v1/video-editor/projects/{project_id}/assets": {
+      "get": {
+        "operationId": "list_assets_v1_video_editor_projects__project_id__assets_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VideoEditorAssetListOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Assets",
+        "tags": [
+          "video-editor"
+        ]
+      },
+      "post": {
+        "operationId": "upload_asset_v1_video_editor_projects__project_id__assets_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_upload_asset_v1_video_editor_projects__project_id__assets_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VideoEditorAssetOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Upload Asset",
+        "tags": [
+          "video-editor"
+        ]
+      }
+    },
+    "/v1/video-editor/projects/{project_id}/assets/import": {
+      "post": {
+        "operationId": "import_assets_v1_video_editor_projects__project_id__assets_import_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VideoEditorAssetImportIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VideoEditorAssetListOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Import Assets",
+        "tags": [
+          "video-editor"
+        ]
+      }
+    },
+    "/v1/video-editor/projects/{project_id}/assets/{asset_id}": {
+      "delete": {
+        "operationId": "delete_asset_v1_video_editor_projects__project_id__assets__asset_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "asset_id",
+            "required": true,
+            "schema": {
+              "title": "Asset Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "boolean"
+                  },
+                  "title": "Response Delete Asset V1 Video Editor Projects  Project Id  Assets  Asset Id  Delete",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Asset",
+        "tags": [
+          "video-editor"
+        ]
+      }
+    },
+    "/v1/video-editor/projects/{project_id}/assets/{asset_id}/proxy/retry": {
+      "post": {
+        "operationId": "retry_proxy_v1_video_editor_projects__project_id__assets__asset_id__proxy_retry_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "asset_id",
+            "required": true,
+            "schema": {
+              "title": "Asset Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VideoEditorAssetOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Retry Proxy",
+        "tags": [
+          "video-editor"
+        ]
+      }
+    },
+    "/v1/video-editor/projects/{project_id}/assets/{asset_id}/{variant}": {
+      "get": {
+        "operationId": "asset_variant_v1_video_editor_projects__project_id__assets__asset_id___variant__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "asset_id",
+            "required": true,
+            "schema": {
+              "title": "Asset Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "variant",
+            "required": true,
+            "schema": {
+              "title": "Variant",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Asset Variant",
+        "tags": [
+          "video-editor"
+        ]
+      }
+    },
+    "/v1/video-editor/projects/{project_id}/preview/frame": {
+      "get": {
+        "operationId": "exact_frame_v1_video_editor_projects__project_id__preview_frame_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "revision",
+            "required": true,
+            "schema": {
+              "minimum": 0,
+              "title": "Revision",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "timeUs",
+            "required": true,
+            "schema": {
+              "minimum": 0,
+              "title": "Timeus",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "width",
+            "required": false,
+            "schema": {
+              "default": 960,
+              "maximum": 1920,
+              "minimum": 320,
+              "title": "Width",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Exact Frame",
+        "tags": [
+          "video-editor"
+        ]
+      }
+    },
+    "/v1/video-editor/projects/{project_id}/renders": {
+      "get": {
+        "operationId": "list_renders_v1_video_editor_projects__project_id__renders_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VideoEditorTaskListOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Renders",
+        "tags": [
+          "video-editor"
+        ]
+      },
+      "post": {
+        "operationId": "create_render_v1_video_editor_projects__project_id__renders_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VideoEditorRenderCreateIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VideoEditorTaskOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Render",
+        "tags": [
+          "video-editor"
+        ]
+      }
+    },
+    "/v1/video-editor/projects/{project_id}/renders/preflight": {
+      "post": {
+        "operationId": "render_preflight_v1_video_editor_projects__project_id__renders_preflight_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VideoEditorRenderPreviewIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VideoEditorRenderPreviewOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Render Preflight",
+        "tags": [
+          "video-editor"
+        ]
+      }
+    },
+    "/v1/video-editor/projects/{project_id}/renders/{task_id}": {
+      "get": {
+        "operationId": "get_render_v1_video_editor_projects__project_id__renders__task_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "task_id",
+            "required": true,
+            "schema": {
+              "title": "Task Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VideoEditorTaskOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Render",
+        "tags": [
+          "video-editor"
+        ]
+      }
+    },
+    "/v1/video-editor/projects/{project_id}/renders/{task_id}/cancel": {
+      "post": {
+        "operationId": "cancel_render_v1_video_editor_projects__project_id__renders__task_id__cancel_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "task_id",
+            "required": true,
+            "schema": {
+              "title": "Task Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VideoEditorTaskOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Cancel Render",
+        "tags": [
+          "video-editor"
+        ]
+      }
+    },
+    "/v1/video-editor/projects/{project_id}/timeline": {
+      "get": {
+        "operationId": "get_timeline_v1_video_editor_projects__project_id__timeline_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VideoEditorTimelineOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Timeline",
+        "tags": [
+          "video-editor"
+        ]
+      }
+    },
+    "/v1/video-editor/projects/{project_id}/timeline/operations": {
+      "post": {
+        "operationId": "apply_timeline_operations_v1_video_editor_projects__project_id__timeline_operations_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VideoEditorTimelineBatchIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VideoEditorTimelineOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Apply Timeline Operations",
+        "tags": [
+          "video-editor"
         ]
       }
     },
