@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import io
+import os
 import subprocess
 from functools import lru_cache
 from pathlib import Path
@@ -76,6 +77,13 @@ class VideoEditorFrames:
         document = VideoEditorTimelineDocument.model_validate(timeline.document)
         if time_us < 0 or time_us > timeline_duration_us(document):
             raise VideoEditorValidationError("预览时间超出时间轴", code="invalid_time")
+        cache = (
+            self.storage.project_root("video-editor", project_id)
+            / "derived"
+            / f"frame-r{revision}-t{time_us}-w{width}.png"
+        )
+        if cache.is_file():
+            return cache.read_bytes()
         asset_ids = {
             value
             for track in document.tracks
@@ -118,4 +126,11 @@ class VideoEditorFrames:
         ).render(time_us, size=(width, width * 9 // 16))
         output = io.BytesIO()
         frame.save(output, format="PNG", optimize=False)
-        return output.getvalue()
+        payload = output.getvalue()
+        temporary = cache.with_suffix(f".{os.getpid()}.tmp")
+        try:
+            temporary.write_bytes(payload)
+            os.replace(temporary, cache)
+        finally:
+            temporary.unlink(missing_ok=True)
+        return payload

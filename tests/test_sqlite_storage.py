@@ -123,6 +123,7 @@ def test_existing_r0001_database_upgrades_without_rewriting_history(tmp_path: Pa
             ("r0032_realtime_fresh_catalog",),
             ("r0033_model_test_tools",),
             ("r0034_realtime_tool_calls",),
+            ("r0035_video_editor",),
         ]
         assert connection.execute("SELECT COUNT(*) FROM model_test_conversations").fetchone() == (
             0,

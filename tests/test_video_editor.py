@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import io
 import json
 import subprocess
 import threading
@@ -16,6 +17,7 @@ from app.models import VideoEditorProject
 from app.schemas.video_editor import VideoEditorTimelineDocument
 from app.video_editor.evaluator import FrameSource, TimelineFrameRenderer, property_at, visual_gaps
 from app.video_editor.render_engine import render_document
+from app.video_editor.runner import VideoEditorRunner
 
 
 async def _reset() -> None:
@@ -59,9 +61,7 @@ async def test_video_editor_timeline_cas_idempotency_and_overlap_validation() ->
         )
         assert project_response.status_code == 200
         project = project_response.json()
-        timeline = (
-            await client.get(f"/v1/video-editor/projects/{project['id']}/timeline")
-        ).json()
+        timeline = (await client.get(f"/v1/video-editor/projects/{project['id']}/timeline")).json()
         assert timeline["revision"] == 0
         assert [track["kind"] for track in timeline["document"]["tracks"]] == [
             "visual",
@@ -117,6 +117,52 @@ async def test_video_editor_timeline_cas_idempotency_and_overlap_validation() ->
         assert preview.status_code == 200
         assert preview.json()["ready"] is True
         assert preview.json()["frameCount"] == 60
+
+
+@pytest.mark.asyncio
+async def test_video_editor_media_is_copied_and_proxy_metadata_is_retryable() -> None:
+    await _reset()
+    image = io.BytesIO()
+    Image.new("RGB", (640, 360), "#674fd1").save(image, format="PNG")
+    payload = image.getvalue()
+    transport = httpx.ASGITransport(app=app)
+    async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+        project = (await client.post("/v1/video-editor/projects", json={"title": "素材"})).json()
+        upload = await client.post(
+            f"/v1/video-editor/projects/{project['id']}/assets",
+            files={"upload": ("frame.png", payload, "image/png")},
+        )
+        assert upload.status_code == 200
+        asset_id = upload.json()["id"]
+        assert upload.json()["processingStatus"] == "queued"
+        await VideoEditorRunner().process_once()
+        listed = (await client.get(f"/v1/video-editor/projects/{project['id']}/assets")).json()
+        asset = next(item for item in listed["items"] if item["id"] == asset_id)
+        assert asset["processingStatus"] == "ready"
+        assert asset["thumbnailUrl"]
+        thumbnail = await client.get(asset["thumbnailUrl"])
+        assert thumbnail.status_code == 200
+        assert thumbnail.headers["content-type"].startswith("image/png")
+
+        source = (
+            await client.post(
+                "/v1/files",
+                files={"upload": ("library.png", payload, "image/png")},
+            )
+        ).json()
+        imported = await client.post(
+            f"/v1/video-editor/projects/{project['id']}/assets/import",
+            json={"assetIds": [source["id"]]},
+        )
+        assert imported.status_code == 200
+        imported_id = imported.json()["items"][0]["id"]
+        assert imported_id != source["id"]
+        deleted = await client.delete(
+            f"/v1/files/{source['id']}", params={"expected_revision": source["revision"]}
+        )
+        assert deleted.status_code == 200
+        copied_content = await client.get(f"/v1/files/{imported_id}/content")
+        assert copied_content.content == payload
 
 
 def test_video_editor_frame_evaluator_interpolates_and_marks_gaps() -> None:

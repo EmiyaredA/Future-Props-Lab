@@ -92,6 +92,11 @@ class AddTrackOperation(BaseModel):
     track: VideoEditorTrack
 
 
+class UpdateSettingsOperation(BaseModel):
+    type: Literal["updateSettings"]
+    patch: dict
+
+
 class UpdateTrackOperation(BaseModel):
     type: Literal["updateTrack"]
     track_id: str = Field(alias="trackId")
@@ -160,6 +165,14 @@ class KeyframeOperation(BaseModel):
     keyframe: VideoEditorKeyframe | None = None
     keyframe_id: str | None = Field(default=None, alias="keyframeId")
 
+    @model_validator(mode="after")
+    def required_keyframe_fields(self) -> KeyframeOperation:
+        if self.type in {"addKeyframe", "updateKeyframe"} and self.keyframe is None:
+            raise ValueError("新增或更新关键帧必须提交 keyframe")
+        if self.type == "removeKeyframe" and not self.keyframe_id:
+            raise ValueError("删除关键帧必须提交 keyframeId")
+        return self
+
 
 class SetTransitionOperation(BaseModel):
     type: Literal["setTransition"]
@@ -170,6 +183,7 @@ class SetTransitionOperation(BaseModel):
 
 VideoEditorTimelineOperation = Annotated[
     AddTrackOperation
+    | UpdateSettingsOperation
     | UpdateTrackOperation
     | RemoveTrackOperation
     | ReorderTrackOperation

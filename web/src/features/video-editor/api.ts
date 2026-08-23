@@ -30,9 +30,7 @@ export const patchVideoEditorProject = async (
     }),
   );
 
-export const deleteVideoEditorProject = async (
-  project: VideoEditorProject,
-) =>
+export const deleteVideoEditorProject = async (project: VideoEditorProject) =>
   unwrap(
     await api.DELETE("/v1/video-editor/projects/{project_id}", {
       params: {
@@ -86,10 +84,7 @@ export const importVideoEditorAssets = async (
     }),
   );
 
-export async function uploadVideoEditorAsset(
-  projectId: string,
-  file: File,
-) {
+export async function uploadVideoEditorAsset(projectId: string, file: File) {
   const form = new FormData();
   form.append("upload", file);
   const request = applySessionHeaders(
@@ -114,13 +109,10 @@ export const renderPreflight = async (
   preset: VideoEditorPreset,
 ) =>
   unwrap(
-    await api.POST(
-      "/v1/video-editor/projects/{project_id}/renders/preflight",
-      {
-        params: { path: { project_id: projectId } },
-        body: { expectedRevision, preset, startUs: 0 },
-      },
-    ),
+    await api.POST("/v1/video-editor/projects/{project_id}/renders/preflight", {
+      params: { path: { project_id: projectId } },
+      body: { expectedRevision, preset, startUs: 0 },
+    }),
   );
 
 export const createVideoEditorRender = async (

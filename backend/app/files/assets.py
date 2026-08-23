@@ -13,6 +13,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.concurrency.revisions import RevisionConflictError
 from app.core.config import Settings
 from app.core.time import iso_utc, utc_now
+from app.files.asset_scope import (
+    ensure_library_managed,
+    is_library_asset,
+    is_visual_project_asset,
+)
 from app.files.library import AssetError, AssetLibrary
 from app.files.policy import display_name_without_original_extension
 from app.files.storage import TARGET_STORAGE_VERSION, AssetStorage
@@ -427,18 +432,7 @@ class VisualAssets:
 
     async def patch_asset(self, asset_id: str, body: VisualAssetPatchIn) -> VisualAssetOut:
         row = await self._asset(asset_id)
-        if row.galgame_project_id is not None:
-            raise AssetError(
-                "Galgame 工程素材必须在所属工程中管理",
-                code="scope_mismatch",
-                status=409,
-            )
-        if row.video_editor_project_id is not None:
-            raise AssetError(
-                "视频剪辑素材必须在所属剪辑项目中管理",
-                code="scope_mismatch",
-                status=409,
-            )
+        ensure_library_managed(row)
         new_folder_id = None if body.move_to_root else body.folder_id
         if body.folder_id is not None or body.move_to_root:
             await self._validate_folder_scope(new_folder_id, row.project_id)
@@ -469,18 +463,7 @@ class VisualAssets:
 
     async def delete_asset(self, asset_id: str, expected_revision: int) -> None:
         row = await self._asset(asset_id)
-        if row.galgame_project_id is not None:
-            raise AssetError(
-                "Galgame 工程素材必须在所属工程中管理",
-                code="scope_mismatch",
-                status=409,
-            )
-        if row.video_editor_project_id is not None:
-            raise AssetError(
-                "视频剪辑素材必须在所属剪辑项目中管理",
-                code="scope_mismatch",
-                status=409,
-            )
+        ensure_library_managed(row)
         conversation_reference = await self.session.scalar(
             select(VisualAssistantMessageAsset.id)
             .where(VisualAssistantMessageAsset.asset_id == asset_id)
@@ -551,11 +534,7 @@ class VisualAssets:
     ) -> VisualAssetOut:
         await self._project(project_id)
         asset = await self._asset(body.asset_id)
-        if (
-            asset.project_id is not None
-            or asset.galgame_project_id is not None
-            or asset.video_editor_project_id is not None
-        ):
+        if not is_library_asset(asset):
             raise AssetError("只能从文件管理导入文件", code="scope_mismatch")
         await self._validate_folder_scope(body.folder_id, project_id)
         existing = await self.session.scalar(
@@ -606,12 +585,7 @@ class VisualAssets:
         ordered = [by_id[asset_id] for asset_id in body.asset_ids]
 
         if body.source_scope == "library":
-            if any(
-                row.project_id is not None
-                or row.galgame_project_id is not None
-                or row.video_editor_project_id is not None
-                for row in ordered
-            ):
+            if any(not is_library_asset(row) for row in ordered):
                 raise AssetError("素材不属于公共文件库", code="scope_mismatch")
             existing_rows = (
                 (
@@ -649,12 +623,7 @@ class VisualAssets:
             )
 
         assert body.source_project_id is not None
-        if any(
-            row.project_id != body.source_project_id
-            or row.galgame_project_id is not None
-            or row.video_editor_project_id is not None
-            for row in ordered
-        ):
+        if any(not is_visual_project_asset(row, body.source_project_id) for row in ordered):
             raise AssetError("素材不属于所选来源项目", code="scope_mismatch")
 
         copied_paths: list[Path] = []

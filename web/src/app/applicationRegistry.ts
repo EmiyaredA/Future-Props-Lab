@@ -28,8 +28,4 @@ export function applicationPathFor(page: string, projectId?: string) {
   return undefined;
 }
 
-export {
-  GALGAME_WORKSHOP_MODULE,
-  VIDEO_EDITOR_MODULE,
-  VISUAL_WORKSHOP_MODULE,
-};
+export { GALGAME_WORKSHOP_MODULE, VIDEO_EDITOR_MODULE, VISUAL_WORKSHOP_MODULE };

@@ -40,6 +40,7 @@ class VisualAsset(Base):
             "updated_at",
             "created_at",
         ),
+        Index("ix_visual_assets_video_editor_project", "video_editor_project_id", "updated_at"),
     )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)

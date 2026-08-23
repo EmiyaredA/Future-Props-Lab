@@ -22,7 +22,9 @@ export function VideoEditorTasksPage({
           listVideoEditorRenders(project.id),
         ),
       );
-      return lists.flatMap((list) => list.items).filter((task) => task.kind === "render");
+      return lists
+        .flatMap((list) => list.items)
+        .filter((task) => task.kind === "render");
     },
     refetchInterval: 1500,
   });
@@ -42,14 +44,22 @@ export function VideoEditorTasksPage({
           <article key={task.id}>
             <Film aria-hidden />
             <div>
-              <strong>{String(task.resultDetail?.outputFilename ?? "视频导出")}</strong>
-              <small>{task.status} · {task.progress}%</small>
-              <span><i style={{ width: `${task.progress}%` }} /></span>
+              <strong>
+                {String(task.resultDetail?.outputFilename ?? "视频导出")}
+              </strong>
+              <small>
+                {task.status} · {task.progress}%
+              </small>
+              <span>
+                <i style={{ width: `${task.progress}%` }} />
+              </span>
             </div>
             {task.outputAssetId ? (
               <a href={`/v1/files/${task.outputAssetId}/download`}>下载</a>
             ) : (
-              <button onClick={() => onOpenProject(task.projectId)}>查看项目</button>
+              <button onClick={() => onOpenProject(task.projectId)}>
+                查看项目
+              </button>
             )}
           </article>
         ))}

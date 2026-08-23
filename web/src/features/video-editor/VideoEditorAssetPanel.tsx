@@ -1,6 +1,14 @@
 import { useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { FilePlus2, Image, Library, Music2, Type, Upload, Video } from "lucide-react";
+import {
+  FilePlus2,
+  Image,
+  Library,
+  Music2,
+  Type,
+  Upload,
+  Video,
+} from "lucide-react";
 import {
   importVideoEditorAssets,
   listVideoEditorImportSources,
@@ -9,7 +17,13 @@ import {
 import type { VideoEditorAsset } from "./types";
 
 const iconFor = (kind: string) =>
-  kind === "video" ? Video : kind === "audio" ? Music2 : kind === "image" ? Image : Type;
+  kind === "video"
+    ? Video
+    : kind === "audio"
+      ? Music2
+      : kind === "image"
+        ? Image
+        : Type;
 
 export function VideoEditorAssetPanel({
   projectId,
@@ -32,7 +46,9 @@ export function VideoEditorAssetPanel({
     enabled: showImport,
   });
   const refresh = () =>
-    void client.invalidateQueries({ queryKey: ["video-editor-assets", projectId] });
+    void client.invalidateQueries({
+      queryKey: ["video-editor-assets", projectId],
+    });
   const upload = useMutation({
     mutationFn: (file: File) => uploadVideoEditorAsset(projectId, file),
     onSuccess: refresh,
@@ -88,19 +104,26 @@ export function VideoEditorAssetPanel({
               disabled={asset.processingStatus !== "ready"}
               draggable={asset.processingStatus === "ready"}
               onDragStart={(event) =>
-                event.dataTransfer.setData("application/x-video-editor-asset", asset.id)
+                event.dataTransfer.setData(
+                  "application/x-video-editor-asset",
+                  asset.id,
+                )
               }
               onDoubleClick={() => onAdd(asset)}
             >
               {asset.thumbnailUrl ? (
                 <img src={asset.thumbnailUrl} alt="" />
               ) : (
-                <span><Icon aria-hidden /></span>
+                <span>
+                  <Icon aria-hidden />
+                </span>
               )}
               <div>
                 <strong>{asset.displayName}</strong>
                 <small>
-                  {asset.processingStatus === "ready" ? asset.mediaKind : asset.processingStatus}
+                  {asset.processingStatus === "ready"
+                    ? asset.mediaKind
+                    : asset.processingStatus}
                 </small>
               </div>
               <FilePlus2 aria-label="添加到时间轴" />
@@ -110,7 +133,11 @@ export function VideoEditorAssetPanel({
       </div>
       {showImport ? (
         <div className="ve-dialog-backdrop">
-          <section className="ve-dialog ve-import-dialog" role="dialog" aria-modal="true">
+          <section
+            className="ve-dialog ve-import-dialog"
+            role="dialog"
+            aria-modal="true"
+          >
             <h2>从其他应用复制素材</h2>
             <p>导入后生成独立物理快照，源项目删除也不会影响剪辑。</p>
             <div>
@@ -127,13 +154,20 @@ export function VideoEditorAssetPanel({
                   }
                 >
                   <span>{chosen.includes(asset.id) ? "✓" : ""}</span>
-                  <div><strong>{asset.displayName}</strong><small>{asset.sourceApplication}</small></div>
+                  <div>
+                    <strong>{asset.displayName}</strong>
+                    <small>{asset.sourceApplication}</small>
+                  </div>
                 </button>
               ))}
             </div>
             <footer>
               <button onClick={() => setShowImport(false)}>取消</button>
-              <button className="primary" disabled={!chosen.length} onClick={() => importAssets.mutate()}>
+              <button
+                className="primary"
+                disabled={!chosen.length}
+                onClick={() => importAssets.mutate()}
+              >
                 复制 {chosen.length || ""} 项
               </button>
             </footer>

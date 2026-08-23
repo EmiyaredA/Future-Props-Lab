@@ -1,0 +1,444 @@
+.ve-editor {
+  min-width: 1160px;
+  height: 100vh;
+  display: grid;
+  grid-template-rows: 58px minmax(330px, 56vh) 42px minmax(260px, 1fr);
+  overflow: hidden;
+  color: var(--text);
+  background: #0d1018;
+}
+.ve-editor button {
+  color: inherit;
+}
+.ve-editor-topbar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 0 16px;
+  border-bottom: 1px solid #2b3040;
+  background: #151925;
+}
+.ve-back {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+}
+.ve-back svg {
+  width: 18px;
+}
+.ve-editor-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 270px;
+}
+.ve-editor-title > svg {
+  width: 28px;
+  color: #8e80ff;
+}
+.ve-editor-title div {
+  display: grid;
+}
+.ve-editor-title small {
+  color: #8991a6;
+}
+.ve-save-state {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-left: auto;
+  color: #8f98ad;
+  font-size: 12px;
+}
+.ve-save-state svg {
+  width: 15px;
+  color: #5bd2a1;
+}
+.ve-top-actions {
+  display: flex;
+  gap: 7px;
+}
+.ve-top-actions button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 11px;
+  border: 1px solid #303647;
+  background: #1b202e;
+}
+.ve-top-actions button.primary {
+  border-color: #7567f0;
+  color: white;
+  background: #695bdd;
+}
+.ve-top-actions svg {
+  width: 16px;
+}
+.ve-editor-body {
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 250px minmax(550px, 1fr) 290px;
+}
+.ve-assets-panel,
+.ve-inspector,
+.ve-preview-panel {
+  min-height: 0;
+  border-right: 1px solid #292e3c;
+  background: #131722;
+}
+.ve-assets-panel header,
+.ve-inspector > header,
+.ve-preview-panel > header {
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 14px;
+  border-bottom: 1px solid #292e3c;
+}
+.ve-assets-panel header span {
+  padding: 2px 8px;
+  border-radius: 12px;
+  color: #aba4e9;
+  background: #2b2845;
+}
+.ve-asset-actions,
+.ve-generated-assets {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 7px;
+  padding: 10px;
+}
+.ve-generated-assets {
+  padding-top: 0;
+}
+.ve-asset-actions button,
+.ve-generated-assets button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 34px;
+  border: 1px solid #303647;
+  background: #1b202d;
+}
+.ve-asset-actions svg,
+.ve-generated-assets svg {
+  width: 15px;
+}
+.ve-black-swatch {
+  width: 14px;
+  height: 14px;
+  border: 1px solid #666;
+  border-radius: 3px;
+  background: #000;
+}
+.ve-assets-list {
+  height: calc(100% - 128px);
+  overflow: auto;
+  padding: 0 9px 12px;
+}
+.ve-asset {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 54px 1fr 18px;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 7px;
+  padding: 7px;
+  text-align: left;
+  border: 1px solid transparent;
+  background: #191e2b;
+}
+.ve-asset:hover {
+  border-color: #655bd1;
+  background: #202638;
+}
+.ve-asset > img,
+.ve-asset > span {
+  width: 54px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  object-fit: cover;
+  border-radius: 5px;
+  background: #0c0f16;
+}
+.ve-asset > div {
+  min-width: 0;
+  display: grid;
+}
+.ve-asset strong {
+  overflow: hidden;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ve-asset small {
+  color: #8991a6;
+}
+.ve-asset > svg {
+  width: 15px;
+  color: #8d81f7;
+}
+.ve-import-dialog {
+  width: min(620px, 100%);
+}
+.ve-import-dialog > div {
+  max-height: 360px;
+  overflow: auto;
+  margin-top: 14px;
+}
+.ve-import-dialog > div button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 5px 0;
+  padding: 9px;
+  text-align: left;
+  border: 1px solid var(--border);
+  background: var(--bg);
+}
+.ve-import-dialog > div button.selected {
+  border-color: #7669ef;
+}
+.ve-import-dialog > div button > span {
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  color: white;
+  background: #6558db;
+}
+.ve-import-dialog > div button div {
+  display: grid;
+}
+
+.ve-preview-panel {
+  display: grid;
+  grid-template-rows: 42px 1fr 46px;
+  border-right: 1px solid #292e3c;
+  background: #0b0e15;
+}
+.ve-preview-panel header div {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: #8e96aa;
+  font-size: 11px;
+}
+.ve-preview-panel header button {
+  height: 28px;
+  padding: 0 8px;
+  border: 1px solid #303647;
+  background: #191e2a;
+}
+.ve-preview-panel header button.active {
+  color: #b8b1ff;
+  border-color: #645bd2;
+}
+.ve-preview-panel header svg {
+  width: 14px;
+}
+.ve-stage-wrap {
+  min-height: 0;
+  display: grid;
+  place-items: center;
+  padding: 12px 22px;
+  overflow: hidden;
+}
+.ve-stage {
+  position: relative;
+  width: min(100%, calc((56vh - 112px) * 16 / 9));
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  box-shadow: 0 12px 50px #000;
+}
+.ve-stage-layer {
+  position: absolute;
+  max-width: 100%;
+}
+.ve-stage-layer.selected {
+  outline: 1px solid #8374ff;
+}
+.ve-stage-layer img,
+.ve-stage-layer video {
+  display: block;
+  max-width: none;
+  width: 100%;
+}
+.ve-stage-layer i {
+  display: block;
+  width: 1920px;
+  height: 1080px;
+}
+.ve-stage-layer span {
+  display: block;
+  white-space: pre-wrap;
+  text-align: center;
+  text-shadow: 0 2px 6px #000;
+}
+.ve-precise-frame {
+  position: absolute;
+  z-index: 20;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.ve-safe-area {
+  position: absolute;
+  z-index: 21;
+  inset: 5%;
+  pointer-events: none;
+  border: 1px dashed rgb(255 255 255 / 16%);
+}
+.ve-transport {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-top: 1px solid #292e3c;
+}
+.ve-transport button {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+.ve-transport button.play {
+  border-radius: 50%;
+  color: white;
+  background: #685adc;
+}
+.ve-transport svg {
+  width: 16px;
+}
+.ve-transport strong {
+  margin-left: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.ve-transport span {
+  color: #778095;
+  font-size: 11px;
+}
+
+.ve-inspector {
+  overflow: auto;
+  border-right: 0;
+}
+.ve-inspector > header div {
+  display: grid;
+}
+.ve-inspector > header small {
+  color: #8d96a9;
+}
+.ve-inspector > header button {
+  width: 28px;
+  height: 28px;
+  padding: 4px;
+}
+.ve-inspector > header svg {
+  width: 15px;
+}
+.ve-inspector section {
+  padding: 12px 14px;
+  border-bottom: 1px solid #292e3c;
+}
+.ve-inspector h3 {
+  margin: 0 0 10px;
+  font-size: 12px;
+  color: #aab1c2;
+}
+.ve-inspector label {
+  display: grid;
+  gap: 5px;
+  margin-bottom: 10px;
+  color: #9ca5b9;
+  font-size: 11px;
+}
+.ve-inspector input,
+.ve-inspector textarea {
+  min-width: 0;
+  padding: 8px;
+  border: 1px solid #303647;
+  border-radius: 6px;
+  outline: 0;
+  color: #e7e9ef;
+  background: #0f131d;
+}
+.ve-inspector textarea {
+  min-height: 70px;
+  resize: vertical;
+}
+.ve-key-field {
+  grid-template-columns: 62px 1fr 28px !important;
+  align-items: center;
+}
+.ve-key-field button {
+  height: 28px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+}
+.ve-key-field svg {
+  width: 12px;
+}
+.ve-keyframes div {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 30px;
+  color: #b1b8c8;
+  font-size: 11px;
+}
+.ve-keyframes svg {
+  width: 11px;
+  color: #8274f4;
+}
+.ve-keyframes span {
+  flex: 1;
+}
+.ve-keyframes button {
+  padding: 3px;
+}
+.ve-transition-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+.ve-transition-buttons button {
+  padding: 5px 7px;
+  border: 1px solid #303647;
+  background: #1a1f2c;
+  font-size: 10px;
+}
+.ve-inspector.empty > div {
+  display: grid;
+  justify-items: center;
+  padding: 50px 25px;
+  text-align: center;
+  color: #7f889d;
+}
+.ve-inspector.empty > div svg {
+  width: 26px;
+  color: #7065d2;
+}
+
+.ve-proxy-audio {
+  display: none;
+}
+.ve-keyframes button.ve-key-easing {
+  padding: 3px 5px;
+  color: #a9a0ff;
+  font-size: 9px;
+}

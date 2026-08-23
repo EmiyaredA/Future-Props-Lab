@@ -18,6 +18,7 @@ from app.files.storage import AssetStorage
 from app.models import (
     VideoEditorAssetMetadata,
     VideoEditorTask,
+    VideoEditorTimeline,
     VisualAsset,
 )
 from app.schemas.video_editor import (
@@ -67,7 +68,7 @@ def probe_media(path: Path) -> dict:
             "-v",
             "error",
             "-show_entries",
-            "format=duration,format_name:stream=index,codec_type,codec_name,width,height,avg_frame_rate,sample_rate,channels",
+            "format=duration,format_name:stream=index,codec_type,codec_name,width,height,avg_frame_rate,pix_fmt,nb_frames,sample_rate,channels",
             "-of",
             "json",
             str(path),
@@ -266,8 +267,6 @@ class VideoEditorMedia:
 
     async def delete(self, project_id: str, asset_id: str) -> None:
         asset, _metadata = await self.asset(project_id, asset_id)
-        from app.models import VideoEditorTimeline
-
         timeline = await self.session.get(VideoEditorTimeline, project_id)
         if timeline and asset_id in json.dumps(timeline.document):
             raise VideoEditorValidationError("素材仍被时间轴引用", code="asset_in_use")

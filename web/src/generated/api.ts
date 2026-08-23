@@ -8630,6 +8630,18 @@ export interface components {
              */
             type: "updateClip";
         };
+        /** UpdateSettingsOperation */
+        UpdateSettingsOperation: {
+            /** Patch */
+            patch: {
+                [key: string]: unknown;
+            };
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "updateSettings";
+        };
         /** UpdateTrackOperation */
         UpdateTrackOperation: {
             /** Patch */
@@ -8970,7 +8982,7 @@ export interface components {
             /** Expectedrevision */
             expectedRevision: number;
             /** Operations */
-            operations: (components["schemas"]["AddTrackOperation"] | components["schemas"]["UpdateTrackOperation"] | components["schemas"]["RemoveTrackOperation"] | components["schemas"]["ReorderTrackOperation"] | components["schemas"]["AddClipOperation"] | components["schemas"]["UpdateClipOperation"] | components["schemas"]["ClipIdOperation"] | components["schemas"]["MoveClipOperation"] | components["schemas"]["TrimClipOperation"] | components["schemas"]["SplitClipOperation"] | components["schemas"]["LinkClipsOperation"] | components["schemas"]["KeyframeOperation"] | components["schemas"]["SetTransitionOperation"])[];
+            operations: (components["schemas"]["AddTrackOperation"] | components["schemas"]["UpdateSettingsOperation"] | components["schemas"]["UpdateTrackOperation"] | components["schemas"]["RemoveTrackOperation"] | components["schemas"]["ReorderTrackOperation"] | components["schemas"]["AddClipOperation"] | components["schemas"]["UpdateClipOperation"] | components["schemas"]["ClipIdOperation"] | components["schemas"]["MoveClipOperation"] | components["schemas"]["TrimClipOperation"] | components["schemas"]["SplitClipOperation"] | components["schemas"]["LinkClipsOperation"] | components["schemas"]["KeyframeOperation"] | components["schemas"]["SetTransitionOperation"])[];
             /** Requestid */
             requestId: string;
         };

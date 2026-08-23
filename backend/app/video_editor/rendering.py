@@ -204,7 +204,10 @@ class VideoEditorRenders:
             (
                 await self.session.execute(
                     select(VideoEditorTask)
-                    .where(VideoEditorTask.project_id == project_id)
+                    .where(
+                        VideoEditorTask.project_id == project_id,
+                        VideoEditorTask.kind == "render",
+                    )
                     .order_by(VideoEditorTask.created_at.desc())
                 )
             ).scalars()

@@ -1,0 +1,235 @@
+.ve-timeline-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 10px;
+  border-block: 1px solid #292e3c;
+  background: #151925;
+}
+.ve-timeline-bar > div {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.ve-timeline-bar button {
+  height: 28px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0 8px;
+  border: 1px solid #303647;
+  background: #1b202d;
+}
+.ve-timeline-bar svg {
+  width: 14px;
+}
+.ve-timeline-bar input[type="range"] {
+  width: 120px;
+  accent-color: #796aec;
+}
+.ve-timeline-bar span {
+  color: #8992a6;
+  font-size: 11px;
+}
+.ve-timeline-panel {
+  min-height: 0;
+  display: grid;
+  grid-template-rows: 38px 1fr;
+  background: #10141e;
+}
+.ve-timeline-tools {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 10px;
+  border-bottom: 1px solid #292e3c;
+}
+.ve-timeline-tools strong {
+  margin-right: 8px;
+}
+.ve-timeline-tools > span {
+  margin-right: auto;
+  color: #8e97a9;
+  font-size: 11px;
+}
+.ve-timeline-tools button {
+  height: 27px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0 8px;
+  border: 1px solid #303647;
+  background: #181d29;
+}
+.ve-timeline-tools svg {
+  width: 13px;
+}
+.ve-timeline-grid {
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 150px 1fr;
+}
+.ve-track-heads {
+  z-index: 4;
+  border-right: 1px solid #323746;
+  background: #151925;
+}
+.ve-ruler-spacer {
+  height: 26px;
+  border-bottom: 1px solid #303645;
+}
+.ve-track-heads > div:not(.ve-ruler-spacer) {
+  height: 56px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0 7px;
+  border-bottom: 1px solid #252a37;
+}
+.ve-track-heads strong {
+  flex: 1;
+  overflow: hidden;
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ve-track-heads button {
+  width: 23px;
+  height: 23px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+.ve-track-heads svg {
+  width: 13px;
+}
+.ve-tracks-scroll {
+  min-width: 0;
+  overflow: auto;
+}
+.ve-ruler {
+  position: sticky;
+  z-index: 3;
+  top: 0;
+  height: 26px;
+  min-width: 100%;
+  border-bottom: 1px solid #303645;
+  background: #131721;
+}
+.ve-ruler::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    90deg,
+    transparent 0 calc(var(--tick, 80px) - 1px),
+    #343949 calc(var(--tick, 80px) - 1px) var(--tick, 80px)
+  );
+  opacity: 0.55;
+  pointer-events: none;
+}
+.ve-ruler span {
+  position: absolute;
+  top: 5px;
+  color: #7b8498;
+  font-size: 9px;
+  transform: translateX(3px);
+}
+.ve-track-canvas {
+  position: relative;
+  min-width: 100%;
+}
+.ve-track-row {
+  position: relative;
+  height: 56px;
+  border-bottom: 1px solid #252a37;
+  background-image: repeating-linear-gradient(
+    90deg,
+    transparent 0 79px,
+    rgb(255 255 255 / 3%) 79px 80px
+  );
+}
+.ve-track-row.audio {
+  background-color: rgb(72 49 103 / 12%);
+}
+.ve-clip {
+  position: absolute;
+  top: 5px;
+  height: 46px;
+  overflow: hidden;
+  display: grid;
+  align-content: center;
+  padding: 0 8px;
+  text-align: left;
+  border: 1px solid #43677b;
+  border-radius: 5px;
+  color: #dfe8ef;
+  background: #253e4d;
+}
+.ve-clip.video {
+  border-color: #3f79b5;
+  background: #234566;
+}
+.ve-clip.image {
+  border-color: #3c9b78;
+  background: #245541;
+}
+.ve-clip.audio {
+  border-color: #8a58ae;
+  background: #543568;
+}
+.ve-clip.text {
+  border-color: #bc8e42;
+  background: #624d27;
+}
+.ve-clip.color {
+  border-color: #6e7480;
+  background: #272b32;
+}
+.ve-clip.selected {
+  outline: 2px solid #8f80ff;
+  outline-offset: 1px;
+}
+.ve-clip span {
+  overflow: hidden;
+  font-size: 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ve-clip small {
+  color: rgb(255 255 255 / 62%);
+  font-size: 8px;
+}
+.ve-playhead {
+  position: absolute;
+  z-index: 5;
+  top: -26px;
+  bottom: 0;
+  width: 1px;
+  pointer-events: none;
+  background: #ff5e6d;
+}
+.ve-playhead::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -4px;
+  border: 5px solid transparent;
+  border-top-color: #ff5e6d;
+}
+.ve-key-marker {
+  position: absolute;
+  bottom: 3px;
+  width: 6px;
+  height: 6px;
+  background: #fff;
+  transform: rotate(45deg);
+}
+
+.ve-timeline-bar button.active {
+  border-color: #7467e8;
+  color: #bcb6ff;
+  background: #292642;
+}

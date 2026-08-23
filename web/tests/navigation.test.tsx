@@ -57,6 +57,9 @@ test("uses home as the default and parses deep application routes", () => {
   expect(parsePage("/apps/galgame-workshop/projects/project-1/editor")).toBe(
     "galgame-workshop-editor",
   );
+  expect(parsePage("/apps/video-editor/projects/project-1/editor")).toBe(
+    "video-editor-editor",
+  );
   expect(parsePage("/files")).toBe("files");
   expect(parsePage("/tools")).toBe("tools");
   expect(parsePage("/tools/video-frame-exporter")).toBe("video-frame-exporter");
@@ -88,6 +91,10 @@ test("uses home as the default and parses deep application routes", () => {
   expect(pathFor("galgame-workshop-editor", "project-1")).toBe(
     "/apps/galgame-workshop/projects/project-1/editor",
   );
+  expect(pathFor("video-editor-editor", "project-1")).toBe(
+    "/apps/video-editor/projects/project-1/editor",
+  );
+  expect(pathFor("video-editor-tasks")).toBe("/apps/video-editor/tasks");
   expect(pathFor("model-service")).toBe("/model-service");
   expect(parseRoute("/model-test-tools/tool-1")).toEqual({
     page: "model-test-tools",

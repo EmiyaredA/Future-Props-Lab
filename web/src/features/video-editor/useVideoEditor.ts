@@ -11,7 +11,10 @@ import {
 import type { VideoEditorOperation } from "./types";
 import { frameUs, timelineDuration } from "./editorModel";
 
-type HistoryEntry = { redo: VideoEditorOperation[]; undo: VideoEditorOperation[] };
+type HistoryEntry = {
+  redo: VideoEditorOperation[];
+  undo: VideoEditorOperation[];
+};
 
 export function useVideoEditor(projectId: string) {
   const client = useQueryClient();
@@ -46,6 +49,7 @@ export function useVideoEditor(projectId: string) {
   const [undoStack, setUndoStack] = useState<HistoryEntry[]>([]);
   const [redoStack, setRedoStack] = useState<HistoryEntry[]>([]);
   const clock = useRef({ startedAt: 0, startedUs: 0 });
+  const playheadRef = useRef(0);
 
   const mutation = useMutation({
     mutationFn: ({ operations }: { operations: VideoEditorOperation[] }) => {
@@ -61,8 +65,13 @@ export function useVideoEditor(projectId: string) {
       setNotice("已自动保存");
     },
     onError: (error) => {
-      if (error instanceof ApiError && error.problem.code === "revision_conflict") {
-        setNotice("服务器版本已更新，已载入最新时间轴；本次操作未覆盖他人修改。");
+      if (
+        error instanceof ApiError &&
+        error.problem.code === "revision_conflict"
+      ) {
+        setNotice(
+          "服务器版本已更新，已载入最新时间轴；本次操作未覆盖他人修改。",
+        );
         void timeline.refetch();
       } else setNotice(error instanceof Error ? error.message : "保存失败");
     },
@@ -95,8 +104,14 @@ export function useVideoEditor(projectId: string) {
 
   const durationUs = timelineDuration(timeline.data);
   useEffect(() => {
+    playheadRef.current = playheadUs;
+  }, [playheadUs]);
+  useEffect(() => {
     if (!playing) return;
-    clock.current = { startedAt: performance.now(), startedUs: playheadUs };
+    clock.current = {
+      startedAt: performance.now(),
+      startedUs: playheadRef.current,
+    };
     let frame = 0;
     const tick = () => {
       const next =
@@ -115,7 +130,10 @@ export function useVideoEditor(projectId: string) {
   }, [durationUs, playing]);
   useEffect(() => {
     const keydown = (event: KeyboardEvent) => {
-      if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement)
+      if (
+        event.target instanceof HTMLInputElement ||
+        event.target instanceof HTMLTextAreaElement
+      )
         return;
       if (event.code === "Space") {
         event.preventDefault();
@@ -126,7 +144,13 @@ export function useVideoEditor(projectId: string) {
         const fps = timeline.data?.document.settings?.fps ?? 30;
         setPlaying(false);
         setPlayheadUs((value) =>
-          Math.max(0, Math.min(durationUs, value + (event.code === "ArrowLeft" ? -1 : 1) * frameUs(fps))),
+          Math.max(
+            0,
+            Math.min(
+              durationUs,
+              value + (event.code === "ArrowLeft" ? -1 : 1) * frameUs(fps),
+            ),
+          ),
         );
       }
     };

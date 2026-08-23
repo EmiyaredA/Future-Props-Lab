@@ -43,6 +43,15 @@ def _hash(path: Path) -> str:
     return digest.hexdigest()
 
 
+def _fraction(value: object) -> float:
+    text = str(value or "0")
+    numerator, separator, denominator = text.partition("/")
+    if not separator:
+        return float(numerator or 0)
+    divisor = float(denominator or 0)
+    return float(numerator or 0) / divisor if divisor else 0.0
+
+
 def _prepare_media(
     source: Path, asset: VisualAsset, derived: Path
 ) -> tuple[dict, str | None, str | None, str | None, str]:
@@ -262,6 +271,17 @@ class VideoEditorRunner(PollingGenerationRunner):
         except RenderCancelled:
             await self._set(task_id, status="cancelled", finished=True)
         except Exception as exc:
+            async with self.session_factory() as session:
+                task = await self._get(session, task_id)
+                if task is not None and task.kind == "media":
+                    asset_id = str((task.request_payload or {}).get("assetId", ""))
+                    metadata = await session.get(VideoEditorAssetMetadata, asset_id)
+                    if metadata is not None:
+                        metadata.processing_status = "failed"
+                        metadata.error = str(exc)
+                        metadata.revision += 1
+                        metadata.updated_at = utc_now()
+                        await session.commit()
             await self._set(task_id, status="failed", error=str(exc), finished=True)
 
     async def _process_media(self, task_id: str) -> None:
@@ -357,7 +377,10 @@ class VideoEditorRunner(PollingGenerationRunner):
                     output,
                     preset=str(payload["preset"]),
                     start_us=int(payload.get("startUs", 0)),
-                    end_us=int(payload.get("endUs") or detail["durationUs"]),
+                    end_us=int(
+                        payload.get("endUs")
+                        or int(payload.get("startUs", 0)) + int(detail["durationUs"])
+                    ),
                     cancel=cancel,
                     progress=progress,
                 )
@@ -388,8 +411,21 @@ class VideoEditorRunner(PollingGenerationRunner):
                 or audio.get("codec_name") != "aac"
                 or video.get("width") != width
                 or video.get("height") != height
+                or video.get("pix_fmt") != "yuv420p"
+                or int(audio.get("sample_rate") or 0) != 48_000
             ):
                 raise RuntimeError("成片规格校验失败")
+            expected_duration_us = int(detail["durationUs"])
+            expected_frames = round(expected_duration_us / 1_000_000 * fps)
+            actual_frames = int(video.get("nb_frames") or 0)
+            actual_fps = _fraction(video.get("avg_frame_rate"))
+            duration_delta_us = abs(int(probe.get("durationUs") or 0) - expected_duration_us)
+            if (
+                actual_frames != expected_frames
+                or abs(actual_fps - fps) > 0.001
+                or duration_delta_us > max(round(1_000_000 / fps), 2_000)
+            ):
+                raise RuntimeError("成片帧数、帧率或时长校验失败")
             async with self.session_factory() as session:
                 bind_workspace(session, workspace_id)
                 project = await session.get(VideoEditorProject, project_id)

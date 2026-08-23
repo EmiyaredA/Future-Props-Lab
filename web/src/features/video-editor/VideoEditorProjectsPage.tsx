@@ -22,7 +22,10 @@ export function VideoEditorProjectsPage({
   const [editing, setEditing] = useState<VideoEditorProject | null>(null);
   const [title, setTitle] = useState("");
   const [deleting, setDeleting] = useState<VideoEditorProject | null>(null);
-  const projects = useQuery({ queryKey: key, queryFn: listVideoEditorProjects });
+  const projects = useQuery({
+    queryKey: key,
+    queryFn: listVideoEditorProjects,
+  });
   const refresh = () => void client.invalidateQueries({ queryKey: key });
   const create = useMutation({
     mutationFn: () => createVideoEditorProject(),
@@ -73,7 +76,9 @@ export function VideoEditorProjectsPage({
           onChange={(event) => setQuery(event.target.value)}
         />
       </div>
-      {projects.isLoading ? <div className="ve-state">正在读取项目…</div> : null}
+      {projects.isLoading ? (
+        <div className="ve-state">正在读取项目…</div>
+      ) : null}
       {projects.isError ? <div className="ve-state">项目读取失败</div> : null}
       <div className="ve-project-grid">
         {items.map((project) => (
@@ -88,7 +93,8 @@ export function VideoEditorProjectsPage({
             <div>
               <strong>{project.title}</strong>
               <small>
-                {project.status === "draft" ? "剪辑中" : "已完成"} · 修订 {project.revision}
+                {project.status === "draft" ? "剪辑中" : "已完成"} · 修订{" "}
+                {project.revision}
               </small>
             </div>
             <footer>
@@ -104,7 +110,9 @@ export function VideoEditorProjectsPage({
               <button aria-label="删除" onClick={() => setDeleting(project)}>
                 <Trash2 aria-hidden />
               </button>
-              <button onClick={() => onOpenProject(project.id)}>打开时间轴</button>
+              <button onClick={() => onOpenProject(project.id)}>
+                打开时间轴
+              </button>
             </footer>
           </article>
         ))}
@@ -119,10 +127,18 @@ export function VideoEditorProjectsPage({
             }}
           >
             <h2>重命名项目</h2>
-            <input autoFocus value={title} onChange={(event) => setTitle(event.target.value)} />
+            <input
+              autoFocus
+              value={title}
+              onChange={(event) => setTitle(event.target.value)}
+            />
             <footer>
-              <button type="button" onClick={() => setEditing(null)}>取消</button>
-              <button className="primary" disabled={!title.trim()}>保存</button>
+              <button type="button" onClick={() => setEditing(null)}>
+                取消
+              </button>
+              <button className="primary" disabled={!title.trim()}>
+                保存
+              </button>
             </footer>
           </form>
         </div>
@@ -134,7 +150,9 @@ export function VideoEditorProjectsPage({
             <p>项目素材快照、代理和历史输出都会被清理。</p>
             <footer>
               <button onClick={() => setDeleting(null)}>取消</button>
-              <button className="danger" onClick={() => remove.mutate()}>确认删除</button>
+              <button className="danger" onClick={() => remove.mutate()}>
+                确认删除
+              </button>
             </footer>
           </section>
         </div>

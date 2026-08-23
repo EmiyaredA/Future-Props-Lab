@@ -48,6 +48,13 @@ from app.models.model_test_tools import (
     ModelTestToolCall,
 )
 from app.models.tool_navigation import ToolNavigationItem
+from app.models.video_editor import (
+    VideoEditorAssetMetadata,
+    VideoEditorOperationBatch,
+    VideoEditorProject,
+    VideoEditorTask,
+    VideoEditorTimeline,
+)
 from app.models.visual_workshop import (
     VisualAssistantAction,
     VisualAssistantConversation,
@@ -56,13 +63,6 @@ from app.models.visual_workshop import (
     VisualCanvasDocument,
     VisualGenerationTask,
     VisualWorkshopProject,
-)
-from app.models.video_editor import (
-    VideoEditorAssetMetadata,
-    VideoEditorOperationBatch,
-    VideoEditorProject,
-    VideoEditorTask,
-    VideoEditorTimeline,
 )
 from app.models.workspace import Workspace
 

@@ -8,7 +8,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.concurrency.revisions import RevisionConflictError
 from app.core.time import iso_utc, utc_now
 from app.models import (
+    VideoEditorAssetMetadata,
     VideoEditorOperationBatch,
+    VideoEditorProject,
     VideoEditorTimeline,
     VisualAsset,
 )
@@ -45,7 +47,12 @@ def apply_operations(document: dict, body: VideoEditorTimelineBatchIn) -> dict:
     for operation in body.operations:
         data = operation.model_dump(mode="json", by_alias=True, exclude_none=True)
         kind = data.pop("type")
-        if kind == "addTrack":
+        if kind == "updateSettings":
+            allowed = {"fps", "backgroundColor"}
+            result["settings"].update(
+                {key: value for key, value in data["patch"].items() if key in allowed}
+            )
+        elif kind == "addTrack":
             result["tracks"].append(data["track"])
         elif kind == "updateTrack":
             track = next((item for item in result["tracks"] if item["id"] == data["trackId"]), None)
@@ -173,6 +180,9 @@ async def validate_timeline(session: AsyncSession, project_id: str, document: di
     track_ids = [track["id"] for track in dumped["tracks"]]
     if len(track_ids) != len(set(track_ids)):
         raise VideoEditorValidationError("轨道 ID 必须全局唯一")
+    track_orders = [track["order"] for track in dumped["tracks"]]
+    if len(track_orders) != len(set(track_orders)):
+        raise VideoEditorValidationError("轨道顺序必须唯一", code="duplicate_track_order")
     clip_ids: list[str] = []
     asset_ids: set[str] = set()
     for track in dumped["tracks"]:
@@ -202,21 +212,43 @@ async def validate_timeline(session: AsyncSession, project_id: str, document: di
         raise VideoEditorValidationError("Clip ID 必须全局唯一")
     if asset_ids:
         rows = (
-            (
-                await session.execute(
-                    select(VisualAsset).where(
-                        VisualAsset.id.in_(asset_ids),
-                        VisualAsset.video_editor_project_id == project_id,
-                    )
+            await session.execute(
+                select(VisualAsset, VideoEditorAssetMetadata)
+                .join(
+                    VideoEditorAssetMetadata,
+                    VideoEditorAssetMetadata.asset_id == VisualAsset.id,
+                )
+                .where(
+                    VisualAsset.id.in_(asset_ids),
+                    VisualAsset.video_editor_project_id == project_id,
                 )
             )
-            .scalars()
-            .all()
-        )
-        if {row.id for row in rows} != asset_ids:
+        ).all()
+        assets = {asset.id: (asset, metadata) for asset, metadata in rows}
+        if set(assets) != asset_ids:
             raise VideoEditorValidationError(
                 "时间轴引用了不属于当前项目的素材", code="invalid_asset"
             )
+        for track in dumped["tracks"]:
+            for clip in track["clips"]:
+                asset_id = clip.get("assetId")
+                if not asset_id:
+                    continue
+                asset, metadata = assets[asset_id]
+                allowed = {
+                    "video": {"video"},
+                    "image": {"image"},
+                    "audio": {"audio", "video"},
+                }.get(clip["kind"], set())
+                if asset.media_kind not in allowed:
+                    raise VideoEditorValidationError(
+                        "Clip 类型与素材类型不匹配", code="invalid_asset_kind"
+                    )
+                duration_us = int((metadata.probe or {}).get("durationUs") or 0)
+                if duration_us and clip.get("sourceInUs", 0) + clip["durationUs"] > duration_us:
+                    raise VideoEditorValidationError(
+                        "Clip 源区间超出素材时长", code="invalid_source_range"
+                    )
     return dumped
 
 
@@ -302,6 +334,11 @@ class VideoEditorTimelines:
                 result_revision=body.expected_revision + 1,
                 operations=operations,
             )
+        )
+        await self.session.execute(
+            update(VideoEditorProject)
+            .where(VideoEditorProject.id == project_id)
+            .values(updated_at=now)
         )
         await self.session.commit()
         return await self.get(project_id)

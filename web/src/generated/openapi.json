@@ -15226,6 +15226,26 @@
         "title": "UpdateClipOperation",
         "type": "object"
       },
+      "UpdateSettingsOperation": {
+        "properties": {
+          "patch": {
+            "additionalProperties": true,
+            "title": "Patch",
+            "type": "object"
+          },
+          "type": {
+            "const": "updateSettings",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "patch"
+        ],
+        "title": "UpdateSettingsOperation",
+        "type": "object"
+      },
       "UpdateTrackOperation": {
         "properties": {
           "patch": {
@@ -16172,6 +16192,7 @@
                   "unlinkClips": "#/components/schemas/ClipIdOperation",
                   "updateClip": "#/components/schemas/UpdateClipOperation",
                   "updateKeyframe": "#/components/schemas/KeyframeOperation",
+                  "updateSettings": "#/components/schemas/UpdateSettingsOperation",
                   "updateTrack": "#/components/schemas/UpdateTrackOperation"
                 },
                 "propertyName": "type"
@@ -16179,6 +16200,9 @@
               "oneOf": [
                 {
                   "$ref": "#/components/schemas/AddTrackOperation"
+                },
+                {
+                  "$ref": "#/components/schemas/UpdateSettingsOperation"
                 },
                 {
                   "$ref": "#/components/schemas/UpdateTrackOperation"
