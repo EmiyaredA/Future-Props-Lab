@@ -14,7 +14,7 @@ from sqlalchemy.exc import OperationalError
 import app.main as main_module
 from app.problem_details import storage_operational_error_handler
 from db.migrations import MigrationDriftError, apply_migrations, check_migrations
-from db.migrations.registry import MIGRATIONS
+from db.migrations.registry import LATEST_MIGRATION_ID, MIGRATIONS
 from db.migrations.runner import connect_database, ensure_registry, migration_checksum
 
 DEFAULT_OPENAI_PROVIDER_ID = "f0000000-0000-4000-8000-000000000001"
@@ -36,18 +36,26 @@ def _create_database_at_migration(database_path: Path, migration_count: int) -> 
                 connection.execute("PRAGMA foreign_keys = ON")
 
 
+def _migration_count_before(migration_id: str) -> int:
+    return next(
+        index
+        for index, migration in enumerate(MIGRATIONS)
+        if migration.migration_id == migration_id
+    )
+
+
 def test_sqlite_migration_is_repeatable_and_detects_drift(tmp_path: Path) -> None:
     database_path = tmp_path / "nested" / "catalog.db"
 
     assert apply_migrations(database_path) == (
-        "r0029_galgame_video_exports",
+        LATEST_MIGRATION_ID,
         True,
     )
     assert apply_migrations(database_path) == (
-        "r0029_galgame_video_exports",
+        LATEST_MIGRATION_ID,
         False,
     )
-    assert check_migrations(database_path) == "r0029_galgame_video_exports"
+    assert check_migrations(database_path) == LATEST_MIGRATION_ID
 
     with connect_database(database_path) as connection:
         connection.execute(
@@ -73,7 +81,7 @@ def test_existing_r0001_database_upgrades_without_rewriting_history(tmp_path: Pa
         connection.commit()
 
     assert apply_migrations(database_path) == (
-        "r0029_galgame_video_exports",
+        LATEST_MIGRATION_ID,
         True,
     )
     with connect_database(database_path) as connection:
@@ -110,6 +118,9 @@ def test_existing_r0001_database_upgrades_without_rewriting_history(tmp_path: Pa
             ("r0027_transcription_parameters",),
             ("r0028_galgame_annotation_imports",),
             ("r0029_galgame_video_exports",),
+            ("r0030_senseaudio_realtime",),
+            ("r0031_integration_center",),
+            ("r0032_realtime_fresh_catalog",),
         ]
         assert connection.execute("SELECT COUNT(*) FROM model_test_conversations").fetchone() == (
             0,
@@ -158,7 +169,9 @@ def test_r0020_assigns_complete_r0019_history_to_default_workspace(
     tmp_path: Path,
 ) -> None:
     database_path = tmp_path / "r0019-history.db"
-    _create_database_at_migration(database_path, len(MIGRATIONS) - 4)
+    _create_database_at_migration(
+        database_path, _migration_count_before("r0020_accounts_and_workspaces")
+    )
     with connect_database(database_path) as connection:
         connection.execute(
             """
@@ -222,7 +235,7 @@ def test_r0020_assigns_complete_r0019_history_to_default_workspace(
         connection.commit()
 
     assert apply_migrations(database_path) == (
-        "r0029_galgame_video_exports",
+        LATEST_MIGRATION_ID,
         True,
     )
     workspace_tables = (
@@ -270,7 +283,7 @@ def test_r0020_assigns_complete_r0019_history_to_default_workspace(
 
 def test_r0021_adds_senseaudio_asr_to_each_existing_workspace(tmp_path: Path) -> None:
     database_path = tmp_path / "r0020-multi-workspace.db"
-    _create_database_at_migration(database_path, len(MIGRATIONS) - 9)
+    _create_database_at_migration(database_path, _migration_count_before("r0021_senseaudio_asr"))
     workspace_id = "12345678-1234-5678-9abc-def012345678"
     with connect_database(database_path) as connection:
         connection.execute(
@@ -288,7 +301,7 @@ def test_r0021_adds_senseaudio_asr_to_each_existing_workspace(tmp_path: Path) ->
         connection.commit()
 
     assert apply_migrations(database_path) == (
-        "r0029_galgame_video_exports",
+        LATEST_MIGRATION_ID,
         True,
     )
     with connect_database(database_path) as connection:
@@ -361,19 +374,108 @@ def test_r0021_adds_senseaudio_asr_to_each_existing_workspace(tmp_path: Path) ->
             1,
         ),
     ]
-    assert revisions["default"] == default_revision + 2
-    assert revisions[workspace_id] == 5
+    assert revisions["default"] == default_revision + 3
+    assert revisions[workspace_id] == 6
     assert "transcript_segments" in metadata_columns
     assert "result_segments" in task_columns
     assert apply_migrations(database_path) == (
-        "r0029_galgame_video_exports",
+        LATEST_MIGRATION_ID,
         False,
     )
 
 
+def test_r0030_adds_realtime_voice_and_clones_workspace_credentials(tmp_path: Path) -> None:
+    database_path = tmp_path / "r0029-realtime-upgrade.db"
+    _create_database_at_migration(
+        database_path, _migration_count_before("r0030_senseaudio_realtime")
+    )
+    keyed_workspace = "12345678-1234-5678-9abc-def012345678"
+    empty_workspace = "87654321-4321-4abc-8def-0123456789ab"
+    with connect_database(database_path) as connection:
+        connection.executemany(
+            "INSERT INTO workspaces (id, name) VALUES (?, ?)",
+            [(keyed_workspace, "有密钥"), (empty_workspace, "无密钥")],
+        )
+        connection.executemany(
+            "INSERT INTO model_catalog_state (id, revision) VALUES (?, ?)",
+            [(keyed_workspace, 7), (empty_workspace, 4)],
+        )
+        connection.execute(
+            """
+            INSERT INTO model_providers (
+              id, workspace_id, name, kind, base_url,
+              api_key_ciphertext, enabled, sort_order
+            ) VALUES (?, ?, ?, 'senseaudio_asr', ?, ?, 1, 2)
+            """,
+            (
+                "existing-senseaudio-provider",
+                keyed_workspace,
+                "已有 SenseAudio",
+                "https://api.senseaudio.cn/v1",
+                "encrypted-workspace-key",
+            ),
+        )
+        connection.execute(
+            """
+            INSERT INTO model_entries (
+              id, workspace_id, provider_id, slug, label, description,
+              capabilities, categories, enabled, sort_order
+            ) VALUES (?, ?, ?, 'existing-asr', 'Existing', '',
+                      '["speech_recognition"]', '["speech_recognition"]', 1, 0)
+            """,
+            ("existing-model", keyed_workspace, "existing-senseaudio-provider"),
+        )
+        connection.commit()
+
+    assert apply_migrations(database_path) == (LATEST_MIGRATION_ID, True)
+    with connect_database(database_path) as connection:
+        rows = connection.execute(
+            """
+            SELECT workspace_id, id, api_key_ciphertext, enabled
+            FROM model_providers
+            WHERE kind = 'senseaudio_realtime'
+            ORDER BY workspace_id
+            """
+        ).fetchall()
+        models = connection.execute(
+            """
+            SELECT provider.workspace_id, model.slug, model.capabilities, model.categories
+            FROM model_entries AS model
+            JOIN model_providers AS provider ON provider.id = model.provider_id
+            WHERE provider.kind = 'senseaudio_realtime'
+            ORDER BY provider.workspace_id
+            """
+        ).fetchall()
+        revisions = dict(
+            connection.execute(
+                "SELECT id, revision FROM model_catalog_state WHERE id IN (?, ?)",
+                (keyed_workspace, empty_workspace),
+            ).fetchall()
+        )
+        existing_model = connection.execute(
+            "SELECT provider_id FROM model_entries WHERE id = 'existing-model'"
+        ).fetchone()
+        foreign_key_errors = connection.execute("PRAGMA foreign_key_check").fetchall()
+
+    keyed = next(row for row in rows if row[0] == keyed_workspace)
+    empty = next(row for row in rows if row[0] == empty_workspace)
+    assert keyed[1] == "r0030-12345678123456789abcdef0123456"
+    assert keyed[2:] == ("encrypted-workspace-key", 1)
+    assert empty[2:] == ("", 0)
+    expected_model = (
+        "senseaudio-realtime-1.0",
+        '["voice"]',
+        '["end_to_end_speech"]',
+    )
+    assert all(row[1:] == expected_model for row in models)
+    assert revisions == {keyed_workspace: 8, empty_workspace: 5}
+    assert existing_model == ("existing-senseaudio-provider",)
+    assert foreign_key_errors == []
+
+
 def test_r0025_clones_existing_asr_credentials_and_enabled_state(tmp_path: Path) -> None:
     database_path = tmp_path / "r0024-pro-asr-upgrade.db"
-    _create_database_at_migration(database_path, len(MIGRATIONS) - 5)
+    _create_database_at_migration(database_path, _migration_count_before("r0025_pro_asr_provider"))
     with connect_database(database_path) as connection:
         connection.execute(
             """
@@ -410,7 +512,7 @@ def test_r0025_clones_existing_asr_credentials_and_enabled_state(tmp_path: Path)
         ).fetchone()[0]
         connection.commit()
 
-    assert apply_migrations(database_path) == ("r0029_galgame_video_exports", True)
+    assert apply_migrations(database_path) == (LATEST_MIGRATION_ID, True)
     with connect_database(database_path) as connection:
         cloned = connection.execute(
             """
@@ -438,12 +540,14 @@ def test_r0025_clones_existing_asr_credentials_and_enabled_state(tmp_path: Path)
         '["speech_recognition"]',
         '["speech_recognition"]',
     )
-    assert revision == before_revision + 1
+    assert revision == before_revision + 2
 
 
 def test_r0026_expands_transcription_storage_limit_and_preserves_tasks(tmp_path: Path) -> None:
     database_path = tmp_path / "r0025-transcription-limit.db"
-    _create_database_at_migration(database_path, len(MIGRATIONS) - 4)
+    _create_database_at_migration(
+        database_path, _migration_count_before("r0026_transcription_100mb")
+    )
     insert_sql = """
         INSERT INTO model_test_transcription_tasks (
           id, workspace_id, provider_kind, provider_name, model_slug,
@@ -459,7 +563,7 @@ def test_r0026_expands_transcription_storage_limit_and_preserves_tasks(tmp_path:
         )
         connection.commit()
 
-    assert apply_migrations(database_path) == ("r0029_galgame_video_exports", True)
+    assert apply_migrations(database_path) == (LATEST_MIGRATION_ID, True)
     with connect_database(database_path) as connection:
         assert connection.execute(
             "SELECT input_filename, input_byte_size FROM model_test_transcription_tasks "
@@ -484,7 +588,9 @@ def test_r0026_expands_transcription_storage_limit_and_preserves_tasks(tmp_path:
 
 def test_r0027_backfills_transcription_parameter_snapshots(tmp_path: Path) -> None:
     database_path = tmp_path / "r0026-transcription-parameters.db"
-    _create_database_at_migration(database_path, len(MIGRATIONS) - 3)
+    _create_database_at_migration(
+        database_path, _migration_count_before("r0027_transcription_parameters")
+    )
     with connect_database(database_path) as connection:
         connection.executemany(
             """
@@ -517,7 +623,7 @@ def test_r0027_backfills_transcription_parameter_snapshots(tmp_path: Path) -> No
         )
         connection.commit()
 
-    assert apply_migrations(database_path) == ("r0029_galgame_video_exports", True)
+    assert apply_migrations(database_path) == (LATEST_MIGRATION_ID, True)
     with connect_database(database_path) as connection:
         columns = {
             row[1]: row[2]
@@ -595,7 +701,9 @@ def test_r0014_adds_empty_content_parts_to_existing_messages(tmp_path: Path) -> 
 
 def test_r0015_upgrades_r0014_and_enforces_private_asset_ownership(tmp_path: Path) -> None:
     database_path = tmp_path / "generation-assets-upgrade.db"
-    _create_database_at_migration(database_path, len(MIGRATIONS) - 4)
+    _create_database_at_migration(
+        database_path, _migration_count_before("r0026_transcription_100mb")
+    )
     with connect_database(database_path) as connection:
         connection.execute(
             """
@@ -619,11 +727,11 @@ def test_r0015_upgrades_r0014_and_enforces_private_asset_ownership(tmp_path: Pat
         connection.commit()
 
     assert apply_migrations(database_path) == (
-        "r0029_galgame_video_exports",
+        LATEST_MIGRATION_ID,
         True,
     )
     assert apply_migrations(database_path) == (
-        "r0029_galgame_video_exports",
+        LATEST_MIGRATION_ID,
         False,
     )
     with connect_database(database_path) as connection:
@@ -732,7 +840,7 @@ def test_existing_default_catalog_is_extended_without_overwriting_user_data(
         connection.commit()
 
     assert apply_migrations(database_path) == (
-        "r0029_galgame_video_exports",
+        LATEST_MIGRATION_ID,
         True,
     )
 
@@ -817,18 +925,22 @@ def test_existing_default_catalog_is_extended_without_overwriting_user_data(
     ]
     assert "senseaudio-vl-1.0-260319" not in all_slugs
     assert len(all_slugs) == 15
-    assert revision == (11,)
-    assert stored_categories == {"[]", '["speech_recognition"]'}
+    assert revision == (12,)
+    assert stored_categories == {
+        "[]",
+        '["speech_recognition"]',
+        '["end_to_end_speech"]',
+    }
 
     assert apply_migrations(database_path) == (
-        "r0029_galgame_video_exports",
+        LATEST_MIGRATION_ID,
         False,
     )
     with connect_database(database_path) as connection:
         assert connection.execute(
             "SELECT revision FROM model_catalog_state WHERE id = 'default'"
-        ).fetchone() == (11,)
-        assert connection.execute("SELECT COUNT(*) FROM model_entries").fetchone() == (22,)
+        ).fetchone() == (12,)
+        assert connection.execute("SELECT COUNT(*) FROM model_entries").fetchone() == (23,)
 
 
 def test_catalog_upgrade_does_not_recreate_deleted_default_provider(tmp_path: Path) -> None:
@@ -839,7 +951,7 @@ def test_catalog_upgrade_does_not_recreate_deleted_default_provider(tmp_path: Pa
         connection.commit()
 
     assert apply_migrations(database_path) == (
-        "r0029_galgame_video_exports",
+        LATEST_MIGRATION_ID,
         True,
     )
     with connect_database(database_path) as connection:
@@ -849,10 +961,13 @@ def test_catalog_upgrade_does_not_recreate_deleted_default_provider(tmp_path: Pa
         assert connection.execute(
             "SELECT COUNT(*) FROM model_providers WHERE kind = 'senseaudio_asr'"
         ).fetchone() == (2,)
-        assert connection.execute("SELECT COUNT(*) FROM model_entries").fetchone() == (2,)
+        assert connection.execute("SELECT COUNT(*) FROM model_entries").fetchone() == (3,)
+        assert connection.execute(
+            "SELECT COUNT(*) FROM model_providers WHERE kind = 'senseaudio_realtime'"
+        ).fetchone() == (1,)
         assert connection.execute(
             "SELECT revision FROM model_catalog_state WHERE id = 'default'"
-        ).fetchone() == (6,)
+        ).fetchone() == (7,)
 
 
 def test_r0007_upgrade_adds_visual_tasks_and_preserves_provider_credentials(
@@ -880,7 +995,7 @@ def test_r0007_upgrade_adds_visual_tasks_and_preserves_provider_credentials(
         connection.commit()
 
     assert apply_migrations(database_path) == (
-        "r0029_galgame_video_exports",
+        LATEST_MIGRATION_ID,
         True,
     )
     with connect_database(database_path) as connection:
@@ -932,10 +1047,12 @@ def test_r0007_upgrade_adds_visual_tasks_and_preserves_provider_credentials(
 
 def test_r0024_adds_private_model_test_transcription_tasks(tmp_path: Path) -> None:
     database_path = tmp_path / "r0023-transcription-upgrade.db"
-    _create_database_at_migration(database_path, len(MIGRATIONS) - 6)
+    _create_database_at_migration(
+        database_path, _migration_count_before("r0024_model_test_transcription")
+    )
 
     assert apply_migrations(database_path) == (
-        "r0029_galgame_video_exports",
+        LATEST_MIGRATION_ID,
         True,
     )
     with connect_database(database_path) as connection:

@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host 0.0.0.0",
-    "build": "tsc -b && vite build && node scripts/check-bundle-budgets.mjs",
+    "build": "node scripts/sync-voice-vad-assets.mjs --check && tsc -b && vite build && node scripts/check-bundle-budgets.mjs",
     "preview": "vite preview",
     "test": "vitest run",
     "test:e2e": "playwright test",
@@ -13,11 +13,14 @@
     "format": "prettier --write src tests e2e *.html *.ts *.json",
     "format:check": "prettier --check src tests e2e *.html *.ts *.json",
     "contracts:generate": "openapi-typescript src/generated/openapi.json -o src/generated/api.ts",
-    "contracts:check": "openapi-typescript src/generated/openapi.json | diff - src/generated/api.ts"
+    "contracts:check": "openapi-typescript src/generated/openapi.json | diff - src/generated/api.ts",
+    "voice-vad:sync": "node scripts/sync-voice-vad-assets.mjs"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.83.0",
+    "@ricky0123/vad-web": "^0.0.30",
     "lucide-react": "^1.28.0",
+    "onnxruntime-web": "^1.27.0",
     "openapi-fetch": "^0.14.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",

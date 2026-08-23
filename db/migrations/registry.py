@@ -32,6 +32,9 @@ from db.migrations.versions import (
     r0027_transcription_parameters,
     r0028_galgame_annotation_imports,
     r0029_galgame_video_exports,
+    r0030_senseaudio_realtime,
+    r0031_integration_center,
+    r0032_realtime_fresh_catalog,
 )
 
 
@@ -151,6 +154,16 @@ MIGRATIONS = (
     Migration(
         r0029_galgame_video_exports.MIGRATION_ID,
         r0029_galgame_video_exports.SQL,
+    ),
+    Migration(
+        r0030_senseaudio_realtime.MIGRATION_ID,
+        r0030_senseaudio_realtime.SQL,
+        foreign_keys_off=True,
+    ),
+    Migration(r0031_integration_center.MIGRATION_ID, r0031_integration_center.SQL),
+    Migration(
+        r0032_realtime_fresh_catalog.MIGRATION_ID,
+        r0032_realtime_fresh_catalog.SQL,
     ),
 )
 

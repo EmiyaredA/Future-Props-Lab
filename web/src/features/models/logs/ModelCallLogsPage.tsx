@@ -17,6 +17,10 @@ import {
 import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
 import { CustomDateInput } from "@shared/ui/CustomDateInput";
 import { CustomSelect } from "@shared/ui/CustomSelect";
+import {
+  logProviderKindOptions,
+  providerLabels,
+} from "@features/models/logs/logOptions";
 
 function formatNumber(value: number | null | undefined): string {
   return value == null ? "—" : new Intl.NumberFormat("zh-CN").format(value);
@@ -43,14 +47,6 @@ const sourceLabels: Record<string, string> = {
   audio_annotation: "录音标注",
   visual_workshop_assistant: "视觉助手",
   visual_workshop_generation: "视觉生成",
-};
-
-const providerLabels: Record<string, string> = {
-  openai: "OpenAI 兼容",
-  anthropic: "Anthropic",
-  senseaudio_image: "SenseAudio 图片",
-  senseaudio_video: "SenseAudio 视频",
-  senseaudio_asr: "SenseAudio 语音识别",
 };
 
 const roleLabels: Record<TraceRole, string> = {
@@ -731,11 +727,7 @@ export function ModelCallLogsPage() {
               ariaLabel="供应商筛选"
               value={filters.providerKind}
               onChange={(value) => setFilter("providerKind", value)}
-              options={[
-                { value: "", label: "全部供应商" },
-                { value: "openai", label: "OpenAI 兼容" },
-                { value: "anthropic", label: "Anthropic" },
-              ]}
+              options={logProviderKindOptions}
             />
             <CustomSelect
               ariaLabel="模型筛选"

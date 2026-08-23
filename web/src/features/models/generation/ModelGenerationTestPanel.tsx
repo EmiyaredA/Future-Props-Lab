@@ -53,12 +53,7 @@ type TestModel = {
   value: string;
   label: string;
   description: string;
-  providerKind:
-    | "openai"
-    | "anthropic"
-    | "senseaudio_image"
-    | "senseaudio_video"
-    | "senseaudio_asr";
+  providerKind: string;
   capabilities?: string[];
 };
 
@@ -262,6 +257,9 @@ export function ModelGenerationTestPanel({
       (model) =>
         ["openai", "senseaudio_asr"].includes(model.providerKind) &&
         model.capabilities?.includes("speech_recognition"),
+    ),
+    realtime_voice: models.some((model) =>
+      model.capabilities?.includes("voice"),
     ),
   };
   const modelOptions: SelectOption[] = useMemo(

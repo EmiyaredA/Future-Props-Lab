@@ -6,6 +6,13 @@ import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
 import { CustomSelect } from "@shared/ui/CustomSelect";
 import { ProviderIcon } from "@shared/ui/ProviderIcon";
 import {
+  capabilityLabel,
+  modelCapabilities,
+  providerBaseUrlPlaceholder,
+  providerKindLabel,
+  providerKindOptions,
+} from "@features/models/catalog/catalogOptions";
+import {
   addModel,
   createProvider,
   deleteModel,
@@ -35,22 +42,6 @@ type DeleteTarget =
   | { kind: "provider"; provider: Provider }
   | { kind: "model"; model: ModelEntry }
   | null;
-
-const providerKindLabel = {
-  openai: "OpenAI 兼容",
-  anthropic: "Anthropic",
-  senseaudio_image: "SenseAudio 图片",
-  senseaudio_video: "SenseAudio 视频",
-  senseaudio_asr: "SenseAudio 语音识别",
-} as const;
-const capabilityLabel = {
-  chat: "对话",
-  vision: "视觉",
-  tools: "工具",
-  image_generation: "图片生成",
-  video_generation: "视频生成",
-  speech_recognition: "语音识别",
-} as const;
 
 function visibleCapabilities(model: ModelEntry) {
   const categoryIds = new Set<string>(model.categories);
@@ -162,13 +153,7 @@ function ProviderForm({
           ariaLabel="通道类型"
           value={kind}
           onChange={(value) => setKind(value as typeof kind)}
-          options={[
-            { value: "openai", label: "OpenAI 兼容" },
-            { value: "anthropic", label: "Anthropic" },
-            { value: "senseaudio_image", label: "SenseAudio 图片生成" },
-            { value: "senseaudio_video", label: "SenseAudio 视频生成" },
-            { value: "senseaudio_asr", label: "SenseAudio 专业说话人识别" },
-          ]}
+          options={providerKindOptions}
         />
       </label>
       <label>
@@ -177,13 +162,7 @@ function ProviderForm({
           type="url"
           value={baseUrl}
           onChange={(event) => setBaseUrl(event.target.value)}
-          placeholder={
-            kind === "openai"
-              ? "https://api.openai.com/v1"
-              : kind === "anthropic"
-                ? "https://api.anthropic.com/v1"
-                : "https://api.senseaudio.cn/v1"
-          }
+          placeholder={providerBaseUrlPlaceholder(kind)}
         />
         <small>留空使用该通道的官方默认地址。</small>
       </label>
@@ -311,16 +290,7 @@ function ModelForm({
       <fieldset>
         <legend>能力</legend>
         <div className="capability-picker">
-          {(
-            [
-              "chat",
-              "vision",
-              "tools",
-              "image_generation",
-              "video_generation",
-              "speech_recognition",
-            ] as const
-          ).map((capability) => (
+          {modelCapabilities.map((capability) => (
             <button
               type="button"
               className={capabilities.includes(capability) ? "active" : ""}

@@ -51,9 +51,16 @@ export type ModelTestTranscriptionParameters =
 export type ModelTestLibraryAudio = components["schemas"]["VisualAssetOut"];
 export type ModelTestLibraryFolder =
   components["schemas"]["VisualAssetFolderOut"];
+export type RealtimeVoiceOptions =
+  components["schemas"]["RealtimeVoiceOptionsOut"];
+export type RealtimeVoiceModel = components["schemas"]["RealtimeVoiceModelOut"];
 
 export async function getCatalog(): Promise<Catalog> {
   return unwrap(await api.GET("/v1/model-providers"));
+}
+
+export async function getRealtimeVoiceOptions(): Promise<RealtimeVoiceOptions> {
+  return unwrap(await api.GET("/v1/model-test/realtime-options"));
 }
 
 export async function getModelCategories() {

@@ -4,7 +4,7 @@ import secrets
 from datetime import timedelta
 from typing import Annotated
 
-from fastapi import Depends, HTTPException, Request, status
+from fastapi import Depends, HTTPException, Request, WebSocket, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -218,6 +218,58 @@ async def require_public_studio_auth(request: Request, session: SessionDep) -> S
     principal = await authenticate_studio_request(request, session, required_scope="studio:read")
     if principal.auth_kind != "session":
         raise _forbidden("browser_session_required", "公开展台必须使用浏览器 Session")
+    return principal
+
+
+async def authenticate_studio_websocket(
+    websocket: WebSocket, session: AsyncSession
+) -> StudioPrincipal:
+    """Authenticate the browser-only realtime channel without extending cookie lifetime."""
+    now = utc_now()
+    raw_session = websocket.cookies.get(SESSION_COOKIE, "")
+    if not raw_session:
+        raise _unauthorized()
+    row = (
+        await session.execute(
+            select(AuthSession, User)
+            .join(User, User.id == AuthSession.user_id)
+            .where(AuthSession.token_hash == hash_secret(raw_session))
+        )
+    ).first()
+    if row is None:
+        raise _unauthorized()
+    auth_session, user = row
+    if (
+        user.status != "active"
+        or user.must_change_password
+        or auth_session.revoked_at is not None
+        or auth_session.idle_expires_at <= now
+        or auth_session.absolute_expires_at <= now
+    ):
+        raise _unauthorized()
+    workspace = await session.get(Workspace, auth_session.active_workspace_id)
+    if workspace is None:
+        raise _unauthorized()
+    try:
+        access, membership = await resolve_access(session, user=user, workspace=workspace)
+    except Exception as exc:
+        raise _forbidden("workspace_access_changed", "当前 Workspace 的访问权限已变化") from exc
+    if access == "public_viewer":
+        raise _forbidden("insufficient_scope", "缺少 studio:private_read 权限")
+    principal = StudioPrincipal(
+        user_id=user.id,
+        workspace_id=workspace.id,
+        membership_id=membership.id if membership else None,
+        workspace_access=access,
+        member_role=membership.role if membership else None,
+        is_platform_admin=bool(user.is_platform_admin),
+        must_change_password=False,
+        auth_kind="session",
+        scopes=frozenset({"studio:read", "studio:private_read", "studio:write"}),
+        session_id=auth_session.id,
+        reauthenticated_at=auth_session.reauthenticated_at,
+    )
+    bind_workspace(session, principal.workspace_id)
     return principal
 
 

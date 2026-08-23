@@ -10,13 +10,17 @@ from app.models import (
     AudioAnnotationProject,
     GalgameAssetTranscriptionTask,
     GalgameWorkshopProject,
+    IntegrationCheck,
     LlmCallLog,
+    McpIntegration,
     ModelEntry,
     ModelProvider,
     ModelTestConversation,
     ModelTestGenerationAsset,
     ModelTestGenerationTask,
     ModelTestTranscriptionTask,
+    SkillIntegration,
+    ToolApiIntegration,
     ToolNavigationItem,
     VisualAsset,
     VisualAssetFolder,
@@ -44,6 +48,10 @@ TENANT_MODELS = (
     ModelTestGenerationTask,
     ModelTestGenerationAsset,
     ModelTestTranscriptionTask,
+    ToolApiIntegration,
+    McpIntegration,
+    SkillIntegration,
+    IntegrationCheck,
 )
 
 _CURRENT_WORKSPACE: ContextVar[str] = ContextVar(

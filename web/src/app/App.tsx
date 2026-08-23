@@ -48,6 +48,11 @@ const ToolNavigationPage = lazy(() =>
     default: module.ToolNavigationPage,
   })),
 );
+const IntegrationCenterPage = lazy(() =>
+  import("@features/integrations/IntegrationCenterPage").then((module) => ({
+    default: module.IntegrationCenterPage,
+  })),
+);
 const VideoFrameExporterPage = lazy(() =>
   import("@features/tools/VideoFrameExporterPage").then((module) => ({
     default: module.VideoFrameExporterPage,
@@ -269,6 +274,28 @@ export default function App() {
             <FileManagementPage />
           ) : page === "tools" ? (
             <ToolNavigationPage onOpenInternal={navigatePath} />
+          ) : page.startsWith("integrations-") ? (
+            <IntegrationCenterPage
+              canManage={["owner", "platform_admin"].includes(
+                me.workspace.access_kind,
+              )}
+              kind={
+                page === "integrations-mcp"
+                  ? "mcp"
+                  : page === "integrations-skills"
+                    ? "skills"
+                    : "tool-apis"
+              }
+              onKindChange={(kind) =>
+                navigate(
+                  kind === "mcp"
+                    ? "integrations-mcp"
+                    : kind === "skills"
+                      ? "integrations-skills"
+                      : "integrations-tool-apis",
+                )
+              }
+            />
           ) : page === "video-frame-exporter" ? (
             <VideoFrameExporterPage onBack={() => navigate("tools")} />
           ) : page === "audio-annotation-projects" ? (

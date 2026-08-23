@@ -1,0 +1,583 @@
+.realtime-voice-page {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.realtime-voice-layout {
+  min-height: 0;
+  flex: 1;
+  display: grid;
+  grid-template-columns: 360px minmax(0, 1fr);
+  overflow: hidden;
+  background:
+    radial-gradient(
+      circle at 72% 20%,
+      color-mix(in srgb, var(--accent) 8%, transparent),
+      transparent 34%
+    ),
+    var(--surface);
+}
+
+.realtime-voice-settings {
+  min-width: 0;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  border-right: 1px solid var(--border);
+  background: color-mix(in srgb, var(--surface-soft) 68%, var(--surface));
+  overflow-y: auto;
+}
+
+.realtime-panel-heading {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+
+.realtime-panel-icon {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--accent-line);
+  border-radius: 11px;
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.realtime-panel-icon svg {
+  width: 19px;
+}
+
+.realtime-panel-heading strong,
+.realtime-panel-heading small,
+.realtime-voice-settings label > span,
+.realtime-voice-settings label > small {
+  display: block;
+}
+
+.realtime-panel-heading strong {
+  color: var(--text-strong);
+  font-size: 13px;
+}
+
+.realtime-panel-heading small,
+.realtime-voice-settings label > small {
+  margin-top: 3px;
+  color: var(--faint);
+  font-size: 9px;
+}
+
+.realtime-voice-settings label {
+  display: grid;
+  gap: 7px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 650;
+}
+
+.realtime-voice-settings textarea {
+  width: 100%;
+  padding: 10px 11px;
+  resize: vertical;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  outline: 0;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-weight: 450;
+  line-height: 1.65;
+}
+
+.realtime-voice-settings textarea:focus {
+  border-color: var(--accent-line);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.realtime-voice-settings textarea:disabled {
+  opacity: 0.68;
+}
+
+.realtime-parameter-section {
+  display: grid;
+  gap: 11px;
+  padding-top: 15px;
+  border-top: 1px solid var(--border);
+}
+
+.realtime-parameter-section > header {
+  display: grid;
+  gap: 3px;
+}
+
+.realtime-parameter-section > header strong {
+  color: var(--text-strong);
+  font-size: 11px;
+}
+
+.realtime-parameter-section > header small {
+  color: var(--faint);
+  font-size: 8px;
+}
+
+.realtime-parameter-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 9px;
+}
+
+.realtime-number-field > div {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.realtime-number-field input {
+  width: 100%;
+  height: 35px;
+  padding: 0 34px 0 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  outline: 0;
+  background: var(--surface);
+  color: var(--text-strong);
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+}
+
+.realtime-number-field input:focus {
+  border-color: var(--accent-line);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.realtime-number-field input:disabled {
+  opacity: 0.68;
+}
+
+.realtime-number-field div > small {
+  position: absolute;
+  right: 9px;
+  color: var(--faint);
+  font-size: 8px;
+  pointer-events: none;
+}
+
+.realtime-toggle-list {
+  display: grid;
+  gap: 8px;
+}
+
+.realtime-toggle-setting {
+  min-height: 42px;
+  padding: 8px 9px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface);
+}
+
+.realtime-toggle-setting > span {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.realtime-toggle-setting strong {
+  color: var(--text-strong);
+  font-size: 9px;
+}
+
+.realtime-toggle-setting small {
+  color: var(--faint);
+  font-size: 7px;
+  font-weight: 450;
+}
+
+.realtime-toggle-setting button {
+  position: relative;
+  width: 32px;
+  height: 18px;
+  flex: none;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface-strong);
+}
+
+.realtime-toggle-setting button i {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--faint);
+  transition: transform 0.16s ease;
+}
+
+.realtime-toggle-setting button[aria-checked="true"] {
+  border-color: var(--accent);
+  background: var(--accent);
+}
+
+.realtime-toggle-setting button[aria-checked="true"] i {
+  background: #fff;
+  transform: translateX(14px);
+}
+
+.realtime-toggle-setting button:focus-visible {
+  outline: 3px solid var(--accent-soft);
+}
+
+.realtime-toggle-setting button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.realtime-parameter-error {
+  margin: -5px 0 0;
+  color: var(--danger);
+  font-size: 8px;
+  line-height: 1.5;
+}
+
+.realtime-specs {
+  margin-top: 4px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 7px;
+}
+
+.realtime-specs span {
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--faint);
+  font-size: 8px;
+  text-align: center;
+}
+
+.realtime-voice-stage {
+  min-width: 0;
+  min-height: 0;
+  padding: clamp(18px, 3vw, 38px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  overflow-y: auto;
+}
+
+.realtime-call-orb {
+  position: relative;
+  width: 112px;
+  height: 112px;
+  margin-top: 8px;
+  display: grid;
+  place-items: center;
+}
+
+.realtime-call-orb > span {
+  position: relative;
+  z-index: 2;
+  width: 72px;
+  height: 72px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--accent-line);
+  border-radius: 50%;
+  background: linear-gradient(145deg, var(--accent-soft), var(--surface));
+  box-shadow: 0 14px 35px color-mix(in srgb, var(--accent) 16%, transparent);
+  color: var(--accent);
+}
+
+.realtime-call-orb svg {
+  width: 31px;
+  height: 31px;
+}
+
+.realtime-call-orb i {
+  position: absolute;
+  inset: 12px;
+  border: 1px solid var(--accent-line);
+  border-radius: 50%;
+  opacity: 0;
+}
+
+.realtime-call-orb i:nth-child(3) {
+  inset: 4px;
+  animation-delay: 0.45s;
+}
+
+.realtime-call-orb i:nth-child(4) {
+  inset: -4px;
+  animation-delay: 0.9s;
+}
+
+.realtime-call-orb.status-listening i,
+.realtime-call-orb.status-thinking i,
+.realtime-call-orb.status-speaking i,
+.realtime-call-orb.status-connecting i,
+.realtime-call-orb.status-preparing i {
+  animation: realtime-pulse 1.8s ease-out infinite;
+}
+
+.realtime-call-orb.status-error > span {
+  border-color: color-mix(in srgb, var(--danger) 45%, var(--border));
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+@keyframes realtime-pulse {
+  0% {
+    transform: scale(0.78);
+    opacity: 0.7;
+  }
+  100% {
+    transform: scale(1.16);
+    opacity: 0;
+  }
+}
+
+.realtime-call-status {
+  margin-top: 7px;
+  display: grid;
+  gap: 5px;
+  text-align: center;
+}
+
+.realtime-call-status strong {
+  color: var(--text-strong);
+  font-size: 17px;
+}
+
+.realtime-call-status span {
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.realtime-error {
+  width: min(720px, 100%);
+  margin: 16px 0 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.realtime-error button {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.realtime-error button svg {
+  width: 13px;
+}
+
+.realtime-transcripts {
+  width: min(860px, 100%);
+  margin-top: 24px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.realtime-transcripts article {
+  min-height: 135px;
+  padding: 15px;
+  border: 1px solid var(--border);
+  border-radius: 13px;
+  background: color-mix(in srgb, var(--surface) 90%, transparent);
+  transition:
+    border-color 0.16s ease,
+    box-shadow 0.16s ease;
+}
+
+.realtime-transcripts article.active {
+  border-color: var(--accent-line);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+.realtime-transcripts article.assistant.active {
+  border-color: color-mix(in srgb, #718fe9 55%, var(--border));
+}
+
+.realtime-transcripts header {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--accent);
+}
+
+.realtime-transcripts header svg {
+  width: 15px;
+}
+
+.realtime-transcripts header span {
+  color: var(--text-strong);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.realtime-transcripts header small {
+  margin-left: auto;
+  color: var(--faint);
+  font-size: 8px;
+}
+
+.realtime-transcripts p {
+  margin: 13px 0 0;
+  color: var(--text);
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+.realtime-transcripts p:only-child,
+.realtime-transcripts article:not(.active) p {
+  color: var(--muted);
+}
+
+.realtime-call-metrics {
+  width: min(860px, 100%);
+  margin-top: 11px;
+  display: flex;
+  justify-content: space-between;
+  color: var(--faint);
+  font-size: 9px;
+}
+
+.realtime-call-metrics span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.realtime-call-metrics svg {
+  width: 13px;
+}
+
+.realtime-call-controls {
+  margin-top: auto;
+  padding-top: 28px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 18px;
+}
+
+.realtime-call-controls button {
+  width: 76px;
+  min-height: 68px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid var(--border);
+  border-radius: 15px;
+  background: var(--surface-soft);
+  color: var(--text);
+  font-size: 8px;
+  font-weight: 650;
+}
+
+.realtime-call-controls button svg {
+  width: 20px;
+  height: 20px;
+}
+
+.realtime-call-controls button:hover:not(:disabled),
+.realtime-call-controls button:focus-visible {
+  border-color: var(--accent-line);
+  outline: 3px solid var(--accent-soft);
+}
+
+.realtime-call-controls button:disabled {
+  cursor: not-allowed;
+  opacity: 0.42;
+}
+
+.realtime-call-controls button.muted {
+  color: var(--danger);
+}
+
+.realtime-call-controls button.start-call,
+.realtime-call-controls button.hangup {
+  width: 102px;
+  min-height: 82px;
+  border-radius: 18px;
+  color: #fff;
+}
+
+.realtime-call-controls button.start-call {
+  border-color: var(--accent);
+  background: var(--accent);
+  box-shadow: 0 12px 26px color-mix(in srgb, var(--accent) 24%, transparent);
+}
+
+.realtime-call-controls button.hangup {
+  border-color: #c95851;
+  background: #c95851;
+  box-shadow: 0 12px 26px rgb(201 88 81 / 22%);
+}
+
+.realtime-privacy-note {
+  margin: 14px 0 0;
+  color: var(--faint);
+  font-size: 8px;
+  text-align: center;
+}
+
+@media (max-width: 900px) {
+  .realtime-voice-page {
+    overflow: auto;
+  }
+  .realtime-voice-layout {
+    display: flex;
+    flex-direction: column;
+    overflow: visible;
+  }
+  .realtime-voice-settings {
+    border-right: 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .realtime-specs {
+    margin-top: 0;
+    grid-template-columns: repeat(4, 1fr);
+  }
+  .realtime-voice-stage {
+    min-height: 610px;
+  }
+}
+
+@media (max-width: 620px) {
+  .realtime-transcripts {
+    grid-template-columns: 1fr;
+  }
+  .realtime-specs {
+    grid-template-columns: 1fr 1fr;
+  }
+  .realtime-call-controls {
+    gap: 9px;
+  }
+  .realtime-call-controls button {
+    width: 66px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .realtime-call-orb i {
+    animation: none !important;
+  }
+}

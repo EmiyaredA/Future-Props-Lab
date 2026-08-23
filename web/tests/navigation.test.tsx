@@ -6,7 +6,7 @@ import { GalgameWorkshopShell } from "@app/layout/GalgameWorkshopShell";
 import { VisualWorkshopShell } from "@app/layout/VisualWorkshopShell";
 import { DocsApp } from "../src/docs/DocsApp";
 
-test("renders home, applications, files, tools, then the base model group", () => {
+test("renders integrations after tools and before the base model group", () => {
   const navigate = vi.fn();
   render(<StudioSidebar page="model-service" navigate={navigate} />);
   expect(screen.getByText("未来道具研究所")).toBeInTheDocument();
@@ -17,7 +17,8 @@ test("renders home, applications, files, tools, then the base model group", () =
   expect(navigationButtons[1]).toHaveTextContent("AI应用");
   expect(navigationButtons[2]).toHaveTextContent("文件管理");
   expect(navigationButtons[3]).toHaveTextContent("工具导航");
-  expect(navigationButtons[4]).toHaveTextContent("基模型");
+  expect(navigationButtons[4]).toHaveTextContent("集成中心");
+  expect(navigationButtons[5]).toHaveTextContent("基模型");
   fireEvent.click(screen.getByRole("button", { name: "首页" }));
   expect(navigate).toHaveBeenCalledWith("home");
   fireEvent.click(screen.getByRole("button", { name: "AI应用" }));
@@ -26,6 +27,8 @@ test("renders home, applications, files, tools, then the base model group", () =
   expect(navigate).toHaveBeenCalledWith("files");
   fireEvent.click(screen.getByRole("button", { name: "工具导航" }));
   expect(navigate).toHaveBeenCalledWith("tools");
+  fireEvent.click(screen.getByRole("button", { name: "集成中心" }));
+  expect(navigate).toHaveBeenCalledWith("integrations-tool-apis");
   expect(screen.getByRole("button", { name: "基模型" })).toHaveAttribute(
     "aria-expanded",
     "true",
@@ -61,6 +64,10 @@ test("uses home as the default and parses deep application routes", () => {
   expect(parsePage("/tools/audio-annotation/project-1")).toBe(
     "audio-annotation-editor",
   );
+  expect(parsePage("/integrations")).toBe("integrations-tool-apis");
+  expect(parsePage("/integrations/tool-apis")).toBe("integrations-tool-apis");
+  expect(parsePage("/integrations/mcp")).toBe("integrations-mcp");
+  expect(parsePage("/integrations/skills")).toBe("integrations-skills");
   expect(pathFor("home")).toBe("/home");
   expect(pathFor("tools")).toBe("/tools");
   expect(pathFor("video-frame-exporter")).toBe("/tools/video-frame-exporter");
@@ -69,6 +76,9 @@ test("uses home as the default and parses deep application routes", () => {
     "/tools/audio-annotation/project-1",
   );
   expect(pathFor("files")).toBe("/files");
+  expect(pathFor("integrations-tool-apis")).toBe("/integrations/tool-apis");
+  expect(pathFor("integrations-mcp")).toBe("/integrations/mcp");
+  expect(pathFor("integrations-skills")).toBe("/integrations/skills");
   expect(pathFor("visual-workshop-canvas", "project-1")).toBe(
     "/apps/visual-workshop/projects/project-1/canvas",
   );

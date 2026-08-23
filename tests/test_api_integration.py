@@ -11,6 +11,7 @@ from app.core.db import SessionLocal
 from app.llm.providers import DiagnosticResult
 from app.main import app
 from app.models import LlmCallLog, ModelProvider
+from db.migrations.registry import LATEST_MIGRATION_ID
 
 
 @pytest.mark.asyncio
@@ -46,7 +47,7 @@ async def test_model_catalog_diagnostic_and_logs(monkeypatch: pytest.MonkeyPatch
         assert ready.status_code == 200
         assert ready.json() == {
             "status": "ready",
-            "schema": "r0029_galgame_video_exports",
+            "schema": LATEST_MIGRATION_ID,
         }
         categories = (await client.get("/v1/model-categories")).json()["items"]
         assert {item["id"] for item in categories} == {

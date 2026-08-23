@@ -1086,6 +1086,26 @@
         "title": "BatchDeleteIn",
         "type": "object"
       },
+      "Body_add_skill_version_v1_integrations_skills__skill_id__versions_post": {
+        "properties": {
+          "expected_revision": {
+            "minimum": 0.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "file": {
+            "contentMediaType": "application/octet-stream",
+            "title": "File",
+            "type": "string"
+          }
+        },
+        "required": [
+          "file",
+          "expected_revision"
+        ],
+        "title": "Body_add_skill_version_v1_integrations_skills__skill_id__versions_post",
+        "type": "object"
+      },
       "Body_batch_upload_project_assets_v1_galgame_workshop_projects__project_id__assets_batch_post": {
         "properties": {
           "category": {
@@ -1118,6 +1138,25 @@
           "category"
         ],
         "title": "Body_batch_upload_project_assets_v1_galgame_workshop_projects__project_id__assets_batch_post",
+        "type": "object"
+      },
+      "Body_create_skill_v1_integrations_skills_post": {
+        "properties": {
+          "enabled": {
+            "default": false,
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "file": {
+            "contentMediaType": "application/octet-stream",
+            "title": "File",
+            "type": "string"
+          }
+        },
+        "required": [
+          "file"
+        ],
+        "title": "Body_create_skill_v1_integrations_skills_post",
         "type": "object"
       },
       "Body_import_legacy_story_v1_galgame_workshop_projects__project_id__story_import_post": {
@@ -1768,6 +1807,17 @@
           "revision"
         ],
         "title": "DeleteMutationOut",
+        "type": "object"
+      },
+      "DeleteOut": {
+        "properties": {
+          "deleted": {
+            "default": true,
+            "title": "Deleted",
+            "type": "boolean"
+          }
+        },
+        "title": "DeleteOut",
         "type": "object"
       },
       "GalgameAnnotationImportIn": {
@@ -10129,6 +10179,100 @@
         "title": "ImageGenerationTaskCreateIn",
         "type": "object"
       },
+      "IntegrationCheckOut": {
+        "properties": {
+          "created_at": {
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "latency_ms": {
+            "title": "Latency Ms",
+            "type": "integer"
+          },
+          "ok": {
+            "title": "Ok",
+            "type": "boolean"
+          },
+          "resource_id": {
+            "title": "Resource Id",
+            "type": "string"
+          },
+          "resource_kind": {
+            "enum": [
+              "tool_api",
+              "mcp"
+            ],
+            "title": "Resource Kind",
+            "type": "string"
+          },
+          "resource_name": {
+            "title": "Resource Name",
+            "type": "string"
+          },
+          "status_code": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status Code"
+          },
+          "summary": {
+            "title": "Summary",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "resource_kind",
+          "resource_id",
+          "resource_name",
+          "ok",
+          "status_code",
+          "latency_ms",
+          "summary",
+          "created_at"
+        ],
+        "title": "IntegrationCheckOut",
+        "type": "object"
+      },
+      "IntegrationOverviewOut": {
+        "properties": {
+          "failed_count": {
+            "title": "Failed Count",
+            "type": "integer"
+          },
+          "primary_count": {
+            "title": "Primary Count",
+            "type": "integer"
+          },
+          "recent": {
+            "items": {
+              "$ref": "#/components/schemas/IntegrationCheckOut"
+            },
+            "title": "Recent",
+            "type": "array"
+          },
+          "tertiary_count": {
+            "title": "Tertiary Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "primary_count",
+          "failed_count",
+          "tertiary_count"
+        ],
+        "title": "IntegrationOverviewOut",
+        "type": "object"
+      },
       "LoginIn": {
         "properties": {
           "password": {
@@ -10145,6 +10289,396 @@
           "password"
         ],
         "title": "LoginIn",
+        "type": "object"
+      },
+      "McpCatalogOut": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/McpOut"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "overview": {
+            "$ref": "#/components/schemas/IntegrationOverviewOut"
+          }
+        },
+        "required": [
+          "items",
+          "overview"
+        ],
+        "title": "McpCatalogOut",
+        "type": "object"
+      },
+      "McpCreateIn": {
+        "properties": {
+          "arguments": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 64,
+            "title": "Arguments",
+            "type": "array"
+          },
+          "bearer_token": {
+            "default": "",
+            "maxLength": 8192,
+            "title": "Bearer Token",
+            "type": "string"
+          },
+          "clear_bearer_token": {
+            "default": false,
+            "title": "Clear Bearer Token",
+            "type": "boolean"
+          },
+          "clear_environment": {
+            "default": false,
+            "title": "Clear Environment",
+            "type": "boolean"
+          },
+          "command": {
+            "default": "",
+            "maxLength": 1024,
+            "title": "Command",
+            "type": "string"
+          },
+          "description": {
+            "default": "",
+            "maxLength": 500,
+            "title": "Description",
+            "type": "string"
+          },
+          "enabled": {
+            "default": true,
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "environment": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Environment",
+            "type": "object"
+          },
+          "name": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 12,
+            "title": "Tags",
+            "type": "array"
+          },
+          "transport": {
+            "default": "streamable_http",
+            "enum": [
+              "streamable_http",
+              "stdio"
+            ],
+            "title": "Transport",
+            "type": "string"
+          },
+          "url": {
+            "default": "",
+            "maxLength": 1024,
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "McpCreateIn",
+        "type": "object"
+      },
+      "McpOut": {
+        "properties": {
+          "arguments": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Arguments",
+            "type": "array"
+          },
+          "bearer_hint": {
+            "title": "Bearer Hint",
+            "type": "string"
+          },
+          "command": {
+            "title": "Command",
+            "type": "string"
+          },
+          "created_at": {
+            "title": "Created At",
+            "type": "string"
+          },
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "enabled": {
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "environment_keys": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Environment Keys",
+            "type": "array"
+          },
+          "has_bearer_token": {
+            "title": "Has Bearer Token",
+            "type": "boolean"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "last_checked_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Checked At"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "protocol_version": {
+            "title": "Protocol Version",
+            "type": "string"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          },
+          "server_name": {
+            "title": "Server Name",
+            "type": "string"
+          },
+          "server_version": {
+            "title": "Server Version",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "unchecked",
+              "healthy",
+              "failed"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "status_message": {
+            "title": "Status Message",
+            "type": "string"
+          },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Tags",
+            "type": "array"
+          },
+          "tool_count": {
+            "title": "Tool Count",
+            "type": "integer"
+          },
+          "transport": {
+            "title": "Transport",
+            "type": "string"
+          },
+          "updated_at": {
+            "title": "Updated At",
+            "type": "string"
+          },
+          "url": {
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "description",
+          "transport",
+          "url",
+          "command",
+          "arguments",
+          "has_bearer_token",
+          "bearer_hint",
+          "environment_keys",
+          "tags",
+          "enabled",
+          "status",
+          "status_message",
+          "server_name",
+          "server_version",
+          "protocol_version",
+          "tool_count",
+          "last_checked_at",
+          "revision",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "McpOut",
+        "type": "object"
+      },
+      "McpToolOut": {
+        "properties": {
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "input_schema": {
+            "additionalProperties": true,
+            "title": "Input Schema",
+            "type": "object"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "description",
+          "input_schema"
+        ],
+        "title": "McpToolOut",
+        "type": "object"
+      },
+      "McpUpdateIn": {
+        "properties": {
+          "arguments": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 64,
+            "title": "Arguments",
+            "type": "array"
+          },
+          "bearer_token": {
+            "default": "",
+            "maxLength": 8192,
+            "title": "Bearer Token",
+            "type": "string"
+          },
+          "clear_bearer_token": {
+            "default": false,
+            "title": "Clear Bearer Token",
+            "type": "boolean"
+          },
+          "clear_environment": {
+            "default": false,
+            "title": "Clear Environment",
+            "type": "boolean"
+          },
+          "command": {
+            "default": "",
+            "maxLength": 1024,
+            "title": "Command",
+            "type": "string"
+          },
+          "description": {
+            "default": "",
+            "maxLength": 500,
+            "title": "Description",
+            "type": "string"
+          },
+          "enabled": {
+            "default": true,
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "environment": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Environment",
+            "type": "object"
+          },
+          "expected_revision": {
+            "minimum": 0.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "name": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 12,
+            "title": "Tags",
+            "type": "array"
+          },
+          "transport": {
+            "default": "streamable_http",
+            "enum": [
+              "streamable_http",
+              "stdio"
+            ],
+            "title": "Transport",
+            "type": "string"
+          },
+          "url": {
+            "default": "",
+            "maxLength": 1024,
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "expected_revision"
+        ],
+        "title": "McpUpdateIn",
+        "type": "object"
+      },
+      "McpValidationOut": {
+        "properties": {
+          "check": {
+            "$ref": "#/components/schemas/IntegrationCheckOut"
+          },
+          "server": {
+            "$ref": "#/components/schemas/McpOut"
+          },
+          "tools": {
+            "items": {
+              "$ref": "#/components/schemas/McpToolOut"
+            },
+            "title": "Tools",
+            "type": "array"
+          }
+        },
+        "required": [
+          "check",
+          "server",
+          "tools"
+        ],
+        "title": "McpValidationOut",
         "type": "object"
       },
       "ModelCatalogOut": {
@@ -10244,7 +10778,8 @@
                 "tools",
                 "image_generation",
                 "video_generation",
-                "speech_recognition"
+                "speech_recognition",
+                "voice"
               ],
               "type": "string"
             },
@@ -10314,7 +10849,8 @@
                 "tools",
                 "image_generation",
                 "video_generation",
-                "speech_recognition"
+                "speech_recognition",
+                "voice"
               ],
               "type": "string"
             },
@@ -12271,7 +12807,8 @@
               "anthropic",
               "senseaudio_image",
               "senseaudio_video",
-              "senseaudio_asr"
+              "senseaudio_asr",
+              "senseaudio_realtime"
             ],
             "title": "Kind",
             "type": "string"
@@ -12336,7 +12873,8 @@
               "anthropic",
               "senseaudio_image",
               "senseaudio_video",
-              "senseaudio_asr"
+              "senseaudio_asr",
+              "senseaudio_realtime"
             ],
             "title": "Kind",
             "type": "string"
@@ -12541,6 +13079,119 @@
         "title": "PublicWorkspaceProjectionOut",
         "type": "object"
       },
+      "RealtimeVoiceModelOut": {
+        "properties": {
+          "commit_silence_ms": {
+            "title": "Commit Silence Ms",
+            "type": "integer"
+          },
+          "default_voice": {
+            "title": "Default Voice",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "input_sample_rate": {
+            "title": "Input Sample Rate",
+            "type": "integer"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "output_sample_rate": {
+            "title": "Output Sample Rate",
+            "type": "integer"
+          },
+          "provider_id": {
+            "title": "Provider Id",
+            "type": "string"
+          },
+          "provider_kind": {
+            "enum": [
+              "openai",
+              "anthropic",
+              "senseaudio_image",
+              "senseaudio_video",
+              "senseaudio_asr",
+              "senseaudio_realtime"
+            ],
+            "title": "Provider Kind",
+            "type": "string"
+          },
+          "provider_name": {
+            "title": "Provider Name",
+            "type": "string"
+          },
+          "slug": {
+            "title": "Slug",
+            "type": "string"
+          },
+          "supports_interruption": {
+            "title": "Supports Interruption",
+            "type": "boolean"
+          },
+          "voices": {
+            "items": {
+              "$ref": "#/components/schemas/RealtimeVoiceOptionOut"
+            },
+            "title": "Voices",
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "provider_id",
+          "provider_name",
+          "provider_kind",
+          "slug",
+          "label",
+          "voices",
+          "default_voice",
+          "input_sample_rate",
+          "output_sample_rate",
+          "commit_silence_ms",
+          "supports_interruption"
+        ],
+        "title": "RealtimeVoiceModelOut",
+        "type": "object"
+      },
+      "RealtimeVoiceOptionOut": {
+        "properties": {
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "value": {
+            "title": "Value",
+            "type": "string"
+          }
+        },
+        "required": [
+          "value",
+          "label"
+        ],
+        "title": "RealtimeVoiceOptionOut",
+        "type": "object"
+      },
+      "RealtimeVoiceOptionsOut": {
+        "properties": {
+          "models": {
+            "items": {
+              "$ref": "#/components/schemas/RealtimeVoiceModelOut"
+            },
+            "title": "Models",
+            "type": "array"
+          }
+        },
+        "required": [
+          "models"
+        ],
+        "title": "RealtimeVoiceOptionsOut",
+        "type": "object"
+      },
       "ReauthIn": {
         "properties": {
           "password": {
@@ -12695,6 +13346,185 @@
           "page_size"
         ],
         "title": "SecurityAuditListOut",
+        "type": "object"
+      },
+      "SkillCatalogOut": {
+        "properties": {
+          "draft_count": {
+            "title": "Draft Count",
+            "type": "integer"
+          },
+          "enabled_count": {
+            "title": "Enabled Count",
+            "type": "integer"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/SkillOut"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "version_count": {
+            "title": "Version Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "enabled_count",
+          "draft_count",
+          "version_count"
+        ],
+        "title": "SkillCatalogOut",
+        "type": "object"
+      },
+      "SkillOut": {
+        "properties": {
+          "created_at": {
+            "title": "Created At",
+            "type": "string"
+          },
+          "default_version": {
+            "title": "Default Version",
+            "type": "string"
+          },
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "enabled": {
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "latest_version": {
+            "title": "Latest Version",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          },
+          "status": {
+            "enum": [
+              "unchecked",
+              "healthy",
+              "failed"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "status_message": {
+            "title": "Status Message",
+            "type": "string"
+          },
+          "updated_at": {
+            "title": "Updated At",
+            "type": "string"
+          },
+          "version_count": {
+            "title": "Version Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "description",
+          "default_version",
+          "latest_version",
+          "version_count",
+          "enabled",
+          "status",
+          "status_message",
+          "revision",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "SkillOut",
+        "type": "object"
+      },
+      "SkillUpdateIn": {
+        "properties": {
+          "default_version": {
+            "maxLength": 24,
+            "minLength": 2,
+            "pattern": "^v[1-9][0-9]*$",
+            "title": "Default Version",
+            "type": "string"
+          },
+          "enabled": {
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "expected_revision": {
+            "minimum": 0.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "expected_revision",
+          "enabled",
+          "default_version"
+        ],
+        "title": "SkillUpdateIn",
+        "type": "object"
+      },
+      "SkillVersionOut": {
+        "properties": {
+          "content_sha256": {
+            "title": "Content Sha256",
+            "type": "string"
+          },
+          "created_at": {
+            "title": "Created At",
+            "type": "string"
+          },
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "expanded_bytes": {
+            "title": "Expanded Bytes",
+            "type": "integer"
+          },
+          "file_count": {
+            "title": "File Count",
+            "type": "integer"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "version": {
+            "title": "Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "version",
+          "name",
+          "description",
+          "content_sha256",
+          "file_count",
+          "expanded_bytes",
+          "created_at"
+        ],
+        "title": "SkillVersionOut",
         "type": "object"
       },
       "StorageLayoutIssueOut": {
@@ -12861,6 +13691,393 @@
           "latency_ms"
         ],
         "title": "TestModelOut",
+        "type": "object"
+      },
+      "ToolApiCatalogOut": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ToolApiOut"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "overview": {
+            "$ref": "#/components/schemas/IntegrationOverviewOut"
+          }
+        },
+        "required": [
+          "items",
+          "overview"
+        ],
+        "title": "ToolApiCatalogOut",
+        "type": "object"
+      },
+      "ToolApiCreateIn": {
+        "properties": {
+          "auth_header_name": {
+            "default": "",
+            "maxLength": 120,
+            "title": "Auth Header Name",
+            "type": "string"
+          },
+          "auth_kind": {
+            "default": "none",
+            "enum": [
+              "none",
+              "bearer",
+              "api_key"
+            ],
+            "title": "Auth Kind",
+            "type": "string"
+          },
+          "body_template": {
+            "anyOf": [
+              {},
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Body Template"
+          },
+          "clear_secret": {
+            "default": false,
+            "title": "Clear Secret",
+            "type": "boolean"
+          },
+          "description": {
+            "default": "",
+            "maxLength": 500,
+            "title": "Description",
+            "type": "string"
+          },
+          "enabled": {
+            "default": true,
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "method": {
+            "default": "GET",
+            "enum": [
+              "GET",
+              "POST",
+              "PUT",
+              "PATCH",
+              "DELETE"
+            ],
+            "title": "Method",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "parameters_schema": {
+            "additionalProperties": true,
+            "title": "Parameters Schema",
+            "type": "object"
+          },
+          "query_template": {
+            "additionalProperties": true,
+            "title": "Query Template",
+            "type": "object"
+          },
+          "secret": {
+            "default": "",
+            "maxLength": 8192,
+            "title": "Secret",
+            "type": "string"
+          },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 12,
+            "title": "Tags",
+            "type": "array"
+          },
+          "url": {
+            "maxLength": 1024,
+            "minLength": 1,
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "url"
+        ],
+        "title": "ToolApiCreateIn",
+        "type": "object"
+      },
+      "ToolApiOut": {
+        "properties": {
+          "auth_header_name": {
+            "title": "Auth Header Name",
+            "type": "string"
+          },
+          "auth_kind": {
+            "title": "Auth Kind",
+            "type": "string"
+          },
+          "body_template": {
+            "anyOf": [
+              {},
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Body Template"
+          },
+          "created_at": {
+            "title": "Created At",
+            "type": "string"
+          },
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "enabled": {
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "has_secret": {
+            "title": "Has Secret",
+            "type": "boolean"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "last_checked_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Checked At"
+          },
+          "method": {
+            "title": "Method",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "parameters_schema": {
+            "additionalProperties": true,
+            "title": "Parameters Schema",
+            "type": "object"
+          },
+          "query_template": {
+            "additionalProperties": true,
+            "title": "Query Template",
+            "type": "object"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          },
+          "secret_hint": {
+            "title": "Secret Hint",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "unchecked",
+              "healthy",
+              "failed"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "status_message": {
+            "title": "Status Message",
+            "type": "string"
+          },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Tags",
+            "type": "array"
+          },
+          "updated_at": {
+            "title": "Updated At",
+            "type": "string"
+          },
+          "url": {
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "description",
+          "method",
+          "url",
+          "auth_kind",
+          "auth_header_name",
+          "has_secret",
+          "secret_hint",
+          "parameters_schema",
+          "query_template",
+          "body_template",
+          "tags",
+          "enabled",
+          "status",
+          "status_message",
+          "last_checked_at",
+          "revision",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "ToolApiOut",
+        "type": "object"
+      },
+      "ToolApiUpdateIn": {
+        "properties": {
+          "auth_header_name": {
+            "default": "",
+            "maxLength": 120,
+            "title": "Auth Header Name",
+            "type": "string"
+          },
+          "auth_kind": {
+            "default": "none",
+            "enum": [
+              "none",
+              "bearer",
+              "api_key"
+            ],
+            "title": "Auth Kind",
+            "type": "string"
+          },
+          "body_template": {
+            "anyOf": [
+              {},
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Body Template"
+          },
+          "clear_secret": {
+            "default": false,
+            "title": "Clear Secret",
+            "type": "boolean"
+          },
+          "description": {
+            "default": "",
+            "maxLength": 500,
+            "title": "Description",
+            "type": "string"
+          },
+          "enabled": {
+            "default": true,
+            "title": "Enabled",
+            "type": "boolean"
+          },
+          "expected_revision": {
+            "minimum": 0.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "method": {
+            "default": "GET",
+            "enum": [
+              "GET",
+              "POST",
+              "PUT",
+              "PATCH",
+              "DELETE"
+            ],
+            "title": "Method",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "parameters_schema": {
+            "additionalProperties": true,
+            "title": "Parameters Schema",
+            "type": "object"
+          },
+          "query_template": {
+            "additionalProperties": true,
+            "title": "Query Template",
+            "type": "object"
+          },
+          "secret": {
+            "default": "",
+            "maxLength": 8192,
+            "title": "Secret",
+            "type": "string"
+          },
+          "tags": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 12,
+            "title": "Tags",
+            "type": "array"
+          },
+          "url": {
+            "maxLength": 1024,
+            "minLength": 1,
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "url",
+          "expected_revision"
+        ],
+        "title": "ToolApiUpdateIn",
+        "type": "object"
+      },
+      "ToolApiValidateIn": {
+        "properties": {
+          "input": {
+            "additionalProperties": true,
+            "title": "Input",
+            "type": "object"
+          }
+        },
+        "title": "ToolApiValidateIn",
+        "type": "object"
+      },
+      "ToolApiValidationOut": {
+        "properties": {
+          "check": {
+            "$ref": "#/components/schemas/IntegrationCheckOut"
+          },
+          "content_type": {
+            "title": "Content Type",
+            "type": "string"
+          },
+          "response_preview": {
+            "title": "Response Preview",
+            "type": "string"
+          }
+        },
+        "required": [
+          "check",
+          "response_preview",
+          "content_type"
+        ],
+        "title": "ToolApiValidationOut",
         "type": "object"
       },
       "ToolFavoriteIn": {
@@ -19494,6 +20711,897 @@
         ]
       }
     },
+    "/v1/integrations/mcp": {
+      "get": {
+        "operationId": "mcp_servers_v1_integrations_mcp_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/McpCatalogOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Mcp Servers",
+        "tags": [
+          "integrations"
+        ]
+      },
+      "post": {
+        "operationId": "create_mcp_v1_integrations_mcp_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/McpCreateIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/McpOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Mcp",
+        "tags": [
+          "integrations"
+        ]
+      }
+    },
+    "/v1/integrations/mcp/{integration_id}": {
+      "delete": {
+        "operationId": "delete_mcp_v1_integrations_mcp__integration_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "integration_id",
+            "required": true,
+            "schema": {
+              "title": "Integration Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "expected_revision",
+            "required": true,
+            "schema": {
+              "minimum": 0,
+              "title": "Expected Revision",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeleteOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Mcp",
+        "tags": [
+          "integrations"
+        ]
+      },
+      "get": {
+        "operationId": "mcp_server_v1_integrations_mcp__integration_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "integration_id",
+            "required": true,
+            "schema": {
+              "title": "Integration Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/McpOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Mcp Server",
+        "tags": [
+          "integrations"
+        ]
+      },
+      "patch": {
+        "operationId": "update_mcp_v1_integrations_mcp__integration_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "integration_id",
+            "required": true,
+            "schema": {
+              "title": "Integration Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/McpUpdateIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/McpOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Update Mcp",
+        "tags": [
+          "integrations"
+        ]
+      }
+    },
+    "/v1/integrations/mcp/{integration_id}/tools": {
+      "get": {
+        "operationId": "mcp_tools_v1_integrations_mcp__integration_id__tools_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "integration_id",
+            "required": true,
+            "schema": {
+              "title": "Integration Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/McpToolOut"
+                  },
+                  "title": "Response Mcp Tools V1 Integrations Mcp  Integration Id  Tools Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Mcp Tools",
+        "tags": [
+          "integrations"
+        ]
+      }
+    },
+    "/v1/integrations/mcp/{integration_id}/validate": {
+      "post": {
+        "operationId": "validate_mcp_v1_integrations_mcp__integration_id__validate_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "integration_id",
+            "required": true,
+            "schema": {
+              "title": "Integration Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/McpValidationOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Validate Mcp",
+        "tags": [
+          "integrations"
+        ]
+      }
+    },
+    "/v1/integrations/skills": {
+      "get": {
+        "operationId": "skills_v1_integrations_skills_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SkillCatalogOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Skills",
+        "tags": [
+          "integrations"
+        ]
+      },
+      "post": {
+        "operationId": "create_skill_v1_integrations_skills_post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_create_skill_v1_integrations_skills_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SkillOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Skill",
+        "tags": [
+          "integrations"
+        ]
+      }
+    },
+    "/v1/integrations/skills/{skill_id}": {
+      "delete": {
+        "operationId": "delete_skill_v1_integrations_skills__skill_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "skill_id",
+            "required": true,
+            "schema": {
+              "title": "Skill Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "expected_revision",
+            "required": true,
+            "schema": {
+              "minimum": 0,
+              "title": "Expected Revision",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeleteOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Skill",
+        "tags": [
+          "integrations"
+        ]
+      },
+      "get": {
+        "operationId": "skill_v1_integrations_skills__skill_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "skill_id",
+            "required": true,
+            "schema": {
+              "title": "Skill Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SkillOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Skill",
+        "tags": [
+          "integrations"
+        ]
+      },
+      "patch": {
+        "operationId": "update_skill_v1_integrations_skills__skill_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "skill_id",
+            "required": true,
+            "schema": {
+              "title": "Skill Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SkillUpdateIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SkillOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Update Skill",
+        "tags": [
+          "integrations"
+        ]
+      }
+    },
+    "/v1/integrations/skills/{skill_id}/versions": {
+      "get": {
+        "operationId": "skill_versions_v1_integrations_skills__skill_id__versions_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "skill_id",
+            "required": true,
+            "schema": {
+              "title": "Skill Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/SkillVersionOut"
+                  },
+                  "title": "Response Skill Versions V1 Integrations Skills  Skill Id  Versions Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Skill Versions",
+        "tags": [
+          "integrations"
+        ]
+      },
+      "post": {
+        "operationId": "add_skill_version_v1_integrations_skills__skill_id__versions_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "skill_id",
+            "required": true,
+            "schema": {
+              "title": "Skill Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_add_skill_version_v1_integrations_skills__skill_id__versions_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SkillOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Add Skill Version",
+        "tags": [
+          "integrations"
+        ]
+      }
+    },
+    "/v1/integrations/skills/{skill_id}/versions/{version}/content": {
+      "get": {
+        "operationId": "skill_version_content_v1_integrations_skills__skill_id__versions__version__content_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "skill_id",
+            "required": true,
+            "schema": {
+              "title": "Skill Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "version",
+            "required": true,
+            "schema": {
+              "title": "Version",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Skill Version Content",
+        "tags": [
+          "integrations"
+        ]
+      }
+    },
+    "/v1/integrations/tool-apis": {
+      "get": {
+        "operationId": "tool_apis_v1_integrations_tool_apis_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ToolApiCatalogOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Tool Apis",
+        "tags": [
+          "integrations"
+        ]
+      },
+      "post": {
+        "operationId": "create_tool_api_v1_integrations_tool_apis_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ToolApiCreateIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ToolApiOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Tool Api",
+        "tags": [
+          "integrations"
+        ]
+      }
+    },
+    "/v1/integrations/tool-apis/{integration_id}": {
+      "delete": {
+        "operationId": "delete_tool_api_v1_integrations_tool_apis__integration_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "integration_id",
+            "required": true,
+            "schema": {
+              "title": "Integration Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "expected_revision",
+            "required": true,
+            "schema": {
+              "minimum": 0,
+              "title": "Expected Revision",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeleteOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Tool Api",
+        "tags": [
+          "integrations"
+        ]
+      },
+      "get": {
+        "operationId": "tool_api_v1_integrations_tool_apis__integration_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "integration_id",
+            "required": true,
+            "schema": {
+              "title": "Integration Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ToolApiOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Tool Api",
+        "tags": [
+          "integrations"
+        ]
+      },
+      "patch": {
+        "operationId": "update_tool_api_v1_integrations_tool_apis__integration_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "integration_id",
+            "required": true,
+            "schema": {
+              "title": "Integration Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ToolApiUpdateIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ToolApiOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Update Tool Api",
+        "tags": [
+          "integrations"
+        ]
+      }
+    },
+    "/v1/integrations/tool-apis/{integration_id}/validate": {
+      "post": {
+        "operationId": "validate_tool_api_v1_integrations_tool_apis__integration_id__validate_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "integration_id",
+            "required": true,
+            "schema": {
+              "title": "Integration Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ToolApiValidateIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ToolApiValidationOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Validate Tool Api",
+        "tags": [
+          "integrations"
+        ]
+      }
+    },
     "/v1/llm-call-logs": {
       "get": {
         "operationId": "list_logs_v1_llm_call_logs_get",
@@ -19526,7 +21634,7 @@
             "required": false,
             "schema": {
               "default": "",
-              "pattern": "^(|openai|anthropic|senseaudio_asr)$",
+              "pattern": "^(|openai|anthropic|senseaudio_asr|senseaudio_realtime)$",
               "title": "Provider Kind",
               "type": "string"
             }
@@ -21176,6 +23284,27 @@
           }
         },
         "summary": "Retry Materialization",
+        "tags": [
+          "model-test"
+        ]
+      }
+    },
+    "/v1/model-test/realtime-options": {
+      "get": {
+        "operationId": "realtime_options_v1_model_test_realtime_options_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RealtimeVoiceOptionsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Realtime Options",
         "tags": [
           "model-test"
         ]

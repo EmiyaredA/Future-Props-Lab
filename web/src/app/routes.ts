@@ -3,6 +3,9 @@ export type StudioPage =
   | "apps"
   | "files"
   | "tools"
+  | "integrations-tool-apis"
+  | "integrations-mcp"
+  | "integrations-skills"
   | "video-frame-exporter"
   | "audio-annotation-projects"
   | "audio-annotation-editor"
@@ -60,6 +63,12 @@ export function parseRoute(pathname = window.location.pathname): AppRoute {
   if (application) return application as AppRoute;
   if (pathname.startsWith("/apps")) return { page: "apps" };
   if (pathname.startsWith("/files")) return { page: "files" };
+  if (pathname.startsWith("/integrations/mcp"))
+    return { page: "integrations-mcp" };
+  if (pathname.startsWith("/integrations/skills"))
+    return { page: "integrations-skills" };
+  if (pathname.startsWith("/integrations"))
+    return { page: "integrations-tool-apis" };
   if (pathname.startsWith("/tools/video-frame-exporter"))
     return { page: "video-frame-exporter" };
   const audioAnnotation = pathname.match(
@@ -87,6 +96,9 @@ export function pathFor(page: AppPage, projectId?: string): string {
     apps: "/apps",
     files: "/files",
     tools: "/tools",
+    "integrations-tool-apis": "/integrations/tool-apis",
+    "integrations-mcp": "/integrations/mcp",
+    "integrations-skills": "/integrations/skills",
     "video-frame-exporter": "/tools/video-frame-exporter",
     "audio-annotation-projects": "/tools/audio-annotation",
     "audio-annotation-editor": "/tools/audio-annotation",

@@ -49,12 +49,7 @@ type TestModel = {
   label: string;
   description: string;
   capabilities: string[];
-  providerKind:
-    | "openai"
-    | "anthropic"
-    | "senseaudio_image"
-    | "senseaudio_video"
-    | "senseaudio_asr";
+  providerKind: string;
 };
 
 const pendingStatuses: ModelTestTranscriptionTask["status"][] = [
@@ -449,6 +444,9 @@ export function ModelTranscriptionTestPanel({
     image: models.some((model) => model.providerKind === "senseaudio_image"),
     video: models.some((model) => model.providerKind === "senseaudio_video"),
     speech: Boolean(speechModels.length),
+    realtime_voice: models.some((model) =>
+      model.capabilities.includes("voice"),
+    ),
   };
   const modelOptions: SelectOption[] = speechModels.map((model) => ({
     value: model.value,

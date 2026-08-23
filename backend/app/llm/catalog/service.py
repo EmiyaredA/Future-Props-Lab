@@ -82,6 +82,8 @@ def _default_categories(row: ModelEntry) -> list[str]:
         return ["video_generation"]
     if "speech_recognition" in capabilities:
         return ["speech_recognition"]
+    if "voice" in capabilities:
+        return ["end_to_end_speech"]
     return ["text_generation"]
 
 
@@ -355,4 +357,6 @@ def _categories_for_provider_kind(kind: str) -> list[str]:
         return ["video_generation"]
     if kind == "senseaudio_asr":
         return ["speech_recognition"]
+    if kind == "senseaudio_realtime":
+        return ["end_to_end_speech"]
     return ["text_generation"]

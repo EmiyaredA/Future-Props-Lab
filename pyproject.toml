@@ -9,14 +9,18 @@ dependencies = [
   "cryptography>=45.0.0",
   "fastapi>=0.116.0",
   "httpx>=0.28.0",
+  "jsonschema>=4.25.0",
+  "mcp>=2.0.0,<3.0.0",
   "pillow>=12.3.0",
   "pypdf>=6.0.0",
   "pydantic-settings>=2.10.0",
+  "pyyaml>=6.0.0",
   "python-multipart>=0.0.20",
   "python-dotenv>=1.1.0",
   "sqlalchemy[asyncio]>=2.0.40",
   "tinytag>=2.1.0",
   "uvicorn[standard]>=0.35.0",
+  "websockets>=15.0",
 ]
 
 [dependency-groups]

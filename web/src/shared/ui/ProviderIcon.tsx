@@ -7,7 +7,8 @@ export function ProviderIcon({
     | "anthropic"
     | "senseaudio_image"
     | "senseaudio_video"
-    | "senseaudio_asr";
+    | "senseaudio_asr"
+    | "senseaudio_realtime";
   size?: number;
 }) {
   if (kind.startsWith("senseaudio_"))

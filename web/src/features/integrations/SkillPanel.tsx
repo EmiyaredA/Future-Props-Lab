@@ -1,0 +1,478 @@
+import { useMemo, useRef, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  Download,
+  FileArchive,
+  Layers3,
+  Plus,
+  Search,
+  Trash2,
+} from "lucide-react";
+import {
+  addSkillVersion,
+  createSkill,
+  deleteSkill,
+  downloadSkillVersion,
+  getSkills,
+  getSkillVersions,
+  updateSkill,
+  type Skill,
+  type SkillVersion,
+} from "@features/integrations/api";
+import {
+  IntegrationModal,
+  PanelMessage,
+  StatusBadge,
+  ToggleButton,
+} from "@features/integrations/components";
+import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
+import { CustomSelect } from "@shared/ui/CustomSelect";
+import { ApiError } from "@platform/api/client";
+
+const KEY = ["integrations", "skills"] as const;
+
+function errorMessage(error: unknown) {
+  if (error instanceof ApiError && error.problem.code === "revision_conflict") {
+    return "Skill 已被其他操作更新，列表已刷新，请重试。";
+  }
+  return error instanceof Error ? error.message : "操作失败，请稍后重试。";
+}
+
+function saveBlob(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = filename;
+  anchor.click();
+  URL.revokeObjectURL(url);
+}
+
+function UploadDialog({
+  title,
+  pending,
+  onClose,
+  onUpload,
+  showEnabled,
+}: {
+  title: string;
+  pending: boolean;
+  onClose: () => void;
+  onUpload: (file: File, enabled: boolean) => void;
+  showEnabled: boolean;
+}) {
+  const input = useRef<HTMLInputElement>(null);
+  const [file, setFile] = useState<File | null>(null);
+  const [enabled, setEnabled] = useState(false);
+  return (
+    <IntegrationModal title={title} onClose={onClose}>
+      <div className="integration-form">
+        <div className="skill-drop">
+          <FileArchive aria-hidden />
+          <strong>{file?.name ?? "选择 Skill ZIP 包"}</strong>
+          <small>最多 10 MiB，必须包含根 SKILL.md</small>
+          <button
+            type="button"
+            className="btn"
+            onClick={() => input.current?.click()}
+          >
+            选择文件
+          </button>
+          <input
+            ref={input}
+            hidden
+            type="file"
+            accept=".zip,application/zip"
+            onChange={(event) => setFile(event.target.files?.[0] ?? null)}
+          />
+        </div>
+        {showEnabled ? (
+          <ToggleButton
+            value={enabled}
+            onChange={setEnabled}
+            label="导入后启用"
+          />
+        ) : null}
+        <footer className="integration-form-actions">
+          <button type="button" className="btn" onClick={onClose}>
+            取消
+          </button>
+          <button
+            type="button"
+            className="btn primary"
+            disabled={!file || pending}
+            onClick={() => file && onUpload(file, enabled)}
+          >
+            {pending ? "校验并导入中…" : "上传并校验"}
+          </button>
+        </footer>
+      </div>
+    </IntegrationModal>
+  );
+}
+
+export function SkillPanel({
+  canManage,
+  search,
+  status,
+  onSearchChange,
+  onStatusChange,
+}: {
+  canManage: boolean;
+  search: string;
+  status: string;
+  onSearchChange: (value: string) => void;
+  onStatusChange: (value: string) => void;
+}) {
+  const client = useQueryClient();
+  const query = useQuery({ queryKey: KEY, queryFn: getSkills });
+  const [uploading, setUploading] = useState(false);
+  const [addingTo, setAddingTo] = useState<Skill | null>(null);
+  const [viewing, setViewing] = useState<Skill | null>(null);
+  const [versions, setVersions] = useState<SkillVersion[]>([]);
+  const [selectedVersion, setSelectedVersion] = useState("");
+  const [removing, setRemoving] = useState<Skill | null>(null);
+  const [notice, setNotice] = useState("");
+  const refresh = () => client.invalidateQueries({ queryKey: KEY });
+  const create = useMutation({
+    mutationFn: ({ file, enabled }: { file: File; enabled: boolean }) =>
+      createSkill(file, enabled),
+    onSuccess: (skill) => {
+      setUploading(false);
+      setNotice(`${skill.name} 已通过校验并导入。`);
+      void refresh();
+    },
+    onError: (error) => {
+      setNotice(errorMessage(error));
+      if (
+        error instanceof ApiError &&
+        error.problem.code === "revision_conflict"
+      ) {
+        setAddingTo(null);
+        setViewing(null);
+        void refresh();
+      }
+    },
+  });
+  const add = useMutation({
+    mutationFn: ({ skill, file }: { skill: Skill; file: File }) =>
+      addSkillVersion(skill, file),
+    onSuccess: (skill) => {
+      setAddingTo(null);
+      setNotice(`${skill.name} ${skill.latest_version} 已导入。`);
+      void refresh();
+      void openVersions(skill);
+    },
+    onError: (error) => {
+      setNotice(errorMessage(error));
+      if (
+        error instanceof ApiError &&
+        error.problem.code === "revision_conflict"
+      ) {
+        setAddingTo(null);
+        setViewing(null);
+        void refresh();
+      }
+    },
+  });
+  const update = useMutation({
+    mutationFn: ({
+      skill,
+      enabled,
+      version,
+    }: {
+      skill: Skill;
+      enabled: boolean;
+      version: string;
+    }) => updateSkill(skill, enabled, version),
+    onSuccess: (skill) => {
+      setViewing(skill);
+      setSelectedVersion(skill.default_version);
+      setNotice("Skill 设置已更新。");
+      void refresh();
+    },
+    onError: (error) => {
+      setNotice(errorMessage(error));
+      if (
+        error instanceof ApiError &&
+        error.problem.code === "revision_conflict"
+      ) {
+        setViewing(null);
+        void refresh();
+      }
+    },
+  });
+  const remove = useMutation({
+    mutationFn: deleteSkill,
+    onSuccess: () => {
+      setRemoving(null);
+      setViewing(null);
+      void refresh();
+    },
+    onError: (error) => {
+      setNotice(errorMessage(error));
+      if (
+        error instanceof ApiError &&
+        error.problem.code === "revision_conflict"
+      )
+        void refresh();
+    },
+  });
+  const items = useMemo(
+    () =>
+      (query.data?.items ?? []).filter(
+        (item) =>
+          `${item.name} ${item.description}`
+            .toLowerCase()
+            .includes(search.toLowerCase()) &&
+          (status === "all" ||
+            (status === "enabled" ? item.enabled : !item.enabled)),
+      ),
+    [query.data, search, status],
+  );
+  const openVersions = async (skill: Skill) => {
+    setViewing(skill);
+    setSelectedVersion(skill.default_version);
+    try {
+      setVersions(await getSkillVersions(skill));
+    } catch (error) {
+      setNotice(errorMessage(error));
+    }
+  };
+  const download = async (skill: Skill, version: string) => {
+    try {
+      saveBlob(
+        await downloadSkillVersion(skill, version),
+        `${skill.name}-${version}.zip`,
+      );
+    } catch (error) {
+      setNotice(errorMessage(error));
+    }
+  };
+  return (
+    <div className="integration-panel">
+      <div className="integration-toolbar">
+        <label className="integration-search">
+          <Search aria-hidden />
+          <input
+            aria-label="搜索 Skill"
+            placeholder="搜索 Skill 名称或说明"
+            value={search}
+            onChange={(e) => onSearchChange(e.target.value)}
+          />
+        </label>
+        <CustomSelect
+          ariaLabel="Skill 状态筛选"
+          value={status}
+          options={[
+            { value: "all", label: "全部状态" },
+            { value: "enabled", label: "已启用" },
+            { value: "draft", label: "草稿" },
+          ]}
+          onChange={onStatusChange}
+        />
+        {canManage ? (
+          <button
+            type="button"
+            className="btn primary"
+            onClick={() => setUploading(true)}
+          >
+            <Plus aria-hidden />
+            上传 Skill
+          </button>
+        ) : null}
+      </div>
+      {notice ? <PanelMessage>{notice}</PanelMessage> : null}
+      <div className="integration-layout">
+        <main className="integration-grid">
+          {query.isLoading ? (
+            <PanelMessage>正在加载 Skill…</PanelMessage>
+          ) : query.isError ? (
+            <PanelMessage>加载失败，请重试。</PanelMessage>
+          ) : items.length === 0 ? (
+            <PanelMessage>
+              {query.data?.items.length
+                ? "没有匹配的 Skill。"
+                : "还没有 Skill，上传 ZIP 后会先进行安全校验。"}
+            </PanelMessage>
+          ) : (
+            items.map((item) => (
+              <article className="integration-card" key={item.id}>
+                <header>
+                  <span className="integration-card-icon">
+                    <FileArchive aria-hidden />
+                  </span>
+                  <StatusBadge enabled={item.enabled} status={item.status} />
+                </header>
+                <h3>{item.name}</h3>
+                <p>{item.description}</p>
+                <div className="integration-card-meta">
+                  <code>{item.default_version}</code>
+                  <span>{item.version_count} 个不可变版本</span>
+                </div>
+                <footer>
+                  <span>最新 {item.latest_version}</span>
+                  <span className="card-actions">
+                    <button
+                      aria-label={`查看 ${item.name} 版本`}
+                      onClick={() => void openVersions(item)}
+                    >
+                      <Layers3 aria-hidden />
+                    </button>
+                    {canManage ? (
+                      <button
+                        aria-label={`删除 ${item.name}`}
+                        onClick={() => setRemoving(item)}
+                      >
+                        <Trash2 aria-hidden />
+                      </button>
+                    ) : null}
+                  </span>
+                </footer>
+              </article>
+            ))
+          )}
+        </main>
+        <aside className="integration-overview">
+          <h2>Skill 概览</h2>
+          <div className="overview-stats">
+            <span>
+              <strong>{query.data?.enabled_count ?? 0}</strong>已启用
+            </span>
+            <span>
+              <strong>{query.data?.draft_count ?? 0}</strong>草稿
+            </span>
+            <span>
+              <strong>{query.data?.version_count ?? 0}</strong>版本总数
+            </span>
+          </div>
+          <div className="skill-safety-note">
+            <FileArchive aria-hidden />
+            <div>
+              <h3>本地安全导入</h3>
+              <p>
+                ZIP 只会解压与校验，不会执行包内脚本。版本一经导入不可修改。
+              </p>
+            </div>
+          </div>
+        </aside>
+      </div>
+      {uploading ? (
+        <UploadDialog
+          title="上传 Skill ZIP"
+          pending={create.isPending}
+          onClose={() => setUploading(false)}
+          showEnabled
+          onUpload={(file, enabled) => create.mutate({ file, enabled })}
+        />
+      ) : null}
+      {addingTo ? (
+        <UploadDialog
+          title={`为 ${addingTo.name} 添加新版本`}
+          pending={add.isPending}
+          onClose={() => setAddingTo(null)}
+          showEnabled={false}
+          onUpload={(file) => add.mutate({ skill: addingTo, file })}
+        />
+      ) : null}
+      {viewing ? (
+        <IntegrationModal
+          title={`${viewing.name} · 版本`}
+          onClose={() => setViewing(null)}
+          wide
+        >
+          <div className="skill-version-controls">
+            <div>
+              <strong>默认版本</strong>
+              <CustomSelect
+                ariaLabel="默认 Skill 版本"
+                value={selectedVersion}
+                options={versions.map((version) => ({
+                  value: version.version,
+                  label: version.version,
+                }))}
+                onChange={setSelectedVersion}
+              />
+            </div>
+            {canManage ? (
+              <>
+                <ToggleButton
+                  value={viewing.enabled}
+                  onChange={(enabled) =>
+                    update.mutate({
+                      skill: viewing,
+                      enabled,
+                      version: selectedVersion,
+                    })
+                  }
+                />
+                <button
+                  className="btn"
+                  type="button"
+                  disabled={
+                    update.isPending ||
+                    selectedVersion === viewing.default_version
+                  }
+                  onClick={() =>
+                    update.mutate({
+                      skill: viewing,
+                      enabled: viewing.enabled,
+                      version: selectedVersion,
+                    })
+                  }
+                >
+                  设为默认
+                </button>
+                <button
+                  className="btn primary"
+                  type="button"
+                  onClick={() => setAddingTo(viewing)}
+                >
+                  <Plus aria-hidden />
+                  添加版本
+                </button>
+              </>
+            ) : null}
+          </div>
+          <div className="skill-version-list">
+            {versions.map((version) => (
+              <article key={version.id}>
+                <span>
+                  <strong>
+                    {version.version}
+                    {version.version === viewing.default_version
+                      ? " · 默认"
+                      : ""}
+                  </strong>
+                  <small>
+                    {version.file_count} 个文件 ·{" "}
+                    {(version.expanded_bytes / 1024).toFixed(1)} KiB · SHA-256{" "}
+                    {version.content_sha256.slice(0, 12)}…
+                  </small>
+                </span>
+                <button
+                  type="button"
+                  className="btn"
+                  onClick={() => void download(viewing, version.version)}
+                >
+                  <Download aria-hidden />
+                  下载 ZIP
+                </button>
+              </article>
+            ))}
+          </div>
+        </IntegrationModal>
+      ) : null}
+      <ConfirmDialog
+        open={Boolean(removing)}
+        title="删除 Skill？"
+        description="所有本地版本将移入回收区，数据库记录和版本历史将被删除。"
+        confirmLabel="删除"
+        pending={remove.isPending}
+        onCancel={() => setRemoving(null)}
+        onConfirm={() => {
+          if (removing) remove.mutate(removing);
+        }}
+      />
+    </div>
+  );
+}

@@ -52,8 +52,7 @@ import {
 import { fetchApiBlob } from "@platform/api/client";
 import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
 import type { SelectOption } from "@shared/ui/CustomSelect";
-import { ModelGenerationTestPanel } from "@features/models/generation/ModelGenerationTestPanel";
-import { ModelTranscriptionTestPanel } from "@features/models/generation/ModelTranscriptionTestPanel";
+import { ModelTestCapabilityPanel } from "@features/models/conversation/ModelTestCapabilityPanel";
 import {
   ModelTestWorkspaceHeader,
   type ModelTestMode,
@@ -414,7 +413,7 @@ export function ModelTestPage({
     null,
   );
   const lastGenerationModelByMode = useRef<
-    Partial<Record<"image" | "video" | "speech", string>>
+    Partial<Record<"image" | "video" | "speech" | "realtime_voice", string>>
   >({});
   const abortRef = useRef<AbortController | null>(null);
   const activeMessageIdRef = useRef<string | null>(null);
@@ -785,19 +784,29 @@ export function ModelTestPage({
         ["openai", "senseaudio_asr"].includes(model.providerKind) &&
         model.capabilities.includes("speech_recognition"),
     ),
+    realtime_voice: availableModels.some((model) =>
+      model.capabilities.includes("voice"),
+    ),
   };
   const selectMode = (mode: ModelTestMode) => {
     if (mode === "chat") {
       setGenerationModelId(null);
       return;
     }
-    const candidates = availableModels.filter((model) =>
-      mode === "speech"
-        ? ["openai", "senseaudio_asr"].includes(model.providerKind) &&
+    const candidates = availableModels.filter((model) => {
+      if (mode === "speech") {
+        return (
+          ["openai", "senseaudio_asr"].includes(model.providerKind) &&
           model.capabilities.includes("speech_recognition")
-        : model.providerKind ===
-          (mode === "image" ? "senseaudio_image" : "senseaudio_video"),
-    );
+        );
+      }
+      if (mode === "realtime_voice")
+        return model.capabilities.includes("voice");
+      return (
+        model.providerKind ===
+        (mode === "image" ? "senseaudio_image" : "senseaudio_video")
+      );
+    });
     const remembered = lastGenerationModelByMode.current[mode];
     const next =
       candidates.find((model) => model.value === remembered) ?? candidates[0];
@@ -805,53 +814,16 @@ export function ModelTestPage({
     lastGenerationModelByMode.current[mode] = next.value;
     setGenerationModelId(next.value);
   };
-  if (
-    generationModel &&
-    ["openai", "senseaudio_asr"].includes(generationModel.providerKind) &&
-    generationModel.capabilities.includes("speech_recognition")
-  ) {
+  if (generationModel) {
     return (
-      <ModelTranscriptionTestPanel
+      <ModelTestCapabilityPanel
         models={availableModels}
         modelId={generationModel.value}
         onOpenAudioAnnotation={onOpenAudioAnnotation}
         onSelectMode={selectMode}
-        onSelectModel={(modelId) => {
-          const next = availableModels.find(
-            (model) =>
-              model.value === modelId &&
-              ["openai", "senseaudio_asr"].includes(model.providerKind) &&
-              model.capabilities.includes("speech_recognition"),
-          );
-          if (!next) return;
-          lastGenerationModelByMode.current.speech = next.value;
-          setGenerationModelId(next.value);
-        }}
-      />
-    );
-  }
-  if (
-    generationModel &&
-    ["senseaudio_image", "senseaudio_video"].includes(
-      generationModel.providerKind,
-    )
-  ) {
-    return (
-      <ModelGenerationTestPanel
-        models={availableModels}
-        modelId={generationModel.value}
-        onSelectMode={selectMode}
-        onSelectModel={(modelId) => {
-          const next = availableModels.find((model) => model.value === modelId);
-          if (!next) return;
-          if (
-            ["senseaudio_image", "senseaudio_video"].includes(next.providerKind)
-          ) {
-            const mode =
-              next.providerKind === "senseaudio_image" ? "image" : "video";
-            lastGenerationModelByMode.current[mode] = next.value;
-            setGenerationModelId(next.value);
-          }
+        onSelectModel={(modelId, mode) => {
+          lastGenerationModelByMode.current[mode] = modelId;
+          setGenerationModelId(modelId);
         }}
       />
     );

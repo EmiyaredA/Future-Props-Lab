@@ -4,7 +4,10 @@ from pydantic import ValidationError
 from app.accounts.passwords import hash_password, validate_password, verify_password
 from app.accounts.security import new_management_api_key
 from app.core.config import Settings
-from app.core.outbound_urls import normalize_provider_base_url
+from app.core.outbound_urls import (
+    normalize_provider_base_url,
+    normalize_provider_websocket_url,
+)
 from app.schemas.model_service import ProviderIn
 
 
@@ -43,6 +46,25 @@ def test_provider_urls_require_https_except_for_loopback() -> None:
         "http://127.0.0.1:8080/v1"
     )
     assert normalize_provider_base_url("http://[::1]:8080/v1") == "http://[::1]:8080/v1"
+
+
+def test_realtime_provider_requires_secure_websocket_except_for_loopback() -> None:
+    common = {
+        "expected_catalog_revision": 0,
+        "name": "realtime",
+        "kind": "senseaudio_realtime",
+    }
+    with pytest.raises(ValidationError, match="WSS"):
+        ProviderIn(**common, base_url="ws://voice.example/realtime")
+    with pytest.raises(ValidationError, match="WSS"):
+        ProviderIn(**common, base_url="https://voice.example/realtime")
+    assert (
+        ProviderIn(**common, base_url="wss://voice.example/realtime").base_url
+        == "wss://voice.example/realtime"
+    )
+    assert normalize_provider_websocket_url("ws://127.0.0.1:8080/realtime") == (
+        "ws://127.0.0.1:8080/realtime"
+    )
 
 
 def test_temporary_media_upload_is_opt_in() -> None:

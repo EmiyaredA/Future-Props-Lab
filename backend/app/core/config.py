@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from functools import lru_cache
 from pathlib import Path
 from urllib.parse import urlsplit
@@ -28,6 +29,10 @@ class Settings(BaseSettings):
     fpl_galgame_export_max_bytes: int = 8 * 1024 * 1024 * 1024
     fpl_galgame_renderer_url: str = "http://127.0.0.1:3000/galgame-export.html"
     fpl_temp_media_upload_url: str = ""
+    fpl_mcp_stdio_allowed_commands: str = ""
+    fpl_skill_archive_max_bytes: int = 10 * 1024 * 1024
+    fpl_skill_expanded_max_bytes: int = 50 * 1024 * 1024
+    fpl_skill_max_files: int = 500
 
     @model_validator(mode="after")
     def validate_security(self) -> Settings:
@@ -44,6 +49,22 @@ class Settings(BaseSettings):
             raise ValueError("FPL_VISUAL_ASSET_MAX_BYTES must be positive")
         if self.fpl_galgame_export_max_bytes < 1:
             raise ValueError("FPL_GALGAME_EXPORT_MAX_BYTES must be positive")
+        if (
+            min(
+                self.fpl_skill_archive_max_bytes,
+                self.fpl_skill_expanded_max_bytes,
+                self.fpl_skill_max_files,
+            )
+            < 1
+        ):
+            raise ValueError("Skill archive limits must be positive")
+        allowed_commands = [
+            item.strip()
+            for item in self.fpl_mcp_stdio_allowed_commands.split(os.pathsep)
+            if item.strip()
+        ]
+        if any(not Path(item).is_absolute() for item in allowed_commands):
+            raise ValueError("FPL_MCP_STDIO_ALLOWED_COMMANDS must contain absolute paths")
         parsed_renderer_url = urlsplit(self.fpl_galgame_renderer_url)
         if (
             parsed_renderer_url.scheme not in {"http", "https"}
@@ -103,6 +124,17 @@ class Settings(BaseSettings):
         if workspace_id == "default":
             return (self.runtime_path / "model-test" / kind).resolve()
         return (self.workspace_path(workspace_id) / "model-test" / kind).resolve()
+
+    def workspace_skill_path(self, workspace_id: str) -> Path:
+        return (self.workspace_path(workspace_id) / "integrations" / "skills").resolve()
+
+    @property
+    def mcp_stdio_allowed_commands(self) -> tuple[Path, ...]:
+        return tuple(
+            Path(item.strip()).expanduser().resolve()
+            for item in self.fpl_mcp_stdio_allowed_commands.split(os.pathsep)
+            if item.strip()
+        )
 
     @property
     def profiles_path(self) -> Path:

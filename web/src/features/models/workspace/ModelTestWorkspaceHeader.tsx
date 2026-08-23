@@ -1,8 +1,15 @@
 import type { ReactNode } from "react";
-import { Image, MessageSquareText, Mic2, Video } from "lucide-react";
+import {
+  AudioLines,
+  Image,
+  MessageSquareText,
+  Mic2,
+  Video,
+} from "lucide-react";
 import { CustomSelect, type SelectOption } from "@shared/ui/CustomSelect";
 
-export type ModelTestMode = "chat" | "image" | "video" | "speech";
+export type ModelTestMode =
+  "chat" | "image" | "video" | "speech" | "realtime_voice";
 
 const modes: Array<{
   id: ModelTestMode;
@@ -13,6 +20,7 @@ const modes: Array<{
   { id: "image", label: "图片生成", icon: Image },
   { id: "video", label: "视频生成", icon: Video },
   { id: "speech", label: "语音识别", icon: Mic2 },
+  { id: "realtime_voice", label: "实时语音", icon: AudioLines },
 ];
 
 export function ModelTestWorkspaceHeader({
@@ -38,7 +46,7 @@ export function ModelTestWorkspaceHeader({
     <header className="model-test-workspace-header">
       <div className="model-test-workspace-title">
         <h1>模型测试</h1>
-        <p>统一验证对话、图片、视频与语音模型能力。</p>
+        <p>统一验证对话、图片、视频、识别与实时语音能力。</p>
       </div>
       <div
         className="model-test-mode-tabs"

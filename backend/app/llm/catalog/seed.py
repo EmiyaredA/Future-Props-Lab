@@ -25,6 +25,8 @@ def _categories_for_provider(kind: str) -> list[str]:
         return ["video_generation"]
     if kind == "senseaudio_asr":
         return ["speech_recognition"]
+    if kind == "senseaudio_realtime":
+        return ["end_to_end_speech"]
     return ["text_generation"]
 
 
@@ -242,6 +244,22 @@ SAYFLOW_TEXT_CATALOG = (
                 label="SenseAudio ASR Pro 1.5",
                 description="支持说话人分离与句级时间戳的专业语音识别模型",
                 capabilities=("speech_recognition",),
+            ),
+        ),
+    ),
+    SeedProvider(
+        id="f0000000-0000-4000-8000-000000000007",
+        name="SenseAudio 实时语音",
+        kind="senseaudio_realtime",
+        base_url="wss://api.senseaudio.cn/ws/v1/realtime/voice-dialog",
+        sort_order=5,
+        models=(
+            SeedModel(
+                id="f2000000-0000-4000-8000-000000000008",
+                slug="senseaudio-realtime-1.0",
+                label="SenseAudio Realtime 1.0",
+                description="支持免按键双工、实时转写与语音打断的端到端语音模型",
+                capabilities=("voice",),
             ),
         ),
     ),

@@ -2,12 +2,17 @@ from __future__ import annotations
 
 from typing import Literal
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, model_validator
 
-from app.core.outbound_urls import normalize_provider_base_url
+from app.core.outbound_urls import normalize_provider_base_url, normalize_provider_websocket_url
 
 ProviderKind = Literal[
-    "openai", "anthropic", "senseaudio_image", "senseaudio_video", "senseaudio_asr"
+    "openai",
+    "anthropic",
+    "senseaudio_image",
+    "senseaudio_video",
+    "senseaudio_asr",
+    "senseaudio_realtime",
 ]
 ModelCapability = Literal[
     "chat",
@@ -16,6 +21,7 @@ ModelCapability = Literal[
     "image_generation",
     "video_generation",
     "speech_recognition",
+    "voice",
 ]
 ModelCategory = Literal[
     "text_generation",
@@ -58,10 +64,14 @@ class ProviderIn(BaseModel):
     api_key: str = ""
     enabled: bool = True
 
-    @field_validator("base_url")
-    @classmethod
-    def valid_base_url(cls, value: str) -> str:
-        return normalize_provider_base_url(value)
+    @model_validator(mode="after")
+    def valid_base_url(self) -> ProviderIn:
+        self.base_url = (
+            normalize_provider_websocket_url(self.base_url)
+            if self.kind == "senseaudio_realtime"
+            else normalize_provider_base_url(self.base_url)
+        )
+        return self
 
 
 class ProviderOut(BaseModel):

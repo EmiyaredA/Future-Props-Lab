@@ -15,8 +15,9 @@ Future-Props-Lab/
 │   ├── core/          # 配置、数据库、时间与密钥基础设施
 │   ├── files/         # 文件策略、落盘、公共库、项目引用与旧布局迁移
 │   ├── agents/        # 供应商无关 Agent Harness、Reactive 工具循环与内存审批
-│   ├── llm/           # 模型目录、供应商适配、共享生成运行时、测试工作台和调用日志
+│   ├── llm/           # 模型目录、供应商适配、共享生成/实时运行时、测试工作台和调用日志
 │   ├── tool_navigation/ # 工具收藏与最近使用状态规则
+│   ├── integrations/ # Workspace 工具 API、MCP、Skill 目录、验证与文件事务
 │   ├── audio_annotation/ # Workspace 录音标注任务、文档/波形 CAS 与导入校验
 │   ├── visual_workshop/ # 视觉工坊项目、画布、助手、生成任务与领域适配器
 │   ├── galgame_workshop/ # Galgame 工程、Story 1.4 CAS、标注导入/视频导出任务、素材/ASR/尺寸维护与线路分析
@@ -30,9 +31,9 @@ Future-Props-Lab/
 ├── web/src/
 │   ├── app/           # Studio 入口、壳、路由与唯一 AI 应用注册表
 │   ├── docs/          # 数据驱动的双工坊使用指南、搜索、目录与深链接
-│   ├── features/      # 首页、AI 应用、文件管理、视觉工坊、Galgame 工坊、工具导航与模型功能
+│   ├── features/      # 首页、AI 应用、文件管理、工坊、工具导航、集成中心与模型功能
 │   ├── generated/     # OpenAPI 生成物
-│   ├── platform/      # Cookie/CSRF、API 客户端与认证事件基础设施
+│   ├── platform/      # Cookie/CSRF、API 客户端、认证事件与浏览器语音基础设施
 │   └── shared/        # 品牌与主题 UI
 ├── web/galgame-export.html # 隔离的 Galgame 纯舞台渲染入口
 ├── web/scripts/       # 后台 Chromium 录制与 FFmpeg 音画合成脚本
@@ -64,10 +65,17 @@ Future-Props-Lab/
   `/v1/agents` 管理接口。`llm/providers/` 是供应商协议差异的唯一实现边界，并反向实现 Harness
   定义的适配器契约。模型测试、诊断、REST/SSE 与 Web 消费端
   只依赖统一结果或事件，不根据供应商原始载荷控制运行行为；供应商管理界面展示配置属于例外。
+- `llm/providers/realtime/` 只拥有供应商无关实时桥接契约与 SenseAudio 协议适配，
+  `llm/realtime/` 负责 Workspace 模型解析、短会话日志结算和浏览器 WebSocket 编排；
+  `web/src/platform/voice/` 负责 16 kHz 采集、Silero VAD、回声参考打断和 24 kHz 缓冲播放。
+  这些模块不拥有 Bot、工具调用、知识库、电话或持久化实时会话。
 - 后端不增加通用 `services/`、`domain/`、`platform/` 或 `product/` 分层。需要拆分大型模块
   时，按具体业务能力在所属功能包内命名，避免同一职责出现多个事实源。
 - 工具目录由 Web 静态注册表维护；后端 `tool_navigation/` 只持久化稳定工具 ID 对应的收藏与
   最近使用状态，不复制工具名称、分类或外部网址。
+- `integrations/` 拥有独立于工具导航的 Workspace 集成目录：`tool_apis/` 管理受限 HTTP 调用配置，
+  `mcp/` 管理 Streamable HTTP/stdio 连接与工具快照，`skills/` 管理安全 ZIP 导入和不可变版本，
+  `checks/` 只保存脱敏验证元数据。v1 只负责管理、发现和按需验证，不接入 Agent Harness 执行。
 - `audio_annotation/` 管理 Workspace 级录音标注任务，根项目直接保存 `workspace_id` 并引用
   公共文件库中的音频；说话人/片段文档与最多双声道的预计算波形分别使用独立 revision CAS，
   选中片段可通过统一语音识别适配器执行一次性转写。识别参数、语言能力、文件上限和安全错误
@@ -121,7 +129,9 @@ Future-Props-Lab/
 `applications/visual-workshop/projects/<project-id>/{assets,generated}/`；Galgame 项目使用
 `applications/galgame-workshop/projects/<project-id>/{assets,derived,exports}/`。项目目录只保存素材、
 派生文件和导出快照，标题变化不改变目录。模型测试对话图片保存在 `model-test/attachments/`，生成参考
-素材及语音识别输入的任务私有副本保存在 `model-test/references/`，生成结果保存在 `model-test/generated/`。本地临时分镜、场景图与未定稿草稿放在仓库根目录 `.scratch/`，与 `.runtime/`
+素材及语音识别输入的任务私有副本保存在 `model-test/references/`，生成结果保存在 `model-test/generated/`。
+Skill 不可变版本保存在 `workspaces/<workspace-id>/integrations/skills/<skill-id>/<version>/`。
+本地临时分镜、场景图与未定稿草稿放在仓库根目录 `.scratch/`，与 `.runtime/`
 一样被 git 忽略，不进入文档资产或产品素材真源。FastAPI 启动时自动创建
 目录并执行 `registry.py` 中已登记、带 checksum 的 migration；每个连接启用外键约束、WAL
 与忙等待。迁移历史只追加且不导入运行时 `app`，schema 变化必须同时更新 ORM、注册表、测试
@@ -145,8 +155,9 @@ Agent 是通用 Harness 的首个消费者：读取画布、素材和生成任�
 且不与 `model_test_*` 数据混用。
 
 模型测试对话、图片附件及生成结果是独立的 Workspace 调试数据，不进入视觉工坊文件管理，也不参与
-Bot 或业务编排。当前工程包含单机账号和逻辑多 Workspace，但仍刻意不包含 Bot 会话、知识库、
-实时语音、浏览器扩展或多实例租户部署。
+Bot 或业务编排。实时语音通话不建立持久化会话，转写和音频只在浏览器与连接内存中存在，调用日志
+仅保存时长、字符数、延迟、usage 与状态。当前工程包含单机账号和逻辑多 Workspace，但仍刻意不包含
+Bot 会话、知识库、电话接入、浏览器扩展或多实例租户部署。
 
 ## 按需扩展
 

@@ -29,12 +29,22 @@ Story、画布和配置使用 revision/CAS。HTTP 409 表示服务器已有更�
 请求，而会返回配置错误；配置该地址前应确认数据保留、访问控制和删除边界。端点必须兼容 multipart
 `file` 字段并返回同主机 HTTPS 地址。
 
+## 集成中心验证
+
+工具 API 或 MCP HTTP 验证失败时，先检查 URL、远端证书和认证配置。远程地址必须使用 HTTPS，
+只有 `localhost`、`127.0.0.1` 与 `::1` 可使用 HTTP；重定向和解析到私网、链路本地或多播地址会被
+拒绝。验证记录只保留状态、耗时、状态码和脱敏摘要，不会保留响应正文。
+
+MCP stdio 默认禁用。需要启用时，把经过审核的绝对可执行文件加入
+`FPL_MCP_STDIO_ALLOWED_COMMANDS` 并重启应用；不要加入 shell 或通用脚本解释器。Skill 导入失败时
+按页面校验结果修复 ZIP，禁止直接把文件复制到运行期目录或修改数据库记录。
+
 ## 备份与恢复
 
 备份前停止应用，并一次性复制：
 
 - SQLite 主文件 `.runtime/future-props.db`；
-- `.runtime/workspaces/` 与 `.runtime/profiles/`；
+- `.runtime/workspaces/`（包括集成中心 Skill 版本）与 `.runtime/profiles/`；
 - `.runtime/library/assets/`；
 - `.runtime/applications/`；
 - `.runtime/model-test/attachments/`、`references/`、`generated/`。

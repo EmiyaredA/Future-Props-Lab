@@ -40,6 +40,13 @@
 ASR API 供应商会复制原 ASR 供应商的加密凭证与启用状态，仅把地址切换为
 `/api/v2/asr/pro`；新 Workspace 的两项 ASR 供应商都默认停用且不包含凭证。
 
+端到端实时语音使用供应商类型 `senseaudio_realtime`、模型能力 `voice` 和既有类别
+`end_to_end_speech`。内置模型为 `senseaudio-realtime-1.0`，默认上游地址为
+`wss://api.senseaudio.cn/ws/v1/realtime/voice-dialog`。历史 Workspace 只有在已启用、地址精确为
+`https://api.senseaudio.cn/v1` 的 SenseAudio 供应商存在密钥时，才复制其加密凭证并启用实时供应商；
+否则保持无密钥和停用。实时供应商只接受远程 `wss://` 或本机回环 `ws://`，其他供应商继续使用
+HTTPS 或本机回环 HTTP 规则。
+
 测试调用使用固定提示词、16 个最大输出 Token 和 30 秒超时；无论上游成功、失败或超时均记录日志，API Key 不进入请求或日志 payload。
 
 ## 调用日志
@@ -79,6 +86,17 @@ ASR API 供应商会复制原 ASR 供应商的加密凭证与启用状态，仅�
 - `GET /v1/model-test/transcription-tasks`、`GET /v1/model-test/transcription-tasks/{task_id}`：分页查询或读取识别任务。
 - `GET /v1/model-test/transcription-tasks/{task_id}/input-content`：鉴权试听任务的私有输入副本。
 - `DELETE /v1/model-test/transcription-tasks/{task_id}?expected_revision=...`：CAS 删除完成或失败任务及其私有音频。
+- `GET /v1/model-test/realtime-options`：返回已启用且声明 `voice` 能力的实时模型、15 个音色、默认音色、采样率、400 ms 自动提交和打断能力，不返回密钥。
+- `WS /v1/model-test/realtime`：Cookie Session 鉴权的实时语音双工连接；握手同时校验当前 Workspace 与精确 Origin。
+
+实时 WebSocket 使用稳定的供应商无关 JSON 契约。客户端首条消息必须是
+`start {model_id, voice, instructions}`，之后可发送 `audio`（Base64 PCM16/16 kHz）、
+`commit_input`、`interrupt`、`mute` 和 `stop`。服务端只返回 `call_started`、用户说话与转写事件、
+助手转写、`audio`（Base64 PCM16/24 kHz）、`turn_done`、`interrupt`、`error` 和 `call_ended`；
+供应商原始事件不会透传。未登录或 Session 失效以 4401 关闭，Origin 或 Workspace 校验失败以
+4403 关闭。每个完成的助手回合复用同一 trace ID 写一条 `model_playground` 调用日志，只保存模型、
+音色、输入/输出音频时长、转写字符数、首音频延迟、总耗时、usage 与状态。转写正文和音频字节只在
+当前页面内存中存在，通话结束、离开页面或登出时立即清除，不进入数据库或日志。
 
 修改、删除、发送和重新生成使用会话 `expected_revision` 做 CAS 保护。发送请求可携带最多 5 个
 `attachment_ids`，文本和图片至少提供一项。图片仅支持 JPEG、PNG、WebP 与静态 GIF，单张
@@ -88,8 +106,10 @@ ASR API 供应商会复制原 ASR 供应商的加密凭证与启用状态，仅�
 与大小，不记录图片内容或磁盘路径。流式接口返回 SSE v2 envelope，事件为 `start / delta / done /
 error`；成功、失败、超时或取消都会保存消息状态并写入调用日志。
 
-模型测试页按能力与供应商协议自适应：只有声明 `chat` 的 OpenAI/Anthropic 模型进入多轮对话，SenseAudio 图片/视频模型进入
-独立异步生成测试。图片测试支持提示词、尺寸和种子；视频测试支持提示词、时长、分辨率、比例、
+模型测试页按能力与供应商协议自适应：只有声明 `chat` 的 OpenAI/Anthropic 模型进入多轮对话，
+SenseAudio 图片/视频模型进入独立异步生成测试，声明 `voice` 的已启用模型进入实时语音测试。
+实时语音支持免按键自动断句、双方实时转写、流式播放、麦克风/扬声器静音和说话打断；模型、音色
+与系统提示词在通话中锁定。图片测试支持提示词、尺寸和种子；视频测试支持提示词、时长、分辨率、比例、
 水印、生成音频，以及上传最多 9 张图片、3 个音频和 3 个视频到模型测试私有草稿区。创建任务会在
 同一事务认领这些草稿；新任务不能引用公共 `visual_assets`。历史任务由显式回填 API 迁移，原公共
 文件保持不动。任务结果下载到 `model-test/generated/`，不创建视觉工坊项目或素材。任务与模型
@@ -126,6 +146,29 @@ SenseAudio 结果包含全文、说话人和句级起止时间；ASR API 的嵌�
 
 工具目录本身由 Web 注册表维护，后端只保存由小写字母、数字和连字符组成的稳定工具 ID。
 状态属于当前 Workspace，同一工具可在不同空间保存独立偏好。
+
+## 集成中心
+
+- 工具 API：`GET/POST /v1/integrations/tool-apis`、`GET/PATCH/DELETE
+/v1/integrations/tool-apis/{id}`、`POST .../{id}/validate`。
+- MCP：`GET/POST /v1/integrations/mcp`、`GET/PATCH/DELETE /v1/integrations/mcp/{id}`、
+  `POST .../{id}/validate` 与 `GET .../{id}/tools`。
+- Skill：`GET/POST /v1/integrations/skills`、`GET/PATCH/DELETE /v1/integrations/skills/{id}`、
+  `GET/POST .../{id}/versions` 与 `GET .../{id}/versions/{version}/content`。
+
+列表和详情允许普通成员读取脱敏配置；创建、修改、删除和验证仅允许 Workspace Owner 或平台管理员。
+修改、启停、删除、添加 Skill 版本和切换默认版本使用资源 `revision` 做 CAS，冲突返回服务器当前快照。
+工具 API 验证只接受 HTTPS 或明确本机回环地址，支持 GET/POST/PUT/PATCH/DELETE、JSON Schema
+输入与 `{{field}}` 模板；连接前重新解析主机，禁止凭证型 URL、重定向及私网/链路本地/多播地址，
+超时为 30 秒且响应读取受限。本次脱敏预览不会落库。
+
+MCP v1 支持 Streamable HTTP 与 stdio，不支持旧 SSE。HTTP 可选 Bearer；stdio 命令必须为白名单中的
+绝对可执行文件，参数按数组传递且不使用 shell。验证建立短连接，发现 Server 信息和工具后立即关闭，
+并覆盖当前工具快照。Skill 创建与加版使用 multipart ZIP；允许一个包装目录，但拒绝路径穿越、
+绝对路径、符号链接、重复路径及超限包。每个版本在本地不可变，包内脚本不会执行。
+
+集成中心 v1 只管理与验证资源，不会把工具 API、MCP 或 Skill 注入 Agent Harness，也不会导入
+OpenAPI 或执行定时健康检查。
 
 ## 录音分段标注
 

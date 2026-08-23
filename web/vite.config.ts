@@ -25,12 +25,23 @@ export default defineConfig({
         docs: resolve(__dirname, "docs.html"),
         galgameExport: resolve(__dirname, "galgame-export.html"),
       },
+      output: {
+        manualChunks(id) {
+          if (
+            id.includes("@ricky0123/vad-web") ||
+            id.includes("onnxruntime-common") ||
+            id.includes("onnxruntime-web")
+          ) {
+            return "silero-vad-vendor";
+          }
+        },
+      },
     },
   },
   server: {
     port: webPort,
     proxy: {
-      "/v1": apiTarget,
+      "/v1": { target: apiTarget, ws: true },
       "/health": apiTarget,
       "/ready": apiTarget,
     },

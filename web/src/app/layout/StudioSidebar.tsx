@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { BrandMark } from "@shared/ui/BrandMark";
+import { IntegrationIcon } from "@shared/ui/IntegrationIcon";
 import { ThemeToggle } from "@shared/ui/ThemeToggle";
 import type { StudioPage } from "@app/routes";
 import { AccountWorkspacePanel } from "@app/AccountWorkspacePanel";
@@ -103,6 +104,7 @@ export function StudioSidebar({
     page === "video-frame-exporter" ||
     page === "audio-annotation-projects" ||
     page === "audio-annotation-editor";
+  const integrationsActive = page.startsWith("integrations-");
   return (
     <aside className="studio-sidebar">
       <div className="sidebar-brand">
@@ -145,6 +147,14 @@ export function StudioSidebar({
         >
           <CompassIcon />
           <span>工具导航</span>
+        </button>
+        <button
+          className={`nav-primary${integrationsActive ? " active" : ""}`}
+          aria-current={integrationsActive ? "page" : undefined}
+          onClick={() => navigate("integrations-tool-apis")}
+        >
+          <IntegrationIcon />
+          <span>集成中心</span>
         </button>
         <button
           className="nav-group"

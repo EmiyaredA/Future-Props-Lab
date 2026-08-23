@@ -38,7 +38,9 @@ async def list_logs(
             "visual_workshop_generation|audio_annotation)$"
         ),
     ),
-    provider_kind: str = Query("", pattern="^(|openai|anthropic|senseaudio_asr)$"),
+    provider_kind: str = Query(
+        "", pattern="^(|openai|anthropic|senseaudio_asr|senseaudio_realtime)$"
+    ),
     model: str = Query("", max_length=160),
     status: str = Query("", pattern="^(|success|error)$"),
     from_: str | None = Query(None, alias="from"),

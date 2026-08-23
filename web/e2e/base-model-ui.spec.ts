@@ -157,3 +157,94 @@ test("model test workspace keeps panels readable on desktop and narrow screens",
   await page.getByRole("button", { name: "深色" }).click();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
 });
+
+test("realtime voice tab is capability-driven, keyboard reachable and responsive", async ({
+  page,
+}) => {
+  await page.route("**/v1/model-providers", async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        revision: 1,
+        providers: [
+          {
+            id: "provider-realtime-e2e",
+            name: "SenseAudio 实时语音",
+            kind: "senseaudio_realtime",
+            base_url: "wss://voice.example/realtime",
+            enabled: true,
+            has_api_key: true,
+            api_key_hint: "•••• demo",
+            models: [
+              {
+                id: "model-realtime-e2e",
+                provider_id: "provider-realtime-e2e",
+                slug: "senseaudio-realtime-1.0",
+                label: "Realtime 1.0",
+                description: "",
+                capabilities: ["voice"],
+                categories: ["end_to_end_speech"],
+                enabled: true,
+              },
+            ],
+          },
+        ],
+      }),
+    });
+  });
+  await page.route("**/v1/model-test/conversations", async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({ items: [] }),
+    });
+  });
+  await page.route("**/v1/model-test/realtime-options", async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        models: [
+          {
+            id: "model-realtime-e2e",
+            provider_id: "provider-realtime-e2e",
+            provider_name: "SenseAudio 实时语音",
+            provider_kind: "senseaudio_realtime",
+            slug: "senseaudio-realtime-1.0",
+            label: "Realtime 1.0",
+            voices: [{ value: "f_m_0009_a", label: "气质学姐 · 开心" }],
+            default_voice: "f_m_0009_a",
+            input_sample_rate: 16000,
+            output_sample_rate: 24000,
+            commit_silence_ms: 400,
+            supports_interruption: true,
+          },
+        ],
+      }),
+    });
+  });
+
+  await page.goto("/model-test");
+  const realtimeTab = page.getByRole("tab", { name: "实时语音" });
+  await realtimeTab.focus();
+  await expect(realtimeTab).toBeFocused();
+  await realtimeTab.press("Enter");
+
+  await expect(realtimeTab).toHaveAttribute("aria-selected", "true");
+  await expect(page.getByRole("combobox", { name: "测试模型" })).toContainText(
+    "Realtime 1.0",
+  );
+  await expect(
+    page.getByRole("combobox", { name: "实时语音音色" }),
+  ).toContainText("气质学姐");
+  await expect(page.getByRole("button", { name: "开始通话" })).toBeEnabled();
+  await expect(page.getByText("输入 16 kHz PCM16")).toBeVisible();
+  await expect(page.getByText("输出 24 kHz PCM16")).toBeVisible();
+  await expect(page.getByText(/只保留在当前页面内存中/)).toBeVisible();
+  await expect(page.locator("select")).toHaveCount(0);
+
+  await page.setViewportSize({ width: 600, height: 760 });
+  await expect(page.locator(".realtime-voice-layout")).toHaveCSS(
+    "flex-direction",
+    "column",
+  );
+  await expect(page.getByText("助手的回答会在这里同步显示。")).toBeVisible();
+});

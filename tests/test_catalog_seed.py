@@ -77,6 +77,7 @@ async def test_sayflow_text_catalog_seed_is_complete_and_idempotent(tmp_path: Pa
             ("SenseAudio 图片生成", "senseaudio_image"),
             ("SenseAudio 视频生成", "senseaudio_video"),
             ("SenseAudio 专业说话人识别", "senseaudio_asr"),
+            ("SenseAudio 实时语音", "senseaudio_realtime"),
         }
         assert all(item.api_key_ciphertext == "" for item in providers)
         assert {item.name: item.enabled for item in providers} == {
@@ -85,6 +86,7 @@ async def test_sayflow_text_catalog_seed_is_complete_and_idempotent(tmp_path: Pa
             "SenseAudio 图片生成": False,
             "SenseAudio 视频生成": False,
             "SenseAudio 专业说话人识别": False,
+            "SenseAudio 实时语音": False,
         }
         openai_models = sorted(
             (item for item in models if item.provider_id == "f0000000-0000-4000-8000-000000000001"),
@@ -139,6 +141,17 @@ async def test_sayflow_text_catalog_seed_is_complete_and_idempotent(tmp_path: Pa
                 "senseaudio-asr-pro-1.5-260319",
                 ("speech_recognition",),
                 ("speech_recognition",),
+            )
+        }
+        assert {
+            (item.slug, tuple(item.capabilities), tuple(item.categories))
+            for item in models
+            if item.provider_id == "f0000000-0000-4000-8000-000000000007"
+        } == {
+            (
+                "senseaudio-realtime-1.0",
+                ("voice",),
+                ("end_to_end_speech",),
             )
         }
         assert state is not None and state.revision == 1

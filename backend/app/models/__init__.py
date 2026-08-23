@@ -25,6 +25,14 @@ from app.models.galgame_workshop import (
     GalgameVideoExportTask,
     GalgameWorkshopProject,
 )
+from app.models.integrations import (
+    IntegrationCheck,
+    McpDiscoveredTool,
+    McpIntegration,
+    SkillIntegration,
+    SkillVersion,
+    ToolApiIntegration,
+)
 from app.models.model_service import ModelCatalogState, ModelEntry, ModelProvider
 from app.models.model_test import (
     ModelTestAttachment,
@@ -61,8 +69,11 @@ __all__ = [
     "GalgameStorySnapshot",
     "GalgameVideoExportTask",
     "GalgameWorkshopProject",
+    "IntegrationCheck",
     "LlmCallLog",
     "ManagementApiKey",
+    "McpDiscoveredTool",
+    "McpIntegration",
     "ModelCatalogState",
     "ModelEntry",
     "ModelProvider",
@@ -72,8 +83,11 @@ __all__ = [
     "ModelTestAttachment",
     "ModelTestMessage",
     "ModelTestTranscriptionTask",
-    "ToolNavigationItem",
     "SecurityAuditEvent",
+    "SkillIntegration",
+    "SkillVersion",
+    "ToolApiIntegration",
+    "ToolNavigationItem",
     "User",
     "VisualAssistantConversation",
     "VisualAssistantAction",
