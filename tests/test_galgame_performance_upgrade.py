@@ -3,6 +3,7 @@ from scripts.galgame_performance_upgrade import (
     cast_member,
     enlarge_dialogue_text,
     install_cgs,
+    remembered_cast_expression,
 )
 from scripts.galgame_runaway_cues import (
     CG_SPECS,
@@ -92,3 +93,32 @@ def test_dialogue_text_is_enlarged_without_changing_layout() -> None:
     dialogue_box = document["presentation"]["dialogueBox"]
     assert dialogue_box["body"] == {"fontSizePx": 34, "lineHeight": 1.5}
     assert dialogue_box["layout"] == {"heightPercent": 30}
+
+
+def test_shadowed_cast_member_keeps_previous_expression() -> None:
+    characters = {
+        "speaker": {"defaultExpressionId": "speaker-default"},
+        "shadowed": {"defaultExpressionId": "shadowed-default"},
+    }
+    dialogue = {"characterId": "speaker", "expressionId": "speaker-angry"}
+    remembered = {"speaker": "speaker-calm", "shadowed": "shadowed-worried"}
+    assert (
+        remembered_cast_expression("speaker", dialogue, characters, remembered) == "speaker-angry"
+    )
+    assert (
+        remembered_cast_expression("shadowed", dialogue, characters, remembered)
+        == "shadowed-worried"
+    )
+
+
+def test_shadowed_cast_member_uses_default_before_first_expression() -> None:
+    characters = {"shadowed": {"defaultExpressionId": "shadowed-default"}}
+    assert (
+        remembered_cast_expression(
+            "shadowed",
+            {"characterId": "speaker", "expressionId": "speaker-calm"},
+            characters,
+            {},
+        )
+        == "shadowed-default"
+    )

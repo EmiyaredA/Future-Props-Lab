@@ -691,6 +691,19 @@ def visible_cast_for_dialogue(
     return list(dict.fromkeys(speakers))[:3]
 
 
+def remembered_cast_expression(
+    character_id: str,
+    dialogue: dict[str, Any],
+    character_by_id: dict[str, dict[str, Any]],
+    last_expression_by_character: dict[str, str],
+) -> str | None:
+    if character_id == dialogue.get("characterId"):
+        return dialogue.get("expressionId")
+    return last_expression_by_character.get(character_id) or character_by_id.get(
+        character_id, {}
+    ).get("defaultExpressionId")
+
+
 def install_performance_blocks(document: dict[str, Any], first_person_id: str) -> None:
     fragment = target_fragment(document)
     original_signature = dialogue_signature(fragment)
@@ -744,6 +757,7 @@ def install_performance_blocks(document: dict[str, Any], first_person_id: str) -
             }
         )
 
+    last_expression_by_character: dict[str, str] = {}
     for cue_index, dialogue in enumerate(dialogues):
         character_id = dialogue.get("characterId")
         if character_id in visible_character_ids:
@@ -751,6 +765,7 @@ def install_performance_blocks(document: dict[str, Any], first_person_id: str) -
                 dialogue["expressionId"] = DIALOGUE_EXPRESSION_CUES[dialogue["id"]]
             except KeyError as exc:
                 raise RuntimeError(f"对白缺少显式表情：{dialogue['id']}") from exc
+            last_expression_by_character[character_id] = dialogue["expressionId"]
         else:
             dialogue.pop("expressionId", None)
         visible_ids = visible_cast_for_dialogue(
@@ -758,10 +773,11 @@ def install_performance_blocks(document: dict[str, Any], first_person_id: str) -
         )
         members: list[dict[str, Any]] = []
         for member_index, character_id in enumerate(visible_ids):
-            expression_id = (
-                dialogue.get("expressionId")
-                if character_id == dialogue.get("characterId")
-                else character_by_id.get(character_id, {}).get("defaultExpressionId")
+            expression_id = remembered_cast_expression(
+                character_id,
+                dialogue,
+                character_by_id,
+                last_expression_by_character,
             )
             members.append(
                 cast_member(
@@ -1002,6 +1018,30 @@ def audit_document(
         for dialogue in hidden_dialogues
         if dialogue.get("portrait", {}).get("visible")
     ]
+    cast_block_by_id = {block["id"]: block for block in cast_blocks}
+    stale_cast_expressions: list[dict[str, Any]] = []
+    last_expression_by_character: dict[str, str] = {}
+    character_by_id = {character["id"]: character for character in document.get("characters", [])}
+    for cue_index, dialogue in enumerate(dialogues):
+        character_id = dialogue.get("characterId")
+        if character_id in visible_character_ids and dialogue.get("expressionId"):
+            last_expression_by_character[character_id] = dialogue["expressionId"]
+        block = cast_block_by_id.get(f"perf-cast-{cue_index:03d}")
+        if not block:
+            continue
+        for member in block.get("members", []):
+            expected = last_expression_by_character.get(
+                member["characterId"]
+            ) or character_by_id.get(member["characterId"], {}).get("defaultExpressionId")
+            if member.get("expressionId") != expected:
+                stale_cast_expressions.append(
+                    {
+                        "owner": block["id"],
+                        "characterId": member["characterId"],
+                        "expected": expected,
+                        "actual": member.get("expressionId"),
+                    }
+                )
 
     unsafe_frames: list[dict[str, Any]] = []
     floating_frames: list[dict[str, Any]] = []
@@ -1108,6 +1148,7 @@ def audit_document(
         "invalidExpressionDialogues": invalid_expression_dialogues,
         "visibleHiddenPortraits": visible_hidden_portraits,
         "hiddenVisiblePortraits": hidden_visible_portraits,
+        "staleCastExpressions": stale_cast_expressions,
         "nearDialogueCount": len(near_dialogue_ids),
         "nearDialogueIdsMatchCurated": near_dialogue_ids == SAFE_CLOSEUP_DIALOGUE_IDS,
         "unsafeCharacterFrames": unsafe_frames,
@@ -1153,6 +1194,7 @@ def audit_document(
         or invalid_expression_dialogues
         or visible_hidden_portraits
         or hidden_visible_portraits
+        or stale_cast_expressions
     ):
         raise RuntimeError("逐句表情或隐藏人物审计失败")
     if (
@@ -1197,7 +1239,7 @@ def audit_document(
         or checks["blockCount"] > 1000
     ):
         raise RuntimeError("CG 事件或 Block 上限审计失败")
-    if checks["logicalLibraryCount"] != 702 or missing_mapping or missing_cg_mapping:
+    if checks["logicalLibraryCount"] != 701 or missing_mapping or missing_cg_mapping:
         raise RuntimeError("原作素材映射不完整")
     return checks
 
