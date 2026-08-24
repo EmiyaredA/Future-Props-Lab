@@ -256,3 +256,41 @@ class GalgameVideoExportTask(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, onupdate=utc_now)
     started_at: Mapped[datetime | None] = mapped_column(DateTime)
     finished_at: Mapped[datetime | None] = mapped_column(DateTime)
+
+
+class GalgameVideoEditorHandoffTask(Base):
+    __tablename__ = "galgame_video_editor_handoffs"
+    __table_args__ = (
+        UniqueConstraint("workspace_id", "project_id", "request_id"),
+        Index(
+            "ix_galgame_video_editor_handoffs_project_status",
+            "project_id",
+            "status",
+            "created_at",
+        ),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    workspace_id: Mapped[str] = mapped_column(String(36), index=True, default="default")
+    project_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("galgame_workshop_projects.id", ondelete="CASCADE")
+    )
+    snapshot_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("galgame_story_snapshots.id", ondelete="RESTRICT")
+    )
+    request_id: Mapped[str] = mapped_column(String(64))
+    story_revision: Mapped[int] = mapped_column(Integer)
+    request_payload: Mapped[dict] = mapped_column(JSON, default=dict)
+    status: Mapped[str] = mapped_column(String(16), default="queued")
+    progress: Mapped[int] = mapped_column(Integer, default=0)
+    result_detail: Mapped[dict] = mapped_column(JSON, default=dict)
+    output_project_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("video_editor_projects.id", ondelete="SET NULL")
+    )
+    cancel_requested: Mapped[bool] = mapped_column(Boolean, default=False)
+    error: Mapped[str | None] = mapped_column(Text)
+    revision: Mapped[int] = mapped_column(Integer, default=0)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, onupdate=utc_now)
+    started_at: Mapped[datetime | None] = mapped_column(DateTime)
+    finished_at: Mapped[datetime | None] = mapped_column(DateTime)

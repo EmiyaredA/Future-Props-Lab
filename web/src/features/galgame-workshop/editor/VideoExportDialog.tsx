@@ -28,6 +28,8 @@ import {
   type VideoClipRange,
 } from "@features/galgame-workshop/editor/videoExportRange";
 import { VideoCaptureFrameEditor } from "@features/galgame-workshop/editor/VideoCaptureFrameEditor";
+import { VideoEditorHandoffPanel } from "@features/galgame-workshop/editor/VideoEditorHandoffPanel";
+import { DeterministicExportFrame } from "@features/galgame-workshop/editor/DeterministicExportFrame";
 import {
   FULL_CAPTURE_FRAME,
   normalizeCaptureFrame,
@@ -43,6 +45,7 @@ const PRESETS: Array<{
   { id: "1080p30", label: "1080p / 30", detail: "推荐 · 画质与速度平衡" },
   { id: "720p30", label: "720p / 30", detail: "文件更小、导出更快" },
   { id: "1080p60", label: "1080p / 60", detail: "更流畅、性能要求更高" },
+  { id: "720p60", label: "720p / 60", detail: "流畅预览、文件更小" },
 ];
 
 function languageLabel(locale: string) {
@@ -68,7 +71,7 @@ function formatDuration(milliseconds: number) {
 const phaseLabel: Record<string, string> = {
   queued: "排队中",
   preparing: "准备素材",
-  rendering: "自动播放与渲染",
+  rendering: "确定性逐帧合成",
   encoding: "编码 MP4",
   verifying: "校验成片",
   registering: "保存到资产库",
@@ -307,6 +310,11 @@ export function VideoExportDialog({
             timelinePositionMs={currentPlayheadMs}
             value={captureFrame}
             onChange={setCaptureFrame}
+          />
+          <DeterministicExportFrame
+            projectId={projectId}
+            request={previewBody}
+            fingerprint={preview.data?.ready ? preview.data.previewFingerprint : undefined}
           />
           <section>
             <h3>导出范围</h3>
@@ -700,8 +708,14 @@ export function VideoExportDialog({
             ) : (
               <Film aria-hidden />
             )}
-            开始后台导出
+            直接导出 MP4
           </button>
+          <VideoEditorHandoffPanel
+            projectId={projectId}
+            request={previewBody}
+            fingerprint={preview.data?.previewFingerprint}
+            disabled={!preview.data?.ready}
+          />
           <section className="galgame-video-history">
             <h3>导出记录</h3>
             {tasks.data?.items.length ? (

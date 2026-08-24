@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field, field_validator, model_validator
 
 from app.schemas.galgame_workshop.base import STABLE_ID_PATTERN
 
-GalgameVideoExportPreset = Literal["1080p30", "720p30", "1080p60"]
+GalgameVideoExportPreset = Literal["1080p30", "720p30", "1080p60", "720p60"]
 GalgameVideoExportScope = Literal["route", "fragments", "clip"]
 GalgameVideoExportStatus = Literal["queued", "running", "completed", "failed", "cancelled"]
 GalgameVideoExportPhase = Literal[
@@ -111,6 +111,11 @@ class GalgameVideoExportPreviewIn(BaseModel):
 class GalgameVideoExportCreateIn(GalgameVideoExportPreviewIn):
     request_id: str = Field(alias="requestId", pattern=STABLE_ID_PATTERN)
     preview_fingerprint: str = Field(alias="previewFingerprint", pattern=r"^[a-f0-9]{64}$")
+
+
+class GalgameVideoExportFrameIn(GalgameVideoExportPreviewIn):
+    time_ms: int = Field(alias="timeMs", ge=0)
+    width: int = Field(default=960, ge=320, le=1920)
 
 
 class GalgameVideoExportIssue(BaseModel):

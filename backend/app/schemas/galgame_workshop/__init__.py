@@ -14,3 +14,4 @@ from app.schemas.galgame_workshop.story import *  # noqa: F403
 from app.schemas.galgame_workshop.story_migrations import *  # noqa: F403
 from app.schemas.galgame_workshop.story_structure import *  # noqa: F403
 from app.schemas.galgame_workshop.video_export import *  # noqa: F403
+from app.schemas.galgame_workshop.video_handoff import *  # noqa: F403

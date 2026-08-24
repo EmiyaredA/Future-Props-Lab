@@ -13,6 +13,7 @@ from PIL import Image
 from app.schemas.video_editor import VideoEditorClip, VideoEditorTimelineDocument
 from app.video_editor.evaluator import FrameSource, TimelineFrameRenderer
 from app.video_editor.rendering import PRESETS
+from app.video_editor.render_plan import RenderCaptureFrame, RenderPlan
 
 
 class RenderCancelled(RuntimeError):
@@ -103,6 +104,7 @@ def _render_segment(
     total_frames: int,
     cancel: threading.Event,
     progress: Callable[[int], None],
+    capture_frame: RenderCaptureFrame,
 ) -> None:
     width, height, fps = PRESETS[preset]
     canvas_size = (document.settings.width, document.settings.height)
@@ -181,7 +183,15 @@ def _render_segment(
                 raise RenderCancelled("渲染已取消")
             frame_number = first_frame + offset
             time_us = range_start_us + round(frame_number * 1_000_000 / fps)
-            frame = renderer.render(time_us, size=(width, height))
+            frame = renderer.render(time_us)
+            frame = frame.crop(
+                (
+                    capture_frame.x,
+                    capture_frame.y,
+                    capture_frame.x + capture_frame.width,
+                    capture_frame.y + capture_frame.height,
+                )
+            ).resize((width, height), Image.Resampling.LANCZOS)
             encoder.stdin.write(frame.tobytes())
             if frame_number % max(1, fps // 2) == 0:
                 progress(round((frame_number + 1) / max(1, total_frames) * 82))
@@ -321,6 +331,7 @@ def render_document(
     end_us: int,
     cancel: threading.Event,
     progress: Callable[[int], None],
+    capture_frame: RenderCaptureFrame = RenderCaptureFrame(),
 ) -> None:
     _width, _height, fps = PRESETS[preset]
     total_frames = round((end_us - start_us) / 1_000_000 * fps)
@@ -341,6 +352,7 @@ def render_document(
                 total_frames=total_frames,
                 cancel=cancel,
                 progress=progress,
+                capture_frame=capture_frame,
             )
             segments.append(output)
         concat_file = root / "segments.txt"
@@ -378,3 +390,26 @@ def render_document(
             cancel=cancel,
         )
         progress(96)
+
+
+def render_plan(
+    plan: RenderPlan,
+    output_path: Path,
+    *,
+    preset: str,
+    start_us: int,
+    end_us: int,
+    cancel: threading.Event,
+    progress: Callable[[int], None],
+) -> None:
+    render_document(
+        plan.document,
+        plan.asset_paths,
+        output_path,
+        preset=preset,
+        start_us=start_us,
+        end_us=end_us,
+        cancel=cancel,
+        progress=progress,
+        capture_frame=plan.capture_frame,
+    )

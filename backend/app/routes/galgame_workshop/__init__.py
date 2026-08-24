@@ -9,6 +9,7 @@ from app.routes.galgame_workshop import (
     story,
     story_migrations,
     video_export,
+    video_handoff,
 )
 
 router = APIRouter(tags=["galgame-workshop"])
@@ -21,3 +22,4 @@ router.include_router(assets.router, prefix=prefix)
 router.include_router(asr.router, prefix=prefix)
 router.include_router(maintenance.router, prefix=prefix)
 router.include_router(video_export.router, prefix=prefix)
+router.include_router(video_handoff.router, prefix=prefix)

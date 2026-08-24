@@ -18,6 +18,7 @@ from app.schemas.video_editor import VideoEditorClip, VideoEditorTimelineDocumen
 from app.video_editor.errors import VideoEditorNotFoundError, VideoEditorValidationError
 from app.video_editor.evaluator import FrameSource, TimelineFrameRenderer, timeline_duration_us
 from app.video_editor.projects import VideoEditorProjects
+from app.video_editor.render_plan import RenderPlan
 
 
 def _extract_video_frame(path: Path, source_us: int) -> Image.Image:
@@ -49,6 +50,33 @@ def _extract_video_frame(path: Path, source_us: int) -> Image.Image:
 def _load_image(path: str) -> Image.Image:
     with Image.open(path) as source:
         return source.convert("RGBA")
+
+
+def render_plan_frame(plan: RenderPlan, *, time_us: int, width: int = 960) -> bytes:
+    def image_for_clip(clip: VideoEditorClip, local_us: int) -> Image.Image | None:
+        path = plan.asset_paths.get(clip.asset_id or "")
+        if path is None:
+            return None
+        if clip.kind == "video":
+            return _extract_video_frame(path, clip.source_in_us + local_us)
+        if clip.kind == "image":
+            return _load_image(str(path)).copy()
+        return None
+
+    frame = TimelineFrameRenderer(
+        plan.document,
+        FrameSource(
+            image_for_clip=image_for_clip,
+            font_for_clip=lambda clip: plan.asset_paths.get(clip.font_asset_id or ""),
+        ),
+    ).render(time_us)
+    capture = plan.capture_frame
+    frame = frame.crop(
+        (capture.x, capture.y, capture.x + capture.width, capture.y + capture.height)
+    ).resize((width, width * 9 // 16), Image.Resampling.LANCZOS)
+    output = io.BytesIO()
+    frame.save(output, format="PNG", optimize=False)
+    return output.getvalue()
 
 
 class VideoEditorFrames:

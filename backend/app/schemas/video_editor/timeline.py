@@ -50,6 +50,14 @@ class VideoEditorClip(BaseModel):
     font_asset_id: str | None = Field(default=None, alias="fontAssetId")
     font_size: int = Field(default=72, alias="fontSize", ge=8, le=400)
     text_color: str = Field(default="#ffffff", alias="textColor", pattern=r"^#[0-9a-fA-F]{6}$")
+    text_max_width: int | None = Field(default=None, alias="textMaxWidth", ge=80, le=1920)
+    fit_mode: Literal["native", "cover", "contain", "height"] = Field(
+        default="native", alias="fitMode"
+    )
+    height_percent: float | None = Field(
+        default=None, alias="heightPercent", gt=0, le=400
+    )
+    flip_x: bool = Field(default=False, alias="flipX")
     volume: float = Field(default=1, ge=0, le=4)
     transform: VideoEditorTransform = Field(default_factory=VideoEditorTransform)
     keyframes: list[VideoEditorKeyframe] = Field(default_factory=list, max_length=1000)

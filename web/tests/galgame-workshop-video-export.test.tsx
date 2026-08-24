@@ -4,7 +4,9 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, vi } from "vitest";
 import {
   createGalgameVideoExport,
+  listGalgameVideoEditorHandoffs,
   listGalgameVideoExports,
+  previewGalgameVideoExportFrame,
   previewGalgameVideoExport,
   type GalgameStoryProject,
 } from "@features/galgame-workshop/api";
@@ -19,7 +21,9 @@ vi.mock("@features/galgame-workshop/api", async () => {
     ...actual,
     createGalgameVideoExport: vi.fn(),
     listGalgameVideoExports: vi.fn(),
+    listGalgameVideoEditorHandoffs: vi.fn(),
     previewGalgameVideoExport: vi.fn(),
+    previewGalgameVideoExportFrame: vi.fn(),
   };
 });
 
@@ -81,6 +85,10 @@ beforeEach(() => {
   localStorage.clear();
   vi.clearAllMocks();
   vi.mocked(listGalgameVideoExports).mockResolvedValue({ items: [] });
+  vi.mocked(listGalgameVideoEditorHandoffs).mockResolvedValue({ items: [] });
+  vi.mocked(previewGalgameVideoExportFrame).mockResolvedValue(
+    new Blob(["png"], { type: "image/png" }),
+  );
   vi.mocked(previewGalgameVideoExport).mockImplementation(
     async (_projectId, body) => {
       const fragmentIds =
@@ -182,7 +190,7 @@ test("selects one or multiple fragments and submits them in story order", async 
       }),
     ),
   );
-  await user.click(screen.getByRole("button", { name: "开始后台导出" }));
+  await user.click(screen.getByRole("button", { name: "直接导出 MP4" }));
   await waitFor(() =>
     expect(createGalgameVideoExport).toHaveBeenCalledWith(
       "project-one",
@@ -219,7 +227,7 @@ test("defaults quick clip to ten seconds after the current playhead and submits 
   await user.type(endInput, "16:00.000");
   await user.tab();
   expect(screen.getAllByText("快速试片最长为 5 分钟")).not.toHaveLength(0);
-  expect(screen.getByRole("button", { name: "开始后台导出" })).toBeDisabled();
+  expect(screen.getByRole("button", { name: "直接导出 MP4" })).toBeDisabled();
 
   await user.clear(endInput);
   await user.type(endInput, "10:12.345");
@@ -239,7 +247,7 @@ test("defaults quick clip to ten seconds after the current playhead and submits 
       }),
     ),
   );
-  await user.click(screen.getByRole("button", { name: "开始后台导出" }));
+  await user.click(screen.getByRole("button", { name: "直接导出 MP4" }));
   await waitFor(() =>
     expect(createGalgameVideoExport).toHaveBeenCalledWith(
       "project-one",

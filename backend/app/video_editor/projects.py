@@ -25,6 +25,10 @@ def project_out(row: VideoEditorProject) -> VideoEditorProjectOut:
         revision=row.revision,
         createdAt=iso_utc(row.created_at),
         updatedAt=iso_utc(row.updated_at),
+        sourceApplication=row.source_application,
+        sourceProjectId=row.source_project_id,
+        sourceRevision=row.source_revision,
+        sourceCompilerVersion=row.source_compiler_version,
     )
 
 

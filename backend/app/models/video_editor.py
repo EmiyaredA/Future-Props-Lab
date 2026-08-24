@@ -21,6 +21,10 @@ class VideoEditorProject(Base):
     title: Mapped[str] = mapped_column(String(120))
     status: Mapped[str] = mapped_column(String(16), default="draft")
     revision: Mapped[int] = mapped_column(Integer, default=0)
+    source_application: Mapped[str | None] = mapped_column(String(32))
+    source_project_id: Mapped[str | None] = mapped_column(String(36))
+    source_revision: Mapped[int | None] = mapped_column(Integer)
+    source_compiler_version: Mapped[str | None] = mapped_column(String(64))
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, onupdate=utc_now)
 

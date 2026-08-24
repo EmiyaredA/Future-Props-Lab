@@ -420,6 +420,90 @@
   opacity: 0.45;
 }
 
+.galgame-video-handoff {
+  display: grid;
+  gap: 7px;
+  padding: 14px;
+  border: 1px solid color-mix(in srgb, var(--accent) 38%, var(--gal-line));
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--accent) 7%, var(--gal-surface));
+}
+
+.galgame-video-handoff > button,
+.galgame-video-handoff a {
+  display: inline-flex;
+  min-height: 42px;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+}
+
+.galgame-video-handoff > button {
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--gal-line));
+  color: var(--accent);
+}
+
+.galgame-video-handoff > small {
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+.galgame-video-handoff > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 8px;
+  border-top: 1px solid var(--gal-line);
+}
+
+.galgame-video-handoff a {
+  min-height: 34px;
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.galgame-video-handoff a svg {
+  width: 15px;
+}
+
+.galgame-video-handoff > p {
+  margin: 0;
+  color: #f28a82;
+}
+
+.galgame-video-deterministic-frame {
+  display: grid;
+  gap: 10px;
+}
+
+.galgame-video-deterministic-frame > header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.galgame-video-deterministic-frame img {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border: 1px solid var(--gal-line);
+  border-radius: 10px;
+  background: #000;
+  object-fit: contain;
+}
+
+.galgame-video-deterministic-frame p {
+  display: flex;
+  min-height: 120px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 0;
+  border: 1px dashed var(--gal-line);
+  border-radius: 10px;
+}
+
 .galgame-video-history {
   border-top: 1px solid var(--gal-line);
   padding-top: 18px;

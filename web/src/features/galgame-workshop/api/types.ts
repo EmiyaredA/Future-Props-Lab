@@ -5,6 +5,8 @@ export type GalgameWorkshopProject =
 export type GalgameWorkshopProjectStatus = GalgameWorkshopProject["status"];
 export type GalgameVideoExportPreview =
   components["schemas"]["GalgameVideoExportPreviewOut"];
+export type GalgameVideoExportPreviewRequest =
+  components["schemas"]["GalgameVideoExportPreviewIn"];
 export type GalgameVideoExportTask =
   components["schemas"]["GalgameVideoExportTaskOut"];
 export type GalgameVideoExportPreset =
@@ -13,6 +15,8 @@ export type GalgameVideoExportBranchSelection =
   components["schemas"]["GalgameVideoExportBranchSelection"];
 export type GalgameVideoExportCaptureFrame =
   components["schemas"]["GalgameVideoExportCaptureFrame"];
+export type GalgameVideoEditorHandoffTask =
+  components["schemas"]["GalgameVideoEditorHandoffTaskOut"];
 type GeneratedGalgameStoryDocument =
   components["schemas"]["GalgameStoryDocumentOut"];
 export type GeneratedGalgameStoryProject =

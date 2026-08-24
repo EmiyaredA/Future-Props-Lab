@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 import shutil
+import asyncio
 from pathlib import Path
 
 from sqlalchemy import select
@@ -20,6 +21,7 @@ from app.galgame_workshop.video_export_planning import (
     _plan_fragments,
     _plan_route,
 )
+from app.galgame_workshop.video_compiler import COMPILER_VERSION, compile_galgame_render_plan
 from app.models import (
     GalgameAssetMetadata,
     GalgameStorySnapshot,
@@ -30,6 +32,7 @@ from app.models import (
 from app.schemas.galgame_workshop import (
     GalgameVideoExportChoiceOut,
     GalgameVideoExportCreateIn,
+    GalgameVideoExportFrameIn,
     GalgameVideoExportDecisionOut,
     GalgameVideoExportIssue,
     GalgameVideoExportPreviewIn,
@@ -38,6 +41,7 @@ from app.schemas.galgame_workshop import (
     GalgameVideoExportTaskListOut,
     GalgameVideoExportTaskOut,
 )
+from app.video_editor.frames import render_plan_frame
 
 __all__ = ["EXPORT_PACKAGING_POLICY", "GalgameVideoExports"]
 
@@ -146,7 +150,7 @@ class GalgameVideoExports:
                         path=f"/assets/{index}",
                     )
                 )
-        for program in ("node", "ffmpeg", "ffprobe"):
+        for program in ("ffmpeg", "ffprobe"):
             if shutil.which(program) is None:
                 blockers.append(
                     GalgameVideoExportIssue(
@@ -155,17 +159,6 @@ class GalgameVideoExports:
                         path="/renderer",
                     )
                 )
-        render_script = (
-            Path(__file__).resolve().parents[3] / "web" / "scripts" / "render-galgame-video.mjs"
-        )
-        if not render_script.is_file():
-            blockers.append(
-                GalgameVideoExportIssue(
-                    code="renderer_missing",
-                    message="Galgame 视频渲染器尚未安装",
-                    path="/renderer",
-                )
-            )
         selections = {item.branch_block_id: item.choice_id for item in body.branch_selections}
         if body.scope == "fragments":
             plan = _plan_fragments(document, body.fragment_ids, asset_duration)
@@ -178,6 +171,12 @@ class GalgameVideoExports:
             )
         else:
             plan = _plan_route(document, selections, asset_duration)
+            if plan.fragment_ids and not plan.fragment_durations_ms:
+                fragment_plan = _plan_fragments(document, plan.fragment_ids, asset_duration)
+                plan.fragment_durations_ms = fragment_plan.fragment_durations_ms
+                if plan.fragment_durations_ms:
+                    remainder = plan.duration_ms - sum(plan.fragment_durations_ms)
+                    plan.fragment_durations_ms[-1] += max(0, remainder)
         blockers.extend(plan.blockers)
         warnings.extend(plan.warnings)
         bitrate_mbps = 6 if body.preset == "720p30" else (18 if body.preset == "1080p60" else 10)
@@ -222,6 +221,7 @@ class GalgameVideoExports:
             exactDuration=plan.exact_duration,
         )
         fingerprint_payload = {
+            "compilerVersion": COMPILER_VERSION,
             "storyRevision": story.revision,
             "locale": body.locale,
             "preset": body.preset,
@@ -238,6 +238,15 @@ class GalgameVideoExports:
             "captureFrame": body.capture_frame.model_dump(mode="json", by_alias=True),
             "route": route.model_dump(mode="json", by_alias=True),
             "decision": decision.model_dump(mode="json", by_alias=True) if decision else None,
+            "assets": [
+                {
+                    "id": asset.id,
+                    "revision": asset.revision,
+                    "bytes": asset.byte_size,
+                    "updatedAt": asset.updated_at.isoformat(),
+                }
+                for asset in sorted(assets_by_file.values(), key=lambda item: item.id)
+            ],
         }
         fingerprint = hashlib.sha256(
             json.dumps(fingerprint_payload, ensure_ascii=False, sort_keys=True).encode()
@@ -268,7 +277,7 @@ class GalgameVideoExports:
             )
         )
         if existing is not None:
-            if existing.request_payload != payload:
+            if any(existing.request_payload.get(key) != value for key, value in payload.items()):
                 raise AssetError(
                     "同一 requestId 已用于不同导出请求",
                     code="idempotency_conflict",
@@ -292,6 +301,8 @@ class GalgameVideoExports:
                 code="video_export_not_ready",
                 detail={"preview": preview.model_dump(mode="json", by_alias=True)},
             )
+        payload["resolvedFragmentIds"] = preview.route.fragment_ids
+        payload["compilerVersion"] = COMPILER_VERSION
         story = await GalgameStoryDocuments(self.session).get(project_id)
         snapshot = GalgameStorySnapshot(
             project_id=project_id,
@@ -319,6 +330,51 @@ class GalgameVideoExports:
         await self.session.commit()
         await self.session.refresh(task)
         return _task_out(task)
+
+    async def frame(self, project_id: str, body: GalgameVideoExportFrameIn) -> bytes:
+        preview_body = GalgameVideoExportPreviewIn.model_validate(
+            body.model_dump(mode="json", by_alias=True)
+        )
+        preview = await self.preview(project_id, preview_body)
+        if not preview.ready:
+            raise AssetError(
+                "精确帧预览未通过导出检查",
+                code="video_export_not_ready",
+                detail={"preview": preview.model_dump(mode="json", by_alias=True)},
+            )
+        if body.time_ms > preview.route.estimated_duration_ms:
+            raise AssetError("预览时间超出导出范围", code="invalid_time", status=422)
+        story = await GalgameStoryDocuments(self.session).get(project_id)
+        document = story.document.model_dump(mode="json", by_alias=True)
+        file_ids = [
+            item.get("fileId") for item in document.get("assets", []) if item.get("fileId")
+        ]
+        assets = (
+            list(
+                (
+                    await self.session.execute(
+                        select(VisualAsset).where(VisualAsset.id.in_(file_ids))
+                    )
+                ).scalars()
+            )
+            if file_ids
+            else []
+        )
+        payload = body.model_dump(mode="json", by_alias=True, exclude={"time_ms", "width"})
+        payload["resolvedFragmentIds"] = preview.route.fragment_ids
+        compiled = compile_galgame_render_plan(
+            document,
+            payload,
+            fragment_durations_ms=preview.route.fragment_durations_ms,
+            total_ms=preview.route.estimated_duration_ms,
+            asset_paths={asset.id: self.storage.path_for(asset) for asset in assets},
+        )
+        return await asyncio.to_thread(
+            render_plan_frame,
+            compiled.plan,
+            time_us=body.time_ms * 1000,
+            width=body.width,
+        )
 
     async def list(self, project_id: str) -> GalgameVideoExportTaskListOut:
         await self._project(project_id)

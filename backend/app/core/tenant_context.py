@@ -9,6 +9,8 @@ from sqlalchemy.orm import Session, with_loader_criteria
 from app.models import (
     AudioAnnotationProject,
     GalgameAssetTranscriptionTask,
+    GalgameVideoEditorHandoffTask,
+    GalgameVideoExportTask,
     GalgameWorkshopProject,
     IntegrationCheck,
     LlmCallLog,
@@ -46,6 +48,8 @@ TENANT_MODELS = (
     VisualAssistantConversation,
     GalgameWorkshopProject,
     GalgameAssetTranscriptionTask,
+    GalgameVideoEditorHandoffTask,
+    GalgameVideoExportTask,
     VisualAssetFolder,
     VisualAsset,
     VisualProjectAssetReference,

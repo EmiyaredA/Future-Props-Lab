@@ -19,6 +19,7 @@ from app.files.storage import AssetStorage
 from app.galgame_workshop.annotation_import_runner import GalgameAnnotationImportRunner
 from app.galgame_workshop.asr import GalgameAsrRunner
 from app.galgame_workshop.video_export_runner import GalgameVideoExportRunner
+from app.galgame_workshop.video_handoff_runner import GalgameVideoEditorHandoffRunner
 from app.llm.catalog.seed import seed_sayflow_text_catalog
 from app.llm.generation_runtime import RunnerSupervisor
 from app.llm.playground.generation_runner import ModelTestGenerationRunner
@@ -57,6 +58,7 @@ async def lifespan(lifespan_app: FastAPI) -> AsyncIterator[None]:
             GalgameAsrRunner(),
             GalgameAnnotationImportRunner(),
             GalgameVideoExportRunner(),
+            GalgameVideoEditorHandoffRunner(),
             VideoEditorRunner(),
         )
     )

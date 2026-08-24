@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException, status
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
 
 from app.core.config import get_settings
 from app.deps import SessionDep
@@ -10,6 +10,7 @@ from app.files.policy import download_filename
 from app.galgame_workshop.video_export import GalgameVideoExports
 from app.schemas.galgame_workshop import (
     GalgameVideoExportCreateIn,
+    GalgameVideoExportFrameIn,
     GalgameVideoExportPreviewIn,
     GalgameVideoExportPreviewOut,
     GalgameVideoExportTaskListOut,
@@ -36,6 +37,17 @@ async def preview_video_export(
         return await GalgameVideoExports(session, get_settings()).preview(project_id, body)
     except AssetError as exc:
         raise _error(exc) from None
+
+
+@router.post("/{project_id}/video-exports/frame")
+async def exact_video_export_frame(
+    session: SessionDep, project_id: str, body: GalgameVideoExportFrameIn
+) -> Response:
+    try:
+        png = await GalgameVideoExports(session, get_settings()).frame(project_id, body)
+    except AssetError as exc:
+        raise _error(exc) from None
+    return Response(png, media_type="image/png", headers={"Cache-Control": "private, no-store"})
 
 
 @router.post(

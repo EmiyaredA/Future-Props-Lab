@@ -40,6 +40,10 @@ class VideoEditorProjectOut(BaseModel):
     revision: int
     created_at: str = Field(alias="createdAt")
     updated_at: str = Field(alias="updatedAt")
+    source_application: str | None = Field(default=None, alias="sourceApplication")
+    source_project_id: str | None = Field(default=None, alias="sourceProjectId")
+    source_revision: int | None = Field(default=None, alias="sourceRevision")
+    source_compiler_version: str | None = Field(default=None, alias="sourceCompilerVersion")
 
 
 class VideoEditorProjectListOut(BaseModel):

@@ -9090,6 +9090,213 @@
         "title": "GalgameTranscriptionTaskOut",
         "type": "object"
       },
+      "GalgameVideoEditorHandoffCreateIn": {
+        "properties": {
+          "branchSelections": {
+            "items": {
+              "$ref": "#/components/schemas/GalgameVideoExportBranchSelection"
+            },
+            "maxItems": 256,
+            "title": "Branchselections",
+            "type": "array"
+          },
+          "captureFrame": {
+            "$ref": "#/components/schemas/GalgameVideoExportCaptureFrame"
+          },
+          "clipRange": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/GalgameVideoExportClipRange"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "expectedStoryRevision": {
+            "minimum": 0.0,
+            "title": "Expectedstoryrevision",
+            "type": "integer"
+          },
+          "fragmentIds": {
+            "items": {
+              "pattern": "^[a-z0-9][a-z0-9-]{0,63}$",
+              "type": "string"
+            },
+            "maxItems": 500,
+            "title": "Fragmentids",
+            "type": "array"
+          },
+          "locale": {
+            "default": "zh",
+            "maxLength": 32,
+            "minLength": 1,
+            "title": "Locale",
+            "type": "string"
+          },
+          "preset": {
+            "default": "1080p30",
+            "enum": [
+              "1080p30",
+              "720p30",
+              "1080p60",
+              "720p60"
+            ],
+            "title": "Preset",
+            "type": "string"
+          },
+          "previewFingerprint": {
+            "pattern": "^[a-f0-9]{64}$",
+            "title": "Previewfingerprint",
+            "type": "string"
+          },
+          "requestId": {
+            "pattern": "^[a-z0-9][a-z0-9-]{0,63}$",
+            "title": "Requestid",
+            "type": "string"
+          },
+          "scope": {
+            "default": "route",
+            "enum": [
+              "route",
+              "fragments",
+              "clip"
+            ],
+            "title": "Scope",
+            "type": "string"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "maxLength": 120,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          }
+        },
+        "required": [
+          "expectedStoryRevision",
+          "requestId",
+          "previewFingerprint"
+        ],
+        "title": "GalgameVideoEditorHandoffCreateIn",
+        "type": "object"
+      },
+      "GalgameVideoEditorHandoffTaskListOut": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/GalgameVideoEditorHandoffTaskOut"
+            },
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "title": "GalgameVideoEditorHandoffTaskListOut",
+        "type": "object"
+      },
+      "GalgameVideoEditorHandoffTaskOut": {
+        "properties": {
+          "assetCount": {
+            "default": 0,
+            "title": "Assetcount",
+            "type": "integer"
+          },
+          "createdAt": {
+            "title": "Createdat",
+            "type": "string"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "outputProjectId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Outputprojectid"
+          },
+          "progress": {
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Progress",
+            "type": "integer"
+          },
+          "projectId": {
+            "title": "Projectid",
+            "type": "string"
+          },
+          "requestId": {
+            "title": "Requestid",
+            "type": "string"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          },
+          "status": {
+            "enum": [
+              "queued",
+              "running",
+              "completed",
+              "failed",
+              "cancelled"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "storyRevision": {
+            "title": "Storyrevision",
+            "type": "integer"
+          },
+          "trackCount": {
+            "default": 0,
+            "title": "Trackcount",
+            "type": "integer"
+          },
+          "updatedAt": {
+            "title": "Updatedat",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "projectId",
+          "requestId",
+          "storyRevision",
+          "status",
+          "progress",
+          "revision",
+          "createdAt",
+          "updatedAt"
+        ],
+        "title": "GalgameVideoEditorHandoffTaskOut",
+        "type": "object"
+      },
       "GalgameVideoExportBranchSelection": {
         "properties": {
           "branchBlockId": {
@@ -9247,7 +9454,8 @@
             "enum": [
               "1080p30",
               "720p30",
-              "1080p60"
+              "1080p60",
+              "720p60"
             ],
             "title": "Preset",
             "type": "string"
@@ -9305,6 +9513,91 @@
           "choices"
         ],
         "title": "GalgameVideoExportDecisionOut",
+        "type": "object"
+      },
+      "GalgameVideoExportFrameIn": {
+        "properties": {
+          "branchSelections": {
+            "items": {
+              "$ref": "#/components/schemas/GalgameVideoExportBranchSelection"
+            },
+            "maxItems": 256,
+            "title": "Branchselections",
+            "type": "array"
+          },
+          "captureFrame": {
+            "$ref": "#/components/schemas/GalgameVideoExportCaptureFrame"
+          },
+          "clipRange": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/GalgameVideoExportClipRange"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "expectedStoryRevision": {
+            "minimum": 0.0,
+            "title": "Expectedstoryrevision",
+            "type": "integer"
+          },
+          "fragmentIds": {
+            "items": {
+              "pattern": "^[a-z0-9][a-z0-9-]{0,63}$",
+              "type": "string"
+            },
+            "maxItems": 500,
+            "title": "Fragmentids",
+            "type": "array"
+          },
+          "locale": {
+            "default": "zh",
+            "maxLength": 32,
+            "minLength": 1,
+            "title": "Locale",
+            "type": "string"
+          },
+          "preset": {
+            "default": "1080p30",
+            "enum": [
+              "1080p30",
+              "720p30",
+              "1080p60",
+              "720p60"
+            ],
+            "title": "Preset",
+            "type": "string"
+          },
+          "scope": {
+            "default": "route",
+            "enum": [
+              "route",
+              "fragments",
+              "clip"
+            ],
+            "title": "Scope",
+            "type": "string"
+          },
+          "timeMs": {
+            "minimum": 0.0,
+            "title": "Timems",
+            "type": "integer"
+          },
+          "width": {
+            "default": 960,
+            "maximum": 1920.0,
+            "minimum": 320.0,
+            "title": "Width",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "expectedStoryRevision",
+          "timeMs"
+        ],
+        "title": "GalgameVideoExportFrameIn",
         "type": "object"
       },
       "GalgameVideoExportIssue": {
@@ -9379,7 +9672,8 @@
             "enum": [
               "1080p30",
               "720p30",
-              "1080p60"
+              "1080p60",
+              "720p60"
             ],
             "title": "Preset",
             "type": "string"
@@ -9432,7 +9726,8 @@
             "enum": [
               "1080p30",
               "720p30",
-              "1080p60"
+              "1080p60",
+              "720p60"
             ],
             "title": "Preset",
             "type": "string"
@@ -9626,7 +9921,8 @@
             "enum": [
               "1080p30",
               "720p30",
-              "1080p60"
+              "1080p60",
+              "720p60"
             ],
             "title": "Preset",
             "type": "string"
@@ -15521,6 +15817,22 @@
             "title": "Durationus",
             "type": "integer"
           },
+          "fitMode": {
+            "default": "native",
+            "enum": [
+              "native",
+              "cover",
+              "contain",
+              "height"
+            ],
+            "title": "Fitmode",
+            "type": "string"
+          },
+          "flipX": {
+            "default": false,
+            "title": "Flipx",
+            "type": "boolean"
+          },
           "fontAssetId": {
             "anyOf": [
               {
@@ -15538,6 +15850,19 @@
             "minimum": 8.0,
             "title": "Fontsize",
             "type": "integer"
+          },
+          "heightPercent": {
+            "anyOf": [
+              {
+                "exclusiveMinimum": 0.0,
+                "maximum": 400.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Heightpercent"
           },
           "id": {
             "maxLength": 64,
@@ -15605,6 +15930,19 @@
             "pattern": "^#[0-9a-fA-F]{6}$",
             "title": "Textcolor",
             "type": "string"
+          },
+          "textMaxWidth": {
+            "anyOf": [
+              {
+                "maximum": 1920.0,
+                "minimum": 80.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Textmaxwidth"
           },
           "timelineStartUs": {
             "minimum": 0.0,
@@ -15754,6 +16092,50 @@
           "revision": {
             "title": "Revision",
             "type": "integer"
+          },
+          "sourceApplication": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sourceapplication"
+          },
+          "sourceCompilerVersion": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sourcecompilerversion"
+          },
+          "sourceProjectId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sourceprojectid"
+          },
+          "sourceRevision": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sourcerevision"
           },
           "status": {
             "enum": [
@@ -22599,6 +22981,200 @@
         ]
       }
     },
+    "/v1/galgame-workshop/projects/{project_id}/video-editor-handoffs": {
+      "get": {
+        "operationId": "list_handoffs_v1_galgame_workshop_projects__project_id__video_editor_handoffs_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GalgameVideoEditorHandoffTaskListOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Handoffs",
+        "tags": [
+          "galgame-workshop"
+        ]
+      },
+      "post": {
+        "operationId": "create_handoff_v1_galgame_workshop_projects__project_id__video_editor_handoffs_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GalgameVideoEditorHandoffCreateIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GalgameVideoEditorHandoffTaskOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Handoff",
+        "tags": [
+          "galgame-workshop"
+        ]
+      }
+    },
+    "/v1/galgame-workshop/projects/{project_id}/video-editor-handoffs/{task_id}": {
+      "get": {
+        "operationId": "get_handoff_v1_galgame_workshop_projects__project_id__video_editor_handoffs__task_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "task_id",
+            "required": true,
+            "schema": {
+              "title": "Task Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GalgameVideoEditorHandoffTaskOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Handoff",
+        "tags": [
+          "galgame-workshop"
+        ]
+      }
+    },
+    "/v1/galgame-workshop/projects/{project_id}/video-editor-handoffs/{task_id}/cancel": {
+      "post": {
+        "operationId": "cancel_handoff_v1_galgame_workshop_projects__project_id__video_editor_handoffs__task_id__cancel_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "task_id",
+            "required": true,
+            "schema": {
+              "title": "Task Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GalgameVideoEditorHandoffTaskOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Cancel Handoff",
+        "tags": [
+          "galgame-workshop"
+        ]
+      }
+    },
     "/v1/galgame-workshop/projects/{project_id}/video-exports": {
       "get": {
         "operationId": "list_video_exports_v1_galgame_workshop_projects__project_id__video_exports_get",
@@ -22686,6 +23262,56 @@
           }
         },
         "summary": "Create Video Export",
+        "tags": [
+          "galgame-workshop"
+        ]
+      }
+    },
+    "/v1/galgame-workshop/projects/{project_id}/video-exports/frame": {
+      "post": {
+        "operationId": "exact_video_export_frame_v1_galgame_workshop_projects__project_id__video_exports_frame_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GalgameVideoExportFrameIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Exact Video Export Frame",
         "tags": [
           "galgame-workshop"
         ]

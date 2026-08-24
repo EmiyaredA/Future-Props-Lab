@@ -38,6 +38,7 @@ from db.migrations.versions import (
     r0033_model_test_tools,
     r0034_realtime_tool_calls,
     r0035_video_editor,
+    r0036_galgame_video_editor_handoffs,
 )
 
 
@@ -175,6 +176,10 @@ MIGRATIONS = (
         foreign_keys_off=True,
     ),
     Migration(r0035_video_editor.MIGRATION_ID, r0035_video_editor.SQL),
+    Migration(
+        r0036_galgame_video_editor_handoffs.MIGRATION_ID,
+        r0036_galgame_video_editor_handoffs.SQL,
+    ),
 )
 
 LATEST_MIGRATION_ID = MIGRATIONS[-1].migration_id

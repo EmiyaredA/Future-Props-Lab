@@ -27,7 +27,6 @@ class Settings(BaseSettings):
     fpl_auth_cookie_secure: bool = False
     fpl_visual_asset_max_bytes: int = 200 * 1024 * 1024
     fpl_galgame_export_max_bytes: int = 8 * 1024 * 1024 * 1024
-    fpl_galgame_renderer_url: str = "http://127.0.0.1:3000/galgame-export.html"
     fpl_temp_media_upload_url: str = ""
     fpl_mcp_stdio_allowed_commands: str = ""
     fpl_skill_archive_max_bytes: int = 10 * 1024 * 1024
@@ -65,14 +64,6 @@ class Settings(BaseSettings):
         ]
         if any(not Path(item).is_absolute() for item in allowed_commands):
             raise ValueError("FPL_MCP_STDIO_ALLOWED_COMMANDS must contain absolute paths")
-        parsed_renderer_url = urlsplit(self.fpl_galgame_renderer_url)
-        if (
-            parsed_renderer_url.scheme not in {"http", "https"}
-            or parsed_renderer_url.hostname not in {"127.0.0.1", "localhost"}
-            or parsed_renderer_url.username
-            or parsed_renderer_url.password
-        ):
-            raise ValueError("FPL_GALGAME_RENDERER_URL must be a local HTTP(S) URL")
         if self.fpl_temp_media_upload_url:
             parsed_upload_url = urlsplit(self.fpl_temp_media_upload_url)
             if (

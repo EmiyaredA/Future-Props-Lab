@@ -67,6 +67,8 @@ export function VideoEditorPage({
       color: kind === "color" ? "#000000" : undefined,
       fontSize: 72,
       textColor: "#ffffff",
+      fitMode: "native",
+      flipX: false,
       volume: 1,
       transform: {
         x: 960,

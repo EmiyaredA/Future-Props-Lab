@@ -3,11 +3,9 @@ from __future__ import annotations
 import asyncio
 import hashlib
 import json
-import os
 import re
-import shutil
-import signal
 import subprocess
+import threading
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import Any
@@ -22,11 +20,10 @@ from app.core.time import utc_now
 from app.files.library import AssetLibrary
 from app.files.storage import AssetStorage
 from app.galgame_workshop.video_export_planning import (
-    CHOICE_DURATION_MS,
-    CHOICE_HIGHLIGHT_MS,
     EXPORT_PACKAGING_POLICY,
     PRESETS,
 )
+from app.galgame_workshop.video_compiler import compile_galgame_render_plan
 from app.llm.generation_runtime import PollingGenerationRunner
 from app.models import (
     GalgameAssetMetadata,
@@ -36,6 +33,7 @@ from app.models import (
     GalgameWorkshopProject,
     VisualAsset,
 )
+from app.video_editor.render_engine import RenderCancelled, render_plan
 
 
 def _safe_filename(value: str) -> str:
@@ -199,120 +197,60 @@ class GalgameVideoExportRunner(PollingGenerationRunner):
                     if file_ids
                     else []
                 )
-                asset_paths = {item.id: str(self.storage.path_for(item)) for item in assets}
+                asset_paths = {item.id: self.storage.path_for(item) for item in assets}
 
-            render_script = (
-                Path(__file__).resolve().parents[3] / "web" / "scripts" / "render-galgame-video.mjs"
-            )
             with TemporaryDirectory(prefix=f"galgame-video-{task_id}-") as temp_dir:
                 root = Path(temp_dir)
-                manifest_path = root / "manifest.json"
                 output_path = root / "output.mp4"
-                manifest_path.write_text(
-                    json.dumps(
-                        {
-                            "taskId": task_id,
-                            "rendererUrl": self.settings.fpl_galgame_renderer_url,
-                            "document": document,
-                            "assetPaths": asset_paths,
-                            "locale": payload.get("locale", "zh"),
-                            "preset": payload.get("preset", "1080p30"),
-                            "fragmentIds": payload.get("fragmentIds", []),
-                            "fragmentDurationsMs": fragment_durations_ms,
-                            "clipRange": payload.get("clipRange"),
-                            "captureFrame": payload.get(
-                                "captureFrame",
-                                {"x": 0, "y": 0, "width": 1920, "height": 1080},
-                            ),
-                            "branchSelections": payload.get("branchSelections", []),
-                            "choiceDurationMs": CHOICE_DURATION_MS,
-                            "choiceHighlightMs": CHOICE_HIGHLIGHT_MS,
-                            "totalMs": total_ms,
-                        },
-                        ensure_ascii=False,
-                    ),
-                    encoding="utf-8",
+                compiled = compile_galgame_render_plan(
+                    document,
+                    payload,
+                    fragment_durations_ms=fragment_durations_ms,
+                    total_ms=total_ms,
+                    asset_paths=asset_paths,
                 )
                 await self._set(task_id, phase="rendering", progress=2)
-                process = await asyncio.create_subprocess_exec(
-                    shutil.which("node") or "node",
-                    str(render_script),
-                    str(manifest_path),
-                    str(output_path),
-                    stdout=asyncio.subprocess.PIPE,
-                    stderr=asyncio.subprocess.PIPE,
-                    start_new_session=True,
+                cancel_event = threading.Event()
+                render_progress = [2]
+
+                def report(value: int) -> None:
+                    render_progress[0] = max(2, min(88, value))
+
+                rendering = asyncio.create_task(
+                    asyncio.to_thread(
+                        render_plan,
+                        compiled.plan,
+                        output_path,
+                        preset=str(payload.get("preset", "1080p30")),
+                        start_us=0,
+                        end_us=max(1, total_ms * 1000),
+                        cancel=cancel_event,
+                        progress=report,
+                    )
                 )
-                stderr_chunks: list[bytes] = []
-
-                async def read_stderr() -> None:
-                    assert process.stderr is not None
-                    while chunk := await process.stderr.read(8192):
-                        stderr_chunks.append(chunk)
-                        if sum(map(len, stderr_chunks)) > 64_000:
-                            stderr_chunks.pop(0)
-
-                stderr_task = asyncio.create_task(read_stderr())
-                assert process.stdout is not None
+                while not rendering.done():
+                    if await self._cancel_requested(task_id):
+                        cancel_event.set()
+                    await self._set(
+                        task_id,
+                        phase="rendering",
+                        progress=render_progress[0],
+                        rendered_ms=round(total_ms * render_progress[0] / 88),
+                    )
+                    await asyncio.sleep(0.75)
                 try:
-                    while True:
-                        try:
-                            line = await asyncio.wait_for(process.stdout.readline(), timeout=1.0)
-                        except TimeoutError:
-                            line = b""
-                        if await self._cancel_requested(task_id):
-                            if process.returncode is None:
-                                os.killpg(process.pid, signal.SIGTERM)
-                            await process.wait()
-                            await stderr_task
-                            await self._set(
-                                task_id,
-                                status="cancelled",
-                                phase="cancelled",
-                                error=None,
-                                finished=True,
-                            )
-                            return
-                        if line:
-                            try:
-                                event = json.loads(line)
-                            except (json.JSONDecodeError, UnicodeDecodeError):
-                                event = {}
-                            rendered_ms = int(event.get("renderedMs", 0))
-                            phase = str(event.get("phase", "rendering"))
-                            progress = (
-                                min(88, 2 + round(rendered_ms / total_ms * 86))
-                                if total_ms > 0
-                                else 2
-                            )
-                            await self._set(
-                                task_id,
-                                phase=(
-                                    phase if phase in {"rendering", "encoding"} else "rendering"
-                                ),
-                                progress=progress,
-                                rendered_ms=rendered_ms,
-                            )
-                        if process.returncode is not None:
-                            break
-                        if not line:
-                            try:
-                                await asyncio.wait_for(process.wait(), timeout=0.01)
-                            except TimeoutError:
-                                continue
-                finally:
-                    if process.returncode is None:
-                        try:
-                            os.killpg(process.pid, signal.SIGTERM)
-                        except ProcessLookupError:
-                            pass
-                        await asyncio.shield(process.wait())
-                await stderr_task
-                if process.returncode != 0:
-                    message = b"".join(stderr_chunks).decode(errors="replace").strip()
-                    raise RuntimeError(message[-4000:] or "视频渲染器执行失败")
+                    await rendering
+                except RenderCancelled:
+                    await self._set(
+                        task_id,
+                        status="cancelled",
+                        phase="cancelled",
+                        error=None,
+                        finished=True,
+                    )
+                    return
                 if not output_path.is_file():
-                    raise RuntimeError("视频渲染器没有生成输出文件")
+                    raise RuntimeError("确定性渲染器没有生成输出文件")
                 await self._set(task_id, phase="verifying", progress=90)
                 probe = await asyncio.to_thread(_probe_video, output_path)
                 streams = probe.get("streams", [])

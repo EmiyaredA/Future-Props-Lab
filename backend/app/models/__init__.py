@@ -23,6 +23,7 @@ from app.models.galgame_workshop import (
     GalgameStoryDocument,
     GalgameStorySnapshot,
     GalgameVideoExportTask,
+    GalgameVideoEditorHandoffTask,
     GalgameWorkshopProject,
 )
 from app.models.integrations import (
@@ -80,6 +81,7 @@ __all__ = [
     "GalgameProjectAssetReference",
     "GalgameStorySnapshot",
     "GalgameVideoExportTask",
+    "GalgameVideoEditorHandoffTask",
     "GalgameWorkshopProject",
     "IntegrationCheck",
     "LlmCallLog",

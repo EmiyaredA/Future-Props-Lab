@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import math
+import textwrap
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
@@ -143,7 +144,16 @@ class TimelineFrameRenderer:
             )
         except (OSError, TypeError):
             font = ImageFont.load_default()
-        lines = (clip.text or "").splitlines() or [""]
+        raw_lines = (clip.text or "").splitlines() or [""]
+        if clip.text_max_width:
+            approximate = max(1, round(clip.text_max_width / max(8, clip.font_size)))
+            lines = [
+                part
+                for line in raw_lines
+                for part in (textwrap.wrap(line, approximate) or [""])
+            ]
+        else:
+            lines = raw_lines
         boxes = [font.getbbox(line or " ") for line in lines]
         width = max(box[2] - box[0] for box in boxes) + 32
         height = sum(box[3] - box[1] + 12 for box in boxes) + 20
@@ -160,6 +170,25 @@ class TimelineFrameRenderer:
         canvas: Image.Image, layer: Image.Image, clip: VideoEditorClip, local_us: int
     ) -> None:
         transform = clip.transform
+        canvas_width, canvas_height = canvas.size
+        if clip.fit_mode in {"cover", "contain"}:
+            ratio = (
+                max(canvas_width / layer.width, canvas_height / layer.height)
+                if clip.fit_mode == "cover"
+                else min(canvas_width / layer.width, canvas_height / layer.height)
+            )
+            layer = layer.resize(
+                (max(1, round(layer.width * ratio)), max(1, round(layer.height * ratio))),
+                Image.Resampling.LANCZOS,
+            )
+        elif clip.fit_mode == "height" and clip.height_percent:
+            ratio = canvas_height * clip.height_percent / 100 / layer.height
+            layer = layer.resize(
+                (max(1, round(layer.width * ratio)), max(1, round(layer.height * ratio))),
+                Image.Resampling.LANCZOS,
+            )
+        if clip.flip_x:
+            layer = layer.transpose(Image.Transpose.FLIP_LEFT_RIGHT)
         scale_x = property_at(clip, "scaleX", local_us, transform.scale_x)
         scale_y = property_at(clip, "scaleY", local_us, transform.scale_y)
         width = max(1, round(layer.width * scale_x))

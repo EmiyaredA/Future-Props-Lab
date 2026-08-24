@@ -79,6 +79,8 @@ const baseClip = (
   assetId: asset.id,
   fontSize: 72,
   textColor: "#ffffff",
+  fitMode: "native",
+  flipX: false,
   volume: 1,
   transform: {
     x: 960,

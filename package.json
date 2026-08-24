@@ -8,8 +8,7 @@
   },
   "workspaces": ["web"],
   "scripts": {
-    "setup": "uv sync --all-groups && npm install && npm run voice-vad:sync --workspace web && npm run setup:renderer",
-    "setup:renderer": "npm exec --workspace web playwright install chromium",
+    "setup": "uv sync --all-groups && npm install && npm run voice-vad:sync --workspace web",
     "dev": "concurrently -k -n api,web -c blue,magenta \"npm run dev:backend\" \"npm run dev:web\"",
     "dev:backend": "uv run uvicorn app.main:app --app-dir backend --reload --host 127.0.0.1 --port 9000",
     "dev:web": "npm run dev --workspace web",
