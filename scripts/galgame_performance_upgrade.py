@@ -435,6 +435,13 @@ def set_all_lip_sync_fps(document: dict[str, Any]) -> None:
                 sequence["fps"] = 15
 
 
+def enlarge_dialogue_text(document: dict[str, Any]) -> None:
+    dialogue_box = document.setdefault("presentation", {}).setdefault("dialogueBox", {})
+    body = dialogue_box.setdefault("body", {})
+    body["fontSizePx"] = 34
+    body["lineHeight"] = 1.5
+
+
 def install_curated_scenes(document: dict[str, Any], mapping: dict[str, Any]) -> None:
     scenes = document.setdefault("scenes", [])
     for code, name, distance in CURATED_SCENES:
@@ -593,9 +600,13 @@ def cast_member(
     dialogue_id: str,
 ) -> dict[str, Any]:
     positions = {
-        1: ("position-center",),
-        2: ("position-left", "position-right"),
-        3: ("position-outer-left", "position-center", "position-outer-right"),
+        1: (("performance-center", 50),),
+        2: (("performance-left", 30), ("performance-right", 70)),
+        3: (
+            ("performance-outer-left", 18),
+            ("performance-center", 50),
+            ("performance-outer-right", 82),
+        ),
     }[count]
     distance = (
         "near"
@@ -615,9 +626,9 @@ def cast_member(
         "characterId": character_id,
         "expressionId": expression_id,
         "distance": distance,
-        "positionId": positions[index],
+        "positionId": positions[index][0],
         "transform": {
-            "x": 50,
+            "x": positions[index][1],
             "y": safe_y,
             "anchor": "bottomCenter",
             "scale": scale,
@@ -762,7 +773,10 @@ def install_performance_blocks(document: dict[str, Any], first_person_id: str) -
         explicit_group = len(dialogue.get("speakerIds") or []) > 1
         intentional_exchange = len(visible_ids) > 1 and cue_index % 3 == 0
         requires_composition = (
-            dialogue["characterId"] == first_person_id or explicit_group or intentional_exchange
+            dialogue["characterId"] == first_person_id
+            or explicit_group
+            or intentional_exchange
+            or dialogue["id"] in SAFE_CLOSEUP_DIALOGUE_IDS
         )
         if requires_composition:
             performance.append(
@@ -868,6 +882,7 @@ def install_performance_blocks(document: dict[str, Any], first_person_id: str) -
                     following["characterId"] == first_person_id
                     or len(following.get("speakerIds") or []) > 1
                     or (len(following_ids) > 1 and (cue_index + 1) % 3 == 0)
+                    or following["id"] in SAFE_CLOSEUP_DIALOGUE_IDS
                 )
             )
             if (
@@ -1062,6 +1077,10 @@ def audit_document(
         "durationMs": fragment["timeline"]["durationMs"],
         "dialogueCount": len(dialogues),
         "allLipSyncFps15": bool(lip_sync_fps) and set(lip_sync_fps) == {15},
+        "dialogueBodyFontSizePx": document.get("presentation", {})
+        .get("dialogueBox", {})
+        .get("body", {})
+        .get("fontSizePx"),
         "explicitExpressionCueCount": len(DIALOGUE_EXPRESSION_CUES),
         "visibleDialogueCount": len(visible_dialogues),
         "hiddenDialogueCount": len(hidden_dialogues),
@@ -1102,6 +1121,8 @@ def audit_document(
         raise RuntimeError(f"对白或时间轴审计失败：{checks}")
     if not checks["allLipSyncFps15"]:
         raise RuntimeError("仍有唇形序列不是 15 FPS")
+    if checks["dialogueBodyFontSizePx"] != 34:
+        raise RuntimeError("对白正文字号没有应用到 34px")
     if (
         checks["explicitExpressionCueCount"] != 399
         or checks["visibleDialogueCount"] != 399
@@ -1169,6 +1190,7 @@ def transform_latest_story(
     install_curated_scenes(document, mapping)
     upgrade_suzuha(document, mapping, source_root)
     set_all_lip_sync_fps(document)
+    enlarge_dialogue_text(document)
     first_person_id = first_person_okabe(document)["id"]
     install_performance_blocks(document, first_person_id)
     install_cgs(document, mapping)
