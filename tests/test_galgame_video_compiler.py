@@ -138,6 +138,63 @@ def test_story_compiler_builds_layered_timeline_and_capture_frame() -> None:
     assert voice_track.clips[0].duration_us == 5_400_000
 
 
+def test_clip_export_restores_active_story_cg() -> None:
+    document = {
+        "assets": [{"id": "cg-asset", "fileId": "file-cg"}],
+        "scenes": [],
+        "cgs": [
+            {
+                "id": "cg",
+                "name": "关键剧情",
+                "variants": [{"id": "cg-default", "assetId": "cg-asset"}],
+                "defaultVariantId": "cg-default",
+            }
+        ],
+        "characters": [],
+        "presentation": {"dialogueBox": {}},
+        "chapters": [
+            {
+                "id": "chapter",
+                "fragments": [
+                    {
+                        "id": "main",
+                        "timeline": {"durationMs": 1000},
+                        "blocks": [
+                            {
+                                "id": "show",
+                                "type": "showCg",
+                                "atMs": 200,
+                                "cgId": "cg",
+                                "variantId": "cg-default",
+                                "displayMode": "fullscreen",
+                                "fit": "cover",
+                            },
+                            {"id": "hide", "type": "hideCg", "atMs": 800},
+                        ],
+                    }
+                ],
+            }
+        ],
+    }
+    result = compile_galgame_render_plan(
+        document,
+        {
+            "scope": "clip",
+            "clipRange": {"fragmentId": "main", "startMs": 500, "endMs": 1000},
+            "preset": "1080p30",
+            "resolvedFragmentIds": ["main"],
+        },
+        fragment_durations_ms=[500],
+        total_ms=500,
+        asset_paths={"file-cg": Path("/tmp/cg.png")},
+    )
+    cg_track = next(track for track in result.plan.document.tracks if track.name == "剧情 CG")
+    assert [clip.asset_id for clip in cg_track.clips] == ["file-cg"]
+    assert cg_track.clips[0].timeline_start_us == 0
+    assert cg_track.clips[0].duration_us == 500_000
+    assert "file-cg" in result.used_file_ids
+
+
 def test_clip_export_replays_stage_and_trims_master_audio_without_line_voice() -> None:
     document = {
         "assets": [
@@ -323,7 +380,7 @@ def test_lip_sync_sequence_restores_mid_clip_audio_phase() -> None:
                         "renderMode": "frameSequence",
                         "sequence": {
                             "playbackMode": "lipSync",
-                            "fps": 8,
+                            "fps": 15,
                             "loop": True,
                             "frames": [
                                 {"id": "closed", "assetId": "closed"},
@@ -381,16 +438,22 @@ def test_lip_sync_sequence_restores_mid_clip_audio_phase() -> None:
         },
         audio_envelopes={
             "file-master": AudioEnvelope(
-                hop_us=83_000,
-                levels_db=(-100, -40, -20, -20, -100, -100),
+                hop_us=33_334,
+                levels_db=(-100, -100, *([-20] * 10), -100, -100, -100),
             )
         },
     )
     actor = next(track for track in result.plan.document.tracks if track.name == "角色 · 主角")
-    assert [clip.asset_id for clip in actor.clips] == ["file-half", "file-open"]
+    assert [clip.asset_id for clip in actor.clips] == [
+        "file-half",
+        "file-open",
+        "file-half",
+        "file-closed",
+        "file-half",
+    ]
     assert actor.clips[0].timeline_start_us == 0
-    assert actor.clips[0].duration_us == 99_000
-    assert actor.clips[1].timeline_start_us == 99_000
+    assert actor.clips[0].duration_us == 16_670
+    assert actor.clips[1].timeline_start_us == 16_670
     assert sum(clip.duration_us for clip in actor.clips) == 250_000
     assert {"file-half", "file-open"}.issubset(result.used_file_ids)
 

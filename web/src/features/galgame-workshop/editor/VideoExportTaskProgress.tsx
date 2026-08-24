@@ -1,4 +1,4 @@
-import { Download, LoaderCircle } from "lucide-react";
+import { Download, Film, LoaderCircle } from "lucide-react";
 import {
   downloadGalgameVideoExport,
   type GalgameVideoExportTask,
@@ -98,19 +98,82 @@ export function ActiveVideoExportStatus({
   );
 }
 
+export function VideoExportStartButton({
+  checking,
+  ready,
+  submitting,
+  onClick,
+}: {
+  checking: boolean;
+  ready: boolean;
+  submitting: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      className="galgame-video-export-start"
+      disabled={submitting}
+      aria-disabled={!ready || submitting}
+      onClick={onClick}
+    >
+      {submitting || checking ? (
+        <LoaderCircle className="spinning" aria-hidden />
+      ) : (
+        <Film aria-hidden />
+      )}
+      {submitting
+        ? "正在创建导出任务…"
+        : checking
+          ? "正在检查导出设置…"
+          : ready
+            ? "直接导出 MP4"
+            : "请先完成导出检查"}
+    </button>
+  );
+}
+
 export function VideoExportHistory({
   projectId,
   tasks,
+  loading,
+  refreshing,
+  error,
+  onRetry,
   onCancel,
 }: {
   projectId: string;
   tasks: GalgameVideoExportTask[];
+  loading: boolean;
+  refreshing: boolean;
+  error?: string;
+  onRetry: () => void;
   onCancel: (taskId: string) => void;
 }) {
   return (
     <section className="galgame-video-history">
-      <h3>导出记录</h3>
-      {tasks.length ? (
+      <header>
+        <h3>导出记录</h3>
+        {refreshing ? (
+          <small role="status" aria-live="polite">
+            <LoaderCircle className="spinning" aria-hidden />
+            正在刷新…
+          </small>
+        ) : null}
+      </header>
+      {loading ? (
+        <div
+          className="galgame-video-history-state"
+          role="status"
+          aria-live="polite"
+        >
+          <LoaderCircle className="spinning" aria-hidden />
+          <span>
+            <strong>正在加载导出记录</strong>
+            <small>任务较多或正在导出时可能需要稍等片刻…</small>
+          </span>
+        </div>
+      ) : (
         tasks.map((task) => (
           <article key={task.id}>
             <TaskProgress task={task} />
@@ -135,9 +198,21 @@ export function VideoExportHistory({
             {task.error ? <p>{task.error}</p> : null}
           </article>
         ))
-      ) : (
-        <p className="galgame-video-empty">还没有导出记录</p>
       )}
+      {!loading && !tasks.length && !error ? (
+        <p className="galgame-video-empty">还没有导出记录</p>
+      ) : null}
+      {!loading && error ? (
+        <div className="galgame-video-history-error" role="alert">
+          <span>
+            <strong>导出记录暂时无法读取</strong>
+            <small>{error}</small>
+          </span>
+          <button type="button" onClick={onRetry}>
+            重新加载
+          </button>
+        </div>
+      ) : null}
     </section>
   );
 }

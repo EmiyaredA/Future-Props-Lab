@@ -14,10 +14,14 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-ANALYSIS_VERSION = "galgame-audio-envelope-v1"
+ANALYSIS_VERSION = "galgame-audio-envelope-v2-30hz"
 SAMPLE_RATE = 48_000
-HOP_US = 83_000
+HOP_US = 33_334
 MIN_DECIBELS = -100.0
+MOUTH_PATTERNS = {
+    1: (0, 1),
+    2: (0, 1, 2, 1),
+}
 
 
 @dataclass(frozen=True)
@@ -59,21 +63,28 @@ class _LipTracker:
     def reset(self) -> None:
         self.noise_floor_db = -48.0
         self.frame = 0
-        self.changed_at_us = -10_000_000
+        self.voiced_started_at_us: int | None = None
 
     def update(self, level_db: float, speaking: bool, now_us: int, fps: int) -> int:
         if not speaking:
             sample = max(MIN_DECIBELS, min(-12.0, level_db))
             self.noise_floor_db = self.noise_floor_db * 0.9 + sample * 0.1
             self.frame = 0
-            self.changed_at_us = now_us
+            self.voiced_started_at_us = None
             return 0
         above_noise = level_db - self.noise_floor_db
-        target = 2 if above_noise >= 12 else (1 if above_noise >= 6 else 0)
-        minimum_us = round(1_000_000 / max(1, min(60, fps)))
-        if target != self.frame and now_us - self.changed_at_us >= minimum_us:
-            self.frame = target
-            self.changed_at_us = now_us
+        opening = 2 if above_noise >= 12 else (1 if above_noise >= 6 else 0)
+        if opening == 0:
+            self.frame = 0
+            self.voiced_started_at_us = None
+            return 0
+        if self.voiced_started_at_us is None:
+            self.voiced_started_at_us = now_us
+        bounded_fps = max(1, min(60, fps))
+        elapsed_us = max(0, now_us - self.voiced_started_at_us)
+        cadence = (elapsed_us * bounded_fps + 500_000) // 1_000_000
+        pattern = MOUTH_PATTERNS[opening]
+        self.frame = pattern[cadence % len(pattern)]
         return self.frame
 
 

@@ -13,6 +13,10 @@ export type AudioLevelMonitor = {
 };
 
 const MIN_DECIBELS = -100;
+const MOUTH_PATTERNS: Record<1 | 2, LipSyncFrame[]> = {
+  1: [0, 1],
+  2: [0, 1, 2, 1],
+};
 
 /**
  * 把运行时口型帧映射回同一姿态。缺少差分时始终回退到作者选择的表情。
@@ -69,7 +73,7 @@ export function resolveLipSyncPresentation(
 export class LipSyncLevelTracker {
   private noiseFloorDb = -48;
   private frame: LipSyncFrame = 0;
-  private changedAt = 0;
+  private voicedStartedAt: number | undefined;
 
   update(
     levelDb: number,
@@ -81,23 +85,30 @@ export class LipSyncLevelTracker {
       const sample = Math.max(MIN_DECIBELS, Math.min(-12, levelDb));
       this.noiseFloorDb = this.noiseFloorDb * 0.9 + sample * 0.1;
       this.frame = 0;
-      this.changedAt = nowMs;
+      this.voicedStartedAt = undefined;
       return 0;
     }
     const aboveNoise = levelDb - this.noiseFloorDb;
-    const target: LipSyncFrame = aboveNoise >= 12 ? 2 : aboveNoise >= 6 ? 1 : 0;
-    if (target === this.frame) return this.frame;
-    const minimumFrameDurationMs = 1000 / Math.max(1, Math.min(60, fps));
-    if (nowMs - this.changedAt < minimumFrameDurationMs) return this.frame;
-    this.frame = target;
-    this.changedAt = nowMs;
+    const opening: 0 | 1 | 2 = aboveNoise >= 12 ? 2 : aboveNoise >= 6 ? 1 : 0;
+    if (opening === 0) {
+      this.frame = 0;
+      this.voicedStartedAt = undefined;
+      return 0;
+    }
+    this.voicedStartedAt ??= nowMs;
+    const boundedFps = Math.max(1, Math.min(60, fps));
+    const cadence = Math.floor(
+      ((nowMs - this.voicedStartedAt) * boundedFps) / 1000 + 0.5,
+    );
+    const pattern = MOUTH_PATTERNS[opening];
+    this.frame = pattern[cadence % pattern.length];
     return this.frame;
   }
 
   reset() {
     this.noiseFloorDb = -48;
     this.frame = 0;
-    this.changedAt = 0;
+    this.voicedStartedAt = undefined;
   }
 }
 
@@ -134,7 +145,7 @@ export function createAudioLevelMonitor(
     for (const sample of samples) sum += sample * sample;
     const rms = Math.sqrt(sum / samples.length);
     onLevel(Math.max(MIN_DECIBELS, 20 * Math.log10(Math.max(rms, 0.00001))));
-  }, 83);
+  }, 33);
   let disposed = false;
   return {
     resume: async () => {

@@ -31,6 +31,7 @@ import { VideoEditorHandoffPanel } from "@features/galgame-workshop/editor/Video
 import { DeterministicExportFrame } from "@features/galgame-workshop/editor/DeterministicExportFrame";
 import {
   ActiveVideoExportStatus,
+  VideoExportStartButton,
   VideoExportHistory,
 } from "@features/galgame-workshop/editor/VideoExportTaskProgress";
 import { useDebouncedValue } from "@features/galgame-workshop/editor/useDebouncedValue";
@@ -297,9 +298,33 @@ export function VideoExportDialog({
         queryKey: ["galgame-video-exports", projectId],
       }),
   });
+  const exportChecking = previewUpdating || preview.isFetching;
+  const exportReady = !exportChecking && Boolean(preview.data?.ready);
+  const requestExport = () => {
+    if (create.isPending) return;
+    if (exportChecking) {
+      setError("");
+      setSubmissionStatus("正在检查导出设置，完成后请再次点击。");
+      return;
+    }
+    if (!preview.data?.ready) {
+      setError("");
+      setSubmissionStatus("请先处理上方导出检查中的问题。");
+      return;
+    }
+    create.mutate();
+  };
   if (!open) return null;
   const decision = preview.data?.nextDecision;
-  const latestTask = tasks.data?.items[0] ?? lastCreatedTask;
+  const listedTasks = tasks.data?.items ?? [];
+  const listedCreatedTask = lastCreatedTask
+    ? listedTasks.find((task) => task.id === lastCreatedTask.id)
+    : undefined;
+  const latestTask = listedCreatedTask ?? lastCreatedTask ?? listedTasks[0];
+  const visibleTasks =
+    lastCreatedTask && !listedCreatedTask
+      ? [lastCreatedTask, ...listedTasks]
+      : listedTasks;
   return (
     <div className="galgame-video-export-backdrop" role="presentation">
       <section
@@ -320,11 +345,11 @@ export function VideoExportDialog({
             <X aria-hidden />
           </button>
         </header>
+        <ActiveVideoExportStatus
+          task={latestTask}
+          submitting={create.isPending}
+        />
         <div className="galgame-video-export-content">
-          <ActiveVideoExportStatus
-            task={latestTask}
-            submitting={create.isPending}
-          />
           <VideoCaptureFrameEditor
             document={document}
             fragment={currentFragment}
@@ -721,23 +746,16 @@ export function VideoExportDialog({
             ))}
           </section>
           {error ? (
-            <p className="galgame-video-export-error-text">{error}</p>
+            <p className="galgame-video-export-error-text" role="alert">
+              {error}
+            </p>
           ) : null}
-          <button
-            type="button"
-            className="galgame-video-export-start"
-            disabled={
-              previewUpdating || !preview.data?.ready || create.isPending
-            }
-            onClick={() => create.mutate()}
-          >
-            {create.isPending ? (
-              <LoaderCircle className="spinning" aria-hidden />
-            ) : (
-              <Film aria-hidden />
-            )}
-            {create.isPending ? "正在提交导出…" : "直接导出 MP4"}
-          </button>
+          <VideoExportStartButton
+            checking={exportChecking}
+            ready={exportReady}
+            submitting={create.isPending}
+            onClick={requestExport}
+          />
           {submissionStatus ? (
             <p className="galgame-video-export-submission" role="status">
               {submissionStatus}
@@ -753,7 +771,11 @@ export function VideoExportDialog({
           />
           <VideoExportHistory
             projectId={projectId}
-            tasks={tasks.data?.items ?? []}
+            tasks={visibleTasks}
+            loading={tasks.isFetching && !visibleTasks.length}
+            refreshing={tasks.isFetching && Boolean(visibleTasks.length)}
+            error={tasks.isError ? tasks.error.message : undefined}
+            onRetry={() => void tasks.refetch()}
             onCancel={(taskId) => cancel.mutate(taskId)}
           />
         </div>

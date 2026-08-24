@@ -30,12 +30,11 @@
 }
 
 .galgame-video-active-export {
-  position: sticky;
-  z-index: 3;
-  top: -22px;
   display: flex;
+  flex: 0 0 auto;
   align-items: center;
   gap: 11px;
+  margin: 16px 22px 0;
   padding: 13px 15px;
   border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--gal-line));
   border-radius: 12px;
@@ -58,6 +57,59 @@
   margin: -10px 0 0;
   color: var(--gal-muted);
   text-align: center;
+}
+
+.galgame-video-history > header,
+.galgame-video-history > header small,
+.galgame-video-history-state,
+.galgame-video-history-error {
+  display: flex;
+  align-items: center;
+}
+
+.galgame-video-history > header {
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.galgame-video-history > header h3 {
+  margin: 0;
+}
+
+.galgame-video-history > header small {
+  gap: 6px;
+}
+
+.galgame-video-history > header svg,
+.galgame-video-history-state > svg {
+  width: 16px;
+  min-width: 16px;
+}
+
+.galgame-video-history-state,
+.galgame-video-history-error {
+  gap: 10px;
+  min-height: 64px;
+  margin-top: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--gal-line);
+  border-radius: 10px;
+  background: var(--gal-surface);
+}
+
+.galgame-video-history-state > span,
+.galgame-video-history-error > span {
+  display: grid;
+  flex: 1;
+  gap: 3px;
+}
+
+.galgame-video-history-error {
+  border-color: color-mix(in srgb, #f28a82 45%, var(--gal-line));
+}
+
+.galgame-video-history-error button {
+  padding: 7px 10px;
 }
 
 .galgame-video-deterministic-frame > header > span {

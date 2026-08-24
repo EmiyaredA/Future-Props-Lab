@@ -4,6 +4,7 @@ from pathlib import Path
 
 from app.galgame_workshop.video_lip_sync import (
     HOP_US,
+    _LipTracker,
     analyze_audio_envelope,
     prepare_audio_envelopes,
 )
@@ -72,3 +73,20 @@ def test_audio_envelope_cache_is_reused(tmp_path: Path, monkeypatch) -> None:
         selected_fragment_ids={"main"},
     )
     assert second == first
+
+
+def test_lip_tracker_cycles_strong_voice_at_fifteen_fps_and_closes_on_silence() -> None:
+    tracker = _LipTracker()
+    assert tracker.update(-100, False, 0, 15) == 0
+    assert [
+        tracker.update(-20, True, time_us, 15) for time_us in (0, 66_667, 133_334, 200_000, 266_667)
+    ] == [0, 1, 2, 1, 0]
+    assert tracker.update(-100, False, 300_000, 15) == 0
+
+
+def test_lip_tracker_limits_quieter_voice_to_half_open() -> None:
+    tracker = _LipTracker()
+    assert tracker.update(-100, False, 0, 15) == 0
+    assert [
+        tracker.update(-47, True, time_us, 15) for time_us in (0, 66_667, 133_334, 200_000)
+    ] == [0, 1, 0, 1]

@@ -10,6 +10,8 @@
 }
 
 .galgame-video-export-dialog {
+  display: flex;
+  flex-direction: column;
   width: min(1120px, 96vw);
   max-height: min(880px, 94vh);
   overflow: hidden;
@@ -64,7 +66,9 @@
 
 .galgame-video-export-content {
   display: grid;
+  flex: 1 1 auto;
   gap: 20px;
+  min-height: 0;
   max-height: calc(94vh - 82px);
   padding: 22px;
   overflow: auto;
@@ -416,8 +420,15 @@
   background: var(--accent) !important;
 }
 
-.galgame-video-export-start:disabled {
+.galgame-video-export-start:disabled,
+.galgame-video-export-start[aria-disabled="true"] {
+  cursor: not-allowed;
   opacity: 0.45;
+}
+
+.galgame-video-export-start:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--accent) 42%, transparent);
+  outline-offset: 3px;
 }
 
 .galgame-video-handoff {

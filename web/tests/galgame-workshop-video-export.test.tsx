@@ -10,8 +10,11 @@ import {
   previewGalgameVideoExportFrame,
   previewGalgameVideoExport,
   type GalgameStoryProject,
+  type GalgameVideoExportPreviewRequest,
+  type GalgameVideoExportTask,
 } from "@features/galgame-workshop/api";
 import { VideoExportDialog } from "@features/galgame-workshop/editor/VideoExportDialog";
+import { VideoExportHistory } from "@features/galgame-workshop/editor/VideoExportTaskProgress";
 import { defaultVideoClipRange } from "@features/galgame-workshop/editor/videoExportRange";
 
 vi.mock("@features/galgame-workshop/api", async () => {
@@ -57,16 +60,86 @@ const document = {
   ],
 } as GalgameStoryProject;
 
+const createdTask: GalgameVideoExportTask = {
+  id: "export-one",
+  projectId: "project-one",
+  requestId: "request-one",
+  storyRevision: 3,
+  status: "queued",
+  phase: "queued",
+  progress: 0,
+  renderedMs: 0,
+  totalMs: 2000,
+  preset: "1080p30",
+  endingLabel: "2 个片段",
+  revision: 0,
+  createdAt: "2026-08-22T00:00:00Z",
+  updatedAt: "2026-08-22T00:00:00Z",
+};
+
+function readyPreview(body: GalgameVideoExportPreviewRequest) {
+  const fragmentIds =
+    body.scope === "clip" && body.clipRange
+      ? [body.clipRange.fragmentId]
+      : (body.fragmentIds ?? []);
+  const estimatedDurationMs =
+    body.scope === "clip" && body.clipRange
+      ? body.clipRange.endMs - body.clipRange.startMs
+      : Math.max(1000, fragmentIds.length * 1000);
+  return {
+    ready: true,
+    storyRevision: 3,
+    preset: body.preset,
+    width: 1920,
+    height: 1080,
+    fps: 30,
+    previewFingerprint: "a".repeat(64),
+    route: {
+      chapterIds: ["chapter-one"],
+      fragmentIds,
+      fragmentDurationsMs: fragmentIds.map(() => estimatedDurationMs),
+      branchBlockIds: [],
+      endingLabel:
+        body.scope === "fragments"
+          ? `${body.fragmentIds?.length ?? 0} 个片段`
+          : body.scope === "clip"
+            ? "片段一 · 10m00s-10m10s"
+            : "故事结束",
+      estimatedDurationMs,
+      exactDuration: true,
+    },
+    blockers: [],
+    warnings: [],
+  };
+}
+
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  let reject!: (reason?: unknown) => void;
+  const promise = new Promise<T>((onResolve, onReject) => {
+    resolve = onResolve;
+    reject = onReject;
+  });
+  return { promise, resolve, reject };
+}
+
 function renderDialog({
   story = document,
   positionMs = 600_000,
+  queryClient,
 }: {
   story?: GalgameStoryProject;
   positionMs?: number;
+  queryClient?: QueryClient;
 } = {}) {
-  const client = new QueryClient({
-    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
-  });
+  const client =
+    queryClient ??
+    new QueryClient({
+      defaultOptions: {
+        queries: { retry: false },
+        mutations: { retry: false },
+      },
+    });
   return render(
     <QueryClientProvider client={client}>
       <VideoExportDialog
@@ -105,58 +178,9 @@ beforeEach(() => {
     new Blob(["png"], { type: "image/png" }),
   );
   vi.mocked(previewGalgameVideoExport).mockImplementation(
-    async (_projectId, body) => {
-      const fragmentIds =
-        body.scope === "clip" && body.clipRange
-          ? [body.clipRange.fragmentId]
-          : (body.fragmentIds ?? []);
-      const estimatedDurationMs =
-        body.scope === "clip" && body.clipRange
-          ? body.clipRange.endMs - body.clipRange.startMs
-          : Math.max(1000, fragmentIds.length * 1000);
-      return {
-        ready: true,
-        storyRevision: 3,
-        preset: body.preset,
-        width: 1920,
-        height: 1080,
-        fps: 30,
-        previewFingerprint: "a".repeat(64),
-        route: {
-          chapterIds: ["chapter-one"],
-          fragmentIds,
-          fragmentDurationsMs: fragmentIds.map(() => estimatedDurationMs),
-          branchBlockIds: [],
-          endingLabel:
-            body.scope === "fragments"
-              ? `${body.fragmentIds?.length ?? 0} 个片段`
-              : body.scope === "clip"
-                ? "片段一 · 10m00s-10m10s"
-                : "故事结束",
-          estimatedDurationMs,
-          exactDuration: true,
-        },
-        blockers: [],
-        warnings: [],
-      };
-    },
+    async (_projectId, body) => readyPreview(body),
   );
-  vi.mocked(createGalgameVideoExport).mockResolvedValue({
-    id: "export-one",
-    projectId: "project-one",
-    requestId: "request-one",
-    storyRevision: 3,
-    status: "queued",
-    phase: "queued",
-    progress: 0,
-    renderedMs: 0,
-    totalMs: 2000,
-    preset: "1080p30",
-    endingLabel: "2 个片段",
-    revision: 0,
-    createdAt: "2026-08-22T00:00:00Z",
-    updatedAt: "2026-08-22T00:00:00Z",
-  });
+  vi.mocked(createGalgameVideoExport).mockResolvedValue(createdTask);
 });
 
 test("edits and persists a strict 16:9 capture frame in preview requests", async () => {
@@ -220,6 +244,144 @@ test("generates the expensive deterministic frame only when requested", async ()
   );
 });
 
+test("explains a click while export settings are still being checked", async () => {
+  const user = userEvent.setup();
+  const pendingPreview =
+    deferred<Awaited<ReturnType<typeof previewGalgameVideoExport>>>();
+  let requestedBody: GalgameVideoExportPreviewRequest | undefined;
+  vi.mocked(previewGalgameVideoExport).mockImplementation(
+    async (_projectId, body) => {
+      requestedBody = body;
+      return pendingPreview.promise;
+    },
+  );
+  renderDialog();
+
+  const checking = await screen.findByRole("button", {
+    name: "正在检查导出设置…",
+  });
+  expect(checking).toHaveAttribute("aria-disabled", "true");
+  await user.click(checking);
+  expect(
+    screen.getByText("正在检查导出设置，完成后请再次点击。"),
+  ).toBeInTheDocument();
+  expect(createGalgameVideoExport).not.toHaveBeenCalled();
+
+  await waitFor(() => expect(requestedBody).toBeDefined());
+  pendingPreview.resolve(readyPreview(requestedBody!));
+  const ready = await screen.findByRole("button", {
+    name: "直接导出 MP4",
+  });
+  expect(ready).toHaveAttribute("aria-disabled", "false");
+  expect(createGalgameVideoExport).not.toHaveBeenCalled();
+
+  await user.click(ready);
+  await waitFor(() =>
+    expect(createGalgameVideoExport).toHaveBeenCalledTimes(1),
+  );
+});
+
+test("shows immediate feedback and prevents duplicate export submissions", async () => {
+  const user = userEvent.setup();
+  const pendingCreate = deferred<GalgameVideoExportTask>();
+  vi.mocked(createGalgameVideoExport).mockReturnValue(pendingCreate.promise);
+  renderDialog();
+
+  await user.click(await screen.findByRole("button", { name: "直接导出 MP4" }));
+  const submitting = await screen.findByRole("button", {
+    name: "正在创建导出任务…",
+  });
+  expect(submitting).toBeDisabled();
+  expect(screen.getByText("正在创建导出任务")).toBeInTheDocument();
+  fireEvent.click(submitting);
+  expect(createGalgameVideoExport).toHaveBeenCalledTimes(1);
+
+  pendingCreate.resolve(createdTask);
+  expect(await screen.findByText("视频正在后台导出")).toBeInTheDocument();
+});
+
+test("recovers from a failed export submission", async () => {
+  const user = userEvent.setup();
+  vi.mocked(createGalgameVideoExport).mockRejectedValueOnce(
+    new Error("导出服务暂时繁忙"),
+  );
+  renderDialog();
+
+  await user.click(await screen.findByRole("button", { name: "直接导出 MP4" }));
+  expect(await screen.findByRole("alert")).toHaveTextContent(
+    "导出服务暂时繁忙",
+  );
+  expect(screen.getByRole("button", { name: "直接导出 MP4" })).toHaveAttribute(
+    "aria-disabled",
+    "false",
+  );
+});
+
+test("does not show an empty history while records are loading", async () => {
+  const pendingHistory =
+    deferred<Awaited<ReturnType<typeof listGalgameVideoExports>>>();
+  vi.mocked(listGalgameVideoExports).mockReturnValue(pendingHistory.promise);
+  renderDialog();
+
+  expect(await screen.findByText("正在加载导出记录")).toBeInTheDocument();
+  expect(screen.queryByText("还没有导出记录")).not.toBeInTheDocument();
+
+  pendingHistory.resolve({ items: [] });
+  expect(await screen.findByText("还没有导出记录")).toBeInTheDocument();
+  expect(screen.queryByText("正在加载导出记录")).not.toBeInTheDocument();
+});
+
+test("treats a cached empty history as loading while it refreshes", async () => {
+  const pendingHistory =
+    deferred<Awaited<ReturnType<typeof listGalgameVideoExports>>>();
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  queryClient.setQueryData(["galgame-video-exports", "project-one"], {
+    items: [],
+  });
+  vi.mocked(listGalgameVideoExports).mockReturnValue(pendingHistory.promise);
+  renderDialog({ queryClient });
+
+  expect(await screen.findByText("正在加载导出记录")).toBeInTheDocument();
+  expect(screen.queryByText("还没有导出记录")).not.toBeInTheDocument();
+
+  pendingHistory.resolve({ items: [] });
+  expect(await screen.findByText("还没有导出记录")).toBeInTheDocument();
+});
+
+test("shows history errors with retry and preserves records while refreshing", async () => {
+  const user = userEvent.setup();
+  vi.mocked(listGalgameVideoExports)
+    .mockRejectedValueOnce(new Error("记录查询超时"))
+    .mockResolvedValueOnce({ items: [] });
+  renderDialog();
+
+  expect(await screen.findByText("导出记录暂时无法读取")).toBeInTheDocument();
+  expect(screen.getByText("记录查询超时")).toBeInTheDocument();
+  expect(screen.queryByText("还没有导出记录")).not.toBeInTheDocument();
+  await user.click(screen.getByRole("button", { name: "重新加载" }));
+  expect(await screen.findByText("还没有导出记录")).toBeInTheDocument();
+
+  const onRetry = vi.fn();
+  render(
+    <VideoExportHistory
+      projectId="project-one"
+      tasks={[createdTask]}
+      loading={false}
+      refreshing
+      error="刷新失败"
+      onRetry={onRetry}
+      onCancel={vi.fn()}
+    />,
+  );
+  expect(screen.getByText("正在刷新…")).toBeInTheDocument();
+  expect(screen.getByText("2 个片段")).toBeInTheDocument();
+  expect(screen.getByText("刷新失败")).toBeInTheDocument();
+  await user.click(screen.getAllByRole("button", { name: "重新加载" }).at(-1)!);
+  expect(onRetry).toHaveBeenCalledTimes(1);
+});
+
 test("selects one or multiple fragments and submits them in story order", async () => {
   const user = userEvent.setup();
   renderDialog();
@@ -253,6 +415,14 @@ test("selects one or multiple fragments and submits them in story order", async 
   );
   expect(await screen.findByText("视频正在后台导出")).toBeInTheDocument();
   expect(screen.getByText(/可以关闭窗口，任务会继续运行/)).toBeInTheDocument();
+  const exportStatus = screen.getByText("视频正在后台导出").closest("section");
+  expect(exportStatus).not.toBeNull();
+  expect(exportStatus?.parentElement).toHaveClass(
+    "galgame-video-export-dialog",
+  );
+  expect(exportStatus?.nextElementSibling).toHaveClass(
+    "galgame-video-export-content",
+  );
 });
 
 test("defaults quick clip to ten seconds after the current playhead and submits exact milliseconds", async () => {
@@ -280,7 +450,14 @@ test("defaults quick clip to ten seconds after the current playhead and submits 
   await user.type(endInput, "16:00.000");
   await user.tab();
   expect(screen.getAllByText("快速试片最长为 5 分钟")).not.toHaveLength(0);
-  expect(screen.getByRole("button", { name: "直接导出 MP4" })).toBeDisabled();
+  const blockedExport = await screen.findByRole("button", {
+    name: "请先完成导出检查",
+  });
+  expect(blockedExport).toHaveAttribute("aria-disabled", "true");
+  await user.click(blockedExport);
+  expect(
+    screen.getByText("请先处理上方导出检查中的问题。"),
+  ).toBeInTheDocument();
 
   await user.clear(endInput);
   await user.type(endInput, "10:12.345");
