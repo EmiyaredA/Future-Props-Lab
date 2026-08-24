@@ -62,10 +62,19 @@ export function stableId() {
   return crypto.randomUUID().toLowerCase();
 }
 
+const completedStoryDocumentCache = new WeakMap<
+  GalgameStoryProject,
+  GalgameStoryProject
+>();
+
 export function completeStoryDocument(
   document: GalgameStoryProject,
 ): GalgameStoryProject {
-  return normalizeStoryProject(document);
+  const cached = completedStoryDocumentCache.get(document);
+  if (cached) return cached;
+  const completed = normalizeStoryProject(document);
+  completedStoryDocumentCache.set(document, completed);
+  return completed;
 }
 
 export function firstChapter(document: GalgameStoryProject) {

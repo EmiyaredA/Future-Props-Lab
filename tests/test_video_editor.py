@@ -2,8 +2,11 @@ from __future__ import annotations
 
 import io
 import json
+import math
+import struct
 import subprocess
 import threading
+import wave
 from pathlib import Path
 
 import httpx
@@ -216,6 +219,51 @@ def test_video_editor_frame_evaluator_interpolates_and_marks_gaps() -> None:
     assert frame.size == (320, 180)
 
 
+def test_video_editor_frame_evaluator_honors_bottom_anchor_and_brightness() -> None:
+    clip = {
+        **color_clip("portrait", 0, 1_000_000),
+        "kind": "image",
+        "name": "portrait",
+        "assetId": "portrait",
+        "color": None,
+        "fitMode": "native",
+        "transform": {
+            "x": 100,
+            "y": 100,
+            "anchor": "bottomCenter",
+            "scaleX": 1,
+            "scaleY": 1,
+            "rotation": 0,
+            "opacity": 1,
+            "brightness": 0.5,
+        },
+    }
+    document = VideoEditorTimelineDocument.model_validate(
+        {
+            "settings": {"width": 1920, "height": 1080, "fps": 30},
+            "tracks": [
+                {
+                    "id": "visual-1",
+                    "kind": "visual",
+                    "name": "V1",
+                    "order": 0,
+                    "clips": [clip],
+                }
+            ],
+        }
+    )
+    portrait = Image.new("RGBA", (10, 10), (200, 100, 50, 255))
+    frame = TimelineFrameRenderer(
+        document,
+        FrameSource(
+            image_for_clip=lambda _clip, _time: portrait.copy(),
+            font_for_clip=lambda _clip: None,
+        ),
+    ).render(0)
+    assert frame.getpixel((99, 99)) == (100, 50, 25)
+    assert frame.getpixel((99, 100)) == (0, 0, 0)
+
+
 def test_video_editor_render_is_ffmpeg_native_and_has_exact_tracks(tmp_path: Path) -> None:
     document = VideoEditorTimelineDocument.model_validate(
         {
@@ -272,3 +320,80 @@ def test_video_editor_render_is_ffmpeg_native_and_has_exact_tracks(tmp_path: Pat
     assert (video["codec_name"], video["width"], video["height"]) == ("h264", 1280, 720)
     assert audio["codec_name"] == "aac"
     assert output.is_file()
+
+
+def test_video_editor_audio_source_offset_is_rebased_to_pts_zero(tmp_path: Path) -> None:
+    source = tmp_path / "source.wav"
+    rate = 48_000
+    with wave.open(str(source), "wb") as output:
+        output.setparams((1, 2, rate, rate * 2, "NONE", "not compressed"))
+        samples = []
+        for index in range(rate * 2):
+            value = (
+                0 if index < rate else round(12_000 * math.sin(2 * math.pi * 440 * index / rate))
+            )
+            samples.append(struct.pack("<h", value))
+        output.writeframes(b"".join(samples))
+    document = VideoEditorTimelineDocument.model_validate(
+        {
+            "settings": {"width": 1920, "height": 1080, "fps": 30},
+            "tracks": [
+                {
+                    "id": "visual-1",
+                    "kind": "visual",
+                    "name": "V1",
+                    "order": 0,
+                    "clips": [color_clip("black", 0, 200_000)],
+                },
+                {
+                    "id": "audio-1",
+                    "kind": "audio",
+                    "name": "A1",
+                    "order": 1,
+                    "clips": [
+                        {
+                            "id": "audio",
+                            "trackId": "audio-1",
+                            "kind": "audio",
+                            "name": "trimmed",
+                            "timelineStartUs": 0,
+                            "durationUs": 200_000,
+                            "sourceInUs": 1_000_000,
+                            "assetId": "source",
+                        }
+                    ],
+                },
+            ],
+        }
+    )
+    rendered = tmp_path / "trimmed.mp4"
+    render_document(
+        document,
+        {"source": source},
+        rendered,
+        preset="720p30",
+        start_us=0,
+        end_us=200_000,
+        cancel=threading.Event(),
+        progress=lambda _value: None,
+    )
+    decoded = subprocess.run(
+        [
+            "ffmpeg",
+            "-v",
+            "error",
+            "-i",
+            str(rendered),
+            "-map",
+            "0:a:0",
+            "-f",
+            "s16le",
+            "-ac",
+            "1",
+            "pipe:1",
+        ],
+        check=True,
+        capture_output=True,
+    ).stdout
+    values = struct.unpack(f"<{len(decoded) // 2}h", decoded)
+    assert max(abs(value) for value in values) > 500

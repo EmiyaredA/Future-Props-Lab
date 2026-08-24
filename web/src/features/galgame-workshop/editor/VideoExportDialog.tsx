@@ -3,7 +3,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Check,
   CheckSquare2,
-  Download,
   Film,
   LoaderCircle,
   Square,
@@ -12,11 +11,11 @@ import {
 import {
   cancelGalgameVideoExport,
   createGalgameVideoExport,
-  downloadGalgameVideoExport,
   listGalgameVideoExports,
   previewGalgameVideoExport,
   type GalgameVideoExportBranchSelection,
   type GalgameVideoExportPreset,
+  type GalgameVideoExportTask,
   type GalgameStoryProject,
 } from "@features/galgame-workshop/api";
 import { formatTimecode } from "@features/galgame-workshop/editor/timeline";
@@ -30,6 +29,11 @@ import {
 import { VideoCaptureFrameEditor } from "@features/galgame-workshop/editor/VideoCaptureFrameEditor";
 import { VideoEditorHandoffPanel } from "@features/galgame-workshop/editor/VideoEditorHandoffPanel";
 import { DeterministicExportFrame } from "@features/galgame-workshop/editor/DeterministicExportFrame";
+import {
+  ActiveVideoExportStatus,
+  VideoExportHistory,
+} from "@features/galgame-workshop/editor/VideoExportTaskProgress";
+import { useDebouncedValue } from "@features/galgame-workshop/editor/useDebouncedValue";
 import {
   FULL_CAPTURE_FRAME,
   normalizeCaptureFrame,
@@ -67,18 +71,6 @@ function formatDuration(milliseconds: number) {
     )
     .join(":");
 }
-
-const phaseLabel: Record<string, string> = {
-  queued: "排队中",
-  preparing: "准备素材",
-  rendering: "确定性逐帧合成",
-  encoding: "编码 MP4",
-  verifying: "校验成片",
-  registering: "保存到资产库",
-  completed: "已完成",
-  failed: "失败",
-  cancelled: "已取消",
-};
 
 export function VideoExportDialog({
   open,
@@ -156,6 +148,9 @@ export function VideoExportDialog({
     );
   }, [fragmentOptions, selectedFragmentIds]);
   const [error, setError] = useState("");
+  const [submissionStatus, setSubmissionStatus] = useState("");
+  const [lastCreatedTask, setLastCreatedTask] =
+    useState<GalgameVideoExportTask>();
   useEffect(() => {
     if (!open) return;
     setScope("route");
@@ -168,6 +163,7 @@ export function VideoExportDialog({
       ),
     );
     setError("");
+    setSubmissionStatus("");
     setLocale(preferredLocale);
   }, [
     currentFragmentId,
@@ -234,9 +230,11 @@ export function VideoExportDialog({
       storyRevision,
     ],
   );
+  const checkedPreviewBody = useDebouncedValue(previewBody, 300);
+  const previewUpdating = checkedPreviewBody !== previewBody;
   const preview = useQuery({
-    queryKey: ["galgame-video-export-preview", projectId, previewBody],
-    queryFn: () => previewGalgameVideoExport(projectId, previewBody),
+    queryKey: ["galgame-video-export-preview", projectId, checkedPreviewBody],
+    queryFn: () => previewGalgameVideoExport(projectId, checkedPreviewBody),
     enabled:
       open &&
       (scope === "route" ||
@@ -257,21 +255,39 @@ export function VideoExportDialog({
   });
   const create = useMutation({
     mutationFn: async () => {
-      if (!preview.data?.ready) throw new Error("请先完成导出范围选择和检查");
+      if (previewUpdating || !preview.data?.ready)
+        throw new Error("请等待最新导出设置检查完成");
       return createGalgameVideoExport(projectId, {
-        ...previewBody,
+        ...checkedPreviewBody,
         requestId: `export-${crypto.randomUUID()}`,
         previewFingerprint: preview.data.previewFingerprint,
       });
     },
-    onSuccess: async () => {
+    onMutate: () => {
       setError("");
-      await client.invalidateQueries({
+      setSubmissionStatus("正在创建导出任务…");
+    },
+    onSuccess: (task) => {
+      setError("");
+      setSubmissionStatus("导出任务已创建，正在后台处理。");
+      setLastCreatedTask(task);
+      client.setQueryData(
+        ["galgame-video-exports", projectId],
+        (current: { items: (typeof task)[] } | undefined) => ({
+          items: [
+            task,
+            ...(current?.items ?? []).filter((item) => item.id !== task.id),
+          ],
+        }),
+      );
+      void client.invalidateQueries({
         queryKey: ["galgame-video-exports", projectId],
       });
     },
-    onError: (reason) =>
-      setError(reason instanceof Error ? reason.message : "无法开始视频导出"),
+    onError: (reason) => {
+      setSubmissionStatus("");
+      setError(reason instanceof Error ? reason.message : "无法开始视频导出");
+    },
   });
   const cancel = useMutation({
     mutationFn: (exportId: string) =>
@@ -283,6 +299,7 @@ export function VideoExportDialog({
   });
   if (!open) return null;
   const decision = preview.data?.nextDecision;
+  const latestTask = tasks.data?.items[0] ?? lastCreatedTask;
   return (
     <div className="galgame-video-export-backdrop" role="presentation">
       <section
@@ -304,6 +321,10 @@ export function VideoExportDialog({
           </button>
         </header>
         <div className="galgame-video-export-content">
+          <ActiveVideoExportStatus
+            task={latestTask}
+            submitting={create.isPending}
+          />
           <VideoCaptureFrameEditor
             document={document}
             fragment={currentFragment}
@@ -313,8 +334,12 @@ export function VideoExportDialog({
           />
           <DeterministicExportFrame
             projectId={projectId}
-            request={previewBody}
-            fingerprint={preview.data?.ready ? preview.data.previewFingerprint : undefined}
+            request={checkedPreviewBody}
+            fingerprint={
+              !previewUpdating && preview.data?.ready
+                ? preview.data.previewFingerprint
+                : undefined
+            }
           />
           <section>
             <h3>导出范围</h3>
@@ -622,9 +647,10 @@ export function VideoExportDialog({
               <div className="galgame-video-export-issues">
                 <p>{clipError}</p>
               </div>
-            ) : preview.isLoading ? (
+            ) : previewUpdating || preview.isFetching ? (
               <p className="galgame-video-export-loading">
-                <LoaderCircle className="spinning" aria-hidden /> 正在检查路线…
+                <LoaderCircle className="spinning" aria-hidden />
+                正在检查最新导出设置…
               </p>
             ) : decision ? (
               <div className="galgame-video-decision">
@@ -700,7 +726,9 @@ export function VideoExportDialog({
           <button
             type="button"
             className="galgame-video-export-start"
-            disabled={!preview.data?.ready || create.isPending}
+            disabled={
+              previewUpdating || !preview.data?.ready || create.isPending
+            }
             onClick={() => create.mutate()}
           >
             {create.isPending ? (
@@ -708,60 +736,26 @@ export function VideoExportDialog({
             ) : (
               <Film aria-hidden />
             )}
-            直接导出 MP4
+            {create.isPending ? "正在提交导出…" : "直接导出 MP4"}
           </button>
+          {submissionStatus ? (
+            <p className="galgame-video-export-submission" role="status">
+              {submissionStatus}
+            </p>
+          ) : null}
           <VideoEditorHandoffPanel
             projectId={projectId}
-            request={previewBody}
-            fingerprint={preview.data?.previewFingerprint}
-            disabled={!preview.data?.ready}
+            request={checkedPreviewBody}
+            fingerprint={
+              previewUpdating ? undefined : preview.data?.previewFingerprint
+            }
+            disabled={previewUpdating || !preview.data?.ready}
           />
-          <section className="galgame-video-history">
-            <h3>导出记录</h3>
-            {tasks.data?.items.length ? (
-              tasks.data.items.map((task) => (
-                <article key={task.id}>
-                  <div>
-                    <strong>
-                      {task.outputFilename || task.endingLabel || "视频导出"}
-                    </strong>
-                    <small>
-                      {phaseLabel[task.phase] || task.phase} · {task.preset}
-                      {task.totalMs
-                        ? ` · ${formatDuration(task.renderedMs)} / ${formatDuration(task.totalMs)}`
-                        : ""}
-                    </small>
-                  </div>
-                  <progress max="100" value={task.progress} />
-                  <span>{task.progress}%</span>
-                  {task.status === "completed" ? (
-                    <button
-                      type="button"
-                      onClick={() =>
-                        void downloadGalgameVideoExport(
-                          projectId,
-                          task.id,
-                          task.outputFilename || "galgame-export.mp4",
-                        )
-                      }
-                    >
-                      <Download aria-hidden /> 下载
-                    </button>
-                  ) : ["queued", "running"].includes(task.status) ? (
-                    <button
-                      type="button"
-                      onClick={() => cancel.mutate(task.id)}
-                    >
-                      取消
-                    </button>
-                  ) : null}
-                  {task.error ? <p>{task.error}</p> : null}
-                </article>
-              ))
-            ) : (
-              <p className="galgame-video-empty">还没有导出记录</p>
-            )}
-          </section>
+          <VideoExportHistory
+            projectId={projectId}
+            tasks={tasks.data?.items ?? []}
+            onCancel={(taskId) => cancel.mutate(taskId)}
+          />
         </div>
       </section>
     </div>

@@ -143,8 +143,10 @@ class AssetStorage:
         temp_dir.mkdir(parents=True, exist_ok=True)
         return temp_dir / f"{self._segment(storage_key)}-{uuid4().hex}.tmp", final_path
 
-    def ensure_project_layout(self, application_id: str, project_id: str) -> bool:
-        root = self.project_root(application_id, project_id)
+    def ensure_project_layout(
+        self, application_id: str, project_id: str, *, workspace_id: str | None = None
+    ) -> bool:
+        root = self.project_root(application_id, project_id, workspace_id=workspace_id)
         created = not root.exists()
         directories = [root / "assets"]
         if application_id == "visual-workshop":

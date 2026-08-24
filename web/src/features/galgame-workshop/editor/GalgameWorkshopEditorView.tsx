@@ -300,7 +300,10 @@ export function GalgameWorkshopEditorView({
             <button
               type="button"
               className="galgame-editor-video-export"
-              onClick={() => setVideoExportOpen(true)}
+              onClick={() => {
+                setPreviewMode("edit");
+                setVideoExportOpen(true);
+              }}
             >
               <Film aria-hidden /> 导出视频
             </button>

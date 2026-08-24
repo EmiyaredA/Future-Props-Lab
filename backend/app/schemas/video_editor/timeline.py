@@ -17,15 +17,17 @@ class VideoEditorProjectSettings(BaseModel):
 class VideoEditorTransform(BaseModel):
     x: float = 960
     y: float = 540
+    anchor: Literal["center", "topLeft", "bottomCenter"] = "center"
     scale_x: float = Field(default=1, alias="scaleX", ge=0.01, le=20)
     scale_y: float = Field(default=1, alias="scaleY", ge=0.01, le=20)
     rotation: float = Field(default=0, ge=-3600, le=3600)
     opacity: float = Field(default=1, ge=0, le=1)
+    brightness: float = Field(default=1, ge=0, le=2)
 
 
 class VideoEditorKeyframe(BaseModel):
     id: str = Field(min_length=1, max_length=64)
-    property: Literal["x", "y", "scaleX", "scaleY", "rotation", "opacity", "volume"]
+    property: Literal["x", "y", "scaleX", "scaleY", "rotation", "opacity", "brightness", "volume"]
     time_us: int = Field(alias="timeUs", ge=0)
     value: float
     interpolation: Literal["linear", "ease-in", "ease-out", "ease-in-out"] = "linear"
@@ -44,6 +46,7 @@ class VideoEditorClip(BaseModel):
     timeline_start_us: int = Field(alias="timelineStartUs", ge=0)
     duration_us: int = Field(alias="durationUs", gt=0)
     source_in_us: int = Field(default=0, alias="sourceInUs", ge=0)
+    source_loop: bool = Field(default=False, alias="sourceLoop")
     asset_id: str | None = Field(default=None, alias="assetId")
     text: str | None = Field(default=None, max_length=4000)
     color: str | None = Field(default=None, pattern=r"^#[0-9a-fA-F]{6}$")
@@ -54,9 +57,7 @@ class VideoEditorClip(BaseModel):
     fit_mode: Literal["native", "cover", "contain", "height"] = Field(
         default="native", alias="fitMode"
     )
-    height_percent: float | None = Field(
-        default=None, alias="heightPercent", gt=0, le=400
-    )
+    height_percent: float | None = Field(default=None, alias="heightPercent", gt=0, le=400)
     flip_x: bool = Field(default=False, alias="flipX")
     volume: float = Field(default=1, ge=0, le=4)
     transform: VideoEditorTransform = Field(default_factory=VideoEditorTransform)

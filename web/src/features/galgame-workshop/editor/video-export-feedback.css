@@ -1,0 +1,78 @@
+.galgame-video-export-loading-dialog {
+  display: flex;
+  width: min(420px, 90vw);
+  align-items: center;
+  gap: 14px;
+  padding: 22px;
+  border: 1px solid var(--gal-line);
+  border-radius: 16px;
+  color: var(--gal-text);
+  background: var(--gal-panel);
+  box-shadow: 0 24px 70px rgb(0 0 0 / 40%);
+}
+
+.galgame-video-export-loading-dialog > svg {
+  width: 22px;
+  color: var(--accent);
+}
+
+.galgame-video-export-loading-dialog > span,
+.galgame-video-active-export > span {
+  display: grid;
+  flex: 1;
+  gap: 3px;
+}
+
+.galgame-video-export-loading-dialog small,
+.galgame-video-active-export small,
+.galgame-video-deterministic-frame > header small {
+  color: var(--gal-muted);
+}
+
+.galgame-video-active-export {
+  position: sticky;
+  z-index: 3;
+  top: -22px;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 13px 15px;
+  border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--gal-line));
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--accent) 10%, var(--gal-panel));
+  box-shadow: 0 8px 24px rgb(0 0 0 / 16%);
+}
+
+.galgame-video-active-export > svg {
+  width: 20px;
+  min-width: 20px;
+  color: var(--accent);
+}
+
+.galgame-video-active-export em {
+  color: #f28a82;
+  font-style: normal;
+}
+
+.galgame-video-export-submission {
+  margin: -10px 0 0;
+  color: var(--gal-muted);
+  text-align: center;
+}
+
+.galgame-video-deterministic-frame > header > span {
+  display: grid;
+  gap: 3px;
+}
+
+.galgame-video-deterministic-frame > header > button {
+  display: inline-flex;
+  min-height: 34px;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 10px;
+}
+
+.galgame-video-deterministic-frame > header > button svg {
+  width: 16px;
+}

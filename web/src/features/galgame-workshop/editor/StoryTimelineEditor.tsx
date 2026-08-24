@@ -34,11 +34,8 @@ import {
   timelineCgRanges,
   timelineCharacterTiming,
   timelineCues,
-  timelineEvents,
   timelineGaps,
-  timelineStageMarkers,
   timelineStructureEvents,
-  type GalgameTimelineCharacterBlock,
 } from "@features/galgame-workshop/editor/timeline";
 import { dialogueSpeakerIds } from "@features/galgame-workshop/editor/dialogue";
 import {
@@ -48,12 +45,13 @@ import {
 import { TimelineClock } from "@features/galgame-workshop/editor/timelineClock";
 import { TimelineTrackLabels } from "@features/galgame-workshop/editor/TimelineTrackLabels";
 import { StoryTimelineToolbar } from "@features/galgame-workshop/editor/StoryTimelineToolbar";
-import { timelineStateSegments } from "@features/galgame-workshop/editor/timelineStateSegments";
 import { timelineCharacterColor } from "@features/galgame-workshop/editor/timelineCharacterColor";
+import { storyTimelineEditorModel } from "@features/galgame-workshop/editor/storyTimelineEditorModel";
 import type { TimelineDragState as DragState } from "@features/galgame-workshop/editor/timelineDragState";
 import type { StoryTimelineEditorProps } from "@features/galgame-workshop/editor/storyTimelineEditorProps";
 
 const TIMELINE_LABEL_WIDTH = 168;
+const PREVIEW_SYNC_INTERVAL_MS = 100;
 
 export function StoryTimelineEditor({
   document,
@@ -96,44 +94,23 @@ export function StoryTimelineEditor({
   const auditionRef = useRef<
     { startMs: number; endMs: number; loop: boolean } | undefined
   >(undefined);
-  const cues = timelineCues(fragment);
-  const gaps = timelineGaps(fragment);
-  const markers = timelineStageMarkers(fragment);
-  const events = timelineEvents(fragment);
-  const cgRanges = timelineCgRanges(fragment);
-  const bgmAssets = useMemo(
-    () =>
-      Array.from(
-        new Map(
-          timelineEvents(fragment).flatMap((event) => {
-            const block = event.block;
-            if (
-              block.type !== "audio" ||
-              block.action !== "play" ||
-              block.channel !== "bgm" ||
-              !block.assetId
-            )
-              return [];
-            const asset = (document.assets ?? []).find(
-              (candidate) =>
-                candidate.type === "audio" && candidate.id === block.assetId,
-            );
-            return asset?.type === "audio" ? [[asset.id, asset] as const] : [];
-          }),
-        ).values(),
-      ),
-    [document.assets, fragment],
+  const {
+    attachedCharacterEvents,
+    bgmAssets,
+    cgs,
+    cgRanges,
+    characterTrackIds,
+    characters,
+    cues,
+    durationMs,
+    gaps,
+    markers,
+    pointEvents,
+    stateSegments,
+  } = useMemo(
+    () => storyTimelineEditorModel(document, fragment),
+    [document, fragment],
   );
-  const pointEvents = events.filter(
-    (event) =>
-      event.block.type === "scene" ||
-      event.block.type === "showCg" ||
-      event.block.type === "hideCg" ||
-      event.block.type === "showCharacter" ||
-      event.block.type === "removeCharacter" ||
-      event.block.type === "audio",
-  );
-  const durationMs = fragment.timeline?.durationMs ?? 0;
   const displayPositionMs =
     readOnly && followPositionMs != null
       ? Math.max(0, Math.min(durationMs, followPositionMs))
@@ -142,40 +119,16 @@ export function StoryTimelineEditor({
   durationRef.current = durationMs;
   const onPreviewPositionRef = useRef(onPreviewPosition);
   onPreviewPositionRef.current = onPreviewPosition;
+  const lastPreviewSyncRef = useRef(Number.NEGATIVE_INFINITY);
   const trackWidth = Math.max(640, (durationMs / 60_000) * zoom);
   const activeCue = activeTimelineCue(fragment, displayPositionMs);
-  const characters = new Map(
-    (document.characters ?? []).map((character) => [character.id, character]),
-  );
-  const cgs = new Map((document.cgs ?? []).map((cg) => [cg.id, cg]));
-  const characterTrackIds = Array.from(
-    new Set(
-      pointEvents.flatMap((event) =>
-        (event.block.type === "showCharacter" ||
-          event.block.type === "removeCharacter") &&
-        event.block.characterId
-          ? [event.block.characterId]
-          : [],
+  const visibleCharacterTrackIds = useMemo(
+    () =>
+      characterTrackIds.filter(
+        (characterId) => !hiddenCharacterTrackIds.has(characterId),
       ),
-    ),
+    [characterTrackIds, hiddenCharacterTrackIds],
   );
-  const visibleCharacterTrackIds = characterTrackIds.filter(
-    (characterId) => !hiddenCharacterTrackIds.has(characterId),
-  );
-  const attachedCharacterEvents = new Map<
-    string,
-    GalgameTimelineCharacterBlock[]
-  >();
-  for (const block of fragment.blocks ?? []) {
-    if (block.type !== "showCharacter" && block.type !== "removeCharacter")
-      continue;
-    const timing = timelineCharacterTiming(fragment, block.id);
-    if (timing?.mode !== "dialogue") continue;
-    attachedCharacterEvents.set(timing.dialogueBlockId, [
-      ...(attachedCharacterEvents.get(timing.dialogueBlockId) ?? []),
-      block,
-    ]);
-  }
   const setCharacterTrackVisible = (characterId: string, visible: boolean) => {
     setHiddenCharacterTrackIds((current) => {
       const next = new Set(current);
@@ -185,21 +138,24 @@ export function StoryTimelineEditor({
     });
   };
   const laneHeight = 40;
-  const lanes = [
-    { id: "scene", label: "场景" },
-    { id: "cg", label: "CG" },
-    ...(characterTracksExpanded
-      ? visibleCharacterTrackIds.map((characterId) => ({
-          id: `character:${characterId}`,
-          label: characters.get(characterId)?.name ?? "未知角色",
-        }))
-      : []),
-    { id: "dialogue", label: "对白 / 角色 / 配音" },
-    { id: "bgm", label: "BGM" },
-    { id: "ambient", label: "环境音" },
-    { id: "sfx", label: "音效" },
-    { id: "structure", label: "分支 / 结局" },
-  ];
+  const lanes = useMemo(
+    () => [
+      { id: "scene", label: "场景" },
+      { id: "cg", label: "CG" },
+      ...(characterTracksExpanded
+        ? visibleCharacterTrackIds.map((characterId) => ({
+            id: `character:${characterId}`,
+            label: characters.get(characterId)?.name ?? "未知角色",
+          }))
+        : []),
+      { id: "dialogue", label: "对白 / 角色 / 配音" },
+      { id: "bgm", label: "BGM" },
+      { id: "ambient", label: "环境音" },
+      { id: "sfx", label: "音效" },
+      { id: "structure", label: "分支 / 结局" },
+    ],
+    [characterTracksExpanded, characters, visibleCharacterTrackIds],
+  );
   const laneTop = (laneId: string) =>
     Math.max(
       0,
@@ -207,12 +163,6 @@ export function StoryTimelineEditor({
     ) * laneHeight;
   const dialogueTop = laneTop("dialogue");
   const trackHeight = lanes.length * laneHeight;
-  const stateSegments = timelineStateSegments({
-    pointEvents,
-    document,
-    durationMs,
-  });
-
   useEffect(() => {
     if (readOnly) return;
     let active = true;
@@ -291,7 +241,15 @@ export function StoryTimelineEditor({
       onPosition: (next) => {
         if (!active) return;
         setPositionMs(next);
-        onPreviewPositionRef.current(next);
+        const now = performance.now();
+        if (
+          !clockRef.current?.isPlaying ||
+          now - lastPreviewSyncRef.current >= PREVIEW_SYNC_INTERVAL_MS ||
+          next >= durationRef.current
+        ) {
+          lastPreviewSyncRef.current = now;
+          onPreviewPositionRef.current(next);
+        }
         const audition = auditionRef.current;
         if (!audition || next < audition.endMs) return;
         if (audition.loop) {

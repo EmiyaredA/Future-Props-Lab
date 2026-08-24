@@ -4,6 +4,7 @@ import httpx
 import pytest
 
 from app.galgame_workshop.video_export import EXPORT_PACKAGING_POLICY
+from app.galgame_workshop.video_handoff_runner import GalgameVideoEditorHandoffRunner
 from app.main import app
 from test_galgame_workshop import playable_story
 
@@ -329,3 +330,76 @@ async def test_video_export_clip_rejects_invalid_ranges() -> None:
                 },
             )
             assert response.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_video_editor_handoff_is_idempotent_and_cancellable() -> None:
+    transport = httpx.ASGITransport(app=app)
+    async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+        project = (
+            await client.post("/v1/galgame-workshop/projects", json={"title": "剪辑交接"})
+        ).json()
+        saved = await client.put(
+            f"/v1/galgame-workshop/projects/{project['id']}/story",
+            json={"expected_revision": 0, "document": playable_story()},
+        )
+        assert saved.status_code == 200, saved.text
+        preview_body = {
+            "expectedStoryRevision": saved.json()["revision"],
+            "preset": "720p60",
+            "branchSelections": [{"branchBlockId": "block-branch", "choiceId": "choice-device"}],
+        }
+        preview = await client.post(
+            f"/v1/galgame-workshop/projects/{project['id']}/video-exports/preview",
+            json=preview_body,
+        )
+        assert preview.status_code == 200, preview.text
+        request = {
+            **preview_body,
+            "requestId": "handoff-test-request",
+            "previewFingerprint": preview.json()["previewFingerprint"],
+        }
+        created = await client.post(
+            f"/v1/galgame-workshop/projects/{project['id']}/video-editor-handoffs",
+            json=request,
+        )
+        assert created.status_code == 202, created.text
+        repeated = await client.post(
+            f"/v1/galgame-workshop/projects/{project['id']}/video-editor-handoffs",
+            json=request,
+        )
+        assert repeated.status_code == 202
+        assert repeated.json()["id"] == created.json()["id"]
+        listed = await client.get(
+            f"/v1/galgame-workshop/projects/{project['id']}/video-editor-handoffs"
+        )
+        assert listed.status_code == 200
+        assert listed.json()["items"][0]["id"] == created.json()["id"]
+        cancelled = await client.post(
+            f"/v1/galgame-workshop/projects/{project['id']}/video-editor-handoffs/"
+            f"{created.json()['id']}/cancel"
+        )
+        assert cancelled.status_code == 200
+        assert cancelled.json()["status"] == "cancelled"
+
+        materialize_request = {**request, "requestId": "handoff-materialize-test"}
+        materialize = await client.post(
+            f"/v1/galgame-workshop/projects/{project['id']}/video-editor-handoffs",
+            json=materialize_request,
+        )
+        assert materialize.status_code == 202, materialize.text
+        await GalgameVideoEditorHandoffRunner()._process(materialize.json()["id"])
+        completed = await client.get(
+            f"/v1/galgame-workshop/projects/{project['id']}/video-editor-handoffs/"
+            f"{materialize.json()['id']}"
+        )
+        assert completed.status_code == 200, completed.text
+        assert completed.json()["status"] == "completed", completed.json().get("error")
+        output_project_id = completed.json()["outputProjectId"]
+        editor_project = await client.get(f"/v1/video-editor/projects/{output_project_id}")
+        assert editor_project.status_code == 200, editor_project.text
+        assert editor_project.json()["sourceApplication"] == "galgame-workshop"
+        assert editor_project.json()["sourceRevision"] == saved.json()["revision"]
+        timeline = await client.get(f"/v1/video-editor/projects/{output_project_id}/timeline")
+        assert timeline.status_code == 200, timeline.text
+        assert any(track["name"] == "对白 UI" for track in timeline.json()["document"]["tracks"])

@@ -1,9 +1,9 @@
 from __future__ import annotations
 
+import asyncio
 import hashlib
 import json
 import shutil
-import asyncio
 from pathlib import Path
 
 from sqlalchemy import select
@@ -14,6 +14,8 @@ from app.core.time import iso_utc, utc_now
 from app.files import AssetError
 from app.files.storage import AssetStorage
 from app.galgame_workshop.story import GalgameStoryDocuments
+from app.galgame_workshop.video_compiler import COMPILER_VERSION, compile_galgame_render_plan
+from app.galgame_workshop.video_dialogue import dialogue_renderer_issue
 from app.galgame_workshop.video_export_planning import (
     EXPORT_PACKAGING_POLICY,
     PRESETS,
@@ -21,7 +23,7 @@ from app.galgame_workshop.video_export_planning import (
     _plan_fragments,
     _plan_route,
 )
-from app.galgame_workshop.video_compiler import COMPILER_VERSION, compile_galgame_render_plan
+from app.galgame_workshop.video_lip_sync import prepare_audio_envelopes
 from app.models import (
     GalgameAssetMetadata,
     GalgameStorySnapshot,
@@ -32,8 +34,8 @@ from app.models import (
 from app.schemas.galgame_workshop import (
     GalgameVideoExportChoiceOut,
     GalgameVideoExportCreateIn,
-    GalgameVideoExportFrameIn,
     GalgameVideoExportDecisionOut,
+    GalgameVideoExportFrameIn,
     GalgameVideoExportIssue,
     GalgameVideoExportPreviewIn,
     GalgameVideoExportPreviewOut,
@@ -52,6 +54,7 @@ def _task_out(row: GalgameVideoExportTask) -> GalgameVideoExportTaskOut:
     if phase not in {
         "queued",
         "preparing",
+        "analyzing",
         "rendering",
         "encoding",
         "verifying",
@@ -159,6 +162,15 @@ class GalgameVideoExports:
                         path="/renderer",
                     )
                 )
+        font_issue = dialogue_renderer_issue()
+        if font_issue:
+            blockers.append(
+                GalgameVideoExportIssue(
+                    code="renderer_font_missing",
+                    message=font_issue,
+                    path="/renderer/fonts",
+                )
+            )
         selections = {item.branch_block_id: item.choice_id for item in body.branch_selections}
         if body.scope == "fragments":
             plan = _plan_fragments(document, body.fragment_ids, asset_duration)
@@ -346,9 +358,7 @@ class GalgameVideoExports:
             raise AssetError("预览时间超出导出范围", code="invalid_time", status=422)
         story = await GalgameStoryDocuments(self.session).get(project_id)
         document = story.document.model_dump(mode="json", by_alias=True)
-        file_ids = [
-            item.get("fileId") for item in document.get("assets", []) if item.get("fileId")
-        ]
+        file_ids = [item.get("fileId") for item in document.get("assets", []) if item.get("fileId")]
         assets = (
             list(
                 (
@@ -360,15 +370,63 @@ class GalgameVideoExports:
             if file_ids
             else []
         )
+        asset_paths = {asset.id: self.storage.path_for(asset) for asset in assets}
+        asset_fingerprints = {
+            asset.id: (f"{asset.id}:{asset.revision}:{asset.storage_version}:{asset.byte_size}")
+            for asset in assets
+        }
+        metadata_rows = (
+            list(
+                (
+                    await self.session.execute(
+                        select(GalgameAssetMetadata).where(
+                            GalgameAssetMetadata.asset_id.in_(file_ids)
+                        )
+                    )
+                ).scalars()
+            )
+            if file_ids
+            else []
+        )
+        duration_by_file = {
+            item.asset_id: item.duration_ms
+            for item in metadata_rows
+            if item.duration_ms is not None
+        }
+        asset_duration_ms = {
+            str(item["id"]): duration_by_file[item["fileId"]]
+            for item in document.get("assets", [])
+            if item.get("fileId") in duration_by_file
+        }
         payload = body.model_dump(mode="json", by_alias=True, exclude={"time_ms", "width"})
         payload["resolvedFragmentIds"] = preview.route.fragment_ids
-        compiled = compile_galgame_render_plan(
-            document,
-            payload,
-            fragment_durations_ms=preview.route.fragment_durations_ms,
-            total_ms=preview.route.estimated_duration_ms,
-            asset_paths={asset.id: self.storage.path_for(asset) for asset in assets},
-        )
+        try:
+            envelopes = await asyncio.to_thread(
+                prepare_audio_envelopes,
+                document,
+                asset_paths,
+                cache_dir=self.storage.project_root("galgame-workshop", project_id)
+                / "derived"
+                / "audio-envelopes",
+                asset_fingerprints=asset_fingerprints,
+                selected_fragment_ids=set(preview.route.fragment_ids),
+            )
+            compiled = await asyncio.to_thread(
+                compile_galgame_render_plan,
+                document,
+                payload,
+                fragment_durations_ms=preview.route.fragment_durations_ms,
+                total_ms=preview.route.estimated_duration_ms,
+                asset_paths=asset_paths,
+                asset_duration_ms=asset_duration_ms,
+                audio_envelopes=envelopes,
+            )
+        except (RuntimeError, ValueError) as exc:
+            raise AssetError(
+                f"无法准备确定性口型与动画：{exc}",
+                code="video_export_compilation_failed",
+                status=422,
+            ) from exc
         return await asyncio.to_thread(
             render_plan_frame,
             compiled.plan,

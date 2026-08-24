@@ -9,6 +9,7 @@ import type {
   GalgameStoryProject,
 } from "@features/galgame-workshop/api";
 import { StoryPlayer } from "@features/galgame-workshop/editor/StoryPlayer";
+import { DEFAULT_STAGE_VIEWPORT_PREFERENCES } from "@features/galgame-workshop/editor/stageViewportPreferences";
 import {
   FULL_CAPTURE_FRAME,
   normalizeCaptureFrame,
@@ -146,6 +147,7 @@ export function VideoCaptureFrameEditor({
             editFragment={fragment}
             editTimelinePositionMs={timelinePositionMs}
             chrome="stage-only"
+            viewportPreferences={DEFAULT_STAGE_VIEWPORT_PREFERENCES}
           />
         </div>
         {previewMode === "edit" ? (

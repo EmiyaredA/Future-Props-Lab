@@ -32,7 +32,15 @@ const ease = (progress: number, interpolation: string) => {
 
 export function clipPropertyAt(
   clip: VideoEditorClip,
-  property: "x" | "y" | "scaleX" | "scaleY" | "rotation" | "opacity" | "volume",
+  property:
+    | "x"
+    | "y"
+    | "scaleX"
+    | "scaleY"
+    | "rotation"
+    | "opacity"
+    | "brightness"
+    | "volume",
   localUs: number,
   fallback: number,
 ) {
@@ -76,6 +84,7 @@ const baseClip = (
   timelineStartUs: startUs,
   durationUs: Number(asset.probe?.durationUs || 5_000_000),
   sourceInUs: 0,
+  sourceLoop: false,
   assetId: asset.id,
   fontSize: 72,
   textColor: "#ffffff",
@@ -89,6 +98,8 @@ const baseClip = (
     scaleY: 1,
     rotation: 0,
     opacity: 1,
+    anchor: "center",
+    brightness: 1,
   },
   keyframes: [],
 });

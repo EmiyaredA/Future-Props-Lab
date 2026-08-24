@@ -335,11 +335,14 @@ ID、消息数量、画布摘要和素材 ID；不保存图片 Base64、临时�
 - `POST /v1/galgame-workshop/projects/{project_id}/annotation-imports/preview`：只读核对广播剧标注、完整主音轨、说话人映射、Story 占位素材、对白时间/中文和演出数量。
 - `POST /v1/galgame-workshop/projects/{project_id}/annotation-imports`：以 `requestId` 幂等创建持久化导入任务；服务端从完整源音频裁切逐句配音、保存 Story 快照并执行 CAS 更新。
 - `GET /v1/galgame-workshop/projects/{project_id}/annotation-imports/{import_id}`：读取导入进度、音频内容校验、保存验收或自动回滚结果；`phase` 明确返回 `queued`、`cutting`、`validating`、`saving`、`accepting`、`rolling_back` 等阶段。
-- `POST /v1/galgame-workshop/projects/{project_id}/video-exports/preview`：按 Story revision、语言、画质和已有分支选择推演路线；逐次返回下一处待选分支、预计时长、结局、阻断问题与预览指纹。
-- `POST /v1/galgame-workshop/projects/{project_id}/video-exports`：以 `requestId` 和预览指纹幂等创建后台 MP4 导出任务，并保存只读 Story 快照。
+- `POST /v1/galgame-workshop/projects/{project_id}/video-exports/preview`：按 Story revision、语言、四档输出规格、取景框和已有分支选择推演路线；逐次返回下一处待选分支、预计时长、结局、阻断问题与含素材指纹的预览指纹。
+- `POST /v1/galgame-workshop/projects/{project_id}/video-exports/frame`：使用与正式导出相同的冻结路线和 `RenderPlan` 返回指定时间点的精确 PNG 帧。
+- `POST /v1/galgame-workshop/projects/{project_id}/video-exports`：以 `requestId` 和预览指纹幂等创建后台 MP4 导出任务并保存只读 Story 快照；正式合成不启动浏览器或 JavaScript 时钟。
 - `GET /v1/galgame-workshop/projects/{project_id}/video-exports` 与 `GET .../{export_id}`：读取导出历史、阶段、进度、已渲染时间和结果素材。
 - `POST /v1/galgame-workshop/projects/{project_id}/video-exports/{export_id}/cancel`：取消排队或运行中的任务；运行中会终止隔离渲染与编码进程并清理临时文件。
 - `GET /v1/galgame-workshop/projects/{project_id}/video-exports/{export_id}/download`：下载完成的 H.264/AAC MP4。
+- `POST/GET /v1/galgame-workshop/projects/{project_id}/video-editor-handoffs`：以相同预览指纹创建或列出后台剪辑交接任务；每次完成都会产生新的冻结、分层视频剪辑工程并物理复制依赖素材。
+- `GET /v1/galgame-workshop/projects/{project_id}/video-editor-handoffs/{task_id}` 与 `POST .../{task_id}/cancel`：读取交接进度、输出剪辑工程与轨道/素材摘要，或取消任务并清理尚未完成的工程。
 
 ### 视频剪辑工坊
 
@@ -374,18 +377,24 @@ ID、消息数量、画布摘要和素材 ID；不保存图片 Base64、临时�
 `clipRange: { fragmentId, startMs, endMs }` 只渲染单个时间轴 Fragment 的指定区间。快速试片区间
 必须位于 Fragment 时间轴内、结束晚于开始且最长 5 分钟；区间与 Story revision 一起进入预览指纹
 和任务快照。片段模式不会跟随片段中的分支、调用或章节跳转进入未选择内容。三种范围均支持
-`720p30`、`1080p30` 与 `1080p60` 三档预设。
+`720p30`、`1080p30`、`720p60` 与 `1080p60` 四档预设。
 三种范围都可提交 `captureFrame: { x, y, width, height }`。该坐标固定以 1920×1080 舞台为基准，
 四个值均为偶数整数，最小尺寸 320×180，必须严格保持 16:9 且完整位于画布内；字段缺失时按
 `{ x: 0, y: 0, width: 1920, height: 1080 }` 兼容全画面。取景框参与预览指纹、任务请求和渲染
-manifest；渲染器先把它映射到录制规格并执行偶数像素 crop，再用 Lanczos 缩放回输出规格。
-后台只访问本机专用渲染页，使用
-任务创建时的 Story 快照，不读取用户浏览器 Cookie，也不改写 Story revision。分支固定显示
+manifest；确定性渲染器先按 1920×1080 规范舞台裁剪，再用 Lanczos 缩放回输出规格。
+后台使用任务创建时的 Story 快照，不访问网页、Chromium、Playwright 或 JavaScript 时钟，也不
+读取用户浏览器 Cookie或改写 Story revision。分支固定显示
 2 秒，并在最后 0.5 秒高亮预选项；时间轴按 `durationMs`，普通剧情按播放器自动推进规则执行。
-快速试片会从起点前最多 500ms 恢复舞台和近期动画并在成片中裁掉预热部分，主音轨和其他声音按
-区间起点恢复偏移。主音轨 Story 只混入一次完整主音轨；普通 Story 会按实际播放事件混合逐句配音、BGM、环境音、
+快速试片会从 Fragment 起点归约舞台状态，并按绝对时间恢复片段起点处的角色、动画和对白；输出
+只在最终合成阶段归零。主音轨按区间起点设置素材偏移且只混入一次，存在主音轨时不再叠加逐句
+配音；普通 Story 会按实际播放事件混合逐句配音、BGM、环境音、
 音效及视频声音。成片验证通过后登记到项目 `exports/`，预览失效、路线循环、素材缺失、磁盘不足
 或媒体参数不符都会阻止创建或把任务标记为失败。
+
+序列帧立绘不会在导出时压成代表首帧：`timed` 序列按表情启用的 Story 绝对时间播放，`lipSync`
+三帧序列由主音轨或逐句配音的离线 RMS 包络确定闭口、半口和张口状态。快速试片会从 Fragment
+起点预热口型底噪，任务的 `analyzing` 阶段负责生成或读取素材指纹缓存。人物动作、镜头与全舞台
+动画在同一绝对时间变换中组合，精确 PNG、直接 MP4 和剪辑工坊交接共用该结果。
 
 - `GET/POST /v1/galgame-workshop/projects/{project_id}/story/portrait-upgrade`：预览或应用旧立绘尺寸升级；应用前自动保存快照。
 - `GET /v1/galgame-workshop/projects/{project_id}/story/snapshots` 与 `POST .../{snapshot_id}/restore`：列出并以 Story revision 恢复维护快照。
@@ -497,6 +506,8 @@ Dialogue Block 的 `characterId` 继续表示主说话角色；可选 `speakerId
 透明度、圆角和旧版 `fontScale` 外，还可分别配置面板布局、纵向渐变、顶部边线、正文安全边距与对齐、
 人物名位置与装饰线，以及推进状态的位置、样式和视频导出可见性。内置 `classicGradient` 是全宽底部渐隐
 样式；编辑器预览、正式试玩和视频导出共用同一套样式解析结果，`switchDialogueStyle` 也会切换完整预设。
+视频导出把解析后的对话框、富文本、人物名和推进指示器预渲染为透明 RGBA 图层，并使用应用内固定
+版本的 Noto Sans CJK SC 字体；字体不可读时预检/编译失败，不回退到缺少中文字形的位图字体。
 可选 `assetId` 必须引用 `assets[]` 中 role 为 `dialogueBox` 的静态图片；上传图片与角色立绘、场景背景
 复用同一套工程私有素材和全局文件引用生命周期。旧 V1 故事缺少新增字段时沿用原暗色面板视觉，首次
 修改后随 Story CAS 整体保存。

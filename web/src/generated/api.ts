@@ -6653,7 +6653,7 @@ export interface components {
              * Phase
              * @enum {string}
              */
-            phase: "queued" | "preparing" | "rendering" | "encoding" | "verifying" | "registering" | "completed" | "failed" | "cancelled";
+            phase: "queued" | "preparing" | "analyzing" | "rendering" | "encoding" | "verifying" | "registering" | "completed" | "failed" | "cancelled";
             /**
              * Preset
              * @enum {string}
@@ -8955,6 +8955,11 @@ export interface components {
              * @default 0
              */
             sourceInUs: number;
+            /**
+             * Sourceloop
+             * @default false
+             */
+            sourceLoop: boolean;
             /** Text */
             text?: string | null;
             /**
@@ -8991,7 +8996,7 @@ export interface components {
              * Property
              * @enum {string}
              */
-            property: "x" | "y" | "scaleX" | "scaleY" | "rotation" | "opacity" | "volume";
+            property: "x" | "y" | "scaleX" | "scaleY" | "rotation" | "opacity" | "brightness" | "volume";
             /** Timeus */
             timeUs: number;
             /** Value */
@@ -9245,6 +9250,17 @@ export interface components {
         };
         /** VideoEditorTransform */
         VideoEditorTransform: {
+            /**
+             * Anchor
+             * @default center
+             * @enum {string}
+             */
+            anchor: "center" | "topLeft" | "bottomCenter";
+            /**
+             * Brightness
+             * @default 1
+             */
+            brightness: number;
             /**
              * Opacity
              * @default 1

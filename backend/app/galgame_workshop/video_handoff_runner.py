@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import asyncio
+import threading
 from pathlib import Path
 
 from sqlalchemy import delete, select
@@ -16,8 +18,10 @@ from app.galgame_workshop.video_compiler import (
     compile_galgame_render_plan,
     remap_render_plan_assets,
 )
+from app.galgame_workshop.video_lip_sync import prepare_audio_envelopes
 from app.llm.generation_runtime import PollingGenerationRunner
 from app.models import (
+    GalgameAssetMetadata,
     GalgameStorySnapshot,
     GalgameVideoEditorHandoffTask,
     GalgameWorkshopProject,
@@ -162,17 +166,65 @@ class GalgameVideoEditorHandoffRunner(PollingGenerationRunner):
                 )
                 source_by_id = {item.id: item for item in sources}
                 source_paths = {item.id: self.storage.path_for(item) for item in sources}
-                compiled = compile_galgame_render_plan(
-                    document,
-                    payload,
-                    fragment_durations_ms=fragment_durations,
-                    total_ms=total_ms,
-                    asset_paths=source_paths,
+                asset_fingerprints = {
+                    item.id: (f"{item.id}:{item.revision}:{item.storage_version}:{item.byte_size}")
+                    for item in sources
+                }
+                metadata_rows = list(
+                    (
+                        await session.execute(
+                            select(GalgameAssetMetadata).where(
+                                GalgameAssetMetadata.asset_id.in_(file_ids)
+                            )
+                        )
+                    ).scalars()
                 )
+                duration_by_file = {
+                    item.asset_id: item.duration_ms
+                    for item in metadata_rows
+                    if item.duration_ms is not None
+                }
+                asset_duration_ms = {
+                    str(item["id"]): duration_by_file[item["fileId"]]
+                    for item in document.get("assets", [])
+                    if item.get("fileId") in duration_by_file
+                }
                 title = str(payload.get("title") or "").strip() or (
                     f"{source_project.title} · Story r{task.story_revision}"
                 )
 
+            cancel_event = threading.Event()
+            await self._set(task_id, progress=3, detail={"phase": "analyzing"})
+            analysis = asyncio.create_task(
+                asyncio.to_thread(
+                    prepare_audio_envelopes,
+                    document,
+                    source_paths,
+                    cache_dir=self.storage.project_root(
+                        "galgame-workshop", task.project_id, workspace_id=workspace_id
+                    )
+                    / "derived"
+                    / "audio-envelopes",
+                    asset_fingerprints=asset_fingerprints,
+                    selected_fragment_ids=set(payload.get("resolvedFragmentIds") or []),
+                    cancel=cancel_event,
+                )
+            )
+            while not analysis.done():
+                if await self._cancelled(task_id):
+                    cancel_event.set()
+                await asyncio.sleep(0.25)
+            envelopes = await analysis
+            compiled = await asyncio.to_thread(
+                compile_galgame_render_plan,
+                document,
+                payload,
+                fragment_durations_ms=fragment_durations,
+                total_ms=total_ms,
+                asset_paths=source_paths,
+                asset_duration_ms=asset_duration_ms,
+                audio_envelopes=envelopes,
+            )
             if await self._cancelled(task_id):
                 raise InterruptedError("剪辑交接已取消")
 
@@ -202,15 +254,27 @@ class GalgameVideoEditorHandoffRunner(PollingGenerationRunner):
                 if await self._cancelled(task_id):
                     raise InterruptedError("剪辑交接已取消")
                 source = source_by_id.get(source_id)
-                if source is None:
+                generated_path = compiled.plan.asset_paths.get(source_id)
+                if source is None and (
+                    not source_id.startswith("generated-dialogue-")
+                    or generated_path is None
+                    or not generated_path.is_file()
+                ):
                     raise RuntimeError(f"素材 {source_id} 已不存在")
+                source_path = source_paths[source_id] if source is not None else generated_path
+                filename = (
+                    source.original_filename
+                    if source is not None
+                    else f"dialogue-ui-{source_id.removeprefix('generated-dialogue-')}.png"
+                )
+                content_type = source.mime_type if source is not None else "image/png"
                 async with self.session_factory() as session:
                     bind_workspace(session, workspace_id)
                     library = AssetLibrary(session, self.settings)
                     copied, staged = await library.stage_local_copy(
-                        source_paths[source_id],
-                        filename=source.original_filename,
-                        content_type=source.mime_type,
+                        source_path,
+                        filename=filename,
+                        content_type=content_type,
                         video_editor_project_id=created_project_id,
                         allowed_extensions=VIDEO_EDITOR_EXTENSIONS,
                     )
@@ -266,9 +330,7 @@ class GalgameVideoEditorHandoffRunner(PollingGenerationRunner):
         except InterruptedError:
             if created_project_id is not None:
                 await self._discard_project(created_project_id, workspace_id)
-            await self._set(
-                task_id, status="cancelled", progress=0, error=None, finished=True
-            )
+            await self._set(task_id, status="cancelled", progress=0, error=None, finished=True)
         except Exception as exc:
             if created_project_id is not None:
                 try:

@@ -63,6 +63,7 @@ export function VideoEditorPage({
       timelineStartUs: snapUs(editor.playheadUs, fps),
       durationUs: snapUs(3_000_000, fps),
       sourceInUs: 0,
+      sourceLoop: false,
       text: kind === "text" ? "双击属性编辑文字" : undefined,
       color: kind === "color" ? "#000000" : undefined,
       fontSize: 72,
@@ -77,6 +78,8 @@ export function VideoEditorPage({
         scaleY: 1,
         rotation: 0,
         opacity: 1,
+        anchor: "center",
+        brightness: 1,
       },
       keyframes: [],
     };

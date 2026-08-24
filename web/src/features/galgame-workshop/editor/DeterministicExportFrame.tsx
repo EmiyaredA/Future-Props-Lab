@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { LoaderCircle } from "lucide-react";
+import { Image, LoaderCircle, RefreshCcw } from "lucide-react";
 import {
   previewGalgameVideoExportFrame,
   type GalgameVideoExportPreviewRequest,
@@ -17,14 +17,14 @@ export function DeterministicExportFrame({
 }) {
   const [url, setUrl] = useState("");
   const frame = useQuery({
-    queryKey: ["galgame-video-export-frame", projectId, fingerprint],
+    queryKey: ["galgame-video-export-frame", projectId, fingerprint, request],
     queryFn: () =>
       previewGalgameVideoExportFrame(projectId, {
         ...request,
         timeMs: 0,
         width: 960,
       }),
-    enabled: Boolean(fingerprint),
+    enabled: false,
     retry: false,
   });
   useEffect(() => {
@@ -38,17 +38,29 @@ export function DeterministicExportFrame({
   return (
     <section className="galgame-video-deterministic-frame">
       <header>
-        <strong>确定性导出首帧</strong>
-        <small>来自后端 RenderPlan，不是浏览器录屏画面</small>
+        <span>
+          <strong>确定性导出首帧</strong>
+          <small>按需生成，避免打开窗口时占用渲染资源</small>
+        </span>
+        <button
+          type="button"
+          disabled={frame.isFetching}
+          onClick={() => void frame.refetch()}
+        >
+          {url ? <RefreshCcw aria-hidden /> : <Image aria-hidden />}
+          {url ? "重新生成" : "生成精确首帧"}
+        </button>
       </header>
-      {url ? (
-        <img src={url} alt="当前导出设置生成的精确首帧" />
-      ) : frame.isLoading ? (
+      {frame.isFetching ? (
         <p>
           <LoaderCircle className="spinning" aria-hidden /> 正在合成精确帧…
         </p>
+      ) : url ? (
+        <img src={url} alt="当前导出设置生成的精确首帧" />
+      ) : frame.isError ? (
+        <p>{frame.error.message || "精确帧暂时不可用"}</p>
       ) : (
-        <p>{frame.error?.message || "精确帧暂时不可用"}</p>
+        <p>需要核对最终合成效果时再生成，不影响直接开始导出。</p>
       )}
     </section>
   );

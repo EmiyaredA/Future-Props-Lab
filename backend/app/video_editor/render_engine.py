@@ -12,8 +12,8 @@ from PIL import Image
 
 from app.schemas.video_editor import VideoEditorClip, VideoEditorTimelineDocument
 from app.video_editor.evaluator import FrameSource, TimelineFrameRenderer
-from app.video_editor.rendering import PRESETS
 from app.video_editor.render_plan import RenderCaptureFrame, RenderPlan
+from app.video_editor.rendering import PRESETS
 
 
 class RenderCancelled(RuntimeError):
@@ -255,20 +255,22 @@ def _mux_audio(
         intersection_end = min(end_us, clip.timeline_start_us + clip.duration_us)
         source_start = clip.source_in_us + intersection_start - clip.timeline_start_us
         clip_duration = (intersection_end - intersection_start) / 1_000_000
-        args.extend(
-            [
-                "-ss",
-                f"{source_start / 1_000_000:.6f}",
-                "-t",
-                f"{clip_duration:.6f}",
-                "-i",
-                str(asset_paths[clip.asset_id or ""]),
-            ]
-        )
+        input_args = [
+            *(["-stream_loop", "-1"] if clip.source_loop else []),
+            "-ss",
+            f"{source_start / 1_000_000:.6f}",
+            "-t",
+            f"{clip_duration:.6f}",
+            "-i",
+            str(asset_paths[clip.asset_id or ""]),
+        ]
+        args.extend(input_args)
         delay_ms = round((intersection_start - start_us) / 1000)
         volume = _volume_expression(clip, intersection_start - clip.timeline_start_us)
         chain = [
-            f"[{index}:a]aresample=48000",
+            f"[{index}:a]atrim=start=0:end={clip_duration:.6f}",
+            "asetpts=PTS-STARTPTS",
+            "aresample=48000",
             f"volume='{volume}':eval=frame",
         ]
         if clip.transition_in and clip.transition_in.kind == "audio-crossfade":
@@ -282,7 +284,8 @@ def _mux_audio(
         labels.append(f"[a{index}]")
     if labels:
         filters.append(
-            f"{''.join(labels)}amix=inputs={len(labels)}:normalize=0:duration=longest[aout]"
+            f"{''.join(labels)}amix=inputs={len(labels)}:normalize=0:duration=longest,"
+            f"atrim=start=0:end={duration:.6f},asetpts=PTS-STARTPTS[aout]"
         )
         args.extend(["-filter_complex", ";".join(filters), "-map", "0:v:0", "-map", "[aout]"])
     else:

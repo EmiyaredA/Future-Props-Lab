@@ -36,6 +36,8 @@ export function VideoEditorInspector({
     scaleY: 1,
     rotation: 0,
     opacity: 1,
+    anchor: "center" as const,
+    brightness: 1,
   };
   const update = (
     patch: Record<string, unknown>,
@@ -48,7 +50,14 @@ export function VideoEditorInspector({
   const localUs = Math.max(0, playheadUs - clip.timelineStartUs);
   const addKeyframe = (
     property:
-      "x" | "y" | "scaleX" | "scaleY" | "rotation" | "opacity" | "volume",
+      | "x"
+      | "y"
+      | "scaleX"
+      | "scaleY"
+      | "rotation"
+      | "opacity"
+      | "brightness"
+      | "volume",
     value: number,
   ) => {
     const keyframe = {
@@ -190,43 +199,51 @@ export function VideoEditorInspector({
       {clip.kind !== "audio" ? (
         <section>
           <h3>变换</h3>
-          {(["x", "y", "scaleX", "scaleY", "rotation", "opacity"] as const).map(
-            (property) => (
-              <label className="ve-key-field" key={property}>
-                <span>{property}</span>
-                <input
-                  type="number"
-                  step={
-                    property.startsWith("scale") || property === "opacity"
-                      ? 0.01
-                      : 1
-                  }
-                  defaultValue={transform[property]}
-                  onBlur={(event) => {
-                    const value = numberValue(event);
-                    if (value !== transform[property])
-                      void update(
-                        {
-                          transform: {
-                            ...transform,
-                            [property]: numberValue(event),
-                          },
+          {(
+            [
+              "x",
+              "y",
+              "scaleX",
+              "scaleY",
+              "rotation",
+              "opacity",
+              "brightness",
+            ] as const
+          ).map((property) => (
+            <label className="ve-key-field" key={property}>
+              <span>{property}</span>
+              <input
+                type="number"
+                step={
+                  property.startsWith("scale") ||
+                  property === "opacity" ||
+                  property === "brightness"
+                    ? 0.01
+                    : 1
+                }
+                defaultValue={transform[property]}
+                onBlur={(event) => {
+                  const value = numberValue(event);
+                  if (value !== transform[property])
+                    void update(
+                      {
+                        transform: {
+                          ...transform,
+                          [property]: numberValue(event),
                         },
-                        { transform },
-                      );
-                  }}
-                />
-                <button
-                  aria-label={`为 ${property} 添加关键帧`}
-                  onClick={() =>
-                    void addKeyframe(property, transform[property])
-                  }
-                >
-                  <Diamond aria-hidden />
-                </button>
-              </label>
-            ),
-          )}
+                      },
+                      { transform },
+                    );
+                }}
+              />
+              <button
+                aria-label={`为 ${property} 添加关键帧`}
+                onClick={() => void addKeyframe(property, transform[property])}
+              >
+                <Diamond aria-hidden />
+              </button>
+            </label>
+          ))}
         </section>
       ) : (
         <section>

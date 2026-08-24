@@ -5,7 +5,6 @@
 - `FPL_DATABASE_PATH`：可选 SQLite 文件路径，默认 `.runtime/future-props.db`；相对路径以仓库根目录为准。
 - `FPL_VISUAL_ASSET_MAX_BYTES`：文件管理与项目素材的单文件上限，默认 `209715200`（200 MiB）。
 - `FPL_GALGAME_EXPORT_MAX_BYTES`：Galgame 导出 MP4 的单文件上限，默认 `8589934592`（8 GiB）。
-- `FPL_GALGAME_RENDERER_URL`：后台隔离渲染页的本机地址，开发环境默认 `http://127.0.0.1:3000/galgame-export.html`；不接受带凭证或非本机主机的 URL。
 - `FPL_TEMP_MEDIA_UPLOAD_URL`：可选的视频生成参考音频/视频临时托管上传地址，默认留空。配置后必须是无凭证 HTTPS 地址；未配置时需要外传参考媒体的请求会在发起网络访问前返回明确配置错误。
 - `FPL_MCP_STDIO_ALLOWED_COMMANDS`：允许 MCP stdio 启动的绝对可执行文件路径，使用系统路径分隔符
   分隔多项；默认空，即完全禁用 stdio。命令解析后必须精确命中白名单，参数始终按数组传递且不使用 shell。

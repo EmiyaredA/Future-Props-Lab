@@ -19,11 +19,12 @@ from app.core.tenant_context import bind_workspace
 from app.core.time import utc_now
 from app.files.library import AssetLibrary
 from app.files.storage import AssetStorage
+from app.galgame_workshop.video_compiler import compile_galgame_render_plan
 from app.galgame_workshop.video_export_planning import (
     EXPORT_PACKAGING_POLICY,
     PRESETS,
 )
-from app.galgame_workshop.video_compiler import compile_galgame_render_plan
+from app.galgame_workshop.video_lip_sync import prepare_audio_envelopes
 from app.llm.generation_runtime import PollingGenerationRunner
 from app.models import (
     GalgameAssetMetadata,
@@ -198,23 +199,74 @@ class GalgameVideoExportRunner(PollingGenerationRunner):
                     else []
                 )
                 asset_paths = {item.id: self.storage.path_for(item) for item in assets}
+                asset_fingerprints = {
+                    item.id: (f"{item.id}:{item.revision}:{item.storage_version}:{item.byte_size}")
+                    for item in assets
+                }
+                metadata_rows = (
+                    list(
+                        (
+                            await session.execute(
+                                select(GalgameAssetMetadata).where(
+                                    GalgameAssetMetadata.asset_id.in_(file_ids)
+                                )
+                            )
+                        ).scalars()
+                    )
+                    if file_ids
+                    else []
+                )
+                duration_by_file = {
+                    item.asset_id: item.duration_ms
+                    for item in metadata_rows
+                    if item.duration_ms is not None
+                }
+                asset_duration_ms = {
+                    str(item["id"]): duration_by_file[item["fileId"]]
+                    for item in document.get("assets", [])
+                    if item.get("fileId") in duration_by_file
+                }
 
             with TemporaryDirectory(prefix=f"galgame-video-{task_id}-") as temp_dir:
                 root = Path(temp_dir)
                 output_path = root / "output.mp4"
-                compiled = compile_galgame_render_plan(
+                cancel_event = threading.Event()
+                await self._set(task_id, phase="analyzing", progress=2)
+                analysis = asyncio.create_task(
+                    asyncio.to_thread(
+                        prepare_audio_envelopes,
+                        document,
+                        asset_paths,
+                        cache_dir=self.storage.project_root(
+                            "galgame-workshop", project_id, workspace_id=workspace_id
+                        )
+                        / "derived"
+                        / "audio-envelopes",
+                        asset_fingerprints=asset_fingerprints,
+                        selected_fragment_ids=set(payload.get("resolvedFragmentIds") or []),
+                        cancel=cancel_event,
+                    )
+                )
+                while not analysis.done():
+                    if await self._cancel_requested(task_id):
+                        cancel_event.set()
+                    await asyncio.sleep(0.25)
+                envelopes = await analysis
+                compiled = await asyncio.to_thread(
+                    compile_galgame_render_plan,
                     document,
                     payload,
                     fragment_durations_ms=fragment_durations_ms,
                     total_ms=total_ms,
                     asset_paths=asset_paths,
+                    asset_duration_ms=asset_duration_ms,
+                    audio_envelopes=envelopes,
                 )
-                await self._set(task_id, phase="rendering", progress=2)
-                cancel_event = threading.Event()
-                render_progress = [2]
+                await self._set(task_id, phase="rendering", progress=3)
+                render_progress = [3]
 
                 def report(value: int) -> None:
-                    render_progress[0] = max(2, min(88, value))
+                    render_progress[0] = max(3, min(88, value))
 
                 rendering = asyncio.create_task(
                     asyncio.to_thread(
@@ -320,6 +372,14 @@ class GalgameVideoExportRunner(PollingGenerationRunner):
                     output_filename=filename,
                     finished=True,
                 )
+        except InterruptedError:
+            await self._set(
+                task_id,
+                status="cancelled",
+                phase="cancelled",
+                error=None,
+                finished=True,
+            )
         except Exception as exc:
             await self._set(
                 task_id,

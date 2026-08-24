@@ -151,6 +151,8 @@ export function VideoEditorPreview({
               scaleY: 1,
               rotation: 0,
               opacity: 1,
+              anchor: "center" as const,
+              brightness: 1,
             };
             const localUs = playheadUs - clip.timelineStartUs;
             const x = clipPropertyAt(clip, "x", localUs, transform.x);
@@ -173,11 +175,30 @@ export function VideoEditorPreview({
               localUs,
               transform.rotation,
             );
+            const brightness = clipPropertyAt(
+              clip,
+              "brightness",
+              localUs,
+              transform.brightness ?? 1,
+            );
+            const anchorTranslate =
+              transform.anchor === "bottomCenter"
+                ? "translate(-50%, -100%)"
+                : transform.anchor === "topLeft"
+                  ? "translate(0, 0)"
+                  : "translate(-50%, -50%)";
             const style = {
               left: `${(x / 1920) * 100}%`,
               top: `${(y / 1080) * 100}%`,
               opacity: clipOpacityAt(clip, localUs),
-              transform: `translate(-50%, -50%) scale(${scaleX}, ${scaleY}) rotate(${rotation}deg)`,
+              filter: `brightness(${brightness})`,
+              transformOrigin:
+                transform.anchor === "bottomCenter"
+                  ? "bottom center"
+                  : transform.anchor === "topLeft"
+                    ? "top left"
+                    : "center",
+              transform: `${anchorTranslate} scale(${scaleX}, ${scaleY}) rotate(${rotation}deg)`,
             };
             return (
               <div

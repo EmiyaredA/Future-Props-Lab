@@ -20,7 +20,7 @@ Future-Props-Lab/
 │   ├── integrations/ # Workspace 工具 API、MCP、Skill 目录、验证与文件事务
 │   ├── audio_annotation/ # Workspace 录音标注任务、文档/波形 CAS 与导入校验
 │   ├── visual_workshop/ # 视觉工坊项目、画布、助手、生成任务与领域适配器
-│   ├── galgame_workshop/ # Galgame 工程、Story 1.4 CAS、标注导入/视频导出任务、素材/ASR/尺寸维护与线路分析
+│   ├── galgame_workshop/ # Galgame 工程、Story 1.4 CAS、Story→RenderPlan 编译、剪辑交接、素材/ASR 与线路分析
 │   ├── video_editor/ # API 驱动的多轨时间轴、代理/精确帧、RenderPlan 求值与 FFmpeg 后台合成
 │   ├── models/        # SQLAlchemy 持久化形状
 │   ├── routes/        # `/v1` HTTP/SSE 协议边界；Galgame 按五类协议模块汇总
@@ -36,8 +36,7 @@ Future-Props-Lab/
 │   ├── generated/     # OpenAPI 生成物
 │   ├── platform/      # Cookie/CSRF、API 客户端、认证事件与浏览器语音基础设施
 │   └── shared/        # 品牌与主题 UI
-├── web/galgame-export.html # 隔离的 Galgame 纯舞台渲染入口
-├── web/scripts/       # 后台 Chromium 录制与 FFmpeg 音画合成脚本
+├── web/scripts/       # Web 构建与维护脚本；正式视频导出不在这里执行
 ├── web/public/docs/   # 文档中心使用的当前真实界面截图
 ├── web/tests/         # Web 组件测试
 ├── web/e2e/           # Playwright 浏览器旅程
@@ -92,7 +91,7 @@ Future-Props-Lab/
   `galgame_workshop/` 负责 Galgame 工程元数据、Story 1.4 故事文档 CAS、Workspace 级旧 Story
   批量迁移与旧文件导入用例、剧情对话富文本、多人角色舞台演出、
   角色/多层场景/音视频素材生命周期、虚拟打包路径、语音识别任务、立绘尺寸快照恢复、Fragment 线路分析与
-  只读 Story 快照驱动的视频导出任务，
+  只读 Story 快照驱动的视频导出与分层剪辑交接任务，
   `video_editor/` 负责与 Story 解耦的微秒级多轨文档、类型化原子操作、项目素材快照、代理媒体、
   后端精确停帧和固定帧网格的 FFmpeg/Pillow 合成。正式剪辑渲染只依赖不可变时间轴快照和原素材，
   不启动 Chromium、Playwright 或浏览器录屏；Pillow 只承担文字透明层和二维像素合成，音频 PTS
@@ -101,8 +100,15 @@ Future-Props-Lab/
   “文件管理”和项目素材浏览器复用同一文件 API；Galgame 上传图片、音视频与字体也复用公共存储、内容签名和媒体元数据校验，
   但只能通过 Galgame 工程素材 API 修改或删除。公共文件被视觉或 Galgame 工程引用期间禁止删除，
   对话消息引用的项目素材也必须先解除引用才能删除。
-- Galgame 视频导出按 `video_export_planning.py` 路线/片段/试片纯规划、`video_export.py` 用例与
-  `video_export_runner.py` 后台媒体执行分层；广播剧导入由 `annotation_import.py` 负责预检和任务
+- Galgame 视频导出按 `video_export_planning.py` 路线/片段/试片纯规划、`video_compiler.py`
+  冻结 Story 到共享 `RenderPlan` 的编译、`video_compiler_events.py` 的绝对时间状态归约、
+  `video_compiler_support.py`/`video_actor_compiler.py` 的舞台、序列帧与组合动画投影、
+  `video_lip_sync.py` 的离线音频包络和确定性口型事件，以及 `video_dialogue.py` 的对白图层生成，
+  `video_export.py` 用例和 `video_export_runner.py`
+  后台执行拆分。直接导出与 `video_handoff.py`/`video_handoff_runner.py` 创建的分层剪辑工程共用
+  同一编译结果；中文对白使用随应用分发的固定 Noto CJK 字体，正式成片只经过后端像素合成与
+  FFmpeg，不启动网页、Chromium 或实时播放器。
+  广播剧导入由 `annotation_import.py` 负责预检和任务
   用例，`annotation_import_runner.py` 负责 FFmpeg 裁切、验收、保存与补偿。HTTP 路由不直接依赖
   Runner，应用生命周期只装配 Runner 模块。
 - Galgame 素材写入和 CAS 用例保留在 `assets.py`；文件命名、媒体元数据映射等纯规则位于

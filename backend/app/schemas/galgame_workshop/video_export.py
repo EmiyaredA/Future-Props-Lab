@@ -12,6 +12,7 @@ GalgameVideoExportStatus = Literal["queued", "running", "completed", "failed", "
 GalgameVideoExportPhase = Literal[
     "queued",
     "preparing",
+    "analyzing",
     "rendering",
     "encoding",
     "verifying",

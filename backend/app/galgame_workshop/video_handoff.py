@@ -127,18 +127,14 @@ class GalgameVideoEditorHandoffs:
         )
         return GalgameVideoEditorHandoffTaskListOut(items=[handoff_out(row) for row in rows])
 
-    async def get(
-        self, project_id: str, task_id: str
-    ) -> GalgameVideoEditorHandoffTaskOut:
+    async def get(self, project_id: str, task_id: str) -> GalgameVideoEditorHandoffTaskOut:
         await self._project(project_id)
         row = await self.session.get(GalgameVideoEditorHandoffTask, task_id)
         if row is None or row.project_id != project_id:
             raise AssetError("剪辑交接任务不存在", code="not_found", status=404)
         return handoff_out(row)
 
-    async def cancel(
-        self, project_id: str, task_id: str
-    ) -> GalgameVideoEditorHandoffTaskOut:
+    async def cancel(self, project_id: str, task_id: str) -> GalgameVideoEditorHandoffTaskOut:
         await self._project(project_id)
         row = await self.session.get(GalgameVideoEditorHandoffTask, task_id)
         if row is None or row.project_id != project_id:

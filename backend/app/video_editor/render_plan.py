@@ -22,4 +22,3 @@ class RenderPlan:
     asset_paths: dict[str, Path]
     capture_frame: RenderCaptureFrame = RenderCaptureFrame()
     metadata: dict[str, object] = field(default_factory=dict)
-

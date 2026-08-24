@@ -9906,6 +9906,7 @@
             "enum": [
               "queued",
               "preparing",
+              "analyzing",
               "rendering",
               "encoding",
               "verifying",
@@ -15913,6 +15914,11 @@
             "title": "Sourceinus",
             "type": "integer"
           },
+          "sourceLoop": {
+            "default": false,
+            "title": "Sourceloop",
+            "type": "boolean"
+          },
           "text": {
             "anyOf": [
               {
@@ -16024,6 +16030,7 @@
               "scaleY",
               "rotation",
               "opacity",
+              "brightness",
               "volume"
             ],
             "title": "Property",
@@ -16754,6 +16761,23 @@
       },
       "VideoEditorTransform": {
         "properties": {
+          "anchor": {
+            "default": "center",
+            "enum": [
+              "center",
+              "topLeft",
+              "bottomCenter"
+            ],
+            "title": "Anchor",
+            "type": "string"
+          },
+          "brightness": {
+            "default": 1,
+            "maximum": 2.0,
+            "minimum": 0.0,
+            "title": "Brightness",
+            "type": "number"
+          },
           "opacity": {
             "default": 1,
             "maximum": 1.0,

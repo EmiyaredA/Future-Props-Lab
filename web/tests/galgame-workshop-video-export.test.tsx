@@ -3,6 +3,7 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, vi } from "vitest";
 import {
+  createGalgameVideoEditorHandoff,
   createGalgameVideoExport,
   listGalgameVideoEditorHandoffs,
   listGalgameVideoExports,
@@ -19,6 +20,7 @@ vi.mock("@features/galgame-workshop/api", async () => {
   >("@features/galgame-workshop/api");
   return {
     ...actual,
+    createGalgameVideoEditorHandoff: vi.fn(),
     createGalgameVideoExport: vi.fn(),
     listGalgameVideoExports: vi.fn(),
     listGalgameVideoEditorHandoffs: vi.fn(),
@@ -86,6 +88,19 @@ beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(listGalgameVideoExports).mockResolvedValue({ items: [] });
   vi.mocked(listGalgameVideoEditorHandoffs).mockResolvedValue({ items: [] });
+  vi.mocked(createGalgameVideoEditorHandoff).mockResolvedValue({
+    id: "handoff-one",
+    projectId: "project-one",
+    requestId: "handoff-request",
+    storyRevision: 3,
+    status: "queued",
+    progress: 0,
+    trackCount: 0,
+    assetCount: 0,
+    revision: 0,
+    createdAt: "2026-08-22T00:00:00Z",
+    updatedAt: "2026-08-22T00:00:00Z",
+  });
   vi.mocked(previewGalgameVideoExportFrame).mockResolvedValue(
     new Blob(["png"], { type: "image/png" }),
   );
@@ -169,6 +184,42 @@ test("edits and persists a strict 16:9 capture frame in preview requests", async
   ).toEqual({ x: 320, y: 90, width: 1600, height: 900 });
 });
 
+test("mounts a full-height canonical stage inside the capture surface", () => {
+  const { container } = renderDialog();
+
+  const player = container.querySelector(
+    ".galgame-capture-source .galgame-player-stage-only",
+  );
+  const stageHost = container.querySelector(
+    ".galgame-capture-source .galgame-stage-host",
+  );
+
+  expect(player).toHaveStyle({
+    display: "flex",
+    flexDirection: "column",
+    width: "100%",
+    height: "100%",
+  });
+  expect(stageHost).toHaveAttribute("data-aspect-mode", "auto");
+  expect(stageHost).toHaveStyle({ width: "100%", height: "100%" });
+  expect(stageHost).not.toHaveAttribute("hidden");
+});
+
+test("generates the expensive deterministic frame only when requested", async () => {
+  const user = userEvent.setup();
+  renderDialog();
+
+  const generate = await screen.findByRole("button", {
+    name: "生成精确首帧",
+  });
+  expect(previewGalgameVideoExportFrame).not.toHaveBeenCalled();
+
+  await user.click(generate);
+  await waitFor(() =>
+    expect(previewGalgameVideoExportFrame).toHaveBeenCalledTimes(1),
+  );
+});
+
 test("selects one or multiple fragments and submits them in story order", async () => {
   const user = userEvent.setup();
   renderDialog();
@@ -200,6 +251,8 @@ test("selects one or multiple fragments and submits them in story order", async 
       }),
     ),
   );
+  expect(await screen.findByText("视频正在后台导出")).toBeInTheDocument();
+  expect(screen.getByText(/可以关闭窗口，任务会继续运行/)).toBeInTheDocument();
 });
 
 test("defaults quick clip to ten seconds after the current playhead and submits exact milliseconds", async () => {
@@ -258,6 +311,48 @@ test("defaults quick clip to ten seconds after the current playhead and submits 
           startMs: 601_200,
           endMs: 612_345,
         },
+      }),
+    ),
+  );
+});
+
+test("sends the checked settings to a new frozen video editor project", async () => {
+  const user = userEvent.setup();
+  vi.mocked(listGalgameVideoEditorHandoffs).mockResolvedValue({
+    items: [
+      {
+        id: "handoff-completed",
+        projectId: "project-one",
+        requestId: "handoff-completed-request",
+        storyRevision: 3,
+        status: "completed",
+        progress: 100,
+        outputProjectId: "editor-project-one",
+        trackCount: 8,
+        assetCount: 5,
+        revision: 2,
+        createdAt: "2026-08-22T00:00:00Z",
+        updatedAt: "2026-08-22T00:00:02Z",
+      },
+    ],
+  });
+  renderDialog();
+
+  const open = await screen.findByRole("link", { name: /打开剪辑工程/ });
+  expect(open).toHaveAttribute(
+    "href",
+    "/apps/video-editor/projects/editor-project-one/editor",
+  );
+  const handoff = screen.getByRole("button", { name: "发送到视频剪辑工坊" });
+  await waitFor(() => expect(handoff).toBeEnabled());
+  await user.click(handoff);
+  await waitFor(() =>
+    expect(createGalgameVideoEditorHandoff).toHaveBeenCalledWith(
+      "project-one",
+      expect.objectContaining({
+        expectedStoryRevision: 3,
+        preset: "1080p30",
+        previewFingerprint: "a".repeat(64),
       }),
     ),
   );

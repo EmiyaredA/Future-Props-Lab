@@ -4,11 +4,36 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from app.galgame_workshop.video_export_planning import _estimate_block_ms
+from app.galgame_workshop.video_actor_compiler import compile_actor_clips
+from app.galgame_workshop.video_compiler_events import (
+    apply_event,
+    sequential_events,
+    timed_events,
+)
+from app.galgame_workshop.video_compiler_support import (
+    actor_layout,
+    apply_composed_opacity,
+    apply_composed_visual_motion,
+    character_presentation,
+    content_text,
+    speaker_name,
+)
+from app.galgame_workshop.video_compiler_support import asset_maps as _asset_maps
+from app.galgame_workshop.video_compiler_support import (
+    remap_render_plan_assets as remap_render_plan_assets,
+)
+from app.galgame_workshop.video_compiler_support import timeline_clip as _clip
+from app.galgame_workshop.video_compiler_support import timeline_track as _track
+from app.galgame_workshop.video_dialogue import render_dialogue_layer
+from app.galgame_workshop.video_lip_sync import (
+    AudioEnvelope,
+    LipSyncSchedule,
+    build_lip_sync_schedule,
+)
 from app.schemas.video_editor import VideoEditorTimelineDocument
 from app.video_editor.render_plan import RenderCaptureFrame, RenderPlan
 
-COMPILER_VERSION = "galgame-render-plan-v1"
+COMPILER_VERSION = "galgame-render-plan-v3"
 
 
 @dataclass
@@ -23,116 +48,6 @@ class CompilationResult:
     plan: RenderPlan
     used_file_ids: set[str] = field(default_factory=set)
     warnings: list[CompilationIssue] = field(default_factory=list)
-
-
-def _clip(
-    clip_id: str,
-    track_id: str,
-    kind: str,
-    name: str,
-    start_us: int,
-    duration_us: int,
-    **values: Any,
-) -> dict[str, Any]:
-    return {
-        "id": clip_id[:64],
-        "trackId": track_id,
-        "kind": kind,
-        "name": name[:255] or kind,
-        "timelineStartUs": max(0, start_us),
-        "durationUs": max(1, duration_us),
-        "sourceInUs": 0,
-        "transform": {
-            "x": 960,
-            "y": 540,
-            "scaleX": 1,
-            "scaleY": 1,
-            "rotation": 0,
-            "opacity": 1,
-        },
-        "keyframes": [],
-        **values,
-    }
-
-
-def _track(track_id: str, name: str, order: int, kind: str = "visual") -> dict[str, Any]:
-    return {
-        "id": track_id,
-        "kind": kind,
-        "name": name,
-        "order": order,
-        "locked": False,
-        "hidden": False,
-        "muted": False,
-        "clips": [],
-    }
-
-
-def _asset_maps(document: dict[str, Any]) -> tuple[dict[str, dict], dict[str, str]]:
-    assets = {item["id"]: item for item in document.get("assets", [])}
-    return assets, {
-        logical_id: str(item.get("fileId"))
-        for logical_id, item in assets.items()
-        if item.get("fileId")
-    }
-
-
-def _character_asset(
-    characters: dict[str, dict], logical_files: dict[str, str], actor: dict[str, Any]
-) -> tuple[str | None, dict[str, Any] | None]:
-    character = characters.get(actor.get("characterId", ""))
-    if not character:
-        return None, None
-    expression_id = actor.get("expressionId") or character.get("defaultExpressionId")
-    expression = next(
-        (item for item in character.get("expressions", []) if item.get("id") == expression_id),
-        None,
-    )
-    if expression is None:
-        return None, None
-    asset_id = expression.get("assetId")
-    skin_id = actor.get("skinId") or character.get("defaultPortraitSkinId")
-    if skin_id:
-        skin = next(
-            (item for item in character.get("portraitSkins", []) if item.get("id") == skin_id),
-            None,
-        )
-        override = next(
-            (
-                item
-                for item in (skin or {}).get("overrides", [])
-                if item.get("expressionId") == expression_id
-            ),
-            None,
-        )
-        if override:
-            asset_id = override.get("assetId")
-    return logical_files.get(str(asset_id)), expression
-
-
-def _speaker_name(character: dict[str, Any] | None, block: dict[str, Any]) -> str:
-    if not character:
-        return ""
-    selected = block.get("displayNameId") or character.get("defaultDisplayNameId")
-    display = next(
-        (item for item in character.get("displayNames", []) if item.get("id") == selected), None
-    )
-    if display and display.get("source") == "literal":
-        return str(display.get("value") or character.get("name") or "")
-    return str(character.get("name") or "")
-
-
-def _position(actor: dict[str, Any]) -> tuple[float, float, float, bool, float, int]:
-    transform = actor.get("transform") or {}
-    position = actor.get("positionId")
-    default_x = {"left": 27, "center": 50, "right": 73}.get(position, 50)
-    x = float(transform.get("x", default_x)) * 19.2
-    y_percent = float(transform.get("y", 100))
-    y = y_percent * 10.8
-    scale = float(transform.get("scale", 1))
-    opacity = float(transform.get("opacity", 1))
-    layer = int(transform.get("layer", 10))
-    return x, y, scale, bool(transform.get("flipX", False)), opacity, layer
 
 
 class _Builder:
@@ -154,6 +69,7 @@ class _Builder:
         self.used: set[str] = set()
         self.warnings: list[CompilationIssue] = []
         self.counter = 0
+        self.lip_schedule = LipSyncSchedule(events={})
 
     def track(self, track_id: str, name: str, order: int, kind: str = "visual") -> dict:
         if track_id not in self.tracks:
@@ -161,7 +77,19 @@ class _Builder:
         return self.tracks[track_id]
 
     def add(self, track_id: str, clip: dict[str, Any]) -> None:
-        self.tracks[track_id]["clips"].append(clip)
+        clips = self.tracks[track_id]["clips"]
+        previous = clips[-1] if clips else None
+        if (
+            previous
+            and previous["timelineStartUs"] + previous["durationUs"] == clip["timelineStartUs"]
+        ):
+            ignored = {"id", "timelineStartUs", "durationUs"}
+            comparable_previous = {k: v for k, v in previous.items() if k not in ignored}
+            comparable_clip = {k: v for k, v in clip.items() if k not in ignored}
+            if comparable_previous == comparable_clip:
+                previous["durationUs"] += clip["durationUs"]
+                return
+        clips.append(clip)
         asset_id = clip.get("assetId")
         if asset_id:
             self.used.add(asset_id)
@@ -170,7 +98,15 @@ class _Builder:
         self.counter += 1
         return f"{prefix}-{self.counter}"
 
-    def emit_state(self, state: dict[str, Any], start_us: int, end_us: int) -> None:
+    def emit_state(
+        self,
+        state: dict[str, Any],
+        start_us: int,
+        end_us: int,
+        *,
+        source_start_us: int,
+        source_end_us: int,
+    ) -> None:
         duration = end_us - start_us
         if duration <= 0:
             return
@@ -181,19 +117,31 @@ class _Builder:
                 continue
             track_id = f"scene-{index + 1}"
             self.track(track_id, f"场景 · {layer.get('name') or index + 1}", 100 + index)
-            self.add(
+            clip = _clip(
+                self.next_id("scene"),
                 track_id,
-                _clip(
-                    self.next_id("scene"),
-                    track_id,
-                    "image",
-                    str(layer.get("name") or "场景"),
-                    start_us,
-                    duration,
-                    assetId=file_id,
-                    fitMode="cover",
-                ),
+                "image",
+                str(layer.get("name") or "场景"),
+                start_us,
+                duration,
+                assetId=file_id,
+                fitMode="cover",
             )
+            apply_composed_visual_motion(
+                clip,
+                camera=state.get("camera"),
+                stage_animation=state.get("stageAnimation"),
+                plane="background",
+                source_start_us=source_start_us,
+                source_end_us=source_end_us,
+            )
+            apply_composed_opacity(
+                clip,
+                state.get("stageAnimation"),
+                source_start_us=source_start_us,
+                source_end_us=source_end_us,
+            )
+            self.add(track_id, clip)
 
         cg_state = state.get("cg")
         if cg_state:
@@ -227,95 +175,162 @@ class _Builder:
                         scaleY=float(overlay.get("width", 60)) / 100,
                         opacity=float(overlay.get("opacity", 1)),
                     )
+                apply_composed_visual_motion(
+                    clip,
+                    camera=state.get("camera"),
+                    stage_animation=state.get("stageAnimation"),
+                    plane="cg",
+                    source_start_us=source_start_us,
+                    source_end_us=source_end_us,
+                )
+                apply_composed_opacity(
+                    clip,
+                    state.get("stageAnimation"),
+                    cg_state,
+                    source_start_us=source_start_us,
+                    source_end_us=source_end_us,
+                )
                 self.add(track_id, clip)
 
-        for character_id, actor in sorted(
-            state.get("actors", {}).items(), key=lambda item: _position(item[1])[-1]
-        ):
-            file_id, expression = _character_asset(self.characters, self.logical_files, actor)
-            if not file_id:
+        video_state = state.get("video")
+        if video_state:
+            file_id = self.logical_files.get(str(video_state.get("assetId")))
+            if file_id:
+                source_in_us = max(
+                    0, source_start_us - int(state.get("videoStartedUs", source_start_us))
+                )
+                track_id = "embedded-video"
+                self.track(track_id, "视频", 40)
+                video_clip = _clip(
+                    self.next_id("video"),
+                    track_id,
+                    "video",
+                    "视频",
+                    start_us,
+                    duration,
+                    assetId=file_id,
+                    sourceInUs=source_in_us,
+                    fitMode=str(video_state.get("fit") or "cover"),
+                )
+                apply_composed_visual_motion(
+                    video_clip,
+                    camera=None,
+                    stage_animation=state.get("stageAnimation"),
+                    plane="video",
+                    source_start_us=source_start_us,
+                    source_end_us=source_end_us,
+                )
+                apply_composed_opacity(
+                    video_clip,
+                    state.get("stageAnimation"),
+                    source_start_us=source_start_us,
+                    source_end_us=source_end_us,
+                )
+                self.add(track_id, video_clip)
+                audio_track = "audio-video"
+                self.track(audio_track, "视频原声", 260, "audio")
+                self.add(
+                    audio_track,
+                    _clip(
+                        self.next_id("video-audio"),
+                        audio_track,
+                        "audio",
+                        "视频原声",
+                        start_us,
+                        duration,
+                        assetId=file_id,
+                        sourceInUs=source_in_us,
+                        volume=float(video_state.get("volume", 100)) / 100,
+                    ),
+                )
+
+        actor_rows: list[tuple[str, dict[str, Any], dict[str, Any], Any]] = []
+        for character_id, actor in state.get("actors", {}).items():
+            presentation = character_presentation(self.characters, self.logical_files, actor)
+            if presentation is None:
                 continue
-            x, y, scale, flip_x, opacity, layer = _position(actor)
+            character = self.characters.get(character_id, {})
+            actor_rows.append((character_id, actor, character, presentation))
+        actor_rows.sort(
+            key=lambda item: actor_layout(self.document, item[2], item[1], item[3].expression)[6]
+        )
+        active = state.get("content")
+        for character_id, actor, character, presentation in actor_rows:
+            layer = actor_layout(self.document, character, actor, presentation.expression)[6]
             track_id = f"actor-{character_id}"
             self.track(
                 track_id,
-                f"角色 · {self.characters.get(character_id, {}).get('name', character_id)}",
+                f"角色 · {character.get('name', character_id)}",
                 60 - min(20, layer),
             )
-            height = (
-                (expression or {}).get("heightPercent")
-                or self.characters.get(character_id, {}).get("portraitHeightPercent")
-                or 92
+            clips = compile_actor_clips(
+                self.document,
+                state,
+                character_id=character_id,
+                actor=actor,
+                character=character,
+                presentation=presentation,
+                logical_files=self.logical_files,
+                lip_schedule=self.lip_schedule,
+                track_id=track_id,
+                output_start_us=start_us,
+                source_start_us=source_start_us,
+                source_end_us=source_end_us,
+                next_id=self.next_id,
             )
-            clip = _clip(
-                self.next_id("actor"),
-                track_id,
-                "image",
-                str(self.characters.get(character_id, {}).get("name") or character_id),
-                start_us,
-                duration,
-                assetId=file_id,
-                fitMode="height",
-                heightPercent=float(height),
-                flipX=flip_x ^ bool((expression or {}).get("flipX", False)),
-            )
-            clip["transform"].update(x=x, y=y, scaleX=scale, scaleY=scale, opacity=opacity)
-            self.add(track_id, clip)
+            for clip in clips:
+                self.add(track_id, clip)
 
-        active = state.get("content")
-        if active and active.get("type") in {"dialogue", "narration", "storyParagraph"}:
-            text = str(active.get("text") or "")
+        if active and active.get("type") in {
+            "dialogue",
+            "narration",
+            "storyParagraph",
+            "systemMessage",
+        }:
+            variables = state.get("variables") or {}
+            text = content_text(active, variables)
             character = self.characters.get(active.get("characterId", ""))
-            name = _speaker_name(character, active) if active.get("type") == "dialogue" else ""
+            name = (
+                speaker_name(character, active, variables)
+                if active.get("type") == "dialogue"
+                else ""
+            )
             style = self.document.get("presentation", {}).get("dialogueBox", {})
-            panel = self.track("dialogue-panel", "对白框", 20)
-            panel_clip = _clip(
-                self.next_id("dialogue-panel"),
-                panel["id"],
-                "color",
-                "对白框",
-                start_us,
-                duration,
-                color=str(style.get("backgroundColor") or "#080e18"),
-            )
-            panel_clip["transform"].update(
-                x=960,
-                y=905,
-                scaleX=1,
-                scaleY=0.32,
-                opacity=float(style.get("backgroundOpacity", 0.82)),
-            )
-            self.add(panel["id"], panel_clip)
-            if name:
-                name_track = self.track("speaker-name", "说话人", 10)
-                name_clip = _clip(
-                    self.next_id("speaker"),
-                    name_track["id"],
-                    "text",
-                    name,
-                    start_us,
-                    duration,
-                    text=name,
-                    fontSize=32,
-                    textColor=str(style.get("nameColor") or "#ffffff"),
-                )
-                name_clip["transform"].update(x=360, y=790)
-                self.add(name_track["id"], name_clip)
-            text_track = self.track("dialogue-text", "对白文字", 9)
-            text_clip = _clip(
-                self.next_id("dialogue"),
-                text_track["id"],
-                "text",
-                text or "…",
-                start_us,
-                duration,
+            skin_file = self.logical_files.get(str(style.get("assetId") or ""))
+            asset_id, path = render_dialogue_layer(
                 text=text or "…",
-                fontSize=42,
-                textColor=str(style.get("textColor") or "#ffffff"),
-                textMaxWidth=1420,
+                name=name,
+                configured_style=style,
+                runtime_preset=state.get("dialoguePreset"),
+                skin_path=self.asset_paths.get(skin_file or ""),
             )
-            text_clip["transform"].update(x=960, y=900)
-            self.add(text_track["id"], text_clip)
+            self.asset_paths[asset_id] = path
+            dialogue_track = self.track("dialogue-ui", "对白 UI", 9)
+            dialogue_clip = _clip(
+                self.next_id("dialogue-ui"),
+                dialogue_track["id"],
+                "image",
+                f"对白 · {name or '旁白'}",
+                start_us,
+                duration,
+                assetId=asset_id,
+                fitMode="native",
+            )
+            apply_composed_visual_motion(
+                dialogue_clip,
+                camera=None,
+                stage_animation=state.get("stageAnimation"),
+                plane="dialogue",
+                source_start_us=source_start_us,
+                source_end_us=source_end_us,
+            )
+            apply_composed_opacity(
+                dialogue_clip,
+                state.get("stageAnimation"),
+                source_start_us=source_start_us,
+                source_end_us=source_end_us,
+            )
+            self.add(dialogue_track["id"], dialogue_clip)
 
         curtain = state.get("curtain")
         if curtain:
@@ -330,6 +345,21 @@ class _Builder:
                 color=str(curtain.get("color") or "#000000"),
             )
             clip["transform"]["opacity"] = float(curtain.get("opacity", 1))
+            apply_composed_visual_motion(
+                clip,
+                camera=None,
+                stage_animation=state.get("stageAnimation"),
+                plane="curtain",
+                source_start_us=source_start_us,
+                source_end_us=source_end_us,
+            )
+            apply_composed_opacity(
+                clip,
+                state.get("stageAnimation"),
+                curtain,
+                source_start_us=source_start_us,
+                source_end_us=source_end_us,
+            )
             self.add(track["id"], clip)
 
     def add_audio(
@@ -338,13 +368,21 @@ class _Builder:
         start_us: int,
         duration_us: int,
         channel: str,
+        *,
+        source_in_us: int = 0,
     ) -> None:
         logical_id = block.get("assetId") or block.get("voiceAssetId")
         file_id = self.logical_files.get(str(logical_id))
         if not file_id or duration_us <= 0:
             return
         track_id = f"audio-{channel}"
-        labels = {"voice": "配音", "bgm": "背景音乐", "ambient": "环境音", "sfx": "音效", "master": "主音轨"}
+        labels = {
+            "voice": "配音",
+            "bgm": "背景音乐",
+            "ambient": "环境音",
+            "sfx": "音效",
+            "master": "主音轨",
+        }
         self.track(track_id, labels.get(channel, channel), 200 + len(self.tracks), "audio")
         volume = float(block.get("voiceVolume", block.get("volume", 100))) / 100
         self.add(
@@ -357,6 +395,8 @@ class _Builder:
                 start_us,
                 duration_us,
                 assetId=file_id,
+                sourceInUs=max(0, source_in_us),
+                sourceLoop=bool(block.get("loop", False)),
                 volume=volume,
             ),
         )
@@ -380,95 +420,6 @@ class _Builder:
         )
 
 
-def _timed_events(fragment: dict[str, Any]) -> list[tuple[int, int, str, dict[str, Any]]]:
-    events: list[tuple[int, int, str, dict[str, Any]]] = []
-    for index, block in enumerate(fragment.get("blocks", [])):
-        if block.get("startMs") is not None and block.get("endMs") is not None:
-            events.append((int(block["startMs"]), 20, "content-start", block))
-            events.append((int(block["endMs"]), 10, "content-end", block))
-        elif block.get("atMs") is not None:
-            events.append((int(block["atMs"]), 15, "automatic", block))
-    return sorted(events, key=lambda item: (item[0], item[1]))
-
-
-def _sequential_events(
-    fragment: dict[str, Any], asset_duration: dict[str, int]
-) -> tuple[list[tuple[int, int, str, dict[str, Any]]], int]:
-    events: list[tuple[int, int, str, dict[str, Any]]] = []
-    cursor = 0
-    automatic = {
-        "scene", "showCg", "hideCg", "showCharacter", "setStageCast",
-        "removeCharacter", "destroyScene", "camera", "resetCamera", "particle",
-        "stageAnimation", "floatingText", "curtain", "video", "animateSprite",
-        "autoPlay", "switchDialogueStyle", "portraitStyleRule", "audio",
-    }
-    for block in fragment.get("blocks", []):
-        block_type = block.get("type")
-        duration, _exact = _estimate_block_ms(block, asset_duration)
-        if block_type in automatic:
-            events.append((cursor, 15, "automatic", block))
-            if block.get("waitForCompletion"):
-                cursor += duration
-            continue
-        if block_type in {"dialogue", "narration", "storyParagraph", "systemMessage"}:
-            duration = max(1, duration)
-            events.append((cursor, 20, "content-start", block))
-            events.append((cursor + duration, 10, "content-end", block))
-            cursor += duration
-        elif block_type == "wait":
-            cursor += duration
-    return sorted(events, key=lambda item: (item[0], item[1])), cursor
-
-
-def _apply(state: dict[str, Any], action: str, block: dict[str, Any]) -> None:
-    if action == "content-end":
-        if state.get("content", {}).get("id") == block.get("id"):
-            state["content"] = None
-        return
-    if action == "content-start":
-        state["content"] = block
-        if block.get("type") == "dialogue":
-            character_id = block.get("characterId")
-            actor = state["actors"].get(character_id, {"characterId": character_id})
-            if block.get("expressionId"):
-                actor["expressionId"] = block["expressionId"]
-            portrait = block.get("portrait") or {}
-            if portrait.get("visible", True) and portrait.get("mode") != "dialogueAvatar":
-                actor.update(
-                    positionId=portrait.get("positionId", actor.get("positionId")),
-                    transform=portrait.get("transform", actor.get("transform", {})),
-                    distance=portrait.get("distance", actor.get("distance", "medium")),
-                )
-                state["actors"][character_id] = actor
-        return
-    kind = block.get("type")
-    if kind == "scene":
-        state["sceneId"] = block.get("sceneId")
-        if block.get("clearCharacters", True):
-            state["actors"] = {}
-    elif kind == "showCg":
-        state["cg"] = block
-    elif kind == "hideCg":
-        state["cg"] = None
-    elif kind == "showCharacter":
-        state["actors"][block.get("characterId")] = dict(block)
-    elif kind == "setStageCast":
-        state["actors"] = {
-            item.get("characterId"): dict(item) for item in block.get("members", [])
-        }
-    elif kind == "removeCharacter":
-        if block.get("all"):
-            state["actors"] = {}
-        else:
-            state["actors"].pop(block.get("characterId"), None)
-    elif kind == "destroyScene":
-        state.update(sceneId=None, actors={}, cg=None, content=None)
-    elif kind == "curtain":
-        state["curtain"] = block if block.get("action") == "show" else None
-    elif kind == "video":
-        state["video"] = block if block.get("action") == "play" else None
-
-
 def compile_galgame_render_plan(
     document: dict[str, Any],
     payload: dict[str, Any],
@@ -476,6 +427,8 @@ def compile_galgame_render_plan(
     fragment_durations_ms: list[int],
     total_ms: int,
     asset_paths: dict[str, Path],
+    asset_duration_ms: dict[str, int] | None = None,
+    audio_envelopes: dict[str, AudioEnvelope] | None = None,
 ) -> CompilationResult:
     preset = str(payload.get("preset", "1080p30"))
     fps = 60 if preset.endswith("60") else 30
@@ -494,7 +447,26 @@ def compile_galgame_render_plan(
     }
     selected_ids = list(payload.get("resolvedFragmentIds") or payload.get("fragmentIds") or [])
     offset_us = 0
-    asset_duration: dict[str, int] = {}
+    asset_duration = asset_duration_ms or {}
+    state: dict[str, Any] = {
+        "sceneId": None,
+        "actors": {},
+        "cg": None,
+        "curtain": None,
+        "video": None,
+        "videoStartedUs": 0,
+        "camera": None,
+        "content": None,
+        "contentStartedUs": None,
+        "spriteAnimations": {},
+        "stageAnimation": None,
+        "dialoguePreset": None,
+        "focusTransition": {},
+        "lastSpeaker": None,
+        "variables": {
+            str(item.get("id")): item.get("defaultValue") for item in document.get("variables", [])
+        },
+    }
     for index, fragment_id in enumerate(selected_ids):
         fragment = fragments.get(fragment_id)
         if fragment is None:
@@ -507,18 +479,18 @@ def compile_galgame_render_plan(
         clip_range = payload.get("clipRange") if payload.get("scope") == "clip" else None
         local_start_ms = int((clip_range or {}).get("startMs", 0))
         local_end_ms = int((clip_range or {}).get("endMs", planned_ms + local_start_ms))
-        events = _timed_events(fragment) if fragment.get("timeline") else []
+        events = timed_events(fragment) if fragment.get("timeline") else []
         if not fragment.get("timeline"):
-            events, inferred_ms = _sequential_events(fragment, asset_duration)
+            events, inferred_ms = sequential_events(fragment, asset_duration)
             local_end_ms = max(local_end_ms, inferred_ms)
-        state: dict[str, Any] = {
-            "sceneId": None,
-            "actors": {},
-            "cg": None,
-            "curtain": None,
-            "video": None,
-            "content": None,
-        }
+        builder.lip_schedule = build_lip_sync_schedule(
+            document,
+            fragment,
+            events,
+            duration_us=max(0, local_end_ms * 1000),
+            logical_files=builder.logical_files,
+            envelopes=audio_envelopes or {},
+        )
         cursor_ms = 0
         for time_ms, _priority, action, block in [*events, (local_end_ms, 99, "end", {})]:
             bounded = min(local_end_ms, max(0, time_ms))
@@ -529,14 +501,26 @@ def compile_galgame_render_plan(
                     state,
                     offset_us + (visible_start - local_start_ms) * 1000,
                     offset_us + (visible_end - local_start_ms) * 1000,
+                    source_start_us=visible_start * 1000,
+                    source_end_us=visible_end * 1000,
                 )
             cursor_ms = max(cursor_ms, bounded)
             if action == "end":
                 break
-            _apply(state, action, block)
-            if action == "content-start" and block.get("type") == "dialogue":
+            apply_event(
+                state,
+                action,
+                block,
+                absolute_us=bounded * 1000,
+            )
+            master = (fragment.get("timeline") or {}).get("masterAudio")
+            if action == "content-start" and block.get("type") == "dialogue" and not master:
                 end = next(
-                    (item[0] for item in events if item[2] == "content-end" and item[3].get("id") == block.get("id")),
+                    (
+                        item[0]
+                        for item in events
+                        if item[2] == "content-end" and item[3].get("id") == block.get("id")
+                    ),
                     bounded + 1000,
                 )
                 start = max(bounded, local_start_ms)
@@ -547,15 +531,41 @@ def compile_galgame_render_plan(
                         offset_us + (start - local_start_ms) * 1000,
                         (stop - start) * 1000,
                         "voice",
+                        source_in_us=(start - bounded) * 1000,
                     )
-            if action == "automatic" and block.get("type") == "audio" and block.get("action") == "play":
+            if (
+                action == "automatic"
+                and block.get("type") == "audio"
+                and block.get("action") == "play"
+            ):
                 start = max(bounded, local_start_ms)
-                if start < local_end_ms:
+                stop = next(
+                    (
+                        item[0]
+                        for item in events
+                        if item[0] > bounded
+                        and item[2] == "automatic"
+                        and item[3].get("type") == "audio"
+                        and item[3].get("channel") == block.get("channel")
+                    ),
+                    local_end_ms,
+                )
+                logical_duration = asset_duration.get(str(block.get("assetId")))
+                if not block.get("loop") and logical_duration:
+                    stop = min(stop, bounded + logical_duration)
+                stop = min(stop, local_end_ms)
+                if start < stop:
                     builder.add_audio(
                         block,
                         offset_us + (start - local_start_ms) * 1000,
-                        (local_end_ms - start) * 1000,
+                        (stop - start) * 1000,
                         str(block.get("channel", "sfx")),
+                        source_in_us=(
+                            (start - bounded) % logical_duration
+                            if block.get("loop") and logical_duration
+                            else start - bounded
+                        )
+                        * 1000,
                     )
             if action == "automatic" and block.get("type") == "floatingText":
                 start = max(bounded, local_start_ms)
@@ -563,58 +573,57 @@ def compile_galgame_render_plan(
                 if duration > 0:
                     track = builder.track("effects-text", "视觉效果 · 浮动文字", 5)
                     clip = _clip(
-                        builder.next_id("floating-text"), track["id"], "text",
-                        "浮动文字", offset_us + (start - local_start_ms) * 1000,
-                        duration * 1000, text=str(block.get("text") or "…"),
-                        fontSize=54, textColor=str(block.get("color") or "#ffffff"),
+                        builder.next_id("floating-text"),
+                        track["id"],
+                        "text",
+                        "浮动文字",
+                        offset_us + (start - local_start_ms) * 1000,
+                        duration * 1000,
+                        text=str(block.get("text") or "…"),
+                        fontSize=54,
+                        textColor=str(block.get("color") or "#ffffff"),
                     )
                     clip["transform"].update(
                         x=float(block.get("x", 50)) * 19.2,
                         y=float(block.get("y", 50)) * 10.8,
                     )
+                    source_start_us = start * 1000
+                    source_end_us = (start + duration) * 1000
+                    apply_composed_visual_motion(
+                        clip,
+                        camera=None,
+                        stage_animation=state.get("stageAnimation"),
+                        plane="effects",
+                        source_start_us=source_start_us,
+                        source_end_us=source_end_us,
+                    )
+                    apply_composed_opacity(
+                        clip,
+                        state.get("stageAnimation"),
+                        source_start_us=source_start_us,
+                        source_end_us=source_end_us,
+                    )
                     builder.add(track["id"], clip)
         master = (fragment.get("timeline") or {}).get("masterAudio")
+        output_fragment_ms = max(1, local_end_ms - local_start_ms)
         if master:
             master_block = {"assetId": master.get("assetId"), "volume": master.get("volume", 100)}
-            builder.add_audio(master_block, offset_us, planned_ms * 1000, "master")
-        offset_us += max(1, planned_ms * 1000)
+            builder.add_audio(
+                master_block,
+                offset_us,
+                output_fragment_ms * 1000,
+                "master",
+                source_in_us=local_start_ms * 1000,
+            )
+        offset_us += output_fragment_ms * 1000
 
     document_out = builder.document_out(fps)
     plan = RenderPlan(
         document=document_out,
-        asset_paths={key: value for key, value in asset_paths.items() if key in builder.used},
+        asset_paths={
+            key: value for key, value in builder.asset_paths.items() if key in builder.used
+        },
         capture_frame=frame,
         metadata={"compilerVersion": COMPILER_VERSION, "totalUs": max(1, total_ms * 1000)},
     )
     return CompilationResult(plan=plan, used_file_ids=builder.used, warnings=builder.warnings)
-
-
-def remap_render_plan_assets(plan: RenderPlan, mapping: dict[str, str], paths: dict[str, Path]) -> RenderPlan:
-    dumped = plan.document.model_dump(mode="json", by_alias=True, exclude_none=True)
-    capture = plan.capture_frame
-    scale = 1920 / capture.width
-    for track in dumped["tracks"]:
-        for clip in track["clips"]:
-            if clip.get("assetId") in mapping:
-                clip["assetId"] = mapping[clip["assetId"]]
-            if clip.get("fontAssetId") in mapping:
-                clip["fontAssetId"] = mapping[clip["fontAssetId"]]
-            if track["kind"] == "visual":
-                transform = clip.setdefault("transform", {})
-                transform["x"] = (float(transform.get("x", 960)) - capture.x) * scale
-                transform["y"] = (float(transform.get("y", 540)) - capture.y) * scale
-                transform["scaleX"] = float(transform.get("scaleX", 1)) * scale
-                transform["scaleY"] = float(transform.get("scaleY", 1)) * scale
-                for keyframe in clip.get("keyframes", []):
-                    if keyframe.get("property") == "x":
-                        keyframe["value"] = (float(keyframe["value"]) - capture.x) * scale
-                    elif keyframe.get("property") == "y":
-                        keyframe["value"] = (float(keyframe["value"]) - capture.y) * scale
-                    elif keyframe.get("property") in {"scaleX", "scaleY"}:
-                        keyframe["value"] = float(keyframe["value"]) * scale
-    return RenderPlan(
-        document=VideoEditorTimelineDocument.model_validate(dumped),
-        asset_paths=paths,
-        capture_frame=RenderCaptureFrame(),
-        metadata=dict(plan.metadata),
-    )

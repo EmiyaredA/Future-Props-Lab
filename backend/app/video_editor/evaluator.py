@@ -148,9 +148,7 @@ class TimelineFrameRenderer:
         if clip.text_max_width:
             approximate = max(1, round(clip.text_max_width / max(8, clip.font_size)))
             lines = [
-                part
-                for line in raw_lines
-                for part in (textwrap.wrap(line, approximate) or [""])
+                part for line in raw_lines for part in (textwrap.wrap(line, approximate) or [""])
             ]
         else:
             lines = raw_lines
@@ -164,6 +162,33 @@ class TimelineFrameRenderer:
             draw.text((16, y), line, font=font, fill=clip.text_color)
             y += box[3] - box[1] + 12
         return layer
+
+    @staticmethod
+    def _rotate_about_anchor(
+        layer: Image.Image, rotation: float, anchor: str
+    ) -> tuple[Image.Image, tuple[float, float]]:
+        if anchor == "topLeft":
+            pivot = (0.0, 0.0)
+        elif anchor == "bottomCenter":
+            pivot = (layer.width / 2, float(layer.height))
+        else:
+            pivot = (layer.width / 2, layer.height / 2)
+        if math.isclose(rotation, 0):
+            return layer, pivot
+        radius = math.ceil(math.hypot(layer.width, layer.height)) + 2
+        side = radius * 2
+        center = side / 2
+        padded = Image.new("RGBA", (side, side), (0, 0, 0, 0))
+        padded.alpha_composite(
+            layer,
+            (round(center - pivot[0]), round(center - pivot[1])),
+        )
+        rotated = padded.rotate(-rotation, resample=Image.Resampling.BICUBIC)
+        bounds = rotated.getbbox()
+        if bounds is None:
+            return rotated, (center, center)
+        cropped = rotated.crop(bounds)
+        return cropped, (center - bounds[0], center - bounds[1])
 
     @staticmethod
     def _composite(
@@ -196,12 +221,19 @@ class TimelineFrameRenderer:
         if layer.size != (width, height):
             layer = layer.resize((width, height), Image.Resampling.LANCZOS)
         rotation = property_at(clip, "rotation", local_us, transform.rotation)
-        if not math.isclose(rotation, 0):
-            layer = layer.rotate(-rotation, expand=True, resample=Image.Resampling.BICUBIC)
+        layer, pivot = TimelineFrameRenderer._rotate_about_anchor(layer, rotation, transform.anchor)
         opacity = clip_opacity(clip, local_us)
         if opacity < 1:
             alpha = layer.getchannel("A").point(lambda value: round(value * opacity))
             layer.putalpha(alpha)
+        brightness = property_at(clip, "brightness", local_us, transform.brightness)
+        if not math.isclose(brightness, 1):
+            rgb = layer.convert("RGB").point(
+                lambda value: max(0, min(255, round(value * brightness)))
+            )
+            rgb.putalpha(layer.getchannel("A"))
+            layer = rgb
         x = property_at(clip, "x", local_us, transform.x)
         y = property_at(clip, "y", local_us, transform.y)
-        canvas.alpha_composite(layer, (round(x - layer.width / 2), round(y - layer.height / 2)))
+        left, top = x - pivot[0], y - pivot[1]
+        canvas.alpha_composite(layer, (round(left), round(top)))
