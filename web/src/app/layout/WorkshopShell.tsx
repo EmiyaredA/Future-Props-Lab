@@ -1,42 +1,51 @@
-import { ArrowLeft, Box } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
+import type { ReactNode } from "react";
+import type { ApplicationModule } from "@features/applications";
 import { ThemeToggle } from "@shared/ui/ThemeToggle";
-import type { WorkshopPage } from "@app/routes";
-import "@features/visual-workshop/visual-workshop.css";
+import "@app/layout/workshop-shell.css";
 
-const items = [
-  {
-    page: "galgame-workshop-projects" as const,
-    label: "项目工作台",
-    icon: Box,
-  },
-];
-
-export function GalgameWorkshopShell({
+export function WorkshopShell({
+  module,
   page,
   navigate,
   onBack,
   children,
 }: {
-  page: WorkshopPage;
-  navigate: (page: WorkshopPage) => void;
+  module: ApplicationModule;
+  page: string;
+  navigate: (page: string) => void;
   onBack: () => void;
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
+  const { definition, shellConfig } = module;
+  const BrandIcon = definition.icon;
   return (
-    <div className="workshop-shell galgame-workshop-shell">
+    <div
+      className={["workshop-shell", shellConfig.className]
+        .filter(Boolean)
+        .join(" ")}
+    >
       <aside className="workshop-sidebar">
-        <div className="workshop-brand">
+        <div
+          className={["workshop-brand", shellConfig.brandClassName]
+            .filter(Boolean)
+            .join(" ")}
+        >
           <span>
-            <img
-              src="/brand/galgame-workshop-mark.png"
-              alt=""
-              aria-hidden
-              draggable={false}
-            />
+            {definition.brandImage ? (
+              <img
+                src={definition.brandImage}
+                alt=""
+                aria-hidden
+                draggable={false}
+              />
+            ) : (
+              <BrandIcon aria-hidden />
+            )}
           </span>
           <div>
-            <strong>Galgame 工坊</strong>
-            <small>Galgame Workshop</small>
+            <strong>{definition.name}</strong>
+            <small>{shellConfig.subtitle}</small>
           </div>
         </div>
         <button
@@ -50,16 +59,13 @@ export function GalgameWorkshopShell({
           </span>
           <span className="workshop-back-copy">
             <strong>返回应用中心</strong>
-            <small>浏览全部 AI 应用</small>
+            <small>{shellConfig.backSubtitle}</small>
           </span>
         </button>
-        <nav aria-label="Galgame 工坊导航">
-          {items.map((item) => {
+        <nav aria-label={`${definition.name}导航`}>
+          {shellConfig.navigation.map((item) => {
             const Icon = item.icon;
-            const active =
-              page === item.page ||
-              page === "galgame-workshop-overview" ||
-              page === "galgame-workshop-editor";
+            const active = item.activePages.includes(page);
             return (
               <button
                 key={item.page}

@@ -1,10 +1,33 @@
 from __future__ import annotations
 
-# ruff: noqa: F405
-from fastapi import APIRouter
+from typing import Annotated
 
-from app.routes.galgame_workshop._shared import *  # noqa: F403
-from app.routes.galgame_workshop._shared import _asset_error, _not_found
+from fastapi import APIRouter, File, Form, HTTPException, Query, UploadFile
+
+from app.core.config import get_settings
+from app.deps import SessionDep
+from app.files import AssetError
+from app.galgame_workshop.assets import GalgameProjectAssets
+from app.galgame_workshop.errors import (
+    GalgameStoryDocumentInvalidError,
+    GalgameStoryDocumentNotFoundError,
+    GalgameWorkshopProjectNotFoundError,
+)
+from app.galgame_workshop.maintenance import GalgameMaintenance
+from app.routes.galgame_workshop._shared import _asset_error, _invalid_story, _not_found
+from app.schemas.galgame_workshop import (
+    GalgameAssetBatchUploadOut,
+    GalgameAssetCategory,
+    GalgameAssetImportPreviewIn,
+    GalgameAssetImportPreviewOut,
+    GalgameAssetOverviewOut,
+    GalgameMissingAssetRepairIn,
+    GalgamePackageManifestOut,
+    GalgameProjectAssetListOut,
+    GalgameProjectAssetOut,
+    GalgameProjectAssetPatchIn,
+    GalgameStoryDocumentOut,
+)
 
 router = APIRouter()
 

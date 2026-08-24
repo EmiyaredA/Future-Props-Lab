@@ -1,7 +1,28 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { act, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { StudioAuthGate } from "@app/StudioAuthGate";
+
+const accountApi = vi.hoisted(() => ({
+  changePassword: vi.fn(),
+  getMe: vi.fn(),
+  login: vi.fn(),
+  logout: vi.fn(),
+  switchWorkspace: vi.fn(),
+}));
+
+vi.mock("@features/accounts/api", async () => {
+  const actual = await vi.importActual<typeof import("@features/accounts/api")>(
+    "@features/accounts/api",
+  );
+  return { ...actual, ...accountApi };
+});
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  accountApi.getMe.mockRejectedValue(new Error("未登录"));
+  accountApi.changePassword.mockResolvedValue(undefined);
+});
 
 const me = {
   user: {
@@ -37,29 +58,16 @@ function renderGate() {
 
 afterEach(() => {
   vi.unstubAllGlobals();
-  document.cookie = "fpl_csrf=; Max-Age=0; Path=/";
 });
 
 test("logs in with a temporary password and forces a password change", async () => {
-  document.cookie = "fpl_csrf=test-csrf; Path=/";
-  const responses = [
-    new Response(JSON.stringify({ detail: { code: "studio_auth_required" } }), {
-      status: 401,
-    }),
-    new Response(JSON.stringify({ ...me, must_change_password: true }), {
-      status: 200,
-      headers: { "Content-Type": "application/json" },
-    }),
-    new Response(null, { status: 204 }),
-    new Response(JSON.stringify(me), {
-      status: 200,
-      headers: { "Content-Type": "application/json" },
-    }),
-  ];
-  const fetchMock = vi
-    .fn()
-    .mockImplementation(() => Promise.resolve(responses.shift()));
-  vi.stubGlobal("fetch", fetchMock);
+  accountApi.login.mockResolvedValue({
+    ...me,
+    must_change_password: true,
+  });
+  accountApi.getMe
+    .mockRejectedValueOnce(new Error("未登录"))
+    .mockResolvedValueOnce(me);
   const user = userEvent.setup();
   renderGate();
 
@@ -79,24 +87,28 @@ test("logs in with a temporary password and forces a password change", async () 
   await user.click(screen.getByRole("button", { name: "保存并继续" }));
 
   expect(await screen.findByText("账号系统已就绪")).toBeInTheDocument();
-  const changeRequest = fetchMock.mock.calls[2];
-  expect(changeRequest[0]).toBe("/v1/auth/change-password");
-  const headers = (changeRequest[1] as RequestInit).headers as Headers;
-  expect(headers.get("X-CSRF-Token")).toBe("test-csrf");
+  expect(accountApi.changePassword).toHaveBeenCalledWith(
+    "Temporary-2026!",
+    "Changed-Password-2026!",
+  );
 });
 
 test("restores an existing Cookie session before rendering the studio", async () => {
-  vi.stubGlobal(
-    "fetch",
-    vi.fn().mockResolvedValue(
-      new Response(JSON.stringify(me), {
-        status: 200,
-        headers: { "Content-Type": "application/json" },
-      }),
-    ),
-  );
+  accountApi.getMe.mockResolvedValue(me);
   renderGate();
   await waitFor(() =>
     expect(screen.getByText("账号系统已就绪")).toBeInTheDocument(),
   );
+});
+
+test("returns to the login screen when the shared API client reports session expiry", async () => {
+  accountApi.getMe.mockResolvedValue(me);
+  renderGate();
+  expect(await screen.findByText("账号系统已就绪")).toBeInTheDocument();
+
+  act(() => window.dispatchEvent(new Event("future-props:auth-required")));
+
+  expect(
+    await screen.findByRole("heading", { name: "登录 Future Props Lab" }),
+  ).toBeInTheDocument();
 });

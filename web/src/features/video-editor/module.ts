@@ -1,4 +1,4 @@
-import { Film } from "lucide-react";
+import { Box, Film, ListVideo } from "lucide-react";
 import { defineApplicationModule } from "@features/applications";
 
 const moduleDefinition = {
@@ -13,6 +13,26 @@ const moduleDefinition = {
   },
   supportsProjects: true,
   shell: "video-editor",
+  shellConfig: {
+    className: "video-editor-shell",
+    brandClassName: "video-editor-brand",
+    subtitle: "Video Editor",
+    backSubtitle: "浏览全部应用",
+    navigation: [
+      {
+        page: "video-editor-projects",
+        label: "剪辑项目",
+        icon: Box,
+        activePages: ["video-editor-projects"],
+      },
+      {
+        page: "video-editor-tasks",
+        label: "渲染任务",
+        icon: ListVideo,
+        activePages: ["video-editor-tasks"],
+      },
+    ],
+  },
   matchPath(pathname: string) {
     const editor = pathname.match(
       /^\/apps\/video-editor\/projects\/([^/]+)\/editor/,

@@ -2,8 +2,10 @@ import { fireEvent, render, screen, within } from "@testing-library/react";
 import { vi } from "vitest";
 import { parsePage, parseRoute, pathFor } from "@app/routes";
 import { StudioSidebar } from "@app/layout/StudioSidebar";
-import { GalgameWorkshopShell } from "@app/layout/GalgameWorkshopShell";
-import { VisualWorkshopShell } from "@app/layout/VisualWorkshopShell";
+import { WorkshopShell } from "@app/layout/WorkshopShell";
+import { GALGAME_WORKSHOP_MODULE } from "@features/galgame-workshop/module";
+import { VIDEO_EDITOR_MODULE } from "@features/video-editor/module";
+import { VISUAL_WORKSHOP_MODULE } from "@features/visual-workshop/module";
 import { DocsApp } from "../src/docs/DocsApp";
 
 test("renders integrations after tools and before the base model group", () => {
@@ -118,36 +120,68 @@ test("renders the visual workshop brand and return card", () => {
   const navigate = vi.fn();
   const onBack = vi.fn();
   const { container } = render(
-    <VisualWorkshopShell
+    <WorkshopShell
+      module={VISUAL_WORKSHOP_MODULE}
       page="visual-workshop-projects"
       navigate={navigate}
       onBack={onBack}
     >
       <div>项目内容</div>
-    </VisualWorkshopShell>,
+    </WorkshopShell>,
   );
   expect(container.querySelector(".workshop-brand img")).toHaveAttribute(
     "src",
     "/brand/visual-workshop-mark.png",
   );
   expect(screen.getByText("浏览全部 AI 应用")).toBeInTheDocument();
+  expect(
+    screen.getByRole("navigation", { name: "视觉创作工坊导航" }),
+  ).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "项目工作台" })).toHaveAttribute(
+    "aria-current",
+    "page",
+  );
+  expect(screen.getByRole("group", { name: "外观模式" })).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "生成任务" }));
+  expect(navigate).toHaveBeenCalledWith("visual-workshop-tasks");
   fireEvent.click(screen.getByRole("button", { name: "返回应用中心" }));
   expect(onBack).toHaveBeenCalledOnce();
 });
 
 test("renders the Galgame workshop brand", () => {
   const { container } = render(
-    <GalgameWorkshopShell
+    <WorkshopShell
+      module={GALGAME_WORKSHOP_MODULE}
       page="galgame-workshop-projects"
       navigate={vi.fn()}
       onBack={vi.fn()}
     >
       <div>Galgame 项目内容</div>
-    </GalgameWorkshopShell>,
+    </WorkshopShell>,
   );
   expect(container.querySelector(".workshop-brand img")).toHaveAttribute(
     "src",
     "/brand/galgame-workshop-mark.png",
+  );
+});
+
+test("renders the video editor shell from its module configuration", () => {
+  render(
+    <WorkshopShell
+      module={VIDEO_EDITOR_MODULE}
+      page="video-editor-tasks"
+      navigate={vi.fn()}
+      onBack={vi.fn()}
+    >
+      <div>剪辑任务</div>
+    </WorkshopShell>,
+  );
+  expect(
+    screen.getByRole("navigation", { name: "视频剪辑工坊导航" }),
+  ).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "渲染任务" })).toHaveAttribute(
+    "aria-current",
+    "page",
   );
 });
 

@@ -1,4 +1,4 @@
-import { Clapperboard } from "lucide-react";
+import { Box, Clapperboard, ListChecks } from "lucide-react";
 import { defineApplicationModule } from "@features/applications";
 
 const visualWorkshopModule = {
@@ -14,6 +14,24 @@ const visualWorkshopModule = {
   },
   supportsProjects: true,
   shell: "visual-workshop",
+  shellConfig: {
+    subtitle: "Visual Workshop",
+    backSubtitle: "浏览全部 AI 应用",
+    navigation: [
+      {
+        page: "visual-workshop-projects",
+        label: "项目工作台",
+        icon: Box,
+        activePages: ["visual-workshop-projects"],
+      },
+      {
+        page: "visual-workshop-tasks",
+        label: "生成任务",
+        icon: ListChecks,
+        activePages: ["visual-workshop-tasks"],
+      },
+    ],
+  },
   matchPath(pathname: string) {
     const project = pathname.match(
       /^\/apps\/visual-workshop\/projects\/([^/]+)\/(canvas|assets)/,

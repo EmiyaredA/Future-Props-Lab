@@ -1,422 +1,45 @@
-import {
-  type FormEvent,
-  useEffect,
-  useId,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
 import { createPortal } from "react-dom";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AlertCircle,
   ArrowDownAZ,
   CheckCircle2,
   Download,
   File,
-  FileText,
   Filter,
   Folder,
   FolderOpen,
   FolderPlus,
   Grid2X2,
-  Image,
   List,
   LoaderCircle,
-  MoreHorizontal,
-  Music,
-  Pencil,
   Plus,
   Search,
   Trash2,
   Upload,
-  Video,
   X,
 } from "lucide-react";
-import { fetchApiBlob } from "@platform/api/client";
-import { CustomSelect, type SelectOption } from "@shared/ui/CustomSelect";
+import { CustomSelect } from "@shared/ui/CustomSelect";
+import { importFile } from "@features/files/api";
+import { invalidateFileScope } from "@features/files/queryKeys";
 import {
-  createFolder,
-  deleteFolder,
-  deleteManagedFile,
-  getFiles,
-  getFolders,
-  importFile,
-  patchFolder,
-  patchManagedFile,
-  uploadManagedFile,
-  type ManagedFile,
-  type ManagedFolder,
-  type MediaKind,
-} from "@features/files/api";
-import { fileQueryKeys, invalidateFileScope } from "@features/files/queryKeys";
+  ACCEPT,
+  AssetPreview,
+  AssetPreviewDialog,
+  type AssetViewMode,
+  ItemActionMenu,
+  KIND_OPTIONS,
+  SORT_OPTIONS,
+  extensionLabel,
+  fileDisplayName,
+  formatBytes,
+  kindLabel,
+  relativeUpdatedAt,
+  uploadStatusLabel,
+} from "@features/files/AssetBrowserParts";
+import { useAssetBrowserController } from "@features/files/useAssetBrowserController";
 import "@features/files/files.css";
 
-export type AssetViewMode = "grid" | "list";
-type UploadStatus = "queued" | "uploading" | "success" | "error";
-type UploadItem = {
-  id: string;
-  name: string;
-  status: UploadStatus;
-  error?: string;
-};
-type FileEditor =
-  | { kind: "create-folder"; name: string }
-  | { kind: "rename-folder"; folder: ManagedFolder; name: string }
-  | { kind: "rename-file"; file: ManagedFile; name: string }
-  | { kind: "move-folder"; folder: ManagedFolder; target: string }
-  | { kind: "move-file"; file: ManagedFile; target: string }
-  | { kind: "delete-folder"; folder: ManagedFolder }
-  | { kind: "delete-file"; file: ManagedFile }
-  | null;
-
-const VIEW_KEY = "fpl_file_browser_view";
-const ACCEPT =
-  ".jpg,.jpeg,.png,.webp,.gif,.avif,.mp4,.webm,.mov,.mp3,.wav,.m4a,.ogg,.pdf,.txt,.md,.json";
-const KIND_OPTIONS: SelectOption[] = [
-  { value: "all", label: "全部类型" },
-  { value: "image", label: "图片" },
-  { value: "video", label: "视频" },
-  { value: "audio", label: "音频" },
-  { value: "document", label: "文档" },
-];
-const SORT_OPTIONS: SelectOption[] = [
-  { value: "updated", label: "最近更新" },
-  { value: "name", label: "按名称" },
-];
-
-function uploadStatusLabel(status: UploadStatus) {
-  return {
-    queued: "等待上传",
-    uploading: "上传中",
-    success: "上传成功",
-    error: "上传失败",
-  }[status];
-}
-
-function formatBytes(value: number) {
-  if (value < 1024) return `${value} B`;
-  if (value < 1024 * 1024) return `${(value / 1024).toFixed(1)} KB`;
-  return `${(value / 1024 / 1024).toFixed(1)} MB`;
-}
-
-function relativeUpdatedAt(value: string) {
-  const elapsed = Date.now() - new Date(value).getTime();
-  if (elapsed < 60_000) return "刚刚更新";
-  if (elapsed < 3_600_000)
-    return `${Math.max(1, Math.floor(elapsed / 60_000))} 分钟前更新`;
-  if (elapsed < 86_400_000)
-    return `${Math.floor(elapsed / 3_600_000)} 小时前更新`;
-  if (elapsed < 604_800_000)
-    return `${Math.floor(elapsed / 86_400_000)} 天前更新`;
-  return `${new Date(value).toLocaleDateString("zh-CN")} 更新`;
-}
-
-function kindLabel(kind: MediaKind) {
-  return {
-    image: "图片",
-    video: "视频",
-    audio: "音频",
-    font: "字体",
-    document: "文档",
-  }[kind];
-}
-
-function extensionLabel(file: ManagedFile) {
-  const extension = file.original_filename.split(".").pop();
-  return extension && extension !== file.original_filename
-    ? extension.toUpperCase()
-    : kindLabel(file.media_kind);
-}
-
-function originalExtension(file: ManagedFile) {
-  const match = /(\.[^./\\]+)$/.exec(file.original_filename);
-  return match?.[1] ?? "";
-}
-
-function stripOriginalExtension(name: string, file: ManagedFile) {
-  const extension = originalExtension(file);
-  const trimmed = name.trim();
-  if (!extension || trimmed.length <= extension.length) return trimmed;
-  return trimmed
-    .toLocaleLowerCase("zh-CN")
-    .endsWith(extension.toLocaleLowerCase("zh-CN"))
-    ? trimmed.slice(0, -extension.length).trim()
-    : trimmed;
-}
-
-function fileDisplayName(file: ManagedFile) {
-  return stripOriginalExtension(file.display_name, file) || file.display_name;
-}
-
-function fileDownloadName(file: ManagedFile) {
-  const baseName = fileDisplayName(file).replace(/[\\/]/g, "-").trim();
-  const fallback = stripOriginalExtension(file.original_filename, file);
-  return `${baseName || fallback || "download"}${originalExtension(file)}`;
-}
-
-function FileKindIcon({ kind }: { kind: MediaKind }) {
-  const Icon =
-    kind === "image"
-      ? Image
-      : kind === "video"
-        ? Video
-        : kind === "audio"
-          ? Music
-          : FileText;
-  return <Icon aria-hidden />;
-}
-
-function AssetPreview({ file }: { file: ManagedFile }) {
-  const [url, setUrl] = useState("");
-  useEffect(() => {
-    if (file.media_kind !== "image") return;
-    let active = true;
-    let objectUrl = "";
-    void fetchApiBlob(`/v1/files/${file.id}/content`)
-      .then((blob) => {
-        objectUrl = URL.createObjectURL(blob);
-        if (active) setUrl(objectUrl);
-      })
-      .catch(() => undefined);
-    return () => {
-      active = false;
-      if (objectUrl) URL.revokeObjectURL(objectUrl);
-    };
-  }, [file.id, file.media_kind]);
-  return url ? (
-    <img src={url} alt="" />
-  ) : (
-    <span>
-      <FileKindIcon kind={file.media_kind} />
-    </span>
-  );
-}
-
-function AssetPreviewDialog({
-  file,
-  onClose,
-  onDownload,
-}: {
-  file: ManagedFile;
-  onClose: () => void;
-  onDownload: () => void;
-}) {
-  const titleId = useId();
-  const [source, setSource] = useState("");
-  const [failed, setFailed] = useState(false);
-  const canInlinePreview =
-    file.media_kind === "image" ||
-    file.media_kind === "video" ||
-    file.media_kind === "audio";
-
-  useEffect(() => {
-    if (!canInlinePreview) return;
-    let active = true;
-    let objectUrl = "";
-    setSource("");
-    setFailed(false);
-    void fetchApiBlob(`/v1/files/${encodeURIComponent(file.id)}/content`)
-      .then((blob) => {
-        if (!active) return;
-        objectUrl = URL.createObjectURL(blob);
-        setSource(objectUrl);
-      })
-      .catch(() => {
-        if (active) setFailed(true);
-      });
-    return () => {
-      active = false;
-      if (objectUrl) URL.revokeObjectURL(objectUrl);
-    };
-  }, [canInlinePreview, file.id]);
-
-  useEffect(() => {
-    const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
-    };
-    document.addEventListener("keydown", closeOnEscape);
-    return () => document.removeEventListener("keydown", closeOnEscape);
-  }, [onClose]);
-
-  return (
-    <div
-      className="file-preview-backdrop"
-      onMouseDown={(event) => {
-        if (event.target === event.currentTarget) onClose();
-      }}
-    >
-      <section
-        className="file-preview-dialog"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby={titleId}
-      >
-        <header>
-          <div>
-            <span>{kindLabel(file.media_kind)}预览</span>
-            <h2 id={titleId}>{fileDisplayName(file)}</h2>
-          </div>
-          <button
-            type="button"
-            aria-label="关闭预览"
-            title="关闭"
-            onClick={onClose}
-          >
-            <X aria-hidden />
-          </button>
-        </header>
-        <div className={`file-preview-stage ${file.media_kind}`}>
-          {!canInlinePreview ? (
-            <div className="file-preview-fallback">
-              <FileKindIcon kind={file.media_kind} />
-              <strong>{fileDisplayName(file)}</strong>
-              <p>该文件类型暂不支持在线预览，可下载后查看。</p>
-              <button type="button" onClick={onDownload}>
-                <Download aria-hidden /> 下载文件
-              </button>
-            </div>
-          ) : null}
-          {canInlinePreview && !source && !failed ? (
-            <span className="file-preview-state">
-              <LoaderCircle className="spin" aria-hidden />
-              正在加载预览…
-            </span>
-          ) : null}
-          {canInlinePreview && failed ? (
-            <span className="file-preview-state" role="alert">
-              预览加载失败，请关闭后重试。
-            </span>
-          ) : null}
-          {source && file.media_kind === "image" ? (
-            <img src={source} alt={fileDisplayName(file)} />
-          ) : null}
-          {source && file.media_kind === "video" ? (
-            <video src={source} controls />
-          ) : null}
-          {source && file.media_kind === "audio" ? (
-            <div className="file-audio-preview">
-              <Music aria-hidden />
-              <strong>{fileDisplayName(file)}</strong>
-              <audio src={source} controls />
-            </div>
-          ) : null}
-        </div>
-      </section>
-    </div>
-  );
-}
-
-function pathToFolder(folderId: string | undefined, folders: ManagedFolder[]) {
-  const path: ManagedFolder[] = [];
-  let current = folders.find((folder) => folder.id === folderId);
-  while (current) {
-    path.unshift(current);
-    current = folders.find((folder) => folder.id === current?.parent_id);
-  }
-  return path;
-}
-
-function folderOptionLabel(folder: ManagedFolder, folders: ManagedFolder[]) {
-  return pathToFolder(folder.id, folders)
-    .map((item) => item.name)
-    .join(" / ");
-}
-
-function isFolderWithin(
-  candidate: ManagedFolder,
-  folderId: string,
-  folders: ManagedFolder[],
-) {
-  let current: ManagedFolder | undefined = candidate;
-  while (current) {
-    if (current.id === folderId) return true;
-    current = folders.find((folder) => folder.id === current?.parent_id);
-  }
-  return false;
-}
-
-function ItemActionMenu({
-  id,
-  label,
-  open,
-  deleteLabel,
-  onToggle,
-  onClose,
-  onDownload,
-  onRename,
-  onMove,
-  onDelete,
-}: {
-  id: string;
-  label: string;
-  open: boolean;
-  deleteLabel: string;
-  onToggle: () => void;
-  onClose: () => void;
-  onDownload?: () => void;
-  onRename: () => void;
-  onMove: () => void;
-  onDelete: () => void;
-}) {
-  const root = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    const closeOnPointer = (event: MouseEvent) => {
-      if (!root.current?.contains(event.target as Node)) onClose();
-    };
-    const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
-    };
-    document.addEventListener("mousedown", closeOnPointer);
-    document.addEventListener("keydown", closeOnEscape);
-    return () => {
-      document.removeEventListener("mousedown", closeOnPointer);
-      document.removeEventListener("keydown", closeOnEscape);
-    };
-  }, [onClose, open]);
-
-  return (
-    <div className={`file-item-menu${open ? " open" : ""}`} ref={root}>
-      <button
-        type="button"
-        className="file-item-menu-trigger"
-        aria-label={`更多操作 ${label}`}
-        aria-haspopup="menu"
-        aria-expanded={open}
-        aria-controls={open ? id : undefined}
-        onClick={onToggle}
-      >
-        <MoreHorizontal aria-hidden />
-      </button>
-      {open ? (
-        <div className="file-item-menu-popover" id={id} role="menu">
-          {onDownload ? (
-            <button type="button" role="menuitem" onClick={onDownload}>
-              <Download aria-hidden /> 下载
-            </button>
-          ) : null}
-          <button type="button" role="menuitem" onClick={onRename}>
-            <Pencil aria-hidden /> 重命名
-          </button>
-          <button type="button" role="menuitem" onClick={onMove}>
-            <FolderOpen aria-hidden /> 移动到
-          </button>
-          <i aria-hidden />
-          <button
-            type="button"
-            className="danger"
-            role="menuitem"
-            onClick={onDelete}
-          >
-            <Trash2 aria-hidden /> {deleteLabel}
-          </button>
-        </div>
-      ) : null}
-    </div>
-  );
-}
+export type { AssetViewMode } from "@features/files/AssetBrowserParts";
 
 export function AssetBrowser({
   projectId,
@@ -433,358 +56,62 @@ export function AssetBrowser({
   onViewModeChange?: (view: AssetViewMode) => void;
   onImported?: () => void;
 }) {
-  const client = useQueryClient();
-  const fileInput = useRef<HTMLInputElement>(null);
-  const compactActions = useRef<HTMLDivElement>(null);
-  const dialogTitleId = useId();
-  const [folderId, setFolderId] = useState<string>();
-  const [query, setQuery] = useState("");
-  const [kind, setKind] = useState<"all" | MediaKind>("all");
-  const [sort, setSort] = useState<"updated" | "name">("updated");
-  const [localView, setLocalView] = useState<AssetViewMode>(() =>
-    window.localStorage.getItem(VIEW_KEY) === "list" ? "list" : "grid",
-  );
-  const view = viewMode ?? localView;
-  const [compactFilterOpen, setCompactFilterOpen] = useState(false);
-  const [compactAddOpen, setCompactAddOpen] = useState(false);
-  const [notice, setNotice] = useState("");
-  const [uploads, setUploads] = useState<UploadItem[]>([]);
-  const [openMenu, setOpenMenu] = useState<string>();
-  const [previewFile, setPreviewFile] = useState<ManagedFile>();
-  const [editor, setEditor] = useState<FileEditor>(null);
-  const [editorError, setEditorError] = useState("");
-  const sourceProjectId = importMode ? undefined : projectId;
-  const foldersQuery = useQuery({
-    queryKey: fileQueryKeys.folders(sourceProjectId),
-    queryFn: () => getFolders(sourceProjectId),
+  const {
+    client,
+    fileInput,
+    compactActions,
+    dialogTitleId,
+    setFolderId,
+    query,
+    setQuery,
+    kind,
+    setKind,
+    sort,
+    setSort,
+    view,
+    compactFilterOpen,
+    setCompactFilterOpen,
+    compactAddOpen,
+    setCompactAddOpen,
+    notice,
+    setNotice,
+    uploads,
+    setUploads,
+    openMenu,
+    setOpenMenu,
+    previewFile,
+    setPreviewFile,
+    editor,
+    editorError,
+    foldersQuery,
+    filesQuery,
+    act,
+    upload,
+    files,
+    childFolders,
+    path,
+    completedUploads,
+    moveTargetOptions,
+    setView,
+    openEditor,
+    closeEditor,
+    updateEditorName,
+    updateEditorTarget,
+    submitEditor,
+    uploadFiles,
+    downloadFile,
+    showContent,
+    noMatches,
+    editorTitle,
+    editorSubmitLabel,
+    editorSubmitDisabled,
+  } = useAssetBrowserController({
+    projectId,
+    compact,
+    importMode,
+    viewMode,
+    onViewModeChange,
   });
-  const filesQuery = useQuery({
-    queryKey: fileQueryKeys.list({
-      projectId: sourceProjectId,
-      folderId,
-      query,
-      mediaKind: kind === "all" ? undefined : kind,
-      sort,
-      includeReferences: !importMode,
-    }),
-    queryFn: () =>
-      getFiles({
-        projectId: sourceProjectId,
-        folderId,
-        query,
-        mediaKind: kind === "all" ? undefined : kind,
-        sort,
-        includeReferences: !importMode,
-      }),
-  });
-  const refresh = () => {
-    void invalidateFileScope(client, sourceProjectId, { folders: true });
-  };
-  const act = useMutation({
-    mutationFn: async (operation: () => Promise<unknown>) => operation(),
-    onSuccess: () => {
-      setEditor(null);
-      setEditorError("");
-      setOpenMenu(undefined);
-      refresh();
-    },
-    onError: (error) => {
-      const message = error instanceof Error ? error.message : "操作失败";
-      setEditorError(message);
-      setNotice(message);
-    },
-  });
-  const upload = useMutation({
-    mutationFn: async (files: File[]) => {
-      let succeeded = 0;
-      let failed = 0;
-      for (const [index, file] of files.entries()) {
-        setUploads((current) =>
-          current.map((item, itemIndex) =>
-            itemIndex === index ? { ...item, status: "uploading" } : item,
-          ),
-        );
-        try {
-          await uploadManagedFile(file, sourceProjectId, folderId);
-          succeeded += 1;
-          setUploads((current) =>
-            current.map((item, itemIndex) =>
-              itemIndex === index
-                ? { ...item, status: "success", error: undefined }
-                : item,
-            ),
-          );
-        } catch (error) {
-          failed += 1;
-          setUploads((current) =>
-            current.map((item, itemIndex) =>
-              itemIndex === index
-                ? {
-                    ...item,
-                    status: "error",
-                    error: error instanceof Error ? error.message : "上传失败",
-                  }
-                : item,
-            ),
-          );
-        }
-      }
-      return { succeeded, failed };
-    },
-    onSuccess: ({ succeeded, failed }) => {
-      if (failed === 0) {
-        setNotice(`已成功上传 ${succeeded} 个文件`);
-        setUploads([]);
-      } else if (succeeded === 0) {
-        setNotice("文件上传失败，请查看下方原因");
-        setUploads((current) =>
-          current.filter((item) => item.status === "error"),
-        );
-      } else {
-        setNotice(`已上传 ${succeeded} 个文件，${failed} 个失败`);
-        setUploads((current) =>
-          current.filter((item) => item.status === "error"),
-        );
-      }
-    },
-    onSettled: () => refresh(),
-  });
-  const folders = useMemo(
-    () => foldersQuery.data?.items ?? [],
-    [foldersQuery.data?.items],
-  );
-  const files = useMemo(
-    () => filesQuery.data?.items ?? [],
-    [filesQuery.data?.items],
-  );
-  const childFolders = useMemo(() => {
-    const normalizedQuery = query.trim().toLocaleLowerCase("zh-CN");
-    return folders
-      .filter((folder) =>
-        folderId ? folder.parent_id === folderId : folder.parent_id === null,
-      )
-      .filter(
-        (folder) =>
-          !normalizedQuery ||
-          folder.name.toLocaleLowerCase("zh-CN").includes(normalizedQuery),
-      )
-      .sort((left, right) =>
-        sort === "name"
-          ? left.name.localeCompare(right.name, "zh-CN")
-          : Date.parse(right.updated_at) - Date.parse(left.updated_at),
-      );
-  }, [folderId, folders, query, sort]);
-  const path = pathToFolder(folderId, folders);
-  const completedUploads = uploads.filter(
-    (item) => item.status === "success" || item.status === "error",
-  ).length;
-  const moveTargetOptions = useMemo<SelectOption[]>(() => {
-    if (!editor || !editor.kind.startsWith("move-")) return [];
-    const available =
-      editor.kind === "move-folder"
-        ? folders.filter(
-            (folder) => !isFolderWithin(folder, editor.folder.id, folders),
-          )
-        : folders;
-    return [
-      { value: "root", label: "根目录" },
-      ...available.map((folder) => ({
-        value: folder.id,
-        label: folderOptionLabel(folder, folders),
-      })),
-    ];
-  }, [editor, folders]);
-
-  useEffect(() => {
-    if (!editor) return;
-    const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape" && !act.isPending) {
-        setEditor(null);
-        setEditorError("");
-      }
-    };
-    document.addEventListener("keydown", closeOnEscape);
-    return () => document.removeEventListener("keydown", closeOnEscape);
-  }, [act.isPending, editor]);
-
-  useEffect(() => {
-    window.localStorage.setItem(VIEW_KEY, view);
-  }, [view]);
-
-  useEffect(() => {
-    if (!compactFilterOpen && !compactAddOpen) return;
-    const closeOnPointer = (event: MouseEvent) => {
-      if (!compactActions.current?.contains(event.target as Node)) {
-        setCompactFilterOpen(false);
-        setCompactAddOpen(false);
-      }
-    };
-    const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setCompactFilterOpen(false);
-        setCompactAddOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", closeOnPointer);
-    document.addEventListener("keydown", closeOnEscape);
-    return () => {
-      document.removeEventListener("mousedown", closeOnPointer);
-      document.removeEventListener("keydown", closeOnEscape);
-    };
-  }, [compactAddOpen, compactFilterOpen]);
-
-  const setView = (next: AssetViewMode) => {
-    setLocalView(next);
-    onViewModeChange?.(next);
-  };
-  const openEditor = (next: Exclude<FileEditor, null>) => {
-    setOpenMenu(undefined);
-    setEditorError("");
-    setEditor(next);
-  };
-  const closeEditor = () => {
-    if (act.isPending) return;
-    setEditor(null);
-    setEditorError("");
-  };
-  const updateEditorName = (name: string) => {
-    setEditor((current) => {
-      if (
-        !current ||
-        !["create-folder", "rename-folder", "rename-file"].includes(
-          current.kind,
-        )
-      )
-        return current;
-      return { ...current, name };
-    });
-  };
-  const updateEditorTarget = (target: string) => {
-    setEditor((current) => {
-      if (
-        !current ||
-        (current.kind !== "move-folder" && current.kind !== "move-file")
-      )
-        return current;
-      return { ...current, target };
-    });
-  };
-  const submitEditor = (event?: FormEvent) => {
-    event?.preventDefault();
-    if (!editor || act.isPending) return;
-    if (editor.kind === "create-folder") {
-      const name = editor.name.trim();
-      if (name) act.mutate(() => createFolder(name, sourceProjectId, folderId));
-    } else if (editor.kind === "rename-folder") {
-      const name = editor.name.trim();
-      if (name && name !== editor.folder.name)
-        act.mutate(() => patchFolder(editor.folder, { name }));
-    } else if (editor.kind === "rename-file") {
-      const name = stripOriginalExtension(editor.name, editor.file);
-      if (
-        name &&
-        name !== stripOriginalExtension(editor.file.display_name, editor.file)
-      )
-        act.mutate(() => patchManagedFile(editor.file, { display_name: name }));
-    } else if (editor.kind === "move-folder") {
-      act.mutate(() =>
-        patchFolder(
-          editor.folder,
-          editor.target === "root"
-            ? { move_to_root: true }
-            : { parent_id: editor.target },
-        ),
-      );
-    } else if (editor.kind === "move-file") {
-      act.mutate(() =>
-        patchManagedFile(
-          editor.file,
-          editor.target === "root"
-            ? { move_to_root: true }
-            : { folder_id: editor.target },
-        ),
-      );
-    } else if (editor.kind === "delete-folder") {
-      act.mutate(() => deleteFolder(editor.folder));
-    } else if (editor.kind === "delete-file") {
-      act.mutate(() => deleteManagedFile(editor.file));
-    }
-  };
-  const uploadFiles = (selectedFiles: FileList | null) => {
-    if (!selectedFiles?.length || upload.isPending) return;
-    const selected = Array.from(selectedFiles);
-    setNotice("");
-    setUploads(
-      selected.map((file, index) => ({
-        id: `${file.name}-${file.size}-${file.lastModified}-${index}`,
-        name: file.name,
-        status: "queued",
-      })),
-    );
-    upload.mutate(selected);
-  };
-  const downloadFile = async (file: ManagedFile) => {
-    try {
-      const blob = await fetchApiBlob(`/v1/files/${file.id}/download`);
-      const url = URL.createObjectURL(blob);
-      const anchor = document.createElement("a");
-      anchor.href = url;
-      anchor.download = fileDownloadName(file);
-      anchor.click();
-      URL.revokeObjectURL(url);
-    } catch (error) {
-      setNotice(error instanceof Error ? error.message : "下载失败");
-    }
-  };
-  const hasItems = childFolders.length > 0 || files.length > 0;
-  const showContent = hasItems || (!compact && !importMode);
-  const noMatches = !hasItems && Boolean(query.trim() || kind !== "all");
-
-  const editorTitle = editor
-    ? {
-        "create-folder": "新建文件夹",
-        "rename-folder": "重命名文件夹",
-        "rename-file": "重命名文件",
-        "move-folder": "移动文件夹",
-        "move-file": "移动文件",
-        "delete-folder": "删除文件夹",
-        "delete-file":
-          editor.kind === "delete-file" && editor.file.is_reference
-            ? "移除文件引用"
-            : "删除文件",
-      }[editor.kind]
-    : "";
-  const editorSubmitLabel = editor
-    ? {
-        "create-folder": "创建文件夹",
-        "rename-folder": "保存名称",
-        "rename-file": "保存名称",
-        "move-folder": "确认移动",
-        "move-file": "确认移动",
-        "delete-folder": "确认删除",
-        "delete-file":
-          editor.kind === "delete-file" && editor.file.is_reference
-            ? "移除引用"
-            : "确认删除",
-      }[editor.kind]
-    : "";
-  const editorSubmitDisabled = (() => {
-    if (!editor) return true;
-    if (editor.kind === "create-folder") return !editor.name.trim();
-    if (editor.kind === "rename-folder")
-      return !editor.name.trim() || editor.name.trim() === editor.folder.name;
-    if (editor.kind === "rename-file")
-      return (
-        !stripOriginalExtension(editor.name, editor.file) ||
-        stripOriginalExtension(editor.name, editor.file) ===
-          stripOriginalExtension(editor.file.display_name, editor.file)
-      );
-    if (editor.kind === "move-folder")
-      return editor.target === (editor.folder.parent_id ?? "root");
-    if (editor.kind === "move-file")
-      return editor.target === (editor.file.folder_id ?? "root");
-    return false;
-  })();
 
   return (
     <section className={`file-browser${compact ? " is-compact" : ""}`}>

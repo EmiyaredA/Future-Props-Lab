@@ -7,6 +7,7 @@ import mimetypes
 from contextlib import ExitStack
 from copy import deepcopy
 from datetime import UTC, datetime
+from math import floor
 from pathlib import Path
 from typing import Any
 
@@ -34,6 +35,9 @@ DEFAULT_SOURCE_ROOT = Path("/Users/tonghao/Projects/steins-gate-video/assets/gam
 BACKUP_ROOT = REPO_ROOT / ".runtime" / "galgame-import-backups"
 MAP_PATH = BACKUP_ROOT / "sg0-performance-asset-map.json"
 IMAGE_SUFFIXES = {".png", ".jpg", ".jpeg", ".webp"}
+LIP_SYNC_FPS = 10
+MOTION_SAFE_PERCENT = 4.0
+STAGE_BOTTOM_PERCENT = 100.0
 EXPRESSION_CUES_PATH = REPO_ROOT / "scripts" / "galgame_runaway_expression_cues.json"
 DIALOGUE_EXPRESSION_CUES: dict[str, str] = json.loads(
     EXPRESSION_CUES_PATH.read_text(encoding="utf-8")
@@ -417,7 +421,7 @@ def upgrade_suzuha(document: dict[str, Any], mapping: dict[str, Any], source_roo
         expression["renderMode"] = "frameSequence"
         expression["sequence"] = {
             "playbackMode": "lipSync",
-            "fps": 15,
+            "fps": LIP_SYNC_FPS,
             "loop": True,
             "frames": [
                 {"id": frame_id, "assetId": asset_id}
@@ -432,7 +436,7 @@ def set_all_lip_sync_fps(document: dict[str, Any]) -> None:
         for expression in character.get("expressions", []):
             sequence = expression.get("sequence")
             if sequence and sequence.get("playbackMode") == "lipSync":
-                sequence["fps"] = 15
+                sequence["fps"] = LIP_SYNC_FPS
 
 
 def enlarge_dialogue_text(document: dict[str, Any]) -> None:
@@ -615,13 +619,12 @@ def cast_member(
         if count > 1 and index > 0
         else "medium"
     )
-    scale = 1.0
     height = portrait_height_percent(document, character_id, expression_id)
-    # 额外留 4% 给惊跳、呼吸等会上移角色的动作，动作峰值仍保有 6% 顶部安全区。
-    safe_y = round(
-        height * DISTANCE_SCALES[distance] * scale + TOP_SAFE_PERCENT + 4,
-        3,
-    )
+    effective_height = height * DISTANCE_SCALES[distance]
+    available_height = STAGE_BOTTOM_PERCENT - TOP_SAFE_PERCENT - MOTION_SAFE_PERCENT
+    scale = floor(min(1.0, available_height / effective_height) * 1000) / 1000
+    if scale < 0.25:
+        raise RuntimeError(f"角色 {character_id} 的立绘过高，无法在贴底后保留安全头部")
     return {
         "characterId": character_id,
         "expressionId": expression_id,
@@ -629,7 +632,7 @@ def cast_member(
         "positionId": positions[index][0],
         "transform": {
             "x": positions[index][1],
-            "y": safe_y,
+            "y": STAGE_BOTTOM_PERCENT,
             "anchor": "bottomCenter",
             "scale": scale,
             "brightness": 1,
@@ -1001,6 +1004,7 @@ def audit_document(
     ]
 
     unsafe_frames: list[dict[str, Any]] = []
+    floating_frames: list[dict[str, Any]] = []
 
     def check_safe_frame(
         *,
@@ -1017,6 +1021,13 @@ def audit_document(
         top = float(transform.get("y", 100)) - effective_height
         if top < TOP_SAFE_PERCENT:
             unsafe_frames.append({"owner": owner, "topPercent": round(top, 3)})
+        if (
+            transform.get("anchor", "bottomCenter") == "bottomCenter"
+            and float(transform.get("y", 100)) != STAGE_BOTTOM_PERCENT
+        ):
+            floating_frames.append(
+                {"owner": owner, "bottomPercent": float(transform.get("y", 100))}
+            )
 
     for block in cast_blocks:
         for member in block.get("members", []):
@@ -1060,6 +1071,16 @@ def audit_document(
         for left, right in zip(cg_intervals, cg_intervals[1:], strict=False)
         if left[1] is not None and left[1] > right[0]
     ]
+    overlong_story_cgs = [
+        {
+            "key": spec["key"],
+            "durationMs": spec["endMs"] - spec["startMs"],
+        }
+        for spec in CG_SPECS
+        if not spec["key"].startswith("q-")
+        and spec["endMs"] is not None
+        and spec["endMs"] - spec["startMs"] > 8_000
+    ]
     suzuha = find_character(document, ("铃羽", "鈴羽", "玲羽", "Suzuha"))
     suzuha_asset_ids = {
         expression.get("assetId", "") for expression in suzuha.get("expressions", [])
@@ -1076,7 +1097,7 @@ def audit_document(
     checks = {
         "durationMs": fragment["timeline"]["durationMs"],
         "dialogueCount": len(dialogues),
-        "allLipSyncFps15": bool(lip_sync_fps) and set(lip_sync_fps) == {15},
+        "allLipSyncFps10": bool(lip_sync_fps) and set(lip_sync_fps) == {LIP_SYNC_FPS},
         "dialogueBodyFontSizePx": document.get("presentation", {})
         .get("dialogueBox", {})
         .get("body", {})
@@ -1090,6 +1111,7 @@ def audit_document(
         "nearDialogueCount": len(near_dialogue_ids),
         "nearDialogueIdsMatchCurated": near_dialogue_ids == SAFE_CLOSEUP_DIALOGUE_IDS,
         "unsafeCharacterFrames": unsafe_frames,
+        "floatingCharacterFrames": floating_frames,
         "maxCastSize": max((len(block.get("members", [])) for block in cast_blocks), default=0),
         "firstPersonNeverVisible": all(
             first_person_id not in {member["characterId"] for member in block.get("members", [])}
@@ -1108,6 +1130,7 @@ def audit_document(
         "managedCgDefinitionsReady": managed_cg_ids <= {cg["id"] for cg in document.get("cgs", [])},
         "duplicateCgEventIds": len(cg_event_ids) != len(set(cg_event_ids)),
         "cgOverlaps": cg_overlaps,
+        "overlongStoryCgs": overlong_story_cgs,
         "suzuhaUsesSg0BlueVest": bool(suzuha_asset_ids)
         and all(asset_id.startswith("sg0-suz-suz-hs") for asset_id in suzuha_asset_ids)
         and any("hsd" in asset_id for asset_id in suzuha_asset_ids)
@@ -1119,8 +1142,8 @@ def audit_document(
     }
     if checks["durationMs"] != 1_780_344 or checks["dialogueCount"] != 514:
         raise RuntimeError(f"对白或时间轴审计失败：{checks}")
-    if not checks["allLipSyncFps15"]:
-        raise RuntimeError("仍有唇形序列不是 15 FPS")
+    if not checks["allLipSyncFps10"]:
+        raise RuntimeError("仍有唇形序列不是 10 FPS")
     if checks["dialogueBodyFontSizePx"] != 34:
         raise RuntimeError("对白正文字号没有应用到 34px")
     if (
@@ -1136,6 +1159,7 @@ def audit_document(
         not checks["nearDialogueIdsMatchCurated"]
         or checks["nearDialogueCount"] != 16
         or unsafe_frames
+        or floating_frames
     ):
         raise RuntimeError("安全近景或顶部安全区审计失败")
     if checks["maxCastSize"] > 3 or not checks["firstPersonNeverVisible"]:
@@ -1164,15 +1188,16 @@ def audit_document(
             )
         )
     if (
-        checks["showCgCount"] != 13
-        or checks["hideCgCount"] != 11
+        checks["showCgCount"] != 14
+        or checks["hideCgCount"] != 12
         or not checks["managedCgDefinitionsReady"]
         or checks["duplicateCgEventIds"]
         or cg_overlaps
+        or overlong_story_cgs
         or checks["blockCount"] > 1000
     ):
         raise RuntimeError("CG 事件或 Block 上限审计失败")
-    if checks["logicalLibraryCount"] != 701 or missing_mapping or missing_cg_mapping:
+    if checks["logicalLibraryCount"] != 702 or missing_mapping or missing_cg_mapping:
         raise RuntimeError("原作素材映射不完整")
     return checks
 

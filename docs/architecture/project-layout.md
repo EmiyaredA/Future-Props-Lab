@@ -8,12 +8,12 @@ Future-Props-Lab/
 ├── .github/workflows/ # 冻结依赖的 Python/Web 质量检查与 Chromium E2E
 ├── backend/app/
 │   ├── main.py        # FastAPI 装配、生命周期与健康探针
-│   ├── deps.py        # 请求级会话和 Studio 鉴权依赖
+│   ├── deps.py        # HTTP/WebSocket 会话和 Studio 鉴权依赖
 │   ├── problem_details.py # 统一协议错误映射
 │   ├── accounts/      # 账号、Session、审计、API Key、Workspace 与公开投影
-│   ├── concurrency/   # revision/CAS 并发语义
+│   ├── concurrency/   # revision/CAS 并发语义与统一写入结果校验
 │   ├── core/          # 配置、数据库、时间与密钥基础设施
-│   ├── files/         # 文件策略、落盘、公共库、项目引用与旧布局迁移
+│   ├── files/         # 文件策略、落盘、公共库、项目文件事务、引用与旧布局迁移
 │   ├── agents/        # 供应商无关 Agent Harness、Reactive 工具循环与内存审批
 │   ├── llm/           # 模型目录、供应商适配、共享生成/实时运行时、测试工作台和调用日志
 │   ├── tool_navigation/ # 工具收藏与最近使用状态规则
@@ -23,16 +23,16 @@ Future-Props-Lab/
 │   ├── galgame_workshop/ # Galgame 工程、Story 1.4 CAS、Story→RenderPlan 编译、剪辑交接、素材/ASR 与线路分析
 │   ├── video_editor/ # API 驱动的多轨时间轴、代理/精确帧、RenderPlan 求值与 FFmpeg 后台合成
 │   ├── models/        # SQLAlchemy 持久化形状
-│   ├── routes/        # `/v1` HTTP/SSE 协议边界；Galgame 按五类协议模块汇总
+│   ├── routes/        # `/v1` HTTP/SSE 协议边界；Galgame 按九类协议模块拆分
 │   └── schemas/       # Pydantic 请求与响应形状；Galgame 与视频剪辑按职责拆包
 ├── db/migrations/
 │   ├── versions/      # 只追加、不可改写的 SQLite migration
 │   ├── registry.py    # 有序 migration 注册表与最新版本
 │   └── runner.py      # checksum、连续前缀检查和事务应用
 ├── web/src/
-│   ├── app/           # Studio 入口、壳、路由与唯一 AI 应用注册表
+│   ├── app/           # Studio 入口、Session Context、路由、配置驱动工坊壳与应用注册表
 │   ├── docs/          # 数据驱动的双工坊使用指南、搜索、目录与深链接
-│   ├── features/      # 首页、AI 应用、文件管理、工坊、工具导航、集成中心与模型功能
+│   ├── features/      # 账号治理、首页、AI 应用、文件管理、工坊、工具导航、集成中心与模型功能
 │   ├── generated/     # OpenAPI 生成物
 │   ├── platform/      # Cookie/CSRF、API 客户端、认证事件与浏览器语音基础设施
 │   └── shared/        # 品牌与主题 UI
@@ -85,8 +85,10 @@ Future-Props-Lab/
   选中片段可通过统一语音识别适配器执行一次性转写。识别参数、语言能力、文件上限和安全错误
   映射归属 `llm/transcription/`，录音标注、模型测试和 Galgame 只依赖该能力边界。
   删除任务不会删除原音频，被任务引用的音频不能从文件库删除。
-- AI 应用目录同样由 Web 静态注册表维护，应用最近访问记录只保存在浏览器本地。视觉创作工坊
-  、Galgame 工坊与视频剪辑工坊各自使用独立页面壳；后端 `files/` 负责公共文件元数据、文件夹、存储校验与项目引用，
+- AI 应用目录同样由 Web 静态注册表维护，应用最近访问记录只保存在浏览器本地。视觉创作工坊、
+  Galgame 工坊与视频剪辑工坊通过应用模块配置品牌、导航和 active 规则，共用 `app/layout/WorkshopShell`；
+  后端 `files/` 负责公共文件元数据、文件夹、存储校验、项目引用，以及三个工坊创建/删除时数据库与
+  文件目录的一致性补偿，
   `visual_workshop/` 负责真实项目、revisioned 节点画布、项目对话与图片/视频异步生成任务，
   `galgame_workshop/` 负责 Galgame 工程元数据、Story 1.4 故事文档 CAS、Workspace 级旧 Story
   批量迁移与旧文件导入用例、剧情对话富文本、多人角色舞台演出、
@@ -119,6 +121,8 @@ Future-Props-Lab/
 - Web 的依赖方向是 `app → features → shared/platform/generated`。`platform/` 与 `shared/`
   不依赖 `features/` 或 `app/`，`features/` 不依赖 `app/`；入口装配留在 `app/`，业务代码不
   放回 `web/src/` 根目录，生成契约不手工修改。
+- `features/accounts/` 拥有 Workspace 治理、个人资料与安全、平台账号页面和账号 API/Mutation；
+  `app/StudioSession.ts` 只提供 Session Context，认证与业务请求统一经过 `platform/api` 客户端。
 - Character Workspace 的 ViewModel 由独立 `characterWorkspaceViewModel.ts` 拥有，展示子面板不再
   反向导入总视图。Galgame 样式由 `galgameStyles.ts` 懒加载编辑器壳、Story 编排、角色舞台和
   素材/播放器四个语义包；源码在各语义所有者下继续按 foundation/components/interactions 拆分，

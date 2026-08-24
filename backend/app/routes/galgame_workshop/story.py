@@ -1,14 +1,26 @@
 from __future__ import annotations
 
-# ruff: noqa: F405
 import json
 from typing import Annotated
 
-from fastapi import APIRouter
+from fastapi import APIRouter, File, Form, UploadFile
 
+from app.core.config import get_settings
+from app.deps import SessionDep
+from app.galgame_workshop.errors import (
+    GalgameStoryDocumentInvalidError,
+    GalgameStoryDocumentNotFoundError,
+    GalgameWorkshopProjectNotFoundError,
+)
+from app.galgame_workshop.readiness import GalgameReadiness
+from app.galgame_workshop.story import GalgameStoryDocuments
 from app.galgame_workshop.story_migrations import GalgameStoryMigrations
-from app.routes.galgame_workshop._shared import *  # noqa: F403
 from app.routes.galgame_workshop._shared import _invalid_story, _not_found
+from app.schemas.galgame_workshop import (
+    GalgameStoryDocumentOut,
+    GalgameStoryDocumentPutIn,
+    GalgameStoryRouteReportOut,
+)
 
 router = APIRouter()
 MAX_STORY_IMPORT_BYTES = 10 * 1024 * 1024

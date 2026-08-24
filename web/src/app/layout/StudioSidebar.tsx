@@ -3,7 +3,8 @@ import { BrandMark } from "@shared/ui/BrandMark";
 import { IntegrationIcon } from "@shared/ui/IntegrationIcon";
 import { ThemeToggle } from "@shared/ui/ThemeToggle";
 import type { StudioPage } from "@app/routes";
-import { AccountWorkspacePanel } from "@app/AccountWorkspacePanel";
+import { useOptionalStudioSession } from "@app/StudioSession";
+import { AccountWorkspacePanel } from "@features/accounts";
 
 function HomeIcon() {
   return (
@@ -108,6 +109,7 @@ export function StudioSidebar({
   navigate: (page: StudioPage) => void;
 }) {
   const [expanded, setExpanded] = useState(true);
+  const session = useOptionalStudioSession();
   const toolsActive =
     page === "tools" ||
     page === "video-frame-exporter" ||
@@ -213,7 +215,7 @@ export function StudioSidebar({
         ) : null}
       </nav>
       <footer className="sidebar-footer">
-        <AccountWorkspacePanel />
+        {session ? <AccountWorkspacePanel session={session} /> : null}
         <div className="sidebar-rule" />
         <button
           className="docs-entry"

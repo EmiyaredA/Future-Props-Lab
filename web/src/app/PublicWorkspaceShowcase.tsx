@@ -1,6 +1,11 @@
 import { useEffect, useState } from "react";
-import { AccountWorkspacePanel } from "@app/AccountWorkspacePanel";
-import { sessionRequest, useStudioSession } from "@app/StudioSession";
+import { AccountWorkspacePanel } from "@features/accounts";
+import {
+  getPublicGalgameStory,
+  getPublicWorkspace,
+  type PublicWorkspaceProjection,
+} from "@features/public-workspace";
+import { useStudioSession } from "@app/StudioSession";
 import { BrandMark } from "@shared/ui/BrandMark";
 import { ThemeToggle } from "@shared/ui/ThemeToggle";
 
@@ -19,15 +24,11 @@ type PublicProject = {
   updated_at: string;
   assets: PublicAsset[];
 };
-type Projection = {
-  workspace_name: string;
-  visual_projects: PublicProject[];
-  galgame_projects: PublicProject[];
-};
-
 export function PublicWorkspaceShowcase() {
-  const { me } = useStudioSession();
-  const [projection, setProjection] = useState<Projection | null>(null);
+  const session = useStudioSession();
+  const { me } = session;
+  const [projection, setProjection] =
+    useState<PublicWorkspaceProjection | null>(null);
   const [story, setStory] = useState<{
     projectId: string;
     document: unknown;
@@ -35,7 +36,7 @@ export function PublicWorkspaceShowcase() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    sessionRequest<Projection>("/v1/public-workspace")
+    getPublicWorkspace()
       .then(setProjection)
       .catch((reason) =>
         setError(reason instanceof Error ? reason.message : "展台加载失败"),
@@ -57,7 +58,7 @@ export function PublicWorkspaceShowcase() {
         </div>
         <div className="public-showcase-actions">
           <ThemeToggle />
-          <AccountWorkspacePanel />
+          <AccountWorkspacePanel session={session} />
         </div>
       </header>
       <main className="public-showcase-main">
@@ -91,9 +92,7 @@ export function PublicWorkspaceShowcase() {
                   type="button"
                   className="btn"
                   onClick={() =>
-                    void sessionRequest<{ document: unknown }>(
-                      `/v1/public-workspace/galgame-projects/${project.id}/story`,
-                    )
+                    void getPublicGalgameStory(project.id)
                       .then((result) =>
                         setStory({
                           projectId: project.id,

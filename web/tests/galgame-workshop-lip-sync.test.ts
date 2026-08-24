@@ -63,19 +63,19 @@ describe("音量驱动口型", () => {
     });
   });
 
-  test("根据动态底噪限制开口幅度并按十五帧循环", () => {
+  test("根据动态底噪限制开口幅度并按十帧循环", () => {
     const tracker = new LipSyncLevelTracker();
     expect(tracker.update(-42, false, 0)).toBe(0);
-    expect(tracker.update(-39, true, 0, 15)).toBe(0);
-    expect(tracker.update(-39, true, 67, 15)).toBe(1);
-    expect(tracker.update(-39, true, 134, 15)).toBe(0);
+    expect(tracker.update(-39, true, 0, 10)).toBe(0);
+    expect(tracker.update(-39, true, 100, 10)).toBe(1);
+    expect(tracker.update(-39, true, 200, 10)).toBe(0);
     tracker.reset();
-    expect(tracker.update(-25, true, 0, 15)).toBe(0);
-    expect(tracker.update(-25, true, 67, 15)).toBe(1);
-    expect(tracker.update(-25, true, 134, 15)).toBe(2);
-    expect(tracker.update(-25, true, 200, 15)).toBe(1);
-    expect(tracker.update(-25, true, 267, 15)).toBe(0);
-    expect(tracker.update(-40, false, 300)).toBe(0);
+    expect(tracker.update(-25, true, 0, 10)).toBe(0);
+    expect(tracker.update(-25, true, 100, 10)).toBe(1);
+    expect(tracker.update(-25, true, 200, 10)).toBe(2);
+    expect(tracker.update(-25, true, 300, 10)).toBe(1);
+    expect(tracker.update(-25, true, 400, 10)).toBe(0);
+    expect(tracker.update(-40, false, 500)).toBe(0);
   });
 
   test("按表情帧率控制口型循环速度", () => {

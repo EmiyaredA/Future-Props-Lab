@@ -1,62 +1,16 @@
-import { type FormEvent, useEffect, useState } from "react";
 import {
-  sessionRequest,
-  type SessionContextValue,
-  type SessionWorkspace,
-  useOptionalStudioSession,
-} from "@app/StudioSession";
-
-type WorkspaceItem = SessionWorkspace & {
-  owner_username: string;
-  owner_display_name: string;
-};
-type WorkspaceList = { items: WorkspaceItem[]; total: number };
-type Member = {
-  membership_id: string;
-  username: string;
-  display_name: string;
-  role: "owner" | "member";
-  revision: number;
-};
-type Invitation = {
-  id: string;
-  workspace_name: string;
-  invitee_username: string;
-  status: string;
-  revision: number;
-  expires_at: string;
-};
-type AccountSession = {
-  id: string;
-  client_ip: string;
-  user_agent: string;
-  last_seen_at: string;
-  is_current: boolean;
-};
-type ApiKey = {
-  id: string;
-  name: string;
-  key_prefix: string;
-  scopes: string[];
-  expires_at: string;
-  revoked_at: string | null;
-  revision: number;
-};
-type ManagedAccount = {
-  id: string;
-  username: string;
-  display_name: string;
-  status: "active" | "disabled";
-  must_change_password: boolean;
-  revision: number;
-};
-type SecurityEvent = {
-  id: string;
-  event_type: string;
-  outcome: string;
-  client_ip: string;
-  created_at: string;
-};
+  type AccountSessionContext,
+  deleteAccountSession,
+  deleteAvatar,
+  removeWorkspaceMember,
+  resetPlatformAccountPassword,
+  respondToInvitation,
+  revokeApiKey,
+  revokeOtherSessions,
+  revokeWorkspaceInvitation,
+  updatePlatformAccount,
+} from "./api";
+import { useAccountWorkspacePanel } from "./useAccountWorkspacePanel";
 
 function shortDate(value: string) {
   return new Intl.DateTimeFormat("zh-CN", {
@@ -65,256 +19,71 @@ function shortDate(value: string) {
   }).format(new Date(value));
 }
 
-export function AccountWorkspacePanel() {
-  const session = useOptionalStudioSession();
-  if (!session) return null;
-  return <AccountWorkspacePanelContent session={session} />;
-}
-
-function AccountWorkspacePanelContent({
+export function AccountWorkspacePanel({
   session,
 }: {
-  session: SessionContextValue;
+  session: AccountSessionContext;
 }) {
-  const { me, refresh, logout, switchWorkspace } = session;
-  const [open, setOpen] = useState<"workspace" | "account" | null>(null);
-  const [tab, setTab] = useState("overview");
-  const [error, setError] = useState("");
-  const [notice, setNotice] = useState("");
-  const [workspaces, setWorkspaces] = useState<WorkspaceItem[]>([]);
-  const [members, setMembers] = useState<Member[]>([]);
-  const [invitations, setInvitations] = useState<Invitation[]>([]);
-  const [sessions, setSessions] = useState<AccountSession[]>([]);
-  const [keys, setKeys] = useState<ApiKey[]>([]);
-  const [accounts, setAccounts] = useState<ManagedAccount[]>([]);
-  const [securityEvents, setSecurityEvents] = useState<SecurityEvent[]>([]);
-  const [workspaceName, setWorkspaceName] = useState(me.workspace.name);
-  const [inviteUsername, setInviteUsername] = useState("");
-  const [displayName, setDisplayName] = useState(me.user.display_name);
-  const [email, setEmail] = useState(me.user.email || "");
-  const [reauthPassword, setReauthPassword] = useState("");
-  const [keyName, setKeyName] = useState("");
-  const [keyWrite, setKeyWrite] = useState(false);
-  const [revealedKey, setRevealedKey] = useState("");
-  const [newUsername, setNewUsername] = useState("");
-  const [newDisplayName, setNewDisplayName] = useState("");
-  const [temporaryPassword, setTemporaryPassword] = useState("");
-  const [currentPassword, setCurrentPassword] = useState("");
-  const [changedPassword, setChangedPassword] = useState("");
-  const [changedPasswordAgain, setChangedPasswordAgain] = useState("");
-
-  const report = async (work: () => Promise<void>) => {
-    setError("");
-    setNotice("");
-    try {
-      await work();
-    } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "操作失败");
-    }
-  };
-
-  const loadWorkspaces = async () => {
-    const result = await sessionRequest<WorkspaceList>(
-      "/v1/account/workspaces",
-    );
-    setWorkspaces(result.items);
-    const pending = await sessionRequest<{ items: Invitation[] }>(
-      "/v1/account/workspace-invitations",
-    );
-    setInvitations(pending.items);
-  };
-
-  const loadGovernance = async () => {
-    if (!["owner", "platform_admin"].includes(me.workspace.access_kind)) return;
-    const [memberResult, invitationResult] = await Promise.all([
-      sessionRequest<{ items: Member[] }>(
-        "/v1/account/workspaces/current/members",
-      ),
-      sessionRequest<{ items: Invitation[] }>(
-        "/v1/account/workspaces/current/invitations",
-      ),
-    ]);
-    setMembers(memberResult.items);
-    setInvitations(invitationResult.items);
-  };
-
-  const loadSecurity = async () => {
-    const [sessionResult, keyResult, eventResult] = await Promise.all([
-      sessionRequest<{ items: AccountSession[] }>("/v1/account/sessions"),
-      sessionRequest<ApiKey[]>("/v1/account/api-keys"),
-      sessionRequest<{ items: SecurityEvent[] }>("/v1/account/security-events"),
-    ]);
-    setSessions(sessionResult.items);
-    setKeys(keyResult);
-    setSecurityEvents(eventResult.items);
-  };
-
-  const loadAccounts = async () => {
-    if (!me.user.is_platform_admin) return;
-    const result = await sessionRequest<{ items: ManagedAccount[] }>(
-      "/v1/platform/accounts",
-    );
-    setAccounts(result.items);
-  };
-
-  useEffect(() => {
-    if (!open) return;
-    void report(async () => {
-      if (open === "workspace") {
-        await loadWorkspaces();
-        await loadGovernance();
-      } else {
-        await loadSecurity();
-        await loadAccounts();
-      }
-    });
-    // The panel reloads from the current session snapshot whenever it opens.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open]);
-
-  const reauthenticate = async (event: FormEvent) => {
-    event.preventDefault();
-    await report(async () => {
-      await sessionRequest("/v1/auth/reauth", {
-        method: "POST",
-        body: JSON.stringify({ password: reauthPassword }),
-      });
-      setReauthPassword("");
-      setNotice("身份已重新验证，敏感操作将在 10 分钟内保持解锁。");
-    });
-  };
-
-  const saveProfile = async (event: FormEvent) => {
-    event.preventDefault();
-    await report(async () => {
-      await sessionRequest("/v1/account/profile", {
-        method: "PATCH",
-        body: JSON.stringify({
-          display_name: displayName,
-          email: email || null,
-          expected_revision: me.user.revision,
-        }),
-      });
-      await refresh();
-      setNotice("个人资料已保存。");
-    });
-  };
-
-  const uploadAvatar = async (file: File | undefined) => {
-    if (!file) return;
-    await report(async () => {
-      const form = new FormData();
-      form.append("file", file);
-      form.append("expected_revision", String(me.user.revision));
-      await sessionRequest("/v1/account/profile/avatar", {
-        method: "PUT",
-        body: form,
-      });
-      await refresh();
-      setNotice("头像已更新。");
-    });
-  };
-
-  const changePassword = async (event: FormEvent) => {
-    event.preventDefault();
-    if (changedPassword !== changedPasswordAgain) {
-      setError("两次输入的新密码不一致");
-      return;
-    }
-    await report(async () => {
-      await sessionRequest("/v1/auth/change-password", {
-        method: "POST",
-        body: JSON.stringify({
-          current_password: currentPassword,
-          new_password: changedPassword,
-        }),
-      });
-      setCurrentPassword("");
-      setChangedPassword("");
-      setChangedPasswordAgain("");
-      await refresh();
-      await loadSecurity();
-      setNotice("密码已修改，其他设备已退出。");
-    });
-  };
-
-  const saveWorkspace = async (visibility = me.workspace.visibility) => {
-    await report(async () => {
-      await sessionRequest("/v1/account/workspaces/current", {
-        method: "PATCH",
-        body: JSON.stringify({
-          name: workspaceName,
-          visibility,
-          expected_revision: me.workspace.revision,
-        }),
-      });
-      await refresh();
-      setNotice("Workspace 设置已保存。");
-    });
-  };
-
-  const invite = async (event: FormEvent) => {
-    event.preventDefault();
-    await report(async () => {
-      await sessionRequest("/v1/account/workspaces/current/invitations", {
-        method: "POST",
-        body: JSON.stringify({ username: inviteUsername }),
-      });
-      setInviteUsername("");
-      await loadGovernance();
-      setNotice("邀请已创建。");
-    });
-  };
-
-  const createKey = async (event: FormEvent) => {
-    event.preventDefault();
-    await report(async () => {
-      const result = await sessionRequest<{ secret: string }>(
-        "/v1/account/api-keys",
-        {
-          method: "POST",
-          body: JSON.stringify({
-            name: keyName,
-            scopes: keyWrite
-              ? ["studio:read", "studio:write"]
-              : ["studio:read"],
-            expires_in_days: 90,
-          }),
-        },
-      );
-      setKeyName("");
-      setRevealedKey(result.secret);
-      await loadSecurity();
-    });
-  };
-
-  const createAccount = async (event: FormEvent) => {
-    event.preventDefault();
-    await report(async () => {
-      const result = await sessionRequest<{ temporary_password: string }>(
-        "/v1/platform/accounts",
-        {
-          method: "POST",
-          body: JSON.stringify({
-            username: newUsername,
-            display_name: newDisplayName,
-          }),
-        },
-      );
-      setTemporaryPassword(result.temporary_password);
-      setNewUsername("");
-      setNewDisplayName("");
-      await loadAccounts();
-    });
-  };
-
-  const close = () => {
-    setOpen(null);
-    setError("");
-    setNotice("");
-    setRevealedKey("");
-    setTemporaryPassword("");
-  };
+  const {
+    me,
+    refresh,
+    logout,
+    switchWorkspace,
+    open,
+    setOpen,
+    tab,
+    setTab,
+    error,
+    notice,
+    workspaces,
+    members,
+    invitations,
+    sessions,
+    keys,
+    accounts,
+    securityEvents,
+    workspaceName,
+    setWorkspaceName,
+    inviteUsername,
+    setInviteUsername,
+    displayName,
+    setDisplayName,
+    email,
+    setEmail,
+    reauthPassword,
+    setReauthPassword,
+    keyName,
+    setKeyName,
+    keyWrite,
+    setKeyWrite,
+    revealedKey,
+    newUsername,
+    setNewUsername,
+    newDisplayName,
+    setNewDisplayName,
+    temporaryPassword,
+    setTemporaryPassword,
+    currentPassword,
+    setCurrentPassword,
+    changedPassword,
+    setChangedPassword,
+    changedPasswordAgain,
+    setChangedPasswordAgain,
+    report,
+    loadWorkspaces,
+    loadGovernance,
+    loadSecurity,
+    loadAccounts,
+    reauthenticate,
+    saveProfile,
+    uploadAvatar,
+    changePassword,
+    saveWorkspace,
+    invite,
+    createKey,
+    createAccount,
+    close,
+  } = useAccountWorkspacePanel(session);
 
   return (
     <>
@@ -513,15 +282,7 @@ function AccountWorkspacePanelContent({
                                 className="btn small primary"
                                 onClick={() =>
                                   void report(async () => {
-                                    await sessionRequest(
-                                      `/v1/account/workspace-invitations/${item.id}/accept`,
-                                      {
-                                        method: "POST",
-                                        body: JSON.stringify({
-                                          expected_revision: item.revision,
-                                        }),
-                                      },
-                                    );
+                                    await respondToInvitation(item, "accept");
                                     await loadWorkspaces();
                                   })
                                 }
@@ -533,15 +294,7 @@ function AccountWorkspacePanelContent({
                                 className="btn small"
                                 onClick={() =>
                                   void report(async () => {
-                                    await sessionRequest(
-                                      `/v1/account/workspace-invitations/${item.id}/decline`,
-                                      {
-                                        method: "POST",
-                                        body: JSON.stringify({
-                                          expected_revision: item.revision,
-                                        }),
-                                      },
-                                    );
+                                    await respondToInvitation(item, "decline");
                                     await loadWorkspaces();
                                   })
                                 }
@@ -576,15 +329,7 @@ function AccountWorkspacePanelContent({
                             className="btn small danger"
                             onClick={() =>
                               void report(async () => {
-                                await sessionRequest(
-                                  `/v1/account/workspaces/current/members/${member.membership_id}`,
-                                  {
-                                    method: "DELETE",
-                                    body: JSON.stringify({
-                                      expected_revision: member.revision,
-                                    }),
-                                  },
-                                );
+                                await removeWorkspaceMember(member);
                                 await loadGovernance();
                               })
                             }
@@ -627,15 +372,7 @@ function AccountWorkspacePanelContent({
                             className="btn small danger"
                             onClick={() =>
                               void report(async () => {
-                                await sessionRequest(
-                                  `/v1/account/workspaces/current/invitations/${item.id}`,
-                                  {
-                                    method: "DELETE",
-                                    body: JSON.stringify({
-                                      expected_revision: item.revision,
-                                    }),
-                                  },
-                                );
+                                await revokeWorkspaceInvitation(item);
                                 await loadGovernance();
                               })
                             }
@@ -679,12 +416,7 @@ function AccountWorkspacePanelContent({
                         className="btn small danger"
                         onClick={() =>
                           void report(async () => {
-                            await sessionRequest("/v1/account/profile/avatar", {
-                              method: "DELETE",
-                              body: JSON.stringify({
-                                expected_revision: me.user.revision,
-                              }),
-                            });
+                            await deleteAvatar(me.user.revision);
                             await refresh();
                           })
                         }
@@ -807,10 +539,7 @@ function AccountWorkspacePanelContent({
                             className="btn small"
                             onClick={() =>
                               void report(async () => {
-                                await sessionRequest(
-                                  `/v1/account/sessions/${item.id}`,
-                                  { method: "DELETE" },
-                                );
+                                await deleteAccountSession(item.id);
                                 await loadSecurity();
                               })
                             }
@@ -825,10 +554,7 @@ function AccountWorkspacePanelContent({
                       className="btn"
                       onClick={() =>
                         void report(async () => {
-                          await sessionRequest(
-                            "/v1/account/sessions/revoke-others",
-                            { method: "POST" },
-                          );
+                          await revokeOtherSessions();
                           await loadSecurity();
                         })
                       }
@@ -882,15 +608,7 @@ function AccountWorkspacePanelContent({
                             className="btn small danger"
                             onClick={() =>
                               void report(async () => {
-                                await sessionRequest(
-                                  `/v1/account/api-keys/${key.id}/revoke`,
-                                  {
-                                    method: "POST",
-                                    body: JSON.stringify({
-                                      expected_revision: key.revision,
-                                    }),
-                                  },
-                                );
+                                await revokeApiKey(key);
                                 await loadSecurity();
                               })
                             }
@@ -976,18 +694,11 @@ function AccountWorkspacePanelContent({
                             className="btn small"
                             onClick={() =>
                               void report(async () => {
-                                await sessionRequest(
-                                  `/v1/platform/accounts/${account.id}`,
-                                  {
-                                    method: "PATCH",
-                                    body: JSON.stringify({
-                                      status:
-                                        account.status === "active"
-                                          ? "disabled"
-                                          : "active",
-                                      expected_revision: account.revision,
-                                    }),
-                                  },
+                                await updatePlatformAccount(
+                                  account,
+                                  account.status === "active"
+                                    ? "disabled"
+                                    : "active",
                                 );
                                 await loadAccounts();
                               })
@@ -1002,12 +713,10 @@ function AccountWorkspacePanelContent({
                             className="btn small"
                             onClick={() =>
                               void report(async () => {
-                                const result = await sessionRequest<{
-                                  temporary_password: string;
-                                }>(
-                                  `/v1/platform/accounts/${account.id}/reset-password`,
-                                  { method: "POST" },
-                                );
+                                const result =
+                                  await resetPlatformAccountPassword(
+                                    account.id,
+                                  );
                                 setTemporaryPassword(result.temporary_password);
                                 await loadAccounts();
                               })

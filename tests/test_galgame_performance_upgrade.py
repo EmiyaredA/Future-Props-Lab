@@ -38,18 +38,20 @@ def test_curated_closeup_keeps_motion_safe_headroom() -> None:
     member = cast_member(document, "hero", "emotion", 0, 1, dialogue_id)
     assert member["distance"] == "near"
     assert member["positionId"] == "performance-center"
-    effective_height = 120 * 1.28
+    effective_height = 120 * 1.28 * member["transform"]["scale"]
     static_top = member["transform"]["y"] - effective_height
     assert static_top >= TOP_SAFE_PERCENT + 4
     assert static_top - 4 >= TOP_SAFE_PERCENT
+    assert member["transform"]["y"] == 100
     character = document["characters"][0]
     expression = character["expressions"][0]
     _x, y, scale, *_rest, height = actor_layout(document, character, member, expression)
     assert y / 10.8 - height * scale >= TOP_SAFE_PERCENT + 4
+    assert y / 10.8 == 100
 
 
 def test_unified_cg_manifest_installs_expected_events() -> None:
-    assert len(CG_SPECS) == 13
+    assert len(CG_SPECS) == 14
     document = {
         "assets": [],
         "cgs": [],
@@ -67,9 +69,14 @@ def test_unified_cg_manifest_installs_expected_events() -> None:
     mapping = {"items": {spec["relative"]: {"assetId": f"file-{spec['key']}"} for spec in CG_SPECS}}
     install_cgs(document, mapping)
     blocks = document["chapters"][0]["fragments"][0]["blocks"]
-    assert len(document["cgs"]) == 13
-    assert sum(block["type"] == "showCg" for block in blocks) == 13
-    assert sum(block["type"] == "hideCg" for block in blocks) == 11
+    assert len(document["cgs"]) == 14
+    assert sum(block["type"] == "showCg" for block in blocks) == 14
+    assert sum(block["type"] == "hideCg" for block in blocks) == 12
+    assert all(
+        spec["endMs"] - spec["startMs"] <= 8_000
+        for spec in CG_SPECS
+        if not spec["key"].startswith("q-") and spec["endMs"] is not None
+    )
 
 
 def test_dialogue_text_is_enlarged_without_changing_layout() -> None:

@@ -13,16 +13,16 @@ from app.llm.playground.transcription import (
     ModelTestTranscription,
     ModelTestTranscriptionError,
 )
-from app.llm.playground.transcription_parameters import (
-    TranscriptionParameterError,
-    parameter_capabilities,
-    resolve_parameters,
-)
 from app.llm.playground.transcription_runner import ModelTestTranscriptionRunner
 from app.llm.providers.transcription import (
     TranscriptionResult,
     TranscriptSegment,
     TranscriptWord,
+)
+from app.llm.transcription.parameters import (
+    TranscriptionParameterError,
+    parameter_capabilities,
+    resolve_parameters,
 )
 from app.main import app
 from app.models import ModelTestTranscriptionTask, Workspace

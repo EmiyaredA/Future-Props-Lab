@@ -1,2 +1,49 @@
-from app.schemas.video_editor.base import *  # noqa: F403
-from app.schemas.video_editor.timeline import *  # noqa: F403
+"""Stable, explicitly exported schema surface for the video editor API."""
+
+# ruff: noqa: F401
+
+from app.schemas.video_editor.base import (
+    VideoEditorAssetImportIn,
+    VideoEditorAssetListOut,
+    VideoEditorAssetOut,
+    VideoEditorAvailableAssetListOut,
+    VideoEditorAvailableAssetOut,
+    VideoEditorPreset,
+    VideoEditorProjectCreateIn,
+    VideoEditorProjectListOut,
+    VideoEditorProjectOut,
+    VideoEditorProjectPatchIn,
+    VideoEditorRenderCreateIn,
+    VideoEditorRenderIssue,
+    VideoEditorRenderPreviewIn,
+    VideoEditorRenderPreviewOut,
+    VideoEditorTaskListOut,
+    VideoEditorTaskOut,
+    VideoEditorTaskStatus,
+)
+from app.schemas.video_editor.timeline import (
+    AddClipOperation,
+    AddTrackOperation,
+    ClipIdOperation,
+    KeyframeOperation,
+    LinkClipsOperation,
+    MoveClipOperation,
+    RemoveTrackOperation,
+    ReorderTrackOperation,
+    SetTransitionOperation,
+    SplitClipOperation,
+    TrimClipOperation,
+    UpdateClipOperation,
+    UpdateSettingsOperation,
+    UpdateTrackOperation,
+    VideoEditorClip,
+    VideoEditorKeyframe,
+    VideoEditorProjectSettings,
+    VideoEditorTimelineBatchIn,
+    VideoEditorTimelineDocument,
+    VideoEditorTimelineOperation,
+    VideoEditorTimelineOut,
+    VideoEditorTrack,
+    VideoEditorTransform,
+    VideoEditorTransition,
+)

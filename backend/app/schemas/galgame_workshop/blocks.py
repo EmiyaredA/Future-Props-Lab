@@ -1,12 +1,20 @@
 from __future__ import annotations
 
-# ruff: noqa: F405
 from typing import Annotated, Any, Literal
 
 from pydantic import Field, field_validator, model_validator
 
-from app.schemas.galgame_workshop.base import *  # noqa: F403
-from app.schemas.galgame_workshop.base import _clean_title
+from app.schemas.galgame_workshop.base import GalgameStorySourceRef
+from app.schemas.galgame_workshop.base_core import (
+    HEX_COLOR_PATTERN,
+    STABLE_ID_PATTERN,
+    GalgameStoryModel,
+    _clean_title,
+)
+
+
+def _optional_timeline_ms() -> Any:
+    return Field(default=None, alias="atMs", ge=0, exclude_if=lambda value: value is None)
 
 
 class GalgameStoryBlockBase(GalgameStoryModel):
@@ -15,9 +23,7 @@ class GalgameStoryBlockBase(GalgameStoryModel):
 
 class GalgameStorySceneBlock(GalgameStoryBlockBase):
     type: Literal["scene"]
-    at_ms: int | None = Field(
-        default=None, alias="atMs", ge=0, exclude_if=lambda value: value is None
-    )
+    at_ms: int | None = _optional_timeline_ms()
     scene_id: str = Field(alias="sceneId", pattern=STABLE_ID_PATTERN)
     clear_characters: bool | None = Field(default=None, alias="clearCharacters")
 
@@ -42,9 +48,7 @@ class GalgameStoryCgOverlay(GalgameStoryModel):
 
 class GalgameStoryShowCgBlock(GalgameStoryBlockBase):
     type: Literal["showCg"]
-    at_ms: int | None = Field(
-        default=None, alias="atMs", ge=0, exclude_if=lambda value: value is None
-    )
+    at_ms: int | None = _optional_timeline_ms()
     cg_id: str = Field(alias="cgId", pattern=STABLE_ID_PATTERN)
     variant_id: str | None = Field(default=None, alias="variantId", pattern=STABLE_ID_PATTERN)
     display_mode: Literal["fullscreen", "overlay"] = Field(
@@ -57,9 +61,7 @@ class GalgameStoryShowCgBlock(GalgameStoryBlockBase):
 
 class GalgameStoryHideCgBlock(GalgameStoryBlockBase):
     type: Literal["hideCg"]
-    at_ms: int | None = Field(
-        default=None, alias="atMs", ge=0, exclude_if=lambda value: value is None
-    )
+    at_ms: int | None = _optional_timeline_ms()
     transition: GalgameStoryCgTransition = Field(default_factory=GalgameStoryCgTransition)
 
 
@@ -120,9 +122,7 @@ class GalgameStoryDialoguePortrait(GalgameStoryModel):
 
 class GalgameStoryShowCharacterBlock(GalgameStoryBlockBase):
     type: Literal["showCharacter"]
-    at_ms: int | None = Field(
-        default=None, alias="atMs", ge=0, exclude_if=lambda value: value is None
-    )
+    at_ms: int | None = _optional_timeline_ms()
     character_id: str = Field(alias="characterId", pattern=STABLE_ID_PATTERN)
     expression_id: str | None = Field(default=None, alias="expressionId", pattern=STABLE_ID_PATTERN)
     distance: Literal["far", "medium", "near"] = "medium"
@@ -166,9 +166,7 @@ class GalgameStoryStageCastMember(GalgameStoryModel):
 
 class GalgameStorySetStageCastBlock(GalgameStoryBlockBase):
     type: Literal["setStageCast"]
-    at_ms: int | None = Field(
-        default=None, alias="atMs", ge=0, exclude_if=lambda value: value is None
-    )
+    at_ms: int | None = _optional_timeline_ms()
     members: list[GalgameStoryStageCastMember] = Field(default_factory=list, max_length=3)
     exit_transition: GalgameStoryCharacterTransition = Field(
         default_factory=GalgameStoryCharacterTransition, alias="exitTransition"
@@ -187,9 +185,7 @@ class GalgameStorySetStageCastBlock(GalgameStoryBlockBase):
 
 class GalgameStoryRemoveCharacterBlock(GalgameStoryBlockBase):
     type: Literal["removeCharacter"]
-    at_ms: int | None = Field(
-        default=None, alias="atMs", ge=0, exclude_if=lambda value: value is None
-    )
+    at_ms: int | None = _optional_timeline_ms()
     character_id: str | None = Field(
         default=None,
         alias="characterId",

@@ -79,7 +79,7 @@ export class LipSyncLevelTracker {
     levelDb: number,
     speaking: boolean,
     nowMs: number,
-    fps = 12,
+    fps = 10,
   ): LipSyncFrame {
     if (!speaking) {
       const sample = Math.max(MIN_DECIBELS, Math.min(-12, levelDb));

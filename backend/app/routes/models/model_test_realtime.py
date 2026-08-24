@@ -5,8 +5,7 @@ from urllib.parse import urlsplit
 from fastapi import APIRouter, HTTPException, WebSocket
 
 from app.core.config import get_settings
-from app.core.db import SessionLocal
-from app.deps import SessionDep, StudioAuth, authenticate_studio_websocket
+from app.deps import SessionDep, StudioAuth, resolve_studio_websocket_principal
 from app.llm.realtime import list_realtime_models, run_realtime_model_test
 from app.schemas.realtime_voice import RealtimeVoiceOptionsOut
 
@@ -35,9 +34,8 @@ async def realtime_socket(websocket: WebSocket) -> None:
         await websocket.close(code=4403, reason="origin_not_allowed")
         return
     try:
-        async with SessionLocal() as session:
-            principal = await authenticate_studio_websocket(websocket, session)
-            workspace_id = principal.workspace_id
+        principal = await resolve_studio_websocket_principal(websocket)
+        workspace_id = principal.workspace_id
     except HTTPException as exc:
         await websocket.close(code=4401 if exc.status_code == 401 else 4403)
         return

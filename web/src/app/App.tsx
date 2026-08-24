@@ -7,10 +7,8 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { GalgameWorkshopShell } from "@app/layout/GalgameWorkshopShell";
 import { StudioSidebar } from "@app/layout/StudioSidebar";
-import { VisualWorkshopShell } from "@app/layout/VisualWorkshopShell";
-import { VideoEditorShell } from "@app/layout/VideoEditorShell";
+import { WorkshopShell } from "@app/layout/WorkshopShell";
 import { PublicWorkspaceShowcase } from "@app/PublicWorkspaceShowcase";
 import { useStudioSession } from "@app/StudioSession";
 import {
@@ -206,9 +204,10 @@ export default function App() {
 
   if (isVideoEditorPage(page)) {
     return (
-      <VideoEditorShell
+      <WorkshopShell
+        module={VIDEO_EDITOR_MODULE}
         page={page}
-        navigate={(next: WorkshopPage) => navigate(next)}
+        navigate={(next) => navigate(next as WorkshopPage)}
         onBack={() => navigate("apps")}
       >
         <PageBoundary>
@@ -226,15 +225,16 @@ export default function App() {
             />
           )}
         </PageBoundary>
-      </VideoEditorShell>
+      </WorkshopShell>
     );
   }
 
   if (isGalgameWorkshopPage(page)) {
     return (
-      <GalgameWorkshopShell
+      <WorkshopShell
+        module={GALGAME_WORKSHOP_MODULE}
         page={page}
-        navigate={(next: WorkshopPage) => navigate(next)}
+        navigate={(next) => navigate(next as WorkshopPage)}
         onBack={() => navigate("apps")}
       >
         <PageBoundary>
@@ -254,15 +254,16 @@ export default function App() {
             />
           )}
         </PageBoundary>
-      </GalgameWorkshopShell>
+      </WorkshopShell>
     );
   }
 
   if (isVisualWorkshopPage(page)) {
     return (
-      <VisualWorkshopShell
+      <WorkshopShell
+        module={VISUAL_WORKSHOP_MODULE}
         page={page}
-        navigate={(next: WorkshopPage) => navigate(next)}
+        navigate={(next) => navigate(next as WorkshopPage)}
         onBack={() => navigate("apps")}
       >
         <PageBoundary>
@@ -299,7 +300,7 @@ export default function App() {
             />
           )}
         </PageBoundary>
-      </VisualWorkshopShell>
+      </WorkshopShell>
     );
   }
 

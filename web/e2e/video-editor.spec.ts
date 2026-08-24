@@ -28,6 +28,7 @@ test("builds a deterministic image, black-card, and title edit", async ({
   await expect(page.locator(".ve-clip.image")).toHaveCount(2);
   await page.locator(".ve-clip.image").nth(1).click();
   await page.getByRole("button", { name: "删除", exact: true }).click();
+  await expect(page.locator(".ve-clip.image")).toHaveCount(1);
 
   await page.getByRole("button", { name: "纯色黑幕" }).click();
   await expect(page.locator(".ve-clip.color")).toHaveCount(1);

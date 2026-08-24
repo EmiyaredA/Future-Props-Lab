@@ -15,8 +15,14 @@ import {
   type AuthMe,
   SessionContext,
   type SessionContextValue,
-  sessionRequest,
 } from "@app/StudioSession";
+import {
+  changePassword,
+  getMe,
+  login as loginAccount,
+  logout as logoutAccount,
+  switchWorkspace as switchAccountWorkspace,
+} from "@features/accounts/api";
 import { clearRetainedRealtimeVoiceState } from "@features/models/realtime/realtimeVoiceMemory";
 
 type Status = "checking" | "signed-out" | "signed-in";
@@ -34,7 +40,7 @@ export function StudioAuthGate({ children }: { children: ReactNode }) {
 
   const refresh = async () => {
     try {
-      const current = await sessionRequest<AuthMe>("/v1/auth/me");
+      const current = await getMe();
       setMe(current);
       setStatus("signed-in");
     } catch {
@@ -70,10 +76,7 @@ export function StudioAuthGate({ children }: { children: ReactNode }) {
     setBusy(true);
     setError("");
     try {
-      const current = await sessionRequest<AuthMe>("/v1/auth/login", {
-        method: "POST",
-        body: JSON.stringify({ username, password }),
-      });
+      const current = await loginAccount(username, password);
       clearRetainedRealtimeVoiceState();
       setMe(current);
       setStatus("signed-in");
@@ -95,13 +98,7 @@ export function StudioAuthGate({ children }: { children: ReactNode }) {
     setBusy(true);
     setError("");
     try {
-      await sessionRequest<void>("/v1/auth/change-password", {
-        method: "POST",
-        body: JSON.stringify({
-          current_password: password,
-          new_password: newPassword,
-        }),
-      });
+      await changePassword(password, newPassword);
       setPassword("");
       setNewPassword("");
       setConfirmPassword("");
@@ -119,17 +116,14 @@ export function StudioAuthGate({ children }: { children: ReactNode }) {
       me,
       refresh,
       logout: async () => {
-        await sessionRequest<void>("/v1/auth/logout", { method: "POST" });
+        await logoutAccount();
         clearRetainedRealtimeVoiceState();
         queryClient.clear();
         setMe(null);
         setStatus("signed-out");
       },
       switchWorkspace: async (workspaceId: string) => {
-        await sessionRequest("/v1/account/workspaces/switch", {
-          method: "POST",
-          body: JSON.stringify({ workspace_id: workspaceId }),
-        });
+        await switchAccountWorkspace(workspaceId);
         clearRetainedRealtimeVoiceState();
         queryClient.clear();
         if (typeof BroadcastChannel !== "undefined") {

@@ -1,10 +1,20 @@
 from __future__ import annotations
 
-# ruff: noqa: F405
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException, Query
 
-from app.routes.galgame_workshop._shared import *  # noqa: F403
+from app.deps import SessionDep
+from app.galgame_workshop.errors import (
+    GalgameStoryNotReadyError,
+    GalgameWorkshopProjectNotFoundError,
+)
+from app.galgame_workshop.projects import GalgameWorkshopProjects
 from app.routes.galgame_workshop._shared import _not_found
+from app.schemas.galgame_workshop import (
+    GalgameWorkshopProjectCreateIn,
+    GalgameWorkshopProjectListOut,
+    GalgameWorkshopProjectOut,
+    GalgameWorkshopProjectPatchIn,
+)
 
 router = APIRouter()
 

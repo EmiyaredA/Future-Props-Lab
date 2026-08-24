@@ -97,6 +97,18 @@
   max-height: 100%;
   aspect-ratio: 16/9;
 }
+.galgame-fast-preview-stage .galgame-player-stage-only {
+  display: flex;
+  flex-direction: column;
+}
+.galgame-fast-preview-stage .galgame-stage-host {
+  flex: 1 1 auto;
+}
+.galgame-fast-preview .galgame-stage-advance {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
 .galgame-fast-preview-inspector {
   border-left: 1px solid var(--gal-line);
 }

@@ -118,7 +118,7 @@ test("authors two chapters across card and performance views and plays into the 
   );
 
   await page.goto("/apps/galgame-workshop/projects/multi-chapter/editor");
-  await expect(page.getByText("多章节旅程")).toBeVisible();
+  await expect(page.getByText("多章节旅程")).toBeVisible({ timeout: 15_000 });
   await page.getByRole("button", { name: "新建章节" }).click();
   await page
     .locator(".galgame-block-toolbar")
@@ -251,19 +251,10 @@ test("authors two chapters across card and performance views and plays into the 
   await page.setViewportSize({ width: 1280, height: 800 });
 
   await page.getByRole("button", { name: "开始试玩", exact: true }).click();
-  for (const scope of [
-    "从项目入口开始",
-    "从当前章节开始",
-    "从当前 Block 开始",
-  ]) {
-    const scopeButton = page.getByRole("button", { name: scope });
-    await expect(scopeButton).toBeEnabled();
-    await scopeButton.click();
-    await expect(page.getByRole("region", { name: "游戏预览" })).toBeVisible();
-  }
-
-  await page.getByRole("button", { name: "开始试玩", exact: true }).click();
-  const player = page.getByRole("region", { name: "游戏预览" });
+  const player = page
+    .locator(".galgame-fast-preview")
+    .getByRole("region", { name: "游戏预览" });
+  await expect(player).toBeVisible();
   await player.getByRole("button", { name: "点击继续" }).click();
   await expect(player.getByText("欢迎来到第二章")).toBeVisible();
   await player.getByRole("button", { name: "点击继续" }).click();

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import random
 import time
 from pathlib import Path
 from typing import Any
@@ -12,6 +13,8 @@ from dotenv import dotenv_values
 REPO_ROOT = Path(__file__).resolve().parents[1]
 PROJECT_ID = "63ac832d-bff3-4053-9c9f-f55c9dafc52a"
 FRAGMENT_ID = "runaway-full"
+FULL_DURATION_MS = 1_780_344
+SAMPLE_DURATION_MS = 180_000
 EXPORTS = (
     ("user-clip-10m57s-12m29s500", 657_000, 749_500),
     ("cg-kagari-hououin-imitation", 593_385, 623_296),
@@ -19,6 +22,27 @@ EXPORTS = (
     ("cg-cleaning-sergeant", 1_233_804, 1_254_683),
     ("cg-harem-chaos-finale", 1_735_012, 1_764_737),
 )
+
+
+def random_sample(rng: random.Random | None = None) -> tuple[str, int, int]:
+    source = rng or random.SystemRandom()
+    latest_start = FULL_DURATION_MS - SAMPLE_DURATION_MS
+    start_ms = source.randrange(0, latest_start + 1) // 1_000 * 1_000
+    end_ms = start_ms + SAMPLE_DURATION_MS
+    return (f"random-3m-{start_ms:07d}-{end_ms:07d}", start_ms, end_ms)
+
+
+def requested_exports(
+    only: str | None,
+    rng: random.Random | None = None,
+) -> list[tuple[str, int, int] | None]:
+    if only == "user-clip":
+        return [EXPORTS[0]]
+    if only == "cg-clips":
+        return [*EXPORTS[1:]]
+    if only == "full":
+        return [None]
+    return [random_sample(rng)]
 
 
 def request_json(
@@ -59,22 +83,18 @@ def request_body(revision: int, item: tuple[str, int, int] | None) -> dict[str, 
     }
 
 
-def submit(client: httpx.Client, only: str | None = None) -> tuple[int, dict[str, str]]:
+def submit(
+    client: httpx.Client,
+    only: str | None = None,
+    rng: random.Random | None = None,
+) -> tuple[int, dict[str, str]]:
     story = request_json(
         client,
         "GET",
         f"/v1/galgame-workshop/projects/{PROJECT_ID}/story",
     )
     revision = int(story["revision"])
-    requested: list[tuple[str, int, int] | None]
-    if only == "user-clip":
-        requested = [EXPORTS[0]]
-    elif only == "cg-clips":
-        requested = [*EXPORTS[1:]]
-    elif only == "full":
-        requested = [None]
-    else:
-        requested = [*EXPORTS, None]
+    requested = requested_exports(only, rng)
     task_names: dict[str, str] = {}
     for item in requested:
         name = item[0] if item else "full-29m40s344"
@@ -150,10 +170,13 @@ def wait_and_download(client: httpx.Client, revision: int, task_names: dict[str,
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="提交并下载《自由粒子的离家出走》验收视频")
+    parser = argparse.ArgumentParser(
+        description="默认随机抽取并下载《自由粒子的离家出走》连续三分钟验收视频"
+    )
     parser.add_argument("action", choices=("all", "submit"), default="all", nargs="?")
     parser.add_argument("--base-url", default="http://127.0.0.1:9000")
-    parser.add_argument("--only", choices=("user-clip", "cg-clips", "full"))
+    parser.add_argument("--only", choices=("random-sample", "user-clip", "cg-clips", "full"))
+    parser.add_argument("--seed", type=int, help="固定随机样片位置，便于复现")
     args = parser.parse_args()
     management_key = (
         dotenv_values(REPO_ROOT / "backend" / ".env").get("FPL_MANAGEMENT_API_KEY") or ""
@@ -165,7 +188,8 @@ def main() -> None:
         headers={"Authorization": f"Bearer {management_key}"},
         timeout=None,
     ) as client:
-        revision, tasks = submit(client, args.only)
+        rng = random.Random(args.seed) if args.seed is not None else None
+        revision, tasks = submit(client, args.only, rng)
         if args.action == "all":
             wait_and_download(client, revision, tasks)
 

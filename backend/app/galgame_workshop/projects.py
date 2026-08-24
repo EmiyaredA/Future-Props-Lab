@@ -3,9 +3,10 @@ from __future__ import annotations
 from sqlalchemy import delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.concurrency.revisions import RevisionConflictError
+from app.concurrency.revisions import require_revision_write
 from app.core.config import get_settings
 from app.core.time import iso_utc, utc_now
+from app.files.project_transactions import creating_project_layout, deleting_project_layout
 from app.files.storage import TARGET_STORAGE_VERSION, AssetStorage
 from app.galgame_workshop.errors import (
     GalgameStoryNotReadyError,
@@ -66,31 +67,15 @@ class GalgameWorkshopProjects:
         row = GalgameWorkshopProject(title=body.title, status="draft")
         self.session.add(row)
         await self.session.flush()
-        created_root = self.storage.ensure_project_layout("galgame-workshop", row.id)
-        try:
+        async with creating_project_layout(self.session, self.storage, "galgame-workshop", row.id):
             self.session.add(
                 GalgameStoryDocument(
                     project_id=row.id,
                     document=default_story_document().model_dump(mode="json", by_alias=True),
                 )
             )
-            await self.session.commit()
-        except Exception:
-            await self.session.rollback()
-            if created_root:
-                self.storage.remove_project_root("galgame-workshop", row.id)
-            raise
         await self.session.refresh(row)
         return project_out(row)
-
-    async def _raise_conflict(self, project_id: str, expected_revision: int) -> None:
-        await self.session.rollback()
-        current = await self.get(project_id)
-        raise RevisionConflictError(
-            expected_revision,
-            current.revision,
-            current.model_dump(mode="json"),
-        )
 
     async def patch(
         self,
@@ -118,8 +103,12 @@ class GalgameWorkshopProjects:
             )
             .values(**values)
         )
-        if result.rowcount != 1:
-            await self._raise_conflict(project_id, body.expected_revision)
+        await require_revision_write(
+            self.session,
+            result,
+            expected=body.expected_revision,
+            load_current=lambda: self.get(project_id),
+        )
         await self.session.commit()
         return await self.get(project_id)
 
@@ -139,20 +128,22 @@ class GalgameWorkshopProjects:
             for asset in assets
             if asset.storage_version < TARGET_STORAGE_VERSION
         ]
-        staged = self.storage.stage_project_root("galgame-workshop", project_id)
-        try:
+        async with deleting_project_layout(
+            self.session,
+            self.storage,
+            "galgame-workshop",
+            project_id,
+            legacy_paths=legacy_paths,
+        ):
             result = await self.session.execute(
                 delete(GalgameWorkshopProject).where(
                     GalgameWorkshopProject.id == project_id,
                     GalgameWorkshopProject.revision == expected_revision,
                 )
             )
-            if result.rowcount != 1:
-                await self._raise_conflict(project_id, expected_revision)
-            await self.session.commit()
-        except Exception:
-            self.storage.restore_staged_root(staged)
-            raise
-        for path in legacy_paths:
-            path.unlink(missing_ok=True)
-        self.storage.purge_staged_root(staged)
+            await require_revision_write(
+                self.session,
+                result,
+                expected=expected_revision,
+                load_current=lambda: self.get(project_id),
+            )

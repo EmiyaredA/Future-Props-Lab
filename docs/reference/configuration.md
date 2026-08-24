@@ -8,6 +8,9 @@
 - `FPL_TEMP_MEDIA_UPLOAD_URL`：可选的视频生成参考音频/视频临时托管上传地址，默认留空。配置后必须是无凭证 HTTPS 地址；未配置时需要外传参考媒体的请求会在发起网络访问前返回明确配置错误。
 - `FPL_MCP_STDIO_ALLOWED_COMMANDS`：允许 MCP stdio 启动的绝对可执行文件路径，使用系统路径分隔符
   分隔多项；默认空，即完全禁用 stdio。命令解析后必须精确命中白名单，参数始终按数组传递且不使用 shell。
+- `FPL_SKILL_ARCHIVE_MAX_BYTES`：Skill ZIP 单文件上限，默认 `10485760`（10 MiB）。
+- `FPL_SKILL_EXPANDED_MAX_BYTES`：Skill 解压后的文件总量上限，默认 `52428800`（50 MiB）。
+- `FPL_SKILL_MAX_FILES`：单个 Skill 解压后的文件数量上限，默认 `500`。
 - `FPL_SECRETS_KEY`：必填 Fernet 密钥，用于加密供应商 API Key。丢失后旧密钥不可恢复。
 - `FPL_AUTH_COOKIE_SECURE`：Session/CSRF Cookie 的 Secure 标志；本机 HTTP 开发默认 `false`，HTTPS 环境必须设为 `true`。
 - `CORS_ORIGINS`：允许访问 API 的 Studio 来源，逗号分隔。
@@ -37,7 +40,7 @@ Web 开发代理已经为 `/v1` 开启 WebSocket upgrade。HTTPS 生产反向代
 显示连接失败。实时语音 VAD 的 ONNX、worklet 与 WASM 位于 `web/public/voice-vad/`，
 `npm run setup` 会同步资源，构建会校验资源没有缺失或过期。麦克风浏览器权限通常要求 HTTPS 或本机来源。
 
-应用启动时自动执行迁移。手动运行 `npm run db:migrate` 可重复确认迁移，`npm run db:migrate:check` 用于发现待执行迁移或 checksum 漂移。Skill ZIP 固定最多 10 MiB，解压后最多 50 MiB、500 个文件，根 `SKILL.md` 最多 256 KiB。模型测试图片固定为每张最多 8 MiB；语音识别不会自动切片，自定义 Pro 端点单文件最多 100 MB，其余当前模型最多 10 MB，均无需环境变量配置。备份时应先停止应用，再同时复制 SQLite 数据库及数据库同级的 `workspaces/`（包含 Skill 版本）、`profiles/`、`library/assets/`、`applications/`、`model-test/attachments/`、`model-test/references/`、`model-test/generated/` 文件目录，以确保元数据和原始文件一致。
+应用启动时自动执行迁移。手动运行 `npm run db:migrate` 可重复确认迁移，`npm run db:migrate:check` 用于发现待执行迁移或 checksum 漂移。Skill ZIP、解压总量与文件数量可通过上述三个变量限制，根 `SKILL.md` 固定最多 256 KiB。模型测试图片固定为每张最多 8 MiB；语音识别不会自动切片，自定义 Pro 端点单文件最多 100 MB，其余当前模型最多 10 MB，均无需环境变量配置。备份时应先停止应用，再同时复制 SQLite 数据库及数据库同级的 `workspaces/`（包含 Skill 版本）、`profiles/`、`library/assets/`、`applications/`、`model-test/attachments/`、`model-test/references/`、`model-test/generated/` 文件目录，以确保元数据和原始文件一致。
 
-`npm run setup` 会安装视频导出使用的隔离 Chromium；FFmpeg 与 FFprobe 必须可从系统命令路径调用。
-渲染器不复用用户 Chrome，不读取登录态，并只通过任务清单访问当前项目已校验的本机素材。
+`npm run setup` 不安装 Chromium。FFmpeg 与 FFprobe 必须可从系统命令路径调用；Chromium 仅用于
+Playwright E2E，按 Playwright 的安装说明单独准备，不参与正式视频导出。

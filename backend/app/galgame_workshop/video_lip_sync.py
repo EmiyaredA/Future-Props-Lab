@@ -246,7 +246,7 @@ def _lip_fps(character: dict[str, Any], expression_id: str) -> int:
         expression.get("renderMode") == "frameSequence"
         and sequence.get("playbackMode") == "lipSync"
     ):
-        return int(sequence.get("fps", 12))
+        return int(sequence.get("fps", 10))
     return 2
 
 

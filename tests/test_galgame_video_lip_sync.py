@@ -75,18 +75,19 @@ def test_audio_envelope_cache_is_reused(tmp_path: Path, monkeypatch) -> None:
     assert second == first
 
 
-def test_lip_tracker_cycles_strong_voice_at_fifteen_fps_and_closes_on_silence() -> None:
+def test_lip_tracker_cycles_strong_voice_at_ten_fps_and_closes_on_silence() -> None:
     tracker = _LipTracker()
-    assert tracker.update(-100, False, 0, 15) == 0
+    assert tracker.update(-100, False, 0, 10) == 0
     assert [
-        tracker.update(-20, True, time_us, 15) for time_us in (0, 66_667, 133_334, 200_000, 266_667)
+        tracker.update(-20, True, time_us, 10)
+        for time_us in (0, 100_000, 200_000, 300_000, 400_000)
     ] == [0, 1, 2, 1, 0]
-    assert tracker.update(-100, False, 300_000, 15) == 0
+    assert tracker.update(-100, False, 500_000, 10) == 0
 
 
 def test_lip_tracker_limits_quieter_voice_to_half_open() -> None:
     tracker = _LipTracker()
-    assert tracker.update(-100, False, 0, 15) == 0
+    assert tracker.update(-100, False, 0, 10) == 0
     assert [
-        tracker.update(-47, True, time_us, 15) for time_us in (0, 66_667, 133_334, 200_000)
+        tracker.update(-47, True, time_us, 10) for time_us in (0, 100_000, 200_000, 300_000)
     ] == [0, 1, 0, 1]

@@ -273,6 +273,13 @@ async def authenticate_studio_websocket(
     return principal
 
 
+async def resolve_studio_websocket_principal(websocket: WebSocket) -> StudioPrincipal:
+    """Own the short authentication session outside the protocol route."""
+    async for session in get_session():
+        return await authenticate_studio_websocket(websocket, session)
+    raise RuntimeError("database session dependency did not yield a session")
+
+
 StudioAuth = Annotated[StudioPrincipal, Depends(require_studio_auth)]
 PublicStudioAuth = Annotated[StudioPrincipal, Depends(require_public_studio_auth)]
 

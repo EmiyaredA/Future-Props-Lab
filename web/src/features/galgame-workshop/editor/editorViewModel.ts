@@ -3,3 +3,7 @@ import type { useGalgameWorkshopEditorController } from "@features/galgame-works
 export type EditorPageViewModel = ReturnType<
   typeof useGalgameWorkshopEditorController
 >;
+export type ReadyEditorPageViewModel = Extract<
+  EditorPageViewModel,
+  { status: "ready" }
+>;

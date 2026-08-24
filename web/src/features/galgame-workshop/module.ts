@@ -1,4 +1,4 @@
-import { BookOpen } from "lucide-react";
+import { BookOpen, Box } from "lucide-react";
 import { defineApplicationModule } from "@features/applications";
 
 const galgameWorkshopModule = {
@@ -15,6 +15,23 @@ const galgameWorkshopModule = {
   },
   supportsProjects: true,
   shell: "galgame-workshop",
+  shellConfig: {
+    className: "galgame-workshop-shell",
+    subtitle: "Galgame Workshop",
+    backSubtitle: "浏览全部 AI 应用",
+    navigation: [
+      {
+        page: "galgame-workshop-projects",
+        label: "项目工作台",
+        icon: Box,
+        activePages: [
+          "galgame-workshop-projects",
+          "galgame-workshop-overview",
+          "galgame-workshop-editor",
+        ],
+      },
+    ],
+  },
   matchPath(pathname: string) {
     const project = pathname.match(
       /^\/apps\/galgame-workshop\/projects\/([^/]+)\/(editor|overview|preview)/,

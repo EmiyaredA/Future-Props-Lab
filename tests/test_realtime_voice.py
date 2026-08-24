@@ -3,7 +3,6 @@ from __future__ import annotations
 import asyncio
 import base64
 import json
-from contextlib import asynccontextmanager
 from types import SimpleNamespace
 from uuid import uuid4
 
@@ -720,15 +719,10 @@ def test_realtime_client_parameters_are_validated_and_normalized() -> None:
 def test_realtime_websocket_rejects_origin_and_auth(monkeypatch: pytest.MonkeyPatch) -> None:
     import app.routes.models.model_test_realtime as route
 
-    @asynccontextmanager
-    async def session_local():
-        yield object()
-
     async def unauthorized(*_args):
         raise HTTPException(401)
 
-    monkeypatch.setattr(route, "SessionLocal", session_local)
-    monkeypatch.setattr(route, "authenticate_studio_websocket", unauthorized)
+    monkeypatch.setattr(route, "resolve_studio_websocket_principal", unauthorized)
     with TestClient(app) as client:
         with pytest.raises(WebSocketDisconnect) as missing_origin:
             with client.websocket_connect("/v1/model-test/realtime"):
@@ -747,10 +741,6 @@ def test_realtime_websocket_accepts_authenticated_workspace(
 ) -> None:
     import app.routes.models.model_test_realtime as route
 
-    @asynccontextmanager
-    async def session_local():
-        yield object()
-
     async def authenticated(*_args):
         return SimpleNamespace(workspace_id="workspace-a")
 
@@ -758,8 +748,7 @@ def test_realtime_websocket_accepts_authenticated_workspace(
         await websocket.send_json({"type": "workspace", "id": workspace_id})
         await websocket.close(code=1000)
 
-    monkeypatch.setattr(route, "SessionLocal", session_local)
-    monkeypatch.setattr(route, "authenticate_studio_websocket", authenticated)
+    monkeypatch.setattr(route, "resolve_studio_websocket_principal", authenticated)
     monkeypatch.setattr(route, "run_realtime_model_test", run)
     with TestClient(app) as client:
         with client.websocket_connect(

@@ -12,7 +12,7 @@ from app.core.config import get_settings
 from app.core.db import SessionLocal
 from app.core.tenant_context import bind_workspace
 from app.llm.providers.transcription import TranscriptionResult, TranscriptSegment
-from app.llm.transcription_support import (
+from app.llm.transcription.support import (
     resolve_transcription_language,
     resolve_transcription_target_language,
 )

@@ -1,10 +1,20 @@
 from __future__ import annotations
 
-# ruff: noqa: F405
 from fastapi import APIRouter
 
-from app.routes.galgame_workshop._shared import *  # noqa: F403
+from app.deps import SessionDep
+from app.files import AssetError
+from app.galgame_workshop.asr import GalgameAsrService
 from app.routes.galgame_workshop._shared import _asset_error
+from app.schemas.galgame_workshop import (
+    GalgameAsrSettingsOut,
+    GalgameAsrSettingsPatchIn,
+    GalgameTranscriptionCreateIn,
+    GalgameTranscriptionTaskListOut,
+    GalgameTranscriptPatchIn,
+    GalgameVoiceMatchIn,
+    GalgameVoiceMatchOut,
+)
 
 router = APIRouter()
 

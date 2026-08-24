@@ -1,17 +1,213 @@
-"""Stable public schema surface for the Galgame workshop API."""
+"""Stable, explicitly exported schema surface for the Galgame workshop API."""
 
-from app.schemas.galgame_workshop.annotation_import import *  # noqa: F403
-from app.schemas.galgame_workshop.asr import *  # noqa: F403
-from app.schemas.galgame_workshop.assets import *  # noqa: F403
-from app.schemas.galgame_workshop.base import *  # noqa: F403
-from app.schemas.galgame_workshop.blocks import *  # noqa: F403
-from app.schemas.galgame_workshop.dialogue_box import *  # noqa: F403
-from app.schemas.galgame_workshop.localization import *  # noqa: F403
-from app.schemas.galgame_workshop.maintenance import *  # noqa: F403
-from app.schemas.galgame_workshop.reports import *  # noqa: F403
-from app.schemas.galgame_workshop.stage_settings import *  # noqa: F403
-from app.schemas.galgame_workshop.story import *  # noqa: F403
-from app.schemas.galgame_workshop.story_migrations import *  # noqa: F403
-from app.schemas.galgame_workshop.story_structure import *  # noqa: F403
-from app.schemas.galgame_workshop.video_export import *  # noqa: F403
-from app.schemas.galgame_workshop.video_handoff import *  # noqa: F403
+# ruff: noqa: F401
+
+from app.schemas.galgame_workshop.annotation_import import (
+    GalgameAnnotationImportIn,
+    GalgameAnnotationImportIssue,
+    GalgameAnnotationImportPhase,
+    GalgameAnnotationImportPreviewOut,
+    GalgameAnnotationImportRequirements,
+    GalgameAnnotationImportSegmentOut,
+    GalgameAnnotationImportStatus,
+    GalgameAnnotationImportTaskOut,
+)
+from app.schemas.galgame_workshop.asr import (
+    GalgameAsrSettingsOut,
+    GalgameAsrSettingsPatchIn,
+    GalgameTranscriptionCreateIn,
+    GalgameTranscriptionTaskListOut,
+    GalgameTranscriptionTaskOut,
+    GalgameTranscriptPatchIn,
+    GalgameTranscriptSegmentOut,
+    GalgameVoiceMatchIn,
+    GalgameVoiceMatchItem,
+    GalgameVoiceMatchOut,
+)
+from app.schemas.galgame_workshop.assets import (
+    GalgameAssetBatchUploadOut,
+    GalgameAssetCategory,
+    GalgameAssetImportPreviewIn,
+    GalgameAssetImportPreviewItem,
+    GalgameAssetImportPreviewOut,
+    GalgameAssetPackagingPolicy,
+    GalgameMissingAssetRepairIn,
+    GalgamePackageManifestIssue,
+    GalgamePackageManifestItem,
+    GalgamePackageManifestOut,
+    GalgameProjectAssetListOut,
+    GalgameProjectAssetOut,
+    GalgameProjectAssetPatchIn,
+)
+from app.schemas.galgame_workshop.base import (
+    GalgameStoryAsset,
+    GalgameStoryAudioAsset,
+    GalgameStoryCg,
+    GalgameStoryCgVariant,
+    GalgameStoryCharacter,
+    GalgameStoryCharacterAttributeTemplate,
+    GalgameStoryCharacterDisplayName,
+    GalgameStoryCharacterExpression,
+    GalgameStoryCharacterOverlay,
+    GalgameStoryDialogueAvatarSettings,
+    GalgameStoryDialogueBoxStyle,
+    GalgameStoryExpressionAvatar,
+    GalgameStoryExpressionFrame,
+    GalgameStoryExpressionSequence,
+    GalgameStoryImageAsset,
+    GalgameStoryImageCrop,
+    GalgameStoryParagraphPresentation,
+    GalgameStoryParagraphStyle,
+    GalgameStoryPortraitSkin,
+    GalgameStoryPortraitSkinOverride,
+    GalgameStoryPresentation,
+    GalgameStoryScene,
+    GalgameStorySceneGroup,
+    GalgameStorySceneLayer,
+    GalgameStorySourceRef,
+    GalgameStoryStageStyle,
+    GalgameStorySystemMessagePresentation,
+    GalgameStorySystemMessageStyle,
+    GalgameStoryTextPlaybackStyle,
+    GalgameStoryUiComponent,
+    GalgameStoryUiStyle,
+    GalgameStoryVariable,
+    GalgameStoryVideoAsset,
+    GalgameStoryVoiceProfile,
+    GalgameWorkshopProjectCreateIn,
+    GalgameWorkshopProjectListOut,
+    GalgameWorkshopProjectOut,
+    GalgameWorkshopProjectPatchIn,
+    GalgameWorkshopProjectStatus,
+)
+from app.schemas.galgame_workshop.blocks import (
+    GalgameStoryAnimateSpriteBlock,
+    GalgameStoryAudioBlock,
+    GalgameStoryAutoPlayBlock,
+    GalgameStoryBlock,
+    GalgameStoryBlockBase,
+    GalgameStoryBranchBlock,
+    GalgameStoryBranchChoice,
+    GalgameStoryCallFragmentBlock,
+    GalgameStoryCameraBlock,
+    GalgameStoryCgOverlay,
+    GalgameStoryCgTransition,
+    GalgameStoryCharacterTransform,
+    GalgameStoryCharacterTransition,
+    GalgameStoryCommentBlock,
+    GalgameStoryCurtainBlock,
+    GalgameStoryDestroySceneBlock,
+    GalgameStoryDialogueBlock,
+    GalgameStoryDialoguePortrait,
+    GalgameStoryEndChapterBlock,
+    GalgameStoryFloatingTextBlock,
+    GalgameStoryGalleryBlock,
+    GalgameStoryHideCgBlock,
+    GalgameStoryIfBlock,
+    GalgameStoryNarrationBlock,
+    GalgameStoryParagraphParamsBlock,
+    GalgameStoryParticleBlock,
+    GalgameStoryPortraitStyleRuleBlock,
+    GalgameStoryRemoveCharacterBlock,
+    GalgameStoryResetCameraBlock,
+    GalgameStoryReturnToEntryBlock,
+    GalgameStoryRichTextDocument,
+    GalgameStoryRichTextExpressionNode,
+    GalgameStoryRichTextLineBreakNode,
+    GalgameStoryRichTextNode,
+    GalgameStoryRichTextRubyNode,
+    GalgameStoryRichTextTextNode,
+    GalgameStoryRichTextTimedBlockBase,
+    GalgameStoryRichTextVariableNode,
+    GalgameStoryRichTextWaitNode,
+    GalgameStorySceneBlock,
+    GalgameStorySetStageCastBlock,
+    GalgameStorySetVariableBlock,
+    GalgameStoryShowCgBlock,
+    GalgameStoryShowCharacterBlock,
+    GalgameStoryStageAnimationBlock,
+    GalgameStoryStageCastMember,
+    GalgameStoryStoryParagraphBlock,
+    GalgameStorySwitchDialogueStyleBlock,
+    GalgameStorySystemMessageBlock,
+    GalgameStoryTextMarks,
+    GalgameStoryTimedBlockBase,
+    GalgameStoryVideoBlock,
+    GalgameStoryWaitBlock,
+)
+from app.schemas.galgame_workshop.dialogue_box import (
+    GalgameStoryDialogueBoxAdvanceIndicator,
+    GalgameStoryDialogueBoxBackground,
+    GalgameStoryDialogueBoxBody,
+    GalgameStoryDialogueBoxLayout,
+    GalgameStoryDialogueBoxSpeakerName,
+)
+from app.schemas.galgame_workshop.localization import (
+    GalgameStoryLocalizationEntry,
+    GalgameStoryLocalizations,
+    GalgameStoryLocalizationTarget,
+)
+from app.schemas.galgame_workshop.maintenance import (
+    GalgameAssetOverviewItem,
+    GalgameAssetOverviewOut,
+    GalgameAssetReferenceLocation,
+    GalgameMissingAssetOverviewItem,
+    GalgamePortraitUpgradeApplyIn,
+    GalgamePortraitUpgradeItem,
+    GalgamePortraitUpgradePreviewOut,
+    GalgameStorySnapshotOut,
+    GalgameStorySnapshotRestoreIn,
+)
+from app.schemas.galgame_workshop.reports import (
+    GalgameStoryChapterReport,
+    GalgameStoryReportIssue,
+    GalgameStoryRouteReportOut,
+)
+from app.schemas.galgame_workshop.stage_settings import (
+    GalgameStoryCanvasSettings,
+    GalgameStoryCharacterStageSettings,
+    GalgameStoryPositionBuiltinKey,
+    GalgameStoryPositionPreset,
+    GalgameStorySettings,
+    default_character_position_presets,
+)
+from app.schemas.galgame_workshop.story import (
+    GalgameStoryDocumentOut,
+    GalgameStoryDocumentPutIn,
+    GalgameStoryProject,
+)
+from app.schemas.galgame_workshop.story_migrations import (
+    GalgameStoryMigrationRunIn,
+    GalgameStoryMigrationRunOut,
+    GalgameStoryMigrationStatusOut,
+)
+from app.schemas.galgame_workshop.story_structure import (
+    GalgameStoryChapter,
+    GalgameStoryFragment,
+    GalgameStoryFragmentTimeline,
+    GalgameStoryTimelineMasterAudio,
+)
+from app.schemas.galgame_workshop.video_export import (
+    GalgameVideoExportBranchSelection,
+    GalgameVideoExportCaptureFrame,
+    GalgameVideoExportChoiceOut,
+    GalgameVideoExportClipRange,
+    GalgameVideoExportCreateIn,
+    GalgameVideoExportDecisionOut,
+    GalgameVideoExportFrameIn,
+    GalgameVideoExportIssue,
+    GalgameVideoExportPhase,
+    GalgameVideoExportPreset,
+    GalgameVideoExportPreviewIn,
+    GalgameVideoExportPreviewOut,
+    GalgameVideoExportRouteOut,
+    GalgameVideoExportScope,
+    GalgameVideoExportStatus,
+    GalgameVideoExportTaskListOut,
+    GalgameVideoExportTaskOut,
+)
+from app.schemas.galgame_workshop.video_handoff import (
+    GalgameVideoEditorHandoffCreateIn,
+    GalgameVideoEditorHandoffTaskListOut,
+    GalgameVideoEditorHandoffTaskOut,
+)

@@ -13,7 +13,7 @@ SIZE_BASELINE = json.loads(
 )
 
 FORBIDDEN_BACKEND_DIRECTORIES = {"domain", "platform", "product", "services"}
-ROUTE_FORBIDDEN_IMPORTS = ("app.models", "db", "sqlalchemy")
+ROUTE_FORBIDDEN_IMPORTS = ("app.core.db", "app.models", "db", "sqlalchemy")
 HTTP_METHODS = {"delete", "get", "head", "options", "patch", "post", "put", "trace", "websocket"}
 ROOT_PROBE_PATHS = {"/health", "/ready"}
 
@@ -105,6 +105,16 @@ def test_backend_routes_do_not_own_persistence() -> None:
             if any(_matches_module(module, prefix) for prefix in ROUTE_FORBIDDEN_IMPORTS):
                 violations.append(f"{_relative(path)} imports {module}")
     assert not violations, "路由层不得直接依赖持久化实现：\n" + "\n".join(violations)
+
+
+def test_backend_production_code_has_no_wildcard_imports() -> None:
+    violations: list[str] = []
+    for path in _python_files(BACKEND_APP):
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        for node in ast.walk(tree):
+            if isinstance(node, ast.ImportFrom) and any(alias.name == "*" for alias in node.names):
+                violations.append(f"{_relative(path)}:{node.lineno}")
+    assert not violations, "后端生产代码不得使用通配符导入：\n" + "\n".join(violations)
 
 
 def test_migrations_are_runtime_independent() -> None:
@@ -313,6 +323,20 @@ def test_feature_styles_do_not_reenter_the_app_shell() -> None:
     assert not violations, "feature 样式不得覆盖应用壳选择器：\n" + "\n".join(violations)
 
 
+def test_workshop_shell_does_not_depend_on_feature_implementation_or_styles() -> None:
+    shell = WEB_SRC / "app" / "layout" / "WorkshopShell.tsx"
+    violations = [
+        specifier
+        for specifier in _web_imports(shell)
+        if specifier.endswith(".css")
+        and (
+            (target := _resolve_web_import(shell, specifier)) is not None
+            and _is_within(target, WEB_SRC / "features")
+        )
+    ]
+    assert not violations, "通用工坊壳不得依赖 feature 实现或样式：\n" + "\n".join(violations)
+
+
 def test_business_routes_are_mounted_under_v1() -> None:
     routes_init = BACKEND_APP / "routes" / "__init__.py"
     routes_tree = ast.parse(routes_init.read_text(encoding="utf-8"), filename=str(routes_init))
@@ -399,14 +423,15 @@ def test_galgame_protocol_and_schema_modules_stay_split() -> None:
 def test_project_applications_have_modules_routes_and_storage_roots() -> None:
     registry = (WEB_SRC / "app" / "applicationRegistry.ts").read_text(encoding="utf-8")
     settings = (BACKEND_APP / "core" / "config.py").read_text(encoding="utf-8")
-    for application in ("visual-workshop", "galgame-workshop"):
+    storage = (BACKEND_APP / "files" / "storage.py").read_text(encoding="utf-8")
+    for application in ("visual-workshop", "galgame-workshop", "video-editor"):
         feature = WEB_SRC / "features" / application
         module = feature / "module.ts"
         assert module.is_file(), f"{application} 缺少 feature module"
         source = module.read_text(encoding="utf-8")
         assert "supportsProjects: true" in source
         assert f"/apps/{application}/projects/" in source
-        assert f'"{application}"' in settings
+        assert f'"{application}"' in settings + storage
         assert module.stem in registry or application.replace("-", "_").upper() in registry
 
 
