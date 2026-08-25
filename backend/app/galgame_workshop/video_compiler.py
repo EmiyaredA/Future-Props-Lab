@@ -110,41 +110,63 @@ class _Builder:
         duration = end_us - start_us
         if duration <= 0:
             return
-        scene = self.scenes.get(state.get("sceneId", ""))
-        for index, layer in enumerate((scene or {}).get("layers", [])):
-            file_id = self.logical_files.get(str(layer.get("assetId")))
-            if not file_id:
-                continue
-            track_id = f"scene-{index + 1}"
-            self.track(track_id, f"场景 · {layer.get('name') or index + 1}", 100 + index)
-            clip = _clip(
-                self.next_id("scene"),
-                track_id,
-                "image",
-                str(layer.get("name") or "场景"),
-                start_us,
-                duration,
-                assetId=file_id,
-                fitMode="cover",
+        scene_states = [
+            ("exiting", state.get("exitingScene"), 120),
+            ("active", state.get("scene"), 100),
+        ]
+        if not state.get("scene") and state.get("sceneId"):
+            scene_states.append(
+                (
+                    "legacy",
+                    {"sceneId": state["sceneId"], "fade": False},
+                    100,
+                )
             )
-            apply_composed_visual_motion(
-                clip,
-                camera=state.get("camera"),
-                stage_animation=state.get("stageAnimation"),
-                plane="background",
-                source_start_us=source_start_us,
-                source_end_us=source_end_us,
-            )
-            apply_composed_opacity(
-                clip,
-                state.get("stageAnimation"),
-                source_start_us=source_start_us,
-                source_end_us=source_end_us,
-            )
-            self.add(track_id, clip)
+        for role, scene_state, base_order in scene_states:
+            scene = self.scenes.get((scene_state or {}).get("sceneId", ""))
+            for index, layer in enumerate((scene or {}).get("layers", [])):
+                file_id = self.logical_files.get(str(layer.get("assetId")))
+                if not file_id:
+                    continue
+                track_id = f"scene-{role}-{index + 1}"
+                self.track(
+                    track_id,
+                    f"场景 · {layer.get('name') or index + 1}",
+                    base_order + index,
+                )
+                clip = _clip(
+                    self.next_id("scene"),
+                    track_id,
+                    "image",
+                    str(layer.get("name") or "场景"),
+                    start_us,
+                    duration,
+                    assetId=file_id,
+                    fitMode="cover",
+                )
+                apply_composed_visual_motion(
+                    clip,
+                    camera=state.get("camera"),
+                    stage_animation=state.get("stageAnimation"),
+                    plane="background",
+                    source_start_us=source_start_us,
+                    source_end_us=source_end_us,
+                )
+                apply_composed_opacity(
+                    clip,
+                    state.get("stageAnimation"),
+                    scene_state,
+                    source_start_us=source_start_us,
+                    source_end_us=source_end_us,
+                )
+                self.add(track_id, clip)
 
-        cg_state = state.get("cg")
-        if cg_state:
+        for role, cg_state, order in (
+            ("exiting", state.get("exitingCg"), 46),
+            ("active", state.get("cg"), 45),
+        ):
+            if not cg_state:
+                continue
             cg = self.cgs.get(cg_state.get("cgId", ""))
             variant_id = cg_state.get("variantId") or (cg or {}).get("defaultVariantId")
             variant = next(
@@ -155,8 +177,8 @@ class _Builder:
             if file_id:
                 overlay = cg_state.get("overlay") or {}
                 fullscreen = cg_state.get("displayMode", "fullscreen") == "fullscreen"
-                track_id = "cg"
-                self.track(track_id, "剧情 CG", 45)
+                track_id = f"cg-{role}"
+                self.track(track_id, "剧情 CG", order)
                 clip = _clip(
                     self.next_id("cg"),
                     track_id,
@@ -450,8 +472,11 @@ def compile_galgame_render_plan(
     asset_duration = asset_duration_ms or {}
     state: dict[str, Any] = {
         "sceneId": None,
+        "scene": None,
+        "exitingScene": None,
         "actors": {},
         "cg": None,
+        "exitingCg": None,
         "curtain": None,
         "video": None,
         "videoStartedUs": 0,

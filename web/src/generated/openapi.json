@@ -7478,6 +7478,9 @@
             "title": "Sceneid",
             "type": "string"
           },
+          "transition": {
+            "$ref": "#/components/schemas/GalgameStoryCgTransition"
+          },
           "type": {
             "const": "scene",
             "title": "Type",
@@ -7601,7 +7604,7 @@
             "items": {
               "$ref": "#/components/schemas/GalgameStoryStageCastMember"
             },
-            "maxItems": 3,
+            "maxItems": 8,
             "title": "Members",
             "type": "array"
           },

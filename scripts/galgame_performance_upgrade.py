@@ -32,10 +32,14 @@ except ModuleNotFoundError:
 REPO_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_PROJECT_ID = "63ac832d-bff3-4053-9c9f-f55c9dafc52a"
 DEFAULT_SOURCE_ROOT = Path("/Users/tonghao/Projects/steins-gate-video/assets/games/steins_gate_0")
+DEFAULT_ANNOTATION_PATH = Path("/Users/tonghao/Downloads/广播剧.annotation (6).json")
 BACKUP_ROOT = REPO_ROOT / ".runtime" / "galgame-import-backups"
 MAP_PATH = BACKUP_ROOT / "sg0-performance-asset-map.json"
 IMAGE_SUFFIXES = {".png", ".jpg", ".jpeg", ".webp"}
 LIP_SYNC_FPS = 10
+EXPECTED_ANNOTATION_TEXT_CHANGES = 189
+EXPECTED_ANNOTATION_SPEAKER_CHANGES = 10
+EXPECTED_ANNOTATION_MULTI_SPEAKER_LINES = 12
 MOTION_SAFE_PERCENT = 4.0
 STAGE_BOTTOM_PERCENT = 100.0
 EXPRESSION_CUES_PATH = REPO_ROOT / "scripts" / "galgame_runaway_expression_cues.json"
@@ -61,20 +65,32 @@ CURATED_SCENES = (
     ("BG11A8", "时间机器登舱梯", 1.05),
 )
 
+CUSTOM_SCENES = (
+    {
+        "code": "BG11A7_TWO",
+        "name": "双时光机屋顶",
+        "description": "基于原作 BG11A7 补全铃羽第二台时光机的屋顶场景。",
+        "path": REPO_ROOT / "docs/assets/galgame-runaway-scenes/BG11A7-two-time-machines-v1.png",
+        "relative": "project-scenes/BG11A7-two-time-machines-v1.png",
+        "distance": 0.92,
+    },
+)
+
 SCENE_BEATS = (
     (0, "BG03A1"),
     (28_000, "BG03A2"),
-    (352_000, "BG11A3"),
-    (365_000, "BG11A2"),
-    (402_000, "BG11A7"),
-    (650_000, "BG11A8"),
-    (970_000, "BG03A1"),
-    (1_188_000, "BG03A3"),
+    (151_754, "BG03A5"),
+    (260_255, "BG03A3"),
+    (373_608, "BG11A7"),
+    (653_198, "BG11A7_TWO"),
+    (687_072, "BG03A1"),
+    (970_000, "BG03A2"),
+    (1_188_000, "BG03A5"),
     (1_300_000, "BG03A4"),
-    (1_364_000, "BG03A1"),
+    (1_364_000, "BG03A3"),
     (1_604_000, "BG11A7"),
     (1_680_000, "BG11A3"),
-    (1_740_000, "BG03A5"),
+    (1_682_974, "BG03A5"),
 )
 
 SUZUHA_VARIANTS = {
@@ -98,6 +114,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("action", choices=("inspect", "upload", "apply", "audit", "all"))
     parser.add_argument("--project-id", default=DEFAULT_PROJECT_ID)
     parser.add_argument("--source-root", type=Path, default=DEFAULT_SOURCE_ROOT)
+    parser.add_argument("--annotation", type=Path, default=DEFAULT_ANNOTATION_PATH)
     parser.add_argument("--base-url", default="http://127.0.0.1:9000")
     parser.add_argument("--batch-size", type=int, default=12)
     return parser.parse_args()
@@ -174,11 +191,19 @@ def source_entries(source_root: Path) -> list[dict[str, Any]]:
             )
     entries.extend(
         {
-            "path": REPO_ROOT / spec["path"],
+            "path": spec["path"] if spec["path"].is_absolute() else REPO_ROOT / spec["path"],
             "relative": spec["relative"],
             "category": "cg",
         }
         for spec in CG_SPECS
+    )
+    entries.extend(
+        {
+            "path": spec["path"],
+            "relative": spec["relative"],
+            "category": "scene",
+        }
+        for spec in CUSTOM_SCENES
     )
     missing = [str(item["path"]) for item in entries if not item["path"].is_file()]
     if missing:
@@ -448,24 +473,38 @@ def enlarge_dialogue_text(document: dict[str, Any]) -> None:
 
 def install_curated_scenes(document: dict[str, Any], mapping: dict[str, Any]) -> None:
     scenes = document.setdefault("scenes", [])
-    for code, name, distance in CURATED_SCENES:
-        relative = f"backgrounds/scenes/{code}.png"
+    specs = [
+        {
+            "code": code,
+            "name": name,
+            "description": f"《命运石之门 0》原作场景 {code}",
+            "relative": f"backgrounds/scenes/{code}.png",
+            "distance": distance,
+        }
+        for code, name, distance in CURATED_SCENES
+    ]
+    specs.extend(CUSTOM_SCENES)
+    for spec in specs:
+        code = spec["code"]
+        name = spec["name"]
+        relative = spec["relative"]
         record = mapping["items"].get(relative)
         if not record:
             raise RuntimeError(f"场景素材尚未上传：{relative}")
-        story_asset_id = f"sg0-scene-{code.lower()}"
-        scene_id = f"sg0-{code.lower()}"
+        code_slug = code.lower().replace("_", "-")
+        story_asset_id = f"sg0-scene-{code_slug}"
+        scene_id = f"sg0-{code_slug}"
         ensure_story_image_asset(document, story_asset_id, "sceneLayer", record["assetId"])
         scene = {
             "id": scene_id,
             "name": name,
-            "description": f"《命运石之门 0》原作场景 {code}",
+            "description": spec["description"],
             "layers": [
                 {
                     "id": f"{scene_id}-layer",
                     "name": name,
                     "assetId": story_asset_id,
-                    "distance": distance,
+                    "distance": spec["distance"],
                     "offsetX": 0,
                     "offsetY": 0,
                 }
@@ -564,6 +603,114 @@ def dialogue_signature(fragment: dict[str, Any]) -> list[tuple[Any, ...]]:
     ]
 
 
+def dialogue_timeline_signature(fragment: dict[str, Any]) -> list[tuple[Any, ...]]:
+    return [
+        (
+            block["id"],
+            block.get("startMs"),
+            block.get("endMs"),
+            block.get("voiceAssetId"),
+            block.get("voiceVolume"),
+        )
+        for block in fragment.get("blocks", [])
+        if block.get("type") == "dialogue"
+    ]
+
+
+def annotation_text(segment: dict[str, Any]) -> str:
+    return next(
+        (
+            localized["text"]
+            for localized in segment.get("localized_texts", [])
+            if localized.get("language") == "zh"
+        ),
+        segment["text"],
+    )
+
+
+def annotation_character_map(
+    document: dict[str, Any], annotation: dict[str, Any]
+) -> dict[str, str]:
+    first_person_id = first_person_okabe(document)["id"]
+    fixed = {
+        "冈部伦太郎": first_person_id,
+        "牧濑红莉栖": find_character(document, ("牧濑红莉栖",))["id"],
+        "椎名真由理": find_character(document, ("椎名真由理",))["id"],
+        "桥田至": find_character(document, ("桥田至",))["id"],
+        "菲莉丝·喵喵": find_character(document, ("菲莉丝",))["id"],
+        "阿万音铃羽": find_character(document, ("阿万音铃羽",))["id"],
+        "幼年篝": find_character(document, ("幼年篝",))["id"],
+        "漆原琉华": find_character(document, ("漆原琉华",))["id"],
+        "比屋定真帆": find_character(document, ("比屋定真帆",))["id"],
+        "桐生萌郁": find_character(document, ("桐生萌郁",))["id"],
+        "天王寺裕吾": find_character(document, ("天王寺裕吾",))["id"],
+        "众人": find_character(document, ("众人",))["id"],
+    }
+    mapping = {speaker["id"]: fixed[speaker["name"]] for speaker in annotation.get("speakers", [])}
+    if len(mapping) != 12:
+        raise RuntimeError(f"标注说话人应为 12 名，实际为 {len(mapping)} 名")
+    return mapping
+
+
+def apply_annotation(document: dict[str, Any], annotation_path: Path) -> dict[str, Any]:
+    if not annotation_path.is_file():
+        raise RuntimeError(f"新版对白标注不存在：{annotation_path}")
+    annotation = json.loads(annotation_path.read_text(encoding="utf-8"))
+    segments = annotation.get("segments", [])
+    if len(segments) != 514:
+        raise RuntimeError(f"新版对白标注应为 514 条，实际为 {len(segments)} 条")
+    fragment = target_fragment(document)
+    dialogues = [block for block in fragment.get("blocks", []) if block.get("type") == "dialogue"]
+    by_interval = {(block["startMs"], block["endMs"]): block for block in dialogues}
+    if len(by_interval) != len(dialogues):
+        raise RuntimeError("现有对白时间区间并非唯一，无法精确对齐新版标注")
+    speaker_map = annotation_character_map(document, annotation)
+    changed_text_count = 0
+    changed_speaker_count = 0
+    multi_speaker_count = 0
+    expected: list[tuple[Any, ...]] = []
+    for segment in segments:
+        interval = (segment["start_ms"], segment["end_ms"])
+        dialogue = by_interval.get(interval)
+        if dialogue is None:
+            raise RuntimeError(f"新版对白无法按时间对齐：{interval}")
+        text = annotation_text(segment)
+        character_id = speaker_map[segment["speaker_id"]]
+        speaker_ids = [speaker_map[speaker_id] for speaker_id in segment["speaker_ids"]]
+        if dialogue.get("text") != text:
+            changed_text_count += 1
+        if dialogue.get("characterId") != character_id:
+            changed_speaker_count += 1
+        if len(speaker_ids) > 1:
+            multi_speaker_count += 1
+        dialogue["text"] = text
+        dialogue["characterId"] = character_id
+        dialogue["speakerIds"] = speaker_ids
+        expected.append(
+            (
+                dialogue["id"],
+                character_id,
+                tuple(speaker_ids),
+                text,
+                segment["start_ms"],
+                segment["end_ms"],
+            )
+        )
+    if len(dialogues) != len(expected):
+        raise RuntimeError("新版对白没有完整覆盖现有 514 个对白 Block")
+    return {
+        "path": str(annotation_path),
+        "sha256": sha256(annotation_path),
+        "changedTextCount": changed_text_count,
+        "changedSpeakerCount": changed_speaker_count,
+        "multiSpeakerCount": multi_speaker_count,
+        "expectedChangedTextCount": EXPECTED_ANNOTATION_TEXT_CHANGES,
+        "expectedChangedSpeakerCount": EXPECTED_ANNOTATION_SPEAKER_CHANGES,
+        "expectedMultiSpeakerCount": EXPECTED_ANNOTATION_MULTI_SPEAKER_LINES,
+        "expectedDialogueSignature": expected,
+    }
+
+
 def target_fragment(document: dict[str, Any]) -> dict[str, Any]:
     candidates = [
         fragment
@@ -603,7 +750,7 @@ def cast_member(
     count: int,
     dialogue_id: str,
 ) -> dict[str, Any]:
-    positions = {
+    curated_positions = {
         1: (("performance-center", 50),),
         2: (("performance-left", 30), ("performance-right", 70)),
         3: (
@@ -611,18 +758,30 @@ def cast_member(
             ("performance-center", 50),
             ("performance-outer-right", 82),
         ),
-    }[count]
+    }
+    if count <= 3:
+        positions = curated_positions[count]
+    else:
+        left = 6.0
+        right = 94.0
+        step = (right - left) / (count - 1)
+        positions = tuple(
+            (f"performance-row-{count}-{position_index + 1}", left + step * position_index)
+            for position_index in range(count)
+        )
     distance = (
         "near"
         if count == 1 and dialogue_id in SAFE_CLOSEUP_DIALOGUE_IDS
         else "far"
-        if count > 1 and index > 0
+        if count >= 4 or (count > 1 and index > 0)
         else "medium"
     )
     height = portrait_height_percent(document, character_id, expression_id)
     effective_height = height * DISTANCE_SCALES[distance]
     available_height = STAGE_BOTTOM_PERCENT - TOP_SAFE_PERCENT - MOTION_SAFE_PERCENT
-    scale = floor(min(1.0, available_height / effective_height) * 1000) / 1000
+    equal_row_scale_caps = {4: 0.72, 5: 0.62, 6: 0.54, 7: 0.47, 8: 0.42}
+    scale_cap = equal_row_scale_caps.get(count, 1.0)
+    scale = floor(min(scale_cap, available_height / effective_height) * 1000) / 1000
     if scale < 0.25:
         raise RuntimeError(f"角色 {character_id} 的立绘过高，无法在贴底后保留安全头部")
     return {
@@ -640,7 +799,7 @@ def cast_member(
             "flipX": index == 1 and count > 1,
             "layer": 10 + index,
         },
-        "transition": {"durationMs": 220, "fade": True},
+        "transition": {"durationMs": 0, "fade": False},
     }
 
 
@@ -651,15 +810,20 @@ def visible_cast_for_dialogue(
     visible_character_ids: set[str],
 ) -> list[str]:
     current = dialogues[index]
-    if current.get("characterId") not in visible_character_ids:
-        return []
     if current["id"] in SAFE_CLOSEUP_DIALOGUE_IDS:
-        return [current["characterId"]]
+        return (
+            [current["characterId"]] if current.get("characterId") in visible_character_ids else []
+        )
+    explicit_group = len(current.get("speakerIds") or []) > 1
     speakers = [
         speaker
         for speaker in (current.get("speakerIds") or [current.get("characterId")])
         if speaker and speaker != first_person_id and speaker in visible_character_ids
     ]
+    if explicit_group:
+        return list(dict.fromkeys(speakers))[:8]
+    if current.get("characterId") not in visible_character_ids:
+        return []
     previous = dialogues[index - 1] if index else None
     if speakers and previous:
         previous_speakers = [
@@ -724,6 +888,7 @@ def install_performance_blocks(document: dict[str, Any], first_person_id: str) -
         "camera",
         "resetCamera",
         "animateSprite",
+        "curtain",
     }
     retained = [
         block for block in fragment.get("blocks", []) if block.get("type") not in removed_types
@@ -735,8 +900,12 @@ def install_performance_blocks(document: dict[str, Any], first_person_id: str) -
                 "id": f"perf-scene-{beat_index:02d}",
                 "type": "scene",
                 "atMs": at_ms,
-                "sceneId": f"sg0-{scene_code.lower()}",
+                "sceneId": f"sg0-{scene_code.lower().replace('_', '-')}",
                 "clearCharacters": True,
+                "transition": {
+                    "durationMs": 0 if beat_index == 0 else 350,
+                    "fade": beat_index != 0,
+                },
             }
         )
         performance.append(
@@ -792,7 +961,7 @@ def install_performance_blocks(document: dict[str, Any], first_person_id: str) -
         explicit_group = len(dialogue.get("speakerIds") or []) > 1
         intentional_exchange = len(visible_ids) > 1 and cue_index % 3 == 0
         requires_composition = (
-            dialogue["characterId"] == first_person_id
+            dialogue["characterId"] not in visible_character_ids
             or explicit_group
             or intentional_exchange
             or dialogue["id"] in SAFE_CLOSEUP_DIALOGUE_IDS
@@ -804,7 +973,7 @@ def install_performance_blocks(document: dict[str, Any], first_person_id: str) -
                     "type": "setStageCast",
                     "atMs": dialogue["startMs"],
                     "members": members,
-                    "exitTransition": {"durationMs": 180, "fade": True},
+                    "exitTransition": {"durationMs": 0, "fade": False},
                 }
             )
 
@@ -813,8 +982,8 @@ def install_performance_blocks(document: dict[str, Any], first_person_id: str) -
                 "mode": "stage",
                 "visible": False,
                 "distance": "medium",
-                "keepAfter": False,
-                "transition": {"durationMs": 120, "fade": False},
+                "keepAfter": True,
+                "transition": {"durationMs": 0, "fade": False},
             }
         else:
             speaker_member = next(
@@ -833,9 +1002,9 @@ def install_performance_blocks(document: dict[str, Any], first_person_id: str) -
                 "visible": True,
                 "distance": speaker_member["distance"],
                 "positionId": speaker_member["positionId"],
-                "keepAfter": False,
+                "keepAfter": True,
                 "transform": speaker_member["transform"],
-                "transition": {"durationMs": 160, "fade": True},
+                "transition": {"durationMs": 0, "fade": False},
             }
 
         text = dialogue.get("text", "")
@@ -883,42 +1052,6 @@ def install_performance_blocks(document: dict[str, Any], first_person_id: str) -
                         "waitForCompletion": False,
                     }
                 )
-        if requires_composition:
-            following = dialogues[cue_index + 1] if cue_index + 1 < len(dialogues) else None
-            following_ids = (
-                visible_cast_for_dialogue(
-                    dialogues,
-                    cue_index + 1,
-                    first_person_id,
-                    visible_character_ids,
-                )
-                if following
-                else []
-            )
-            following_requires_composition = bool(
-                following
-                and (
-                    following["characterId"] == first_person_id
-                    or len(following.get("speakerIds") or []) > 1
-                    or (len(following_ids) > 1 and (cue_index + 1) % 3 == 0)
-                    or following["id"] in SAFE_CLOSEUP_DIALOGUE_IDS
-                )
-            )
-            if (
-                not following_requires_composition
-                or following is None
-                or following["startMs"] > dialogue["endMs"]
-            ):
-                performance.append(
-                    {
-                        "id": f"perf-cast-clear-{cue_index:03d}",
-                        "type": "setStageCast",
-                        "atMs": dialogue["endMs"],
-                        "members": [],
-                        "exitTransition": {"durationMs": 160, "fade": True},
-                    }
-                )
-
     if not any(
         block.get("type") == "setStageCast" and block.get("atMs") == dialogues[-1]["endMs"]
         for block in performance
@@ -929,7 +1062,7 @@ def install_performance_blocks(document: dict[str, Any], first_person_id: str) -
                 "type": "setStageCast",
                 "atMs": dialogues[-1]["endMs"],
                 "members": [],
-                "exitTransition": {"durationMs": 180, "fade": True},
+                "exitTransition": {"durationMs": 0, "fade": False},
             }
         )
     fragment["blocks"] = [*performance, *retained]
@@ -940,7 +1073,10 @@ def install_performance_blocks(document: dict[str, Any], first_person_id: str) -
 
 
 def audit_document(
-    document: dict[str, Any], mapping: dict[str, Any], source_root: Path
+    document: dict[str, Any],
+    mapping: dict[str, Any],
+    source_root: Path,
+    annotation_audit: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     fragment = target_fragment(document)
     dialogues = [block for block in fragment.get("blocks", []) if block.get("type") == "dialogue"]
@@ -956,6 +1092,9 @@ def audit_document(
     ]
     scene_blocks = [block for block in fragment.get("blocks", []) if block.get("type") == "scene"]
     camera_blocks = [block for block in fragment.get("blocks", []) if block.get("type") == "camera"]
+    curtain_blocks = [
+        block for block in fragment.get("blocks", []) if block.get("type") == "curtain"
+    ]
     stage_events = sorted(
         [
             block
@@ -1111,6 +1250,35 @@ def audit_document(
         for left, right in zip(cg_intervals, cg_intervals[1:], strict=False)
         if left[1] is not None and left[1] > right[0]
     ]
+    scene_beats = [(block["atMs"], block["sceneId"]) for block in scene_blocks]
+    expected_scene_beats = [
+        (at_ms, f"sg0-{scene_code.lower().replace('_', '-')}") for at_ms, scene_code in SCENE_BEATS
+    ]
+    scene_events_inside_cgs = [
+        {
+            "sceneBlockId": block["id"],
+            "atMs": block["atMs"],
+            "cg": spec["key"],
+        }
+        for block in scene_blocks
+        for spec in CG_SPECS
+        if spec["endMs"] is not None and spec["startMs"] < block["atMs"] < spec["endMs"]
+    ]
+    character_fades = [
+        block["id"]
+        for block in fragment.get("blocks", [])
+        if block.get("type") == "setStageCast"
+        and (
+            (block.get("exitTransition") or {}).get("fade")
+            or any(
+                (member.get("transition") or {}).get("fade") for member in block.get("members", [])
+            )
+        )
+    ] + [
+        dialogue["id"]
+        for dialogue in dialogues
+        if (dialogue.get("portrait", {}).get("transition") or {}).get("fade")
+    ]
     overlong_story_cgs = [
         {
             "key": spec["key"],
@@ -1159,6 +1327,8 @@ def audit_document(
             for block in cast_blocks
         ),
         "sceneBeatCount": len(scene_blocks),
+        "sceneBeatsExact": scene_beats == expected_scene_beats,
+        "sceneEventsInsideCgs": scene_events_inside_cgs,
         "distinctSceneCount": len({block["sceneId"] for block in scene_blocks}),
         "cameraBeatCount": len(camera_blocks),
         "cameraUiIsolationReady": all(
@@ -1166,6 +1336,8 @@ def audit_document(
         ),
         "silentGapCount": len(silent_gaps),
         "nonemptySilentGaps": nonempty_silent_gaps,
+        "curtainCount": len(curtain_blocks),
+        "characterFadeBlocks": character_fades,
         "showCgCount": len(show_cg_blocks),
         "hideCgCount": len(hide_cg_blocks),
         "managedCgDefinitionsReady": managed_cg_ids <= {cg["id"] for cg in document.get("cgs", [])},
@@ -1180,6 +1352,7 @@ def audit_document(
         "missingLogicalMappings": missing_mapping,
         "missingCgMappings": missing_cg_mapping,
         "blockCount": len(fragment.get("blocks", [])),
+        "annotation": annotation_audit,
     }
     if checks["durationMs"] != 1_780_344 or checks["dialogueCount"] != 514:
         raise RuntimeError(f"对白或时间轴审计失败：{checks}")
@@ -1188,9 +1361,9 @@ def audit_document(
     if checks["dialogueBodyFontSizePx"] != 34:
         raise RuntimeError("对白正文字号没有应用到 34px")
     if (
-        checks["explicitExpressionCueCount"] != 399
-        or checks["visibleDialogueCount"] != 399
-        or checks["hiddenDialogueCount"] != 115
+        checks["explicitExpressionCueCount"] != 409
+        or checks["visibleDialogueCount"] != 409
+        or checks["hiddenDialogueCount"] != 105
         or invalid_expression_dialogues
         or visible_hidden_portraits
         or hidden_visible_portraits
@@ -1204,14 +1377,18 @@ def audit_document(
         or floating_frames
     ):
         raise RuntimeError("安全近景或顶部安全区审计失败")
-    if checks["maxCastSize"] > 3 or not checks["firstPersonNeverVisible"]:
+    if checks["maxCastSize"] != 8 or not checks["firstPersonNeverVisible"]:
         raise RuntimeError("舞台人数或第一人称冈部审计失败")
-    if checks["sceneBeatCount"] < 12 or checks["distinctSceneCount"] < 8:
+    if (
+        checks["sceneBeatCount"] != len(SCENE_BEATS)
+        or not checks["sceneBeatsExact"]
+        or checks["sceneEventsInsideCgs"]
+        or checks["distinctSceneCount"] < 8
+    ):
         raise RuntimeError("场景丰富度没有达到验收条件")
     if (
         checks["cameraBeatCount"] < 12
         or not checks["cameraUiIsolationReady"]
-        or checks["nonemptySilentGaps"]
         or not checks["suzuhaUsesSg0BlueVest"]
     ):
         raise RuntimeError(
@@ -1222,7 +1399,6 @@ def audit_document(
                     for key in (
                         "cameraBeatCount",
                         "cameraUiIsolationReady",
-                        "nonemptySilentGaps",
                         "suzuhaUsesSg0BlueVest",
                     )
                 },
@@ -1230,8 +1406,8 @@ def audit_document(
             )
         )
     if (
-        checks["showCgCount"] != 14
-        or checks["hideCgCount"] != 12
+        checks["showCgCount"] != len(CG_SPECS)
+        or checks["hideCgCount"] != sum(spec["endMs"] is not None for spec in CG_SPECS)
         or not checks["managedCgDefinitionsReady"]
         or checks["duplicateCgEventIds"]
         or cg_overlaps
@@ -1241,19 +1417,43 @@ def audit_document(
         raise RuntimeError("CG 事件或 Block 上限审计失败")
     if checks["logicalLibraryCount"] != 701 or missing_mapping or missing_cg_mapping:
         raise RuntimeError("原作素材映射不完整")
+    if checks["curtainCount"] or checks["characterFadeBlocks"]:
+        raise RuntimeError("普通演出仍包含幕布或人物淡化")
+    if annotation_audit is not None:
+        if (
+            annotation_audit["expectedChangedTextCount"] != EXPECTED_ANNOTATION_TEXT_CHANGES
+            or annotation_audit["expectedChangedSpeakerCount"]
+            != EXPECTED_ANNOTATION_SPEAKER_CHANGES
+            or annotation_audit["multiSpeakerCount"] != EXPECTED_ANNOTATION_MULTI_SPEAKER_LINES
+            or dialogue_signature(fragment) != annotation_audit["expectedDialogueSignature"]
+        ):
+            raise RuntimeError("新版对白标注审计失败")
     return checks
 
 
 def transform_latest_story(
-    latest: dict[str, Any], mapping: dict[str, Any], source_root: Path
+    latest: dict[str, Any],
+    mapping: dict[str, Any],
+    source_root: Path,
+    annotation_path: Path,
 ) -> tuple[dict[str, Any], dict[str, Any]]:
     document = deepcopy(latest["document"])
     fragment = target_fragment(document)
     baseline = {
         "revision": latest["revision"],
         "durationMs": fragment["timeline"]["durationMs"],
-        "dialogueSignature": dialogue_signature(fragment),
+        "dialogueTimelineSignature": dialogue_timeline_signature(fragment),
     }
+    annotation_audit = apply_annotation(document, annotation_path)
+    observed_changes = (
+        annotation_audit["changedTextCount"],
+        annotation_audit["changedSpeakerCount"],
+    )
+    if observed_changes not in {
+        (0, 0),
+        (EXPECTED_ANNOTATION_TEXT_CHANGES, EXPECTED_ANNOTATION_SPEAKER_CHANGES),
+    }:
+        raise RuntimeError(f"新版对白变更数量异常：{observed_changes}")
     install_curated_scenes(document, mapping)
     upgrade_suzuha(document, mapping, source_root)
     set_all_lip_sync_fps(document)
@@ -1261,9 +1461,12 @@ def transform_latest_story(
     first_person_id = first_person_okabe(document)["id"]
     install_performance_blocks(document, first_person_id)
     install_cgs(document, mapping)
-    checks = audit_document(document, mapping, source_root)
-    if dialogue_signature(target_fragment(document)) != baseline["dialogueSignature"]:
-        raise RuntimeError("最终审计发现对白发生变化")
+    checks = audit_document(document, mapping, source_root, annotation_audit)
+    if (
+        dialogue_timeline_signature(target_fragment(document))
+        != baseline["dialogueTimelineSignature"]
+    ):
+        raise RuntimeError("最终审计发现对白 Block、时间或音频绑定发生变化")
     return document, {"baseline": baseline, "checks": checks}
 
 
@@ -1272,12 +1475,13 @@ def apply_story(
     project_id: str,
     mapping: dict[str, Any],
     source_root: Path,
+    annotation_path: Path,
 ) -> dict[str, Any]:
     for attempt in range(1, 4):
         latest = request_json(client, "GET", project_path(project_id, "/story"))
         backup_path = BACKUP_ROOT / f"{timestamp()}-performance-before.json"
         write_json(backup_path, latest)
-        document, audit = transform_latest_story(latest, mapping, source_root)
+        document, audit = transform_latest_story(latest, mapping, source_root, annotation_path)
         try:
             saved = request_json(
                 client,
@@ -1337,6 +1541,7 @@ def audit_live(
     project_id: str,
     mapping: dict[str, Any],
     source_root: Path,
+    annotation_path: Path,
 ) -> dict[str, Any]:
     story = request_json(client, "GET", project_path(project_id, "/story"))
     listed = request_json(client, "GET", project_path(project_id, "/assets"))["items"]
@@ -1346,7 +1551,13 @@ def audit_live(
         for relative, item in mapping.get("items", {}).items()
         if item["assetId"] not in existing_ids
     ]
-    checks = audit_document(story["document"], mapping, source_root)
+    document = deepcopy(story["document"])
+    annotation_audit = apply_annotation(document, annotation_path)
+    if dialogue_signature(target_fragment(document)) != dialogue_signature(
+        target_fragment(story["document"])
+    ):
+        raise RuntimeError("线上故事尚未与新版对白标注完全一致")
+    checks = audit_document(story["document"], mapping, source_root, annotation_audit)
     checks["missingProjectAssets"] = missing_assets
     if missing_assets:
         raise RuntimeError("映射中的项目素材记录不存在")
@@ -1364,6 +1575,8 @@ def main() -> None:
         raise RuntimeError("backend/.env 未配置可用的 FPL_MANAGEMENT_API_KEY")
     if not args.source_root.is_dir():
         raise RuntimeError(f"SG0 素材目录不存在：{args.source_root}")
+    if not args.annotation.is_file():
+        raise RuntimeError(f"新版对白标注不存在：{args.annotation}")
     with httpx.Client(
         base_url=args.base_url.rstrip("/"),
         headers={"Authorization": f"Bearer {management_key}"},
@@ -1381,9 +1594,21 @@ def main() -> None:
                 args.batch_size,
             )
         if args.action in {"apply", "all"}:
-            apply_story(client, args.project_id, mapping, args.source_root)
+            apply_story(
+                client,
+                args.project_id,
+                mapping,
+                args.source_root,
+                args.annotation,
+            )
         if args.action in {"audit", "all"}:
-            audit_live(client, args.project_id, mapping, args.source_root)
+            audit_live(
+                client,
+                args.project_id,
+                mapping,
+                args.source_root,
+                args.annotation,
+            )
 
 
 if __name__ == "__main__":

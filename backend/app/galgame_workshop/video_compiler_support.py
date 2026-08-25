@@ -533,6 +533,8 @@ def apply_composed_opacity(
     source_start_us: int,
     source_end_us: int,
 ) -> None:
+    if transition_state and not bool(transition_state.get("fade", True)):
+        transition_state = None
     if not stage_animation and not transition_state:
         return
     base = float(clip["transform"].get("opacity", 1))

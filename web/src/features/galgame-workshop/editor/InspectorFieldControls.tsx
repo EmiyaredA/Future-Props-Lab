@@ -51,11 +51,15 @@ export function Field({
 export function CgTransitionFields({
   transition,
   onChange,
+  label = "CG",
+  defaultValue = { durationMs: 400, fade: true },
 }: {
   transition?: GalgameStoryCgTransition;
   onChange: (transition: GalgameStoryCgTransition) => void;
+  label?: string;
+  defaultValue?: Required<GalgameStoryCgTransition>;
 }) {
-  const value = { durationMs: 400, fade: true, ...transition };
+  const value = { ...defaultValue, ...transition };
   const progress = `${(value.durationMs / 5000) * 100}%`;
   return (
     <div className="galgame-character-transition-fields">
@@ -67,14 +71,14 @@ export function CgTransitionFields({
             onChange({ ...value, fade: event.target.checked })
           }
         />
-        <span>CG 淡入淡出</span>
+        <span>{label}淡入淡出</span>
       </label>
       <label className="galgame-stage-range">
         <span>
           过渡时长 <em>{value.durationMs}ms</em>
         </span>
         <input
-          aria-label="CG 过渡时长"
+          aria-label={`${label}过渡时长`}
           type="range"
           min="0"
           max="5000"

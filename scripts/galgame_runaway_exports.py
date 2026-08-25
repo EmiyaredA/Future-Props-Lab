@@ -22,6 +22,13 @@ EXPORTS = (
     ("cg-cleaning-sergeant", 1_233_804, 1_254_683),
     ("cg-harem-chaos-finale", 1_735_012, 1_764_737),
 )
+BOUNDARY_EXPORTS = (
+    ("boundary-rooftop-06m13", 368_000, 380_000),
+    ("boundary-imitation-09m53", 589_000, 604_000),
+    ("boundary-two-machines-10m53", 649_000, 660_000),
+    ("boundary-return-lab-11m27", 682_000, 693_000),
+    ("boundary-farewell-return-28m00", 1_676_000, 1_688_000),
+)
 
 
 def random_sample(rng: random.Random | None = None) -> tuple[str, int, int]:
@@ -40,6 +47,8 @@ def requested_exports(
         return [EXPORTS[0]]
     if only == "cg-clips":
         return [*EXPORTS[1:]]
+    if only == "boundary-clips":
+        return [*BOUNDARY_EXPORTS]
     if only == "full":
         return [None]
     return [random_sample(rng)]
@@ -175,7 +184,10 @@ def main() -> None:
     )
     parser.add_argument("action", choices=("all", "submit"), default="all", nargs="?")
     parser.add_argument("--base-url", default="http://127.0.0.1:9000")
-    parser.add_argument("--only", choices=("random-sample", "user-clip", "cg-clips", "full"))
+    parser.add_argument(
+        "--only",
+        choices=("random-sample", "user-clip", "cg-clips", "boundary-clips", "full"),
+    )
     parser.add_argument("--seed", type=int, help="固定随机样片位置，便于复现")
     args = parser.parse_args()
     management_key = (

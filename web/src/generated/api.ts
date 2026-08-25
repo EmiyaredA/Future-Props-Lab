@@ -5680,6 +5680,7 @@ export interface components {
             id: string;
             /** Sceneid */
             sceneId: string;
+            transition?: components["schemas"]["GalgameStoryCgTransition"];
             /**
              * @description discriminator enum property added by openapi-typescript
              * @enum {string}

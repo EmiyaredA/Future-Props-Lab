@@ -17,6 +17,8 @@ import {
 } from "@features/galgame-workshop/editor/stage";
 import { Field } from "@features/galgame-workshop/editor/InspectorFieldControls";
 
+const MAX_STAGE_CAST_MEMBERS = 8;
+
 function defaultMember(
   document: GalgameStoryProject,
   characterId: string,
@@ -86,7 +88,9 @@ export function StageCastInspectorFields({
       ) : (
         <div className="galgame-stage-cast-summary">
           <span>舞台角色</span>
-          <strong>{members.length} / 3</strong>
+          <strong>
+            {members.length} / {MAX_STAGE_CAST_MEMBERS}
+          </strong>
         </div>
       )}
       <div className="galgame-stage-cast-list">
@@ -226,7 +230,7 @@ export function StageCastInspectorFields({
           );
         })}
       </div>
-      {members.length < 3 && availableCharacter ? (
+      {members.length < MAX_STAGE_CAST_MEMBERS && availableCharacter ? (
         <button
           type="button"
           className="galgame-stage-cast-add"
@@ -250,7 +254,7 @@ export function StageCastInspectorFields({
           </span>
           <span className="galgame-stage-cast-add-count">
             <small>还可添加</small>
-            <strong>{3 - members.length}</strong>
+            <strong>{MAX_STAGE_CAST_MEMBERS - members.length}</strong>
             <small>人</small>
           </span>
         </button>

@@ -8,6 +8,7 @@ from app.schemas.galgame_workshop.base import GalgameStorySourceRef
 from app.schemas.galgame_workshop.base_core import (
     HEX_COLOR_PATTERN,
     STABLE_ID_PATTERN,
+    GalgameStoryCgTransition,
     GalgameStoryModel,
     _clean_title,
 )
@@ -26,16 +27,14 @@ class GalgameStorySceneBlock(GalgameStoryBlockBase):
     at_ms: int | None = _optional_timeline_ms()
     scene_id: str = Field(alias="sceneId", pattern=STABLE_ID_PATTERN)
     clear_characters: bool | None = Field(default=None, alias="clearCharacters")
+    transition: GalgameStoryCgTransition = Field(
+        default_factory=lambda: GalgameStoryCgTransition(duration_ms=0, fade=False)
+    )
 
     @field_validator("clear_characters", mode="before")
     @classmethod
     def missing_clear_characters_uses_default(cls, value: Any) -> Any:
         return True if value is None else value
-
-
-class GalgameStoryCgTransition(GalgameStoryModel):
-    duration_ms: int = Field(default=400, alias="durationMs", ge=0, le=5000)
-    fade: bool = True
 
 
 class GalgameStoryCgOverlay(GalgameStoryModel):
@@ -167,7 +166,7 @@ class GalgameStoryStageCastMember(GalgameStoryModel):
 class GalgameStorySetStageCastBlock(GalgameStoryBlockBase):
     type: Literal["setStageCast"]
     at_ms: int | None = _optional_timeline_ms()
-    members: list[GalgameStoryStageCastMember] = Field(default_factory=list, max_length=3)
+    members: list[GalgameStoryStageCastMember] = Field(default_factory=list, max_length=8)
     exit_transition: GalgameStoryCharacterTransition = Field(
         default_factory=GalgameStoryCharacterTransition, alias="exitTransition"
     )

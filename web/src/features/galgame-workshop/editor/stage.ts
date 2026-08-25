@@ -2,8 +2,6 @@ import type {
   GalgameStoryBlock,
   GalgameStoryCharacterTransform,
   GalgameStoryCharacterTransition,
-  GalgameStoryCgOverlay,
-  GalgameStoryCgTransition,
   GalgameStoryDialoguePortrait,
   GalgameStoryDialogueBoxStyle,
   GalgameStoryFragment,
@@ -16,6 +14,22 @@ import {
   activeTimelineCue,
   timelineEvents,
 } from "@features/galgame-workshop/editor/timeline";
+import {
+  applyVisualStageBlock,
+  cgTransition,
+  sceneTransition,
+  settleVisualBlock,
+  type StageCg,
+  type StageScene,
+} from "@features/galgame-workshop/editor/stageVisualTransitions";
+export {
+  cgOverlay,
+  cgTransition,
+  DEFAULT_CG_OVERLAY,
+  DEFAULT_CG_TRANSITION,
+  DEFAULT_SCENE_TRANSITION,
+  sceneTransition,
+} from "@features/galgame-workshop/editor/stageVisualTransitions";
 
 export const DEFAULT_CHARACTER_TRANSFORM: Required<GalgameStoryCharacterTransform> =
   {
@@ -46,19 +60,6 @@ export const CHARACTER_DISTANCE_SCALE: Record<CharacterDistance, number> = {
   near: 1.28,
 };
 
-export const DEFAULT_CG_TRANSITION: Required<GalgameStoryCgTransition> = {
-  durationMs: 400,
-  fade: true,
-};
-
-export const DEFAULT_CG_OVERLAY: Required<GalgameStoryCgOverlay> = {
-  x: 50,
-  y: 50,
-  width: 60,
-  opacity: 1,
-  placement: "frontOfCharacters",
-};
-
 export type StageActor = {
   characterId: string;
   expressionId?: string;
@@ -71,20 +72,10 @@ export type StageActor = {
   exiting: boolean;
 };
 
-export type StageCg = {
-  sourceBlockId: string;
-  cgId: string;
-  variantId: string;
-  displayMode: "fullscreen" | "overlay";
-  fit: "cover" | "contain";
-  overlay: Required<GalgameStoryCgOverlay>;
-  transition: Required<GalgameStoryCgTransition>;
-  entering: boolean;
-  exiting: boolean;
-};
-
 export type GalgameStageState = {
   sceneId?: string;
+  scene?: StageScene;
+  exitingScene?: StageScene;
   cg?: StageCg;
   exitingCg?: StageCg;
   actors: Record<string, StageActor>;
@@ -181,18 +172,6 @@ export function characterTransition(
   value?: GalgameStoryCharacterTransition | null,
 ): Required<GalgameStoryCharacterTransition> {
   return { ...DEFAULT_CHARACTER_TRANSITION, ...value };
-}
-
-export function cgTransition(
-  value?: GalgameStoryCgTransition | null,
-): Required<GalgameStoryCgTransition> {
-  return { ...DEFAULT_CG_TRANSITION, ...value };
-}
-
-export function cgOverlay(
-  value?: GalgameStoryCgOverlay | null,
-): Required<GalgameStoryCgOverlay> {
-  return { ...DEFAULT_CG_OVERLAY, ...value };
 }
 
 export function emptyStageState(): GalgameStageState {
@@ -296,6 +275,10 @@ export function settleStage(state: GalgameStageState): GalgameStageState {
   return {
     ...state,
     actors,
+    scene: state.scene?.entering
+      ? { ...state.scene, entering: false }
+      : state.scene,
+    exitingScene: undefined,
     cg: state.cg?.entering ? { ...state.cg, entering: false } : state.cg,
     exitingCg: undefined,
     soloActor: undefined,
@@ -328,59 +311,8 @@ export function applyAutomaticStageBlock(
   block: GalgameStoryBlock,
   document: GalgameStoryProject,
 ): GalgameStageState {
-  if (block.type === "scene") {
-    return {
-      ...state,
-      sceneId: block.sceneId,
-      actors: block.clearCharacters === false ? state.actors : {},
-      soloActor: undefined,
-      hiddenCharacterId: undefined,
-      activeSpeakerId: undefined,
-      activeSpeakerIds: undefined,
-    };
-  }
-  if (block.type === "showCg") {
-    const cg = (document.cgs ?? []).find(
-      (candidate) => candidate.id === block.cgId,
-    );
-    const variantId = block.variantId ?? cg?.defaultVariantId;
-    if (!variantId) return state;
-    return {
-      ...state,
-      exitingCg: state.cg
-        ? {
-            ...state.cg,
-            transition: cgTransition(block.transition),
-            entering: false,
-            exiting: true,
-          }
-        : undefined,
-      cg: {
-        sourceBlockId: block.id,
-        cgId: block.cgId,
-        variantId,
-        displayMode: block.displayMode ?? "fullscreen",
-        fit: block.fit,
-        overlay: cgOverlay(block.overlay),
-        transition: cgTransition(block.transition),
-        entering: true,
-        exiting: false,
-      },
-    };
-  }
-  if (block.type === "hideCg") {
-    if (!state.cg) return state;
-    return {
-      ...state,
-      exitingCg: {
-        ...state.cg,
-        transition: cgTransition(block.transition),
-        entering: false,
-        exiting: true,
-      },
-      cg: undefined,
-    };
-  }
+  const visualState = applyVisualStageBlock(state, block, document);
+  if (visualState) return visualState;
   if (block.type === "showCharacter") {
     const existing = state.actors[block.characterId];
     return {
@@ -757,8 +689,21 @@ export function replayStageAtTime(
       event.block.type === "animateSprite" ||
       event.block.type === "autoPlay" ||
       event.block.type === "switchDialogueStyle"
-    )
+    ) {
       state = applyAutomaticStageBlock(state, event.block, document);
+      if (
+        event.block.type === "scene" ||
+        event.block.type === "showCg" ||
+        event.block.type === "hideCg"
+      ) {
+        const transition =
+          event.block.type === "scene"
+            ? sceneTransition(event.block.transition)
+            : cgTransition(event.block.transition);
+        if (milliseconds >= event.timeMs + transition.durationMs)
+          state = settleVisualBlock(state, event.block);
+      }
+    }
   }
   const active = activeTimelineCue(fragment, milliseconds);
   if (!active) return { stage: state };

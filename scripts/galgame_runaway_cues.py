@@ -41,11 +41,13 @@ def _cg(
     variant_id: str | None = None,
     story_asset_id: str | None = None,
     transition_ms: int = 450,
+    relative: str | None = None,
 ) -> dict[str, Any]:
+    path = Path(filename)
     return {
         "key": key,
-        "path": Path(filename),
-        "relative": f"project-cgs/{Path(filename).name}",
+        "path": path,
+        "relative": relative or f"project-cgs/{path.name}",
         "name": name,
         "description": description,
         "startMs": start_ms,
@@ -112,11 +114,20 @@ CG_SPECS = (
     ),
     _cg(
         "kagari-hououin-imitation",
-        "docs/assets/galgame-runaway-cgs/07-kagari-hououin-imitation.png",
+        "docs/assets/galgame-runaway-cgs/07-kagari-hououin-imitation-v2.png",
         "篝的凤凰院凶真模仿秀",
-        "篝模仿凤凰院凶真的夸张姿势，实验室众人忍俊不禁。",
+        "单时光机屋顶上，篝模仿凤凰院凶真的交叉前臂式夸张姿势。",
         593_385,
         600_885,
+    ),
+    _cg(
+        "original-lab-roundtable",
+        "/Users/tonghao/Projects/steins-gate-video/assets/games/steins_gate/cg/event/EV_M02C.PNG",
+        "原作实验室圆桌群像",
+        "复用《命运石之门》原作实验室群像 CG，短暂切换圆桌会议视角。",
+        314_263,
+        321_852,
+        relative="original-sg-cgs/EV_M02C.PNG",
     ),
     _cg(
         "mother-identity-stop",

@@ -18,6 +18,7 @@ import { StoryAssetImage } from "@features/galgame-workshop/editor/StoryAssetIma
 import { ExpressionPortrait } from "@features/galgame-workshop/editor/ExpressionPortrait";
 import { stageAspectModeLabel } from "@features/galgame-workshop/editor/stageViewportPreferences";
 import { RichTextView } from "@features/galgame-workshop/editor/RichTextEditor";
+import { storyPlayerSceneLayerStyle } from "@features/galgame-workshop/editor/storyPlayerSceneStyle";
 import { dialogueDisplayName } from "@features/galgame-workshop/editor/richText";
 import type { useStoryPlayerController } from "@features/galgame-workshop/editor/useStoryPlayerController";
 import {
@@ -74,7 +75,7 @@ export function StoryPlayerView({ model }: { model: StoryPlayerViewModel }) {
     activeDialogue,
     runtimeVariables,
     activeTimeline,
-    activeSceneLayers,
+    stageScenes,
     activeVideoAsset,
     activeVideoOffsetMs,
     videoUrl,
@@ -410,31 +411,27 @@ export function StoryPlayerView({ model }: { model: StoryPlayerViewModel }) {
               <Volume2 aria-hidden /> 点击启用声音
             </button>
           ) : null}
-          {activeSceneLayers.map(({ layer, asset }, index) => (
+          {stageScenes.map(({ key, state, layer, asset }, index) => (
             <StoryAssetImage
-              key={layer.id}
+              key={`${key}:${state.sourceBlockId}:${layer.id}`}
               fileId={asset.fileId}
               alt=""
               className="galgame-player-background galgame-player-background-layer galgame-camera-plane"
+              data-entering={
+                state.entering && state.transition.fade ? "true" : undefined
+              }
+              data-exiting={state.exiting ? "true" : undefined}
               data-camera-effect={
                 cameraTargets("background") ? camera?.effect : undefined
               }
-              style={{
-                zIndex: index,
-                transform:
-                  cameraTargets("background") && camera
-                    ? `translate(${layer.offsetX + camera.x / layer.distance}%, ${layer.offsetY + camera.y / layer.distance}%) scale(${1 + (camera.scale - 1) / layer.distance}) rotate(${camera.rotation / layer.distance}deg)`
-                    : `translate(${layer.offsetX}%, ${layer.offsetY}%)`,
-                transformOrigin: "center",
-                transition:
-                  cameraTargets("background") && camera
-                    ? `transform ${camera.durationMs}ms ${cameraEasing}`
-                    : undefined,
-                animationDuration:
-                  cameraTargets("background") && camera
-                    ? `${camera.durationMs}ms`
-                    : undefined,
-              }}
+              style={storyPlayerSceneLayerStyle({
+                index,
+                state,
+                layer,
+                camera,
+                cameraActive: cameraTargets("background"),
+                cameraEasing,
+              })}
               fallback={null}
             />
           ))}

@@ -169,7 +169,12 @@ def test_clip_export_restores_active_story_cg() -> None:
                                 "displayMode": "fullscreen",
                                 "fit": "cover",
                             },
-                            {"id": "hide", "type": "hideCg", "atMs": 800},
+                            {
+                                "id": "hide",
+                                "type": "hideCg",
+                                "atMs": 800,
+                                "transition": {"durationMs": 200, "fade": True},
+                            },
                         ],
                     }
                 ],
@@ -188,11 +193,110 @@ def test_clip_export_restores_active_story_cg() -> None:
         total_ms=500,
         asset_paths={"file-cg": Path("/tmp/cg.png")},
     )
-    cg_track = next(track for track in result.plan.document.tracks if track.name == "剧情 CG")
-    assert [clip.asset_id for clip in cg_track.clips] == ["file-cg"]
-    assert cg_track.clips[0].timeline_start_us == 0
-    assert cg_track.clips[0].duration_us == 500_000
+    cg_tracks = [track for track in result.plan.document.tracks if track.name == "剧情 CG"]
+    cg_clips = [clip for track in cg_tracks for clip in track.clips]
+    assert {clip.asset_id for clip in cg_clips} == {"file-cg"}
+    assert min(clip.timeline_start_us for clip in cg_clips) == 0
+    assert max(clip.timeline_start_us + clip.duration_us for clip in cg_clips) == 500_000
     assert "file-cg" in result.used_file_ids
+
+
+def test_scene_and_cg_changes_compile_as_single_crossfades() -> None:
+    document = {
+        "assets": [
+            {"id": "bg-one", "fileId": "file-bg-one"},
+            {"id": "bg-two", "fileId": "file-bg-two"},
+            {"id": "cg-one-asset", "fileId": "file-cg-one"},
+            {"id": "cg-two-asset", "fileId": "file-cg-two"},
+        ],
+        "scenes": [
+            {"id": "scene-one", "layers": [{"name": "一", "assetId": "bg-one"}]},
+            {"id": "scene-two", "layers": [{"name": "二", "assetId": "bg-two"}]},
+        ],
+        "cgs": [
+            {
+                "id": "cg-one",
+                "name": "CG 一",
+                "variants": [{"id": "cg-one-default", "assetId": "cg-one-asset"}],
+                "defaultVariantId": "cg-one-default",
+            },
+            {
+                "id": "cg-two",
+                "name": "CG 二",
+                "variants": [{"id": "cg-two-default", "assetId": "cg-two-asset"}],
+                "defaultVariantId": "cg-two-default",
+            },
+        ],
+        "characters": [],
+        "presentation": {"dialogueBox": {}},
+        "chapters": [
+            {
+                "id": "chapter",
+                "fragments": [
+                    {
+                        "id": "main",
+                        "timeline": {"durationMs": 5000},
+                        "blocks": [
+                            {
+                                "id": "scene-one",
+                                "type": "scene",
+                                "sceneId": "scene-one",
+                                "atMs": 0,
+                                "transition": {"durationMs": 0, "fade": False},
+                            },
+                            {
+                                "id": "scene-two",
+                                "type": "scene",
+                                "sceneId": "scene-two",
+                                "atMs": 1000,
+                                "transition": {"durationMs": 350, "fade": True},
+                            },
+                            {
+                                "id": "show-one",
+                                "type": "showCg",
+                                "cgId": "cg-one",
+                                "atMs": 2000,
+                                "transition": {"durationMs": 450, "fade": True},
+                            },
+                            {
+                                "id": "show-two",
+                                "type": "showCg",
+                                "cgId": "cg-two",
+                                "atMs": 3000,
+                                "transition": {"durationMs": 450, "fade": True},
+                            },
+                            {
+                                "id": "hide-two",
+                                "type": "hideCg",
+                                "atMs": 4000,
+                                "transition": {"durationMs": 450, "fade": True},
+                            },
+                        ],
+                    }
+                ],
+            }
+        ],
+    }
+    result = compile_galgame_render_plan(
+        document,
+        {"preset": "1080p30", "resolvedFragmentIds": ["main"]},
+        fragment_durations_ms=[5000],
+        total_ms=5000,
+        asset_paths={
+            "file-bg-one": Path("/tmp/bg-one.png"),
+            "file-bg-two": Path("/tmp/bg-two.png"),
+            "file-cg-one": Path("/tmp/cg-one.png"),
+            "file-cg-two": Path("/tmp/cg-two.png"),
+        },
+    )
+    tracks = {track.id: track for track in result.plan.document.tracks}
+    assert "scene-active-1" in tracks
+    assert "scene-exiting-1" in tracks
+    assert "cg-active" in tracks
+    assert "cg-exiting" in tracks
+    assert any(clip.asset_id == "file-cg-two" for clip in tracks["cg-active"].clips)
+    assert any(clip.asset_id == "file-cg-one" for clip in tracks["cg-exiting"].clips)
+    assert not any(track.id.startswith("curtain") for track in tracks.values())
 
 
 def test_clip_export_replays_stage_and_trims_master_audio_without_line_voice() -> None:

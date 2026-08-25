@@ -121,8 +121,8 @@ def test_galgame_stage_cast_and_sprite_motion_contracts() -> None:
     document = playable_story()
     document["characters"].extend(
         [
-            {"id": "character-two", "name": "助手"},
-            {"id": "character-three", "name": "访客"},
+            {"id": "character-two", "name": "角色2"},
+            *({"id": f"character-{index}", "name": f"角色{index}"} for index in range(3, 9)),
         ]
     )
     document["chapters"][0]["fragments"][0]["blocks"].insert(
@@ -142,6 +142,7 @@ def test_galgame_stage_cast_and_sprite_motion_contracts() -> None:
                     "distance": "far",
                     "positionId": "position-right",
                 },
+                *({"characterId": f"character-{index}"} for index in range(3, 9)),
             ],
             "exitTransition": {"durationMs": 320, "fade": True},
         },
@@ -158,29 +159,27 @@ def test_galgame_stage_cast_and_sprite_motion_contracts() -> None:
             "easing": "easeOut",
         },
     )
-
     normalized = GalgameStoryProject.model_validate(document).model_dump(mode="json", by_alias=True)
+    assert normalized["chapters"][0]["fragments"][0]["blocks"][0]["transition"] == {
+        "durationMs": 0,
+        "fade": False,
+    }
     cast = normalized["chapters"][0]["fragments"][0]["blocks"][1]
     motion = normalized["chapters"][0]["fragments"][0]["blocks"][2]
-    assert len(cast["members"]) == 2
+    assert len(cast["members"]) == 8
     assert cast["members"][0]["transform"]["scale"] == 1.15
     assert motion["direction"] == "right"
     assert motion["intensity"] == 1.4
-
     duplicate = deepcopy(document)
     duplicate["chapters"][0]["fragments"][0]["blocks"][1]["members"][1]["characterId"] = (
         "character-one"
     )
     with pytest.raises(ValueError, match="不能重复放置角色"):
         GalgameStoryProject.model_validate(duplicate)
-
     overcrowded = deepcopy(document)
-    overcrowded["characters"].append({"id": "character-four", "name": "路人"})
-    overcrowded["chapters"][0]["fragments"][0]["blocks"][1]["members"].extend(
-        [
-            {"characterId": "character-three"},
-            {"characterId": "character-four"},
-        ]
+    overcrowded["characters"].append({"id": "character-nine", "name": "第九人"})
+    overcrowded["chapters"][0]["fragments"][0]["blocks"][1]["members"].append(
+        {"characterId": "character-nine"}
     )
     with pytest.raises(ValueError):
         GalgameStoryProject.model_validate(overcrowded)

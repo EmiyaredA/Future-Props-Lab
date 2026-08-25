@@ -32,7 +32,7 @@ def timed_events(fragment: dict[str, Any]) -> list[CompilerEvent]:
                 events.append(
                     (
                         int(block["atMs"]) + transition_ms,
-                        11,
+                        16 if transition_ms == 0 else 11,
                         "actor-transition-end",
                         block,
                     )
@@ -64,12 +64,13 @@ def timed_events(fragment: dict[str, Any]) -> list[CompilerEvent]:
                         block,
                     )
                 )
-            if block.get("type") in {"showCg", "hideCg", "curtain"}:
+            if block.get("type") in {"scene", "showCg", "hideCg", "curtain"}:
                 transition = block.get("transition") or block
+                transition_ms = int(transition.get("durationMs", 0))
                 events.append(
                     (
-                        int(block["atMs"]) + int(transition.get("durationMs", 0)),
-                        12,
+                        int(block["atMs"]) + transition_ms,
+                        16 if transition_ms == 0 else 12,
                         "visual-transition-end",
                         block,
                     )
@@ -114,15 +115,29 @@ def sequential_events(
             if block_type in {"setStageCast", "removeCharacter"}:
                 transition_key = "exitTransition" if block_type == "setStageCast" else "transition"
                 transition_ms = int((block.get(transition_key) or {}).get("durationMs", 240))
-                events.append((started + transition_ms, 11, "actor-transition-end", block))
+                events.append(
+                    (
+                        started + transition_ms,
+                        16 if transition_ms == 0 else 11,
+                        "actor-transition-end",
+                        block,
+                    )
+                )
             if block_type == "animateSprite" and not block.get("loop"):
                 events.append((started + duration, 12, "animation-end", block))
             if block_type == "stageAnimation":
                 events.append((started + duration, 12, "stage-animation-end", block))
             if block_type in {"camera", "resetCamera"}:
                 events.append((started + duration, 12, "camera-transition-end", block))
-            if block_type in {"showCg", "hideCg", "curtain"}:
-                events.append((started + duration, 12, "visual-transition-end", block))
+            if block_type in {"scene", "showCg", "hideCg", "curtain"}:
+                events.append(
+                    (
+                        started + duration,
+                        16 if duration == 0 else 12,
+                        "visual-transition-end",
+                        block,
+                    )
+                )
             if block.get("waitForCompletion"):
                 cursor += duration
             continue
@@ -190,10 +205,16 @@ def apply_event(
     if action == "camera-transition-end":
         return
     if action == "visual-transition-end":
-        if block.get("type") == "hideCg" and state.get("cg", {}).get("sourceBlockId") == block.get(
-            "id"
-        ):
-            state["cg"] = None
+        if block.get("type") == "scene":
+            if (state.get("scene") or {}).get("sourceBlockId") == block.get("id"):
+                state["scene"]["entering"] = False
+            if (state.get("exitingScene") or {}).get("exitSourceBlockId") == block.get("id"):
+                state["exitingScene"] = None
+        if block.get("type") in {"showCg", "hideCg"}:
+            if (state.get("cg") or {}).get("sourceBlockId") == block.get("id"):
+                state["cg"]["entering"] = False
+            if (state.get("exitingCg") or {}).get("exitSourceBlockId") == block.get("id"):
+                state["exitingCg"] = None
         if (
             block.get("type") == "curtain"
             and block.get("action") == "hide"
@@ -255,28 +276,68 @@ def apply_event(
         return
     kind = block.get("type")
     if kind == "scene":
+        transition = block.get("transition") or {"durationMs": 0, "fade": False}
+        previous = state.get("scene")
+        if previous and previous.get("sceneId") != block.get("sceneId"):
+            state["exitingScene"] = {
+                **previous,
+                "entering": False,
+                "exiting": True,
+                "transitionStartedUs": absolute_us,
+                "durationMs": int(transition.get("durationMs", 0)),
+                "fade": bool(transition.get("fade", False)),
+                "exitSourceBlockId": block.get("id"),
+            }
+        else:
+            state["exitingScene"] = None
         state["sceneId"] = block.get("sceneId")
+        state["scene"] = {
+            "sourceBlockId": block.get("id"),
+            "sceneId": block.get("sceneId"),
+            "entering": previous is None or previous.get("sceneId") != block.get("sceneId"),
+            "exiting": False,
+            "transitionStartedUs": absolute_us,
+            "durationMs": int(transition.get("durationMs", 0)),
+            "fade": bool(transition.get("fade", False)),
+        }
         if block.get("clearCharacters", True):
             state["actors"] = {}
     elif kind == "showCg":
+        transition = block.get("transition") or {}
+        if state.get("cg"):
+            state["exitingCg"] = {
+                **state["cg"],
+                "entering": False,
+                "exiting": True,
+                "transitionStartedUs": absolute_us,
+                "durationMs": int(transition.get("durationMs", 0)),
+                "fade": bool(transition.get("fade", True)),
+                "exitSourceBlockId": block.get("id"),
+            }
+        else:
+            state["exitingCg"] = None
         state["cg"] = {
             **block,
             "entering": True,
             "exiting": False,
             "transitionStartedUs": absolute_us,
-            "durationMs": int((block.get("transition") or {}).get("durationMs", 0)),
+            "durationMs": int(transition.get("durationMs", 0)),
+            "fade": bool(transition.get("fade", True)),
             "sourceBlockId": block.get("id"),
         }
     elif kind == "hideCg":
         if state.get("cg"):
-            state["cg"] = {
+            transition = block.get("transition") or {}
+            state["exitingCg"] = {
                 **state["cg"],
                 "entering": False,
                 "exiting": True,
                 "transitionStartedUs": absolute_us,
-                "durationMs": int((block.get("transition") or {}).get("durationMs", 0)),
-                "sourceBlockId": block.get("id"),
+                "durationMs": int(transition.get("durationMs", 0)),
+                "fade": bool(transition.get("fade", True)),
+                "exitSourceBlockId": block.get("id"),
             }
+            state["cg"] = None
     elif kind == "showCharacter":
         state["actors"][block.get("characterId")] = {
             **block,
@@ -332,7 +393,15 @@ def apply_event(
                     transition=block.get("transition") or {},
                 )
     elif kind == "destroyScene":
-        state.update(sceneId=None, actors={}, cg=None, content=None)
+        state.update(
+            sceneId=None,
+            scene=None,
+            exitingScene=None,
+            actors={},
+            cg=None,
+            exitingCg=None,
+            content=None,
+        )
     elif kind == "curtain":
         previous = state.get("curtain") or {}
         transition = block.get("transition") or block

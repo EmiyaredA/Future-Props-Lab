@@ -302,6 +302,90 @@ describe("Galgame workbench v2 runtime", () => {
     });
   });
 
+  it("keeps outgoing and incoming scene and CG layers during one crossfade", () => {
+    const document = story();
+    document.scenes = [
+      { id: "lab", name: "Lab", description: "" },
+      { id: "roof", name: "Roof", description: "" },
+    ];
+    document.cgs = [
+      {
+        id: "cg-one",
+        name: "CG 1",
+        description: "",
+        variants: [
+          { id: "cg-one-default", label: "默认", assetId: "cg-one-asset" },
+        ],
+        defaultVariantId: "cg-one-default",
+      },
+      {
+        id: "cg-two",
+        name: "CG 2",
+        description: "",
+        variants: [
+          { id: "cg-two-default", label: "默认", assetId: "cg-two-asset" },
+        ],
+        defaultVariantId: "cg-two-default",
+      },
+    ];
+    let state = applyAutomaticStageBlock(
+      emptyStageState(),
+      { id: "scene-lab", type: "scene", sceneId: "lab" },
+      document,
+    );
+    state = applyAutomaticStageBlock(
+      state,
+      {
+        id: "scene-roof",
+        type: "scene",
+        sceneId: "roof",
+        transition: { durationMs: 350, fade: true },
+      },
+      document,
+    );
+    expect(state.scene).toMatchObject({ sceneId: "roof", entering: true });
+    expect(state.exitingScene).toMatchObject({ sceneId: "lab", exiting: true });
+
+    state = applyAutomaticStageBlock(
+      state,
+      {
+        id: "show-one",
+        type: "showCg",
+        cgId: "cg-one",
+        displayMode: "fullscreen",
+        fit: "cover",
+        transition: { durationMs: 450, fade: true },
+      },
+      document,
+    );
+    state = applyAutomaticStageBlock(
+      state,
+      {
+        id: "show-two",
+        type: "showCg",
+        cgId: "cg-two",
+        displayMode: "fullscreen",
+        fit: "cover",
+        transition: { durationMs: 450, fade: true },
+      },
+      document,
+    );
+    expect(state.cg).toMatchObject({ cgId: "cg-two", entering: true });
+    expect(state.exitingCg).toMatchObject({ cgId: "cg-one", exiting: true });
+
+    state = applyAutomaticStageBlock(
+      state,
+      {
+        id: "hide-two",
+        type: "hideCg",
+        transition: { durationMs: 450, fade: true },
+      },
+      document,
+    );
+    expect(state.cg).toBeUndefined();
+    expect(state.exitingCg).toMatchObject({ cgId: "cg-two", exiting: true });
+  });
+
   it("keeps the authored camera target in replay state", () => {
     const camera = applyAutomaticStageBlock(
       emptyStageState(),

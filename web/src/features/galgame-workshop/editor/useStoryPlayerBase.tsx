@@ -261,12 +261,33 @@ export function useStoryPlayerBase({
     activeFragment?.id,
     activeDialogue?.startMs,
   );
-  const activeScene = scenes.get(displayFrame.stage.sceneId ?? "");
-  const activeSceneLayers = (activeScene?.layers ?? []).flatMap((layer) => {
-    const asset = (document.assets ?? []).find(
-      (candidate) => candidate.id === layer.assetId,
-    );
-    return asset?.type === "image" ? [{ layer, asset }] : [];
+  const stageScenes = [
+    displayFrame.stage.exitingScene
+      ? { key: "exiting", state: displayFrame.stage.exitingScene }
+      : undefined,
+    displayFrame.stage.scene
+      ? { key: "active", state: displayFrame.stage.scene }
+      : displayFrame.stage.sceneId
+        ? {
+            key: "active",
+            state: {
+              sourceBlockId: "legacy-scene",
+              sceneId: displayFrame.stage.sceneId,
+              transition: { durationMs: 0, fade: false },
+              entering: false,
+              exiting: false,
+            },
+          }
+        : undefined,
+  ].flatMap((entry) => {
+    if (!entry) return [];
+    const scene = scenes.get(entry.state.sceneId);
+    return (scene?.layers ?? []).flatMap((layer) => {
+      const asset = (document.assets ?? []).find(
+        (candidate) => candidate.id === layer.assetId,
+      );
+      return asset?.type === "image" ? [{ ...entry, layer, asset }] : [];
+    });
   });
   const activeVideoAsset = (document.assets ?? []).find(
     (asset) =>
@@ -465,7 +486,7 @@ export function useStoryPlayerBase({
     activeDialogue,
     activeDialogueAvatar,
     activeFragment,
-    activeSceneLayers,
+    stageScenes,
     activeTimeline,
     activeVideoAsset,
     activeVideoOffsetMs,

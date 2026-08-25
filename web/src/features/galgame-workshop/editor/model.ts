@@ -130,6 +130,7 @@ export function makeBlock(
       type: "scene",
       sceneId: scenes[0].id,
       clearCharacters: true,
+      transition: { durationMs: 0, fade: false },
     };
   }
   if (kind === "showCg") {

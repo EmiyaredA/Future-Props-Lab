@@ -36,6 +36,7 @@ import { WaitInspectorFields } from "@features/galgame-workshop/editor/WaitInspe
 import { AudioInspectorFields } from "@features/galgame-workshop/editor/AudioInspectorFields";
 import { CurtainInspectorFields } from "@features/galgame-workshop/editor/CurtainInspectorFields";
 import { StageCastInspectorFields } from "@features/galgame-workshop/editor/StageCastInspectorFields";
+import { SceneTransitionInspector } from "@features/galgame-workshop/editor/SceneTransitionInspector";
 import {
   AnimateSpriteInspectorFields,
   CameraInspectorFields,
@@ -56,10 +57,8 @@ export {
 type BlockInspectorControllerModel = ReturnType<
   typeof useBlockInspectorController
 >;
-export type BlockInspectorViewModel = Extract<
-  BlockInspectorControllerModel,
-  { status: "ready" }
->;
+// prettier-ignore
+export type BlockInspectorViewModel = Extract<BlockInspectorControllerModel, { status: "ready" }>;
 export function BlockInspectorView({
   model,
 }: {
@@ -415,6 +414,7 @@ export function BlockInspectorView({
             />
             <span>切换场景时清空舞台角色</span>
           </label>
+          <SceneTransitionInspector block={block} patch={patch} />
         </>
       ) : block.type === "showCg" ? (
         <>
