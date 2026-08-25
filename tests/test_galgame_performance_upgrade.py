@@ -140,9 +140,9 @@ def test_opening_full_cast_cg_and_declaration_finish_before_voice() -> None:
 
 
 def test_v8_annotation_and_scene_timing_contract() -> None:
-    assert DEFAULT_ANNOTATION_PATH.name == "广播剧.annotation (10).json"
+    assert DEFAULT_ANNOTATION_PATH.name == "广播剧.annotation (12).json"
     assert sha256(DEFAULT_ANNOTATION_PATH) == EXPECTED_ANNOTATION_SHA256
-    assert LIP_SYNC_FPS == 8
+    assert LIP_SYNC_FPS == 5
     assert (372_443, "BG11A2") in SCENE_BEATS
     assert (387_752, "BG11A7") in SCENE_BEATS
     assert (456_433, "BG03A1") in SCENE_BEATS
@@ -189,7 +189,7 @@ def test_v8_cg_timing_and_scene_consistency() -> None:
     assert assets["harem-chaos-finale-v6"]["path"].name.endswith("v6.png")
 
 
-def test_pair_layout_separates_portraits_and_enlarges_suzuha() -> None:
+def test_pair_layout_uses_larger_medium_portraits() -> None:
     document = {
         "settings": {"characterStage": {"defaultHeightPercent": 100}},
         "characters": [
@@ -199,8 +199,9 @@ def test_pair_layout_separates_portraits_and_enlarges_suzuha() -> None:
     }
     peer = cast_member(document, "peer", None, 0, 2, "line")
     suzuha = cast_member(document, "suzuha", None, 1, 2, "line")
-    assert suzuha["transform"]["x"] - peer["transform"]["x"] == 64
-    assert suzuha["transform"]["scale"] > peer["transform"]["scale"]
+    assert suzuha["transform"]["x"] - peer["transform"]["x"] == 56
+    assert peer["distance"] == suzuha["distance"] == "medium"
+    assert peer["transform"]["scale"] == suzuha["transform"]["scale"] == 0.9
 
 
 def test_dialogue_text_is_enlarged_without_changing_layout() -> None:
@@ -220,6 +221,10 @@ def test_dialogue_text_is_enlarged_without_changing_layout() -> None:
         "maxWidthPercent": 100,
     }
     assert dialogue_box["layout"] == {"heightPercent": 30}
+    assert dialogue_box["backgroundColor"] == "#05070B"
+    assert dialogue_box["backgroundOpacity"] == 1
+    assert dialogue_box["gradientTopOpacity"] == 1
+    assert dialogue_box["gradientBottomOpacity"] == 1
 
 
 def test_shadowed_cast_member_keeps_previous_expression() -> None:

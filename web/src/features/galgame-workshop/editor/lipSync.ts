@@ -13,9 +13,10 @@ export type AudioLevelMonitor = {
 };
 
 const MIN_DECIBELS = -100;
+const RELEASE_HOLD_MS = 180;
 const MOUTH_PATTERNS: Record<1 | 2, LipSyncFrame[]> = {
-  1: [0, 1],
-  2: [0, 1, 2, 1],
+  1: [1, 1, 0],
+  2: [1, 2, 2, 1, 0],
 };
 
 /**
@@ -74,6 +75,8 @@ export class LipSyncLevelTracker {
   private noiseFloorDb = -48;
   private frame: LipSyncFrame = 0;
   private voicedStartedAt: number | undefined;
+  private lastVoicedAt: number | undefined;
+  private opening: 0 | 1 | 2 = 0;
 
   update(
     levelDb: number,
@@ -86,10 +89,24 @@ export class LipSyncLevelTracker {
       this.noiseFloorDb = this.noiseFloorDb * 0.9 + sample * 0.1;
       this.frame = 0;
       this.voicedStartedAt = undefined;
+      this.lastVoicedAt = undefined;
+      this.opening = 0;
       return 0;
     }
     const aboveNoise = levelDb - this.noiseFloorDb;
-    const opening: 0 | 1 | 2 = aboveNoise >= 12 ? 2 : aboveNoise >= 6 ? 1 : 0;
+    const detected: 0 | 1 | 2 = aboveNoise >= 11 ? 2 : aboveNoise >= 5 ? 1 : 0;
+    if (detected === 0)
+      this.noiseFloorDb = this.noiseFloorDb * 0.98 + Math.min(-12, levelDb) * 0.02;
+    if (detected > 0) {
+      this.opening = detected;
+      this.lastVoicedAt = nowMs;
+    } else if (
+      this.lastVoicedAt == null ||
+      nowMs - this.lastVoicedAt > RELEASE_HOLD_MS
+    ) {
+      this.opening = 0;
+    }
+    const opening = this.opening;
     if (opening === 0) {
       this.frame = 0;
       this.voicedStartedAt = undefined;
@@ -109,6 +126,8 @@ export class LipSyncLevelTracker {
     this.noiseFloorDb = -48;
     this.frame = 0;
     this.voicedStartedAt = undefined;
+    this.lastVoicedAt = undefined;
+    this.opening = 0;
   }
 }
 

@@ -67,31 +67,36 @@ export function ExpressionPortrait({
       : undefined;
   const sequenceKey = `${expression?.id ?? "missing"}:${skinAssetId ?? "base"}:${fileIds.join(",")}:${sequence?.fps ?? 0}:${sequence?.loop ?? false}`;
   const [frameIndex, setFrameIndex] = useState(0);
-  const [urls, setUrls] = useState<Map<string, string>>(new Map());
-  const [failedFileIds, setFailedFileIds] = useState<Set<string>>(new Set());
-  const [lastReadyFileId, setLastReadyFileId] = useState<string>();
+  const [readyGroup, setReadyGroup] = useState<{
+    key: string;
+    urls: Map<string, string>;
+    failedFileIds: Set<string>;
+  }>();
+  const [lastReadyFrame, setLastReadyFrame] = useState<{
+    key: string;
+    fileId: string;
+    url: string;
+  }>();
+  const retainedUrlsRef = useRef(new Set<string>());
   const reportedNaturalSizeKey = useRef<string | undefined>(undefined);
 
   useEffect(() => {
     setFrameIndex(0);
-    setFailedFileIds(new Set());
-    setLastReadyFileId(undefined);
     reportedNaturalSizeKey.current = undefined;
   }, [sequenceKey]);
 
   useEffect(() => {
     if (!sequence) {
-      setUrls(new Map());
+      setReadyGroup(undefined);
       return;
     }
     let active = true;
-    const objectUrls: string[] = [];
     void Promise.all(
       [...new Set(fileIds)].map(async (fileId) => {
         try {
           const blob = await fetchApiBlob(`/v1/files/${fileId}/content`);
           const url = URL.createObjectURL(blob);
-          objectUrls.push(url);
+          retainedUrlsRef.current.add(url);
           return [fileId, url] as const;
         } catch {
           return [fileId, ""] as const;
@@ -99,19 +104,33 @@ export function ExpressionPortrait({
       }),
     ).then((entries) => {
       if (!active) return;
-      setUrls(new Map(entries));
-      setFailedFileIds(
-        new Set(entries.flatMap(([fileId, url]) => (url ? [] : [fileId]))),
-      );
+      setReadyGroup({
+        key: sequenceKey,
+        urls: new Map(entries),
+        failedFileIds: new Set(
+          entries.flatMap(([fileId, url]) => (url ? [] : [fileId])),
+        ),
+      });
     });
     return () => {
       active = false;
-      for (const url of objectUrls) URL.revokeObjectURL(url);
     };
-  }, [fileIds, sequence]);
+  }, [fileIds, sequence, sequenceKey]);
+
+  useEffect(
+    () => () => {
+      for (const url of retainedUrlsRef.current) URL.revokeObjectURL(url);
+      retainedUrlsRef.current.clear();
+    },
+    [],
+  );
 
   useEffect(() => {
-    if (!sequence || urls.size === 0 || controlledFrameIndex !== undefined)
+    if (
+      !sequence ||
+      readyGroup?.key !== sequenceKey ||
+      controlledFrameIndex !== undefined
+    )
       return;
     const timer = window.setInterval(() => {
       setFrameIndex((current) => {
@@ -120,7 +139,7 @@ export function ExpressionPortrait({
       });
     }, 1000 / sequence.fps);
     return () => window.clearInterval(timer);
-  }, [controlledFrameIndex, fileIds.length, sequence, urls.size]);
+  }, [controlledFrameIndex, fileIds.length, readyGroup?.key, sequence, sequenceKey]);
 
   if (!sequence) {
     return (
@@ -140,10 +159,20 @@ export function ExpressionPortrait({
       ? frameIndex
       : Math.max(0, Math.min(fileIds.length - 1, controlledFrameIndex));
   const candidateFileId = fileIds[resolvedFrameIndex];
-  const displayFileId = failedFileIds.has(candidateFileId)
-    ? lastReadyFileId
-    : candidateFileId;
-  const displayUrl = displayFileId ? urls.get(displayFileId) : undefined;
+  const currentGroup = readyGroup?.key === sequenceKey ? readyGroup : undefined;
+  const firstSuccessfulFileId = fileIds.find(
+    (fileId) => currentGroup?.urls.get(fileId),
+  );
+  const displayFileId = currentGroup
+    ? currentGroup.failedFileIds.has(candidateFileId)
+      ? firstSuccessfulFileId
+      : candidateFileId
+    : lastReadyFrame?.fileId;
+  const displayUrl = currentGroup
+    ? displayFileId
+      ? currentGroup.urls.get(displayFileId)
+      : undefined
+    : lastReadyFrame?.url;
   const reportAnchorNaturalSize = (fileId: string, image: HTMLImageElement) => {
     if (fileId !== fileIds[0] && !failedFileIds.has(fileIds[0])) return;
     const size = {
@@ -162,7 +191,7 @@ export function ExpressionPortrait({
       : undefined;
   return (
     <>
-      {[...urls.entries()].map(([fileId, url]) =>
+      {[...(currentGroup?.urls.entries() ?? [])].map(([fileId, url]) =>
         url ? (
           <img
             key={`preload-${fileId}`}
@@ -172,7 +201,6 @@ export function ExpressionPortrait({
             className="galgame-expression-frame-preload"
             data-file-id={fileId}
             onLoad={(event) => {
-              setLastReadyFileId((current) => current ?? fileId);
               reportAnchorNaturalSize(fileId, event.currentTarget);
             }}
             onError={() =>
@@ -190,11 +218,24 @@ export function ExpressionPortrait({
           data-sequence-frame={resolvedFrameIndex}
           data-file-id={readyDisplay.fileId}
           onLoad={(event) => {
-            setLastReadyFileId(readyDisplay.fileId);
+            setLastReadyFrame({
+              key: sequenceKey,
+              fileId: readyDisplay.fileId,
+              url: readyDisplay.url,
+            });
             reportAnchorNaturalSize(readyDisplay.fileId, event.currentTarget);
           }}
           onError={() =>
-            setFailedFileIds((current) => new Set(current).add(candidateFileId))
+            setReadyGroup((current) =>
+              current?.key === sequenceKey
+                ? {
+                    ...current,
+                    failedFileIds: new Set(current.failedFileIds).add(
+                      candidateFileId,
+                    ),
+                  }
+                : current,
+            )
           }
         />
       ) : (

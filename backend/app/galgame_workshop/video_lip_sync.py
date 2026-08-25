@@ -19,9 +19,10 @@ SAMPLE_RATE = 48_000
 HOP_US = 33_334
 MIN_DECIBELS = -100.0
 MOUTH_PATTERNS = {
-    1: (0, 1),
-    2: (0, 1, 2, 1),
+    1: (1, 1, 0),
+    2: (1, 2, 2, 1, 0),
 }
+RELEASE_HOLD_US = 180_000
 
 
 @dataclass(frozen=True)
@@ -64,6 +65,8 @@ class _LipTracker:
         self.noise_floor_db = -48.0
         self.frame = 0
         self.voiced_started_at_us: int | None = None
+        self.last_voiced_at_us: int | None = None
+        self.opening = 0
 
     def update(self, level_db: float, speaking: bool, now_us: int, fps: int) -> int:
         if not speaking:
@@ -73,7 +76,15 @@ class _LipTracker:
             self.voiced_started_at_us = None
             return 0
         above_noise = level_db - self.noise_floor_db
-        opening = 2 if above_noise >= 12 else (1 if above_noise >= 6 else 0)
+        detected = 2 if above_noise >= 11 else (1 if above_noise >= 5 else 0)
+        if detected == 0:
+            self.noise_floor_db = self.noise_floor_db * 0.98 + min(-12.0, level_db) * 0.02
+        if detected > 0:
+            self.opening = detected
+            self.last_voiced_at_us = now_us
+        elif self.last_voiced_at_us is None or now_us - self.last_voiced_at_us > RELEASE_HOLD_US:
+            self.opening = 0
+        opening = self.opening
         if opening == 0:
             self.frame = 0
             self.voiced_started_at_us = None

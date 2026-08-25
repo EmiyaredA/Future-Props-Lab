@@ -36,12 +36,12 @@ except ModuleNotFoundError:
 REPO_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_PROJECT_ID = "63ac832d-bff3-4053-9c9f-f55c9dafc52a"
 DEFAULT_SOURCE_ROOT = Path("/Users/tonghao/Projects/steins-gate-video/assets/games/steins_gate_0")
-DEFAULT_ANNOTATION_PATH = Path("/Users/tonghao/Downloads/广播剧.annotation (10).json")
+DEFAULT_ANNOTATION_PATH = Path("/Users/tonghao/Downloads/广播剧.annotation (12).json")
 BACKUP_ROOT = REPO_ROOT / ".runtime" / "galgame-import-backups"
 MAP_PATH = BACKUP_ROOT / "sg0-performance-asset-map.json"
 IMAGE_SUFFIXES = {".png", ".jpg", ".jpeg", ".webp"}
-LIP_SYNC_FPS = 8
-EXPECTED_ANNOTATION_SHA256 = "34837912c6ddad220ae25456f0f2c9e5ae5bfa43b8dd20d7bd7571e4b5bb7467"
+LIP_SYNC_FPS = 5
+EXPECTED_ANNOTATION_SHA256 = "00652faa1715f7076220450ab162fd4f9ac0c9228a13f7bd824c3568f0f6f94f"
 EXPECTED_ANNOTATION_MULTI_SPEAKER_LINES = 12
 GROUP_CG_DIALOGUE_IDS = frozenset(
     f"runaway-annotated-line-{line:04d}"
@@ -551,6 +551,10 @@ def set_all_lip_sync_fps(document: dict[str, Any]) -> None:
 
 def enlarge_dialogue_text(document: dict[str, Any]) -> None:
     dialogue_box = document.setdefault("presentation", {}).setdefault("dialogueBox", {})
+    dialogue_box["backgroundColor"] = "#05070B"
+    dialogue_box["backgroundOpacity"] = 1
+    dialogue_box["gradientTopOpacity"] = 1
+    dialogue_box["gradientBottomOpacity"] = 1
     body = dialogue_box.setdefault("body", {})
     body["fontSizePx"] = 34
     body["lineHeight"] = 1.5
@@ -896,13 +900,12 @@ def configure_dialogue_display_names(document: dict[str, Any]) -> None:
         elif dialogue.get("characterId") == kagari["id"]:
             dialogue.pop("displayNameId", None)
 
-    ensemble_name_id = "runaway-ensemble-name"
+    ensemble = find_character(document, ("众人",))
     for dialogue in dialogues.values():
-        speaker_ids = dialogue.get("speakerIds") or []
-        if len(speaker_ids) > 3:
-            character = character_by_id[dialogue["characterId"]]
-            ensure_literal_display_name(character, ensemble_name_id, "众人")
-            dialogue["displayNameId"] = ensemble_name_id
+        if dialogue.get("displayNameId") == "runaway-ensemble-name":
+            dialogue.pop("displayNameId", None)
+        if dialogue.get("characterId") == ensemble["id"]:
+            dialogue["speakerIds"] = [ensemble["id"]]
 
     for line, value in (
         (377, "冈部伦太郎、桥田至"),
@@ -956,7 +959,7 @@ def cast_member(
 ) -> dict[str, Any]:
     curated_positions = {
         1: (("performance-center", 50),),
-        2: (("performance-left", 18), ("performance-right", 82)),
+        2: (("performance-left", 22), ("performance-right", 78)),
         3: (
             ("performance-outer-left", 10),
             ("performance-center", 50),
@@ -976,14 +979,16 @@ def cast_member(
     distance = (
         "near"
         if count == 1 and dialogue_id in SAFE_CLOSEUP_DIALOGUE_IDS
+        else "medium"
+        if count == 2
         else "far"
-        if count > 1
+        if count > 2
         else "medium"
     )
     height = portrait_height_percent(document, character_id, expression_id)
     effective_height = height * DISTANCE_SCALES[distance]
     available_height = STAGE_BOTTOM_PERCENT - TOP_SAFE_PERCENT - MOTION_SAFE_PERCENT
-    equal_row_scale_caps = {2: 0.78, 3: 0.60, 4: 0.72, 5: 0.62, 6: 0.54, 7: 0.47, 8: 0.42}
+    equal_row_scale_caps = {2: 0.92, 3: 0.60, 4: 0.72, 5: 0.62, 6: 0.54, 7: 0.47, 8: 0.42}
     scale_cap = equal_row_scale_caps.get(count, 1.0)
     character = next(
         (item for item in document.get("characters", []) if item.get("id") == character_id),
@@ -1592,10 +1597,21 @@ def audit_document(
         return str((display or {}).get("value") or character.get("name") or "")
 
     dialogue_by_id = {dialogue["id"]: dialogue for dialogue in dialogues}
+    ensemble_character_id = find_character(document, ("众人",))["id"]
     multi_name_errors = [
         dialogue["id"]
         for dialogue in dialogues
-        if len(dialogue.get("speakerIds") or []) > 3 and display_name_value(dialogue) != "众人"
+        if (
+            display_name_value(dialogue) == "众人"
+            and (
+                dialogue.get("characterId") != ensemble_character_id
+                or dialogue.get("speakerIds") != [ensemble_character_id]
+            )
+        )
+        or (
+            dialogue.get("characterId") == ensemble_character_id
+            and dialogue.get("speakerIds") != [ensemble_character_id]
+        )
     ]
     kagari_unknown_name_errors = [
         dialogue["id"]
@@ -1614,7 +1630,16 @@ def audit_document(
     checks = {
         "durationMs": fragment["timeline"]["durationMs"],
         "dialogueCount": len(dialogues),
-        "allLipSyncFps8": bool(lip_sync_fps) and set(lip_sync_fps) == {LIP_SYNC_FPS},
+        "allLipSyncFps5": bool(lip_sync_fps) and set(lip_sync_fps) == {LIP_SYNC_FPS},
+        "dialogueBoxOpaque": all(
+            document.get("presentation", {}).get("dialogueBox", {}).get(key) == value
+            for key, value in (
+                ("backgroundColor", "#05070B"),
+                ("backgroundOpacity", 1),
+                ("gradientTopOpacity", 1),
+                ("gradientBottomOpacity", 1),
+            )
+        ),
         "dialogueBodyFontSizePx": document.get("presentation", {})
         .get("dialogueBox", {})
         .get("body", {})
@@ -1747,8 +1772,10 @@ def audit_document(
     }
     if checks["durationMs"] != 1_780_344 or checks["dialogueCount"] != 514:
         raise RuntimeError(f"对白或时间轴审计失败：{checks}")
-    if not checks["allLipSyncFps8"]:
-        raise RuntimeError("仍有唇形序列不是 8 FPS")
+    if not checks["allLipSyncFps5"]:
+        raise RuntimeError("仍有唇形序列不是 5 FPS")
+    if not checks["dialogueBoxOpaque"]:
+        raise RuntimeError("对白框没有保持最高层不透明样式")
     if checks["dialogueBodyFontSizePx"] != 34 or checks["dialogueBodyMaxWidthPercent"] != 100:
         raise RuntimeError("对白正文字号或可用宽度未按 V8 应用")
     if (

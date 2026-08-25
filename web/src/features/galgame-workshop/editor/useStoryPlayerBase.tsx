@@ -382,7 +382,7 @@ export function useStoryPlayerBase({
     setMouthFrame(0);
   }, [activeDialogueExpressionId, lipSyncTrackerRef, setMouthFrame]);
 
-  const showMissingPortraitFallback = !exportMode;
+  const showMissingPortraitFallback = mode === "edit" && !exportMode;
   const stageActors = visibleStageActors(displayFrame.stage).flatMap(
     (actor) => {
       const character = characters.get(actor.characterId);
