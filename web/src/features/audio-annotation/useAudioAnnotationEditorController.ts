@@ -286,7 +286,7 @@ export function useAudioAnnotationEditorController({
           .join(" ") || "未指定";
       return (
         !needle ||
-        `${speaker} ${segmentSearchableText(segment)} ${languages
+        `${speaker} ${segment.emotion ?? ""} ${segmentSearchableText(segment)} ${languages
           .map(languageLabel)
           .join(" ")}`
           .toLocaleLowerCase("zh-CN")

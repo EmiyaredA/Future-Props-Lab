@@ -7,6 +7,8 @@ export type FastPreviewDocumentMessage = {
   document: GalgameStoryProject;
   startCursor: FastPreviewCursor;
   playbackRange?: StoryPlayerPlaybackRange;
+  storyRevision?: number;
+  exactFrameDisabledReason?: string;
   source: "launch" | "reload";
 };
 
@@ -15,12 +17,16 @@ export function openFastPreviewWindow({
   document,
   startCursor,
   playbackRange,
+  storyRevision,
+  exactFrameDisabledReason,
   latestDocument,
 }: {
   projectId: string;
   document: GalgameStoryProject;
   startCursor: FastPreviewCursor;
   playbackRange?: StoryPlayerPlaybackRange;
+  storyRevision: number;
+  exactFrameDisabledReason?: string;
   latestDocument: () => GalgameStoryProject;
 }) {
   const sessionId = crypto.randomUUID();
@@ -33,6 +39,8 @@ export function openFastPreviewWindow({
       ),
       startCursor,
       playbackRange,
+      storyRevision,
+      exactFrameDisabledReason,
       source,
     } satisfies FastPreviewDocumentMessage);
   channel.addEventListener("message", (event) => {

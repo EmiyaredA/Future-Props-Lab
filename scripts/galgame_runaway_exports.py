@@ -12,24 +12,30 @@ from dotenv import dotenv_values
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 PROJECT_ID = "63ac832d-bff3-4053-9c9f-f55c9dafc52a"
+EXPORT_WORKFLOW_VERSION = "v8-visual-revision-1"
 FRAGMENT_ID = "runaway-full"
 FULL_DURATION_MS = 1_780_344
 SAMPLE_DURATION_MS = 180_000
-Q_OPENING_EXPORT = ("boundary-q-opening", 10_000, 30_000)
+Q_OPENING_EXPORT = ("boundary-full-cast-and-q-opening", 0, 30_000)
 EXPORTS = (
-    ("user-clip-10m57s-12m29s500", 657_000, 749_500),
-    ("cg-kagari-hououin-imitation", 593_385, 623_296),
-    ("cg-mother-identity-stop", 783_000, 793_000),
+    ("user-clip-suzuha-lab-entrance", 648_000, 670_000),
+    ("cg-kagari-hououin-imitation", 588_000, 620_000),
+    ("cg-mother-identity-stop", 786_000, 802_000),
     ("cg-cleaning-sergeant", 1_232_000, 1_243_000),
+    ("cg-group-rebukes-kagari", 1_453_000, 1_464_000),
+    ("cg-kagari-remembers-mother", 1_561_000, 1_572_000),
     ("cg-harem-chaos-finale", 1_760_000, 1_780_344),
 )
 BOUNDARY_EXPORTS = (
-    ("boundary-rooftop-06m13", 368_000, 380_000),
-    ("boundary-imitation-09m53", 589_000, 604_000),
-    ("boundary-two-machines-10m53", 649_000, 660_000),
-    ("boundary-return-lab-11m27", 682_000, 693_000),
-    ("boundary-farewell-return-28m00", 1_676_000, 1_688_000),
-    ("boundary-final-cg-29m23", 1_759_000, 1_780_344),
+    ("boundary-phone-ui", 65_000, 82_000),
+    ("boundary-okabe-rap", 233_000, 250_000),
+    ("boundary-rooftop-transition", 360_000, 401_000),
+    ("boundary-return-lab", 438_000, 465_000),
+    ("boundary-imitation-lab", 588_000, 620_000),
+    ("boundary-suzuha-lab-entrance", 648_000, 670_000),
+    ("boundary-late-rooftop-switch", 1_598_000, 1_640_000),
+    ("boundary-time-machine-leap", 1_650_000, 1_685_000),
+    ("boundary-final-rooftop-cg", 1_758_000, 1_780_344),
 )
 
 
@@ -110,7 +116,7 @@ def submit(
     requested = requested_exports(only, rng)
     task_names: dict[str, str] = {}
     for item in requested:
-        name = item[0] if item else "full-29m40s344-v7"
+        name = item[0] if item else "full-29m40s344-v8"
         body = request_body(revision, item)
         preview = request_json(client, "POST", export_path("/preview"), body)
         if not preview["ready"]:
@@ -121,7 +127,7 @@ def submit(
             export_path(),
             {
                 **body,
-                "requestId": f"runaway-rev{revision}-{name}",
+                "requestId": (f"runaway-rev{revision}-{EXPORT_WORKFLOW_VERSION}-{name}"),
                 "previewFingerprint": preview["previewFingerprint"],
             },
         )

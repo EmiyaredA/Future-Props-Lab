@@ -48,6 +48,7 @@ class AudioAnnotationSegment(BaseModel):
     speaker_ids: list[Annotated[str, Field(pattern=STABLE_ID_PATTERN)]] = Field(
         default_factory=list, max_length=64
     )
+    emotion: str | None = Field(default=None, max_length=40)
     text: str = Field(default="", max_length=20_000)
     language: str | None = Field(default=None, pattern=LANGUAGE_CODE_PATTERN, max_length=35)
     localized_texts: list[AudioAnnotationLocalizedText] = Field(default_factory=list, max_length=32)
@@ -57,6 +58,14 @@ class AudioAnnotationSegment(BaseModel):
     @classmethod
     def normalize_language(cls, value: str | None) -> str | None:
         return value.lower() if value is not None else None
+
+    @field_validator("emotion")
+    @classmethod
+    def normalize_emotion(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        cleaned = value.strip()
+        return cleaned or None
 
     @model_validator(mode="after")
     def speaker_and_localized_languages_are_valid(self) -> AudioAnnotationSegment:

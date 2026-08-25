@@ -8,10 +8,10 @@ import { SegmentTranscriptionDialogs } from "./SegmentTranscriptionDialogs";
 import {
   mergeImportedSpeakers,
   mergeWithNext,
-  prepareTextOnlyAnnotationImport,
   segmentSpeakerIds,
   speakerAssignment,
 } from "./model";
+import { prepareTextOnlyAnnotationImport } from "./annotationTextImport";
 import type { AnnotationSnapshot, AudioAnnotationDocument } from "./types";
 import type { AudioAnnotationEditorController } from "./useAudioAnnotationEditorController";
 

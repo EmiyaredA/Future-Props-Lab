@@ -36,23 +36,93 @@ except ModuleNotFoundError:
 REPO_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_PROJECT_ID = "63ac832d-bff3-4053-9c9f-f55c9dafc52a"
 DEFAULT_SOURCE_ROOT = Path("/Users/tonghao/Projects/steins-gate-video/assets/games/steins_gate_0")
-DEFAULT_ANNOTATION_PATH = Path("/Users/tonghao/Downloads/广播剧.annotation (7).json")
+DEFAULT_ANNOTATION_PATH = Path("/Users/tonghao/Downloads/广播剧.annotation (10).json")
 BACKUP_ROOT = REPO_ROOT / ".runtime" / "galgame-import-backups"
 MAP_PATH = BACKUP_ROOT / "sg0-performance-asset-map.json"
 IMAGE_SUFFIXES = {".png", ".jpg", ".jpeg", ".webp"}
-LIP_SYNC_FPS = 10
-EXPECTED_ANNOTATION_SHA256 = "eb177fd3a3d080f70104bc55f461aae5795a69dd7483a042503417c0b77d1514"
+LIP_SYNC_FPS = 8
+EXPECTED_ANNOTATION_SHA256 = "34837912c6ddad220ae25456f0f2c9e5ae5bfa43b8dd20d7bd7571e4b5bb7467"
 EXPECTED_ANNOTATION_MULTI_SPEAKER_LINES = 12
 GROUP_CG_DIALOGUE_IDS = frozenset(
     f"runaway-annotated-line-{line:04d}"
     for line in (85, 88, 109, 117, 169, 213, 230, 257, 322, 324, 377, 426, 463, 511)
 )
-Q_OVERLAY_DIALOGUE_IDS = frozenset({"runaway-annotated-line-0001", "runaway-annotated-line-0002"})
+Q_OVERLAY_DIALOGUE_IDS = frozenset({"runaway-annotated-line-0001"})
 MOTION_SAFE_PERCENT = 4.0
 STAGE_BOTTOM_PERCENT = 100.0
 EXPRESSION_CUES_PATH = REPO_ROOT / "scripts" / "galgame_runaway_expression_cues.json"
 DIALOGUE_EXPRESSION_CUES: dict[str, str] = json.loads(
     EXPRESSION_CUES_PATH.read_text(encoding="utf-8")
+)
+OPENING_DECLARATION_ID = "runaway-opening-declaration"
+OPENING_DECLARATION_TEXT = (
+    "源剧情：【命运石之门0广播剧】自由粒子的逃逸\n\n"
+    "本视频为up主自制的galgame版本\n"
+    "字幕自己翻的（有参考一些别人的翻译版本）\n\n"
+    "游戏CG小部分来自本篇和0，大部分由AI生成\n\n"
+    "制作不易，大家如果看开心了可以给个三连～"
+)
+TRANSITION_CARD_BLOCKS = (
+    {
+        "id": "runaway-curtain-rooftop-show",
+        "type": "curtain",
+        "atMs": 368_143,
+        "mode": "fullscreen",
+        "action": "show",
+        "color": "#000000",
+        "opacity": 1,
+        "durationMs": 600,
+    },
+    {
+        "id": "runaway-transition-rooftop-text",
+        "type": "floatingText",
+        "atMs": 368_743,
+        "text": "众人前往屋顶......",
+        "x": 50,
+        "y": 50,
+        "color": "#F5F1E8",
+        "durationMs": 3_700,
+    },
+    {
+        "id": "runaway-curtain-rooftop-hide",
+        "type": "curtain",
+        "atMs": 373_008,
+        "mode": "fullscreen",
+        "action": "hide",
+        "color": "#000000",
+        "opacity": 1,
+        "durationMs": 600,
+    },
+    {
+        "id": "runaway-curtain-lab-show",
+        "type": "curtain",
+        "atMs": 450_933,
+        "mode": "fullscreen",
+        "action": "show",
+        "color": "#000000",
+        "opacity": 1,
+        "durationMs": 600,
+    },
+    {
+        "id": "runaway-transition-lab-text",
+        "type": "floatingText",
+        "atMs": 451_633,
+        "text": "众人回到lab......",
+        "x": 50,
+        "y": 50,
+        "color": "#F5F1E8",
+        "durationMs": 4_800,
+    },
+    {
+        "id": "runaway-curtain-lab-hide",
+        "type": "curtain",
+        "atMs": 457_665,
+        "mode": "fullscreen",
+        "action": "hide",
+        "color": "#000000",
+        "opacity": 1,
+        "durationMs": 600,
+    },
 )
 
 LIBRARY_GROUPS = (
@@ -66,6 +136,7 @@ CURATED_SCENES = (
     ("BG03A2", "实验室设备亮起", 0.9),
     ("BG03A4", "实验室整理中", 0.95),
     ("BG03A5", "实验室另一角度", 1.15),
+    ("BG11A2", "关闭的时间机器", 0.92),
     ("BG11A7", "时间机器舱门开启", 0.92),
     ("BG11A8", "时间机器登舱梯", 1.05),
 )
@@ -79,6 +150,14 @@ CUSTOM_SCENES = (
         "relative": "project-scenes/BG11A7-two-time-machines-v1.png",
         "distance": 0.92,
     },
+    {
+        "code": "BG11_EMPTY",
+        "name": "跃迁后的平整空天台",
+        "description": "基于原作 BG11A7 移除时光机器并补全为无裂纹、无残骸的平整屋顶。",
+        "path": REPO_ROOT / "docs/assets/galgame-runaway-scenes/BG11-empty-rooftop-v1.png",
+        "relative": "project-scenes/BG11-empty-rooftop-v1.png",
+        "distance": 1.0,
+    },
 )
 
 SCENE_BEATS = (
@@ -86,16 +165,15 @@ SCENE_BEATS = (
     (28_000, "BG03A2"),
     (151_754, "BG03A5"),
     (260_255, "BG03A4"),
-    (373_608, "BG11A7"),
-    (653_198, "BG11A7_TWO"),
-    (687_072, "BG03A1"),
+    (372_443, "BG11A2"),
+    (387_752, "BG11A7"),
+    (456_433, "BG03A1"),
     (970_000, "BG03A2"),
     (1_188_000, "BG03A5"),
     (1_300_000, "BG03A4"),
     (1_364_000, "BG03A1"),
-    (1_604_000, "BG11A7"),
-    (1_680_000, "BG11A8"),
-    (1_682_974, "BG03A5"),
+    (1_627_170, "BG11A7"),
+    (1_677_392, "BG11_EMPTY"),
 )
 
 SUZUHA_VARIANTS = {
@@ -562,11 +640,12 @@ def install_cgs(document: dict[str, Any], mapping: dict[str, Any]) -> None:
             block.get("type") in {"showCg", "hideCg"}
             and block.get("id", "").startswith("runaway-cg-")
         )
+        and not block.get("id", "").startswith("runaway-phone-camera-")
     ]
     cg_events: list[dict[str, Any]] = []
     for event in CG_EVENTS:
         spec = asset_by_key[event["assetKey"]]
-        transition = {"durationMs": event["transitionMs"], "fade": True}
+        show_transition = {"durationMs": event["transitionMs"], "fade": True}
         cg_events.append(
             {
                 "id": f"runaway-cg-show-{event['key']}",
@@ -577,7 +656,7 @@ def install_cgs(document: dict[str, Any], mapping: dict[str, Any]) -> None:
                 "displayMode": event["displayMode"],
                 "fit": event["fit"],
                 "overlay": event["overlay"],
-                "transition": transition,
+                "transition": show_transition,
             }
         )
         if event["endMs"] is not None:
@@ -586,10 +665,74 @@ def install_cgs(document: dict[str, Any], mapping: dict[str, Any]) -> None:
                     "id": f"runaway-cg-hide-{event['key']}",
                     "type": "hideCg",
                     "atMs": event["endMs"],
-                    "transition": transition,
+                    "transition": {
+                        "durationMs": event["hideTransitionMs"],
+                        "fade": True,
+                    },
                 }
             )
+    cg_events.extend(
+        (
+            {
+                "id": "runaway-phone-camera-offscreen",
+                "type": "camera",
+                "atMs": 68_050,
+                "target": "cg",
+                "effect": "move",
+                "x": 35,
+                "y": 0,
+                "scale": 1,
+                "rotation": 0,
+                "intensity": 1,
+                "durationMs": 0,
+                "easing": "linear",
+                "waitForCompletion": False,
+            },
+            {
+                "id": "runaway-phone-camera-slide-in",
+                "type": "camera",
+                "atMs": 68_051,
+                "target": "cg",
+                "effect": "move",
+                "x": 0,
+                "y": 0,
+                "scale": 1,
+                "rotation": 0,
+                "intensity": 1,
+                "durationMs": 220,
+                "easing": "easeOut",
+                "waitForCompletion": False,
+            },
+        )
+    )
     fragment["blocks"] = [*retained, *cg_events]
+
+
+def install_opening_declaration(document: dict[str, Any]) -> None:
+    fragment = target_fragment(document)
+    retained = [
+        block for block in fragment.get("blocks", []) if block.get("id") != OPENING_DECLARATION_ID
+    ]
+    retained.append(
+        {
+            "id": OPENING_DECLARATION_ID,
+            "type": "floatingText",
+            "atMs": 500,
+            "text": OPENING_DECLARATION_TEXT,
+            "x": 50,
+            "y": 50,
+            "color": "#F4E7C5",
+            "durationMs": 10_000,
+        }
+    )
+    fragment["blocks"] = retained
+
+
+def install_transition_cards(document: dict[str, Any]) -> None:
+    fragment = target_fragment(document)
+    managed_ids = {block["id"] for block in TRANSITION_CARD_BLOCKS}
+    retained = [block for block in fragment.get("blocks", []) if block.get("id") not in managed_ids]
+    fragment["blocks"] = [*retained, *deepcopy(TRANSITION_CARD_BLOCKS)]
 
 
 def dialogue_signature(fragment: dict[str, Any]) -> list[tuple[Any, ...]]:
@@ -813,11 +956,11 @@ def cast_member(
 ) -> dict[str, Any]:
     curated_positions = {
         1: (("performance-center", 50),),
-        2: (("performance-left", 24), ("performance-right", 76)),
+        2: (("performance-left", 18), ("performance-right", 82)),
         3: (
-            ("performance-outer-left", 14),
+            ("performance-outer-left", 10),
             ("performance-center", 50),
-            ("performance-outer-right", 86),
+            ("performance-outer-right", 90),
         ),
     }
     if count <= 3:
@@ -840,8 +983,14 @@ def cast_member(
     height = portrait_height_percent(document, character_id, expression_id)
     effective_height = height * DISTANCE_SCALES[distance]
     available_height = STAGE_BOTTOM_PERCENT - TOP_SAFE_PERCENT - MOTION_SAFE_PERCENT
-    equal_row_scale_caps = {2: 0.82, 3: 0.62, 4: 0.72, 5: 0.62, 6: 0.54, 7: 0.47, 8: 0.42}
+    equal_row_scale_caps = {2: 0.78, 3: 0.60, 4: 0.72, 5: 0.62, 6: 0.54, 7: 0.47, 8: 0.42}
     scale_cap = equal_row_scale_caps.get(count, 1.0)
+    character = next(
+        (item for item in document.get("characters", []) if item.get("id") == character_id),
+        {},
+    )
+    if any(name in str(character.get("name", "")) for name in ("铃羽", "鈴羽", "玲羽", "Suzuha")):
+        scale_cap *= 1.12
     scale = floor(min(scale_cap, available_height / effective_height) * 1000) / 1000
     if scale < 0.25:
         raise RuntimeError(f"角色 {character_id} 的立绘过高，无法在贴底后保留安全头部")
@@ -959,6 +1108,14 @@ def install_performance_blocks(document: dict[str, Any], first_person_id: str) -
     ]
     performance: list[dict[str, Any]] = []
     for beat_index, (at_ms, scene_code) in enumerate(SCENE_BEATS):
+        hidden_scene_switch = at_ms in {372_443, 456_433}
+        scene_transition_ms = (
+            0
+            if beat_index == 0 or hidden_scene_switch or at_ms in CG_EVENT_STARTS
+            else 450
+            if at_ms == 387_752
+            else 350
+        )
         performance.append(
             {
                 "id": f"perf-scene-{beat_index:02d}",
@@ -967,8 +1124,8 @@ def install_performance_blocks(document: dict[str, Any], first_person_id: str) -
                 "sceneId": f"sg0-{scene_code.lower().replace('_', '-')}",
                 "clearCharacters": True,
                 "transition": {
-                    "durationMs": 0 if beat_index == 0 or at_ms in CG_EVENT_STARTS else 350,
-                    "fade": beat_index != 0 and at_ms not in CG_EVENT_STARTS,
+                    "durationMs": scene_transition_ms,
+                    "fade": scene_transition_ms > 0,
                 },
             }
         )
@@ -1025,11 +1182,10 @@ def install_performance_blocks(document: dict[str, Any], first_person_id: str) -
         explicit_group = len(dialogue.get("speakerIds") or []) > 1
         group_dialogue = explicit_group or dialogue.get("characterId") == group_character_id
         cg_hidden_dialogue = group_dialogue or dialogue["id"] in Q_OVERLAY_DIALOGUE_IDS
-        intentional_exchange = len(visible_ids) > 1 and cue_index % 3 == 0
         requires_composition = (
             dialogue["characterId"] not in visible_character_ids
             or cg_hidden_dialogue
-            or intentional_exchange
+            or len(visible_ids) > 1
             or dialogue["id"] in SAFE_CLOSEUP_DIALOGUE_IDS
         )
         if requires_composition:
@@ -1327,6 +1483,13 @@ def audit_document(
     hide_cg_blocks = [
         block for block in fragment.get("blocks", []) if block.get("type") == "hideCg"
     ]
+    opening_declaration_blocks = [
+        block for block in fragment.get("blocks", []) if block.get("id") == OPENING_DECLARATION_ID
+    ]
+    opening_event = next(
+        (event for event in CG_EVENTS if event["key"] == "full-cast-opening"), None
+    )
+    first_dialogue_start_ms = min(dialogue["startMs"] for dialogue in dialogues)
     managed_cg_ids = {spec["cgId"] for spec in CG_ASSETS}
     cg_event_ids = [block["id"] for block in [*show_cg_blocks, *hide_cg_blocks]]
     cg_intervals = sorted(
@@ -1406,7 +1569,7 @@ def audit_document(
                 strict=False,
             )
         )
-        < 20
+        < (60 if len(block.get("members", [])) == 2 else 35)
     ]
     logical_library = logical_library_entries(source_root)
     missing_mapping = [
@@ -1451,7 +1614,7 @@ def audit_document(
     checks = {
         "durationMs": fragment["timeline"]["durationMs"],
         "dialogueCount": len(dialogues),
-        "allLipSyncFps10": bool(lip_sync_fps) and set(lip_sync_fps) == {LIP_SYNC_FPS},
+        "allLipSyncFps8": bool(lip_sync_fps) and set(lip_sync_fps) == {LIP_SYNC_FPS},
         "dialogueBodyFontSizePx": document.get("presentation", {})
         .get("dialogueBox", {})
         .get("body", {})
@@ -1488,7 +1651,9 @@ def audit_document(
             (block["transition"]["durationMs"], block["transition"]["fade"])
             == (
                 (0, False)
-                if block["atMs"] == 0 or block["atMs"] in CG_EVENT_STARTS
+                if block["atMs"] in {0, 372_443, 456_433} or block["atMs"] in CG_EVENT_STARTS
+                else (450, True)
+                if block["atMs"] == 387_752
                 else (350, True)
             )
             for block in scene_blocks
@@ -1497,11 +1662,41 @@ def audit_document(
         "distinctSceneCount": len({block["sceneId"] for block in scene_blocks}),
         "cameraBeatCount": len(camera_blocks),
         "cameraUiIsolationReady": all(
-            block.get("target") == "background" for block in camera_blocks
+            block.get("target")
+            == ("cg" if block.get("id", "").startswith("runaway-phone-camera-") else "background")
+            for block in camera_blocks
         ),
         "silentGapCount": len(silent_gaps),
         "nonemptySilentGaps": nonempty_silent_gaps,
         "curtainCount": len(curtain_blocks),
+        "curtainEventsExact": sorted(
+            (
+                block["id"],
+                block["atMs"],
+                block["action"],
+                block["durationMs"],
+            )
+            for block in curtain_blocks
+        )
+        == sorted(
+            (
+                block["id"],
+                block["atMs"],
+                block["action"],
+                block["durationMs"],
+            )
+            for block in TRANSITION_CARD_BLOCKS
+            if block["type"] == "curtain"
+        ),
+        "transitionTextsExact": sorted(
+            (block.get("atMs"), block.get("text"), block.get("durationMs"))
+            for block in fragment.get("blocks", [])
+            if block.get("id", "").startswith("runaway-transition-")
+        )
+        == [
+            (368_743, "众人前往屋顶......", 3_700),
+            (451_633, "众人回到lab......", 4_800),
+        ],
         "characterFadeBlocks": character_fades,
         "showCgCount": len(show_cg_blocks),
         "hideCgCount": len(hide_cg_blocks),
@@ -1516,6 +1711,17 @@ def audit_document(
             and abs((event["overlay"]["width"] / 100) ** 2 - 1 / 6) <= 0.01
             for event in q_events
         ),
+        "openingDeclarationReady": len(opening_declaration_blocks) == 1
+        and opening_declaration_blocks[0].get("atMs") == 500
+        and opening_declaration_blocks[0].get("durationMs") == 10_000
+        and opening_declaration_blocks[0].get("text") == OPENING_DECLARATION_TEXT
+        and opening_declaration_blocks[0].get("x") == 50
+        and opening_declaration_blocks[0].get("y") == 50
+        and opening_declaration_blocks[0].get("color") == "#F4E7C5",
+        "openingCgBeforeVoice": bool(opening_event)
+        and opening_event["startMs"] == 0
+        and opening_event["endMs"] == 11_500
+        and opening_event["endMs"] < first_dialogue_start_ms,
         "finalCgPersists": final_cg_persists,
         "suzuhaUsesSg0BlueVest": bool(suzuha_asset_ids)
         and all(asset_id.startswith("sg0-suz-half-v1-suz-hs") for asset_id in suzuha_asset_ids)
@@ -1531,9 +1737,7 @@ def audit_document(
         and display_name_value(dialogue_by_id["runaway-annotated-line-0463"])
         == "阿万音铃羽、比屋定真帆",
         "rejectedSceneReferences": [
-            block["sceneId"]
-            for block in scene_blocks
-            if block["sceneId"] in {"sg0-bg03a3", "sg0-bg11a3"}
+            block["sceneId"] for block in scene_blocks if block["sceneId"] == "sg0-bg03a3"
         ],
         "logicalLibraryCount": len(logical_library),
         "missingLogicalMappings": missing_mapping,
@@ -1543,10 +1747,10 @@ def audit_document(
     }
     if checks["durationMs"] != 1_780_344 or checks["dialogueCount"] != 514:
         raise RuntimeError(f"对白或时间轴审计失败：{checks}")
-    if not checks["allLipSyncFps10"]:
-        raise RuntimeError("仍有唇形序列不是 10 FPS")
+    if not checks["allLipSyncFps8"]:
+        raise RuntimeError("仍有唇形序列不是 8 FPS")
     if checks["dialogueBodyFontSizePx"] != 34 or checks["dialogueBodyMaxWidthPercent"] != 100:
-        raise RuntimeError("对白正文字号或可用宽度未按 V7 应用")
+        raise RuntimeError("对白正文字号或可用宽度未按 V8 应用")
     if (
         checks["explicitExpressionCueCount"] != 409
         or invalid_expression_dialogues
@@ -1611,6 +1815,8 @@ def audit_document(
         or checks["duplicateCgEventIds"]
         or cg_overlaps
         or not checks["qOverlayReady"]
+        or not checks["openingDeclarationReady"]
+        or not checks["openingCgBeforeVoice"]
         or not checks["finalCgPersists"]
         or not all(checks["groupCgCoverage"].values())
         or checks["blockCount"] > 1000
@@ -1618,8 +1824,13 @@ def audit_document(
         raise RuntimeError("CG 事件或 Block 上限审计失败")
     if checks["logicalLibraryCount"] != 701 or missing_mapping or missing_cg_mapping:
         raise RuntimeError("原作素材映射不完整")
-    if checks["curtainCount"] or checks["characterFadeBlocks"]:
-        raise RuntimeError("普通演出仍包含幕布或人物淡化")
+    if (
+        checks["curtainCount"] != 4
+        or not checks["curtainEventsExact"]
+        or not checks["transitionTextsExact"]
+        or checks["characterFadeBlocks"]
+    ):
+        raise RuntimeError("场景幕布、过场文字或人物淡化审计失败")
     if (
         checks["kagariCharacterName"] != "冈部篝"
         or checks["kagariUnknownNameErrors"]
@@ -1656,7 +1867,7 @@ def transform_latest_story(
         annotation_audit["changedTextCount"],
         annotation_audit["changedSpeakerCount"],
     )
-    if observed_changes not in {(0, 0), (1, 0)}:
+    if observed_changes not in {(0, 0), (1, 0), (3, 0), (4, 0)}:
         raise RuntimeError(f"新版对白变更数量异常：{observed_changes}")
     configure_dialogue_display_names(document)
     install_curated_scenes(document, mapping)
@@ -1666,6 +1877,8 @@ def transform_latest_story(
     first_person_id = first_person_okabe(document)["id"]
     install_performance_blocks(document, first_person_id)
     install_cgs(document, mapping)
+    install_opening_declaration(document)
+    install_transition_cards(document)
     checks = audit_document(document, mapping, source_root, annotation_audit)
     if (
         dialogue_timeline_signature(target_fragment(document))

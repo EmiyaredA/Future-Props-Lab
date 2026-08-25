@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+from types import SimpleNamespace
+
 import httpx
 import pytest
 
 from app.galgame_workshop.video_export import EXPORT_PACKAGING_POLICY
+from app.galgame_workshop.video_export_runner import _recover_interrupted_task
 from app.galgame_workshop.video_handoff_runner import GalgameVideoEditorHandoffRunner
 from app.main import app
 from test_galgame_workshop import playable_story
@@ -149,6 +152,26 @@ async def test_video_export_rejects_stale_story_preview() -> None:
 
 def test_video_export_registers_outputs_with_a_supported_packaging_policy() -> None:
     assert EXPORT_PACKAGING_POLICY in {"auto", "include", "exclude"}
+
+
+def test_video_export_recovery_preserves_running_cancellation() -> None:
+    task = SimpleNamespace(
+        cancel_requested=True,
+        status="running",
+        progress=4,
+        result_detail={"phase": "rendering"},
+        finished_at=None,
+        revision=7,
+        updated_at=None,
+    )
+
+    _recover_interrupted_task(task)
+
+    assert task.status == "cancelled"
+    assert task.progress == 0
+    assert task.result_detail["phase"] == "cancelled"
+    assert task.finished_at is not None
+    assert task.revision == 8
 
 
 @pytest.mark.asyncio

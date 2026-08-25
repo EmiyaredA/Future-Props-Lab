@@ -39,7 +39,7 @@ export function AudioAnnotationTextImportDialog({
           </button>
         </header>
         <p>
-          粘贴项目 JSON。只替换原文、附加语言和校对状态；片段
+          粘贴项目 JSON。只替换情绪、原文、附加语言和校对状态；片段
           ID、时间与说话人必须完全一致。
         </p>
         <textarea

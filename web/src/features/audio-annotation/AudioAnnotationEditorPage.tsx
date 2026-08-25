@@ -550,6 +550,7 @@ export function AudioAnnotationEditorPage({
                 <span>片段</span>
                 <span>时间范围</span>
                 <span>说话人</span>
+                <span>情绪</span>
                 <span>语言</span>
                 <span>内容</span>
                 <span>状态</span>
@@ -599,6 +600,9 @@ export function AudioAnnotationEditorPage({
                       {segmentSpeakers.length
                         ? segmentSpeakers.map((item) => item.name).join("、")
                         : "未指定"}
+                    </span>
+                    <span className="annotation-segment-emotion">
+                      {segment.emotion || "未标注"}
                     </span>
                     <span className="annotation-language-badges">
                       {languageCodes.length ? (

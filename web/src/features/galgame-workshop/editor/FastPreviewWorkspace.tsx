@@ -4,6 +4,7 @@ import {
   ExternalLink,
   Film,
   GitBranch,
+  Image,
   ListTree,
   Pause,
   Play,
@@ -14,7 +15,10 @@ import {
   Variable,
   X,
 } from "lucide-react";
-import type { GalgameStoryProject } from "@features/galgame-workshop/api";
+import {
+  previewGalgameVideoExportFrame,
+  type GalgameStoryProject,
+} from "@features/galgame-workshop/api";
 import {
   StoryPlayer,
   type StoryPlayerHandle,
@@ -38,6 +42,9 @@ export function FastPreviewWorkspace({
   document,
   startCursor,
   sourceNotice,
+  projectId,
+  storyRevision,
+  exactFrameDisabledReason,
   onExit,
   onOpenWindow,
   onReload,
@@ -48,6 +55,9 @@ export function FastPreviewWorkspace({
   document: GalgameStoryProject;
   startCursor: FastPreviewCursor;
   sourceNotice?: string;
+  projectId?: string;
+  storyRevision?: number;
+  exactFrameDisabledReason?: string;
   onExit: (snapshot?: StoryPlayerRuntimeSnapshot) => void;
   onOpenWindow?: () => void;
   onReload?: () => void;
@@ -62,6 +72,15 @@ export function FastPreviewWorkspace({
   );
   const [logs, setLogs] = useState<string[]>(["预演快照已冻结"]);
   const [rangeLoop, setRangeLoop] = useState(Boolean(playbackRange?.loop));
+  const [exactFrame, setExactFrame] = useState<{
+    url: string;
+    fragmentId: string;
+    timeMs: number;
+  }>();
+  const [exactFrameLoading, setExactFrameLoading] = useState(false);
+  const [exactFrameError, setExactFrameError] = useState("");
+  const exactFrameRequestRef = useRef(0);
+  const exactFrameUrlRef = useRef("");
   const effectivePlaybackRange = useMemo(
     () => (playbackRange ? { ...playbackRange, loop: rangeLoop } : undefined),
     [playbackRange, rangeLoop],
@@ -97,6 +116,15 @@ export function FastPreviewWorkspace({
     playerRef.current?.restart();
   }, [document, startCursor]);
 
+  useEffect(
+    () => () => {
+      exactFrameRequestRef.current += 1;
+      if (exactFrameUrlRef.current)
+        URL.revokeObjectURL(exactFrameUrlRef.current);
+    },
+    [],
+  );
+
   useEffect(() => {
     const keyboard = (event: KeyboardEvent) => {
       if (event.target instanceof HTMLInputElement) return;
@@ -127,6 +155,87 @@ export function FastPreviewWorkspace({
     snapshot?.frame.mode === "content" && snapshot.frame.block.type === "branch"
       ? snapshot.frame.block.choices
       : [];
+  const exactFrameUnavailableReason =
+    exactFrameDisabledReason ??
+    (!projectId || storyRevision == null
+      ? "当前快照缺少已保存的项目修订信息"
+      : !activeFragment?.timeline
+        ? "当前片段没有精确时间轴"
+        : !snapshot
+          ? "快速预演尚未就绪"
+          : undefined);
+  const exactFrameStale = Boolean(
+    exactFrame &&
+    snapshot &&
+    (exactFrame.fragmentId !== snapshot.fragmentId ||
+      Math.abs(exactFrame.timeMs - snapshot.positionMs) >= 100),
+  );
+  const generateExactFrame = async () => {
+    if (
+      exactFrameUnavailableReason ||
+      !projectId ||
+      storyRevision == null ||
+      !activeFragment?.timeline ||
+      !snapshot
+    )
+      return;
+    if (snapshot.playing) playerRef.current?.togglePlayback();
+    const requestId = ++exactFrameRequestRef.current;
+    const fragmentId = activeFragment.id;
+    const timelineTimeMs = Math.min(
+      snapshot.positionMs,
+      Math.max(0, activeFragment.timeline.durationMs - 1),
+    );
+    const clipStartMs = Math.max(0, timelineTimeMs - 1000);
+    const clipEndMs = Math.min(
+      activeFragment.timeline.durationMs,
+      timelineTimeMs + 1001,
+    );
+    setExactFrameLoading(true);
+    setExactFrameError("");
+    try {
+      const blob = await previewGalgameVideoExportFrame(projectId, {
+        expectedStoryRevision: storyRevision,
+        locale: "zh",
+        preset: "1080p30",
+        scope: "clip",
+        fragmentIds: [],
+        branchSelections: [],
+        captureFrame: { x: 0, y: 0, width: 1920, height: 1080 },
+        clipRange: {
+          fragmentId,
+          startMs: clipStartMs,
+          endMs: clipEndMs,
+        },
+        timeMs: timelineTimeMs - clipStartMs,
+        width: 960,
+      });
+      if (requestId !== exactFrameRequestRef.current) return;
+      const url = URL.createObjectURL(blob);
+      const previousUrl = exactFrameUrlRef.current;
+      exactFrameUrlRef.current = url;
+      setExactFrame({ url, fragmentId, timeMs: timelineTimeMs });
+      if (previousUrl) URL.revokeObjectURL(previousUrl);
+    } catch (error) {
+      if (requestId !== exactFrameRequestRef.current) return;
+      setExactFrameError(
+        error instanceof Error ? error.message : "精确导出帧生成失败",
+      );
+    } finally {
+      if (requestId === exactFrameRequestRef.current)
+        setExactFrameLoading(false);
+    }
+  };
+  const closeExactFrame = () => {
+    exactFrameRequestRef.current += 1;
+    setExactFrameLoading(false);
+    setExactFrameError("");
+    setExactFrame(undefined);
+    if (exactFrameUrlRef.current) {
+      URL.revokeObjectURL(exactFrameUrlRef.current);
+      exactFrameUrlRef.current = "";
+    }
+  };
   return (
     <main className="galgame-fast-preview">
       <header>
@@ -147,6 +256,15 @@ export function FastPreviewWorkspace({
               独立窗口
             </button>
           ) : null}
+          <button
+            type="button"
+            disabled={Boolean(exactFrameUnavailableReason) || exactFrameLoading}
+            title={exactFrameUnavailableReason}
+            onClick={() => void generateExactFrame()}
+          >
+            <Image aria-hidden />
+            {exactFrameLoading ? "正在生成精确帧…" : "生成当前精确帧"}
+          </button>
           <button type="button" onClick={() => onExit(snapshot)}>
             <X aria-hidden />
             退出预演
@@ -194,6 +312,39 @@ export function FastPreviewWorkspace({
             chrome="stage-only"
             onRuntimeSnapshot={receiveSnapshot}
           />
+          {exactFrame ? (
+            <section
+              className="galgame-fast-preview-exact-frame"
+              data-stale={exactFrameStale ? "true" : undefined}
+              aria-label="当前时间点精确导出帧"
+            >
+              <img src={exactFrame.url} alt="正式导出引擎生成的当前帧" />
+              <header>
+                <strong>精确导出帧</strong>
+                <time>{formatTimelineTime(exactFrame.timeMs)}</time>
+                {exactFrameStale ? <em>播放位置已变化，请重新生成</em> : null}
+              </header>
+              <footer>
+                <button type="button" onClick={closeExactFrame}>
+                  返回动态预览
+                </button>
+                <button
+                  type="button"
+                  disabled={exactFrameLoading}
+                  onClick={() => void generateExactFrame()}
+                >
+                  {exactFrameLoading ? "正在生成…" : "重新生成"}
+                </button>
+              </footer>
+            </section>
+          ) : exactFrameError ? (
+            <div className="galgame-fast-preview-exact-error" role="alert">
+              <span>{exactFrameError}</span>
+              <button type="button" onClick={() => setExactFrameError("")}>
+                关闭
+              </button>
+            </div>
+          ) : null}
         </section>
         <aside className="galgame-fast-preview-inspector">
           <nav>

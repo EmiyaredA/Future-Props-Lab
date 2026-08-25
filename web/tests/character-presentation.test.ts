@@ -128,7 +128,7 @@ describe("character presentation recommendations", () => {
     });
   });
 
-  it("falls back to the asset position while preserving an explicit fine scale", () => {
+  it("preserves explicit coordinates when a named position is not registered", () => {
     const transform = characterAssetTransform(
       document,
       "hero",
@@ -145,6 +145,48 @@ describe("character presentation recommendations", () => {
       "deleted-position",
     );
 
-    expect(transform).toMatchObject({ x: 50, y: 50, scale: 3 });
+    expect(transform).toMatchObject({
+      x: 4,
+      y: 99,
+      anchor: "center",
+      scale: 3,
+    });
+  });
+
+  it("matches export coordinates for performance-only position ids", () => {
+    expect(
+      characterAssetTransform(
+        document,
+        "hero",
+        {
+          x: 18,
+          y: 100,
+          anchor: "bottomCenter",
+          scale: 0.78,
+          brightness: 1,
+          opacity: 1,
+          flipX: false,
+          layer: 10,
+        },
+        "performance-left",
+      ),
+    ).toMatchObject({ x: 18, y: 100 });
+    expect(
+      characterAssetTransform(
+        document,
+        "hero",
+        {
+          x: 82,
+          y: 100,
+          anchor: "bottomCenter",
+          scale: 0.78,
+          brightness: 1,
+          opacity: 1,
+          flipX: true,
+          layer: 11,
+        },
+        "performance-right",
+      ),
+    ).toMatchObject({ x: 82, y: 100 });
   });
 });

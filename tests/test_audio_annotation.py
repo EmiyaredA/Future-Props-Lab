@@ -144,6 +144,7 @@ async def test_audio_annotation_project_document_waveform_and_asset_guard() -> N
                         "start_ms": 0,
                         "end_ms": 500,
                         "speaker_id": "speaker-host",
+                        "emotion": "  克制的兴奋  ",
                         "text": "大丈夫。",
                         "language": "ja",
                         "localized_texts": [
@@ -158,11 +159,32 @@ async def test_audio_annotation_project_document_waveform_and_asset_guard() -> N
         assert saved.status_code == 200, saved.text
         assert saved.json()["revision"] == 1
         assert saved.json()["segments"][0]["speaker_ids"] == ["speaker-host"]
+        assert saved.json()["segments"][0]["emotion"] == "克制的兴奋"
         assert saved.json()["segments"][0]["language"] == "ja"
         assert saved.json()["segments"][0]["localized_texts"] == [
             {"language": "zh", "text": "没问题。"},
             {"language": "en", "text": "Don't worry."},
         ]
+
+        invalid_emotion = await client.put(
+            f"/v1/audio-annotation/projects/{project['id']}/document",
+            json={
+                "expected_revision": saved.json()["revision"],
+                "schema_version": "1.0",
+                "speakers": [],
+                "segments": [
+                    {
+                        "id": "emotion-too-long",
+                        "start_ms": 0,
+                        "end_ms": 500,
+                        "emotion": "很" * 41,
+                        "text": "",
+                        "status": "draft",
+                    }
+                ],
+            },
+        )
+        assert invalid_emotion.status_code == 422
 
         conflict = await client.put(
             f"/v1/audio-annotation/projects/{project['id']}/document",
@@ -751,6 +773,7 @@ async def test_transcription_import_reuses_library_audio_and_handles_plain_text_
                 "end_ms": task_project["duration_ms"],
                 "speaker_id": None,
                 "speaker_ids": [],
+                "emotion": None,
                 "text": "只有完整转写。",
                 "language": None,
                 "localized_texts": [],

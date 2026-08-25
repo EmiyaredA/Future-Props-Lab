@@ -142,6 +142,9 @@ export function StoryPlayerView({ model }: { model: StoryPlayerViewModel }) {
     "1em",
     10,
   );
+  const dialogueOverlayBodyWidth =
+    Math.max(0, 100 - dialogueStyle.layout.contentInsetXPercent * 2) *
+    (dialogueStyle.body.maxWidthPercent / 100);
   const dialogueIndicatorVisible =
     dialogueStyle.advanceIndicator.visible &&
     (!exportMode || dialogueStyle.advanceIndicator.showInExport);
@@ -411,9 +414,9 @@ export function StoryPlayerView({ model }: { model: StoryPlayerViewModel }) {
               <Volume2 aria-hidden /> 点击启用声音
             </button>
           ) : null}
-          {stageScenes.map(({ key, state, layer, asset }, index) => (
+          {stageScenes.map(({ state, layer, asset }, index) => (
             <StoryAssetImage
-              key={`${key}:${state.sourceBlockId}:${layer.id}`}
+              key={`${state.sourceBlockId}:${layer.id}`}
               fileId={asset.fileId}
               alt=""
               className="galgame-player-background galgame-player-background-layer galgame-camera-plane"
@@ -502,6 +505,18 @@ export function StoryPlayerView({ model }: { model: StoryPlayerViewModel }) {
                 left: `${displayFrame.stage.floatingText.x}%`,
                 top: `${displayFrame.stage.floatingText.y}%`,
                 color: displayFrame.stage.floatingText.color,
+                width: "max-content",
+                maxWidth: "82%",
+                fontSize: "clamp(18px, 3cqw, 48px)",
+                fontWeight: 700,
+                lineHeight: 1.5,
+                textAlign: "center",
+                whiteSpace: "pre-line",
+                textShadow: "0 2px 12px rgb(0 0 0 / 0.75)",
+                animation:
+                  displayFrame.stage.floatingText.durationMs >= 5000
+                    ? "none"
+                    : undefined,
                 animationDuration: `${displayFrame.stage.floatingText.durationMs}ms`,
               }}
             >
@@ -737,7 +752,7 @@ export function StoryPlayerView({ model }: { model: StoryPlayerViewModel }) {
               });
             return (
               <div
-                key={`${key}:${state.cgId}:${state.variantId}`}
+                key={`${state.sourceBlockId}:${state.cgId}:${state.variantId}`}
                 className={`galgame-player-cg galgame-camera-plane${editable ? " is-editable" : ""}`}
                 data-camera-effect={
                   cameraTargets("cg") ? camera?.effect : undefined
@@ -1097,6 +1112,7 @@ export function StoryPlayerView({ model }: { model: StoryPlayerViewModel }) {
                   "--dialogue-inset-top": `${dialogueStyle.layout.contentInsetTopPercent}%`,
                   "--dialogue-inset-bottom": `${dialogueStyle.layout.contentInsetBottomPercent}%`,
                   "--dialogue-body-width": `${dialogueStyle.body.maxWidthPercent}%`,
+                  "--dialogue-overlay-body-width": `${dialogueOverlayBodyWidth}%`,
                   "--dialogue-body-font-size": dialogueBodyFontSize,
                   "--dialogue-name-font-size": dialogueNameFontSize,
                   "--dialogue-line-height": dialogueStyle.body.lineHeight,

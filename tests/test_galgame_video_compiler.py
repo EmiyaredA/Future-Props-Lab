@@ -3,7 +3,11 @@ from pathlib import Path
 
 from PIL import Image
 
-from app.galgame_workshop.video_compiler import compile_galgame_render_plan
+from app.galgame_workshop.video_compiler import (
+    FLOATING_TEXT_FONT_ASSET_ID,
+    compile_galgame_render_plan,
+)
+from app.galgame_workshop.video_dialogue import FONT_REGULAR
 from app.galgame_workshop.video_lip_sync import AudioEnvelope
 from app.video_editor.frames import render_plan_frame
 
@@ -136,6 +140,99 @@ def test_story_compiler_builds_layered_timeline_and_capture_frame() -> None:
     )
     voice_track = next(track for track in sequential.plan.document.tracks if track.name == "配音")
     assert voice_track.clips[0].duration_us == 5_400_000
+
+
+def test_long_floating_text_uses_bundled_chinese_font() -> None:
+    document = {
+        "assets": [],
+        "scenes": [],
+        "cgs": [],
+        "characters": [],
+        "presentation": {"dialogueBox": {}},
+        "chapters": [
+            {
+                "id": "chapter",
+                "fragments": [
+                    {
+                        "id": "main",
+                        "timeline": {"durationMs": 10_000},
+                        "blocks": [
+                            {
+                                "id": "declaration",
+                                "type": "floatingText",
+                                "atMs": 0,
+                                "text": "源剧情：自由粒子的逃逸\n本视频为自制版本",
+                                "durationMs": 10_000,
+                            }
+                        ],
+                    }
+                ],
+            }
+        ],
+    }
+
+    result = compile_galgame_render_plan(
+        document,
+        {"preset": "1080p30", "resolvedFragmentIds": ["main"]},
+        fragment_durations_ms=[10_000],
+        total_ms=10_000,
+        asset_paths={},
+    )
+
+    text_clip = next(
+        clip for track in result.plan.document.tracks for clip in track.clips if clip.kind == "text"
+    )
+    assert text_clip.font_asset_id == FLOATING_TEXT_FONT_ASSET_ID
+    assert text_clip.font_size == 34
+    assert text_clip.text_max_width == 1000
+    assert result.plan.asset_paths[FLOATING_TEXT_FONT_ASSET_ID] == FONT_REGULAR
+
+
+def test_clip_export_does_not_restore_expired_floating_text() -> None:
+    document = {
+        "assets": [],
+        "scenes": [],
+        "cgs": [],
+        "characters": [],
+        "presentation": {"dialogueBox": {}},
+        "chapters": [
+            {
+                "id": "chapter",
+                "fragments": [
+                    {
+                        "id": "main",
+                        "timeline": {"durationMs": 20_000},
+                        "blocks": [
+                            {
+                                "id": "declaration",
+                                "type": "floatingText",
+                                "atMs": 500,
+                                "text": "只在开头显示",
+                                "durationMs": 10_000,
+                            }
+                        ],
+                    }
+                ],
+            }
+        ],
+    }
+
+    result = compile_galgame_render_plan(
+        document,
+        {
+            "scope": "clip",
+            "clipRange": {"fragmentId": "main", "startMs": 12_000, "endMs": 15_000},
+            "preset": "1080p30",
+            "resolvedFragmentIds": ["main"],
+        },
+        fragment_durations_ms=[3_000],
+        total_ms=3_000,
+        asset_paths={},
+    )
+
+    assert not any(
+        clip.kind == "text" for track in result.plan.document.tracks for clip in track.clips
+    )
 
 
 def test_clip_export_restores_active_story_cg() -> None:

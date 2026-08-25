@@ -8,6 +8,11 @@
 这些文件由 Codex 内置图片生成能力根据官方截图中的布局与材质特征重新生成，不包含原游戏人物、
 场景、文字、图标、标识或商标。绿色底文件用于透明背景处理，最终 PNG 已裁去透明留白并调整透明度。
 
+## V8 广播剧补充素材（2026-08-25）
+
+- `opening-blackboard-v1.png`：ImageGen 生成的透明、无文字旧式深绿黑板，带木框与轻微粉笔灰；合成到 `20-full-cast-opening-v3.png` 中，中文声明仍由真实浮动文字渲染。
+- `okabe-main-phone-overlay-v1.png`：从本篇原作 `PHONE.png` 提取红色正面手机，并使用同一图集的蓝色菜单底图合成；全画布透明，手机位于右上侧，供时间轴滑入使用。
+
 ## 对话框底图
 
 - 当前绑定：`steins-inspired-dialogue-panel-v2.png`

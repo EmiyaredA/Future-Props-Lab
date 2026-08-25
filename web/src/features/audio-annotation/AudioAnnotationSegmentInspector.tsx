@@ -9,6 +9,7 @@ import {
   Users,
 } from "lucide-react";
 import { LanguageAnnotationEditor } from "./LanguageAnnotationEditor";
+import { AudioAnnotationEmotionField } from "./AudioAnnotationEmotionField";
 import {
   formatTimestamp,
   parseTimestamp,
@@ -265,6 +266,11 @@ export function AudioAnnotationSegmentInspector({
               </button>
             </div>
           </div>
+          <AudioAnnotationEmotionField
+            key={`${selected.id}-emotion`}
+            emotion={selected.emotion}
+            onChange={(emotion) => updateSelected({ emotion, status: "draft" })}
+          />
           <LanguageAnnotationEditor
             key={selected.id}
             segment={selected}

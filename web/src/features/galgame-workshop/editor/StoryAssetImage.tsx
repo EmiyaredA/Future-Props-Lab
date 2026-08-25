@@ -26,12 +26,11 @@ export function StoryAssetImage({
   const activeUrlRef = useRef("");
 
   useEffect(() => {
-    const previousUrl = activeUrlRef.current;
-    activeUrlRef.current = "";
-    setUrl("");
-    if (previousUrl) URL.revokeObjectURL(previousUrl);
-
     if (!fileId) {
+      const previousUrl = activeUrlRef.current;
+      activeUrlRef.current = "";
+      setUrl("");
+      if (previousUrl) URL.revokeObjectURL(previousUrl);
       return;
     }
     let active = true;
@@ -61,7 +60,9 @@ export function StoryAssetImage({
         preloader.src = nextUrl;
       })
       .catch(() => {
-        if (active) setUrl("");
+        // Keep the last decoded image visible when a replacement fails. The
+        // fallback is only shown when no image has ever loaded successfully.
+        if (active && !activeUrlRef.current) setUrl("");
       });
     return () => {
       active = false;

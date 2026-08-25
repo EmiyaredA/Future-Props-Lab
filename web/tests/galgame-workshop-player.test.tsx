@@ -1514,6 +1514,13 @@ test("renders the classic gradient dialogue preset with export-safe AUTO status"
   expect(dialogue.style.getPropertyValue("--dialogue-body-font-size")).toBe(
     "clamp(12px, 1.5625cqw, 30px)",
   );
+  const classicStyle = dialogueBoxPresetStyle("classicGradient");
+  const expectedOverlayWidth =
+    Math.max(0, 100 - classicStyle.layout.contentInsetXPercent * 2) *
+    (classicStyle.body.maxWidthPercent / 100);
+  expect(dialogue.style.getPropertyValue("--dialogue-overlay-body-width")).toBe(
+    `${expectedOverlayWidth}%`,
+  );
 });
 
 test("runs voice, persistent music, ambient and sound-effect channels and cleans them up", async () => {

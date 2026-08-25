@@ -91,7 +91,7 @@ export function AudioAnnotationExportDialog({
             <FileJson aria-hidden />
             <span>
               <strong>项目 JSON</strong>
-              <small>保留说话人、片段和校对状态，可重新导入。</small>
+              <small>保留说话人、情绪、片段和校对状态，可重新导入。</small>
             </span>
             <Download aria-hidden />
           </button>

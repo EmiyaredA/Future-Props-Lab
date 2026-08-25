@@ -126,25 +126,36 @@ export function EditorFastPreviewOverlay({
     range: NonNullable<EditorFastPreviewSession["playbackRange"]>,
   ) => void;
 }) {
+  const exactFrameDisabledReason = model.conflict
+    ? "存在版本冲突，解决后才能生成精确帧"
+    : model.saveState === "saving"
+      ? "故事仍在保存，保存完成后才能生成精确帧"
+      : model.saveState !== "saved"
+        ? "当前故事尚未成功保存"
+        : undefined;
+  const renderDisabledReason = model.conflict
+    ? "存在版本冲突，解决后才能渲染"
+    : model.saveState === "saving"
+      ? "故事仍在保存，保存完成后才能渲染"
+      : model.saveState !== "saved"
+        ? "当前故事尚未成功保存"
+        : undefined;
   return (
     <Suspense fallback={<div className="page-loading">正在启动快速预演…</div>}>
       <FastPreviewWorkspace
+        projectId={model.projectId}
+        storyRevision={model.revisionRef.current}
+        exactFrameDisabledReason={exactFrameDisabledReason}
         document={session.document}
         startCursor={session.startCursor}
         playbackRange={session.playbackRange}
-        renderDisabledReason={
-          model.conflict
-            ? "存在版本冲突，解决后才能渲染"
-            : model.saveState === "saving"
-              ? "故事仍在保存，保存完成后才能渲染"
-              : model.saveState !== "saved"
-                ? "当前故事尚未成功保存"
-                : undefined
-        }
+        renderDisabledReason={renderDisabledReason}
         onRenderRange={onRenderRange}
         onOpenWindow={() =>
           openFastPreviewWindow({
             projectId: model.projectId,
+            storyRevision: model.revisionRef.current,
+            exactFrameDisabledReason,
             document: session.document,
             startCursor: session.startCursor,
             playbackRange: session.playbackRange,

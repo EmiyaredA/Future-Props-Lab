@@ -24,7 +24,7 @@ from app.galgame_workshop.video_compiler_support import (
 )
 from app.galgame_workshop.video_compiler_support import timeline_clip as _clip
 from app.galgame_workshop.video_compiler_support import timeline_track as _track
-from app.galgame_workshop.video_dialogue import render_dialogue_layer
+from app.galgame_workshop.video_dialogue import FONT_REGULAR, render_dialogue_layer
 from app.galgame_workshop.video_lip_sync import (
     AudioEnvelope,
     LipSyncSchedule,
@@ -34,6 +34,7 @@ from app.schemas.video_editor import VideoEditorTimelineDocument
 from app.video_editor.render_plan import RenderCaptureFrame, RenderPlan
 
 COMPILER_VERSION = "galgame-render-plan-v3"
+FLOATING_TEXT_FONT_ASSET_ID = "galgame-floating-text-noto-sans-sc"
 
 
 @dataclass
@@ -60,7 +61,7 @@ class _Builder:
     ) -> None:
         self.document = document
         self.total_us = max(1, total_us)
-        self.asset_paths = asset_paths
+        self.asset_paths = {**asset_paths, FLOATING_TEXT_FONT_ASSET_ID: FONT_REGULAR}
         self.assets, self.logical_files = _asset_maps(document)
         self.characters = {item["id"]: item for item in document.get("characters", [])}
         self.scenes = {item["id"]: item for item in document.get("scenes", [])}
@@ -93,6 +94,9 @@ class _Builder:
         asset_id = clip.get("assetId")
         if asset_id:
             self.used.add(asset_id)
+        font_asset_id = clip.get("fontAssetId")
+        if font_asset_id:
+            self.used.add(font_asset_id)
 
     def next_id(self, prefix: str) -> str:
         self.counter += 1
@@ -594,8 +598,10 @@ def compile_galgame_render_plan(
                     )
             if action == "automatic" and block.get("type") == "floatingText":
                 start = max(bounded, local_start_ms)
-                duration = min(int(block.get("durationMs", 1500)), local_end_ms - start)
+                floating_end = bounded + int(block.get("durationMs", 1500))
+                duration = min(floating_end, local_end_ms) - start
                 if duration > 0:
+                    is_long_form = duration >= 5000 or len(str(block.get("text") or "")) >= 80
                     track = builder.track("effects-text", "视觉效果 · 浮动文字", 5)
                     clip = _clip(
                         builder.next_id("floating-text"),
@@ -605,7 +611,9 @@ def compile_galgame_render_plan(
                         offset_us + (start - local_start_ms) * 1000,
                         duration * 1000,
                         text=str(block.get("text") or "…"),
-                        fontSize=54,
+                        fontAssetId=FLOATING_TEXT_FONT_ASSET_ID,
+                        fontSize=34 if is_long_form else 54,
+                        textMaxWidth=1000 if is_long_form else None,
                         textColor=str(block.get("color") or "#ffffff"),
                     )
                     clip["transform"].update(

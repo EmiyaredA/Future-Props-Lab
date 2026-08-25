@@ -28,7 +28,7 @@
 }
 
 .annotation-segment-table {
-  min-width: 760px;
+  min-width: 850px;
   max-height: 360px;
   overflow: auto;
 }
@@ -37,7 +37,7 @@
 .annotation-segment-table > button {
   min-height: 48px;
   display: grid;
-  grid-template-columns: 54px 166px 112px 142px minmax(180px, 1fr) 72px;
+  grid-template-columns: 54px 156px 112px 86px 128px minmax(170px, 1fr) 72px;
   align-items: center;
   text-align: left;
 }
@@ -102,6 +102,10 @@
 .annotation-speaker-dots i + i {
   margin-left: -3px;
   box-shadow: 0 0 0 1px var(--surface);
+}
+
+.annotation-segment-emotion {
+  color: var(--muted);
 }
 
 .annotation-segment-table .draft,

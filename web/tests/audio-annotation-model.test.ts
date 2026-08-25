@@ -12,7 +12,6 @@ import {
   parseAudioAnnotationImportFile,
   parseProjectFile,
   parseTimestamp,
-  prepareTextOnlyAnnotationImport,
   sameSegmentSpeakers,
   segmentSpeakerIds,
   segmentLanguageCodes,
@@ -31,6 +30,7 @@ import {
   waveformFocusZoom,
   waveformViewport,
 } from "@features/audio-annotation/model";
+import { prepareTextOnlyAnnotationImport } from "@features/audio-annotation/annotationTextImport";
 import type {
   AudioAnnotationProject,
   AudioAnnotationSegment,
@@ -155,6 +155,7 @@ test("normalizes legacy and multiple speaker assignments", () => {
 test("collects and searches every language version of one audio segment", () => {
   const multilingual = {
     ...segments[0]!,
+    emotion: "紧张",
     language: "ja",
     text: "大丈夫。",
     localized_texts: [
@@ -220,6 +221,7 @@ test("imports only annotation text when the segment structure is unchanged", () 
     segments: segments.map((segment) => ({
       ...segment,
       text: "新日文",
+      emotion: "克制的兴奋",
       language: "ja",
       localized_texts: [{ language: "zh", text: "新中文" }],
       status: "draft",
@@ -232,6 +234,7 @@ test("imports only annotation text when the segment structure is unchanged", () 
     end_ms: 1_000,
     speaker_id: "host",
     text: "新日文",
+    emotion: "克制的兴奋",
     language: "ja",
     localized_texts: [{ language: "zh", text: "新中文" }],
     status: "draft",
@@ -290,6 +293,7 @@ test("duplicates a time range for assigning another overlapping speaker", () => 
       id: "overlap",
       speaker_id: null,
       speaker_ids: [],
+      emotion: null,
       text: "",
       status: "draft",
     },

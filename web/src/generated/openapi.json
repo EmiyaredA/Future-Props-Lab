@@ -723,6 +723,18 @@
       },
       "AudioAnnotationSegment": {
         "properties": {
+          "emotion": {
+            "anyOf": [
+              {
+                "maxLength": 40,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Emotion"
+          },
           "end_ms": {
             "exclusiveMinimum": 0.0,
             "title": "End Ms",

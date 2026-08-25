@@ -227,9 +227,6 @@
   position: absolute;
   z-index: 39;
   transform: translate(-50%, -50%);
-  font-size: clamp(18px, 3cqw, 48px);
-  font-weight: 700;
-  text-shadow: 0 2px 12px rgb(0 0 0 / 0.75);
   animation: galgame-floating-text both ease-out;
   pointer-events: none;
 }

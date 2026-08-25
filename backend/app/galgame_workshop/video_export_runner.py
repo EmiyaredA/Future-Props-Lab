@@ -69,6 +69,20 @@ def _probe_video(path: Path) -> dict[str, Any]:
     return json.loads(result.stdout)
 
 
+def _recover_interrupted_task(row: GalgameVideoExportTask) -> None:
+    if row.cancel_requested:
+        row.status = "cancelled"
+        row.progress = 0
+        row.result_detail = {**(row.result_detail or {}), "phase": "cancelled"}
+        row.finished_at = utc_now()
+    else:
+        row.status = "queued"
+        row.error = None
+        row.result_detail = {**(row.result_detail or {}), "phase": "queued"}
+    row.revision += 1
+    row.updated_at = utc_now()
+
+
 class GalgameVideoExportRunner(PollingGenerationRunner):
     runner_name = "galgame-video-export-runner"
     poll_interval_seconds = 1.0
@@ -95,12 +109,7 @@ class GalgameVideoExportRunner(PollingGenerationRunner):
                 ).scalars()
             )
             for row in rows:
-                row.status = "queued"
-                row.cancel_requested = False
-                row.error = None
-                row.result_detail = {**(row.result_detail or {}), "phase": "queued"}
-                row.revision += 1
-                row.updated_at = utc_now()
+                _recover_interrupted_task(row)
             await session.commit()
 
     async def process_once(self) -> None:

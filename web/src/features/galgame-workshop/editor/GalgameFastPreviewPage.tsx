@@ -37,6 +37,7 @@ export function GalgameFastPreviewPage({ projectId }: { projectId: string }) {
           document: saved.document,
           startCursor: fallbackCursor(saved.document),
           source: "launch",
+          storyRevision: saved.revision,
         });
         setNotice("编辑器未连接，正在预演服务器已保存版本");
       } catch {
@@ -76,6 +77,9 @@ export function GalgameFastPreviewPage({ projectId }: { projectId: string }) {
     <FastPreviewWorkspace
       key={`${session.source}-${session.document.schemaVersion}-${notice}`}
       document={session.document}
+      projectId={projectId}
+      storyRevision={session.storyRevision}
+      exactFrameDisabledReason={session.exactFrameDisabledReason}
       startCursor={session.startCursor}
       playbackRange={session.playbackRange}
       sourceNotice={notice}

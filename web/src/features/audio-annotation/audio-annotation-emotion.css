@@ -1,0 +1,136 @@
+.annotation-emotion-field > span {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.annotation-emotion-field > span small {
+  color: var(--faint);
+  font-size: 9px;
+  font-weight: 500;
+}
+
+.annotation-emotion-options {
+  padding: 5px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-soft);
+}
+
+.annotation-emotion-options button {
+  min-height: 28px;
+  padding: 4px 7px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.annotation-emotion-options button:hover {
+  border-color: var(--border-strong);
+  background: var(--surface-hover);
+  color: var(--text);
+}
+
+.annotation-emotion-options button.selected {
+  border-color: var(--accent-line);
+  background: var(--accent-soft);
+  color: var(--text-strong);
+}
+
+.annotation-emotion-options button:focus-visible,
+.annotation-emotion-custom input:focus-visible,
+.annotation-emotion-custom button:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.annotation-emotion-options i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--emotion-color, var(--faint));
+}
+
+.annotation-emotion-options svg {
+  width: 12px;
+}
+
+.annotation-emotion-options .calm {
+  --emotion-color: #61a5c2;
+}
+
+.annotation-emotion-options .happy {
+  --emotion-color: #e7a72f;
+}
+
+.annotation-emotion-options .sad {
+  --emotion-color: #7586e5;
+}
+
+.annotation-emotion-options .angry {
+  --emotion-color: #e2645a;
+}
+
+.annotation-emotion-options .surprised {
+  --emotion-color: #b873d1;
+}
+
+.annotation-emotion-options .fearful {
+  --emotion-color: #7f8d86;
+}
+
+.annotation-emotion-custom {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 6px;
+}
+
+.annotation-emotion-custom input {
+  min-width: 0;
+  min-height: 34px;
+  padding: 0 9px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  outline: 0;
+  background: var(--surface-soft);
+  color: var(--text);
+  font-size: 11px;
+}
+
+.annotation-emotion-custom.selected input {
+  border-color: var(--accent-line);
+}
+
+.annotation-emotion-custom button {
+  min-height: 34px;
+  padding: 0 9px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--surface-soft);
+  color: var(--text);
+  font-size: 10px;
+}
+
+.annotation-emotion-custom button:not(:disabled):hover {
+  border-color: var(--accent-line);
+  color: var(--accent);
+}
+
+.annotation-emotion-custom button:disabled {
+  opacity: 0.48;
+}
+
+.annotation-emotion-custom svg {
+  width: 12px;
+}

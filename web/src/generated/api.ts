@@ -3148,6 +3148,8 @@ export interface components {
         };
         /** AudioAnnotationSegment */
         AudioAnnotationSegment: {
+            /** Emotion */
+            emotion?: string | null;
             /** End Ms */
             end_ms: number;
             /** Id */

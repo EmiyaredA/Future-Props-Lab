@@ -151,19 +151,21 @@ export function characterAssetTransform(
   positionId?: string | null,
 ): Required<GalgameStoryCharacterTransform> {
   const stageSettings = characterStageSettings(document, characterId);
-  const defaultPosition =
-    stageSettings.positionPresets.find(
-      (preset) => preset.id === (positionId ?? stageSettings.defaultPositionId),
-    ) ??
-    stageSettings.positionPresets.find(
-      (preset) => preset.id === stageSettings.defaultPositionId,
-    ) ??
-    stageSettings.positionPresets[0];
+  const requestedPositionId = positionId ?? stageSettings.defaultPositionId;
+  const requestedPosition = stageSettings.positionPresets.find(
+    (preset) => preset.id === requestedPositionId,
+  );
+  const builtinX =
+    requestedPositionId === "left"
+      ? 25
+      : requestedPositionId === "right"
+        ? 75
+        : 50;
   return {
     ...characterTransform(value),
-    x: defaultPosition?.x ?? 50,
-    y: defaultPosition?.y ?? 50,
-    anchor: stageSettings.anchor,
+    x: requestedPosition?.x ?? value?.x ?? builtinX,
+    y: requestedPosition?.y ?? value?.y ?? 100,
+    anchor: value?.anchor ?? stageSettings.anchor,
     scale: value?.scale ?? stageSettings.legacyDefaultScale ?? 1,
   };
 }

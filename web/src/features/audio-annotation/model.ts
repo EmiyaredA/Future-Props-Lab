@@ -221,56 +221,6 @@ export function segmentEditorVersion(
     : PRIMARY_DISPLAY_LANGUAGE;
 }
 
-export function prepareTextOnlyAnnotationImport(
-  current: AnnotationSnapshot,
-  payload: unknown,
-): AnnotationSnapshot {
-  if (!payload || typeof payload !== "object")
-    throw new Error("JSON 内容不是有效的标注项目");
-  const imported = payload as Partial<AnnotationSnapshot>;
-  if (imported.schema_version !== "1.0" || !Array.isArray(imported.segments))
-    throw new Error("JSON 缺少有效的 1.0 标注文档");
-  if (imported.segments.length !== current.segments.length)
-    throw new Error("片段数量与当前项目不一致");
-
-  const segments = current.segments.map((segment, index) => {
-    const incoming = imported.segments![index];
-    if (
-      !incoming ||
-      incoming.id !== segment.id ||
-      incoming.start_ms !== segment.start_ms ||
-      incoming.end_ms !== segment.end_ms ||
-      !sameSegmentSpeakers(incoming, segment)
-    )
-      throw new Error(`片段 ${index + 1} 的结构与当前项目不一致`);
-    const localizedTexts = incoming.localized_texts ?? [];
-    const languages = localizedTexts.map((item) => item.language);
-    if (
-      languages.length !== new Set(languages).size ||
-      localizedTexts.some(
-        (item) =>
-          typeof item.language !== "string" || typeof item.text !== "string",
-      )
-    )
-      throw new Error(`片段 ${index + 1} 包含无效或重复的语言版本`);
-    if (
-      typeof incoming.text !== "string" ||
-      (incoming.language !== null && typeof incoming.language !== "string") ||
-      !["draft", "reviewed"].includes(incoming.status)
-    )
-      throw new Error(`片段 ${index + 1} 的文本字段无效`);
-    return {
-      ...segment,
-      text: incoming.text,
-      language: incoming.language,
-      localized_texts: localizedTexts,
-      status: incoming.status,
-    };
-  });
-
-  return { schema_version: "1.0", speakers: current.speakers, segments };
-}
-
 const TRANSCRIPTION_LANGUAGE_ALIASES: Record<string, string[]> = {
   zh: ["zh", "chinese"],
   en: ["en", "english"],
@@ -506,6 +456,7 @@ export function duplicateSegmentForOverlap(
       ...selected,
       id: createId(),
       ...speakerAssignment([]),
+      emotion: null,
       text: "",
       language: selected.language,
       localized_texts: [],

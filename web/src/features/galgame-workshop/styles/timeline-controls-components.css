@@ -1,12 +1,14 @@
 .galgame-dialogue-box.layout-bottomOverlay .galgame-dialogue-body {
   position: absolute;
-  top: var(--dialogue-inset-top, 0%);
-  left: var(--dialogue-inset-x, 0%);
+  top: var(--dialogue-inset-top, 0);
+  left: var(--dialogue-inset-x, 0);
+  width: var(--dialogue-overlay-body-width, 100%);
+  max-width: calc(100% - var(--dialogue-inset-x, 0) * 2);
 }
 
 .galgame-dialogue-box.layout-bottomOverlay.body-center .galgame-dialogue-body {
-  right: var(--dialogue-inset-x, 0%);
-  left: var(--dialogue-inset-x, 0%);
+  left: 50%;
+  transform: translateX(-50%);
 }
 
 .galgame-dialogue-box.layout-bottomOverlay.body-right .galgame-dialogue-body {
