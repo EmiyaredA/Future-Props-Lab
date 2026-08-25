@@ -16,14 +16,18 @@ from dotenv import dotenv_values
 
 try:
     from scripts.galgame_runaway_cues import (
-        CG_SPECS,
+        CG_ASSETS,
+        CG_EVENT_STARTS,
+        CG_EVENTS,
         DISTANCE_SCALES,
         SAFE_CLOSEUP_DIALOGUE_IDS,
         TOP_SAFE_PERCENT,
     )
 except ModuleNotFoundError:
     from galgame_runaway_cues import (  # type: ignore[no-redef]
-        CG_SPECS,
+        CG_ASSETS,
+        CG_EVENT_STARTS,
+        CG_EVENTS,
         DISTANCE_SCALES,
         SAFE_CLOSEUP_DIALOGUE_IDS,
         TOP_SAFE_PERCENT,
@@ -32,14 +36,18 @@ except ModuleNotFoundError:
 REPO_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_PROJECT_ID = "63ac832d-bff3-4053-9c9f-f55c9dafc52a"
 DEFAULT_SOURCE_ROOT = Path("/Users/tonghao/Projects/steins-gate-video/assets/games/steins_gate_0")
-DEFAULT_ANNOTATION_PATH = Path("/Users/tonghao/Downloads/广播剧.annotation (6).json")
+DEFAULT_ANNOTATION_PATH = Path("/Users/tonghao/Downloads/广播剧.annotation (7).json")
 BACKUP_ROOT = REPO_ROOT / ".runtime" / "galgame-import-backups"
 MAP_PATH = BACKUP_ROOT / "sg0-performance-asset-map.json"
 IMAGE_SUFFIXES = {".png", ".jpg", ".jpeg", ".webp"}
 LIP_SYNC_FPS = 10
-EXPECTED_ANNOTATION_TEXT_CHANGES = 189
-EXPECTED_ANNOTATION_SPEAKER_CHANGES = 10
+EXPECTED_ANNOTATION_SHA256 = "eb177fd3a3d080f70104bc55f461aae5795a69dd7483a042503417c0b77d1514"
 EXPECTED_ANNOTATION_MULTI_SPEAKER_LINES = 12
+GROUP_CG_DIALOGUE_IDS = frozenset(
+    f"runaway-annotated-line-{line:04d}"
+    for line in (85, 88, 109, 117, 169, 213, 230, 257, 322, 324, 377, 426, 463, 511)
+)
+Q_OVERLAY_DIALOGUE_IDS = frozenset({"runaway-annotated-line-0001", "runaway-annotated-line-0002"})
 MOTION_SAFE_PERCENT = 4.0
 STAGE_BOTTOM_PERCENT = 100.0
 EXPRESSION_CUES_PATH = REPO_ROOT / "scripts" / "galgame_runaway_expression_cues.json"
@@ -56,11 +64,8 @@ LIBRARY_GROUPS = (
 CURATED_SCENES = (
     ("BG03A1", "实验室日常", 1.0),
     ("BG03A2", "实验室设备亮起", 0.9),
-    ("BG03A3", "凌乱的实验室", 1.1),
     ("BG03A4", "实验室整理中", 0.95),
     ("BG03A5", "实验室另一角度", 1.15),
-    ("BG11A2", "屋顶与时间机器", 1.0),
-    ("BG11A3", "空旷屋顶", 1.12),
     ("BG11A7", "时间机器舱门开启", 0.92),
     ("BG11A8", "时间机器登舱梯", 1.05),
 )
@@ -80,16 +85,16 @@ SCENE_BEATS = (
     (0, "BG03A1"),
     (28_000, "BG03A2"),
     (151_754, "BG03A5"),
-    (260_255, "BG03A3"),
+    (260_255, "BG03A4"),
     (373_608, "BG11A7"),
     (653_198, "BG11A7_TWO"),
     (687_072, "BG03A1"),
     (970_000, "BG03A2"),
     (1_188_000, "BG03A5"),
     (1_300_000, "BG03A4"),
-    (1_364_000, "BG03A3"),
+    (1_364_000, "BG03A1"),
     (1_604_000, "BG11A7"),
-    (1_680_000, "BG11A3"),
+    (1_680_000, "BG11A8"),
     (1_682_974, "BG03A5"),
 )
 
@@ -101,6 +106,12 @@ SUZUHA_VARIANTS = {
     "strict": ("SUZ_HSE", "001"),
     "relieved": ("SUZ_HSE", "006"),
 }
+SUZUHA_CROP_ROOT = REPO_ROOT / "docs/assets/galgame-runaway-portraits/suzuha-half-v1"
+
+
+def suzuha_crop_entry(pose: str, variant: str, mouth: int) -> tuple[Path, str]:
+    filename = f"{pose}-{variant}-{mouth:03d}.png"
+    return SUZUHA_CROP_ROOT / filename, f"project-portraits/suzuha-half-v1/{filename}"
 
 
 class ApiError(RuntimeError):
@@ -137,6 +148,13 @@ def sha256(path: Path) -> str:
         while chunk := source.read(1024 * 1024):
             digest.update(chunk)
     return digest.hexdigest()
+
+
+def png_dimensions(path: Path) -> tuple[int, int]:
+    header = path.read_bytes()[:24]
+    if header[:8] != b"\x89PNG\r\n\x1a\n" or len(header) < 24:
+        raise RuntimeError(f"不是可识别的 PNG 素材：{path}")
+    return int.from_bytes(header[16:20], "big"), int.from_bytes(header[20:24], "big")
 
 
 def request_json(
@@ -176,16 +194,11 @@ def source_entries(source_root: Path) -> list[dict[str, Any]]:
         )
     for pose, variant in SUZUHA_VARIANTS.values():
         for mouth in range(3):
-            path = (
-                source_root
-                / "characters/amane_suzuha/sprites/variants"
-                / pose
-                / f"type_40_depends_{variant}_{mouth:03d}.png"
-            )
+            path, relative = suzuha_crop_entry(pose, variant, mouth)
             entries.append(
                 {
                     "path": path,
-                    "relative": path.relative_to(source_root).as_posix(),
+                    "relative": relative,
                     "category": "character",
                 }
             )
@@ -195,7 +208,7 @@ def source_entries(source_root: Path) -> list[dict[str, Any]]:
             "relative": spec["relative"],
             "category": "cg",
         }
-        for spec in CG_SPECS
+        for spec in CG_ASSETS
     )
     entries.extend(
         {
@@ -409,7 +422,7 @@ def ensure_story_image_asset(
     assets.append(replacement)
 
 
-def upgrade_suzuha(document: dict[str, Any], mapping: dict[str, Any], source_root: Path) -> str:
+def upgrade_suzuha(document: dict[str, Any], mapping: dict[str, Any]) -> str:
     suzuha = find_character(document, ("铃羽", "鈴羽", "玲羽", "Suzuha"))
     expressions = suzuha.get("expressions", [])
     if len(expressions) < 6:
@@ -419,18 +432,12 @@ def upgrade_suzuha(document: dict[str, Any], mapping: dict[str, Any], source_roo
         pose, variant = SUZUHA_VARIANTS[semantic]
         frame_assets: list[str] = []
         for mouth in range(3):
-            source = (
-                source_root
-                / "characters/amane_suzuha/sprites/variants"
-                / pose
-                / f"type_40_depends_{variant}_{mouth:03d}.png"
-            )
-            relative = source.relative_to(source_root).as_posix()
+            _source, relative = suzuha_crop_entry(pose, variant, mouth)
             record = mapping["items"].get(relative)
             if not record:
                 raise RuntimeError(f"铃羽素材尚未上传：{relative}")
             normalized_pose = pose.lower().replace("_", "-")
-            story_asset_id = f"sg0-suz-{normalized_pose}-{variant}-{mouth}"
+            story_asset_id = f"sg0-suz-half-v1-{normalized_pose}-{variant}-{mouth}"
             ensure_story_image_asset(
                 document, story_asset_id, "characterPortrait", record["assetId"]
             )
@@ -469,6 +476,7 @@ def enlarge_dialogue_text(document: dict[str, Any]) -> None:
     body = dialogue_box.setdefault("body", {})
     body["fontSizePx"] = 34
     body["lineHeight"] = 1.5
+    body["maxWidthPercent"] = 100
 
 
 def install_curated_scenes(document: dict[str, Any], mapping: dict[str, Any]) -> None:
@@ -521,7 +529,8 @@ def install_curated_scenes(document: dict[str, Any], mapping: dict[str, Any]) ->
 def install_cgs(document: dict[str, Any], mapping: dict[str, Any]) -> None:
     cgs = document.setdefault("cgs", [])
     cg_by_id = {cg["id"]: index for index, cg in enumerate(cgs)}
-    for spec in CG_SPECS:
+    asset_by_key = {spec["key"]: spec for spec in CG_ASSETS}
+    for spec in CG_ASSETS:
         record = mapping.get("items", {}).get(spec["relative"])
         if not record:
             raise RuntimeError(f"CG 素材尚未上传：{spec['relative']}")
@@ -555,33 +564,28 @@ def install_cgs(document: dict[str, Any], mapping: dict[str, Any]) -> None:
         )
     ]
     cg_events: list[dict[str, Any]] = []
-    for spec in CG_SPECS:
-        transition = {"durationMs": spec["transitionMs"], "fade": True}
+    for event in CG_EVENTS:
+        spec = asset_by_key[event["assetKey"]]
+        transition = {"durationMs": event["transitionMs"], "fade": True}
         cg_events.append(
             {
-                "id": f"runaway-cg-show-{spec['key']}",
+                "id": f"runaway-cg-show-{event['key']}",
                 "type": "showCg",
-                "atMs": spec["startMs"],
+                "atMs": event["startMs"],
                 "cgId": spec["cgId"],
                 "variantId": spec["variantId"],
-                "displayMode": "fullscreen",
-                "fit": "cover",
-                "overlay": {
-                    "x": 50,
-                    "y": 50,
-                    "width": 60,
-                    "opacity": 1,
-                    "placement": "frontOfCharacters",
-                },
+                "displayMode": event["displayMode"],
+                "fit": event["fit"],
+                "overlay": event["overlay"],
                 "transition": transition,
             }
         )
-        if spec["endMs"] is not None:
+        if event["endMs"] is not None:
             cg_events.append(
                 {
-                    "id": f"runaway-cg-hide-{spec['key']}",
+                    "id": f"runaway-cg-hide-{event['key']}",
                     "type": "hideCg",
-                    "atMs": spec["endMs"],
+                    "atMs": event["endMs"],
                     "transition": transition,
                 }
             )
@@ -639,7 +643,7 @@ def annotation_character_map(
         "桥田至": find_character(document, ("桥田至",))["id"],
         "菲莉丝·喵喵": find_character(document, ("菲莉丝",))["id"],
         "阿万音铃羽": find_character(document, ("阿万音铃羽",))["id"],
-        "幼年篝": find_character(document, ("幼年篝",))["id"],
+        "幼年篝": find_character(document, ("幼年篝", "冈部篝"))["id"],
         "漆原琉华": find_character(document, ("漆原琉华",))["id"],
         "比屋定真帆": find_character(document, ("比屋定真帆",))["id"],
         "桐生萌郁": find_character(document, ("桐生萌郁",))["id"],
@@ -655,6 +659,9 @@ def annotation_character_map(
 def apply_annotation(document: dict[str, Any], annotation_path: Path) -> dict[str, Any]:
     if not annotation_path.is_file():
         raise RuntimeError(f"新版对白标注不存在：{annotation_path}")
+    annotation_sha256 = sha256(annotation_path)
+    if annotation_sha256 != EXPECTED_ANNOTATION_SHA256:
+        raise RuntimeError(f"新版对白标注校验和不匹配：{annotation_sha256}")
     annotation = json.loads(annotation_path.read_text(encoding="utf-8"))
     segments = annotation.get("segments", [])
     if len(segments) != 514:
@@ -700,15 +707,69 @@ def apply_annotation(document: dict[str, Any], annotation_path: Path) -> dict[st
         raise RuntimeError("新版对白没有完整覆盖现有 514 个对白 Block")
     return {
         "path": str(annotation_path),
-        "sha256": sha256(annotation_path),
+        "sha256": annotation_sha256,
         "changedTextCount": changed_text_count,
         "changedSpeakerCount": changed_speaker_count,
         "multiSpeakerCount": multi_speaker_count,
-        "expectedChangedTextCount": EXPECTED_ANNOTATION_TEXT_CHANGES,
-        "expectedChangedSpeakerCount": EXPECTED_ANNOTATION_SPEAKER_CHANGES,
         "expectedMultiSpeakerCount": EXPECTED_ANNOTATION_MULTI_SPEAKER_LINES,
         "expectedDialogueSignature": expected,
     }
+
+
+def ensure_literal_display_name(
+    character: dict[str, Any], display_name_id: str, value: str
+) -> None:
+    display_names = character.setdefault("displayNames", [])
+    replacement = {
+        "id": display_name_id,
+        "label": value,
+        "source": "literal",
+        "value": value,
+    }
+    for index, current in enumerate(display_names):
+        if current.get("id") == display_name_id:
+            display_names[index] = replacement
+            return
+    display_names.append(replacement)
+
+
+def configure_dialogue_display_names(document: dict[str, Any]) -> None:
+    fragment = target_fragment(document)
+    dialogues = {
+        block["id"]: block
+        for block in fragment.get("blocks", [])
+        if block.get("type") == "dialogue"
+    }
+    character_by_id = {character["id"]: character for character in document.get("characters", [])}
+    kagari = find_character(document, ("幼年篝", "冈部篝"))
+    kagari["name"] = "冈部篝"
+    unknown_name_id = "runaway-kagari-unknown"
+    ensure_literal_display_name(kagari, unknown_name_id, "红发小女孩")
+
+    for line in range(1, 515):
+        dialogue = dialogues[f"runaway-annotated-line-{line:04d}"]
+        if dialogue.get("characterId") == kagari["id"] and line <= 116:
+            dialogue["displayNameId"] = unknown_name_id
+        elif dialogue.get("characterId") == kagari["id"]:
+            dialogue.pop("displayNameId", None)
+
+    ensemble_name_id = "runaway-ensemble-name"
+    for dialogue in dialogues.values():
+        speaker_ids = dialogue.get("speakerIds") or []
+        if len(speaker_ids) > 3:
+            character = character_by_id[dialogue["characterId"]]
+            ensure_literal_display_name(character, ensemble_name_id, "众人")
+            dialogue["displayNameId"] = ensemble_name_id
+
+    for line, value in (
+        (377, "冈部伦太郎、桥田至"),
+        (463, "阿万音铃羽、比屋定真帆"),
+    ):
+        dialogue = dialogues[f"runaway-annotated-line-{line:04d}"]
+        display_name_id = f"runaway-pair-name-{line}"
+        character = character_by_id[dialogue["characterId"]]
+        ensure_literal_display_name(character, display_name_id, value)
+        dialogue["displayNameId"] = display_name_id
 
 
 def target_fragment(document: dict[str, Any]) -> dict[str, Any]:
@@ -752,11 +813,11 @@ def cast_member(
 ) -> dict[str, Any]:
     curated_positions = {
         1: (("performance-center", 50),),
-        2: (("performance-left", 30), ("performance-right", 70)),
+        2: (("performance-left", 24), ("performance-right", 76)),
         3: (
-            ("performance-outer-left", 18),
+            ("performance-outer-left", 14),
             ("performance-center", 50),
-            ("performance-outer-right", 82),
+            ("performance-outer-right", 86),
         ),
     }
     if count <= 3:
@@ -773,13 +834,13 @@ def cast_member(
         "near"
         if count == 1 and dialogue_id in SAFE_CLOSEUP_DIALOGUE_IDS
         else "far"
-        if count >= 4 or (count > 1 and index > 0)
+        if count > 1
         else "medium"
     )
     height = portrait_height_percent(document, character_id, expression_id)
     effective_height = height * DISTANCE_SCALES[distance]
     available_height = STAGE_BOTTOM_PERCENT - TOP_SAFE_PERCENT - MOTION_SAFE_PERCENT
-    equal_row_scale_caps = {4: 0.72, 5: 0.62, 6: 0.54, 7: 0.47, 8: 0.42}
+    equal_row_scale_caps = {2: 0.82, 3: 0.62, 4: 0.72, 5: 0.62, 6: 0.54, 7: 0.47, 8: 0.42}
     scale_cap = equal_row_scale_caps.get(count, 1.0)
     scale = floor(min(scale_cap, available_height / effective_height) * 1000) / 1000
     if scale < 0.25:
@@ -810,6 +871,8 @@ def visible_cast_for_dialogue(
     visible_character_ids: set[str],
 ) -> list[str]:
     current = dialogues[index]
+    if current["id"] in Q_OVERLAY_DIALOGUE_IDS:
+        return []
     if current["id"] in SAFE_CLOSEUP_DIALOGUE_IDS:
         return (
             [current["characterId"]] if current.get("characterId") in visible_character_ids else []
@@ -821,7 +884,7 @@ def visible_cast_for_dialogue(
         if speaker and speaker != first_person_id and speaker in visible_character_ids
     ]
     if explicit_group:
-        return list(dict.fromkeys(speakers))[:8]
+        return []
     if current.get("characterId") not in visible_character_ids:
         return []
     previous = dialogues[index - 1] if index else None
@@ -880,6 +943,7 @@ def install_performance_blocks(document: dict[str, Any], first_person_id: str) -
         for character in document.get("characters", [])
         if character.get("expressions") and character["id"] != first_person_id
     }
+    group_character_id = find_character(document, ("众人",))["id"]
     removed_types = {
         "scene",
         "showCharacter",
@@ -903,8 +967,8 @@ def install_performance_blocks(document: dict[str, Any], first_person_id: str) -
                 "sceneId": f"sg0-{scene_code.lower().replace('_', '-')}",
                 "clearCharacters": True,
                 "transition": {
-                    "durationMs": 0 if beat_index == 0 else 350,
-                    "fade": beat_index != 0,
+                    "durationMs": 0 if beat_index == 0 or at_ms in CG_EVENT_STARTS else 350,
+                    "fade": beat_index != 0 and at_ms not in CG_EVENT_STARTS,
                 },
             }
         )
@@ -959,10 +1023,12 @@ def install_performance_blocks(document: dict[str, Any], first_person_id: str) -
                 )
             )
         explicit_group = len(dialogue.get("speakerIds") or []) > 1
+        group_dialogue = explicit_group or dialogue.get("characterId") == group_character_id
+        cg_hidden_dialogue = group_dialogue or dialogue["id"] in Q_OVERLAY_DIALOGUE_IDS
         intentional_exchange = len(visible_ids) > 1 and cue_index % 3 == 0
         requires_composition = (
             dialogue["characterId"] not in visible_character_ids
-            or explicit_group
+            or cg_hidden_dialogue
             or intentional_exchange
             or dialogue["id"] in SAFE_CLOSEUP_DIALOGUE_IDS
         )
@@ -977,7 +1043,7 @@ def install_performance_blocks(document: dict[str, Any], first_person_id: str) -
                 }
             )
 
-        if dialogue["characterId"] not in visible_character_ids:
+        if dialogue["characterId"] not in visible_character_ids or cg_hidden_dialogue:
             dialogue["portrait"] = {
                 "mode": "stage",
                 "visible": False,
@@ -1129,13 +1195,26 @@ def audit_document(
         for character_id, character in character_by_id.items()
         if character.get("expressions") and character_id != first_person_id
     }
-    visible_dialogues = [
+    expression_dialogues = [
         dialogue for dialogue in dialogues if dialogue.get("characterId") in visible_character_ids
+    ]
+    group_dialogues = [
+        dialogue for dialogue in dialogues if dialogue["id"] in GROUP_CG_DIALOGUE_IDS
+    ]
+    q_overlay_dialogues = [
+        dialogue for dialogue in dialogues if dialogue["id"] in Q_OVERLAY_DIALOGUE_IDS
+    ]
+    visually_hidden_dialogue_ids = GROUP_CG_DIALOGUE_IDS | Q_OVERLAY_DIALOGUE_IDS
+    visible_dialogues = [
+        dialogue
+        for dialogue in expression_dialogues
+        if dialogue["id"] not in visually_hidden_dialogue_ids
     ]
     hidden_dialogues = [
         dialogue
         for dialogue in dialogues
         if dialogue.get("characterId") not in visible_character_ids
+        and dialogue["id"] not in visually_hidden_dialogue_ids
     ]
     expression_ids = {
         character_id: {expression["id"] for expression in character.get("expressions", [])}
@@ -1143,7 +1222,7 @@ def audit_document(
     }
     invalid_expression_dialogues = [
         dialogue["id"]
-        for dialogue in visible_dialogues
+        for dialogue in expression_dialogues
         if dialogue.get("expressionId") not in expression_ids.get(dialogue["characterId"], set())
         or DIALOGUE_EXPRESSION_CUES.get(dialogue["id"]) != dialogue.get("expressionId")
     ]
@@ -1155,6 +1234,16 @@ def audit_document(
     hidden_visible_portraits = [
         dialogue["id"]
         for dialogue in hidden_dialogues
+        if dialogue.get("portrait", {}).get("visible")
+    ]
+    group_visible_portraits = [
+        dialogue["id"]
+        for dialogue in group_dialogues
+        if dialogue.get("portrait", {}).get("visible")
+    ]
+    q_overlay_visible_portraits = [
+        dialogue["id"]
+        for dialogue in q_overlay_dialogues
         if dialogue.get("portrait", {}).get("visible")
     ]
     cast_block_by_id = {block["id"]: block for block in cast_blocks}
@@ -1238,12 +1327,12 @@ def audit_document(
     hide_cg_blocks = [
         block for block in fragment.get("blocks", []) if block.get("type") == "hideCg"
     ]
-    managed_cg_ids = {spec["cgId"] for spec in CG_SPECS}
+    managed_cg_ids = {spec["cgId"] for spec in CG_ASSETS}
     cg_event_ids = [block["id"] for block in [*show_cg_blocks, *hide_cg_blocks]]
     cg_intervals = sorted(
-        (spec["startMs"], spec["endMs"], spec["key"])
-        for spec in CG_SPECS
-        if spec["endMs"] is not None and not spec["key"].startswith("q-")
+        (event["startMs"], event["endMs"], event["key"])
+        for event in CG_EVENTS
+        if event["endMs"] is not None and not event["key"].startswith("q-")
     )
     cg_overlaps = [
         (left[2], right[2])
@@ -1261,7 +1350,7 @@ def audit_document(
             "cg": spec["key"],
         }
         for block in scene_blocks
-        for spec in CG_SPECS
+        for spec in CG_EVENTS
         if spec["endMs"] is not None and spec["startMs"] < block["atMs"] < spec["endMs"]
     ]
     character_fades = [
@@ -1279,20 +1368,46 @@ def audit_document(
         for dialogue in dialogues
         if (dialogue.get("portrait", {}).get("transition") or {}).get("fade")
     ]
-    overlong_story_cgs = [
-        {
-            "key": spec["key"],
-            "durationMs": spec["endMs"] - spec["startMs"],
-        }
-        for spec in CG_SPECS
-        if not spec["key"].startswith("q-")
-        and spec["endMs"] is not None
-        and spec["endMs"] - spec["startMs"] > 8_000
+    q_events = [event for event in CG_EVENTS if event["key"].startswith("q-")]
+    group_cg_coverage = {
+        dialogue["id"]: any(
+            event["startMs"] <= dialogue["startMs"]
+            and (event["endMs"] is None or event["endMs"] >= dialogue["endMs"])
+            for event in CG_EVENTS
+        )
+        for dialogue in group_dialogues
+    }
+    final_cg_blocks = [
+        block for block in show_cg_blocks if block["id"] == "runaway-cg-show-harem-chaos-finale"
     ]
+    final_cg_persists = (
+        len(final_cg_blocks) == 1
+        and final_cg_blocks[0]["atMs"] == 1_763_485
+        and not any(block["atMs"] >= 1_763_485 for block in hide_cg_blocks)
+    )
     suzuha = find_character(document, ("铃羽", "鈴羽", "玲羽", "Suzuha"))
     suzuha_asset_ids = {
         expression.get("assetId", "") for expression in suzuha.get("expressions", [])
     }
+    suzuha_crop_dimensions = {
+        png_dimensions(suzuha_crop_entry(pose, variant, mouth)[0])
+        for pose, variant in SUZUHA_VARIANTS.values()
+        for mouth in range(3)
+    }
+    crowded_cast_layout_errors = [
+        block["id"]
+        for block in cast_blocks
+        if len(block.get("members", [])) in {2, 3}
+        and min(
+            right - left
+            for left, right in zip(
+                sorted(member["transform"]["x"] for member in block["members"]),
+                sorted(member["transform"]["x"] for member in block["members"])[1:],
+                strict=False,
+            )
+        )
+        < 20
+    ]
     logical_library = logical_library_entries(source_root)
     missing_mapping = [
         item["relative"]
@@ -1300,7 +1415,38 @@ def audit_document(
         if item["relative"] not in mapping.get("items", {})
     ]
     missing_cg_mapping = [
-        spec["relative"] for spec in CG_SPECS if spec["relative"] not in mapping.get("items", {})
+        spec["relative"] for spec in CG_ASSETS if spec["relative"] not in mapping.get("items", {})
+    ]
+    kagari = find_character(document, ("冈部篝", "幼年篝"))
+
+    def display_name_value(dialogue: dict[str, Any]) -> str:
+        character = character_by_id[dialogue["characterId"]]
+        selected = dialogue.get("displayNameId") or character.get("defaultDisplayNameId")
+        display = next(
+            (item for item in character.get("displayNames", []) if item.get("id") == selected),
+            None,
+        )
+        return str((display or {}).get("value") or character.get("name") or "")
+
+    dialogue_by_id = {dialogue["id"]: dialogue for dialogue in dialogues}
+    multi_name_errors = [
+        dialogue["id"]
+        for dialogue in dialogues
+        if len(dialogue.get("speakerIds") or []) > 3 and display_name_value(dialogue) != "众人"
+    ]
+    kagari_unknown_name_errors = [
+        dialogue["id"]
+        for dialogue in dialogues
+        if dialogue.get("characterId") == kagari["id"]
+        and int(dialogue["id"].rsplit("-", 1)[1]) <= 116
+        and display_name_value(dialogue) != "红发小女孩"
+    ]
+    kagari_known_name_errors = [
+        dialogue["id"]
+        for dialogue in dialogues
+        if dialogue.get("characterId") == kagari["id"]
+        and int(dialogue["id"].rsplit("-", 1)[1]) >= 118
+        and display_name_value(dialogue) != "冈部篝"
     ]
     checks = {
         "durationMs": fragment["timeline"]["durationMs"],
@@ -1310,24 +1456,43 @@ def audit_document(
         .get("dialogueBox", {})
         .get("body", {})
         .get("fontSizePx"),
+        "dialogueBodyMaxWidthPercent": document.get("presentation", {})
+        .get("dialogueBox", {})
+        .get("body", {})
+        .get("maxWidthPercent"),
         "explicitExpressionCueCount": len(DIALOGUE_EXPRESSION_CUES),
         "visibleDialogueCount": len(visible_dialogues),
         "hiddenDialogueCount": len(hidden_dialogues),
+        "groupCgDialogueCount": len(group_dialogues),
+        "qOverlayDialogueCount": len(q_overlay_dialogues),
+        "groupCgCoverage": group_cg_coverage,
         "invalidExpressionDialogues": invalid_expression_dialogues,
         "visibleHiddenPortraits": visible_hidden_portraits,
         "hiddenVisiblePortraits": hidden_visible_portraits,
+        "groupVisiblePortraits": group_visible_portraits,
+        "qOverlayVisiblePortraits": q_overlay_visible_portraits,
         "staleCastExpressions": stale_cast_expressions,
         "nearDialogueCount": len(near_dialogue_ids),
         "nearDialogueIdsMatchCurated": near_dialogue_ids == SAFE_CLOSEUP_DIALOGUE_IDS,
         "unsafeCharacterFrames": unsafe_frames,
         "floatingCharacterFrames": floating_frames,
         "maxCastSize": max((len(block.get("members", [])) for block in cast_blocks), default=0),
+        "crowdedCastLayoutErrors": crowded_cast_layout_errors,
         "firstPersonNeverVisible": all(
             first_person_id not in {member["characterId"] for member in block.get("members", [])}
             for block in cast_blocks
         ),
         "sceneBeatCount": len(scene_blocks),
         "sceneBeatsExact": scene_beats == expected_scene_beats,
+        "sceneTransitionsReady": all(
+            (block["transition"]["durationMs"], block["transition"]["fade"])
+            == (
+                (0, False)
+                if block["atMs"] == 0 or block["atMs"] in CG_EVENT_STARTS
+                else (350, True)
+            )
+            for block in scene_blocks
+        ),
         "sceneEventsInsideCgs": scene_events_inside_cgs,
         "distinctSceneCount": len({block["sceneId"] for block in scene_blocks}),
         "cameraBeatCount": len(camera_blocks),
@@ -1343,11 +1508,33 @@ def audit_document(
         "managedCgDefinitionsReady": managed_cg_ids <= {cg["id"] for cg in document.get("cgs", [])},
         "duplicateCgEventIds": len(cg_event_ids) != len(set(cg_event_ids)),
         "cgOverlaps": cg_overlaps,
-        "overlongStoryCgs": overlong_story_cgs,
+        "qOverlayReady": len(q_events) == 3
+        and all(
+            event["displayMode"] == "overlay"
+            and event["overlay"]["x"] == 50
+            and event["overlay"]["y"] == 50
+            and abs((event["overlay"]["width"] / 100) ** 2 - 1 / 6) <= 0.01
+            for event in q_events
+        ),
+        "finalCgPersists": final_cg_persists,
         "suzuhaUsesSg0BlueVest": bool(suzuha_asset_ids)
-        and all(asset_id.startswith("sg0-suz-suz-hs") for asset_id in suzuha_asset_ids)
+        and all(asset_id.startswith("sg0-suz-half-v1-suz-hs") for asset_id in suzuha_asset_ids)
         and any("hsd" in asset_id for asset_id in suzuha_asset_ids)
         and any("hse" in asset_id for asset_id in suzuha_asset_ids),
+        "suzuhaCropFrameDimensions": sorted(suzuha_crop_dimensions),
+        "kagariCharacterName": kagari["name"],
+        "kagariUnknownNameErrors": kagari_unknown_name_errors,
+        "kagariKnownNameErrors": kagari_known_name_errors,
+        "multiNameErrors": multi_name_errors,
+        "pairNamesExact": display_name_value(dialogue_by_id["runaway-annotated-line-0377"])
+        == "冈部伦太郎、桥田至"
+        and display_name_value(dialogue_by_id["runaway-annotated-line-0463"])
+        == "阿万音铃羽、比屋定真帆",
+        "rejectedSceneReferences": [
+            block["sceneId"]
+            for block in scene_blocks
+            if block["sceneId"] in {"sg0-bg03a3", "sg0-bg11a3"}
+        ],
         "logicalLibraryCount": len(logical_library),
         "missingLogicalMappings": missing_mapping,
         "missingCgMappings": missing_cg_mapping,
@@ -1358,16 +1545,21 @@ def audit_document(
         raise RuntimeError(f"对白或时间轴审计失败：{checks}")
     if not checks["allLipSyncFps10"]:
         raise RuntimeError("仍有唇形序列不是 10 FPS")
-    if checks["dialogueBodyFontSizePx"] != 34:
-        raise RuntimeError("对白正文字号没有应用到 34px")
+    if checks["dialogueBodyFontSizePx"] != 34 or checks["dialogueBodyMaxWidthPercent"] != 100:
+        raise RuntimeError("对白正文字号或可用宽度未按 V7 应用")
     if (
         checks["explicitExpressionCueCount"] != 409
-        or checks["visibleDialogueCount"] != 409
-        or checks["hiddenDialogueCount"] != 105
         or invalid_expression_dialogues
         or visible_hidden_portraits
         or hidden_visible_portraits
+        or group_visible_portraits
+        or q_overlay_visible_portraits
         or stale_cast_expressions
+        or checks["visibleDialogueCount"]
+        + checks["hiddenDialogueCount"]
+        + checks["groupCgDialogueCount"]
+        + checks["qOverlayDialogueCount"]
+        != 514
     ):
         raise RuntimeError("逐句表情或隐藏人物审计失败")
     if (
@@ -1377,19 +1569,26 @@ def audit_document(
         or floating_frames
     ):
         raise RuntimeError("安全近景或顶部安全区审计失败")
-    if checks["maxCastSize"] != 8 or not checks["firstPersonNeverVisible"]:
+    if (
+        checks["maxCastSize"] > 3
+        or checks["crowdedCastLayoutErrors"]
+        or not checks["firstPersonNeverVisible"]
+    ):
         raise RuntimeError("舞台人数或第一人称冈部审计失败")
     if (
         checks["sceneBeatCount"] != len(SCENE_BEATS)
         or not checks["sceneBeatsExact"]
+        or not checks["sceneTransitionsReady"]
         or checks["sceneEventsInsideCgs"]
-        or checks["distinctSceneCount"] < 8
+        or checks["distinctSceneCount"] < 7
+        or checks["rejectedSceneReferences"]
     ):
         raise RuntimeError("场景丰富度没有达到验收条件")
     if (
         checks["cameraBeatCount"] < 12
         or not checks["cameraUiIsolationReady"]
         or not checks["suzuhaUsesSg0BlueVest"]
+        or checks["suzuhaCropFrameDimensions"] != [(482, 960)]
     ):
         raise RuntimeError(
             "镜头、静默区间、第一人称反应或铃羽素材审计失败："
@@ -1406,12 +1605,14 @@ def audit_document(
             )
         )
     if (
-        checks["showCgCount"] != len(CG_SPECS)
-        or checks["hideCgCount"] != sum(spec["endMs"] is not None for spec in CG_SPECS)
+        checks["showCgCount"] != len(CG_EVENTS)
+        or checks["hideCgCount"] != sum(event["endMs"] is not None for event in CG_EVENTS)
         or not checks["managedCgDefinitionsReady"]
         or checks["duplicateCgEventIds"]
         or cg_overlaps
-        or overlong_story_cgs
+        or not checks["qOverlayReady"]
+        or not checks["finalCgPersists"]
+        or not all(checks["groupCgCoverage"].values())
         or checks["blockCount"] > 1000
     ):
         raise RuntimeError("CG 事件或 Block 上限审计失败")
@@ -1419,11 +1620,17 @@ def audit_document(
         raise RuntimeError("原作素材映射不完整")
     if checks["curtainCount"] or checks["characterFadeBlocks"]:
         raise RuntimeError("普通演出仍包含幕布或人物淡化")
+    if (
+        checks["kagariCharacterName"] != "冈部篝"
+        or checks["kagariUnknownNameErrors"]
+        or checks["kagariKnownNameErrors"]
+        or checks["multiNameErrors"]
+        or not checks["pairNamesExact"]
+    ):
+        raise RuntimeError("对白显示名称审计失败")
     if annotation_audit is not None:
         if (
-            annotation_audit["expectedChangedTextCount"] != EXPECTED_ANNOTATION_TEXT_CHANGES
-            or annotation_audit["expectedChangedSpeakerCount"]
-            != EXPECTED_ANNOTATION_SPEAKER_CHANGES
+            annotation_audit["sha256"] != EXPECTED_ANNOTATION_SHA256
             or annotation_audit["multiSpeakerCount"] != EXPECTED_ANNOTATION_MULTI_SPEAKER_LINES
             or dialogue_signature(fragment) != annotation_audit["expectedDialogueSignature"]
         ):
@@ -1449,13 +1656,11 @@ def transform_latest_story(
         annotation_audit["changedTextCount"],
         annotation_audit["changedSpeakerCount"],
     )
-    if observed_changes not in {
-        (0, 0),
-        (EXPECTED_ANNOTATION_TEXT_CHANGES, EXPECTED_ANNOTATION_SPEAKER_CHANGES),
-    }:
+    if observed_changes not in {(0, 0), (1, 0)}:
         raise RuntimeError(f"新版对白变更数量异常：{observed_changes}")
+    configure_dialogue_display_names(document)
     install_curated_scenes(document, mapping)
-    upgrade_suzuha(document, mapping, source_root)
+    upgrade_suzuha(document, mapping)
     set_all_lip_sync_fps(document)
     enlarge_dialogue_text(document)
     first_person_id = first_person_okabe(document)["id"]

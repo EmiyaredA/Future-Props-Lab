@@ -15,12 +15,13 @@ PROJECT_ID = "63ac832d-bff3-4053-9c9f-f55c9dafc52a"
 FRAGMENT_ID = "runaway-full"
 FULL_DURATION_MS = 1_780_344
 SAMPLE_DURATION_MS = 180_000
+Q_OPENING_EXPORT = ("boundary-q-opening", 10_000, 30_000)
 EXPORTS = (
     ("user-clip-10m57s-12m29s500", 657_000, 749_500),
     ("cg-kagari-hououin-imitation", 593_385, 623_296),
-    ("cg-mother-identity-stop", 780_228, 806_772),
-    ("cg-cleaning-sergeant", 1_233_804, 1_254_683),
-    ("cg-harem-chaos-finale", 1_735_012, 1_764_737),
+    ("cg-mother-identity-stop", 783_000, 793_000),
+    ("cg-cleaning-sergeant", 1_232_000, 1_243_000),
+    ("cg-harem-chaos-finale", 1_760_000, 1_780_344),
 )
 BOUNDARY_EXPORTS = (
     ("boundary-rooftop-06m13", 368_000, 380_000),
@@ -28,6 +29,7 @@ BOUNDARY_EXPORTS = (
     ("boundary-two-machines-10m53", 649_000, 660_000),
     ("boundary-return-lab-11m27", 682_000, 693_000),
     ("boundary-farewell-return-28m00", 1_676_000, 1_688_000),
+    ("boundary-final-cg-29m23", 1_759_000, 1_780_344),
 )
 
 
@@ -49,6 +51,8 @@ def requested_exports(
         return [*EXPORTS[1:]]
     if only == "boundary-clips":
         return [*BOUNDARY_EXPORTS]
+    if only == "q-opening":
+        return [Q_OPENING_EXPORT]
     if only == "full":
         return [None]
     return [random_sample(rng)]
@@ -106,7 +110,7 @@ def submit(
     requested = requested_exports(only, rng)
     task_names: dict[str, str] = {}
     for item in requested:
-        name = item[0] if item else "full-29m40s344"
+        name = item[0] if item else "full-29m40s344-v7"
         body = request_body(revision, item)
         preview = request_json(client, "POST", export_path("/preview"), body)
         if not preview["ready"]:
@@ -186,7 +190,14 @@ def main() -> None:
     parser.add_argument("--base-url", default="http://127.0.0.1:9000")
     parser.add_argument(
         "--only",
-        choices=("random-sample", "user-clip", "cg-clips", "boundary-clips", "full"),
+        choices=(
+            "random-sample",
+            "user-clip",
+            "cg-clips",
+            "boundary-clips",
+            "q-opening",
+            "full",
+        ),
     )
     parser.add_argument("--seed", type=int, help="固定随机样片位置，便于复现")
     args = parser.parse_args()
