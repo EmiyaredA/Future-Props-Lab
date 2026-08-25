@@ -44,6 +44,8 @@ export function useStoryPlayerTimelineController(base: StoryPlayerBase) {
     frame,
     generationRef,
     pauseTimelineMaster,
+    playbackRange,
+    playbackRangeRef,
     reconcileTimelineAudio,
     runtimeRef,
     setAdvanceMode,
@@ -186,11 +188,11 @@ export function useStoryPlayerTimelineController(base: StoryPlayerBase) {
     (fragment: GalgameStoryFragment, autoplay = advanceMode === "auto") => {
       if (!fragment.timeline) return;
       const timelineDurationMs = fragment.timeline.durationMs;
-      const {
-        range: exportRange,
-        startMs,
-        endMs,
-      } = timelineExportBounds(fragment, exportMode?.timelineRange);
+      const requestedRange = exportMode?.timelineRange ?? playbackRange;
+      const { range, startMs, endMs } = timelineExportBounds(
+        fragment,
+        requestedRange,
+      );
       showTimelinePosition(fragment, startMs);
       setTimelinePositionMs(startMs);
       const playerGeneration = generationRef.current;
@@ -246,14 +248,21 @@ export function useStoryPlayerTimelineController(base: StoryPlayerBase) {
           if (!next) pauseTimelineMaster();
         },
         onBoundary: (milliseconds) => {
-          if (
-            !exportRange ||
-            milliseconds < endMs ||
-            exportCompletedRef.current
-          )
+          if (!range || milliseconds < endMs) return;
+          if (exportMode) {
+            if (exportCompletedRef.current) return;
+            exportCompletedRef.current = true;
+            exportMode.onComplete?.({ ok: true, label: "快速试片完成" });
             return;
-          exportCompletedRef.current = true;
-          exportMode?.onComplete?.({ ok: true, label: "快速试片完成" });
+          }
+          const latestRange = playbackRangeRef.current;
+          if (!latestRange?.loop || latestRange.fragmentId !== fragment.id)
+            return;
+          clock.seek(startMs);
+          reconcileTimelineAudio(fragment, startMs);
+          showTimelinePosition(fragment, startMs);
+          setTimelinePositionMs(startMs);
+          void playTimeline(fragment, clock, endMs);
         },
         onFinish: () => {
           const playing = playback.current;
@@ -293,16 +302,14 @@ export function useStoryPlayerTimelineController(base: StoryPlayerBase) {
             playerGeneration === generationRef.current &&
             timelineRef.current === playing
           )
-            void playTimeline(fragment, clock, exportRange ? endMs : undefined);
+            void playTimeline(fragment, clock, range ? endMs : undefined);
         });
       } else {
-        clock.seek(
-          exportRange ? startMs : autoplay ? 0 : (firstStep?.startMs ?? 0),
-        );
+        clock.seek(range ? startMs : autoplay ? 0 : (firstStep?.startMs ?? 0));
         syncTimelineBgm(fragment, startMs, false);
         syncTimelineAmbient(fragment, startMs, false);
         if (autoplay)
-          void playTimeline(fragment, clock, exportRange ? endMs : undefined);
+          void playTimeline(fragment, clock, range ? endMs : undefined);
         else if (firstStep)
           clock.playUntil(Math.max(firstStep.startMs, firstStep.endMs - 1));
       }
@@ -315,7 +322,10 @@ export function useStoryPlayerTimelineController(base: StoryPlayerBase) {
       finishTimeline,
       generationRef,
       pauseTimelineMaster,
+      playbackRange,
+      playbackRangeRef,
       playTimeline,
+      reconcileTimelineAudio,
       setTimelinePlaying,
       setTimelinePositionMs,
       showTimelinePosition,
@@ -365,8 +375,9 @@ export function useStoryPlayerTimelineController(base: StoryPlayerBase) {
     cleanupPlayback();
     exportCompletedRef.current = false;
     setSelectedExportChoiceId(undefined);
-    setAdvanceMode(exportMode ? "auto" : "manual");
-    advanceModeRef.current = exportMode ? "auto" : "manual";
+    const autoplay = Boolean(exportMode || playbackRange?.autoPlay);
+    setAdvanceMode(autoplay ? "auto" : "manual");
+    advanceModeRef.current = autoplay ? "auto" : "manual";
     const base = initialRuntime(document);
     const startChapter = startCursor
       ? chapterById(document, startCursor.chapterId)
@@ -398,7 +409,7 @@ export function useStoryPlayerTimelineController(base: StoryPlayerBase) {
     }
     const entryFragment = fragmentById(initialChapter, initial.fragmentId);
     if (entryFragment?.timeline) {
-      startTimeline(entryFragment, Boolean(exportMode));
+      startTimeline(entryFragment, autoplay);
       return;
     }
     presentRuntime(advanceRuntime(document, initial));
@@ -469,10 +480,16 @@ export function useStoryPlayerTimelineController(base: StoryPlayerBase) {
   const seekTimeline = (milliseconds: number, triggerPointEffects = false) => {
     const playing = timelineRef.current;
     if (!playing || !activeFragment?.timeline) return;
-    const target = Math.max(
-      0,
-      Math.min(activeFragment.timeline.durationMs, milliseconds),
+    const activeRange =
+      playbackRangeRef.current?.fragmentId === activeFragment.id
+        ? playbackRangeRef.current
+        : undefined;
+    const minimum = activeRange?.startMs ?? 0;
+    const maximum = Math.min(
+      activeFragment.timeline.durationMs,
+      activeRange?.endMs ?? activeFragment.timeline.durationMs,
     );
+    const target = Math.max(minimum, Math.min(maximum, milliseconds));
     if (advanceModeRef.current === "manual") playing.clock.pause();
     playing.lastPositionMs = target;
     playing.lastPublishedPositionMs = target;
@@ -509,7 +526,16 @@ export function useStoryPlayerTimelineController(base: StoryPlayerBase) {
   const skipTimelineStep = (direction: -1 | 1) => {
     if (!activeFragment) return;
     fadeCurrentVoice();
-    const steps = timelinePlaybackSteps(activeFragment);
+    const activeRange =
+      playbackRangeRef.current?.fragmentId === activeFragment.id
+        ? playbackRangeRef.current
+        : undefined;
+    const steps = timelinePlaybackSteps(activeFragment).filter(
+      (step) =>
+        !activeRange ||
+        (step.endMs > activeRange.startMs && step.startMs < activeRange.endMs),
+    );
+    if (!steps.length) return;
     const currentIndex =
       frame.mode === "content"
         ? steps.findIndex(
@@ -530,7 +556,10 @@ export function useStoryPlayerTimelineController(base: StoryPlayerBase) {
       Math.min(steps.length - 1, currentIndex + direction),
     );
     if (direction === 1 && currentIndex >= steps.length - 1)
-      seekTimeline(activeFragment.timeline?.durationMs ?? 0, true);
+      seekTimeline(
+        activeRange?.endMs ?? activeFragment.timeline?.durationMs ?? 0,
+        true,
+      );
     else {
       const nextStep = steps[nextIndex];
       seekTimeline(nextStep?.startMs ?? 0, true);
@@ -547,10 +576,20 @@ export function useStoryPlayerTimelineController(base: StoryPlayerBase) {
     if (!playing) return;
     const { clock } = playing;
     if (!clock.isPlaying) {
-      if (clock.position >= (activeFragment?.timeline?.durationMs ?? 0))
-        clock.seek(0);
+      const activeRange =
+        activeFragment &&
+        playbackRangeRef.current?.fragmentId === activeFragment.id
+          ? playbackRangeRef.current
+          : undefined;
+      if (
+        clock.position >=
+          (activeRange?.endMs ?? activeFragment?.timeline?.durationMs ?? 0) ||
+        clock.position < (activeRange?.startMs ?? 0)
+      )
+        seekTimeline(activeRange?.startMs ?? 0);
       setAdvanceMode("auto");
-      if (activeFragment) void playTimeline(activeFragment, clock);
+      if (activeFragment)
+        void playTimeline(activeFragment, clock, activeRange?.endMs);
     } else {
       clock.pause();
       setAdvanceMode("manual");

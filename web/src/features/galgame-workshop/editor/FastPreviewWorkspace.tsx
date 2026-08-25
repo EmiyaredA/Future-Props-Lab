@@ -2,10 +2,12 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Bug,
   ExternalLink,
+  Film,
   GitBranch,
   ListTree,
   Pause,
   Play,
+  Repeat2,
   RotateCcw,
   SkipBack,
   SkipForward,
@@ -20,6 +22,7 @@ import {
 import {
   formatTimelineTime,
   playerContentText,
+  type StoryPlayerPlaybackRange,
   type StoryPlayerRuntimeSnapshot,
 } from "@features/galgame-workshop/editor/storyPlayerModel";
 import { visibleStageActors } from "@features/galgame-workshop/editor/stage";
@@ -38,6 +41,9 @@ export function FastPreviewWorkspace({
   onExit,
   onOpenWindow,
   onReload,
+  playbackRange,
+  renderDisabledReason,
+  onRenderRange,
 }: {
   document: GalgameStoryProject;
   startCursor: FastPreviewCursor;
@@ -45,6 +51,9 @@ export function FastPreviewWorkspace({
   onExit: (snapshot?: StoryPlayerRuntimeSnapshot) => void;
   onOpenWindow?: () => void;
   onReload?: () => void;
+  playbackRange?: StoryPlayerPlaybackRange;
+  renderDisabledReason?: string;
+  onRenderRange?: (range: StoryPlayerPlaybackRange) => void;
 }) {
   const playerRef = useRef<StoryPlayerHandle>(null);
   const [snapshot, setSnapshot] = useState<StoryPlayerRuntimeSnapshot>();
@@ -52,6 +61,11 @@ export function FastPreviewWorkspace({
     "stage",
   );
   const [logs, setLogs] = useState<string[]>(["预演快照已冻结"]);
+  const [rangeLoop, setRangeLoop] = useState(Boolean(playbackRange?.loop));
+  const effectivePlaybackRange = useMemo(
+    () => (playbackRange ? { ...playbackRange, loop: rangeLoop } : undefined),
+    [playbackRange, rangeLoop],
+  );
   const activeFragment = useMemo(
     () =>
       document.chapters
@@ -175,6 +189,7 @@ export function FastPreviewWorkspace({
             ref={playerRef}
             document={document}
             startCursor={startCursor}
+            playbackRange={effectivePlaybackRange}
             mode="play"
             chrome="stage-only"
             onRuntimeSnapshot={receiveSnapshot}
@@ -285,12 +300,23 @@ export function FastPreviewWorkspace({
           <SkipForward aria-hidden />
           <span>下一对白</span>
         </button>
+        {playbackRange ? (
+          <button
+            type="button"
+            aria-pressed={rangeLoop}
+            className={rangeLoop ? "active" : ""}
+            onClick={() => setRangeLoop((current) => !current)}
+          >
+            <Repeat2 aria-hidden />
+            <span>循环区间</span>
+          </button>
+        ) : null}
         {activeFragment?.timeline ? (
           <>
             <input
               type="range"
-              min="0"
-              max={activeFragment.timeline.durationMs}
+              min={playbackRange?.startMs ?? 0}
+              max={playbackRange?.endMs ?? activeFragment.timeline.durationMs}
               step="100"
               value={snapshot?.positionMs ?? 0}
               onChange={(event) =>
@@ -300,7 +326,15 @@ export function FastPreviewWorkspace({
             />
             <time>
               {formatTimelineTime(snapshot?.positionMs ?? 0)} /{" "}
-              {formatTimelineTime(activeFragment.timeline.durationMs)}
+              {formatTimelineTime(
+                playbackRange?.endMs ?? activeFragment.timeline.durationMs,
+              )}
+              {playbackRange ? (
+                <small>
+                  区间 {formatTimelineTime(playbackRange.startMs)}–
+                  {formatTimelineTime(playbackRange.endMs)}
+                </small>
+              ) : null}
             </time>
           </>
         ) : (
@@ -309,6 +343,17 @@ export function FastPreviewWorkspace({
             {activeFragment?.blocks?.length ?? 0} · 左方向键不回写变量历史
           </strong>
         )}
+        {playbackRange && onRenderRange ? (
+          <button
+            type="button"
+            disabled={Boolean(renderDisabledReason)}
+            title={renderDisabledReason}
+            onClick={() => onRenderRange({ ...playbackRange, loop: rangeLoop })}
+          >
+            <Film aria-hidden />
+            <span>渲染此区间</span>
+          </button>
+        ) : null}
       </footer>
     </main>
   );

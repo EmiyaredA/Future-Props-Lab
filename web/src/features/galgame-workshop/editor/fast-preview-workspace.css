@@ -158,11 +158,25 @@
   flex: 1;
   accent-color: var(--gal-accent);
 }
+.galgame-fast-preview > footer button.active {
+  border-color: var(--gal-accent-line);
+  color: var(--gal-accent);
+  background: var(--gal-accent-soft);
+}
 .galgame-fast-preview > footer time,
 .galgame-fast-preview > footer strong {
   margin-left: auto;
   color: var(--gal-muted);
   font-size: 11px;
+}
+.galgame-fast-preview > footer time {
+  display: grid;
+  gap: 2px;
+  white-space: nowrap;
+}
+.galgame-fast-preview > footer time small {
+  color: var(--gal-muted);
+  font-size: 9px;
 }
 @media (max-width: 900px) {
   .galgame-fast-preview-body {

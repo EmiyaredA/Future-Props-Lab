@@ -160,6 +160,13 @@
   gap: 3px;
 }
 
+.galgame-video-clip-heading > .galgame-video-clip-heading-actions {
+  display: flex;
+  grid-auto-flow: column;
+  align-items: center;
+  gap: 7px;
+}
+
 .galgame-video-clip-heading h3 {
   margin: 0;
 }

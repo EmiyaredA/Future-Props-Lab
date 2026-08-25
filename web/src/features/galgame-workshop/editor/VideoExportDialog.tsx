@@ -19,12 +19,12 @@ import {
   type GalgameStoryProject,
 } from "@features/galgame-workshop/api";
 import { formatTimecode } from "@features/galgame-workshop/editor/timeline";
-import { VideoClipTimecodeInput } from "@features/galgame-workshop/editor/VideoClipTimecodeInput";
+import { VideoClipRangeEditor } from "@features/galgame-workshop/editor/VideoClipRangeEditor";
 import {
   DEFAULT_VIDEO_CLIP_DURATION_MS,
   defaultVideoClipRange,
-  MAX_VIDEO_CLIP_DURATION_MS,
   type VideoClipRange,
+  videoClipRangeError,
 } from "@features/galgame-workshop/editor/videoExportRange";
 import { VideoCaptureFrameEditor } from "@features/galgame-workshop/editor/VideoCaptureFrameEditor";
 import { VideoEditorHandoffPanel } from "@features/galgame-workshop/editor/VideoEditorHandoffPanel";
@@ -80,6 +80,7 @@ export function VideoExportDialog({
   document,
   currentFragmentId,
   currentTimelinePositionMs,
+  initialClipRange,
   languageOptions,
   onClose,
 }: {
@@ -89,6 +90,7 @@ export function VideoExportDialog({
   document: GalgameStoryProject;
   currentFragmentId?: string;
   currentTimelinePositionMs?: number;
+  initialClipRange?: VideoClipRange & { fragmentId: string };
   languageOptions: string[];
   onClose: () => void;
 }) {
@@ -154,14 +156,20 @@ export function VideoExportDialog({
     useState<GalgameVideoExportTask>();
   useEffect(() => {
     if (!open) return;
-    setScope("route");
+    const seededClip =
+      initialClipRange?.fragmentId === currentFragmentId
+        ? initialClipRange
+        : undefined;
+    setScope(seededClip ? "clip" : "route");
     setBranchSelections([]);
     setSelectedFragmentIds(currentFragmentId ? [currentFragmentId] : []);
     setClipRange(
-      defaultVideoClipRange(
-        currentTimelineDurationMs ?? 0,
-        currentPlayheadRef.current,
-      ),
+      seededClip
+        ? { startMs: seededClip.startMs, endMs: seededClip.endMs }
+        : defaultVideoClipRange(
+            currentTimelineDurationMs ?? 0,
+            currentPlayheadRef.current,
+          ),
     );
     setError("");
     setSubmissionStatus("");
@@ -169,6 +177,7 @@ export function VideoExportDialog({
   }, [
     currentFragmentId,
     currentTimelineDurationMs,
+    initialClipRange,
     open,
     preferredLocale,
     storyRevision,
@@ -188,17 +197,10 @@ export function VideoExportDialog({
       // Browser privacy modes may disable local preferences.
     }
   }, [captureFrame, captureStorageKey]);
-  const clipError = useMemo(() => {
-    if (currentTimelineDurationMs == null)
-      return "当前 Fragment 没有时间轴，无法快速试片";
-    if (clipRange.startMs < 0) return "开始时间不能早于 00:00.000";
-    if (clipRange.endMs > currentTimelineDurationMs)
-      return "结束时间不能超过 Fragment 时长";
-    if (clipRange.startMs >= clipRange.endMs) return "结束时间必须晚于开始时间";
-    if (clipRange.endMs - clipRange.startMs > MAX_VIDEO_CLIP_DURATION_MS)
-      return "快速试片最长为 5 分钟";
-    return "";
-  }, [clipRange, currentTimelineDurationMs]);
+  const clipError = useMemo(
+    () => videoClipRangeError(clipRange, currentTimelineDurationMs),
+    [clipRange, currentTimelineDurationMs],
+  );
   const previewBody = useMemo(
     () => ({
       expectedStoryRevision: storyRevision,
@@ -515,121 +517,21 @@ export function VideoExportDialog({
             </section>
           ) : null}
           {scope === "clip" && currentTimelineDurationMs != null ? (
-            <section className="galgame-video-clip-editor">
-              <div className="galgame-video-clip-heading">
-                <span>
-                  <h3>快速试片区间</h3>
-                  <small>
-                    {currentFragment?.title} · 总时长{" "}
-                    {formatTimecode(currentTimelineDurationMs)}
-                  </small>
-                </span>
-                <button
-                  type="button"
-                  onClick={() =>
-                    setClipRange(
-                      defaultVideoClipRange(
-                        currentTimelineDurationMs,
-                        currentPlayheadMs,
-                      ),
-                    )
-                  }
-                >
-                  重新使用当前播放头
-                </button>
-              </div>
-              <div className="galgame-video-clip-sliders">
-                <div className="galgame-video-clip-track" aria-hidden />
-                <div
-                  className="galgame-video-clip-selection"
-                  aria-hidden
-                  style={{
-                    left: `${(Math.max(0, Math.min(currentTimelineDurationMs, clipRange.startMs)) / currentTimelineDurationMs) * 100}%`,
-                    width: `${(Math.max(0, Math.min(currentTimelineDurationMs, clipRange.endMs) - Math.max(0, clipRange.startMs)) / currentTimelineDurationMs) * 100}%`,
-                  }}
-                />
-                <input
-                  type="range"
-                  min="0"
-                  max={currentTimelineDurationMs}
-                  step="100"
-                  value={Math.min(currentTimelineDurationMs, clipRange.startMs)}
-                  aria-label="快速试片开始位置"
-                  onChange={(event) => {
-                    const value = Number(event.target.value);
-                    setClipRange((current) => ({
-                      ...current,
-                      startMs: Math.min(value, current.endMs - 100),
-                    }));
-                  }}
-                />
-                <input
-                  type="range"
-                  min="0"
-                  max={currentTimelineDurationMs}
-                  step="100"
-                  value={Math.max(0, clipRange.endMs)}
-                  aria-label="快速试片结束位置"
-                  onChange={(event) => {
-                    const value = Number(event.target.value);
-                    setClipRange((current) => ({
-                      ...current,
-                      endMs: Math.max(value, current.startMs + 100),
-                    }));
-                  }}
-                />
-              </div>
-              <div className="galgame-video-clip-timecodes">
-                <VideoClipTimecodeInput
-                  label="开始时间"
-                  value={clipRange.startMs}
-                  onCommit={(startMs) =>
-                    setClipRange((current) => ({ ...current, startMs }))
-                  }
-                />
-                <span aria-hidden>—</span>
-                <VideoClipTimecodeInput
-                  label="结束时间"
-                  value={clipRange.endMs}
-                  onCommit={(endMs) =>
-                    setClipRange((current) => ({ ...current, endMs }))
-                  }
-                />
-              </div>
-              <div className="galgame-video-clip-shortcuts">
-                <span>从开始点向后：</span>
-                {[5_000, 10_000, 30_000].map((durationMs) => (
-                  <button
-                    key={durationMs}
-                    type="button"
-                    onClick={() =>
-                      setClipRange((current) => ({
-                        startMs: current.startMs,
-                        endMs: Math.min(
-                          currentTimelineDurationMs,
-                          current.startMs + durationMs,
-                        ),
-                      }))
-                    }
-                  >
-                    {durationMs / 1000} 秒
-                  </button>
-                ))}
-                <strong>
-                  成片{" "}
-                  {formatTimecode(
-                    Math.max(0, clipRange.endMs - clipRange.startMs),
-                  )}
-                </strong>
-              </div>
-              {clipError ? (
-                <p className="galgame-video-clip-error">{clipError}</p>
-              ) : (
-                <p className="galgame-video-clip-note">
-                  将从区间前最多预热 500ms；预热内容不会进入成片。
-                </p>
-              )}
-            </section>
+            <VideoClipRangeEditor
+              fragmentTitle={currentFragment?.title}
+              durationMs={currentTimelineDurationMs}
+              range={clipRange}
+              error={clipError}
+              onChange={setClipRange}
+              onReset={() =>
+                setClipRange(
+                  defaultVideoClipRange(
+                    currentTimelineDurationMs,
+                    currentPlayheadMs,
+                  ),
+                )
+              }
+            />
           ) : null}
           <section>
             <h3>语言</h3>

@@ -1,6 +1,7 @@
 import { lazy, Suspense } from "react";
 import { Film, LoaderCircle } from "lucide-react";
 import type { GalgameStoryProject } from "@features/galgame-workshop/api";
+import type { SegmentPreviewSelection } from "@features/galgame-workshop/editor/EditorSegmentPreviewDialog";
 import { videoExportLanguageOptions } from "@features/galgame-workshop/editor/videoExportLanguage";
 import "@features/galgame-workshop/editor/video-export.css";
 import "@features/galgame-workshop/editor/video-export-feedback.css";
@@ -17,6 +18,7 @@ export function GalgameEditorVideoExportDialog({
   storyRevision,
   document,
   currentContext,
+  initialClipRange,
   onClose,
 }: {
   open: boolean;
@@ -28,6 +30,7 @@ export function GalgameEditorVideoExportDialog({
     string | undefined,
     number | null | undefined,
   ];
+  initialClipRange?: SegmentPreviewSelection;
   onClose: () => void;
 }) {
   const [playbackFollow, selectedFragmentId, timelinePreviewMs] =
@@ -58,10 +61,18 @@ export function GalgameEditorVideoExportDialog({
         projectId={projectId}
         storyRevision={storyRevision}
         document={document}
-        currentFragmentId={playbackFollow?.fragmentId ?? selectedFragmentId}
-        currentTimelinePositionMs={
-          playbackFollow?.positionMs ?? timelinePreviewMs ?? 0
+        currentFragmentId={
+          initialClipRange?.fragmentId ??
+          playbackFollow?.fragmentId ??
+          selectedFragmentId
         }
+        currentTimelinePositionMs={
+          initialClipRange?.startMs ??
+          playbackFollow?.positionMs ??
+          timelinePreviewMs ??
+          0
+        }
+        initialClipRange={initialClipRange}
         languageOptions={videoExportLanguageOptions(document)}
         onClose={onClose}
       />

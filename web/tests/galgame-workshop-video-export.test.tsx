@@ -15,7 +15,11 @@ import {
 } from "@features/galgame-workshop/api";
 import { VideoExportDialog } from "@features/galgame-workshop/editor/VideoExportDialog";
 import { VideoExportHistory } from "@features/galgame-workshop/editor/VideoExportTaskProgress";
-import { defaultVideoClipRange } from "@features/galgame-workshop/editor/videoExportRange";
+import {
+  defaultVideoClipRange,
+  selectedBlockClipRange,
+  videoClipRangeError,
+} from "@features/galgame-workshop/editor/videoExportRange";
 
 vi.mock("@features/galgame-workshop/api", async () => {
   const actual = await vi.importActual<
@@ -126,10 +130,16 @@ function deferred<T>() {
 function renderDialog({
   story = document,
   positionMs = 600_000,
+  initialClipRange,
   queryClient,
 }: {
   story?: GalgameStoryProject;
   positionMs?: number;
+  initialClipRange?: {
+    fragmentId: string;
+    startMs: number;
+    endMs: number;
+  };
   queryClient?: QueryClient;
 } = {}) {
   const client =
@@ -149,6 +159,7 @@ function renderDialog({
         document={story}
         currentFragmentId="fragment-one"
         currentTimelinePositionMs={positionMs}
+        initialClipRange={initialClipRange}
         languageOptions={["zh"]}
         onClose={vi.fn()}
       />
@@ -552,4 +563,58 @@ test("falls back to the final ten seconds when the playhead is at the end", () =
     startMs: 1_770_000,
     endMs: 1_780_000,
   });
+});
+
+test("opens a seeded middle range directly in quick clip mode", async () => {
+  renderDialog({
+    initialClipRange: {
+      fragmentId: "fragment-one",
+      startMs: 720_000,
+      endMs: 732_000,
+    },
+  });
+
+  await waitFor(() =>
+    expect(previewGalgameVideoExport).toHaveBeenLastCalledWith(
+      "project-one",
+      expect.objectContaining({
+        scope: "clip",
+        clipRange: {
+          fragmentId: "fragment-one",
+          startMs: 720_000,
+          endMs: 732_000,
+        },
+      }),
+    ),
+  );
+  expect(screen.getByLabelText("开始时间")).toHaveValue("12:00.000");
+  expect(screen.getByLabelText("结束时间")).toHaveValue("12:12.000");
+});
+
+test("validates ranges and derives the exact selected dialogue interval", () => {
+  expect(videoClipRangeError({ startMs: 0, endMs: 300_001 }, 1_000_000)).toBe(
+    "快速试片最长为 5 分钟",
+  );
+  expect(videoClipRangeError({ startMs: 10_000, endMs: 9000 }, 20_000)).toBe(
+    "结束时间必须晚于开始时间",
+  );
+  expect(
+    selectedBlockClipRange(
+      {
+        id: "main",
+        title: "中段",
+        timeline: { durationMs: 20_000 },
+        blocks: [
+          {
+            id: "line",
+            type: "narration",
+            text: "精确区间",
+            startMs: 6500,
+            endMs: 8750,
+          },
+        ],
+      },
+      0,
+    ),
+  ).toEqual({ startMs: 6500, endMs: 8750 });
 });

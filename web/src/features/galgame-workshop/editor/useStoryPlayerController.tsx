@@ -39,6 +39,7 @@ export function useStoryPlayerController({
   workbenchHeader = false,
   onCgOverlayChange,
   onPlaybackPosition,
+  playbackRange,
   exportMode,
 }: StoryPlayerProps) {
   const base = useStoryPlayerBase({
@@ -60,6 +61,7 @@ export function useStoryPlayerController({
     workbenchHeader,
     onCgOverlayChange,
     onPlaybackPosition,
+    playbackRange,
     exportMode,
   });
   const {
@@ -353,10 +355,12 @@ export function useStoryPlayerController({
         typewriterFrame.block.type === "storyParagraph" &&
         runtimeRef.current.paragraph.revealEffect === "instant") ||
       (typewriterFrame.mode === "content" &&
-        exportMode?.timelineRange?.fragmentId === typewriterFrame.fragmentId &&
+        (exportMode?.timelineRange ?? playbackRange)?.fragmentId ===
+          typewriterFrame.fragmentId &&
         "startMs" in typewriterFrame.block &&
         typeof typewriterFrame.block.startMs === "number" &&
-        typewriterFrame.block.startMs < exportMode.timelineRange.startMs) ||
+        typewriterFrame.block.startMs <
+          (exportMode?.timelineRange ?? playbackRange)!.startMs) ||
       globalThis.matchMedia?.("(prefers-reduced-motion: reduce)").matches
     ) {
       setVisibleTextLength(Array.from(displayText).length);
@@ -442,6 +446,7 @@ export function useStoryPlayerController({
     exportMode?.timelineRange,
     inlineWaitReleaseRef,
     mode,
+    playbackRange,
     revealTextImmediatelyRef,
     runtimeRef,
     setInlinePlayerWait,

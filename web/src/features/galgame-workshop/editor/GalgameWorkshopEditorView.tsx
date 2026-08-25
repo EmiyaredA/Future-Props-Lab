@@ -1,4 +1,4 @@
-import { Suspense, useState } from "react";
+import { Suspense } from "react";
 import {
   ArrowLeft,
   Film,
@@ -35,7 +35,7 @@ import {
   EditorFastPreviewOverlay,
   EditorFastPreviewRunMenu,
 } from "@features/galgame-workshop/editor/EditorFastPreviewOverlay";
-import type { EditorFastPreviewSession } from "@features/galgame-workshop/editor/editorFastPreviewSession";
+import { useEditorSegmentPreviewController } from "@features/galgame-workshop/editor/useEditorSegmentPreviewController";
 import {
   AssetCenter,
   BlockInspector,
@@ -57,7 +57,7 @@ export function GalgameWorkshopEditorView({
 }: {
   model: EditorPageViewModel;
 }) {
-  const [fastPreview, setFastPreview] = useState<EditorFastPreviewSession>();
+  const segmentPreview = useEditorSegmentPreviewController(model);
   if (model.status === "loading")
     return (
       <div className="workshop-state galgame-editor-state">
@@ -169,12 +169,13 @@ export function GalgameWorkshopEditorView({
     effectiveCenterRatio,
     editorGridStyle,
   } = model;
-  if (fastPreview)
+  if (segmentPreview.fastPreview)
     return (
       <EditorFastPreviewOverlay
-        session={fastPreview}
+        session={segmentPreview.fastPreview}
         model={model}
-        onClose={() => setFastPreview(undefined)}
+        onClose={() => segmentPreview.setFastPreview(undefined)}
+        onRenderRange={segmentPreview.renderSegment}
       />
     );
   return (
@@ -239,13 +240,18 @@ export function GalgameWorkshopEditorView({
               type="button"
               className="galgame-editor-video-export"
               onClick={() => {
+                segmentPreview.clearVideoExportSeed();
                 setPreviewMode("edit");
                 setVideoExportOpen(true);
               }}
             >
               <Film aria-hidden /> 导出视频
             </button>
-            <EditorFastPreviewRunMenu model={model} onLaunch={setFastPreview} />
+            <EditorFastPreviewRunMenu
+              model={model}
+              onLaunch={segmentPreview.setFastPreview}
+              onConfigureRange={segmentPreview.openSegmentPreview}
+            />
           </div>
         </header>
         <nav className="galgame-editor-tabs" aria-label="创作工作区">
@@ -762,8 +768,13 @@ export function GalgameWorkshopEditorView({
             selectedFragment?.id,
             timelinePreviewMs,
           ]}
-          onClose={() => setVideoExportOpen(false)}
+          initialClipRange={segmentPreview.videoExportSeed}
+          onClose={() => {
+            setVideoExportOpen(false);
+            segmentPreview.clearVideoExportSeed();
+          }}
         />
+        {segmentPreview.dialog}
       </section>
     </Suspense>
   );

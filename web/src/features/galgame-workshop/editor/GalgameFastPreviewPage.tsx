@@ -77,6 +77,7 @@ export function GalgameFastPreviewPage({ projectId }: { projectId: string }) {
       key={`${session.source}-${session.document.schemaVersion}-${notice}`}
       document={session.document}
       startCursor={session.startCursor}
+      playbackRange={session.playbackRange}
       sourceNotice={notice}
       onReload={
         sessionId

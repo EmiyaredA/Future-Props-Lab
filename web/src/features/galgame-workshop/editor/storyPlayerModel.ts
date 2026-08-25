@@ -136,6 +136,14 @@ export type StoryPlayerRuntimeSnapshot = {
   advanceMode: "manual" | "auto" | "skip";
 };
 
+export type StoryPlayerPlaybackRange = {
+  fragmentId: string;
+  startMs: number;
+  endMs: number;
+  loop?: boolean;
+  autoPlay?: boolean;
+};
+
 export type StoryPlayerProps = {
   document: GalgameStoryProject;
   locale?: string;
@@ -161,6 +169,7 @@ export type StoryPlayerProps = {
     blockId?: string;
   }) => void;
   onRuntimeSnapshot?: (snapshot: StoryPlayerRuntimeSnapshot) => void;
+  playbackRange?: StoryPlayerPlaybackRange;
   exportMode?: {
     branchSelections: Record<string, string>;
     choiceDurationMs: number;

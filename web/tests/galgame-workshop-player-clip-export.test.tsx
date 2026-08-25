@@ -1,8 +1,11 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { act } from "react";
+import { createRef } from "react";
 import { beforeEach, vi } from "vitest";
 import type { GalgameStoryProject } from "@features/galgame-workshop/api";
 import { StoryPlayer } from "@features/galgame-workshop/editor/StoryPlayer";
+import type { StoryPlayerHandle } from "@features/galgame-workshop/editor/StoryPlayer";
+import type { StoryPlayerRuntimeSnapshot } from "@features/galgame-workshop/editor/storyPlayerModel";
 
 vi.mock("@platform/api/client", () => ({
   fetchApiBlob: vi.fn().mockResolvedValue(new Blob(["audio"])),
@@ -252,6 +255,76 @@ test("restores a non-zero timeline range with audio offsets and stops once", asy
     });
     act(() => vi.advanceTimersByTime(5000));
     expect(onComplete).toHaveBeenCalledTimes(1);
+    expect(screen.queryByText("这句不应进入试片。")).not.toBeInTheDocument();
+  } finally {
+    vi.useRealTimers();
+  }
+});
+
+test("previews only the requested middle range and stays on its final frame", async () => {
+  vi.useFakeTimers();
+  const snapshots: StoryPlayerRuntimeSnapshot[] = [];
+  const playerRef = createRef<StoryPlayerHandle>();
+  try {
+    render(
+      <StoryPlayer
+        ref={playerRef}
+        document={clipStory}
+        playbackRange={{
+          fragmentId: "main",
+          startMs: 9500,
+          endMs: 10_500,
+          autoPlay: true,
+        }}
+        onRuntimeSnapshot={(snapshot) => snapshots.push(snapshot)}
+      />,
+    );
+    act(() => playerRef.current?.restart());
+    await act(async () => Promise.resolve());
+
+    expect(screen.getByText("这是时间轴中段。")).toBeInTheDocument();
+    act(() => vi.advanceTimersByTime(1200));
+    expect(snapshots.at(-1)).toMatchObject({
+      fragmentId: "main",
+      positionMs: 10_500,
+      playing: false,
+    });
+    expect(screen.queryByText("这句不应进入试片。")).not.toBeInTheDocument();
+
+    act(() => playerRef.current?.togglePlayback());
+    expect(snapshots.at(-1)?.positionMs).toBe(9500);
+  } finally {
+    vi.useRealTimers();
+  }
+});
+
+test("loops a middle range without advancing into later content", async () => {
+  vi.useFakeTimers();
+  const snapshots: StoryPlayerRuntimeSnapshot[] = [];
+  const playerRef = createRef<StoryPlayerHandle>();
+  try {
+    render(
+      <StoryPlayer
+        ref={playerRef}
+        document={clipStory}
+        playbackRange={{
+          fragmentId: "main",
+          startMs: 9500,
+          endMs: 10_000,
+          loop: true,
+          autoPlay: true,
+        }}
+        onRuntimeSnapshot={(snapshot) => snapshots.push(snapshot)}
+      />,
+    );
+    act(() => playerRef.current?.restart());
+    await act(async () => Promise.resolve());
+    act(() => vi.advanceTimersByTime(650));
+    await act(async () => Promise.resolve());
+
+    expect(snapshots.at(-1)?.positionMs).toBeGreaterThanOrEqual(9500);
+    expect(snapshots.at(-1)?.positionMs).toBeLessThan(10_000);
+    expect(snapshots.at(-1)?.playing).toBe(true);
     expect(screen.queryByText("这句不应进入试片。")).not.toBeInTheDocument();
   } finally {
     vi.useRealTimers();

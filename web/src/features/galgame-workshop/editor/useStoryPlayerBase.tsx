@@ -65,6 +65,7 @@ export function useStoryPlayerBase({
   workbenchHeader = false,
   onCgOverlayChange,
   onPlaybackPosition,
+  playbackRange,
   exportMode,
 }: StoryPlayerProps) {
   const document = useMemo(
@@ -89,6 +90,8 @@ export function useStoryPlayerBase({
     stage: emptyStageState(),
   });
   const runtimeRef = useRef<StoryRuntimeState>(initialRuntime(document));
+  const playbackRangeRef = useRef(playbackRange);
+  playbackRangeRef.current = playbackRange;
   const [mix, setMix] = useState(DEFAULT_STORY_PLAYER_MIX);
   const [mixerOpen, setMixerOpen] = useState(false);
   const [aspectMenuOpen, setAspectMenuOpen] = useState(false);
@@ -255,7 +258,7 @@ export function useStoryPlayerBase({
     (asset) =>
       asset.type === "audio" && asset.id === activeDialogue?.voiceAssetId,
   );
-  const exportTimelineRange = exportMode?.timelineRange;
+  const exportTimelineRange = exportMode?.timelineRange ?? playbackRange;
   const exportVoiceOffsetMs = timelineExportVoiceOffset(
     exportTimelineRange,
     activeFragment?.id,
@@ -530,6 +533,8 @@ export function useStoryPlayerBase({
     onCgOverlayChange,
     onCollapsedChange,
     onPlaybackPosition,
+    playbackRange,
+    playbackRangeRef,
     palette,
     pauseTimelineMaster,
     pendingRef,

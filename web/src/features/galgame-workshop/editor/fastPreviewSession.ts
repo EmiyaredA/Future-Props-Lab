@@ -1,10 +1,12 @@
 import type { GalgameStoryProject } from "@features/galgame-workshop/api";
 import type { FastPreviewCursor } from "@features/galgame-workshop/editor/FastPreviewWorkspace";
+import type { StoryPlayerPlaybackRange } from "@features/galgame-workshop/editor/storyPlayerModel";
 
 export type FastPreviewDocumentMessage = {
   type: "document";
   document: GalgameStoryProject;
   startCursor: FastPreviewCursor;
+  playbackRange?: StoryPlayerPlaybackRange;
   source: "launch" | "reload";
 };
 
@@ -12,11 +14,13 @@ export function openFastPreviewWindow({
   projectId,
   document,
   startCursor,
+  playbackRange,
   latestDocument,
 }: {
   projectId: string;
   document: GalgameStoryProject;
   startCursor: FastPreviewCursor;
+  playbackRange?: StoryPlayerPlaybackRange;
   latestDocument: () => GalgameStoryProject;
 }) {
   const sessionId = crypto.randomUUID();
@@ -28,6 +32,7 @@ export function openFastPreviewWindow({
         source === "launch" ? document : latestDocument(),
       ),
       startCursor,
+      playbackRange,
       source,
     } satisfies FastPreviewDocumentMessage);
   channel.addEventListener("message", (event) => {

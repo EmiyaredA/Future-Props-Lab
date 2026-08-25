@@ -1,4 +1,4 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { ChevronDown, Play } from "lucide-react";
 import type { EditorPageViewModel } from "@features/galgame-workshop/editor/editorViewModel";
 import {
@@ -16,11 +16,35 @@ const FastPreviewWorkspace = lazy(() =>
 export function EditorFastPreviewRunMenu({
   model,
   onLaunch,
+  onConfigureRange,
 }: {
   model: Extract<EditorPageViewModel, { status: "ready" }>;
   onLaunch: (session: EditorFastPreviewSession) => void;
+  onConfigureRange: () => void;
 }) {
-  const launch = (scope: "project" | "chapter" | "block") =>
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const toggleRef = useRef<HTMLButtonElement>(null);
+  const closeMenu = () => setMenuOpen(false);
+  useEffect(() => {
+    if (!menuOpen) return;
+    const closeOnOutsidePress = (event: PointerEvent) => {
+      if (!menuRef.current?.contains(event.target as Node)) setMenuOpen(false);
+    };
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      setMenuOpen(false);
+      toggleRef.current?.focus();
+    };
+    document.addEventListener("pointerdown", closeOnOutsidePress);
+    window.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("pointerdown", closeOnOutsidePress);
+      window.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [menuOpen]);
+  const launch = (scope: "project" | "chapter" | "block") => {
+    closeMenu();
     onLaunch(
       createEditorFastPreviewSession({
         document: model.document,
@@ -30,32 +54,62 @@ export function EditorFastPreviewRunMenu({
         selectedIndex: model.selectedIndex,
       }),
     );
+  };
   return (
-    <details className="galgame-run-menu">
-      <summary
+    <div ref={menuRef} className="galgame-run-menu" style={{ display: "flex" }}>
+      <button
+        type="button"
         className="galgame-preview-launch"
-        role="button"
         aria-label="开始试玩"
         onClick={() => launch("project")}
       >
-        <Play aria-hidden /> 运行 <ChevronDown aria-hidden />
-      </summary>
-      <div>
-        <button type="button" onClick={() => launch("project")}>
-          从项目入口开始
-        </button>
-        <button type="button" onClick={() => launch("chapter")}>
-          从当前章节开始
-        </button>
-        <button
-          type="button"
-          disabled={!model.selectedBlock}
-          onClick={() => launch("block")}
-        >
-          从当前 Block 开始
-        </button>
-      </div>
-    </details>
+        <Play aria-hidden /> 运行
+      </button>
+      <button
+        ref={toggleRef}
+        type="button"
+        className="galgame-preview-launch"
+        style={{ paddingInline: 8 }}
+        aria-label="打开运行菜单"
+        aria-expanded={menuOpen}
+        aria-haspopup="true"
+        onClick={() => setMenuOpen((open) => !open)}
+      >
+        <ChevronDown aria-hidden />
+      </button>
+      {menuOpen ? (
+        <div>
+          <button type="button" onClick={() => launch("project")}>
+            从项目入口开始
+          </button>
+          <button type="button" onClick={() => launch("chapter")}>
+            从当前章节开始
+          </button>
+          <button
+            type="button"
+            disabled={!model.selectedBlock}
+            onClick={() => launch("block")}
+          >
+            从当前 Block 开始
+          </button>
+          <button
+            type="button"
+            disabled={!model.selectedFragment?.timeline}
+            title={
+              model.selectedFragment?.timeline
+                ? undefined
+                : "当前 Fragment 没有时间轴"
+            }
+            onClick={() => {
+              closeMenu();
+              onConfigureRange();
+            }}
+          >
+            预演时间区间
+          </button>
+        </div>
+      ) : null}
+    </div>
   );
 }
 
@@ -63,21 +117,37 @@ export function EditorFastPreviewOverlay({
   session,
   model,
   onClose,
+  onRenderRange,
 }: {
   session: EditorFastPreviewSession;
   model: Extract<EditorPageViewModel, { status: "ready" }>;
   onClose: () => void;
+  onRenderRange: (
+    range: NonNullable<EditorFastPreviewSession["playbackRange"]>,
+  ) => void;
 }) {
   return (
     <Suspense fallback={<div className="page-loading">正在启动快速预演…</div>}>
       <FastPreviewWorkspace
         document={session.document}
         startCursor={session.startCursor}
+        playbackRange={session.playbackRange}
+        renderDisabledReason={
+          model.conflict
+            ? "存在版本冲突，解决后才能渲染"
+            : model.saveState === "saving"
+              ? "故事仍在保存，保存完成后才能渲染"
+              : model.saveState !== "saved"
+                ? "当前故事尚未成功保存"
+                : undefined
+        }
+        onRenderRange={onRenderRange}
         onOpenWindow={() =>
           openFastPreviewWindow({
             projectId: model.projectId,
             document: session.document,
             startCursor: session.startCursor,
+            playbackRange: session.playbackRange,
             latestDocument: () => model.documentRef.current ?? model.document,
           })
         }
