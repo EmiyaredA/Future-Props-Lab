@@ -26,15 +26,11 @@ import {
   type StoryPlayerHandle,
 } from "@features/galgame-workshop/editor/StoryPlayer";
 import { FastPreviewQuickEdit } from "@features/galgame-workshop/editor/FastPreviewQuickEdit";
-import {
-  applyFastPreviewDialogueEdit,
-  EMPTY_DIALOGUE_DRAFT,
-  type FastPreviewDialogueDraft,
-  type FastPreviewDialogueEdit,
-  type FastPreviewDialogueEditResult,
+import type {
+  FastPreviewDialogueDraft,
+  FastPreviewDialogueEdit,
+  FastPreviewDialogueEditResult,
 } from "@features/galgame-workshop/editor/fastPreviewDialogueEdit";
-import type { GalgameStoryDialogueBlock } from "@features/galgame-workshop/editor/dialogue";
-import { updateBlock } from "@features/galgame-workshop/editor/model";
 import {
   formatTimelineTime,
   playerContentText,
@@ -46,6 +42,7 @@ import {
   loadFastPreviewAuthoringOverlays,
   saveFastPreviewAuthoringOverlays,
 } from "@features/galgame-workshop/editor/fastPreviewPreferences";
+import { useFastPreviewDialogueDrafts } from "@features/galgame-workshop/editor/useFastPreviewDialogueDrafts";
 import "@features/galgame-workshop/editor/fast-preview-workspace.css";
 
 export type {
@@ -58,19 +55,6 @@ export type FastPreviewCursor = {
   fragmentId: string;
   blockIndex?: number;
 };
-
-function dialogueMatchesDraft(
-  block: GalgameStoryDialogueBlock | undefined,
-  draft: FastPreviewDialogueDraft,
-) {
-  return Boolean(
-    block &&
-    block.text === draft.text &&
-    (block.expressionId ?? "") === draft.expressionId &&
-    JSON.stringify(block.portrait ?? null) ===
-      JSON.stringify(draft.portrait ?? null),
-  );
-}
 
 export function FastPreviewWorkspace({
   document: sourceDocument,
@@ -105,7 +89,7 @@ export function FastPreviewWorkspace({
 }) {
   const playerRef = useRef<StoryPlayerHandle>(null);
   const editPauseRequestedRef = useRef(false);
-  const editTargetLockedRef = useRef(false);
+  const editRestorePendingRef = useRef(false);
   const restorePositionRef = useRef<
     { positionMs: number; pauseAfterSeek: boolean } | undefined
   >(undefined);
@@ -116,8 +100,6 @@ export function FastPreviewWorkspace({
   const [tab, setTab] = useState<
     "stage" | "edit" | "variables" | "branches" | "logs"
   >("stage");
-  const [editDraft, setEditDraft] =
-    useState<FastPreviewDialogueDraft>(EMPTY_DIALOGUE_DRAFT);
   const [editSaving, setEditSaving] = useState(false);
   const [editMessage, setEditMessage] = useState("");
   const [logs, setLogs] = useState<string[]>(["预演快照已冻结"]);
@@ -139,42 +121,16 @@ export function FastPreviewWorkspace({
     setPreviewDocument(sourceDocument);
     setCurrentRevision(storyRevision);
   }, [sourceDocument, storyRevision]);
-  const editedSourceBlock = useMemo(() => {
-    if (!editDraft.fragmentId || !editDraft.blockId) return undefined;
-    const block = document.chapters
-      ?.flatMap((chapter) => chapter.fragments ?? [])
-      .find((fragment) => fragment.id === editDraft.fragmentId)
-      ?.blocks?.find((candidate) => candidate.id === editDraft.blockId);
-    return block?.type === "dialogue" ? block : undefined;
-  }, [document.chapters, editDraft.blockId, editDraft.fragmentId]);
-  const editDirty = Boolean(
-    editDraft.fragmentId &&
-    editDraft.blockId &&
-    !dialogueMatchesDraft(editedSourceBlock, editDraft),
-  );
-  const previewDocument = useMemo(() => {
-    if (
-      !editDraft.fragmentId ||
-      !editDraft.blockId ||
-      dialogueMatchesDraft(editedSourceBlock, editDraft)
-    )
-      return document;
-    return updateBlock(
-      document,
-      editDraft.fragmentId,
-      editDraft.blockId,
-      (block) =>
-        block.type === "dialogue"
-          ? applyFastPreviewDialogueEdit(block, {
-              fragmentId: editDraft.fragmentId,
-              blockId: editDraft.blockId,
-              text: editDraft.text,
-              expressionId: editDraft.expressionId || null,
-              portrait: editDraft.portrait,
-            })
-          : block,
-    );
-  }, [document, editDraft, editedSourceBlock]);
+  const {
+    discardDraft,
+    editDraft,
+    editDirty,
+    hasDirtyDrafts,
+    pendingDraftCount,
+    previewDocument,
+    selectDialogue,
+    updateDraft,
+  } = useFastPreviewDialogueDrafts(document);
   const effectivePlaybackRange = useMemo(
     () =>
       playbackRange
@@ -227,6 +183,7 @@ export function FastPreviewWorkspace({
     const timer = window.setTimeout(() => {
       playerRef.current?.seekTimeline(restore.positionMs);
       if (restore.pauseAfterSeek) playerRef.current?.togglePlayback();
+      editRestorePendingRef.current = false;
     });
     return () => window.clearTimeout(timer);
   }, [previewDocument, startCursor]);
@@ -282,7 +239,7 @@ export function FastPreviewWorkspace({
       ? snapshot.frame.block
       : undefined;
   useEffect(() => {
-    if (editTargetLockedRef.current) return;
+    if (editRestorePendingRef.current) return;
     if (!snapshotDialogue || !activeFragment) return;
     const targetChanged =
       editDraft.fragmentId !== activeFragment.id ||
@@ -293,19 +250,19 @@ export function FastPreviewWorkspace({
       .find((fragment) => fragment.id === activeFragment.id)
       ?.blocks?.find((block) => block.id === snapshotDialogue.id);
     if (sourceBlock?.type !== "dialogue") return;
-    setEditDraft({
-      fragmentId: activeFragment.id,
-      blockId: sourceBlock.id,
-      text: sourceBlock.text,
-      expressionId: sourceBlock.expressionId ?? "",
-      portrait: sourceBlock.portrait ?? null,
-    });
-    setEditMessage("");
+    selectDialogue(activeFragment.id, sourceBlock);
+    setEditMessage(
+      pendingDraftCount
+        ? `已保留 ${pendingDraftCount} 个未保存草稿，可切回对应对白继续修改`
+        : "",
+    );
   }, [
     activeFragment,
     document.chapters,
     editDraft.blockId,
     editDraft.fragmentId,
+    pendingDraftCount,
+    selectDialogue,
     snapshotDialogue,
   ]);
   const editableBlock = previewDocument.chapters
@@ -325,7 +282,7 @@ export function FastPreviewWorkspace({
     setTab("edit");
   };
   const updateEditDraft = (nextDraft: FastPreviewDialogueDraft) => {
-    editTargetLockedRef.current = true;
+    editRestorePendingRef.current = true;
     exactFrameRequestRef.current += 1;
     setExactFrame(undefined);
     setExactFrameError("");
@@ -340,7 +297,7 @@ export function FastPreviewWorkspace({
         positionMs: currentSnapshot.positionMs,
         pauseAfterSeek: false,
       };
-    setEditDraft(nextDraft);
+    updateDraft(nextDraft);
     setEditMessage("未保存草稿已实时显示在画面中");
   };
   const applyDialogueEdit = async () => {
@@ -367,9 +324,16 @@ export function FastPreviewWorkspace({
         positionMs: restorePosition,
         pauseAfterSeek: false,
       };
+      editRestorePendingRef.current = true;
       setPreviewDocument(result.document);
       setCurrentRevision(result.storyRevision);
-      setEditMessage("已保存，当前区间可继续播放");
+      discardDraft(editDraft.fragmentId, editDraft.blockId);
+      const remainingDrafts = Math.max(0, pendingDraftCount - 1);
+      setEditMessage(
+        remainingDrafts
+          ? `已保存当前对白，另有 ${remainingDrafts} 个未保存草稿`
+          : "已保存，当前区间可继续播放",
+      );
     } catch (error) {
       setEditMessage(error instanceof Error ? error.message : "保存失败");
     } finally {
@@ -378,8 +342,8 @@ export function FastPreviewWorkspace({
   };
   const exactFrameUnavailableReason =
     exactFrameDisabledReason ??
-    (editDirty
-      ? "请先保存当前实时草稿，再生成精确导出帧"
+    (hasDirtyDrafts
+      ? "请先保存全部实时草稿，再生成精确导出帧"
       : !projectId || currentRevision == null
         ? "当前快照缺少已保存的项目修订信息"
         : !activeFragment?.timeline
@@ -695,7 +659,6 @@ export function FastPreviewWorkspace({
         <button
           type="button"
           onClick={() => {
-            if (!editDirty) editTargetLockedRef.current = false;
             playerRef.current?.previousDialogue();
           }}
           disabled={!activeFragment?.timeline}
@@ -706,7 +669,6 @@ export function FastPreviewWorkspace({
         <button
           type="button"
           onClick={() => {
-            if (!editDirty) editTargetLockedRef.current = false;
             playerRef.current?.togglePlayback();
           }}
         >
@@ -722,7 +684,6 @@ export function FastPreviewWorkspace({
         <button
           type="button"
           onClick={() => {
-            if (!editDirty) editTargetLockedRef.current = false;
             playerRef.current?.nextDialogue();
           }}
         >
@@ -749,7 +710,6 @@ export function FastPreviewWorkspace({
               step="100"
               value={snapshot?.positionMs ?? 0}
               onChange={(event) => {
-                if (!editDirty) editTargetLockedRef.current = false;
                 playerRef.current?.seekTimeline(Number(event.target.value));
               }}
               aria-label="快速预演时间轴"

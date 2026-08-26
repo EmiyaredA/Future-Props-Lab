@@ -1,10 +1,12 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
+import { StrictMode } from "react";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import type {
   GalgameStoryAsset,
   GalgameStoryCharacterExpression,
 } from "@features/galgame-workshop/api";
 import { ExpressionPortrait } from "@features/galgame-workshop/editor/ExpressionPortrait";
+import { StoryImageCacheProvider } from "@features/galgame-workshop/editor/StoryImageCache";
 import { portraitFootprintWidth } from "@features/galgame-workshop/editor/portraitSizing";
 import { fetchApiBlob } from "@platform/api/client";
 
@@ -94,6 +96,38 @@ describe("ExpressionPortrait", () => {
     );
     act(() => vi.advanceTimersByTime(200));
     expect(screen.getByAltText("待机")).toHaveAttribute(
+      "data-file-id",
+      "file-0",
+    );
+  });
+
+  test("shares decoded sequence frames across actors in one player", async () => {
+    render(
+      <StrictMode>
+        <StoryImageCacheProvider>
+          <ExpressionPortrait
+            expression={expression()}
+            assets={assets}
+            alt="左侧待机"
+            fallback={<span>左侧加载中</span>}
+          />
+          <ExpressionPortrait
+            expression={expression()}
+            assets={assets}
+            alt="右侧待机"
+            fallback={<span>右侧加载中</span>}
+          />
+        </StoryImageCacheProvider>
+      </StrictMode>,
+    );
+    await settleFrames();
+
+    expect(fetchApiBlob).toHaveBeenCalledTimes(3);
+    expect(screen.getByAltText("左侧待机")).toHaveAttribute(
+      "data-file-id",
+      "file-0",
+    );
+    expect(screen.getByAltText("右侧待机")).toHaveAttribute(
       "data-file-id",
       "file-0",
     );

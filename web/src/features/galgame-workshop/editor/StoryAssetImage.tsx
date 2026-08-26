@@ -6,6 +6,7 @@ import {
   type ReactNode,
 } from "react";
 import { fetchApiBlob } from "@platform/api/client";
+import { useStoryImageCache } from "@features/galgame-workshop/editor/StoryImageCache";
 
 export function StoryAssetImage({
   fileId,
@@ -24,37 +25,49 @@ export function StoryAssetImage({
 }) {
   const [url, setUrl] = useState("");
   const activeUrlRef = useRef("");
+  const activeUrlOwnedRef = useRef(false);
+  const imageCache = useStoryImageCache();
 
   useEffect(() => {
     if (!fileId) {
       const previousUrl = activeUrlRef.current;
+      const previousOwned = activeUrlOwnedRef.current;
       activeUrlRef.current = "";
+      activeUrlOwnedRef.current = false;
       setUrl("");
-      if (previousUrl) URL.revokeObjectURL(previousUrl);
+      if (previousUrl && previousOwned) URL.revokeObjectURL(previousUrl);
       return;
     }
     let active = true;
-    void fetchApiBlob(`/v1/files/${fileId}/content`)
-      .then((blob) => {
-        const nextUrl = URL.createObjectURL(blob);
+    const release = imageCache?.retain(fileId);
+    const request = imageCache
+      ? imageCache.load(fileId).then((nextUrl) => ({ nextUrl, owned: false }))
+      : fetchApiBlob(`/v1/files/${fileId}/content`).then((blob) => ({
+          nextUrl: URL.createObjectURL(blob),
+          owned: true,
+        }));
+    void request
+      .then(({ nextUrl, owned }) => {
         const preloader = new Image();
         let settled = false;
         const discard = () => {
           if (settled) return;
           settled = true;
-          URL.revokeObjectURL(nextUrl);
+          if (owned) URL.revokeObjectURL(nextUrl);
         };
         preloader.onload = () => {
           if (settled) return;
           settled = true;
           if (!active) {
-            URL.revokeObjectURL(nextUrl);
+            if (owned) URL.revokeObjectURL(nextUrl);
             return;
           }
           const previousUrl = activeUrlRef.current;
+          const previousOwned = activeUrlOwnedRef.current;
           activeUrlRef.current = nextUrl;
+          activeUrlOwnedRef.current = owned;
           setUrl(nextUrl);
-          if (previousUrl) URL.revokeObjectURL(previousUrl);
+          if (previousUrl && previousOwned) URL.revokeObjectURL(previousUrl);
         };
         preloader.onerror = discard;
         preloader.src = nextUrl;
@@ -66,12 +79,14 @@ export function StoryAssetImage({
       });
     return () => {
       active = false;
+      release?.();
     };
-  }, [fileId]);
+  }, [fileId, imageCache]);
 
   useEffect(
     () => () => {
-      if (activeUrlRef.current) URL.revokeObjectURL(activeUrlRef.current);
+      if (activeUrlRef.current && activeUrlOwnedRef.current)
+        URL.revokeObjectURL(activeUrlRef.current);
     },
     [],
   );
@@ -90,9 +105,11 @@ export function StoryAssetImage({
       }
       onError={() => {
         const failedUrl = activeUrlRef.current;
+        const failedOwned = activeUrlOwnedRef.current;
         activeUrlRef.current = "";
+        activeUrlOwnedRef.current = false;
         setUrl("");
-        if (failedUrl) URL.revokeObjectURL(failedUrl);
+        if (failedUrl && failedOwned) URL.revokeObjectURL(failedUrl);
       }}
     />
   ) : (

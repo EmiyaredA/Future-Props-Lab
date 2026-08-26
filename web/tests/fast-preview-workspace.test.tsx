@@ -13,6 +13,8 @@ import type {
 } from "@features/galgame-workshop/editor/storyPlayerModel";
 
 const togglePlayback = vi.fn();
+const nextDialogue = vi.fn();
+const previousDialogue = vi.fn();
 const snapshot: StoryPlayerRuntimeSnapshot = {
   frame: {
     mode: "stageOnly",
@@ -69,8 +71,8 @@ vi.mock("@features/galgame-workshop/editor/StoryPlayer", () => ({
           advance: vi.fn(),
           togglePlayback,
           seekTimeline: vi.fn(),
-          previousDialogue: vi.fn(),
-          nextDialogue: vi.fn(),
+          previousDialogue,
+          nextDialogue,
         }) satisfies StoryPlayerHandle,
     );
     useEffect(() => {
@@ -79,16 +81,22 @@ vi.mock("@features/galgame-workshop/editor/StoryPlayer", () => ({
       sentRef.current = true;
       onRuntimeSnapshot?.(playerSnapshot);
     }, [onRuntimeSnapshot]);
-    const playerBlock =
-      playerDocument.chapters?.[0]?.fragments?.[0]?.blocks?.[0];
+    const playerBlocks =
+      playerDocument.chapters?.[0]?.fragments?.[0]?.blocks ?? [];
     return (
       <div
         data-testid="mock-story-player"
         data-authoring-overlays={showAuthoringOverlays ? "true" : "false"}
       >
-        {playerBlock?.type === "dialogue"
-          ? `${playerBlock.text}|${playerBlock.expressionId ?? ""}|${playerBlock.portrait?.mode ?? "legacy"}|${playerBlock.portrait?.distance ?? ""}`
-          : ""}
+        {playerBlocks
+          .flatMap((block) =>
+            block.type === "dialogue"
+              ? [
+                  `${block.text}|${block.expressionId ?? ""}|${block.portrait?.mode ?? "legacy"}|${block.portrait?.distance ?? ""}`,
+                ]
+              : [],
+          )
+          .join("||")}
       </div>
     );
   }),
@@ -363,6 +371,20 @@ test("previews dialogue and presentation drafts before the explicit save action"
         },
       ],
     },
+    {
+      id: "friend",
+      name: "搭档",
+      description: "",
+      defaultExpressionId: "smile",
+      expressions: [
+        {
+          id: "smile",
+          label: "微笑",
+          assetId: "friend-portrait",
+          renderMode: "staticImage",
+        },
+      ],
+    },
   ];
   dialogueDocument.chapters![0]!.fragments![0]!.blocks = [
     {
@@ -377,8 +399,8 @@ test("previews dialogue and presentation drafts before the explicit save action"
     {
       id: "line-two",
       type: "dialogue",
-      characterId: "hero",
-      expressionId: "calm",
+      characterId: "friend",
+      expressionId: "smile",
       text: "下一句对白",
       startMs: 1_000,
       endMs: 2_000,
@@ -397,8 +419,10 @@ test("previews dialogue and presentation drafts before the explicit save action"
   };
   const onApplyDialogueEdit = vi.fn(async (edit) => {
     const savedDocument = structuredClone(dialogueDocument);
-    const savedBlock = savedDocument.chapters![0]!.fragments![0]!.blocks![0]!;
-    if (savedBlock.type === "dialogue") {
+    const savedBlock = savedDocument.chapters![0]!.fragments![0]!.blocks!.find(
+      (block) => block.id === edit.blockId,
+    );
+    if (savedBlock?.type === "dialogue") {
       savedBlock.text = edit.text;
       savedBlock.expressionId = edit.expressionId;
       savedBlock.portrait = edit.portrait;
@@ -432,7 +456,10 @@ test("previews dialogue and presentation drafts before the explicit save action"
   expect(screen.getByRole("status")).toHaveTextContent("未保存草稿已实时显示");
   expect(
     screen.getByRole("button", { name: "生成当前精确帧" }),
-  ).toHaveAttribute("title", "请先保存当前实时草稿，再生成精确导出帧");
+  ).toHaveAttribute("title", "请先保存全部实时草稿，再生成精确导出帧");
+
+  await user.click(screen.getByRole("button", { name: "下一对白" }));
+  expect(nextDialogue).toHaveBeenCalledTimes(1);
 
   act(() => {
     emitPlayerSnapshot?.({
@@ -449,7 +476,11 @@ test("previews dialogue and presentation drafts before the explicit save action"
       },
     });
   });
-  expect(textarea).toHaveValue("修正后的对白");
+  await waitFor(() => expect(textarea).toHaveValue("下一句对白"));
+  expect(
+    within(textarea.closest("section")!).getByText("搭档"),
+  ).toBeInTheDocument();
+  expect(screen.getByRole("status")).toHaveTextContent("已保留 1 个未保存草稿");
 
   await user.click(screen.getByRole("combobox", { name: "快速修改立绘演出" }));
   await user.click(screen.getByRole("option", { name: "舞台立绘" }));
@@ -458,7 +489,7 @@ test("previews dialogue and presentation drafts before the explicit save action"
 
   await waitFor(() =>
     expect(screen.getByTestId("mock-story-player")).toHaveTextContent(
-      "修正后的对白|calm|stage|near",
+      "下一句对白|smile|stage|near",
     ),
   );
   await user.click(screen.getByRole("button", { name: "保存这些修改" }));
@@ -466,11 +497,26 @@ test("previews dialogue and presentation drafts before the explicit save action"
   await waitFor(() =>
     expect(onApplyDialogueEdit).toHaveBeenCalledWith({
       fragmentId: "fragment-one",
-      blockId: "line-one",
-      text: "修正后的对白",
-      expressionId: "calm",
+      blockId: "line-two",
+      text: "下一句对白",
+      expressionId: "smile",
       portrait: expect.objectContaining({ mode: "stage", distance: "near" }),
     }),
   );
-  expect(await screen.findByRole("status")).toHaveTextContent("已保存");
+  expect(await screen.findByRole("status")).toHaveTextContent(
+    "另有 1 个未保存草稿",
+  );
+  expect(screen.getByTestId("mock-story-player")).toHaveTextContent(
+    "修正后的对白|calm|legacy|",
+  );
+
+  await user.click(screen.getByRole("button", { name: "上一对白" }));
+  expect(previousDialogue).toHaveBeenCalledTimes(1);
+  act(() => {
+    emitPlayerSnapshot?.({ ...playerSnapshot, playing: false });
+  });
+  await waitFor(() => expect(textarea).toHaveValue("修正后的对白"));
+  expect(
+    within(textarea.closest("section")!).getByText("主角"),
+  ).toBeInTheDocument();
 });

@@ -1,5 +1,6 @@
 import { forwardRef, useEffect, useImperativeHandle } from "react";
 import { StoryPlayerView } from "@features/galgame-workshop/editor/StoryPlayerView";
+import { StoryImageCacheProvider } from "@features/galgame-workshop/editor/StoryImageCache";
 import { useStoryPlayerController } from "@features/galgame-workshop/editor/useStoryPlayerController";
 import type {
   StoryPlayerHandle,
@@ -51,6 +52,10 @@ export const StoryPlayer = forwardRef<StoryPlayerHandle, StoryPlayerProps>(
       model.timelinePositionMs,
       onRuntimeSnapshot,
     ]);
-    return <StoryPlayerView model={model} />;
+    return (
+      <StoryImageCacheProvider>
+        <StoryPlayerView model={model} />
+      </StoryImageCacheProvider>
+    );
   },
 );

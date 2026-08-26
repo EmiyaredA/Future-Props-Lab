@@ -13,6 +13,7 @@ import type {
 } from "@features/galgame-workshop/api";
 import type { PortraitNaturalSize } from "@features/galgame-workshop/editor/portraitSizing";
 import { StoryAssetImage } from "@features/galgame-workshop/editor/StoryAssetImage";
+import { useStoryImageCache } from "@features/galgame-workshop/editor/StoryImageCache";
 
 function expressionFileIds(
   expression: GalgameStoryCharacterExpression | undefined,
@@ -81,6 +82,7 @@ export function ExpressionPortrait({
   }>();
   const retainedUrlsRef = useRef(new Set<string>());
   const reportedNaturalSizeKey = useRef<string | undefined>(undefined);
+  const imageCache = useStoryImageCache();
 
   useEffect(() => {
     setFrameIndex(0);
@@ -99,15 +101,23 @@ export function ExpressionPortrait({
       failedFileIds: new Set(),
       settledFileIds: new Set(),
     });
+    const releases = [...new Set(fileIds)].map((fileId) =>
+      imageCache?.retain(fileId),
+    );
     for (const fileId of new Set(fileIds)) {
-      void fetchApiBlob(`/v1/files/${fileId}/content`)
-        .then((blob) => {
-          const url = URL.createObjectURL(blob);
+      const request = imageCache
+        ? imageCache.load(fileId).then((url) => ({ url, owned: false }))
+        : fetchApiBlob(`/v1/files/${fileId}/content`).then((blob) => ({
+            url: URL.createObjectURL(blob),
+            owned: true,
+          }));
+      void request
+        .then(({ url, owned }) => {
           if (!active) {
-            URL.revokeObjectURL(url);
+            if (owned) URL.revokeObjectURL(url);
             return;
           }
-          retainedUrlsRef.current.add(url);
+          if (owned) retainedUrlsRef.current.add(url);
           setReadyGroup((current) => {
             if (current?.key !== sequenceKey) return current;
             const urls = new Map(current.urls);
@@ -131,8 +141,9 @@ export function ExpressionPortrait({
     }
     return () => {
       active = false;
+      for (const release of releases) release?.();
     };
-  }, [fileIds, sequence, sequenceKey]);
+  }, [fileIds, imageCache, sequence, sequenceKey]);
 
   useEffect(
     () => () => {
@@ -190,17 +201,17 @@ export function ExpressionPortrait({
     (fileId) =>
       currentGroup?.urls.get(fileId) && !currentGroup.failedFileIds.has(fileId),
   );
-  const displayFileId = currentGroup
+  const currentDisplayFileId = currentGroup
     ? currentGroup.urls.has(candidateFileId) &&
       !currentGroup.failedFileIds.has(candidateFileId)
       ? candidateFileId
       : firstSuccessfulFileId
-    : lastReadyFrame?.fileId;
-  const displayUrl = currentGroup
-    ? displayFileId
-      ? currentGroup.urls.get(displayFileId)
-      : undefined
-    : lastReadyFrame?.url;
+    : undefined;
+  const currentDisplayUrl = currentDisplayFileId
+    ? currentGroup?.urls.get(currentDisplayFileId)
+    : undefined;
+  const displayFileId = currentDisplayFileId ?? lastReadyFrame?.fileId;
+  const displayUrl = currentDisplayUrl ?? lastReadyFrame?.url;
   const reportAnchorNaturalSize = (fileId: string, image: HTMLImageElement) => {
     const anchorFailed = currentGroup?.failedFileIds.has(fileIds[0]) ?? false;
     if (fileId !== fileIds[0] && !anchorFailed) return;
