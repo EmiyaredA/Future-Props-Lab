@@ -1,4 +1,4 @@
-import { act, render, screen, waitFor } from "@testing-library/react";
+import { act, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { forwardRef, useEffect, useImperativeHandle, useRef } from "react";
 import { beforeEach, expect, test, vi } from "vitest";
@@ -45,14 +45,17 @@ vi.mock("@features/galgame-workshop/editor/StoryPlayer", () => ({
     StoryPlayerHandle,
     {
       document: GalgameStoryProject;
+      showAuthoringOverlays?: boolean;
       onRuntimeSnapshot?: (value: StoryPlayerRuntimeSnapshot) => void;
     }
   >(function MockStoryPlayer(
     {
       document: playerDocument,
+      showAuthoringOverlays,
       onRuntimeSnapshot,
     }: {
       document: GalgameStoryProject;
+      showAuthoringOverlays?: boolean;
       onRuntimeSnapshot?: (value: StoryPlayerRuntimeSnapshot) => void;
     },
     ref,
@@ -79,7 +82,10 @@ vi.mock("@features/galgame-workshop/editor/StoryPlayer", () => ({
     const playerBlock =
       playerDocument.chapters?.[0]?.fragments?.[0]?.blocks?.[0];
     return (
-      <div data-testid="mock-story-player">
+      <div
+        data-testid="mock-story-player"
+        data-authoring-overlays={showAuthoringOverlays ? "true" : "false"}
+      >
         {playerBlock?.type === "dialogue"
           ? `${playerBlock.text}|${playerBlock.expressionId ?? ""}|${playerBlock.portrait?.mode ?? "legacy"}|${playerBlock.portrait?.distance ?? ""}`
           : ""}
@@ -116,6 +122,7 @@ const document = {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  localStorage.clear();
   playerSnapshot = snapshot;
   emitPlayerSnapshot = undefined;
   vi.mocked(previewGalgameVideoExportFrame).mockResolvedValue(
@@ -125,6 +132,105 @@ beforeEach(() => {
     createObjectURL: vi.fn(() => "blob:exact-frame"),
     revokeObjectURL: vi.fn(),
   });
+});
+
+test("hides authoring overlays by default and persists the toolbar preference", async () => {
+  const user = userEvent.setup();
+  const first = render(
+    <FastPreviewWorkspace
+      document={document}
+      startCursor={{ chapterId: "chapter-one", fragmentId: "fragment-one" }}
+      onExit={vi.fn()}
+    />,
+  );
+
+  expect(screen.getByText(/动态预演/)).toBeInTheDocument();
+  expect(
+    first.container.querySelector(".galgame-fast-preview"),
+  ).toHaveAttribute("data-authoring-overlays", "false");
+  expect(screen.getByTestId("mock-story-player")).toHaveAttribute(
+    "data-authoring-overlays",
+    "false",
+  );
+  await user.click(screen.getByRole("button", { name: "显示辅助信息" }));
+  expect(
+    first.container.querySelector(".galgame-fast-preview"),
+  ).toHaveAttribute("data-authoring-overlays", "true");
+  expect(screen.getByTestId("mock-story-player")).toHaveAttribute(
+    "data-authoring-overlays",
+    "true",
+  );
+  first.unmount();
+
+  const second = render(
+    <FastPreviewWorkspace
+      document={document}
+      startCursor={{ chapterId: "chapter-one", fragmentId: "fragment-one" }}
+      onExit={vi.fn()}
+    />,
+  );
+  expect(
+    second.container.querySelector(".galgame-fast-preview"),
+  ).toHaveAttribute("data-authoring-overlays", "true");
+  expect(screen.getByRole("button", { name: "隐藏辅助信息" })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+});
+
+test("keeps the 1:52 dialogue queue aligned with the rendered frame", async () => {
+  const timelineDocument = structuredClone(document);
+  timelineDocument.characters = [
+    { id: "okabe", name: "冈部伦太郎", description: "", expressions: [] },
+    { id: "kurisu", name: "牧濑红莉栖", description: "", expressions: [] },
+  ];
+  const blocks = [
+    {
+      id: "okabe-line",
+      type: "dialogue" as const,
+      characterId: "okabe",
+      text: "呼——哈哈哈！",
+    },
+    {
+      id: "kurisu-line",
+      type: "dialogue" as const,
+      characterId: "kurisu",
+      text: "是是，凤凰院凶真，凤凰院凶真。",
+    },
+    {
+      id: "mayuri-line",
+      type: "narration" as const,
+      text: "没、没事吧，冈伦？",
+    },
+  ];
+  timelineDocument.chapters![0]!.fragments![0]!.blocks = blocks;
+  playerSnapshot = {
+    ...snapshot,
+    blockIndex: 0,
+    positionMs: 112_000,
+    frame: {
+      mode: "content",
+      fragmentId: "fragment-one",
+      blockIndex: 1,
+      block: blocks[1],
+      stage: { actors: {} },
+    },
+  };
+
+  render(
+    <FastPreviewWorkspace
+      document={timelineDocument}
+      startCursor={{ chapterId: "chapter-one", fragmentId: "fragment-one" }}
+      onExit={vi.fn()}
+    />,
+  );
+
+  const current = (await screen.findByText("当前句")).closest("article");
+  expect(current).not.toBeNull();
+  expect(within(current!).getByText("牧濑红莉栖")).toBeInTheDocument();
+  expect(
+    within(current!).getByText("是是，凤凰院凶真，凤凰院凶真。"),
+  ).toBeInTheDocument();
 });
 
 test("uses a short source-time clip for exact frames late in a long timeline", async () => {

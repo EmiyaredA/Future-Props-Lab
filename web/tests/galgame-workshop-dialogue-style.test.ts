@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
+  dialogueEffectiveOpacity,
   dialogueBoxPresetStyle,
+  dialogueSpeakerNameLayout,
   resolveDialogueBoxStyle,
 } from "@features/galgame-workshop/api";
 
@@ -80,4 +82,24 @@ describe("Galgame dialogue box styles", () => {
     expect(style.body.align).toBe("left");
     expect(style.layout.mode).toBe("bottomOverlay");
   });
+
+  it("multiplies the overall opacity into each gradient node", () => {
+    expect(dialogueEffectiveOpacity(0.82, 1)).toBe(0.82);
+    expect(dialogueEffectiveOpacity(0.82, 0.5)).toBe(0.41);
+    expect(dialogueEffectiveOpacity(2, 1)).toBe(1);
+    expect(dialogueEffectiveOpacity(-1, 1)).toBe(0);
+  });
+
+  it.each([
+    ["topLeft", { horizontal: "left", vertical: "top" }],
+    ["topCenter", { horizontal: "center", vertical: "top" }],
+    ["bottomLeft", { horizontal: "left", vertical: "bottom" }],
+    ["bottomCenter", { horizontal: "center", vertical: "bottom" }],
+    ["hidden", { horizontal: "left", vertical: "hidden" }],
+  ] as const)(
+    "maps the %s speaker placement to browser layout",
+    (value, expected) => {
+      expect(dialogueSpeakerNameLayout(value)).toEqual(expected);
+    },
+  );
 });

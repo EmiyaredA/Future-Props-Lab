@@ -602,7 +602,9 @@ def compile_galgame_render_plan(
                 duration = min(floating_end, local_end_ms) - start
                 if duration > 0:
                     is_long_form = duration >= 5000 or len(str(block.get("text") or "")) >= 80
-                    track = builder.track("effects-text", "视觉效果 · 浮动文字", 5)
+                    # Lower track orders render on top. Keep floating text above a
+                    # fullscreen curtain so interstitial captions remain visible.
+                    track = builder.track("effects-text", "视觉效果 · 浮动文字", 0)
                     clip = _clip(
                         builder.next_id("floating-text"),
                         track["id"],

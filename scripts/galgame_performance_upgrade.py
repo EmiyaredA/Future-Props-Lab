@@ -36,14 +36,16 @@ except ModuleNotFoundError:
 REPO_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_PROJECT_ID = "63ac832d-bff3-4053-9c9f-f55c9dafc52a"
 DEFAULT_SOURCE_ROOT = Path("/Users/tonghao/Projects/steins-gate-video/assets/games/steins_gate_0")
-DEFAULT_ANNOTATION_PATH = Path("/Users/tonghao/Downloads/广播剧.annotation (12).json")
+DEFAULT_ANNOTATION_PATH = Path("/Users/tonghao/Downloads/广播剧.annotation (14).json")
 BACKUP_ROOT = REPO_ROOT / ".runtime" / "galgame-import-backups"
 MAP_PATH = BACKUP_ROOT / "sg0-performance-asset-map.json"
 IMAGE_SUFFIXES = {".png", ".jpg", ".jpeg", ".webp"}
 LIP_SYNC_FPS = 5
 DIALOGUE_BOX_OPACITY = 0.82
-EXPECTED_ANNOTATION_SHA256 = "00652faa1715f7076220450ab162fd4f9ac0c9228a13f7bd824c3568f0f6f94f"
+EXPECTED_ANNOTATION_SHA256 = "4bee3fd1aec1bd5b9b4028e80ae04b5a620f6a2ab87bd86909f76bb52d319e23"
 EXPECTED_ANNOTATION_MULTI_SPEAKER_LINES = 12
+EXPECTED_CROWD_NORMALIZED_LINES = 10
+EXPECTED_STORY_MULTI_SPEAKER_LINES = 2
 GROUP_CG_DIALOGUE_IDS = frozenset(
     f"runaway-annotated-line-{line:04d}"
     for line in (85, 88, 109, 117, 169, 213, 230, 257, 322, 324, 377, 426, 463, 511)
@@ -55,6 +57,9 @@ EXPRESSION_CUES_PATH = REPO_ROOT / "scripts" / "galgame_runaway_expression_cues.
 DIALOGUE_EXPRESSION_CUES: dict[str, str] = json.loads(
     EXPRESSION_CUES_PATH.read_text(encoding="utf-8")
 )
+CAST_EXPRESSION_OVERRIDES = {
+    "runaway-annotated-line-0050": (("牧濑红莉栖", "e009-f000"),),
+}
 OPENING_DECLARATION_ID = "runaway-opening-declaration"
 OPENING_DECLARATION_TEXT = (
     "源剧情：【命运石之门0广播剧】自由粒子的逃逸\n\n"
@@ -118,6 +123,36 @@ TRANSITION_CARD_BLOCKS = (
         "id": "runaway-curtain-lab-hide",
         "type": "curtain",
         "atMs": 457_665,
+        "mode": "fullscreen",
+        "action": "hide",
+        "color": "#000000",
+        "opacity": 1,
+        "durationMs": 600,
+    },
+    {
+        "id": "runaway-curtain-explanation-show",
+        "type": "curtain",
+        "atMs": 682_514,
+        "mode": "fullscreen",
+        "action": "show",
+        "color": "#000000",
+        "opacity": 1,
+        "durationMs": 600,
+    },
+    {
+        "id": "runaway-transition-explanation-text",
+        "type": "floatingText",
+        "atMs": 683_114,
+        "text": "玲羽和众人解释一番过后......",
+        "x": 50,
+        "y": 50,
+        "color": "#F5F1E8",
+        "durationMs": 3_358,
+    },
+    {
+        "id": "runaway-curtain-explanation-hide",
+        "type": "curtain",
+        "atMs": 686_472,
         "mode": "fullscreen",
         "action": "hide",
         "color": "#000000",
@@ -824,6 +859,9 @@ def apply_annotation(document: dict[str, Any], annotation_path: Path) -> dict[st
     changed_text_count = 0
     changed_speaker_count = 0
     multi_speaker_count = 0
+    raw_multi_speaker_count = 0
+    crowd_normalized_count = 0
+    ensemble_character_id = find_character(document, ("众人",))["id"]
     expected: list[tuple[Any, ...]] = []
     for segment in segments:
         interval = (segment["start_ms"], segment["end_ms"])
@@ -832,7 +870,15 @@ def apply_annotation(document: dict[str, Any], annotation_path: Path) -> dict[st
             raise RuntimeError(f"新版对白无法按时间对齐：{interval}")
         text = annotation_text(segment)
         character_id = speaker_map[segment["speaker_id"]]
-        speaker_ids = [speaker_map[speaker_id] for speaker_id in segment["speaker_ids"]]
+        raw_speaker_ids = [speaker_map[speaker_id] for speaker_id in segment["speaker_ids"]]
+        if len(raw_speaker_ids) > 1:
+            raw_multi_speaker_count += 1
+        if len(raw_speaker_ids) > 3:
+            character_id = ensemble_character_id
+            speaker_ids = [ensemble_character_id]
+            crowd_normalized_count += 1
+        else:
+            speaker_ids = raw_speaker_ids
         if dialogue.get("text") != text:
             changed_text_count += 1
         if dialogue.get("characterId") != character_id:
@@ -860,7 +906,10 @@ def apply_annotation(document: dict[str, Any], annotation_path: Path) -> dict[st
         "changedTextCount": changed_text_count,
         "changedSpeakerCount": changed_speaker_count,
         "multiSpeakerCount": multi_speaker_count,
+        "rawMultiSpeakerCount": raw_multi_speaker_count,
         "expectedMultiSpeakerCount": EXPECTED_ANNOTATION_MULTI_SPEAKER_LINES,
+        "crowdNormalizedCount": crowd_normalized_count,
+        "storyMultiSpeakerCount": sum(len(item[2]) > 1 for item in expected),
         "expectedDialogueSignature": expected,
     }
 
@@ -918,6 +967,24 @@ def configure_dialogue_display_names(document: dict[str, Any]) -> None:
         character = character_by_id[dialogue["characterId"]]
         ensure_literal_display_name(character, display_name_id, value)
         dialogue["displayNameId"] = display_name_id
+
+
+def install_special_character_expressions(document: dict[str, Any]) -> None:
+    mayuri = find_character(document, ("椎名真由理",))
+    expressions = mayuri.setdefault("expressions", [])
+    source = next(expression for expression in expressions if expression["id"] == "e002-f000")
+    shy = deepcopy(source)
+    shy["id"] = "e010-f000"
+    shy["label"] = "害羞"
+    sequence = shy.get("sequence") or {}
+    for frame, mouth in zip(
+        sequence.get("frames", []),
+        ("closed", "half", "open"),
+        strict=False,
+    ):
+        frame["id"] = f"e010-mouth-{mouth}"
+    expressions[:] = [expression for expression in expressions if expression["id"] != shy["id"]]
+    expressions.append(shy)
 
 
 def target_fragment(document: dict[str, Any]) -> dict[str, Any]:
@@ -1170,7 +1237,7 @@ def install_performance_blocks(document: dict[str, Any], first_person_id: str) -
 
     last_expression_by_character: dict[str, str] = {}
     motion_block_count = 0
-    motion_block_limit = 27
+    motion_block_limit = 24
     for cue_index, dialogue in enumerate(dialogues):
         character_id = dialogue.get("characterId")
         if character_id in visible_character_ids:
@@ -1181,6 +1248,9 @@ def install_performance_blocks(document: dict[str, Any], first_person_id: str) -
             last_expression_by_character[character_id] = dialogue["expressionId"]
         else:
             dialogue.pop("expressionId", None)
+        for character_name, expression_id in CAST_EXPRESSION_OVERRIDES.get(dialogue["id"], ()):
+            override_character_id = find_character(document, (character_name,))["id"]
+            last_expression_by_character[override_character_id] = expression_id
         visible_ids = visible_cast_for_dialogue(
             dialogues, cue_index, first_person_id, visible_character_ids
         )
@@ -1462,6 +1532,9 @@ def audit_document(
         character_id = dialogue.get("characterId")
         if character_id in visible_character_ids and dialogue.get("expressionId"):
             last_expression_by_character[character_id] = dialogue["expressionId"]
+        for character_name, expression_id in CAST_EXPRESSION_OVERRIDES.get(dialogue["id"], ()):
+            override_character_id = find_character(document, (character_name,))["id"]
+            last_expression_by_character[override_character_id] = expression_id
         block = cast_block_by_id.get(f"perf-cast-{cue_index:03d}")
         if not block:
             continue
@@ -1814,6 +1887,7 @@ def audit_document(
         == [
             (368_743, "众人前往屋顶......", 3_700),
             (451_633, "众人回到lab......", 4_800),
+            (683_114, "玲羽和众人解释一番过后......", 3_358),
         ],
         "characterFadeBlocks": character_fades,
         "showCgCount": len(show_cg_blocks),
@@ -1876,7 +1950,7 @@ def audit_document(
     if checks["dialogueBodyFontSizePx"] != 34 or checks["dialogueBodyMaxWidthPercent"] != 100:
         raise RuntimeError("对白正文字号或可用宽度未按 V8 应用")
     if (
-        checks["explicitExpressionCueCount"] != 409
+        checks["explicitExpressionCueCount"] != 410
         or invalid_expression_dialogues
         or visible_hidden_portraits
         or stage_managed_visible_portraits
@@ -1892,7 +1966,24 @@ def audit_document(
         + checks["qOverlayDialogueCount"]
         != 514
     ):
-        raise RuntimeError("逐句表情或隐藏人物审计失败")
+        raise RuntimeError(
+            "逐句表情或隐藏人物审计失败："
+            + json.dumps(
+                {
+                    "explicitExpressionCueCount": checks["explicitExpressionCueCount"],
+                    "invalidExpressionDialogues": invalid_expression_dialogues,
+                    "visibleHiddenPortraits": visible_hidden_portraits,
+                    "stageManagedVisiblePortraits": stage_managed_visible_portraits,
+                    "duplicatePortraitLayerDialogues": duplicate_portrait_layer_dialogues,
+                    "hiddenVisiblePortraits": hidden_visible_portraits,
+                    "groupVisiblePortraits": group_visible_portraits,
+                    "qOverlayVisiblePortraits": q_overlay_visible_portraits,
+                    "staleCastExpressions": stale_cast_expressions,
+                    "fullscreenVisiblePortraits": fullscreen_visible_portraits,
+                },
+                ensure_ascii=False,
+            )
+        )
     if (
         not checks["nearDialogueIdsMatchCurated"]
         or checks["nearDialogueCount"] != 16
@@ -1982,7 +2073,7 @@ def audit_document(
     if checks["logicalLibraryCount"] != 701 or missing_mapping or missing_cg_mapping:
         raise RuntimeError("原作素材映射不完整")
     if (
-        checks["curtainCount"] != 4
+        checks["curtainCount"] != 6
         or not checks["curtainEventsExact"]
         or not checks["transitionTextsExact"]
         or checks["characterFadeBlocks"]
@@ -1999,7 +2090,10 @@ def audit_document(
     if annotation_audit is not None:
         if (
             annotation_audit["sha256"] != EXPECTED_ANNOTATION_SHA256
-            or annotation_audit["multiSpeakerCount"] != EXPECTED_ANNOTATION_MULTI_SPEAKER_LINES
+            or annotation_audit["rawMultiSpeakerCount"] != EXPECTED_ANNOTATION_MULTI_SPEAKER_LINES
+            or annotation_audit["multiSpeakerCount"] != EXPECTED_STORY_MULTI_SPEAKER_LINES
+            or annotation_audit["crowdNormalizedCount"] != EXPECTED_CROWD_NORMALIZED_LINES
+            or annotation_audit["storyMultiSpeakerCount"] != EXPECTED_STORY_MULTI_SPEAKER_LINES
             or dialogue_signature(fragment) != annotation_audit["expectedDialogueSignature"]
         ):
             raise RuntimeError("新版对白标注审计失败")
@@ -2024,11 +2118,12 @@ def transform_latest_story(
         annotation_audit["changedTextCount"],
         annotation_audit["changedSpeakerCount"],
     )
-    if observed_changes not in {(0, 0), (1, 0), (2, 0), (3, 0), (4, 0)}:
+    if observed_changes[0] not in range(0, 7) or observed_changes[1] not in range(0, 13):
         raise RuntimeError(f"新版对白变更数量异常：{observed_changes}")
     configure_dialogue_display_names(document)
     install_curated_scenes(document, mapping)
     upgrade_suzuha(document, mapping)
+    install_special_character_expressions(document)
     set_all_lip_sync_fps(document)
     enlarge_dialogue_text(document)
     first_person_id = first_person_okabe(document)["id"]

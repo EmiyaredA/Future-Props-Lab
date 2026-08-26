@@ -184,8 +184,8 @@ CG_ASSETS = (
         "篝在时间机器舱门前回头挥手，铃羽等待登舱。",
     ),
     _asset(
-        "harem-chaos-finale-v7",
-        "docs/assets/galgame-runaway-cgs/10-harem-chaos-finale-v7.png",
+        "harem-chaos-finale-v9",
+        "docs/assets/galgame-runaway-cgs/10-harem-chaos-finale-v9.png",
         "大家都是妈妈？",
         "跃迁后的平整空天台上，原作立绘形象的萌郁与琉华和众人将冈部围在误解的混乱中心。",
     ),
@@ -308,7 +308,7 @@ CG_EVENTS = (
     ),
     _event("rooftop-farewell", "rooftop-farewell", 1_655_044, 1_666_292),
     _event("time-machine-leap", "time-machine-leap-v1", 1_666_293, 1_677_392),
-    _event("harem-chaos-finale", "harem-chaos-finale-v7", 1_763_485, None),
+    _event("harem-chaos-finale", "harem-chaos-finale-v9", 1_763_485, None),
 )
 
 CG_EVENT_STARTS = frozenset(event["startMs"] for event in CG_EVENTS)

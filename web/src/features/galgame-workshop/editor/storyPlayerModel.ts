@@ -136,6 +136,20 @@ export type StoryPlayerRuntimeSnapshot = {
   advanceMode: "manual" | "auto" | "skip";
 };
 
+export function playerFrameCursor(
+  frame: PlayerFrame,
+  fallback: { fragmentId: string; blockIndex: number },
+) {
+  return {
+    fragmentId:
+      frame.mode === "content" || frame.mode === "stageOnly"
+        ? frame.fragmentId
+        : fallback.fragmentId,
+    blockIndex:
+      frame.mode === "content" ? frame.blockIndex : fallback.blockIndex,
+  };
+}
+
 export type StoryPlayerPlaybackRange = {
   fragmentId: string;
   startMs: number;
@@ -151,6 +165,7 @@ export type StoryPlayerProps = {
   startCursor?: { chapterId: string; fragmentId: string; blockIndex?: number };
   mode?: "edit" | "play";
   suppressMissingPortraitFallback?: boolean;
+  showAuthoringOverlays?: boolean;
   chrome?: "full" | "stage-only";
   editFragment?: GalgameStoryFragment;
   editBlockIndex?: number;

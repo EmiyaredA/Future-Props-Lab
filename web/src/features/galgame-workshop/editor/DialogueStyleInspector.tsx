@@ -707,12 +707,12 @@ export function DialogueStyleInspector({
 
       <label className="galgame-dialogue-range">
         <span>
-          底板透明度{" "}
+          底板整体透明度{" "}
           <strong>{Math.round(style.backgroundOpacity * 100)}%</strong>
         </span>
         <input
           type="range"
-          aria-label="对话框底板透明度"
+          aria-label="对话框底板整体透明度"
           min="20"
           max="100"
           value={Math.round(style.backgroundOpacity * 100)}
@@ -1040,14 +1040,14 @@ export function DialogueStyleInspector({
           <>
             <label className="galgame-dialogue-range">
               <span>
-                渐变顶部透明度{" "}
+                渐变顶部节点透明度{" "}
                 <strong>
                   {Math.round(style.background.gradientTopOpacity * 100)}%
                 </strong>
               </span>
               <input
                 type="range"
-                aria-label="对话框渐变顶部透明度"
+                aria-label="对话框渐变顶部节点透明度"
                 min="0"
                 max="100"
                 value={Math.round(style.background.gradientTopOpacity * 100)}
@@ -1065,14 +1065,14 @@ export function DialogueStyleInspector({
             </label>
             <label className="galgame-dialogue-range">
               <span>
-                渐变底部透明度{" "}
+                渐变底部节点透明度{" "}
                 <strong>
                   {Math.round(style.background.gradientBottomOpacity * 100)}%
                 </strong>
               </span>
               <input
                 type="range"
-                aria-label="对话框渐变底部透明度"
+                aria-label="对话框渐变底部节点透明度"
                 min="0"
                 max="100"
                 value={Math.round(style.background.gradientBottomOpacity * 100)}

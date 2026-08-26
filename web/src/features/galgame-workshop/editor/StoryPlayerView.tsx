@@ -20,6 +20,10 @@ import { stageAspectModeLabel } from "@features/galgame-workshop/editor/stageVie
 import { RichTextView } from "@features/galgame-workshop/editor/RichTextEditor";
 import { storyPlayerSceneLayerStyle } from "@features/galgame-workshop/editor/storyPlayerSceneStyle";
 import { dialogueDisplayName } from "@features/galgame-workshop/editor/richText";
+import {
+  dialogueEffectiveOpacity,
+  dialogueSpeakerNameLayout,
+} from "@features/galgame-workshop/api/dialogueBoxStyle";
 import type { useStoryPlayerController } from "@features/galgame-workshop/editor/useStoryPlayerController";
 import {
   STAGE_ASPECT_OPTIONS,
@@ -70,6 +74,7 @@ export function StoryPlayerView({ model }: { model: StoryPlayerViewModel }) {
     tryPlay,
     characters,
     scenes,
+    showAuthoringOverlays,
     displayFrame,
     palette,
     activeDialogue,
@@ -142,6 +147,26 @@ export function StoryPlayerView({ model }: { model: StoryPlayerViewModel }) {
     "1em",
     10,
   );
+  const dialogueNameLayout = dialogueSpeakerNameLayout(
+    dialogueStyle.speakerName.placement,
+  );
+  const dialogueNamePositionStyle: CSSProperties | undefined =
+    dialogueStyle.layout.mode === "bottomOverlay" &&
+    dialogueNameLayout.vertical === "top"
+      ? { top: "var(--dialogue-name-top, 9px)" }
+      : undefined;
+  const dialogueBodyPositionStyle: CSSProperties | undefined =
+    dialogueStyle.layout.mode === "bottomOverlay" &&
+    dialogueNameLayout.vertical === "top"
+      ? {
+          top: "max(var(--dialogue-inset-top, 0%), calc(var(--dialogue-name-top, 9px) + var(--dialogue-name-font-size, 1em) + var(--dialogue-name-gap, 7px)))",
+        }
+      : dialogueStyle.layout.mode !== "bottomOverlay" &&
+          dialogueStyle.speakerName.placement === "topCenter"
+        ? {
+            marginTop: "calc(var(--dialogue-name-font-size, 1em) * 1.65)",
+          }
+        : undefined;
   const dialogueOverlayBodyWidth =
     Math.max(0, 100 - dialogueStyle.layout.contentInsetXPercent * 2) *
     (dialogueStyle.body.maxWidthPercent / 100);
@@ -570,7 +595,9 @@ export function StoryPlayerView({ model }: { model: StoryPlayerViewModel }) {
               />
             </div>
           ))}
-          {customUiComponents.length === 0 ? (
+          {!exportMode &&
+          showAuthoringOverlays &&
+          customUiComponents.length === 0 ? (
             <span>
               {scenes.get(displayFrame.stage.sceneId ?? "")?.name ??
                 "等待场景 Block"}
@@ -1086,6 +1113,8 @@ export function StoryPlayerView({ model }: { model: StoryPlayerViewModel }) {
           ) : displayText ? (
             <button
               className={`galgame-dialogue-box layout-${dialogueStyle.layout.mode} background-${dialogueStyle.background.mode} body-${dialogueStyle.body.align} name-${dialogueStyle.speakerName.placement} name-decoration-${dialogueStyle.speakerName.decoration} indicator-${dialogueStyle.advanceIndicator.position} indicator-style-${dialogueStyle.advanceIndicator.style} top-rule-${dialogueStyle.background.topRule}`}
+              data-speaker-horizontal={dialogueNameLayout.horizontal}
+              data-speaker-vertical={dialogueNameLayout.vertical}
               type="button"
               onClick={mode === "play" ? advance : undefined}
               style={
@@ -1094,10 +1123,16 @@ export function StoryPlayerView({ model }: { model: StoryPlayerViewModel }) {
                     dialogueStyle.background.mode === "verticalGradient"
                       ? `linear-gradient(180deg, ${playerHexToRgba(
                           dialogueStyle.backgroundColor,
-                          dialogueStyle.background.gradientTopOpacity,
+                          dialogueEffectiveOpacity(
+                            dialogueStyle.backgroundOpacity,
+                            dialogueStyle.background.gradientTopOpacity,
+                          ),
                         )}, ${playerHexToRgba(
                           dialogueStyle.backgroundColor,
-                          dialogueStyle.background.gradientBottomOpacity,
+                          dialogueEffectiveOpacity(
+                            dialogueStyle.backgroundOpacity,
+                            dialogueStyle.background.gradientBottomOpacity,
+                          ),
                         )})`
                       : playerHexToRgba(
                           dialogueStyle.backgroundColor,
@@ -1115,6 +1150,8 @@ export function StoryPlayerView({ model }: { model: StoryPlayerViewModel }) {
                   "--dialogue-overlay-body-width": `${dialogueOverlayBodyWidth}%`,
                   "--dialogue-body-font-size": dialogueBodyFontSize,
                   "--dialogue-name-font-size": dialogueNameFontSize,
+                  "--dialogue-name-top": logicalFontSize(15, "15px", 8),
+                  "--dialogue-name-gap": logicalFontSize(14, "14px", 7),
                   "--dialogue-line-height": dialogueStyle.body.lineHeight,
                   "--dialogue-name-color": dialogueStyle.nameColor,
                   "--dialogue-rule-color": playerHexToRgba(
@@ -1153,7 +1190,10 @@ export function StoryPlayerView({ model }: { model: StoryPlayerViewModel }) {
                       />
                     </span>
                   ) : null}
-                  <strong className="galgame-dialogue-speaker-name">
+                  <strong
+                    className="galgame-dialogue-speaker-name"
+                    style={dialogueNamePositionStyle}
+                  >
                     {dialogueSpeakerIds(displayFrame.block)
                       .map((speakerId, index) => {
                         const character = characters.get(speakerId);
@@ -1169,9 +1209,17 @@ export function StoryPlayerView({ model }: { model: StoryPlayerViewModel }) {
                   </strong>
                 </>
               ) : (
-                <small className="galgame-dialogue-speaker-name">旁白</small>
+                <small
+                  className="galgame-dialogue-speaker-name"
+                  style={dialogueNamePositionStyle}
+                >
+                  旁白
+                </small>
               )}
-              <span className="galgame-dialogue-body">
+              <span
+                className="galgame-dialogue-body"
+                style={dialogueBodyPositionStyle}
+              >
                 {visibleRichContent ? (
                   <RichTextView
                     content={visibleRichContent}

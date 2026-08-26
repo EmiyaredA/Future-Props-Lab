@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Bug,
   ExternalLink,
+  Eye,
   Film,
   GitBranch,
   Image,
@@ -41,6 +42,10 @@ import {
   type StoryPlayerRuntimeSnapshot,
 } from "@features/galgame-workshop/editor/storyPlayerModel";
 import { visibleStageActors } from "@features/galgame-workshop/editor/stage";
+import {
+  loadFastPreviewAuthoringOverlays,
+  saveFastPreviewAuthoringOverlays,
+} from "@features/galgame-workshop/editor/fastPreviewPreferences";
 import "@features/galgame-workshop/editor/fast-preview-workspace.css";
 
 export type {
@@ -117,6 +122,9 @@ export function FastPreviewWorkspace({
   const [editMessage, setEditMessage] = useState("");
   const [logs, setLogs] = useState<string[]>(["预演快照已冻结"]);
   const [rangeLoop, setRangeLoop] = useState(Boolean(playbackRange?.loop));
+  const [showAuthoringOverlays, setShowAuthoringOverlays] = useState(
+    loadFastPreviewAuthoringOverlays,
+  );
   const [exactFrame, setExactFrame] = useState<{
     url: string;
     fragmentId: string;
@@ -178,32 +186,38 @@ export function FastPreviewWorkspace({
         : undefined,
     [playbackRange, rangeLoop, tab],
   );
+  const activeFragmentId =
+    snapshot?.frame.mode === "content" || snapshot?.frame.mode === "stageOnly"
+      ? snapshot.frame.fragmentId
+      : (snapshot?.fragmentId ?? startCursor.fragmentId);
+  const activeBlockIndex =
+    snapshot?.frame.mode === "content"
+      ? snapshot.frame.blockIndex
+      : snapshot?.blockIndex;
+  const snapshotVariables = snapshot?.variables;
   const activeFragment = useMemo(
     () =>
       previewDocument.chapters
         ?.flatMap((chapter) => chapter.fragments ?? [])
-        .find(
-          (fragment) =>
-            fragment.id === (snapshot?.fragmentId ?? startCursor.fragmentId),
-        ),
-    [previewDocument.chapters, snapshot?.fragmentId, startCursor.fragmentId],
+        .find((fragment) => fragment.id === activeFragmentId),
+    [activeFragmentId, previewDocument.chapters],
   );
   const dialogueQueue = useMemo(() => {
     const content = (activeFragment?.blocks ?? []).flatMap(
       (block, blockIndex) => {
-        const text = playerContentText(block, snapshot?.variables);
+        const text = playerContentText(block, snapshotVariables);
         return text ? [{ block, blockIndex, text }] : [];
       },
     );
     const active = content.findIndex(
-      (item) => item.blockIndex === snapshot?.blockIndex,
+      (item) => item.blockIndex === activeBlockIndex,
     );
     return {
       previous: active > 0 ? content[active - 1] : undefined,
       current: active >= 0 ? content[active] : content[0],
       next: active >= 0 ? content[active + 1] : content[1],
     };
-  }, [activeFragment?.blocks, snapshot?.blockIndex, snapshot?.variables]);
+  }, [activeBlockIndex, activeFragment?.blocks, snapshotVariables]);
 
   useEffect(() => {
     playerRef.current?.restart();
@@ -446,11 +460,14 @@ export function FastPreviewWorkspace({
     }
   };
   return (
-    <main className="galgame-fast-preview">
+    <main
+      className="galgame-fast-preview"
+      data-authoring-overlays={showAuthoringOverlays ? "true" : "false"}
+    >
       <header>
         <span>
           <strong>快速预演</strong>
-          <small>{sourceNotice ?? "启动时内存快照"}</small>
+          <small>动态预演 · {sourceNotice ?? "启动时内存快照"}</small>
         </span>
         <nav>
           {onReload ? (
@@ -465,6 +482,18 @@ export function FastPreviewWorkspace({
               独立窗口
             </button>
           ) : null}
+          <button
+            type="button"
+            aria-pressed={showAuthoringOverlays}
+            onClick={() => {
+              const visible = !showAuthoringOverlays;
+              setShowAuthoringOverlays(visible);
+              saveFastPreviewAuthoringOverlays(visible);
+            }}
+          >
+            <Eye aria-hidden />
+            {showAuthoringOverlays ? "隐藏辅助信息" : "显示辅助信息"}
+          </button>
           <button
             type="button"
             disabled={Boolean(exactFrameUnavailableReason) || exactFrameLoading}
@@ -519,6 +548,7 @@ export function FastPreviewWorkspace({
             playbackRange={effectivePlaybackRange}
             mode="play"
             suppressMissingPortraitFallback
+            showAuthoringOverlays={showAuthoringOverlays}
             chrome="stage-only"
             onRuntimeSnapshot={receiveSnapshot}
           />

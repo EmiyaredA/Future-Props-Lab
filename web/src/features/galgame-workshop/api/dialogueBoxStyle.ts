@@ -15,6 +15,30 @@ export type ResolvedDialogueBoxStyle = GalgameStoryDialogueBoxStyle & {
   >;
 };
 
+export type DialogueSpeakerNameLayout = {
+  horizontal: "left" | "center";
+  vertical: "top" | "bottom" | "hidden";
+};
+
+export function dialogueEffectiveOpacity(
+  overallOpacity: number,
+  nodeOpacity = 1,
+) {
+  return Math.min(1, Math.max(0, overallOpacity * nodeOpacity));
+}
+
+export function dialogueSpeakerNameLayout(
+  placement: NonNullable<
+    GalgameStoryDialogueBoxStyle["speakerName"]
+  >["placement"],
+): DialogueSpeakerNameLayout {
+  if (placement === "hidden") return { horizontal: "left", vertical: "hidden" };
+  return {
+    horizontal: placement.endsWith("Center") ? "center" : "left",
+    vertical: placement.startsWith("top") ? "top" : "bottom",
+  };
+}
+
 const BASE_DIALOGUE_BOX_STYLE: ResolvedDialogueBoxStyle = {
   preset: "dark",
   assetId: null,

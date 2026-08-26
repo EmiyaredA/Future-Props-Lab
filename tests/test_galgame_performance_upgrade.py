@@ -5,6 +5,7 @@ from scripts.galgame_performance_upgrade import (
     DIALOGUE_BOX_OPACITY,
     DIALOGUE_EXPRESSION_CUES,
     EXPECTED_ANNOTATION_SHA256,
+    EXPECTED_CROWD_NORMALIZED_LINES,
     LIP_SYNC_FPS,
     OPENING_DECLARATION_ID,
     OPENING_DECLARATION_TEXT,
@@ -15,6 +16,7 @@ from scripts.galgame_performance_upgrade import (
     fullscreen_cg_at,
     install_cgs,
     install_opening_declaration,
+    install_special_character_expressions,
     install_transition_cards,
     remembered_cast_expression,
     sha256,
@@ -30,7 +32,10 @@ from app.galgame_workshop.video_compiler_support import actor_layout
 
 
 def test_runaway_expression_cues_are_explicit_and_personality_checked() -> None:
-    assert len(DIALOGUE_EXPRESSION_CUES) == 409
+    assert len(DIALOGUE_EXPRESSION_CUES) == 410
+    assert DIALOGUE_EXPRESSION_CUES["runaway-annotated-line-0026"] == "e009-f000"
+    assert DIALOGUE_EXPRESSION_CUES["runaway-annotated-line-0050"] == "e010-f000"
+    assert DIALOGUE_EXPRESSION_CUES["runaway-annotated-line-0051"] == "e009-f000"
     assert DIALOGUE_EXPRESSION_CUES["runaway-annotated-line-0176"] == "e005-f000"
     assert DIALOGUE_EXPRESSION_CUES["runaway-annotated-line-0184"] == "e004-f000"
     assert DIALOGUE_EXPRESSION_CUES["runaway-annotated-line-0186"] == "e005-f000"
@@ -144,7 +149,7 @@ def test_opening_full_cast_cg_and_declaration_finish_before_voice() -> None:
 
 
 def test_v8_annotation_and_scene_timing_contract() -> None:
-    assert DEFAULT_ANNOTATION_PATH.name == "广播剧.annotation (12).json"
+    assert DEFAULT_ANNOTATION_PATH.name == "广播剧.annotation (14).json"
     assert sha256(DEFAULT_ANNOTATION_PATH) == EXPECTED_ANNOTATION_SHA256
     assert LIP_SYNC_FPS == 5
     assert (372_443, "BG11A2") in SCENE_BEATS
@@ -157,6 +162,9 @@ def test_v8_annotation_and_scene_timing_contract() -> None:
     annotation = json.loads(DEFAULT_ANNOTATION_PATH.read_text(encoding="utf-8"))
     assert len(annotation["segments"]) == 514
     assert sum(len(segment["speaker_ids"]) > 1 for segment in annotation["segments"]) == 12
+    assert sum(len(segment["speaker_ids"]) > 3 for segment in annotation["segments"]) == (
+        EXPECTED_CROWD_NORMALIZED_LINES
+    )
     ensemble_id = next(
         speaker["id"] for speaker in annotation["speakers"] if speaker["name"] == "众人"
     )
@@ -169,19 +177,58 @@ def test_v8_annotation_and_scene_timing_contract() -> None:
         "你在说什么？我可是气量很大的男人！"
     )
     assert annotation["segments"][248]["localized_texts"][0]["text"] == "呐，篝的肚子饿了。"
+    assert annotation["segments"][315]["localized_texts"][0]["text"] == "爸爸也最喜欢篝的哟！"
 
 
-def test_v8_transition_cards_are_exactly_two_black_intertitles() -> None:
+def test_v8_transition_cards_include_explanation_intertitle() -> None:
     document = {
         "chapters": [{"fragments": [{"timeline": {"durationMs": 1_780_344}, "blocks": []}]}]
     }
     install_transition_cards(document)
     blocks = document["chapters"][0]["fragments"][0]["blocks"]
     assert blocks == list(TRANSITION_CARD_BLOCKS)
-    assert sum(block["type"] == "curtain" for block in blocks) == 4
+    assert sum(block["type"] == "curtain" for block in blocks) == 6
     assert [block["text"] for block in blocks if block["type"] == "floatingText"] == [
         "众人前往屋顶......",
         "众人回到lab......",
+        "玲羽和众人解释一番过后......",
+    ]
+
+
+def test_mayuri_gets_a_shy_expression_preset_with_lip_sync() -> None:
+    document = {
+        "characters": [
+            {
+                "id": "mayuri",
+                "name": "椎名真由理",
+                "expressions": [
+                    {
+                        "id": "e002-f000",
+                        "label": "笑容",
+                        "assetId": "closed",
+                        "sequence": {
+                            "frames": [
+                                {"id": "old-closed", "assetId": "closed"},
+                                {"id": "old-half", "assetId": "half"},
+                                {"id": "old-open", "assetId": "open"},
+                            ]
+                        },
+                    }
+                ],
+            }
+        ]
+    }
+    install_special_character_expressions(document)
+    shy = next(
+        expression
+        for expression in document["characters"][0]["expressions"]
+        if expression["id"] == "e010-f000"
+    )
+    assert shy["label"] == "害羞"
+    assert [frame["assetId"] for frame in shy["sequence"]["frames"]] == [
+        "closed",
+        "half",
+        "open",
     ]
 
 
@@ -206,7 +253,7 @@ def test_v8_cg_timing_and_scene_consistency() -> None:
     )
     assert assets["kagari-imitation-v9"]["path"].name.endswith("v9.png")
     assert assets["suzuha-maho-v2"]["path"].name.endswith("v2.png")
-    assert assets["harem-chaos-finale-v7"]["path"].name.endswith("v7.png")
+    assert assets["harem-chaos-finale-v9"]["path"].name.endswith("v9.png")
 
 
 def test_fullscreen_cg_detection_excludes_phone_overlay() -> None:

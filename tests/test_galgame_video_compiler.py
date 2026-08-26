@@ -188,6 +188,57 @@ def test_long_floating_text_uses_bundled_chinese_font() -> None:
     assert result.plan.asset_paths[FLOATING_TEXT_FONT_ASSET_ID] == FONT_REGULAR
 
 
+def test_floating_text_renders_above_fullscreen_curtain() -> None:
+    document = {
+        "assets": [],
+        "scenes": [],
+        "cgs": [],
+        "characters": [],
+        "presentation": {"dialogueBox": {}},
+        "chapters": [
+            {
+                "id": "chapter",
+                "fragments": [
+                    {
+                        "id": "main",
+                        "timeline": {"durationMs": 4_000},
+                        "blocks": [
+                            {
+                                "id": "curtain-show",
+                                "type": "curtain",
+                                "atMs": 0,
+                                "action": "show",
+                                "mode": "fullscreen",
+                                "durationMs": 0,
+                                "color": "#000000",
+                                "opacity": 1,
+                            },
+                            {
+                                "id": "interstitial-copy",
+                                "type": "floatingText",
+                                "atMs": 0,
+                                "text": "玲羽和众人解释一番过后......",
+                                "durationMs": 4_000,
+                            },
+                        ],
+                    }
+                ],
+            }
+        ],
+    }
+
+    result = compile_galgame_render_plan(
+        document,
+        {"preset": "1080p30", "resolvedFragmentIds": ["main"]},
+        fragment_durations_ms=[4_000],
+        total_ms=4_000,
+        asset_paths={},
+    )
+
+    tracks = {track.id: track for track in result.plan.document.tracks}
+    assert tracks["effects-text"].order < tracks["curtain"].order
+
+
 def test_clip_export_does_not_restore_expired_floating_text() -> None:
     document = {
         "assets": [],

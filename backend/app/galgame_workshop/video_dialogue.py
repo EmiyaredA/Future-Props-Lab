@@ -229,11 +229,14 @@ def _draw_name(
     font = _font(FONT_MEDIUM, size)
     bbox = draw.textbbox((0, 0), name, font=font)
     width = bbox[2] - bbox[0]
-    if placement.endswith("Center"):
-        x = (panel[0] + panel[2] - width) // 2
-    else:
-        x = content[0]
-    y = content[1] if placement.startswith("top") else panel[1] + 15
+    x, y, body_y = _speaker_name_geometry(
+        placement=placement,
+        name_width=width,
+        font_size=size,
+        layout_mode=str(style["layout"]["mode"]),
+        content=content,
+        panel=panel,
+    )
     color = ImageColor.getrgb(str(style["nameColor"]))
     draw.text(
         (x, y), name, font=font, fill=(*color, 255), stroke_width=1, stroke_fill=(0, 0, 0, 110)
@@ -242,7 +245,25 @@ def _draw_name(
         middle = y + size // 2
         draw.line((x - 88, middle, x - 18, middle), fill=(*color, 150), width=1)
         draw.line((x + width + 18, middle, x + width + 88, middle), fill=(*color, 150), width=1)
-    return y + round(size * 1.65) if placement.startswith("top") else max(content[1], y + size + 14)
+    return body_y
+
+
+def _speaker_name_geometry(
+    *,
+    placement: str,
+    name_width: int,
+    font_size: int,
+    layout_mode: str,
+    content: tuple[int, int, int, int],
+    panel: tuple[int, int, int, int],
+) -> tuple[int, int, int]:
+    centered = placement.endswith("Center")
+    x = (panel[0] + panel[2] - name_width) // 2 if centered else content[0]
+    if placement.startswith("top"):
+        y = panel[1] + 15 if layout_mode == "bottomOverlay" else content[1]
+        return x, y, max(content[1], y + font_size + 14)
+    y = max(content[1], content[3] - round(font_size * 1.25))
+    return x, y, content[1]
 
 
 def _draw_indicator(

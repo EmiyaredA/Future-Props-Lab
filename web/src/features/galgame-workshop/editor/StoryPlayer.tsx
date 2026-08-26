@@ -5,6 +5,7 @@ import type {
   StoryPlayerHandle,
   StoryPlayerProps,
 } from "@features/galgame-workshop/editor/storyPlayerModel";
+import { playerFrameCursor } from "@features/galgame-workshop/editor/storyPlayerModel";
 
 export type { StoryPlayerHandle };
 
@@ -25,13 +26,17 @@ export const StoryPlayer = forwardRef<StoryPlayerHandle, StoryPlayerProps>(
         model.activeTimeline ? model.skipTimelineStep(1) : model.advance(),
     }));
     useEffect(() => {
+      const frameCursor = playerFrameCursor(
+        model.frame,
+        model.runtimeRef.current,
+      );
       onRuntimeSnapshot?.({
         frame: model.frame,
         stage: model.frame.stage,
         variables: model.runtimeRef.current.variables,
         chapterId: model.runtimeRef.current.chapterId,
-        fragmentId: model.runtimeRef.current.fragmentId,
-        blockIndex: model.runtimeRef.current.blockIndex,
+        fragmentId: frameCursor.fragmentId,
+        blockIndex: frameCursor.blockIndex,
         positionMs: model.timelinePositionMs,
         durationMs: model.activeTimeline?.durationMs,
         playing: model.timelinePlaying,
