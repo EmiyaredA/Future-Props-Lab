@@ -190,6 +190,12 @@ CG_ASSETS = (
         "跃迁后的平整空天台上，原作立绘形象的萌郁与琉华和众人将冈部围在误解的混乱中心。",
     ),
     _asset(
+        "ending-blackboard-v1",
+        "docs/assets/galgame-ui/opening-blackboard-v1.png",
+        "片尾感谢黑板",
+        "复用开场的透明旧式深绿黑板，在最后一句对白结束后显示感谢文字。",
+    ),
+    _asset(
         "okabe-main-phone-overlay-v2",
         "docs/assets/galgame-ui/okabe-main-phone-overlay-v2.png",
         "冈部手机界面",
@@ -309,6 +315,14 @@ CG_EVENTS = (
     _event("rooftop-farewell", "rooftop-farewell", 1_655_044, 1_666_292),
     _event("time-machine-leap", "time-machine-leap-v1", 1_666_293, 1_677_392),
     _event("harem-chaos-finale", "harem-chaos-finale-v9", 1_763_485, None),
+    _event(
+        "ending-blackboard",
+        "ending-blackboard-v1",
+        1_773_594,
+        None,
+        overlay=True,
+        overlay_width=62,
+    ),
 )
 
 CG_EVENT_STARTS = frozenset(event["startMs"] for event in CG_EVENTS)

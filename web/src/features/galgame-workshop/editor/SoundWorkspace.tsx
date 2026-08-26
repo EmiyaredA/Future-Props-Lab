@@ -29,6 +29,7 @@ import {
   type GalgameStoryAudioAsset,
   type GalgameStoryProject,
 } from "@features/galgame-workshop/api";
+import { formatFileSize } from "@shared/lib/fileSize";
 import { getCatalog } from "@features/models";
 import { dialogueSpeakerIds } from "@features/galgame-workshop/editor/dialogue";
 import {
@@ -103,13 +104,6 @@ function speakerTone(speaker: string) {
   for (const character of speaker)
     hash = (hash * 31 + character.charCodeAt(0)) | 0;
   return Math.abs(hash) % 6;
-}
-
-function formatBytes(bytes?: number | null) {
-  if (bytes === undefined || bytes === null) return "—";
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 }
 
 function modeForRole(role: AudioRole): SoundMode {
@@ -709,7 +703,7 @@ export function SoundWorkspace({
                     file?.durationMs ?? measuredDurations[asset.fileId],
                   )}
                 </time>
-                <span>{formatBytes(file?.byte_size)}</span>
+                <span>{formatFileSize(file?.byte_size)}</span>
                 <button
                   type="button"
                   className="galgame-sound-row-more"

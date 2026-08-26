@@ -14,6 +14,7 @@ import {
 import { prepareTextOnlyAnnotationImport } from "./annotationTextImport";
 import type { AnnotationSnapshot, AudioAnnotationDocument } from "./types";
 import type { AudioAnnotationEditorController } from "./useAudioAnnotationEditorController";
+import type { SpeakerImportSource } from "./speakerImportSource";
 
 function snapshot(document: AudioAnnotationDocument): AnnotationSnapshot {
   return {
@@ -25,8 +26,10 @@ function snapshot(document: AudioAnnotationDocument): AnnotationSnapshot {
 
 export function AudioAnnotationEditorDialogs({
   controller,
+  speakerImportSource,
 }: {
   controller: AudioAnnotationEditorController;
+  speakerImportSource?: SpeakerImportSource;
 }) {
   const {
     applySnapshot,
@@ -63,6 +66,7 @@ export function AudioAnnotationEditorDialogs({
   return (
     <>
       <AudioAnnotationSpeakerManager
+        importSource={speakerImportSource}
         open={speakerManager}
         projectTitle={project.title}
         speakers={document.speakers}

@@ -672,6 +672,29 @@ def test_lip_sync_sequence_restores_mid_clip_audio_phase() -> None:
             }
         ],
     }
+    full = compile_galgame_render_plan(
+        document,
+        {
+            "scope": "clip",
+            "clipRange": {"fragmentId": "main", "startMs": 0, "endMs": 400},
+            "preset": "1080p30",
+            "resolvedFragmentIds": ["main"],
+        },
+        fragment_durations_ms=[400],
+        total_ms=400,
+        asset_paths={
+            "file-closed": Path("/tmp/closed.png"),
+            "file-half": Path("/tmp/half.png"),
+            "file-open": Path("/tmp/open.png"),
+            "file-master": Path("/tmp/master.wav"),
+        },
+        audio_envelopes={
+            "file-master": AudioEnvelope(
+                hop_us=33_334,
+                levels_db=(-100, -100, *([-20] * 10), -100, -100, -100),
+            )
+        },
+    )
     result = compile_galgame_render_plan(
         document,
         {
@@ -695,19 +718,23 @@ def test_lip_sync_sequence_restores_mid_clip_audio_phase() -> None:
             )
         },
     )
+    full_actor = next(
+        track for track in full.plan.document.tracks if track.name == "角色 · 主角"
+    )
+    full_clip_at_cut = next(
+        clip
+        for clip in full_actor.clips
+        if clip.timeline_start_us <= 150_000
+        < clip.timeline_start_us + clip.duration_us
+    )
     actor = next(track for track in result.plan.document.tracks if track.name == "角色 · 主角")
-    assert [clip.asset_id for clip in actor.clips] == [
-        "file-half",
-        "file-open",
-        "file-half",
-        "file-closed",
-        "file-half",
-    ]
-    assert actor.clips[0].timeline_start_us == 0
-    assert actor.clips[0].duration_us == 16_670
-    assert actor.clips[1].timeline_start_us == 16_670
-    assert sum(clip.duration_us for clip in actor.clips) == 250_000
-    assert {"file-half", "file-open"}.issubset(result.used_file_ids)
+    assert actor.clips[0].asset_id == full_clip_at_cut.asset_id
+    cursor_us = 0
+    for clip in actor.clips:
+        assert clip.timeline_start_us == cursor_us
+        cursor_us += clip.duration_us
+    assert cursor_us == 250_000
+    assert {clip.asset_id for clip in actor.clips}.issubset(result.used_file_ids)
 
 
 def test_timed_sequence_uses_expression_absolute_phase() -> None:

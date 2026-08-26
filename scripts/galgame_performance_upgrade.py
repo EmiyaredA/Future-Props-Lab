@@ -61,6 +61,8 @@ CAST_EXPRESSION_OVERRIDES = {
     "runaway-annotated-line-0050": (("牧濑红莉栖", "e009-f000"),),
 }
 OPENING_DECLARATION_ID = "runaway-opening-declaration"
+ENDING_THANKS_ID = "runaway-ending-thanks"
+ENDING_THANKS_TEXT = "谢谢观看"
 OPENING_DECLARATION_TEXT = (
     "源剧情：【命运石之门0广播剧】自由粒子的逃逸\n\n"
     "本视频为up主自制的galgame版本\n"
@@ -769,6 +771,26 @@ def install_opening_declaration(document: dict[str, Any]) -> None:
     fragment["blocks"] = retained
 
 
+def install_ending_thanks(document: dict[str, Any]) -> None:
+    fragment = target_fragment(document)
+    retained = [
+        block for block in fragment.get("blocks", []) if block.get("id") != ENDING_THANKS_ID
+    ]
+    retained.append(
+        {
+            "id": ENDING_THANKS_ID,
+            "type": "floatingText",
+            "atMs": 1_774_194,
+            "text": ENDING_THANKS_TEXT,
+            "x": 50,
+            "y": 50,
+            "color": "#F4E7C5",
+            "durationMs": 6_150,
+        }
+    )
+    fragment["blocks"] = retained
+
+
 def install_transition_cards(document: dict[str, Any]) -> None:
     fragment = target_fragment(document)
     managed_ids = {block["id"] for block in TRANSITION_CARD_BLOCKS}
@@ -1154,6 +1176,22 @@ def remembered_cast_expression(
     ).get("defaultExpressionId")
 
 
+def clear_adjacent_direct_portrait_overlaps(dialogues: list[dict[str, Any]]) -> list[str]:
+    cleared: list[str] = []
+    for current, following in zip(dialogues, dialogues[1:], strict=False):
+        current_portrait = current.get("portrait", {})
+        following_portrait = following.get("portrait", {})
+        if (
+            current.get("characterId") != following.get("characterId")
+            and current_portrait.get("visible")
+            and following_portrait.get("visible")
+            and current_portrait.get("positionId") == following_portrait.get("positionId")
+        ):
+            current_portrait["keepAfter"] = False
+            cleared.append(current["id"])
+    return cleared
+
+
 def fullscreen_cg_at(milliseconds: int) -> dict[str, Any] | None:
     return next(
         (
@@ -1381,6 +1419,8 @@ def install_performance_blocks(document: dict[str, Any], first_person_id: str) -
                     }
                 )
                 motion_block_count += 1
+    clear_adjacent_direct_portrait_overlaps(dialogues)
+    dialogues[-1]["hideDialogueAfter"] = True
     fragment["blocks"] = [*performance, *retained]
     if len(fragment["blocks"]) > 1000:
         raise RuntimeError(f"演出 Block 超过上限：{len(fragment['blocks'])}")
@@ -1613,6 +1653,9 @@ def audit_document(
     opening_declaration_blocks = [
         block for block in fragment.get("blocks", []) if block.get("id") == OPENING_DECLARATION_ID
     ]
+    ending_thanks_blocks = [
+        block for block in fragment.get("blocks", []) if block.get("id") == ENDING_THANKS_ID
+    ]
     opening_event = next(
         (event for event in CG_EVENTS if event["key"] == "full-cast-opening"), None
     )
@@ -1670,9 +1713,14 @@ def audit_document(
     final_cg_blocks = [
         block for block in show_cg_blocks if block["id"] == "runaway-cg-show-harem-chaos-finale"
     ]
-    final_cg_persists = (
+    ending_blackboard_blocks = [
+        block for block in show_cg_blocks if block["id"] == "runaway-cg-show-ending-blackboard"
+    ]
+    final_cg_hands_off_to_thanks = (
         len(final_cg_blocks) == 1
         and final_cg_blocks[0]["atMs"] == 1_763_485
+        and len(ending_blackboard_blocks) == 1
+        and ending_blackboard_blocks[0]["atMs"] == 1_773_594
         and not any(block["atMs"] >= 1_763_485 for block in hide_cg_blocks)
     )
     fullscreen_events = [event for event in CG_EVENTS if event["displayMode"] == "fullscreen"]
@@ -1914,7 +1962,15 @@ def audit_document(
         and opening_event["startMs"] == 0
         and opening_event["endMs"] == 11_500
         and opening_event["endMs"] < first_dialogue_start_ms,
-        "finalCgPersists": final_cg_persists,
+        "finalCgHandsOffToThanks": final_cg_hands_off_to_thanks,
+        "endingThanksReady": len(ending_thanks_blocks) == 1
+        and ending_thanks_blocks[0].get("atMs") == 1_774_194
+        and ending_thanks_blocks[0].get("durationMs") == 6_150
+        and ending_thanks_blocks[0].get("text") == ENDING_THANKS_TEXT
+        and ending_thanks_blocks[0].get("x") == 50
+        and ending_thanks_blocks[0].get("y") == 50
+        and ending_thanks_blocks[0].get("color") == "#F4E7C5"
+        and dialogues[-1].get("hideDialogueAfter") is True,
         "fullscreenCgTimingErrors": fullscreen_timing_errors,
         "cgEntryStageFlashRisks": cg_entry_stage_flash_risks,
         "cgEntryPortraitFlashRisks": cg_entry_portrait_flash_risks,
@@ -2040,7 +2096,8 @@ def audit_document(
         or not checks["qOverlayReady"]
         or not checks["openingDeclarationReady"]
         or not checks["openingCgBeforeVoice"]
-        or not checks["finalCgPersists"]
+        or not checks["finalCgHandsOffToThanks"]
+        or not checks["endingThanksReady"]
         or checks["fullscreenCgTimingErrors"]
         or checks["cgEntryStageFlashRisks"]
         or checks["cgEntryPortraitFlashRisks"]
@@ -2060,7 +2117,8 @@ def audit_document(
                         "qOverlayReady",
                         "openingDeclarationReady",
                         "openingCgBeforeVoice",
-                        "finalCgPersists",
+                        "finalCgHandsOffToThanks",
+                        "endingThanksReady",
                         "fullscreenCgTimingErrors",
                         "cgEntryStageFlashRisks",
                         "cgEntryPortraitFlashRisks",
@@ -2130,6 +2188,7 @@ def transform_latest_story(
     install_performance_blocks(document, first_person_id)
     install_cgs(document, mapping)
     install_opening_declaration(document)
+    install_ending_thanks(document)
     install_transition_cards(document)
     checks = audit_document(document, mapping, source_root, annotation_audit)
     if (

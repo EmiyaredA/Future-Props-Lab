@@ -165,7 +165,7 @@ export function characterAssetTransform(
     ...characterTransform(value),
     x: requestedPosition?.x ?? value?.x ?? builtinX,
     y: requestedPosition?.y ?? value?.y ?? 100,
-    anchor: value?.anchor ?? stageSettings.anchor,
+    anchor: stageSettings.anchor ?? value?.anchor,
     scale: value?.scale ?? stageSettings.legacyDefaultScale ?? 1,
   };
 }

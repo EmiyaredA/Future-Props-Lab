@@ -9,6 +9,7 @@ import httpx
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
+from app.concurrency.polling_runner import PollingTaskRunner
 from app.concurrency.revisions import RevisionConflictError
 from app.core.config import Settings, get_settings
 from app.core.credentials import decrypt_secret
@@ -18,7 +19,6 @@ from app.core.time import iso_utc, utc_now
 from app.files import AssetError
 from app.files.storage import AssetStorage
 from app.galgame_workshop.story import GalgameStoryDocuments
-from app.llm.generation_runtime import PollingGenerationRunner
 from app.llm.providers._senseaudio import SenseAudioProviderError
 from app.llm.providers.senseaudio_asr import (
     SenseAudioAsrFileTooLarge,
@@ -365,7 +365,7 @@ def _normalized_text(value: str) -> str:
     return re.sub(r"[\W_]+", "", normalized, flags=re.UNICODE)
 
 
-class GalgameAsrRunner(PollingGenerationRunner):
+class GalgameAsrRunner(PollingTaskRunner):
     runner_name = "galgame-asr-runner"
 
     def __init__(

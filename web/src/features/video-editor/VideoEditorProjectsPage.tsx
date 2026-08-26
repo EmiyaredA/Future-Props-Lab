@@ -8,9 +8,8 @@ import {
   patchVideoEditorProject,
 } from "./api";
 import type { VideoEditorProject } from "./types";
+import { videoEditorQueryKeys } from "./queryKeys";
 import "./video-editor.css";
-
-const key = ["video-editor-projects"] as const;
 
 export function VideoEditorProjectsPage({
   onOpenProject,
@@ -23,10 +22,11 @@ export function VideoEditorProjectsPage({
   const [title, setTitle] = useState("");
   const [deleting, setDeleting] = useState<VideoEditorProject | null>(null);
   const projects = useQuery({
-    queryKey: key,
+    queryKey: videoEditorQueryKeys.projects,
     queryFn: listVideoEditorProjects,
   });
-  const refresh = () => void client.invalidateQueries({ queryKey: key });
+  const refresh = () =>
+    void client.invalidateQueries({ queryKey: videoEditorQueryKeys.projects });
   const create = useMutation({
     mutationFn: () => createVideoEditorProject(),
     onSuccess: (project) => {

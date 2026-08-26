@@ -14,27 +14,59 @@ export const api = createClient<paths>({
   credentials: "include",
 });
 
-export async function fetchApiBlob(path: string): Promise<Blob> {
-  const response = await fetch(
-    `${import.meta.env.VITE_API_BASE || ""}${path}`,
-    {
-      credentials: "include",
-    },
+function apiUrl(path: string): string {
+  const base = String(import.meta.env.VITE_API_BASE || "").replace(/\/$/, "");
+  return `${base}${path.startsWith("/") ? path : `/${path}`}`;
+}
+
+async function responseProblem(response: Response): Promise<ProblemDetail> {
+  try {
+    return (await response.json()) as ProblemDetail;
+  } catch {
+    return {};
+  }
+}
+
+function isWorkspaceChanged(problem: ProblemDetail): boolean {
+  const detail = problem.detail as { code?: string } | string | undefined;
+  return (
+    problem.code === "workspace_access_changed" ||
+    (typeof detail === "object" && detail?.code === "workspace_access_changed")
   );
+}
+
+export async function requestApi(
+  path: string,
+  init: RequestInit = {},
+): Promise<Response> {
+  const request = applySessionHeaders(
+    new Request(apiUrl(path), { ...init, credentials: "include" }),
+  );
+  const response = await fetch(request);
   if (response.status === 401) notifyAuthRequired();
   if (!response.ok) {
-    let problem: ProblemDetail = {};
-    try {
-      problem = (await response.json()) as ProblemDetail;
-    } catch {
-      // Non-JSON file response failures still receive a useful fallback.
-    }
+    const problem = await responseProblem(response);
+    if (response.status === 409 && isWorkspaceChanged(problem))
+      notifyWorkspaceChanged();
     throw new ApiError(
-      String(problem.detail || "文件读取失败"),
+      String(problem.detail || "请求失败，请稍后重试"),
       problem,
       response.status,
     );
   }
+  return response;
+}
+
+export async function fetchApiJson<T>(
+  path: string,
+  init: RequestInit = {},
+): Promise<T> {
+  const response = await requestApi(path, init);
+  return (await response.json()) as T;
+}
+
+export async function fetchApiBlob(path: string): Promise<Blob> {
+  const response = await requestApi(path);
   return response.blob();
 }
 api.use({
@@ -46,13 +78,7 @@ api.use({
     if (response.status === 409) {
       const clone = response.clone();
       const problem = (await clone.json().catch(() => ({}))) as ProblemDetail;
-      const detail = problem.detail as { code?: string } | undefined;
-      if (
-        problem.code === "workspace_access_changed" ||
-        detail?.code === "workspace_access_changed"
-      ) {
-        notifyWorkspaceChanged();
-      }
+      if (isWorkspaceChanged(problem)) notifyWorkspaceChanged();
     }
     return response;
   },

@@ -7,6 +7,7 @@ from pathlib import Path
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
+from app.concurrency.polling_runner import PollingTaskRunner
 from app.core.config import Settings, get_settings
 from app.core.db import SessionLocal
 from app.core.tenant_context import bind_workspace
@@ -19,7 +20,6 @@ from app.galgame_workshop.video_compiler import (
     remap_render_plan_assets,
 )
 from app.galgame_workshop.video_lip_sync import prepare_audio_envelopes
-from app.llm.generation_runtime import PollingGenerationRunner
 from app.models import (
     GalgameAssetMetadata,
     GalgameStorySnapshot,
@@ -34,7 +34,7 @@ from app.models import (
 from app.video_editor.media import VIDEO_EDITOR_EXTENSIONS
 
 
-class GalgameVideoEditorHandoffRunner(PollingGenerationRunner):
+class GalgameVideoEditorHandoffRunner(PollingTaskRunner):
     runner_name = "galgame-video-editor-handoff-runner"
     poll_interval_seconds = 1.0
 

@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import asyncio
-import hashlib
 import json
 import re
 import subprocess
@@ -13,10 +12,12 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
+from app.concurrency.polling_runner import PollingTaskRunner
 from app.core.config import Settings, get_settings
 from app.core.db import SessionLocal
 from app.core.tenant_context import bind_workspace
 from app.core.time import utc_now
+from app.files.digests import sha256_file
 from app.files.library import AssetLibrary
 from app.files.storage import AssetStorage
 from app.galgame_workshop.video_compiler import compile_galgame_render_plan
@@ -25,7 +26,6 @@ from app.galgame_workshop.video_export_planning import (
     PRESETS,
 )
 from app.galgame_workshop.video_lip_sync import prepare_audio_envelopes
-from app.llm.generation_runtime import PollingGenerationRunner
 from app.models import (
     GalgameAssetMetadata,
     GalgameProjectAssetReference,
@@ -40,14 +40,6 @@ from app.video_editor.render_engine import RenderCancelled, render_plan
 def _safe_filename(value: str) -> str:
     cleaned = re.sub(r"[\\/:*?\"<>|\x00-\x1f]+", "-", value).strip(" .-")
     return (cleaned or "galgame-export")[:180]
-
-
-def _sha256_file(path: Path) -> str:
-    digest = hashlib.sha256()
-    with path.open("rb") as handle:
-        while chunk := handle.read(1024 * 1024):
-            digest.update(chunk)
-    return digest.hexdigest()
 
 
 def _probe_video(path: Path) -> dict[str, Any]:
@@ -83,7 +75,7 @@ def _recover_interrupted_task(row: GalgameVideoExportTask) -> None:
     row.updated_at = utc_now()
 
 
-class GalgameVideoExportRunner(PollingGenerationRunner):
+class GalgameVideoExportRunner(PollingTaskRunner):
     runner_name = "galgame-video-export-runner"
     poll_interval_seconds = 1.0
 
@@ -357,7 +349,7 @@ class GalgameVideoExportRunner(PollingGenerationRunner):
                             category="video",
                             virtual_path=f"exports/{filename}",
                             packaging_policy=EXPORT_PACKAGING_POLICY,
-                            checksum_sha256=await asyncio.to_thread(_sha256_file, output_path),
+                            checksum_sha256=await asyncio.to_thread(sha256_file, output_path),
                             width=width,
                             height=height,
                             duration_ms=actual_duration_ms,

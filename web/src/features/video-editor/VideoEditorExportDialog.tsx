@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { AlertTriangle, Film, X } from "lucide-react";
 import { createVideoEditorRender, renderPreflight } from "./api";
 import type { VideoEditorPreset } from "./types";
+import { videoEditorQueryKeys } from "./queryKeys";
 
 const presets: VideoEditorPreset[] = ["720p30", "1080p30", "720p60", "1080p60"];
 
@@ -35,7 +36,7 @@ export function VideoEditorExportDialog({
     },
     onSuccess: () => {
       void client.invalidateQueries({
-        queryKey: ["video-editor-renders", projectId],
+        queryKey: videoEditorQueryKeys.renders(projectId),
       });
       onClose();
     },

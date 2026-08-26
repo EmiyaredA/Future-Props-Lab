@@ -5,7 +5,7 @@ import logging
 from collections.abc import Awaitable, Callable, Iterable
 from dataclasses import dataclass
 
-generation_semaphore = asyncio.Semaphore(4)
+runner_task_semaphore = asyncio.Semaphore(4)
 logger = logging.getLogger(__name__)
 
 
@@ -17,10 +17,10 @@ class RunnerHealth:
     last_error_type: str
 
 
-class PollingGenerationRunner:
-    """Single-process polling lifecycle shared by generation task adapters."""
+class PollingTaskRunner:
+    """Single-process polling lifecycle shared by background task adapters."""
 
-    runner_name = "generation-runner"
+    runner_name = "task-runner"
     poll_interval_seconds = 5.0
     max_backoff_seconds = 60.0
     unhealthy_after_failures = 3
@@ -84,11 +84,7 @@ class PollingGenerationRunner:
                     self.poll_interval_seconds * (2 ** min(self._consecutive_failures - 1, 8)),
                     self.max_backoff_seconds,
                 )
-                logger.error(
-                    "%s poll failed (%s)",
-                    self.runner_name,
-                    self._last_error_type,
-                )
+                logger.error("%s poll failed (%s)", self.runner_name, self._last_error_type)
             try:
                 await asyncio.wait_for(self._stop.wait(), timeout=delay)
             except TimeoutError:
@@ -100,7 +96,7 @@ class PollingGenerationRunner:
         handler: Callable[[str], Awaitable[None]],
     ) -> None:
         async def guarded(task_id: str) -> None:
-            async with generation_semaphore:
+            async with runner_task_semaphore:
                 await handler(task_id)
 
         await asyncio.gather(*(guarded(task_id) for task_id in task_ids))
@@ -109,11 +105,11 @@ class PollingGenerationRunner:
 class RunnerSupervisor:
     """Starts and stops polling runners as one application lifecycle unit."""
 
-    def __init__(self, runners: Iterable[PollingGenerationRunner]) -> None:
+    def __init__(self, runners: Iterable[PollingTaskRunner]) -> None:
         self.runners = tuple(runners)
 
     async def start(self) -> None:
-        started: list[PollingGenerationRunner] = []
+        started: list[PollingTaskRunner] = []
         try:
             for runner in self.runners:
                 await runner.start()

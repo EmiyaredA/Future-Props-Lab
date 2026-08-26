@@ -15,6 +15,7 @@ import {
   uploadVideoEditorAsset,
 } from "./api";
 import type { VideoEditorAsset } from "./types";
+import { videoEditorQueryKeys } from "./queryKeys";
 
 const iconFor = (kind: string) =>
   kind === "video"
@@ -41,13 +42,13 @@ export function VideoEditorAssetPanel({
   const [showImport, setShowImport] = useState(false);
   const [chosen, setChosen] = useState<string[]>([]);
   const sources = useQuery({
-    queryKey: ["video-editor-import-sources"],
+    queryKey: videoEditorQueryKeys.importSources,
     queryFn: listVideoEditorImportSources,
     enabled: showImport,
   });
   const refresh = () =>
     void client.invalidateQueries({
-      queryKey: ["video-editor-assets", projectId],
+      queryKey: videoEditorQueryKeys.assets(projectId),
     });
   const upload = useMutation({
     mutationFn: (file: File) => uploadVideoEditorAsset(projectId, file),

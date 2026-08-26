@@ -4,10 +4,10 @@ import asyncio
 
 import pytest
 
-from app.llm.generation_runtime import PollingGenerationRunner, RunnerSupervisor
+from app.concurrency.polling_runner import PollingTaskRunner, RunnerSupervisor
 
 
-class ScriptedRunner(PollingGenerationRunner):
+class ScriptedRunner(PollingTaskRunner):
     poll_interval_seconds = 0.001
     max_backoff_seconds = 0.002
 

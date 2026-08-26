@@ -2,19 +2,17 @@ import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Plus, Trash2, Users, X } from "lucide-react";
 import {
-  getGalgameStoryDocument,
-  getGalgameWorkshopProjects,
-  type GalgameWorkshopProject,
-} from "@features/galgame-workshop";
-import {
   SPEAKER_COLORS,
   type ImportedAudioAnnotationSpeaker,
 } from "@features/audio-annotation/model";
 import type { AudioAnnotationSpeaker } from "@features/audio-annotation/types";
+import type { SpeakerImportSource } from "@features/audio-annotation/speakerImportSource";
 import { CustomColorPicker } from "@shared/ui/CustomColorPicker";
 import { CustomSelect } from "@shared/ui/CustomSelect";
 
-const EMPTY_GALGAME_PROJECTS: GalgameWorkshopProject[] = [];
+const EMPTY_IMPORT_PROJECTS: Awaited<
+  ReturnType<SpeakerImportSource["listProjects"]>
+> = [];
 
 export function AudioAnnotationSpeakerManager({
   open,
@@ -24,6 +22,7 @@ export function AudioAnnotationSpeakerManager({
   onImport,
   onDelete,
   onClose,
+  importSource,
 }: {
   open: boolean;
   projectTitle: string;
@@ -32,15 +31,16 @@ export function AudioAnnotationSpeakerManager({
   onImport: (speakers: ImportedAudioAnnotationSpeaker[]) => number;
   onDelete: (speaker: AudioAnnotationSpeaker) => void;
   onClose: () => void;
+  importSource?: SpeakerImportSource;
 }) {
   const [sourceProjectId, setSourceProjectId] = useState("");
   const [importNotice, setImportNotice] = useState("");
   const projectsQuery = useQuery({
     queryKey: ["galgame-speaker-import-projects"],
-    queryFn: getGalgameWorkshopProjects,
-    enabled: open,
+    queryFn: () => importSource!.listProjects(),
+    enabled: open && Boolean(importSource),
   });
-  const projects = projectsQuery.data?.items ?? EMPTY_GALGAME_PROJECTS;
+  const projects = projectsQuery.data ?? EMPTY_IMPORT_PROJECTS;
   const matchingProject = useMemo(() => {
     const normalizedTitle = projectTitle.trim().toLocaleLowerCase("zh-CN");
     if (!normalizedTitle) return undefined;
@@ -65,22 +65,18 @@ export function AudioAnnotationSpeakerManager({
 
   const storyQuery = useQuery({
     queryKey: ["galgame-speaker-import-story", sourceProjectId],
-    queryFn: () => getGalgameStoryDocument(sourceProjectId),
-    enabled: open && Boolean(sourceProjectId),
+    queryFn: () => importSource!.listSpeakers(sourceProjectId),
+    enabled: open && Boolean(importSource) && Boolean(sourceProjectId),
   });
 
   const importCharacters = () => {
-    const characters = storyQuery.data?.document.characters ?? [];
+    const characters = storyQuery.data ?? [];
     if (!characters.length) {
       setImportNotice("这个 Galgame 工程还没有角色。");
       return;
     }
     const addedCount = onImport(
-      characters.map((character) => ({
-        id: character.id,
-        name: character.name,
-        color: character.themeColor,
-      })),
+      characters,
     );
     setImportNotice(
       addedCount
@@ -145,7 +141,7 @@ export function AudioAnnotationSpeakerManager({
             <X aria-hidden />
           </button>
         </header>
-        <section className="annotation-speaker-import">
+        {importSource ? <section className="annotation-speaker-import">
           <div>
             <strong>从 Galgame 工坊导入角色</strong>
             <small>沿用角色名和主题色，导入后仍可继续编辑。</small>
@@ -157,7 +153,7 @@ export function AudioAnnotationSpeakerManager({
               <CustomSelect
                 ariaLabel="角色来源工程"
                 value={sourceProjectId}
-                options={projects.map((project: GalgameWorkshopProject) => ({
+                options={projects.map((project) => ({
                   value: project.id,
                   label: project.title,
                   description:
@@ -183,7 +179,7 @@ export function AudioAnnotationSpeakerManager({
           )}
           {storyQuery.isError ? <p>角色读取失败，请稍后重试。</p> : null}
           {importNotice ? <small role="status">{importNotice}</small> : null}
-        </section>
+        </section> : null}
         <div className="annotation-speaker-list">
           {speakers.map((speaker, index) => (
             <div key={speaker.id}>

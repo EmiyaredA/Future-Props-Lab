@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import asyncio
-import hashlib
 import os
 import shutil
 from dataclasses import dataclass
@@ -11,6 +10,7 @@ from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import Settings
+from app.files.digests import sha256_file
 from app.files.storage import TARGET_STORAGE_VERSION, AssetStorage
 from app.models import (
     GalgameWorkshopProject,
@@ -70,19 +70,11 @@ async def reconcile_project_trash(session: AsyncSession, storage: AssetStorage) 
                 shutil.rmtree(staged_path, ignore_errors=True)
 
 
-def _sha256(path: Path) -> str:
-    digest = hashlib.sha256()
-    with path.open("rb") as source:
-        while chunk := source.read(1024 * 1024):
-            digest.update(chunk)
-    return digest.hexdigest()
-
-
 def _copy_verified(source: Path, target: Path, expected_size: int) -> None:
     shutil.copyfile(source, target)
     if source.stat().st_size != expected_size or target.stat().st_size != expected_size:
         raise OSError("素材大小与数据库记录不一致")
-    if _sha256(source) != _sha256(target):
+    if sha256_file(source) != sha256_file(target):
         raise OSError("素材复制校验失败")
 
 
@@ -90,7 +82,7 @@ def _same_content(source: Path, target: Path) -> bool:
     return (
         target.is_file()
         and target.stat().st_size == source.stat().st_size
-        and _sha256(target) == _sha256(source)
+        and sha256_file(target) == sha256_file(source)
     )
 
 

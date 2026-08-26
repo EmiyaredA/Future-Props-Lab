@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import hashlib
 import json
 import mimetypes
 import subprocess
@@ -51,14 +50,6 @@ VIDEO_EDITOR_EXTENSIONS = {
     ".woff",
     ".woff2",
 }
-
-
-def _sha256(path: Path) -> str:
-    digest = hashlib.sha256()
-    with path.open("rb") as handle:
-        while chunk := handle.read(1024 * 1024):
-            digest.update(chunk)
-    return digest.hexdigest()
 
 
 def probe_media(path: Path) -> dict:

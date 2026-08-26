@@ -1,7 +1,5 @@
 import type { components } from "@generated/api";
-import { api, fetchApiBlob, unwrap } from "@platform/api/client";
-import { ApiError } from "@platform/api/client";
-import { getCsrfToken, notifyAuthRequired } from "@platform/api/studioAuth";
+import { api, fetchApiBlob, fetchApiJson, unwrap } from "@platform/api/client";
 import { postSse } from "@platform/api/sse";
 
 export type Catalog = components["schemas"]["ModelCatalogOut"];
@@ -339,30 +337,10 @@ export async function deleteModelTestConversation(
 export async function uploadModelTestAttachments(id: string, files: File[]) {
   const form = new FormData();
   for (const file of files) form.append("files", file);
-  const base = String(import.meta.env.VITE_API_BASE || "").replace(/\/$/, "");
-  const csrf = getCsrfToken();
-  const response = await fetch(
-    `${base}/v1/model-test/conversations/${encodeURIComponent(id)}/attachments`,
-    {
-      method: "POST",
-      headers: csrf ? { "X-CSRF-Token": csrf } : {},
-      credentials: "include",
-      body: form,
-    },
+  return fetchApiJson<components["schemas"]["ModelTestAttachmentListOut"]>(
+    `/v1/model-test/conversations/${encodeURIComponent(id)}/attachments`,
+    { method: "POST", body: form },
   );
-  if (response.status === 401) notifyAuthRequired();
-  if (!response.ok) {
-    const problem = (await response.json().catch(() => ({}))) as Record<
-      string,
-      unknown
-    >;
-    throw new ApiError(
-      String(problem.detail || "图片上传失败"),
-      problem,
-      response.status,
-    );
-  }
-  return (await response.json()) as components["schemas"]["ModelTestAttachmentListOut"];
 }
 
 export async function deleteModelTestAttachment(

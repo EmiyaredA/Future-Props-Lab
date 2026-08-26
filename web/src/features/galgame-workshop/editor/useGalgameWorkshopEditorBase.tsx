@@ -46,12 +46,10 @@ import {
   projectFragmentTimeline,
   timelineGaps,
 } from "@features/galgame-workshop/editor/timeline";
-const STORY_KEY = (projectId: string) =>
-  ["galgame-workshop-story", projectId] as const;
-const REPORT_KEY = (projectId: string) =>
-  ["galgame-workshop-story-report", projectId] as const;
-const PROJECT_KEY = (projectId: string) =>
-  ["galgame-workshop-project", projectId] as const;
+import { galgameQueryKeys } from "@features/galgame-workshop/queryKeys";
+const STORY_KEY = galgameQueryKeys.story;
+const REPORT_KEY = galgameQueryKeys.storyReport;
+const PROJECT_KEY = galgameQueryKeys.project;
 
 type SaveState = "saved" | "saving" | "error" | "conflict";
 type InspectorTab = "properties" | "appearance" | "report";

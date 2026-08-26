@@ -12,13 +12,8 @@ import {
 } from "@features/galgame-workshop/api";
 import { stableId } from "@features/galgame-workshop/editor/model";
 import { fetchApiBlob } from "@platform/api/client";
+import { formatFileSize } from "@shared/lib/fileSize";
 import { CustomSelect } from "@shared/ui/CustomSelect";
-
-function formatBytes(bytes: number) {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 ** 2) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / 1024 ** 2).toFixed(1)} MB`;
-}
 
 export function VideoWorkspace({
   projectId,
@@ -171,7 +166,7 @@ export function VideoWorkspace({
             <Film aria-hidden />
             <span>
               <strong>{video.display_name}</strong>
-              <small>{formatBytes(video.byte_size)}</small>
+              <small>{formatFileSize(video.byte_size)}</small>
             </span>
           </button>
         ))}
@@ -205,7 +200,7 @@ export function VideoWorkspace({
               </div>
               <div>
                 <dt>大小</dt>
-                <dd>{formatBytes(selected.byte_size)}</dd>
+                <dd>{formatFileSize(selected.byte_size)}</dd>
               </div>
               <div>
                 <dt>时长</dt>

@@ -4,6 +4,8 @@ from scripts.galgame_performance_upgrade import (
     DEFAULT_ANNOTATION_PATH,
     DIALOGUE_BOX_OPACITY,
     DIALOGUE_EXPRESSION_CUES,
+    ENDING_THANKS_ID,
+    ENDING_THANKS_TEXT,
     EXPECTED_ANNOTATION_SHA256,
     EXPECTED_CROWD_NORMALIZED_LINES,
     LIP_SYNC_FPS,
@@ -12,9 +14,11 @@ from scripts.galgame_performance_upgrade import (
     SCENE_BEATS,
     TRANSITION_CARD_BLOCKS,
     cast_member,
+    clear_adjacent_direct_portrait_overlaps,
     enlarge_dialogue_text,
     fullscreen_cg_at,
     install_cgs,
+    install_ending_thanks,
     install_opening_declaration,
     install_special_character_expressions,
     install_transition_cards,
@@ -72,8 +76,8 @@ def test_curated_closeup_keeps_motion_safe_headroom() -> None:
 
 
 def test_unified_cg_manifest_installs_expected_events() -> None:
-    assert len(CG_ASSETS) == 24
-    assert len(CG_EVENTS) == 27
+    assert len(CG_ASSETS) == 25
+    assert len(CG_EVENTS) == 28
     document = {
         "assets": [],
         "cgs": [],
@@ -93,8 +97,8 @@ def test_unified_cg_manifest_installs_expected_events() -> None:
     }
     install_cgs(document, mapping)
     blocks = document["chapters"][0]["fragments"][0]["blocks"]
-    assert len(document["cgs"]) == 24
-    assert sum(block["type"] == "showCg" for block in blocks) == 27
+    assert len(document["cgs"]) == 25
+    assert sum(block["type"] == "showCg" for block in blocks) == 28
     assert sum(block["type"] == "hideCg" for block in blocks) == 24
     q_shows = [
         block
@@ -116,6 +120,10 @@ def test_unified_cg_manifest_installs_expected_events() -> None:
         block["id"] for block in blocks if block.get("id", "").startswith("runaway-phone-camera-")
     } == {"runaway-phone-camera-offscreen", "runaway-phone-camera-slide-in"}
     assert not any(block["type"] == "hideCg" and block["atMs"] >= 1_763_485 for block in blocks)
+    ending = next(block for block in blocks if block["id"] == "runaway-cg-show-ending-blackboard")
+    assert ending["atMs"] == 1_773_594
+    assert ending["displayMode"] == "overlay"
+    assert ending["overlay"]["width"] == 62
 
 
 def test_opening_full_cast_cg_and_declaration_finish_before_voice() -> None:
@@ -145,6 +153,33 @@ def test_opening_full_cast_cg_and_declaration_finish_before_voice() -> None:
         "y": 50,
         "color": "#F4E7C5",
         "durationMs": 10_000,
+    }
+
+
+def test_ending_thanks_uses_opening_blackboard_timing() -> None:
+    document = {
+        "chapters": [
+            {
+                "fragments": [
+                    {
+                        "timeline": {"durationMs": 1_780_344},
+                        "blocks": [],
+                    }
+                ]
+            }
+        ]
+    }
+    install_ending_thanks(document)
+    block = document["chapters"][0]["fragments"][0]["blocks"][0]
+    assert block == {
+        "id": ENDING_THANKS_ID,
+        "type": "floatingText",
+        "atMs": 1_774_194,
+        "text": ENDING_THANKS_TEXT,
+        "x": 50,
+        "y": 50,
+        "color": "#F4E7C5",
+        "durationMs": 6_150,
     }
 
 
@@ -327,3 +362,29 @@ def test_shadowed_cast_member_uses_default_before_first_expression() -> None:
         )
         == "shadowed-default"
     )
+
+
+def test_adjacent_direct_portraits_do_not_linger_in_the_same_slot() -> None:
+    dialogues = [
+        {
+            "id": "kurisu-line",
+            "characterId": "kurisu",
+            "portrait": {
+                "visible": True,
+                "positionId": "performance-center",
+                "keepAfter": True,
+            },
+        },
+        {
+            "id": "kagari-line",
+            "characterId": "kagari",
+            "portrait": {
+                "visible": True,
+                "positionId": "performance-center",
+                "keepAfter": True,
+            },
+        },
+    ]
+    assert clear_adjacent_direct_portrait_overlaps(dialogues) == ["kurisu-line"]
+    assert dialogues[0]["portrait"]["keepAfter"] is False
+    assert dialogues[1]["portrait"]["keepAfter"] is True

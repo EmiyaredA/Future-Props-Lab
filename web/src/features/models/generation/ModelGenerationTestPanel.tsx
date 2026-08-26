@@ -36,6 +36,7 @@ import {
   type ModelTestReferenceAsset,
   uploadModelTestReferenceAssets,
 } from "@features/models/api";
+import { formatFileSize } from "@shared/lib/fileSize";
 
 type GenerationKind = "image" | "video";
 type Resolution = "480p" | "720p" | "1080p";
@@ -109,11 +110,8 @@ function referenceKind(file: File): ReferenceKind | null {
   return null;
 }
 
-function formatBytes(bytes: number) {
-  return bytes >= 1024 * 1024
-    ? `${(bytes / 1024 / 1024).toFixed(1)} MB`
-    : `${Math.max(1, Math.round(bytes / 1024))} KB`;
-}
+const formatBytes = (bytes: number) =>
+  formatFileSize(bytes, { minimumUnit: "KB", fractionalDigits: 0 });
 
 function modelGenerationKind(model: TestModel): GenerationKind | null {
   if (model.providerKind === "senseaudio_image") return "image";

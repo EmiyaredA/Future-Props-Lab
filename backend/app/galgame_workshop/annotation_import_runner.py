@@ -10,17 +10,18 @@ from tempfile import TemporaryDirectory
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
+from app.concurrency.polling_runner import PollingTaskRunner
 from app.concurrency.revisions import RevisionConflictError
 from app.core.config import Settings, get_settings
 from app.core.db import SessionLocal
 from app.core.tenant_context import bind_workspace
 from app.core.time import utc_now
+from app.files.digests import sha256_file
 from app.files.library import AssetLibrary
 from app.files.storage import AssetStorage
-from app.galgame_workshop.annotation_import import GalgameAnnotationImports, _sha256
+from app.galgame_workshop.annotation_import import GalgameAnnotationImports
 from app.galgame_workshop.readiness import GalgameReadiness
 from app.galgame_workshop.story import GalgameStoryDocuments
-from app.llm.generation_runtime import PollingGenerationRunner
 from app.models import (
     AudioAnnotationDocument,
     AudioAnnotationProject,
@@ -115,7 +116,7 @@ def _envelope_correlation(left: list[float], right: list[float]) -> float:
     return best
 
 
-class GalgameAnnotationImportRunner(PollingGenerationRunner):
+class GalgameAnnotationImportRunner(PollingTaskRunner):
     runner_name = "galgame-annotation-import-runner"
     poll_interval_seconds = 1.0
 
@@ -300,7 +301,7 @@ class GalgameAnnotationImportRunner(PollingGenerationRunner):
                     correlation = _envelope_correlation(source_envelope, clip_envelope)
                     if correlation < body.requirements.min_content_correlation:
                         raise RuntimeError(f"{filename} 内容相关度过低：{correlation:.4f}")
-                    checksum = await asyncio.to_thread(_sha256, output_path)
+                    checksum = await asyncio.to_thread(sha256_file, output_path)
 
                     async with self.session_factory() as session:
                         bind_workspace(session, task.workspace_id)

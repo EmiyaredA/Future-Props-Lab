@@ -11,6 +11,7 @@ from sqlalchemy.exc import OperationalError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.accounts.profile import reconcile_profile_avatars
+from app.concurrency.polling_runner import RunnerSupervisor
 from app.concurrency.revisions import RevisionConflictError
 from app.core.config import get_settings
 from app.core.db import SessionLocal, engine
@@ -21,7 +22,6 @@ from app.galgame_workshop.asr import GalgameAsrRunner
 from app.galgame_workshop.video_export_runner import GalgameVideoExportRunner
 from app.galgame_workshop.video_handoff_runner import GalgameVideoEditorHandoffRunner
 from app.llm.catalog.seed import seed_sayflow_text_catalog
-from app.llm.generation_runtime import RunnerSupervisor
 from app.llm.playground.generation_runner import ModelTestGenerationRunner
 from app.llm.playground.tool_stream import recover_interrupted_model_test_runs
 from app.llm.playground.transcription_runner import ModelTestTranscriptionRunner

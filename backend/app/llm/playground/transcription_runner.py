@@ -8,12 +8,12 @@ import httpx
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
+from app.concurrency.polling_runner import PollingTaskRunner
 from app.core.config import Settings, get_settings
 from app.core.credentials import decrypt_secret
 from app.core.db import SessionLocal
 from app.core.tenant_context import bind_workspace
 from app.core.time import utc_now
-from app.llm.generation_runtime import PollingGenerationRunner
 from app.llm.providers.transcription import transcribe_model_audio
 from app.llm.transcription import (
     model_supports_transcription,
@@ -23,7 +23,7 @@ from app.models import LlmCallLog, ModelEntry, ModelProvider, ModelTestTranscrip
 from app.schemas.model_test import ModelTestTranscriptionResultDetailOut
 
 
-class ModelTestTranscriptionRunner(PollingGenerationRunner):
+class ModelTestTranscriptionRunner(PollingTaskRunner):
     runner_name = "model-test-transcription-runner"
 
     def __init__(

@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import asyncio
-import hashlib
 import subprocess
 import threading
 from pathlib import Path
@@ -10,13 +9,14 @@ from tempfile import TemporaryDirectory
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
+from app.concurrency.polling_runner import PollingTaskRunner
 from app.core.config import Settings, get_settings
 from app.core.db import SessionLocal
 from app.core.tenant_context import bind_workspace
 from app.core.time import utc_now
+from app.files.digests import sha256_file
 from app.files.library import AssetLibrary
 from app.files.storage import AssetStorage
-from app.llm.generation_runtime import PollingGenerationRunner
 from app.models import VideoEditorAssetMetadata, VideoEditorProject, VideoEditorTask, VisualAsset
 from app.schemas.video_editor import VideoEditorTimelineDocument
 from app.video_editor.media import probe_media
@@ -35,14 +35,6 @@ def _run(args: list[str]) -> None:
         raise RuntimeError((result.stderr or "媒体处理失败")[-4000:])
 
 
-def _hash(path: Path) -> str:
-    digest = hashlib.sha256()
-    with path.open("rb") as handle:
-        while chunk := handle.read(1024 * 1024):
-            digest.update(chunk)
-    return digest.hexdigest()
-
-
 def _fraction(value: object) -> float:
     text = str(value or "0")
     numerator, separator, denominator = text.partition("/")
@@ -55,7 +47,7 @@ def _fraction(value: object) -> float:
 def _prepare_media(
     source: Path, asset: VisualAsset, derived: Path
 ) -> tuple[dict, str | None, str | None, str | None, str]:
-    fingerprint = _hash(source)
+    fingerprint = sha256_file(source)
     proxy: str | None = None
     thumbnail: str | None = None
     waveform: str | None = None
@@ -170,7 +162,7 @@ def _prepare_media(
     return probe, proxy, thumbnail, waveform, fingerprint
 
 
-class VideoEditorRunner(PollingGenerationRunner):
+class VideoEditorRunner(PollingTaskRunner):
     runner_name = "video-editor-runner"
     poll_interval_seconds = 0.75
 
@@ -445,7 +437,7 @@ class VideoEditorRunner(PollingGenerationRunner):
                             project_id=project_id,
                             processing_status="ready",
                             probe=probe,
-                            fingerprint=_hash(output),
+                            fingerprint=sha256_file(output),
                         )
                     )
                     await session.commit()

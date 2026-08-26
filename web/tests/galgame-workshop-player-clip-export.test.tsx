@@ -261,6 +261,89 @@ test("restores a non-zero timeline range with audio offsets and stops once", asy
   }
 });
 
+test("exports a preselected route without player controls", async () => {
+  vi.useFakeTimers();
+  const onComplete = vi.fn();
+  const routeStory = structuredClone(clipStory);
+  routeStory.assets = [];
+  routeStory.chapters![0].fragments = [
+    {
+      id: "main",
+      title: "分支",
+      blocks: [
+        {
+          id: "branch",
+          type: "branch",
+          prompt: "检查哪里？",
+          choices: [
+            { id: "left", text: "设备", targetFragmentId: "left" },
+            { id: "right", text: "时钟", targetFragmentId: "right" },
+          ],
+        },
+      ],
+    },
+    {
+      id: "left",
+      title: "设备线",
+      blocks: [
+        { id: "left-text", type: "narration", text: "发现干扰。" },
+        {
+          id: "left-end",
+          type: "endChapter",
+          endingId: "ending-left",
+          label: "设备结局",
+        },
+      ],
+    },
+    {
+      id: "right",
+      title: "时钟线",
+      blocks: [
+        {
+          id: "right-end",
+          type: "endChapter",
+          endingId: "ending-right",
+          label: "时钟结局",
+        },
+      ],
+    },
+  ];
+  try {
+    const rendered = render(
+      <StoryPlayer
+        document={routeStory}
+        exportMode={{
+          branchSelections: { branch: "left" },
+          choiceDurationMs: 2000,
+          choiceHighlightMs: 500,
+          onComplete,
+        }}
+      />,
+    );
+    await act(async () => {
+      for (let index = 0; index < 6; index += 1) await Promise.resolve();
+    });
+
+    expect(
+      screen.queryByRole("button", { name: "开始试玩" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "自动" }),
+    ).not.toBeInTheDocument();
+    const chosen = screen.getByRole("button", { name: "设备" });
+    expect(chosen).not.toHaveClass("is-export-selected");
+    act(() => vi.advanceTimersByTime(1600));
+    expect(chosen).toHaveClass("is-export-selected");
+    act(() => vi.advanceTimersByTime(500));
+    expect(screen.getByText("发现干扰。")).toBeInTheDocument();
+    act(() => vi.advanceTimersByTime(1600));
+    expect(onComplete).toHaveBeenCalledWith({ ok: true, label: "设备结局" });
+    expect(rendered.container.querySelector(".galgame-ending")).toBeNull();
+  } finally {
+    vi.useRealTimers();
+  }
+});
+
 test("previews only the requested middle range and stays on its final frame", async () => {
   vi.useFakeTimers();
   const snapshots: StoryPlayerRuntimeSnapshot[] = [];

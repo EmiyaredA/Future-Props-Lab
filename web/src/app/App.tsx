@@ -11,6 +11,7 @@ import { StudioSidebar } from "@app/layout/StudioSidebar";
 import { WorkshopShell } from "@app/layout/WorkshopShell";
 import { PublicWorkspaceShowcase } from "@app/PublicWorkspaceShowcase";
 import { useStudioSession } from "@app/StudioSession";
+import { galgameSpeakerImportSource } from "@app/integrations/galgameSpeakerImport";
 import {
   APPLICATION_DEFINITIONS,
   GALGAME_WORKSHOP_MODULE,
@@ -360,6 +361,7 @@ export default function App() {
               workspaceId={me.workspace.id}
               onBack={() => navigate("audio-annotation-projects")}
               registerNavigationGuard={registerNavigationGuard}
+              speakerImportSource={galgameSpeakerImportSource}
             />
           ) : page === "model-test" ? (
             <ModelTestPage

@@ -9,6 +9,7 @@ import httpx
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
+from app.concurrency.polling_runner import PollingTaskRunner
 from app.core.config import Settings, get_settings
 from app.core.credentials import decrypt_secret
 from app.core.db import SessionLocal
@@ -17,7 +18,6 @@ from app.core.time import utc_now
 from app.files.storage import TARGET_STORAGE_VERSION, AssetStorage
 from app.llm.generation_runtime import (
     GenerationMaterializationError,
-    PollingGenerationRunner,
     assert_public_https,
     download_generated_media,
     generated_type,
@@ -40,7 +40,7 @@ def _safe_task_error(exc: Exception) -> str:
     return safe_generation_error(exc)
 
 
-class VisualGenerationRunner(PollingGenerationRunner):
+class VisualGenerationRunner(PollingTaskRunner):
     runner_name = "visual-generation-runner"
 
     def __init__(

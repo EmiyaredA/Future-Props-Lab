@@ -39,6 +39,7 @@ import {
   type ModelTestTranscriptionParameters,
   type ModelTestTranscriptionTask,
 } from "@features/models/api";
+import { formatFileSize } from "@shared/lib/fileSize";
 import {
   ModelTestWorkspaceHeader,
   type ModelTestMode,
@@ -74,11 +75,8 @@ const fallbackParameters: ModelTestTranscriptionParameters = {
   abbreviations: false,
 };
 
-function formatBytes(bytes: number) {
-  return bytes >= 1024 * 1024
-    ? `${(bytes / 1024 / 1024).toFixed(1)} MB`
-    : `${Math.max(1, Math.round(bytes / 1024))} KB`;
-}
+const formatBytes = (bytes: number) =>
+  formatFileSize(bytes, { minimumUnit: "KB", fractionalDigits: 0 });
 
 function formatDate(value: string) {
   return new Intl.DateTimeFormat("zh-CN", {

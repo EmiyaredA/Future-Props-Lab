@@ -38,6 +38,7 @@ import type { AudioAnnotationSpeaker } from "@features/audio-annotation/types";
 import { AudioWaveform } from "@features/audio-annotation/AudioWaveform";
 import { CustomSelect } from "@shared/ui/CustomSelect";
 import { AudioAnnotationEditorDialogs } from "./AudioAnnotationEditorDialogs";
+import type { SpeakerImportSource } from "./speakerImportSource";
 import { AudioAnnotationSegmentInspector } from "./AudioAnnotationSegmentInspector";
 import { useAudioAnnotationEditorController } from "./useAudioAnnotationEditorController";
 import "@features/audio-annotation/audio-annotation-import.css";
@@ -49,6 +50,7 @@ export function AudioAnnotationEditorPage({
   workspaceId,
   onBack,
   registerNavigationGuard,
+  speakerImportSource,
 }: {
   projectId: string;
   workspaceId: string;
@@ -56,6 +58,7 @@ export function AudioAnnotationEditorPage({
   registerNavigationGuard: (
     guard: ((continueNavigation: () => void) => boolean) | null,
   ) => void;
+  speakerImportSource?: SpeakerImportSource;
 }) {
   const controller = useAudioAnnotationEditorController({
     projectId,
@@ -635,7 +638,10 @@ export function AudioAnnotationEditorPage({
         <AudioAnnotationSegmentInspector controller={controller} />
       </div>
 
-      <AudioAnnotationEditorDialogs controller={controller} />
+      <AudioAnnotationEditorDialogs
+        controller={controller}
+        speakerImportSource={speakerImportSource}
+      />
     </section>
   );
 }

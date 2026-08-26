@@ -19,6 +19,7 @@ import {
   type GalgameStoryStageStyle,
   type GalgameStoryUiComponent,
 } from "@features/galgame-workshop/api";
+import { DialogueFontScaleField } from "@features/galgame-workshop/editor/DialogueFontScaleField";
 import {
   DEFAULT_DIALOGUE_BOX_STYLE,
   DEFAULT_STAGE_STYLE,
@@ -748,61 +749,16 @@ export function DialogueStyleInspector({
           }
         />
       </label>
-      <label className="galgame-dialogue-range">
-        <span>
-          正文字号{" "}
-          <strong>
-            {style.body.fontSizePx ?? Math.round(24 * style.fontScale)}px
-          </strong>
-        </span>
-        <input
-          type="range"
-          aria-label="对话框正文字号"
-          min="14"
-          max="60"
-          value={style.body.fontSizePx ?? Math.round(24 * style.fontScale)}
-          style={rangeProgress(
-            style.body.fontSizePx ?? Math.round(24 * style.fontScale),
-            14,
-            60,
-          )}
-          onChange={(event) =>
-            updateBody({ fontSizePx: Number(event.target.value) })
-          }
-        />
-      </label>
-      <label className="galgame-dialogue-range">
-        <span>
-          人物名字号{" "}
-          <strong>
-            {style.speakerName.fontSizePx ??
-              style.body.fontSizePx ??
-              Math.round(24 * style.fontScale)}
-            px
-          </strong>
-        </span>
-        <input
-          type="range"
-          aria-label="对话框人物名字号"
-          min="12"
-          max="48"
-          value={
-            style.speakerName.fontSizePx ??
-            style.body.fontSizePx ??
-            Math.round(24 * style.fontScale)
-          }
-          style={rangeProgress(
-            style.speakerName.fontSizePx ??
-              style.body.fontSizePx ??
-              Math.round(24 * style.fontScale),
-            12,
-            48,
-          )}
-          onChange={(event) =>
-            updateSpeakerName({ fontSizePx: Number(event.target.value) })
-          }
-        />
-      </label>
+      <DialogueFontScaleField
+        style={style}
+        onScaleChange={(fontScale) =>
+          updateStyle({ preset: "custom", fontScale })
+        }
+        onBodyFontSizeChange={(fontSizePx) => updateBody({ fontSizePx })}
+        onNameFontSizeChange={(fontSizePx) =>
+          updateSpeakerName({ fontSizePx })
+        }
+      />
 
       <details className="galgame-dialogue-advanced-settings">
         <summary>高级布局与排版</summary>

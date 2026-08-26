@@ -13,7 +13,7 @@ from dotenv import dotenv_values
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 PROJECT_ID = "63ac832d-bff3-4053-9c9f-f55c9dafc52a"
-EXPORT_WORKFLOW_VERSION = "v9r2"
+EXPORT_WORKFLOW_VERSION = "v10r1"
 FRAGMENT_ID = "runaway-full"
 FULL_DURATION_MS = 1_780_344
 SAMPLE_DURATION_MS = 180_000
@@ -52,6 +52,10 @@ LATEST_REVISION_EXPORTS = (
     ("diagnostic-explanation-card-680s-694s", 680_000, 694_000),
     ("diagnostic-finale-moeka-v9", 1_761_000, 1_780_344),
 )
+LATEST_FIX_EXPORTS = (
+    ("diagnostic-overlap-fix-1518s-1527s", 1_518_000, 1_527_000),
+    ("diagnostic-ending-thanks-1768s-1780s", 1_768_000, 1_780_344),
+)
 
 
 def random_sample(rng: random.Random | None = None) -> tuple[str, int, int]:
@@ -78,6 +82,8 @@ def requested_exports(
         return [*PREVIEW_REGRESSION_EXPORTS]
     if only == "latest-review":
         return [*LATEST_REVISION_EXPORTS]
+    if only == "latest-fixes":
+        return [*LATEST_FIX_EXPORTS]
     if only == "full":
         return [None]
     return [random_sample(rng)]
@@ -140,7 +146,7 @@ def submit(
     requested = requested_exports(only, rng)
     task_names: dict[str, str] = {}
     for item in requested:
-        name = item[0] if item else "full-29m40s344-v9"
+        name = item[0] if item else "full-29m40s344-v10"
         body = request_body(revision, item)
         preview = request_json(client, "POST", export_path("/preview"), body)
         if not preview["ready"]:
@@ -231,6 +237,7 @@ def main() -> None:
             "q-opening",
             "preview-regression",
             "latest-review",
+            "latest-fixes",
             "full",
         ),
     )

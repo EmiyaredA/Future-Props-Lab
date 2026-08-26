@@ -10,6 +10,7 @@ import {
 } from "./api";
 import type { VideoEditorOperation } from "./types";
 import { frameUs, timelineDuration } from "./editorModel";
+import { videoEditorQueryKeys } from "./queryKeys";
 
 type HistoryEntry = {
   redo: VideoEditorOperation[];
@@ -19,15 +20,15 @@ type HistoryEntry = {
 export function useVideoEditor(projectId: string) {
   const client = useQueryClient();
   const project = useQuery({
-    queryKey: ["video-editor-project", projectId],
+    queryKey: videoEditorQueryKeys.project(projectId),
     queryFn: () => getVideoEditorProject(projectId),
   });
   const timeline = useQuery({
-    queryKey: ["video-editor-timeline", projectId],
+    queryKey: videoEditorQueryKeys.timeline(projectId),
     queryFn: () => getVideoEditorTimeline(projectId),
   });
   const assets = useQuery({
-    queryKey: ["video-editor-assets", projectId],
+    queryKey: videoEditorQueryKeys.assets(projectId),
     queryFn: () => listVideoEditorAssets(projectId),
     refetchInterval: (query) =>
       query.state.data?.items.some((asset) =>
@@ -37,7 +38,7 @@ export function useVideoEditor(projectId: string) {
         : false,
   });
   const tasks = useQuery({
-    queryKey: ["video-editor-renders", projectId],
+    queryKey: videoEditorQueryKeys.renders(projectId),
     queryFn: () => listVideoEditorRenders(projectId),
     refetchInterval: 1200,
   });

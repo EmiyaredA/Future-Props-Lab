@@ -126,6 +126,15 @@ def test_migrations_are_runtime_independent() -> None:
     assert not violations, "迁移层不得反向导入运行时 app：\n" + "\n".join(violations)
 
 
+def test_background_runner_lifecycle_is_not_owned_by_llm() -> None:
+    violations: list[str] = []
+    for path in _python_files(BACKEND_APP):
+        source = path.read_text(encoding="utf-8")
+        if "PollingGenerationRunner" in source or "generation_runtime.worker" in source:
+            violations.append(_relative(path))
+    assert not violations, "通用 Runner 生命周期必须归属 concurrency：\n" + "\n".join(violations)
+
+
 def test_backend_avoids_generic_abstract_layer_directories() -> None:
     violations = sorted(
         _relative(path)

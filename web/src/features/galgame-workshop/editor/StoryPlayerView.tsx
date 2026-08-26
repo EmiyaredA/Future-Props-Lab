@@ -13,24 +13,17 @@ import {
   Volume2,
 } from "lucide-react";
 import { CHARACTER_DISTANCE_SCALE } from "@features/galgame-workshop/editor/stage";
-import { dialogueSpeakerIds } from "@features/galgame-workshop/editor/dialogue";
 import { StoryAssetImage } from "@features/galgame-workshop/editor/StoryAssetImage";
 import { ExpressionPortrait } from "@features/galgame-workshop/editor/ExpressionPortrait";
 import { stageAspectModeLabel } from "@features/galgame-workshop/editor/stageViewportPreferences";
 import { RichTextView } from "@features/galgame-workshop/editor/RichTextEditor";
 import { storyPlayerSceneLayerStyle } from "@features/galgame-workshop/editor/storyPlayerSceneStyle";
-import { dialogueDisplayName } from "@features/galgame-workshop/editor/richText";
-import {
-  dialogueEffectiveOpacity,
-  dialogueSpeakerNameLayout,
-} from "@features/galgame-workshop/api/dialogueBoxStyle";
+import { StoryPlayerDialogueLayer } from "@features/galgame-workshop/editor/StoryPlayerDialogueLayer";
 import type { useStoryPlayerController } from "@features/galgame-workshop/editor/useStoryPlayerController";
 import {
   STAGE_ASPECT_OPTIONS,
   clampPlayerValue,
   formatTimelineTime,
-  playerAdvanceIndicatorText,
-  playerHexToRgba,
 } from "@features/galgame-workshop/editor/storyPlayerModel";
 type StoryPlayerViewModel = ReturnType<typeof useStoryPlayerController>;
 
@@ -62,7 +55,6 @@ export function StoryPlayerView({ model }: { model: StoryPlayerViewModel }) {
     aspectParts,
     advanceMode,
     visibleTextLength,
-    inlinePlayerWait,
     advanceRef,
     autoplayBlocked,
     setAutoplayBlocked,
@@ -72,12 +64,10 @@ export function StoryPlayerView({ model }: { model: StoryPlayerViewModel }) {
     voiceRef,
     pendingRef,
     tryPlay,
-    characters,
     scenes,
     showAuthoringOverlays,
     displayFrame,
     palette,
-    activeDialogue,
     runtimeVariables,
     activeTimeline,
     stageScenes,
@@ -85,14 +75,10 @@ export function StoryPlayerView({ model }: { model: StoryPlayerViewModel }) {
     activeVideoOffsetMs,
     videoUrl,
     stageCgs,
-    dialogueStyle,
-    dialogueSkinAsset,
     stageStyle,
     lipSyncSpeaking,
     currentAudioLevelDb,
     stageActors,
-    activeDialogueAvatar,
-    dialogueAvatarAsset,
     customUiComponents,
     restart,
     enterFragment,
@@ -103,7 +89,6 @@ export function StoryPlayerView({ model }: { model: StoryPlayerViewModel }) {
     paragraphGroup,
     advance,
     displayText,
-    visibleRichContent,
     paragraphVisibleContents,
     systemMessageStyle,
     resolveSystemMessage,
@@ -128,59 +113,6 @@ export function StoryPlayerView({ model }: { model: StoryPlayerViewModel }) {
           "--galgame-camera-intensity": camera.intensity,
         } as CSSProperties)
       : undefined;
-  const canvasWidth = document.settings?.canvas?.width ?? 1920;
-  const logicalFontSize = (
-    logicalPixels: number | null | undefined,
-    fallback: string,
-    minimum: number,
-  ) =>
-    logicalPixels == null
-      ? fallback
-      : `clamp(${minimum}px, ${(logicalPixels / canvasWidth) * 100}cqw, ${logicalPixels}px)`;
-  const dialogueBodyFontSize = logicalFontSize(
-    dialogueStyle.body.fontSizePx,
-    `clamp(14px, ${dialogueStyle.fontScale * 1.25}cqw, 28px)`,
-    12,
-  );
-  const dialogueNameFontSize = logicalFontSize(
-    dialogueStyle.speakerName.fontSizePx,
-    "1em",
-    10,
-  );
-  const dialogueNameLayout = dialogueSpeakerNameLayout(
-    dialogueStyle.speakerName.placement,
-  );
-  const dialogueNamePositionStyle: CSSProperties | undefined =
-    dialogueStyle.layout.mode === "bottomOverlay" &&
-    dialogueNameLayout.vertical === "top"
-      ? { top: "var(--dialogue-name-top, 9px)" }
-      : undefined;
-  const dialogueBodyPositionStyle: CSSProperties | undefined =
-    dialogueStyle.layout.mode === "bottomOverlay" &&
-    dialogueNameLayout.vertical === "top"
-      ? {
-          top: "max(var(--dialogue-inset-top, 0%), calc(var(--dialogue-name-top, 9px) + var(--dialogue-name-font-size, 1em) + var(--dialogue-name-gap, 7px)))",
-        }
-      : dialogueStyle.layout.mode !== "bottomOverlay" &&
-          dialogueStyle.speakerName.placement === "topCenter"
-        ? {
-            marginTop: "calc(var(--dialogue-name-font-size, 1em) * 1.65)",
-          }
-        : undefined;
-  const dialogueOverlayBodyWidth =
-    Math.max(0, 100 - dialogueStyle.layout.contentInsetXPercent * 2) *
-    (dialogueStyle.body.maxWidthPercent / 100);
-  const dialogueIndicatorVisible =
-    dialogueStyle.advanceIndicator.visible &&
-    (!exportMode || dialogueStyle.advanceIndicator.showInExport);
-  const dialogueIndicatorText = playerAdvanceIndicatorText({
-    compact: dialogueStyle.advanceIndicator.style === "compact",
-    advanceMode,
-    visibleTextLength,
-    textLength: Array.from(displayText).length,
-    editing: mode === "edit",
-    waiting: inlinePlayerWait,
-  });
   return (
     <section
       className={`galgame-player${exportMode ? " galgame-player-export" : ""}${chrome === "stage-only" ? " galgame-player-stage-only" : ""}`}
@@ -1111,134 +1043,7 @@ export function StoryPlayerView({ model }: { model: StoryPlayerViewModel }) {
               </em>
             </button>
           ) : displayText ? (
-            <button
-              className={`galgame-dialogue-box layout-${dialogueStyle.layout.mode} background-${dialogueStyle.background.mode} body-${dialogueStyle.body.align} name-${dialogueStyle.speakerName.placement} name-decoration-${dialogueStyle.speakerName.decoration} indicator-${dialogueStyle.advanceIndicator.position} indicator-style-${dialogueStyle.advanceIndicator.style} top-rule-${dialogueStyle.background.topRule}`}
-              data-speaker-horizontal={dialogueNameLayout.horizontal}
-              data-speaker-vertical={dialogueNameLayout.vertical}
-              type="button"
-              onClick={mode === "play" ? advance : undefined}
-              style={
-                {
-                  background:
-                    dialogueStyle.background.mode === "verticalGradient"
-                      ? `linear-gradient(180deg, ${playerHexToRgba(
-                          dialogueStyle.backgroundColor,
-                          dialogueEffectiveOpacity(
-                            dialogueStyle.backgroundOpacity,
-                            dialogueStyle.background.gradientTopOpacity,
-                          ),
-                        )}, ${playerHexToRgba(
-                          dialogueStyle.backgroundColor,
-                          dialogueEffectiveOpacity(
-                            dialogueStyle.backgroundOpacity,
-                            dialogueStyle.background.gradientBottomOpacity,
-                          ),
-                        )})`
-                      : playerHexToRgba(
-                          dialogueStyle.backgroundColor,
-                          dialogueStyle.backgroundOpacity,
-                        ),
-                  borderRadius: `${dialogueStyle.borderRadius}px`,
-                  color: dialogueStyle.textColor,
-                  "--dialogue-width": `${dialogueStyle.layout.widthPercent}%`,
-                  "--dialogue-height": `${dialogueStyle.layout.heightPercent}%`,
-                  "--dialogue-bottom": `${dialogueStyle.layout.bottomOffsetPercent}%`,
-                  "--dialogue-inset-x": `${dialogueStyle.layout.contentInsetXPercent}%`,
-                  "--dialogue-inset-top": `${dialogueStyle.layout.contentInsetTopPercent}%`,
-                  "--dialogue-inset-bottom": `${dialogueStyle.layout.contentInsetBottomPercent}%`,
-                  "--dialogue-body-width": `${dialogueStyle.body.maxWidthPercent}%`,
-                  "--dialogue-overlay-body-width": `${dialogueOverlayBodyWidth}%`,
-                  "--dialogue-body-font-size": dialogueBodyFontSize,
-                  "--dialogue-name-font-size": dialogueNameFontSize,
-                  "--dialogue-name-top": logicalFontSize(15, "15px", 8),
-                  "--dialogue-name-gap": logicalFontSize(14, "14px", 7),
-                  "--dialogue-line-height": dialogueStyle.body.lineHeight,
-                  "--dialogue-name-color": dialogueStyle.nameColor,
-                  "--dialogue-rule-color": playerHexToRgba(
-                    dialogueStyle.background.topRuleColor,
-                    dialogueStyle.background.topRuleOpacity,
-                  ),
-                } as CSSProperties
-              }
-            >
-              {dialogueSkinAsset ? (
-                <StoryAssetImage
-                  fileId={dialogueSkinAsset.fileId}
-                  alt=""
-                  className="galgame-dialogue-skin-image"
-                  fallback={null}
-                />
-              ) : null}
-              {displayFrame.block.type === "dialogue" ? (
-                <>
-                  {dialogueAvatarAsset?.type === "image" ? (
-                    <span
-                      className="galgame-dialogue-runtime-avatar"
-                      style={
-                        {
-                          "--avatar-x": `${activeDialogueAvatar?.crop?.x ?? 50}%`,
-                          "--avatar-y": `${activeDialogueAvatar?.crop?.y ?? 25}%`,
-                          "--avatar-scale":
-                            activeDialogueAvatar?.crop?.scale ?? 1.8,
-                        } as CSSProperties
-                      }
-                    >
-                      <StoryAssetImage
-                        fileId={dialogueAvatarAsset.fileId}
-                        alt=""
-                        fallback={null}
-                      />
-                    </span>
-                  ) : null}
-                  <strong
-                    className="galgame-dialogue-speaker-name"
-                    style={dialogueNamePositionStyle}
-                  >
-                    {dialogueSpeakerIds(displayFrame.block)
-                      .map((speakerId, index) => {
-                        const character = characters.get(speakerId);
-                        return index === 0
-                          ? dialogueDisplayName(
-                              character,
-                              activeDialogue?.displayNameId,
-                              runtimeVariables,
-                            )
-                          : (character?.name ?? "未知角色");
-                      })
-                      .join("、")}
-                  </strong>
-                </>
-              ) : (
-                <small
-                  className="galgame-dialogue-speaker-name"
-                  style={dialogueNamePositionStyle}
-                >
-                  旁白
-                </small>
-              )}
-              <span
-                className="galgame-dialogue-body"
-                style={dialogueBodyPositionStyle}
-              >
-                {visibleRichContent ? (
-                  <RichTextView
-                    content={visibleRichContent}
-                    document={document}
-                    variables={runtimeVariables}
-                  />
-                ) : (
-                  Array.from(displayText).slice(0, visibleTextLength).join("")
-                )}
-              </span>
-              {dialogueIndicatorVisible ? (
-                <em className="galgame-dialogue-advance-indicator">
-                  {dialogueStyle.advanceIndicator.style === "compact" ? (
-                    <i aria-hidden />
-                  ) : null}
-                  {dialogueIndicatorText}
-                </em>
-              ) : null}
-            </button>
+            <StoryPlayerDialogueLayer model={model} />
           ) : null}
         </div>
       </div>

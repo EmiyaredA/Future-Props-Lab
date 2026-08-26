@@ -63,12 +63,6 @@ export function uploadStatusLabel(status: UploadStatus) {
   }[status];
 }
 
-export function formatBytes(value: number) {
-  if (value < 1024) return `${value} B`;
-  if (value < 1024 * 1024) return `${(value / 1024).toFixed(1)} KB`;
-  return `${(value / 1024 / 1024).toFixed(1)} MB`;
-}
-
 export function relativeUpdatedAt(value: string) {
   const elapsed = Date.now() - new Date(value).getTime();
   if (elapsed < 60_000) return "刚刚更新";

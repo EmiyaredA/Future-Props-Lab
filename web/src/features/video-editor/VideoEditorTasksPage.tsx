@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Film, RefreshCcw } from "lucide-react";
 import { listVideoEditorProjects, listVideoEditorRenders } from "./api";
 import type { VideoEditorTask } from "./types";
+import { videoEditorQueryKeys } from "./queryKeys";
 import "./video-editor.css";
 
 export function VideoEditorTasksPage({
@@ -10,11 +11,11 @@ export function VideoEditorTasksPage({
   onOpenProject: (projectId: string) => void;
 }) {
   const projects = useQuery({
-    queryKey: ["video-editor-projects"],
+    queryKey: videoEditorQueryKeys.projects,
     queryFn: listVideoEditorProjects,
   });
   const tasks = useQuery({
-    queryKey: ["video-editor-all-renders", projects.data?.items],
+    queryKey: videoEditorQueryKeys.allRenders(projects.data?.items),
     enabled: Boolean(projects.data),
     queryFn: async () => {
       const lists = await Promise.all(

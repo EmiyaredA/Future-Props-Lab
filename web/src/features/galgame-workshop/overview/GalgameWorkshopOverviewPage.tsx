@@ -18,11 +18,10 @@ import {
   type GalgameWorkshopProject,
 } from "@features/galgame-workshop/api";
 import "@features/galgame-workshop/galgameStyles";
+import { galgameQueryKeys } from "@features/galgame-workshop/queryKeys";
 
-const PROJECT_KEY = (projectId: string) =>
-  ["galgame-workshop-project", projectId] as const;
-const STORY_KEY = (projectId: string) =>
-  ["galgame-workshop-story", projectId] as const;
+const PROJECT_KEY = galgameQueryKeys.project;
+const STORY_KEY = galgameQueryKeys.story;
 
 const MODULES = [
   {

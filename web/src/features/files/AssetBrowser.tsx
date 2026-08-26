@@ -31,11 +31,11 @@ import {
   SORT_OPTIONS,
   extensionLabel,
   fileDisplayName,
-  formatBytes,
   kindLabel,
   relativeUpdatedAt,
   uploadStatusLabel,
 } from "@features/files/AssetBrowserParts";
+import { formatFileSize } from "@shared/lib/fileSize";
 import { useAssetBrowserController } from "@features/files/useAssetBrowserController";
 import "@features/files/files.css";
 
@@ -542,7 +542,7 @@ export function AssetBrowser({
                       {file.is_reference ? <small>来自文件管理</small> : null}
                     </span>
                     <small className="file-item-size">
-                      {formatBytes(file.byte_size)}
+                      {formatFileSize(file.byte_size)}
                     </small>
                   </span>
                 </button>

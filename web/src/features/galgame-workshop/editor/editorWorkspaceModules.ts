@@ -6,6 +6,7 @@ import {
   Palette,
   Settings2,
 } from "lucide-react";
+import { galgameQueryKeys } from "@features/galgame-workshop/queryKeys";
 export const BlockInspector = lazy(() =>
   import("@features/galgame-workshop/editor/EditorInspectors").then(
     (module) => ({ default: module.BlockInspector }),
@@ -63,5 +64,4 @@ export const WORKSPACES = [
   { id: "personalization", label: "个性化", icon: Palette },
   { id: "settings", label: "设置", icon: Settings2 },
 ] as const;
-export const STORY_KEY = (projectId: string) =>
-  ["galgame-workshop-story", projectId] as const;
+export const STORY_KEY = galgameQueryKeys.story;

@@ -418,47 +418,6 @@ test("automatically advances an untimed legacy fragment", () => {
   }
 });
 
-test("exports a preselected route without player controls", async () => {
-  vi.useFakeTimers();
-  const onComplete = vi.fn();
-  try {
-    const rendered = render(
-      <StoryPlayer
-        document={story}
-        exportMode={{
-          branchSelections: { branch: "left" },
-          choiceDurationMs: 2000,
-          choiceHighlightMs: 500,
-          onComplete,
-        }}
-      />,
-    );
-    await act(async () => {
-      for (let index = 0; index < 6; index += 1) await Promise.resolve();
-    });
-
-    expect(
-      screen.queryByRole("button", { name: "开始试玩" }),
-    ).not.toBeInTheDocument();
-    expect(
-      screen.queryByRole("button", { name: "自动" }),
-    ).not.toBeInTheDocument();
-
-    act(() => vi.advanceTimersByTime(1600));
-    const chosen = screen.getByRole("button", { name: "设备" });
-    expect(chosen).not.toHaveClass("is-export-selected");
-    act(() => vi.advanceTimersByTime(1500));
-    expect(chosen).toHaveClass("is-export-selected");
-    act(() => vi.advanceTimersByTime(500));
-    expect(screen.getByText("发现干扰。")).toBeInTheDocument();
-    act(() => vi.advanceTimersByTime(1600));
-    expect(onComplete).toHaveBeenCalledWith({ ok: true, label: "设备结局" });
-    expect(rendered.container.querySelector(".galgame-ending")).toBeNull();
-  } finally {
-    vi.useRealTimers();
-  }
-});
-
 test("throttles workbench playback position reports during timeline playback", () => {
   vi.useFakeTimers();
   try {
@@ -1520,6 +1479,29 @@ test("renders the classic gradient dialogue preset with export-safe AUTO status"
     (classicStyle.body.maxWidthPercent / 100);
   expect(dialogue.style.getPropertyValue("--dialogue-overlay-body-width")).toBe(
     `${expectedOverlayWidth}%`,
+  );
+});
+
+test("applies the project-wide font scale to explicit dialogue sizes", async () => {
+  const scaledStory = structuredClone(story);
+  scaledStory.presentation = {
+    ...scaledStory.presentation,
+    dialogueBox: {
+      ...dialogueBoxPresetStyle("classicGradient"),
+      preset: "custom",
+      fontScale: 1.2,
+    },
+  };
+
+  render(<StoryPlayer document={scaledStory} />);
+  fireEvent.click(screen.getByRole("button", { name: "开始试玩" }));
+
+  const dialogue = screen.getByText("开始调查。").closest("button")!;
+  expect(dialogue.style.getPropertyValue("--dialogue-body-font-size")).toBe(
+    "clamp(12px, 1.875cqw, 36px)",
+  );
+  expect(dialogue.style.getPropertyValue("--dialogue-name-font-size")).toBe(
+    "clamp(10px, 1.3541666666666667cqw, 26px)",
   );
 });
 

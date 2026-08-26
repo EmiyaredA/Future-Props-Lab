@@ -1,8 +1,6 @@
 from __future__ import annotations
 
 import asyncio
-import hashlib
-from pathlib import Path
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -10,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import Settings, get_settings
 from app.core.time import iso_utc
 from app.files import AssetError
+from app.files.digests import sha256_file
 from app.files.storage import AssetStorage
 from app.galgame_workshop.story import GalgameStoryDocuments
 from app.models import (
@@ -64,14 +63,6 @@ def _task_out(row: GalgameAnnotationImportTask) -> GalgameAnnotationImportTaskOu
         startedAt=iso_utc(row.started_at) if row.started_at else None,
         finishedAt=iso_utc(row.finished_at) if row.finished_at else None,
     )
-
-
-def _sha256(path: Path) -> str:
-    digest = hashlib.sha256()
-    with path.open("rb") as source:
-        while chunk := source.read(1024 * 1024):
-            digest.update(chunk)
-    return digest.hexdigest()
 
 
 def _effective_text(segment: AudioAnnotationSegment) -> str:
@@ -132,7 +123,7 @@ class GalgameAnnotationImports:
 
         speakers = [AudioAnnotationSpeaker.model_validate(item) for item in document_row.speakers]
         segments = [AudioAnnotationSegment.model_validate(item) for item in document_row.segments]
-        source_checksum = await asyncio.to_thread(_sha256, source_path)
+        source_checksum = await asyncio.to_thread(sha256_file, source_path)
         issues: list[GalgameAnnotationImportIssue] = []
 
         def issue(code: str, message: str, path: str = "") -> None:

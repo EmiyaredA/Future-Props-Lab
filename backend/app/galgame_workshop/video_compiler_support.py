@@ -318,7 +318,7 @@ def actor_layout(
         .get("characterStage", {})
         .get("defaultHeightPercent", 100)
     ) * DISTANCE_SCALE.get(str(actor.get("distance") or "medium"), 1)
-    anchor = str(transform.get("anchor") or settings.get("anchor") or "center")
+    anchor = str(settings.get("anchor") or transform.get("anchor") or "center")
     return (
         x,
         y,

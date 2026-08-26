@@ -1,5 +1,4 @@
-import { api, unwrap } from "@platform/api/client";
-import { applySessionHeaders } from "@platform/api/studioAuth";
+import { api, fetchApiJson, unwrap } from "@platform/api/client";
 import type {
   VideoEditorOperation,
   VideoEditorPreset,
@@ -87,20 +86,10 @@ export const importVideoEditorAssets = async (
 export async function uploadVideoEditorAsset(projectId: string, file: File) {
   const form = new FormData();
   form.append("upload", file);
-  const request = applySessionHeaders(
-    new Request(
-      `${import.meta.env.VITE_API_BASE || ""}/v1/video-editor/projects/${encodeURIComponent(projectId)}/assets`,
-      { method: "POST", credentials: "include", body: form },
-    ),
+  return fetchApiJson(
+    `/v1/video-editor/projects/${encodeURIComponent(projectId)}/assets`,
+    { method: "POST", body: form },
   );
-  const response = await fetch(request);
-  if (!response.ok) {
-    const problem = (await response.json().catch(() => ({}))) as {
-      detail?: string;
-    };
-    throw new Error(problem.detail || "素材上传失败");
-  }
-  return response.json();
 }
 
 export const renderPreflight = async (
