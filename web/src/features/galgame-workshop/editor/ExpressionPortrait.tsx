@@ -139,7 +139,13 @@ export function ExpressionPortrait({
       });
     }, 1000 / sequence.fps);
     return () => window.clearInterval(timer);
-  }, [controlledFrameIndex, fileIds.length, readyGroup?.key, sequence, sequenceKey]);
+  }, [
+    controlledFrameIndex,
+    fileIds.length,
+    readyGroup?.key,
+    sequence,
+    sequenceKey,
+  ]);
 
   if (!sequence) {
     return (
@@ -160,8 +166,8 @@ export function ExpressionPortrait({
       : Math.max(0, Math.min(fileIds.length - 1, controlledFrameIndex));
   const candidateFileId = fileIds[resolvedFrameIndex];
   const currentGroup = readyGroup?.key === sequenceKey ? readyGroup : undefined;
-  const firstSuccessfulFileId = fileIds.find(
-    (fileId) => currentGroup?.urls.get(fileId),
+  const firstSuccessfulFileId = fileIds.find((fileId) =>
+    currentGroup?.urls.get(fileId),
   );
   const displayFileId = currentGroup
     ? currentGroup.failedFileIds.has(candidateFileId)
@@ -174,7 +180,8 @@ export function ExpressionPortrait({
       : undefined
     : lastReadyFrame?.url;
   const reportAnchorNaturalSize = (fileId: string, image: HTMLImageElement) => {
-    if (fileId !== fileIds[0] && !failedFileIds.has(fileIds[0])) return;
+    const anchorFailed = currentGroup?.failedFileIds.has(fileIds[0]) ?? false;
+    if (fileId !== fileIds[0] && !anchorFailed) return;
     const size = {
       width: image.naturalWidth,
       height: image.naturalHeight,
@@ -204,7 +211,14 @@ export function ExpressionPortrait({
               reportAnchorNaturalSize(fileId, event.currentTarget);
             }}
             onError={() =>
-              setFailedFileIds((current) => new Set(current).add(fileId))
+              setReadyGroup((current) =>
+                current?.key === sequenceKey
+                  ? {
+                      ...current,
+                      failedFileIds: new Set(current.failedFileIds).add(fileId),
+                    }
+                  : current,
+              )
             }
           />
         ) : null,

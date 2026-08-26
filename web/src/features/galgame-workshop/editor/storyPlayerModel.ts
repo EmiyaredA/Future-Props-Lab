@@ -150,6 +150,7 @@ export type StoryPlayerProps = {
   includeStaleTranslations?: boolean;
   startCursor?: { chapterId: string; fragmentId: string; blockIndex?: number };
   mode?: "edit" | "play";
+  suppressMissingPortraitFallback?: boolean;
   chrome?: "full" | "stage-only";
   editFragment?: GalgameStoryFragment;
   editBlockIndex?: number;

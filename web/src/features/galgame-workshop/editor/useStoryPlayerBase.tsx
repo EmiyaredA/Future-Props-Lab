@@ -52,6 +52,7 @@ export function useStoryPlayerBase({
   includeStaleTranslations = false,
   startCursor,
   mode = "play",
+  suppressMissingPortraitFallback = false,
   chrome = "full",
   editFragment: sourceEditFragment,
   editBlockIndex,
@@ -382,7 +383,8 @@ export function useStoryPlayerBase({
     setMouthFrame(0);
   }, [activeDialogueExpressionId, lipSyncTrackerRef, setMouthFrame]);
 
-  const showMissingPortraitFallback = mode === "edit" && !exportMode;
+  const showMissingPortraitFallback =
+    !exportMode && !suppressMissingPortraitFallback;
   const stageActors = visibleStageActors(displayFrame.stage).flatMap(
     (actor) => {
       const character = characters.get(actor.characterId);

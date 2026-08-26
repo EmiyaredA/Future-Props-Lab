@@ -81,7 +81,7 @@ def test_lip_tracker_cycles_strong_voice_at_ten_fps_and_closes_on_silence() -> N
     assert [
         tracker.update(-20, True, time_us, 10)
         for time_us in (0, 100_000, 200_000, 300_000, 400_000)
-    ] == [0, 1, 2, 1, 0]
+    ] == [1, 2, 2, 1, 0]
     assert tracker.update(-100, False, 500_000, 10) == 0
 
 
@@ -90,4 +90,6 @@ def test_lip_tracker_limits_quieter_voice_to_half_open() -> None:
     assert tracker.update(-100, False, 0, 10) == 0
     assert [
         tracker.update(-47, True, time_us, 10) for time_us in (0, 100_000, 200_000, 300_000)
-    ] == [0, 1, 0, 1]
+    ] == [1, 1, 0, 1]
+    assert tracker.update(-100, True, 400_000, 10) != 0
+    assert tracker.update(-100, True, 500_001, 10) == 0

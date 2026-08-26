@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import random
 import time
@@ -37,6 +38,14 @@ BOUNDARY_EXPORTS = (
     ("boundary-time-machine-leap", 1_650_000, 1_685_000),
     ("boundary-final-rooftop-cg", 1_758_000, 1_780_344),
 )
+PREVIEW_REGRESSION_EXPORTS = (
+    ("diagnostic-two-actors-47s-52s", 47_000, 52_000),
+    ("diagnostic-phone-dialogue-65s-82s", 65_000, 82_000),
+    ("diagnostic-long-subtitle-168s-173s", 168_000, 173_000),
+    ("diagnostic-cg-entry-338s-347s", 338_000, 347_000),
+    ("diagnostic-no-duplicate-1518s-1527s", 1_518_000, 1_527_000),
+    ("diagnostic-finale-cg-1761s-1780s", 1_761_000, 1_780_344),
+)
 
 
 def random_sample(rng: random.Random | None = None) -> tuple[str, int, int]:
@@ -59,6 +68,8 @@ def requested_exports(
         return [*BOUNDARY_EXPORTS]
     if only == "q-opening":
         return [Q_OPENING_EXPORT]
+    if only == "preview-regression":
+        return [*PREVIEW_REGRESSION_EXPORTS]
     if only == "full":
         return [None]
     return [random_sample(rng)]
@@ -71,7 +82,12 @@ def request_json(
     payload: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     response = client.request(method, path, json=payload)
-    response.raise_for_status()
+    try:
+        response.raise_for_status()
+    except httpx.HTTPStatusError as exc:
+        raise RuntimeError(
+            f"API {method} {path} 返回 {response.status_code}: {response.text}"
+        ) from exc
     return response.json()
 
 
@@ -127,7 +143,10 @@ def submit(
             export_path(),
             {
                 **body,
-                "requestId": (f"runaway-rev{revision}-{EXPORT_WORKFLOW_VERSION}-{name}"),
+                "requestId": (
+                    f"runaway-r{revision}-v8-{name[:28]}-"
+                    f"{hashlib.sha256(name.encode()).hexdigest()[:8]}"
+                ),
                 "previewFingerprint": preview["previewFingerprint"],
             },
         )
@@ -202,6 +221,7 @@ def main() -> None:
             "cg-clips",
             "boundary-clips",
             "q-opening",
+            "preview-regression",
             "full",
         ),
     )

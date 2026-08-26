@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { act, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { forwardRef, useEffect, useImperativeHandle, useRef } from "react";
 import { beforeEach, expect, test, vi } from "vitest";
@@ -30,6 +30,8 @@ const snapshot: StoryPlayerRuntimeSnapshot = {
   advanceMode: "manual",
 };
 let playerSnapshot = snapshot;
+let emitPlayerSnapshot:
+  ((value: StoryPlayerRuntimeSnapshot) => void) | undefined;
 
 vi.mock("@features/galgame-workshop/api", async () => {
   const actual = await vi.importActual<
@@ -41,11 +43,16 @@ vi.mock("@features/galgame-workshop/api", async () => {
 vi.mock("@features/galgame-workshop/editor/StoryPlayer", () => ({
   StoryPlayer: forwardRef<
     StoryPlayerHandle,
-    { onRuntimeSnapshot?: (value: StoryPlayerRuntimeSnapshot) => void }
+    {
+      document: GalgameStoryProject;
+      onRuntimeSnapshot?: (value: StoryPlayerRuntimeSnapshot) => void;
+    }
   >(function MockStoryPlayer(
     {
+      document: playerDocument,
       onRuntimeSnapshot,
     }: {
+      document: GalgameStoryProject;
       onRuntimeSnapshot?: (value: StoryPlayerRuntimeSnapshot) => void;
     },
     ref,
@@ -64,11 +71,20 @@ vi.mock("@features/galgame-workshop/editor/StoryPlayer", () => ({
         }) satisfies StoryPlayerHandle,
     );
     useEffect(() => {
+      emitPlayerSnapshot = onRuntimeSnapshot;
       if (sentRef.current) return;
       sentRef.current = true;
       onRuntimeSnapshot?.(playerSnapshot);
     }, [onRuntimeSnapshot]);
-    return <div data-testid="mock-story-player" />;
+    const playerBlock =
+      playerDocument.chapters?.[0]?.fragments?.[0]?.blocks?.[0];
+    return (
+      <div data-testid="mock-story-player">
+        {playerBlock?.type === "dialogue"
+          ? `${playerBlock.text}|${playerBlock.expressionId ?? ""}|${playerBlock.portrait?.mode ?? "legacy"}|${playerBlock.portrait?.distance ?? ""}`
+          : ""}
+      </div>
+    );
   }),
 }));
 
@@ -101,6 +117,7 @@ const document = {
 beforeEach(() => {
   vi.clearAllMocks();
   playerSnapshot = snapshot;
+  emitPlayerSnapshot = undefined;
   vi.mocked(previewGalgameVideoExportFrame).mockResolvedValue(
     new Blob(["png"], { type: "image/png" }),
   );
@@ -220,4 +237,134 @@ test("disables exact frames for an unsaved snapshot", async () => {
   expect(button).toBeDisabled();
   expect(button).toHaveAttribute("title", "当前故事尚未成功保存");
   expect(previewGalgameVideoExportFrame).not.toHaveBeenCalled();
+});
+
+test("previews dialogue and presentation drafts before the explicit save action", async () => {
+  const user = userEvent.setup();
+  const dialogueDocument = structuredClone(document);
+  dialogueDocument.characters = [
+    {
+      id: "hero",
+      name: "主角",
+      description: "",
+      defaultExpressionId: "calm",
+      expressions: [
+        {
+          id: "calm",
+          label: "平静",
+          assetId: "portrait",
+          renderMode: "staticImage",
+        },
+      ],
+    },
+  ];
+  dialogueDocument.chapters![0]!.fragments![0]!.blocks = [
+    {
+      id: "line-one",
+      type: "dialogue",
+      characterId: "hero",
+      expressionId: "calm",
+      text: "原对白",
+      startMs: 0,
+      endMs: 1_000,
+    },
+    {
+      id: "line-two",
+      type: "dialogue",
+      characterId: "hero",
+      expressionId: "calm",
+      text: "下一句对白",
+      startMs: 1_000,
+      endMs: 2_000,
+    },
+  ];
+  playerSnapshot = {
+    ...snapshot,
+    playing: true,
+    frame: {
+      mode: "content",
+      fragmentId: "fragment-one",
+      blockIndex: 0,
+      block: dialogueDocument.chapters![0]!.fragments![0]!.blocks![0]!,
+      stage: { actors: {} },
+    },
+  };
+  const onApplyDialogueEdit = vi.fn(async (edit) => {
+    const savedDocument = structuredClone(dialogueDocument);
+    const savedBlock = savedDocument.chapters![0]!.fragments![0]!.blocks![0]!;
+    if (savedBlock.type === "dialogue") {
+      savedBlock.text = edit.text;
+      savedBlock.expressionId = edit.expressionId;
+      savedBlock.portrait = edit.portrait;
+    }
+    return { document: savedDocument, storyRevision: 618 };
+  });
+
+  render(
+    <FastPreviewWorkspace
+      projectId="project-one"
+      storyRevision={617}
+      document={dialogueDocument}
+      startCursor={{ chapterId: "chapter-one", fragmentId: "fragment-one" }}
+      onExit={vi.fn()}
+      onApplyDialogueEdit={onApplyDialogueEdit}
+    />,
+  );
+
+  await user.click(await screen.findByRole("button", { name: "快速修改" }));
+  const textarea = screen.getByLabelText("对白文本");
+  await user.clear(textarea);
+  await user.type(textarea, "修正后的对白");
+
+  expect(togglePlayback).toHaveBeenCalledTimes(1);
+
+  await waitFor(() =>
+    expect(screen.getByTestId("mock-story-player")).toHaveTextContent(
+      "修正后的对白|calm|legacy|",
+    ),
+  );
+  expect(screen.getByRole("status")).toHaveTextContent("未保存草稿已实时显示");
+  expect(
+    screen.getByRole("button", { name: "生成当前精确帧" }),
+  ).toHaveAttribute("title", "请先保存当前实时草稿，再生成精确导出帧");
+
+  act(() => {
+    emitPlayerSnapshot?.({
+      ...playerSnapshot,
+      blockIndex: 1,
+      positionMs: 1_100,
+      playing: false,
+      frame: {
+        mode: "content",
+        fragmentId: "fragment-one",
+        blockIndex: 1,
+        block: dialogueDocument.chapters![0]!.fragments![0]!.blocks![1]!,
+        stage: { actors: {} },
+      },
+    });
+  });
+  expect(textarea).toHaveValue("修正后的对白");
+
+  await user.click(screen.getByRole("combobox", { name: "快速修改立绘演出" }));
+  await user.click(screen.getByRole("option", { name: "舞台立绘" }));
+  await user.click(screen.getByRole("combobox", { name: "快速修改立绘景别" }));
+  await user.click(screen.getByRole("option", { name: "近景" }));
+
+  await waitFor(() =>
+    expect(screen.getByTestId("mock-story-player")).toHaveTextContent(
+      "修正后的对白|calm|stage|near",
+    ),
+  );
+  await user.click(screen.getByRole("button", { name: "保存这些修改" }));
+
+  await waitFor(() =>
+    expect(onApplyDialogueEdit).toHaveBeenCalledWith({
+      fragmentId: "fragment-one",
+      blockId: "line-one",
+      text: "修正后的对白",
+      expressionId: "calm",
+      portrait: expect.objectContaining({ mode: "stage", distance: "near" }),
+    }),
+  );
+  expect(await screen.findByRole("status")).toHaveTextContent("已保存");
 });

@@ -172,7 +172,7 @@
 }
 .galgame-fast-preview-inspector > nav {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   gap: 4px;
   margin-bottom: 12px;
 }
@@ -203,6 +203,87 @@
 .galgame-fast-preview-inspector small,
 .galgame-fast-preview-inspector p {
   color: var(--gal-muted);
+}
+.galgame-fast-preview-quick-edit {
+  display: grid;
+  gap: 12px;
+}
+.galgame-fast-preview-quick-edit > header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+.galgame-fast-preview-quick-edit > header > span {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.galgame-fast-preview-quick-edit > header em {
+  border: 1px solid color-mix(in srgb, var(--gal-accent) 48%, transparent);
+  border-radius: 999px;
+  padding: 2px 6px;
+  color: var(--gal-accent);
+  font-size: 9px;
+  font-style: normal;
+}
+.galgame-fast-preview-quick-edit > label {
+  display: grid;
+  gap: 6px;
+  color: var(--gal-muted);
+  font-size: 10px;
+}
+.galgame-fast-preview-presentation-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+.galgame-fast-preview-presentation-grid > label {
+  display: grid;
+  gap: 6px;
+  color: var(--gal-muted);
+  font-size: 10px;
+}
+.galgame-fast-preview-presentation-grid > label:first-child:last-child,
+.galgame-fast-preview-presentation-grid > label:nth-child(3) {
+  grid-column: 1 / -1;
+}
+.galgame-fast-preview-presentation-toggles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.galgame-fast-preview-presentation-toggles label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--gal-line);
+  border-radius: 7px;
+  padding: 6px 8px;
+  color: var(--gal-muted);
+  font-size: 10px;
+}
+.galgame-fast-preview-presentation-toggles input {
+  accent-color: var(--gal-accent);
+}
+.galgame-fast-preview-quick-edit textarea {
+  width: 100%;
+  min-height: 130px;
+  resize: vertical;
+  border: 1px solid var(--gal-line);
+  border-radius: 8px;
+  padding: 9px;
+  color: var(--gal-text);
+  background: var(--gal-surface);
+  font: inherit;
+  line-height: 1.55;
+}
+.galgame-fast-preview-quick-edit > button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 9px 10px;
 }
 .galgame-fast-preview > footer {
   display: flex;

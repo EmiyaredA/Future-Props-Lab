@@ -209,7 +209,11 @@ describe("ExpressionPortrait", () => {
     );
     await settleFrames();
 
-    expect(screen.getByText("加载中")).toBeVisible();
+    expect(screen.queryByText("加载中")).not.toBeInTheDocument();
+    expect(screen.getByAltText("待机")).toHaveAttribute(
+      "data-file-id",
+      "file-1",
+    );
     const nextFramePreload = rendered.container.querySelector<HTMLImageElement>(
       '.galgame-expression-frame-preload[data-file-id="file-1"]',
     );

@@ -184,14 +184,14 @@ CG_ASSETS = (
         "篝在时间机器舱门前回头挥手，铃羽等待登舱。",
     ),
     _asset(
-        "harem-chaos-finale-v6",
-        "docs/assets/galgame-runaway-cgs/10-harem-chaos-finale-v6.png",
+        "harem-chaos-finale-v7",
+        "docs/assets/galgame-runaway-cgs/10-harem-chaos-finale-v7.png",
         "大家都是妈妈？",
         "跃迁后的平整空天台上，原作立绘形象的萌郁与琉华和众人将冈部围在误解的混乱中心。",
     ),
     _asset(
-        "okabe-main-phone-overlay-v1",
-        "docs/assets/galgame-ui/okabe-main-phone-overlay-v1.png",
+        "okabe-main-phone-overlay-v2",
+        "docs/assets/galgame-ui/okabe-main-phone-overlay-v2.png",
         "冈部手机界面",
         "从《命运石之门》本篇原作手机贴图提取的红色正面手机与蓝色菜单界面。",
     ),
@@ -255,7 +255,7 @@ CG_EVENTS = (
     ),
     _event(
         "okabe-phone",
-        "okabe-main-phone-overlay-v1",
+        "okabe-main-phone-overlay-v2",
         68_051,
         78_422,
         transition_ms=220,
@@ -308,7 +308,7 @@ CG_EVENTS = (
     ),
     _event("rooftop-farewell", "rooftop-farewell", 1_655_044, 1_666_292),
     _event("time-machine-leap", "time-machine-leap-v1", 1_666_293, 1_677_392),
-    _event("harem-chaos-finale", "harem-chaos-finale-v6", 1_763_485, None),
+    _event("harem-chaos-finale", "harem-chaos-finale-v7", 1_763_485, None),
 )
 
 CG_EVENT_STARTS = frozenset(event["startMs"] for event in CG_EVENTS)

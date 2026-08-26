@@ -96,7 +96,8 @@ export class LipSyncLevelTracker {
     const aboveNoise = levelDb - this.noiseFloorDb;
     const detected: 0 | 1 | 2 = aboveNoise >= 11 ? 2 : aboveNoise >= 5 ? 1 : 0;
     if (detected === 0)
-      this.noiseFloorDb = this.noiseFloorDb * 0.98 + Math.min(-12, levelDb) * 0.02;
+      this.noiseFloorDb =
+        this.noiseFloorDb * 0.98 + Math.min(-12, levelDb) * 0.02;
     if (detected > 0) {
       this.opening = detected;
       this.lastVoicedAt = nowMs;

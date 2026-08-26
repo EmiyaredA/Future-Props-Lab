@@ -25,6 +25,14 @@ def test_default_export_is_one_random_three_minute_clip() -> None:
 def test_full_export_requires_explicit_option() -> None:
     assert requested_exports("full") == [None]
     assert requested_exports("random-sample", random.Random(7))[0] is not None
+    assert [item[0] for item in requested_exports("preview-regression") if item] == [
+        "diagnostic-two-actors-47s-52s",
+        "diagnostic-phone-dialogue-65s-82s",
+        "diagnostic-long-subtitle-168s-173s",
+        "diagnostic-cg-entry-338s-347s",
+        "diagnostic-no-duplicate-1518s-1527s",
+        "diagnostic-finale-cg-1761s-1780s",
+    ]
 
 
 def test_seeded_random_sample_is_reproducible() -> None:

@@ -2,10 +2,15 @@ import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { ChevronDown, Play } from "lucide-react";
 import type { EditorPageViewModel } from "@features/galgame-workshop/editor/editorViewModel";
 import {
+  applyFastPreviewDialogueEdit,
+  type FastPreviewDialogueEdit,
+} from "@features/galgame-workshop/editor/fastPreviewDialogueEdit";
+import {
   createEditorFastPreviewSession,
   type EditorFastPreviewSession,
 } from "@features/galgame-workshop/editor/editorFastPreviewSession";
 import { openFastPreviewWindow } from "@features/galgame-workshop/editor/fastPreviewSession";
+import { updateBlock } from "@features/galgame-workshop/editor/model";
 
 const FastPreviewWorkspace = lazy(() =>
   import("@features/galgame-workshop/editor/FastPreviewWorkspace").then(
@@ -126,6 +131,20 @@ export function EditorFastPreviewOverlay({
     range: NonNullable<EditorFastPreviewSession["playbackRange"]>,
   ) => void;
 }) {
+  const applyDialogueEdit = async (edit: FastPreviewDialogueEdit) => {
+    const current = model.documentRef.current ?? model.document;
+    const next = updateBlock(current, edit.fragmentId, edit.blockId, (block) =>
+      block.type === "dialogue"
+        ? applyFastPreviewDialogueEdit(block, edit)
+        : block,
+    );
+    if (!(await model.commitDocument(next)))
+      throw new Error("保存失败或故事版本已发生冲突");
+    return {
+      document: next,
+      storyRevision: model.revisionRef.current,
+    };
+  };
   const exactFrameDisabledReason = model.conflict
     ? "存在版本冲突，解决后才能生成精确帧"
     : model.saveState === "saving"
@@ -151,6 +170,7 @@ export function EditorFastPreviewOverlay({
         playbackRange={session.playbackRange}
         renderDisabledReason={renderDisabledReason}
         onRenderRange={onRenderRange}
+        onApplyDialogueEdit={applyDialogueEdit}
         onOpenWindow={() =>
           openFastPreviewWindow({
             projectId: model.projectId,
@@ -160,6 +180,7 @@ export function EditorFastPreviewOverlay({
             startCursor: session.startCursor,
             playbackRange: session.playbackRange,
             latestDocument: () => model.documentRef.current ?? model.document,
+            applyDialogueEdit,
           })
         }
         onExit={(snapshot) => {

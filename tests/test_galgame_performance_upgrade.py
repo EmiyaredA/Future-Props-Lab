@@ -1,5 +1,8 @@
+import json
+
 from scripts.galgame_performance_upgrade import (
     DEFAULT_ANNOTATION_PATH,
+    DIALOGUE_BOX_OPACITY,
     DIALOGUE_EXPRESSION_CUES,
     EXPECTED_ANNOTATION_SHA256,
     LIP_SYNC_FPS,
@@ -9,6 +12,7 @@ from scripts.galgame_performance_upgrade import (
     TRANSITION_CARD_BLOCKS,
     cast_member,
     enlarge_dialogue_text,
+    fullscreen_cg_at,
     install_cgs,
     install_opening_declaration,
     install_transition_cards,
@@ -150,6 +154,22 @@ def test_v8_annotation_and_scene_timing_contract() -> None:
     assert (1_677_392, "BG11_EMPTY") in SCENE_BEATS
     assert not any(at_ms in {653_198, 687_072, 1_604_000, 1_682_974} for at_ms, _ in SCENE_BEATS)
 
+    annotation = json.loads(DEFAULT_ANNOTATION_PATH.read_text(encoding="utf-8"))
+    assert len(annotation["segments"]) == 514
+    assert sum(len(segment["speaker_ids"]) > 1 for segment in annotation["segments"]) == 12
+    ensemble_id = next(
+        speaker["id"] for speaker in annotation["speakers"] if speaker["name"] == "众人"
+    )
+    ensemble_segments = [
+        segment for segment in annotation["segments"] if segment["speaker_id"] == ensemble_id
+    ]
+    assert len(ensemble_segments) == 2
+    assert all(segment["speaker_ids"] == [ensemble_id] for segment in ensemble_segments)
+    assert annotation["segments"][78]["localized_texts"][0]["text"] == (
+        "你在说什么？我可是气量很大的男人！"
+    )
+    assert annotation["segments"][248]["localized_texts"][0]["text"] == "呐，篝的肚子饿了。"
+
 
 def test_v8_transition_cards_are_exactly_two_black_intertitles() -> None:
     document = {
@@ -186,7 +206,13 @@ def test_v8_cg_timing_and_scene_consistency() -> None:
     )
     assert assets["kagari-imitation-v9"]["path"].name.endswith("v9.png")
     assert assets["suzuha-maho-v2"]["path"].name.endswith("v2.png")
-    assert assets["harem-chaos-finale-v6"]["path"].name.endswith("v6.png")
+    assert assets["harem-chaos-finale-v7"]["path"].name.endswith("v7.png")
+
+
+def test_fullscreen_cg_detection_excludes_phone_overlay() -> None:
+    assert fullscreen_cg_at(341_612)["key"] == "roundtable-1"
+    assert fullscreen_cg_at(68_051) is None
+    assert fullscreen_cg_at(364_948) is None
 
 
 def test_pair_layout_uses_larger_medium_portraits() -> None:
@@ -222,9 +248,9 @@ def test_dialogue_text_is_enlarged_without_changing_layout() -> None:
     }
     assert dialogue_box["layout"] == {"heightPercent": 30}
     assert dialogue_box["backgroundColor"] == "#05070B"
-    assert dialogue_box["backgroundOpacity"] == 1
-    assert dialogue_box["gradientTopOpacity"] == 1
-    assert dialogue_box["gradientBottomOpacity"] == 1
+    assert dialogue_box["backgroundOpacity"] == DIALOGUE_BOX_OPACITY
+    assert dialogue_box["background"]["gradientTopOpacity"] == 1
+    assert dialogue_box["background"]["gradientBottomOpacity"] == 1
 
 
 def test_shadowed_cast_member_keeps_previous_expression() -> None:

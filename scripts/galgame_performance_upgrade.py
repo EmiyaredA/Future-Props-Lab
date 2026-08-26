@@ -41,6 +41,7 @@ BACKUP_ROOT = REPO_ROOT / ".runtime" / "galgame-import-backups"
 MAP_PATH = BACKUP_ROOT / "sg0-performance-asset-map.json"
 IMAGE_SUFFIXES = {".png", ".jpg", ".jpeg", ".webp"}
 LIP_SYNC_FPS = 5
+DIALOGUE_BOX_OPACITY = 0.82
 EXPECTED_ANNOTATION_SHA256 = "00652faa1715f7076220450ab162fd4f9ac0c9228a13f7bd824c3568f0f6f94f"
 EXPECTED_ANNOTATION_MULTI_SPEAKER_LINES = 12
 GROUP_CG_DIALOGUE_IDS = frozenset(
@@ -552,9 +553,10 @@ def set_all_lip_sync_fps(document: dict[str, Any]) -> None:
 def enlarge_dialogue_text(document: dict[str, Any]) -> None:
     dialogue_box = document.setdefault("presentation", {}).setdefault("dialogueBox", {})
     dialogue_box["backgroundColor"] = "#05070B"
-    dialogue_box["backgroundOpacity"] = 1
-    dialogue_box["gradientTopOpacity"] = 1
-    dialogue_box["gradientBottomOpacity"] = 1
+    dialogue_box["backgroundOpacity"] = DIALOGUE_BOX_OPACITY
+    background = dialogue_box.setdefault("background", {})
+    background["gradientTopOpacity"] = 1
+    background["gradientBottomOpacity"] = 1
     body = dialogue_box.setdefault("body", {})
     body["fontSizePx"] = 34
     body["lineHeight"] = 1.5
@@ -1085,6 +1087,19 @@ def remembered_cast_expression(
     ).get("defaultExpressionId")
 
 
+def fullscreen_cg_at(milliseconds: int) -> dict[str, Any] | None:
+    return next(
+        (
+            event
+            for event in CG_EVENTS
+            if event["displayMode"] == "fullscreen"
+            and event["startMs"] <= milliseconds
+            and (event["endMs"] is None or milliseconds < event["endMs"])
+        ),
+        None,
+    )
+
+
 def install_performance_blocks(document: dict[str, Any], first_person_id: str) -> None:
     fragment = target_fragment(document)
     original_signature = dialogue_signature(fragment)
@@ -1134,25 +1149,28 @@ def install_performance_blocks(document: dict[str, Any], first_person_id: str) -
                 },
             }
         )
-        performance.append(
-            {
-                "id": f"perf-camera-{beat_index:02d}",
-                "type": "camera",
-                "atMs": at_ms,
-                "target": "background",
-                "effect": "move" if beat_index % 3 else "zoomIn",
-                "x": (-2 if beat_index % 2 else 2),
-                "y": -1 if beat_index % 2 else 0,
-                "scale": 1 if beat_index % 4 == 3 else 1.04 + (beat_index % 3) * 0.025,
-                "rotation": 0,
-                "intensity": 0.5,
-                "durationMs": 5_000,
-                "easing": "easeInOut",
-                "waitForCompletion": False,
-            }
-        )
+        if beat_index:
+            performance.append(
+                {
+                    "id": f"perf-camera-{beat_index:02d}",
+                    "type": "camera",
+                    "atMs": at_ms,
+                    "target": "background",
+                    "effect": "move" if beat_index % 3 else "zoomIn",
+                    "x": (-2 if beat_index % 2 else 2),
+                    "y": -1 if beat_index % 2 else 0,
+                    "scale": 1 if beat_index % 4 == 3 else 1.04 + (beat_index % 3) * 0.025,
+                    "rotation": 0,
+                    "intensity": 0.5,
+                    "durationMs": 5_000,
+                    "easing": "easeInOut",
+                    "waitForCompletion": False,
+                }
+            )
 
     last_expression_by_character: dict[str, str] = {}
+    motion_block_count = 0
+    motion_block_limit = 27
     for cue_index, dialogue in enumerate(dialogues):
         character_id = dialogue.get("characterId")
         if character_id in visible_character_ids:
@@ -1186,7 +1204,10 @@ def install_performance_blocks(document: dict[str, Any], first_person_id: str) -
             )
         explicit_group = len(dialogue.get("speakerIds") or []) > 1
         group_dialogue = explicit_group or dialogue.get("characterId") == group_character_id
-        cg_hidden_dialogue = group_dialogue or dialogue["id"] in Q_OVERLAY_DIALOGUE_IDS
+        fullscreen_cg = fullscreen_cg_at(dialogue["startMs"])
+        cg_hidden_dialogue = (
+            group_dialogue or dialogue["id"] in Q_OVERLAY_DIALOGUE_IDS or fullscreen_cg is not None
+        )
         requires_composition = (
             dialogue["characterId"] not in visible_character_ids
             or cg_hidden_dialogue
@@ -1194,17 +1215,23 @@ def install_performance_blocks(document: dict[str, Any], first_person_id: str) -
             or dialogue["id"] in SAFE_CLOSEUP_DIALOGUE_IDS
         )
         if requires_composition:
+            cast_at_ms = dialogue["startMs"]
+            if fullscreen_cg and fullscreen_cg["startMs"] == dialogue["startMs"]:
+                # Keep the previous stage intact while the CG fades in. The new
+                # cast is installed only once the CG is fully opaque, preventing
+                # a one-frame portrait flash at every CG/dialogue boundary.
+                cast_at_ms += fullscreen_cg["transitionMs"]
             performance.append(
                 {
                     "id": f"perf-cast-{cue_index:03d}",
                     "type": "setStageCast",
-                    "atMs": dialogue["startMs"],
+                    "atMs": cast_at_ms,
                     "members": members,
                     "exitTransition": {"durationMs": 0, "fade": False},
                 }
             )
 
-        if dialogue["characterId"] not in visible_character_ids or cg_hidden_dialogue:
+        if requires_composition:
             dialogue["portrait"] = {
                 "mode": "stage",
                 "visible": False,
@@ -1235,7 +1262,7 @@ def install_performance_blocks(document: dict[str, Any], first_person_id: str) -
             }
 
         text = dialogue.get("text", "")
-        if visible_ids and cue_index % 18 == 0:
+        if visible_ids and cue_index % 18 == 0 and motion_block_count < motion_block_limit:
             animation = (
                 "startle"
                 if any(mark in text for mark in ("！", "!"))
@@ -1258,12 +1285,16 @@ def install_performance_blocks(document: dict[str, Any], first_person_id: str) -
                     "waitForCompletion": False,
                 }
             )
+            motion_block_count += 1
         if (
             len(visible_ids) >= 2
             and 1_364_000 <= dialogue["startMs"] <= 1_604_000
             and cue_index % 11 == 0
+            and motion_block_count < motion_block_limit
         ):
             for member_index, character_id in enumerate(visible_ids[:2]):
+                if motion_block_count >= motion_block_limit:
+                    break
                 performance.append(
                     {
                         "id": f"perf-motion-{cue_index:03d}-{member_index + 1}",
@@ -1279,19 +1310,7 @@ def install_performance_blocks(document: dict[str, Any], first_person_id: str) -
                         "waitForCompletion": False,
                     }
                 )
-    if not any(
-        block.get("type") == "setStageCast" and block.get("atMs") == dialogues[-1]["endMs"]
-        for block in performance
-    ):
-        performance.append(
-            {
-                "id": "perf-cast-final-clear",
-                "type": "setStageCast",
-                "atMs": dialogues[-1]["endMs"],
-                "members": [],
-                "exitTransition": {"durationMs": 0, "fade": False},
-            }
-        )
+                motion_block_count += 1
     fragment["blocks"] = [*performance, *retained]
     if len(fragment["blocks"]) > 1000:
         raise RuntimeError(f"演出 Block 超过上限：{len(fragment['blocks'])}")
@@ -1387,10 +1406,27 @@ def audit_document(
         if dialogue.get("expressionId") not in expression_ids.get(dialogue["characterId"], set())
         or DIALOGUE_EXPRESSION_CUES.get(dialogue["id"]) != dialogue.get("expressionId")
     ]
+    cast_block_by_id = {block["id"]: block for block in cast_blocks}
+    stage_managed_dialogue_ids = {
+        dialogues[int(block_id.rsplit("-", 1)[1])]["id"]
+        for block_id in cast_block_by_id
+        if block_id.startswith("perf-cast-") and block_id != "perf-cast-final-clear"
+    }
+    direct_visible_dialogues = [
+        dialogue
+        for dialogue in visible_dialogues
+        if dialogue["id"] not in stage_managed_dialogue_ids
+    ]
     visible_hidden_portraits = [
         dialogue["id"]
-        for dialogue in visible_dialogues
+        for dialogue in direct_visible_dialogues
         if not dialogue.get("portrait", {}).get("visible")
+    ]
+    stage_managed_visible_portraits = [
+        dialogue["id"]
+        for dialogue in dialogues
+        if dialogue["id"] in stage_managed_dialogue_ids
+        and dialogue.get("portrait", {}).get("visible")
     ]
     hidden_visible_portraits = [
         dialogue["id"]
@@ -1407,7 +1443,18 @@ def audit_document(
         for dialogue in q_overlay_dialogues
         if dialogue.get("portrait", {}).get("visible")
     ]
-    cast_block_by_id = {block["id"]: block for block in cast_blocks}
+    duplicate_portrait_layer_dialogues = []
+    for cue_index, dialogue in enumerate(dialogues):
+        block = cast_block_by_id.get(f"perf-cast-{cue_index:03d}")
+        if (
+            block
+            and dialogue.get("portrait", {}).get("visible")
+            and any(
+                member.get("characterId") == dialogue.get("characterId")
+                for member in block.get("members", [])
+            )
+        ):
+            duplicate_portrait_layer_dialogues.append(dialogue["id"])
     stale_cast_expressions: list[dict[str, Any]] = []
     last_expression_by_character: dict[str, str] = {}
     character_by_id = {character["id"]: character for character in document.get("characters", [])}
@@ -1467,7 +1514,7 @@ def audit_document(
                 distance=member["distance"],
                 transform=member["transform"],
             )
-    for dialogue in visible_dialogues:
+    for dialogue in direct_visible_dialogues:
         portrait = dialogue["portrait"]
         check_safe_frame(
             owner=dialogue["id"],
@@ -1477,11 +1524,13 @@ def audit_document(
             transform=portrait["transform"],
         )
 
-    near_dialogue_ids = {
-        dialogue["id"]
-        for dialogue in visible_dialogues
-        if dialogue.get("portrait", {}).get("distance") == "near"
-    }
+    near_dialogue_ids = set()
+    for cue_index, dialogue in enumerate(dialogues):
+        block = cast_block_by_id.get(f"perf-cast-{cue_index:03d}")
+        if block and any(member.get("distance") == "near" for member in block.get("members", [])):
+            near_dialogue_ids.add(dialogue["id"])
+        elif dialogue.get("portrait", {}).get("distance") == "near":
+            near_dialogue_ids.add(dialogue["id"])
     show_cg_blocks = [
         block for block in fragment.get("blocks", []) if block.get("type") == "showCg"
     ]
@@ -1553,6 +1602,41 @@ def audit_document(
         and final_cg_blocks[0]["atMs"] == 1_763_485
         and not any(block["atMs"] >= 1_763_485 for block in hide_cg_blocks)
     )
+    fullscreen_events = [event for event in CG_EVENTS if event["displayMode"] == "fullscreen"]
+    dialogue_start_ms = {dialogue["startMs"] for dialogue in dialogues}
+    fullscreen_timing_errors = [
+        event["key"]
+        for event in fullscreen_events
+        if event["startMs"] != 0
+        and event["startMs"] not in dialogue_start_ms
+        and not any(
+            previous.get("endMs") is not None and event["startMs"] == previous["endMs"] + 1
+            for previous in fullscreen_events
+        )
+    ]
+    cg_entry_stage_flash_risks = [
+        block["id"]
+        for block in cast_blocks
+        if any(
+            event["startMs"] > 0 and block.get("atMs") == event["startMs"]
+            for event in fullscreen_events
+        )
+    ]
+    cg_entry_portrait_flash_risks = [
+        dialogue["id"]
+        for dialogue in dialogues
+        if dialogue.get("portrait", {}).get("visible")
+        and any(
+            event["startMs"] > 0 and dialogue["startMs"] == event["startMs"]
+            for event in fullscreen_events
+        )
+    ]
+    fullscreen_visible_portraits = [
+        dialogue["id"]
+        for dialogue in dialogues
+        if dialogue.get("portrait", {}).get("visible")
+        and fullscreen_cg_at(dialogue["startMs"]) is not None
+    ]
     suzuha = find_character(document, ("铃羽", "鈴羽", "玲羽", "Suzuha"))
     suzuha_asset_ids = {
         expression.get("assetId", "") for expression in suzuha.get("expressions", [])
@@ -1574,7 +1658,7 @@ def audit_document(
                 strict=False,
             )
         )
-        < (60 if len(block.get("members", [])) == 2 else 35)
+        < (56 if len(block.get("members", [])) == 2 else 35)
     ]
     logical_library = logical_library_entries(source_root)
     missing_mapping = [
@@ -1631,14 +1715,21 @@ def audit_document(
         "durationMs": fragment["timeline"]["durationMs"],
         "dialogueCount": len(dialogues),
         "allLipSyncFps5": bool(lip_sync_fps) and set(lip_sync_fps) == {LIP_SYNC_FPS},
-        "dialogueBoxOpaque": all(
-            document.get("presentation", {}).get("dialogueBox", {}).get(key) == value
-            for key, value in (
-                ("backgroundColor", "#05070B"),
-                ("backgroundOpacity", 1),
-                ("gradientTopOpacity", 1),
-                ("gradientBottomOpacity", 1),
-            )
+        "dialogueBoxSemiTransparent": (
+            document.get("presentation", {}).get("dialogueBox", {}).get("backgroundColor")
+            == "#05070B"
+            and document.get("presentation", {}).get("dialogueBox", {}).get("backgroundOpacity")
+            == DIALOGUE_BOX_OPACITY
+            and document.get("presentation", {})
+            .get("dialogueBox", {})
+            .get("background", {})
+            .get("gradientTopOpacity")
+            == 1
+            and document.get("presentation", {})
+            .get("dialogueBox", {})
+            .get("background", {})
+            .get("gradientBottomOpacity")
+            == 1
         ),
         "dialogueBodyFontSizePx": document.get("presentation", {})
         .get("dialogueBox", {})
@@ -1656,6 +1747,8 @@ def audit_document(
         "groupCgCoverage": group_cg_coverage,
         "invalidExpressionDialogues": invalid_expression_dialogues,
         "visibleHiddenPortraits": visible_hidden_portraits,
+        "stageManagedVisiblePortraits": stage_managed_visible_portraits,
+        "duplicatePortraitLayerDialogues": duplicate_portrait_layer_dialogues,
         "hiddenVisiblePortraits": hidden_visible_portraits,
         "groupVisiblePortraits": group_visible_portraits,
         "qOverlayVisiblePortraits": q_overlay_visible_portraits,
@@ -1748,6 +1841,10 @@ def audit_document(
         and opening_event["endMs"] == 11_500
         and opening_event["endMs"] < first_dialogue_start_ms,
         "finalCgPersists": final_cg_persists,
+        "fullscreenCgTimingErrors": fullscreen_timing_errors,
+        "cgEntryStageFlashRisks": cg_entry_stage_flash_risks,
+        "cgEntryPortraitFlashRisks": cg_entry_portrait_flash_risks,
+        "fullscreenCgVisiblePortraits": fullscreen_visible_portraits,
         "suzuhaUsesSg0BlueVest": bool(suzuha_asset_ids)
         and all(asset_id.startswith("sg0-suz-half-v1-suz-hs") for asset_id in suzuha_asset_ids)
         and any("hsd" in asset_id for asset_id in suzuha_asset_ids)
@@ -1774,18 +1871,21 @@ def audit_document(
         raise RuntimeError(f"对白或时间轴审计失败：{checks}")
     if not checks["allLipSyncFps5"]:
         raise RuntimeError("仍有唇形序列不是 5 FPS")
-    if not checks["dialogueBoxOpaque"]:
-        raise RuntimeError("对白框没有保持最高层不透明样式")
+    if not checks["dialogueBoxSemiTransparent"]:
+        raise RuntimeError("对白框没有保持最高层半透明样式")
     if checks["dialogueBodyFontSizePx"] != 34 or checks["dialogueBodyMaxWidthPercent"] != 100:
         raise RuntimeError("对白正文字号或可用宽度未按 V8 应用")
     if (
         checks["explicitExpressionCueCount"] != 409
         or invalid_expression_dialogues
         or visible_hidden_portraits
+        or stage_managed_visible_portraits
+        or duplicate_portrait_layer_dialogues
         or hidden_visible_portraits
         or group_visible_portraits
         or q_overlay_visible_portraits
         or stale_cast_expressions
+        or fullscreen_visible_portraits
         or checks["visibleDialogueCount"]
         + checks["hiddenDialogueCount"]
         + checks["groupCgDialogueCount"]
@@ -1805,7 +1905,12 @@ def audit_document(
         or checks["crowdedCastLayoutErrors"]
         or not checks["firstPersonNeverVisible"]
     ):
-        raise RuntimeError("舞台人数或第一人称冈部审计失败")
+        raise RuntimeError(
+            "舞台人数或第一人称冈部审计失败："
+            f"maxCastSize={checks['maxCastSize']}, "
+            f"crowdedCastLayoutErrors={checks['crowdedCastLayoutErrors']}, "
+            f"firstPersonNeverVisible={checks['firstPersonNeverVisible']}"
+        )
     if (
         checks["sceneBeatCount"] != len(SCENE_BEATS)
         or not checks["sceneBeatsExact"]
@@ -1845,10 +1950,35 @@ def audit_document(
         or not checks["openingDeclarationReady"]
         or not checks["openingCgBeforeVoice"]
         or not checks["finalCgPersists"]
+        or checks["fullscreenCgTimingErrors"]
+        or checks["cgEntryStageFlashRisks"]
+        or checks["cgEntryPortraitFlashRisks"]
         or not all(checks["groupCgCoverage"].values())
         or checks["blockCount"] > 1000
     ):
-        raise RuntimeError("CG 事件或 Block 上限审计失败")
+        raise RuntimeError(
+            "CG 事件或 Block 上限审计失败："
+            + json.dumps(
+                {
+                    key: checks[key]
+                    for key in (
+                        "showCgCount",
+                        "hideCgCount",
+                        "duplicateCgEventIds",
+                        "cgOverlaps",
+                        "qOverlayReady",
+                        "openingDeclarationReady",
+                        "openingCgBeforeVoice",
+                        "finalCgPersists",
+                        "fullscreenCgTimingErrors",
+                        "cgEntryStageFlashRisks",
+                        "cgEntryPortraitFlashRisks",
+                        "blockCount",
+                    )
+                },
+                ensure_ascii=False,
+            )
+        )
     if checks["logicalLibraryCount"] != 701 or missing_mapping or missing_cg_mapping:
         raise RuntimeError("原作素材映射不完整")
     if (
@@ -1894,7 +2024,7 @@ def transform_latest_story(
         annotation_audit["changedTextCount"],
         annotation_audit["changedSpeakerCount"],
     )
-    if observed_changes not in {(0, 0), (1, 0), (3, 0), (4, 0)}:
+    if observed_changes not in {(0, 0), (1, 0), (2, 0), (3, 0), (4, 0)}:
         raise RuntimeError(f"新版对白变更数量异常：{observed_changes}")
     configure_dialogue_display_names(document)
     install_curated_scenes(document, mapping)
