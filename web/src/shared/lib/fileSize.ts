@@ -19,7 +19,7 @@ export function formatFileSize(
   const unitIndex = Math.max(minimumIndex, naturalIndex);
   const scaled = bytes / 1024 ** unitIndex;
   if (unitIndex === 0) return `${Math.round(scaled)} B`;
-  const digits = options.fractionalDigits ?? 1;
+  const digits = unitIndex > minimumIndex ? 1 : (options.fractionalDigits ?? 1);
   const rendered =
     digits === 0
       ? String(Math.max(bytes > 0 ? 1 : 0, Math.round(scaled)))

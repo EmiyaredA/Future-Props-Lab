@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import type {
   GalgameStoryBlock,
   GalgameStoryCgOverlay,
@@ -85,6 +85,28 @@ export function formatTimelineTime(milliseconds: number) {
   const minutes = Math.floor(totalSeconds / 60);
   const seconds = totalSeconds % 60;
   return `${minutes}:${seconds.toString().padStart(2, "0")}`;
+}
+
+export function cameraEasingCss(value?: string) {
+  return value
+    ?.replace("easeInOut", "ease-in-out")
+    .replace("easeIn", "ease-in")
+    .replace("easeOut", "ease-out");
+}
+
+export function storyPlayerCameraPlaneStyle(
+  camera: GalgameStageState["camera"],
+  target: "background" | "characters" | "cg",
+): CSSProperties | undefined {
+  if (!camera || (camera.target !== "stage" && camera.target !== target)) {
+    return undefined;
+  }
+  return {
+    transform: `translate(${camera.x}%, ${camera.y}%) scale(${camera.scale}) rotate(${camera.rotation}deg)`,
+    transition: `transform ${camera.durationMs}ms ${cameraEasingCss(camera.easing)}`,
+    animationDuration: `${camera.durationMs}ms`,
+    "--galgame-camera-intensity": camera.intensity,
+  } as CSSProperties;
 }
 
 export function playerAdvanceIndicatorText({

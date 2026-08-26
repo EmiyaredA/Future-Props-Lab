@@ -20,13 +20,13 @@ test("updates project-wide and explicit dialogue font sizes", () => {
     target: { value: "1.15" },
   });
   fireEvent.change(screen.getByLabelText("对话框正文字号"), {
-    target: { value: "30" },
+    target: { value: "31" },
   });
   fireEvent.change(screen.getByLabelText("对话框人物名字号"), {
-    target: { value: "24" },
+    target: { value: "25" },
   });
 
   expect(onScaleChange).toHaveBeenCalledWith(1.15);
-  expect(onBodyFontSizeChange).toHaveBeenCalledWith(30);
-  expect(onNameFontSizeChange).toHaveBeenCalledWith(24);
+  expect(onBodyFontSizeChange).toHaveBeenCalledWith(31);
+  expect(onNameFontSizeChange).toHaveBeenCalledWith(25);
 });

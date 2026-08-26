@@ -24,7 +24,7 @@ Future-Props-Lab/
 │   ├── video_editor/ # API 驱动的多轨时间轴、代理/精确帧、RenderPlan 求值与 FFmpeg 后台合成
 │   ├── models/        # SQLAlchemy 持久化形状
 │   ├── routes/        # `/v1` HTTP/SSE 协议边界；Galgame 按九类协议模块拆分
-│   └── schemas/       # Pydantic 请求与响应形状；Galgame 与视频剪辑按职责拆包
+│   └── schemas/       # Pydantic 请求与响应形状；Galgame 项目内容、Block 核心/流程与视频剪辑按职责拆包
 ├── db/migrations/
 │   ├── versions/      # 只追加、不可改写的 SQLite migration
 │   ├── registry.py    # 有序 migration 注册表与最新版本

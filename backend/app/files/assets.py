@@ -8,19 +8,19 @@ from uuid import uuid4
 from fastapi import UploadFile
 from sqlalchemy import delete, select, update
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.concurrency.revisions import RevisionConflictError
-from app.core.config import Settings
-from app.core.time import iso_utc, utc_now
+from app.core.time import utc_now
+from app.files.asset_context import VisualAssetContext
+from app.files.asset_outputs import asset_out, folder_out
 from app.files.asset_scope import (
     ensure_library_managed,
     is_library_asset,
     is_visual_project_asset,
 )
-from app.files.library import AssetError, AssetLibrary
+from app.files.library import AssetError
 from app.files.policy import display_name_without_original_extension
-from app.files.storage import TARGET_STORAGE_VERSION, AssetStorage
+from app.files.storage import TARGET_STORAGE_VERSION
 from app.models import (
     AudioAnnotationProject,
     GalgameProjectAssetReference,
@@ -28,7 +28,6 @@ from app.models import (
     VisualAssetFolder,
     VisualAssistantMessageAsset,
     VisualProjectAssetReference,
-    VisualWorkshopProject,
 )
 from app.schemas.files import (
     VisualAssetFolderCreateIn,
@@ -46,78 +45,7 @@ from app.schemas.files import (
 MAX_FOLDER_DEPTH = 5
 
 
-def folder_out(row: VisualAssetFolder) -> VisualAssetFolderOut:
-    return VisualAssetFolderOut(
-        id=row.id,
-        project_id=row.project_id,
-        parent_id=row.parent_id,
-        name=row.name,
-        revision=row.revision,
-        created_at=iso_utc(row.created_at),
-        updated_at=iso_utc(row.updated_at),
-    )
-
-
-def asset_out(
-    row: VisualAsset,
-    *,
-    reference: VisualProjectAssetReference | None = None,
-) -> VisualAssetOut:
-    display_name = reference.display_name if reference else row.display_name
-    return VisualAssetOut(
-        id=row.id,
-        project_id=reference.project_id if reference else row.project_id,
-        folder_id=reference.folder_id if reference else row.folder_id,
-        original_filename=row.original_filename,
-        display_name=display_name_without_original_extension(
-            display_name,
-            row.original_filename,
-        ),
-        media_kind=row.media_kind,
-        mime_type=row.mime_type,
-        byte_size=row.byte_size,
-        revision=reference.revision if reference else row.revision,
-        created_at=iso_utc(reference.created_at if reference else row.created_at),
-        updated_at=iso_utc(reference.updated_at if reference else row.updated_at),
-        source="library" if row.project_id is None else "project",
-        is_reference=reference is not None,
-        reference_id=reference.id if reference else None,
-    )
-
-
-class VisualAssets:
-    def __init__(self, session: AsyncSession, settings: Settings) -> None:
-        self.session = session
-        self.settings = settings
-        self.storage = AssetStorage(settings)
-        self.library = AssetLibrary(session, settings)
-
-    async def _project(self, project_id: str) -> None:
-        if await self.session.get(VisualWorkshopProject, project_id) is None:
-            raise AssetError("项目不存在", code="not_found", status=404)
-
-    async def _folder(self, folder_id: str) -> VisualAssetFolder:
-        row = await self.session.get(VisualAssetFolder, folder_id)
-        if row is None:
-            raise AssetError("文件夹不存在", code="not_found", status=404)
-        return row
-
-    async def _asset(self, asset_id: str) -> VisualAsset:
-        row = await self.session.get(VisualAsset, asset_id)
-        if row is None:
-            raise AssetError("文件不存在", code="not_found", status=404)
-        return row
-
-    async def _validate_folder_scope(
-        self, folder_id: str | None, project_id: str | None
-    ) -> VisualAssetFolder | None:
-        if folder_id is None:
-            return None
-        folder = await self._folder(folder_id)
-        if folder.project_id != project_id:
-            raise AssetError("文件夹不属于当前文件域", code="scope_mismatch")
-        return folder
-
+class VisualAssets(VisualAssetContext):
     async def list_folders(self, project_id: str | None) -> VisualAssetFolderListOut:
         if project_id:
             await self._project(project_id)
