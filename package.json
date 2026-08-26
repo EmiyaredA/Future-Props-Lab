@@ -11,6 +11,7 @@
     "setup": "uv sync --all-groups && npm install && npm run voice-vad:sync --workspace web",
     "dev": "concurrently -k -n api,web -c blue,magenta \"npm run dev:backend\" \"npm run dev:web\"",
     "dev:backend": "uv run uvicorn app.main:app --app-dir backend --reload --host 127.0.0.1 --port 9000",
+    "start:backend": "uv run uvicorn app.main:app --app-dir backend --host 127.0.0.1 --port 9000 --workers 1",
     "dev:web": "npm run dev --workspace web",
     "db:migrate": "uv run python -m db.migrations --apply",
     "db:migrate:check": "uv run python -m db.migrations --check",

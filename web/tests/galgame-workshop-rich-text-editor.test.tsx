@@ -149,4 +149,26 @@ describe("official rich text toolbar", () => {
     expect(input.selectionStart).toBe(0);
     expect(input.selectionEnd).toBe(2);
   });
+
+  it("adds ruby through the accessible input dialog and restores focus", async () => {
+    const user = userEvent.setup();
+    const changed = vi.fn();
+    render(<Harness onChange={changed} />);
+    const input = screen.getByLabelText("剧情正文") as HTMLTextAreaElement;
+    input.focus();
+    input.setSelectionRange(0, 2);
+    fireEvent.select(input);
+
+    await user.click(screen.getByRole("button", { name: "注音" }));
+    const reading = screen.getByLabelText("输入所选文字的注音");
+    await user.type(reading, "せんたく");
+    await user.keyboard("{Enter}");
+
+    expect(changed.mock.calls.at(-1)?.[0].nodes).toContainEqual({
+      type: "ruby",
+      text: "选择",
+      reading: "せんたく",
+    });
+    expect(input).toHaveFocus();
+  });
 });

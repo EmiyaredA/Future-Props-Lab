@@ -75,9 +75,7 @@ export function AudioAnnotationSpeakerManager({
       setImportNotice("这个 Galgame 工程还没有角色。");
       return;
     }
-    const addedCount = onImport(
-      characters,
-    );
+    const addedCount = onImport(characters);
     setImportNotice(
       addedCount
         ? `已加入 ${addedCount} 个角色名，重复名称会自动跳过。`
@@ -141,45 +139,47 @@ export function AudioAnnotationSpeakerManager({
             <X aria-hidden />
           </button>
         </header>
-        {importSource ? <section className="annotation-speaker-import">
-          <div>
-            <strong>从 Galgame 工坊导入角色</strong>
-            <small>沿用角色名和主题色，导入后仍可继续编辑。</small>
-          </div>
-          {projectsQuery.isLoading ? (
-            <p>正在读取 Galgame 工程…</p>
-          ) : projects.length ? (
-            <div className="annotation-speaker-import-controls">
-              <CustomSelect
-                ariaLabel="角色来源工程"
-                value={sourceProjectId}
-                options={projects.map((project) => ({
-                  value: project.id,
-                  label: project.title,
-                  description:
-                    project.status === "completed" ? "已完成" : "草稿",
-                }))}
-                onChange={(value) => {
-                  setSourceProjectId(value);
-                  setImportNotice("");
-                }}
-              />
-              <button
-                type="button"
-                className="btn"
-                disabled={storyQuery.isLoading || !storyQuery.data}
-                onClick={importCharacters}
-              >
-                <Users aria-hidden />
-                {storyQuery.isLoading ? "读取角色…" : "导入角色名"}
-              </button>
+        {importSource ? (
+          <section className="annotation-speaker-import">
+            <div>
+              <strong>从 Galgame 工坊导入角色</strong>
+              <small>沿用角色名和主题色，导入后仍可继续编辑。</small>
             </div>
-          ) : (
-            <p>暂无可导入的 Galgame 工程。</p>
-          )}
-          {storyQuery.isError ? <p>角色读取失败，请稍后重试。</p> : null}
-          {importNotice ? <small role="status">{importNotice}</small> : null}
-        </section> : null}
+            {projectsQuery.isLoading ? (
+              <p>正在读取 Galgame 工程…</p>
+            ) : projects.length ? (
+              <div className="annotation-speaker-import-controls">
+                <CustomSelect
+                  ariaLabel="角色来源工程"
+                  value={sourceProjectId}
+                  options={projects.map((project) => ({
+                    value: project.id,
+                    label: project.title,
+                    description:
+                      project.status === "completed" ? "已完成" : "草稿",
+                  }))}
+                  onChange={(value) => {
+                    setSourceProjectId(value);
+                    setImportNotice("");
+                  }}
+                />
+                <button
+                  type="button"
+                  className="btn"
+                  disabled={storyQuery.isLoading || !storyQuery.data}
+                  onClick={importCharacters}
+                >
+                  <Users aria-hidden />
+                  {storyQuery.isLoading ? "读取角色…" : "导入角色名"}
+                </button>
+              </div>
+            ) : (
+              <p>暂无可导入的 Galgame 工程。</p>
+            )}
+            {storyQuery.isError ? <p>角色读取失败，请稍后重试。</p> : null}
+            {importNotice ? <small role="status">{importNotice}</small> : null}
+          </section>
+        ) : null}
         <div className="annotation-speaker-list">
           {speakers.map((speaker, index) => (
             <div key={speaker.id}>

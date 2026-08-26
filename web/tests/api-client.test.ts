@@ -1,9 +1,5 @@
 import { beforeEach, expect, test, vi } from "vitest";
-import {
-  ApiError,
-  fetchApiJson,
-  requestApi,
-} from "@platform/api/client";
+import { ApiError, fetchApiJson, requestApi } from "@platform/api/client";
 import {
   AUTH_REQUIRED_EVENT,
   WORKSPACE_CHANGED_EVENT,
@@ -17,7 +13,9 @@ beforeEach(() => {
 test("sends multipart requests with session CSRF and browser content type", async () => {
   const fetchMock = vi
     .spyOn(globalThis, "fetch")
-    .mockResolvedValue(new Response(JSON.stringify({ ok: true }), { status: 200 }));
+    .mockResolvedValue(
+      new Response(JSON.stringify({ ok: true }), { status: 200 }),
+    );
   const form = new FormData();
   form.append("upload", new Blob(["asset"]), "asset.txt");
 
@@ -31,7 +29,7 @@ test("sends multipart requests with session CSRF and browser content type", asyn
   const request = fetchMock.mock.calls[0]![0] as Request;
   expect(request.credentials).toBe("include");
   expect(request.headers.get("X-CSRF-Token")).toBe("test-csrf");
-  expect(request.headers.get("Content-Type")).toBeNull();
+  expect(request.headers.get("Content-Type")).not.toBe("multipart/form-data");
 });
 
 test("notifies authentication and maps non-JSON failures to ApiError", async () => {

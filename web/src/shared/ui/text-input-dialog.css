@@ -1,0 +1,25 @@
+.text-input-dialog-backdrop {
+  z-index: 1200;
+}
+
+.text-input-dialog {
+  position: relative;
+  width: min(420px, calc(100vw - 32px));
+  display: grid;
+  gap: 14px;
+}
+
+.text-input-dialog-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+}
+
+.text-input-dialog label {
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.text-input-dialog input {
+  width: 100%;
+}

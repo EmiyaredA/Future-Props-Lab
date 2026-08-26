@@ -12,7 +12,11 @@ from pathlib import Path
 from typing import Any
 
 import httpx
-from dotenv import dotenv_values
+
+try:
+    from scripts.management_api import management_api_key
+except ModuleNotFoundError:
+    from management_api import management_api_key
 
 try:
     from scripts.galgame_runaway_cues import (
@@ -2298,10 +2302,7 @@ def audit_live(
 
 def main() -> None:
     args = parse_args()
-    secrets = dotenv_values(REPO_ROOT / "backend" / ".env")
-    management_key = (secrets.get("FPL_MANAGEMENT_API_KEY") or "").strip()
-    if not management_key.startswith("fpm_"):
-        raise RuntimeError("backend/.env 未配置可用的 FPL_MANAGEMENT_API_KEY")
+    management_key = management_api_key()
     if not args.source_root.is_dir():
         raise RuntimeError(f"SG0 素材目录不存在：{args.source_root}")
     if not args.annotation.is_file():

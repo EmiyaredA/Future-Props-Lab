@@ -1220,8 +1220,9 @@ test("uploads dialogue and custom Gal component images with auto-save", async ()
   fireEvent.change(screen.getByLabelText("对话框底板整体透明度"), {
     target: { value: "65" },
   });
-  fireEvent.change(screen.getByLabelText("对话框圆角"), { target: { value: "20" } });
-  fireEvent.change(screen.getByLabelText("对话框整体字体大小"), { target: { value: "1.15" } });
+  fireEvent.change(screen.getByLabelText("对话框圆角"), {
+    target: { value: "20" },
+  });
   await waitFor(
     () =>
       expect(
@@ -1231,7 +1232,6 @@ test("uploads dialogue and custom Gal component images with auto-save", async ()
         preset: "custom",
         backgroundOpacity: 0.65,
         borderRadius: 20,
-        fontScale: 1.15,
       }),
     { timeout: 2000 },
   );

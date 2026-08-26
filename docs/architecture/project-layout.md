@@ -11,7 +11,7 @@ Future-Props-Lab/
 │   ├── deps.py        # HTTP/WebSocket 会话和 Studio 鉴权依赖
 │   ├── problem_details.py # 统一协议错误映射
 │   ├── accounts/      # 账号、Session、审计、API Key、Workspace 与公开投影
-│   ├── concurrency/   # revision/CAS 并发语义与统一写入结果校验
+│   ├── concurrency/   # revision/CAS 与通用单进程轮询 Runner 生命周期
 │   ├── core/          # 配置、数据库、时间与密钥基础设施
 │   ├── files/         # 文件策略、落盘、公共库、项目文件事务、引用与旧布局迁移
 │   ├── agents/        # 供应商无关 Agent Harness、Reactive 工具循环与内存审批
@@ -165,7 +165,8 @@ schema migration 不执行文件 I/O。
 通过正式 `/v1` API 执行状态预检、受 Workspace 约束的批量 CAS 固化和单工程旧文件导入，不以
 schema migration 或直接数据库修改替代运行期迁移。工具单项状态通过幂等更新和原子 upsert 写入。图片/视频生成任务持久化
 供应商/模型快照和规范化参数，FastAPI 生命周期中的单机执行器负责恢复、轮询与安全下载；视觉工坊
-和模型测试复用 `llm/generation_runtime/` 的轮询、并发与安全下载能力，但分别保存任务状态与
+和模型测试复用 `concurrency/polling_runner.py` 的生命周期与并发控制，并复用
+`llm/generation_runtime/` 的供应商任务协议与安全下载能力，但分别保存任务状态与
 结果。`AsyncSession` 只能由单个异步任务
 使用；每个生成分支使用独立短会话，供应商网络调用和文件下载不占用已开始写入的事务。
 项目对话同样在发送准备与流式结算阶段使用独立短事务，并复用统一供应商适配边界。视觉工坊

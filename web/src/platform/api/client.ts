@@ -16,7 +16,10 @@ export const api = createClient<paths>({
 
 function apiUrl(path: string): string {
   const base = String(import.meta.env.VITE_API_BASE || "").replace(/\/$/, "");
-  return `${base}${path.startsWith("/") ? path : `/${path}`}`;
+  const normalized = path.startsWith("/") ? path : `/${path}`;
+  return base
+    ? `${base}${normalized}`
+    : new URL(normalized, window.location.origin).toString();
 }
 
 async function responseProblem(response: Response): Promise<ProblemDetail> {

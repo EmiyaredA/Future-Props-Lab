@@ -3,6 +3,9 @@
 模型测试生成、语音识别、视觉生成、Galgame 标注导入和视频导出均由同一进程内的轮询 Runner 执行。
 Runner 不是独立服务，也不应在多进程间共享同一 SQLite 任务队列。
 
+通用启动、停止、退避、健康状态和并发上限位于 `app/concurrency/polling_runner.py`。各功能包只实现
+任务恢复与单轮处理；`llm/generation_runtime/` 仅保留供应商生成任务协议、下载和安全归一化能力。
+
 ## 存活与退避
 
 每个 Runner 的单轮异常只记录 Runner 名称、任务标识和异常类型，不记录密钥、媒体内容或供应商响应

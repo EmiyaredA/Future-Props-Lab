@@ -2,6 +2,9 @@
 
 后端只读取 `backend/.env`，可从 `backend/.env.example` 创建。
 
+Web 的 `VITE_API_BASE` 是执行 `npm run build` 时读取的构建变量，不写入 `backend/.env`。同源反向
+代理部署保持为空；跨源部署填写 API 的 HTTPS 根地址。完整步骤见生产部署指南。
+
 - `FPL_DATABASE_PATH`：可选 SQLite 文件路径，默认 `.runtime/future-props.db`；相对路径以仓库根目录为准。
 - `FPL_VISUAL_ASSET_MAX_BYTES`：文件管理与项目素材的单文件上限，默认 `209715200`（200 MiB）。
 - `FPL_GALGAME_EXPORT_MAX_BYTES`：Galgame 导出 MP4 的单文件上限，默认 `8589934592`（8 GiB）。
@@ -25,6 +28,9 @@
 `fpl_session` 与可读 `fpl_csrf` Cookie，写请求还必须携带匹配的 `X-CSRF-Token` 和精确 Origin。
 HTTPS 反向代理部署必须同时开启 `FPL_AUTH_COOKIE_SECURE`。账号只由平台管理员或
 `npm run account -- create-admin|create-user|reset-password` 创建和恢复，不开放注册或邮件找回。
+
+`FPL_MANAGEMENT_API_KEY` 不是后端配置项。它只能作为调用管理 API 脚本时的短期进程环境变量，
+不得保存到 `backend/.env`；使用完成后应清除环境变量并吊销不再需要的 Key。
 
 视频生成时，用户上传的音频和视频先保存在本机素材库。只有管理员显式配置
 `FPL_TEMP_MEDIA_UPLOAD_URL` 后，后端才会在数据库事务外把供应商要求公网可达的参考媒体流式上传，

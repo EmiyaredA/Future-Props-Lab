@@ -8,7 +8,11 @@ from pathlib import Path
 from typing import Any
 
 import httpx
-from dotenv import dotenv_values
+
+try:
+    from scripts.management_api import management_api_key
+except ModuleNotFoundError:
+    from management_api import management_api_key
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_ANNOTATION_PATH = Path("/Users/tonghao/Downloads/广播剧.annotation (14).json")
@@ -101,11 +105,7 @@ def main() -> None:
     parser.add_argument("--base-url", default="http://127.0.0.1:9000")
     args = parser.parse_args()
     annotation = json.loads(args.annotation.read_text(encoding="utf-8"))
-    management_key = (
-        dotenv_values(REPO_ROOT / "backend" / ".env").get("FPL_MANAGEMENT_API_KEY") or ""
-    ).strip()
-    if not management_key.startswith("fpm_"):
-        raise RuntimeError("backend/.env 未配置可用的 FPL_MANAGEMENT_API_KEY")
+    management_key = management_api_key()
     with httpx.Client(
         base_url=args.base_url.rstrip("/"),
         headers={"Authorization": f"Bearer {management_key}"},

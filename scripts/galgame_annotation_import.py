@@ -2,12 +2,16 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
 import time
 from datetime import UTC, datetime
 from pathlib import Path
 
 import httpx
+
+try:
+    from scripts.management_api import management_api_key
+except ModuleNotFoundError:
+    from management_api import management_api_key
 
 
 def parse_args() -> argparse.Namespace:
@@ -31,9 +35,7 @@ def request_json(
 
 def main() -> None:
     args = parse_args()
-    secret = os.environ.get("FPL_MANAGEMENT_API_KEY", "").strip()
-    if not secret.startswith("fpm_"):
-        raise RuntimeError("请通过环境变量 FPL_MANAGEMENT_API_KEY 提供短期 Management API Key")
+    secret = management_api_key()
     request_body = json.loads(args.request.read_text(encoding="utf-8"))
     project_path = f"/v1/galgame-workshop/projects/{args.project_id}/annotation-imports"
     with httpx.Client(

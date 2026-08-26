@@ -26,6 +26,7 @@ import type {
   GalgameStoryRichTextNode,
 } from "@features/galgame-workshop/api";
 import { CustomColorPicker } from "@shared/ui/CustomColorPicker";
+import { TextInputDialog } from "@shared/ui/TextInputDialog";
 import {
   plainRichText,
   richTextPlainText,
@@ -283,6 +284,7 @@ export function RichTextEditor({
   const toolbarPointerRef = useRef(false);
   const [selection, setSelection] = useState({ start: 0, end: 0 });
   const [focused, setFocused] = useState(false);
+  const [rubyOpen, setRubyOpen] = useState(false);
   const plain = useMemo(() => richTextPlainText(content), [content]);
   const selected = selection.end > selection.start;
   useEffect(
@@ -306,8 +308,9 @@ export function RichTextEditor({
   };
   const ruby = () => {
     if (!selected) return;
-    const reading = window.prompt("输入注音");
-    if (!reading) return;
+    setRubyOpen(true);
+  };
+  const applyRuby = (reading: string) => {
     const text = plain.slice(selection.start, selection.end);
     const before = plainRichText(plain.slice(0, selection.start)).nodes ?? [];
     const after = plainRichText(plain.slice(selection.end)).nodes ?? [];
@@ -315,6 +318,7 @@ export function RichTextEditor({
       version: 1,
       nodes: [...before, { type: "ruby", text, reading }, ...after],
     });
+    setRubyOpen(false);
   };
   return (
     <div
@@ -333,6 +337,14 @@ export function RichTextEditor({
         }, 120);
       }}
     >
+      <TextInputDialog
+        open={rubyOpen}
+        title="添加注音"
+        label="输入所选文字的注音"
+        confirmLabel="添加注音"
+        onCancel={() => setRubyOpen(false)}
+        onConfirm={applyRuby}
+      />
       {focused && selected ? (
         <div
           className="galgame-rich-toolbar"

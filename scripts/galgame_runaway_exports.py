@@ -9,7 +9,11 @@ from pathlib import Path
 from typing import Any
 
 import httpx
-from dotenv import dotenv_values
+
+try:
+    from scripts.management_api import management_api_key
+except ModuleNotFoundError:
+    from management_api import management_api_key
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 PROJECT_ID = "63ac832d-bff3-4053-9c9f-f55c9dafc52a"
@@ -243,11 +247,7 @@ def main() -> None:
     )
     parser.add_argument("--seed", type=int, help="固定随机样片位置，便于复现")
     args = parser.parse_args()
-    management_key = (
-        dotenv_values(REPO_ROOT / "backend" / ".env").get("FPL_MANAGEMENT_API_KEY") or ""
-    ).strip()
-    if not management_key.startswith("fpm_"):
-        raise RuntimeError("backend/.env 未配置可用的 FPL_MANAGEMENT_API_KEY")
+    management_key = management_api_key()
     with httpx.Client(
         base_url=args.base_url.rstrip("/"),
         headers={"Authorization": f"Bearer {management_key}"},

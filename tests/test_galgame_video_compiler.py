@@ -718,14 +718,11 @@ def test_lip_sync_sequence_restores_mid_clip_audio_phase() -> None:
             )
         },
     )
-    full_actor = next(
-        track for track in full.plan.document.tracks if track.name == "角色 · 主角"
-    )
+    full_actor = next(track for track in full.plan.document.tracks if track.name == "角色 · 主角")
     full_clip_at_cut = next(
         clip
         for clip in full_actor.clips
-        if clip.timeline_start_us <= 150_000
-        < clip.timeline_start_us + clip.duration_us
+        if clip.timeline_start_us <= 150_000 < clip.timeline_start_us + clip.duration_us
     )
     actor = next(track for track in result.plan.document.tracks if track.name == "角色 · 主角")
     assert actor.clips[0].asset_id == full_clip_at_cut.asset_id

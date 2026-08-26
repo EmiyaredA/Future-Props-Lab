@@ -36,4 +36,4 @@ Galgame 工坊使用 Story 1.4 管理角色表情/皮肤、真实多层场景、
 `.runtime/model-test/generated/`、`.runtime/workspaces/` 与 `.runtime/profiles/`。数据库路径可通过
 `FPL_DATABASE_PATH` 调整，这些文件目录都位于数据库所在目录下。
 
-详细说明见 [贡献指南](CONTRIBUTING.md)、[项目结构](docs/architecture/project-layout.md)、[环境变量](docs/reference/configuration.md)、[故障排查](docs/operations/troubleshooting.md)、[后台 Runner 运维](docs/operations/background-runners.md)、[文件与事务约束](docs/operations/file-transactions.md) 和 [API 参考](docs/reference/api.md)。
+详细说明见 [贡献指南](CONTRIBUTING.md)、[项目结构](docs/architecture/project-layout.md)、[生产部署](docs/operations/production-deployment.md)、[开发交付说明](docs/architecture/handoff-readiness.md)、[环境变量](docs/reference/configuration.md)、[故障排查](docs/operations/troubleshooting.md)、[后台 Runner 运维](docs/operations/background-runners.md)、[文件与事务约束](docs/operations/file-transactions.md) 和 [API 参考](docs/reference/api.md)。

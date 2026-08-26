@@ -755,9 +755,7 @@ export function DialogueStyleInspector({
           updateStyle({ preset: "custom", fontScale })
         }
         onBodyFontSizeChange={(fontSizePx) => updateBody({ fontSizePx })}
-        onNameFontSizeChange={(fontSizePx) =>
-          updateSpeakerName({ fontSizePx })
-        }
+        onNameFontSizeChange={(fontSizePx) => updateSpeakerName({ fontSizePx })}
       />
 
       <details className="galgame-dialogue-advanced-settings">

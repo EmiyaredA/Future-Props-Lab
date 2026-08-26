@@ -55,9 +55,7 @@ export function DialogueFontScaleField({
             14,
             60,
           )}
-          onChange={(event) =>
-            onBodyFontSizeChange(Number(event.target.value))
-          }
+          onChange={(event) => onBodyFontSizeChange(Number(event.target.value))}
         />
       </label>
       <label className="galgame-dialogue-range">
@@ -85,9 +83,7 @@ export function DialogueFontScaleField({
             12,
             48,
           )}
-          onChange={(event) =>
-            onNameFontSizeChange(Number(event.target.value))
-          }
+          onChange={(event) => onNameFontSizeChange(Number(event.target.value))}
         />
       </label>
     </>
