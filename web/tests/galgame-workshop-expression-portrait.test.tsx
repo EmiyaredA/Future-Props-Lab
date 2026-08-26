@@ -99,6 +99,50 @@ describe("ExpressionPortrait", () => {
     );
   });
 
+  test("shows the first available frame before the remaining frames finish", async () => {
+    let resolveRemainingFrames: ((blob: Blob) => void) | undefined;
+    const remainingFrames = new Promise<Blob>((resolve) => {
+      resolveRemainingFrames = resolve;
+    });
+    vi.mocked(fetchApiBlob).mockImplementation((path) =>
+      path.endsWith("/file-0/content")
+        ? Promise.resolve(new Blob(["first-frame"], { type: "image/png" }))
+        : remainingFrames,
+    );
+
+    render(
+      <ExpressionPortrait
+        expression={expression()}
+        assets={assets}
+        alt="渐进加载"
+        fallback={<span>加载中</span>}
+      />,
+    );
+    await settleFrames();
+
+    expect(screen.queryByText("加载中")).not.toBeInTheDocument();
+    expect(screen.getByAltText("渐进加载")).toHaveAttribute(
+      "data-file-id",
+      "file-0",
+    );
+    act(() => vi.advanceTimersByTime(500));
+    expect(screen.getByAltText("渐进加载")).toHaveAttribute(
+      "data-file-id",
+      "file-0",
+    );
+
+    await act(async () => {
+      resolveRemainingFrames?.(new Blob(["remaining"], { type: "image/png" }));
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    act(() => vi.advanceTimersByTime(100));
+    expect(screen.getByAltText("渐进加载")).toHaveAttribute(
+      "data-file-id",
+      "file-1",
+    );
+  });
+
   test("holds the final frame when looping is disabled", async () => {
     render(
       <ExpressionPortrait

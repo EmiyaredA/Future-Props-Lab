@@ -17,7 +17,7 @@ except ModuleNotFoundError:
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 PROJECT_ID = "63ac832d-bff3-4053-9c9f-f55c9dafc52a"
-EXPORT_WORKFLOW_VERSION = "v10r1"
+EXPORT_WORKFLOW_VERSION = "v11r1"
 FRAGMENT_ID = "runaway-full"
 FULL_DURATION_MS = 1_780_344
 SAMPLE_DURATION_MS = 180_000
@@ -60,6 +60,20 @@ LATEST_FIX_EXPORTS = (
     ("diagnostic-overlap-fix-1518s-1527s", 1_518_000, 1_527_000),
     ("diagnostic-ending-thanks-1768s-1780s", 1_768_000, 1_780_344),
 )
+SCENE_TIME_EXPORTS = (
+    ("scene-main-day-switch-145s-160s", 145_000, 160_000),
+    ("scene-day-to-evening-964s-980s", 964_000, 980_000),
+    ("scene-evening-main-1182s-1198s", 1_182_000, 1_198_000),
+    ("scene-evening-to-night-1294s-1310s", 1_294_000, 1_310_000),
+)
+PORTRAIT_REVIEW_EXPORTS = (
+    ("portrait-faris-private-38s-43s", 38_000, 43_000),
+    ("portrait-kurisu-mayuri-shy-219s-233s", 219_000, 233_000),
+    ("portrait-luka-private-283s-291s", 283_000, 291_000),
+    ("portrait-moeka-299s-309s", 299_000, 309_000),
+    ("portrait-suzuha-kagari-1353s-1362s", 1_353_000, 1_362_000),
+    ("portrait-maho-suzuha-1596s-1612s", 1_596_000, 1_612_000),
+)
 
 
 def random_sample(rng: random.Random | None = None) -> tuple[str, int, int]:
@@ -88,6 +102,10 @@ def requested_exports(
         return [*LATEST_REVISION_EXPORTS]
     if only == "latest-fixes":
         return [*LATEST_FIX_EXPORTS]
+    if only == "scene-time":
+        return [*SCENE_TIME_EXPORTS]
+    if only == "portrait-review":
+        return [*PORTRAIT_REVIEW_EXPORTS]
     if only == "full":
         return [None]
     return [random_sample(rng)]
@@ -150,7 +168,7 @@ def submit(
     requested = requested_exports(only, rng)
     task_names: dict[str, str] = {}
     for item in requested:
-        name = item[0] if item else "full-29m40s344-v10"
+        name = item[0] if item else "full-29m40s344-v11"
         body = request_body(revision, item)
         preview = request_json(client, "POST", export_path("/preview"), body)
         if not preview["ready"]:
@@ -242,6 +260,8 @@ def main() -> None:
             "preview-regression",
             "latest-review",
             "latest-fixes",
+            "scene-time",
+            "portrait-review",
             "full",
         ),
     )

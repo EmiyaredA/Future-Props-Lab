@@ -1,22 +1,18 @@
 import {
   Check,
-  ChevronDown,
   ChevronRight,
-  ChevronUp,
   FileImage,
-  Film,
   FlipHorizontal2,
-  FolderOpen,
   ImagePlus,
   Maximize2,
   Minimize2,
-  Plus,
+  PencilLine,
   RotateCcw,
   SlidersHorizontal,
   Trash2,
   UserRound,
-  Volume2,
 } from "lucide-react";
+import { CharacterExpressionPresentation } from "@features/galgame-workshop/editor/CharacterExpressionPresentation";
 import { stableId } from "@features/galgame-workshop/editor/model";
 import { StoryAssetImage } from "@features/galgame-workshop/editor/StoryAssetImage";
 import { ExpressionPortrait } from "@features/galgame-workshop/editor/ExpressionPortrait";
@@ -30,27 +26,19 @@ export function CharacterExpressionForm({
   const {
     document,
     onDocument,
-    fileInput,
     characters,
     previewBackgroundMode,
     setNaturalPortraitSizes,
     setPicker,
     expandedExpressionPreview,
     setExpandedExpressionPreview,
-    projectAssetsQuery,
     selectedCharacter,
-    expressions,
     selectedExpression,
     selectedSkinAssetId,
     assetsById,
     updateCharacter,
     setDefaultExpression,
     updateExpression,
-    switchExpressionToSequence,
-    setSequencePlaybackMode,
-    switchExpressionToStatic,
-    appendExistingExpressionFrame,
-    updateSequenceFrames,
     deleteExpression,
     activeAsset,
     previewBackgroundAsset,
@@ -71,452 +59,178 @@ export function CharacterExpressionForm({
       className="galgame-expression-form"
       aria-label={`${selectedExpression.label} 表情设置`}
     >
-      <section className="galgame-expression-setting-section galgame-expression-presentation">
+      <CharacterExpressionPresentation model={model} />
+      <section
+        className={`galgame-expression-detail-preview-section ${
+          expandedExpressionPreview ? "is-expanded" : ""
+        }`}
+        role={expandedExpressionPreview ? "dialog" : undefined}
+        aria-modal={expandedExpressionPreview ? true : undefined}
+        aria-label={
+          selectedExpression.renderMode === "frameSequence"
+            ? "序列帧预览"
+            : "舞台表情预览"
+        }
+      >
         <header>
           <span>
-            <Film aria-hidden />
-            <strong>呈现方式</strong>
+            <FileImage aria-hidden />
+            <strong>
+              {selectedExpression.renderMode === "frameSequence"
+                ? "序列帧预览"
+                : "舞台预览"}
+            </strong>
           </span>
           <small>
             {selectedExpression.renderMode === "frameSequence"
-              ? `序列帧 · ${selectedExpression.sequence?.frames.length ?? 0} 帧`
-              : "静态图片"}
+              ? `${selectedExpression.sequence?.frames.length ?? 0} 帧 · ${selectedExpression.sequence?.fps ?? 2} FPS · `
+              : ""}
+            {previewPosition.name} · X {previewPosition.x}% · Y{" "}
+            {previewPosition.y}% · SIZE {selectedExpressionHeight}%
           </small>
+          <button
+            type="button"
+            aria-label={expandedExpressionPreview ? "退出全屏预览" : "全屏预览"}
+            onClick={() => setExpandedExpressionPreview((current) => !current)}
+          >
+            {expandedExpressionPreview ? (
+              <Minimize2 aria-hidden />
+            ) : (
+              <Maximize2 aria-hidden />
+            )}
+          </button>
         </header>
         <div
-          className="galgame-expression-render-modes"
-          role="group"
-          aria-label="表情呈现方式"
+          className={`galgame-expression-detail-preview is-${previewBackgroundMode}`}
+          style={{
+            aspectRatio: `${canvasWidth} / ${canvasHeight}`,
+          }}
         >
-          <button
-            type="button"
-            aria-pressed={selectedExpression.renderMode !== "frameSequence"}
-            onClick={switchExpressionToStatic}
-          >
-            静态图片
-          </button>
-          <button
-            type="button"
-            aria-pressed={selectedExpression.renderMode === "frameSequence"}
-            onClick={switchExpressionToSequence}
-          >
-            序列帧
-          </button>
-          <button type="button" disabled title="首期暂不支持 Spine 资源包">
-            Spine
-          </button>
-          <button type="button" disabled title="首期暂不支持 Live2D 资源包">
-            Live2D
-          </button>
-        </div>
-        {selectedExpression.renderMode === "frameSequence" &&
-        selectedExpression.sequence ? (
-          <div className="galgame-expression-sequence-editor">
-            <div
-              className="galgame-expression-playback-modes"
-              role="group"
-              aria-label="序列播放方式"
-            >
-              <button
-                type="button"
-                aria-pressed={
-                  (selectedExpression.sequence.playbackMode ?? "timed") ===
-                  "timed"
-                }
-                onClick={() => setSequencePlaybackMode("timed")}
-              >
-                定时播放
-              </button>
-              <button
-                type="button"
-                aria-pressed={
-                  selectedExpression.sequence.playbackMode === "lipSync"
-                }
-                onClick={() => setSequencePlaybackMode("lipSync")}
-              >
-                语音口型
-              </button>
-            </div>
-            <div className="galgame-expression-sequence-controls">
-              <label className="galgame-expression-fps-control">
-                <span>播放帧率</span>
-                <span>
-                  <input
-                    type="number"
-                    min={1}
-                    max={60}
-                    aria-label="播放帧率"
-                    value={selectedExpression.sequence.fps}
-                    onChange={(event) =>
-                      updateExpression(selectedExpression.id, (expression) => ({
-                        ...expression,
-                        sequence: expression.sequence
-                          ? {
-                              ...expression.sequence,
-                              fps: Math.min(
-                                60,
-                                Math.max(
-                                  1,
-                                  Math.round(Number(event.target.value) || 1),
-                                ),
-                              ),
-                            }
-                          : expression.sequence,
-                      }))
-                    }
-                  />
-                  <em>FPS</em>
-                  <span
-                    className="galgame-expression-fps-slider"
-                    style={
-                      {
-                        "--sequence-ratio":
-                          (selectedExpression.sequence.fps - 1) / 59,
-                      } as CSSProperties
-                    }
-                  >
-                    <input
-                      type="range"
-                      min={1}
-                      max={60}
-                      aria-label="播放帧率滑杆"
-                      value={selectedExpression.sequence.fps}
-                      onChange={(event) =>
-                        updateExpression(
-                          selectedExpression.id,
-                          (expression) => ({
-                            ...expression,
-                            sequence: expression.sequence
-                              ? {
-                                  ...expression.sequence,
-                                  fps: Number(event.target.value),
-                                }
-                              : expression.sequence,
-                          }),
-                        )
-                      }
-                    />
-                  </span>
-                </span>
-              </label>
-              {selectedExpression.sequence.playbackMode === "lipSync" ? (
-                <div className="galgame-expression-lip-sync-note">
-                  <Volume2 aria-hidden />
-                  <span>
-                    <strong>语音驱动</strong>
-                    <small>静止闭口，按音量切换三帧</small>
-                  </span>
-                </div>
-              ) : (
-                <label className="galgame-expression-setting-toggle">
-                  <span>
-                    <strong>循环播放</strong>
-                    <small>关闭后停留在最后一帧</small>
-                  </span>
-                  <input
-                    type="checkbox"
-                    aria-label="循环播放"
-                    checked={selectedExpression.sequence.loop}
-                    onChange={(event) =>
-                      updateExpression(selectedExpression.id, (expression) => ({
-                        ...expression,
-                        sequence: expression.sequence
-                          ? {
-                              ...expression.sequence,
-                              loop: event.target.checked,
-                            }
-                          : expression.sequence,
-                      }))
-                    }
-                  />
-                  <i aria-hidden />
-                </label>
-              )}
-            </div>
-            <p className="galgame-expression-sequence-help">
-              {selectedExpression.sequence.playbackMode === "lipSync"
-                ? "按闭口、半口、张口顺序保存三帧；首帧同时用于缩略图和静止状态。"
-                : `共 ${selectedExpression.sequence.frames.length} 个帧表情。首帧用于父节点缩略图；每帧仍可单独管理资源。`}
-            </p>
-            <ol className="galgame-expression-frame-list">
-              {selectedExpression.sequence.frames.map(
-                (frame, index, frames) => {
-                  const storyAsset = assetsById.get(frame.assetId);
-                  const projectAsset = projectAssetsQuery.data?.items.find(
-                    (asset) => asset.id === storyAsset?.fileId,
-                  );
-                  return (
-                    <li key={frame.id}>
-                      <span>
-                        {selectedExpression.sequence?.playbackMode === "lipSync"
-                          ? ["闭", "半", "张"][index]
-                          : index + 1}
-                      </span>
-                      <StoryAssetImage
-                        fileId={storyAsset?.fileId}
-                        alt=""
-                        fallback={<FileImage aria-hidden />}
-                      />
-                      <strong>
-                        {projectAsset?.display_name ?? `帧 ${index + 1}`}
-                      </strong>
-                      <button
-                        type="button"
-                        aria-label={`上移第 ${index + 1} 帧`}
-                        disabled={index === 0}
-                        onClick={() =>
-                          updateSequenceFrames((current) => {
-                            const next = [...current];
-                            [next[index - 1], next[index]] = [
-                              next[index],
-                              next[index - 1],
-                            ];
-                            return next;
-                          })
-                        }
-                      >
-                        <ChevronUp aria-hidden />
-                      </button>
-                      <button
-                        type="button"
-                        aria-label={`下移第 ${index + 1} 帧`}
-                        disabled={index === frames.length - 1}
-                        onClick={() =>
-                          updateSequenceFrames((current) => {
-                            const next = [...current];
-                            [next[index], next[index + 1]] = [
-                              next[index + 1],
-                              next[index],
-                            ];
-                            return next;
-                          })
-                        }
-                      >
-                        <ChevronDown aria-hidden />
-                      </button>
-                      <button
-                        type="button"
-                        className="danger"
-                        aria-label={`删除第 ${index + 1} 帧`}
-                        disabled={
-                          frames.length === 1 ||
-                          selectedExpression.sequence?.playbackMode ===
-                            "lipSync"
-                        }
-                        onClick={() =>
-                          updateSequenceFrames((current) =>
-                            current.filter((item) => item.id !== frame.id),
-                          )
-                        }
-                      >
-                        <Trash2 aria-hidden />
-                      </button>
-                    </li>
-                  );
-                },
-              )}
-            </ol>
-            <div className="galgame-expression-sequence-actions">
-              <CustomSelect
-                ariaLabel="从已有表情添加帧"
-                className="galgame-expression-sequence-source"
-                leadingIcon={<ImagePlus aria-hidden />}
-                showChevron={false}
-                disabled={
-                  selectedExpression.sequence.playbackMode === "lipSync" &&
-                  selectedExpression.sequence.frames.length >= 3
-                }
-                value=""
-                onChange={appendExistingExpressionFrame}
-                options={[
-                  { value: "", label: "从已有表情添加" },
-                  ...expressions
-                    .filter(
-                      (expression) => expression.id !== selectedExpression.id,
-                    )
-                    .map((expression) => ({
-                      value: expression.id,
-                      label: expression.label,
-                    })),
-                ]}
-              />
-              <button
-                type="button"
-                disabled={
-                  selectedExpression.sequence.playbackMode === "lipSync" &&
-                  selectedExpression.sequence.frames.length >= 3
-                }
-                onClick={() =>
-                  setPicker({
-                    mode: "sequence",
-                    source: "project",
-                  })
-                }
-              >
-                <FolderOpen aria-hidden /> 从项目素材添加
-              </button>
-              <button
-                type="button"
-                disabled={
-                  selectedExpression.sequence.playbackMode === "lipSync" &&
-                  selectedExpression.sequence.frames.length >= 3
-                }
-                onClick={() => {
-                  setPicker({
-                    mode: "sequence",
-                    source: "project",
-                  });
-                  requestAnimationFrame(() => fileInput.current?.click());
-                }}
-              >
-                <Plus aria-hidden /> 从本地导入
-              </button>
-            </div>
-          </div>
-        ) : null}
-        <section
-          className={`galgame-expression-detail-preview-section ${
-            expandedExpressionPreview ? "is-expanded" : ""
-          }`}
-          role={expandedExpressionPreview ? "dialog" : undefined}
-          aria-modal={expandedExpressionPreview ? true : undefined}
-          aria-label={
-            selectedExpression.renderMode === "frameSequence"
-              ? "序列帧预览"
-              : "舞台表情预览"
-          }
-        >
-          <header>
-            <span>
-              <FileImage aria-hidden />
-              <strong>
-                {selectedExpression.renderMode === "frameSequence"
-                  ? "序列帧预览"
-                  : "舞台预览"}
-              </strong>
-            </span>
-            <small>
-              {selectedExpression.renderMode === "frameSequence"
-                ? `${selectedExpression.sequence?.frames.length ?? 0} 帧 · ${selectedExpression.sequence?.fps ?? 2} FPS · `
-                : ""}
-              {previewPosition.name} · X {previewPosition.x}% · Y{" "}
-              {previewPosition.y}% · SIZE {selectedExpressionHeight}%
-            </small>
-            <button
-              type="button"
-              aria-label={
-                expandedExpressionPreview ? "退出全屏预览" : "全屏预览"
-              }
-              onClick={() =>
-                setExpandedExpressionPreview((current) => !current)
-              }
-            >
-              {expandedExpressionPreview ? (
-                <Minimize2 aria-hidden />
-              ) : (
-                <Maximize2 aria-hidden />
-              )}
-            </button>
-          </header>
-          <div
-            className={`galgame-expression-detail-preview is-${previewBackgroundMode}`}
+          {previewBackgroundMode === "scene" ? (
+            <StoryAssetImage
+              fileId={previewBackgroundAsset?.fileId}
+              alt=""
+              className="galgame-expression-detail-background"
+              fallback={<span />}
+            />
+          ) : null}
+          <span
+            className="galgame-stage-preview-guide"
             style={{
-              aspectRatio: `${canvasWidth} / ${canvasHeight}`,
+              left: `${previewPosition.x}%`,
+              top: `${previewPosition.y}%`,
+            }}
+            aria-hidden
+          >
+            <i />
+          </span>
+          <span
+            className={`galgame-expression-stage-actor is-${stageSettings.anchor}`}
+            data-position={`${previewPosition.x},${previewPosition.y}`}
+            data-size={selectedExpressionHeight}
+            style={{
+              left: `${previewPosition.x}%`,
+              top: `${previewPosition.y}%`,
+              width: `${selectedFootprintWidth}%`,
+              height: `${selectedFootprintHeight}%`,
+              transform:
+                stageSettings.anchor === "center"
+                  ? "translate(-50%, -50%)"
+                  : stageSettings.anchor === "topLeft"
+                    ? "translate(0, 0)"
+                    : "translate(-50%, -100%)",
             }}
           >
-            {previewBackgroundMode === "scene" ? (
-              <StoryAssetImage
-                fileId={previewBackgroundAsset?.fileId}
-                alt=""
-                className="galgame-expression-detail-background"
-                fallback={<span />}
-              />
-            ) : null}
-            <span
-              className="galgame-stage-preview-guide"
+            <div
+              className="galgame-portrait-stage-composite"
+              data-flipped={selectedExpression.flipX || undefined}
               style={{
-                left: `${previewPosition.x}%`,
-                top: `${previewPosition.y}%`,
-              }}
-              aria-hidden
-            >
-              <i />
-            </span>
-            <span
-              className={`galgame-expression-stage-actor is-${stageSettings.anchor}`}
-              data-position={`${previewPosition.x},${previewPosition.y}`}
-              data-size={selectedExpressionHeight}
-              style={{
-                left: `${previewPosition.x}%`,
-                top: `${previewPosition.y}%`,
-                width: `${selectedFootprintWidth}%`,
-                height: `${selectedFootprintHeight}%`,
-                transform:
-                  stageSettings.anchor === "center"
-                    ? "translate(-50%, -50%)"
-                    : "translate(0, 0)",
+                transform: `scaleX(${selectedExpression.flipX ? -1 : 1})`,
               }}
             >
-              <div
-                className="galgame-portrait-stage-composite"
-                data-flipped={selectedExpression.flipX || undefined}
-                style={{
-                  transform: `scaleX(${selectedExpression.flipX ? -1 : 1})`,
-                }}
-              >
-                <ExpressionPortrait
-                  expression={selectedExpression}
-                  assets={document.assets ?? []}
-                  skinAssetId={selectedSkinAssetId}
-                  alt={`${selectedCharacter.name} · ${selectedExpression.label}`}
-                  className="galgame-portrait-stage-image"
-                  onNaturalSize={({ width, height }) => {
-                    if (!selectedPortraitFileId) return;
-                    setNaturalPortraitSizes((current) => {
-                      const existing = current.get(selectedPortraitFileId);
-                      if (
-                        existing?.width === width &&
-                        existing.height === height
-                      )
-                        return current;
-                      const next = new Map(current);
-                      next.set(selectedPortraitFileId, {
-                        width,
-                        height,
-                      });
-                      return next;
+              <ExpressionPortrait
+                expression={selectedExpression}
+                assets={document.assets ?? []}
+                skinAssetId={selectedSkinAssetId}
+                alt={`${selectedCharacter.name} · ${selectedExpression.label}`}
+                className="galgame-portrait-stage-image"
+                onNaturalSize={({ width, height }) => {
+                  if (!selectedPortraitFileId) return;
+                  setNaturalPortraitSizes((current) => {
+                    const existing = current.get(selectedPortraitFileId);
+                    if (existing?.width === width && existing.height === height)
+                      return current;
+                    const next = new Map(current);
+                    next.set(selectedPortraitFileId, {
+                      width,
+                      height,
                     });
-                  }}
-                  fallback={
-                    <span>
-                      <UserRound aria-hidden />
-                      <strong>尚未绑定基准立绘</strong>
-                      <small>上传图片或从文件库选择。</small>
-                    </span>
-                  }
-                />
-                {(selectedExpression.overlays ?? []).map((overlay) => {
-                  const overlayAsset = assetsById.get(overlay.assetId);
-                  return overlayAsset?.type === "image" ? (
-                    <StoryAssetImage
-                      key={overlay.id}
-                      fileId={overlayAsset.fileId}
-                      alt=""
-                      className="galgame-portrait-stage-overlay"
-                      style={{
-                        left: `${overlay.x}%`,
-                        top: `${overlay.y}%`,
-                        width: `${overlay.width}%`,
-                        opacity: overlay.opacity,
-                      }}
-                      fallback={null}
-                    />
-                  ) : null;
-                })}
-              </div>
-            </span>
-          </div>
-        </section>
+                    return next;
+                  });
+                }}
+                fallback={
+                  <span>
+                    <UserRound aria-hidden />
+                    <strong>尚未绑定基准立绘</strong>
+                    <small>上传图片或从文件库选择。</small>
+                  </span>
+                }
+              />
+              {(selectedExpression.overlays ?? []).map((overlay) => {
+                const overlayAsset = assetsById.get(overlay.assetId);
+                return overlayAsset?.type === "image" ? (
+                  <StoryAssetImage
+                    key={overlay.id}
+                    fileId={overlayAsset.fileId}
+                    alt=""
+                    className="galgame-portrait-stage-overlay"
+                    style={{
+                      left: `${overlay.x}%`,
+                      top: `${overlay.y}%`,
+                      width: `${overlay.width}%`,
+                      opacity: overlay.opacity,
+                    }}
+                    fallback={null}
+                  />
+                ) : null;
+              })}
+            </div>
+          </span>
+        </div>
+      </section>
+
+      <section className="galgame-expression-setting-section galgame-expression-identity">
+        <header>
+          <span>
+            <PencilLine aria-hidden />
+            <strong>基本信息</strong>
+          </span>
+          <small>修改后自动保存</small>
+        </header>
+        <div className="galgame-expression-basic-fields">
+          <label className="galgame-field">
+            <span>表情名称</span>
+            <input
+              aria-label="表情名称"
+              autoComplete="off"
+              value={selectedExpression.label}
+              onChange={(event) =>
+                updateExpression(selectedExpression.id, (expression) => ({
+                  ...expression,
+                  label: event.target.value,
+                }))
+              }
+            />
+          </label>
+          <label className="galgame-field">
+            <span>表情 ID（只读）</span>
+            <input
+              aria-label="表情 ID"
+              value={selectedExpression.id}
+              readOnly
+            />
+          </label>
+        </div>
       </section>
 
       <section className="galgame-expression-setting-section">
@@ -787,38 +501,6 @@ export function CharacterExpressionForm({
           <ChevronRight aria-hidden />
         </summary>
         <div>
-          <section className="galgame-expression-basic-settings">
-            <header>
-              <span>
-                <FileImage aria-hidden />
-                <strong>基本信息</strong>
-              </span>
-              <small>修改后自动保存</small>
-            </header>
-            <div className="galgame-expression-basic-fields">
-              <label className="galgame-field">
-                <span>表情名称</span>
-                <input
-                  aria-label="表情名称"
-                  value={selectedExpression.label}
-                  onChange={(event) =>
-                    updateExpression(selectedExpression.id, (expression) => ({
-                      ...expression,
-                      label: event.target.value,
-                    }))
-                  }
-                />
-              </label>
-              <label className="galgame-field">
-                <span>表情 ID（只读）</span>
-                <input
-                  aria-label="表情 ID"
-                  value={selectedExpression.id}
-                  readOnly
-                />
-              </label>
-            </div>
-          </section>
           <fieldset className="galgame-expression-crop-settings">
             <legend>编辑器缩略图裁剪</legend>
             {(["x", "y", "scale"] as const).map((key) => (
@@ -1060,4 +742,3 @@ export function CharacterExpressionForm({
     </div>
   );
 }
-import type { CSSProperties } from "react";

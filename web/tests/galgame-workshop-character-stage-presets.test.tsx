@@ -762,6 +762,22 @@ test("opens selected characters with a blank expression detail and compact role 
           description: "当前好感度",
         },
       ],
+      settings: {
+        characterStage: {
+          anchor: "bottomCenter",
+          defaultPositionId: "position-center",
+          defaultHeightPercent: 100,
+          positionPresets: [
+            {
+              id: "position-center",
+              name: "中",
+              x: 50,
+              y: 100,
+              builtinKey: "center",
+            },
+          ],
+        },
+      },
       assets: [
         {
           id: "portrait-default",
@@ -814,7 +830,6 @@ test("opens selected characters with a blank expression detail and compact role 
   expect(screen.queryByDisplayValue("平静")).not.toBeInTheDocument();
 
   await user.click(screen.getByRole("button", { name: /惊讶$/ }));
-  expect(screen.queryByDisplayValue("惊讶")).not.toBeVisible();
   expect(screen.getByText("对白头像已关闭")).toBeVisible();
   await user.click(screen.getByRole("checkbox", { name: "对白头像" }));
   await waitFor(() => {
@@ -832,6 +847,7 @@ test("opens selected characters with a blank expression detail and compact role 
   );
   if (!expressionSettings) throw new Error("missing expression settings");
   for (const heading of [
+    "基本信息",
     "舞台显示",
     "立绘尺寸",
     "对白头像",
@@ -839,7 +855,16 @@ test("opens selected characters with a blank expression detail and compact role 
     "资源操作",
   ])
     expect(within(expressionSettings).getByText(heading)).toBeVisible();
-  expect(within(expressionSettings).queryByText("基本信息")).not.toBeVisible();
+  const expressionName = within(expressionSettings).getByRole("textbox", {
+    name: "表情名称",
+  });
+  expect(expressionName).toBeVisible();
+  await user.clear(expressionName);
+  await user.type(expressionName, "吃惊");
+  await waitFor(() => {
+    const saved = vi.mocked(putGalgameStoryDocument).mock.calls.at(-1)?.[1];
+    expect(saved?.characters?.[0].expressions?.[1].label).toBe("吃惊");
+  });
   expect(
     within(expressionSettings).getByLabelText("对白头像来源"),
   ).toBeVisible();
@@ -887,12 +912,12 @@ test("opens selected characters with a blank expression detail and compact role 
   const sequenceStageActor = rendered.container.querySelector<HTMLElement>(
     ".galgame-expression-stage-actor",
   );
-  expect(sequenceStageActor).toHaveAttribute("data-position", "50,50");
+  expect(sequenceStageActor).toHaveAttribute("data-position", "50,100");
   expect(sequenceStageActor).toHaveAttribute("data-size", "100");
   expect(sequenceStageActor).toHaveStyle({
     width: "37.5%",
     height: "100%",
-    transform: "translate(-50%, -50%)",
+    transform: "translate(-50%, -100%)",
   });
   expect(
     rendered.container.querySelector(".galgame-character-workspace"),
@@ -1006,8 +1031,6 @@ test("opens selected characters with a blank expression detail and compact role 
     expect(saved?.characters?.[0].expressions?.[1].heightPercent).toBe(175);
   });
   await user.click(within(expressionSettings).getByText("高级设置"));
-  expect(within(expressionSettings).getByText("基本信息")).toBeVisible();
-  expect(within(expressionSettings).getByDisplayValue("惊讶")).toBeVisible();
   expect(
     within(expressionSettings).getByRole("spinbutton", {
       name: "缩略图裁剪 X",

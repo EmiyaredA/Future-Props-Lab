@@ -1,6 +1,8 @@
 import json
+from pathlib import Path
 
 from scripts.galgame_performance_upgrade import (
+    CURATED_CHARACTER_POSES,
     DEFAULT_ANNOTATION_PATH,
     DIALOGUE_BOX_OPACITY,
     DIALOGUE_EXPRESSION_CUES,
@@ -8,6 +10,7 @@ from scripts.galgame_performance_upgrade import (
     ENDING_THANKS_TEXT,
     EXPECTED_ANNOTATION_SHA256,
     EXPECTED_CROWD_NORMALIZED_LINES,
+    HIDDEN_SCENE_SWITCH_MS,
     LIP_SYNC_FPS,
     OPENING_DECLARATION_ID,
     OPENING_DECLARATION_TEXT,
@@ -15,14 +18,20 @@ from scripts.galgame_performance_upgrade import (
     TRANSITION_CARD_BLOCKS,
     cast_member,
     clear_adjacent_direct_portrait_overlaps,
+    curated_portrait_entry,
     enlarge_dialogue_text,
     fullscreen_cg_at,
     install_cgs,
+    install_curated_character_expressions,
     install_ending_thanks,
     install_opening_declaration,
     install_special_character_expressions,
     install_transition_cards,
+    normalize_expression_labels,
+    performance_expression_for_turn,
+    performance_expression_id,
     remembered_cast_expression,
+    scene_id_for_code,
     sha256,
 )
 from scripts.galgame_runaway_cues import (
@@ -189,7 +198,8 @@ def test_v8_annotation_and_scene_timing_contract() -> None:
     assert LIP_SYNC_FPS == 5
     assert (372_443, "BG11A2") in SCENE_BEATS
     assert (387_752, "BG11A7") in SCENE_BEATS
-    assert (456_433, "BG03A1") in SCENE_BEATS
+    assert (456_433, "SG_BG01A") in SCENE_BEATS
+    assert (686_472, "SG_BG02A2") in SCENE_BEATS
     assert (1_627_170, "BG11A7") in SCENE_BEATS
     assert (1_677_392, "BG11_EMPTY") in SCENE_BEATS
     assert not any(at_ms in {653_198, 687_072, 1_604_000, 1_682_974} for at_ms, _ in SCENE_BEATS)
@@ -213,6 +223,25 @@ def test_v8_annotation_and_scene_timing_contract() -> None:
     )
     assert annotation["segments"][248]["localized_texts"][0]["text"] == "呐，篝的肚子饿了。"
     assert annotation["segments"][315]["localized_texts"][0]["text"] == "爸爸也最喜欢篝的哟！"
+
+
+def test_lab_scene_schedule_uses_two_main_compositions_with_time_progression() -> None:
+    lab_beats = [(at_ms, code) for at_ms, code in SCENE_BEATS if code.startswith("SG_")]
+    assert lab_beats == [
+        (0, "SG_BG01A"),
+        (151_754, "SG_BG02A2"),
+        (456_433, "SG_BG01A"),
+        (686_472, "SG_BG02A2"),
+        (970_000, "SG_BG01E"),
+        (1_188_000, "SG_BG02E2"),
+        (1_300_000, "SG_BG01N"),
+        (1_364_000, "SG_BG02N2"),
+    ]
+    assert all(code.startswith(("SG_BG01", "SG_BG02")) for _at_ms, code in lab_beats)
+    assert not any(code.startswith("BG03") for _at_ms, code in SCENE_BEATS)
+    assert HIDDEN_SCENE_SWITCH_MS == {372_443, 456_433, 686_472}
+    assert scene_id_for_code("SG_BG01A") == "sg-bg01a"
+    assert scene_id_for_code("BG11A7") == "sg0-bg11a7"
 
 
 def test_v8_transition_cards_include_explanation_intertitle() -> None:
@@ -265,6 +294,149 @@ def test_mayuri_gets_a_shy_expression_preset_with_lip_sync() -> None:
         "half",
         "open",
     ]
+
+
+def test_curated_expressions_add_pose_variety_and_private_clothes() -> None:
+    document = {
+        "assets": [],
+        "characters": [
+            {"id": "kurisu-makise", "name": "牧濑红莉栖", "expressions": []},
+            {
+                "id": "mayuri",
+                "name": "椎名真由理",
+                "expressions": [{"id": "e002-f000", "label": "笑容", "assetId": "old-mayuri"}],
+            },
+            {"id": "daru", "name": "桥田至", "expressions": []},
+            {
+                "id": "faris",
+                "name": "菲莉丝·喵喵",
+                "expressions": [
+                    {"id": f"e{index:03d}-f000", "label": "旧女仆装"} for index in range(1, 5)
+                ],
+            },
+            {
+                "id": "luka",
+                "name": "漆原琉华",
+                "expressions": [
+                    {"id": f"e{index:03d}-f000", "label": "旧巫女服"} for index in range(1, 7)
+                ],
+            },
+            {"id": "moeka", "name": "桐生萌郁", "expressions": []},
+            {
+                "id": "suzuha",
+                "name": "阿万音铃羽",
+                "expressions": [
+                    {"id": f"e{index:03d}-f000", "label": "旧铃羽表情"} for index in range(1, 7)
+                ],
+            },
+            {
+                "id": "kagari",
+                "name": "冈部篝",
+                "expressions": [
+                    {"id": f"e{index:03d}-f000", "label": "旧篝表情"} for index in range(1, 8)
+                ],
+            },
+            {
+                "id": "maho",
+                "name": "比屋定真帆",
+                "expressions": [
+                    {"id": f"e{index:03d}-f000", "label": "旧真帆表情"} for index in range(1, 13)
+                ],
+            },
+            {
+                "id": "yuugo",
+                "name": "天王寺裕吾",
+                "expressions": [
+                    {"id": f"e{index:03d}-f000", "label": "旧天王寺表情"} for index in range(1, 4)
+                ],
+            },
+        ],
+    }
+    source_root = Path("/original-sg0")
+    mapping = {"items": {}}
+    for character_spec in CURATED_CHARACTER_POSES:
+        for pose_spec in character_spec["poses"]:
+            for variant in range(1, len(pose_spec["labels"]) + 1):
+                for mouth in range(3):
+                    _path, relative = curated_portrait_entry(
+                        source_root,
+                        character_spec["sourceDirectory"],
+                        pose_spec["code"],
+                        variant,
+                        mouth,
+                    )
+                    mapping["items"][relative] = {"assetId": f"file-{relative}"}
+
+    install_curated_character_expressions(document, mapping, source_root)
+    install_special_character_expressions(document)
+    normalize_expression_labels(document)
+    characters = {character["id"]: character for character in document["characters"]}
+
+    faris = characters["faris"]
+    assert len(faris["expressions"]) == 12
+    assert next(item for item in faris["expressions"] if item["id"] == "e001-f000")[
+        "assetId"
+    ].startswith("sg0-fei-dla-")
+    assert not any(item.get("label") == "旧女仆装" for item in faris["expressions"])
+
+    luka = characters["luka"]
+    assert len(luka["expressions"]) == 11
+    assert next(item for item in luka["expressions"] if item["id"] == "e001-f000")[
+        "assetId"
+    ].startswith("sg0-ruk-cla-")
+    assert not any(item.get("label") == "旧巫女服" for item in luka["expressions"])
+
+    mayuri = characters["mayuri"]
+    shy = next(item for item in mayuri["expressions"] if item["id"] == "e010-f000")
+    assert shy["assetId"].startswith("sg0-may-alc-e003-")
+    assert shy["label"] == "双手交握·害羞"
+    assert len(characters["kurisu-makise"]["expressions"]) == 15
+    assert next(
+        item
+        for item in characters["kurisu-makise"]["expressions"]
+        if item["id"] == "crs-alc-e006-f000"
+    )["assetId"].startswith("sg0-crs-alc-")
+    assert len(characters["daru"]["expressions"]) == 6
+    assert len(characters["moeka"]["expressions"]) == 5
+    assert len(characters["suzuha"]["expressions"]) == 21
+    assert len(characters["kagari"]["expressions"]) == 12
+    assert (
+        next(item for item in characters["kagari"]["expressions"] if item["id"] == "e007-f000")[
+            "label"
+        ]
+        == "水手服站姿·闭眼微笑"
+    )
+    assert len(characters["maho"]["expressions"]) == 21
+    assert len(characters["yuugo"]["expressions"]) == 6
+
+
+def test_curated_expression_overrides_are_used_for_performance() -> None:
+    assert performance_expression_id("kurisu-makise", "e008-f000") == ("crs-alb-e008-f000")
+    assert performance_expression_id("kurisu-makise", "e009-f000") == ("crs-alc-e006-f000")
+    assert performance_expression_id("mayuri", "e003-f000") == "may-alc-e001-f000"
+    assert performance_expression_id("faris", "e003-f000") == "fei-dlc-e003-f000"
+    assert performance_expression_id("luka", "e005-f000") == "ruk-clb-e005-f000"
+    assert performance_expression_id("suzuha", "e003-f000") == "suz-hme-e003-f000"
+    assert performance_expression_id("kagari", "e005-f000") == "kag-alb-e003-f000"
+    assert performance_expression_id("maho", "e009-f000") == "mah-alb-e006-f000"
+    assert performance_expression_id("yuugo", "e002-f000") == "ten-bla-e002-f000"
+    assert performance_expression_id("okabe-rintarou", "e003-f000") == "e003-f000"
+
+
+def test_performance_pose_changes_without_changing_emotion() -> None:
+    assert [
+        performance_expression_for_turn("kurisu-makise", "e005-f000", turn) for turn in range(6)
+    ] == [
+        "crs-alc-e004-f000",
+        "crs-alc-e004-f000",
+        "crs-alb-e005-f000",
+        "crs-alb-e005-f000",
+        "e005-f000",
+        "e005-f000",
+    ]
+    assert performance_expression_for_turn("kagari", "e004-f000", 0) == "e004-f000"
+    assert performance_expression_for_turn("kagari", "e004-f000", 2) == "kag-alb-e004-f000"
+    assert performance_expression_for_turn("okabe-rintarou", "e003-f000", 99) == ("e003-f000")
 
 
 def test_v8_cg_timing_and_scene_consistency() -> None:

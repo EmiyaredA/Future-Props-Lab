@@ -66,11 +66,13 @@ export function ExpressionPortrait({
       ? expression.sequence
       : undefined;
   const sequenceKey = `${expression?.id ?? "missing"}:${skinAssetId ?? "base"}:${fileIds.join(",")}:${sequence?.fps ?? 0}:${sequence?.loop ?? false}`;
+  const uniqueFileCount = new Set(fileIds).size;
   const [frameIndex, setFrameIndex] = useState(0);
   const [readyGroup, setReadyGroup] = useState<{
     key: string;
     urls: Map<string, string>;
     failedFileIds: Set<string>;
+    settledFileIds: Set<string>;
   }>();
   const [lastReadyFrame, setLastReadyFrame] = useState<{
     key: string;
@@ -91,27 +93,42 @@ export function ExpressionPortrait({
       return;
     }
     let active = true;
-    void Promise.all(
-      [...new Set(fileIds)].map(async (fileId) => {
-        try {
-          const blob = await fetchApiBlob(`/v1/files/${fileId}/content`);
-          const url = URL.createObjectURL(blob);
-          retainedUrlsRef.current.add(url);
-          return [fileId, url] as const;
-        } catch {
-          return [fileId, ""] as const;
-        }
-      }),
-    ).then((entries) => {
-      if (!active) return;
-      setReadyGroup({
-        key: sequenceKey,
-        urls: new Map(entries),
-        failedFileIds: new Set(
-          entries.flatMap(([fileId, url]) => (url ? [] : [fileId])),
-        ),
-      });
+    setReadyGroup({
+      key: sequenceKey,
+      urls: new Map(),
+      failedFileIds: new Set(),
+      settledFileIds: new Set(),
     });
+    for (const fileId of new Set(fileIds)) {
+      void fetchApiBlob(`/v1/files/${fileId}/content`)
+        .then((blob) => {
+          const url = URL.createObjectURL(blob);
+          if (!active) {
+            URL.revokeObjectURL(url);
+            return;
+          }
+          retainedUrlsRef.current.add(url);
+          setReadyGroup((current) => {
+            if (current?.key !== sequenceKey) return current;
+            const urls = new Map(current.urls);
+            urls.set(fileId, url);
+            const settledFileIds = new Set(current.settledFileIds);
+            settledFileIds.add(fileId);
+            return { ...current, urls, settledFileIds };
+          });
+        })
+        .catch(() => {
+          if (!active) return;
+          setReadyGroup((current) => {
+            if (current?.key !== sequenceKey) return current;
+            const failedFileIds = new Set(current.failedFileIds);
+            failedFileIds.add(fileId);
+            const settledFileIds = new Set(current.settledFileIds);
+            settledFileIds.add(fileId);
+            return { ...current, failedFileIds, settledFileIds };
+          });
+        });
+    }
     return () => {
       active = false;
     };
@@ -129,6 +146,7 @@ export function ExpressionPortrait({
     if (
       !sequence ||
       readyGroup?.key !== sequenceKey ||
+      readyGroup.settledFileIds.size < uniqueFileCount ||
       controlledFrameIndex !== undefined
     )
       return;
@@ -143,8 +161,10 @@ export function ExpressionPortrait({
     controlledFrameIndex,
     fileIds.length,
     readyGroup?.key,
+    readyGroup?.settledFileIds.size,
     sequence,
     sequenceKey,
+    uniqueFileCount,
   ]);
 
   if (!sequence) {
@@ -166,13 +186,15 @@ export function ExpressionPortrait({
       : Math.max(0, Math.min(fileIds.length - 1, controlledFrameIndex));
   const candidateFileId = fileIds[resolvedFrameIndex];
   const currentGroup = readyGroup?.key === sequenceKey ? readyGroup : undefined;
-  const firstSuccessfulFileId = fileIds.find((fileId) =>
-    currentGroup?.urls.get(fileId),
+  const firstSuccessfulFileId = fileIds.find(
+    (fileId) =>
+      currentGroup?.urls.get(fileId) && !currentGroup.failedFileIds.has(fileId),
   );
   const displayFileId = currentGroup
-    ? currentGroup.failedFileIds.has(candidateFileId)
-      ? firstSuccessfulFileId
-      : candidateFileId
+    ? currentGroup.urls.has(candidateFileId) &&
+      !currentGroup.failedFileIds.has(candidateFileId)
+      ? candidateFileId
+      : firstSuccessfulFileId
     : lastReadyFrame?.fileId;
   const displayUrl = currentGroup
     ? displayFileId
@@ -245,7 +267,7 @@ export function ExpressionPortrait({
                 ? {
                     ...current,
                     failedFileIds: new Set(current.failedFileIds).add(
-                      candidateFileId,
+                      readyDisplay.fileId,
                     ),
                   }
                 : current,

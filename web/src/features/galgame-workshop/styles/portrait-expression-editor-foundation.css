@@ -219,45 +219,38 @@
 
 .galgame-expression-setting-section > header,
 .galgame-expression-advanced-settings > summary,
-.galgame-expression-basic-settings > header,
 .galgame-expression-setting-section > header > span,
-.galgame-expression-advanced-settings > summary > span,
-.galgame-expression-basic-settings > header > span {
+.galgame-expression-advanced-settings > summary > span {
   display: flex;
   align-items: center;
 }
 
 .galgame-expression-setting-section > header,
-.galgame-expression-advanced-settings > summary,
-.galgame-expression-basic-settings > header {
+.galgame-expression-advanced-settings > summary {
   min-width: 0;
   justify-content: space-between;
   gap: 12px;
 }
 
 .galgame-expression-setting-section > header > span,
-.galgame-expression-advanced-settings > summary > span,
-.galgame-expression-basic-settings > header > span {
+.galgame-expression-advanced-settings > summary > span {
   gap: 8px;
 }
 
 .galgame-expression-setting-section > header svg,
-.galgame-expression-advanced-settings > summary svg,
-.galgame-expression-basic-settings > header svg {
+.galgame-expression-advanced-settings > summary svg {
   width: 16px;
   height: 16px;
   color: var(--gal-muted);
 }
 
 .galgame-expression-setting-section > header strong,
-.galgame-expression-advanced-settings > summary strong,
-.galgame-expression-basic-settings > header strong {
+.galgame-expression-advanced-settings > summary strong {
   font-size: 13px;
 }
 
 .galgame-expression-setting-section > header small,
-.galgame-expression-advanced-settings > summary small,
-.galgame-expression-basic-settings > header small {
+.galgame-expression-advanced-settings > summary small {
   min-width: 0;
   overflow: hidden;
   color: var(--gal-muted);
@@ -481,15 +474,7 @@
   gap: 14px;
 }
 
-.galgame-expression-basic-settings {
-  padding-bottom: 2px;
-}
-
 .galgame-expression-advanced-settings .galgame-expression-crop-settings,
 .galgame-expression-advanced-settings .galgame-expression-overlays {
   margin: 0;
-}
-
-.galgame-expression-resource-actions {
-  order: 4;
 }

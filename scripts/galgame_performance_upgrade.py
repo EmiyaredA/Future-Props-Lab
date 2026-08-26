@@ -40,6 +40,7 @@ except ModuleNotFoundError:
 REPO_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_PROJECT_ID = "63ac832d-bff3-4053-9c9f-f55c9dafc52a"
 DEFAULT_SOURCE_ROOT = Path("/Users/tonghao/Projects/steins-gate-video/assets/games/steins_gate_0")
+ORIGINAL_SG_ROOT = Path("/Users/tonghao/Projects/steins-gate-video/assets/games/steins_gate")
 DEFAULT_ANNOTATION_PATH = Path("/Users/tonghao/Downloads/广播剧.annotation (14).json")
 BACKUP_ROOT = REPO_ROOT / ".runtime" / "galgame-import-backups"
 MAP_PATH = BACKUP_ROOT / "sg0-performance-asset-map.json"
@@ -183,6 +184,24 @@ CURATED_SCENES = (
     ("BG11A8", "时间机器登舱梯", 1.05),
 )
 
+ORIGINAL_SG_SCENES = (
+    ("BG01A", "Lab 客厅·白昼", 1.0),
+    ("BG01E", "Lab 客厅·黄昏", 1.0),
+    ("BG01N", "Lab 客厅·夜晚", 1.0),
+    ("BG02A1", "Lab 沙发区·白昼", 1.0),
+    ("BG02A2", "Lab 沙发区·白昼·窗帘关闭", 1.0),
+    ("BG02E1", "Lab 沙发区·黄昏", 1.0),
+    ("BG02E2", "Lab 沙发区·黄昏·窗帘关闭", 1.0),
+    ("BG02N1", "Lab 沙发区·夜晚", 1.0),
+    ("BG02N2", "Lab 沙发区·夜晚·窗帘关闭", 1.0),
+    ("BG02AS1", "Lab 沙发区局部·白昼·左", 1.0),
+    ("BG02AS2", "Lab 沙发区局部·白昼·右", 1.0),
+    ("BG02ES1", "Lab 沙发区局部·黄昏·左", 1.0),
+    ("BG02ES2", "Lab 沙发区局部·黄昏·右", 1.0),
+    ("BG02NS1", "Lab 沙发区局部·夜晚·左", 1.0),
+    ("BG02NS2", "Lab 沙发区局部·夜晚·右", 1.0),
+)
+
 CUSTOM_SCENES = (
     {
         "code": "BG11A7_TWO",
@@ -203,20 +222,21 @@ CUSTOM_SCENES = (
 )
 
 SCENE_BEATS = (
-    (0, "BG03A1"),
-    (28_000, "BG03A2"),
-    (151_754, "BG03A5"),
-    (260_255, "BG03A4"),
+    (0, "SG_BG01A"),
+    (151_754, "SG_BG02A2"),
     (372_443, "BG11A2"),
     (387_752, "BG11A7"),
-    (456_433, "BG03A1"),
-    (970_000, "BG03A2"),
-    (1_188_000, "BG03A5"),
-    (1_300_000, "BG03A4"),
-    (1_364_000, "BG03A1"),
+    (456_433, "SG_BG01A"),
+    (686_472, "SG_BG02A2"),
+    (970_000, "SG_BG01E"),
+    (1_188_000, "SG_BG02E2"),
+    (1_300_000, "SG_BG01N"),
+    (1_364_000, "SG_BG02N2"),
     (1_627_170, "BG11A7"),
     (1_677_392, "BG11_EMPTY"),
 )
+
+HIDDEN_SCENE_SWITCH_MS = frozenset({372_443, 456_433, 686_472})
 
 SUZUHA_VARIANTS = {
     "calm": ("SUZ_HSD", "001"),
@@ -228,10 +248,492 @@ SUZUHA_VARIANTS = {
 }
 SUZUHA_CROP_ROOT = REPO_ROOT / "docs/assets/galgame-runaway-portraits/suzuha-half-v1"
 
+CURATED_CHARACTER_POSES = (
+    {
+        "characterNames": ("牧濑红莉栖",),
+        "sourceDirectory": "makise_kurisu",
+        "poses": (
+            {
+                "code": "CRS_ALB",
+                "labels": (
+                    "抱臂·平静",
+                    "抱臂·得意",
+                    "抱臂·严肃",
+                    "抱臂·疑惑",
+                    "抱臂·担忧",
+                    "抱臂·微笑",
+                    "抱臂·不悦",
+                    "抱臂·生气",
+                    "抱臂·害羞",
+                ),
+            },
+            {
+                "code": "CRS_ALC",
+                "labels": (
+                    "手扶领带·平静",
+                    "手扶领带·闭眼微笑",
+                    "手扶领带·认真",
+                    "手扶领带·担忧",
+                    "手扶领带·不悦",
+                    "手扶领带·害羞",
+                ),
+            },
+        ),
+    },
+    {
+        "characterNames": ("椎名真由理",),
+        "sourceDirectory": "shiina_mayuri",
+        "poses": (
+            {
+                "code": "MAY_ALB",
+                "labels": ("抬手·温柔", "抬手·笑容", "抬手·担忧", "抬手·难过"),
+            },
+            {
+                "code": "MAY_ALC",
+                "labels": ("双手交握·担忧", "双手交握·惊讶", "双手交握·害羞", "双手交握·落泪"),
+            },
+        ),
+    },
+    {
+        "characterNames": ("桥田至",),
+        "sourceDirectory": "hashida_itaru",
+        "poses": (
+            {
+                "code": "DAR_ALB",
+                "labels": (
+                    "正面站姿·平静",
+                    "正面站姿·认真",
+                    "正面站姿·担忧",
+                    "正面站姿·惊讶",
+                    "正面站姿·不悦",
+                    "正面站姿·沮丧",
+                ),
+            },
+        ),
+    },
+    {
+        "characterNames": ("菲莉丝",),
+        "sourceDirectory": "faris_nyannyan",
+        "replacePrimary": True,
+        "poses": (
+            {
+                "code": "FEI_DLA",
+                "labels": (
+                    "米色私服站姿·俏皮眨眼",
+                    "米色私服站姿·闭眼微笑",
+                    "米色私服站姿·严肃不悦",
+                    "米色私服站姿·从容得意",
+                ),
+            },
+            {
+                "code": "FEI_DLB",
+                "labels": ("交握双手·俏皮", "交握双手·笑容", "交握双手·认真"),
+            },
+            {
+                "code": "FEI_DLC",
+                "labels": ("侧身·俏皮", "侧身·笑容", "侧身·严肃", "侧身·得意", "侧身·担忧"),
+            },
+        ),
+    },
+    {
+        "characterNames": ("漆原琉华",),
+        "sourceDirectory": "urushibara_luka",
+        "replacePrimary": True,
+        "poses": (
+            {
+                "code": "RUK_CLA",
+                "labels": (
+                    "黑色私服站姿·温柔",
+                    "黑色私服站姿·悲伤",
+                    "黑色私服站姿·惊讶",
+                    "黑色私服站姿·落泪",
+                    "黑色私服站姿·害羞",
+                    "黑色私服站姿·睁眼微笑",
+                ),
+            },
+            {
+                "code": "RUK_CLB",
+                "labels": (
+                    "手抚衣领·温柔",
+                    "手抚衣领·悲伤",
+                    "手抚衣领·惊讶",
+                    "手抚衣领·哭泣",
+                    "手抚衣领·害羞",
+                ),
+            },
+        ),
+    },
+    {
+        "characterNames": ("桐生萌郁",),
+        "sourceDirectory": "kiryu_moeka",
+        "poses": (
+            {
+                "code": "MOE_ALB",
+                "labels": (
+                    "正面站姿·冷淡",
+                    "正面站姿·疲惫",
+                    "正面站姿·闭眼沉思",
+                    "正面站姿·担忧",
+                    "正面站姿·不悦",
+                ),
+            },
+        ),
+    },
+    {
+        "characterNames": ("铃羽", "鈴羽", "玲羽", "Suzuha"),
+        "sourceDirectory": "amane_suzuha",
+        "poses": (
+            {
+                "code": "SUZ_HMD",
+                "labels": (
+                    "站姿·平静",
+                    "站姿·俏皮眨眼",
+                    "站姿·认真",
+                    "站姿·微笑",
+                    "站姿·不悦",
+                    "站姿·含泪",
+                    "站姿·生气",
+                    "站姿·闭眼难过",
+                    "站姿·担忧",
+                ),
+            },
+            {
+                "code": "SUZ_HME",
+                "labels": (
+                    "抱臂·平静",
+                    "抱臂·微笑",
+                    "抱臂·认真",
+                    "抱臂·生气",
+                    "抱臂·担忧",
+                    "抱臂·闭眼沉思",
+                ),
+            },
+        ),
+    },
+    {
+        "characterNames": ("冈部篝", "幼年篝"),
+        "sourceDirectory": "shiina_kagari",
+        "poses": (
+            {
+                "code": "KAG_ALB",
+                "labels": (
+                    "双手交握·睁眼微笑",
+                    "双手交握·担忧",
+                    "双手交握·悲伤",
+                    "双手交握·不悦",
+                    "双手交握·闭眼微笑",
+                ),
+            },
+        ),
+    },
+    {
+        "characterNames": ("比屋定真帆",),
+        "sourceDirectory": "hiyajo_maho",
+        "poses": (
+            {
+                "code": "MAH_ALB",
+                "labels": (
+                    "双手交握·自信",
+                    "双手交握·温柔",
+                    "双手交握·俏皮",
+                    "双手交握·生气",
+                    "双手交握·严肃",
+                    "双手交握·害羞",
+                    "双手交握·不悦",
+                    "双手交握·闭眼悲伤",
+                    "双手交握·闭眼微笑",
+                ),
+            },
+        ),
+    },
+    {
+        "characterNames": ("天王寺裕吾",),
+        "sourceDirectory": "tennoji_yugo",
+        "poses": (
+            {
+                "code": "TEN_BLA",
+                "labels": ("围裙正面站姿·平静", "围裙正面站姿·严肃", "围裙正面站姿·担忧"),
+            },
+        ),
+    },
+)
+
+CURATED_EXPRESSION_OVERRIDES = {
+    "kurisu-makise": {
+        "e003-f000": "crs-alb-e003-f000",
+        "e004-f000": "crs-alb-e004-f000",
+        "e005-f000": "crs-alc-e004-f000",
+        "e006-f000": "crs-alc-e002-f000",
+        "e007-f000": "crs-alb-e007-f000",
+        "e008-f000": "crs-alb-e008-f000",
+        "e009-f000": "crs-alc-e006-f000",
+    },
+    "mayuri": {
+        "e003-f000": "may-alc-e001-f000",
+        "e004-f000": "may-alc-e004-f000",
+    },
+    "daru": {
+        "e002-f000": "dar-alb-e002-f000",
+        "e004-f000": "dar-alb-e004-f000",
+        "e005-f000": "dar-alb-e005-f000",
+        "e006-f000": "dar-alb-e006-f000",
+    },
+    "faris": {
+        "e002-f000": "fei-dlb-e002-f000",
+        "e003-f000": "fei-dlc-e003-f000",
+        "e004-f000": "fei-dlc-e004-f000",
+    },
+    "luka": {
+        "e004-f000": "ruk-clb-e004-f000",
+        "e005-f000": "ruk-clb-e005-f000",
+    },
+    "moeka": {
+        "e002-f000": "moe-alb-e002-f000",
+        "e004-f000": "moe-alb-e004-f000",
+        "e005-f000": "moe-alb-e005-f000",
+    },
+    "suzuha": {
+        "e001-f000": "suz-hmd-e001-f000",
+        "e002-f000": "suz-hmd-e002-f000",
+        "e003-f000": "suz-hme-e003-f000",
+        "e004-f000": "suz-hme-e005-f000",
+        "e005-f000": "suz-hme-e004-f000",
+        "e006-f000": "suz-hmd-e004-f000",
+    },
+    "kagari": {
+        "e001-f000": "kag-alb-e001-f000",
+        "e002-f000": "kag-alb-e005-f000",
+        "e003-f000": "kag-alb-e002-f000",
+        "e004-f000": "kag-alb-e004-f000",
+        "e005-f000": "kag-alb-e003-f000",
+    },
+    "maho": {
+        "e001-f000": "mah-alb-e001-f000",
+        "e002-f000": "mah-alb-e003-f000",
+        "e003-f000": "mah-alb-e004-f000",
+        "e004-f000": "mah-alb-e005-f000",
+        "e005-f000": "mah-alb-e007-f000",
+        "e006-f000": "mah-alb-e002-f000",
+        "e007-f000": "mah-alb-e004-f000",
+        "e008-f000": "mah-alb-e007-f000",
+        "e009-f000": "mah-alb-e006-f000",
+    },
+    "yuugo": {
+        "e001-f000": "ten-bla-e001-f000",
+        "e002-f000": "ten-bla-e002-f000",
+        "e003-f000": "ten-bla-e003-f000",
+    },
+}
+
+POSE_HOLD_SPEAKING_TURNS = 2
+PERFORMANCE_POSE_CANDIDATES = {
+    "kurisu-makise": {
+        "e001-f000": ("e001-f000", "crs-alb-e001-f000", "crs-alc-e001-f000"),
+        "e002-f000": ("e002-f000", "crs-alb-e002-f000"),
+        "e003-f000": ("crs-alb-e003-f000", "crs-alc-e003-f000", "e003-f000"),
+        "e004-f000": ("crs-alb-e004-f000", "e004-f000"),
+        "e005-f000": ("crs-alc-e004-f000", "crs-alb-e005-f000", "e005-f000"),
+        "e006-f000": ("crs-alc-e002-f000", "crs-alb-e006-f000", "e006-f000"),
+        "e007-f000": ("crs-alb-e007-f000", "crs-alc-e005-f000", "e007-f000"),
+        "e008-f000": ("crs-alb-e008-f000", "e008-f000"),
+        "e009-f000": ("crs-alc-e006-f000", "crs-alb-e009-f000", "e009-f000"),
+    },
+    "mayuri": {
+        "e001-f000": ("e001-f000", "may-alb-e001-f000"),
+        "e002-f000": ("e002-f000", "may-alb-e002-f000"),
+        "e003-f000": ("may-alc-e001-f000", "may-alb-e003-f000", "e003-f000"),
+        "e004-f000": ("may-alc-e004-f000", "may-alb-e004-f000", "e004-f000"),
+        "e005-f000": ("e005-f000", "may-alc-e004-f000"),
+        "e010-f000": ("e010-f000",),
+    },
+    "daru": {
+        **{
+            f"e{variant:03d}-f000": (
+                f"dar-alb-e{variant:03d}-f000",
+                f"e{variant:03d}-f000",
+            )
+            for variant in range(1, 7)
+        },
+    },
+    "faris": {
+        "e001-f000": ("e001-f000", "fei-dlb-e001-f000", "fei-dlc-e001-f000"),
+        "e002-f000": ("e002-f000", "fei-dlb-e002-f000", "fei-dlc-e002-f000"),
+        "e003-f000": ("e003-f000", "fei-dlb-e003-f000", "fei-dlc-e003-f000"),
+        "e004-f000": ("e004-f000", "fei-dlc-e004-f000"),
+    },
+    "luka": {
+        **{
+            f"e{variant:03d}-f000": (
+                f"e{variant:03d}-f000",
+                f"ruk-clb-e{variant:03d}-f000",
+            )
+            for variant in range(1, 6)
+        },
+        "e006-f000": ("e006-f000",),
+    },
+    "moeka": {
+        **{
+            f"e{variant:03d}-f000": (
+                f"moe-alb-e{variant:03d}-f000",
+                f"e{variant:03d}-f000",
+            )
+            for variant in range(1, 6)
+        },
+    },
+    "suzuha": {
+        "e001-f000": ("e001-f000", "suz-hmd-e001-f000", "suz-hme-e001-f000"),
+        "e002-f000": ("e002-f000", "suz-hmd-e002-f000", "suz-hmd-e004-f000"),
+        "e003-f000": ("e003-f000", "suz-hmd-e003-f000", "suz-hme-e003-f000"),
+        "e004-f000": ("e004-f000", "suz-hmd-e009-f000", "suz-hme-e005-f000"),
+        "e005-f000": ("e005-f000", "suz-hmd-e007-f000", "suz-hme-e004-f000"),
+        "e006-f000": ("e006-f000", "suz-hmd-e004-f000", "suz-hme-e002-f000"),
+    },
+    "kagari": {
+        "e001-f000": ("e001-f000",),
+        "e002-f000": ("e002-f000", "kag-alb-e001-f000", "kag-alb-e005-f000"),
+        "e003-f000": ("e003-f000", "kag-alb-e002-f000"),
+        "e004-f000": ("e004-f000", "kag-alb-e004-f000"),
+        "e005-f000": ("e005-f000", "kag-alb-e003-f000"),
+        "e006-f000": ("e006-f000",),
+        "e007-f000": ("e007-f000", "kag-alb-e005-f000"),
+    },
+    "maho": {
+        "e001-f000": ("e001-f000", "mah-alb-e001-f000"),
+        "e002-f000": ("e002-f000", "mah-alb-e003-f000"),
+        "e003-f000": ("e003-f000", "mah-alb-e004-f000"),
+        "e004-f000": ("e004-f000", "mah-alb-e005-f000"),
+        "e005-f000": ("e005-f000", "mah-alb-e007-f000"),
+        "e006-f000": ("e006-f000", "mah-alb-e002-f000", "mah-alb-e009-f000"),
+        "e007-f000": ("e007-f000", "mah-alb-e004-f000"),
+        "e008-f000": ("e008-f000", "mah-alb-e007-f000"),
+        "e009-f000": ("e009-f000", "mah-alb-e006-f000"),
+        "e010-f000": ("e010-f000", "mah-alb-e009-f000"),
+        "e011-f000": ("e011-f000",),
+        "e012-f000": ("e012-f000", "mah-alb-e008-f000"),
+    },
+    "yuugo": {
+        **{
+            f"e{variant:03d}-f000": (
+                f"ten-bla-e{variant:03d}-f000",
+                f"e{variant:03d}-f000",
+            )
+            for variant in range(1, 4)
+        },
+    },
+}
+
+# 表情名称直接描述画面中的服装、姿势、眼睛状态与面部特征。剧情编排与
+# 快速修改都依赖这些名称，因此不能使用“释然”一类无法从画面验证的推断词。
+EXPRESSION_LABEL_OVERRIDES = {
+    "kurisu-makise": {
+        "e001-f000": "白衬衫站姿·平静",
+        "e002-f000": "白衬衫站姿·得意",
+        "e003-f000": "白衬衫站姿·严肃",
+        "e004-f000": "白衬衫站姿·疑惑",
+        "e005-f000": "白衬衫站姿·担忧",
+        "e006-f000": "白衬衫站姿·睁眼微笑",
+        "e007-f000": "白衬衫站姿·不悦",
+        "e008-f000": "白衬衫站姿·生气",
+        "e009-f000": "白衬衫站姿·害羞",
+    },
+    "mayuri": {
+        "e001-f000": "帽子站姿·温柔",
+        "e002-f000": "帽子站姿·闭眼微笑",
+        "e003-f000": "帽子站姿·担忧",
+        "e004-f000": "帽子站姿·难过",
+        "e005-f000": "帽子站姿·含泪感动",
+        "e010-f000": "双手交握·害羞",
+    },
+    "daru": {
+        "e001-f000": "抱臂站姿·平静",
+        "e002-f000": "抱臂站姿·认真",
+        "e003-f000": "抱臂站姿·担忧",
+        "e004-f000": "抱臂站姿·惊讶",
+        "e005-f000": "抱臂站姿·不悦",
+        "e006-f000": "抱臂站姿·沮丧",
+    },
+    "suzuha": {
+        "e001-f000": "蓝色马甲站姿·平静",
+        "e002-f000": "蓝色马甲站姿·爽朗微笑",
+        "e003-f000": "蓝色马甲站姿·认真",
+        "e004-f000": "蓝色马甲站姿·担忧",
+        "e005-f000": "蓝色马甲抱臂·严肃",
+        "e006-f000": "蓝色马甲抱臂·闭眼微笑",
+    },
+    "kagari": {
+        "e001-f000": "水手服站姿·平静",
+        "e002-f000": "水手服站姿·睁眼微笑",
+        "e003-f000": "水手服站姿·担忧",
+        "e004-f000": "水手服站姿·生气",
+        "e005-f000": "水手服站姿·悲伤",
+        "e006-f000": "水手服站姿·惊讶",
+        "e007-f000": "水手服站姿·闭眼微笑",
+    },
+    "maho": {
+        "e001-f000": "单手横放·冷静自信",
+        "e002-f000": "单手横放·俏皮眨眼",
+        "e003-f000": "单手横放·强烈不满",
+        "e004-f000": "单手横放·严肃",
+        "e005-f000": "单手横放·无奈",
+        "e006-f000": "单手横放·开朗微笑",
+        "e007-f000": "单手横放·生气",
+        "e008-f000": "单手横放·赌气",
+        "e009-f000": "单手横放·害羞",
+        "e010-f000": "单手横放·闭眼微笑",
+        "e011-f000": "单手横放·担忧",
+        "e012-f000": "单手横放·含泪悲伤",
+    },
+    "moeka": {
+        "e001-f000": "持手机侧身·冷淡",
+        "e002-f000": "持手机侧身·疲惫",
+        "e003-f000": "持手机侧身·闭眼沉思",
+        "e004-f000": "持手机侧身·担忧",
+        "e005-f000": "持手机侧身·不悦",
+    },
+    "yuugo": {
+        "e001-f000": "围裙站姿·平静",
+        "e002-f000": "围裙站姿·严肃",
+        "e003-f000": "围裙站姿·担忧",
+    },
+    "okabe-rintarou-main": {
+        "confident": "白大褂正面·自信",
+        "maniac-laugh": "白大褂正面·狂气大笑",
+        "annoyed": "白大褂正面·不悦",
+        "surprised": "白大褂正面·惊讶",
+        "serious": "白大褂正面·严肃",
+        "concerned": "白大褂正面·担忧",
+        "closed-eyes-smile": "白大褂正面·闭眼微笑",
+    },
+    "okabe-rintarou": {
+        "e001-f000": "白大褂站姿·冷静",
+        "e002-f000": "白大褂站姿·苦笑",
+        "e003-f000": "白大褂站姿·不悦",
+        "e004-f000": "白大褂站姿·担忧",
+        "e005-f000": "白大褂站姿·惊讶",
+        "e006-f000": "白大褂站姿·愤怒",
+        "e007-f000": "白大褂站姿·悲伤",
+        "e008-f000": "白大褂站姿·闭眼沉思",
+    },
+}
+
 
 def suzuha_crop_entry(pose: str, variant: str, mouth: int) -> tuple[Path, str]:
     filename = f"{pose}-{variant}-{mouth:03d}.png"
     return SUZUHA_CROP_ROOT / filename, f"project-portraits/suzuha-half-v1/{filename}"
+
+
+def curated_portrait_entry(
+    source_root: Path, source_directory: str, pose: str, variant: int, mouth: int
+) -> tuple[Path, str]:
+    relative = (
+        f"characters/{source_directory}/sprites/variants/{pose}/"
+        f"type_40_depends_{variant:03d}_{mouth:03d}.png"
+    )
+    return source_root / relative, relative
+
+
+def curated_expression_id(pose: str, variant: int) -> str:
+    return f"{pose.lower().replace('_', '-')}-e{variant:03d}-f000"
 
 
 class ApiError(RuntimeError):
@@ -299,6 +801,18 @@ def project_path(project_id: str, suffix: str) -> str:
     return f"/v1/galgame-workshop/projects/{project_id}{suffix}"
 
 
+def scene_id_for_code(code: str) -> str:
+    if code.startswith("SG_"):
+        return f"sg-{code.removeprefix('SG_').lower().replace('_', '-')}"
+    return f"sg0-{code.lower().replace('_', '-')}"
+
+
+def scene_asset_id_for_code(code: str) -> str:
+    if code.startswith("SG_"):
+        return f"{scene_id_for_code(code)}-scene"
+    return f"sg0-scene-{code.lower().replace('_', '-')}"
+
+
 def source_entries(source_root: Path) -> list[dict[str, Any]]:
     entries: list[dict[str, Any]] = []
     for relative_directory, category in LIBRARY_GROUPS:
@@ -322,6 +836,22 @@ def source_entries(source_root: Path) -> list[dict[str, Any]]:
                     "category": "character",
                 }
             )
+    for character_spec in CURATED_CHARACTER_POSES:
+        source_directory = character_spec["sourceDirectory"]
+        for pose_spec in character_spec["poses"]:
+            pose = pose_spec["code"]
+            for variant in range(1, len(pose_spec["labels"]) + 1):
+                for mouth in range(3):
+                    path, relative = curated_portrait_entry(
+                        source_root, source_directory, pose, variant, mouth
+                    )
+                    entries.append(
+                        {
+                            "path": path,
+                            "relative": relative,
+                            "category": "character",
+                        }
+                    )
     entries.extend(
         {
             "path": spec["path"] if spec["path"].is_absolute() else REPO_ROOT / spec["path"],
@@ -337,6 +867,15 @@ def source_entries(source_root: Path) -> list[dict[str, Any]]:
             "category": "scene",
         }
         for spec in CUSTOM_SCENES
+    )
+    entries.extend(
+        {
+            "path": ORIGINAL_SG_ROOT / "backgrounds" / "scenes" / f"{code}.PNG",
+            "relative": f"sg-original/backgrounds/scenes/{code}.PNG",
+            "virtualPath": f"sg/backgrounds/scenes/{code}.PNG",
+            "category": "scene",
+        }
+        for code, _name, _distance in ORIGINAL_SG_SCENES
     )
     missing = [str(item["path"]) for item in entries if not item["path"].is_file()]
     if missing:
@@ -441,7 +980,7 @@ def upload_assets(
                     data={"category": category},
                 )
             for entry, asset in zip(batch, uploaded["items"], strict=True):
-                desired_path = f"sg0/{entry['relative']}"
+                desired_path = entry.get("virtualPath", f"sg0/{entry['relative']}")
                 patched = request_json(
                     client,
                     "PATCH",
@@ -591,6 +1130,99 @@ def set_all_lip_sync_fps(document: dict[str, Any]) -> None:
                 sequence["fps"] = LIP_SYNC_FPS
 
 
+def build_curated_expression(
+    document: dict[str, Any],
+    mapping: dict[str, Any],
+    source_root: Path,
+    source_directory: str,
+    pose: str,
+    variant: int,
+    label: str,
+    *,
+    expression_id: str | None = None,
+) -> dict[str, Any]:
+    expression_id = expression_id or curated_expression_id(pose, variant)
+    frame_asset_ids: list[str] = []
+    for mouth in range(3):
+        _path, relative = curated_portrait_entry(
+            source_root, source_directory, pose, variant, mouth
+        )
+        record = mapping["items"].get(relative)
+        if not record:
+            raise RuntimeError(f"精选角色立绘尚未上传：{relative}")
+        story_asset_id = f"sg0-{pose.lower().replace('_', '-')}-e{variant:03d}-f{mouth:03d}"
+        ensure_story_image_asset(document, story_asset_id, "characterPortrait", record["assetId"])
+        frame_asset_ids.append(story_asset_id)
+    return {
+        "id": expression_id,
+        "label": label,
+        "assetId": frame_asset_ids[0],
+        "renderMode": "frameSequence",
+        "sequence": {
+            "playbackMode": "lipSync",
+            "fps": LIP_SYNC_FPS,
+            "loop": True,
+            "frames": [
+                {
+                    "id": f"{expression_id}-mouth-{mouth}",
+                    "assetId": asset_id,
+                }
+                for mouth, asset_id in enumerate(frame_asset_ids)
+            ],
+        },
+    }
+
+
+def install_curated_character_expressions(
+    document: dict[str, Any], mapping: dict[str, Any], source_root: Path
+) -> None:
+    for character_spec in CURATED_CHARACTER_POSES:
+        character = find_character(document, character_spec["characterNames"])
+        expressions = character.setdefault("expressions", [])
+        replace_primary = bool(character_spec.get("replacePrimary"))
+        primary_pose = character_spec["poses"][0]["code"]
+        for pose_spec in character_spec["poses"]:
+            pose = pose_spec["code"]
+            for variant, label in enumerate(pose_spec["labels"], start=1):
+                expression_id = (
+                    f"e{variant:03d}-f000"
+                    if replace_primary and pose == primary_pose
+                    else curated_expression_id(pose, variant)
+                )
+                expression = build_curated_expression(
+                    document,
+                    mapping,
+                    source_root,
+                    character_spec["sourceDirectory"],
+                    pose,
+                    variant,
+                    label,
+                    expression_id=expression_id,
+                )
+                expressions[:] = [
+                    current for current in expressions if current["id"] != expression_id
+                ]
+                expressions.append(expression)
+
+
+def performance_expression_id(character_id: str, expression_id: str | None) -> str | None:
+    if expression_id is None:
+        return None
+    return CURATED_EXPRESSION_OVERRIDES.get(character_id, {}).get(expression_id, expression_id)
+
+
+def performance_expression_for_turn(
+    character_id: str, expression_id: str | None, speaking_turn: int
+) -> str | None:
+    if expression_id is None:
+        return None
+    candidates = PERFORMANCE_POSE_CANDIDATES.get(character_id, {}).get(expression_id)
+    if not candidates:
+        return performance_expression_id(character_id, expression_id)
+    candidate_index = (speaking_turn // POSE_HOLD_SPEAKING_TURNS) % len(candidates)
+    return candidates[candidate_index]
+
+
 def enlarge_dialogue_text(document: dict[str, Any]) -> None:
     dialogue_box = document.setdefault("presentation", {}).setdefault("dialogueBox", {})
     dialogue_box["backgroundColor"] = "#05070B"
@@ -616,6 +1248,16 @@ def install_curated_scenes(document: dict[str, Any], mapping: dict[str, Any]) ->
         }
         for code, name, distance in CURATED_SCENES
     ]
+    specs.extend(
+        {
+            "code": f"SG_{code}",
+            "name": name,
+            "description": f"《命运石之门》原作场景 {code}",
+            "relative": f"sg-original/backgrounds/scenes/{code}.PNG",
+            "distance": distance,
+        }
+        for code, name, distance in ORIGINAL_SG_SCENES
+    )
     specs.extend(CUSTOM_SCENES)
     for spec in specs:
         code = spec["code"]
@@ -624,9 +1266,8 @@ def install_curated_scenes(document: dict[str, Any], mapping: dict[str, Any]) ->
         record = mapping["items"].get(relative)
         if not record:
             raise RuntimeError(f"场景素材尚未上传：{relative}")
-        code_slug = code.lower().replace("_", "-")
-        story_asset_id = f"sg0-scene-{code_slug}"
-        scene_id = f"sg0-{code_slug}"
+        story_asset_id = scene_asset_id_for_code(code)
+        scene_id = scene_id_for_code(code)
         ensure_story_image_asset(document, story_asset_id, "sceneLayer", record["assetId"])
         scene = {
             "id": scene_id,
@@ -998,7 +1639,10 @@ def configure_dialogue_display_names(document: dict[str, Any]) -> None:
 def install_special_character_expressions(document: dict[str, Any]) -> None:
     mayuri = find_character(document, ("椎名真由理",))
     expressions = mayuri.setdefault("expressions", [])
-    source = next(expression for expression in expressions if expression["id"] == "e002-f000")
+    source = next(
+        (expression for expression in expressions if expression["id"] == "may-alc-e003-f000"),
+        next(expression for expression in expressions if expression["id"] == "e002-f000"),
+    )
     shy = deepcopy(source)
     shy["id"] = "e010-f000"
     shy["label"] = "害羞"
@@ -1011,6 +1655,20 @@ def install_special_character_expressions(document: dict[str, Any]) -> None:
         frame["id"] = f"e010-mouth-{mouth}"
     expressions[:] = [expression for expression in expressions if expression["id"] != shy["id"]]
     expressions.append(shy)
+
+
+def normalize_expression_labels(document: dict[str, Any]) -> None:
+    characters = {character["id"]: character for character in document.get("characters", [])}
+    for character_id, labels in EXPRESSION_LABEL_OVERRIDES.items():
+        character = characters.get(character_id)
+        if not character:
+            continue
+        expressions = {
+            expression["id"]: expression for expression in character.get("expressions", [])
+        }
+        for expression_id, label in labels.items():
+            if expression_id in expressions:
+                expressions[expression_id]["label"] = label
 
 
 def target_fragment(document: dict[str, Any]) -> dict[str, Any]:
@@ -1237,7 +1895,7 @@ def install_performance_blocks(document: dict[str, Any], first_person_id: str) -
     ]
     performance: list[dict[str, Any]] = []
     for beat_index, (at_ms, scene_code) in enumerate(SCENE_BEATS):
-        hidden_scene_switch = at_ms in {372_443, 456_433}
+        hidden_scene_switch = at_ms in HIDDEN_SCENE_SWITCH_MS
         scene_transition_ms = (
             0
             if beat_index == 0 or hidden_scene_switch or at_ms in CG_EVENT_STARTS
@@ -1250,7 +1908,7 @@ def install_performance_blocks(document: dict[str, Any], first_person_id: str) -
                 "id": f"perf-scene-{beat_index:02d}",
                 "type": "scene",
                 "atMs": at_ms,
-                "sceneId": f"sg0-{scene_code.lower().replace('_', '-')}",
+                "sceneId": scene_id_for_code(scene_code),
                 "clearCharacters": True,
                 "transition": {
                     "durationMs": scene_transition_ms,
@@ -1278,21 +1936,30 @@ def install_performance_blocks(document: dict[str, Any], first_person_id: str) -
             )
 
     last_expression_by_character: dict[str, str] = {}
+    speaking_turn_by_character: dict[str, int] = {}
     motion_block_count = 0
     motion_block_limit = 24
     for cue_index, dialogue in enumerate(dialogues):
         character_id = dialogue.get("characterId")
         if character_id in visible_character_ids:
             try:
-                dialogue["expressionId"] = DIALOGUE_EXPRESSION_CUES[dialogue["id"]]
+                speaking_turn = speaking_turn_by_character.get(character_id, 0)
+                dialogue["expressionId"] = performance_expression_for_turn(
+                    character_id,
+                    DIALOGUE_EXPRESSION_CUES[dialogue["id"]],
+                    speaking_turn,
+                )
             except KeyError as exc:
                 raise RuntimeError(f"对白缺少显式表情：{dialogue['id']}") from exc
+            speaking_turn_by_character[character_id] = speaking_turn + 1
             last_expression_by_character[character_id] = dialogue["expressionId"]
         else:
             dialogue.pop("expressionId", None)
         for character_name, expression_id in CAST_EXPRESSION_OVERRIDES.get(dialogue["id"], ()):
             override_character_id = find_character(document, (character_name,))["id"]
-            last_expression_by_character[override_character_id] = expression_id
+            last_expression_by_character[override_character_id] = performance_expression_id(
+                override_character_id, expression_id
+            )
         visible_ids = visible_cast_for_dialogue(
             dialogues, cue_index, first_person_id, visible_character_ids
         )
@@ -1514,11 +2181,88 @@ def audit_document(
         character_id: {expression["id"] for expression in character.get("expressions", [])}
         for character_id, character in character_by_id.items()
     }
-    invalid_expression_dialogues = [
-        dialogue["id"]
-        for dialogue in expression_dialogues
-        if dialogue.get("expressionId") not in expression_ids.get(dialogue["characterId"], set())
-        or DIALOGUE_EXPRESSION_CUES.get(dialogue["id"]) != dialogue.get("expressionId")
+    expression_label_mismatches = [
+        {
+            "characterId": character_id,
+            "expressionId": expression_id,
+            "expected": expected,
+            "actual": next(
+                (
+                    expression.get("label")
+                    for expression in character_by_id.get(character_id, {}).get("expressions", [])
+                    if expression.get("id") == expression_id
+                ),
+                None,
+            ),
+        }
+        for character_id, labels in EXPRESSION_LABEL_OVERRIDES.items()
+        for expression_id, expected in labels.items()
+        if next(
+            (
+                expression.get("label")
+                for expression in character_by_id.get(character_id, {}).get("expressions", [])
+                if expression.get("id") == expression_id
+            ),
+            None,
+        )
+        != expected
+    ]
+    ambiguous_expression_labels = [
+        {
+            "characterId": character_id,
+            "expressionId": expression.get("id"),
+            "label": expression.get("label"),
+        }
+        for character_id, character in character_by_id.items()
+        for expression in character.get("expressions", [])
+        if "·" not in str(expression.get("label") or "")
+    ]
+    invalid_expression_dialogues: list[str] = []
+    speaking_turn_by_character: dict[str, int] = {}
+    for dialogue in expression_dialogues:
+        character_id = dialogue["characterId"]
+        speaking_turn = speaking_turn_by_character.get(character_id, 0)
+        expected_expression_id = performance_expression_for_turn(
+            character_id,
+            DIALOGUE_EXPRESSION_CUES.get(dialogue["id"]),
+            speaking_turn,
+        )
+        speaking_turn_by_character[character_id] = speaking_turn + 1
+        if dialogue.get("expressionId") not in expression_ids.get(
+            character_id, set()
+        ) or expected_expression_id != dialogue.get("expressionId"):
+            invalid_expression_dialogues.append(dialogue["id"])
+    pose_variety_by_character = {
+        character_id: sorted(
+            {
+                "primary"
+                if expression_id.startswith(
+                    (
+                        "e",
+                        "confident",
+                        "maniac",
+                        "annoyed",
+                        "surprised",
+                        "serious",
+                        "concerned",
+                        "closed",
+                    )
+                )
+                else expression_id.rsplit("-e", 1)[0]
+                for expression_id in (
+                    dialogue.get("expressionId", "")
+                    for dialogue in expression_dialogues
+                    if dialogue["characterId"] == character_id
+                )
+                if expression_id
+            }
+        )
+        for character_id in PERFORMANCE_POSE_CANDIDATES
+    }
+    missing_pose_variety = [
+        character_id
+        for character_id, pose_families in pose_variety_by_character.items()
+        if len(pose_families) < 2
     ]
     cast_block_by_id = {block["id"]: block for block in cast_blocks}
     stage_managed_dialogue_ids = {
@@ -1578,7 +2322,9 @@ def audit_document(
             last_expression_by_character[character_id] = dialogue["expressionId"]
         for character_name, expression_id in CAST_EXPRESSION_OVERRIDES.get(dialogue["id"], ()):
             override_character_id = find_character(document, (character_name,))["id"]
-            last_expression_by_character[override_character_id] = expression_id
+            last_expression_by_character[override_character_id] = performance_expression_id(
+                override_character_id, expression_id
+            )
         block = cast_block_by_id.get(f"perf-cast-{cue_index:03d}")
         if not block:
             continue
@@ -1678,7 +2424,7 @@ def audit_document(
     ]
     scene_beats = [(block["atMs"], block["sceneId"]) for block in scene_blocks]
     expected_scene_beats = [
-        (at_ms, f"sg0-{scene_code.lower().replace('_', '-')}") for at_ms, scene_code in SCENE_BEATS
+        (at_ms, scene_id_for_code(scene_code)) for at_ms, scene_code in SCENE_BEATS
     ]
     scene_events_inside_cgs = [
         {
@@ -1771,6 +2517,55 @@ def audit_document(
         for pose, variant in SUZUHA_VARIANTS.values()
         for mouth in range(3)
     }
+    curated_character_checks: dict[str, dict[str, Any]] = {}
+    for character_spec in CURATED_CHARACTER_POSES:
+        character = find_character(document, character_spec["characterNames"])
+        expressions = {
+            expression["id"]: expression for expression in character.get("expressions", [])
+        }
+        expected_ids: set[str] = set()
+        expected_asset_prefixes: dict[str, str] = {}
+        replace_primary = bool(character_spec.get("replacePrimary"))
+        primary_pose = character_spec["poses"][0]["code"]
+        for pose_spec in character_spec["poses"]:
+            pose = pose_spec["code"]
+            asset_prefix = f"sg0-{pose.lower().replace('_', '-')}-"
+            for variant in range(1, len(pose_spec["labels"]) + 1):
+                expression_id = (
+                    f"e{variant:03d}-f000"
+                    if replace_primary and pose == primary_pose
+                    else curated_expression_id(pose, variant)
+                )
+                expected_ids.add(expression_id)
+                expected_asset_prefixes[expression_id] = asset_prefix
+        missing_ids = sorted(expected_ids - expressions.keys())
+        wrong_assets: list[str] = []
+        invalid_sequences: list[str] = []
+        for expression_id, expected_prefix in expected_asset_prefixes.items():
+            expression = expressions.get(expression_id)
+            if not expression:
+                continue
+            if not str(expression.get("assetId", "")).startswith(expected_prefix):
+                wrong_assets.append(expression_id)
+            sequence = expression.get("sequence") or {}
+            frames = sequence.get("frames") or []
+            if (
+                sequence.get("playbackMode") != "lipSync"
+                or sequence.get("fps") != LIP_SYNC_FPS
+                or len(frames) != 3
+                or any(
+                    not str(frame.get("assetId", "")).startswith(expected_prefix)
+                    for frame in frames
+                )
+            ):
+                invalid_sequences.append(expression_id)
+        curated_character_checks[character["id"]] = {
+            "expectedCount": len(expected_ids),
+            "installedCount": len(expected_ids & expressions.keys()),
+            "missingExpressionIds": missing_ids,
+            "wrongAssets": wrong_assets,
+            "invalidSequences": invalid_sequences,
+        }
     crowded_cast_layout_errors = [
         block["id"]
         for block in cast_blocks
@@ -1871,6 +2666,10 @@ def audit_document(
         "qOverlayDialogueCount": len(q_overlay_dialogues),
         "groupCgCoverage": group_cg_coverage,
         "invalidExpressionDialogues": invalid_expression_dialogues,
+        "poseVarietyByCharacter": pose_variety_by_character,
+        "missingPoseVariety": missing_pose_variety,
+        "expressionLabelMismatches": expression_label_mismatches,
+        "ambiguousExpressionLabels": ambiguous_expression_labels,
         "visibleHiddenPortraits": visible_hidden_portraits,
         "stageManagedVisiblePortraits": stage_managed_visible_portraits,
         "duplicatePortraitLayerDialogues": duplicate_portrait_layer_dialogues,
@@ -1894,7 +2693,9 @@ def audit_document(
             (block["transition"]["durationMs"], block["transition"]["fade"])
             == (
                 (0, False)
-                if block["atMs"] in {0, 372_443, 456_433} or block["atMs"] in CG_EVENT_STARTS
+                if block["atMs"] == 0
+                or block["atMs"] in HIDDEN_SCENE_SWITCH_MS
+                or block["atMs"] in CG_EVENT_STARTS
                 else (450, True)
                 if block["atMs"] == 387_752
                 else (350, True)
@@ -1980,10 +2781,32 @@ def audit_document(
         "cgEntryPortraitFlashRisks": cg_entry_portrait_flash_risks,
         "fullscreenCgVisiblePortraits": fullscreen_visible_portraits,
         "suzuhaUsesSg0BlueVest": bool(suzuha_asset_ids)
-        and all(asset_id.startswith("sg0-suz-half-v1-suz-hs") for asset_id in suzuha_asset_ids)
+        and all(
+            asset_id.startswith(("sg0-suz-half-v1-suz-hs", "sg0-suz-hm"))
+            for asset_id in suzuha_asset_ids
+        )
         and any("hsd" in asset_id for asset_id in suzuha_asset_ids)
-        and any("hse" in asset_id for asset_id in suzuha_asset_ids),
+        and any("hse" in asset_id for asset_id in suzuha_asset_ids)
+        and any("hmd" in asset_id for asset_id in suzuha_asset_ids)
+        and any("hme" in asset_id for asset_id in suzuha_asset_ids),
         "suzuhaCropFrameDimensions": sorted(suzuha_crop_dimensions),
+        "curatedCharacterExpressions": curated_character_checks,
+        "farisUsesRuffledCasualOutfit": all(
+            next(
+                expression
+                for expression in find_character(document, ("菲莉丝",))["expressions"]
+                if expression["id"] == f"e{variant:03d}-f000"
+            )["assetId"].startswith("sg0-fei-dla-")
+            for variant in range(1, 5)
+        ),
+        "lukaUsesBlackCasualOutfit": all(
+            next(
+                expression
+                for expression in find_character(document, ("漆原琉华",))["expressions"]
+                if expression["id"] == f"e{variant:03d}-f000"
+            )["assetId"].startswith("sg0-ruk-cla-")
+            for variant in range(1, 7)
+        ),
         "kagariCharacterName": kagari["name"],
         "kagariUnknownNameErrors": kagari_unknown_name_errors,
         "kagariKnownNameErrors": kagari_known_name_errors,
@@ -2012,6 +2835,9 @@ def audit_document(
     if (
         checks["explicitExpressionCueCount"] != 410
         or invalid_expression_dialogues
+        or missing_pose_variety
+        or expression_label_mismatches
+        or ambiguous_expression_labels
         or visible_hidden_portraits
         or stage_managed_visible_portraits
         or duplicate_portrait_layer_dialogues
@@ -2032,6 +2858,10 @@ def audit_document(
                 {
                     "explicitExpressionCueCount": checks["explicitExpressionCueCount"],
                     "invalidExpressionDialogues": invalid_expression_dialogues,
+                    "poseVarietyByCharacter": pose_variety_by_character,
+                    "missingPoseVariety": missing_pose_variety,
+                    "expressionLabelMismatches": expression_label_mismatches,
+                    "ambiguousExpressionLabels": ambiguous_expression_labels,
                     "visibleHiddenPortraits": visible_hidden_portraits,
                     "stageManagedVisiblePortraits": stage_managed_visible_portraits,
                     "duplicatePortraitLayerDialogues": duplicate_portrait_layer_dialogues,
@@ -2087,6 +2917,28 @@ def audit_document(
                         "cameraUiIsolationReady",
                         "suzuhaUsesSg0BlueVest",
                     )
+                },
+                ensure_ascii=False,
+            )
+        )
+    if (
+        not checks["farisUsesRuffledCasualOutfit"]
+        or not checks["lukaUsesBlackCasualOutfit"]
+        or any(
+            item["missingExpressionIds"]
+            or item["wrongAssets"]
+            or item["invalidSequences"]
+            or item["installedCount"] != item["expectedCount"]
+            for item in checks["curatedCharacterExpressions"].values()
+        )
+    ):
+        raise RuntimeError(
+            "精选私服或扩充表情素材审计失败："
+            + json.dumps(
+                {
+                    "farisUsesRuffledCasualOutfit": checks["farisUsesRuffledCasualOutfit"],
+                    "lukaUsesBlackCasualOutfit": checks["lukaUsesBlackCasualOutfit"],
+                    "curatedCharacterExpressions": checks["curatedCharacterExpressions"],
                 },
                 ensure_ascii=False,
             )
@@ -2185,7 +3037,9 @@ def transform_latest_story(
     configure_dialogue_display_names(document)
     install_curated_scenes(document, mapping)
     upgrade_suzuha(document, mapping)
+    install_curated_character_expressions(document, mapping, source_root)
     install_special_character_expressions(document)
+    normalize_expression_labels(document)
     set_all_lip_sync_fps(document)
     enlarge_dialogue_text(document)
     first_person_id = first_person_okabe(document)["id"]

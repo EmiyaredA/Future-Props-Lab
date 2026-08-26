@@ -33,6 +33,20 @@ def test_full_export_requires_explicit_option() -> None:
         "diagnostic-no-duplicate-1518s-1527s",
         "diagnostic-finale-cg-1761s-1780s",
     ]
+    assert requested_exports("scene-time") == [
+        ("scene-main-day-switch-145s-160s", 145_000, 160_000),
+        ("scene-day-to-evening-964s-980s", 964_000, 980_000),
+        ("scene-evening-main-1182s-1198s", 1_182_000, 1_198_000),
+        ("scene-evening-to-night-1294s-1310s", 1_294_000, 1_310_000),
+    ]
+    assert [item[0] for item in requested_exports("portrait-review") if item] == [
+        "portrait-faris-private-38s-43s",
+        "portrait-kurisu-mayuri-shy-219s-233s",
+        "portrait-luka-private-283s-291s",
+        "portrait-moeka-299s-309s",
+        "portrait-suzuha-kagari-1353s-1362s",
+        "portrait-maho-suzuha-1596s-1612s",
+    ]
 
 
 def test_seeded_random_sample_is_reproducible() -> None:
