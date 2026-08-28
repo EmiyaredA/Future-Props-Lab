@@ -1206,7 +1206,6 @@ test("uploads, previews, sends and removes private image drafts", async () => {
       }),
     ),
   );
-
   const user = userEvent.setup();
   const { container } = renderWithQuery(<ModelTestPage />);
   const input = await waitFor(() => {
@@ -1225,9 +1224,9 @@ test("uploads, previews, sends and removes private image drafts", async () => {
       expect.arrayContaining([expect.objectContaining({ name: "screen.png" })]),
     ),
   );
-  expect(
-    await screen.findByRole("button", { name: "查看图片 screen.png" }),
-  ).toBeEnabled();
+  await waitFor(() =>
+    expect(screen.getByLabelText(/查看图片 screen\.png/)).toBeEnabled(),
+  );
   expect(screen.getByRole("button", { name: "发送" })).toBeEnabled();
 
   await user.click(screen.getByRole("button", { name: "发送" }));

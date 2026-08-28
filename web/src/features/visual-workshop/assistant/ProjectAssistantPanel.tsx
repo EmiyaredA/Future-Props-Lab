@@ -31,6 +31,7 @@ import {
   invalidateFileScope,
   uploadManagedFile,
 } from "@features/files";
+import { visualWorkshopQueryKeys as visualKeys } from "@features/visual-workshop/queryKeys";
 import {
   createVisualAssistantConversation,
   deleteVisualAssistantConversation,
@@ -81,7 +82,6 @@ import {
 } from "@features/visual-workshop/assistant/AssistantModelPicker";
 
 const PANEL_WIDTH_KEY = "fpl_visual_assistant_panel_width";
-
 type ConversationDeleteTarget = Pick<
   VisualAssistantConversation,
   "id" | "title" | "revision"
@@ -135,12 +135,12 @@ export function ProjectAssistantPanel({
   });
 
   const listQuery = useQuery({
-    queryKey: ["visual-assistant-conversations", projectId],
+    queryKey: visualKeys.assistantConversations(projectId),
     queryFn: () => getVisualAssistantConversations(projectId),
     enabled: open,
   });
   const detailQuery = useQuery({
-    queryKey: ["visual-assistant-conversation", projectId, activeId],
+    queryKey: visualKeys.assistantConversation(projectId, activeId),
     queryFn: () =>
       getVisualAssistantConversation(projectId, activeId as string),
     enabled: open && Boolean(activeId),
@@ -162,12 +162,12 @@ export function ProjectAssistantPanel({
     enabled: open && pickerOpen,
   });
   const modelsQuery = useQuery({
-    queryKey: ["visual-assistant-models", projectId],
+    queryKey: visualKeys.assistantModels(projectId),
     queryFn: () => getVisualAssistantModels(projectId),
     enabled: open && modelPickerOpen,
   });
   const generationOptionsQuery = useQuery({
-    queryKey: ["visual-generation-options"],
+    queryKey: visualKeys.generationOptions,
     queryFn: getGenerationOptions,
     enabled: open && modelPickerOpen,
   });
@@ -182,11 +182,11 @@ export function ProjectAssistantPanel({
     mutationFn: () => createVisualAssistantConversation(projectId),
     onSuccess: (created) => {
       client.setQueryData(
-        ["visual-assistant-conversation", projectId, created.id],
+        visualKeys.assistantConversation(projectId, created.id),
         created,
       );
       client.setQueryData<{ items: VisualAssistantConversationSummary[] }>(
-        ["visual-assistant-conversations", projectId],
+        visualKeys.assistantConversations(projectId),
         (current) => ({
           items: [
             created,
@@ -331,7 +331,7 @@ export function ProjectAssistantPanel({
             const nodes = event.payload.nodes;
             if (Number.isFinite(revision) && Array.isArray(nodes)) {
               client.setQueryData(
-                ["visual-workshop-canvas", projectId],
+                visualKeys.canvas(projectId),
                 (current: unknown) =>
                   current && typeof current === "object"
                     ? {
@@ -345,7 +345,7 @@ export function ProjectAssistantPanel({
             }
           } else if (event.type === "generation_task_created") {
             void client.invalidateQueries({
-              queryKey: ["visual-generation-tasks"],
+              queryKey: visualKeys.generationTasks,
             });
           } else if (event.type === "error") {
             setNotice(String(event.payload.message || "模型调用失败"));
@@ -410,7 +410,7 @@ export function ProjectAssistantPanel({
         { title: title.trim() },
       );
       client.setQueryData(
-        ["visual-assistant-conversation", projectId, conversation.id],
+        visualKeys.assistantConversation(projectId, conversation.id),
         updated,
       );
       await listQuery.refetch();
@@ -447,7 +447,7 @@ export function ProjectAssistantPanel({
         { [field]: modelId },
       );
       client.setQueryData(
-        ["visual-assistant-conversation", projectId, conversation.id],
+        visualKeys.assistantConversation(projectId, conversation.id),
         updated,
       );
       await listQuery.refetch();

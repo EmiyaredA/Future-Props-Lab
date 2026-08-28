@@ -22,6 +22,7 @@ import type {
   AudioAnnotationTranscriptionOption,
 } from "@features/audio-annotation/types";
 import type { AudioWaveformHandle } from "@features/audio-annotation/AudioWaveform";
+import { modelQueryKeys } from "@features/models";
 
 const MODEL_STORAGE_PREFIX = "fpl_audio_annotation_transcription_model";
 const EMPTY_OPTIONS: AudioAnnotationTranscriptionOption[] = [];
@@ -86,7 +87,7 @@ export function useSegmentTranscription({
   selectedRef.current = selected;
 
   const optionsQuery = useQuery({
-    queryKey: ["model-test-transcription-options"],
+    queryKey: modelQueryKeys.transcriptionOptions,
     queryFn: getAudioAnnotationTranscriptionOptions,
   });
   const options = optionsQuery.data?.items ?? EMPTY_OPTIONS;

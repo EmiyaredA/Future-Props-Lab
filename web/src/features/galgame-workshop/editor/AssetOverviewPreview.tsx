@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Film } from "lucide-react";
-import { fetchApiBlob } from "@platform/api/client";
+import { useApiBlobUrl } from "@platform/api/useApiBlobUrl";
 import { StoryAssetImage } from "@features/galgame-workshop/editor/StoryAssetImage";
 import { StoryAudioPreview } from "@features/galgame-workshop/editor/StoryAudioPreview";
 import {
@@ -10,22 +10,7 @@ import {
 } from "@features/galgame-workshop/editor/assetOverviewModel";
 
 function VideoPreview({ fileId, label }: { fileId: string; label: string }) {
-  const [url, setUrl] = useState("");
-
-  useEffect(() => {
-    let active = true;
-    let objectUrl = "";
-    void fetchApiBlob(`/v1/files/${fileId}/content`)
-      .then((blob) => {
-        objectUrl = URL.createObjectURL(blob);
-        if (active) setUrl(objectUrl);
-      })
-      .catch(() => active && setUrl(""));
-    return () => {
-      active = false;
-      if (objectUrl) URL.revokeObjectURL(objectUrl);
-    };
-  }, [fileId]);
+  const { url } = useApiBlobUrl(`/v1/files/${fileId}/content`);
 
   return url ? (
     <video src={url} aria-label={label} controls preload="metadata" />

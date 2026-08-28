@@ -6,6 +6,8 @@
 
 ### Changed
 
+- Web 为模型、视觉工坊和录音标注建立 feature-local 查询键 owner，统一鉴权 Blob 预览生命周期、
+  Problem Detail 文本解析、供应商/能力元数据及项目列表公共交互；文件 feature 公共入口改为显式导出。
 - 文档图片、固定中文字体和浏览器 VAD 二进制改由 Git LFS 管理；CI 按 Job 选择性下载运行资产并
   检查指针完整性，不改写既有 Git 历史。内容专用 Galgame 脚本迁入 `scripts/demo/`，移除固定项目 ID
   与本机绝对路径，所有目标参数改为显式传入。

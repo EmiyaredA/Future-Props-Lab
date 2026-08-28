@@ -462,11 +462,11 @@ test("renders video node draft references as the canvas preview", async () => {
     updated_at: "2026-08-03T08:00:00Z",
   });
   const { container } = renderCanvas();
-
   expect(await screen.findByText("咖啡馆桌面小世界")).toBeInTheDocument();
   expect(await screen.findByAltText("生成参考素材预览")).toBeInTheDocument();
   expect(fetchApiBlob).toHaveBeenCalledWith(
     "/v1/files/reference-image-1/content",
+    expect.objectContaining({ signal: expect.any(AbortSignal) }),
   );
   expect(
     container

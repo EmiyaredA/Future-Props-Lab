@@ -140,6 +140,48 @@ def test_galgame_asset_query_keys_have_one_owner() -> None:
     assert not violations, "Galgame 素材查询键只能由 queryKeys.ts 定义：\n" + "\n".join(violations)
 
 
+def test_feature_query_keys_have_one_owner() -> None:
+    owners = {
+        WEB_SRC / "features" / "models" / "queryKeys.ts": (
+            '"model-catalog"',
+            '"model-categories"',
+            '"model-logs"',
+            '"model-test-conversations"',
+            '"model-test-tools"',
+            '"model-test-generation-options"',
+            '"model-test-transcription-options"',
+        ),
+        WEB_SRC / "features" / "visual-workshop" / "queryKeys.ts": (
+            '"visual-workshop-projects"',
+            '"visual-workshop-project"',
+            '"visual-workshop-canvas"',
+            '"visual-generation-options"',
+            '"visual-generation-tasks"',
+            '"visual-assistant-conversations"',
+        ),
+        WEB_SRC / "features" / "audio-annotation" / "queryKeys.ts": (
+            '"audio-annotation-projects"',
+            '"audio-annotation-project"',
+            '"audio-annotation-document"',
+            '"audio-annotation-waveform"',
+            '"audio-annotation-library-audio"',
+        ),
+    }
+    allowed_route_metadata = {WEB_SRC / "features" / "visual-workshop" / "module.ts"}
+    violations: list[str] = []
+    for owner, literals in owners.items():
+        for path in sorted((WEB_SRC / "features").rglob("*.ts*")):
+            if path == owner or path in allowed_route_metadata:
+                continue
+            source = path.read_text(encoding="utf-8")
+            for literal in literals:
+                if literal in source:
+                    violations.append(f"{_relative(path)} owns {literal}")
+    assert not violations, "Feature 缓存键字面量只能由所属 queryKeys.ts 定义：\n" + "\n".join(
+        violations
+    )
+
+
 def test_backend_routes_do_not_own_persistence() -> None:
     violations: list[str] = []
     for path in _python_files(BACKEND_APP / "routes"):

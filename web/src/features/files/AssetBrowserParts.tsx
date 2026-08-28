@@ -1,5 +1,5 @@
 /* eslint-disable react-refresh/only-export-components */
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useRef } from "react";
 import {
   Download,
   FileText,
@@ -13,7 +13,7 @@ import {
   Video,
   X,
 } from "lucide-react";
-import { fetchApiBlob } from "@platform/api/client";
+import { useApiBlobUrl } from "@platform/api/useApiBlobUrl";
 import type { SelectOption } from "@shared/ui/CustomSelect";
 import type {
   ManagedFile,
@@ -131,22 +131,9 @@ export function FileKindIcon({ kind }: { kind: MediaKind }) {
 }
 
 export function AssetPreview({ file }: { file: ManagedFile }) {
-  const [url, setUrl] = useState("");
-  useEffect(() => {
-    if (file.media_kind !== "image") return;
-    let active = true;
-    let objectUrl = "";
-    void fetchApiBlob(`/v1/files/${file.id}/content`)
-      .then((blob) => {
-        objectUrl = URL.createObjectURL(blob);
-        if (active) setUrl(objectUrl);
-      })
-      .catch(() => undefined);
-    return () => {
-      active = false;
-      if (objectUrl) URL.revokeObjectURL(objectUrl);
-    };
-  }, [file.id, file.media_kind]);
+  const { url } = useApiBlobUrl(
+    file.media_kind === "image" ? `/v1/files/${file.id}/content` : null,
+  );
   return url ? (
     <img src={url} alt="" />
   ) : (
@@ -166,33 +153,16 @@ export function AssetPreviewDialog({
   onDownload: () => void;
 }) {
   const titleId = useId();
-  const [source, setSource] = useState("");
-  const [failed, setFailed] = useState(false);
   const canInlinePreview =
     file.media_kind === "image" ||
     file.media_kind === "video" ||
     file.media_kind === "audio";
-
-  useEffect(() => {
-    if (!canInlinePreview) return;
-    let active = true;
-    let objectUrl = "";
-    setSource("");
-    setFailed(false);
-    void fetchApiBlob(`/v1/files/${encodeURIComponent(file.id)}/content`)
-      .then((blob) => {
-        if (!active) return;
-        objectUrl = URL.createObjectURL(blob);
-        setSource(objectUrl);
-      })
-      .catch(() => {
-        if (active) setFailed(true);
-      });
-    return () => {
-      active = false;
-      if (objectUrl) URL.revokeObjectURL(objectUrl);
-    };
-  }, [canInlinePreview, file.id]);
+  const { url: source, error } = useApiBlobUrl(
+    canInlinePreview
+      ? `/v1/files/${encodeURIComponent(file.id)}/content`
+      : null,
+  );
+  const failed = Boolean(error);
 
   useEffect(() => {
     const closeOnEscape = (event: KeyboardEvent) => {

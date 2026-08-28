@@ -1,4 +1,4 @@
-import { FormEvent, useState } from "react";
+import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Check,
@@ -11,7 +11,14 @@ import {
   X,
 } from "lucide-react";
 import { ApiError } from "@platform/api/client";
-import { ProjectLibraryCard } from "@shared/ui/project-library";
+import {
+  prependProject,
+  ProjectEditorDialog,
+  ProjectLibraryCard,
+  removeProject,
+  upsertProject,
+  type ProjectEditorState,
+} from "@shared/ui/project-library";
 import {
   createGalgameWorkshopProject,
   deleteGalgameWorkshopProject,
@@ -20,12 +27,9 @@ import {
   type GalgameWorkshopProject,
 } from "@features/galgame-workshop/api";
 import "@features/galgame-workshop/galgameStyles";
+import { galgameQueryKeys } from "@features/galgame-workshop/queryKeys";
 
-const PROJECTS_KEY = ["galgame-workshop-projects"] as const;
-type Editor =
-  | { mode: "rename"; project: GalgameWorkshopProject; title: string }
-  | { mode: "delete"; project: GalgameWorkshopProject }
-  | null;
+type Editor = ProjectEditorState<GalgameWorkshopProject> | null;
 
 function errorMessage(error: unknown) {
   if (error instanceof ApiError && error.problem.code === "revision_conflict")
@@ -43,19 +47,18 @@ export function GalgameWorkshopProjectsPage({
   const [editor, setEditor] = useState<Editor>(null);
   const [notice, setNotice] = useState("");
   const projectsQuery = useQuery({
-    queryKey: PROJECTS_KEY,
+    queryKey: galgameQueryKeys.projects,
     queryFn: getGalgameWorkshopProjects,
   });
   const refresh = () =>
-    void client.invalidateQueries({ queryKey: PROJECTS_KEY });
+    void client.invalidateQueries({ queryKey: galgameQueryKeys.projects });
   const createMutation = useMutation({
     mutationFn: () => createGalgameWorkshopProject("未命名工程"),
     onSuccess: (project) => {
       client.setQueryData(
-        PROJECTS_KEY,
-        (current: { items: GalgameWorkshopProject[] } | undefined) => ({
-          items: [project, ...(current?.items ?? [])],
-        }),
+        galgameQueryKeys.projects,
+        (current: { items: GalgameWorkshopProject[] } | undefined) =>
+          prependProject(current, project),
       );
       onOpenProject(project.id);
     },
@@ -71,13 +74,9 @@ export function GalgameWorkshopProjectsPage({
     }) => patchGalgameWorkshopProject(project, changes),
     onSuccess: (updated) => {
       client.setQueryData(
-        PROJECTS_KEY,
-        (current: { items: GalgameWorkshopProject[] } | undefined) => ({
-          items: [
-            updated,
-            ...(current?.items ?? []).filter((item) => item.id !== updated.id),
-          ],
-        }),
+        galgameQueryKeys.projects,
+        (current: { items: GalgameWorkshopProject[] } | undefined) =>
+          upsertProject(current, updated),
       );
       setEditor(null);
     },
@@ -90,12 +89,9 @@ export function GalgameWorkshopProjectsPage({
     mutationFn: deleteGalgameWorkshopProject,
     onSuccess: (_data, project) => {
       client.setQueryData(
-        PROJECTS_KEY,
-        (current: { items: GalgameWorkshopProject[] } | undefined) => ({
-          items: (current?.items ?? []).filter(
-            (item) => item.id !== project.id,
-          ),
-        }),
+        galgameQueryKeys.projects,
+        (current: { items: GalgameWorkshopProject[] } | undefined) =>
+          removeProject(current, project.id),
       );
       setEditor(null);
     },
@@ -110,14 +106,6 @@ export function GalgameWorkshopProjectsPage({
       .toLocaleLowerCase("zh-CN")
       .includes(query.trim().toLocaleLowerCase("zh-CN"));
   });
-  const submit = (event: FormEvent) => {
-    event.preventDefault();
-    if (editor?.mode === "rename")
-      patchMutation.mutate({
-        project: editor.project,
-        changes: { title: editor.title },
-      });
-  };
   const pending =
     createMutation.isPending ||
     patchMutation.isPending ||
@@ -255,75 +243,24 @@ export function GalgameWorkshopProjectsPage({
         </div>
       )}
       {editor ? (
-        <div className="workshop-dialog-backdrop" role="presentation">
-          <div
-            className="workshop-dialog"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="galgame-project-editor-title"
-          >
-            <header>
-              <div>
-                <span>
-                  {editor.mode === "rename" ? "编辑工程" : "删除工程"}
-                </span>
-                <h2 id="galgame-project-editor-title">
-                  {editor.mode === "rename"
-                    ? "重命名工程"
-                    : `删除“${editor.project.title}”？`}
-                </h2>
-              </div>
-              <button
-                disabled={pending}
-                aria-label="关闭"
-                onClick={() => setEditor(null)}
-              >
-                <X aria-hidden />
-              </button>
-            </header>
-            {editor.mode === "rename" ? (
-              <form onSubmit={submit}>
-                <label>
-                  工程名称
-                  <input
-                    autoFocus
-                    required
-                    maxLength={120}
-                    value={editor.title}
-                    onChange={(event) =>
-                      setEditor({ ...editor, title: event.target.value })
-                    }
-                  />
-                </label>
-                <div className="workshop-dialog-actions">
-                  <button type="button" onClick={() => setEditor(null)}>
-                    取消
-                  </button>
-                  <button
-                    className="workshop-primary"
-                    disabled={pending || !editor.title.trim()}
-                  >
-                    保存名称
-                  </button>
-                </div>
-              </form>
-            ) : (
-              <div className="workshop-delete-copy">
-                <p>删除工程会一并移除故事文档，此操作不可恢复。</p>
-                <div>
-                  <button onClick={() => setEditor(null)}>取消</button>
-                  <button
-                    className="danger"
-                    disabled={pending}
-                    onClick={() => deleteMutation.mutate(editor.project)}
-                  >
-                    确认删除
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
+        <ProjectEditorDialog
+          editor={editor}
+          noun="工程"
+          pending={pending}
+          deleteDescription="删除工程会一并移除故事文档，此操作不可恢复。"
+          onTitleChange={(title) =>
+            editor.mode === "rename" && setEditor({ ...editor, title })
+          }
+          onCancel={() => setEditor(null)}
+          onRename={() =>
+            editor.mode === "rename" &&
+            patchMutation.mutate({
+              project: editor.project,
+              changes: { title: editor.title },
+            })
+          }
+          onDelete={() => deleteMutation.mutate(editor.project)}
+        />
       ) : null}
     </section>
   );

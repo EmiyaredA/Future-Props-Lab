@@ -9,7 +9,7 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { Check, File, FileText, Film, Music, X } from "lucide-react";
 import { fileQueryKeys, getFiles, type ManagedFile } from "@features/files";
-import { fetchApiBlob } from "@platform/api/client";
+import { useApiBlobUrl } from "@platform/api/useApiBlobUrl";
 import {
   EMPTY_EDITOR_TEXT,
   assetPart,
@@ -48,27 +48,11 @@ export function AssistantAssetPreview({
 }: {
   asset: SelectedAttachment;
 }) {
-  const [url, setUrl] = useState("");
   const image = isImage(asset);
   const assetId = asset.id;
-  useEffect(() => {
-    if (!image) {
-      setUrl("");
-      return;
-    }
-    let active = true;
-    let objectUrl = "";
-    void fetchApiBlob(`/v1/files/${encodeURIComponent(assetId)}/content`)
-      .then((blob) => {
-        objectUrl = URL.createObjectURL(blob);
-        if (active) setUrl(objectUrl);
-      })
-      .catch(() => undefined);
-    return () => {
-      active = false;
-      if (objectUrl) URL.revokeObjectURL(objectUrl);
-    };
-  }, [assetId, image]);
+  const { url } = useApiBlobUrl(
+    image ? `/v1/files/${encodeURIComponent(assetId)}/content` : null,
+  );
   if (!image) return <AttachmentIcon asset={asset} />;
   return url ? (
     <img src={url} alt={asset.display_name} />

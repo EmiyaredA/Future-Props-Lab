@@ -22,6 +22,7 @@ import {
   providerLabels,
 } from "@features/models/logs/logOptions";
 import { LogReproductionButton } from "@features/models/logs/LogReproductionButton";
+import { modelQueryKeys } from "@features/models/queryKeys";
 
 function formatNumber(value: number | null | undefined): string {
   return value == null ? "—" : new Intl.NumberFormat("zh-CN").format(value);
@@ -324,7 +325,7 @@ function LogDetail({
   onDelete: (id: string) => void;
 }) {
   const query = useQuery({
-    queryKey: ["model-log", id],
+    queryKey: modelQueryKeys.log(id),
     queryFn: () => getLog(id),
   });
   const log = query.data;
@@ -594,15 +595,15 @@ export function ModelCallLogsPage() {
   const [detailId, setDetailId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<DeleteTarget>(null);
   const listQuery = useQuery({
-    queryKey: ["model-logs", filters],
+    queryKey: modelQueryKeys.logList(filters),
     queryFn: () => getLogs(filters),
   });
   const catalogQuery = useQuery({
-    queryKey: ["model-catalog"],
+    queryKey: modelQueryKeys.catalog,
     queryFn: getCatalog,
   });
   const statsQuery = useQuery({
-    queryKey: ["model-log-stats"],
+    queryKey: modelQueryKeys.logStats,
     queryFn: getLogStats,
   });
   const models = useMemo(
@@ -617,8 +618,8 @@ export function ModelCallLogsPage() {
   );
   const invalidate = async () => {
     await Promise.all([
-      queryClient.invalidateQueries({ queryKey: ["model-logs"] }),
-      queryClient.invalidateQueries({ queryKey: ["model-log-stats"] }),
+      queryClient.invalidateQueries({ queryKey: modelQueryKeys.logs }),
+      queryClient.invalidateQueries({ queryKey: modelQueryKeys.logStats }),
     ]);
   };
   const removeOne = useMutation({

@@ -1,4 +1,4 @@
-import { FormEvent, useState } from "react";
+import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Check,
@@ -12,7 +12,14 @@ import {
   X,
 } from "lucide-react";
 import { ApiError } from "@platform/api/client";
-import { ProjectLibraryCard } from "@shared/ui/project-library";
+import {
+  prependProject,
+  ProjectEditorDialog,
+  ProjectLibraryCard,
+  removeProject,
+  upsertProject,
+  type ProjectEditorState,
+} from "@shared/ui/project-library";
 import {
   createVisualWorkshopProject,
   deleteVisualWorkshopProject,
@@ -21,13 +28,10 @@ import {
   type VisualWorkshopProject,
   type VisualWorkshopProjectStatus,
 } from "@features/visual-workshop/api";
+import { visualWorkshopQueryKeys } from "@features/visual-workshop/queryKeys";
 import "@features/visual-workshop/visual-workshop.css";
 
-const PROJECTS_KEY = ["visual-workshop-projects"] as const;
-type Editor =
-  | { mode: "rename"; project: VisualWorkshopProject; title: string }
-  | { mode: "delete"; project: VisualWorkshopProject }
-  | null;
+type Editor = ProjectEditorState<VisualWorkshopProject> | null;
 
 function errorMessage(error: unknown) {
   if (error instanceof ApiError && error.problem.code === "revision_conflict")
@@ -50,19 +54,20 @@ export function VisualWorkshopProjectsPage({
   const [editor, setEditor] = useState<Editor>(null);
   const [notice, setNotice] = useState("");
   const projectsQuery = useQuery({
-    queryKey: PROJECTS_KEY,
+    queryKey: visualWorkshopQueryKeys.projects,
     queryFn: getVisualWorkshopProjects,
   });
   const refresh = () =>
-    void client.invalidateQueries({ queryKey: PROJECTS_KEY });
+    void client.invalidateQueries({
+      queryKey: visualWorkshopQueryKeys.projects,
+    });
   const createMutation = useMutation({
     mutationFn: () => createVisualWorkshopProject("未命名项目", "canvas"),
     onSuccess: (project) => {
       client.setQueryData(
-        PROJECTS_KEY,
-        (current: { items: VisualWorkshopProject[] } | undefined) => ({
-          items: [project, ...(current?.items ?? [])],
-        }),
+        visualWorkshopQueryKeys.projects,
+        (current: { items: VisualWorkshopProject[] } | undefined) =>
+          prependProject(current, project),
       );
       onOpenProject(project.id);
     },
@@ -78,13 +83,9 @@ export function VisualWorkshopProjectsPage({
     }) => patchVisualWorkshopProject(project, changes),
     onSuccess: (updated) => {
       client.setQueryData(
-        PROJECTS_KEY,
-        (current: { items: VisualWorkshopProject[] } | undefined) => ({
-          items: [
-            updated,
-            ...(current?.items ?? []).filter((item) => item.id !== updated.id),
-          ],
-        }),
+        visualWorkshopQueryKeys.projects,
+        (current: { items: VisualWorkshopProject[] } | undefined) =>
+          upsertProject(current, updated),
       );
       setEditor(null);
     },
@@ -97,12 +98,9 @@ export function VisualWorkshopProjectsPage({
     mutationFn: deleteVisualWorkshopProject,
     onSuccess: (_data, project) => {
       client.setQueryData(
-        PROJECTS_KEY,
-        (current: { items: VisualWorkshopProject[] } | undefined) => ({
-          items: (current?.items ?? []).filter(
-            (item) => item.id !== project.id,
-          ),
-        }),
+        visualWorkshopQueryKeys.projects,
+        (current: { items: VisualWorkshopProject[] } | undefined) =>
+          removeProject(current, project.id),
       );
       setEditor(null);
     },
@@ -117,14 +115,6 @@ export function VisualWorkshopProjectsPage({
       .toLocaleLowerCase("zh-CN")
       .includes(query.trim().toLocaleLowerCase("zh-CN"));
   });
-  const submit = (event: FormEvent) => {
-    event.preventDefault();
-    if (editor?.mode === "rename")
-      patchMutation.mutate({
-        project: editor.project,
-        changes: { title: editor.title },
-      });
-  };
   const pending =
     createMutation.isPending ||
     patchMutation.isPending ||
@@ -280,77 +270,24 @@ export function VisualWorkshopProjectsPage({
         </div>
       )}
       {editor ? (
-        <div className="workshop-dialog-backdrop" role="presentation">
-          <div
-            className="workshop-dialog"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="project-editor-title"
-          >
-            <header>
-              <div>
-                <span>
-                  {editor.mode === "rename" ? "编辑项目" : "删除项目"}
-                </span>
-                <h2 id="project-editor-title">
-                  {editor.mode === "rename"
-                    ? "重命名项目"
-                    : `删除“${editor.project.title}”？`}
-                </h2>
-              </div>
-              <button
-                disabled={pending}
-                aria-label="关闭"
-                onClick={() => setEditor(null)}
-              >
-                <X aria-hidden />
-              </button>
-            </header>
-            {editor.mode === "rename" ? (
-              <form onSubmit={submit}>
-                <label>
-                  项目名称
-                  <input
-                    autoFocus
-                    required
-                    maxLength={120}
-                    value={editor.title}
-                    onChange={(event) =>
-                      setEditor({ ...editor, title: event.target.value })
-                    }
-                  />
-                </label>
-                <div className="workshop-dialog-actions">
-                  <button type="button" onClick={() => setEditor(null)}>
-                    取消
-                  </button>
-                  <button
-                    className="workshop-primary"
-                    disabled={pending || !editor.title.trim()}
-                  >
-                    保存名称
-                  </button>
-                </div>
-              </form>
-            ) : (
-              <div className="workshop-delete-copy">
-                <p>
-                  删除项目时会一并删除项目私有素材和文件夹；文件管理中的源文件不会受到影响。
-                </p>
-                <div>
-                  <button onClick={() => setEditor(null)}>取消</button>
-                  <button
-                    className="danger"
-                    disabled={pending}
-                    onClick={() => deleteMutation.mutate(editor.project)}
-                  >
-                    确认删除
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
+        <ProjectEditorDialog
+          editor={editor}
+          noun="项目"
+          pending={pending}
+          deleteDescription="删除项目时会一并删除项目私有素材和文件夹；文件管理中的源文件不会受到影响。"
+          onTitleChange={(title) =>
+            editor.mode === "rename" && setEditor({ ...editor, title })
+          }
+          onCancel={() => setEditor(null)}
+          onRename={() =>
+            editor.mode === "rename" &&
+            patchMutation.mutate({
+              project: editor.project,
+              changes: { title: editor.title },
+            })
+          }
+          onDelete={() => deleteMutation.mutate(editor.project)}
+        />
       ) : null}
     </section>
   );

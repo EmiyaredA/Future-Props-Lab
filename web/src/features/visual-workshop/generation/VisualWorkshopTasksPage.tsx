@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ExternalLink,
@@ -16,7 +16,8 @@ import {
   type GenerationTask,
   type GenerationTaskStatus,
 } from "@features/visual-workshop/api";
-import { fetchApiBlob } from "@platform/api/client";
+import { useApiBlobUrl } from "@platform/api/useApiBlobUrl";
+import { visualWorkshopQueryKeys } from "@features/visual-workshop/queryKeys";
 import { CustomSelect } from "@shared/ui/CustomSelect";
 import "@features/visual-workshop/visual-workshop.css";
 
@@ -36,25 +37,9 @@ const STATUS_LABELS: Record<GenerationTaskStatus, string> = {
 };
 
 function TaskPreview({ task }: { task: GenerationTask }) {
-  const [source, setSource] = useState("");
-  useEffect(() => {
-    if (!task.result_asset_id) {
-      setSource("");
-      return;
-    }
-    let objectUrl = "";
-    let active = true;
-    void fetchApiBlob(`/v1/files/${task.result_asset_id}/content`)
-      .then((blob) => {
-        objectUrl = URL.createObjectURL(blob);
-        if (active) setSource(objectUrl);
-      })
-      .catch(() => setSource(""));
-    return () => {
-      active = false;
-      if (objectUrl) URL.revokeObjectURL(objectUrl);
-    };
-  }, [task.result_asset_id]);
+  const { url: source } = useApiBlobUrl(
+    task.result_asset_id ? `/v1/files/${task.result_asset_id}/content` : null,
+  );
   if (!source)
     return (
       <div className={`generation-task-placeholder ${task.kind}`}>
@@ -89,11 +74,15 @@ export function VisualWorkshopTasksPage({
   const [kind, setKind] = useState<"" | "image" | "video">("");
   const [status, setStatus] = useState<"" | GenerationTaskStatus>("");
   const projects = useQuery({
-    queryKey: ["visual-workshop-projects"],
+    queryKey: visualWorkshopQueryKeys.projects,
     queryFn: getVisualWorkshopProjects,
   });
   const tasks = useQuery({
-    queryKey: ["visual-generation-tasks", projectId, kind, status],
+    queryKey: visualWorkshopQueryKeys.generationTaskList(
+      projectId,
+      kind,
+      status,
+    ),
     queryFn: () =>
       getGenerationTasks({
         projectId: projectId || undefined,
@@ -108,7 +97,9 @@ export function VisualWorkshopTasksPage({
   const retry = useMutation({
     mutationFn: retryGenerationMaterialization,
     onSuccess: () =>
-      client.invalidateQueries({ queryKey: ["visual-generation-tasks"] }),
+      client.invalidateQueries({
+        queryKey: visualWorkshopQueryKeys.generationTasks,
+      }),
   });
   const projectNames = new Map(
     (projects.data?.items ?? []).map((project) => [project.id, project.title]),

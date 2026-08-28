@@ -21,6 +21,7 @@ import {
   type ModelTestToolInput,
 } from "@features/models/api";
 import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
+import { modelQueryKeys } from "@features/models/queryKeys";
 import { ModelTestToolWizard } from "./ModelTestToolWizard";
 import "./model-test-tools.css";
 import "./model-test-tool-detail.css";
@@ -49,7 +50,7 @@ function ToolDetail({
 }) {
   const queryClient = useQueryClient();
   const query = useQuery({
-    queryKey: ["model-test-tool", toolId],
+    queryKey: modelQueryKeys.tool(toolId),
     queryFn: () => getModelTestTool(toolId),
   });
   const tool = query.data;
@@ -65,7 +66,7 @@ function ToolDetail({
       setEditing(false);
       await Promise.all([
         query.refetch(),
-        queryClient.invalidateQueries({ queryKey: ["model-test-tools"] }),
+        queryClient.invalidateQueries({ queryKey: modelQueryKeys.tools }),
       ]);
     },
   });
@@ -86,7 +87,7 @@ function ToolDetail({
   const removeMutation = useMutation({
     mutationFn: () => deleteModelTestTool(toolId, tool?.revision ?? 0),
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["model-test-tools"] });
+      await queryClient.invalidateQueries({ queryKey: modelQueryKeys.tools });
       onBack();
     },
   });
@@ -277,7 +278,7 @@ export function ModelTestToolsPage({
 }) {
   const queryClient = useQueryClient();
   const query = useQuery({
-    queryKey: ["model-test-tools"],
+    queryKey: modelQueryKeys.tools,
     queryFn: getModelTestTools,
   });
   const [search, setSearch] = useState("");
@@ -288,7 +289,7 @@ export function ModelTestToolsPage({
     mutationFn: createModelTestTool,
     onSuccess: async (tool) => {
       setCreating(false);
-      await queryClient.invalidateQueries({ queryKey: ["model-test-tools"] });
+      await queryClient.invalidateQueries({ queryKey: modelQueryKeys.tools });
       onOpenTool(tool.id);
     },
     onError: (cause) =>

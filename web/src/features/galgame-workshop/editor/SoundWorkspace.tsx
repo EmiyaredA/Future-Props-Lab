@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { modelQueryKeys } from "@features/models";
 import {
   ChevronRight,
   CircleHelp,
@@ -224,7 +225,7 @@ export function SoundWorkspace({
     enabled: mode === "voice",
   });
   const catalog = useQuery({
-    queryKey: ["model-catalog", "galgame-asr"],
+    queryKey: modelQueryKeys.catalogFor("galgame-asr"),
     queryFn: getCatalog,
     enabled: mode === "voice",
   });

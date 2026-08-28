@@ -30,7 +30,7 @@ import {
   type VisualCanvasImageGenerationDraft,
   type VisualCanvasVideoGenerationDraft,
 } from "@features/visual-workshop/api";
-import { ApiError } from "@platform/api/client";
+import { apiErrorMessage } from "@platform/api/errors";
 import { CustomSelect } from "@shared/ui/CustomSelect";
 import {
   IMAGE_CLARITY_OPTIONS,
@@ -43,11 +43,11 @@ import {
   type VideoMode,
 } from "@features/visual-workshop/generation/options";
 import { GenerationPromptEditor } from "@features/visual-workshop/generation/GenerationPromptEditor";
+import { visualWorkshopQueryKeys as visualKeys } from "@features/visual-workshop/queryKeys";
 import { ProjectMediaPicker } from "@features/visual-workshop/generation/ProjectMediaPicker";
 
 function errorMessage(error: unknown) {
-  if (error instanceof ApiError) return error.problem.detail || error.message;
-  return error instanceof Error ? error.message : "创建任务失败，请稍后重试。";
+  return apiErrorMessage(error, "创建任务失败，请稍后重试。");
 }
 
 export function GenerationDrawer({
@@ -176,7 +176,7 @@ export function GenerationDrawer({
     return [...byId.values()];
   }, [promptFiles, selectedPromptAssetIds]);
   const options = useQuery({
-    queryKey: ["visual-generation-options"],
+    queryKey: visualKeys.generationOptions,
     queryFn: getGenerationOptions,
   });
   const models = (options.data?.models ?? []).filter(
@@ -320,7 +320,7 @@ export function GenerationDrawer({
           ? `任务已提交（${task.id.slice(0, 8)}），可在“生成任务”页查看进度。`
           : `已提交 ${tasks.length} 个生成任务，第一个结果将自动绑定当前节点。`,
       );
-      void client.invalidateQueries({ queryKey: ["visual-generation-tasks"] });
+      void client.invalidateQueries({ queryKey: visualKeys.generationTasks });
     },
     onError: (error) => setNotice(errorMessage(error)),
   });

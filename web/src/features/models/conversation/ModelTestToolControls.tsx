@@ -13,6 +13,7 @@ import {
   type ModelTestToolCall,
   type ModelTestToolSummary,
 } from "@features/models/api";
+import { modelQueryKeys } from "@features/models/queryKeys";
 import "./model-test-tool-controls.css";
 
 export type ModelTestToolCallView = Pick<
@@ -138,7 +139,7 @@ export function ModelTestToolSelector({
   const [draft, setDraft] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   const query = useQuery({
-    queryKey: ["model-test-tools"],
+    queryKey: modelQueryKeys.tools,
     queryFn: getModelTestTools,
     enabled: supported,
   });

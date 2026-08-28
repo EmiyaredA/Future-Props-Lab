@@ -15,6 +15,7 @@ import {
 } from "@features/models/workspace/ModelTestWorkspaceHeader";
 import { CustomSelect, type SelectOption } from "@shared/ui/CustomSelect";
 import "@features/models/styles/realtime-voice.css";
+import { modelQueryKeys } from "@features/models/queryKeys";
 
 type TestModel = {
   value: string;
@@ -139,11 +140,11 @@ export function ModelRealtimeVoiceTestPanel({
   onSelectModel: (modelId: string) => void;
 }) {
   const optionsQuery = useQuery({
-    queryKey: ["model-test-realtime-options"],
+    queryKey: modelQueryKeys.realtimeOptions,
     queryFn: getRealtimeVoiceOptions,
   });
   const toolsQuery = useQuery({
-    queryKey: ["model-test-tools"],
+    queryKey: modelQueryKeys.tools,
     queryFn: getModelTestTools,
   });
   const realtimeModels = optionsQuery.data?.models ?? [];

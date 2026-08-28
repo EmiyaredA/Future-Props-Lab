@@ -33,10 +33,9 @@ import type {
   AudioAnnotationImportFile,
   AudioAnnotationProject,
 } from "@features/audio-annotation/types";
+import { audioAnnotationQueryKeys } from "@features/audio-annotation/queryKeys";
 import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
 import "@features/audio-annotation/audio-annotation.css";
-
-const PROJECTS_KEY = ["audio-annotation-projects"] as const;
 
 function bytes(value: number) {
   return value < 1024 * 1024
@@ -82,7 +81,7 @@ function ProjectDialog({
   const [query, setQuery] = useState("");
   const [error, setError] = useState("");
   const filesQuery = useQuery({
-    queryKey: ["audio-annotation-library-audio", query],
+    queryKey: audioAnnotationQueryKeys.libraryAudio(query),
     queryFn: () => getFiles({ query, mediaKind: "audio", sort: "updated" }),
     enabled: open,
   });
@@ -308,7 +307,7 @@ export function AudioAnnotationProjectsPage({
   const [deleting, setDeleting] = useState<AudioAnnotationProject | null>(null);
   const [notice, setNotice] = useState("");
   const projectsQuery = useQuery({
-    queryKey: [...PROJECTS_KEY, query],
+    queryKey: audioAnnotationQueryKeys.projectList(query),
     queryFn: () => listAudioAnnotationProjects(query),
   });
   const projects = useMemo(
@@ -323,7 +322,8 @@ export function AudioAnnotationProjectsPage({
     [projects],
   );
 
-  const invalidate = () => client.invalidateQueries({ queryKey: PROJECTS_KEY });
+  const invalidate = () =>
+    client.invalidateQueries({ queryKey: audioAnnotationQueryKeys.projects });
   const rename = useMutation({
     mutationFn: () => renameAudioAnnotationProject(renaming!, renameValue),
     onSuccess: () => {

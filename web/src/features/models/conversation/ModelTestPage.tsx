@@ -9,6 +9,8 @@ import {
   type ReactNode,
 } from "react";
 import "@features/models/models.css";
+import { modelQueryKeys } from "@features/models/queryKeys";
+import { useApiBlobUrl } from "@platform/api/useApiBlobUrl";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Bot,
@@ -49,7 +51,6 @@ import {
   type ModelTestConversation,
   type ModelTestMessage,
 } from "@features/models/api";
-import { fetchApiBlob } from "@platform/api/client";
 import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
 import type { SelectOption } from "@shared/ui/CustomSelect";
 import { ModelTestCapabilityPanel } from "@features/models/conversation/ModelTestCapabilityPanel";
@@ -182,24 +183,10 @@ function AttachmentImage({
   attachment: ModelTestAttachment;
   onOpen: (url: string, name: string) => void;
 }) {
-  const [url, setUrl] = useState("");
-  useEffect(() => {
-    let active = true;
-    let objectUrl = "";
-    void fetchApiBlob(
-      `/v1/model-test/conversations/${encodeURIComponent(conversationId)}` +
-        `/attachments/${encodeURIComponent(attachment.id)}/content`,
-    )
-      .then((blob) => {
-        objectUrl = URL.createObjectURL(blob);
-        if (active) setUrl(objectUrl);
-      })
-      .catch(() => undefined);
-    return () => {
-      active = false;
-      if (objectUrl) URL.revokeObjectURL(objectUrl);
-    };
-  }, [attachment.id, conversationId]);
+  const { url } = useApiBlobUrl(
+    `/v1/model-test/conversations/${encodeURIComponent(conversationId)}` +
+      `/attachments/${encodeURIComponent(attachment.id)}/content`,
+  );
   return (
     <button
       type="button"
@@ -382,11 +369,11 @@ export function ModelTestPage({
 }) {
   const queryClient = useQueryClient();
   const catalogQuery = useQuery({
-    queryKey: ["model-catalog"],
+    queryKey: modelQueryKeys.catalog,
     queryFn: getCatalog,
   });
   const conversationsQuery = useQuery({
-    queryKey: ["model-test-conversations"],
+    queryKey: modelQueryKeys.conversations,
     queryFn: getModelTestConversations,
   });
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -459,12 +446,12 @@ export function ModelTestPage({
       createModelTestConversation(modelId ?? textModels[0]?.value),
     onSuccess: async (conversation) => {
       queryClient.setQueryData(
-        ["model-test-conversation", conversation.id],
+        modelQueryKeys.conversation(conversation.id),
         conversation,
       );
       queryClient.setQueryData<
         Awaited<ReturnType<typeof getModelTestConversations>>
-      >(["model-test-conversations"], (current) => ({
+      >(modelQueryKeys.conversations, (current) => ({
         items: [
           conversation,
           ...(current?.items ?? []).filter(
@@ -478,7 +465,7 @@ export function ModelTestPage({
       setConversationSearch("");
       setMobilePanel(null);
       await queryClient.invalidateQueries({
-        queryKey: ["model-test-conversations"],
+        queryKey: modelQueryKeys.conversations,
       });
     },
     onError: (cause) =>
@@ -510,7 +497,7 @@ export function ModelTestPage({
   ]);
 
   const detailQuery = useQuery({
-    queryKey: ["model-test-conversation", activeId],
+    queryKey: modelQueryKeys.conversation(activeId),
     queryFn: () => getModelTestConversation(activeId as string),
     enabled: Boolean(activeId),
   });
@@ -550,9 +537,9 @@ export function ModelTestPage({
   }, [conversation, stoppedPreview]);
 
   const updateLocal = (next: ModelTestConversation) => {
-    queryClient.setQueryData(["model-test-conversation", next.id], next);
+    queryClient.setQueryData(modelQueryKeys.conversation(next.id), next);
     void queryClient.invalidateQueries({
-      queryKey: ["model-test-conversations"],
+      queryKey: modelQueryKeys.conversations,
     });
   };
   const patch = async (
@@ -716,9 +703,9 @@ export function ModelTestPage({
       await Promise.all([
         detailQuery.refetch(),
         queryClient.invalidateQueries({
-          queryKey: ["model-test-conversations"],
+          queryKey: modelQueryKeys.conversations,
         }),
-        queryClient.invalidateQueries({ queryKey: ["model-logs"] }),
+        queryClient.invalidateQueries({ queryKey: modelQueryKeys.logs }),
       ]);
     }
   };

@@ -30,6 +30,7 @@ import type {
 import type { AudioWaveformHandle } from "@features/audio-annotation/AudioWaveform";
 import { ApiError } from "@platform/api/client";
 import { useSegmentTranscription } from "@features/audio-annotation/segmentTranscription";
+import { audioAnnotationQueryKeys } from "@features/audio-annotation/queryKeys";
 
 function snapshot(document: AudioAnnotationDocument): AnnotationSnapshot {
   return {
@@ -107,15 +108,15 @@ export function useAudioAnnotationEditorController({
   documentRef.current = document;
 
   const projectQuery = useQuery({
-    queryKey: ["audio-annotation-project", projectId],
+    queryKey: audioAnnotationQueryKeys.project(projectId),
     queryFn: () => getAudioAnnotationProject(projectId),
   });
   const documentQuery = useQuery({
-    queryKey: ["audio-annotation-document", projectId],
+    queryKey: audioAnnotationQueryKeys.document(projectId),
     queryFn: () => getAudioAnnotationDocument(projectId),
   });
   const waveformQuery = useQuery({
-    queryKey: ["audio-annotation-waveform", projectId],
+    queryKey: audioAnnotationQueryKeys.waveform(projectId),
     queryFn: () => getAudioAnnotationWaveform(projectId),
   });
   const project = projectQuery.data;
@@ -156,7 +157,10 @@ export function useAudioAnnotationEditorController({
       version: input.version,
     }),
     onSuccess: ({ saved, version: savedVersion }) => {
-      queryClient.setQueryData(["audio-annotation-document", projectId], saved);
+      queryClient.setQueryData(
+        audioAnnotationQueryKeys.document(projectId),
+        saved,
+      );
       setDocument((current) =>
         current
           ? {
@@ -169,7 +173,7 @@ export function useAudioAnnotationEditorController({
       if (savedVersion === version.current) setDirty(false);
       setNotice("");
       void queryClient.invalidateQueries({
-        queryKey: ["audio-annotation-project", projectId],
+        queryKey: audioAnnotationQueryKeys.project(projectId),
       });
     },
     onError: (error) => {

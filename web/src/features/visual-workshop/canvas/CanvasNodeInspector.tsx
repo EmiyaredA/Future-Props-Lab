@@ -20,6 +20,7 @@ import {
   getGenerationTask,
   type VisualCanvasNode,
 } from "@features/visual-workshop/api";
+import { visualWorkshopQueryKeys } from "@features/visual-workshop/queryKeys";
 
 type MediaNode = Exclude<VisualCanvasNode, { kind: "text" }>;
 
@@ -119,7 +120,7 @@ export function CanvasNodeInspector({
       ? node.generation_task_id
       : undefined;
   const task = useQuery({
-    queryKey: ["visual-generation-task", taskId],
+    queryKey: visualWorkshopQueryKeys.generationTask(taskId),
     queryFn: () => getGenerationTask(taskId!),
     enabled: Boolean(taskId),
     refetchInterval: (query) => {

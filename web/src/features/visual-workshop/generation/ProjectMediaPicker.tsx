@@ -26,14 +26,14 @@ import {
   type ManagedFile,
   type MediaKind,
 } from "@features/files";
-import { ApiError, fetchApiBlob } from "@platform/api/client";
+import { apiErrorMessage } from "@platform/api/errors";
+import { useApiBlobUrl } from "@platform/api/useApiBlobUrl";
 import { MEDIA_ACCEPT } from "@features/visual-workshop/generation/options";
 import { GenerationMediaPreview } from "@features/visual-workshop/generation/GenerationMediaPreview";
 import { ProjectMediaSourceDialog } from "@features/visual-workshop/generation/ProjectMediaSourceDialog";
 
 function uploadErrorMessage(error: unknown) {
-  if (error instanceof ApiError) return error.problem.detail || error.message;
-  return error instanceof Error ? error.message : "上传失败，请稍后重试。";
+  return apiErrorMessage(error, "上传失败，请稍后重试。");
 }
 
 function GenerationMediaPreviewDialog({
@@ -44,28 +44,10 @@ function GenerationMediaPreviewDialog({
   onClose: () => void;
 }) {
   const titleId = useId();
-  const [source, setSource] = useState("");
-  const [failed, setFailed] = useState(false);
-
-  useEffect(() => {
-    let active = true;
-    let objectUrl = "";
-    setSource("");
-    setFailed(false);
-    void fetchApiBlob(`/v1/files/${encodeURIComponent(file.id)}/content`)
-      .then((blob) => {
-        if (!active) return;
-        objectUrl = URL.createObjectURL(blob);
-        setSource(objectUrl);
-      })
-      .catch(() => {
-        if (active) setFailed(true);
-      });
-    return () => {
-      active = false;
-      if (objectUrl) URL.revokeObjectURL(objectUrl);
-    };
-  }, [file.id]);
+  const { url: source, error } = useApiBlobUrl(
+    `/v1/files/${encodeURIComponent(file.id)}/content`,
+  );
+  const failed = Boolean(error);
 
   useEffect(() => {
     const closeOnEscape = (event: KeyboardEvent) => {

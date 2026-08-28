@@ -15,7 +15,7 @@ import {
   galgameQueryKeys,
   invalidateGalgameAssetQueries,
 } from "@features/galgame-workshop/queryKeys";
-import { fetchApiBlob } from "@platform/api/client";
+import { useApiBlobUrl } from "@platform/api/useApiBlobUrl";
 import { formatFileSize } from "@shared/lib/fileSize";
 import { CustomSelect } from "@shared/ui/CustomSelect";
 
@@ -35,7 +35,6 @@ export function VideoWorkspace({
   const client = useQueryClient();
   const input = useRef<HTMLInputElement>(null);
   const [selectedId, setSelectedId] = useState<string>();
-  const [url, setUrl] = useState("");
   const [decodeFailed, setDecodeFailed] = useState(false);
   const query = useQuery({
     queryKey: galgameQueryKeys.projectAssets(projectId, "video"),
@@ -55,21 +54,11 @@ export function VideoWorkspace({
     (asset) => asset.id === selected?.id,
   );
 
-  useEffect(() => {
-    let objectUrl = "";
-    setDecodeFailed(false);
-    if (!selected) {
-      setUrl("");
-      return;
-    }
-    void fetchApiBlob(`/v1/files/${selected.id}/content`).then((blob) => {
-      objectUrl = URL.createObjectURL(blob);
-      setUrl(objectUrl);
-    });
-    return () => {
-      if (objectUrl) URL.revokeObjectURL(objectUrl);
-    };
-  }, [selected]);
+  const { url } = useApiBlobUrl(
+    selected ? `/v1/files/${selected.id}/content` : null,
+  );
+
+  useEffect(() => setDecodeFailed(false), [selected]);
 
   const upload = useMutation({
     mutationFn: async (files: File[]) =>

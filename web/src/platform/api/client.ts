@@ -5,7 +5,12 @@ import {
   notifyAuthRequired,
   notifyWorkspaceChanged,
 } from "@platform/api/studioAuth";
-import { ApiError, type ProblemDetail } from "@platform/api/errors";
+import {
+  ApiError,
+  parseProblemDetail,
+  problemDetailMessage,
+  type ProblemDetail,
+} from "@platform/api/errors";
 
 export { ApiError, type ProblemDetail } from "@platform/api/errors";
 
@@ -24,7 +29,7 @@ function apiUrl(path: string): string {
 
 async function responseProblem(response: Response): Promise<ProblemDetail> {
   try {
-    return (await response.json()) as ProblemDetail;
+    return parseProblemDetail(await response.json());
   } catch {
     return {};
   }
@@ -42,20 +47,19 @@ export async function requestApi(
   path: string,
   init: RequestInit = {},
 ): Promise<Response> {
+  const { signal, ...requestInit } = init;
   const request = applySessionHeaders(
-    new Request(apiUrl(path), { ...init, credentials: "include" }),
+    new Request(apiUrl(path), { ...requestInit, credentials: "include" }),
   );
-  const response = await fetch(request);
+  const response = signal
+    ? await fetch(request, { signal })
+    : await fetch(request);
   if (response.status === 401) notifyAuthRequired();
   if (!response.ok) {
     const problem = await responseProblem(response);
     if (response.status === 409 && isWorkspaceChanged(problem))
       notifyWorkspaceChanged();
-    throw new ApiError(
-      String(problem.detail || "请求失败，请稍后重试"),
-      problem,
-      response.status,
-    );
+    throw new ApiError(problemDetailMessage(problem), problem, response.status);
   }
   return response;
 }
@@ -83,7 +87,7 @@ api.use({
     if (response.status === 401) notifyAuthRequired();
     if (response.status === 409) {
       const clone = response.clone();
-      const problem = (await clone.json().catch(() => ({}))) as ProblemDetail;
+      const problem = parseProblemDetail(await clone.json().catch(() => ({})));
       if (isWorkspaceChanged(problem)) notifyWorkspaceChanged();
     }
     return response;
@@ -96,9 +100,9 @@ export async function unwrap<T>(result: {
   response: Response;
 }): Promise<T> {
   if (result.data !== undefined) return result.data;
-  const problem = (result.error ?? {}) as ProblemDetail;
+  const problem = parseProblemDetail(result.error);
   throw new ApiError(
-    String(problem.detail || "请求失败，请稍后重试"),
+    problemDetailMessage(problem),
     problem,
     result.response.status,
   );

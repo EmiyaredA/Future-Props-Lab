@@ -40,6 +40,7 @@ import {
   type ModelTestTranscriptionTask,
 } from "@features/models/api";
 import { formatFileSize } from "@shared/lib/fileSize";
+import { modelQueryKeys } from "@features/models/queryKeys";
 import {
   ModelTestWorkspaceHeader,
   type ModelTestMode,
@@ -286,11 +287,11 @@ function LibraryPicker({
   const [folderId, setFolderId] = useState<string | undefined>();
   const [search, setSearch] = useState("");
   const foldersQuery = useQuery({
-    queryKey: ["model-test-library-folders"],
+    queryKey: modelQueryKeys.libraryFolders,
     queryFn: getModelTestLibraryFolders,
   });
   const filesQuery = useQuery({
-    queryKey: ["model-test-library-audio", folderId, search],
+    queryKey: modelQueryKeys.libraryAudio(folderId, search),
     queryFn: () =>
       getModelTestLibraryAudioFiles({
         folderId,
@@ -452,7 +453,7 @@ export function ModelTranscriptionTestPanel({
     description: model.description,
   }));
   const optionsQuery = useQuery({
-    queryKey: ["model-test-transcription-options"],
+    queryKey: modelQueryKeys.transcriptionOptions,
     queryFn: getModelTestTranscriptionOptions,
   });
   const selectedTranscriptionOption = optionsQuery.data?.items.find(
@@ -477,7 +478,7 @@ export function ModelTranscriptionTestPanel({
     10 * 1024 * 1024;
   const maxLabel = `${Math.round(maxBytes / 1024 / 1024)} MB`;
   const tasksQuery = useQuery({
-    queryKey: ["model-test-transcription-tasks", modelId],
+    queryKey: modelQueryKeys.transcriptionTasks(modelId),
     queryFn: () => getModelTestTranscriptionTasks(modelId),
     refetchInterval: (query) =>
       query.state.data?.items.some((task) =>
@@ -521,7 +522,7 @@ export function ModelTranscriptionTestPanel({
   const refresh = async () => {
     await Promise.all([
       tasksQuery.refetch(),
-      client.invalidateQueries({ queryKey: ["model-logs"] }),
+      client.invalidateQueries({ queryKey: modelQueryKeys.logs }),
     ]);
   };
   const createMutation = useMutation({

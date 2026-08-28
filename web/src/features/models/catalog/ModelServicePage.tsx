@@ -29,6 +29,7 @@ import {
   type Provider,
   type ProviderInput,
 } from "@features/models/api";
+import { modelQueryKeys } from "@features/models/queryKeys";
 
 type Conflict = {
   current: Catalog;
@@ -346,11 +347,11 @@ function ModelForm({
 export function ModelServicePage() {
   const queryClient = useQueryClient();
   const catalogQuery = useQuery({
-    queryKey: ["model-catalog"],
+    queryKey: modelQueryKeys.catalog,
     queryFn: getCatalog,
   });
   const categoriesQuery = useQuery({
-    queryKey: ["model-categories"],
+    queryKey: modelQueryKeys.categories,
     queryFn: getModelCategories,
   });
   const catalog = catalogQuery.data;
@@ -756,7 +757,10 @@ export function ModelServicePage() {
               <button
                 className="btn"
                 onClick={() => {
-                  queryClient.setQueryData(["model-catalog"], conflict.current);
+                  queryClient.setQueryData(
+                    modelQueryKeys.catalog,
+                    conflict.current,
+                  );
                   setConflict(null);
                 }}
               >

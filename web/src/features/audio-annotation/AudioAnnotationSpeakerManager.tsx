@@ -7,6 +7,7 @@ import {
 } from "@features/audio-annotation/model";
 import type { AudioAnnotationSpeaker } from "@features/audio-annotation/types";
 import type { SpeakerImportSource } from "@features/audio-annotation/speakerImportSource";
+import { audioAnnotationQueryKeys } from "@features/audio-annotation/queryKeys";
 import { CustomColorPicker } from "@shared/ui/CustomColorPicker";
 import { CustomSelect } from "@shared/ui/CustomSelect";
 
@@ -36,7 +37,7 @@ export function AudioAnnotationSpeakerManager({
   const [sourceProjectId, setSourceProjectId] = useState("");
   const [importNotice, setImportNotice] = useState("");
   const projectsQuery = useQuery({
-    queryKey: ["galgame-speaker-import-projects"],
+    queryKey: audioAnnotationQueryKeys.speakerImportProjects,
     queryFn: () => importSource!.listProjects(),
     enabled: open && Boolean(importSource),
   });
@@ -64,7 +65,7 @@ export function AudioAnnotationSpeakerManager({
   }, [matchingProject, open, projects, sourceProjectId]);
 
   const storyQuery = useQuery({
-    queryKey: ["galgame-speaker-import-story", sourceProjectId],
+    queryKey: audioAnnotationQueryKeys.speakerImportStory(sourceProjectId),
     queryFn: () => importSource!.listSpeakers(sourceProjectId),
     enabled: open && Boolean(importSource) && Boolean(sourceProjectId),
   });

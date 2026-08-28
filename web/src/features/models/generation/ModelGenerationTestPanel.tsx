@@ -37,6 +37,7 @@ import {
   uploadModelTestReferenceAssets,
 } from "@features/models/api";
 import { formatFileSize } from "@shared/lib/fileSize";
+import { modelQueryKeys } from "@features/models/queryKeys";
 
 type GenerationKind = "image" | "video";
 type Resolution = "480p" | "720p" | "1080p";
@@ -271,14 +272,14 @@ export function ModelGenerationTestPanel({
   );
 
   const optionsQuery = useQuery({
-    queryKey: ["model-test-generation-options"],
+    queryKey: modelQueryKeys.generationOptions,
     queryFn: getModelTestGenerationOptions,
   });
   const selectedOption = optionsQuery.data?.items.find(
     (item) => item.id === modelId,
   );
   const tasksQuery = useQuery({
-    queryKey: ["model-test-generation-tasks", modelId],
+    queryKey: modelQueryKeys.generationTasks(modelId),
     queryFn: () => getModelTestGenerationTasks(modelId),
     refetchInterval: (query) =>
       query.state.data?.items.some((task) =>
@@ -288,7 +289,7 @@ export function ModelGenerationTestPanel({
         : false,
   });
   const backfillStatusQuery = useQuery({
-    queryKey: ["model-test-generation-asset-backfill"],
+    queryKey: modelQueryKeys.generationAssetBackfill,
     queryFn: getModelTestReferenceBackfillStatus,
   });
   const tasks = tasksQuery.data?.items ?? [];
@@ -369,7 +370,7 @@ export function ModelGenerationTestPanel({
   const refresh = async () => {
     await Promise.all([
       tasksQuery.refetch(),
-      client.invalidateQueries({ queryKey: ["model-logs"] }),
+      client.invalidateQueries({ queryKey: modelQueryKeys.logs }),
     ]);
   };
   const createMutation = useMutation({

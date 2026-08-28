@@ -10,16 +10,16 @@ import {
   type MediaKind,
 } from "@features/files";
 import { getVisualWorkshopProjects } from "@features/visual-workshop/api";
+import { visualWorkshopQueryKeys } from "@features/visual-workshop/queryKeys";
 import { GenerationMediaPreview } from "@features/visual-workshop/generation/GenerationMediaPreview";
-import { ApiError } from "@platform/api/client";
+import { apiErrorMessage } from "@platform/api/errors";
 import { CustomSelect } from "@shared/ui/CustomSelect";
 
 type PickerMode = "project" | "cross";
 type CrossScope = "project" | "library";
 
 function errorMessage(error: unknown) {
-  if (error instanceof ApiError) return error.problem.detail || error.message;
-  return error instanceof Error ? error.message : "素材导入失败，请稍后重试。";
+  return apiErrorMessage(error, "素材导入失败，请稍后重试。");
 }
 
 function mediaLabel(kind: MediaKind) {
@@ -60,7 +60,7 @@ export function ProjectMediaSourceDialog({
     mode === "project" ? initialValue.slice(0, limit) : [],
   );
   const projects = useQuery({
-    queryKey: ["visual-workshop-projects", "media-source"],
+    queryKey: visualWorkshopQueryKeys.projectsForMediaSource,
     queryFn: getVisualWorkshopProjects,
     enabled: mode === "cross",
   });

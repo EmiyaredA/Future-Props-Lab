@@ -441,7 +441,10 @@ test("opens an inline preview when a file card is clicked", async () => {
   expect(preview.parentElement).toHaveClass("file-preview-backdrop");
   expect(preview.parentElement?.parentElement).toBe(document.body);
   await waitFor(() =>
-    expect(fetchApiBlob).toHaveBeenCalledWith("/v1/files/image-1/content"),
+    expect(fetchApiBlob).toHaveBeenCalledWith(
+      "/v1/files/image-1/content",
+      expect.objectContaining({ signal: expect.any(AbortSignal) }),
+    ),
   );
   expect(await screen.findByRole("img", { name: "人设图3" })).toHaveAttribute(
     "src",

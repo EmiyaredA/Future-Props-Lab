@@ -34,6 +34,7 @@ import {
 } from "@features/files";
 import { ProjectAssistantPanel } from "@features/visual-workshop/assistant/ProjectAssistantPanel";
 import { CanvasNodeInspector } from "@features/visual-workshop/canvas/CanvasNodeInspector";
+import { visualWorkshopQueryKeys } from "@features/visual-workshop/queryKeys";
 import {
   ATTACHED_EDITOR_SIZE,
   DEFAULT_VIEWPORT,
@@ -54,7 +55,8 @@ import {
   type VisualCanvasDocument,
   type VisualCanvasNode,
 } from "@features/visual-workshop/api";
-import { ApiError, fetchApiBlob } from "@platform/api/client";
+import { ApiError } from "@platform/api/client";
+import { useApiBlobUrl } from "@platform/api/useApiBlobUrl";
 import { ThemeToggle } from "@shared/ui/ThemeToggle";
 import "@features/visual-workshop/visual-workshop.css";
 
@@ -97,28 +99,11 @@ function previewSourceForNode(node: MediaNode): PreviewSource {
 }
 
 function CanvasMediaPreview({ node }: { node: MediaNode }) {
-  const [url, setUrl] = useState("");
-  const [missing, setMissing] = useState(false);
   const preview = previewSourceForNode(node);
-  useEffect(() => {
-    let active = true;
-    let objectUrl = "";
-    setUrl("");
-    setMissing(false);
-    if (!preview.assetId) return;
-    void fetchApiBlob(`/v1/files/${preview.assetId}/content`)
-      .then((blob) => {
-        objectUrl = URL.createObjectURL(blob);
-        if (active) setUrl(objectUrl);
-      })
-      .catch(() => {
-        if (active) setMissing(true);
-      });
-    return () => {
-      active = false;
-      if (objectUrl) URL.revokeObjectURL(objectUrl);
-    };
-  }, [preview.assetId]);
+  const { url, error } = useApiBlobUrl(
+    preview.assetId ? `/v1/files/${preview.assetId}/content` : null,
+  );
+  const missing = Boolean(error);
 
   if (url && preview.kind === "image")
     return (
@@ -198,11 +183,11 @@ export function VisualWorkshopCanvasPage({
   const [saveMessage, setSaveMessage] = useState("");
   const [conflict, setConflict] = useState<VisualCanvasDocument>();
   const projectQuery = useQuery({
-    queryKey: ["visual-workshop-project", projectId],
+    queryKey: visualWorkshopQueryKeys.project(projectId),
     queryFn: () => getVisualWorkshopProject(projectId),
   });
   const canvasQuery = useQuery({
-    queryKey: ["visual-workshop-canvas", projectId],
+    queryKey: visualWorkshopQueryKeys.canvas(projectId),
     queryFn: () => getVisualCanvas(projectId),
   });
   const canvasReady = projectQuery.isSuccess && canvasQuery.isSuccess;
@@ -344,7 +329,7 @@ export function VisualWorkshopCanvasPage({
       setSaveState("saved");
       setSaveMessage("");
       void client.invalidateQueries({
-        queryKey: ["visual-workshop-canvas", projectId],
+        queryKey: visualWorkshopQueryKeys.canvas(projectId),
       });
     },
     [client, projectId],
@@ -406,8 +391,10 @@ export function VisualWorkshopCanvasPage({
         ? patchVisualWorkshopProject(projectQuery.data, { title: title.trim() })
         : Promise.reject(new Error("项目尚未加载")),
     onSuccess: (updated) => {
-      client.setQueryData(["visual-workshop-project", projectId], updated);
-      void client.invalidateQueries({ queryKey: ["visual-workshop-projects"] });
+      client.setQueryData(visualWorkshopQueryKeys.project(projectId), updated);
+      void client.invalidateQueries({
+        queryKey: visualWorkshopQueryKeys.projects,
+      });
       setTitle(updated.title);
       setEditingTitle(false);
     },
