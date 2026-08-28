@@ -94,6 +94,7 @@ class TimelineFrameRenderer:
     def __init__(self, document: VideoEditorTimelineDocument, source: FrameSource) -> None:
         self.document = document
         self.source = source
+        self._portrait_ground_ratio_by_asset: dict[str, float] = {}
 
     def render(self, time_us: int, *, size: tuple[int, int] | None = None) -> Image.Image:
         settings = self.document.settings
@@ -159,18 +160,47 @@ class TimelineFrameRenderer:
         draw = ImageDraw.Draw(layer)
         y = 10
         for line, box in zip(lines, boxes, strict=True):
-            draw.text((16, y), line, font=font, fill=clip.text_color)
+            # ``getbbox`` is relative to the font baseline. CJK glyphs commonly
+            # have a positive top bearing, so drawing directly at ``y`` makes
+            # their bottom extend past a layer sized from ``box[3] - box[1]``.
+            # Normalize both bearings to keep the full glyph inside the padded
+            # layer instead of clipping its bottom row.
+            draw.text(
+                (16 - box[0], y - box[1]),
+                line,
+                font=font,
+                fill=clip.text_color,
+            )
             y += box[3] - box[1] + 12
         return layer
 
     @staticmethod
+    def _visible_alpha_bottom(layer: Image.Image) -> float:
+        if "A" not in layer.getbands():
+            return float(layer.height)
+        alpha = layer.getchannel("A")
+        minimum_visible_pixels = max(1, math.ceil(layer.width * 0.002))
+        pixels = alpha.load()
+        for y in range(layer.height - 1, -1, -1):
+            if sum(pixels[x, y] >= 8 for x in range(layer.width)) >= minimum_visible_pixels:
+                return float(y + 1)
+        return float(layer.height)
+
+    @staticmethod
     def _rotate_about_anchor(
-        layer: Image.Image, rotation: float, anchor: str
+        layer: Image.Image,
+        rotation: float,
+        anchor: str,
+        *,
+        grounded_bottom: float | None = None,
     ) -> tuple[Image.Image, tuple[float, float]]:
         if anchor == "topLeft":
             pivot = (0.0, 0.0)
         elif anchor == "bottomCenter":
-            pivot = (layer.width / 2, float(layer.height))
+            pivot = (
+                layer.width / 2,
+                grounded_bottom if grounded_bottom is not None else float(layer.height),
+            )
         else:
             pivot = (layer.width / 2, layer.height / 2)
         if math.isclose(rotation, 0):
@@ -190,9 +220,8 @@ class TimelineFrameRenderer:
         cropped = rotated.crop(bounds)
         return cropped, (center - bounds[0], center - bounds[1])
 
-    @staticmethod
     def _composite(
-        canvas: Image.Image, layer: Image.Image, clip: VideoEditorClip, local_us: int
+        self, canvas: Image.Image, layer: Image.Image, clip: VideoEditorClip, local_us: int
     ) -> None:
         transform = clip.transform
         canvas_width, canvas_height = canvas.size
@@ -212,6 +241,13 @@ class TimelineFrameRenderer:
                 (max(1, round(layer.width * ratio)), max(1, round(layer.height * ratio))),
                 Image.Resampling.LANCZOS,
             )
+        ground_ratio: float | None = None
+        if clip.fit_mode == "height" and transform.anchor == "bottomCenter":
+            ground_key = f"{clip.asset_id or clip.id}:{layer.width}x{layer.height}"
+            ground_ratio = self._portrait_ground_ratio_by_asset.get(ground_key)
+            if ground_ratio is None:
+                ground_ratio = self._visible_alpha_bottom(layer) / max(1, layer.height)
+                self._portrait_ground_ratio_by_asset[ground_key] = ground_ratio
         if clip.flip_x:
             layer = layer.transpose(Image.Transpose.FLIP_LEFT_RIGHT)
         scale_x = property_at(clip, "scaleX", local_us, transform.scale_x)
@@ -221,7 +257,12 @@ class TimelineFrameRenderer:
         if layer.size != (width, height):
             layer = layer.resize((width, height), Image.Resampling.LANCZOS)
         rotation = property_at(clip, "rotation", local_us, transform.rotation)
-        layer, pivot = TimelineFrameRenderer._rotate_about_anchor(layer, rotation, transform.anchor)
+        layer, pivot = TimelineFrameRenderer._rotate_about_anchor(
+            layer,
+            rotation,
+            transform.anchor,
+            grounded_bottom=(layer.height * ground_ratio if ground_ratio is not None else None),
+        )
         opacity = clip_opacity(clip, local_us)
         if opacity < 1:
             alpha = layer.getchannel("A").point(lambda value: round(value * opacity))

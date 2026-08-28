@@ -142,6 +142,229 @@ def test_story_compiler_builds_layered_timeline_and_capture_frame() -> None:
     assert voice_track.clips[0].duration_us == 5_400_000
 
 
+def test_speakers_use_dynamic_foreground_tracks_above_every_non_speaker() -> None:
+    document = {
+        "assets": [
+            {"id": "hero-face", "fileId": "file-hero"},
+            {"id": "partner-face", "fileId": "file-partner"},
+            {"id": "observer-face", "fileId": "file-observer"},
+        ],
+        "scenes": [],
+        "cgs": [],
+        "characters": [
+            {
+                "id": character_id,
+                "name": character_id,
+                "defaultExpressionId": "normal",
+                "expressions": [{"id": "normal", "assetId": f"{character_id}-face"}],
+                "displayNames": [],
+            }
+            for character_id in ("hero", "partner", "observer")
+        ],
+        "presentation": {
+            "dialogueBox": {},
+            "stage": {"speakerFocusEnabled": True, "inactiveBrightness": 0.4},
+        },
+        "chapters": [
+            {
+                "id": "chapter",
+                "fragments": [
+                    {
+                        "id": "main",
+                        "timeline": {"durationMs": 2000},
+                        "blocks": [
+                            {
+                                "id": f"show-{character_id}",
+                                "type": "showCharacter",
+                                "characterId": character_id,
+                                "atMs": 0,
+                                "transform": {"layer": layer},
+                            }
+                            for character_id, layer in (
+                                ("hero", 1),
+                                ("partner", 20),
+                                ("observer", 99),
+                            )
+                        ]
+                        + [
+                            {
+                                "id": "team-line",
+                                "type": "dialogue",
+                                "characterId": "hero",
+                                "speakerIds": ["hero", "partner"],
+                                "text": "一起说",
+                                "startMs": 0,
+                                "endMs": 1000,
+                            },
+                            {
+                                "id": "observer-line",
+                                "type": "dialogue",
+                                "characterId": "observer",
+                                "text": "轮到我",
+                                "startMs": 1000,
+                                "endMs": 2000,
+                            },
+                        ],
+                    }
+                ],
+            }
+        ],
+    }
+
+    result = compile_galgame_render_plan(
+        document,
+        {"preset": "1080p30", "resolvedFragmentIds": ["main"]},
+        fragment_durations_ms=[2000],
+        total_ms=2000,
+        asset_paths={
+            "file-hero": Path("/tmp/hero.png"),
+            "file-partner": Path("/tmp/partner.png"),
+            "file-observer": Path("/tmp/observer.png"),
+        },
+    )
+
+    tracks = {track.id: track for track in result.plan.document.tracks}
+    foreground = [track for track in tracks.values() if track.id.startswith("actor-foreground-")]
+    normal = [track for track in tracks.values() if track.id.startswith("actor-normal-")]
+    assert max(track.order for track in foreground) < min(track.order for track in normal)
+    assert tracks["actor-foreground-p20-partner"].order < tracks["actor-foreground-p1-hero"].order
+    assert tracks["actor-foreground-p1-hero"].clips[0].timeline_start_us == 0
+    assert tracks["actor-normal-p1-hero"].clips[0].timeline_start_us == 1_000_000
+    assert tracks["actor-normal-p99-observer"].clips[0].timeline_start_us == 0
+    assert tracks["actor-foreground-p99-observer"].clips[0].timeline_start_us == 1_000_000
+    assert tracks["actor-foreground-p20-partner"].clips[0].transform.brightness == 1
+    partner_after_team_line = tracks["actor-normal-p20-partner"].clips[0]
+    assert partner_after_team_line.transform.brightness == 1
+    assert [keyframe.value for keyframe in partner_after_team_line.keyframes] == [1, 0.4]
+
+
+def test_dialogue_quick_edit_inheritance_matches_browser_preview() -> None:
+    document = {
+        "assets": [
+            {"id": "default-face", "fileId": "file-default"},
+            {"id": "previous-face", "fileId": "file-previous"},
+            {"id": "default-uniform-face", "fileId": "file-default-uniform"},
+            {"id": "alternate-face", "fileId": "file-alternate"},
+        ],
+        "scenes": [],
+        "cgs": [],
+        "characters": [
+            {
+                "id": "hero",
+                "name": "主角",
+                "defaultExpressionId": "default",
+                "defaultPortraitSkinId": "uniform",
+                "expressions": [
+                    {"id": "default", "assetId": "default-face"},
+                    {"id": "previous", "assetId": "previous-face"},
+                ],
+                "portraitSkins": [
+                    {
+                        "id": "uniform",
+                        "overrides": [
+                            {"expressionId": "default", "assetId": "default-uniform-face"}
+                        ],
+                    },
+                    {
+                        "id": "alternate",
+                        "overrides": [{"expressionId": "default", "assetId": "alternate-face"}],
+                    },
+                ],
+                "displayNames": [],
+            }
+        ],
+        "settings": {
+            "characterStage": {
+                "anchor": "bottomCenter",
+                "defaultHeightPercent": 100,
+                "positionPresets": [
+                    {"id": "left", "name": "左", "x": 22, "y": 100},
+                    {"id": "right", "name": "右", "x": 78, "y": 100},
+                ],
+                "defaultPositionId": "left",
+            }
+        },
+        "presentation": {"dialogueBox": {}},
+        "chapters": [
+            {
+                "id": "chapter",
+                "fragments": [
+                    {
+                        "id": "main",
+                        "timeline": {"durationMs": 1000},
+                        "blocks": [
+                            {
+                                "id": "show",
+                                "type": "showCharacter",
+                                "characterId": "hero",
+                                "expressionId": "previous",
+                                "skinId": "alternate",
+                                "positionId": "left",
+                                "transform": {
+                                    "x": 22,
+                                    "y": 100,
+                                    "anchor": "bottomCenter",
+                                    "scale": 0.9,
+                                    "layer": 17,
+                                },
+                                "atMs": 0,
+                            },
+                            {
+                                "id": "line",
+                                "type": "dialogue",
+                                "characterId": "hero",
+                                "expressionId": None,
+                                "text": "快速修改后的对白",
+                                "startMs": 100,
+                                "endMs": 900,
+                                "portrait": {
+                                    "mode": "stage",
+                                    "visible": True,
+                                    "keepAfter": True,
+                                    "distance": "near",
+                                    "positionId": "right",
+                                    "transform": None,
+                                    "transition": {"durationMs": 0, "fade": False},
+                                },
+                            },
+                        ],
+                    }
+                ],
+            }
+        ],
+    }
+
+    result = compile_galgame_render_plan(
+        document,
+        {"preset": "1080p30", "resolvedFragmentIds": ["main"]},
+        fragment_durations_ms=[1000],
+        total_ms=1000,
+        asset_paths={
+            "file-default": Path("/tmp/default.png"),
+            "file-previous": Path("/tmp/previous.png"),
+            "file-default-uniform": Path("/tmp/default-uniform.png"),
+            "file-alternate": Path("/tmp/alternate.png"),
+        },
+    )
+
+    actor = next(
+        clip
+        for track in result.plan.document.tracks
+        if track.id.startswith("actor-foreground-")
+        for clip in track.clips
+        if clip.timeline_start_us == 100_000
+    )
+    assert actor.asset_id == "file-default-uniform"
+    assert actor.transform.x == 78 * 19.2
+    assert actor.transform.y == 1080
+    assert actor.transform.scale_x == 0.9
+    assert actor.transform.scale_y == 0.9
+    assert actor.height_percent == 128
+    dialogue = next(track for track in result.plan.document.tracks if track.id == "dialogue-ui")
+    assert dialogue.clips[0].name == "对白 · 主角"
+    assert result.plan.asset_paths[dialogue.clips[0].asset_id].is_file()
+
+
 def test_long_floating_text_uses_bundled_chinese_font() -> None:
     document = {
         "assets": [],
@@ -237,6 +460,49 @@ def test_floating_text_renders_above_fullscreen_curtain() -> None:
 
     tracks = {track.id: track for track in result.plan.document.tracks}
     assert tracks["effects-text"].order < tracks["curtain"].order
+
+
+def test_short_long_lived_floating_text_renders_as_emphasis_title() -> None:
+    document = {
+        "assets": [],
+        "scenes": [],
+        "cgs": [],
+        "characters": [],
+        "presentation": {"dialogueBox": {}},
+        "chapters": [
+            {
+                "id": "chapter",
+                "fragments": [
+                    {
+                        "id": "main",
+                        "timeline": {"durationMs": 6_150},
+                        "blocks": [
+                            {
+                                "id": "ending-title",
+                                "type": "floatingText",
+                                "atMs": 0,
+                                "text": "谢谢观看",
+                                "durationMs": 6_150,
+                            }
+                        ],
+                    }
+                ],
+            }
+        ],
+    }
+
+    result = compile_galgame_render_plan(
+        document,
+        {"preset": "1080p30", "resolvedFragmentIds": ["main"]},
+        fragment_durations_ms=[6_150],
+        total_ms=6_150,
+        asset_paths={},
+    )
+
+    text_clip = next(
+        clip for track in result.plan.document.tracks for clip in track.clips if clip.kind == "text"
+    )
+    assert text_clip.font_size == 108
 
 
 def test_clip_export_does_not_restore_expired_floating_text() -> None:
@@ -538,8 +804,12 @@ def test_clip_export_replays_stage_and_trims_master_audio_without_line_voice() -
             "file-master": Path("/tmp/master.wav"),
         },
     )
-    tracks = {track.name: track for track in result.plan.document.tracks}
-    actor_clips = tracks["角色 · 大御门"].clips
+    all_tracks = result.plan.document.tracks
+    tracks = {track.name: track for track in all_tracks}
+    actor_clips = sorted(
+        (clip for track in all_tracks if track.name == "角色 · 大御门" for clip in track.clips),
+        key=lambda clip: clip.timeline_start_us,
+    )
     actor = actor_clips[0]
     assert actor.timeline_start_us == 0
     assert sum(clip.duration_us for clip in actor_clips) == 740_000

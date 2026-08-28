@@ -302,6 +302,87 @@ describe("Galgame workbench v2 runtime", () => {
     });
   });
 
+  it("keeps an existing stage actor visible for a hidden dialogue portrait", () => {
+    const document = story();
+    document.characters![0]!.expressions = [
+      { id: "neutral", label: "平静", assetId: "asset-neutral" },
+      { id: "surprised", label: "惊讶", assetId: "asset-surprised" },
+    ];
+    document.characters![0]!.defaultExpressionId = "neutral";
+    const shown = applyAutomaticStageBlock(
+      emptyStageState(),
+      {
+        id: "show-hero",
+        type: "showCharacter",
+        characterId: "hero",
+        expressionId: "neutral",
+        distance: "near",
+        positionId: null,
+        transform: {
+          x: 73,
+          y: 100,
+          anchor: "bottomCenter",
+          scale: 1.25,
+          brightness: 0.8,
+          opacity: 1,
+          flipX: true,
+          layer: 14,
+        },
+        transition: { durationMs: 240, fade: true },
+      },
+      document,
+    );
+
+    const speaking = enterContentBlock(
+      shown,
+      {
+        id: "hidden-portrait-dialogue",
+        type: "dialogue",
+        characterId: "hero",
+        expressionId: "surprised",
+        text: "沿用舞台立绘，只切换表情。",
+        portrait: {
+          mode: "stage",
+          visible: false,
+          distance: "medium",
+          keepAfter: true,
+          transition: { durationMs: 240, fade: true },
+        },
+      },
+      document,
+    );
+
+    expect(speaking.hiddenCharacterId).toBeUndefined();
+    expect(speaking.actors.hero).toEqual({
+      ...shown.actors.hero,
+      expressionId: "surprised",
+    });
+  });
+
+  it("does not spawn a stage actor for a hidden dialogue portrait", () => {
+    const document = story();
+    const speaking = enterContentBlock(
+      emptyStageState(),
+      {
+        id: "hidden-portrait-dialogue",
+        type: "dialogue",
+        characterId: "hero",
+        text: "没有上场立绘时保持隐藏。",
+        portrait: {
+          mode: "stage",
+          visible: false,
+          distance: "medium",
+          keepAfter: true,
+          transition: { durationMs: 240, fade: true },
+        },
+      },
+      document,
+    );
+
+    expect(speaking.actors).toEqual({});
+    expect(speaking.hiddenCharacterId).toBeUndefined();
+  });
+
   it("keeps outgoing and incoming scene and CG layers during one crossfade", () => {
     const document = story();
     document.scenes = [
@@ -554,6 +635,29 @@ describe("Galgame workbench v2 runtime", () => {
       document,
     );
     expect(noOp.curtain).toBeUndefined();
+  });
+
+  it("promotes a short long-lived floating text block to an emphasis title", () => {
+    const document = story();
+    const shown = applyAutomaticStageBlock(
+      emptyStageState(),
+      {
+        id: "ending-title",
+        type: "floatingText",
+        text: "谢谢观看",
+        x: 50,
+        y: 50,
+        color: "#F4E7C5",
+        durationMs: 6150,
+        waitForCompletion: false,
+      },
+      document,
+    );
+
+    expect(shown.floatingText).toMatchObject({
+      text: "谢谢观看",
+      fontSize: 108,
+    });
   });
 
   it("applies paragraph parameters and ignores author comments", () => {

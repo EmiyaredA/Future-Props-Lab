@@ -41,15 +41,15 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_PROJECT_ID = "63ac832d-bff3-4053-9c9f-f55c9dafc52a"
 DEFAULT_SOURCE_ROOT = Path("/Users/tonghao/Projects/steins-gate-video/assets/games/steins_gate_0")
 ORIGINAL_SG_ROOT = Path("/Users/tonghao/Projects/steins-gate-video/assets/games/steins_gate")
-DEFAULT_ANNOTATION_PATH = Path("/Users/tonghao/Downloads/广播剧.annotation (14).json")
+DEFAULT_ANNOTATION_PATH = Path("/Users/tonghao/Downloads/广播剧.annotation (15).json")
 BACKUP_ROOT = REPO_ROOT / ".runtime" / "galgame-import-backups"
 MAP_PATH = BACKUP_ROOT / "sg0-performance-asset-map.json"
 IMAGE_SUFFIXES = {".png", ".jpg", ".jpeg", ".webp"}
 LIP_SYNC_FPS = 5
 DIALOGUE_BOX_OPACITY = 0.82
-EXPECTED_ANNOTATION_SHA256 = "4bee3fd1aec1bd5b9b4028e80ae04b5a620f6a2ab87bd86909f76bb52d319e23"
-EXPECTED_ANNOTATION_MULTI_SPEAKER_LINES = 12
-EXPECTED_CROWD_NORMALIZED_LINES = 10
+EXPECTED_ANNOTATION_SHA256 = "11b11ebdf929ee9ca5b83b1f8a7d104acb1eafa624f23785caa0dc8a8b64fe79"
+EXPECTED_ANNOTATION_MULTI_SPEAKER_LINES = 2
+EXPECTED_CROWD_NORMALIZED_LINES = 0
 EXPECTED_STORY_MULTI_SPEAKER_LINES = 2
 GROUP_CG_DIALOGUE_IDS = frozenset(
     f"runaway-annotated-line-{line:04d}"
@@ -166,6 +166,36 @@ TRANSITION_CARD_BLOCKS = (
         "opacity": 1,
         "durationMs": 600,
     },
+    {
+        "id": "runaway-curtain-time-passage-show",
+        "type": "curtain",
+        "atMs": 1_219_752,
+        "mode": "fullscreen",
+        "action": "show",
+        "color": "#000000",
+        "opacity": 1,
+        "durationMs": 450,
+    },
+    {
+        "id": "runaway-transition-time-passage-text",
+        "type": "floatingText",
+        "atMs": 1_220_202,
+        "text": "过去一段时间以后......",
+        "x": 50,
+        "y": 50,
+        "color": "#F5F1E8",
+        "durationMs": 2_049,
+    },
+    {
+        "id": "runaway-curtain-time-passage-hide",
+        "type": "curtain",
+        "atMs": 1_222_251,
+        "mode": "fullscreen",
+        "action": "hide",
+        "color": "#000000",
+        "opacity": 1,
+        "durationMs": 600,
+    },
 )
 
 LIBRARY_GROUPS = (
@@ -248,6 +278,36 @@ SUZUHA_VARIANTS = {
 }
 SUZUHA_CROP_ROOT = REPO_ROOT / "docs/assets/galgame-runaway-portraits/suzuha-half-v1"
 
+# 红莉栖的三个姿势并不共享表情序号。同一个 e00x 在不同姿势里可能分别是
+# 眨眼、闭眼微笑或生气，不能按基础站姿的顺序套用名称。这里集中保存逐张
+# 对照原图后的名称，供素材导入、线上修正与回归测试共用。
+KURISU_EXPRESSION_LABELS = {
+    "e001-f000": "白衬衫站姿·平静",
+    "e002-f000": "白衬衫站姿·眨眼微笑",
+    "e003-f000": "白衬衫站姿·撇嘴不悦",
+    "e004-f000": "白衬衫站姿·担忧",
+    "e005-f000": "白衬衫站姿·低落",
+    "e006-f000": "白衬衫站姿·闭眼微笑",
+    "e007-f000": "白衬衫站姿·皱眉不悦",
+    "e008-f000": "白衬衫站姿·皱眉生气",
+    "e009-f000": "白衬衫站姿·脸红害羞",
+    "crs-alb-e001-f000": "抱臂·浅笑",
+    "crs-alb-e002-f000": "抱臂·眨眼微笑",
+    "crs-alb-e003-f000": "抱臂·撇嘴不满",
+    "crs-alb-e004-f000": "抱臂·皱眉生气",
+    "crs-alb-e005-f000": "抱臂·担忧",
+    "crs-alb-e006-f000": "抱臂·不悦",
+    "crs-alb-e007-f000": "抱臂·低落",
+    "crs-alb-e008-f000": "抱臂·闭眼微笑",
+    "crs-alb-e009-f000": "抱臂·脸红害羞",
+    "crs-alc-e001-f000": "手扶领带·认真",
+    "crs-alc-e002-f000": "手扶领带·脸红害羞",
+    "crs-alc-e003-f000": "手扶领带·闭眼微笑",
+    "crs-alc-e004-f000": "手扶领带·担忧",
+    "crs-alc-e005-f000": "手扶领带·严肃",
+    "crs-alc-e006-f000": "手扶领带·惊讶",
+}
+
 CURATED_CHARACTER_POSES = (
     {
         "characterNames": ("牧濑红莉栖",),
@@ -255,27 +315,16 @@ CURATED_CHARACTER_POSES = (
         "poses": (
             {
                 "code": "CRS_ALB",
-                "labels": (
-                    "抱臂·平静",
-                    "抱臂·得意",
-                    "抱臂·严肃",
-                    "抱臂·疑惑",
-                    "抱臂·担忧",
-                    "抱臂·微笑",
-                    "抱臂·不悦",
-                    "抱臂·生气",
-                    "抱臂·害羞",
+                "labels": tuple(
+                    KURISU_EXPRESSION_LABELS[f"crs-alb-e{variant:03d}-f000"]
+                    for variant in range(1, 10)
                 ),
             },
             {
                 "code": "CRS_ALC",
-                "labels": (
-                    "手扶领带·平静",
-                    "手扶领带·闭眼微笑",
-                    "手扶领带·认真",
-                    "手扶领带·担忧",
-                    "手扶领带·不悦",
-                    "手扶领带·害羞",
+                "labels": tuple(
+                    KURISU_EXPRESSION_LABELS[f"crs-alc-e{variant:03d}-f000"]
+                    for variant in range(1, 7)
                 ),
             },
         ),
@@ -286,11 +335,16 @@ CURATED_CHARACTER_POSES = (
         "poses": (
             {
                 "code": "MAY_ALB",
-                "labels": ("抬手·温柔", "抬手·笑容", "抬手·担忧", "抬手·难过"),
+                "labels": ("抬手·温柔", "抬手·惊讶", "抬手·平静", "抬手·难过"),
             },
             {
                 "code": "MAY_ALC",
-                "labels": ("双手交握·担忧", "双手交握·惊讶", "双手交握·害羞", "双手交握·落泪"),
+                "labels": (
+                    "双手交握·担忧",
+                    "双手交握·惊讶",
+                    "双手交握·脸红害羞",
+                    "双手交握·含泪悲伤",
+                ),
             },
         ),
     },
@@ -302,11 +356,11 @@ CURATED_CHARACTER_POSES = (
                 "code": "DAR_ALB",
                 "labels": (
                     "正面站姿·平静",
-                    "正面站姿·认真",
+                    "正面站姿·浅笑",
                     "正面站姿·担忧",
                     "正面站姿·惊讶",
-                    "正面站姿·不悦",
-                    "正面站姿·沮丧",
+                    "正面站姿·严肃",
+                    "正面站姿·闭眼沮丧",
                 ),
             },
         ),
@@ -319,19 +373,25 @@ CURATED_CHARACTER_POSES = (
             {
                 "code": "FEI_DLA",
                 "labels": (
-                    "米色私服站姿·俏皮眨眼",
+                    "米色私服站姿·眨眼微笑",
                     "米色私服站姿·闭眼微笑",
-                    "米色私服站姿·严肃不悦",
-                    "米色私服站姿·从容得意",
+                    "米色私服站姿·皱眉不悦",
+                    "米色私服站姿·脸红害羞",
                 ),
             },
             {
                 "code": "FEI_DLB",
-                "labels": ("交握双手·俏皮", "交握双手·笑容", "交握双手·认真"),
+                "labels": ("交握双手·微笑", "交握双手·脸红微笑", "交握双手·担忧"),
             },
             {
                 "code": "FEI_DLC",
-                "labels": ("侧身·俏皮", "侧身·笑容", "侧身·严肃", "侧身·得意", "侧身·担忧"),
+                "labels": (
+                    "正面站姿·微笑",
+                    "正面站姿·惊讶",
+                    "正面站姿·严肃",
+                    "正面站姿·不悦",
+                    "正面站姿·含泪难过",
+                ),
             },
         ),
     },
@@ -344,10 +404,10 @@ CURATED_CHARACTER_POSES = (
                 "code": "RUK_CLA",
                 "labels": (
                     "黑色私服站姿·温柔",
-                    "黑色私服站姿·悲伤",
-                    "黑色私服站姿·惊讶",
-                    "黑色私服站姿·落泪",
-                    "黑色私服站姿·害羞",
+                    "黑色私服站姿·含泪悲伤",
+                    "黑色私服站姿·脸红不安",
+                    "黑色私服站姿·闭眼哭泣",
+                    "黑色私服站姿·脸红害羞",
                     "黑色私服站姿·睁眼微笑",
                 ),
             },
@@ -355,10 +415,10 @@ CURATED_CHARACTER_POSES = (
                 "code": "RUK_CLB",
                 "labels": (
                     "手抚衣领·温柔",
-                    "手抚衣领·悲伤",
+                    "手抚衣领·担忧",
+                    "手抚衣领·脸红害羞",
                     "手抚衣领·惊讶",
-                    "手抚衣领·哭泣",
-                    "手抚衣领·害羞",
+                    "手抚衣领·微笑",
                 ),
             },
         ),
@@ -372,7 +432,7 @@ CURATED_CHARACTER_POSES = (
                 "labels": (
                     "正面站姿·冷淡",
                     "正面站姿·疲惫",
-                    "正面站姿·闭眼沉思",
+                    "正面站姿·低落",
                     "正面站姿·担忧",
                     "正面站姿·不悦",
                 ),
@@ -387,11 +447,11 @@ CURATED_CHARACTER_POSES = (
                 "code": "SUZ_HMD",
                 "labels": (
                     "站姿·平静",
-                    "站姿·俏皮眨眼",
+                    "站姿·眨眼微笑",
                     "站姿·认真",
-                    "站姿·微笑",
+                    "站姿·浅笑",
                     "站姿·不悦",
-                    "站姿·含泪",
+                    "站姿·含泪难过",
                     "站姿·生气",
                     "站姿·闭眼难过",
                     "站姿·担忧",
@@ -401,9 +461,9 @@ CURATED_CHARACTER_POSES = (
                 "code": "SUZ_HME",
                 "labels": (
                     "抱臂·平静",
-                    "抱臂·微笑",
+                    "抱臂·浅笑",
                     "抱臂·认真",
-                    "抱臂·生气",
+                    "抱臂·皱眉生气",
                     "抱臂·担忧",
                     "抱臂·闭眼沉思",
                 ),
@@ -420,7 +480,7 @@ CURATED_CHARACTER_POSES = (
                     "双手交握·睁眼微笑",
                     "双手交握·担忧",
                     "双手交握·悲伤",
-                    "双手交握·不悦",
+                    "双手交握·皱眉不悦",
                     "双手交握·闭眼微笑",
                 ),
             },
@@ -438,8 +498,8 @@ CURATED_CHARACTER_POSES = (
                     "双手交握·俏皮",
                     "双手交握·生气",
                     "双手交握·严肃",
-                    "双手交握·害羞",
-                    "双手交握·不悦",
+                    "双手交握·脸红害羞",
+                    "双手交握·惊讶",
                     "双手交握·闭眼悲伤",
                     "双手交握·闭眼微笑",
                 ),
@@ -625,47 +685,37 @@ PERFORMANCE_POSE_CANDIDATES = {
 # 表情名称直接描述画面中的服装、姿势、眼睛状态与面部特征。剧情编排与
 # 快速修改都依赖这些名称，因此不能使用“释然”一类无法从画面验证的推断词。
 EXPRESSION_LABEL_OVERRIDES = {
-    "kurisu-makise": {
-        "e001-f000": "白衬衫站姿·平静",
-        "e002-f000": "白衬衫站姿·得意",
-        "e003-f000": "白衬衫站姿·严肃",
-        "e004-f000": "白衬衫站姿·疑惑",
-        "e005-f000": "白衬衫站姿·担忧",
-        "e006-f000": "白衬衫站姿·睁眼微笑",
-        "e007-f000": "白衬衫站姿·不悦",
-        "e008-f000": "白衬衫站姿·生气",
-        "e009-f000": "白衬衫站姿·害羞",
-    },
+    "kurisu-makise": KURISU_EXPRESSION_LABELS,
     "mayuri": {
         "e001-f000": "帽子站姿·温柔",
         "e002-f000": "帽子站姿·闭眼微笑",
         "e003-f000": "帽子站姿·担忧",
         "e004-f000": "帽子站姿·难过",
-        "e005-f000": "帽子站姿·含泪感动",
-        "e010-f000": "双手交握·害羞",
+        "e005-f000": "帽子站姿·含泪悲伤",
+        "e010-f000": "双手交握·脸红害羞",
     },
     "daru": {
         "e001-f000": "抱臂站姿·平静",
-        "e002-f000": "抱臂站姿·认真",
+        "e002-f000": "抱臂站姿·浅笑",
         "e003-f000": "抱臂站姿·担忧",
         "e004-f000": "抱臂站姿·惊讶",
-        "e005-f000": "抱臂站姿·不悦",
-        "e006-f000": "抱臂站姿·沮丧",
+        "e005-f000": "抱臂站姿·严肃",
+        "e006-f000": "抱臂站姿·闭眼沮丧",
     },
     "suzuha": {
         "e001-f000": "蓝色马甲站姿·平静",
-        "e002-f000": "蓝色马甲站姿·爽朗微笑",
+        "e002-f000": "蓝色马甲站姿·闭眼微笑",
         "e003-f000": "蓝色马甲站姿·认真",
         "e004-f000": "蓝色马甲站姿·担忧",
         "e005-f000": "蓝色马甲抱臂·严肃",
-        "e006-f000": "蓝色马甲抱臂·闭眼微笑",
+        "e006-f000": "蓝色马甲抱臂·闭眼沉思",
     },
     "kagari": {
-        "e001-f000": "水手服站姿·平静",
-        "e002-f000": "水手服站姿·睁眼微笑",
+        "e001-f000": "水手服站姿·睁眼微笑",
+        "e002-f000": "水手服站姿·闭眼笑容",
         "e003-f000": "水手服站姿·担忧",
         "e004-f000": "水手服站姿·生气",
-        "e005-f000": "水手服站姿·悲伤",
+        "e005-f000": "水手服站姿·含泪悲伤",
         "e006-f000": "水手服站姿·惊讶",
         "e007-f000": "水手服站姿·闭眼微笑",
     },
@@ -675,10 +725,10 @@ EXPRESSION_LABEL_OVERRIDES = {
         "e003-f000": "单手横放·强烈不满",
         "e004-f000": "单手横放·严肃",
         "e005-f000": "单手横放·无奈",
-        "e006-f000": "单手横放·开朗微笑",
+        "e006-f000": "单手横放·闭眼笑容",
         "e007-f000": "单手横放·生气",
         "e008-f000": "单手横放·赌气",
-        "e009-f000": "单手横放·害羞",
+        "e009-f000": "单手横放·脸红害羞",
         "e010-f000": "单手横放·闭眼微笑",
         "e011-f000": "单手横放·担忧",
         "e012-f000": "单手横放·含泪悲伤",
@@ -736,6 +786,42 @@ def curated_expression_id(pose: str, variant: int) -> str:
     return f"{pose.lower().replace('_', '-')}-e{variant:03d}-f000"
 
 
+CURATED_CHARACTER_IDS_BY_SOURCE_DIRECTORY = {
+    "makise_kurisu": "kurisu-makise",
+    "shiina_mayuri": "mayuri",
+    "hashida_itaru": "daru",
+    "faris_nyannyan": "faris",
+    "urushibara_luka": "luka",
+    "kiryu_moeka": "moeka",
+    "amane_suzuha": "suzuha",
+    "shiina_kagari": "kagari",
+    "hiyajo_maho": "maho",
+    "tennoji_yugo": "yuugo",
+}
+
+
+def build_audited_expression_labels() -> dict[str, dict[str, str]]:
+    labels = deepcopy(EXPRESSION_LABEL_OVERRIDES)
+    for character_spec in CURATED_CHARACTER_POSES:
+        character_id = CURATED_CHARACTER_IDS_BY_SOURCE_DIRECTORY[character_spec["sourceDirectory"]]
+        character_labels = labels.setdefault(character_id, {})
+        replace_primary = bool(character_spec.get("replacePrimary"))
+        primary_pose = character_spec["poses"][0]["code"]
+        for pose_spec in character_spec["poses"]:
+            pose = pose_spec["code"]
+            for variant, label in enumerate(pose_spec["labels"], start=1):
+                expression_id = (
+                    f"e{variant:03d}-f000"
+                    if replace_primary and pose == primary_pose
+                    else curated_expression_id(pose, variant)
+                )
+                character_labels[expression_id] = label
+    return labels
+
+
+AUDITED_EXPRESSION_LABELS = build_audited_expression_labels()
+
+
 class ApiError(RuntimeError):
     def __init__(self, message: str, status_code: int) -> None:
         super().__init__(message)
@@ -744,7 +830,18 @@ class ApiError(RuntimeError):
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="通过正式 API 导入 SG0 素材并重做目标广播剧演出")
-    parser.add_argument("action", choices=("inspect", "upload", "apply", "audit", "all"))
+    parser.add_argument(
+        "action",
+        choices=(
+            "inspect",
+            "rename-kurisu",
+            "rename-expressions",
+            "upload",
+            "apply",
+            "audit",
+            "all",
+        ),
+    )
     parser.add_argument("--project-id", default=DEFAULT_PROJECT_ID)
     parser.add_argument("--source-root", type=Path, default=DEFAULT_SOURCE_ROOT)
     parser.add_argument("--annotation", type=Path, default=DEFAULT_ANNOTATION_PATH)
@@ -1671,6 +1768,58 @@ def normalize_expression_labels(document: dict[str, Any]) -> None:
                 expressions[expression_id]["label"] = label
 
 
+def rename_kurisu_expression_labels(document: dict[str, Any]) -> list[dict[str, str]]:
+    return rename_audited_expression_labels(document, {"kurisu-makise"})
+
+
+def rename_audited_expression_labels(
+    document: dict[str, Any], character_ids: set[str] | None = None
+) -> list[dict[str, str]]:
+    characters = {character["id"]: character for character in document.get("characters", [])}
+    selected_ids = character_ids or set(AUDITED_EXPRESSION_LABELS)
+    unmapped = sorted(
+        character["id"]
+        for character in document.get("characters", [])
+        if character.get("expressions")
+        and character["id"] not in AUDITED_EXPRESSION_LABELS
+        and character_ids is None
+    )
+    if unmapped:
+        raise RuntimeError(f"存在尚未逐图核对的角色表情：{unmapped}")
+    changes: list[dict[str, str]] = []
+    for character_id in sorted(selected_ids):
+        character = characters.get(character_id)
+        if not character:
+            raise RuntimeError(f"缺少待核对的角色：{character_id}")
+        expressions = {
+            expression["id"]: expression for expression in character.get("expressions", [])
+        }
+        expected = AUDITED_EXPRESSION_LABELS[character_id]
+        missing = sorted(expected.keys() - expressions.keys())
+        unexpected = sorted(expressions.keys() - expected.keys())
+        if missing or unexpected:
+            raise RuntimeError(
+                f"角色 {character_id} 的表情集合与逐图清单不一致："
+                f"缺少 {missing}，未核对 {unexpected}"
+            )
+        for expression_id, label in expected.items():
+            expression = expressions[expression_id]
+            previous = expression.get("label", "")
+            if previous == label:
+                continue
+            changes.append(
+                {
+                    "characterId": character_id,
+                    "characterName": character["name"],
+                    "id": expression_id,
+                    "before": previous,
+                    "after": label,
+                }
+            )
+            expression["label"] = label
+    return changes
+
+
 def target_fragment(document: dict[str, Any]) -> dict[str, Any]:
     candidates = [
         fragment
@@ -2379,12 +2528,20 @@ def audit_document(
             )
     for dialogue in direct_visible_dialogues:
         portrait = dialogue["portrait"]
+        inherited = next(
+            (
+                member
+                for member in cast_at(dialogue["startMs"])
+                if member.get("characterId") == dialogue["characterId"]
+            ),
+            {},
+        )
         check_safe_frame(
             owner=dialogue["id"],
             character_id=dialogue["characterId"],
             expression_id=dialogue.get("expressionId"),
-            distance=portrait["distance"],
-            transform=portrait["transform"],
+            distance=portrait.get("distance") or inherited.get("distance") or "medium",
+            transform=portrait.get("transform") or inherited.get("transform") or {},
         )
 
     near_dialogue_ids = set()
@@ -2987,7 +3144,8 @@ def audit_document(
     if checks["logicalLibraryCount"] != 701 or missing_mapping or missing_cg_mapping:
         raise RuntimeError("原作素材映射不完整")
     if (
-        checks["curtainCount"] != 6
+        checks["curtainCount"]
+        != sum(block["type"] == "curtain" for block in TRANSITION_CARD_BLOCKS)
         or not checks["curtainEventsExact"]
         or not checks["transitionTextsExact"]
         or checks["characterFadeBlocks"]
@@ -3123,6 +3281,66 @@ def inspect(client: httpx.Client, project_id: str) -> dict[str, Any]:
     return summary
 
 
+def rename_live_expression_labels(
+    client: httpx.Client,
+    project_id: str,
+    *,
+    character_ids: set[str] | None = None,
+    backup_name: str = "expression-labels",
+) -> dict[str, Any]:
+    checked_ids = character_ids or set(AUDITED_EXPRESSION_LABELS)
+    checked_expressions = sum(
+        len(AUDITED_EXPRESSION_LABELS[character_id]) for character_id in checked_ids
+    )
+    for attempt in range(1, 4):
+        latest = request_json(client, "GET", project_path(project_id, "/story"))
+        document = deepcopy(latest["document"])
+        changes = rename_audited_expression_labels(document, character_ids)
+        if not changes:
+            result = {
+                "revision": latest["revision"],
+                "checkedCharacters": len(checked_ids),
+                "checkedExpressions": checked_expressions,
+                "changed": 0,
+                "changes": [],
+            }
+            print(json.dumps(result, ensure_ascii=False))
+            return result
+        backup_path = BACKUP_ROOT / f"{timestamp()}-{backup_name}-before.json"
+        write_json(backup_path, latest)
+        try:
+            saved = request_json(
+                client,
+                "PUT",
+                project_path(project_id, "/story"),
+                payload={"expected_revision": latest["revision"], "document": document},
+            )
+        except ApiError as exc:
+            if exc.status_code == 409 and attempt < 3:
+                continue
+            raise
+        result = {
+            "revision": saved["revision"],
+            "checkedCharacters": len(checked_ids),
+            "checkedExpressions": checked_expressions,
+            "changed": len(changes),
+            "changes": changes,
+            "beforeSnapshot": str(backup_path),
+        }
+        print(json.dumps(result, ensure_ascii=False))
+        return result
+    raise RuntimeError("连续三次 revision 冲突，未覆盖任何故事数据")
+
+
+def rename_live_kurisu_expressions(client: httpx.Client, project_id: str) -> dict[str, Any]:
+    return rename_live_expression_labels(
+        client,
+        project_id,
+        character_ids={"kurisu-makise"},
+        backup_name="kurisu-labels",
+    )
+
+
 def audit_live(
     client: httpx.Client,
     project_id: str,
@@ -3168,6 +3386,12 @@ def main() -> None:
     ) as client:
         if args.action == "inspect":
             inspect(client, args.project_id)
+            return
+        if args.action == "rename-kurisu":
+            rename_live_kurisu_expressions(client, args.project_id)
+            return
+        if args.action == "rename-expressions":
+            rename_live_expression_labels(client, args.project_id)
             return
         mapping = load_asset_map(args.project_id, args.source_root)
         if args.action in {"upload", "all"}:

@@ -7,7 +7,7 @@ export type FastPreviewDialogueEdit = {
   blockId: string;
   text: string;
   expressionId: string | null;
-  portrait: GalgameStoryDialogueBlock["portrait"];
+  portrait: NonNullable<GalgameStoryDialogueBlock["portrait"]> | null;
 };
 
 export type FastPreviewDialogueEditResult = {
@@ -20,7 +20,7 @@ export type FastPreviewDialogueDraft = {
   blockId: string;
   text: string;
   expressionId: string;
-  portrait: GalgameStoryDialogueBlock["portrait"];
+  portrait: NonNullable<GalgameStoryDialogueBlock["portrait"]> | null;
 };
 
 export const EMPTY_DIALOGUE_DRAFT: FastPreviewDialogueDraft = {

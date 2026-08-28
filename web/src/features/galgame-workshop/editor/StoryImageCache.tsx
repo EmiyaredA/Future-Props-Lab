@@ -12,9 +12,13 @@ type StoryImageCacheEntry = {
   refs: number;
   promise?: Promise<string>;
   url?: string;
+  controller?: AbortController;
+  cancelTimer?: ReturnType<typeof setTimeout>;
 };
 
-const MAX_RETAINED_IMAGES = 96;
+// A portrait frame can occupy several MiB after decoding. Keep only a small
+// back/forward window instead of retaining an entire preview session.
+const MAX_RETAINED_IMAGES = 18;
 
 class StoryImageCache {
   private readonly entries = new Map<string, StoryImageCacheEntry>();
@@ -22,10 +26,22 @@ class StoryImageCache {
 
   retain(fileId: string) {
     const entry = this.entry(fileId);
+    if (entry.cancelTimer != null) {
+      globalThis.clearTimeout(entry.cancelTimer);
+      entry.cancelTimer = undefined;
+    }
     entry.refs += 1;
     this.touch(entry);
     return () => {
       entry.refs = Math.max(0, entry.refs - 1);
+      if (entry.refs === 0 && entry.promise && entry.cancelTimer == null) {
+        // Effect cleanup can be followed immediately by a retain for the same
+        // frame. Give that hand-off one task before cancelling stale I/O.
+        entry.cancelTimer = globalThis.setTimeout(() => {
+          entry.cancelTimer = undefined;
+          if (entry.refs === 0 && entry.promise) entry.controller?.abort();
+        }, 0);
+      }
       this.trim();
     };
   }
@@ -35,41 +51,42 @@ class StoryImageCache {
     this.touch(entry);
     if (entry.url) return Promise.resolve(entry.url);
     if (entry.promise) return entry.promise;
-    entry.promise = fetchApiBlob(`/v1/files/${fileId}/content`)
-      .then(async (blob) => {
+    const controller = new AbortController();
+    entry.controller = controller;
+    const request = fetchApiBlob(`/v1/files/${fileId}/content`, {
+      signal: controller.signal,
+    })
+      .then((blob) => {
+        if (controller.signal.aborted) throw new Error("图片加载已取消");
         const url = URL.createObjectURL(blob);
-        const preloader = new Image();
-        preloader.src = url;
-        if (typeof preloader.decode === "function") {
-          try {
-            await preloader.decode();
-          } catch {
-            // Some valid formats cannot be decoded eagerly. The rendered img
-            // still gets its normal load/error lifecycle below the cache.
-          }
-        }
         if (this.disposed) {
           URL.revokeObjectURL(url);
           throw new Error("图片缓存已释放");
         }
         entry.url = url;
         entry.promise = undefined;
+        entry.controller = undefined;
         this.touch(entry);
         this.trim();
         return url;
       })
       .catch((error) => {
         entry.promise = undefined;
+        if (entry.controller === controller) entry.controller = undefined;
         if (!entry.url && entry.refs === 0) this.entries.delete(fileId);
         throw error;
       });
-    return entry.promise;
+    entry.promise = request;
+    return request;
   }
 
   clear() {
     this.disposed = true;
-    for (const entry of this.entries.values())
+    for (const entry of this.entries.values()) {
+      if (entry.cancelTimer != null) globalThis.clearTimeout(entry.cancelTimer);
+      entry.controller?.abort();
       if (entry.url) URL.revokeObjectURL(entry.url);
+    }
     this.entries.clear();
   }
 

@@ -1012,6 +1012,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/galgame-workshop/projects/{project_id}/story/dialogue": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Patch Story Dialogue */
+        patch: operations["patch_story_dialogue_v1_galgame_workshop_projects__project_id__story_dialogue_patch"];
+        trace?: never;
+    };
     "/v1/galgame-workshop/projects/{project_id}/story/import": {
         parameters: {
             query?: never;
@@ -1096,6 +1113,23 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/v1/galgame-workshop/projects/{project_id}/story/stage-expression": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Patch Story Stage Expression */
+        patch: operations["patch_story_stage_expression_v1_galgame_workshop_projects__project_id__story_stage_expression_patch"];
         trace?: never;
     };
     "/v1/galgame-workshop/projects/{project_id}/video-editor-handoffs": {
@@ -4943,6 +4977,30 @@ export interface components {
              */
             textColor: string;
         };
+        /** GalgameStoryDialoguePatchIn */
+        GalgameStoryDialoguePatchIn: {
+            /** Blockid */
+            blockId: string;
+            /** Expected Revision */
+            expected_revision: number;
+            /** Expressionid */
+            expressionId?: string | null;
+            /** Fragmentid */
+            fragmentId: string;
+            portrait?: components["schemas"]["GalgameStoryDialoguePortrait"] | null;
+            /** Text */
+            text: string;
+        };
+        /** GalgameStoryDialoguePatchOut */
+        GalgameStoryDialoguePatchOut: {
+            block: components["schemas"]["GalgameStoryDialogueBlock"];
+            /** Project Id */
+            project_id: string;
+            /** Revision */
+            revision: number;
+            /** Updated At */
+            updated_at: string;
+        };
         /** GalgameStoryDialoguePortrait */
         GalgameStoryDialoguePortrait: {
             /**
@@ -5907,6 +5965,30 @@ export interface components {
             skinId?: string | null;
             transform?: components["schemas"]["GalgameStoryCharacterTransform"];
             transition?: components["schemas"]["GalgameStoryCharacterTransition"];
+        };
+        /** GalgameStoryStageExpressionPatchIn */
+        GalgameStoryStageExpressionPatchIn: {
+            /** Blockid */
+            blockId: string;
+            /** Characterid */
+            characterId: string;
+            /** Expected Revision */
+            expected_revision: number;
+            /** Expressionid */
+            expressionId?: string | null;
+            /** Fragmentid */
+            fragmentId: string;
+        };
+        /** GalgameStoryStageExpressionPatchOut */
+        GalgameStoryStageExpressionPatchOut: {
+            /** Block */
+            block: components["schemas"]["GalgameStoryShowCharacterBlock"] | components["schemas"]["GalgameStorySetStageCastBlock"];
+            /** Project Id */
+            project_id: string;
+            /** Revision */
+            revision: number;
+            /** Updated At */
+            updated_at: string;
         };
         /** GalgameStoryStageStyle */
         GalgameStoryStageStyle: {
@@ -12613,6 +12695,41 @@ export interface operations {
             };
         };
     };
+    patch_story_dialogue_v1_galgame_workshop_projects__project_id__story_dialogue_patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GalgameStoryDialoguePatchIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GalgameStoryDialoguePatchOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     import_legacy_story_v1_galgame_workshop_projects__project_id__story_import_post: {
         parameters: {
             query?: never;
@@ -12799,6 +12916,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["GalgameStoryDocumentOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    patch_story_stage_expression_v1_galgame_workshop_projects__project_id__story_stage_expression_patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GalgameStoryStageExpressionPatchIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GalgameStoryStageExpressionPatchOut"];
                 };
             };
             /** @description Validation Error */

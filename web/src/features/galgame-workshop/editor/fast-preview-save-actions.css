@@ -1,0 +1,32 @@
+.galgame-fast-preview-save-actions {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 7px;
+}
+
+.galgame-fast-preview-save-actions > button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 98px;
+  padding: 9px 12px;
+  border-color: color-mix(in srgb, var(--gal-accent) 70%, transparent);
+  color: #fff;
+  background: var(--gal-accent);
+}
+
+.galgame-fast-preview-save-actions > button:first-child {
+  min-width: 128px;
+}
+
+.galgame-fast-preview-save-actions > button:last-child {
+  color: var(--gal-accent);
+  background: var(--gal-accent-soft);
+}
+
+.galgame-fast-preview-save-actions > button:disabled {
+  border-color: var(--gal-line);
+  color: var(--gal-muted);
+  background: var(--gal-surface);
+}

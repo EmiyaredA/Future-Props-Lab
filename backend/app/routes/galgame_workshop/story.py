@@ -15,11 +15,16 @@ from app.galgame_workshop.errors import (
 from app.galgame_workshop.readiness import GalgameReadiness
 from app.galgame_workshop.story import GalgameStoryDocuments
 from app.galgame_workshop.story_migrations import GalgameStoryMigrations
+from app.galgame_workshop.story_patches import GalgameStoryPatches
 from app.routes.galgame_workshop._shared import _invalid_story, _not_found
 from app.schemas.galgame_workshop import (
+    GalgameStoryDialoguePatchIn,
+    GalgameStoryDialoguePatchOut,
     GalgameStoryDocumentOut,
     GalgameStoryDocumentPutIn,
     GalgameStoryRouteReportOut,
+    GalgameStoryStageExpressionPatchIn,
+    GalgameStoryStageExpressionPatchOut,
 )
 
 router = APIRouter()
@@ -47,6 +52,43 @@ async def put_story(
 ) -> GalgameStoryDocumentOut:
     try:
         return await GalgameStoryDocuments(session).put(project_id, body)
+    except (
+        GalgameWorkshopProjectNotFoundError,
+        GalgameStoryDocumentNotFoundError,
+    ) as exc:
+        raise _not_found(exc) from None
+    except GalgameStoryDocumentInvalidError as exc:
+        raise _invalid_story(exc) from None
+
+
+@router.patch("/{project_id}/story/dialogue", response_model=GalgameStoryDialoguePatchOut)
+async def patch_story_dialogue(
+    session: SessionDep,
+    project_id: str,
+    body: GalgameStoryDialoguePatchIn,
+) -> GalgameStoryDialoguePatchOut:
+    try:
+        return await GalgameStoryPatches(session).patch_dialogue(project_id, body)
+    except (
+        GalgameWorkshopProjectNotFoundError,
+        GalgameStoryDocumentNotFoundError,
+    ) as exc:
+        raise _not_found(exc) from None
+    except GalgameStoryDocumentInvalidError as exc:
+        raise _invalid_story(exc) from None
+
+
+@router.patch(
+    "/{project_id}/story/stage-expression",
+    response_model=GalgameStoryStageExpressionPatchOut,
+)
+async def patch_story_stage_expression(
+    session: SessionDep,
+    project_id: str,
+    body: GalgameStoryStageExpressionPatchIn,
+) -> GalgameStoryStageExpressionPatchOut:
+    try:
+        return await GalgameStoryPatches(session).patch_stage_expression(project_id, body)
     except (
         GalgameWorkshopProjectNotFoundError,
         GalgameStoryDocumentNotFoundError,

@@ -10,7 +10,7 @@
 
 ## V8 广播剧补充素材（2026-08-25）
 
-- `opening-blackboard-v1.png`：ImageGen 生成的透明、无文字旧式深绿黑板，带木框与轻微粉笔灰；合成到 `20-full-cast-opening-v3.png` 中，中文声明仍由真实浮动文字渲染。
+- `opening-blackboard-v1.png`：ImageGen 生成的透明、无文字旧式深绿黑板，带木框与轻微粉笔灰；合成到 `20-full-cast-opening-v4.png` 中，中文声明仍由真实浮动文字渲染。
 - `okabe-main-phone-overlay-v1.png`：初版红色手机叠加素材，仅保留屏幕与第一排按键。
 - `okabe-main-phone-overlay-v2.png`：从本篇原作 `PHONE.png` 分块重组完整红色手机，并使用同一图集的蓝色菜单底图合成；全画布透明，手机位于右侧，供时间轴滑入使用。
 

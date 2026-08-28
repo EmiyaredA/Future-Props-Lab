@@ -6,6 +6,10 @@ import {
   type FastPreviewDialogueEdit,
 } from "@features/galgame-workshop/editor/fastPreviewDialogueEdit";
 import {
+  applyFastPreviewStageExpressionEdit,
+  type FastPreviewStageExpressionEdit,
+} from "@features/galgame-workshop/editor/fastPreviewStageExpressionEdit";
+import {
   createEditorFastPreviewSession,
   type EditorFastPreviewSession,
 } from "@features/galgame-workshop/editor/editorFastPreviewSession";
@@ -138,7 +142,19 @@ export function EditorFastPreviewOverlay({
         ? applyFastPreviewDialogueEdit(block, edit)
         : block,
     );
-    if (!(await model.commitDocument(next)))
+    if (!(await model.commitDialogueEdit(next, edit)))
+      throw new Error("保存失败或故事版本已发生冲突");
+    return {
+      document: next,
+      storyRevision: model.revisionRef.current,
+    };
+  };
+  const applyStageExpressionEdit = async (
+    edit: FastPreviewStageExpressionEdit,
+  ) => {
+    const current = model.documentRef.current ?? model.document;
+    const next = applyFastPreviewStageExpressionEdit(current, edit);
+    if (!(await model.commitStageExpressionEdit(next, edit)))
       throw new Error("保存失败或故事版本已发生冲突");
     return {
       document: next,
@@ -171,6 +187,7 @@ export function EditorFastPreviewOverlay({
         renderDisabledReason={renderDisabledReason}
         onRenderRange={onRenderRange}
         onApplyDialogueEdit={applyDialogueEdit}
+        onApplyStageExpressionEdit={applyStageExpressionEdit}
         onOpenWindow={() =>
           openFastPreviewWindow({
             projectId: model.projectId,
@@ -181,6 +198,7 @@ export function EditorFastPreviewOverlay({
             playbackRange: session.playbackRange,
             latestDocument: () => model.documentRef.current ?? model.document,
             applyDialogueEdit,
+            applyStageExpressionEdit,
           })
         }
         onExit={(snapshot) => {

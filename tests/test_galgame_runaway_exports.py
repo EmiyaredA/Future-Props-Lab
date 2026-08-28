@@ -39,6 +39,11 @@ def test_full_export_requires_explicit_option() -> None:
         ("scene-evening-main-1182s-1198s", 1_182_000, 1_198_000),
         ("scene-evening-to-night-1294s-1310s", 1_294_000, 1_310_000),
     ]
+    assert [item[0] for item in requested_exports("expression-sync") if item] == [
+        "diagnostic-expression-sync-151s-161s",
+        "diagnostic-mother-identity-v4-786s-802s",
+        "diagnostic-luka-speaker-1649s-1656s",
+    ]
     assert [item[0] for item in requested_exports("portrait-review") if item] == [
         "portrait-faris-private-38s-43s",
         "portrait-kurisu-mayuri-shy-219s-233s",
@@ -46,6 +51,19 @@ def test_full_export_requires_explicit_option() -> None:
         "portrait-moeka-299s-309s",
         "portrait-suzuha-kagari-1353s-1362s",
         "portrait-maho-suzuha-1596s-1612s",
+    ]
+    assert [item[0] for item in requested_exports("final-cgs") if item] == [
+        "final-cg-01-cleaning-night",
+        "final-cg-02-rooftop-finale",
+        "final-cg-03-kagari-imitation",
+        "final-cg-04-suzuha-entrance",
+        "final-cg-05-kagari-remembers",
+        "final-cg-06-storytime",
+        "final-cg-07-cleaning-evening",
+        "final-cg-08-kagari-rejects",
+        "final-cg-09-suzuha-maho",
+        "final-cg-10-time-machine",
+        "final-cg-11a-lab-reaction",
     ]
 
 

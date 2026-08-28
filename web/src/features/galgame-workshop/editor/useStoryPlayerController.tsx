@@ -22,6 +22,7 @@ import { useStoryPlayerTimelineController } from "./useStoryPlayerTimelineContro
 import { useStoryPlayerBase } from "./useStoryPlayerBase";
 export function useStoryPlayerController({
   document: sourceDocument,
+  previewExpressionIds,
   locale,
   includeStaleTranslations = false,
   startCursor,
@@ -46,6 +47,7 @@ export function useStoryPlayerController({
 }: StoryPlayerProps) {
   const base = useStoryPlayerBase({
     document: sourceDocument,
+    previewExpressionIds,
     locale,
     includeStaleTranslations,
     startCursor,

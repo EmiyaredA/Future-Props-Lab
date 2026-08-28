@@ -68,8 +68,11 @@ export async function fetchApiJson<T>(
   return (await response.json()) as T;
 }
 
-export async function fetchApiBlob(path: string): Promise<Blob> {
-  const response = await requestApi(path);
+export async function fetchApiBlob(
+  path: string,
+  init: RequestInit = {},
+): Promise<Blob> {
+  const response = await requestApi(path, init);
   return response.blob();
 }
 api.use({

@@ -41,10 +41,13 @@ function expression(loop = true): GalgameStoryCharacterExpression {
 }
 
 async function settleFrames() {
-  await act(async () => {
-    await Promise.resolve();
-    await Promise.resolve();
-  });
+  for (let index = 0; index < 5; index += 1)
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+      vi.advanceTimersByTime(0);
+      await Promise.resolve();
+    });
 }
 
 describe("ExpressionPortrait", () => {
@@ -170,6 +173,7 @@ describe("ExpressionPortrait", () => {
       await Promise.resolve();
       await Promise.resolve();
     });
+    await settleFrames();
     act(() => vi.advanceTimersByTime(100));
     expect(screen.getByAltText("渐进加载")).toHaveAttribute(
       "data-file-id",
@@ -274,7 +278,11 @@ describe("ExpressionPortrait", () => {
   });
 
   test("uses the next loaded frame when the anchor frame fails", async () => {
-    vi.mocked(fetchApiBlob).mockRejectedValueOnce(new Error("missing frame"));
+    vi.mocked(fetchApiBlob).mockImplementation((path) =>
+      path.endsWith("/file-0/content")
+        ? Promise.reject(new Error("missing frame"))
+        : Promise.resolve(new Blob(["frame"], { type: "image/png" })),
+    );
     const onNaturalSize = vi.fn();
     const rendered = render(
       <ExpressionPortrait

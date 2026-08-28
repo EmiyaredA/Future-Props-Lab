@@ -7,6 +7,7 @@ from app.galgame_workshop.video_compiler_support import (
     CharacterPresentation,
     actor_layout,
     apply_composed_visual_motion,
+    dialogue_speaker_ids,
     portrait_segments,
     timeline_clip,
 )
@@ -97,11 +98,9 @@ def compile_actor_clips(
     inactive = float(stage_style.get("inactiveBrightness", 0.6))
     focus_enabled = bool(stage_style.get("speakerFocusEnabled", True))
     active = state.get("content")
-    active_speaker = (
-        active.get("characterId") if active and active.get("type") == "dialogue" else None
-    )
+    active_speakers = set(dialogue_speaker_ids(active))
     target_focus = (
-        inactive if focus_enabled and active_speaker and active_speaker != character_id else 1
+        inactive if focus_enabled and active_speakers and character_id not in active_speakers else 1
     )
     brightness = base_brightness * target_focus
     result: list[dict[str, Any]] = []
@@ -164,10 +163,12 @@ def compile_actor_clips(
             and focus_duration_us > 0
             and segment_start_us < focus_started_us + focus_duration_us
         ):
-            from_speaker = focus.get("from")
-            to_speaker = focus.get("to")
-            from_value = inactive if from_speaker and from_speaker != character_id else 1
-            to_value = inactive if to_speaker and to_speaker != character_id else 1
+            from_speakers = set(
+                focus.get("fromIds") or ([focus.get("from")] if focus.get("from") else [])
+            )
+            to_speakers = set(focus.get("toIds") or ([focus.get("to")] if focus.get("to") else []))
+            from_value = 1 if character_id in from_speakers else inactive if from_speakers else 1
+            to_value = 1 if character_id in to_speakers else inactive if to_speakers else 1
             elapsed = max(0, segment_start_us - focus_started_us)
             progress = min(1, elapsed / focus_duration_us)
             initial = from_value + (to_value - from_value) * progress

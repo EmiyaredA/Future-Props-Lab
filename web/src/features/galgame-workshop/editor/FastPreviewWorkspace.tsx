@@ -1,31 +1,27 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  Bug,
   ExternalLink,
   Eye,
   Film,
-  GitBranch,
   Image,
-  ListTree,
   Pause,
-  PencilLine,
   Play,
   Repeat2,
   RotateCcw,
   SkipBack,
   SkipForward,
-  Variable,
   X,
 } from "lucide-react";
-import {
-  previewGalgameVideoExportFrame,
-  type GalgameStoryProject,
-} from "@features/galgame-workshop/api";
+import type { GalgameStoryProject } from "@features/galgame-workshop/api";
 import {
   StoryPlayer,
   type StoryPlayerHandle,
 } from "@features/galgame-workshop/editor/StoryPlayer";
-import { FastPreviewQuickEdit } from "@features/galgame-workshop/editor/FastPreviewQuickEdit";
+import { FastPreviewDialogueQueue } from "@features/galgame-workshop/editor/FastPreviewDialogueQueue";
+import {
+  FastPreviewInspector,
+  type FastPreviewInspectorTab,
+} from "@features/galgame-workshop/editor/FastPreviewInspector";
 import type {
   FastPreviewDialogueDraft,
   FastPreviewDialogueEdit,
@@ -34,27 +30,36 @@ import type {
 import {
   formatTimelineTime,
   playerContentText,
+  type FastPreviewCursor,
   type StoryPlayerPlaybackRange,
   type StoryPlayerRuntimeSnapshot,
 } from "@features/galgame-workshop/editor/storyPlayerModel";
 import { visibleStageActors } from "@features/galgame-workshop/editor/stage";
 import {
+  loadFastPreviewAutoRevealPortraits,
   loadFastPreviewAuthoringOverlays,
+  saveFastPreviewAutoRevealPortraits,
   saveFastPreviewAuthoringOverlays,
 } from "@features/galgame-workshop/editor/fastPreviewPreferences";
+import { revealHiddenDialoguePortraits } from "@features/galgame-workshop/editor/fastPreviewPortraits";
+import {
+  fastPreviewExpressionOverrides,
+  fastPreviewPortraitWarmupFileIds,
+  fastPreviewStageActorEditors,
+  type FastPreviewStageActorEditor,
+} from "@features/galgame-workshop/editor/fastPreviewStageActors";
 import { useFastPreviewDialogueDrafts } from "@features/galgame-workshop/editor/useFastPreviewDialogueDrafts";
+import { useFastPreviewDraftSaving } from "@features/galgame-workshop/editor/useFastPreviewDraftSaving";
+import { useFastPreviewExactFrame } from "@features/galgame-workshop/editor/useFastPreviewExactFrame";
+import { useFastPreviewSourceDocument } from "@features/galgame-workshop/editor/useFastPreviewSourceDocument";
+import {
+  applyFastPreviewStageExpressionEdit,
+  stageSourceExpressionId,
+  type FastPreviewStageExpressionDraft,
+  type FastPreviewStageExpressionEdit,
+  type FastPreviewStageExpressionEditResult,
+} from "@features/galgame-workshop/editor/fastPreviewStageExpressionEdit";
 import "@features/galgame-workshop/editor/fast-preview-workspace.css";
-
-export type {
-  FastPreviewDialogueEdit,
-  FastPreviewDialogueEditResult,
-} from "@features/galgame-workshop/editor/fastPreviewDialogueEdit";
-
-export type FastPreviewCursor = {
-  chapterId: string;
-  fragmentId: string;
-  blockIndex?: number;
-};
 
 export function FastPreviewWorkspace({
   document: sourceDocument,
@@ -70,6 +75,7 @@ export function FastPreviewWorkspace({
   renderDisabledReason,
   onRenderRange,
   onApplyDialogueEdit,
+  onApplyStageExpressionEdit,
 }: {
   document: GalgameStoryProject;
   startCursor: FastPreviewCursor;
@@ -86,6 +92,9 @@ export function FastPreviewWorkspace({
   onApplyDialogueEdit?: (
     edit: FastPreviewDialogueEdit,
   ) => Promise<FastPreviewDialogueEditResult>;
+  onApplyStageExpressionEdit?: (
+    edit: FastPreviewStageExpressionEdit,
+  ) => Promise<FastPreviewStageExpressionEditResult>;
 }) {
   const playerRef = useRef<StoryPlayerHandle>(null);
   const editPauseRequestedRef = useRef(false);
@@ -94,43 +103,83 @@ export function FastPreviewWorkspace({
     { positionMs: number; pauseAfterSeek: boolean } | undefined
   >(undefined);
   const snapshotRef = useRef<StoryPlayerRuntimeSnapshot | undefined>(undefined);
-  const [document, setPreviewDocument] = useState(sourceDocument);
-  const [currentRevision, setCurrentRevision] = useState(storyRevision);
+  const selectedSnapshotDialogueRef = useRef("");
+  const [document, setPreviewDocument, currentRevision, setCurrentRevision] =
+    useFastPreviewSourceDocument(sourceDocument, storyRevision);
   const [snapshot, setSnapshot] = useState<StoryPlayerRuntimeSnapshot>();
-  const [tab, setTab] = useState<
-    "stage" | "edit" | "variables" | "branches" | "logs"
-  >("stage");
-  const [editSaving, setEditSaving] = useState(false);
-  const [editMessage, setEditMessage] = useState("");
+  const [tab, setTab] = useState<FastPreviewInspectorTab>("stage");
+  const [selectedStageActorId, setSelectedStageActorId] = useState("");
+  const [stageExpressionDraft, setStageExpressionDraft] =
+    useState<FastPreviewStageExpressionDraft>();
   const [logs, setLogs] = useState<string[]>(["预演快照已冻结"]);
   const [rangeLoop, setRangeLoop] = useState(Boolean(playbackRange?.loop));
   const [showAuthoringOverlays, setShowAuthoringOverlays] = useState(
     loadFastPreviewAuthoringOverlays,
   );
-  const [exactFrame, setExactFrame] = useState<{
-    url: string;
-    fragmentId: string;
-    timeMs: number;
-  }>();
-  const [exactFrameLoading, setExactFrameLoading] = useState(false);
-  const [exactFrameError, setExactFrameError] = useState("");
-  const exactFrameRequestRef = useRef(0);
-  const exactFrameUrlRef = useRef("");
-
-  useEffect(() => {
-    setPreviewDocument(sourceDocument);
-    setCurrentRevision(storyRevision);
-  }, [sourceDocument, storyRevision]);
+  const [autoRevealPortraits, setAutoRevealPortraits] = useState(
+    loadFastPreviewAutoRevealPortraits,
+  );
   const {
     discardDraft,
     editDraft,
     editDirty,
-    hasDirtyDrafts,
-    pendingDraftCount,
-    previewDocument,
+    hasDirtyDrafts: dialogueHasDirtyDrafts,
+    pendingDrafts: dialoguePendingDrafts,
+    presentationRevision: dialoguePresentationRevision,
+    previewDocument: dialoguePreviewDocument,
     selectDialogue,
     updateDraft,
   } = useFastPreviewDialogueDrafts(document);
+  const stageExpressionDirty = Boolean(
+    stageExpressionDraft &&
+    stageSourceExpressionId(document, stageExpressionDraft) !==
+      stageExpressionDraft.expressionId,
+  );
+  const {
+    canSaveAll,
+    message: editMessage,
+    pendingCount: pendingDraftCount,
+    saveAll,
+    saveDialogue,
+    saveStageExpression,
+    saving: editSaving,
+    setMessage: setEditMessage,
+  } = useFastPreviewDraftSaving({
+    dialogueDraft: editDraft,
+    dialogueDrafts: dialoguePendingDrafts,
+    dialogueDirty: editDirty,
+    stageExpressionDraft,
+    stageExpressionDirty,
+    positionMs: snapshot?.positionMs ?? 0,
+    playing: Boolean(snapshot?.playing),
+    onPausePlayback: () => playerRef.current?.togglePlayback(),
+    onRestorePosition: (positionMs) => {
+      restorePositionRef.current = { positionMs, pauseAfterSeek: false };
+      editRestorePendingRef.current = true;
+    },
+    onApplyDialogueEdit,
+    onApplyStageExpressionEdit,
+    onDiscardDialogueDraft: discardDraft,
+    onDocument: setPreviewDocument,
+    onRevision: setCurrentRevision,
+  });
+  const previewDocument = useMemo(
+    () =>
+      stageExpressionDraft
+        ? applyFastPreviewStageExpressionEdit(dialoguePreviewDocument, {
+            ...stageExpressionDraft,
+            expressionId: stageExpressionDraft.expressionId || null,
+          })
+        : dialoguePreviewDocument,
+    [dialoguePreviewDocument, stageExpressionDraft],
+  );
+  const playerDocument = useMemo(
+    () =>
+      autoRevealPortraits
+        ? revealHiddenDialoguePortraits(previewDocument)
+        : previewDocument,
+    [autoRevealPortraits, previewDocument],
+  );
   const effectivePlaybackRange = useMemo(
     () =>
       playbackRange
@@ -174,6 +223,15 @@ export function FastPreviewWorkspace({
       next: active >= 0 ? content[active + 1] : content[1],
     };
   }, [activeBlockIndex, activeFragment?.blocks, snapshotVariables]);
+  const portraitWarmupFileIds = useMemo(
+    () =>
+      fastPreviewPortraitWarmupFileIds(playerDocument, [
+        dialogueQueue.previous?.block,
+        dialogueQueue.current?.block,
+        dialogueQueue.next?.block,
+      ]),
+    [dialogueQueue, playerDocument],
+  );
 
   useEffect(() => {
     playerRef.current?.restart();
@@ -186,16 +244,14 @@ export function FastPreviewWorkspace({
       editRestorePendingRef.current = false;
     });
     return () => window.clearTimeout(timer);
-  }, [previewDocument, startCursor]);
-
-  useEffect(
-    () => () => {
-      exactFrameRequestRef.current += 1;
-      if (exactFrameUrlRef.current)
-        URL.revokeObjectURL(exactFrameUrlRef.current);
-    },
-    [],
-  );
+  }, [
+    autoRevealPortraits,
+    document,
+    dialoguePresentationRevision,
+    startCursor.blockIndex,
+    startCursor.chapterId,
+    startCursor.fragmentId,
+  ]);
 
   useEffect(() => {
     const keyboard = (event: KeyboardEvent) => {
@@ -215,7 +271,7 @@ export function FastPreviewWorkspace({
     return () => window.removeEventListener("keydown", keyboard);
   }, [onExit, snapshot]);
 
-  const receiveSnapshot = (next: StoryPlayerRuntimeSnapshot) => {
+  const receiveSnapshot = useCallback((next: StoryPlayerRuntimeSnapshot) => {
     snapshotRef.current = next;
     if (!next.playing) editPauseRequestedRef.current = false;
     setSnapshot(next);
@@ -227,7 +283,7 @@ export function FastPreviewWorkspace({
         ? current
         : [...current.slice(-39), line];
     });
-  };
+  }, []);
   const actors = snapshot ? visibleStageActors(snapshot.stage) : [];
   const branches =
     snapshot?.frame.mode === "content" && snapshot.frame.block.type === "branch"
@@ -238,18 +294,43 @@ export function FastPreviewWorkspace({
     snapshot.frame.block.type === "dialogue"
       ? snapshot.frame.block
       : undefined;
+  const stageActorEditors = fastPreviewStageActorEditors({
+    document: previewDocument,
+    fragment: activeFragment,
+    activeBlockIndex,
+    positionMs: snapshot?.positionMs,
+    actors,
+    autoRevealPortraits,
+  });
   useEffect(() => {
-    if (editRestorePendingRef.current) return;
-    if (!snapshotDialogue || !activeFragment) return;
-    const targetChanged =
-      editDraft.fragmentId !== activeFragment.id ||
-      editDraft.blockId !== snapshotDialogue.id;
-    if (!targetChanged) return;
+    if (!activeFragment) return;
+    if (!snapshotDialogue) {
+      const first = stageActorEditors.find((actor) => actor.source);
+      if (
+        first &&
+        !stageActorEditors.some(
+          (actor) => actor.characterId === selectedStageActorId,
+        )
+      ) {
+        setSelectedStageActorId(first.characterId);
+        setStageExpressionDraft(first.stageExpressionDraft);
+      }
+      return;
+    }
+    const selectionKey = `${activeFragment.id}:${snapshotDialogue.id}`;
+    if (
+      editRestorePendingRef.current &&
+      selectedSnapshotDialogueRef.current === selectionKey
+    )
+      return;
+    if (selectedSnapshotDialogueRef.current === selectionKey) return;
     const sourceBlock = document.chapters
       ?.flatMap((chapter) => chapter.fragments ?? [])
       .find((fragment) => fragment.id === activeFragment.id)
       ?.blocks?.find((block) => block.id === snapshotDialogue.id);
     if (sourceBlock?.type !== "dialogue") return;
+    selectedSnapshotDialogueRef.current = selectionKey;
+    setSelectedStageActorId(sourceBlock.characterId);
     selectDialogue(activeFragment.id, sourceBlock);
     setEditMessage(
       pendingDraftCount
@@ -259,11 +340,12 @@ export function FastPreviewWorkspace({
   }, [
     activeFragment,
     document.chapters,
-    editDraft.blockId,
-    editDraft.fragmentId,
     pendingDraftCount,
     selectDialogue,
+    selectedStageActorId,
+    setEditMessage,
     snapshotDialogue,
+    stageActorEditors,
   ]);
   const editableBlock = previewDocument.chapters
     ?.flatMap((chapter) => chapter.fragments ?? [])
@@ -271,25 +353,61 @@ export function FastPreviewWorkspace({
     ?.blocks?.find((block) => block.id === editDraft.blockId);
   const editableDialogue =
     editableBlock?.type === "dialogue" ? editableBlock : undefined;
+  const selectedStageActor = stageActorEditors.find(
+    (actor) => actor.characterId === selectedStageActorId,
+  );
+  const editingStageExpression = Boolean(
+    selectedStageActor?.source?.kind !== "dialogue" &&
+    stageExpressionDraft?.characterId === selectedStageActor?.characterId,
+  );
   const pauseForEditing = () => {
     const currentSnapshot = snapshotRef.current;
     if (!currentSnapshot?.playing || editPauseRequestedRef.current) return;
     editPauseRequestedRef.current = true;
     playerRef.current?.togglePlayback();
   };
+  const {
+    clearExactFrameError,
+    closeExactFrame,
+    exactFrame,
+    exactFrameError,
+    exactFrameLoading,
+    exactFrameStale,
+    exactFrameUnavailableReason,
+    generateExactFrame,
+    invalidateExactFrame,
+  } = useFastPreviewExactFrame({
+    projectId,
+    revision: currentRevision,
+    disabledReason: exactFrameDisabledReason,
+    hasDirtyDrafts: dialogueHasDirtyDrafts || stageExpressionDirty,
+    activeFragment,
+    snapshot,
+    pausePlayback: () => playerRef.current?.togglePlayback(),
+  });
   const openQuickEdit = () => {
     pauseForEditing();
     setTab("edit");
   };
+  const selectStageActor = (actor: FastPreviewStageActorEditor) => {
+    if (!actor.source || !activeFragment) return;
+    pauseForEditing();
+    setSelectedStageActorId(actor.characterId);
+    if (actor.stageExpressionDraft) {
+      setStageExpressionDraft(actor.stageExpressionDraft);
+      setEditMessage("");
+      return;
+    }
+    selectDialogue(activeFragment.id, actor.sourceBlock!);
+    setEditMessage(
+      actor.source.block.id === snapshotDialogue?.id
+        ? ""
+        : `正在修改舞台角色 ${actor.name} 最近一次登场时的表情与立绘`,
+    );
+  };
   const updateEditDraft = (nextDraft: FastPreviewDialogueDraft) => {
     editRestorePendingRef.current = true;
-    exactFrameRequestRef.current += 1;
-    setExactFrame(undefined);
-    setExactFrameError("");
-    if (exactFrameUrlRef.current) {
-      URL.revokeObjectURL(exactFrameUrlRef.current);
-      exactFrameUrlRef.current = "";
-    }
+    invalidateExactFrame();
     const currentSnapshot = snapshotRef.current;
     pauseForEditing();
     if (currentSnapshot)
@@ -300,128 +418,13 @@ export function FastPreviewWorkspace({
     updateDraft(nextDraft);
     setEditMessage("未保存草稿已实时显示在画面中");
   };
-  const applyDialogueEdit = async () => {
-    if (
-      editableDialogue?.type !== "dialogue" ||
-      !editDraft.fragmentId ||
-      !editDraft.blockId ||
-      !onApplyDialogueEdit
-    )
-      return;
-    if (snapshot?.playing) playerRef.current?.togglePlayback();
-    const restorePosition = snapshot?.positionMs ?? 0;
-    setEditSaving(true);
-    setEditMessage("");
-    try {
-      const result = await onApplyDialogueEdit({
-        fragmentId: editDraft.fragmentId,
-        blockId: editDraft.blockId,
-        text: editDraft.text,
-        expressionId: editDraft.expressionId || null,
-        portrait: editDraft.portrait,
-      });
-      restorePositionRef.current = {
-        positionMs: restorePosition,
-        pauseAfterSeek: false,
-      };
-      editRestorePendingRef.current = true;
-      setPreviewDocument(result.document);
-      setCurrentRevision(result.storyRevision);
-      discardDraft(editDraft.fragmentId, editDraft.blockId);
-      const remainingDrafts = Math.max(0, pendingDraftCount - 1);
-      setEditMessage(
-        remainingDrafts
-          ? `已保存当前对白，另有 ${remainingDrafts} 个未保存草稿`
-          : "已保存，当前区间可继续播放",
-      );
-    } catch (error) {
-      setEditMessage(error instanceof Error ? error.message : "保存失败");
-    } finally {
-      setEditSaving(false);
-    }
-  };
-  const exactFrameUnavailableReason =
-    exactFrameDisabledReason ??
-    (hasDirtyDrafts
-      ? "请先保存全部实时草稿，再生成精确导出帧"
-      : !projectId || currentRevision == null
-        ? "当前快照缺少已保存的项目修订信息"
-        : !activeFragment?.timeline
-          ? "当前片段没有精确时间轴"
-          : !snapshot
-            ? "快速预演尚未就绪"
-            : undefined);
-  const exactFrameStale = Boolean(
-    exactFrame &&
-    snapshot &&
-    (exactFrame.fragmentId !== snapshot.fragmentId ||
-      Math.abs(exactFrame.timeMs - snapshot.positionMs) >= 100),
-  );
-  const generateExactFrame = async () => {
-    if (
-      exactFrameUnavailableReason ||
-      !projectId ||
-      currentRevision == null ||
-      !activeFragment?.timeline ||
-      !snapshot
-    )
-      return;
-    if (snapshot.playing) playerRef.current?.togglePlayback();
-    const requestId = ++exactFrameRequestRef.current;
-    const fragmentId = activeFragment.id;
-    const timelineTimeMs = Math.min(
-      snapshot.positionMs,
-      Math.max(0, activeFragment.timeline.durationMs - 1),
-    );
-    const clipStartMs = Math.max(0, timelineTimeMs - 1000);
-    const clipEndMs = Math.min(
-      activeFragment.timeline.durationMs,
-      timelineTimeMs + 1001,
-    );
-    setExactFrameLoading(true);
-    setExactFrameError("");
-    try {
-      const blob = await previewGalgameVideoExportFrame(projectId, {
-        expectedStoryRevision: currentRevision,
-        locale: "zh",
-        preset: "1080p30",
-        scope: "clip",
-        fragmentIds: [],
-        branchSelections: [],
-        captureFrame: { x: 0, y: 0, width: 1920, height: 1080 },
-        clipRange: {
-          fragmentId,
-          startMs: clipStartMs,
-          endMs: clipEndMs,
-        },
-        timeMs: timelineTimeMs - clipStartMs,
-        width: 960,
-      });
-      if (requestId !== exactFrameRequestRef.current) return;
-      const url = URL.createObjectURL(blob);
-      const previousUrl = exactFrameUrlRef.current;
-      exactFrameUrlRef.current = url;
-      setExactFrame({ url, fragmentId, timeMs: timelineTimeMs });
-      if (previousUrl) URL.revokeObjectURL(previousUrl);
-    } catch (error) {
-      if (requestId !== exactFrameRequestRef.current) return;
-      setExactFrameError(
-        error instanceof Error ? error.message : "精确导出帧生成失败",
-      );
-    } finally {
-      if (requestId === exactFrameRequestRef.current)
-        setExactFrameLoading(false);
-    }
-  };
-  const closeExactFrame = () => {
-    exactFrameRequestRef.current += 1;
-    setExactFrameLoading(false);
-    setExactFrameError("");
-    setExactFrame(undefined);
-    if (exactFrameUrlRef.current) {
-      URL.revokeObjectURL(exactFrameUrlRef.current);
-      exactFrameUrlRef.current = "";
-    }
+  const updateStageExpressionDraft = (
+    nextDraft: FastPreviewStageExpressionDraft,
+  ) => {
+    pauseForEditing();
+    invalidateExactFrame();
+    setStageExpressionDraft(nextDraft);
+    setEditMessage("未保存表情草稿已实时显示在画面中");
   };
   return (
     <main
@@ -431,7 +434,10 @@ export function FastPreviewWorkspace({
       <header>
         <span>
           <strong>快速预演</strong>
-          <small>动态预演 · {sourceNotice ?? "启动时内存快照"}</small>
+          <small>
+            轻量舞台预览（暂停时固定闭口，口型请以精确导出帧为准） ·{" "}
+            {sourceNotice ?? "启动时内存快照"}
+          </small>
         </span>
         <nav>
           {onReload ? (
@@ -474,40 +480,21 @@ export function FastPreviewWorkspace({
         </nav>
       </header>
       <section className="galgame-fast-preview-body">
-        <aside className="galgame-preview-dialogue-queue">
-          {(["previous", "current", "next"] as const).map((position) => {
-            const item = dialogueQueue[position];
-            let speaker = "旁白";
-            if (
-              item &&
-              item.block.type === "dialogue" &&
-              "characterId" in item.block
-            ) {
-              const characterId = item.block.characterId;
-              speaker =
-                previewDocument.characters?.find(
-                  (character) => character.id === characterId,
-                )?.name ?? "角色";
-            }
-            return (
-              <article key={position} className={`is-${position}`}>
-                <small>
-                  {position === "previous"
-                    ? "前一句"
-                    : position === "current"
-                      ? "当前句"
-                      : "下一句"}
-                </small>
-                <strong>{speaker}</strong>
-                <p>{item?.text ?? "—"}</p>
-              </article>
-            );
-          })}
-        </aside>
+        <FastPreviewDialogueQueue
+          document={previewDocument}
+          queue={dialogueQueue}
+          onPrevious={() => playerRef.current?.previousDialogue()}
+          onPlay={() => playerRef.current?.togglePlayback()}
+          onNext={() => playerRef.current?.nextDialogue()}
+        />
         <section className="galgame-fast-preview-stage">
           <StoryPlayer
             ref={playerRef}
-            document={previewDocument}
+            document={playerDocument}
+            preloadFileIds={portraitWarmupFileIds}
+            previewExpressionIds={fastPreviewExpressionOverrides(
+              stageActorEditors,
+            )}
             startCursor={startCursor}
             playbackRange={effectivePlaybackRange}
             mode="play"
@@ -544,116 +531,50 @@ export function FastPreviewWorkspace({
           ) : exactFrameError ? (
             <div className="galgame-fast-preview-exact-error" role="alert">
               <span>{exactFrameError}</span>
-              <button type="button" onClick={() => setExactFrameError("")}>
+              <button type="button" onClick={clearExactFrameError}>
                 关闭
               </button>
             </div>
           ) : null}
         </section>
-        <aside className="galgame-fast-preview-inspector">
-          <nav>
-            <button
-              className={tab === "stage" ? "active" : ""}
-              onClick={() => setTab("stage")}
-            >
-              <ListTree aria-hidden />
-              舞台
-            </button>
-            <button
-              className={tab === "edit" ? "active" : ""}
-              onClick={openQuickEdit}
-            >
-              <PencilLine aria-hidden />
-              快速修改
-            </button>
-            <button
-              className={tab === "variables" ? "active" : ""}
-              onClick={() => setTab("variables")}
-            >
-              <Variable aria-hidden />
-              变量
-            </button>
-            <button
-              className={tab === "branches" ? "active" : ""}
-              onClick={() => setTab("branches")}
-            >
-              <GitBranch aria-hidden />
-              分支
-            </button>
-            <button
-              className={tab === "logs" ? "active" : ""}
-              onClick={() => setTab("logs")}
-            >
-              <Bug aria-hidden />
-              日志
-            </button>
-          </nav>
-          <div>
-            {tab === "stage"
-              ? actors.map((actor) => (
-                  <article key={actor.characterId}>
-                    <strong>
-                      {previewDocument.characters?.find(
-                        (character) => character.id === actor.characterId,
-                      )?.name ?? actor.characterId}
-                    </strong>
-                    <small>
-                      {actor.positionId ?? "自定义位置"} · {actor.distance}
-                    </small>
-                  </article>
-                ))
-              : null}
-            {tab === "edit" ? (
-              editableDialogue ? (
-                <FastPreviewQuickEdit
-                  document={previewDocument}
-                  block={editableDialogue}
-                  draft={editDraft}
-                  positionMs={snapshot?.positionMs ?? 0}
-                  dirty={editDirty}
-                  saving={editSaving}
-                  message={editMessage}
-                  canSave={Boolean(onApplyDialogueEdit)}
-                  onDraft={updateEditDraft}
-                  onSave={() => void applyDialogueEdit()}
-                />
-              ) : (
-                <p>当前时间点不是可编辑对白。</p>
-              )
-            ) : null}
-            {tab === "variables"
-              ? Object.entries(snapshot?.variables ?? {}).map(
-                  ([key, value]) => (
-                    <article key={key}>
-                      <strong>
-                        {previewDocument.variables?.find(
-                          (item) => item.id === key,
-                        )?.name ?? key}
-                      </strong>
-                      <code>{String(value)}</code>
-                    </article>
-                  ),
-                )
-              : null}
-            {tab === "branches"
-              ? branches.map((choice) => (
-                  <article key={choice.id}>
-                    <strong>{choice.text || "未命名选项"}</strong>
-                    <small>{choice.targetFragmentId}</small>
-                  </article>
-                ))
-              : null}
-            {tab === "logs"
-              ? logs.map((line, index) => (
-                  <code key={`${line}-${index}`}>{line}</code>
-                ))
-              : null}
-            {tab === "stage" && !actors.length ? <p>舞台上没有角色</p> : null}
-            {tab === "branches" && !branches.length ? (
-              <p>当前没有待选分支</p>
-            ) : null}
-          </div>
-        </aside>
+        <FastPreviewInspector
+          tab={tab}
+          document={previewDocument}
+          actors={actors}
+          stageActors={stageActorEditors}
+          selectedActor={selectedStageActor}
+          selectedActorId={selectedStageActorId}
+          editableDialogue={editableDialogue}
+          dialogueDraft={editDraft}
+          stageExpressionDraft={stageExpressionDraft}
+          editingStageExpression={editingStageExpression}
+          editingCurrentDialogue={editDraft.blockId === snapshotDialogue?.id}
+          dialogueDirty={editDirty}
+          stageExpressionDirty={stageExpressionDirty}
+          saving={editSaving}
+          message={editMessage}
+          canSaveDialogue={Boolean(onApplyDialogueEdit)}
+          canSaveStageExpression={Boolean(onApplyStageExpressionEdit)}
+          canSaveAll={canSaveAll}
+          pendingDraftCount={pendingDraftCount}
+          autoRevealPortraits={autoRevealPortraits}
+          positionMs={snapshot?.positionMs ?? 0}
+          variables={snapshot?.variables ?? {}}
+          branches={branches}
+          logs={logs}
+          onTab={setTab}
+          onOpenEdit={openQuickEdit}
+          onDialogueDraft={updateEditDraft}
+          onStageExpressionDraft={updateStageExpressionDraft}
+          onSaveDialogue={() => void saveDialogue()}
+          onSaveStageExpression={() => void saveStageExpression()}
+          onSaveAll={() => void saveAll()}
+          onSelectStageActor={selectStageActor}
+          onAutoRevealPortraits={(enabled) => {
+            setAutoRevealPortraits(enabled);
+            saveFastPreviewAutoRevealPortraits(enabled);
+          }}
+        />
       </section>
       <footer>
         <button

@@ -15,7 +15,6 @@ import {
   ChevronRight,
   ChevronUp,
   FileText,
-  Film,
   Folder,
   FolderOpen,
   Grid2X2,
@@ -30,7 +29,6 @@ import {
   Upload,
   X,
 } from "lucide-react";
-import { fetchApiBlob } from "@platform/api/client";
 import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
 import { CustomSelect } from "@shared/ui/CustomSelect";
 import {
@@ -46,8 +44,7 @@ import {
   type GalgameProjectAsset,
   type GalgameStoryProject,
 } from "@features/galgame-workshop/api";
-import { StoryAssetImage } from "@features/galgame-workshop/editor/StoryAssetImage";
-import { StoryAudioPreview } from "@features/galgame-workshop/editor/StoryAudioPreview";
+import { AssetOverviewPreview } from "@features/galgame-workshop/editor/AssetOverviewPreview";
 
 import {
   ASSET_TOOLBAR_HEIGHT,
@@ -73,59 +70,6 @@ import {
   type AssetStatus,
   type DirectoryNode,
 } from "@features/galgame-workshop/editor/assetOverviewModel";
-
-function VideoPreview({ fileId, label }: { fileId: string; label: string }) {
-  const [url, setUrl] = useState("");
-  useEffect(() => {
-    let active = true;
-    let objectUrl = "";
-    void fetchApiBlob(`/v1/files/${fileId}/content`)
-      .then((blob) => {
-        objectUrl = URL.createObjectURL(blob);
-        if (active) setUrl(objectUrl);
-      })
-      .catch(() => active && setUrl(""));
-    return () => {
-      active = false;
-      if (objectUrl) URL.revokeObjectURL(objectUrl);
-    };
-  }, [fileId]);
-  return url ? (
-    <video src={url} aria-label={label} controls preload="metadata" />
-  ) : (
-    <Film aria-hidden />
-  );
-}
-
-function AssetPreview({
-  item,
-  compact = false,
-}: {
-  item: AssetItem;
-  compact?: boolean;
-}) {
-  const kind = displayKind(item);
-  const Icon = KIND_META[kind].icon;
-  if (item.media_kind === "image")
-    return (
-      <StoryAssetImage
-        fileId={item.id}
-        alt={item.display_name}
-        fallback={<Icon aria-hidden />}
-      />
-    );
-  if (item.media_kind === "audio")
-    return (
-      <StoryAudioPreview
-        fileId={item.id}
-        label={item.display_name}
-        compact={compact}
-      />
-    );
-  if (item.media_kind === "video" && !compact)
-    return <VideoPreview fileId={item.id} label={item.display_name} />;
-  return <Icon aria-hidden />;
-}
 
 function DirectoryBranch({
   node,
@@ -341,17 +285,19 @@ export function AssetOverviewWorkspace({
   const overview = useQuery({
     queryKey: ["galgame-asset-overview", projectId],
     queryFn: () => getGalgameAssetOverview(projectId),
-    refetchOnMount: "always",
+    staleTime: 30_000,
   });
   const files = useQuery({
     queryKey: ["galgame-project-assets", projectId],
     queryFn: () => getGalgameProjectAssets(projectId),
-    refetchOnMount: "always",
+    enabled: selection?.kind === "missing",
+    staleTime: 30_000,
   });
   const manifest = useQuery({
     queryKey: ["galgame-package-manifest", projectId],
     queryFn: () => getGalgamePackageManifest(projectId),
-    refetchOnMount: "always",
+    enabled: overview.isSuccess,
+    staleTime: 30_000,
   });
   const items = useMemo(
     () => overview.data?.items ?? [],
@@ -1021,7 +967,7 @@ export function AssetOverviewWorkspace({
                     onClick={() => setSelection({ kind: "asset", id: item.id })}
                   >
                     <span className="galgame-assets-result-preview">
-                      <AssetPreview item={item} compact />
+                      <AssetOverviewPreview item={item} compact />
                       <small className={meta.className}>
                         {meta.label.toUpperCase()}
                       </small>
@@ -1084,7 +1030,7 @@ export function AssetOverviewWorkspace({
               <span>{selected.virtualPath}</span>
             </header>
             <div className="galgame-assets-inspector-preview">
-              <AssetPreview item={selected} />
+              <AssetOverviewPreview item={selected} />
             </div>
             <form
               onSubmit={(event) => {

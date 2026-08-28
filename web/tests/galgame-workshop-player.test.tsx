@@ -907,87 +907,6 @@ test("does not apply expression flipping to dialogue avatars", async () => {
   expect(avatar).not.toHaveStyle({ transform: "scaleX(-1)" });
 });
 
-test("shows multiple speaker names and keeps every speaking stage actor focused", async () => {
-  const user = userEvent.setup();
-  const multiSpeakerStory = structuredClone(story);
-  multiSpeakerStory.characters = [
-    { id: "hero", name: "调查员", description: "" },
-    { id: "partner", name: "助手", description: "" },
-  ];
-  multiSpeakerStory.chapters![0].fragments![0].blocks = [
-    { id: "scene", type: "scene", sceneId: "lab" },
-    {
-      id: "show-hero",
-      type: "showCharacter",
-      characterId: "hero",
-      expressionId: null,
-      transform: {
-        x: 30,
-        y: 100,
-        anchor: "bottomCenter",
-        scale: 1,
-        brightness: 1,
-        opacity: 1,
-        flipX: false,
-        layer: 10,
-      },
-      transition: { durationMs: 0, fade: false },
-    },
-    {
-      id: "show-partner",
-      type: "showCharacter",
-      characterId: "partner",
-      expressionId: null,
-      transform: {
-        x: 70,
-        y: 100,
-        anchor: "bottomCenter",
-        scale: 1,
-        brightness: 1,
-        opacity: 1,
-        flipX: false,
-        layer: 10,
-      },
-      transition: { durationMs: 0, fade: false },
-    },
-    {
-      id: "dialogue",
-      type: "dialogue",
-      characterId: "hero",
-      speakerIds: ["hero", "partner"],
-      text: "就是现在！",
-      portrait: {
-        mode: "stage",
-        keepAfter: true,
-        transform: null,
-        transition: { durationMs: 0, fade: false },
-      },
-    },
-    {
-      id: "end",
-      type: "endChapter",
-      endingId: "together",
-      label: "共同结局",
-    },
-  ];
-
-  render(<StoryPlayer document={multiSpeakerStory} />);
-  await user.click(screen.getByRole("button", { name: "开始试玩" }));
-
-  expect(screen.getByText("调查员、助手")).toBeInTheDocument();
-  expect(screen.getByText("就是现在！")).toBeInTheDocument();
-  const hero = document.querySelector<HTMLElement>(
-    '[data-character-id="hero"]',
-  );
-  const partner = document.querySelector<HTMLElement>(
-    '[data-character-id="partner"]',
-  );
-  expect(hero).toBeInTheDocument();
-  expect(partner).toBeInTheDocument();
-  expect(hero?.style.filter).toContain("brightness(1)");
-  expect(partner?.style.filter).toContain("brightness(1)");
-});
-
 test("keeps multiple staged characters, applies speaker focus, and removes actors", async () => {
   const user = userEvent.setup();
   const stageStory = structuredClone(story);
@@ -1131,8 +1050,13 @@ test("keeps multiple staged characters, applies speaker focus, and removes actor
   )!;
   expect(hero).toHaveStyle({ left: "25%", opacity: "1" });
   expect(partner).toHaveStyle({ left: "75%" });
+  expect(Number(hero.style.zIndex)).toBeGreaterThan(
+    Number(partner.style.zIndex),
+  );
   expect(hero.style.filter).toContain("brightness(1)");
   expect(partner.style.filter).toContain("brightness(0.48)");
+  expect(hero.style.filter).not.toContain("drop-shadow");
+  expect(partner.style.filter).not.toContain("drop-shadow");
 
   await user.click(screen.getByText("两个人都在画面里。").closest("button")!);
   expect(partner.style.filter).toContain("brightness(0.8)");

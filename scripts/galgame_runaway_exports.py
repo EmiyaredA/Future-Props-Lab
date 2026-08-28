@@ -17,7 +17,7 @@ except ModuleNotFoundError:
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 PROJECT_ID = "63ac832d-bff3-4053-9c9f-f55c9dafc52a"
-EXPORT_WORKFLOW_VERSION = "v11r1"
+EXPORT_WORKFLOW_VERSION = "v15r1"
 FRAGMENT_ID = "runaway-full"
 FULL_DURATION_MS = 1_780_344
 SAMPLE_DURATION_MS = 180_000
@@ -60,6 +60,11 @@ LATEST_FIX_EXPORTS = (
     ("diagnostic-overlap-fix-1518s-1527s", 1_518_000, 1_527_000),
     ("diagnostic-ending-thanks-1768s-1780s", 1_768_000, 1_780_344),
 )
+EXPRESSION_SYNC_EXPORTS = (
+    ("diagnostic-expression-sync-151s-161s", 151_000, 161_000),
+    ("diagnostic-mother-identity-v4-786s-802s", 786_000, 802_000),
+    ("diagnostic-luka-speaker-1649s-1656s", 1_649_000, 1_656_000),
+)
 SCENE_TIME_EXPORTS = (
     ("scene-main-day-switch-145s-160s", 145_000, 160_000),
     ("scene-day-to-evening-964s-980s", 964_000, 980_000),
@@ -73,6 +78,19 @@ PORTRAIT_REVIEW_EXPORTS = (
     ("portrait-moeka-299s-309s", 299_000, 309_000),
     ("portrait-suzuha-kagari-1353s-1362s", 1_353_000, 1_362_000),
     ("portrait-maho-suzuha-1596s-1612s", 1_596_000, 1_612_000),
+)
+FINAL_CG_REVIEW_EXPORTS = (
+    ("final-cg-01-cleaning-night", 1_312_000, 1_322_000),
+    ("final-cg-02-rooftop-finale", 1_760_000, 1_780_344),
+    ("final-cg-03-kagari-imitation", 590_000, 620_000),
+    ("final-cg-04-suzuha-entrance", 656_000, 671_000),
+    ("final-cg-05-kagari-remembers", 1_559_000, 1_573_000),
+    ("final-cg-06-storytime", 1_094_000, 1_107_000),
+    ("final-cg-07-cleaning-evening", 1_231_000, 1_244_000),
+    ("final-cg-08-kagari-rejects", 1_440_000, 1_452_000),
+    ("final-cg-09-suzuha-maho", 1_606_000, 1_614_000),
+    ("final-cg-10-time-machine", 1_664_000, 1_680_000),
+    ("final-cg-11a-lab-reaction", 834_000, 842_000),
 )
 
 
@@ -102,10 +120,14 @@ def requested_exports(
         return [*LATEST_REVISION_EXPORTS]
     if only == "latest-fixes":
         return [*LATEST_FIX_EXPORTS]
+    if only == "expression-sync":
+        return [*EXPRESSION_SYNC_EXPORTS]
     if only == "scene-time":
         return [*SCENE_TIME_EXPORTS]
     if only == "portrait-review":
         return [*PORTRAIT_REVIEW_EXPORTS]
+    if only == "final-cgs":
+        return [*FINAL_CG_REVIEW_EXPORTS]
     if only == "full":
         return [None]
     return [random_sample(rng)]
@@ -168,7 +190,7 @@ def submit(
     requested = requested_exports(only, rng)
     task_names: dict[str, str] = {}
     for item in requested:
-        name = item[0] if item else "full-29m40s344-v11"
+        name = item[0] if item else "full-29m40s344-v15"
         body = request_body(revision, item)
         preview = request_json(client, "POST", export_path("/preview"), body)
         if not preview["ready"]:
@@ -260,8 +282,10 @@ def main() -> None:
             "preview-regression",
             "latest-review",
             "latest-fixes",
+            "expression-sync",
             "scene-time",
             "portrait-review",
+            "final-cgs",
             "full",
         ),
     )

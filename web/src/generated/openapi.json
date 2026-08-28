@@ -5424,6 +5424,88 @@
         "title": "GalgameStoryDialogueBoxStyle",
         "type": "object"
       },
+      "GalgameStoryDialoguePatchIn": {
+        "additionalProperties": false,
+        "properties": {
+          "blockId": {
+            "pattern": "^[a-z0-9][a-z0-9-]{0,63}$",
+            "title": "Blockid",
+            "type": "string"
+          },
+          "expected_revision": {
+            "minimum": 0.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "expressionId": {
+            "anyOf": [
+              {
+                "pattern": "^[a-z0-9][a-z0-9-]{0,63}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expressionid"
+          },
+          "fragmentId": {
+            "pattern": "^[a-z0-9][a-z0-9-]{0,63}$",
+            "title": "Fragmentid",
+            "type": "string"
+          },
+          "portrait": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/GalgameStoryDialoguePortrait"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "text": {
+            "maxLength": 20000,
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "expected_revision",
+          "fragmentId",
+          "blockId",
+          "text"
+        ],
+        "title": "GalgameStoryDialoguePatchIn",
+        "type": "object"
+      },
+      "GalgameStoryDialoguePatchOut": {
+        "properties": {
+          "block": {
+            "$ref": "#/components/schemas/GalgameStoryDialogueBlock"
+          },
+          "project_id": {
+            "title": "Project Id",
+            "type": "string"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          },
+          "updated_at": {
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "project_id",
+          "revision",
+          "updated_at",
+          "block"
+        ],
+        "title": "GalgameStoryDialoguePatchOut",
+        "type": "object"
+      },
       "GalgameStoryDialoguePortrait": {
         "additionalProperties": false,
         "properties": {
@@ -8061,6 +8143,86 @@
           "characterId"
         ],
         "title": "GalgameStoryStageCastMember",
+        "type": "object"
+      },
+      "GalgameStoryStageExpressionPatchIn": {
+        "additionalProperties": false,
+        "properties": {
+          "blockId": {
+            "pattern": "^[a-z0-9][a-z0-9-]{0,63}$",
+            "title": "Blockid",
+            "type": "string"
+          },
+          "characterId": {
+            "pattern": "^[a-z0-9][a-z0-9-]{0,63}$",
+            "title": "Characterid",
+            "type": "string"
+          },
+          "expected_revision": {
+            "minimum": 0.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "expressionId": {
+            "anyOf": [
+              {
+                "pattern": "^[a-z0-9][a-z0-9-]{0,63}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expressionid"
+          },
+          "fragmentId": {
+            "pattern": "^[a-z0-9][a-z0-9-]{0,63}$",
+            "title": "Fragmentid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "expected_revision",
+          "fragmentId",
+          "blockId",
+          "characterId"
+        ],
+        "title": "GalgameStoryStageExpressionPatchIn",
+        "type": "object"
+      },
+      "GalgameStoryStageExpressionPatchOut": {
+        "properties": {
+          "block": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/GalgameStoryShowCharacterBlock"
+              },
+              {
+                "$ref": "#/components/schemas/GalgameStorySetStageCastBlock"
+              }
+            ],
+            "title": "Block"
+          },
+          "project_id": {
+            "title": "Project Id",
+            "type": "string"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          },
+          "updated_at": {
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "project_id",
+          "revision",
+          "updated_at",
+          "block"
+        ],
+        "title": "GalgameStoryStageExpressionPatchOut",
         "type": "object"
       },
       "GalgameStoryStageStyle": {
@@ -22727,6 +22889,58 @@
         ]
       }
     },
+    "/v1/galgame-workshop/projects/{project_id}/story/dialogue": {
+      "patch": {
+        "operationId": "patch_story_dialogue_v1_galgame_workshop_projects__project_id__story_dialogue_patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GalgameStoryDialoguePatchIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GalgameStoryDialoguePatchOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Patch Story Dialogue",
+        "tags": [
+          "galgame-workshop"
+        ]
+      }
+    },
     "/v1/galgame-workshop/projects/{project_id}/story/import": {
       "post": {
         "operationId": "import_legacy_story_v1_galgame_workshop_projects__project_id__story_import_post",
@@ -23015,6 +23229,58 @@
           }
         },
         "summary": "Restore Story Snapshot",
+        "tags": [
+          "galgame-workshop"
+        ]
+      }
+    },
+    "/v1/galgame-workshop/projects/{project_id}/story/stage-expression": {
+      "patch": {
+        "operationId": "patch_story_stage_expression_v1_galgame_workshop_projects__project_id__story_stage_expression_patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GalgameStoryStageExpressionPatchIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GalgameStoryStageExpressionPatchOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Patch Story Stage Expression",
         "tags": [
           "galgame-workshop"
         ]

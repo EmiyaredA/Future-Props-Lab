@@ -1,5 +1,6 @@
 import { api, unwrap } from "@platform/api/client";
 import type {
+  GalgameStoryDialoguePortrait,
   GalgameStoryDocument,
   GalgameStoryProject,
   GeneratedGalgameStoryProject,
@@ -35,6 +36,73 @@ export async function putGalgameStoryDocument(
     }),
   );
   return normalizeStoryDocument(response);
+}
+
+export async function patchGalgameStoryDialogue(
+  projectId: string,
+  edit: {
+    fragmentId: string;
+    blockId: string;
+    text: string;
+    expressionId: string | null;
+    portrait:
+      | (Omit<GalgameStoryDialoguePortrait, "visible" | "distance"> & {
+          visible?: GalgameStoryDialoguePortrait["visible"];
+          distance?: GalgameStoryDialoguePortrait["distance"];
+        })
+      | null;
+  },
+  expectedRevision: number,
+) {
+  return unwrap(
+    await api.PATCH(
+      "/v1/galgame-workshop/projects/{project_id}/story/dialogue",
+      {
+        params: { path: { project_id: projectId } },
+        body: {
+          expected_revision: expectedRevision,
+          fragmentId: edit.fragmentId,
+          blockId: edit.blockId,
+          text: edit.text,
+          expressionId: edit.expressionId,
+          portrait: edit.portrait
+            ? {
+                ...edit.portrait,
+                visible: edit.portrait.visible ?? true,
+                distance: edit.portrait.distance ?? "medium",
+              }
+            : null,
+        },
+      },
+    ),
+  );
+}
+
+export async function patchGalgameStoryStageExpression(
+  projectId: string,
+  edit: {
+    fragmentId: string;
+    blockId: string;
+    characterId: string;
+    expressionId: string | null;
+  },
+  expectedRevision: number,
+) {
+  return unwrap(
+    await api.PATCH(
+      "/v1/galgame-workshop/projects/{project_id}/story/stage-expression",
+      {
+        params: { path: { project_id: projectId } },
+        body: {
+          expected_revision: expectedRevision,
+          fragmentId: edit.fragmentId,
+          blockId: edit.blockId,
+          characterId: edit.characterId,
+          expressionId: edit.expressionId,
+        },
+      },
+    ),
+  );
 }
 
 export async function getGalgameStoryReport(projectId: string) {

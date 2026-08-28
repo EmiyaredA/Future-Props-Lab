@@ -264,6 +264,98 @@ def test_video_editor_frame_evaluator_honors_bottom_anchor_and_brightness() -> N
     assert frame.getpixel((99, 100)) == (0, 0, 0)
 
 
+def test_video_editor_height_fitted_portrait_grounds_visible_alpha_bottom() -> None:
+    clip = {
+        **color_clip("portrait", 0, 1_000_000),
+        "kind": "image",
+        "name": "portrait",
+        "assetId": "portrait",
+        "color": None,
+        "fitMode": "height",
+        "heightPercent": 10,
+        "transform": {
+            "x": 100,
+            "y": 100,
+            "anchor": "bottomCenter",
+            "scaleX": 1,
+            "scaleY": 1,
+            "rotation": 0,
+            "opacity": 1,
+            "brightness": 1,
+        },
+    }
+    document = VideoEditorTimelineDocument.model_validate(
+        {
+            "settings": {"width": 1920, "height": 1080, "fps": 30},
+            "tracks": [
+                {
+                    "id": "visual-1",
+                    "kind": "visual",
+                    "name": "V1",
+                    "order": 0,
+                    "clips": [clip],
+                }
+            ],
+        }
+    )
+    portrait = Image.new("RGBA", (10, 10), (220, 40, 30, 255))
+    portrait.paste((0, 0, 0, 0), (0, 7, 10, 10))
+    frame = TimelineFrameRenderer(
+        document,
+        FrameSource(
+            image_for_clip=lambda _clip, _time: portrait.copy(),
+            font_for_clip=lambda _clip: None,
+        ),
+    ).render(0)
+    meaningful_rows = [y for y in range(150) if frame.getpixel((99, y))[0] >= 8]
+    assert max(meaningful_rows) >= 98
+    assert frame.getpixel((99, 100)) == (0, 0, 0)
+
+
+def test_video_editor_text_layer_keeps_large_chinese_glyph_bottom_padding() -> None:
+    clip = {
+        **color_clip("ending-title", 0, 1_000_000),
+        "kind": "text",
+        "name": "谢谢观看",
+        "text": "谢谢观看",
+        "fontSize": 108,
+        "textColor": "#f4e7c5",
+        "fontAssetId": "ending-font",
+        "color": None,
+    }
+    document = VideoEditorTimelineDocument.model_validate(
+        {
+            "settings": {"width": 1920, "height": 1080, "fps": 30},
+            "tracks": [
+                {
+                    "id": "visual-1",
+                    "kind": "visual",
+                    "name": "V1",
+                    "order": 0,
+                    "clips": [clip],
+                }
+            ],
+        }
+    )
+    font_path = (
+        Path(__file__).parents[1] / "backend/app/galgame_workshop/assets/NotoSansSC-Medium.ttf"
+    )
+    renderer = TimelineFrameRenderer(
+        document,
+        FrameSource(
+            image_for_clip=lambda _clip, _time: None,
+            font_for_clip=lambda _clip: font_path,
+        ),
+    )
+
+    layer = renderer._text_layer(document.tracks[0].clips[0])
+    alpha_bounds = layer.getchannel("A").getbbox()
+
+    assert alpha_bounds is not None
+    assert alpha_bounds[1] >= 10
+    assert alpha_bounds[3] <= layer.height - 10
+
+
 def test_video_editor_render_is_ffmpeg_native_and_has_exact_tracks(tmp_path: Path) -> None:
     document = VideoEditorTimelineDocument.model_validate(
         {

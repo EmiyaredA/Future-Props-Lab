@@ -1,21 +1,23 @@
 import { useEffect, useRef, useState } from "react";
 import {
   getGalgameStoryDocument,
+  patchGalgameStoryDialogue,
   putGalgameStoryDocument,
   type GalgameStoryProject,
 } from "@features/galgame-workshop/api";
+import { FastPreviewWorkspace } from "@features/galgame-workshop/editor/FastPreviewWorkspace";
+import type { FastPreviewCursor } from "@features/galgame-workshop/editor/storyPlayerModel";
+import type { FastPreviewDialogueEdit } from "@features/galgame-workshop/editor/fastPreviewDialogueEdit";
 import {
-  FastPreviewWorkspace,
-  type FastPreviewCursor,
-} from "@features/galgame-workshop/editor/FastPreviewWorkspace";
-import {
-  applyFastPreviewDialogueEdit,
-  type FastPreviewDialogueEdit,
-} from "@features/galgame-workshop/editor/fastPreviewDialogueEdit";
+  applyFastPreviewStageExpressionEdit,
+  type FastPreviewStageExpressionEdit,
+} from "@features/galgame-workshop/editor/fastPreviewStageExpressionEdit";
 import type {
   FastPreviewDocumentMessage,
   FastPreviewEditRequestMessage,
   FastPreviewEditResultMessage,
+  FastPreviewStageExpressionRequestMessage,
+  FastPreviewStageExpressionResultMessage,
 } from "@features/galgame-workshop/editor/fastPreviewSession";
 import {
   entryChapter,
@@ -33,6 +35,7 @@ function fallbackCursor(document: GalgameStoryProject): FastPreviewCursor {
 
 export function GalgameFastPreviewPage({ projectId }: { projectId: string }) {
   const [session, setSession] = useState<FastPreviewDocumentMessage>();
+  const sessionRef = useRef<FastPreviewDocumentMessage | undefined>(undefined);
   const receivedRef = useRef(false);
   const channelRef = useRef<BroadcastChannel | undefined>(undefined);
   const pendingEditsRef = useRef(
@@ -56,13 +59,15 @@ export function GalgameFastPreviewPage({ projectId }: { projectId: string }) {
       try {
         const saved = await getGalgameStoryDocument(projectId);
         if (!active) return;
-        setSession({
+        const nextSession: FastPreviewDocumentMessage = {
           type: "document",
           document: saved.document,
           startCursor: fallbackCursor(saved.document),
           source: "launch",
           storyRevision: saved.revision,
-        });
+        };
+        sessionRef.current = nextSession;
+        setSession(nextSession);
         setNotice("编辑器未连接，正在预演服务器已保存版本");
       } catch {
         if (active) setNotice("无法取得编辑器快照或服务器版本");
@@ -73,8 +78,13 @@ export function GalgameFastPreviewPage({ projectId }: { projectId: string }) {
       channel = new BroadcastChannel(`fpl-galgame-preview:${sessionId}`);
       channelRef.current = channel;
       channel.addEventListener("message", (event) => {
-        if (event.data?.type === "edit-dialogue-result") {
-          const message = event.data as FastPreviewEditResultMessage;
+        if (
+          event.data?.type === "edit-dialogue-result" ||
+          event.data?.type === "edit-stage-expression-result"
+        ) {
+          const message = event.data as
+            | FastPreviewEditResultMessage
+            | FastPreviewStageExpressionResultMessage;
           const pending = pendingEditsRef.current.get(message.requestId);
           if (!pending) return;
           pendingEditsRef.current.delete(message.requestId);
@@ -84,7 +94,8 @@ export function GalgameFastPreviewPage({ projectId }: { projectId: string }) {
         }
         if (!active || event.data?.type !== "document") return;
         receivedRef.current = true;
-        setSession(event.data as FastPreviewDocumentMessage);
+        sessionRef.current = event.data as FastPreviewDocumentMessage;
+        setSession(sessionRef.current);
         setNotice(
           event.data.source === "reload"
             ? "已手动载入最新编辑内容并重启"
@@ -125,42 +136,81 @@ export function GalgameFastPreviewPage({ projectId }: { projectId: string }) {
           edit,
         } satisfies FastPreviewEditRequestMessage);
       });
-      setSession((current) =>
-        current
-          ? {
-              ...current,
-              document: result.document,
-              storyRevision: result.storyRevision,
-            }
-          : current,
-      );
+      const nextSession = {
+        ...(sessionRef.current ?? session),
+        document: result.document,
+        storyRevision: result.storyRevision,
+      };
+      sessionRef.current = nextSession;
+      setSession(nextSession);
       return result;
     }
-    if (session.storyRevision == null)
+    const currentSession = sessionRef.current ?? session;
+    if (currentSession.storyRevision == null)
       throw new Error("当前预览缺少可保存的故事修订号");
+    const saved = await patchGalgameStoryDialogue(
+      projectId,
+      edit,
+      currentSession.storyRevision,
+    );
     const next = updateBlock(
-      session.document,
+      currentSession.document,
       edit.fragmentId,
       edit.blockId,
-      (block) =>
-        block.type === "dialogue"
-          ? applyFastPreviewDialogueEdit(block, edit)
-          : block,
+      (block) => (block.type === "dialogue" ? saved.block : block),
+    );
+    const nextSession = {
+      ...currentSession,
+      document: next,
+      storyRevision: saved.revision,
+    };
+    sessionRef.current = nextSession;
+    setSession(nextSession);
+    return { document: next, storyRevision: saved.revision };
+  };
+  const applyStageExpressionEdit = async (
+    edit: FastPreviewStageExpressionEdit,
+  ) => {
+    if (channelRef.current) {
+      const requestId = crypto.randomUUID();
+      const result = await new Promise<
+        NonNullable<FastPreviewStageExpressionResultMessage["result"]>
+      >((resolve, reject) => {
+        pendingEditsRef.current.set(requestId, { resolve, reject });
+        channelRef.current?.postMessage({
+          type: "edit-stage-expression",
+          requestId,
+          edit,
+        } satisfies FastPreviewStageExpressionRequestMessage);
+      });
+      const nextSession = {
+        ...(sessionRef.current ?? session),
+        document: result.document,
+        storyRevision: result.storyRevision,
+      };
+      sessionRef.current = nextSession;
+      setSession(nextSession);
+      return result;
+    }
+    const currentSession = sessionRef.current ?? session;
+    if (currentSession.storyRevision == null)
+      throw new Error("当前预览缺少可保存的故事修订号");
+    const next = applyFastPreviewStageExpressionEdit(
+      currentSession.document,
+      edit,
     );
     const saved = await putGalgameStoryDocument(
       projectId,
       next,
-      session.storyRevision,
+      currentSession.storyRevision,
     );
-    setSession((current) =>
-      current
-        ? {
-            ...current,
-            document: saved.document,
-            storyRevision: saved.revision,
-          }
-        : current,
-    );
+    const nextSession = {
+      ...currentSession,
+      document: saved.document,
+      storyRevision: saved.revision,
+    };
+    sessionRef.current = nextSession;
+    setSession(nextSession);
     return { document: saved.document, storyRevision: saved.revision };
   };
   return (
@@ -174,6 +224,7 @@ export function GalgameFastPreviewPage({ projectId }: { projectId: string }) {
       playbackRange={session.playbackRange}
       sourceNotice={notice}
       onApplyDialogueEdit={applyDialogueEdit}
+      onApplyStageExpressionEdit={applyStageExpressionEdit}
       onReload={
         sessionId
           ? () => {

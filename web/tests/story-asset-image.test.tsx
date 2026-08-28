@@ -1,6 +1,7 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { act, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { StoryAssetImage } from "@features/galgame-workshop/editor/StoryAssetImage";
+import { StoryImageCacheProvider } from "@features/galgame-workshop/editor/StoryImageCache";
 import { fetchApiBlob } from "@platform/api/client";
 
 vi.mock("@platform/api/client", () => ({
@@ -31,7 +32,44 @@ describe("StoryAssetImage", () => {
     });
   });
 
-  afterEach(() => vi.unstubAllGlobals());
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
+
+  test("retries a portrait that initially fails to load", async () => {
+    vi.useFakeTimers();
+    vi.mocked(fetchApiBlob)
+      .mockRejectedValueOnce(new Error("temporary failure"))
+      .mockResolvedValueOnce(new Blob(["retry"], { type: "image/png" }));
+
+    render(
+      <StoryAssetImage
+        fileId="portrait-retry"
+        alt="角色"
+        fallback={<span>加载中</span>}
+      />,
+    );
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(fetchApiBlob).toHaveBeenCalledTimes(1);
+    expect(screen.getByText("加载中")).toBeInTheDocument();
+
+    await act(async () => {
+      vi.advanceTimersByTime(180);
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(fetchApiBlob).toHaveBeenCalledTimes(2);
+    expect(screen.getByAltText("角色")).toHaveAttribute(
+      "src",
+      "blob:story-asset-0",
+    );
+  });
 
   test("keeps the previous asset visible until a replacement is decoded", async () => {
     let resolveNext: ((blob: Blob) => void) | undefined;
@@ -166,6 +204,48 @@ describe("StoryAssetImage", () => {
     expect(screen.getByAltText("角色")).toHaveAttribute(
       "src",
       "blob:story-asset-0",
+    );
+  });
+
+  test("cancels stale cached loads when the preview switches characters", async () => {
+    const pending = new Map<string, (blob: Blob) => void>();
+    const signals = new Map<string, AbortSignal | undefined>();
+    vi.mocked(fetchApiBlob).mockImplementation(
+      (path, init) =>
+        new Promise((resolve, reject) => {
+          pending.set(path, resolve);
+          signals.set(path, init?.signal ?? undefined);
+          init?.signal?.addEventListener("abort", () =>
+            reject(new DOMException("aborted", "AbortError")),
+          );
+        }),
+    );
+
+    const portrait = (fileId: string) => (
+      <StoryImageCacheProvider>
+        <StoryAssetImage
+          fileId={fileId}
+          alt="角色"
+          fallback={<span>加载中</span>}
+        />
+      </StoryImageCacheProvider>
+    );
+    const { rerender } = render(portrait("portrait-a"));
+    rerender(portrait("portrait-b"));
+
+    await waitFor(() =>
+      expect(signals.get("/v1/files/portrait-a/content")?.aborted).toBe(true),
+    );
+    expect(signals.get("/v1/files/portrait-b/content")?.aborted).toBe(false);
+
+    pending.get("/v1/files/portrait-b/content")?.(
+      new Blob(["b"], { type: "image/png" }),
+    );
+    await waitFor(() =>
+      expect(screen.getByAltText("角色")).toHaveAttribute(
+        "src",
+        "blob:story-asset-0",
+      ),
     );
   });
 });

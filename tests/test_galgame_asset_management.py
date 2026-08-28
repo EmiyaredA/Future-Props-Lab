@@ -11,6 +11,7 @@ from sqlalchemy import delete
 
 from app.core.credentials import encrypt_secret
 from app.core.db import SessionLocal
+from app.galgame_workshop import asset_analysis as asset_analysis_module
 from app.galgame_workshop.asr import GalgameAsrRunner
 from app.galgame_workshop.assets import normalize_import_filename
 from app.main import app
@@ -259,7 +260,9 @@ async def test_asset_import_metadata_packaging_and_cas() -> None:
 
 
 @pytest.mark.asyncio
-async def test_sequence_frames_are_referenced_packaged_and_delete_protected() -> None:
+async def test_sequence_frames_are_referenced_packaged_and_delete_protected(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     transport = httpx.ASGITransport(app=app)
     async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
         project = (
@@ -315,10 +318,21 @@ async def test_sequence_frames_are_referenced_packaged_and_delete_protected() ->
         )
         assert saved.status_code == 200, saved.text
 
+        normalize_calls = 0
+        original_normalize = asset_analysis_module.normalize_story_document
+
+        def counted_normalize(document: object) -> GalgameStoryProject:
+            nonlocal normalize_calls
+            normalize_calls += 1
+            return original_normalize(document)
+
+        monkeypatch.setattr(asset_analysis_module, "normalize_story_document", counted_normalize)
+
         overview = await client.get(
             f"/v1/galgame-workshop/projects/{project['id']}/assets/overview"
         )
         assert overview.status_code == 200, overview.text
+        assert normalize_calls == 1
         second = next(item for item in overview.json()["items"] if item["id"] == uploads[1]["id"])
         assert second["reference_count"] == 1
         assert second["references"][0]["kind"] == "characterExpressionFrame"

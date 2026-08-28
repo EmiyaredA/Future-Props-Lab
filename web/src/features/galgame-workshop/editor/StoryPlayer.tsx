@@ -1,6 +1,7 @@
 import { forwardRef, useEffect, useImperativeHandle } from "react";
 import { StoryPlayerView } from "@features/galgame-workshop/editor/StoryPlayerView";
 import { StoryImageCacheProvider } from "@features/galgame-workshop/editor/StoryImageCache";
+import { StoryPlayerImageWarmup } from "@features/galgame-workshop/editor/StoryPlayerImageWarmup";
 import { useStoryPlayerController } from "@features/galgame-workshop/editor/useStoryPlayerController";
 import type {
   StoryPlayerHandle,
@@ -54,6 +55,7 @@ export const StoryPlayer = forwardRef<StoryPlayerHandle, StoryPlayerProps>(
     ]);
     return (
       <StoryImageCacheProvider>
+        <StoryPlayerImageWarmup fileIds={props.preloadFileIds ?? []} />
         <StoryPlayerView model={model} />
       </StoryImageCacheProvider>
     );

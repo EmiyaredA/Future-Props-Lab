@@ -101,6 +101,7 @@ export type GalgameStageState = {
     y: number;
     color: string;
     durationMs: number;
+    fontSize?: number;
   };
   curtain?: {
     mode: "fullscreen" | "letterbox" | "pillarbox" | "frame";
@@ -459,6 +460,10 @@ export function applyAutomaticStageBlock(
         y: block.y,
         color: block.color,
         durationMs: block.durationMs,
+        fontSize:
+          block.durationMs >= 5000 && block.text.trim().length <= 12
+            ? 108
+            : undefined,
       },
     };
   if (block.type === "curtain")
@@ -582,10 +587,29 @@ export function enterContentBlock(
       (character) => character.id === block.characterId,
     )?.dialogueAvatar?.enabled,
   );
-  if (
-    portrait.visible === false ||
-    (portrait.mode === "dialogueAvatar" && dialogueAvatarEnabled)
-  )
+  const existing = state.actors[block.characterId];
+  if (portrait.visible === false)
+    return {
+      ...state,
+      actors: existing
+        ? {
+            ...state.actors,
+            [block.characterId]: {
+              ...existing,
+              expressionId: resolvedExpression(
+                document,
+                block.characterId,
+                block.expressionId,
+              ),
+            },
+          }
+        : state.actors,
+      soloActor: undefined,
+      hiddenCharacterId: undefined,
+      activeSpeakerId: block.characterId,
+      activeSpeakerIds: speakerIds,
+    };
+  if (portrait.mode === "dialogueAvatar" && dialogueAvatarEnabled)
     return {
       ...state,
       soloActor: undefined,
@@ -594,7 +618,6 @@ export function enterContentBlock(
       activeSpeakerIds: speakerIds,
     };
 
-  const existing = state.actors[block.characterId];
   const actor = actorFromPortrait(
     document,
     block.characterId,
@@ -614,9 +637,25 @@ export function enterContentBlock(
 
 export function visibleStageActors(state: GalgameStageState) {
   if (state.soloActor) return [state.soloActor];
+  const activeSpeakers = new Set(activeStageSpeakerIds(state));
   return Object.values(state.actors)
     .filter((actor) => actor.characterId !== state.hiddenCharacterId)
-    .sort((left, right) => left.transform.layer - right.transform.layer);
+    .map((actor, stableIndex) => ({ actor, stableIndex }))
+    .sort((left, right) => {
+      const speakerBand =
+        Number(activeSpeakers.has(left.actor.characterId)) -
+        Number(activeSpeakers.has(right.actor.characterId));
+      if (speakerBand !== 0) return speakerBand;
+      const layer = left.actor.transform.layer - right.actor.transform.layer;
+      return layer !== 0 ? layer : left.stableIndex - right.stableIndex;
+    })
+    .map(({ actor }) => actor);
+}
+
+export function activeStageSpeakerIds(state: GalgameStageState): string[] {
+  const explicit = state.activeSpeakerIds?.filter(Boolean) ?? [];
+  if (explicit.length) return [...new Set(explicit)];
+  return state.activeSpeakerId ? [state.activeSpeakerId] : [];
 }
 
 export function replayStageToBlock(

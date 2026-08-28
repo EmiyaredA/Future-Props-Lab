@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from app.galgame_workshop.video_compiler_support import camera_values
+from app.galgame_workshop.video_compiler_support import camera_values, dialogue_speaker_ids
 from app.galgame_workshop.video_export_planning import _estimate_block_ms
 
 CompilerEvent = tuple[int, int, str, dict[str, Any]]
@@ -164,15 +164,19 @@ def apply_event(
 ) -> None:
     if action == "content-end":
         if state.get("content", {}).get("id") == block.get("id"):
-            previous_speaker = block.get("characterId") if block.get("type") == "dialogue" else None
+            previous_speakers = dialogue_speaker_ids(block)
+            previous_speaker = previous_speakers[0] if previous_speakers else None
             state["content"] = None
             state["contentStartedUs"] = None
             state["focusTransition"] = {
                 "startedUs": absolute_us,
                 "from": previous_speaker,
+                "fromIds": previous_speakers,
                 "to": None,
+                "toIds": (),
             }
             state["lastSpeaker"] = previous_speaker
+            state["lastSpeakerIds"] = previous_speakers
         portrait = block.get("portrait") or {}
         if (
             block.get("type") == "dialogue"
@@ -235,39 +239,54 @@ def apply_event(
         return
     if action == "content-start":
         previous_content = state.get("content") or {}
-        previous_speaker = (
-            previous_content.get("characterId")
-            if previous_content.get("type") == "dialogue"
-            else None
-        )
+        previous_speakers = dialogue_speaker_ids(previous_content)
         if state.get("focusTransition", {}).get("startedUs") == absolute_us:
-            previous_speaker = state.get("lastSpeaker")
+            previous_speakers = tuple(state.get("lastSpeakerIds") or ())
+        previous_speaker = previous_speakers[0] if previous_speakers else None
         state["content"] = block
         state["contentStartedUs"] = absolute_us
-        next_speaker = block.get("characterId") if block.get("type") == "dialogue" else None
+        next_speakers = dialogue_speaker_ids(block)
+        next_speaker = next_speakers[0] if next_speakers else None
         state["focusTransition"] = {
             "startedUs": absolute_us,
             "from": previous_speaker,
+            "fromIds": previous_speakers,
             "to": next_speaker,
+            "toIds": next_speakers,
         }
         state["lastSpeaker"] = None
+        state["lastSpeakerIds"] = ()
         if block.get("type") == "dialogue":
             character_id = block.get("characterId")
             actor = state["actors"].get(character_id, {"characterId": character_id})
-            if block.get("expressionId"):
-                if actor.get("expressionId") != block["expressionId"]:
+            if "expressionId" in block:
+                expression_id = block.get("expressionId")
+                if actor.get("expressionId") != expression_id:
                     actor["expressionStartedUs"] = absolute_us
-                actor["expressionId"] = block["expressionId"]
+                # ``null`` means “follow the character default”, matching the
+                # browser player. Keeping the previous expression here makes a
+                # fast-preview edit look correct but export the stale face.
+                actor["expressionId"] = expression_id
             portrait = block.get("portrait") or {}
             if portrait.get("visible", True) and portrait.get("mode") != "dialogueAvatar":
                 entering = character_id not in state["actors"]
+                position_id = portrait.get("positionId")
+                transform = portrait.get("transform")
+                distance = portrait.get("distance")
                 actor.update(
-                    positionId=portrait.get("positionId", actor.get("positionId")),
-                    transform=portrait.get("transform", actor.get("transform", {})),
-                    distance=portrait.get("distance", actor.get("distance", "medium")),
+                    # The quick editor deliberately serializes inherited values
+                    # as null. Treat null like the browser's ?? fallback so an
+                    # existing stage-cast transform (notably scale/layer/flip)
+                    # survives a dialogue-only position or distance edit.
+                    positionId=actor.get("positionId") if position_id is None else position_id,
+                    transform=actor.get("transform", {}) if transform is None else transform,
+                    distance=actor.get("distance", "medium") if distance is None else distance,
+                    # A dialogue portrait without a skin explicitly returns to
+                    # the character's default skin in the browser player.
+                    skinId=portrait.get("skinId"),
                     entering=entering,
                     enterStartedUs=absolute_us if entering else actor.get("enterStartedUs"),
-                    transition=portrait.get("transition") or actor.get("transition") or {},
+                    transition=portrait.get("transition") or {"durationMs": 240, "fade": True},
                     exiting=False,
                     exitSourceBlockId=None,
                 )

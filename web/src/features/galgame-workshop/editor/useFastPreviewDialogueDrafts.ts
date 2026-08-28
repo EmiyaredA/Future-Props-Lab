@@ -43,6 +43,7 @@ export function useFastPreviewDialogueDrafts(document: GalgameStoryProject) {
   const [pendingDrafts, setPendingDrafts] = useState<
     Record<string, FastPreviewDialogueDraft>
   >({});
+  const [presentationRevision, setPresentationRevision] = useState(0);
   const editedSourceBlock = useMemo(
     () => sourceDialogue(document, editDraft.fragmentId, editDraft.blockId),
     [document, editDraft.blockId, editDraft.fragmentId],
@@ -88,6 +89,11 @@ export function useFastPreviewDialogueDrafts(document: GalgameStoryProject) {
   );
   const updateDraft = useCallback(
     (nextDraft: FastPreviewDialogueDraft) => {
+      if (
+        JSON.stringify(editDraft.portrait) !==
+        JSON.stringify(nextDraft.portrait)
+      )
+        setPresentationRevision((current) => current + 1);
       setEditDraft(nextDraft);
       setPendingDrafts((current) => {
         const key = draftKey(nextDraft.fragmentId, nextDraft.blockId);
@@ -104,7 +110,7 @@ export function useFastPreviewDialogueDrafts(document: GalgameStoryProject) {
         return next;
       });
     },
-    [document],
+    [document, editDraft.portrait],
   );
   const discardDraft = useCallback((fragmentId: string, blockId: string) => {
     setPendingDrafts((current) => {
@@ -121,7 +127,9 @@ export function useFastPreviewDialogueDrafts(document: GalgameStoryProject) {
     editDraft,
     editDirty,
     hasDirtyDrafts: Object.keys(pendingDrafts).length > 0,
+    pendingDrafts: Object.values(pendingDrafts),
     pendingDraftCount: Object.keys(pendingDrafts).length,
+    presentationRevision,
     previewDocument,
     selectDialogue,
     updateDraft,

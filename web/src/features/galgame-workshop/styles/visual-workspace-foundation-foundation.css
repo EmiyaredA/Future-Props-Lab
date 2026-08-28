@@ -33,6 +33,7 @@
   position: relative;
   height: 100%;
   transform-origin: bottom center;
+  translate: 0 var(--galgame-portrait-ground-offset, 0%);
 }
 
 .galgame-stage-cast-list {
@@ -268,7 +269,6 @@
   height: 100%;
   object-fit: contain;
   object-position: bottom center;
-  filter: drop-shadow(0 6px 14px rgb(0 0 0 / 0.3));
 }
 
 .galgame-preview-mode {

@@ -16,6 +16,7 @@ from app.galgame_workshop.video_compiler_support import (
     apply_composed_visual_motion,
     character_presentation,
     content_text,
+    dialogue_speaker_ids,
     speaker_name,
 )
 from app.galgame_workshop.video_compiler_support import asset_maps as _asset_maps
@@ -67,6 +68,7 @@ class _Builder:
         self.scenes = {item["id"]: item for item in document.get("scenes", [])}
         self.cgs = {item["id"]: item for item in document.get("cgs", [])}
         self.tracks: dict[str, dict[str, Any]] = {}
+        self.track_sort_keys: dict[str, tuple[int, int, int]] = {}
         self.used: set[str] = set()
         self.warnings: list[CompilationIssue] = []
         self.counter = 0
@@ -281,14 +283,23 @@ class _Builder:
             key=lambda item: actor_layout(self.document, item[2], item[1], item[3].expression)[6]
         )
         active = state.get("content")
-        for character_id, actor, character, presentation in actor_rows:
+        active_speaker_ids = set(dialogue_speaker_ids(active))
+        for stable_index, (character_id, actor, character, presentation) in enumerate(actor_rows):
             layer = actor_layout(self.document, character, actor, presentation.expression)[6]
-            track_id = f"actor-{character_id}"
+            band = "foreground" if character_id in active_speaker_ids else "normal"
+            layer_id = f"n{abs(layer)}" if layer < 0 else f"p{layer}"
+            track_id = f"actor-{band}-{layer_id}-{character_id}"
+            band_order = 50 if band == "foreground" else 60
             self.track(
                 track_id,
                 f"角色 · {character.get('name', character_id)}",
-                60 - min(20, layer),
+                band_order,
             )
+            # Lower track orders render on top. The band is the primary key so
+            # every active speaker stays above every non-speaker regardless of
+            # authored layer. Inside a band, higher layers and later stable
+            # actors retain the same stacking semantics as the browser player.
+            self.track_sort_keys[track_id] = (band_order, -layer, -stable_index)
             clips = compile_actor_clips(
                 self.document,
                 state,
@@ -428,7 +439,10 @@ class _Builder:
         )
 
     def document_out(self, fps: int) -> VideoEditorTimelineDocument:
-        tracks = sorted(self.tracks.values(), key=lambda item: item["order"])
+        tracks = sorted(
+            self.tracks.values(),
+            key=lambda item: self.track_sort_keys.get(item["id"], (int(item["order"]), 0, 0)),
+        )
         for index, track in enumerate(tracks):
             track["order"] = index
             track["clips"].sort(key=lambda item: (item["timelineStartUs"], item["id"]))
@@ -492,6 +506,7 @@ def compile_galgame_render_plan(
         "dialoguePreset": None,
         "focusTransition": {},
         "lastSpeaker": None,
+        "lastSpeakerIds": (),
         "variables": {
             str(item.get("id")): item.get("defaultValue") for item in document.get("variables", [])
         },
@@ -601,7 +616,9 @@ def compile_galgame_render_plan(
                 floating_end = bounded + int(block.get("durationMs", 1500))
                 duration = min(floating_end, local_end_ms) - start
                 if duration > 0:
-                    is_long_form = duration >= 5000 or len(str(block.get("text") or "")) >= 80
+                    text = str(block.get("text") or "")
+                    is_emphasis_title = duration >= 5000 and len(text.strip()) <= 12
+                    is_long_form = not is_emphasis_title and (duration >= 5000 or len(text) >= 80)
                     # Lower track orders render on top. Keep floating text above a
                     # fullscreen curtain so interstitial captions remain visible.
                     track = builder.track("effects-text", "视觉效果 · 浮动文字", 0)
@@ -612,9 +629,9 @@ def compile_galgame_render_plan(
                         "浮动文字",
                         offset_us + (start - local_start_ms) * 1000,
                         duration * 1000,
-                        text=str(block.get("text") or "…"),
+                        text=text or "…",
                         fontAssetId=FLOATING_TEXT_FONT_ASSET_ID,
-                        fontSize=34 if is_long_form else 54,
+                        fontSize=108 if is_emphasis_title else 34 if is_long_form else 54,
                         textMaxWidth=1000 if is_long_form else None,
                         textColor=str(block.get("color") or "#ffffff"),
                     )

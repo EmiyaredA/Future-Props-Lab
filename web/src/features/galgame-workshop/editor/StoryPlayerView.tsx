@@ -1,11 +1,15 @@
 import type { CSSProperties } from "react";
 import { Clock3, Play } from "lucide-react";
-import { CHARACTER_DISTANCE_SCALE } from "@features/galgame-workshop/editor/stage";
+import {
+  activeStageSpeakerIds,
+  CHARACTER_DISTANCE_SCALE,
+} from "@features/galgame-workshop/editor/stage";
 import { StoryAssetImage } from "@features/galgame-workshop/editor/StoryAssetImage";
 import { ExpressionPortrait } from "@features/galgame-workshop/editor/ExpressionPortrait";
 import { RichTextView } from "@features/galgame-workshop/editor/RichTextEditor";
 import { storyPlayerSceneLayerStyle } from "@features/galgame-workshop/editor/storyPlayerSceneStyle";
 import { StoryPlayerDialogueLayer } from "@features/galgame-workshop/editor/StoryPlayerDialogueLayer";
+import { groundPortraitElement } from "@features/galgame-workshop/editor/portraitGrounding";
 import {
   StoryPlayerAspectMenu,
   StoryPlayerEnableAudio,
@@ -68,6 +72,7 @@ export function StoryPlayerView({ model }: { model: StoryPlayerViewModel }) {
   const cameraEasing = cameraEasingCss(camera?.easing);
   const cameraPlaneStyle = (target: "background" | "characters" | "cg") =>
     storyPlayerCameraPlaneStyle(camera, target);
+  const activeSpeakerIds = new Set(activeStageSpeakerIds(displayFrame.stage));
   return (
     <section
       className={`galgame-player${exportMode ? " galgame-player-export" : ""}${chrome === "stage-only" ? " galgame-player-stage-only" : ""}`}
@@ -206,7 +211,9 @@ export function StoryPlayerView({ model }: { model: StoryPlayerViewModel }) {
                 color: displayFrame.stage.floatingText.color,
                 width: "max-content",
                 maxWidth: "82%",
-                fontSize: "clamp(18px, 3cqw, 48px)",
+                fontSize: displayFrame.stage.floatingText.fontSize
+                  ? `${displayFrame.stage.floatingText.fontSize / 19.2}cqw`
+                  : "clamp(18px, 3cqw, 48px)",
                 fontWeight: 700,
                 lineHeight: 1.5,
                 textAlign: "center",
@@ -285,23 +292,20 @@ export function StoryPlayerView({ model }: { model: StoryPlayerViewModel }) {
             style={cameraPlaneStyle("characters")}
           >
             {stageActors.map(
-              ({
-                actor,
-                character,
-                renderedExpressionId,
-                controlledFrameIndex,
-                expression,
-                skinAssetId,
-                overlays,
-              }) => {
-                const focused =
-                  displayFrame.stage.activeSpeakerIds?.includes(
-                    actor.characterId,
-                  ) ?? displayFrame.stage.activeSpeakerId === actor.characterId;
-                const hasActiveSpeakers = Boolean(
-                  displayFrame.stage.activeSpeakerIds?.length ??
-                  displayFrame.stage.activeSpeakerId,
-                );
+              (
+                {
+                  actor,
+                  character,
+                  renderedExpressionId,
+                  controlledFrameIndex,
+                  expression,
+                  skinAssetId,
+                  overlays,
+                },
+                actorStackIndex,
+              ) => {
+                const focused = activeSpeakerIds.has(actor.characterId);
+                const hasActiveSpeakers = activeSpeakerIds.size > 0;
                 const focusMultiplier =
                   stageStyle.speakerFocusEnabled &&
                   hasActiveSpeakers &&
@@ -353,9 +357,9 @@ export function StoryPlayerView({ model }: { model: StoryPlayerViewModel }) {
                     style={{
                       left: `${actor.transform.x}%`,
                       top: `${actor.transform.y}%`,
-                      zIndex: actor.transform.layer + 10,
+                      zIndex: actorStackIndex + 10,
                       opacity: actor.exiting ? 0 : actor.transform.opacity,
-                      filter: `brightness(${actor.transform.brightness * focusMultiplier}) drop-shadow(0 6px 14px rgb(0 0 0 / 0.3))`,
+                      filter: `brightness(${actor.transform.brightness * focusMultiplier})`,
                       transformOrigin:
                         actor.transform.anchor === "center"
                           ? "center"
@@ -411,6 +415,7 @@ export function StoryPlayerView({ model }: { model: StoryPlayerViewModel }) {
                         controlledFrameIndex={controlledFrameIndex}
                         alt=""
                         className="galgame-player-portrait-image"
+                        onImageLoad={groundPortraitElement}
                         fallback={
                           <span className="galgame-player-portrait-fallback">
                             {character.name.slice(0, 1) || "角"}

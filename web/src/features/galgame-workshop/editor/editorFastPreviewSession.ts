@@ -3,7 +3,7 @@ import type {
   GalgameStoryFragment,
   GalgameStoryProject,
 } from "@features/galgame-workshop/api";
-import type { FastPreviewCursor } from "@features/galgame-workshop/editor/FastPreviewWorkspace";
+import type { FastPreviewCursor } from "@features/galgame-workshop/editor/storyPlayerModel";
 import { entryChapter } from "@features/galgame-workshop/editor/model";
 import type { StoryPlayerPlaybackRange } from "@features/galgame-workshop/editor/storyPlayerModel";
 

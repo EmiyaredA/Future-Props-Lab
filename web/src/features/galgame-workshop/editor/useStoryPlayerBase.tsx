@@ -48,6 +48,7 @@ import {
 
 export function useStoryPlayerBase({
   document: sourceDocument,
+  previewExpressionIds,
   locale,
   includeStaleTranslations = false,
   startCursor,
@@ -213,7 +214,21 @@ export function useStoryPlayerBase({
       stage: replayStageToBlock(document, editFragment, editBlockIndex),
     };
   }, [document, editBlockIndex, editFragment, editTimelinePositionMs]);
-  const displayFrame = mode === "edit" ? editFrame : frame;
+  const sourceDisplayFrame = mode === "edit" ? editFrame : frame;
+  const displayFrame = useMemo<PlayerFrame>(() => {
+    if (
+      sourceDisplayFrame.mode !== "content" ||
+      sourceDisplayFrame.block.type !== "dialogue"
+    )
+      return sourceDisplayFrame;
+    const latest = document.chapters
+      ?.flatMap((item) => item.fragments ?? [])
+      .find((item) => item.id === sourceDisplayFrame.fragmentId)
+      ?.blocks?.find((item) => item.id === sourceDisplayFrame.block.id);
+    return latest?.type === "dialogue"
+      ? { ...sourceDisplayFrame, block: latest }
+      : sourceDisplayFrame;
+  }, [document.chapters, sourceDisplayFrame]);
   useStoryPlayerPlaybackFollow({
     mode,
     displayFrame,
@@ -391,8 +406,9 @@ export function useStoryPlayerBase({
       const character = characters.get(actor.characterId);
       if (!character) return [];
       const authoredExpressionId =
+        previewExpressionIds?.[actor.characterId] ??
         (activeDialogue?.characterId === actor.characterId
-          ? activeInlineExpressionId
+          ? (activeInlineExpressionId ?? activeDialogue.expressionId)
           : undefined) ??
         actor.expressionId ??
         character.defaultExpressionId;

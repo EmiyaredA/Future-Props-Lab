@@ -43,6 +43,7 @@ export function ExpressionPortrait({
   className,
   style,
   onNaturalSize,
+  onImageLoad,
   controlledFrameIndex,
 }: {
   expression?: GalgameStoryCharacterExpression;
@@ -53,6 +54,7 @@ export function ExpressionPortrait({
   className?: string;
   style?: CSSProperties;
   onNaturalSize?: (size: PortraitNaturalSize) => void;
+  onImageLoad?: (image: HTMLImageElement) => void;
   controlledFrameIndex?: number;
 }) {
   const fileIds = useMemo(
@@ -104,14 +106,14 @@ export function ExpressionPortrait({
     const releases = [...new Set(fileIds)].map((fileId) =>
       imageCache?.retain(fileId),
     );
-    for (const fileId of new Set(fileIds)) {
+    const loadFrame = (fileId: string, attempt = 0): Promise<void> => {
       const request = imageCache
         ? imageCache.load(fileId).then((url) => ({ url, owned: false }))
         : fetchApiBlob(`/v1/files/${fileId}/content`).then((blob) => ({
             url: URL.createObjectURL(blob),
             owned: true,
           }));
-      void request
+      return request
         .then(({ url, owned }) => {
           if (!active) {
             if (owned) URL.revokeObjectURL(url);
@@ -129,6 +131,7 @@ export function ExpressionPortrait({
         })
         .catch(() => {
           if (!active) return;
+          if (attempt < 2) return loadFrame(fileId, attempt + 1);
           setReadyGroup((current) => {
             if (current?.key !== sequenceKey) return current;
             const failedFileIds = new Set(current.failedFileIds);
@@ -138,7 +141,17 @@ export function ExpressionPortrait({
             return { ...current, failedFileIds, settledFileIds };
           });
         });
-    }
+    };
+    const uniqueFileIds = [...new Set(fileIds)];
+    void (async () => {
+      for (const fileId of uniqueFileIds) {
+        await loadFrame(fileId);
+        if (!active) return;
+        // Yield between large transparent frames so the browser can decode and
+        // paint the visible frame before fetching the next animation frame.
+        await new Promise<void>((resolve) => globalThis.setTimeout(resolve, 0));
+      }
+    })();
     return () => {
       active = false;
       for (const release of releases) release?.();
@@ -151,6 +164,14 @@ export function ExpressionPortrait({
       retainedUrlsRef.current.clear();
     },
     [],
+  );
+
+  useEffect(
+    () =>
+      lastReadyFrame && imageCache
+        ? imageCache.retain(lastReadyFrame.fileId)
+        : undefined,
+    [imageCache, lastReadyFrame],
   );
 
   useEffect(() => {
@@ -187,6 +208,7 @@ export function ExpressionPortrait({
         className={className}
         style={style}
         onNaturalSize={onNaturalSize}
+        onImageLoad={onImageLoad}
       />
     );
   }
@@ -271,6 +293,7 @@ export function ExpressionPortrait({
               url: readyDisplay.url,
             });
             reportAnchorNaturalSize(readyDisplay.fileId, event.currentTarget);
+            onImageLoad?.(event.currentTarget);
           }}
           onError={() =>
             setReadyGroup((current) =>

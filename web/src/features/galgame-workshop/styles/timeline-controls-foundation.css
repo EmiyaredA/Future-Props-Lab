@@ -331,7 +331,6 @@
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, transparent 35%, rgb(5 10 18 / 0.22));
   pointer-events: none;
 }
 

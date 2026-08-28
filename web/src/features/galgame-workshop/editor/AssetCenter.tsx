@@ -7,11 +7,7 @@ import {
   UserRound,
   Volume2,
 } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
-import {
-  getGalgameAssetOverview,
-  type GalgameStoryProject,
-} from "@features/galgame-workshop/api";
+import { type GalgameStoryProject } from "@features/galgame-workshop/api";
 import { AssetOverviewWorkspace } from "@features/galgame-workshop/editor/AssetOverviewWorkspace";
 import { CharacterWorkspace } from "@features/galgame-workshop/editor/CharacterWorkspace";
 import { SoundWorkspace } from "@features/galgame-workshop/editor/SoundWorkspace";
@@ -78,18 +74,13 @@ export function AssetCenter({
   ) => void;
   storyRevision: number;
 }) {
-  const assetOverview = useQuery({
-    queryKey: ["galgame-asset-overview", projectId],
-    queryFn: () => getGalgameAssetOverview(projectId),
-  });
   const locate = (fragmentId: string, blockId: string) =>
     onLocate(undefined, fragmentId, blockId);
   const sectionCount = (sectionId: AssetSection) => {
     if (sectionId === "characters") return document.characters?.length ?? 0;
     if (sectionId === "scenes")
       return (document.scenes?.length ?? 0) + (document.cgs?.length ?? 0);
-    if (sectionId === "overview")
-      return assetOverview.data?.items.length ?? document.assets?.length ?? 0;
+    if (sectionId === "overview") return document.assets?.length ?? 0;
     if (sectionId === "video")
       return (document.assets ?? []).filter((asset) => asset.type === "video")
         .length;

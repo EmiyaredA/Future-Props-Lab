@@ -5,6 +5,12 @@ import type {
   GalgameStoryFragment,
   GalgameStoryProject,
 } from "@features/galgame-workshop/api";
+
+export type FastPreviewCursor = {
+  chapterId: string;
+  fragmentId: string;
+  blockIndex?: number;
+};
 import type { GalgameStageState } from "@features/galgame-workshop/editor/stage";
 import type {
   StageAspectMode,
@@ -182,6 +188,8 @@ export type StoryPlayerPlaybackRange = {
 
 export type StoryPlayerProps = {
   document: GalgameStoryProject;
+  preloadFileIds?: string[];
+  previewExpressionIds?: Record<string, string>;
   locale?: string;
   includeStaleTranslations?: boolean;
   startCursor?: { chapterId: string; fragmentId: string; blockIndex?: number };

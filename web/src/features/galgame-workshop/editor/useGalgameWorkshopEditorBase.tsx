@@ -7,6 +7,8 @@ import {
   getGalgameStoryReport,
   getGalgameWorkshopProject,
   matchGalgameVoiceDialogue,
+  patchGalgameStoryDialogue,
+  patchGalgameStoryStageExpression,
   patchGalgameWorkshopProject,
   putGalgameStoryDocument,
   repairGalgameMissingAsset,
@@ -40,6 +42,8 @@ import {
   type AssetSection,
   type EditorWorkspace,
 } from "@features/galgame-workshop/editor/model";
+import type { FastPreviewDialogueEdit } from "@features/galgame-workshop/editor/fastPreviewDialogueEdit";
+import type { FastPreviewStageExpressionEdit } from "@features/galgame-workshop/editor/fastPreviewStageExpressionEdit";
 import type { StoryPlayerHandle } from "@features/galgame-workshop/editor/StoryPlayer";
 import {
   projectFragmentTimeline,
@@ -386,23 +390,97 @@ export function useGalgameWorkshopEditorBase({
       setDocument(normalized);
       setSaveState("saving");
       if (autoSave.current) clearTimeout(autoSave.current);
-      autoSave.current = setTimeout(
-        () => enqueueSave(documentRef.current!),
-        650,
-      );
+      autoSave.current = setTimeout(() => {
+        autoSave.current = undefined;
+        void enqueueSave(documentRef.current!);
+      }, 650);
     },
     [enqueueSave],
   );
 
   const commitDocument = useCallback(
     async (next: GalgameStoryProject) => {
-      if (autoSave.current) clearTimeout(autoSave.current);
+      if (autoSave.current) {
+        clearTimeout(autoSave.current);
+        autoSave.current = undefined;
+      }
       documentRef.current = next;
       setDocument(next);
       setSaveState("saving");
       return enqueueSave(next);
     },
     [enqueueSave],
+  );
+  const commitFastPreviewEdit = useCallback(
+    async (
+      next: GalgameStoryProject,
+      edit: FastPreviewDialogueEdit | FastPreviewStageExpressionEdit,
+    ) => {
+      const pendingDocument = documentRef.current;
+      const scheduledFullSave = Boolean(autoSave.current);
+      if (autoSave.current) {
+        clearTimeout(autoSave.current);
+        autoSave.current = undefined;
+      }
+      if (
+        (scheduledFullSave || saveState === "error") &&
+        pendingDocument &&
+        !(await enqueueSave(pendingDocument))
+      )
+        return undefined;
+      documentRef.current = next;
+      setDocument(next);
+      setSaveState("saving");
+      const operation = saveQueue.current.then(async () => {
+        if (conflictRef.current) return undefined;
+        setSaveMessage("");
+        try {
+          const updated =
+            "text" in edit
+              ? await patchGalgameStoryDialogue(
+                  projectId,
+                  edit,
+                  revisionRef.current,
+                )
+              : await patchGalgameStoryStageExpression(
+                  projectId,
+                  edit,
+                  revisionRef.current,
+                );
+          revisionRef.current = updated.revision;
+          client.setQueryData<GalgameStoryDocument>(STORY_KEY(projectId), {
+            project_id: updated.project_id,
+            document: next,
+            revision: updated.revision,
+            updated_at: updated.updated_at,
+          });
+          setSaveState("saved");
+          void client.invalidateQueries({ queryKey: REPORT_KEY(projectId) });
+          void client.invalidateQueries({ queryKey: PROJECT_KEY(projectId) });
+          void client.invalidateQueries({
+            queryKey: ["galgame-workshop-projects"],
+          });
+          return updated;
+        } catch (error) {
+          if (error instanceof ApiError && error.status === 409) {
+            const current = error.problem.current as
+              GalgameStoryDocument | undefined;
+            if (current) {
+              conflictRef.current = true;
+              setConflict(current);
+              setSaveState("conflict");
+              return undefined;
+            }
+          }
+          setSaveState("error");
+          setSaveMessage(errorMessage(error));
+          return undefined;
+        }
+      });
+      saveQueue.current = operation.then(() => undefined);
+      return operation;
+    },
+    [client, enqueueSave, projectId, saveState],
   );
   const autoMatchDialogueVoice = useCallback(
     async (blockId: string) => {
@@ -593,6 +671,8 @@ export function useGalgameWorkshopEditorBase({
     client,
     commandOpen,
     commitDocument,
+    commitDialogueEdit: commitFastPreviewEdit,
+    commitStageExpressionEdit: commitFastPreviewEdit,
     confirmOverwrite,
     conflict,
     conflictRef,

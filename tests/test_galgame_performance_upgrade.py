@@ -2,15 +2,18 @@ import json
 from pathlib import Path
 
 from scripts.galgame_performance_upgrade import (
+    AUDITED_EXPRESSION_LABELS,
     CURATED_CHARACTER_POSES,
     DEFAULT_ANNOTATION_PATH,
     DIALOGUE_BOX_OPACITY,
     DIALOGUE_EXPRESSION_CUES,
     ENDING_THANKS_ID,
     ENDING_THANKS_TEXT,
+    EXPECTED_ANNOTATION_MULTI_SPEAKER_LINES,
     EXPECTED_ANNOTATION_SHA256,
     EXPECTED_CROWD_NORMALIZED_LINES,
     HIDDEN_SCENE_SWITCH_MS,
+    KURISU_EXPRESSION_LABELS,
     LIP_SYNC_FPS,
     OPENING_DECLARATION_ID,
     OPENING_DECLARATION_TEXT,
@@ -31,6 +34,8 @@ from scripts.galgame_performance_upgrade import (
     performance_expression_for_turn,
     performance_expression_id,
     remembered_cast_expression,
+    rename_audited_expression_labels,
+    rename_kurisu_expression_labels,
     scene_id_for_code,
     sha256,
 )
@@ -85,8 +90,8 @@ def test_curated_closeup_keeps_motion_safe_headroom() -> None:
 
 
 def test_unified_cg_manifest_installs_expected_events() -> None:
-    assert len(CG_ASSETS) == 25
-    assert len(CG_EVENTS) == 28
+    assert len(CG_ASSETS) == 26
+    assert len(CG_EVENTS) == 27
     document = {
         "assets": [],
         "cgs": [],
@@ -106,9 +111,9 @@ def test_unified_cg_manifest_installs_expected_events() -> None:
     }
     install_cgs(document, mapping)
     blocks = document["chapters"][0]["fragments"][0]["blocks"]
-    assert len(document["cgs"]) == 25
-    assert sum(block["type"] == "showCg" for block in blocks) == 28
-    assert sum(block["type"] == "hideCg" for block in blocks) == 24
+    assert len(document["cgs"]) == 26
+    assert sum(block["type"] == "showCg" for block in blocks) == 27
+    assert sum(block["type"] == "hideCg" for block in blocks) == 23
     q_shows = [
         block
         for block in blocks
@@ -193,7 +198,7 @@ def test_ending_thanks_uses_opening_blackboard_timing() -> None:
 
 
 def test_v8_annotation_and_scene_timing_contract() -> None:
-    assert DEFAULT_ANNOTATION_PATH.name == "广播剧.annotation (14).json"
+    assert DEFAULT_ANNOTATION_PATH.name == "广播剧.annotation (15).json"
     assert sha256(DEFAULT_ANNOTATION_PATH) == EXPECTED_ANNOTATION_SHA256
     assert LIP_SYNC_FPS == 5
     assert (372_443, "BG11A2") in SCENE_BEATS
@@ -206,7 +211,10 @@ def test_v8_annotation_and_scene_timing_contract() -> None:
 
     annotation = json.loads(DEFAULT_ANNOTATION_PATH.read_text(encoding="utf-8"))
     assert len(annotation["segments"]) == 514
-    assert sum(len(segment["speaker_ids"]) > 1 for segment in annotation["segments"]) == 12
+    assert (
+        sum(len(segment["speaker_ids"]) > 1 for segment in annotation["segments"])
+        == EXPECTED_ANNOTATION_MULTI_SPEAKER_LINES
+    )
     assert sum(len(segment["speaker_ids"]) > 3 for segment in annotation["segments"]) == (
         EXPECTED_CROWD_NORMALIZED_LINES
     )
@@ -216,8 +224,11 @@ def test_v8_annotation_and_scene_timing_contract() -> None:
     ensemble_segments = [
         segment for segment in annotation["segments"] if segment["speaker_id"] == ensemble_id
     ]
-    assert len(ensemble_segments) == 2
+    assert len(ensemble_segments) == 12
     assert all(segment["speaker_ids"] == [ensemble_id] for segment in ensemble_segments)
+    assert annotation["segments"][476]["speaker_id"] == "luka"
+    assert annotation["segments"][476]["speaker_ids"] == ["luka"]
+    assert annotation["segments"][476]["emotion"] == "黑色私服站姿·睁眼微笑"
     assert annotation["segments"][78]["localized_texts"][0]["text"] == (
         "你在说什么？我可是气量很大的男人！"
     )
@@ -251,11 +262,12 @@ def test_v8_transition_cards_include_explanation_intertitle() -> None:
     install_transition_cards(document)
     blocks = document["chapters"][0]["fragments"][0]["blocks"]
     assert blocks == list(TRANSITION_CARD_BLOCKS)
-    assert sum(block["type"] == "curtain" for block in blocks) == 6
+    assert sum(block["type"] == "curtain" for block in blocks) == 8
     assert [block["text"] for block in blocks if block["type"] == "floatingText"] == [
         "众人前往屋顶......",
         "众人回到lab......",
         "玲羽和众人解释一番过后......",
+        "过去一段时间以后......",
     ]
 
 
@@ -389,7 +401,7 @@ def test_curated_expressions_add_pose_variety_and_private_clothes() -> None:
     mayuri = characters["mayuri"]
     shy = next(item for item in mayuri["expressions"] if item["id"] == "e010-f000")
     assert shy["assetId"].startswith("sg0-may-alc-e003-")
-    assert shy["label"] == "双手交握·害羞"
+    assert shy["label"] == "双手交握·脸红害羞"
     assert len(characters["kurisu-makise"]["expressions"]) == 15
     assert next(
         item
@@ -408,6 +420,60 @@ def test_curated_expressions_add_pose_variety_and_private_clothes() -> None:
     )
     assert len(characters["maho"]["expressions"]) == 21
     assert len(characters["yuugo"]["expressions"]) == 6
+
+
+def test_kurisu_expression_labels_are_audited_per_pose_and_variant() -> None:
+    document = {
+        "characters": [
+            {
+                "id": "kurisu-makise",
+                "name": "牧濑红莉栖",
+                "expressions": [
+                    {"id": expression_id, "label": "错位名称"}
+                    for expression_id in KURISU_EXPRESSION_LABELS
+                ],
+            }
+        ]
+    }
+
+    changes = rename_kurisu_expression_labels(document)
+
+    expressions = {
+        expression["id"]: expression["label"]
+        for expression in document["characters"][0]["expressions"]
+    }
+    assert len(changes) == 24
+    assert expressions == KURISU_EXPRESSION_LABELS
+    assert expressions["e002-f000"] == "白衬衫站姿·眨眼微笑"
+    assert expressions["e006-f000"] == "白衬衫站姿·闭眼微笑"
+    assert expressions["crs-alb-e008-f000"] == "抱臂·闭眼微笑"
+    assert expressions["crs-alc-e002-f000"] == "手扶领带·脸红害羞"
+    assert expressions["crs-alc-e006-f000"] == "手扶领带·惊讶"
+
+
+def test_every_expression_character_has_a_complete_audited_label_map() -> None:
+    document = {
+        "characters": [
+            {
+                "id": character_id,
+                "name": character_id,
+                "expressions": [
+                    {"id": expression_id, "label": "未核对"} for expression_id in labels
+                ],
+            }
+            for character_id, labels in AUDITED_EXPRESSION_LABELS.items()
+        ]
+    }
+
+    changes = rename_audited_expression_labels(document)
+
+    assert len(AUDITED_EXPRESSION_LABELS) == 12
+    assert sum(map(len, AUDITED_EXPRESSION_LABELS.values())) == 158
+    assert len(changes) == 158
+    assert AUDITED_EXPRESSION_LABELS["mayuri"]["may-alb-e002-f000"] == "抬手·惊讶"
+    assert AUDITED_EXPRESSION_LABELS["kagari"]["e002-f000"] == "水手服站姿·闭眼笑容"
+    assert AUDITED_EXPRESSION_LABELS["maho"]["mah-alb-e007-f000"] == "双手交握·惊讶"
+    assert AUDITED_EXPRESSION_LABELS["luka"]["ruk-clb-e004-f000"] == "手抚衣领·惊讶"
 
 
 def test_curated_expression_overrides_are_used_for_performance() -> None:
@@ -453,14 +519,18 @@ def test_v8_cg_timing_and_scene_consistency() -> None:
     assert events["kagari-imitation"]["endMs"] == 617_165
     assert events["suzuha-arrival"]["startMs"] == 660_594
     assert events["mother-identity"]["startMs"] == 788_490
+    assert "lab-group-surprise" not in events
     assert events["group-rebukes-kagari"]["startMs"] == 1_458_204
     assert (events["time-machine-leap"]["startMs"], events["time-machine-leap"]["endMs"]) == (
         1_666_293,
         1_677_392,
     )
-    assert assets["kagari-imitation-v9"]["path"].name.endswith("v9.png")
-    assert assets["suzuha-maho-v2"]["path"].name.endswith("v2.png")
-    assert assets["harem-chaos-finale-v9"]["path"].name.endswith("v9.png")
+    assert assets["kagari-imitation-v11"]["path"].name.endswith("v11.png")
+    assert assets["suzuha-maho-v4"]["path"].name.endswith("v4.png")
+    assert assets["mother-identity-v4"]["path"].name.endswith("v4.png")
+    assert assets["harem-chaos-finale-v11"]["path"].name.endswith("v11.png")
+    assert events["cleaning-1"]["assetKey"] == "cleaning-sergeant-evening-v3"
+    assert events["cleaning-2"]["assetKey"] == "cleaning-sergeant-night-v4"
 
 
 def test_fullscreen_cg_detection_excludes_phone_overlay() -> None:

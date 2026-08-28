@@ -1,9 +1,13 @@
 import type { GalgameStoryProject } from "@features/galgame-workshop/api";
-import type { FastPreviewCursor } from "@features/galgame-workshop/editor/FastPreviewWorkspace";
+import type { FastPreviewCursor } from "@features/galgame-workshop/editor/storyPlayerModel";
 import type {
   FastPreviewDialogueEdit,
   FastPreviewDialogueEditResult,
-} from "@features/galgame-workshop/editor/FastPreviewWorkspace";
+} from "@features/galgame-workshop/editor/fastPreviewDialogueEdit";
+import type {
+  FastPreviewStageExpressionEdit,
+  FastPreviewStageExpressionEditResult,
+} from "@features/galgame-workshop/editor/fastPreviewStageExpressionEdit";
 import type { StoryPlayerPlaybackRange } from "@features/galgame-workshop/editor/storyPlayerModel";
 
 export type FastPreviewDocumentMessage = {
@@ -29,6 +33,19 @@ export type FastPreviewEditResultMessage = {
   error?: string;
 };
 
+export type FastPreviewStageExpressionRequestMessage = {
+  type: "edit-stage-expression";
+  requestId: string;
+  edit: FastPreviewStageExpressionEdit;
+};
+
+export type FastPreviewStageExpressionResultMessage = {
+  type: "edit-stage-expression-result";
+  requestId: string;
+  result?: FastPreviewStageExpressionEditResult;
+  error?: string;
+};
+
 export function openFastPreviewWindow({
   projectId,
   document,
@@ -38,6 +55,7 @@ export function openFastPreviewWindow({
   exactFrameDisabledReason,
   latestDocument,
   applyDialogueEdit,
+  applyStageExpressionEdit,
 }: {
   projectId: string;
   document: GalgameStoryProject;
@@ -49,6 +67,9 @@ export function openFastPreviewWindow({
   applyDialogueEdit: (
     edit: FastPreviewDialogueEdit,
   ) => Promise<FastPreviewDialogueEditResult>;
+  applyStageExpressionEdit: (
+    edit: FastPreviewStageExpressionEdit,
+  ) => Promise<FastPreviewStageExpressionEditResult>;
 }) {
   const sessionId = crypto.randomUUID();
   const channel = new BroadcastChannel(`fpl-galgame-preview:${sessionId}`);
@@ -85,6 +106,25 @@ export function openFastPreviewWindow({
             requestId: request.requestId,
             error: error instanceof Error ? error.message : "保存失败",
           } satisfies FastPreviewEditResultMessage),
+        );
+    }
+    if (event.data?.type === "edit-stage-expression") {
+      const request = event.data as FastPreviewStageExpressionRequestMessage;
+      void applyStageExpressionEdit(request.edit)
+        .then((result) => {
+          currentRevision = result.storyRevision;
+          channel.postMessage({
+            type: "edit-stage-expression-result",
+            requestId: request.requestId,
+            result,
+          } satisfies FastPreviewStageExpressionResultMessage);
+        })
+        .catch((error) =>
+          channel.postMessage({
+            type: "edit-stage-expression-result",
+            requestId: request.requestId,
+            error: error instanceof Error ? error.message : "保存失败",
+          } satisfies FastPreviewStageExpressionResultMessage),
         );
     }
   });

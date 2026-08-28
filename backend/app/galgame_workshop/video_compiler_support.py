@@ -57,6 +57,14 @@ def timeline_track(track_id: str, name: str, order: int, kind: str = "visual") -
     }
 
 
+def dialogue_speaker_ids(content: dict[str, Any] | None) -> tuple[str, ...]:
+    if not content or content.get("type") != "dialogue":
+        return ()
+    configured = content.get("speakerIds") or []
+    candidates = configured if configured else [content.get("characterId")]
+    return tuple(dict.fromkeys(str(item) for item in candidates if item))
+
+
 def asset_maps(document: dict[str, Any]) -> tuple[dict[str, dict], dict[str, str]]:
     assets = {item["id"]: item for item in document.get("assets", [])}
     return assets, {
