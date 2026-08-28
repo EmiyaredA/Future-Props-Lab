@@ -640,15 +640,17 @@ test("keeps a voice-driven mouth sequence closed when no voice is playing", asyn
     const rendered = render(<StoryPlayer document={lipSyncStory} />);
     fireEvent.click(screen.getByRole("button", { name: "开始试玩" }));
     await act(async () => {
-      await Promise.resolve();
-      await Promise.resolve();
+      await vi.advanceTimersByTimeAsync(0);
     });
     const portrait = rendered.container.querySelector(
       ".galgame-player-portrait-image",
     );
     expect(portrait).toHaveAttribute("data-sequence-frame", "0");
-    act(() => vi.advanceTimersByTime(1000));
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1000);
+    });
     expect(portrait).toHaveAttribute("data-sequence-frame", "0");
+    rendered.unmount();
   } finally {
     vi.useRealTimers();
   }

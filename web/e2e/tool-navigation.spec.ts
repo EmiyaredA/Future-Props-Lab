@@ -137,8 +137,11 @@ test("opens the local video frame exporter", async ({ page }) => {
   await expect(page).toHaveURL(/\/tools$/);
 });
 
-test("creates and edits an audio annotation task", async ({ page }) => {
+test("creates and edits an audio annotation task", async ({
+  page,
+}, testInfo) => {
   const transcriptionBodies: string[] = [];
+  const audioFileStem = `e2e-annotation-${testInfo.workerIndex}-${testInfo.repeatEachIndex}-${Date.now()}`;
   await page.route("**/v1/model-test/transcription-options", async (route) =>
     route.fulfill({
       contentType: "application/json",
@@ -210,12 +213,15 @@ test("creates and edits an audio annotation task", async ({ page }) => {
 
   await page.getByRole("button", { name: "新建任务" }).click();
   await page.getByLabel("上传录音文件").setInputFiles({
-    name: `e2e-annotation-${Date.now()}.wav`,
+    name: `${audioFileStem}.wav`,
     mimeType: "audio/wav",
     buffer: wavFixture(12),
   });
   await expect(
-    page.getByRole("option", { name: /e2e-annotation-/ }),
+    page
+      .getByRole("listbox", { name: "文件库音频" })
+      .getByRole("option")
+      .filter({ hasText: `${audioFileStem}.wav` }),
   ).toHaveAttribute("aria-selected", "true");
   await page.getByRole("button", { name: "创建并打开" }).click();
 

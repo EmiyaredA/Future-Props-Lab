@@ -44,6 +44,7 @@ export type AudioWaveformHandle = {
   zoom: (ratio: number, anchorMs?: number) => void;
   scrollTo: (startMs: number) => void;
   panBy: (viewportFraction: number) => void;
+  setFocusSelectionMode: (enabled: boolean) => void;
   exportRangeWav: (startMs: number, endMs: number) => Blob | null;
 };
 
@@ -222,6 +223,14 @@ export const AudioWaveform = forwardRef<
         instance.setScrollTime(safeStart / 1000);
         viewport.current = nextViewport;
         callbacks.current.onViewport(nextViewport);
+      },
+      setFocusSelectionMode: (enabled) => {
+        focusSelectionModeRef.current = enabled;
+        for (const region of regions.current?.getRegions() ?? []) {
+          region.setOptions({ drag: !enabled, resize: !enabled });
+          if (region.element)
+            region.element.style.pointerEvents = enabled ? "none" : "";
+        }
       },
       exportRangeWav: (startMs, endMs) => {
         const decoded = decodedAudio.current;

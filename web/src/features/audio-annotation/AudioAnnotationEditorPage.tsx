@@ -284,6 +284,7 @@ export function AudioAnnotationEditorPage({
                   aria-pressed={focusSelectionMode}
                   onClick={() => {
                     const next = !focusSelectionMode;
+                    waveformRef.current?.setFocusSelectionMode(next);
                     setFocusSelectionMode(next);
                     if (next) applyZoom(1, 0);
                   }}
@@ -332,6 +333,7 @@ export function AudioAnnotationEditorPage({
                   startMs,
                   endMs,
                 );
+                waveformRef.current?.setFocusSelectionMode(false);
                 setFocusSelectionMode(false);
                 setZoomRatio(next);
                 waveformRef.current?.zoom(next, (startMs + endMs) / 2);
