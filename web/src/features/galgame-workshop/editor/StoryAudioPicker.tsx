@@ -4,6 +4,7 @@ import { ArrowLeft, Folder, Music2, Search, Upload, X } from "lucide-react";
 import { fileQueryKeys, getFiles, getFolders } from "@features/files";
 import { getGalgameProjectAssets } from "@features/galgame-workshop/api";
 import { StoryAudioPreview } from "@features/galgame-workshop/editor/StoryAudioPreview";
+import { galgameQueryKeys } from "@features/galgame-workshop/queryKeys";
 
 export type StoryAudioPickerSource = "project" | "library";
 
@@ -29,7 +30,7 @@ export function StoryAudioPicker({
   const [query, setQuery] = useState("");
   const [folderId, setFolderId] = useState<string>();
   const projectQuery = useQuery({
-    queryKey: ["galgame-project-assets", projectId, query],
+    queryKey: galgameQueryKeys.projectAssets(projectId, query),
     queryFn: () => getGalgameProjectAssets(projectId, query),
     enabled: source === "project",
   });

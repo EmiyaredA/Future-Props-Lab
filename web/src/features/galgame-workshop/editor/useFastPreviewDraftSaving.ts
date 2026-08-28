@@ -10,6 +10,10 @@ import type {
   FastPreviewStageExpressionEdit,
   FastPreviewStageExpressionEditResult,
 } from "@features/galgame-workshop/editor/fastPreviewStageExpressionEdit";
+import type {
+  FastPreviewStoryEdit,
+  FastPreviewStoryEditResult,
+} from "@features/galgame-workshop/editor/fastPreviewEdits";
 
 type SaveResult =
   FastPreviewDialogueEditResult | FastPreviewStageExpressionEditResult;
@@ -38,6 +42,7 @@ export function useFastPreviewDraftSaving({
   onRestorePosition,
   onApplyDialogueEdit,
   onApplyStageExpressionEdit,
+  onApplyEdits,
   onDiscardDialogueDraft,
   onDocument,
   onRevision,
@@ -57,6 +62,9 @@ export function useFastPreviewDraftSaving({
   onApplyStageExpressionEdit?: (
     edit: FastPreviewStageExpressionEdit,
   ) => Promise<FastPreviewStageExpressionEditResult>;
+  onApplyEdits?: (
+    edits: FastPreviewStoryEdit[],
+  ) => Promise<FastPreviewStoryEditResult>;
   onDiscardDialogueDraft: (fragmentId: string, blockId: string) => void;
   onDocument: (document: GalgameStoryProject) => void;
   onRevision: (revision: number) => void;
@@ -64,11 +72,7 @@ export function useFastPreviewDraftSaving({
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
   const pendingCount = dialogueDrafts.length + (stageExpressionDirty ? 1 : 0);
-  const canSaveAll = Boolean(
-    pendingCount &&
-    (!dialogueDrafts.length || onApplyDialogueEdit) &&
-    (!stageExpressionDirty || onApplyStageExpressionEdit),
-  );
+  const canSaveAll = Boolean(pendingCount && pendingCount && onApplyEdits);
   const prepare = () => {
     if (playing) onPausePlayback();
     return positionMs;
@@ -125,34 +129,31 @@ export function useFastPreviewDraftSaving({
     }
   };
   const saveAll = async () => {
-    if (!canSaveAll) return;
+    if (!canSaveAll || !onApplyEdits) return;
     const restorePosition = prepare();
     const total = pendingCount;
-    let completed = 0;
     setSaving(true);
-    setMessage(`正在保存 0/${total} 项修改…`);
+    setMessage(`正在原子保存 ${total} 项修改…`);
     try {
-      for (const draft of dialogueDrafts) {
-        const result = await onApplyDialogueEdit!(dialogueEdit(draft));
-        accept(result, restorePosition);
-        onDiscardDialogueDraft(draft.fragmentId, draft.blockId);
-        completed += 1;
-        setMessage(`正在保存 ${completed}/${total} 项修改…`);
-      }
-      if (stageExpressionDirty && stageExpressionDraft) {
-        const result = await onApplyStageExpressionEdit!({
+      const edits: FastPreviewStoryEdit[] = dialogueDrafts.map((draft) => ({
+        type: "dialogue",
+        ...dialogueEdit(draft),
+      }));
+      if (stageExpressionDirty && stageExpressionDraft)
+        edits.push({
+          type: "stageExpression",
           ...stageExpressionDraft,
           expressionId: stageExpressionDraft.expressionId || null,
         });
-        accept(result, restorePosition);
-        completed += 1;
-      }
+      const result = await onApplyEdits(edits);
+      accept(result, restorePosition);
+      for (const draft of dialogueDrafts)
+        onDiscardDialogueDraft(draft.fragmentId, draft.blockId);
       setMessage(`已保存全部 ${total} 项修改`);
     } catch (error) {
       const reason = error instanceof Error ? error.message : "未知错误";
-      const remaining = total - completed;
       setMessage(
-        `保存失败：全部保存已中断（${reason}）。已保存 ${completed} 项，另有 ${remaining} 个草稿已保留。`,
+        `保存失败：${reason}。未写入任何修改，全部 ${total} 个草稿已保留。`,
       );
     } finally {
       setSaving(false);

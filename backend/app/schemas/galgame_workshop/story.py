@@ -27,7 +27,6 @@ from app.schemas.galgame_workshop.blocks import (
     GalgameStoryCurtainBlock,
     GalgameStoryDestroySceneBlock,
     GalgameStoryDialogueBlock,
-    GalgameStoryDialoguePortrait,
     GalgameStoryEndChapterBlock,
     GalgameStoryFloatingTextBlock,
     GalgameStoryGalleryBlock,
@@ -37,9 +36,7 @@ from app.schemas.galgame_workshop.blocks import (
     GalgameStoryParticleBlock,
     GalgameStoryRemoveCharacterBlock,
     GalgameStoryResetCameraBlock,
-    GalgameStoryRichTextDocument,
     GalgameStoryRichTextExpressionNode,
-    GalgameStoryRichTextTextNode,
     GalgameStoryRichTextVariableNode,
     GalgameStorySceneBlock,
     GalgameStorySetStageCastBlock,
@@ -649,42 +646,6 @@ class GalgameStoryProject(GalgameStoryModel):
 class GalgameStoryDocumentPutIn(GalgameStoryModel):
     expected_revision: int = Field(ge=0)
     document: GalgameStoryProject
-
-
-class GalgameStoryDialoguePatchIn(GalgameStoryModel):
-    expected_revision: int = Field(ge=0)
-    fragment_id: str = Field(alias="fragmentId", pattern=STABLE_ID_PATTERN)
-    block_id: str = Field(alias="blockId", pattern=STABLE_ID_PATTERN)
-    text: str = Field(max_length=20_000)
-    expression_id: str | None = Field(default=None, alias="expressionId", pattern=STABLE_ID_PATTERN)
-    portrait: GalgameStoryDialoguePortrait | None = None
-
-    def rich_text(self) -> GalgameStoryRichTextDocument:
-        return GalgameStoryRichTextDocument(
-            nodes=[GalgameStoryRichTextTextNode(type="text", text=self.text)] if self.text else []
-        )
-
-
-class GalgameStoryDialoguePatchOut(BaseModel):
-    project_id: str
-    revision: int
-    updated_at: str
-    block: GalgameStoryDialogueBlock
-
-
-class GalgameStoryStageExpressionPatchIn(GalgameStoryModel):
-    expected_revision: int = Field(ge=0)
-    fragment_id: str = Field(alias="fragmentId", pattern=STABLE_ID_PATTERN)
-    block_id: str = Field(alias="blockId", pattern=STABLE_ID_PATTERN)
-    character_id: str = Field(alias="characterId", pattern=STABLE_ID_PATTERN)
-    expression_id: str | None = Field(default=None, alias="expressionId", pattern=STABLE_ID_PATTERN)
-
-
-class GalgameStoryStageExpressionPatchOut(BaseModel):
-    project_id: str
-    revision: int
-    updated_at: str
-    block: GalgameStoryShowCharacterBlock | GalgameStorySetStageCastBlock
 
 
 class GalgameStoryDocumentOut(BaseModel):

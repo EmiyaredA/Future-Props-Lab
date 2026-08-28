@@ -9,6 +9,10 @@ import type {
   FastPreviewStageExpressionEditResult,
 } from "@features/galgame-workshop/editor/fastPreviewStageExpressionEdit";
 import type { StoryPlayerPlaybackRange } from "@features/galgame-workshop/editor/storyPlayerModel";
+import type {
+  FastPreviewStoryEdit,
+  FastPreviewStoryEditResult,
+} from "@features/galgame-workshop/editor/fastPreviewEdits";
 
 export type FastPreviewDocumentMessage = {
   type: "document";
@@ -46,6 +50,19 @@ export type FastPreviewStageExpressionResultMessage = {
   error?: string;
 };
 
+export type FastPreviewEditsRequestMessage = {
+  type: "edit-batch";
+  requestId: string;
+  edits: FastPreviewStoryEdit[];
+};
+
+export type FastPreviewEditsResultMessage = {
+  type: "edit-batch-result";
+  requestId: string;
+  result?: FastPreviewStoryEditResult;
+  error?: string;
+};
+
 export function openFastPreviewWindow({
   projectId,
   document,
@@ -56,6 +73,7 @@ export function openFastPreviewWindow({
   latestDocument,
   applyDialogueEdit,
   applyStageExpressionEdit,
+  applyEdits,
 }: {
   projectId: string;
   document: GalgameStoryProject;
@@ -70,6 +88,9 @@ export function openFastPreviewWindow({
   applyStageExpressionEdit: (
     edit: FastPreviewStageExpressionEdit,
   ) => Promise<FastPreviewStageExpressionEditResult>;
+  applyEdits: (
+    edits: FastPreviewStoryEdit[],
+  ) => Promise<FastPreviewStoryEditResult>;
 }) {
   const sessionId = crypto.randomUUID();
   const channel = new BroadcastChannel(`fpl-galgame-preview:${sessionId}`);
@@ -125,6 +146,25 @@ export function openFastPreviewWindow({
             requestId: request.requestId,
             error: error instanceof Error ? error.message : "保存失败",
           } satisfies FastPreviewStageExpressionResultMessage),
+        );
+    }
+    if (event.data?.type === "edit-batch") {
+      const request = event.data as FastPreviewEditsRequestMessage;
+      void applyEdits(request.edits)
+        .then((result) => {
+          currentRevision = result.storyRevision;
+          channel.postMessage({
+            type: "edit-batch-result",
+            requestId: request.requestId,
+            result,
+          } satisfies FastPreviewEditsResultMessage);
+        })
+        .catch((error) =>
+          channel.postMessage({
+            type: "edit-batch-result",
+            requestId: request.requestId,
+            error: error instanceof Error ? error.message : "保存失败",
+          } satisfies FastPreviewEditsResultMessage),
         );
     }
   });

@@ -13,6 +13,7 @@ from app.galgame_workshop.errors import (
     GalgameStoryDocumentNotFoundError,
     GalgameWorkshopProjectNotFoundError,
 )
+from app.galgame_workshop.story_flow import STORY_TERMINATOR_TYPES
 from app.models import (
     GalgameProjectAssetReference,
     GalgameStoryDocument,
@@ -32,7 +33,6 @@ from app.schemas.galgame_workshop import (
     GalgameStoryParagraphParamsBlock,
     GalgameStoryProject,
     GalgameStoryReportIssue,
-    GalgameStoryReturnToEntryBlock,
     GalgameStoryRouteReportOut,
 )
 
@@ -95,7 +95,7 @@ def story_out(row: GalgameStoryDocument, document: GalgameStoryProject) -> Galga
 def _terminator_index(chapter: GalgameStoryChapter, fragment_id: str) -> int | None:
     fragment = next(item for item in chapter.fragments if item.id == fragment_id)
     for index, block in enumerate(fragment.blocks):
-        if isinstance(block, (GalgameStoryEndChapterBlock, GalgameStoryReturnToEntryBlock)):
+        if block.type in STORY_TERMINATOR_TYPES:
             return index
     return None
 

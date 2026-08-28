@@ -19,6 +19,7 @@ import {
 import { stableId } from "@features/galgame-workshop/editor/model";
 import { type StoryImagePickerState } from "@features/galgame-workshop/editor/StoryImagePicker";
 import { StoryAssetImage } from "@features/galgame-workshop/editor/StoryAssetImage";
+import { invalidateGalgameAssetQueries } from "@features/galgame-workshop/queryKeys";
 type VisualSelection = { kind: "scene" | "cg"; id: string };
 type VisualMenuState = {
   item: VisualSelection;
@@ -488,9 +489,7 @@ export function useVisualWorkspaceController({
       ),
     onSuccess: (asset) => {
       bindFile(asset.id, asset.display_name);
-      void client.invalidateQueries({
-        queryKey: ["galgame-project-assets", projectId],
-      });
+      void invalidateGalgameAssetQueries(client, projectId);
     },
     onError: () => onNotice("图片上传失败，请检查格式和文件大小。"),
   });

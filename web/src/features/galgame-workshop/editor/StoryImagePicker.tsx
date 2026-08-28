@@ -21,6 +21,10 @@ import {
   type GalgameProjectAsset,
 } from "@features/galgame-workshop/api";
 import { StoryAssetImage } from "@features/galgame-workshop/editor/StoryAssetImage";
+import {
+  galgameQueryKeys,
+  invalidateGalgameAssetQueries,
+} from "@features/galgame-workshop/queryKeys";
 
 export type StoryImagePickerState = {
   mode: "add" | "replace" | "sequence";
@@ -62,7 +66,7 @@ export function StoryImagePicker({
   const [libraryFolderId, setLibraryFolderId] = useState<string>();
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const projectQuery = useQuery({
-    queryKey: ["galgame-project-assets", projectId, query],
+    queryKey: galgameQueryKeys.projectAssets(projectId, query),
     queryFn: () => getGalgameProjectAssets(projectId, query),
     enabled: state.source === "project",
   });
@@ -94,9 +98,7 @@ export function StoryImagePicker({
       deleteGalgameProjectAsset(projectId, asset),
     onSuccess: () => {
       setError("");
-      void client.invalidateQueries({
-        queryKey: ["galgame-project-assets", projectId],
-      });
+      void invalidateGalgameAssetQueries(client, projectId);
     },
     onError: (caught) =>
       setError(caught instanceof Error ? caught.message : "素材删除失败"),

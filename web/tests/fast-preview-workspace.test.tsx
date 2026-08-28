@@ -8,6 +8,7 @@ import {
 } from "@features/galgame-workshop/api";
 import { FastPreviewWorkspace } from "@features/galgame-workshop/editor/FastPreviewWorkspace";
 import { applyFastPreviewStageExpressionEdit } from "@features/galgame-workshop/editor/fastPreviewStageExpressionEdit";
+import { applyFastPreviewStoryEdits } from "@features/galgame-workshop/editor/fastPreviewEdits";
 import type {
   StoryPlayerHandle,
   StoryPlayerRuntimeSnapshot,
@@ -586,21 +587,17 @@ test("previews dialogue and presentation drafts before the explicit save action"
   };
   let savedDocument = structuredClone(dialogueDocument);
   let savedRevision = 617;
-  let failFirstLineTwoSave = true;
-  const onApplyDialogueEdit = vi.fn(async (edit) => {
-    if (edit.blockId === "line-two" && failFirstLineTwoSave) {
-      failFirstLineTwoSave = false;
+  let failFirstBatchSave = true;
+  const onApplyDialogueEdit = vi.fn();
+  const onApplyEdits = vi.fn(async (edits) => {
+    if (failFirstBatchSave) {
+      failFirstBatchSave = false;
       throw new Error("故事版本已发生冲突");
     }
-    const nextDocument = structuredClone(savedDocument);
-    const savedBlock = nextDocument.chapters![0]!.fragments![0]!.blocks!.find(
-      (block) => block.id === edit.blockId,
+    const nextDocument = applyFastPreviewStoryEdits(
+      structuredClone(savedDocument),
+      edits,
     );
-    if (savedBlock?.type === "dialogue") {
-      savedBlock.text = edit.text;
-      savedBlock.expressionId = edit.expressionId;
-      savedBlock.portrait = edit.portrait;
-    }
     savedDocument = nextDocument;
     savedRevision += 1;
     return { document: nextDocument, storyRevision: savedRevision };
@@ -614,6 +611,7 @@ test("previews dialogue and presentation drafts before the explicit save action"
       startCursor={{ chapterId: "chapter-one", fragmentId: "fragment-one" }}
       onExit={vi.fn()}
       onApplyDialogueEdit={onApplyDialogueEdit}
+      onApplyEdits={onApplyEdits}
     />,
   );
 
@@ -686,26 +684,33 @@ test("previews dialogue and presentation drafts before the explicit save action"
   await user.click(screen.getByRole("button", { name: "全部保存（2）" }));
 
   await waitFor(() =>
-    expect(onApplyDialogueEdit).toHaveBeenNthCalledWith(
-      2,
-      expect.objectContaining({
-        fragmentId: "fragment-one",
-        blockId: "line-two",
-        portrait: expect.objectContaining({ mode: "stage", distance: "near" }),
-      }),
+    expect(onApplyEdits).toHaveBeenCalledWith(
+      expect.arrayContaining([
+        expect.objectContaining({
+          type: "dialogue",
+          fragmentId: "fragment-one",
+          blockId: "line-two",
+          portrait: expect.objectContaining({
+            mode: "stage",
+            distance: "near",
+          }),
+        }),
+      ]),
     ),
   );
   expect(await screen.findByRole("alert")).toHaveTextContent(
-    "已保存 1 项，另有 1 个草稿已保留",
+    "未写入任何修改，全部 2 个草稿已保留",
   );
-  expect(screen.getByRole("button", { name: "全部保存（1）" })).toBeEnabled();
+  expect(screen.getByRole("button", { name: "全部保存（2）" })).toBeEnabled();
   expect(screen.getByTestId("mock-story-player")).toHaveTextContent(
     "修正后的对白|focused|stage|medium",
   );
-  await user.click(screen.getByRole("button", { name: "全部保存（1）" }));
+  await user.click(screen.getByRole("button", { name: "全部保存（2）" }));
   expect(await screen.findByRole("status")).toHaveTextContent(
-    "已保存全部 1 项修改",
+    "已保存全部 2 项修改",
   );
+  expect(onApplyDialogueEdit).not.toHaveBeenCalled();
+  expect(onApplyEdits).toHaveBeenCalledTimes(2);
   expect(screen.getByTestId("mock-story-player")).toHaveTextContent(
     "下一句对白|smile|stage|near",
   );
@@ -717,10 +722,11 @@ test("previews dialogue and presentation drafts before the explicit save action"
       startCursor={{ chapterId: "chapter-one", fragmentId: "fragment-one" }}
       onExit={vi.fn()}
       onApplyDialogueEdit={onApplyDialogueEdit}
+      onApplyEdits={onApplyEdits}
     />,
   );
   await waitFor(() => expect(seekTimeline).toHaveBeenCalledWith(1_100));
-  expect(restart).toHaveBeenCalledTimes(2);
+  expect(restart).toHaveBeenCalledTimes(1);
   expect(screen.getByTestId("mock-story-player")).toHaveTextContent(
     "下一句对白|smile|stage|near",
   );

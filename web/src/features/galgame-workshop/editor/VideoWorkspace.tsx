@@ -11,6 +11,10 @@ import {
   type GalgameStoryProject,
 } from "@features/galgame-workshop/api";
 import { stableId } from "@features/galgame-workshop/editor/model";
+import {
+  galgameQueryKeys,
+  invalidateGalgameAssetQueries,
+} from "@features/galgame-workshop/queryKeys";
 import { fetchApiBlob } from "@platform/api/client";
 import { formatFileSize } from "@shared/lib/fileSize";
 import { CustomSelect } from "@shared/ui/CustomSelect";
@@ -34,11 +38,11 @@ export function VideoWorkspace({
   const [url, setUrl] = useState("");
   const [decodeFailed, setDecodeFailed] = useState(false);
   const query = useQuery({
-    queryKey: ["galgame-project-assets", projectId, "video"],
+    queryKey: galgameQueryKeys.projectAssets(projectId, "video"),
     queryFn: () => getGalgameProjectAssets(projectId),
   });
   const overview = useQuery({
-    queryKey: ["galgame-asset-overview", projectId],
+    queryKey: galgameQueryKeys.assetOverview(projectId),
     queryFn: () => getGalgameAssetOverview(projectId),
   });
   const videos = useMemo(
@@ -98,12 +102,7 @@ export function VideoWorkspace({
         ],
       });
       setSelectedId(result.items[0]?.id);
-      void client.invalidateQueries({
-        queryKey: ["galgame-project-assets", projectId],
-      });
-      void client.invalidateQueries({
-        queryKey: ["galgame-asset-overview", projectId],
-      });
+      void invalidateGalgameAssetQueries(client, projectId);
       onNotice(`已导入 ${result.items.length} 个视频到 video/。`);
     },
     onError: () => onNotice("视频导入失败，请使用 MP4、WebM 或 MOV。"),
@@ -118,12 +117,7 @@ export function VideoWorkspace({
     }) =>
       patchGalgameProjectAsset(projectId, asset, { packagingPolicy: policy }),
     onSuccess: () => {
-      void client.invalidateQueries({
-        queryKey: ["galgame-project-assets", projectId],
-      });
-      void client.invalidateQueries({
-        queryKey: ["galgame-asset-overview", projectId],
-      });
+      void invalidateGalgameAssetQueries(client, projectId);
     },
   });
 

@@ -45,6 +45,10 @@ import {
   type GalgameStoryProject,
 } from "@features/galgame-workshop/api";
 import { AssetOverviewPreview } from "@features/galgame-workshop/editor/AssetOverviewPreview";
+import {
+  galgameQueryKeys,
+  invalidateGalgameAssetQueries,
+} from "@features/galgame-workshop/queryKeys";
 
 import {
   ASSET_TOOLBAR_HEIGHT,
@@ -283,18 +287,18 @@ export function AssetOverviewWorkspace({
   };
 
   const overview = useQuery({
-    queryKey: ["galgame-asset-overview", projectId],
+    queryKey: galgameQueryKeys.assetOverview(projectId),
     queryFn: () => getGalgameAssetOverview(projectId),
     staleTime: 30_000,
   });
   const files = useQuery({
-    queryKey: ["galgame-project-assets", projectId],
+    queryKey: galgameQueryKeys.projectAssets(projectId),
     queryFn: () => getGalgameProjectAssets(projectId),
     enabled: selection?.kind === "missing",
     staleTime: 30_000,
   });
   const manifest = useQuery({
-    queryKey: ["galgame-package-manifest", projectId],
+    queryKey: galgameQueryKeys.packageManifest(projectId),
     queryFn: () => getGalgamePackageManifest(projectId),
     enabled: overview.isSuccess,
     staleTime: 30_000,
@@ -305,17 +309,7 @@ export function AssetOverviewWorkspace({
   );
 
   const invalidateAssets = async () => {
-    await Promise.all([
-      client.invalidateQueries({
-        queryKey: ["galgame-asset-overview", projectId],
-      }),
-      client.invalidateQueries({
-        queryKey: ["galgame-project-assets", projectId],
-      }),
-      client.invalidateQueries({
-        queryKey: ["galgame-package-manifest", projectId],
-      }),
-    ]);
+    await invalidateGalgameAssetQueries(client, projectId);
   };
 
   const tree = useMemo(() => directoryTree(items), [items]);

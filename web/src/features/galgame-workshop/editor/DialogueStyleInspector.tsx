@@ -33,6 +33,7 @@ import {
 } from "@features/galgame-workshop/editor/StoryImagePicker";
 import { CustomColorPicker } from "@shared/ui/CustomColorPicker";
 import { CustomSelect } from "@shared/ui/CustomSelect";
+import { invalidateGalgameAssetQueries } from "@features/galgame-workshop/queryKeys";
 
 const PRESETS: Array<{
   id: Exclude<GalgameStoryDialogueBoxStyle["preset"], "custom">;
@@ -247,9 +248,7 @@ export function DialogueStyleInspector({
       uploadGalgameProjectAsset(projectId, file),
     onSuccess: (asset, variables) => {
       setUploadError("");
-      void client.invalidateQueries({
-        queryKey: ["galgame-project-assets", projectId],
-      });
+      void invalidateGalgameAssetQueries(client, projectId);
       bindFile(variables.target, asset.id);
     },
     onError: (caught) =>

@@ -43,6 +43,10 @@ import {
   type StoryAudioPickerSource,
 } from "@features/galgame-workshop/editor/StoryAudioPicker";
 import { StoryAudioPreview } from "@features/galgame-workshop/editor/StoryAudioPreview";
+import {
+  galgameQueryKeys,
+  invalidateGalgameAssetQueries,
+} from "@features/galgame-workshop/queryKeys";
 
 type SoundMode = "bgm" | "sfx" | "voice";
 type SpeakerFilter = "all" | "narrator" | "unknown" | `character:${string}`;
@@ -211,7 +215,7 @@ export function SoundWorkspace({
   >({});
   const [busyDelete, setBusyDelete] = useState(false);
   const projectFilesQuery = useQuery({
-    queryKey: ["galgame-project-assets", projectId, ""],
+    queryKey: galgameQueryKeys.projectAssets(projectId, ""),
     queryFn: () => getGalgameProjectAssets(projectId),
   });
   const asrSettings = useQuery({
@@ -332,9 +336,7 @@ export function SoundWorkspace({
               : "voice",
       ),
     onSuccess: (asset) => {
-      void client.invalidateQueries({
-        queryKey: ["galgame-project-assets", projectId],
-      });
+      void invalidateGalgameAssetQueries(client, projectId);
       bindFile(asset.id, asset.display_name);
     },
     onError: (caught) =>
@@ -360,9 +362,7 @@ export function SoundWorkspace({
       void client.invalidateQueries({
         queryKey: ["galgame-asr-tasks", projectId],
       });
-      void client.invalidateQueries({
-        queryKey: ["galgame-project-assets", projectId],
-      });
+      void invalidateGalgameAssetQueries(client, projectId);
       onNotice(`已提交 ${result.items.length} 个语音识别任务。`);
     },
     onError: () => onNotice("无法提交识别任务，请先选择可用模型。"),
@@ -377,9 +377,7 @@ export function SoundWorkspace({
         (asrSettings.data?.defaultLanguage ?? "auto") as "auto" | "zh" | "ja",
       ),
     onSuccess: () => {
-      void client.invalidateQueries({
-        queryKey: ["galgame-project-assets", projectId],
-      });
+      void invalidateGalgameAssetQueries(client, projectId);
       onNotice("识别文本已标记为手工修正。");
     },
     onError: () => onNotice("识别文本保存失败。"),
@@ -425,9 +423,7 @@ export function SoundWorkspace({
     if (projectFile && !fileStillBound) {
       try {
         await deleteGalgameProjectAsset(projectId, projectFile);
-        await client.invalidateQueries({
-          queryKey: ["galgame-project-assets", projectId],
-        });
+        await invalidateGalgameAssetQueries(client, projectId);
       } catch (caught) {
         onNotice(
           caught instanceof Error

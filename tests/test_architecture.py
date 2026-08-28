@@ -98,6 +98,48 @@ def _resolve_web_module(source: Path, specifier: str) -> Path | None:
     return next((candidate for candidate in candidates if candidate.is_file()), None)
 
 
+def test_workspace_models_are_registered_for_tenant_scoping() -> None:
+    from app.core.tenant_context import TENANT_MODELS
+    from app.models import (
+        Base,
+        ManagementApiKey,
+        SecurityAuditEvent,
+        WorkspaceInvitation,
+        WorkspaceMembership,
+    )
+
+    account_governance_models = {
+        ManagementApiKey,
+        SecurityAuditEvent,
+        WorkspaceInvitation,
+        WorkspaceMembership,
+    }
+    workspace_models = {
+        mapper.class_ for mapper in Base.registry.mappers if hasattr(mapper.class_, "workspace_id")
+    }
+    missing = workspace_models - set(TENANT_MODELS) - account_governance_models
+    assert not missing, "带 workspace_id 的业务模型必须注册租户过滤：" + ", ".join(
+        sorted(model.__name__ for model in missing)
+    )
+
+
+def test_galgame_asset_query_keys_have_one_owner() -> None:
+    owner = WEB_SRC / "features" / "galgame-workshop" / "queryKeys.ts"
+    literals = (
+        '"galgame-project-assets"',
+        '"galgame-asset-overview"',
+        '"galgame-package-manifest"',
+    )
+    violations: list[str] = []
+    for path in sorted((WEB_SRC / "features" / "galgame-workshop").rglob("*.ts*")):
+        if path == owner:
+            continue
+        source = path.read_text(encoding="utf-8")
+        if any(literal in source for literal in literals):
+            violations.append(_relative(path))
+    assert not violations, "Galgame 素材查询键只能由 queryKeys.ts 定义：\n" + "\n".join(violations)
+
+
 def test_backend_routes_do_not_own_persistence() -> None:
     violations: list[str] = []
     for path in _python_files(BACKEND_APP / "routes"):

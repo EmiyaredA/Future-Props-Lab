@@ -321,6 +321,7 @@ ID、消息数量、画布摘要和素材 ID；不保存图片 Base64、临时�
 - `GET/PUT /v1/galgame-workshop/projects/{project_id}/story`：读取或整份 CAS 保存 Story 1.4 故事文档。
 - `PATCH /v1/galgame-workshop/projects/{project_id}/story/dialogue`：以 Story revision CAS 快速保存单条对白的文本、表情与立绘演出，不重传整份文档或重建素材引用。
 - `PATCH /v1/galgame-workshop/projects/{project_id}/story/stage-expression`：以 Story revision CAS 快速保存 `showCharacter` 或 `setStageCast` 中一个舞台角色的表情，不重传整份故事。
+- `PATCH /v1/galgame-workshop/projects/{project_id}/story/edits`：以 `expected_revision` 和 1–1000 项判别联合 `edits` 原子保存多条对白与舞台表情；全部校验通过后只提交一次并递增一次 Story revision，重复目标或任一无效目标返回 422 且零写入，revision 冲突返回 409 与当前故事快照。
 - `GET /v1/galgame-workshop/story-migrations/status`：统计当前 Workspace 中待迁移、无效和当前格式的 Story 数量。
 - `POST /v1/galgame-workshop/story-migrations/run`：按 `limit`（1–100）幂等迁移一批 Story 1.0–1.3，并报告 CAS 冲突和剩余数量。
 - `POST /v1/galgame-workshop/projects/{project_id}/story/import`：以 multipart `expectedRevision` 和 `file` 导入不超过 10 MiB 的 Story 1.0–1.3 JSON，一次性转换为 1.4。

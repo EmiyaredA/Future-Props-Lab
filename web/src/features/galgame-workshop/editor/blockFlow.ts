@@ -6,7 +6,10 @@ import {
   dialogueSpeakerIds,
   type GalgameStoryDialogueBlock,
 } from "@features/galgame-workshop/editor/dialogue";
-import { stableId } from "@features/galgame-workshop/editor/model";
+import {
+  isTerminator,
+  stableId,
+} from "@features/galgame-workshop/editor/model";
 import {
   estimatedCueDuration,
   timelineCues,
@@ -79,10 +82,6 @@ function isCharacterBlock(
     block.type === "setStageCast" ||
     block.type === "removeCharacter"
   );
-}
-
-function isTerminator(block: GalgameStoryBlock) {
-  return block.type === "branch" || block.type === "endChapter";
 }
 
 function attachmentTargets(fragment: GalgameStoryFragment) {

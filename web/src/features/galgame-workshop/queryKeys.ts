@@ -1,3 +1,5 @@
+import type { QueryClient } from "@tanstack/react-query";
+
 export const galgameQueryKeys = {
   projects: ["galgame-workshop-projects"] as const,
   project: (projectId: string) =>
@@ -9,4 +11,25 @@ export const galgameQueryKeys = {
     query === undefined
       ? (["galgame-project-assets", projectId] as const)
       : (["galgame-project-assets", projectId, query] as const),
+  assetOverview: (projectId: string) =>
+    ["galgame-asset-overview", projectId] as const,
+  packageManifest: (projectId: string) =>
+    ["galgame-package-manifest", projectId] as const,
 };
+
+export function invalidateGalgameAssetQueries(
+  client: QueryClient,
+  projectId: string,
+) {
+  return Promise.all([
+    client.invalidateQueries({
+      queryKey: galgameQueryKeys.projectAssets(projectId),
+    }),
+    client.invalidateQueries({
+      queryKey: galgameQueryKeys.assetOverview(projectId),
+    }),
+    client.invalidateQueries({
+      queryKey: galgameQueryKeys.packageManifest(projectId),
+    }),
+  ]);
+}

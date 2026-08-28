@@ -8,6 +8,7 @@ import {
   getGalgameWorkshopProject,
   matchGalgameVoiceDialogue,
   patchGalgameStoryDialogue,
+  patchGalgameStoryEdits,
   patchGalgameStoryStageExpression,
   patchGalgameWorkshopProject,
   putGalgameStoryDocument,
@@ -43,6 +44,8 @@ import {
   type EditorWorkspace,
 } from "@features/galgame-workshop/editor/model";
 import type { FastPreviewDialogueEdit } from "@features/galgame-workshop/editor/fastPreviewDialogueEdit";
+import type { FastPreviewStoryEdit } from "@features/galgame-workshop/editor/fastPreviewEdits";
+import { invalidateGalgameAssetQueries } from "@features/galgame-workshop/queryKeys";
 import type { FastPreviewStageExpressionEdit } from "@features/galgame-workshop/editor/fastPreviewStageExpressionEdit";
 import type { StoryPlayerHandle } from "@features/galgame-workshop/editor/StoryPlayer";
 import {
@@ -414,7 +417,10 @@ export function useGalgameWorkshopEditorBase({
   const commitFastPreviewEdit = useCallback(
     async (
       next: GalgameStoryProject,
-      edit: FastPreviewDialogueEdit | FastPreviewStageExpressionEdit,
+      edit:
+        | FastPreviewDialogueEdit
+        | FastPreviewStageExpressionEdit
+        | FastPreviewStoryEdit[],
     ) => {
       const pendingDocument = documentRef.current;
       const scheduledFullSave = Boolean(autoSave.current);
@@ -435,8 +441,9 @@ export function useGalgameWorkshopEditorBase({
         if (conflictRef.current) return undefined;
         setSaveMessage("");
         try {
-          const updated =
-            "text" in edit
+          const updated = Array.isArray(edit)
+            ? await patchGalgameStoryEdits(projectId, edit, revisionRef.current)
+            : "text" in edit
               ? await patchGalgameStoryDialogue(
                   projectId,
                   edit,
@@ -447,10 +454,16 @@ export function useGalgameWorkshopEditorBase({
                   edit,
                   revisionRef.current,
                 );
+          const committedDocument =
+            "document" in updated
+              ? completeStoryDocument(updated.document)
+              : next;
           revisionRef.current = updated.revision;
+          documentRef.current = committedDocument;
+          setDocument(committedDocument);
           client.setQueryData<GalgameStoryDocument>(STORY_KEY(projectId), {
             project_id: updated.project_id,
-            document: next,
+            document: committedDocument,
             revision: updated.revision,
             updated_at: updated.updated_at,
           });
@@ -552,12 +565,7 @@ export function useGalgameWorkshopEditorBase({
         setDocument(next);
         client.setQueryData(STORY_KEY(projectId), updated);
         void client.invalidateQueries({ queryKey: REPORT_KEY(projectId) });
-        void client.invalidateQueries({
-          queryKey: ["galgame-asset-overview", projectId],
-        });
-        void client.invalidateQueries({
-          queryKey: ["galgame-package-manifest", projectId],
-        });
+        void invalidateGalgameAssetQueries(client, projectId);
         setSaveState("saved");
         setNotice("缺失素材已重新绑定并保存。");
         return true;
@@ -673,6 +681,7 @@ export function useGalgameWorkshopEditorBase({
     commitDocument,
     commitDialogueEdit: commitFastPreviewEdit,
     commitStageExpressionEdit: commitFastPreviewEdit,
+    commitBatchEdits: commitFastPreviewEdit,
     confirmOverwrite,
     conflict,
     conflictRef,

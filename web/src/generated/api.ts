@@ -1029,6 +1029,23 @@ export interface paths {
         patch: operations["patch_story_dialogue_v1_galgame_workshop_projects__project_id__story_dialogue_patch"];
         trace?: never;
     };
+    "/v1/galgame-workshop/projects/{project_id}/story/edits": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Patch Story Edits */
+        patch: operations["patch_story_edits_v1_galgame_workshop_projects__project_id__story_edits_patch"];
+        trace?: never;
+    };
     "/v1/galgame-workshop/projects/{project_id}/story/import": {
         parameters: {
             query?: never;
@@ -4977,6 +4994,23 @@ export interface components {
              */
             textColor: string;
         };
+        /** GalgameStoryDialogueEditIn */
+        GalgameStoryDialogueEditIn: {
+            /** Blockid */
+            blockId: string;
+            /** Expressionid */
+            expressionId?: string | null;
+            /** Fragmentid */
+            fragmentId: string;
+            portrait?: components["schemas"]["GalgameStoryDialoguePortrait"] | null;
+            /** Text */
+            text: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "dialogue";
+        };
         /** GalgameStoryDialoguePatchIn */
         GalgameStoryDialoguePatchIn: {
             /** Blockid */
@@ -5045,6 +5079,13 @@ export interface components {
         /** GalgameStoryDocumentPutIn */
         GalgameStoryDocumentPutIn: {
             document: components["schemas"]["GalgameStoryProject"];
+            /** Expected Revision */
+            expected_revision: number;
+        };
+        /** GalgameStoryEditsPatchIn */
+        GalgameStoryEditsPatchIn: {
+            /** Edits */
+            edits: (components["schemas"]["GalgameStoryDialogueEditIn"] | components["schemas"]["GalgameStoryStageExpressionEditIn"])[];
             /** Expected Revision */
             expected_revision: number;
         };
@@ -5965,6 +6006,22 @@ export interface components {
             skinId?: string | null;
             transform?: components["schemas"]["GalgameStoryCharacterTransform"];
             transition?: components["schemas"]["GalgameStoryCharacterTransition"];
+        };
+        /** GalgameStoryStageExpressionEditIn */
+        GalgameStoryStageExpressionEditIn: {
+            /** Blockid */
+            blockId: string;
+            /** Characterid */
+            characterId: string;
+            /** Expressionid */
+            expressionId?: string | null;
+            /** Fragmentid */
+            fragmentId: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "stageExpression";
         };
         /** GalgameStoryStageExpressionPatchIn */
         GalgameStoryStageExpressionPatchIn: {
@@ -12717,6 +12774,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["GalgameStoryDialoguePatchOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    patch_story_edits_v1_galgame_workshop_projects__project_id__story_edits_patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GalgameStoryEditsPatchIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GalgameStoryDocumentOut"];
                 };
             };
             /** @description Validation Error */

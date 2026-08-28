@@ -22,6 +22,7 @@ from app.schemas.galgame_workshop import (
     GalgameStoryDialoguePatchOut,
     GalgameStoryDocumentOut,
     GalgameStoryDocumentPutIn,
+    GalgameStoryEditsPatchIn,
     GalgameStoryRouteReportOut,
     GalgameStoryStageExpressionPatchIn,
     GalgameStoryStageExpressionPatchOut,
@@ -52,6 +53,23 @@ async def put_story(
 ) -> GalgameStoryDocumentOut:
     try:
         return await GalgameStoryDocuments(session).put(project_id, body)
+    except (
+        GalgameWorkshopProjectNotFoundError,
+        GalgameStoryDocumentNotFoundError,
+    ) as exc:
+        raise _not_found(exc) from None
+    except GalgameStoryDocumentInvalidError as exc:
+        raise _invalid_story(exc) from None
+
+
+@router.patch("/{project_id}/story/edits", response_model=GalgameStoryDocumentOut)
+async def patch_story_edits(
+    session: SessionDep,
+    project_id: str,
+    body: GalgameStoryEditsPatchIn,
+) -> GalgameStoryDocumentOut:
+    try:
+        return await GalgameStoryPatches(session).patch_edits(project_id, body)
     except (
         GalgameWorkshopProjectNotFoundError,
         GalgameStoryDocumentNotFoundError,

@@ -24,6 +24,10 @@ import {
 import { CharacterStageSettingsWorkspace } from "@features/galgame-workshop/editor/CharacterStageSettingsWorkspace";
 import { type StoryAudioPickerSource } from "@features/galgame-workshop/editor/StoryAudioPicker";
 import { CustomSelect } from "@shared/ui/CustomSelect";
+import {
+  galgameQueryKeys,
+  invalidateGalgameAssetQueries,
+} from "@features/galgame-workshop/queryKeys";
 type Reference = {
   kind: "dialogue" | "showCharacter" | "setStageCast" | "removeCharacter";
   chapterId: string;
@@ -233,7 +237,7 @@ export function useCharacterWorkspaceController({
       ),
   });
   const projectAssetsQuery = useQuery({
-    queryKey: ["galgame-project-assets", projectId, ""],
+    queryKey: galgameQueryKeys.projectAssets(projectId, ""),
     queryFn: () => getGalgameProjectAssets(projectId),
   });
   const [voicePickerOpen, setVoicePickerOpen] = useState(false);
@@ -689,9 +693,7 @@ export function useCharacterWorkspaceController({
       uploadGalgameProjectAsset(projectId, file, "character"),
     onSuccess: (asset) => {
       setUploadError("");
-      void client.invalidateQueries({
-        queryKey: ["galgame-project-assets", projectId],
-      });
+      void invalidateGalgameAssetQueries(client, projectId);
       bindFile(asset.id, asset.display_name);
     },
     onError: (caught) =>
@@ -776,9 +778,7 @@ export function useCharacterWorkspaceController({
       );
       setPicker(undefined);
       setUploadError("");
-      void client.invalidateQueries({
-        queryKey: ["galgame-project-assets", projectId],
-      });
+      void invalidateGalgameAssetQueries(client, projectId);
       onNotice(
         `已导入 ${result.items.length} 张立绘，并按“角色名_表情名”归组。`,
       );
@@ -805,9 +805,7 @@ export function useCharacterWorkspaceController({
         })),
       );
       setUploadError("");
-      void client.invalidateQueries({
-        queryKey: ["galgame-project-assets", projectId],
-      });
+      void invalidateGalgameAssetQueries(client, projectId);
       onNotice(`已向当前表情追加 ${result.items.length} 个序列帧。`);
     },
     onError: (caught) =>
@@ -861,9 +859,7 @@ export function useCharacterWorkspaceController({
   const voiceUpload = useMutation({
     mutationFn: (file: File) => uploadGalgameProjectAsset(projectId, file),
     onSuccess: (asset) => {
-      void client.invalidateQueries({
-        queryKey: ["galgame-project-assets", projectId],
-      });
+      void invalidateGalgameAssetQueries(client, projectId);
       bindVoiceSample(asset.id, asset.display_name);
     },
     onError: (caught) =>

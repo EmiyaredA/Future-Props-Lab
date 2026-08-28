@@ -98,7 +98,7 @@ export function fragmentById(chapter: GalgameStoryChapter, fragmentId: string) {
 }
 
 export function isTerminator(block: GalgameStoryBlock) {
-  return block.type === "endChapter" || block.type === "returnToEntry";
+  return BLOCK_REGISTRY[block.type].timing === "terminal";
 }
 
 export function moveItem<T>(items: T[], index: number, direction: -1 | 1) {

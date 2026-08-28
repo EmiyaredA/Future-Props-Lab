@@ -18,10 +18,15 @@ from app.galgame_workshop.story import GalgameStoryDocuments
 from app.models import GalgameStoryDocument, GalgameWorkshopProject
 from app.schemas.galgame_workshop import (
     GalgameStoryDialogueBlock,
+    GalgameStoryDialogueEditIn,
     GalgameStoryDialoguePatchIn,
     GalgameStoryDialoguePatchOut,
+    GalgameStoryDocumentOut,
+    GalgameStoryEditsPatchIn,
+    GalgameStoryProject,
     GalgameStorySetStageCastBlock,
     GalgameStoryShowCharacterBlock,
+    GalgameStoryStageExpressionEditIn,
     GalgameStoryStageExpressionPatchIn,
     GalgameStoryStageExpressionPatchOut,
 )
@@ -95,6 +100,76 @@ class GalgameStoryPatches:
         }:
             raise GalgameStoryDocumentInvalidError("表情不属于当前角色")
 
+    def _apply_dialogue(
+        self,
+        document: dict[str, Any],
+        body: GalgameStoryDialoguePatchIn | GalgameStoryDialogueEditIn,
+    ) -> GalgameStoryDialogueBlock:
+        blocks, index, payload = self._target_block(document, body.fragment_id, body.block_id)
+        if payload.get("type") != "dialogue":
+            raise GalgameStoryDocumentInvalidError("目标 Block 不是对白")
+        try:
+            current = GalgameStoryDialogueBlock.model_validate(payload)
+        except ValidationError as exc:
+            raise GalgameStoryDocumentInvalidError("目标对白格式无效") from exc
+        self._validate_expression(document, current.character_id, body.expression_id)
+        try:
+            updated = GalgameStoryDialogueBlock.model_validate(
+                {
+                    **payload,
+                    "text": body.text,
+                    "content": body.rich_text().model_dump(mode="json", by_alias=True),
+                    "expressionId": body.expression_id,
+                    "portrait": body.portrait.model_dump(mode="json", by_alias=True)
+                    if body.portrait is not None
+                    else None,
+                }
+            )
+        except ValidationError as exc:
+            raise GalgameStoryDocumentInvalidError("对白修改内容无效") from exc
+        blocks[index] = updated.model_dump(mode="json", by_alias=True)
+        return updated
+
+    def _apply_stage_expression(
+        self,
+        document: dict[str, Any],
+        body: GalgameStoryStageExpressionPatchIn | GalgameStoryStageExpressionEditIn,
+    ) -> GalgameStoryShowCharacterBlock | GalgameStorySetStageCastBlock:
+        blocks, index, payload = self._target_block(document, body.fragment_id, body.block_id)
+        self._validate_expression(document, body.character_id, body.expression_id)
+        try:
+            if payload.get("type") == "showCharacter":
+                if payload.get("characterId") != body.character_id:
+                    raise GalgameStoryDocumentInvalidError("登场指令不包含当前角色")
+                updated = GalgameStoryShowCharacterBlock.model_validate(
+                    {**payload, "expressionId": body.expression_id}
+                )
+            elif payload.get("type") == "setStageCast":
+                members = payload.get("members", [])
+                if not any(
+                    isinstance(member, dict) and member.get("characterId") == body.character_id
+                    for member in members
+                ):
+                    raise GalgameStoryDocumentInvalidError("舞台阵容不包含当前角色")
+                updated = GalgameStorySetStageCastBlock.model_validate(
+                    {
+                        **payload,
+                        "members": [
+                            {**member, "expressionId": body.expression_id}
+                            if isinstance(member, dict)
+                            and member.get("characterId") == body.character_id
+                            else member
+                            for member in members
+                        ],
+                    }
+                )
+            else:
+                raise GalgameStoryDocumentInvalidError("目标 Block 不是角色登场指令")
+        except ValidationError as exc:
+            raise GalgameStoryDocumentInvalidError("舞台角色表情修改无效") from exc
+        blocks[index] = updated.model_dump(mode="json", by_alias=True)
+        return updated
+
     async def _save(
         self,
         project_id: str,
@@ -135,29 +210,7 @@ class GalgameStoryPatches:
     ) -> GalgameStoryDialoguePatchOut:
         project, row = await self._rows(project_id)
         document = deepcopy(row.document)
-        blocks, index, payload = self._target_block(document, body.fragment_id, body.block_id)
-        if payload.get("type") != "dialogue":
-            raise GalgameStoryDocumentInvalidError("目标 Block 不是对白")
-        try:
-            current = GalgameStoryDialogueBlock.model_validate(payload)
-        except ValidationError as exc:
-            raise GalgameStoryDocumentInvalidError("目标对白格式无效") from exc
-        self._validate_expression(document, current.character_id, body.expression_id)
-        try:
-            updated = GalgameStoryDialogueBlock.model_validate(
-                {
-                    **payload,
-                    "text": body.text,
-                    "content": body.rich_text().model_dump(mode="json", by_alias=True),
-                    "expressionId": body.expression_id,
-                    "portrait": body.portrait.model_dump(mode="json", by_alias=True)
-                    if body.portrait is not None
-                    else None,
-                }
-            )
-        except ValidationError as exc:
-            raise GalgameStoryDocumentInvalidError("对白修改内容无效") from exc
-        blocks[index] = updated.model_dump(mode="json", by_alias=True)
+        updated = self._apply_dialogue(document, body)
         updated_at = await self._save(project_id, project, document, body.expected_revision)
         return GalgameStoryDialoguePatchOut(
             project_id=project_id,
@@ -171,43 +224,38 @@ class GalgameStoryPatches:
     ) -> GalgameStoryStageExpressionPatchOut:
         project, row = await self._rows(project_id)
         document = deepcopy(row.document)
-        blocks, index, payload = self._target_block(document, body.fragment_id, body.block_id)
-        self._validate_expression(document, body.character_id, body.expression_id)
-        try:
-            if payload.get("type") == "showCharacter":
-                if payload.get("characterId") != body.character_id:
-                    raise GalgameStoryDocumentInvalidError("登场指令不包含当前角色")
-                updated = GalgameStoryShowCharacterBlock.model_validate(
-                    {**payload, "expressionId": body.expression_id}
-                )
-            elif payload.get("type") == "setStageCast":
-                members = payload.get("members", [])
-                if not any(
-                    isinstance(member, dict) and member.get("characterId") == body.character_id
-                    for member in members
-                ):
-                    raise GalgameStoryDocumentInvalidError("舞台阵容不包含当前角色")
-                updated = GalgameStorySetStageCastBlock.model_validate(
-                    {
-                        **payload,
-                        "members": [
-                            {**member, "expressionId": body.expression_id}
-                            if isinstance(member, dict)
-                            and member.get("characterId") == body.character_id
-                            else member
-                            for member in members
-                        ],
-                    }
-                )
-            else:
-                raise GalgameStoryDocumentInvalidError("目标 Block 不是角色登场指令")
-        except ValidationError as exc:
-            raise GalgameStoryDocumentInvalidError("舞台角色表情修改无效") from exc
-        blocks[index] = updated.model_dump(mode="json", by_alias=True)
+        updated = self._apply_stage_expression(document, body)
         updated_at = await self._save(project_id, project, document, body.expected_revision)
         return GalgameStoryStageExpressionPatchOut(
             project_id=project_id,
             revision=body.expected_revision + 1,
             updated_at=updated_at,
             block=updated,
+        )
+
+    async def patch_edits(
+        self, project_id: str, body: GalgameStoryEditsPatchIn
+    ) -> GalgameStoryDocumentOut:
+        project, row = await self._rows(project_id)
+        document = deepcopy(row.document)
+        for edit in body.edits:
+            if isinstance(edit, GalgameStoryDialogueEditIn):
+                self._apply_dialogue(document, edit)
+            else:
+                self._apply_stage_expression(document, edit)
+        try:
+            validated = GalgameStoryProject.model_validate(document)
+        except ValidationError as exc:
+            raise GalgameStoryDocumentInvalidError("批量修改后的故事文档无效") from exc
+        updated_at = await self._save(
+            project_id,
+            project,
+            validated.model_dump(mode="json", by_alias=True),
+            body.expected_revision,
+        )
+        return GalgameStoryDocumentOut(
+            project_id=project_id,
+            document=validated,
+            revision=body.expected_revision + 1,
+            updated_at=updated_at,
         )

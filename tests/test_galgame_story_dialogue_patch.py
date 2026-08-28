@@ -31,6 +31,12 @@ def story_document() -> dict:
                                 "text": "原始对白。",
                             },
                             {
+                                "id": "block-dialogue-two",
+                                "type": "dialogue",
+                                "characterId": "character-one",
+                                "text": "第二句对白。",
+                            },
+                            {
                                 "id": "block-show-character",
                                 "type": "showCharacter",
                                 "characterId": "character-one",
@@ -136,3 +142,79 @@ async def test_patches_one_dialogue_without_returning_the_full_document() -> Non
         assert stage_cast_expression.status_code == 200, stage_cast_expression.text
         assert stage_cast_expression.json()["revision"] == 4
         assert stage_cast_expression.json()["block"]["type"] == "setStageCast"
+
+
+@pytest.mark.asyncio
+async def test_batch_story_edits_are_atomic_and_increment_revision_once() -> None:
+    transport = httpx.ASGITransport(app=app)
+    async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+        project = (
+            await client.post("/v1/galgame-workshop/projects", json={"title": "原子保存"})
+        ).json()
+        created = await client.put(
+            f"/v1/galgame-workshop/projects/{project['id']}/story",
+            json={"expected_revision": 0, "document": story_document()},
+        )
+        assert created.status_code == 200, created.text
+        endpoint = f"/v1/galgame-workshop/projects/{project['id']}/story/edits"
+        edits = [
+            {
+                "type": "dialogue",
+                "fragmentId": "main",
+                "blockId": "block-dialogue",
+                "text": "第一句已修改。",
+                "expressionId": None,
+                "portrait": None,
+            },
+            {
+                "type": "dialogue",
+                "fragmentId": "main",
+                "blockId": "block-dialogue-two",
+                "text": "第二句已修改。",
+                "expressionId": None,
+                "portrait": None,
+            },
+            {
+                "type": "stageExpression",
+                "fragmentId": "main",
+                "blockId": "block-show-character",
+                "characterId": "character-one",
+                "expressionId": None,
+            },
+        ]
+        saved = await client.patch(endpoint, json={"expected_revision": 1, "edits": edits})
+        assert saved.status_code == 200, saved.text
+        assert saved.json()["revision"] == 2
+        blocks = saved.json()["document"]["chapters"][0]["fragments"][0]["blocks"]
+        assert [blocks[0]["text"], blocks[1]["text"]] == [
+            "第一句已修改。",
+            "第二句已修改。",
+        ]
+
+        invalid = await client.patch(
+            endpoint,
+            json={
+                "expected_revision": 2,
+                "edits": [
+                    {**edits[0], "text": "不应落库"},
+                    {**edits[1], "blockId": "missing-block", "text": "无效目标"},
+                ],
+            },
+        )
+        assert invalid.status_code == 422, invalid.text
+        unchanged = (
+            await client.get(f"/v1/galgame-workshop/projects/{project['id']}/story")
+        ).json()
+        assert unchanged["revision"] == 2
+        assert unchanged["document"]["chapters"][0]["fragments"][0]["blocks"][0]["text"] == (
+            "第一句已修改。"
+        )
+
+        duplicate = await client.patch(
+            endpoint,
+            json={"expected_revision": 2, "edits": [edits[0], edits[0]]},
+        )
+        assert duplicate.status_code == 422
+        stale = await client.patch(endpoint, json={"expected_revision": 1, "edits": [edits[0]]})
+        assert stale.status_code == 409
+        assert stale.json()["current"]["revision"] == 2

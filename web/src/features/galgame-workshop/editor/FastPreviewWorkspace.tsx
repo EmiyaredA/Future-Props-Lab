@@ -52,6 +52,10 @@ import { useFastPreviewDialogueDrafts } from "@features/galgame-workshop/editor/
 import { useFastPreviewDraftSaving } from "@features/galgame-workshop/editor/useFastPreviewDraftSaving";
 import { useFastPreviewExactFrame } from "@features/galgame-workshop/editor/useFastPreviewExactFrame";
 import { useFastPreviewSourceDocument } from "@features/galgame-workshop/editor/useFastPreviewSourceDocument";
+import type {
+  FastPreviewStoryEdit,
+  FastPreviewStoryEditResult,
+} from "@features/galgame-workshop/editor/fastPreviewEdits";
 import {
   applyFastPreviewStageExpressionEdit,
   stageSourceExpressionId,
@@ -76,6 +80,7 @@ export function FastPreviewWorkspace({
   onRenderRange,
   onApplyDialogueEdit,
   onApplyStageExpressionEdit,
+  onApplyEdits,
 }: {
   document: GalgameStoryProject;
   startCursor: FastPreviewCursor;
@@ -95,6 +100,9 @@ export function FastPreviewWorkspace({
   onApplyStageExpressionEdit?: (
     edit: FastPreviewStageExpressionEdit,
   ) => Promise<FastPreviewStageExpressionEditResult>;
+  onApplyEdits?: (
+    edits: FastPreviewStoryEdit[],
+  ) => Promise<FastPreviewStoryEditResult>;
 }) {
   const playerRef = useRef<StoryPlayerHandle>(null);
   const editPauseRequestedRef = useRef(false);
@@ -159,6 +167,7 @@ export function FastPreviewWorkspace({
     },
     onApplyDialogueEdit,
     onApplyStageExpressionEdit,
+    onApplyEdits,
     onDiscardDialogueDraft: discardDraft,
     onDocument: setPreviewDocument,
     onRevision: setCurrentRevision,

@@ -5,6 +5,7 @@ import re
 from dataclasses import dataclass, field
 from typing import Any
 
+from app.galgame_workshop.story_flow import TIMED_ROUTE_BOUNDARY_TYPES
 from app.schemas.galgame_workshop import GalgameVideoExportIssue
 
 PRESETS = {
@@ -235,7 +236,7 @@ def _plan_route(
                 (
                     (index, item)
                     for index, item in enumerate(fragment.get("blocks", []))
-                    if item.get("type") in {"branch", "endChapter"}
+                    if item.get("type") in TIMED_ROUTE_BOUNDARY_TYPES
                 ),
                 None,
             )

@@ -93,6 +93,44 @@ describe("Galgame Block flow", () => {
     expect(next.blocks?.[0]).not.toHaveProperty("startMs");
   });
 
+  test("keeps branch call-like while inserting before true terminators", () => {
+    const branch: GalgameStoryFragment = {
+      id: "branch-flow",
+      title: "分支后继续",
+      blocks: [
+        {
+          id: "choice",
+          type: "branch",
+          prompt: "选择",
+          choices: [
+            { id: "a", text: "A", targetFragmentId: "a-fragment" },
+            { id: "b", text: "B", targetFragmentId: "b-fragment" },
+          ],
+        },
+      ],
+    };
+    const loop: GalgameStoryFragment = {
+      id: "loop-flow",
+      title: "返回入口",
+      blocks: [{ id: "return", type: "returnToEntry" }],
+    };
+
+    expect(
+      insertStoryBlock(branch, {
+        id: "after-branch",
+        type: "narration",
+        text: "分支返回后继续",
+      }).blocks?.map((block) => block.id),
+    ).toEqual(["choice", "after-branch"]);
+    expect(
+      insertStoryBlock(loop, {
+        id: "before-return",
+        type: "narration",
+        text: "返回前执行",
+      }).blocks?.map((block) => block.id),
+    ).toEqual(["before-return", "return"]);
+  });
+
   test("inserts a timed cue and ripples later cues", () => {
     const fragment: GalgameStoryFragment = {
       id: "timed",

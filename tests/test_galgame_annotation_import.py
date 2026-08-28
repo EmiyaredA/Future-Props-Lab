@@ -4,6 +4,7 @@ import hashlib
 import io
 import math
 import wave
+from types import SimpleNamespace
 
 import httpx
 import pytest
@@ -13,7 +14,11 @@ from app.core.tenant_context import bind_workspace
 from app.galgame_workshop.annotation_import_runner import GalgameAnnotationImportRunner
 from app.galgame_workshop.readiness import GalgameReadiness
 from app.main import app
-from app.models import GalgameAssetMetadata
+from app.models import (
+    GalgameAnnotationImportTask,
+    GalgameAssetMetadata,
+    GalgameWorkshopProject,
+)
 from app.schemas.galgame_workshop import GalgameStoryReportIssue
 
 
@@ -273,6 +278,73 @@ async def test_annotation_import_preview_task_idempotency_and_runner() -> None:
             assert metadata is not None
             assert metadata.packaging_policy == "include"
         await _cleanup(client, target, source, source_asset)
+
+
+@pytest.mark.asyncio
+async def test_annotation_import_runner_quarantines_workspace_mismatch() -> None:
+    task = SimpleNamespace(
+        id="task",
+        project_id="project",
+        workspace_id="wrong-workspace",
+        status="queued",
+        progress=0,
+        result_detail={},
+        error=None,
+        revision=0,
+        updated_at=None,
+        finished_at=None,
+    )
+    project = SimpleNamespace(id="project", workspace_id="correct-workspace")
+
+    class Session:
+        def __init__(self) -> None:
+            self.info: dict[str, str] = {}
+            self.committed = False
+
+        async def get(self, model, row_id):
+            if model is GalgameAnnotationImportTask and row_id == "task":
+                return task
+            if model is GalgameWorkshopProject and row_id == "project":
+                return project
+            return None
+
+        async def commit(self) -> None:
+            self.committed = True
+
+    session = Session()
+    loaded = await GalgameAnnotationImportRunner()._load(session, "task")
+
+    assert loaded is None
+    assert session.committed is True
+    assert task.status == "failed"
+    assert task.result_detail["code"] == "workspace_mismatch"
+
+
+@pytest.mark.asyncio
+async def test_annotation_import_runner_restores_non_default_workspace() -> None:
+    task = SimpleNamespace(
+        id="task",
+        project_id="project",
+        workspace_id="other-workspace",
+    )
+    project = SimpleNamespace(id="project", workspace_id="other-workspace")
+
+    class Session:
+        def __init__(self) -> None:
+            self.info: dict[str, str] = {}
+
+        async def get(self, model, row_id):
+            if model is GalgameAnnotationImportTask and row_id == "task":
+                return task
+            if model is GalgameWorkshopProject and row_id == "project":
+                return project
+            return None
+
+    session = Session()
+    loaded = await GalgameAnnotationImportRunner()._load(session, "task")
+
+    assert loaded is task
+    assert session.info["workspace_id"] == "other-workspace"
 
 
 @pytest.mark.asyncio

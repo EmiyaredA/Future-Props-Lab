@@ -15,6 +15,10 @@ import {
 } from "@features/galgame-workshop/editor/editorFastPreviewSession";
 import { openFastPreviewWindow } from "@features/galgame-workshop/editor/fastPreviewSession";
 import { updateBlock } from "@features/galgame-workshop/editor/model";
+import {
+  applyFastPreviewStoryEdits,
+  type FastPreviewStoryEdit,
+} from "@features/galgame-workshop/editor/fastPreviewEdits";
 
 const FastPreviewWorkspace = lazy(() =>
   import("@features/galgame-workshop/editor/FastPreviewWorkspace").then(
@@ -161,6 +165,16 @@ export function EditorFastPreviewOverlay({
       storyRevision: model.revisionRef.current,
     };
   };
+  const applyEdits = async (edits: FastPreviewStoryEdit[]) => {
+    const current = model.documentRef.current ?? model.document;
+    const next = applyFastPreviewStoryEdits(current, edits);
+    const saved = await model.commitBatchEdits(next, edits);
+    if (!saved) throw new Error("保存失败或故事版本已发生冲突");
+    return {
+      document: "document" in saved ? saved.document : next,
+      storyRevision: model.revisionRef.current,
+    };
+  };
   const exactFrameDisabledReason = model.conflict
     ? "存在版本冲突，解决后才能生成精确帧"
     : model.saveState === "saving"
@@ -188,6 +202,7 @@ export function EditorFastPreviewOverlay({
         onRenderRange={onRenderRange}
         onApplyDialogueEdit={applyDialogueEdit}
         onApplyStageExpressionEdit={applyStageExpressionEdit}
+        onApplyEdits={applyEdits}
         onOpenWindow={() =>
           openFastPreviewWindow({
             projectId: model.projectId,
@@ -199,6 +214,7 @@ export function EditorFastPreviewOverlay({
             latestDocument: () => model.documentRef.current ?? model.document,
             applyDialogueEdit,
             applyStageExpressionEdit,
+            applyEdits,
           })
         }
         onExit={(snapshot) => {

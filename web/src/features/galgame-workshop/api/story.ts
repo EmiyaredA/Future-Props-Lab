@@ -105,6 +105,56 @@ export async function patchGalgameStoryStageExpression(
   );
 }
 
+export async function patchGalgameStoryEdits(
+  projectId: string,
+  edits: Array<
+    | {
+        type: "dialogue";
+        fragmentId: string;
+        blockId: string;
+        text: string;
+        expressionId: string | null;
+        portrait:
+          | (Omit<GalgameStoryDialoguePortrait, "visible" | "distance"> & {
+              visible?: GalgameStoryDialoguePortrait["visible"];
+              distance?: GalgameStoryDialoguePortrait["distance"];
+            })
+          | null;
+      }
+    | {
+        type: "stageExpression";
+        fragmentId: string;
+        blockId: string;
+        characterId: string;
+        expressionId: string | null;
+      }
+  >,
+  expectedRevision: number,
+) {
+  const response = await unwrap(
+    await api.PATCH("/v1/galgame-workshop/projects/{project_id}/story/edits", {
+      params: { path: { project_id: projectId } },
+      body: {
+        expected_revision: expectedRevision,
+        edits: edits.map((edit) => {
+          if (edit.type !== "dialogue") return edit;
+          return {
+            ...edit,
+            portrait: edit.portrait
+              ? {
+                  ...edit.portrait,
+                  visible: edit.portrait.visible ?? true,
+                  distance: edit.portrait.distance ?? "medium",
+                }
+              : null,
+          };
+        }),
+      },
+    }),
+  );
+  return normalizeStoryDocument(response);
+}
+
 export async function getGalgameStoryReport(projectId: string) {
   return unwrap(
     await api.GET("/v1/galgame-workshop/projects/{project_id}/story/report", {

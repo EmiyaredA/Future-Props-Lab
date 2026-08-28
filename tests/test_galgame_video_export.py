@@ -150,6 +150,32 @@ async def test_video_export_rejects_stale_story_preview() -> None:
         assert response.json()["blockers"][0]["code"] == "story_revision_conflict"
 
 
+@pytest.mark.asyncio
+async def test_timed_route_export_reports_return_to_entry_loop() -> None:
+    transport = httpx.ASGITransport(app=app)
+    async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+        project = (
+            await client.post("/v1/galgame-workshop/projects", json={"title": "循环路线"})
+        ).json()
+        document = playable_story()
+        main = document["chapters"][0]["fragments"][0]
+        main["timeline"] = {"durationMs": 3000}
+        main["blocks"] = [{"id": "return", "type": "returnToEntry"}]
+        saved = await client.put(
+            f"/v1/galgame-workshop/projects/{project['id']}/story",
+            json={"expected_revision": 0, "document": document},
+        )
+        assert saved.status_code == 200, saved.text
+
+        preview = await client.post(
+            f"/v1/galgame-workshop/projects/{project['id']}/video-exports/preview",
+            json={"expectedStoryRevision": saved.json()["revision"]},
+        )
+        assert preview.status_code == 200, preview.text
+        assert preview.json()["ready"] is False
+        assert preview.json()["blockers"][0]["code"] == "return_to_entry_loop"
+
+
 def test_video_export_registers_outputs_with_a_supported_packaging_policy() -> None:
     assert EXPORT_PACKAGING_POLICY in {"auto", "include", "exclude"}
 

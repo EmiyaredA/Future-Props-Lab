@@ -28,6 +28,7 @@ from app.models import (
     GalgameAnnotationImportTask,
     GalgameAssetMetadata,
     GalgameStorySnapshot,
+    GalgameWorkshopProject,
     VisualAsset,
 )
 from app.schemas.audio_annotation import AudioAnnotationSegment
@@ -134,8 +135,20 @@ class GalgameAnnotationImportRunner(PollingTaskRunner):
         self, session: AsyncSession, task_id: str
     ) -> GalgameAnnotationImportTask | None:
         task = await session.get(GalgameAnnotationImportTask, task_id)
-        if task is not None:
-            bind_workspace(session, task.workspace_id)
+        if task is None:
+            return None
+        project = await session.get(GalgameWorkshopProject, task.project_id)
+        if project is None or project.workspace_id != task.workspace_id:
+            task.status = "failed"
+            task.progress = 0
+            task.result_detail = {"phase": "failed", "code": "workspace_mismatch"}
+            task.error = "导入任务与目标项目的 Workspace 不一致，请重新创建任务"
+            task.revision += 1
+            task.updated_at = utc_now()
+            task.finished_at = utc_now()
+            await session.commit()
+            return None
+        bind_workspace(session, task.workspace_id)
         return task
 
     async def recover(self) -> None:

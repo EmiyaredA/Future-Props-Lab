@@ -6,6 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import Settings, get_settings
+from app.core.tenant_context import current_workspace_id
 from app.core.time import iso_utc
 from app.files import AssetError
 from app.files.digests import sha256_file
@@ -432,6 +433,7 @@ class GalgameAnnotationImports:
                 detail={"issues": [item.model_dump(mode="json") for item in preview.issues]},
             )
         task = GalgameAnnotationImportTask(
+            workspace_id=current_workspace_id(),
             project_id=project_id,
             source_project_id=body.source_project_id,
             request_id=body.request_id,

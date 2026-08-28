@@ -172,11 +172,17 @@ from app.schemas.galgame_workshop.stage_settings import (
     default_character_position_presets,
 )
 from app.schemas.galgame_workshop.story import (
-    GalgameStoryDialoguePatchIn,
-    GalgameStoryDialoguePatchOut,
     GalgameStoryDocumentOut,
     GalgameStoryDocumentPutIn,
     GalgameStoryProject,
+)
+from app.schemas.galgame_workshop.story_edits import (
+    GalgameStoryDialogueEditIn,
+    GalgameStoryDialoguePatchIn,
+    GalgameStoryDialoguePatchOut,
+    GalgameStoryEditIn,
+    GalgameStoryEditsPatchIn,
+    GalgameStoryStageExpressionEditIn,
     GalgameStoryStageExpressionPatchIn,
     GalgameStoryStageExpressionPatchOut,
 )

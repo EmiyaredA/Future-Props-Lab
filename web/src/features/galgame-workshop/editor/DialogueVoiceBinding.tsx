@@ -13,6 +13,7 @@ import {
   type StoryAudioPickerSource,
 } from "@features/galgame-workshop/editor/StoryAudioPicker";
 import { StoryAudioPreview } from "@features/galgame-workshop/editor/StoryAudioPreview";
+import { invalidateGalgameAssetQueries } from "@features/galgame-workshop/queryKeys";
 
 function displayLabel(filename: string) {
   return filename.replace(/\.[^.]+$/, "").trim() || "对白配音";
@@ -96,9 +97,7 @@ export function DialogueVoiceBinding({
   const upload = useMutation({
     mutationFn: (file: File) => uploadGalgameProjectAsset(projectId, file),
     onSuccess: (asset) => {
-      void client.invalidateQueries({
-        queryKey: ["galgame-project-assets", projectId],
-      });
+      void invalidateGalgameAssetQueries(client, projectId);
       bindFile(asset.id, asset.display_name);
     },
     onError: (caught) =>
