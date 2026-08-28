@@ -1,17 +1,18 @@
-import json
 from pathlib import Path
 
-from scripts.galgame_performance_upgrade import (
+from scripts.demo.galgame_runaway.cues import (
+    CG_ASSETS,
+    CG_EVENTS,
+    SAFE_CLOSEUP_DIALOGUE_IDS,
+    TOP_SAFE_PERCENT,
+)
+from scripts.demo.galgame_runaway.performance_upgrade import (
     AUDITED_EXPRESSION_LABELS,
     CURATED_CHARACTER_POSES,
-    DEFAULT_ANNOTATION_PATH,
     DIALOGUE_BOX_OPACITY,
     DIALOGUE_EXPRESSION_CUES,
     ENDING_THANKS_ID,
     ENDING_THANKS_TEXT,
-    EXPECTED_ANNOTATION_MULTI_SPEAKER_LINES,
-    EXPECTED_ANNOTATION_SHA256,
-    EXPECTED_CROWD_NORMALIZED_LINES,
     HIDDEN_SCENE_SWITCH_MS,
     KURISU_EXPRESSION_LABELS,
     LIP_SYNC_FPS,
@@ -37,13 +38,6 @@ from scripts.galgame_performance_upgrade import (
     rename_audited_expression_labels,
     rename_kurisu_expression_labels,
     scene_id_for_code,
-    sha256,
-)
-from scripts.galgame_runaway_cues import (
-    CG_ASSETS,
-    CG_EVENTS,
-    SAFE_CLOSEUP_DIALOGUE_IDS,
-    TOP_SAFE_PERCENT,
 )
 
 from app.galgame_workshop.video_compiler_support import actor_layout
@@ -197,9 +191,7 @@ def test_ending_thanks_uses_opening_blackboard_timing() -> None:
     }
 
 
-def test_v8_annotation_and_scene_timing_contract() -> None:
-    assert DEFAULT_ANNOTATION_PATH.name == "广播剧.annotation (15).json"
-    assert sha256(DEFAULT_ANNOTATION_PATH) == EXPECTED_ANNOTATION_SHA256
+def test_v8_scene_timing_contract() -> None:
     assert LIP_SYNC_FPS == 5
     assert (372_443, "BG11A2") in SCENE_BEATS
     assert (387_752, "BG11A7") in SCENE_BEATS
@@ -208,32 +200,6 @@ def test_v8_annotation_and_scene_timing_contract() -> None:
     assert (1_627_170, "BG11A7") in SCENE_BEATS
     assert (1_677_392, "BG11_EMPTY") in SCENE_BEATS
     assert not any(at_ms in {653_198, 687_072, 1_604_000, 1_682_974} for at_ms, _ in SCENE_BEATS)
-
-    annotation = json.loads(DEFAULT_ANNOTATION_PATH.read_text(encoding="utf-8"))
-    assert len(annotation["segments"]) == 514
-    assert (
-        sum(len(segment["speaker_ids"]) > 1 for segment in annotation["segments"])
-        == EXPECTED_ANNOTATION_MULTI_SPEAKER_LINES
-    )
-    assert sum(len(segment["speaker_ids"]) > 3 for segment in annotation["segments"]) == (
-        EXPECTED_CROWD_NORMALIZED_LINES
-    )
-    ensemble_id = next(
-        speaker["id"] for speaker in annotation["speakers"] if speaker["name"] == "众人"
-    )
-    ensemble_segments = [
-        segment for segment in annotation["segments"] if segment["speaker_id"] == ensemble_id
-    ]
-    assert len(ensemble_segments) == 12
-    assert all(segment["speaker_ids"] == [ensemble_id] for segment in ensemble_segments)
-    assert annotation["segments"][476]["speaker_id"] == "luka"
-    assert annotation["segments"][476]["speaker_ids"] == ["luka"]
-    assert annotation["segments"][476]["emotion"] == "黑色私服站姿·睁眼微笑"
-    assert annotation["segments"][78]["localized_texts"][0]["text"] == (
-        "你在说什么？我可是气量很大的男人！"
-    )
-    assert annotation["segments"][248]["localized_texts"][0]["text"] == "呐，篝的肚子饿了。"
-    assert annotation["segments"][315]["localized_texts"][0]["text"] == "爸爸也最喜欢篝的哟！"
 
 
 def test_lab_scene_schedule_uses_two_main_compositions_with_time_progression() -> None:

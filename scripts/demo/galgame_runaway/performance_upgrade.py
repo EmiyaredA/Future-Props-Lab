@@ -19,7 +19,7 @@ except ModuleNotFoundError:
     from management_api import management_api_key
 
 try:
-    from scripts.galgame_runaway_cues import (
+    from scripts.demo.galgame_runaway.cues import (
         CG_ASSETS,
         CG_EVENT_STARTS,
         CG_EVENTS,
@@ -28,7 +28,7 @@ try:
         TOP_SAFE_PERCENT,
     )
 except ModuleNotFoundError:
-    from galgame_runaway_cues import (  # type: ignore[no-redef]
+    from cues import (  # type: ignore[no-redef]
         CG_ASSETS,
         CG_EVENT_STARTS,
         CG_EVENTS,
@@ -37,11 +37,7 @@ except ModuleNotFoundError:
         TOP_SAFE_PERCENT,
     )
 
-REPO_ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_PROJECT_ID = "63ac832d-bff3-4053-9c9f-f55c9dafc52a"
-DEFAULT_SOURCE_ROOT = Path("/Users/tonghao/Projects/steins-gate-video/assets/games/steins_gate_0")
-ORIGINAL_SG_ROOT = Path("/Users/tonghao/Projects/steins-gate-video/assets/games/steins_gate")
-DEFAULT_ANNOTATION_PATH = Path("/Users/tonghao/Downloads/广播剧.annotation (15).json")
+REPO_ROOT = Path(__file__).resolve().parents[3]
 BACKUP_ROOT = REPO_ROOT / ".runtime" / "galgame-import-backups"
 MAP_PATH = BACKUP_ROOT / "sg0-performance-asset-map.json"
 IMAGE_SUFFIXES = {".png", ".jpg", ".jpeg", ".webp"}
@@ -58,7 +54,7 @@ GROUP_CG_DIALOGUE_IDS = frozenset(
 Q_OVERLAY_DIALOGUE_IDS = frozenset({"runaway-annotated-line-0001"})
 MOTION_SAFE_PERCENT = 4.0
 STAGE_BOTTOM_PERCENT = 100.0
-EXPRESSION_CUES_PATH = REPO_ROOT / "scripts" / "galgame_runaway_expression_cues.json"
+EXPRESSION_CUES_PATH = Path(__file__).with_name("expression_cues.json")
 DIALOGUE_EXPRESSION_CUES: dict[str, str] = json.loads(
     EXPRESSION_CUES_PATH.read_text(encoding="utf-8")
 )
@@ -842,9 +838,10 @@ def parse_args() -> argparse.Namespace:
             "all",
         ),
     )
-    parser.add_argument("--project-id", default=DEFAULT_PROJECT_ID)
-    parser.add_argument("--source-root", type=Path, default=DEFAULT_SOURCE_ROOT)
-    parser.add_argument("--annotation", type=Path, default=DEFAULT_ANNOTATION_PATH)
+    parser.add_argument("--project-id", required=True)
+    parser.add_argument("--source-root", type=Path, required=True)
+    parser.add_argument("--original-source-root", type=Path, required=True)
+    parser.add_argument("--annotation", type=Path, required=True)
     parser.add_argument("--base-url", default="http://127.0.0.1:9000")
     parser.add_argument("--batch-size", type=int, default=12)
     return parser.parse_args()
@@ -910,7 +907,10 @@ def scene_asset_id_for_code(code: str) -> str:
     return f"sg0-scene-{code.lower().replace('_', '-')}"
 
 
-def source_entries(source_root: Path) -> list[dict[str, Any]]:
+def source_entries(
+    source_root: Path,
+    original_source_root: Path,
+) -> list[dict[str, Any]]:
     entries: list[dict[str, Any]] = []
     for relative_directory, category in LIBRARY_GROUPS:
         directory = source_root / relative_directory
@@ -967,7 +967,7 @@ def source_entries(source_root: Path) -> list[dict[str, Any]]:
     )
     entries.extend(
         {
-            "path": ORIGINAL_SG_ROOT / "backgrounds" / "scenes" / f"{code}.PNG",
+            "path": original_source_root / "backgrounds" / "scenes" / f"{code}.PNG",
             "relative": f"sg-original/backgrounds/scenes/{code}.PNG",
             "virtualPath": f"sg/backgrounds/scenes/{code}.PNG",
             "category": "scene",
@@ -981,10 +981,13 @@ def source_entries(source_root: Path) -> list[dict[str, Any]]:
     return [unique[key] for key in sorted(unique)]
 
 
-def logical_library_entries(source_root: Path) -> list[dict[str, Any]]:
+def logical_library_entries(
+    source_root: Path,
+    original_source_root: Path,
+) -> list[dict[str, Any]]:
     return [
         item
-        for item in source_entries(source_root)
+        for item in source_entries(source_root, original_source_root)
         if any(item["relative"].startswith(f"{directory}/") for directory, _ in LIBRARY_GROUPS)
     ]
 
@@ -1007,10 +1010,11 @@ def upload_assets(
     client: httpx.Client,
     project_id: str,
     source_root: Path,
+    original_source_root: Path,
     batch_size: int,
 ) -> dict[str, Any]:
-    entries = source_entries(source_root)
-    library_count = len(logical_library_entries(source_root))
+    entries = source_entries(source_root, original_source_root)
+    library_count = len(logical_library_entries(source_root, original_source_root))
     if library_count != 701:
         raise RuntimeError(f"原作背景/CG 应为 701 项，实际发现 {library_count} 项")
     request_json(
@@ -2252,6 +2256,7 @@ def audit_document(
     document: dict[str, Any],
     mapping: dict[str, Any],
     source_root: Path,
+    original_source_root: Path,
     annotation_audit: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     fragment = target_fragment(document)
@@ -2737,7 +2742,7 @@ def audit_document(
         )
         < (56 if len(block.get("members", [])) == 2 else 35)
     ]
-    logical_library = logical_library_entries(source_root)
+    logical_library = logical_library_entries(source_root, original_source_root)
     missing_mapping = [
         item["relative"]
         for item in logical_library
@@ -3176,6 +3181,7 @@ def transform_latest_story(
     latest: dict[str, Any],
     mapping: dict[str, Any],
     source_root: Path,
+    original_source_root: Path,
     annotation_path: Path,
 ) -> tuple[dict[str, Any], dict[str, Any]]:
     document = deepcopy(latest["document"])
@@ -3206,7 +3212,13 @@ def transform_latest_story(
     install_opening_declaration(document)
     install_ending_thanks(document)
     install_transition_cards(document)
-    checks = audit_document(document, mapping, source_root, annotation_audit)
+    checks = audit_document(
+        document,
+        mapping,
+        source_root,
+        original_source_root,
+        annotation_audit,
+    )
     if (
         dialogue_timeline_signature(target_fragment(document))
         != baseline["dialogueTimelineSignature"]
@@ -3220,13 +3232,20 @@ def apply_story(
     project_id: str,
     mapping: dict[str, Any],
     source_root: Path,
+    original_source_root: Path,
     annotation_path: Path,
 ) -> dict[str, Any]:
     for attempt in range(1, 4):
         latest = request_json(client, "GET", project_path(project_id, "/story"))
         backup_path = BACKUP_ROOT / f"{timestamp()}-performance-before.json"
         write_json(backup_path, latest)
-        document, audit = transform_latest_story(latest, mapping, source_root, annotation_path)
+        document, audit = transform_latest_story(
+            latest,
+            mapping,
+            source_root,
+            original_source_root,
+            annotation_path,
+        )
         try:
             saved = request_json(
                 client,
@@ -3346,6 +3365,7 @@ def audit_live(
     project_id: str,
     mapping: dict[str, Any],
     source_root: Path,
+    original_source_root: Path,
     annotation_path: Path,
 ) -> dict[str, Any]:
     story = request_json(client, "GET", project_path(project_id, "/story"))
@@ -3362,7 +3382,13 @@ def audit_live(
         target_fragment(story["document"])
     ):
         raise RuntimeError("线上故事尚未与新版对白标注完全一致")
-    checks = audit_document(story["document"], mapping, source_root, annotation_audit)
+    checks = audit_document(
+        story["document"],
+        mapping,
+        source_root,
+        original_source_root,
+        annotation_audit,
+    )
     checks["missingProjectAssets"] = missing_assets
     if missing_assets:
         raise RuntimeError("映射中的项目素材记录不存在")
@@ -3377,6 +3403,8 @@ def main() -> None:
     management_key = management_api_key()
     if not args.source_root.is_dir():
         raise RuntimeError(f"SG0 素材目录不存在：{args.source_root}")
+    if not args.original_source_root.is_dir():
+        raise RuntimeError(f"原作素材目录不存在：{args.original_source_root}")
     if not args.annotation.is_file():
         raise RuntimeError(f"新版对白标注不存在：{args.annotation}")
     with httpx.Client(
@@ -3399,6 +3427,7 @@ def main() -> None:
                 client,
                 args.project_id,
                 args.source_root,
+                args.original_source_root,
                 args.batch_size,
             )
         if args.action in {"apply", "all"}:
@@ -3407,6 +3436,7 @@ def main() -> None:
                 args.project_id,
                 mapping,
                 args.source_root,
+                args.original_source_root,
                 args.annotation,
             )
         if args.action in {"audit", "all"}:
@@ -3415,6 +3445,7 @@ def main() -> None:
                 args.project_id,
                 mapping,
                 args.source_root,
+                args.original_source_root,
                 args.annotation,
             )
 

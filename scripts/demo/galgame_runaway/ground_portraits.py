@@ -12,9 +12,8 @@ import httpx
 from PIL import Image
 
 try:
-    from scripts.galgame_performance_upgrade import (
+    from scripts.demo.galgame_runaway.performance_upgrade import (
         BACKUP_ROOT,
-        DEFAULT_PROJECT_ID,
         ApiError,
         dialogue_signature,
         project_path,
@@ -25,9 +24,8 @@ try:
     )
     from scripts.management_api import management_api_key
 except ModuleNotFoundError:
-    from galgame_performance_upgrade import (  # type: ignore[no-redef]
+    from performance_upgrade import (  # type: ignore[no-redef]
         BACKUP_ROOT,
-        DEFAULT_PROJECT_ID,
         ApiError,
         dialogue_signature,
         project_path,
@@ -36,6 +34,7 @@ except ModuleNotFoundError:
         timestamp,
         write_json,
     )
+
     from management_api import management_api_key  # type: ignore[no-redef]
 
 
@@ -292,7 +291,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(
         description="通过正式故事 API 将所有舞台立绘锚定到底边，并严格审计透明下边距",
     )
-    parser.add_argument("--project-id", default=DEFAULT_PROJECT_ID)
+    parser.add_argument("--project-id", required=True)
     parser.add_argument("--base-url", default="http://127.0.0.1:9000")
     args = parser.parse_args()
     with httpx.Client(

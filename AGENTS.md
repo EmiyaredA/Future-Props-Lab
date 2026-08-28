@@ -8,6 +8,8 @@
 - 目录职责以 [`docs/architecture/project-layout.md`](docs/architecture/project-layout.md)
   为唯一完整索引；新增目录或改变职责时同步更新该文件。
 - Python 命令与临时诊断优先通过 `uv run` 执行。
+- 仓库二进制资产使用 Git LFS；缺少对象时先按路径选择性 `git lfs pull`，不得把 LFS 指针当作字体、
+  模型或图片内容处理。
 - 后端环境变量只放在 `backend/.env`，不得提交真实密钥或把密钥写入日志、测试快照与文档。
 
 ## 常用命令
@@ -20,6 +22,7 @@
 - 测试：`npm test`；浏览器端到端测试：`npm run test:e2e`。
 - 质量检查：`npm run lint`、`npm run format:check`、`npm run build`；需要自动格式化时使用
   `npm run format`。
+- Git LFS：`npm run lfs:check:pointers` 检查指针，`npm run lfs:check` 检查生产运行资产。
 
 ## 应用与目录边界
 
@@ -53,6 +56,8 @@
   写请求统一携带可读 CSRF Cookie 对应的请求头。API Key 明文和临时密码只允许展示一次。
 - 修改安装、启动、环境变量、依赖或目录路径时，同步检查根与 Web 的 `package.json`、
   `pyproject.toml`、脚本、README 和 CI/测试入口。
+- `scripts/demo/` 只保存内容专用演示维护工具；必须通过正式 API 操作，并要求调用者显式提供项目 ID、
+  素材根目录和输入/输出路径，不得保存本机绝对路径或默认目标项目。
 
 ## SQLite、迁移与并发
 
@@ -99,3 +104,5 @@
   OpenAPI 等生成文件排除。历史超限基线只能下降不能增长，不得新增编号式 CSS 分片；构建预算脚本
   只读产物，不得在构建后拆分或改写 CSS。
 - 修复问题时先定位根因和同类风险；保留用户已有的未提交改动，不覆盖或顺手重写无关文件。
+- 新增或替换 `docs/` 图片、固定字体或 VAD 二进制时同步更新 `docs/assets/MANIFEST.md`，并执行
+  `git lfs fsck`；未核清来源和许可证的演示素材不得视为可再分发资产。

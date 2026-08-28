@@ -6,9 +6,11 @@
     "node": "24.x",
     "npm": ">=11"
   },
-  "workspaces": ["web"],
+  "workspaces": [
+    "web"
+  ],
   "scripts": {
-    "setup": "uv sync --all-groups && npm install && npm run voice-vad:sync --workspace web",
+    "setup": "python3 scripts/check_lfs_assets.py --tool && uv sync --all-groups && npm install && npm run voice-vad:sync --workspace web && python3 scripts/check_lfs_assets.py --all",
     "dev": "concurrently -k -n api,web -c blue,magenta \"npm run dev:backend\" \"npm run dev:web\"",
     "dev:backend": "uv run uvicorn app.main:app --app-dir backend --reload --host 127.0.0.1 --port 9000",
     "start:backend": "uv run uvicorn app.main:app --app-dir backend --host 127.0.0.1 --port 9000 --workers 1",
@@ -24,7 +26,9 @@
     "lint": "uv run ruff check backend db scripts tests && npm run lint --workspace web",
     "format": "uv run ruff format backend db scripts tests && npm run format --workspace web",
     "format:check": "uv run ruff format --check backend db scripts tests && npm run format:check --workspace web",
-    "build": "npm run build --workspace web"
+    "build": "python3 scripts/check_lfs_assets.py --web && npm run build --workspace web",
+    "lfs:check": "python3 scripts/check_lfs_assets.py --all",
+    "lfs:check:pointers": "python3 scripts/check_lfs_assets.py --pointers"
   },
   "devDependencies": {
     "concurrently": "^9.2.0"

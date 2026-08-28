@@ -1,6 +1,9 @@
 from copy import deepcopy
 
-from scripts.galgame_ground_portraits import ground_document, placement_audit
+from scripts.demo.galgame_runaway.ground_portraits import (
+    ground_document,
+    placement_audit,
+)
 
 
 def sample_document() -> dict:

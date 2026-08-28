@@ -5,12 +5,6 @@ from pathlib import Path
 
 from PIL import Image, ImageDraw
 
-REPO_ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_ATLAS = Path(
-    "/Users/tonghao/Projects/steins-gate-video/assets/games/steins_gate/"
-    "ui/phone/atlases/png/PHONE.png"
-)
-DEFAULT_OUTPUT = REPO_ROOT / "docs/assets/galgame-ui/okabe-main-phone-overlay-v2.png"
 CANVAS_SIZE = (1672, 941)
 
 
@@ -65,8 +59,8 @@ def build_overlay(atlas_path: Path, output_path: Path) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="从原作 PHONE.png 重组完整冈部手机叠加素材")
-    parser.add_argument("--atlas", type=Path, default=DEFAULT_ATLAS)
-    parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
+    parser.add_argument("--atlas", type=Path, required=True)
+    parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     build_overlay(args.atlas, args.output)
 

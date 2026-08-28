@@ -14,10 +14,7 @@ try:
 except ModuleNotFoundError:
     from management_api import management_api_key
 
-REPO_ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_ANNOTATION_PATH = Path("/Users/tonghao/Downloads/广播剧.annotation (15).json")
-DEFAULT_EXPORT_PATH = Path("/Users/tonghao/Downloads/广播剧.annotation (16).json")
-DEFAULT_GALGAME_PROJECT_ID = "63ac832d-bff3-4053-9c9f-f55c9dafc52a"
+REPO_ROOT = Path(__file__).resolve().parents[3]
 BACKUP_ROOT = REPO_ROOT / ".runtime" / "galgame-import-backups"
 
 
@@ -317,9 +314,9 @@ def main() -> None:
     parser = argparse.ArgumentParser(
         description="保留在线广播标注并通过正式 API 同步 Galgame 角色与表情"
     )
-    parser.add_argument("--annotation", type=Path, default=DEFAULT_ANNOTATION_PATH)
-    parser.add_argument("--export", type=Path, default=DEFAULT_EXPORT_PATH)
-    parser.add_argument("--galgame-project-id", default=DEFAULT_GALGAME_PROJECT_ID)
+    parser.add_argument("--annotation", type=Path, required=True)
+    parser.add_argument("--export", type=Path, required=True)
+    parser.add_argument("--galgame-project-id", required=True)
     parser.add_argument("--base-url", default="http://127.0.0.1:9000")
     args = parser.parse_args()
     annotation = json.loads(args.annotation.read_text(encoding="utf-8"))

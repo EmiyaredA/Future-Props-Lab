@@ -15,8 +15,7 @@ try:
 except ModuleNotFoundError:
     from management_api import management_api_key
 
-REPO_ROOT = Path(__file__).resolve().parents[1]
-PROJECT_ID = "63ac832d-bff3-4053-9c9f-f55c9dafc52a"
+REPO_ROOT = Path(__file__).resolve().parents[3]
 EXPORT_WORKFLOW_VERSION = "v15r1"
 FRAGMENT_ID = "runaway-full"
 FULL_DURATION_MS = 1_780_344
@@ -149,8 +148,8 @@ def request_json(
     return response.json()
 
 
-def export_path(suffix: str = "") -> str:
-    return f"/v1/galgame-workshop/projects/{PROJECT_ID}/video-exports{suffix}"
+def export_path(project_id: str, suffix: str = "") -> str:
+    return f"/v1/galgame-workshop/projects/{project_id}/video-exports{suffix}"
 
 
 def request_body(revision: int, item: tuple[str, int, int] | None) -> dict[str, Any]:
@@ -178,13 +177,14 @@ def request_body(revision: int, item: tuple[str, int, int] | None) -> dict[str, 
 
 def submit(
     client: httpx.Client,
+    project_id: str,
     only: str | None = None,
     rng: random.Random | None = None,
 ) -> tuple[int, dict[str, str]]:
     story = request_json(
         client,
         "GET",
-        f"/v1/galgame-workshop/projects/{PROJECT_ID}/story",
+        f"/v1/galgame-workshop/projects/{project_id}/story",
     )
     revision = int(story["revision"])
     requested = requested_exports(only, rng)
@@ -192,13 +192,13 @@ def submit(
     for item in requested:
         name = item[0] if item else "full-29m40s344-v15"
         body = request_body(revision, item)
-        preview = request_json(client, "POST", export_path("/preview"), body)
+        preview = request_json(client, "POST", export_path(project_id, "/preview"), body)
         if not preview["ready"]:
             raise RuntimeError(f"导出预览未通过 {name}: {preview}")
         created = request_json(
             client,
             "POST",
-            export_path(),
+            export_path(project_id),
             {
                 **body,
                 "requestId": (
@@ -223,14 +223,19 @@ def submit(
     return revision, task_names
 
 
-def wait_and_download(client: httpx.Client, revision: int, task_names: dict[str, str]) -> None:
+def wait_and_download(
+    client: httpx.Client,
+    project_id: str,
+    revision: int,
+    task_names: dict[str, str],
+) -> None:
     output_dir = REPO_ROOT / ".runtime" / "galgame-exports" / f"rev{revision}"
     output_dir.mkdir(parents=True, exist_ok=True)
     pending = set(task_names)
     last_states: dict[str, tuple[str, str, int]] = {}
     while pending:
         for task_id in list(pending):
-            task = request_json(client, "GET", export_path(f"/{task_id}"))
+            task = request_json(client, "GET", export_path(project_id, f"/{task_id}"))
             state = (task["status"], task["phase"], task["progress"])
             if last_states.get(task_id) != state:
                 print(
@@ -249,7 +254,7 @@ def wait_and_download(client: httpx.Client, revision: int, task_names: dict[str,
             if task["status"] in {"failed", "cancelled"}:
                 raise RuntimeError(f"导出失败 {task_names[task_id]}: {task.get('error')}")
             if task["status"] == "completed":
-                response = client.get(export_path(f"/{task_id}/download"))
+                response = client.get(export_path(project_id, f"/{task_id}/download"))
                 response.raise_for_status()
                 target = output_dir / f"{task_names[task_id]}.mp4"
                 target.write_bytes(response.content)
@@ -270,6 +275,7 @@ def main() -> None:
         description="默认随机抽取并下载《自由粒子的离家出走》连续三分钟验收视频"
     )
     parser.add_argument("action", choices=("all", "submit"), default="all", nargs="?")
+    parser.add_argument("--project-id", required=True)
     parser.add_argument("--base-url", default="http://127.0.0.1:9000")
     parser.add_argument(
         "--only",
@@ -298,9 +304,9 @@ def main() -> None:
         timeout=None,
     ) as client:
         rng = random.Random(args.seed) if args.seed is not None else None
-        revision, tasks = submit(client, args.only, rng)
+        revision, tasks = submit(client, args.project_id, args.only, rng)
         if args.action == "all":
-            wait_and_download(client, revision, tasks)
+            wait_and_download(client, args.project_id, revision, tasks)
 
 
 if __name__ == "__main__":

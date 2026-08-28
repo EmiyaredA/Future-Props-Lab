@@ -6,6 +6,7 @@
 ```text
 Future-Props-Lab/
 ├── .github/workflows/ # 冻结依赖的 Python/Web 质量检查与 Chromium E2E
+├── .gitattributes     # 文档图片、固定字体与 VAD 资产的 Git LFS 边界
 ├── backend/app/
 │   ├── main.py        # FastAPI 装配、生命周期与健康探针
 │   ├── deps.py        # HTTP/WebSocket 会话和 Studio 鉴权依赖
@@ -42,7 +43,9 @@ Future-Props-Lab/
 ├── web/e2e/           # Playwright 浏览器旅程
 │   └── fixtures/      # 人物旅程的确定性 API mock 与测试数据；真实烟测不使用
 ├── tests/             # 后端单元、API、存储与架构测试
-├── scripts/           # OpenAPI 导出、API 导入客户端、离线账号命令与 E2E 账号引导
+├── scripts/           # OpenAPI/LFS 检查、API 导入客户端、离线账号命令与 E2E 账号引导
+│   └── demo/galgame_runaway/ # 内容专用演示维护工具；目标项目与素材路径必须显式传入
+├── docs/assets/       # LFS 管理的文档/演示图片、来源许可证状态与内容集校验清单
 ├── docs/operations/   # 故障排查、备份与恢复说明
 ├── CONTRIBUTING.md    # 开发流程、边界、测试矩阵与交付检查表
 ├── CHANGELOG.md       # 交付批次的用户可见变化与工程治理记录
@@ -132,7 +135,8 @@ Future-Props-Lab/
   工坊指南，负责本地全文搜索、`docs.html?page=...#section` 深链接、响应式导航和主题；配套截图只
   存放于 `web/public/docs/`，不作为产品状态或测试数据源。
 - `.github/workflows/` 使用锁文件安装依赖：后端验证 Python 3.11 与 3.14，Web 使用 Node.js 24，
-  Chromium E2E 使用隔离临时数据库和确定性 fixture，不携带真实供应商凭证。
+  Chromium E2E 使用隔离临时数据库和确定性 fixture，不携带真实供应商凭证。CI 检出默认不下载
+  文档演示图，只为后端、Web 和 E2E Job 选择性拉取各自运行资产，并独立检查 LFS 指针完整性。
 - 根 `/health`、`/ready` 是无版本探针，其他业务路由由统一的 `/v1` router 注册。
 - `accounts/` 负责账号与 Workspace 用例；请求通过 Cookie Session 或绑定单一 Workspace 的
   Management API Key 生成 `StudioPrincipal`。业务模块只从 Principal 取得当前 Workspace，

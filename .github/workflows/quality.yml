@@ -18,6 +18,10 @@ jobs:
         python-version: ["3.11", "3.14"]
     steps:
       - uses: actions/checkout@v4
+        with:
+          lfs: false
+      - name: Pull backend runtime assets
+        run: git lfs pull --include="backend/app/galgame_workshop/assets/*.ttf" --exclude=""
       - uses: astral-sh/setup-uv@v6
         with:
           python-version: ${{ matrix.python-version }}
@@ -34,6 +38,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          lfs: false
+      - name: Pull Web runtime assets
+        run: git lfs pull --include="web/public/voice-vad/*" --exclude=""
       - uses: actions/setup-node@v4
         with:
           node-version: 24
@@ -57,6 +65,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          lfs: false
+      - name: Pull E2E runtime assets
+        run: git lfs pull --include="backend/app/galgame_workshop/assets/*.ttf,web/public/voice-vad/*" --exclude=""
       - uses: actions/setup-node@v4
         with:
           node-version: 24
@@ -72,3 +84,13 @@ jobs:
       - run: npm run test:e2e
         env:
           FPL_SECRETS_KEY: Q3kT62dvbHHXXulO5XPCR84_yXK6t-6LXz7BcIYONys=
+
+  lfs-integrity:
+    name: Git LFS pointer integrity
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: false
+      - run: git lfs install --local
+      - run: python3 scripts/check_lfs_assets.py --pointers

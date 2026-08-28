@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import random
 
-from scripts.galgame_runaway_exports import (
+from scripts.demo.galgame_runaway.exports import (
     FULL_DURATION_MS,
     SAMPLE_DURATION_MS,
     random_sample,

@@ -2,7 +2,10 @@
 
 ## 准备环境
 
-项目要求 Node.js 24、npm 11 或更高版本，以及 Python 3.11 或更高版本。克隆仓库后运行 `npm run setup`，复制 `backend/.env.example` 为 `backend/.env`，并生成新的 `FPL_SECRETS_KEY`。不要提交 `.env`、真实供应商凭证或运行期素材。
+项目要求 Node.js 24、npm 11 或更高版本、Python 3.11 或更高版本，以及 Git LFS。克隆仓库后先
+运行 `git lfs install`；使用跳过 LFS 的检出方式时，再运行 `git lfs pull`。随后执行
+`npm run setup`，复制 `backend/.env.example` 为 `backend/.env`，并生成新的 `FPL_SECRETS_KEY`。
+不要提交 `.env`、真实供应商凭证或运行期素材。
 
 使用 `npm run dev` 启动完整 Studio。后端固定监听 `127.0.0.1:9000`，Web 开发服务默认使用 3000 端口。首次启动会创建本机 SQLite 并自动执行已登记迁移。
 
@@ -29,6 +32,8 @@ HTTP 或 SSE 形状改变时，同时更新后端 schema/路由、Web 消费端�
 - `npm run contracts:check`：OpenAPI stale-check。
 - `npm run build`：TypeScript、Vite 与 bundle 预算。
 - `npm run test:e2e`：Chromium 端到端旅程，使用隔离数据库和确定性测试数据。
+- `npm run lfs:check:pointers`：确认应由 LFS 管理的路径没有误提交完整二进制。
+- `npm run lfs:check`：确认生产所需字体和 VAD 对象已下载且校验值正确。
 
 涉及供应商的行为应使用确定性适配器测试；没有真实凭证时不得用付费调用代替自动化验证。
 
@@ -37,6 +42,7 @@ HTTP 或 SSE 形状改变时，同时更新后端 schema/路由、Web 消费端�
 - 安装、启动、环境变量和目录变更已经同步到 README、配置文档及项目结构索引。
 - migration、ORM、API、生成契约和测试保持一致。
 - 没有提交 `.runtime/`、`output/`、`tmp/`、下载视频、密钥或本机缓存。
+- 新增或替换二进制素材时已更新 `docs/assets/MANIFEST.md`，并通过 LFS 指针与对象检查。
 - 上述六项质量命令全部通过；若有无法运行的外部验证，在交付说明中明确列出。
 - 从全新检出目录按冻结锁文件安装后可以重复通过同一套命令。
 - 生产部署说明、升级回滚步骤和开发交付已知债务已经同步更新。

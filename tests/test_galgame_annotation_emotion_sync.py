@@ -1,4 +1,4 @@
-from scripts.galgame_annotation_emotion_sync import (
+from scripts.demo.galgame_runaway.annotation_emotion_sync import (
     build_synced_document,
     sync_story_speakers,
 )

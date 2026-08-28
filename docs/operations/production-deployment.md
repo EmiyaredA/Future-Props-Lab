@@ -5,8 +5,9 @@ Future Props Lab 的受支持生产形态是单台主机、单个后端进程和
 
 ## 构建与启动
 
-1. 安装 Node.js 24、npm 11、Python 3.11 或更高版本，以及系统级 FFmpeg/FFprobe。
-2. 运行 `npm ci` 和 `uv sync --frozen --all-groups`。
+1. 安装 Node.js 24、npm 11、Python 3.11 或更高版本、Git LFS，以及系统级 FFmpeg/FFprobe。
+2. 运行 `git lfs install` 和 `git lfs pull`，再执行 `npm ci`、`uv sync --frozen --all-groups` 与
+   `npm run lfs:check`。生产字体或 VAD 对象缺失/损坏时不得继续构建。
 3. 从 `backend/.env.example` 创建 `backend/.env`，生成并离线备份 `FPL_SECRETS_KEY`。
 4. 执行 `npm run db:migrate:check`，确认迁移状态有效。
 5. 根据反向代理路径设置 Web 构建变量 `VITE_API_BASE`，然后运行 `npm run build`。同源部署应留空，
@@ -35,8 +36,9 @@ Future Props Lab 的受支持生产形态是单台主机、单个后端进程和
 
 ## 升级与回滚
 
-升级时先停止应用并完成全量快照，再更新代码、执行冻结依赖安装、`npm run db:migrate:check` 和
-`npm run build`，最后启动并验证 `/health`、`/ready` 及登录。应用启动会自动应用已登记迁移。
+升级时先停止应用并完成全量快照，再更新代码、拉取所需 LFS 对象、执行冻结依赖安装、
+`npm run db:migrate:check` 和 `npm run build`，最后启动并验证 `/health`、`/ready` 及登录。应用启动
+会自动应用已登记迁移。
 
 若启动前失败，可直接恢复旧代码。若新版本已经写入数据库或执行迁移，回滚必须在停机状态下同时
 恢复升级前的数据库和所有运行期目录；不得手工修改 schema、`schema_migrations` 或迁移 checksum。
