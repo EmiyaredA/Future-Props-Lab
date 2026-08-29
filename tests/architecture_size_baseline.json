@@ -1,13 +1,4 @@
 {
   "production": {},
-  "tests": {
-    "tests/test_galgame_workshop.py": 1857,
-    "web/tests/galgame-workshop-editor-media.test.tsx": 1274,
-    "web/tests/galgame-workshop-editor-script.test.tsx": 1362,
-    "web/tests/galgame-workshop-editor.test.tsx": 1701,
-    "web/tests/galgame-workshop-player.test.tsx": 2041,
-    "web/tests/model-pages.test.tsx": 1415,
-    "web/tests/visual-workshop-canvas.test.tsx": 1423,
-    "web/e2e/galgame-workshop.spec.ts": 1292
-  }
+  "tests": {}
 }

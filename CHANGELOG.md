@@ -6,6 +6,14 @@
 
 ### Changed
 
+- 后台图片/视频任务改由供应商无关的 `GenerationTaskDriver` 统一状态转换、恢复、轮询和安全失败；
+  模型测试与视觉工坊继续分别拥有任务存取、调用日志、素材组装和结果落盘，提交中断不会自动重计费。
+- Workspace 归属改为从 `WorkspaceDep` 或后台任务记录显式传递，移除 ContextVar 和 `default` 回退；
+  文件业务改依赖 `IncomingFile`，FastAPI `UploadFile` 仅保留在路由适配层。
+- Story 1.4 总校验、Agent Harness 主循环与广播剧导入 Runner 分别按纯校验域、执行阶段和补偿阶段
+  拆分；密钥提示、供应商默认类别及 Galgame 文件错误映射收敛为单一维护点。
+- 生产与测试源码尺寸豁免全部清零；8 个历史超限测试按 Story API、作者工作流、时间轴/角色、
+  音频/舞台、播放器表现、模型生成/会话、画布助手和分支旅程拆分，保留全部原断言。
 - Web 为模型、视觉工坊和录音标注建立 feature-local 查询键 owner，统一鉴权 Blob 预览生命周期、
   Problem Detail 文本解析、供应商/能力元数据及项目列表公共交互；文件 feature 公共入口改为显式导出。
 - 文档图片、固定中文字体和浏览器 VAD 二进制改由 Git LFS 管理；CI 按 Job 选择性下载运行资产并

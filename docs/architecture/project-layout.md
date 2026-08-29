@@ -42,7 +42,7 @@ Future-Props-Lab/
 ├── web/tests/         # Web 组件测试
 ├── web/e2e/           # Playwright 浏览器旅程
 │   └── fixtures/      # 人物旅程的确定性 API mock 与测试数据；真实烟测不使用
-├── tests/             # 后端单元、API、存储与架构测试
+├── tests/             # 后端单元、API、存储与架构测试；大型 Story 契约/API 用例按行为拆分
 ├── scripts/           # OpenAPI/LFS 检查、API 导入客户端、离线账号命令与 E2E 账号引导
 │   └── demo/galgame_runaway/ # 内容专用演示维护工具；目标项目与素材路径必须显式传入
 ├── docs/assets/       # LFS 管理的文档/演示图片、来源许可证状态与内容集校验清单
@@ -146,6 +146,9 @@ Future-Props-Lab/
 - `web/src/docs/` 是独立文档入口的数据与展示边界，按页面和章节驱动视觉创作工坊、Galgame
   工坊指南，负责本地全文搜索、`docs.html?page=...#section` 深链接、响应式导航和主题；配套截图只
   存放于 `web/public/docs/`，不作为产品状态或测试数据源。
+- Web 组件和 E2E 测试按编辑器作者工作流、时间轴/角色、音频/舞台、播放器表现、画布助手和分支旅程
+  等领域行为拆分；共享 mock/data builder 保留在所属测试能力内。测试文件不使用编号分片，单文件
+  不超过 1,200 行，尺寸豁免基线保持为空。
 - `.github/workflows/` 使用锁文件安装依赖：后端验证 Python 3.11 与 3.14，Web 使用 Node.js 24，
   Chromium E2E 使用隔离临时数据库和确定性 fixture，不携带真实供应商凭证。CI 检出默认不下载
   文档演示图，只为后端、Web 和 E2E Job 选择性拉取各自运行资产，并独立检查 LFS 指针完整性。

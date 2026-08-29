@@ -42,20 +42,20 @@ Workspace 隔离，但不提供多实例部署、外置数据库、Bot、知识�
 
 ## 迁移与兼容状态
 
-- 2026-08-28 本地只读检查显示 SQLite schema 已到
+- 2026-08-29 本地只读检查显示 SQLite schema 已到
   `r0036_galgame_video_editor_handoffs`，与当前 migration registry 一致。
 - migration 只允许在 `db/migrations/versions/` 追加并登记，不得改写已登记版本、checksum 或
   `schema_migrations`。
 - Story 当前写入版本为 1.4；1.0–1.3 仅保留读取兼容。运行期 Story 固化必须使用受鉴权的迁移 API，
   流程见 [`Story 1.4 迁移运维`](../operations/story-migrations.md)。
-- 本轮质量门禁与文档修正不新增数据库 migration，也不改变 HTTP、SSE、WebSocket 或 SQLite 契约。
+- 七批整改不新增数据库 migration，也不改变 HTTP、SSE、WebSocket 或 SQLite 契约。
 
 ## 质量验收记录
 
-2026-08-28 第一批整改已完成以下验收：323 个后端测试（含 26 个架构测试）、424 个 Web 测试、
-22 条完整 Chromium E2E 全部通过；录音标注用例另以 3 个 worker 并行重复三轮通过，未增加测试超时。
-Python/Web lint、Python/Web format-check、OpenAPI stale-check 和生产 Web build 同时通过。测试过程未
-调用真实模型供应商。
+2026-08-29 七批整改最终验收：336 个后端测试、428 个 Web 测试和 22 条完整 Chromium E2E 全部
+通过；录音标注用例另以 3 个 worker 并行重复三轮通过，未增加测试超时。Python/Web lint、
+Python/Web format-check、OpenAPI stale-check、生产 Web build、LFS 指针完整性及数据库迁移状态检查
+同时通过。`architecture_size_baseline.json` 的 production/tests 均为空。测试过程未调用真实模型供应商。
 
 标准质量命令：
 
@@ -70,6 +70,27 @@ npm run test:e2e
 
 缺少真实供应商凭证时，不执行会产生费用或依赖外网状态的真实模型调用；应明确记录未验证的供应商、
 模型和原因，不能用真实调用替代确定性测试。
+
+## 最终架构结果
+
+| 边界 | 整改后的 owner | 稳定性约束 |
+| --- | --- | --- |
+| HTTP 与租户 | `routes/` + `WorkspaceDep` | 客户端不提交 Workspace；跨空间 ID 按不存在处理 |
+| 文件输入与落盘 | `files.IncomingFile` + `AssetStorage` | 业务不依赖 FastAPI；写路径必须显式 Workspace |
+| 图片/视频后台任务 | `llm/generation_runtime/GenerationTaskDriver` | 短事务状态转换；网络在事务外；提交中断不重提 |
+| Story 1.4 校验 | `schemas/galgame_workshop/story_validation.py` | 角色、素材、国际化、时间轴、流程、表现层纯函数分层 |
+| Agent Harness | `agents/harness/phases.py` | 上下文、模型、提案、审批和执行阶段保持既有事件顺序 |
+| 广播剧导入 | `annotation_import_runner.py` 的阶段方法 | 预检、裁切、验收、落位、结算和补偿独立 |
+| Web 公共维护点 | feature query key、元数据 owner、Blob URL Hook | owner 外不复制缓存键、能力映射或对象 URL 生命周期 |
+| 源码尺寸 | 架构测试 + 空尺寸基线 | 生产与测试均无豁免，按语义拆分而非编号分片 |
+
+仍保留的兼容层只有明确的外部兼容：Story 1.0–1.3 读取/导入适配、默认 Workspace 的历史文件目录、
+旧视觉生成任务中的 URL 参考字段，以及既有 REST/SSE/WebSocket 和 SQLite schema。它们没有成为新代码
+的隐式默认路径；移除任何一项都应另立带数据迁移和契约变更的批次。
+
+后续可选优化包括：在真实发布环境补做供应商凭证、配额、计费与临时媒体保留策略验收；为非 Chromium
+浏览器增加媒体设备旅程；确认全部演示素材的再分发授权；如未来引入多实例，再单独设计外部队列、
+PostgreSQL 和分布式任务认领。本次整改不提前引入这些范围。
 
 ## 演示数据与仓库素材边界
 
@@ -90,7 +111,7 @@ npm run test:e2e
 
 ## 回滚与恢复
 
-纯代码批次可回退对应提交并重新执行质量门禁。本批没有 schema 变化；若应用尚未写入新业务数据，
+每批均为独立 Git 提交，可从最后一批开始逆序回退并重新执行质量门禁。本轮没有 schema 变化；若应用尚未写入新业务数据，
 可直接恢复上一代码版本。任何可能写入数据库、任务状态或素材的升级，开始前都应先停止应用，并同时
 备份 SQLite 主文件以及 `workspaces/`、`profiles/`、`library/assets/`、`applications/`、
 `model-test/attachments/`、`model-test/references/` 和 `model-test/generated/`。
