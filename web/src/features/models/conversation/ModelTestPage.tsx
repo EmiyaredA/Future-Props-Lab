@@ -1,41 +1,8 @@
-import {
-  isValidElement,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type CSSProperties,
-  type ComponentPropsWithoutRef,
-  type ReactNode,
-} from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import "@features/models/models.css";
 import { modelQueryKeys } from "@features/models/queryKeys";
-import { useApiBlobUrl } from "@platform/api/useApiBlobUrl";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  Bot,
-  CircleAlert,
-  Code2,
-  Copy,
-  Info,
-  Image as ImageIcon,
-  LoaderCircle,
-  MessageSquareText,
-  Paperclip,
-  Plus,
-  RotateCcw,
-  Search,
-  Send,
-  SlidersHorizontal,
-  Sparkles,
-  Square,
-  Trash2,
-  UserRound,
-  X,
-} from "lucide-react";
-import ReactMarkdown from "react-markdown";
-import rehypeHighlight from "rehype-highlight";
-import remarkGfm from "remark-gfm";
+import { LoaderCircle, Paperclip, Send, Square, Trash2, X } from "lucide-react";
 import {
   createModelTestConversation,
   deleteModelTestAttachment,
@@ -47,18 +14,12 @@ import {
   streamModelTest,
   uploadModelTestAttachments,
   type ModelStreamEvent,
-  type ModelTestAttachment,
   type ModelTestConversation,
   type ModelTestMessage,
 } from "@features/models/api";
-import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
 import type { SelectOption } from "@shared/ui/CustomSelect";
 import { ModelTestCapabilityPanel } from "@features/models/conversation/ModelTestCapabilityPanel";
-import {
-  ModelTestToolCallList,
-  ModelTestToolSelector,
-  ModelTestToolWarnings,
-} from "@features/models/conversation/ModelTestToolControls";
+import { ModelTestToolWarnings } from "@features/models/conversation/ModelTestToolControls";
 import {
   ModelTestWorkspaceHeader,
   type ModelTestMode,
@@ -73,295 +34,15 @@ const ACCEPTED_IMAGE_TYPES = new Set([
   "image/gif",
 ]);
 
-function extractText(node: ReactNode): string {
-  if (typeof node === "string" || typeof node === "number") return String(node);
-  if (Array.isArray(node)) return node.map(extractText).join("");
-  if (isValidElement<{ children?: ReactNode }>(node))
-    return extractText(node.props.children);
-  return "";
-}
-
-function languageLabel(language?: string) {
-  if (!language) return "Code";
-  const labels: Record<string, string> = {
-    bash: "Bash",
-    css: "CSS",
-    html: "HTML",
-    javascript: "JavaScript",
-    js: "JavaScript",
-    json: "JSON",
-    python: "Python",
-    py: "Python",
-    shell: "Shell",
-    sql: "SQL",
-    ts: "TypeScript",
-    typescript: "TypeScript",
-  };
-  return labels[language.toLowerCase()] || language;
-}
-
-function MarkdownCodeBlock({ children }: ComponentPropsWithoutRef<"pre">) {
-  const code = isValidElement<{
-    className?: string;
-    children?: ReactNode;
-  }>(children)
-    ? children
-    : null;
-  const language = code?.props.className?.match(/language-([^\s]+)/)?.[1];
-  const source = extractText(code?.props.children).replace(/\n$/, "");
-  return (
-    <div className="markdown-code-block">
-      <div className="markdown-code-head">
-        <span>
-          <Code2 aria-hidden /> {languageLabel(language)}
-        </span>
-        <button
-          type="button"
-          aria-label="复制代码"
-          onClick={() => void navigator.clipboard.writeText(source)}
-        >
-          <Copy aria-hidden />
-        </button>
-      </div>
-      <pre>{children}</pre>
-    </div>
-  );
-}
-
-function errorPresentation(raw: string) {
-  if (/401|unauthori[sz]ed|invalid.{0,12}(api|key)|authentication/i.test(raw)) {
-    return {
-      code: "401 Unauthorized",
-      title: "认证失败",
-      message: "请检查 API Key 或网关地址后重新生成。",
-    };
-  }
-  if (/timeout|timed out|超时/i.test(raw)) {
-    return {
-      code: "请求超时",
-      title: "模型响应超时",
-      message: "请稍后重试，或适当降低最大输出 Token。",
-    };
-  }
-  return {
-    code: "调用失败",
-    title: "模型调用失败",
-    message: "请检查供应商配置和模型状态后重试。",
-  };
-}
-
-function formatConversationTime(value: string) {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "";
-  return new Intl.DateTimeFormat("zh-CN", {
-    month: "numeric",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  }).format(date);
-}
-
-function EmptyChat() {
-  return (
-    <div className="playground-empty">
-      <span className="playground-empty-icon">
-        <Sparkles aria-hidden />
-      </span>
-      <h2>开始一次模型测试</h2>
-      <p>选择一个已启用的模型，输入问题或上传图片后即可查看流式回复效果。</p>
-    </div>
-  );
-}
-
-function AttachmentImage({
-  conversationId,
-  attachment,
-  onOpen,
-}: {
-  conversationId: string;
-  attachment: ModelTestAttachment;
-  onOpen: (url: string, name: string) => void;
-}) {
-  const { url } = useApiBlobUrl(
-    `/v1/model-test/conversations/${encodeURIComponent(conversationId)}` +
-      `/attachments/${encodeURIComponent(attachment.id)}/content`,
-  );
-  return (
-    <button
-      type="button"
-      className="attachment-image"
-      aria-label={`查看图片 ${attachment.original_filename}`}
-      disabled={!url}
-      onClick={() => url && onOpen(url, attachment.original_filename)}
-    >
-      {url ? (
-        <img src={url} alt={attachment.original_filename} />
-      ) : (
-        <ImageIcon aria-hidden />
-      )}
-    </button>
-  );
-}
-
-function MessageCard({
-  conversationId,
-  message,
-  contentOverride,
-  isLastAssistant,
-  generating,
-  onRegenerate,
-  onShowError,
-  onPreviewAttachment,
-}: {
-  conversationId: string;
-  message: ModelTestMessage;
-  contentOverride?: string;
-  isLastAssistant: boolean;
-  generating: boolean;
-  onRegenerate: () => void;
-  onShowError: (error: string) => void;
-  onPreviewAttachment: (url: string, name: string) => void;
-}) {
-  const content = contentOverride ?? message.content;
-  const statusLabel = {
-    pending: "",
-    completed: "",
-    error: "生成失败",
-    cancelled: "",
-    superseded: "已替换",
-  }[message.status];
-  const replyStatus =
-    message.role === "assistant" && message.status === "pending"
-      ? { label: "正在回复", tone: "active" }
-      : message.role === "assistant" && message.status === "cancelled"
-        ? { label: "已停止", tone: "interrupt" }
-        : null;
-  const errorInfo =
-    message.status === "error" && message.error_message
-      ? errorPresentation(message.error_message)
-      : null;
-  return (
-    <article className={`chat-message ${message.role} ${message.status}`}>
-      <div className="chat-avatar">
-        {message.role === "user" ? (
-          <UserRound aria-hidden />
-        ) : (
-          <Bot aria-hidden />
-        )}
-      </div>
-      <div className="chat-message-body">
-        <div className="chat-message-meta">
-          <strong>{message.role === "user" ? "你" : "模型回复"}</strong>
-          {message.model_slug ? <span>{message.model_slug}</span> : null}
-          {statusLabel ? <em>{statusLabel}</em> : null}
-        </div>
-        {message.attachments?.length ? (
-          <div className="message-attachments">
-            {message.attachments.map((attachment) => (
-              <AttachmentImage
-                key={attachment.id}
-                conversationId={conversationId}
-                attachment={attachment}
-                onOpen={onPreviewAttachment}
-              />
-            ))}
-          </div>
-        ) : null}
-        <ModelTestToolCallList calls={message.tool_calls ?? []} />
-        {message.role === "assistant" ? (
-          content ? (
-            <div className="markdown-body">
-              <ReactMarkdown
-                remarkPlugins={[remarkGfm]}
-                rehypePlugins={[rehypeHighlight]}
-                components={{ pre: MarkdownCodeBlock }}
-              >
-                {content}
-              </ReactMarkdown>
-              {message.status === "pending" ? (
-                <i className="stream-caret" />
-              ) : null}
-            </div>
-          ) : message.status === "pending" ? (
-            <div className="typing-indicator" aria-label="正在生成">
-              <i />
-              <i />
-              <i />
-            </div>
-          ) : null
-        ) : content ? (
-          <p className="user-copy">{content}</p>
-        ) : null}
-        {replyStatus ? (
-          <div className="reply-status-row" role="status" aria-live="polite">
-            <span className={`reply-status-pill ${replyStatus.tone}`}>
-              {replyStatus.tone === "active" ? (
-                <i className="reply-status-dot" aria-hidden />
-              ) : null}
-              {replyStatus.label}
-            </span>
-          </div>
-        ) : null}
-        {errorInfo && message.error_message ? (
-          <div className="model-error-card" role="alert">
-            <div className="model-error-icon">
-              <CircleAlert aria-hidden />
-            </div>
-            <div className="model-error-copy">
-              <div>
-                <strong>{errorInfo.title}</strong>
-                <span>{errorInfo.code}</span>
-              </div>
-              <p>{errorInfo.message}</p>
-              <div className="model-error-actions">
-                <button
-                  type="button"
-                  onClick={() => onShowError(message.error_message as string)}
-                >
-                  查看详情
-                </button>
-                {isLastAssistant ? (
-                  <button
-                    type="button"
-                    disabled={generating}
-                    onClick={onRegenerate}
-                  >
-                    重新生成
-                  </button>
-                ) : null}
-              </div>
-            </div>
-          </div>
-        ) : null}
-        {message.role === "assistant" && content ? (
-          <div className="message-actions">
-            <button
-              type="button"
-              aria-label="复制原始输出"
-              title="复制原始输出"
-              onClick={() => void navigator.clipboard.writeText(content)}
-            >
-              <Copy aria-hidden />
-            </button>
-            {isLastAssistant && !errorInfo ? (
-              <button
-                type="button"
-                aria-label="重新生成"
-                title="重新生成"
-                disabled={generating}
-                onClick={onRegenerate}
-              >
-                <RotateCcw aria-hidden />
-              </button>
-            ) : null}
-          </div>
-        ) : null}
-      </div>
-    </article>
-  );
-}
-
+import {
+  AttachmentImage,
+  EmptyChat,
+  MessageCard,
+} from "@features/models/conversation/ModelTestConversationView";
+import { ModelTestConversationPanel } from "@features/models/conversation/ModelTestConversationPanel";
+import { ModelTestSettingsPanel } from "@features/models/conversation/ModelTestSettingsPanel";
+import { ModelTestDialogs } from "@features/models/conversation/ModelTestDialogs";
+import { errorPresentation } from "@features/models/conversation/modelTestPresentation";
 export function ModelTestPage({
   onOpenAudioAnnotation = () => undefined,
 }: {
@@ -398,7 +79,6 @@ export function ModelTestPage({
   const [removingAttachmentId, setRemovingAttachmentId] = useState<
     string | null
   >(null);
-  const [temperatureDraft, setTemperatureDraft] = useState(0.7);
   const [mobilePanel, setMobilePanel] = useState<
     "conversations" | "settings" | null
   >(null);
@@ -513,11 +193,6 @@ export function ModelTestPage({
   const selectedModelSupportsTools = Boolean(
     selectedModel?.capabilities.includes("tools"),
   );
-
-  useEffect(() => {
-    if (conversation && !streamingId)
-      setTemperatureDraft(conversation.temperature);
-  }, [conversation, streamingId]);
 
   useEffect(() => {
     setAttachmentPreview(null);
@@ -762,15 +437,6 @@ export function ModelTestPage({
     (selectedModelSupportsTools &&
       conversationTools.every((tool) => tool.enabled));
   const conversationItems = conversationsQuery.data?.items ?? [];
-  const normalizedSearch = conversationSearch.trim().toLowerCase();
-  const filteredConversations = normalizedSearch
-    ? conversationItems.filter((item) =>
-        `${item.title} ${item.model_slug || ""}`
-          .toLowerCase()
-          .includes(normalizedSearch),
-      )
-    : conversationItems;
-
   const generationModel = availableModels.find(
     (model) => model.value === generationModelId,
   );
@@ -868,71 +534,21 @@ export function ModelTestPage({
         </div>
       ) : null}
       <div className="playground-grid">
-        <aside
-          className={`conversation-panel${mobilePanel === "conversations" ? " mobile-open" : ""}`}
-        >
-          <div className="panel-heading">
-            <strong>历史对话</strong>
-          </div>
-          <div className="conversation-tools">
-            <button
-              type="button"
-              className="new-conversation-button"
-              disabled={
-                createMutation.isPending ||
-                Boolean(streamingId) ||
-                uploadingAttachments
-              }
-              onClick={() => createMutation.mutate(undefined)}
-            >
-              <Plus aria-hidden /> 新建对话
-            </button>
-            <label className="conversation-search">
-              <Search aria-hidden />
-              <input
-                value={conversationSearch}
-                onChange={(event) => setConversationSearch(event.target.value)}
-                placeholder="搜索对话"
-                aria-label="搜索对话"
-              />
-            </label>
-          </div>
-          <div className="conversation-list">
-            {filteredConversations.map((item) => (
-              <button
-                className={item.id === activeId ? "active" : ""}
-                key={item.id}
-                onClick={() => {
-                  setActiveId(item.id);
-                  setMobilePanel(null);
-                }}
-              >
-                <span className="conversation-item-icon">
-                  <MessageSquareText aria-hidden />
-                </span>
-                <span>
-                  <strong>{item.title}</strong>
-                  <small>
-                    <span>{item.model_slug || "未选择模型"}</span>
-                    <time>{formatConversationTime(item.updated_at)}</time>
-                  </small>
-                </span>
-              </button>
-            ))}
-            {!filteredConversations.length && normalizedSearch ? (
-              <p className="conversation-empty">没有匹配的对话</p>
-            ) : null}
-          </div>
-          <div className="conversation-count">
-            共 {conversationItems.length} 个对话
-          </div>
-          <button
-            className="mobile-panel-close"
-            onClick={() => setMobilePanel(null)}
-          >
-            收起
-          </button>
-        </aside>
+        <ModelTestConversationPanel
+          open={mobilePanel === "conversations"}
+          items={conversationItems}
+          activeId={activeId}
+          search={conversationSearch}
+          creating={createMutation.isPending}
+          disabled={Boolean(streamingId) || uploadingAttachments}
+          onSearch={setConversationSearch}
+          onCreate={() => createMutation.mutate(undefined)}
+          onSelect={(id) => {
+            setActiveId(id);
+            setMobilePanel(null);
+          }}
+          onClose={() => setMobilePanel(null)}
+        />
 
         <main className="chat-panel">
           {conversation ? (
@@ -1142,236 +758,25 @@ export function ModelTestPage({
           )}
         </main>
 
-        <aside
-          className={`settings-panel${mobilePanel === "settings" ? " mobile-open" : ""}`}
-        >
-          <div className="panel-heading settings-heading">
-            <div className="settings-heading-copy">
-              <span>
-                <SlidersHorizontal aria-hidden />
-                <strong>测试参数</strong>
-              </span>
-              <small>调整当前会话的生成方式</small>
-            </div>
-          </div>
-          {conversation ? (
-            <div className="settings-form">
-              <label className="parameter-field">
-                <span className="parameter-label">
-                  系统提示词 <em className="optional-badge">可选</em>
-                </span>
-                <textarea
-                  key={`${conversation.id}-system-${conversation.revision}`}
-                  defaultValue={conversation.system_prompt}
-                  rows={7}
-                  disabled={Boolean(streamingId)}
-                  placeholder="可选，用于定义模型角色和回答要求"
-                  onBlur={(event) => {
-                    if (event.target.value !== conversation.system_prompt)
-                      void patch({ system_prompt: event.target.value });
-                  }}
-                />
-              </label>
-              <ModelTestToolSelector
-                selected={conversationTools}
-                supported={selectedModelSupportsTools}
-                disabled={Boolean(streamingId)}
-                onSave={async (toolIds) => {
-                  await patch({ tool_ids: toolIds });
-                }}
-              />
-              <label className="parameter-field temperature-field">
-                <span className="parameter-label">
-                  Temperature
-                  <output className="temperature-value">
-                    {temperatureDraft.toFixed(1)}
-                  </output>
-                </span>
-                <div className="temperature-control">
-                  <input
-                    type="range"
-                    min="0"
-                    max="2"
-                    step="0.1"
-                    value={temperatureDraft}
-                    disabled={Boolean(streamingId)}
-                    style={
-                      {
-                        "--range-progress": `${(temperatureDraft / 2) * 100}%`,
-                      } as CSSProperties
-                    }
-                    onChange={(event) =>
-                      setTemperatureDraft(Number(event.target.value))
-                    }
-                    onPointerUp={(event) => {
-                      const value = Number(event.currentTarget.value);
-                      if (value !== conversation.temperature)
-                        void patch({ temperature: value });
-                    }}
-                    onKeyUp={(event) => {
-                      const value = Number(event.currentTarget.value);
-                      if (value !== conversation.temperature)
-                        void patch({ temperature: value });
-                    }}
-                  />
-                  <div className="range-scale" aria-hidden="true">
-                    <span>精确</span>
-                    <span>平衡</span>
-                    <span>创意</span>
-                  </div>
-                </div>
-                <small className="parameter-help">
-                  较低的值更稳定，较高的值更有创造性。
-                </small>
-              </label>
-              <label className="parameter-field">
-                <span className="parameter-label">最大输出</span>
-                <div className="token-input">
-                  <input
-                    type="number"
-                    min="1"
-                    max="8192"
-                    key={`${conversation.id}-tokens-${conversation.max_tokens}`}
-                    defaultValue={conversation.max_tokens}
-                    disabled={Boolean(streamingId)}
-                    onBlur={(event) => {
-                      const value = Math.min(
-                        8192,
-                        Math.max(1, Number(event.target.value)),
-                      );
-                      if (value !== conversation.max_tokens)
-                        void patch({ max_tokens: value });
-                    }}
-                  />
-                  <span>Token</span>
-                </div>
-              </label>
-              <div className="parameter-note">
-                <Info aria-hidden />
-                <div>
-                  <strong>上下文策略</strong>
-                  <p>
-                    仅已成功完成的轮次及其图片会进入下一次请求；失败或停止的回复只保留展示。
-                  </p>
-                </div>
-              </div>
-              <button
-                type="button"
-                className="reset-parameters"
-                disabled={Boolean(streamingId)}
-                onClick={() => {
-                  setTemperatureDraft(0.7);
-                  void patch({
-                    system_prompt: "",
-                    temperature: 0.7,
-                    max_tokens: 1024,
-                  });
-                }}
-              >
-                <RotateCcw aria-hidden /> 恢复默认参数
-              </button>
-            </div>
-          ) : null}
-          <button
-            className="mobile-panel-close"
-            onClick={() => setMobilePanel(null)}
-          >
-            收起
-          </button>
-        </aside>
+        <ModelTestSettingsPanel
+          open={mobilePanel === "settings"}
+          conversation={conversation}
+          tools={conversationTools}
+          toolsSupported={selectedModelSupportsTools}
+          disabled={Boolean(streamingId)}
+          onPatch={patch}
+          onClose={() => setMobilePanel(null)}
+        />
       </div>
-      {errorDetail ? (
-        <div
-          className="modal-backdrop"
-          onMouseDown={(event) => {
-            if (event.target === event.currentTarget) setErrorDetail(null);
-          }}
-        >
-          <div
-            className="modal-card error-detail-modal"
-            role="dialog"
-            aria-modal="true"
-          >
-            <div className="modal-head">
-              <div>
-                <span className="eyebrow">调用错误</span>
-                <h2>错误详情</h2>
-              </div>
-              <button
-                type="button"
-                className="icon-btn"
-                aria-label="关闭错误详情"
-                onClick={() => setErrorDetail(null)}
-              >
-                <X aria-hidden />
-              </button>
-            </div>
-            <pre>{errorDetail}</pre>
-            <div className="modal-actions">
-              <button
-                type="button"
-                className="btn"
-                onClick={() => void navigator.clipboard.writeText(errorDetail)}
-              >
-                复制完整错误
-              </button>
-              <button
-                type="button"
-                className="btn primary"
-                onClick={() => setErrorDetail(null)}
-              >
-                完成
-              </button>
-            </div>
-          </div>
-        </div>
-      ) : null}
-      {attachmentPreview ? (
-        <div
-          className="modal-backdrop"
-          onMouseDown={(event) => {
-            if (event.target === event.currentTarget)
-              setAttachmentPreview(null);
-          }}
-        >
-          <div
-            className="modal-card attachment-preview-modal"
-            role="dialog"
-            aria-modal="true"
-            aria-label={`图片预览 ${attachmentPreview.name}`}
-          >
-            <div className="modal-head">
-              <div>
-                <span className="eyebrow">图片附件</span>
-                <h2>{attachmentPreview.name}</h2>
-              </div>
-              <button
-                type="button"
-                className="icon-btn"
-                aria-label="关闭图片预览"
-                onClick={() => setAttachmentPreview(null)}
-              >
-                <X aria-hidden />
-              </button>
-            </div>
-            <div className="attachment-preview-stage">
-              <img src={attachmentPreview.url} alt={attachmentPreview.name} />
-            </div>
-          </div>
-        </div>
-      ) : null}
-      <ConfirmDialog
-        open={Boolean(conversationToDelete)}
-        title="删除测试对话"
-        description={
-          conversationToDelete
-            ? `对话「${conversationToDelete.title}」及其中的全部消息将被永久删除。`
-            : ""
-        }
-        confirmLabel="删除对话"
-        pending={deletingConversation}
-        onCancel={() => setConversationToDelete(null)}
-        onConfirm={remove}
+      <ModelTestDialogs
+        error={errorDetail}
+        attachment={attachmentPreview}
+        deleteTarget={conversationToDelete}
+        deleting={deletingConversation}
+        onCloseError={() => setErrorDetail(null)}
+        onCloseAttachment={() => setAttachmentPreview(null)}
+        onCancelDelete={() => setConversationToDelete(null)}
+        onDelete={remove}
       />
     </section>
   );

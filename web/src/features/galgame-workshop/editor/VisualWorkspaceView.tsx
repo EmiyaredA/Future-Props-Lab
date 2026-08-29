@@ -1,14 +1,6 @@
-import { createPortal } from "react-dom";
 import {
-  Check,
-  ChevronDown,
-  ChevronRight,
-  Copy,
-  Eye,
-  EyeOff,
   ExternalLink,
-  FolderOpen,
-  GripVertical,
+  Eye,
   Image as ImageIcon,
   ImagePlus,
   Images,
@@ -18,19 +10,17 @@ import {
   Move,
   PanelLeftClose,
   PanelRightClose,
-  Pencil,
   Plus,
   RotateCcw,
-  Search,
   Trash2,
-  Undo2,
-  Upload,
 } from "lucide-react";
-import { stableId } from "@features/galgame-workshop/editor/model";
 import { StoryImagePicker } from "@features/galgame-workshop/editor/StoryImagePicker";
 import { StoryAssetImage } from "@features/galgame-workshop/editor/StoryAssetImage";
 import { InlineEditableName } from "@features/galgame-workshop/editor/EditorShared";
 import type { useVisualWorkspaceController } from "@features/galgame-workshop/editor/useVisualWorkspaceController";
+import { VisualBrowserPanel } from "@features/galgame-workshop/editor/visuals/VisualBrowserPanel";
+import { VisualStackPanel } from "@features/galgame-workshop/editor/visuals/VisualStackPanel";
+import { VisualItemMenu } from "@features/galgame-workshop/editor/visuals/VisualItemMenu";
 
 function clamp(value: number, minimum: number, maximum: number) {
   return Math.min(Math.max(value, minimum), maximum);
@@ -48,31 +38,19 @@ export function VisualWorkspaceView({
 }) {
   const {
     projectId,
-    document,
-    onDocument,
     onLocate,
     onNotice,
     fileInput,
     stageRef,
     distanceAxisRef,
-    draggedItem,
-    menuRef,
     scenes,
     cgs,
-    groups,
     selection,
-    query,
-    setQuery,
-    layerQuery,
-    setLayerQuery,
-    rootsOpen,
-    setRootsOpen,
     browserOpen,
     setBrowserOpen,
     stackOpen,
     setStackOpen,
     setSelectedLayerId,
-    setSelectedVariantId,
     picker,
     setPicker,
     pickerTarget,
@@ -88,12 +66,9 @@ export function VisualWorkspaceView({
     setBottomTab,
     distanceDraft,
     setDistanceDraft,
-    itemMenu,
-    setItemMenu,
     selectedScene,
     selectedCg,
     layers,
-    variants,
     selectedLayer,
     defaultVariant,
     selectedVariant,
@@ -101,24 +76,10 @@ export function VisualWorkspaceView({
     usedFileIds,
     sceneRefs,
     cgRefs,
-    visibleScenes,
-    visibleCgs,
-    filteredLayers,
-    selectVisual,
     updateScene,
     updateCg,
     bindFile,
     upload,
-    openPicker,
-    createScene,
-    createCg,
-    duplicateVisual,
-    moveScene,
-    beginRename,
-    reorderLayer,
-    reorderVariant,
-    removeVariant,
-    removeVisual,
     removeSelectedVisual,
     startStageDrag,
     moveStageDrag,
@@ -133,10 +94,6 @@ export function VisualWorkspaceView({
     title,
     detailCount,
     stageEmpty,
-    renderBrowserItem,
-    menuScene,
-    menuCg,
-    menuReferences,
   } = model;
   return (
     <section className="galgame-unified-visual-workspace">
@@ -191,197 +148,7 @@ export function VisualWorkspaceView({
       <div
         className={`galgame-visual-editor-grid${browserOpen ? "" : " is-browser-collapsed"}${stackOpen ? "" : " is-stack-collapsed"}`}
       >
-        <aside className="galgame-visual-browser">
-          <div className="galgame-visual-browser-toolbar">
-            <label>
-              <Search aria-hidden />
-              <input
-                aria-label="搜索场景和 CG"
-                value={query}
-                placeholder="搜索场景或 CG…"
-                onChange={(event) => setQuery(event.target.value)}
-              />
-            </label>
-            <button type="button" aria-label="新建场景" onClick={createScene}>
-              <ImagePlus aria-hidden />
-            </button>
-            <button type="button" aria-label="新建 CG" onClick={createCg}>
-              <Plus aria-hidden />
-            </button>
-            <button
-              type="button"
-              aria-label="添加分组"
-              onClick={() => {
-                const group = {
-                  id: stableId(),
-                  name: `新分组 ${groups.length + 1}`,
-                  color: "#7586E5",
-                  collapsed: false,
-                };
-                onDocument({
-                  ...document,
-                  sceneGroups: [...groups, group],
-                });
-              }}
-            >
-              <FolderOpen aria-hidden />
-            </button>
-          </div>
-
-          <div className="galgame-visual-browser-tree">
-            <section>
-              <button
-                type="button"
-                className="galgame-visual-tree-root"
-                aria-expanded={rootsOpen.scenes}
-                onClick={() =>
-                  setRootsOpen((current) => ({
-                    ...current,
-                    scenes: !current.scenes,
-                  }))
-                }
-              >
-                {rootsOpen.scenes ? (
-                  <ChevronDown aria-hidden />
-                ) : (
-                  <ChevronRight aria-hidden />
-                )}
-                <span>场景</span>
-                <em>{scenes.filter((scene) => !scene.groupId).length}</em>
-              </button>
-              {rootsOpen.scenes
-                ? visibleScenes
-                    .filter((scene) => !scene.groupId)
-                    .map((scene) =>
-                      renderBrowserItem({ kind: "scene", id: scene.id }),
-                    )
-                : null}
-            </section>
-
-            <section>
-              <button
-                type="button"
-                className="galgame-visual-tree-root"
-                aria-label="剧情 CG"
-                aria-expanded={rootsOpen.cgs}
-                onClick={() =>
-                  setRootsOpen((current) => ({
-                    ...current,
-                    cgs: !current.cgs,
-                  }))
-                }
-              >
-                {rootsOpen.cgs ? (
-                  <ChevronDown aria-hidden />
-                ) : (
-                  <ChevronRight aria-hidden />
-                )}
-                <span>CG</span>
-                <em>{cgs.length}</em>
-              </button>
-              {rootsOpen.cgs
-                ? visibleCgs.map((cg) =>
-                    renderBrowserItem({ kind: "cg", id: cg.id }),
-                  )
-                : null}
-            </section>
-
-            {groups.map((group) => {
-              const groupScenes = scenes.filter(
-                (scene) => scene.groupId === group.id,
-              );
-              const groupedScenes = visibleScenes.filter(
-                (scene) => scene.groupId === group.id,
-              );
-              return (
-                <section
-                  key={group.id}
-                  className="galgame-visual-custom-group"
-                  onDragOver={(event) => event.preventDefault()}
-                  onDrop={(event) => {
-                    event.preventDefault();
-                    const dragged = draggedItem.current;
-                    if (dragged?.kind === "scene")
-                      moveScene(dragged.id, undefined, group.id);
-                    draggedItem.current = undefined;
-                  }}
-                >
-                  <div className="galgame-visual-tree-root">
-                    <button
-                      type="button"
-                      aria-label={`${group.collapsed ? "展开" : "折叠"}${group.name}`}
-                      onClick={() =>
-                        onDocument({
-                          ...document,
-                          sceneGroups: groups.map((candidate) =>
-                            candidate.id === group.id
-                              ? {
-                                  ...candidate,
-                                  collapsed: !candidate.collapsed,
-                                }
-                              : candidate,
-                          ),
-                        })
-                      }
-                    >
-                      {group.collapsed ? (
-                        <ChevronRight aria-hidden />
-                      ) : (
-                        <ChevronDown aria-hidden />
-                      )}
-                    </button>
-                    <i style={{ background: group.color }} />
-                    <input
-                      aria-label="分组名称"
-                      value={group.name}
-                      onChange={(event) =>
-                        onDocument({
-                          ...document,
-                          sceneGroups: groups.map((candidate) =>
-                            candidate.id === group.id
-                              ? { ...candidate, name: event.target.value }
-                              : candidate,
-                          ),
-                        })
-                      }
-                    />
-                    <em>{groupScenes.length}</em>
-                    <button
-                      type="button"
-                      aria-label={`删除分组 ${group.name}`}
-                      onClick={() =>
-                        onDocument({
-                          ...document,
-                          sceneGroups: groups.filter(
-                            (candidate) => candidate.id !== group.id,
-                          ),
-                          scenes: scenes.map((scene) =>
-                            scene.groupId === group.id
-                              ? { ...scene, groupId: null }
-                              : scene,
-                          ),
-                        })
-                      }
-                    >
-                      <Trash2 aria-hidden />
-                    </button>
-                  </div>
-                  {!group.collapsed
-                    ? groupedScenes.map((scene) =>
-                        renderBrowserItem({ kind: "scene", id: scene.id }),
-                      )
-                    : null}
-                </section>
-              );
-            })}
-
-            {!visibleScenes.length && !visibleCgs.length ? (
-              <p className="galgame-visual-tree-empty">
-                {query ? "没有匹配的场景或 CG。" : "创建第一个场景或 CG。"}
-              </p>
-            ) : null}
-          </div>
-        </aside>
+        <VisualBrowserPanel model={model} />
 
         <main className="galgame-visual-stage-panel">
           <header>
@@ -561,284 +328,7 @@ export function VisualWorkspaceView({
           </div>
         </main>
 
-        <aside className="galgame-visual-stack-panel">
-          <header>
-            <strong>{selectedScene ? "图层" : "差分"}</strong>
-            <span>{detailCount}</span>
-            <button
-              type="button"
-              aria-label={selectedScene ? "添加场景图层" : "添加差分"}
-              disabled={!selection}
-              onClick={() =>
-                openPicker(selectedScene ? "scene-layer" : "cg-variant", "add")
-              }
-            >
-              <Plus aria-hidden />
-            </button>
-          </header>
-          <label className="galgame-visual-stack-search">
-            <Search aria-hidden />
-            <input
-              aria-label="搜索图层或差分"
-              value={layerQuery}
-              placeholder={selectedScene ? "搜索图层…" : "搜索差分…"}
-              onChange={(event) => setLayerQuery(event.target.value)}
-            />
-          </label>
-
-          <div className="galgame-visual-stack-list">
-            {selectedScene
-              ? [...filteredLayers].reverse().map((layer) => {
-                  const asset = assetsById.get(layer.assetId);
-                  const index = layers.findIndex(
-                    (item) => item.id === layer.id,
-                  );
-                  return (
-                    <article
-                      key={layer.id}
-                      className={layer.id === selectedLayer?.id ? "active" : ""}
-                      draggable
-                      onDragStart={() =>
-                        (draggedItem.current = {
-                          kind: "scene",
-                          id: `layer:${layer.id}`,
-                        })
-                      }
-                      onDragOver={(event) => event.preventDefault()}
-                      onDrop={() => {
-                        const dragged = draggedItem.current;
-                        const layerId = dragged?.id.replace(/^layer:/, "");
-                        if (layerId) reorderLayer(layerId, layer.id);
-                        draggedItem.current = undefined;
-                      }}
-                      onClick={() => setSelectedLayerId(layer.id)}
-                    >
-                      <GripVertical aria-hidden />
-                      <em>{String(index + 1).padStart(2, "0")}</em>
-                      <span>
-                        <StoryAssetImage
-                          fileId={asset?.fileId}
-                          alt=""
-                          fallback={<MapPinned aria-hidden />}
-                        />
-                      </span>
-                      <div>
-                        <input
-                          aria-label="图层名称"
-                          value={layer.name}
-                          onClick={(event) => event.stopPropagation()}
-                          onChange={(event) =>
-                            updateScene(selectedScene.id, (scene) => ({
-                              ...scene,
-                              layers: (scene.layers ?? []).map((candidate) =>
-                                candidate.id === layer.id
-                                  ? { ...candidate, name: event.target.value }
-                                  : candidate,
-                              ),
-                            }))
-                          }
-                        />
-                        <small>{asset?.fileId ?? "素材缺失"}</small>
-                      </div>
-                      <label onClick={(event) => event.stopPropagation()}>
-                        <span>距离</span>
-                        <input
-                          aria-label={`图层 ${layer.name} 距离数值`}
-                          type="number"
-                          min="0.1"
-                          max="100"
-                          step="0.1"
-                          value={layer.distance}
-                          onChange={(event) =>
-                            setLayerDistance(
-                              layer.id,
-                              Number(event.target.value),
-                            )
-                          }
-                        />
-                      </label>
-                      <button
-                        type="button"
-                        aria-label={`隔离图层 ${layer.name}`}
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          setIsolatedLayerId((current) =>
-                            current === layer.id ? undefined : layer.id,
-                          );
-                        }}
-                      >
-                        {isolatedLayerId === layer.id ? (
-                          <Eye aria-hidden />
-                        ) : (
-                          <EyeOff aria-hidden />
-                        )}
-                      </button>
-                      <button
-                        type="button"
-                        aria-label={`替换图层 ${layer.name}`}
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          setSelectedLayerId(layer.id);
-                          openPicker("scene-layer", "replace");
-                        }}
-                      >
-                        <FolderOpen aria-hidden />
-                      </button>
-                      <button
-                        type="button"
-                        aria-label={`删除图层 ${layer.name}`}
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          updateScene(selectedScene.id, (scene) => ({
-                            ...scene,
-                            layers: (scene.layers ?? []).filter(
-                              (candidate) => candidate.id !== layer.id,
-                            ),
-                          }));
-                        }}
-                      >
-                        <Trash2 aria-hidden />
-                      </button>
-                    </article>
-                  );
-                })
-              : variants
-                  .filter((variant) =>
-                    variant.label
-                      .toLocaleLowerCase("zh-CN")
-                      .includes(layerQuery.trim().toLocaleLowerCase("zh-CN")),
-                  )
-                  .map((variant, index) => {
-                    const asset = assetsById.get(variant.assetId);
-                    const isDefault =
-                      variant.id === selectedCg?.defaultVariantId;
-                    return (
-                      <article
-                        key={variant.id}
-                        className={`${variant.id === selectedVariant?.id ? "active " : ""}is-cg`}
-                        draggable
-                        onDragStart={() =>
-                          (draggedItem.current = {
-                            kind: "cg",
-                            id: `variant:${variant.id}`,
-                          })
-                        }
-                        onDragOver={(event) => event.preventDefault()}
-                        onDrop={() => {
-                          const dragged = draggedItem.current;
-                          const variantId = dragged?.id.replace(
-                            /^variant:/,
-                            "",
-                          );
-                          if (variantId) reorderVariant(variantId, variant.id);
-                          draggedItem.current = undefined;
-                        }}
-                        onClick={() => setSelectedVariantId(variant.id)}
-                      >
-                        <GripVertical aria-hidden />
-                        <em>{String(index + 1).padStart(2, "0")}</em>
-                        <span>
-                          <StoryAssetImage
-                            fileId={asset?.fileId}
-                            alt=""
-                            fallback={<Images aria-hidden />}
-                          />
-                        </span>
-                        <div>
-                          <input
-                            aria-label="差分名称"
-                            value={variant.label}
-                            onClick={(event) => event.stopPropagation()}
-                            onChange={(event) =>
-                              selectedCg &&
-                              updateCg(selectedCg.id, (cg) => ({
-                                ...cg,
-                                variants: (cg.variants ?? []).map(
-                                  (candidate) =>
-                                    candidate.id === variant.id
-                                      ? {
-                                          ...candidate,
-                                          label: event.target.value,
-                                        }
-                                      : candidate,
-                                ),
-                              }))
-                            }
-                          />
-                          <small>
-                            {isDefault ? "默认差分" : asset?.fileId}
-                          </small>
-                        </div>
-                        <button
-                          type="button"
-                          aria-label={`设为默认差分 ${variant.label}`}
-                          disabled={isDefault}
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            if (selectedCg)
-                              updateCg(selectedCg.id, (cg) => ({
-                                ...cg,
-                                defaultVariantId: variant.id,
-                              }));
-                          }}
-                        >
-                          <Check aria-hidden />
-                        </button>
-                        <button
-                          type="button"
-                          aria-label={`替换差分 ${variant.label}`}
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            setSelectedVariantId(variant.id);
-                            openPicker("cg-variant", "replace");
-                          }}
-                        >
-                          <FolderOpen aria-hidden />
-                        </button>
-                        <button
-                          type="button"
-                          aria-label="删除差分"
-                          title={`删除差分 ${variant.label}`}
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            removeVariant(variant);
-                          }}
-                        >
-                          <Trash2 aria-hidden />
-                        </button>
-                      </article>
-                    );
-                  })}
-          </div>
-
-          <div className="galgame-visual-stack-actions">
-            <button
-              type="button"
-              aria-label="素材库添加"
-              disabled={!selection}
-              onClick={() =>
-                openPicker(selectedScene ? "scene-layer" : "cg-variant", "add")
-              }
-            >
-              <FolderOpen aria-hidden /> 素材库添加
-            </button>
-            <button
-              type="button"
-              aria-label="导入图片"
-              disabled={!selection || upload.isPending}
-              onClick={() => {
-                setPickerTarget({
-                  kind: selectedScene ? "scene-layer" : "cg-variant",
-                  mode: "add",
-                });
-                fileInput.current?.click();
-              }}
-            >
-              <Upload aria-hidden />
-              {upload.isPending ? "导入中…" : "导入图片"}
-            </button>
-          </div>
-        </aside>
+        <VisualStackPanel model={model} />
 
         <section className="galgame-visual-bottom-panel">
           <div className="galgame-visual-properties">
@@ -1208,126 +698,7 @@ export function VisualWorkspaceView({
         />
       ) : null}
 
-      {itemMenu && (menuScene || menuCg)
-        ? createPortal(
-            <div
-              ref={menuRef}
-              id="galgame-visual-item-menu"
-              className="galgame-visual-item-menu"
-              role="menu"
-              aria-label={`${menuScene?.name ?? menuCg?.name} 操作`}
-              style={{ left: itemMenu.left, top: itemMenu.top }}
-            >
-              <button
-                type="button"
-                role="menuitem"
-                onClick={() => {
-                  selectVisual(itemMenu.item);
-                  setItemMenu(undefined);
-                }}
-              >
-                <Eye aria-hidden />
-                打开{menuScene ? "场景" : " CG"}
-              </button>
-              <button
-                type="button"
-                role="menuitem"
-                onClick={() => beginRename(itemMenu.item)}
-              >
-                <Pencil aria-hidden />
-                重命名
-              </button>
-
-              {menuScene ? (
-                <>
-                  <i aria-hidden />
-                  <button
-                    type="button"
-                    role="menuitem"
-                    disabled={!menuScene.groupId}
-                    onClick={() => {
-                      moveScene(menuScene.id, undefined, null);
-                      setItemMenu(undefined);
-                    }}
-                  >
-                    <Undo2 aria-hidden />
-                    移出分组
-                  </button>
-                  <button
-                    type="button"
-                    role="menuitem"
-                    disabled={!menuScene.groupId}
-                    onClick={() => {
-                      moveScene(menuScene.id, undefined, null);
-                      setItemMenu(undefined);
-                    }}
-                  >
-                    {!menuScene.groupId ? (
-                      <Check aria-hidden />
-                    ) : (
-                      <FolderOpen aria-hidden />
-                    )}
-                    移动到 场景
-                  </button>
-                  {groups.map((group) => (
-                    <button
-                      key={group.id}
-                      type="button"
-                      role="menuitem"
-                      disabled={menuScene.groupId === group.id}
-                      onClick={() => {
-                        moveScene(menuScene.id, undefined, group.id);
-                        setItemMenu(undefined);
-                      }}
-                    >
-                      {menuScene.groupId === group.id ? (
-                        <Check aria-hidden />
-                      ) : (
-                        <FolderOpen aria-hidden />
-                      )}
-                      移动到 {group.name}
-                    </button>
-                  ))}
-                </>
-              ) : null}
-
-              <i aria-hidden />
-              <button
-                type="button"
-                role="menuitem"
-                onClick={() => {
-                  duplicateVisual(itemMenu.item);
-                  setItemMenu(undefined);
-                }}
-              >
-                <Copy aria-hidden />
-                复制{menuScene ? "场景" : " CG"}
-              </button>
-              <i aria-hidden />
-              <button
-                type="button"
-                className="danger"
-                role="menuitem"
-                disabled={menuReferences.length > 0}
-                title={
-                  menuReferences.length
-                    ? menuScene
-                      ? "场景仍被 Scene Block 引用，无法删除。"
-                      : "CG 仍被显示 CG Block 引用，无法删除。"
-                    : undefined
-                }
-                onClick={() => {
-                  removeVisual(itemMenu.item);
-                  setItemMenu(undefined);
-                }}
-              >
-                <Trash2 aria-hidden />
-                删除{menuScene ? "场景" : " CG"}
-              </button>
-            </div>,
-            globalThis.document.body,
-          )
-        : null}
+      <VisualItemMenu model={model} />
     </section>
   );
 }

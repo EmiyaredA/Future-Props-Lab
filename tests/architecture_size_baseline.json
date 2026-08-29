@@ -1,27 +1,5 @@
 {
-  "production": {
-    "web/src/features/galgame-workshop/editor/AssetOverviewWorkspace.tsx": 1418,
-    "web/src/features/galgame-workshop/editor/BlockInspectorView.tsx": 1398,
-    "web/src/features/galgame-workshop/editor/CharacterExpressionForm.tsx": 1063,
-    "web/src/features/galgame-workshop/editor/CharacterStageSettingsWorkspace.tsx": 1092,
-    "web/src/features/galgame-workshop/editor/DialogueStyleInspector.tsx": 1157,
-    "web/src/features/galgame-workshop/editor/SoundWorkspace.tsx": 937,
-    "web/src/features/galgame-workshop/editor/StoryBlockEditorParts.tsx": 1395,
-    "web/src/features/galgame-workshop/editor/StoryTimelineEditor.tsx": 1485,
-    "web/src/features/galgame-workshop/editor/VisualWorkspaceView.tsx": 1333,
-    "web/src/features/galgame-workshop/editor/blockContextSettings.ts": 1416,
-    "web/src/features/galgame-workshop/editor/timeline.ts": 1130,
-    "web/src/features/galgame-workshop/editor/useCharacterWorkspaceController.tsx": 1442,
-    "web/src/features/galgame-workshop/editor/useVisualWorkspaceController.tsx": 1097,
-    "web/src/features/models/conversation/ModelTestPage.tsx": 1391,
-    "web/src/features/models/generation/ModelGenerationTestPanel.tsx": 990,
-    "web/src/features/models/generation/ModelTranscriptionTestPanel.tsx": 1073,
-    "web/src/features/models/logs/ModelCallLogsPage.tsx": 979,
-    "web/src/features/visual-workshop/assistant/ProjectAssistantPanel.tsx": 946,
-    "web/src/features/visual-workshop/canvas/VisualWorkshopCanvasPage.tsx": 1273,
-    "web/src/features/visual-workshop/generation/GenerationDrawer.tsx": 1261,
-    "web/src/features/visual-workshop/generation/GenerationPromptEditor.tsx": 870
-  },
+  "production": {},
   "tests": {
     "tests/test_galgame_workshop.py": 1857,
     "web/tests/galgame-workshop-editor-media.test.tsx": 1274,

@@ -1,13 +1,5 @@
-import {
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type PointerEvent as ReactPointerEvent,
-  type WheelEvent as ReactWheelEvent,
-} from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Images, MapPinned, MoreHorizontal } from "lucide-react";
 import {
   uploadGalgameProjectAsset,
   type GalgameStoryCg,
@@ -18,73 +10,17 @@ import {
 } from "@features/galgame-workshop/api";
 import { stableId } from "@features/galgame-workshop/editor/model";
 import { type StoryImagePickerState } from "@features/galgame-workshop/editor/StoryImagePicker";
-import { StoryAssetImage } from "@features/galgame-workshop/editor/StoryAssetImage";
+import {
+  cgReferences,
+  clamp,
+  cleanLabel,
+  sceneReferences,
+  type PickerTarget,
+  type VisualMenuState,
+  type VisualSelection,
+} from "@features/galgame-workshop/editor/visuals/model";
+import { useVisualStageInteractions } from "@features/galgame-workshop/editor/visuals/useVisualStageInteractions";
 import { invalidateGalgameAssetQueries } from "@features/galgame-workshop/queryKeys";
-type VisualSelection = { kind: "scene" | "cg"; id: string };
-type VisualMenuState = {
-  item: VisualSelection;
-  left: number;
-  top: number;
-  trigger: HTMLButtonElement;
-};
-type PickerTarget = {
-  kind: "scene-layer" | "cg-variant";
-  mode: "add" | "replace";
-};
-
-function clamp(value: number, minimum: number, maximum: number) {
-  return Math.min(Math.max(value, minimum), maximum);
-}
-
-function cleanLabel(filename: string, fallback: string) {
-  return filename.replace(/\.[^.]+$/, "").trim() || fallback;
-}
-
-function sceneReferences(document: GalgameStoryProject, sceneId: string) {
-  return (document.chapters ?? []).flatMap((chapter) =>
-    (chapter.fragments ?? []).flatMap((fragment) =>
-      (fragment.blocks ?? []).flatMap((block, index) =>
-        block.type === "scene" && block.sceneId === sceneId
-          ? [
-              {
-                chapter: chapter.title,
-                fragmentId: fragment.id,
-                fragment: fragment.title,
-                blockId: block.id,
-                index,
-              },
-            ]
-          : [],
-      ),
-    ),
-  );
-}
-
-function cgReferences(document: GalgameStoryProject, cgId: string) {
-  return (document.chapters ?? []).flatMap((chapter) =>
-    (chapter.fragments ?? []).flatMap((fragment) =>
-      (fragment.blocks ?? []).flatMap((block, index) =>
-        block.type === "showCg" && block.cgId === cgId
-          ? [
-              {
-                chapter: chapter.title,
-                fragmentId: fragment.id,
-                fragment: fragment.title,
-                blockId: block.id,
-                index,
-                variantId: block.variantId,
-              },
-            ]
-          : [],
-      ),
-    ),
-  );
-}
-
-function distanceAtPercent(percent: number) {
-  const value = 0.1 * 10 ** ((clamp(percent, 0, 100) / 100) * 3);
-  return value < 1 ? Math.round(value * 10) / 10 : Math.round(value * 2) / 2;
-}
 
 export function useVisualWorkspaceController({
   projectId,
@@ -109,34 +45,6 @@ export function useVisualWorkspaceController({
 }) {
   const client = useQueryClient();
   const fileInput = useRef<HTMLInputElement>(null);
-  const stageRef = useRef<HTMLDivElement>(null);
-  const distanceAxisRef = useRef<HTMLDivElement>(null);
-  const pointerDrag = useRef<
-    | {
-        kind: "camera";
-        startX: number;
-        startY: number;
-        cameraX: number;
-        cameraY: number;
-      }
-    | {
-        kind: "layer";
-        startX: number;
-        startY: number;
-        offsetX: number;
-        offsetY: number;
-        layerId: string;
-      }
-    | undefined
-  >(undefined);
-  const layerDraftRef = useRef<
-    | {
-        layerId: string;
-        offsetX: number;
-        offsetY: number;
-      }
-    | undefined
-  >(undefined);
   const draggedItem = useRef<VisualSelection | undefined>(undefined);
   const menuRef = useRef<HTMLDivElement>(null);
   const renameInputRef = useRef<HTMLInputElement>(null);
@@ -165,13 +73,7 @@ export function useVisualWorkspaceController({
   const [picker, setPicker] = useState<StoryImagePickerState>();
   const [pickerTarget, setPickerTarget] = useState<PickerTarget>();
   const [stageMode, setStageMode] = useState<"preview" | "layer">("preview");
-  const [camera, setCamera] = useState({ x: 0, y: 0, zoom: 1 });
   const [isolatedLayerId, setIsolatedLayerId] = useState<string>();
-  const [layerDraft, setLayerDraft] = useState<{
-    layerId: string;
-    offsetX: number;
-    offsetY: number;
-  }>();
   const [bottomTab, setBottomTab] = useState<"distance" | "offset">("distance");
   const [distanceDraft, setDistanceDraft] = useState<{
     layerId: string;
@@ -274,13 +176,6 @@ export function useVisualWorkspaceController({
   }, [cgs, scenes, section, selection]);
 
   useEffect(() => {
-    setCamera({ x: 0, y: 0, zoom: 1 });
-    setIsolatedLayerId(undefined);
-    setLayerDraft(undefined);
-    layerDraftRef.current = undefined;
-  }, [selection?.id, selection?.kind]);
-
-  useEffect(() => {
     if (selectedLayer && selectedLayer.id !== selectedLayerId)
       setSelectedLayerId(selectedLayer.id);
     if (!selectedLayer) setSelectedLayerId(undefined);
@@ -353,6 +248,32 @@ export function useVisualWorkspaceController({
         scene.id === sceneId ? updater(scene) : scene,
       ),
     });
+
+  const {
+    stageRef,
+    distanceAxisRef,
+    camera,
+    setCamera,
+    layerDraft,
+    resetStage,
+    startStageDrag,
+    moveStageDrag,
+    finishStageDrag,
+    zoomStage,
+    wheelStage,
+    setLayerDistance,
+    distanceFromPointer,
+  } = useVisualStageInteractions({
+    stageMode,
+    selectedScene,
+    selectedLayer,
+    updateScene,
+  });
+
+  useEffect(() => {
+    resetStage();
+    setIsolatedLayerId(undefined);
+  }, [resetStage, selection?.id, selection?.kind]);
 
   const updateCg = (
     cgId: string,
@@ -719,105 +640,6 @@ export function useVisualWorkspaceController({
     if (selection) removeVisual(selection);
   };
 
-  const startStageDrag = (event: ReactPointerEvent<HTMLDivElement>) => {
-    if (event.button !== 0) return;
-    event.currentTarget.setPointerCapture(event.pointerId);
-    if (stageMode === "layer" && selectedScene && selectedLayer) {
-      pointerDrag.current = {
-        kind: "layer",
-        startX: event.clientX,
-        startY: event.clientY,
-        offsetX: selectedLayer.offsetX,
-        offsetY: selectedLayer.offsetY,
-        layerId: selectedLayer.id,
-      };
-      return;
-    }
-    pointerDrag.current = {
-      kind: "camera",
-      startX: event.clientX,
-      startY: event.clientY,
-      cameraX: camera.x,
-      cameraY: camera.y,
-    };
-  };
-
-  const moveStageDrag = (event: ReactPointerEvent<HTMLDivElement>) => {
-    const drag = pointerDrag.current;
-    if (!drag) return;
-    const deltaX = event.clientX - drag.startX;
-    const deltaY = event.clientY - drag.startY;
-    if (drag.kind === "camera") {
-      setCamera((current) => ({
-        ...current,
-        x: Math.round(drag.cameraX - deltaX),
-        y: Math.round(drag.cameraY - deltaY),
-      }));
-      return;
-    }
-    const bounds = stageRef.current?.getBoundingClientRect();
-    if (!bounds) return;
-    const draft = {
-      layerId: drag.layerId,
-      offsetX: clamp(
-        drag.offsetX + (deltaX / bounds.width / camera.zoom) * 100,
-        -200,
-        200,
-      ),
-      offsetY: clamp(
-        drag.offsetY + (deltaY / bounds.height / camera.zoom) * 100,
-        -200,
-        200,
-      ),
-    };
-    layerDraftRef.current = draft;
-    setLayerDraft(draft);
-  };
-
-  const finishStageDrag = () => {
-    const drag = pointerDrag.current;
-    pointerDrag.current = undefined;
-    if (drag?.kind !== "layer" || !selectedScene) return;
-    const draft = layerDraftRef.current;
-    layerDraftRef.current = undefined;
-    setLayerDraft(undefined);
-    if (!draft) return;
-    updateScene(selectedScene.id, (scene) => ({
-      ...scene,
-      layers: (scene.layers ?? []).map((layer) =>
-        layer.id === draft.layerId
-          ? { ...layer, offsetX: draft.offsetX, offsetY: draft.offsetY }
-          : layer,
-      ),
-    }));
-  };
-
-  const zoomStage = (zoom: number) =>
-    setCamera((current) => ({ ...current, zoom: clamp(zoom, 0.25, 4) }));
-
-  const wheelStage = (event: ReactWheelEvent<HTMLDivElement>) => {
-    event.preventDefault();
-    zoomStage(camera.zoom * (event.deltaY > 0 ? 0.9 : 1.1));
-  };
-
-  const setLayerDistance = (layerId: string, distance: number) => {
-    if (!selectedScene) return;
-    updateScene(selectedScene.id, (scene) => ({
-      ...scene,
-      layers: (scene.layers ?? []).map((layer) =>
-        layer.id === layerId
-          ? { ...layer, distance: clamp(distance, 0.1, 100) }
-          : layer,
-      ),
-    }));
-  };
-
-  const distanceFromPointer = (clientX: number) => {
-    const bounds = distanceAxisRef.current?.getBoundingClientRect();
-    if (!bounds) return 1;
-    return distanceAtPercent(((clientX - bounds.left) / bounds.width) * 100);
-  };
-
   const activeImage = selectedScene
     ? assetsById.get(selectedLayer?.assetId ?? "")
     : assetsById.get(selectedVariant?.assetId ?? "");
@@ -845,145 +667,6 @@ export function useVisualWorkspaceController({
         ? bounds.bottom + 4
         : Math.max(8, bounds.top - estimatedHeight - 4);
     setItemMenu({ item, left, top, trigger });
-  };
-
-  const renderBrowserItem = (item: VisualSelection) => {
-    const scene =
-      item.kind === "scene"
-        ? scenes.find((candidate) => candidate.id === item.id)
-        : undefined;
-    const cg =
-      item.kind === "cg"
-        ? cgs.find((candidate) => candidate.id === item.id)
-        : undefined;
-    if (!scene && !cg) return null;
-    const sceneLayer = scene?.layers?.[0];
-    const cgVariant = cg?.variants?.find(
-      (variant) => variant.id === cg.defaultVariantId,
-    );
-    const asset = assetsById.get(
-      sceneLayer?.assetId ?? cgVariant?.assetId ?? "",
-    );
-    const selected = selection?.kind === item.kind && selection.id === item.id;
-    const isRenaming = renaming?.kind === item.kind && renaming.id === item.id;
-    const menuOpen =
-      itemMenu?.item.kind === item.kind && itemMenu.item.id === item.id;
-    const name = scene?.name ?? cg?.name ?? "";
-    return (
-      <div
-        key={`${item.kind}-${item.id}`}
-        className={`galgame-visual-browser-item${selected ? " active" : ""}`}
-        draggable={!isRenaming}
-        onDragStart={(event) => {
-          if (
-            (event.target as HTMLElement).closest(
-              ".galgame-visual-browser-menu-trigger",
-            )
-          ) {
-            event.preventDefault();
-            return;
-          }
-          draggedItem.current = item;
-          event.dataTransfer.setData("text/visual-id", item.id);
-        }}
-        onDragEnd={() => {
-          draggedItem.current = undefined;
-        }}
-        onDragOver={(event) => event.preventDefault()}
-        onDrop={(event) => {
-          event.preventDefault();
-          const dragged = draggedItem.current;
-          if (!dragged || dragged.kind !== item.kind) return;
-          if (item.kind === "scene")
-            moveScene(dragged.id, item.id, scene?.groupId ?? null);
-          else moveCg(dragged.id, item.id);
-          draggedItem.current = undefined;
-        }}
-      >
-        {isRenaming ? (
-          <div className="galgame-visual-browser-open is-renaming">
-            <span>
-              <StoryAssetImage
-                fileId={asset?.fileId}
-                alt=""
-                fallback={
-                  item.kind === "scene" ? (
-                    <MapPinned aria-hidden />
-                  ) : (
-                    <Images aria-hidden />
-                  )
-                }
-              />
-            </span>
-            <em>
-              <input
-                ref={renameInputRef}
-                aria-label={`重命名${item.kind === "scene" ? "场景" : "CG"}`}
-                value={renameDraft}
-                maxLength={120}
-                onChange={(event) => setRenameDraft(event.target.value)}
-                onBlur={commitRename}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter") {
-                    event.preventDefault();
-                    commitRename();
-                  }
-                  if (event.key === "Escape") {
-                    event.preventDefault();
-                    setRenaming(undefined);
-                  }
-                }}
-              />
-              <small>
-                {item.kind === "scene"
-                  ? `${scene?.layers?.length ?? 0} 层`
-                  : `${cg?.variants?.length ?? 0} 个差分`}
-              </small>
-            </em>
-          </div>
-        ) : (
-          <button
-            type="button"
-            className="galgame-visual-browser-open"
-            onClick={() => selectVisual(item)}
-          >
-            <span>
-              <StoryAssetImage
-                fileId={asset?.fileId}
-                alt=""
-                fallback={
-                  item.kind === "scene" ? (
-                    <MapPinned aria-hidden />
-                  ) : (
-                    <Images aria-hidden />
-                  )
-                }
-              />
-            </span>
-            <em>
-              <strong>{name}</strong>
-              <small>
-                {item.kind === "scene"
-                  ? `${scene?.layers?.length ?? 0} 层`
-                  : `${cg?.variants?.length ?? 0} 个差分`}
-              </small>
-            </em>
-          </button>
-        )}
-        <button
-          type="button"
-          className="galgame-visual-browser-menu-trigger"
-          aria-label={`更多操作 ${name}`}
-          aria-haspopup="menu"
-          aria-expanded={menuOpen}
-          aria-controls={menuOpen ? "galgame-visual-item-menu" : undefined}
-          draggable={false}
-          onClick={(event) => openItemMenu(event.currentTarget, item)}
-        >
-          <MoreHorizontal aria-hidden />
-        </button>
-      </div>
-    );
   };
 
   const menuScene =
@@ -1045,6 +728,11 @@ export function useVisualWorkspaceController({
     setDistanceDraft,
     itemMenu,
     setItemMenu,
+    renaming,
+    setRenaming,
+    renameInputRef,
+    renameDraft,
+    setRenameDraft,
     selectedScene,
     selectedCg,
     layers,
@@ -1069,7 +757,9 @@ export function useVisualWorkspaceController({
     createCg,
     duplicateVisual,
     moveScene,
+    moveCg,
     beginRename,
+    commitRename,
     reorderLayer,
     reorderVariant,
     removeVariant,
@@ -1088,7 +778,7 @@ export function useVisualWorkspaceController({
     title,
     detailCount,
     stageEmpty,
-    renderBrowserItem,
+    openItemMenu,
     menuScene,
     menuCg,
     menuReferences,

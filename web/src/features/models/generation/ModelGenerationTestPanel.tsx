@@ -3,9 +3,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   CheckCircle2,
   Download,
-  FileAudio2,
-  FileImage,
-  FileVideo2,
   Image,
   LoaderCircle,
   Paperclip,
@@ -14,7 +11,6 @@ import {
   Sparkles,
   Trash2,
   Video,
-  X,
 } from "lucide-react";
 import { CustomSelect, type SelectOption } from "@shared/ui/CustomSelect";
 import {
@@ -36,174 +32,27 @@ import {
   type ModelTestReferenceAsset,
   uploadModelTestReferenceAssets,
 } from "@features/models/api";
-import { formatFileSize } from "@shared/lib/fileSize";
 import { modelQueryKeys } from "@features/models/queryKeys";
 
-type GenerationKind = "image" | "video";
-type Resolution = "480p" | "720p" | "1080p";
-type Ratio = "16:9" | "9:16" | "4:3" | "3:4" | "1:1";
-type ReferenceKind = "image" | "audio" | "video";
-
-type LocalReference = {
-  id: string;
-  file: File;
-  kind: ReferenceKind;
-  previewUrl: string;
-};
-
-type TestModel = {
-  value: string;
-  label: string;
-  description: string;
-  providerKind: string;
-  capabilities?: string[];
-};
-
-const statusLabel: Record<ModelTestGenerationTask["status"], string> = {
-  queued: "等待提交",
-  submitting: "正在提交",
-  pending: "等待生成",
-  processing: "生成中",
-  completed: "已完成",
-  failed: "失败",
-};
-
-const pendingStatuses: ModelTestGenerationTask["status"][] = [
-  "queued",
-  "submitting",
-  "pending",
-  "processing",
-];
-
-const durationOptions: SelectOption[] = Array.from(
-  { length: 12 },
-  (_, index) => {
-    const value = String(index + 4);
-    return { value, label: `${value} 秒` };
-  },
-);
-
-const resolutions: Resolution[] = ["480p", "720p", "1080p"];
-const ratios: Ratio[] = ["16:9", "9:16", "4:3", "3:4", "1:1"];
-const referenceLimits: Record<ReferenceKind, number> = {
-  image: 9,
-  audio: 3,
-  video: 3,
-};
-const referenceMimeTypes = new Set([
-  "image/jpeg",
-  "image/png",
-  "image/webp",
-  "image/gif",
-  "audio/mpeg",
-  "audio/wav",
-  "audio/x-wav",
-  "video/mp4",
-  "video/quicktime",
-]);
-const maxReferenceBytes = 45 * 1024 * 1024;
-
-function referenceKind(file: File): ReferenceKind | null {
-  if (!referenceMimeTypes.has(file.type)) return null;
-  if (file.type.startsWith("image/")) return "image";
-  if (file.type.startsWith("audio/")) return "audio";
-  if (file.type.startsWith("video/")) return "video";
-  return null;
-}
-
-const formatBytes = (bytes: number) =>
-  formatFileSize(bytes, { minimumUnit: "KB", fractionalDigits: 0 });
-
-function modelGenerationKind(model: TestModel): GenerationKind | null {
-  if (model.providerKind === "senseaudio_image") return "image";
-  if (model.providerKind === "senseaudio_video") return "video";
-  return null;
-}
-
-function formatTime(value: string) {
-  return new Intl.DateTimeFormat("zh-CN", {
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(new Date(value));
-}
-
-function formatElapsed(task: ModelTestGenerationTask, now: number) {
-  const start = new Date(task.created_at).getTime();
-  const end = task.completed_at ? new Date(task.completed_at).getTime() : now;
-  const totalSeconds = Math.max(0, Math.floor((end - start) / 1000));
-  const hours = Math.floor(totalSeconds / 3600);
-  const minutes = Math.floor((totalSeconds % 3600) / 60);
-  const seconds = totalSeconds % 60;
-  const parts = [minutes, seconds].map((part) => String(part).padStart(2, "0"));
-  if (hours) parts.unshift(String(hours).padStart(2, "0"));
-  return parts.join(":");
-}
-
-function TaskThumbnail({ task }: { task: ModelTestGenerationTask }) {
-  const root = useRef<HTMLDivElement>(null);
-  const [visible, setVisible] = useState(
-    () => typeof IntersectionObserver === "undefined",
-  );
-  const [url, setUrl] = useState("");
-  const [failed, setFailed] = useState(false);
-
-  useEffect(() => {
-    if (visible || !root.current || typeof IntersectionObserver === "undefined")
-      return;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (!entries.some((entry) => entry.isIntersecting)) return;
-        setVisible(true);
-        observer.disconnect();
-      },
-      { rootMargin: "120px" },
-    );
-    observer.observe(root.current);
-    return () => observer.disconnect();
-  }, [visible]);
-
-  useEffect(() => {
-    let objectUrl = "";
-    let disposed = false;
-    setUrl("");
-    setFailed(false);
-    if (!visible || !task.result_available) return;
-    void getModelTestGenerationResult(task.id)
-      .then((blob) => {
-        if (disposed) return;
-        objectUrl = URL.createObjectURL(blob);
-        setUrl(objectUrl);
-      })
-      .catch(() => {
-        if (!disposed) setFailed(true);
-      });
-    return () => {
-      disposed = true;
-      if (objectUrl) URL.revokeObjectURL(objectUrl);
-    };
-  }, [task.id, task.result_available, visible]);
-
-  const fallback =
-    task.status === "completed" && task.result_available && !failed ? (
-      <LoaderCircle className="spinning" aria-hidden />
-    ) : task.kind === "image" ? (
-      <Image aria-hidden />
-    ) : (
-      <Video aria-hidden />
-    );
-
-  return (
-    <div className={`generation-task-thumbnail ${task.kind}`} ref={root}>
-      {url && task.kind === "image" ? <img src={url} alt="" /> : null}
-      {url && task.kind === "video" ? (
-        <video src={url} muted preload="metadata" aria-hidden />
-      ) : null}
-      {!url ? fallback : null}
-    </div>
-  );
-}
+import {
+  durationOptions,
+  formatElapsed,
+  formatTime,
+  maxReferenceBytes,
+  modelGenerationKind,
+  pendingStatuses,
+  ratios,
+  referenceKind,
+  referenceLimits,
+  resolutions,
+  statusLabel,
+  type LocalReference,
+  type Ratio,
+  type Resolution,
+  type TestModel,
+} from "@features/models/generation/modelGenerationOptions";
+import { TaskThumbnail } from "@features/models/generation/ModelGenerationTaskThumbnail";
+import { ModelGenerationReferenceList } from "@features/models/generation/ModelGenerationReferenceList";
 
 export function ModelGenerationTestPanel({
   models,
@@ -825,59 +674,10 @@ export function ModelGenerationTestPanel({
                       <small>可多选，本地素材合计不超过 45 MB</small>
                     </span>
                   </button>
-                  {referenceFiles.length ? (
-                    <div className="generation-reference-list">
-                      {referenceFiles.map((item) => (
-                        <div
-                          className="generation-reference-item"
-                          key={item.id}
-                        >
-                          <div
-                            className={`generation-reference-preview ${item.kind}`}
-                          >
-                            {item.kind === "image" ? (
-                              <img src={item.previewUrl} alt="" />
-                            ) : null}
-                            {item.kind === "video" ? (
-                              <video
-                                src={item.previewUrl}
-                                muted
-                                preload="metadata"
-                              />
-                            ) : null}
-                            {item.kind === "audio" ? (
-                              <FileAudio2 aria-hidden />
-                            ) : null}
-                          </div>
-                          <span>
-                            <strong>{item.file.name}</strong>
-                            <small>
-                              {item.kind === "image" ? (
-                                <FileImage aria-hidden />
-                              ) : item.kind === "video" ? (
-                                <FileVideo2 aria-hidden />
-                              ) : (
-                                <FileAudio2 aria-hidden />
-                              )}
-                              {item.kind === "image"
-                                ? "图片"
-                                : item.kind === "video"
-                                  ? "视频"
-                                  : "音频"}
-                              · {formatBytes(item.file.size)}
-                            </small>
-                          </span>
-                          <button
-                            type="button"
-                            aria-label={`移除参考素材 ${item.file.name}`}
-                            onClick={() => removeReferenceFile(item.id)}
-                          >
-                            <X aria-hidden />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  ) : null}
+                  <ModelGenerationReferenceList
+                    files={referenceFiles}
+                    onRemove={removeReferenceFile}
+                  />
                   <p>音频需搭配参考图片或视频；最多 9 图、3 音频、3 视频。</p>
                 </fieldset>
                 <label>

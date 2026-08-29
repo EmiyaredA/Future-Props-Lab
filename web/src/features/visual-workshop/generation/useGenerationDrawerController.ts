@@ -1,0 +1,421 @@
+import {
+  type FormEvent,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import type { ManagedFile } from "@features/files";
+import {
+  createGenerationTask,
+  getGenerationOptions,
+  type GenerationTaskInput,
+  type VisualCanvasImageGenerationDraft,
+  type VisualCanvasVideoGenerationDraft,
+} from "@features/visual-workshop/api";
+import { apiErrorMessage } from "@platform/api/errors";
+import {
+  imageSizeChoices,
+  type GenerationKind,
+  type VideoMode,
+} from "@features/visual-workshop/generation/options";
+import { visualWorkshopQueryKeys as visualKeys } from "@features/visual-workshop/queryKeys";
+import type { GenerationDrawerProps } from "@features/visual-workshop/generation/generationDrawerTypes";
+
+function errorMessage(error: unknown) {
+  return apiErrorMessage(error, "创建任务失败，请稍后重试。");
+}
+
+export function useGenerationDrawerController({
+  projectId,
+  lockedKind,
+  draft,
+  onDraftChange,
+  onBeforeSubmit,
+  onTaskCreated,
+  compact = false,
+  canvasNodeId,
+  onClose,
+}: GenerationDrawerProps) {
+  const client = useQueryClient();
+  const imageDraft =
+    lockedKind === "image"
+      ? (draft as VisualCanvasImageGenerationDraft | null | undefined)
+      : undefined;
+  const videoDraft =
+    lockedKind === "video"
+      ? (draft as VisualCanvasVideoGenerationDraft | null | undefined)
+      : undefined;
+  const [kind, setKind] = useState<GenerationKind>(lockedKind ?? "image");
+  const [modelId, setModelId] = useState(
+    imageDraft?.model_id ?? videoDraft?.model_id ?? "",
+  );
+  const [prompt, setPrompt] = useState(
+    imageDraft?.prompt ?? videoDraft?.prompt ?? "",
+  );
+  const [size, setSize] = useState(imageDraft?.size ?? "1024x1024");
+  const [seed, setSeed] = useState(
+    imageDraft?.seed == null ? "" : String(imageDraft.seed),
+  );
+  const [imageCount, setImageCount] = useState(imageDraft?.image_count ?? 1);
+  const [imageReference, setImageReference] = useState<string[]>(
+    imageDraft?.reference_asset_id ? [imageDraft.reference_asset_id] : [],
+  );
+  const [videoMode, setVideoMode] = useState<VideoMode>(
+    videoDraft?.mode ?? "text",
+  );
+  const [duration, setDuration] = useState(videoDraft?.duration ?? 5);
+  const [resolution, setResolution] = useState<"480p" | "720p" | "1080p">(
+    videoDraft?.resolution ?? "720p",
+  );
+  const [ratio, setRatio] = useState<"16:9" | "9:16" | "4:3" | "3:4" | "1:1">(
+    videoDraft?.ratio ?? "16:9",
+  );
+  const [watermark, setWatermark] = useState(videoDraft?.watermark ?? true);
+  const [generateAudio, setGenerateAudio] = useState(
+    videoDraft?.generate_audio ?? false,
+  );
+  const [firstFrame, setFirstFrame] = useState<string[]>(
+    videoDraft?.first_frame_asset_id ? [videoDraft.first_frame_asset_id] : [],
+  );
+  const [lastFrame, setLastFrame] = useState<string[]>(
+    videoDraft?.last_frame_asset_id ? [videoDraft.last_frame_asset_id] : [],
+  );
+  const [references, setReferences] = useState<string[]>(
+    videoDraft?.reference_asset_ids ?? [],
+  );
+  const [audioReferences, setAudioReferences] = useState<string[]>(
+    videoDraft?.audio_asset_ids ?? [],
+  );
+  const [videoReferences, setVideoReferences] = useState<string[]>(
+    videoDraft?.video_asset_ids ?? [],
+  );
+  const [composerExpanded, setComposerExpanded] = useState(false);
+  const [notice, setNotice] = useState("");
+  const [promptFiles, setPromptFiles] = useState<Record<string, ManagedFile>>(
+    {},
+  );
+  const modelMenuRef = useRef<HTMLDetailsElement>(null);
+  const rememberPromptFiles = useCallback((files: ManagedFile[]) => {
+    setPromptFiles((current) => {
+      let changed = false;
+      const next = { ...current };
+      files.forEach((file) => {
+        if (next[file.id] !== file) {
+          next[file.id] = file;
+          changed = true;
+        }
+      });
+      return changed ? next : current;
+    });
+  }, []);
+  const selectedPromptAssetIds = useMemo(() => {
+    if (kind === "image") return imageReference;
+    if (videoMode === "image") return firstFrame;
+    if (videoMode === "frames") return [...firstFrame, ...lastFrame];
+    if (videoMode === "reference")
+      return [...references, ...videoReferences, ...audioReferences];
+    return [];
+  }, [
+    audioReferences,
+    firstFrame,
+    imageReference,
+    kind,
+    lastFrame,
+    references,
+    videoMode,
+    videoReferences,
+  ]);
+  const promptAssets = useMemo(() => {
+    const byId = new Map(
+      Object.values(promptFiles).map((file) => [file.id, file]),
+    );
+    selectedPromptAssetIds.forEach((id) => {
+      const file = promptFiles[id];
+      if (file) byId.set(id, file);
+    });
+    return [...byId.values()];
+  }, [promptFiles, selectedPromptAssetIds]);
+  const options = useQuery({
+    queryKey: visualKeys.generationOptions,
+    queryFn: getGenerationOptions,
+  });
+  const models = (options.data?.models ?? []).filter(
+    (model) => model.kind === kind,
+  );
+  const selectedModel = models.find((model) => model.id === modelId);
+  const availableImageSizes = useMemo(
+    () => imageSizeChoices(selectedModel?.sizes ?? []),
+    [selectedModel?.sizes],
+  );
+  const selectedImageSize =
+    availableImageSizes.find((option) => option.value === size) ??
+    availableImageSizes[0];
+  const persistDraft = useCallback(
+    (changes: Record<string, unknown> = {}, immediate = false) => {
+      if (!lockedKind || !onDraftChange) return;
+      const parsedSeed = Number(seed);
+      if (lockedKind === "image") {
+        onDraftChange(
+          {
+            model_id: modelId || null,
+            prompt,
+            size,
+            seed:
+              seed !== "" && Number.isSafeInteger(parsedSeed) && parsedSeed >= 0
+                ? parsedSeed
+                : null,
+            image_count: imageCount,
+            reference_asset_id: imageReference[0] ?? null,
+            ...changes,
+          } as VisualCanvasImageGenerationDraft,
+          immediate,
+        );
+        return;
+      }
+      onDraftChange(
+        {
+          model_id: modelId || null,
+          prompt,
+          mode: videoMode,
+          duration,
+          resolution,
+          ratio,
+          watermark,
+          generate_audio: generateAudio,
+          first_frame_asset_id: firstFrame[0] ?? null,
+          last_frame_asset_id: lastFrame[0] ?? null,
+          reference_asset_ids: references,
+          audio_asset_ids: audioReferences,
+          video_asset_ids: videoReferences,
+          ...changes,
+        } as VisualCanvasVideoGenerationDraft,
+        immediate,
+      );
+    },
+    [
+      audioReferences,
+      duration,
+      firstFrame,
+      generateAudio,
+      imageCount,
+      imageReference,
+      lastFrame,
+      lockedKind,
+      modelId,
+      onDraftChange,
+      prompt,
+      ratio,
+      references,
+      resolution,
+      seed,
+      size,
+      videoMode,
+      videoReferences,
+      watermark,
+    ],
+  );
+  const invalidSelection = useCallback(() => {
+    setNotice("部分已选择素材已失效，已从当前草稿移除。");
+  }, []);
+
+  useEffect(() => {
+    const preferred = models.find((model) =>
+      kind === "image"
+        ? model.slug === "senseaudio-image-2.0-260319"
+        : model.slug === "doubao-seedance-2-0-260128",
+    );
+    if (!models.some((model) => model.id === modelId)) {
+      const next = preferred?.id ?? models[0]?.id ?? "";
+      if (next === modelId) return;
+      setModelId(next);
+      persistDraft({ model_id: next || null }, true);
+    }
+  }, [kind, modelId, models, persistDraft]);
+  useEffect(() => {
+    if (
+      kind === "image" &&
+      selectedModel?.sizes?.length &&
+      !selectedModel.sizes.includes(size)
+    ) {
+      const next = selectedModel.sizes.includes("1024x1024")
+        ? "1024x1024"
+        : selectedModel.sizes[0];
+      setSize(next);
+      persistDraft({ size: next }, true);
+    }
+  }, [kind, persistDraft, selectedModel, size]);
+
+  const createMutation = useMutation({
+    mutationFn: async ({
+      body,
+      count = 1,
+      followupBody,
+    }: {
+      body: GenerationTaskInput;
+      count?: number;
+      followupBody?: GenerationTaskInput;
+    }) => {
+      const tasks = [];
+      for (let index = 0; index < count; index += 1) {
+        tasks.push(
+          await createGenerationTask(
+            projectId,
+            index === 0 ? body : (followupBody ?? body),
+          ),
+        );
+      }
+      return tasks;
+    },
+    onSuccess: async (tasks) => {
+      const task = tasks[0];
+      if (!task) return;
+      try {
+        await onTaskCreated?.(task);
+      } catch (error) {
+        setNotice(`任务已提交，但节点关联保存失败：${errorMessage(error)}`);
+        return;
+      }
+      setNotice(
+        tasks.length === 1
+          ? `任务已提交（${task.id.slice(0, 8)}），可在“生成任务”页查看进度。`
+          : `已提交 ${tasks.length} 个生成任务，第一个结果将自动绑定当前节点。`,
+      );
+      void client.invalidateQueries({ queryKey: visualKeys.generationTasks });
+    },
+    onError: (error) => setNotice(errorMessage(error)),
+  });
+  const submit = async (event: FormEvent) => {
+    event.preventDefault();
+    setNotice("");
+    if (!modelId) {
+      setNotice("请先在模型服务中启用对应的 SenseAudio 供应商和模型。");
+      return;
+    }
+    if ((kind === "image" || videoMode === "text") && !prompt.trim()) {
+      setNotice("请输入生成提示词。");
+      return;
+    }
+    if (
+      kind === "video" &&
+      videoMode === "reference" &&
+      audioReferences.length > 0 &&
+      references.length === 0 &&
+      videoReferences.length === 0
+    ) {
+      setNotice("参考音频需要搭配至少一张图片或一个视频。");
+      return;
+    }
+    try {
+      persistDraft({}, true);
+      const canvasRevision = await onBeforeSubmit?.();
+      const canvasLink =
+        canvasNodeId && typeof canvasRevision === "number"
+          ? {
+              canvas_node_id: canvasNodeId,
+              expected_canvas_revision: canvasRevision,
+            }
+          : {};
+      if (kind === "image") {
+        const body = {
+          kind: "image",
+          model_id: modelId,
+          prompt,
+          size,
+          seed: seed === "" ? null : Number(seed),
+          reference_asset_id: imageReference[0] ?? null,
+        } satisfies GenerationTaskInput;
+        createMutation.mutate({
+          body: { ...body, ...canvasLink },
+          followupBody: body,
+          count: imageCount,
+        });
+        return;
+      }
+      const body = {
+        kind: "video",
+        model_id: modelId,
+        prompt,
+        mode: videoMode === "image" ? "frames" : videoMode,
+        duration,
+        resolution,
+        ratio,
+        watermark,
+        generate_audio: generateAudio,
+        first_frame_asset_id:
+          videoMode === "frames" || videoMode === "image"
+            ? (firstFrame[0] ?? null)
+            : null,
+        last_frame_asset_id:
+          videoMode === "frames" ? (lastFrame[0] ?? null) : null,
+        reference_asset_ids: videoMode === "reference" ? references : [],
+        audio_asset_ids: videoMode === "reference" ? audioReferences : [],
+        video_asset_ids: videoMode === "reference" ? videoReferences : [],
+      } satisfies GenerationTaskInput;
+      createMutation.mutate({ body: { ...body, ...canvasLink } });
+    } catch (error) {
+      setNotice(errorMessage(error));
+      return;
+    }
+  };
+
+  return {
+    projectId,
+    onClose,
+    lockedKind,
+    compact,
+    kind,
+    setKind,
+    modelId,
+    setModelId,
+    prompt,
+    setPrompt,
+    size,
+    setSize,
+    seed,
+    setSeed,
+    imageCount,
+    setImageCount,
+    imageReference,
+    setImageReference,
+    videoMode,
+    setVideoMode,
+    duration,
+    setDuration,
+    resolution,
+    setResolution,
+    ratio,
+    setRatio,
+    watermark,
+    setWatermark,
+    generateAudio,
+    setGenerateAudio,
+    firstFrame,
+    setFirstFrame,
+    lastFrame,
+    setLastFrame,
+    references,
+    setReferences,
+    audioReferences,
+    setAudioReferences,
+    videoReferences,
+    setVideoReferences,
+    composerExpanded,
+    setComposerExpanded,
+    notice,
+    promptAssets,
+    modelMenuRef,
+    rememberPromptFiles,
+    options,
+    models,
+    selectedModel,
+    availableImageSizes,
+    selectedImageSize,
+    persistDraft,
+    invalidSelection,
+    createMutation,
+    submit,
+  };
+}

@@ -136,6 +136,11 @@ Future-Props-Lab/
   素材/播放器四个语义包；源码在各语义所有者下继续按 foundation/components/interactions 拆分，
   不使用编号分片。构建预算只读产物，单 CSS 不超过 150 KiB、单懒加载 JS 不超过 500 KiB，
   Galgame CSS 总量以重构前 369,600 bytes 为基线至少降低 10% 并禁止回升。
+- Galgame 编辑器内部以 `story-authoring/`、`timeline/`、`characters/`、`visuals/`、`audio/`、
+  `preview/`、`presentation/`、`assets/` 为语义边界，各目录的 `index.ts` 是内部稳定入口；根目录
+  同名旧文件只承担兼容转发或页面编排。Block 设置与 Inspector 均按文字、舞台、媒体、流程和系统
+  家族维护，时间轴、角色与视觉工作区把交互 Hook、业务 mutation、派生 ViewModel 和视图分开，
+  不允许把拆出的内部状态重新摊平成跨模块共享的巨型返回值。
 - `web/src/docs/` 是独立文档入口的数据与展示边界，按页面和章节驱动视觉创作工坊、Galgame
   工坊指南，负责本地全文搜索、`docs.html?page=...#section` 深链接、响应式导航和主题；配套截图只
   存放于 `web/public/docs/`，不作为产品状态或测试数据源。

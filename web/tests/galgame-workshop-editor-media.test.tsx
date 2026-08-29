@@ -1040,7 +1040,7 @@ test("uses aligned table workspaces for BGM, sound effects, and voice", async ()
     1,
   );
   expect(await screen.findByText("rainy-cafe.mp3")).toBeInTheDocument();
-  expect(screen.getByText("1:36")).toBeInTheDocument();
+  expect(await screen.findByText("1:36")).toBeInTheDocument();
   expect(screen.getByText("2.0 MB")).toBeInTheDocument();
   expect(screen.getByText("未选择BGM")).toBeInTheDocument();
 

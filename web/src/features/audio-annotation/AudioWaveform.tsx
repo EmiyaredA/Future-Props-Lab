@@ -112,6 +112,7 @@ export const AudioWaveform = forwardRef<
   const regions = useRef<RegionsPlugin | null>(null);
   const syncing = useRef(false);
   const focusSelectionModeRef = useRef(focusSelectionMode);
+  const peaksRef = useRef(peaks);
   const zoomRatio = useRef(1);
   const viewport = useRef<AudioWaveformViewport>({
     startMs: 0,
@@ -134,6 +135,7 @@ export const AudioWaveform = forwardRef<
   });
   const [ready, setReady] = useState(false);
   segmentsRef.current = segments;
+  peaksRef.current = peaks;
   renderedSegmentsRef.current = stabilizeWaveformRegionSegments(
     renderedSegmentsRef.current,
     segments,
@@ -242,6 +244,7 @@ export const AudioWaveform = forwardRef<
 
   useEffect(() => {
     if (!container.current) return;
+    const initialPeaks = peaksRef.current;
     let active = true;
     setReady(false);
     decodedAudio.current = null;
@@ -284,7 +287,7 @@ export const AudioWaveform = forwardRef<
           { color: "rgba(237, 122, 82, 0.18)", minLength: 0.1 },
           4,
         );
-        if (!peaks.length) {
+        if (!initialPeaks.length) {
           callbacks.current.onReadyPeaks(
             instance.exportPeaks({
               channels: 2,
@@ -356,10 +359,10 @@ export const AudioWaveform = forwardRef<
         const [, explicitlyDecoded] = await Promise.all([
           instance.loadBlob(
             blob,
-            peaks.length ? peaks : undefined,
+            initialPeaks.length ? initialPeaks : undefined,
             durationMs / 1000,
           ),
-          peaks.length ? decodeAudioBlob(blob) : Promise.resolve(null),
+          initialPeaks.length ? decodeAudioBlob(blob) : Promise.resolve(null),
         ]);
         if (!active) return;
         const decoded = explicitlyDecoded ?? instance.getDecodedData();
@@ -382,7 +385,7 @@ export const AudioWaveform = forwardRef<
       waveSurfer.current = null;
       regions.current = null;
     };
-  }, [assetId, durationMs, peaks]);
+  }, [assetId, durationMs]);
 
   useEffect(() => {
     if (!ready || !regions.current) return;
