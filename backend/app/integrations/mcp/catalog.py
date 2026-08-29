@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.concurrency.revisions import RevisionConflictError
 from app.core.config import get_settings
 from app.core.credentials import decrypt_secret, encrypt_secret
+from app.core.secret_hints import encrypted_secret_hint
 from app.core.time import iso_utc, utc_now
 from app.integrations.checks import list_recent_checks, record_check
 from app.integrations.common import (
@@ -30,16 +31,6 @@ from app.schemas.integrations import (
     McpUpdateIn,
     McpValidationOut,
 )
-
-
-def _hint(ciphertext: str) -> str:
-    if not ciphertext:
-        return ""
-    try:
-        value = decrypt_secret(ciphertext)
-    except Exception:
-        return ""
-    return value[-4:] if len(value) >= 4 else "••••"
 
 
 def _tool_out(row: McpDiscoveredTool) -> McpToolOut:
@@ -83,7 +74,7 @@ class McpCatalog:
             command=row.command,
             arguments=list(row.arguments or []),
             has_bearer_token=bool(row.bearer_ciphertext),
-            bearer_hint=_hint(row.bearer_ciphertext),
+            bearer_hint=encrypted_secret_hint(row.bearer_ciphertext),
             environment_keys=list(row.environment_keys or []),
             tags=list(row.tags or []),
             enabled=row.enabled,

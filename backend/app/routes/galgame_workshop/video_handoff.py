@@ -1,8 +1,9 @@
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, status
 
 from app.deps import SessionDep
 from app.files import AssetError
 from app.galgame_workshop.video_handoff import GalgameVideoEditorHandoffs
+from app.routes.galgame_workshop._shared import _asset_error
 from app.schemas.galgame_workshop import (
     GalgameVideoEditorHandoffCreateIn,
     GalgameVideoEditorHandoffTaskListOut,
@@ -10,10 +11,6 @@ from app.schemas.galgame_workshop import (
 )
 
 router = APIRouter()
-
-
-def _error(exc: AssetError) -> HTTPException:
-    return HTTPException(exc.status, {"code": exc.code, "message": str(exc), **exc.detail})
 
 
 @router.post(
@@ -27,7 +24,7 @@ async def create_handoff(
     try:
         return await GalgameVideoEditorHandoffs(session).create(project_id, body)
     except AssetError as exc:
-        raise _error(exc) from None
+        raise _asset_error(exc) from None
 
 
 @router.get(
@@ -40,7 +37,7 @@ async def list_handoffs(
     try:
         return await GalgameVideoEditorHandoffs(session).list(project_id)
     except AssetError as exc:
-        raise _error(exc) from None
+        raise _asset_error(exc) from None
 
 
 @router.get(
@@ -53,7 +50,7 @@ async def get_handoff(
     try:
         return await GalgameVideoEditorHandoffs(session).get(project_id, task_id)
     except AssetError as exc:
-        raise _error(exc) from None
+        raise _asset_error(exc) from None
 
 
 @router.post(
@@ -66,4 +63,4 @@ async def cancel_handoff(
     try:
         return await GalgameVideoEditorHandoffs(session).cancel(project_id, task_id)
     except AssetError as exc:
-        raise _error(exc) from None
+        raise _asset_error(exc) from None

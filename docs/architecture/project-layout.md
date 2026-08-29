@@ -64,7 +64,8 @@ Future-Props-Lab/
   Owner 成员关系、审计事件与新 Workspace 模型目录在同一事务内提交或回滚。`accounts/service.py`
   不依赖模型目录实现。
 - `agents/harness/` 提供业务无关的 Agent Definition、消息/工具调用/Usage/适配器契约、上下文预算、
-  Reactive 工具循环、Policy、Verifier、事件订阅、取消和内存审批；不拥有项目数据，也不提供通用
+  Reactive 工具循环、Policy、Verifier、事件订阅、取消和内存审批；`phases.py` 原子化上下文编译、
+  模型回合、工具提案、执行与审批阶段并保持事件顺序；不拥有项目数据，也不提供通用
   `/v1/agents` 管理接口。`llm/providers/` 是供应商协议差异的唯一实现边界，并反向实现 Harness
   定义的适配器契约。模型测试、诊断、REST/SSE 与 Web 消费端
   只依赖统一结果或事件，不根据供应商原始载荷控制运行行为；供应商管理界面展示配置属于例外。
@@ -114,7 +115,8 @@ Future-Props-Lab/
   同一编译结果；中文对白使用随应用分发的固定 Noto CJK 字体，正式成片只经过后端像素合成与
   FFmpeg，不启动网页、Chromium 或实时播放器。
   广播剧导入由 `annotation_import.py` 负责预检和任务
-  用例，`annotation_import_runner.py` 负责 FFmpeg 裁切、验收、保存与补偿。HTTP 路由不直接依赖
+  用例，`annotation_import_runner.py` 将预检、FFmpeg 裁切、内容验收、文件落位、Story 结算与
+  自动补偿保持为独立阶段。HTTP 路由不直接依赖
   Runner，应用生命周期只装配 Runner 模块。
 - Galgame 素材写入和 CAS 用例保留在 `assets.py`；文件命名、媒体元数据映射等纯规则位于
   `asset_support.py`，引用分析、资源总览和打包清单位于 `asset_analysis.py`，避免 CRUD、Story
@@ -177,14 +179,17 @@ schema migration 不执行文件 I/O。
 
 目录配置、模型测试会话、测试工具与生成任务、视觉工坊项目、含节点级生成草稿的节点画布、项目对话、文件夹、文件和项目引用
 使用 revision/CAS 防止静默覆盖；Galgame 工坊工程元数据与整份故事文档分别使用 revision/CAS，
-故事冲突保留服务器完整快照，完成态工程在故事修改后恢复草稿。旧 Story 1.0–1.3 的格式转换只由
+故事冲突保留服务器完整快照，完成态工程在故事修改后恢复草稿。Story 1.4 的角色、素材、国际化、
+时间轴、流程与表现层交叉校验由 `schemas/galgame_workshop/story_validation.py` 的纯函数拥有；
+旧 Story 1.0–1.3 的格式转换只由
 `schemas/galgame_workshop/story_legacy.py` 适配器拥有；`galgame_workshop/story_migrations.py`
 通过正式 `/v1` API 执行状态预检、受 Workspace 约束的批量 CAS 固化和单工程旧文件导入，不以
 schema migration 或直接数据库修改替代运行期迁移。工具单项状态通过幂等更新和原子 upsert 写入。图片/视频生成任务持久化
 供应商/模型快照和规范化参数，FastAPI 生命周期中的单机执行器负责恢复、轮询与安全下载；视觉工坊
-和模型测试复用 `concurrency/polling_runner.py` 的生命周期与并发控制，并复用
-`llm/generation_runtime/` 的供应商任务协议与安全下载能力，但分别保存任务状态与
-结果。`AsyncSession` 只能由单个异步任务
+和模型测试复用 `concurrency/polling_runner.py` 的生命周期与并发控制，并由
+`llm/generation_runtime/GenerationTaskDriver` 统一编排 queued、submitting、pending、processing
+与终态转换、重启恢复及安全失败；两者分别提供任务存取、调用日志、素材组装和结果落盘钩子。
+`submitting` 中断不会自动重提，以避免重复计费。`AsyncSession` 只能由单个异步任务
 使用；每个生成分支使用独立短会话，供应商网络调用和文件下载不占用已开始写入的事务。
 项目对话同样在发送准备与流式结算阶段使用独立短事务，并复用统一供应商适配边界。视觉工坊
 Agent 是通用 Harness 的首个消费者：读取画布、素材和生成任务无需确认，画布写入和外部生成必须

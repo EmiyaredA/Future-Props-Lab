@@ -4,6 +4,7 @@ import asyncio
 import math
 import struct
 import subprocess
+from dataclasses import dataclass, field
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
@@ -34,9 +35,26 @@ from app.models import (
 from app.schemas.audio_annotation import AudioAnnotationSegment
 from app.schemas.galgame_workshop import (
     GalgameAnnotationImportIn,
+    GalgameAnnotationImportPreviewOut,
     GalgameStoryDialogueBlock,
     GalgameStoryDocumentPutIn,
 )
+
+
+@dataclass(slots=True)
+class AnnotationImportRun:
+    task_id: str
+    body: GalgameAnnotationImportIn
+    project_id: str
+    workspace_id: str
+    source_path: Path | None = None
+    segments: list[AudioAnnotationSegment] = field(default_factory=list)
+    preview: GalgameAnnotationImportPreviewOut | None = None
+    snapshot_id: str | None = None
+    saved_revision: int | None = None
+    master_packaging_policy_before: str | None = None
+    generated: dict[str, str] = field(default_factory=dict)
+    audit_items: list[dict] = field(default_factory=list)
 
 
 def _run_checked(args: list[str], *, capture: bool = False) -> bytes:
@@ -210,356 +228,385 @@ class GalgameAnnotationImportRunner(PollingTaskRunner):
             await session.commit()
 
     async def _process(self, task_id: str) -> None:
-        saved_revision: int | None = None
-        snapshot_id: str | None = None
-        master_packaging_policy_before: str | None = None
-        generated: dict[str, str] = {}
-        audit_items: list[dict] = []
+        run: AnnotationImportRun | None = None
         try:
-            async with self.session_factory() as session:
-                task = await self._load(session, task_id)
-                if task is None or task.status != "queued":
-                    return
-                task.status = "running"
-                task.started_at = task.started_at or utc_now()
-                task.error = None
-                task.result_detail = {"phase": "cutting"}
-                task.revision += 1
-                task.updated_at = utc_now()
-                body = GalgameAnnotationImportIn.model_validate(task.request_payload)
-                project_id = task.project_id
-                workspace_id = task.workspace_id
-                await session.commit()
-
-            async with self.session_factory() as session:
-                bind_workspace(session, workspace_id)
-                imports = GalgameAnnotationImports(session, workspace_id, self.settings)
-                preview = await imports.preview(project_id, body)
-                if not preview.ready:
-                    conflicts = {"source_revision_conflict", "story_revision_conflict"}
-                    status = (
-                        "conflict"
-                        if any(item.code in conflicts for item in preview.issues)
-                        else "failed"
-                    )
-                    await self._update(
-                        task_id,
-                        status=status,
-                        result={"phase": status},
-                        error="；".join(item.message for item in preview.issues)[:4000],
-                        finished=True,
-                    )
-                    return
-                source = await session.get(AudioAnnotationProject, body.source_project_id)
-                source_document = await session.get(AudioAnnotationDocument, body.source_project_id)
-                source_asset = await session.get(VisualAsset, source.asset_id) if source else None
-                if source is None or source_document is None or source_asset is None:
-                    raise RuntimeError("广播剧源数据已不存在")
-                source_path = self.storage.path_for(source_asset)
-                segments = [
-                    AudioAnnotationSegment.model_validate(item) for item in source_document.segments
-                ]
-                story = await GalgameStoryDocuments(session).get(project_id)
-                snapshot = GalgameStorySnapshot(
-                    project_id=project_id,
-                    story_revision=story.revision,
-                    reason="audio-annotation-import",
-                    document=story.document.model_dump(mode="json", by_alias=True),
-                )
-                session.add(snapshot)
-                await session.commit()
-                await session.refresh(snapshot)
-                snapshot_id = snapshot.id
-
-            with TemporaryDirectory(prefix=f"galgame-annotation-{task_id}-") as temp_dir:
-                temporary_root = Path(temp_dir)
-                for index, segment in enumerate(segments):
-                    filename = f"{body.asset_prefix}-{index + 1:04d}.m4a"
-                    virtual_path = f"voice/{filename}"
-                    output_path = temporary_root / filename
-                    expected_ms = segment.end_ms - segment.start_ms
-                    await asyncio.to_thread(
-                        _run_checked,
-                        [
-                            "ffmpeg",
-                            "-hide_banner",
-                            "-loglevel",
-                            "error",
-                            "-y",
-                            "-i",
-                            str(source_path),
-                            "-vn",
-                            "-af",
-                            (
-                                f"atrim=start={segment.start_ms / 1000:.3f}:"
-                                f"end={segment.end_ms / 1000:.3f},asetpts=PTS-STARTPTS"
-                            ),
-                            "-c:a",
-                            "aac",
-                            "-b:a",
-                            "128k",
-                            "-movflags",
-                            "+faststart",
-                            str(output_path),
-                        ],
-                    )
-                    actual_ms = await asyncio.to_thread(_probe_duration_ms, output_path)
-                    difference_ms = abs(actual_ms - expected_ms)
-                    if difference_ms > body.requirements.max_duration_difference_ms:
-                        raise RuntimeError(f"{filename} 时长误差 {difference_ms}ms")
-                    source_envelope, clip_envelope = await asyncio.gather(
-                        asyncio.to_thread(
-                            _audio_envelope, source_path, segment.start_ms, segment.end_ms
-                        ),
-                        asyncio.to_thread(_audio_envelope, output_path),
-                    )
-                    correlation = _envelope_correlation(source_envelope, clip_envelope)
-                    if correlation < body.requirements.min_content_correlation:
-                        raise RuntimeError(f"{filename} 内容相关度过低：{correlation:.4f}")
-                    checksum = await asyncio.to_thread(sha256_file, output_path)
-
-                    async with self.session_factory() as session:
-                        bind_workspace(session, workspace_id)
-                        existing = (
-                            await session.execute(
-                                select(VisualAsset, GalgameAssetMetadata)
-                                .join(
-                                    GalgameAssetMetadata,
-                                    GalgameAssetMetadata.asset_id == VisualAsset.id,
-                                )
-                                .where(
-                                    GalgameAssetMetadata.project_id == project_id,
-                                    GalgameAssetMetadata.virtual_path == virtual_path,
-                                )
-                            )
-                        ).first()
-                        if existing is not None:
-                            asset, metadata = existing
-                            if metadata.checksum_sha256 != checksum:
-                                raise RuntimeError(f"{virtual_path} 已存在但内容不同")
-                        else:
-                            library = AssetLibrary(session, self.settings)
-                            asset, staged_path = await library.stage_local_copy(
-                                output_path,
-                                workspace_id=workspace_id,
-                                filename=filename,
-                                content_type="audio/mp4",
-                                galgame_project_id=project_id,
-                                allowed_extensions={".m4a"},
-                            )
-                            try:
-                                metadata = GalgameAssetMetadata(
-                                    asset_id=asset.id,
-                                    project_id=project_id,
-                                    category="voice",
-                                    virtual_path=virtual_path,
-                                    checksum_sha256=checksum,
-                                    duration_ms=actual_ms,
-                                    transcript_status="pending",
-                                )
-                                session.add(metadata)
-                                await session.commit()
-                            except Exception:
-                                await session.rollback()
-                                staged_path.unlink(missing_ok=True)
-                                raise
-                        generated[segment.id] = asset.id
-                    audit_items.append(
-                        {
-                            "index": index + 1,
-                            "segmentId": segment.id,
-                            "startMs": segment.start_ms,
-                            "endMs": segment.end_ms,
-                            "expectedDurationMs": expected_ms,
-                            "encodedDurationMs": actual_ms,
-                            "durationDifferenceMs": difference_ms,
-                            "contentCorrelation": correlation,
-                            "checksumSha256": checksum,
-                            "assetId": generated[segment.id],
-                            "filename": filename,
-                        }
-                    )
-                    if index % 5 == 4 or index + 1 == len(segments):
-                        await self._update(
-                            task_id,
-                            progress=min(94, 2 + round((index + 1) / len(segments) * 90)),
-                            result={
-                                "phase": "validating",
-                                "snapshotId": snapshot_id,
-                                "generatedAssets": index + 1,
-                                "totalAssets": len(segments),
-                            },
-                        )
-
+            run = await self._claim(task_id)
+            if run is None or not await self._preflight(run):
+                return
+            await self._cut_and_stage(run)
+            result = await self._save_and_accept(run)
             await self._update(
-                task_id,
-                progress=95,
-                result={
-                    "phase": "saving",
-                    "snapshotId": snapshot_id,
-                    "generatedAssets": len(segments),
-                    "totalAssets": len(segments),
-                },
-            )
-            payload = body.document.model_dump(mode="json", by_alias=True)
-            for asset in payload["assets"]:
-                if asset.get("role") == "voiceLine":
-                    asset["fileId"] = generated[asset["fileId"]]
-
-            async with self.session_factory() as session:
-                bind_workspace(session, workspace_id)
-                master_metadata = await session.get(GalgameAssetMetadata, body.master_asset_id)
-                if master_metadata is None or master_metadata.project_id != project_id:
-                    raise RuntimeError("完整主音轨素材元数据已不存在")
-                master_packaging_policy_before = master_metadata.packaging_policy
-                if master_metadata.packaging_policy == "exclude":
-                    master_metadata.packaging_policy = "include"
-                    master_metadata.updated_at = utc_now()
-                saved = await GalgameStoryDocuments(session).put(
-                    project_id,
-                    GalgameStoryDocumentPutIn.model_validate(
-                        {
-                            "expected_revision": body.expected_story_revision,
-                            "document": payload,
-                        }
-                    ),
-                )
-                saved_revision = saved.revision
-                await self._update(
-                    task_id,
-                    progress=98,
-                    result={
-                        "phase": "accepting",
-                        "snapshotId": snapshot_id,
-                        "storyRevision": saved_revision,
-                    },
-                )
-                report = await GalgameReadiness(session, self.settings, workspace_id).report(
-                    project_id
-                )
-                if not report.ready or report.errors or report.warnings:
-                    messages = [issue.message for issue in report.errors + report.warnings]
-                    raise RuntimeError("线路报告未通过：" + "；".join(messages))
-                reread = await GalgameStoryDocuments(session).get(project_id)
-                fragments = [
-                    fragment
-                    for chapter in reread.document.chapters
-                    for fragment in chapter.fragments
-                ]
-                dialogues = [
-                    block
-                    for fragment in fragments
-                    for block in fragment.blocks
-                    if isinstance(block, GalgameStoryDialogueBlock)
-                ]
-                if len(fragments) != 1 or len(dialogues) != body.requirements.segment_count:
-                    raise RuntimeError("保存后 Story 数量验收失败")
-                result = {
-                    "phase": "completed",
-                    "snapshotId": snapshot_id,
-                    "storyRevision": reread.revision,
-                    "sourceAssetId": preview.source_asset_id,
-                    "masterAssetId": preview.master_asset_id,
-                    "sourceChecksumSha256": preview.source_checksum_sha256,
-                    "timelineDurationMs": preview.timeline_duration_ms,
-                    "dialogueCount": len(dialogues),
-                    "voiceAssetCount": len(generated),
-                    "speakerCount": preview.speaker_count,
-                    "multiSpeakerCount": preview.multi_speaker_count,
-                    "curtainIntervalCount": preview.curtain_interval_count,
-                    "stageTransitionCount": preview.stage_transition_count,
-                    "maximumDurationDifferenceMs": max(
-                        item["durationDifferenceMs"] for item in audit_items
-                    ),
-                    "minimumContentCorrelation": min(
-                        item["contentCorrelation"] for item in audit_items
-                    ),
-                    "ready": report.ready,
-                    "errors": report.errors,
-                    "warnings": report.warnings,
-                    "segments": audit_items,
-                }
-            await self._update(
-                task_id,
-                status="completed",
-                progress=100,
-                result=result,
-                finished=True,
+                task_id, status="completed", progress=100, result=result, finished=True
             )
         except RevisionConflictError as exc:
             await self._update(
                 task_id,
                 status="conflict",
-                result={"phase": "conflict", "snapshotId": snapshot_id},
+                result={"phase": "conflict", "snapshotId": run.snapshot_id if run else None},
                 error=str(exc),
                 finished=True,
             )
         except asyncio.CancelledError:
             raise
         except Exception as exc:
-            rollback_error: str | None = None
-            if saved_revision is not None and snapshot_id is not None:
-                try:
-                    await self._update(
-                        task_id,
-                        progress=99,
-                        result={
-                            "phase": "rolling_back",
-                            "snapshotId": snapshot_id,
-                            "storyRevision": saved_revision,
-                        },
-                    )
-                    async with self.session_factory() as session:
-                        task = await self._load(session, task_id)
-                        snapshot = await session.get(GalgameStorySnapshot, snapshot_id)
-                        if task is not None and snapshot is not None:
-                            if master_packaging_policy_before is not None:
-                                master_metadata = await session.get(
-                                    GalgameAssetMetadata,
-                                    task.request_payload["masterAssetId"],
-                                )
-                                if master_metadata is not None:
-                                    master_metadata.packaging_policy = (
-                                        master_packaging_policy_before
-                                    )
-                                    master_metadata.updated_at = utc_now()
-                            await GalgameStoryDocuments(session).put(
-                                task.project_id,
-                                GalgameStoryDocumentPutIn.model_validate(
-                                    {
-                                        "expected_revision": saved_revision,
-                                        "document": snapshot.document,
-                                    }
-                                ),
-                            )
-                    await self._update(
-                        task_id,
-                        status="rolled_back",
-                        progress=100,
-                        result={
-                            "phase": "rolled_back",
-                            "snapshotId": snapshot_id,
-                            "rolledBackFromRevision": saved_revision,
-                            "voiceAssetCount": len(generated),
-                            "segments": audit_items,
-                        },
-                        error=str(exc)[:4000],
-                        finished=True,
-                    )
-                    return
-                except Exception as rollback_exc:
-                    rollback_error = str(rollback_exc)
+            rollback_error = await self._compensate(run, exc) if run else None
+            if rollback_error == "":
+                return
             await self._update(
                 task_id,
                 status="failed",
                 result={
                     "phase": "failed",
-                    "snapshotId": snapshot_id,
-                    "voiceAssetCount": len(generated),
-                    "segments": audit_items,
+                    "snapshotId": run.snapshot_id if run else None,
+                    "voiceAssetCount": len(run.generated) if run else 0,
+                    "segments": run.audit_items if run else [],
                 },
                 error=(f"{exc}；自动回滚失败：{rollback_error}" if rollback_error else str(exc))[
                     :4000
                 ],
                 finished=True,
             )
+
+    async def _claim(self, task_id: str) -> AnnotationImportRun | None:
+        async with self.session_factory() as session:
+            task = await self._load(session, task_id)
+            if task is None or task.status != "queued":
+                return None
+            task.status = "running"
+            task.started_at = task.started_at or utc_now()
+            task.error = None
+            task.result_detail = {"phase": "cutting"}
+            task.revision += 1
+            task.updated_at = utc_now()
+            run = AnnotationImportRun(
+                task_id=task_id,
+                body=GalgameAnnotationImportIn.model_validate(task.request_payload),
+                project_id=task.project_id,
+                workspace_id=task.workspace_id,
+            )
+            await session.commit()
+            return run
+
+    async def _preflight(self, run: AnnotationImportRun) -> bool:
+        async with self.session_factory() as session:
+            bind_workspace(session, run.workspace_id)
+            imports = GalgameAnnotationImports(session, run.workspace_id, self.settings)
+            run.preview = await imports.preview(run.project_id, run.body)
+            if not run.preview.ready:
+                conflicts = {"source_revision_conflict", "story_revision_conflict"}
+                status = (
+                    "conflict"
+                    if any(item.code in conflicts for item in run.preview.issues)
+                    else "failed"
+                )
+                await self._update(
+                    run.task_id,
+                    status=status,
+                    result={"phase": status},
+                    error="；".join(item.message for item in run.preview.issues)[:4000],
+                    finished=True,
+                )
+                return False
+            source = await session.get(AudioAnnotationProject, run.body.source_project_id)
+            source_document = await session.get(AudioAnnotationDocument, run.body.source_project_id)
+            source_asset = await session.get(VisualAsset, source.asset_id) if source else None
+            if source is None or source_document is None or source_asset is None:
+                raise RuntimeError("广播剧源数据已不存在")
+            run.source_path = self.storage.path_for(source_asset)
+            run.segments = [
+                AudioAnnotationSegment.model_validate(item) for item in source_document.segments
+            ]
+            story = await GalgameStoryDocuments(session).get(run.project_id)
+            snapshot = GalgameStorySnapshot(
+                project_id=run.project_id,
+                story_revision=story.revision,
+                reason="audio-annotation-import",
+                document=story.document.model_dump(mode="json", by_alias=True),
+            )
+            session.add(snapshot)
+            await session.commit()
+            await session.refresh(snapshot)
+            run.snapshot_id = snapshot.id
+            return True
+
+    async def _cut_and_stage(self, run: AnnotationImportRun) -> None:
+        if run.source_path is None:
+            raise RuntimeError("广播剧源文件不存在")
+        with TemporaryDirectory(prefix=f"galgame-annotation-{run.task_id}-") as temp_dir:
+            for index, segment in enumerate(run.segments):
+                filename = f"{run.body.asset_prefix}-{index + 1:04d}.m4a"
+                output_path = Path(temp_dir) / filename
+                metrics = await self._cut_and_validate_clip(
+                    run.source_path, output_path, segment, filename, run.body
+                )
+                asset_id = await self._stage_clip(
+                    run,
+                    output_path=output_path,
+                    filename=filename,
+                    checksum=metrics[3],
+                    duration_ms=metrics[0],
+                )
+                run.generated[segment.id] = asset_id
+                run.audit_items.append(
+                    {
+                        "index": index + 1,
+                        "segmentId": segment.id,
+                        "startMs": segment.start_ms,
+                        "endMs": segment.end_ms,
+                        "expectedDurationMs": segment.end_ms - segment.start_ms,
+                        "encodedDurationMs": metrics[0],
+                        "durationDifferenceMs": metrics[1],
+                        "contentCorrelation": metrics[2],
+                        "checksumSha256": metrics[3],
+                        "assetId": asset_id,
+                        "filename": filename,
+                    }
+                )
+                if index % 5 == 4 or index + 1 == len(run.segments):
+                    await self._update(
+                        run.task_id,
+                        progress=min(94, 2 + round((index + 1) / len(run.segments) * 90)),
+                        result={
+                            "phase": "validating",
+                            "snapshotId": run.snapshot_id,
+                            "generatedAssets": index + 1,
+                            "totalAssets": len(run.segments),
+                        },
+                    )
+
+    async def _cut_and_validate_clip(
+        self,
+        source_path: Path,
+        output_path: Path,
+        segment: AudioAnnotationSegment,
+        filename: str,
+        body: GalgameAnnotationImportIn,
+    ) -> tuple[int, int, float, str]:
+        await asyncio.to_thread(
+            _run_checked,
+            [
+                "ffmpeg",
+                "-hide_banner",
+                "-loglevel",
+                "error",
+                "-y",
+                "-i",
+                str(source_path),
+                "-vn",
+                "-af",
+                (
+                    f"atrim=start={segment.start_ms / 1000:.3f}:"
+                    f"end={segment.end_ms / 1000:.3f},asetpts=PTS-STARTPTS"
+                ),
+                "-c:a",
+                "aac",
+                "-b:a",
+                "128k",
+                "-movflags",
+                "+faststart",
+                str(output_path),
+            ],
+        )
+        actual_ms = await asyncio.to_thread(_probe_duration_ms, output_path)
+        difference_ms = abs(actual_ms - (segment.end_ms - segment.start_ms))
+        if difference_ms > body.requirements.max_duration_difference_ms:
+            raise RuntimeError(f"{filename} 时长误差 {difference_ms}ms")
+        source_envelope, clip_envelope = await asyncio.gather(
+            asyncio.to_thread(_audio_envelope, source_path, segment.start_ms, segment.end_ms),
+            asyncio.to_thread(_audio_envelope, output_path),
+        )
+        correlation = _envelope_correlation(source_envelope, clip_envelope)
+        if correlation < body.requirements.min_content_correlation:
+            raise RuntimeError(f"{filename} 内容相关度过低：{correlation:.4f}")
+        checksum = await asyncio.to_thread(sha256_file, output_path)
+        return actual_ms, difference_ms, correlation, checksum
+
+    async def _stage_clip(
+        self,
+        run: AnnotationImportRun,
+        *,
+        output_path: Path,
+        filename: str,
+        checksum: str,
+        duration_ms: int,
+    ) -> str:
+        virtual_path = f"voice/{filename}"
+        async with self.session_factory() as session:
+            bind_workspace(session, run.workspace_id)
+            existing = (
+                await session.execute(
+                    select(VisualAsset, GalgameAssetMetadata)
+                    .join(GalgameAssetMetadata, GalgameAssetMetadata.asset_id == VisualAsset.id)
+                    .where(
+                        GalgameAssetMetadata.project_id == run.project_id,
+                        GalgameAssetMetadata.virtual_path == virtual_path,
+                    )
+                )
+            ).first()
+            if existing is not None:
+                asset, metadata = existing
+                if metadata.checksum_sha256 != checksum:
+                    raise RuntimeError(f"{virtual_path} 已存在但内容不同")
+                return asset.id
+            asset, staged_path = await AssetLibrary(session, self.settings).stage_local_copy(
+                output_path,
+                workspace_id=run.workspace_id,
+                filename=filename,
+                content_type="audio/mp4",
+                galgame_project_id=run.project_id,
+                allowed_extensions={".m4a"},
+            )
+            try:
+                session.add(
+                    GalgameAssetMetadata(
+                        asset_id=asset.id,
+                        project_id=run.project_id,
+                        category="voice",
+                        virtual_path=virtual_path,
+                        checksum_sha256=checksum,
+                        duration_ms=duration_ms,
+                        transcript_status="pending",
+                    )
+                )
+                await session.commit()
+            except Exception:
+                await session.rollback()
+                staged_path.unlink(missing_ok=True)
+                raise
+            return asset.id
+
+    async def _save_and_accept(self, run: AnnotationImportRun) -> dict:
+        await self._update(
+            run.task_id,
+            progress=95,
+            result={
+                "phase": "saving",
+                "snapshotId": run.snapshot_id,
+                "generatedAssets": len(run.segments),
+                "totalAssets": len(run.segments),
+            },
+        )
+        payload = run.body.document.model_dump(mode="json", by_alias=True)
+        for asset in payload["assets"]:
+            if asset.get("role") == "voiceLine":
+                asset["fileId"] = run.generated[asset["fileId"]]
+        async with self.session_factory() as session:
+            bind_workspace(session, run.workspace_id)
+            master = await session.get(GalgameAssetMetadata, run.body.master_asset_id)
+            if master is None or master.project_id != run.project_id:
+                raise RuntimeError("完整主音轨素材元数据已不存在")
+            run.master_packaging_policy_before = master.packaging_policy
+            if master.packaging_policy == "exclude":
+                master.packaging_policy = "include"
+                master.updated_at = utc_now()
+            saved = await GalgameStoryDocuments(session).put(
+                run.project_id,
+                GalgameStoryDocumentPutIn.model_validate(
+                    {"expected_revision": run.body.expected_story_revision, "document": payload}
+                ),
+            )
+            run.saved_revision = saved.revision
+            await self._update(
+                run.task_id,
+                progress=98,
+                result={
+                    "phase": "accepting",
+                    "snapshotId": run.snapshot_id,
+                    "storyRevision": run.saved_revision,
+                },
+            )
+            report = await GalgameReadiness(session, self.settings, run.workspace_id).report(
+                run.project_id
+            )
+            if not report.ready or report.errors or report.warnings:
+                messages = [issue.message for issue in report.errors + report.warnings]
+                raise RuntimeError("线路报告未通过：" + "；".join(messages))
+            reread = await GalgameStoryDocuments(session).get(run.project_id)
+            fragments = [item for chapter in reread.document.chapters for item in chapter.fragments]
+            dialogues = [
+                block
+                for fragment in fragments
+                for block in fragment.blocks
+                if isinstance(block, GalgameStoryDialogueBlock)
+            ]
+            if len(fragments) != 1 or len(dialogues) != run.body.requirements.segment_count:
+                raise RuntimeError("保存后 Story 数量验收失败")
+            preview = run.preview
+            if preview is None:
+                raise RuntimeError("导入预检结果不存在")
+            return {
+                "phase": "completed",
+                "snapshotId": run.snapshot_id,
+                "storyRevision": reread.revision,
+                "sourceAssetId": preview.source_asset_id,
+                "masterAssetId": preview.master_asset_id,
+                "sourceChecksumSha256": preview.source_checksum_sha256,
+                "timelineDurationMs": preview.timeline_duration_ms,
+                "dialogueCount": len(dialogues),
+                "voiceAssetCount": len(run.generated),
+                "speakerCount": preview.speaker_count,
+                "multiSpeakerCount": preview.multi_speaker_count,
+                "curtainIntervalCount": preview.curtain_interval_count,
+                "stageTransitionCount": preview.stage_transition_count,
+                "maximumDurationDifferenceMs": max(
+                    item["durationDifferenceMs"] for item in run.audit_items
+                ),
+                "minimumContentCorrelation": min(
+                    item["contentCorrelation"] for item in run.audit_items
+                ),
+                "ready": report.ready,
+                "errors": report.errors,
+                "warnings": report.warnings,
+                "segments": run.audit_items,
+            }
+
+    async def _compensate(self, run: AnnotationImportRun, exc: Exception) -> str | None:
+        if run.saved_revision is None or run.snapshot_id is None:
+            return None
+        try:
+            await self._update(
+                run.task_id,
+                progress=99,
+                result={
+                    "phase": "rolling_back",
+                    "snapshotId": run.snapshot_id,
+                    "storyRevision": run.saved_revision,
+                },
+            )
+            async with self.session_factory() as session:
+                task = await self._load(session, run.task_id)
+                snapshot = await session.get(GalgameStorySnapshot, run.snapshot_id)
+                if task is not None and snapshot is not None:
+                    if run.master_packaging_policy_before is not None:
+                        master = await session.get(
+                            GalgameAssetMetadata, task.request_payload["masterAssetId"]
+                        )
+                        if master is not None:
+                            master.packaging_policy = run.master_packaging_policy_before
+                            master.updated_at = utc_now()
+                    await GalgameStoryDocuments(session).put(
+                        task.project_id,
+                        GalgameStoryDocumentPutIn.model_validate(
+                            {
+                                "expected_revision": run.saved_revision,
+                                "document": snapshot.document,
+                            }
+                        ),
+                    )
+            await self._update(
+                run.task_id,
+                status="rolled_back",
+                progress=100,
+                result={
+                    "phase": "rolled_back",
+                    "snapshotId": run.snapshot_id,
+                    "rolledBackFromRevision": run.saved_revision,
+                    "voiceAssetCount": len(run.generated),
+                    "segments": run.audit_items,
+                },
+                error=str(exc)[:4000],
+                finished=True,
+            )
+            return ""
+        except Exception as rollback_exc:
+            return str(rollback_exc)

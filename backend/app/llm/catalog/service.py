@@ -5,7 +5,9 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.concurrency.revisions import RevisionConflictError
-from app.core.credentials import decrypt_secret, encrypt_secret
+from app.core.credentials import encrypt_secret
+from app.core.secret_hints import encrypted_secret_hint
+from app.llm.catalog.metadata import categories_for_provider
 from app.models import (
     GalgameAssetTranscriptionTask,
     ModelCatalogState,
@@ -38,16 +40,6 @@ class CatalogResourceBusyError(Exception):
 
 
 ACTIVE_GENERATION_STATUSES = ("queued", "submitting", "pending", "processing")
-
-
-def _key_hint(ciphertext: str) -> str:
-    if not ciphertext:
-        return ""
-    try:
-        value = decrypt_secret(ciphertext)
-    except Exception:
-        return ""
-    return value[-4:] if len(value) >= 4 else "••••"
 
 
 MODEL_CATEGORIES = (
@@ -151,7 +143,7 @@ class ModelCatalogService:
             base_url=row.base_url,
             enabled=row.enabled,
             has_api_key=bool(row.api_key_ciphertext),
-            api_key_hint=_key_hint(row.api_key_ciphertext),
+            api_key_hint=encrypted_secret_hint(row.api_key_ciphertext),
             models=[_model_out(item) for item in models],
         )
 
@@ -271,7 +263,7 @@ class ModelCatalogService:
             description=body.description.strip(),
             capabilities=list(dict.fromkeys(body.capabilities)),
             categories=list(dict.fromkeys(body.categories))
-            or _categories_for_provider_kind(provider.kind),
+            or categories_for_provider(provider.kind),
             enabled=body.enabled,
             sort_order=count,
         )
@@ -293,7 +285,7 @@ class ModelCatalogService:
         row.label = body.label.strip()
         row.description = body.description.strip()
         row.capabilities = list(dict.fromkeys(body.capabilities))
-        row.categories = list(dict.fromkeys(body.categories)) or _categories_for_provider_kind(
+        row.categories = list(dict.fromkeys(body.categories)) or categories_for_provider(
             provider.kind
         )
         row.enabled = body.enabled
@@ -353,15 +345,3 @@ class ModelCatalogService:
             )
         )
         return bool(count or test_count or asr_count)
-
-
-def _categories_for_provider_kind(kind: str) -> list[str]:
-    if kind == "senseaudio_image":
-        return ["image_generation"]
-    if kind == "senseaudio_video":
-        return ["video_generation"]
-    if kind == "senseaudio_asr":
-        return ["speech_recognition"]
-    if kind == "senseaudio_realtime":
-        return ["end_to_end_speech"]
-    return ["text_generation"]

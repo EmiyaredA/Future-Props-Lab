@@ -1,11 +1,12 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, status
 
 from app.core.config import get_settings
 from app.deps import SessionDep, WorkspaceDep
 from app.files import AssetError
 from app.galgame_workshop.annotation_import import GalgameAnnotationImports
+from app.routes.galgame_workshop._shared import _asset_error
 from app.schemas.galgame_workshop import (
     GalgameAnnotationImportIn,
     GalgameAnnotationImportPreviewOut,
@@ -17,13 +18,6 @@ router = APIRouter()
 
 def _imports(session: SessionDep, workspace_id: str) -> GalgameAnnotationImports:
     return GalgameAnnotationImports(session, workspace_id, get_settings())
-
-
-def _error(exc: AssetError) -> HTTPException:
-    return HTTPException(
-        exc.status,
-        {"code": exc.code, "message": str(exc), **exc.detail},
-    )
 
 
 @router.post(
@@ -39,7 +33,7 @@ async def preview_annotation_import(
     try:
         return await _imports(session, workspace_id).preview(project_id, body)
     except AssetError as exc:
-        raise _error(exc) from None
+        raise _asset_error(exc) from None
 
 
 @router.post(
@@ -56,7 +50,7 @@ async def create_annotation_import(
     try:
         return await _imports(session, workspace_id).create(project_id, body)
     except AssetError as exc:
-        raise _error(exc) from None
+        raise _asset_error(exc) from None
 
 
 @router.get(
@@ -72,4 +66,4 @@ async def get_annotation_import(
     try:
         return await _imports(session, workspace_id).get(project_id, import_id)
     except AssetError as exc:
-        raise _error(exc) from None
+        raise _asset_error(exc) from None

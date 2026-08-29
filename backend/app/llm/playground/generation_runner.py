@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import asyncio
 import os
 from pathlib import Path
 from uuid import uuid4
@@ -11,13 +10,14 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.concurrency.polling_runner import PollingTaskRunner
 from app.core.config import Settings, get_settings
-from app.core.credentials import decrypt_secret
 from app.core.db import SessionLocal
-from app.core.tenant_context import bind_workspace, require_workspace_id
 from app.core.time import utc_now
 from app.files.storage import AssetStorage
 from app.llm.generation_runtime import (
     GenerationMaterializationError,
+    GenerationTaskContext,
+    GenerationTaskDriver,
+    GenerationTaskStore,
     assert_public_https,
     download_generated_media,
     generated_type,
@@ -31,7 +31,6 @@ from app.llm.playground.generation import ACTIVE_GENERATION_STATUSES
 from app.llm.providers.temporary_media import TemporaryMediaError
 from app.models import (
     LlmCallLog,
-    ModelProvider,
     ModelTestGenerationAsset,
     ModelTestGenerationTask,
     VisualAsset,
@@ -62,196 +61,90 @@ class ModelTestGenerationRunner(PollingTaskRunner):
         self.storage = AssetStorage(self.settings)
         self.download_transport = download_transport
         self.temporary_media_transport = temporary_media_transport
+        self.task_store = GenerationTaskStore(
+            session_factory=self.session_factory,
+            task_type=ModelTestGenerationTask,
+            active_statuses=ACTIVE_GENERATION_STATUSES,
+            task_subject="model generation task",
+            terminal_hook=self._add_log,
+        )
+        self.task_driver = GenerationTaskDriver(
+            store=self.task_store,
+            submit=self._submit_context,
+            poll=self._poll_context,
+            materialize=self._materialize,
+            map_error=_safe_error,
+            provider_failure_message="SenseAudio 生成任务失败",
+            missing_result_message="SenseAudio 已完成任务但未返回结果地址",
+        )
 
     async def _load_task(
         self, session: AsyncSession, task_id: str
     ) -> ModelTestGenerationTask | None:
-        task = await session.get(ModelTestGenerationTask, task_id)
-        if task is not None:
-            bind_workspace(
-                session,
-                require_workspace_id(task.workspace_id, subject="model generation task"),
-            )
-        return task
+        return await self.task_store.load(session, task_id)
 
     async def recover(self) -> None:
-        async with self.session_factory() as session:
-            rows = list(
-                (
-                    await session.execute(
-                        select(ModelTestGenerationTask).where(
-                            ModelTestGenerationTask.status == "submitting"
-                        )
-                    )
-                )
-                .scalars()
-                .all()
-            )
-            for row in rows:
-                row.status = "failed"
-                row.error_message = "应用在提交供应商任务期间中断；为避免重复计费，请重新生成"
-                row.revision += 1
-                row.updated_at = utc_now()
-                self._add_log(session, row)
-            await session.commit()
+        await self.task_driver.recover()
 
     async def process_once(self) -> None:
-        async with self.session_factory() as session:
-            task_ids = list(
-                (
-                    await session.execute(
-                        select(ModelTestGenerationTask.id)
-                        .where(ModelTestGenerationTask.status.in_(ACTIVE_GENERATION_STATUSES))
-                        .order_by(ModelTestGenerationTask.updated_at)
-                        .limit(40)
-                    )
-                )
-                .scalars()
-                .all()
-            )
-
+        task_ids = await self.task_store.active_task_ids()
         await self.run_concurrently(task_ids, self._process_task)
 
     async def _process_task(self, task_id: str) -> None:
-        try:
-            async with self.session_factory() as session:
-                task = await self._load_task(session, task_id)
-                if task is None or task.status not in ACTIVE_GENERATION_STATUSES:
-                    return
-                if task.status == "submitting":
-                    return
-                if task.status == "processing" and task.result_url:
-                    result_url = task.result_url
-                    await session.rollback()
-                    await self._materialize(task_id, result_url)
-                    return
-                provider = (
-                    await session.get(ModelProvider, task.provider_id) if task.provider_id else None
-                )
-                if provider is None or not provider.enabled or not provider.api_key_ciphertext:
-                    await session.rollback()
-                    await self._fail(task_id, "供应商已停用、删除或缺少 API Key")
-                    return
-                base_url = provider.base_url
-                api_key = decrypt_secret(provider.api_key_ciphertext)
-                status = task.status
-                provider_task_id = task.provider_task_id or ""
-                payload = dict(task.request_payload or {})
-                model_slug = task.model_slug
-                provider_kind = task.provider_kind
-                if status == "queued":
-                    task.status = "submitting"
-                    task.revision += 1
-                    task.updated_at = utc_now()
-                    await session.commit()
-                else:
-                    await session.rollback()
+        await self.task_driver.process(task_id)
 
-            if status == "queued":
-                if provider_kind == "senseaudio_image":
-                    provider_task_id = await submit_generation_task(
-                        provider_kind=provider_kind,
-                        base_url=base_url,
-                        api_key=api_key,
-                        model_slug=model_slug,
-                        payload=payload,
-                    )
-                else:
-                    content: list[dict[str, object]] = [
-                        {"type": "text", "text": str(payload["prompt"])}
-                    ]
-                    for asset_id in payload.get("reference_asset_ids", []):
-                        content.append(
-                            {
-                                "type": "image",
-                                "url": await self._asset_data_uri(task_id, str(asset_id), "image"),
-                                "role": "reference",
-                            }
-                        )
-                    for asset_id in payload.get("audio_asset_ids", []):
-                        content.append(
-                            {
-                                "type": "audio",
-                                "audio_url": await self._temporary_asset_url(
-                                    task_id, str(asset_id), "audio"
-                                ),
-                            }
-                        )
-                    for asset_id in payload.get("video_asset_ids", []):
-                        content.append(
-                            {
-                                "type": "video",
-                                "video_url": await self._temporary_asset_url(
-                                    task_id, str(asset_id), "video"
-                                ),
-                            }
-                        )
-                    provider_task_id = await submit_generation_task(
-                        provider_kind=provider_kind,
-                        base_url=base_url,
-                        api_key=api_key,
-                        model_slug=model_slug,
-                        payload=payload,
-                        video_content=content,
-                    )
-                async with self.session_factory() as session:
-                    current = await self._load_task(session, task_id)
-                    if current is None:
-                        return
-                    current.provider_task_id = provider_task_id
-                    current.status = "pending"
-                    current.progress = 0
-                    current.error_message = None
-                    current.revision += 1
-                    current.updated_at = utc_now()
-                    await session.commit()
-                return
-
-            provider_status = await poll_generation_task(
-                provider_kind=provider_kind,
-                base_url=base_url,
-                api_key=api_key,
-                provider_task_id=provider_task_id,
+    async def _submit_context(self, task: GenerationTaskContext) -> str:
+        if task.provider_kind == "senseaudio_image":
+            return await submit_generation_task(
+                provider_kind=task.provider_kind,
+                base_url=task.base_url,
+                api_key=task.api_key,
+                model_slug=task.model_slug,
+                payload=task.payload,
             )
-            if provider_status.status == "failed":
-                await self._fail(
-                    task_id,
-                    safe_generation_error(ValueError(provider_status.error_message))
-                    if provider_status.error_message
-                    else "SenseAudio 生成任务失败",
-                )
-                return
-            if provider_status.status == "completed":
-                if not provider_status.result_url:
-                    await self._fail(task_id, "SenseAudio 已完成任务但未返回结果地址")
-                    return
-                async with self.session_factory() as session:
-                    current = await self._load_task(session, task_id)
-                    if current is None:
-                        return
-                    current.status = "processing"
-                    current.progress = 100
-                    current.result_url = provider_status.result_url
-                    current.revision += 1
-                    current.updated_at = utc_now()
-                    await session.commit()
-                await self._materialize(task_id, provider_status.result_url)
-                return
-            async with self.session_factory() as session:
-                current = await self._load_task(session, task_id)
-                if current is None:
-                    return
-                current.status = (
-                    "processing" if provider_status.status == "processing" else "pending"
-                )
-                current.progress = provider_status.progress
-                current.revision += 1
-                current.updated_at = utc_now()
-                await session.commit()
-        except asyncio.CancelledError:
-            raise
-        except Exception as exc:
-            await self._fail(task_id, _safe_error(exc))
+        content: list[dict[str, object]] = [{"type": "text", "text": str(task.payload["prompt"])}]
+        for asset_id in task.payload.get("reference_asset_ids", []):
+            content.append(
+                {
+                    "type": "image",
+                    "url": await self._asset_data_uri(task.task_id, str(asset_id), "image"),
+                    "role": "reference",
+                }
+            )
+        for asset_id in task.payload.get("audio_asset_ids", []):
+            content.append(
+                {
+                    "type": "audio",
+                    "audio_url": await self._temporary_asset_url(
+                        task.task_id, str(asset_id), "audio"
+                    ),
+                }
+            )
+        for asset_id in task.payload.get("video_asset_ids", []):
+            content.append(
+                {
+                    "type": "video",
+                    "video_url": await self._temporary_asset_url(
+                        task.task_id, str(asset_id), "video"
+                    ),
+                }
+            )
+        return await submit_generation_task(
+            provider_kind=task.provider_kind,
+            base_url=task.base_url,
+            api_key=task.api_key,
+            model_slug=task.model_slug,
+            payload=task.payload,
+            video_content=content,
+        )
+
+    async def _poll_context(self, task: GenerationTaskContext):
+        return await poll_generation_task(
+            provider_kind=task.provider_kind,
+            base_url=task.base_url,
+            api_key=task.api_key,
+            provider_task_id=task.provider_task_id,
+        )
 
     async def _asset_data_uri(self, task_id: str, asset_id: str, expected_kind: str) -> str:
         path, mime_type = await self._asset_path(task_id, asset_id, expected_kind)
@@ -298,18 +191,7 @@ class ModelTestGenerationRunner(PollingTaskRunner):
         )
 
     async def _fail(self, task_id: str, message: str, *, result_url: str = "") -> None:
-        async with self.session_factory() as session:
-            row = await self._load_task(session, task_id)
-            if row is None or row.status in {"completed", "failed"}:
-                return
-            row.status = "failed"
-            row.error_message = message[:4000]
-            if result_url:
-                row.result_url = result_url
-            row.revision += 1
-            row.updated_at = utc_now()
-            self._add_log(session, row)
-            await session.commit()
+        await self.task_store.fail(task_id, message, result_url=result_url)
 
     def _add_log(self, session: AsyncSession, row: ModelTestGenerationTask) -> None:
         if row.log_id:

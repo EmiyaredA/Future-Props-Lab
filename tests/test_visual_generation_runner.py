@@ -10,6 +10,7 @@ import pytest
 from sqlalchemy import delete
 
 from app.core.config import get_settings
+from app.core.credentials import encrypt_secret
 from app.core.db import SessionLocal
 from app.files.storage import AssetStorage
 from app.llm.providers.temporary_media import TemporaryMediaError
@@ -65,7 +66,7 @@ async def _fixture_rows() -> tuple[VisualWorkshopProject, ModelProvider, ModelEn
         name="SenseAudio Runner Test",
         kind="senseaudio_image",
         base_url="https://api.senseaudio.cn/v1",
-        api_key_ciphertext="",
+        api_key_ciphertext=encrypt_secret("runner-test-secret"),
         enabled=True,
         sort_order=99,
     )
@@ -322,6 +323,45 @@ async def test_runner_recovery_and_concurrency_limit() -> None:
         runner._process_task = fake_process  # type: ignore[method-assign]
         await runner.process_once()
         assert maximum == 4
+    finally:
+        await _cleanup(provider.id, project.id)
+
+
+@pytest.mark.asyncio
+async def test_concurrent_claim_submits_a_queued_task_only_once(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    project, provider, model = await _fixture_rows()
+    task = _task(
+        project_id=project.id,
+        provider_id=provider.id,
+        model_id=model.id,
+        status="queued",
+    )
+    submissions = 0
+    try:
+        async with SessionLocal() as session:
+            session.add(task)
+            await session.commit()
+
+        async def fake_submit(**_kwargs) -> str:
+            nonlocal submissions
+            submissions += 1
+            await asyncio.sleep(0.01)
+            return "provider-task-once"
+
+        monkeypatch.setattr(
+            "app.visual_workshop.generation_runner.submit_generation_task", fake_submit
+        )
+        runner = VisualGenerationRunner()
+        await asyncio.gather(runner._process_task(task.id), runner._process_task(task.id))
+
+        async with SessionLocal() as session:
+            current = await session.get(VisualGenerationTask, task.id)
+            assert current is not None
+            assert current.status == "pending", current.error_message
+            assert current.provider_task_id == "provider-task-once"
+        assert submissions == 1
     finally:
         await _cleanup(provider.id, project.id)
 

@@ -242,6 +242,42 @@ def test_background_runner_lifecycle_is_not_owned_by_llm() -> None:
     assert not violations, "通用 Runner 生命周期必须归属 concurrency：\n" + "\n".join(violations)
 
 
+def test_generation_features_use_the_shared_task_driver() -> None:
+    runners = (
+        BACKEND_APP / "llm" / "playground" / "generation_runner.py",
+        BACKEND_APP / "visual_workshop" / "generation_runner.py",
+    )
+    violations = [
+        _relative(path)
+        for path in runners
+        if "GenerationTaskDriver(" not in path.read_text(encoding="utf-8")
+    ]
+    assert not violations, "生成任务状态机必须由 GenerationTaskDriver 统一编排：\n" + "\n".join(
+        violations
+    )
+
+
+def test_secret_hints_and_provider_categories_have_one_owner() -> None:
+    hint_owner = BACKEND_APP / "core" / "secret_hints.py"
+    hint_violations = [
+        _relative(path)
+        for path in _python_files(BACKEND_APP)
+        if path != hint_owner and "value[-4:]" in path.read_text(encoding="utf-8")
+    ]
+    category_violations = [
+        _relative(path)
+        for path in _python_files(BACKEND_APP / "llm" / "catalog")
+        if path.name != "metadata.py"
+        and "def _categories_for_provider" in path.read_text(encoding="utf-8")
+    ]
+    assert not hint_violations, "加密密钥提示只能由 core.secret_hints 生成：\n" + "\n".join(
+        hint_violations
+    )
+    assert not category_violations, "供应商默认类别只能由 catalog.metadata 定义：\n" + (
+        "\n".join(category_violations)
+    )
+
+
 def test_backend_avoids_generic_abstract_layer_directories() -> None:
     violations = sorted(
         _relative(path)

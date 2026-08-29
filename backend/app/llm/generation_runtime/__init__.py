@@ -1,3 +1,8 @@
+from app.llm.generation_runtime.driver import (
+    GenerationTaskContext,
+    GenerationTaskDriver,
+    GenerationTaskStore,
+)
 from app.llm.generation_runtime.media import (
     GenerationMaterializationError,
     assert_public_https,
@@ -15,6 +20,9 @@ from app.llm.generation_runtime.provider_tasks import (
 
 __all__ = [
     "GenerationMaterializationError",
+    "GenerationTaskContext",
+    "GenerationTaskDriver",
+    "GenerationTaskStore",
     "assert_public_https",
     "download_generated_media",
     "generated_type",

@@ -1,0 +1,10 @@
+PROVIDER_DEFAULT_CATEGORIES: dict[str, tuple[str, ...]] = {
+    "senseaudio_image": ("image_generation",),
+    "senseaudio_video": ("video_generation",),
+    "senseaudio_asr": ("speech_recognition",),
+    "senseaudio_realtime": ("end_to_end_speech",),
+}
+
+
+def categories_for_provider(kind: str) -> list[str]:
+    return list(PROVIDER_DEFAULT_CATEGORIES.get(kind, ("text_generation",)))

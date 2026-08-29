@@ -1,20 +1,22 @@
 from __future__ import annotations
 
 import asyncio
-import inspect
-import time
 from collections.abc import Callable
 from dataclasses import replace
 from uuid import uuid4
 
 from app.agents.harness.approval import ApprovalBroker, approval_broker
-from app.agents.harness.context import ContextCompiler
 from app.agents.harness.contracts import (
     AgentMessage,
     ModelAdapter,
-    ModelTextDelta,
-    ModelTurnEnd,
     Usage,
+)
+from app.agents.harness.phases import (
+    approval_phase,
+    emit_event,
+    execute_tool_phase,
+    model_turn_phase,
+    propose_tools_phase,
 )
 from app.agents.harness.types import (
     AgentDefinition,
@@ -25,16 +27,11 @@ from app.agents.harness.types import (
     RunResult,
     RunStatus,
     ToolBinding,
-    ToolExecutionContext,
 )
 
 
 async def _maybe_emit(listener: EventListener | None, event: AgentEvent) -> None:
-    if listener is None:
-        return
-    result = listener(event)
-    if inspect.isawaitable(result):
-        await result
+    await emit_event(listener, event)
 
 
 class ReactiveToolLoop:
@@ -91,80 +88,14 @@ class ReactiveToolLoop:
         round_index: int,
         approved_canvas_revision: int | None,
     ) -> Observation:
-        started = time.perf_counter()
-        await _maybe_emit(
-            listener,
-            AgentEvent(
-                "tool_started",
-                self.run_id,
-                round_index,
-                {
-                    "action_id": action.call.id,
-                    "tool_name": action.binding.name,
-                    "effect": action.binding.effect,
-                    "summary": action.summary,
-                },
-            ),
+        return await execute_tool_phase(
+            action,
+            listener=listener,
+            run_id=self.run_id,
+            round_index=round_index,
+            scope=self.scope,
+            approved_canvas_revision=approved_canvas_revision,
         )
-        try:
-            async with asyncio.timeout(action.binding.timeout_seconds):
-                observation = await action.binding.handler(
-                    action.arguments,
-                    ToolExecutionContext(
-                        run_id=self.run_id,
-                        tool_call_id=action.call.id,
-                        scope=self.scope,
-                        approved_canvas_revision=approved_canvas_revision,
-                    ),
-                )
-        except TimeoutError:
-            observation = Observation(
-                action_id=action.call.id,
-                tool_name=action.binding.name,
-                success=False,
-                model_text="工具执行超时。",
-                error_code="tool_timeout",
-                retryable=True,
-            )
-        except Exception as exc:  # noqa: BLE001
-            observation = Observation(
-                action_id=action.call.id,
-                tool_name=action.binding.name,
-                success=False,
-                model_text=f"工具执行失败：{str(exc)[:1000]}",
-                error_code="tool_failed",
-                retryable=False,
-            )
-        elapsed = max(0, round((time.perf_counter() - started) * 1000))
-        observation = Observation(
-            action_id=observation.action_id,
-            tool_name=observation.tool_name,
-            success=observation.success,
-            model_text=observation.model_text,
-            data=observation.data,
-            error_code=observation.error_code,
-            retryable=observation.retryable,
-            duration_ms=elapsed,
-        )
-        await _maybe_emit(
-            listener,
-            AgentEvent(
-                "tool_completed" if observation.success else "tool_failed",
-                self.run_id,
-                round_index,
-                {
-                    "action_id": action.call.id,
-                    "tool_name": action.binding.name,
-                    "effect": action.binding.effect,
-                    "summary": action.summary,
-                    "observation": observation.data,
-                    "model_text": observation.model_text,
-                    "error_code": observation.error_code,
-                    "duration_ms": elapsed,
-                },
-            ),
-        )
-        return observation
 
     async def run(
         self,
@@ -201,72 +132,19 @@ class ReactiveToolLoop:
             for round_index in range(definition.budgets.max_rounds):
                 if self._abort.is_set():
                     raise asyncio.CancelledError
-                fragments = []
-                for source in definition.context_sources:
-                    fragments.extend(await source())
-                context, context_summary = ContextCompiler(
-                    definition.budgets.context_characters
-                ).compile(fragments)
-                system_prompt = definition.instructions
-                if context:
-                    system_prompt = f"{system_prompt}\n\n{context}"
-                await _maybe_emit(
-                    listener,
-                    AgentEvent(
-                        "context_compiled",
-                        self.run_id,
-                        round_index,
-                        context_summary,
-                    ),
+                current_text, turn_end = await model_turn_phase(
+                    self.adapter,
+                    definition,
+                    messages=messages,
+                    tool_specs=tool_specs,
+                    listener=listener,
+                    run_id=self.run_id,
+                    round_index=round_index,
+                    abort=self._abort,
                 )
-                await _maybe_emit(
-                    listener,
-                    AgentEvent("model_started", self.run_id, round_index),
-                )
-                round_text: list[str] = []
-                turn_end: ModelTurnEnd | None = None
-                try:
-                    async with asyncio.timeout(definition.budgets.model_turn_timeout_seconds):
-                        async for event in self.adapter.stream_turn(
-                            system=system_prompt,
-                            messages=messages,
-                            tools=tool_specs,
-                            model=definition.model,
-                            temperature=definition.temperature,
-                            max_tokens=definition.max_tokens,
-                            round_index=round_index,
-                        ):
-                            if self._abort.is_set():
-                                raise asyncio.CancelledError
-                            if isinstance(event, ModelTextDelta):
-                                round_text.append(event.text)
-                                await _maybe_emit(
-                                    listener,
-                                    AgentEvent(
-                                        "model_text_delta",
-                                        self.run_id,
-                                        round_index,
-                                        {"text": event.text},
-                                    ),
-                                )
-                            else:
-                                turn_end = event
-                except TimeoutError as exc:
-                    raise RuntimeError("model_turn_timeout") from exc
-                turn_end = turn_end or ModelTurnEnd()
                 usage = usage.merged(turn_end.usage)
-                current_text = "".join(round_text)
                 if current_text:
                     final_text += current_text
-                await _maybe_emit(
-                    listener,
-                    AgentEvent(
-                        "model_completed",
-                        self.run_id,
-                        round_index,
-                        {"tool_call_count": len(turn_end.tool_calls)},
-                    ),
-                )
 
                 if not turn_end.tool_calls:
                     decision = await definition.verifier.verify(
@@ -324,54 +202,28 @@ class ReactiveToolLoop:
                         tool_calls=tuple(turn_end.tool_calls),
                     )
                 )
-                actions: list[ProposedAction] = []
-                for call in turn_end.tool_calls:
-                    binding = tools.get(call.name)
-                    if binding is None:
-                        observation = Observation(
-                            call.id,
-                            call.name,
-                            False,
-                            "工具不存在或当前不可用。",
-                            error_code="tool_unavailable",
+                proposal = await propose_tools_phase(
+                    definition,
+                    turn_end.tool_calls,
+                    tools=tools,
+                    scope=self.scope,
+                    listener=listener,
+                    run_id=self.run_id,
+                    round_index=round_index,
+                )
+                for observation in proposal.unavailable:
+                    observations.append(observation)
+                    messages.append(
+                        AgentMessage(
+                            role="tool",
+                            text=observation.model_text,
+                            tool_call_id=observation.action_id,
+                            tool_name=observation.tool_name,
                         )
-                        observations.append(observation)
-                        messages.append(
-                            AgentMessage(
-                                role="tool",
-                                text=observation.model_text,
-                                tool_call_id=call.id,
-                                tool_name=call.name,
-                            )
-                        )
-                        tool_failures += 1
-                        continue
-                    policy = await definition.policy.evaluate(binding, call.arguments, self.scope)
-                    action = ProposedAction(
-                        call=call,
-                        binding=binding,
-                        arguments=dict(call.arguments),
-                        summary=binding.summarize(call.arguments),
-                        policy=policy,
                     )
-                    actions.append(action)
-                    await _maybe_emit(
-                        listener,
-                        AgentEvent(
-                            "tool_proposed",
-                            self.run_id,
-                            round_index,
-                            {
-                                "action_id": call.id,
-                                "tool_name": binding.name,
-                                "effect": binding.effect,
-                                "summary": action.summary,
-                                "policy": policy.decision,
-                                "policy_reason": policy.reason,
-                            },
-                        ),
-                    )
+                    tool_failures += 1
 
+                actions = list(proposal.actions)
                 denied = [item for item in actions if item.policy.decision == "deny"]
                 allowed = [item for item in actions if item.policy.decision == "allow"]
                 gated = [item for item in actions if item.policy.decision == "require_approval"]
@@ -415,87 +267,30 @@ class ReactiveToolLoop:
                     )
 
                 if gated:
-                    approval_id = str(uuid4())
-                    proposal_canvas_revision = int(self.scope.get("canvas_revision") or 0)
-                    await _maybe_emit(
-                        listener,
-                        AgentEvent(
-                            "approval_requested",
-                            self.run_id,
-                            round_index,
-                            {
-                                "approval_id": approval_id,
-                                "canvas_revision": proposal_canvas_revision,
-                                "actions": [
-                                    {
-                                        "action_id": item.call.id,
-                                        "tool_name": item.binding.name,
-                                        "effect": item.binding.effect,
-                                        "summary": item.summary,
-                                    }
-                                    for item in gated
-                                ],
-                            },
-                        ),
+                    approved = await approval_phase(
+                        gated,
+                        approvals=self.approvals,
+                        listener=listener,
+                        run_id=self.run_id,
+                        round_index=round_index,
+                        scope=self.scope,
+                        timeout_seconds=definition.budgets.approval_timeout_seconds,
                     )
-                    try:
-                        resolution = await self.approvals.wait(
-                            run_id=self.run_id,
-                            approval_id=approval_id,
-                            scope=self.scope,
-                            proposal_canvas_revision=proposal_canvas_revision,
-                            timeout_seconds=definition.budgets.approval_timeout_seconds,
-                        )
-                    except TimeoutError:
-                        resolution = None
-                    decision = resolution.decision if resolution else "reject"
-                    await _maybe_emit(
-                        listener,
-                        AgentEvent(
-                            "approval_resolved",
-                            self.run_id,
-                            round_index,
-                            {
-                                "approval_id": approval_id,
-                                "decision": decision,
-                                "reason": "审批已超时" if resolution is None else "",
-                            },
-                        ),
-                    )
-                    approved_revision = resolution.canvas_revision if resolution else None
-                    for action in gated:
-                        if decision == "reject":
-                            observation = Observation(
-                                action.call.id,
-                                action.binding.name,
-                                False,
-                                "用户拒绝了该操作。",
-                                error_code="approval_rejected",
-                            )
-                        else:
-                            observation = await self._execute(
-                                action,
-                                listener=listener,
-                                round_index=round_index,
-                                approved_canvas_revision=approved_revision,
-                            )
+                    for observation in approved:
                         observations.append(observation)
                         if (
                             not observation.success
                             and observation.error_code != "approval_rejected"
                         ):
                             tool_failures += 1
-                        if observation.success and "canvas_revision" in observation.data:
-                            self.scope["canvas_revision"] = observation.data["canvas_revision"]
-                            approved_revision = int(observation.data["canvas_revision"])
                         messages.append(
                             AgentMessage(
                                 role="tool",
                                 text=observation.model_text[
                                     : definition.budgets.tool_result_characters
                                 ],
-                                tool_call_id=action.call.id,
-                                tool_name=action.binding.name,
+                                tool_call_id=observation.action_id,
+                                tool_name=observation.tool_name,
                             )
                         )
 

@@ -51,6 +51,10 @@
 - 模型与供应商差异在 `backend/app/llm/providers/` 的适配边界内归一化。公共 REST/SSE、模型
   测试和调用日志契约保持供应商无关；供应商管理页面可以展示配置，但前端运行流程不得依赖
   供应商原始事件。
+- 图片/视频后台任务的状态转换由 `llm/generation_runtime.GenerationTaskDriver` 唯一编排；各功能
+  只提供任务存取、素材组装/落盘和调用日志钩子。`submitting` 中断必须安全失败，禁止自动重提。
+- Story 总校验保持纯函数分层：身份/角色、素材、国际化、时间轴、流程与表现层规则归属
+  `schemas/galgame_workshop/story_validation.py`；Pydantic Story 入口只负责迁移适配和统一调用。
 - 账号、Session、审计、Management API Key 与 Workspace 治理归属 `backend/app/accounts/`；
   `StudioPrincipal` 是业务请求的唯一租户来源，业务 API 不接受客户端提交 `workspace_id`。
   路由需要显式租户参数时使用 `WorkspaceDep`；不得新增 ContextVar、`default` 回退或其他环境式

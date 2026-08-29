@@ -6,6 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.ids import new_id
+from app.llm.catalog.metadata import categories_for_provider
 from app.models import ModelCatalogState, ModelEntry, ModelProvider
 
 
@@ -16,18 +17,6 @@ class SeedModel:
     label: str
     description: str
     capabilities: tuple[str, ...]
-
-
-def _categories_for_provider(kind: str) -> list[str]:
-    if kind == "senseaudio_image":
-        return ["image_generation"]
-    if kind == "senseaudio_video":
-        return ["video_generation"]
-    if kind == "senseaudio_asr":
-        return ["speech_recognition"]
-    if kind == "senseaudio_realtime":
-        return ["end_to_end_speech"]
-    return ["text_generation"]
 
 
 @dataclass(frozen=True)
@@ -314,7 +303,7 @@ async def ensure_workspace_model_catalog(session: AsyncSession, workspace_id: st
                     label=model_seed.label,
                     description=model_seed.description,
                     capabilities=list(model_seed.capabilities),
-                    categories=_categories_for_provider(provider_seed.kind),
+                    categories=categories_for_provider(provider_seed.kind),
                     enabled=True,
                     sort_order=sort_order,
                 )

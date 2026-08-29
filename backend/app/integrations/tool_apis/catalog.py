@@ -14,6 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.concurrency.revisions import RevisionConflictError
 from app.core.credentials import decrypt_secret, encrypt_secret
 from app.core.outbound_urls import require_safe_integration_http_url
+from app.core.secret_hints import encrypted_secret_hint
 from app.core.time import iso_utc, utc_now
 from app.integrations.checks import list_recent_checks, record_check
 from app.integrations.common import (
@@ -36,16 +37,6 @@ RESPONSE_LIMIT = 1024 * 1024
 PREVIEW_LIMIT = 32 * 1024
 
 
-def _secret_hint(ciphertext: str) -> str:
-    if not ciphertext:
-        return ""
-    try:
-        value = decrypt_secret(ciphertext)
-    except Exception:
-        return ""
-    return value[-4:] if len(value) >= 4 else "••••"
-
-
 def _out(row: ToolApiIntegration) -> ToolApiOut:
     return ToolApiOut(
         id=row.id,
@@ -56,7 +47,7 @@ def _out(row: ToolApiIntegration) -> ToolApiOut:
         auth_kind=row.auth_kind,
         auth_header_name=row.auth_header_name,
         has_secret=bool(row.secret_ciphertext),
-        secret_hint=_secret_hint(row.secret_ciphertext),
+        secret_hint=encrypted_secret_hint(row.secret_ciphertext),
         parameters_schema=dict(row.parameters_schema or {}),
         query_template=dict(row.query_template or {}),
         body_template=row.body_template,
