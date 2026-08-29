@@ -13,7 +13,7 @@ from app.concurrency.polling_runner import PollingTaskRunner
 from app.core.config import Settings, get_settings
 from app.core.credentials import decrypt_secret
 from app.core.db import SessionLocal
-from app.core.tenant_context import bind_workspace
+from app.core.tenant_context import bind_workspace, require_workspace_id
 from app.core.time import utc_now
 from app.files.storage import AssetStorage
 from app.llm.generation_runtime import (
@@ -68,7 +68,10 @@ class ModelTestGenerationRunner(PollingTaskRunner):
     ) -> ModelTestGenerationTask | None:
         task = await session.get(ModelTestGenerationTask, task_id)
         if task is not None:
-            bind_workspace(session, task.workspace_id)
+            bind_workspace(
+                session,
+                require_workspace_id(task.workspace_id, subject="model generation task"),
+            )
         return task
 
     async def recover(self) -> None:

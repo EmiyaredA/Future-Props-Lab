@@ -8,7 +8,6 @@ from typing import Protocol
 from uuid import uuid4
 
 from app.core.config import Settings
-from app.core.tenant_context import current_workspace_id
 
 TARGET_STORAGE_VERSION = 2
 
@@ -38,11 +37,9 @@ class AssetStorage:
             raise ValueError("invalid storage path segment")
         return value
 
-    def project_root(
-        self, application_id: str, project_id: str, *, workspace_id: str | None = None
-    ) -> Path:
+    def project_root(self, application_id: str, project_id: str, *, workspace_id: str) -> Path:
         project_id = self._segment(project_id)
-        workspace_id = workspace_id or current_workspace_id()
+        workspace_id = self._segment(workspace_id)
         if workspace_id != "default":
             root = self.settings.workspace_path(workspace_id) / "applications"
             return (root / application_id / "projects" / project_id).resolve()
@@ -66,7 +63,7 @@ class AssetStorage:
         visual_project_id: str | None,
         galgame_project_id: str | None,
         video_editor_project_id: str | None = None,
-        workspace_id: str | None = None,
+        workspace_id: str,
     ) -> Path:
         owners = (visual_project_id, galgame_project_id, video_editor_project_id)
         if sum(owner is not None for owner in owners) > 1:
@@ -88,7 +85,7 @@ class AssetStorage:
                 )
                 / "assets"
             )
-        workspace_id = workspace_id or current_workspace_id()
+        workspace_id = self._segment(workspace_id)
         if workspace_id != "default":
             return self.settings.workspace_path(workspace_id) / "library" / "assets"
         return self.settings.library_asset_path
@@ -100,7 +97,7 @@ class AssetStorage:
         visual_project_id: str | None,
         galgame_project_id: str | None,
         video_editor_project_id: str | None = None,
-        workspace_id: str | None = None,
+        workspace_id: str,
     ) -> Path:
         return self.target_root(
             visual_project_id=visual_project_id,
@@ -130,7 +127,7 @@ class AssetStorage:
         visual_project_id: str | None,
         galgame_project_id: str | None,
         video_editor_project_id: str | None = None,
-        workspace_id: str | None = None,
+        workspace_id: str,
     ) -> tuple[Path, Path]:
         final_path = self.target_path(
             storage_key,
@@ -144,7 +141,7 @@ class AssetStorage:
         return temp_dir / f"{self._segment(storage_key)}-{uuid4().hex}.tmp", final_path
 
     def ensure_project_layout(
-        self, application_id: str, project_id: str, *, workspace_id: str | None = None
+        self, application_id: str, project_id: str, *, workspace_id: str
     ) -> bool:
         root = self.project_root(application_id, project_id, workspace_id=workspace_id)
         created = not root.exists()
@@ -157,14 +154,22 @@ class AssetStorage:
             directory.mkdir(parents=True, exist_ok=True)
         return created
 
-    def remove_project_root(self, application_id: str, project_id: str) -> None:
-        shutil.rmtree(self.project_root(application_id, project_id), ignore_errors=True)
+    def remove_project_root(
+        self, application_id: str, project_id: str, *, workspace_id: str
+    ) -> None:
+        shutil.rmtree(
+            self.project_root(application_id, project_id, workspace_id=workspace_id),
+            ignore_errors=True,
+        )
 
-    def stage_project_root(self, application_id: str, project_id: str) -> StagedProjectRoot | None:
-        original = self.project_root(application_id, project_id)
+    def stage_project_root(
+        self, application_id: str, project_id: str, *, workspace_id: str
+    ) -> StagedProjectRoot | None:
+        workspace_id = self._segment(workspace_id)
+        original = self.project_root(application_id, project_id, workspace_id=workspace_id)
         if not original.exists():
             return None
-        trash = self.settings.storage_trash_path / application_id
+        trash = self.settings.storage_trash_path / workspace_id / application_id
         trash.mkdir(parents=True, exist_ok=True)
         staged = trash / f"{self._segment(project_id)}--trash--{uuid4().hex}"
         os.replace(original, staged)

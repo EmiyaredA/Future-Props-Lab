@@ -10,9 +10,9 @@ from pathlib import Path, PurePosixPath
 from uuid import uuid4
 
 import yaml
-from fastapi import UploadFile
 
 from app.core.config import Settings
+from app.files.incoming import IncomingFile
 from app.integrations.common import IntegrationValidationError
 
 SKILL_MD_MAX_BYTES = 256 * 1024
@@ -33,7 +33,7 @@ class SkillArchiveStorage:
         self.settings = settings
         self.root = settings.workspace_skill_path(workspace_id)
 
-    async def stage(self, upload: UploadFile) -> StagedSkillArchive:
+    async def stage(self, upload: IncomingFile) -> StagedSkillArchive:
         self.root.mkdir(parents=True, exist_ok=True)
         nonce = uuid4().hex
         archive_path = self.root / f".upload-{nonce}.zip"

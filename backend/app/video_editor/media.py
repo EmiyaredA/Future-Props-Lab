@@ -6,12 +6,12 @@ import subprocess
 from pathlib import Path
 from uuid import uuid4
 
-from fastapi import UploadFile
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import Settings, get_settings
 from app.core.time import iso_utc
+from app.files.incoming import IncomingFile
 from app.files.library import AssetLibrary
 from app.files.storage import AssetStorage
 from app.models import (
@@ -75,14 +75,17 @@ def probe_media(path: Path) -> dict:
 
 
 class VideoEditorMedia:
-    def __init__(self, session: AsyncSession, settings: Settings | None = None) -> None:
+    def __init__(
+        self, session: AsyncSession, workspace_id: str, settings: Settings | None = None
+    ) -> None:
         self.session = session
+        self.workspace_id = workspace_id
         self.settings = settings or get_settings()
         self.storage = AssetStorage(self.settings)
         self.library = AssetLibrary(session, self.settings)
 
     async def _project(self, project_id: str) -> None:
-        await VideoEditorProjects(self.session).row(project_id)
+        await VideoEditorProjects(self.session, self.workspace_id).row(project_id)
 
     def _out(
         self, project_id: str, asset: VisualAsset, metadata: VideoEditorAssetMetadata
@@ -165,10 +168,11 @@ class VideoEditorMedia:
         await self.session.refresh(metadata)
         return self._out(project_id, asset, metadata)
 
-    async def upload(self, project_id: str, upload: UploadFile) -> VideoEditorAssetOut:
+    async def upload(self, project_id: str, upload: IncomingFile) -> VideoEditorAssetOut:
         await self._project(project_id)
         asset = await self.library.store_upload(
             upload,
+            workspace_id=self.workspace_id,
             video_editor_project_id=project_id,
             allowed_extensions=VIDEO_EDITOR_EXTENSIONS,
         )
@@ -196,6 +200,7 @@ class VideoEditorMedia:
             for source in sources:
                 asset, path = await self.library.stage_local_copy(
                     self.storage.path_for(source),
+                    workspace_id=self.workspace_id,
                     filename=source.original_filename,
                     content_type=source.mime_type,
                     video_editor_project_id=project_id,
@@ -269,7 +274,11 @@ class VideoEditorMedia:
     def derived_path(self, project_id: str, filename: str) -> Path:
         if Path(filename).name != filename:
             raise VideoEditorValidationError("派生文件名无效")
-        return self.storage.project_root("video-editor", project_id) / "derived" / filename
+        return (
+            self.storage.project_root("video-editor", project_id, workspace_id=self.workspace_id)
+            / "derived"
+            / filename
+        )
 
 
 def guessed_mime(path: Path) -> str:

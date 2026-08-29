@@ -8,13 +8,12 @@ from datetime import timedelta
 from pathlib import Path
 from uuid import uuid4
 
-from fastapi import UploadFile
 from sqlalchemy import delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import Settings, get_settings
-from app.core.tenant_context import current_workspace_id
 from app.core.time import iso_utc, utc_now
+from app.files.incoming import IncomingFile
 from app.files.storage import AssetStorage
 from app.models import ModelTestGenerationAsset, ModelTestGenerationTask, VisualAsset
 from app.schemas.model_test import (
@@ -95,17 +94,20 @@ def _looks_like(kind: str, head: bytes) -> bool:
 
 
 class ModelTestGenerationAssets:
-    def __init__(self, session: AsyncSession, settings: Settings | None = None) -> None:
+    def __init__(
+        self, session: AsyncSession, workspace_id: str, settings: Settings | None = None
+    ) -> None:
         self.session = session
+        self.workspace_id = workspace_id
         self.settings = settings or get_settings()
         self.storage = AssetStorage(self.settings)
 
     def _root(self, workspace_id: str | None = None) -> Path:
         return self.settings.workspace_model_test_path(
-            workspace_id or current_workspace_id(), "references"
+            workspace_id or self.workspace_id, "references"
         )
 
-    async def upload(self, files: list[UploadFile]) -> ModelTestGenerationAssetListOut:
+    async def upload(self, files: list[IncomingFile]) -> ModelTestGenerationAssetListOut:
         if not files or len(files) > MAX_DRAFT_ASSETS:
             raise GenerationAssetError("每次可上传 1 至 15 个参考素材")
         root = self._root()

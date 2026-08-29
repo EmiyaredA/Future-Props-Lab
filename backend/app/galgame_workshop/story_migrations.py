@@ -6,7 +6,6 @@ from typing import Literal
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.tenant_context import current_workspace_id
 from app.core.time import utc_now
 from app.galgame_workshop.errors import GalgameStoryDocumentInvalidError
 from app.galgame_workshop.story import GalgameStoryDocuments, normalize_story_document
@@ -46,11 +45,11 @@ def inspect_story_migration(
 
 
 class GalgameStoryMigrations:
-    def __init__(self, session: AsyncSession) -> None:
+    def __init__(self, session: AsyncSession, workspace_id: str) -> None:
         self.session = session
+        self.workspace_id = workspace_id
 
     async def _candidates(self) -> list[StoryMigrationCandidate]:
-        workspace_id = current_workspace_id()
         rows = list(
             (
                 await self.session.execute(
@@ -59,7 +58,7 @@ class GalgameStoryMigrations:
                         GalgameWorkshopProject,
                         GalgameWorkshopProject.id == GalgameStoryDocument.project_id,
                     )
-                    .where(GalgameWorkshopProject.workspace_id == workspace_id)
+                    .where(GalgameWorkshopProject.workspace_id == self.workspace_id)
                     .order_by(GalgameStoryDocument.project_id)
                 )
             )
@@ -85,9 +84,8 @@ class GalgameStoryMigrations:
         pending = [candidate for candidate in candidates if candidate.state == "pending"][:limit]
         migrated = 0
         conflicts = 0
-        workspace_id = current_workspace_id()
         project_ids = select(GalgameWorkshopProject.id).where(
-            GalgameWorkshopProject.workspace_id == workspace_id
+            GalgameWorkshopProject.workspace_id == self.workspace_id
         )
         for candidate in pending:
             assert candidate.normalized is not None

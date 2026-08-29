@@ -32,16 +32,20 @@ async def creating_project_layout(
     storage: AssetStorage,
     application_id: str,
     project_id: str,
+    *,
+    workspace_id: str,
 ) -> AsyncIterator[None]:
     """Commit a new project and compensate a newly created file root on failure."""
-    created_root = storage.ensure_project_layout(application_id, project_id)
+    created_root = storage.ensure_project_layout(
+        application_id, project_id, workspace_id=workspace_id
+    )
     try:
         yield
         await session.commit()
     except BaseException:
         await session.rollback()
         if created_root:
-            storage.remove_project_root(application_id, project_id)
+            storage.remove_project_root(application_id, project_id, workspace_id=workspace_id)
         raise
 
 
@@ -52,10 +56,11 @@ async def deleting_project_layout(
     application_id: str,
     project_id: str,
     *,
+    workspace_id: str,
     legacy_paths: Iterable[Path] = (),
 ) -> AsyncIterator[None]:
     """Stage project files until the matching database delete is committed."""
-    staged = storage.stage_project_root(application_id, project_id)
+    staged = storage.stage_project_root(application_id, project_id, workspace_id=workspace_id)
     try:
         yield
         await session.commit()

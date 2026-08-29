@@ -66,8 +66,11 @@ def generation_task_out(row: ModelTestGenerationTask) -> ModelTestGenerationTask
 
 
 class ModelTestGeneration:
-    def __init__(self, session: AsyncSession, settings: Settings | None = None) -> None:
+    def __init__(
+        self, session: AsyncSession, workspace_id: str, settings: Settings | None = None
+    ) -> None:
         self.session = session
+        self.workspace_id = workspace_id
         self.settings = settings or get_settings()
 
     async def _model(self, model_id: str, kind: str) -> tuple[ModelEntry, ModelProvider]:
@@ -150,7 +153,9 @@ class ModelTestGeneration:
         await self.session.flush()
         if isinstance(body, ModelTestVideoGenerationIn):
             try:
-                await ModelTestGenerationAssets(self.session, self.settings).claim_for_task(
+                await ModelTestGenerationAssets(
+                    self.session, self.workspace_id, self.settings
+                ).claim_for_task(
                     row.id,
                     (
                         (body.reference_asset_ids, "reference_image", "image"),

@@ -90,10 +90,12 @@ def message_out(
 
 
 class ModelTestService:
-    def __init__(self, session: AsyncSession, settings: Settings | None = None) -> None:
+    def __init__(
+        self, session: AsyncSession, workspace_id: str, settings: Settings | None = None
+    ) -> None:
         self.session = session
         self.settings = settings or get_settings()
-        self.attachments = ModelTestAttachments(session, self.settings)
+        self.attachments = ModelTestAttachments(session, self.settings, workspace_id)
 
     async def _model_slug(self, model_id: str | None) -> str:
         if not model_id:

@@ -283,10 +283,10 @@ async def test_cancelled_generation_keeps_partial_reply_and_log(
             )
         )
         await session.commit()
-        conversation = await ModelTestService(session).create(
+        conversation = await ModelTestService(session, "default").create(
             ModelTestConversationCreateIn(model_id=model_id)
         )
-        prepared = await ModelTestService(session).prepare_send(
+        prepared = await ModelTestService(session, "default").prepare_send(
             conversation.id, conversation.revision, "cancel me"
         )
 
@@ -520,7 +520,8 @@ async def test_playground_image_attachments_persist_and_reach_multiturn_context(
             row = await session.get(ModelTestAttachment, attachment["id"])
             assert row is not None
             attachment_path = (
-                ModelTestService(session).settings.model_test_attachment_path / row.storage_key
+                ModelTestService(session, "default").settings.model_test_attachment_path
+                / row.storage_key
             )
             assert attachment_path.is_file()
 

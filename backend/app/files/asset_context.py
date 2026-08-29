@@ -7,9 +7,10 @@ from app.models import VisualAsset, VisualAssetFolder, VisualWorkshopProject
 
 
 class VisualAssetContext:
-    def __init__(self, session: AsyncSession, settings: Settings) -> None:
+    def __init__(self, session: AsyncSession, settings: Settings, workspace_id: str) -> None:
         self.session = session
         self.settings = settings
+        self.workspace_id = workspace_id
         self.storage = AssetStorage(settings)
         self.library = AssetLibrary(session, settings)
 

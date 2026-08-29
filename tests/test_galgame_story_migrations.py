@@ -66,7 +66,7 @@ async def test_story_migration_status_run_and_idempotency() -> None:
             session.add(GalgameStoryDocument(project_id=project_id, document=document))
         await session.commit()
 
-        migrations = GalgameStoryMigrations(session)
+        migrations = GalgameStoryMigrations(session, workspace_id)
         assert (await migrations.status()).model_dump() == {
             "pending": 1,
             "invalid": 1,
@@ -119,7 +119,7 @@ async def test_story_migration_only_scans_and_updates_current_workspace() -> Non
 
     async with SessionLocal() as first_workspace:
         bind_workspace(first_workspace.sync_session, workspace_ids[0])
-        migrations = GalgameStoryMigrations(first_workspace)
+        migrations = GalgameStoryMigrations(first_workspace, workspace_ids[0])
         assert (await migrations.status()).model_dump() == {
             "pending": 1,
             "invalid": 0,
@@ -130,7 +130,7 @@ async def test_story_migration_only_scans_and_updates_current_workspace() -> Non
 
     async with SessionLocal() as second_workspace:
         bind_workspace(second_workspace.sync_session, workspace_ids[1])
-        migrations = GalgameStoryMigrations(second_workspace)
+        migrations = GalgameStoryMigrations(second_workspace, workspace_ids[1])
         assert (await migrations.status()).model_dump() == {
             "pending": 1,
             "invalid": 0,
@@ -161,7 +161,7 @@ async def test_story_migration_reports_cas_conflict(monkeypatch: pytest.MonkeyPa
         await session.flush()
         session.add(GalgameStoryDocument(project_id=project_id, document=story_document("1.2")))
         await session.commit()
-        migrations = GalgameStoryMigrations(session)
+        migrations = GalgameStoryMigrations(session, workspace_id)
         stale = await migrations._candidates()
         original_candidates = migrations._candidates
 

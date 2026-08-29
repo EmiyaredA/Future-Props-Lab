@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from contextvars import ContextVar
 from typing import Any
 
 from sqlalchemy import event
@@ -72,10 +71,6 @@ TENANT_MODELS = (
     IntegrationCheck,
 )
 
-_CURRENT_WORKSPACE: ContextVar[str] = ContextVar(
-    "future_props_current_workspace", default="default"
-)
-
 
 @event.listens_for(Session, "do_orm_execute")
 def _scope_tenant_selects(execute_state) -> None:
@@ -126,10 +121,12 @@ class TenantScopeError(RuntimeError):
     """Raised when an ORM write crosses the workspace bound to its session."""
 
 
+def require_workspace_id(value: object, *, subject: str = "resource") -> str:
+    workspace_id = str(value or "").strip()
+    if not workspace_id:
+        raise TenantScopeError(f"{subject} is missing workspace ownership")
+    return workspace_id
+
+
 def bind_workspace(session: Any, workspace_id: str) -> None:
-    session.info["workspace_id"] = workspace_id
-    _CURRENT_WORKSPACE.set(workspace_id)
-
-
-def current_workspace_id() -> str:
-    return _CURRENT_WORKSPACE.get()
+    session.info["workspace_id"] = require_workspace_id(workspace_id, subject="database session")

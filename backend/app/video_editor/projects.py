@@ -68,9 +68,15 @@ def default_timeline() -> dict:
 
 
 class VideoEditorProjects:
-    def __init__(self, session: AsyncSession) -> None:
+    def __init__(self, session: AsyncSession, workspace_id: str | None = None) -> None:
         self.session = session
+        self.workspace_id = workspace_id
         self.storage = AssetStorage(get_settings())
+
+    def _required_workspace(self) -> str:
+        if not self.workspace_id:
+            raise ValueError("workspace_id is required for video editor file operations")
+        return self.workspace_id
 
     async def row(self, project_id: str) -> VideoEditorProject:
         row = await self.session.get(VideoEditorProject, project_id)
@@ -97,7 +103,13 @@ class VideoEditorProjects:
         row = VideoEditorProject(title=body.title, status="draft")
         self.session.add(row)
         await self.session.flush()
-        async with creating_project_layout(self.session, self.storage, "video-editor", row.id):
+        async with creating_project_layout(
+            self.session,
+            self.storage,
+            "video-editor",
+            row.id,
+            workspace_id=self._required_workspace(),
+        ):
             self.session.add(VideoEditorTimeline(project_id=row.id, document=default_timeline()))
         await self.session.refresh(row)
         return project_out(row)
@@ -152,6 +164,7 @@ class VideoEditorProjects:
             self.storage,
             "video-editor",
             project_id,
+            workspace_id=self._required_workspace(),
             legacy_paths=legacy,
         ):
             result = await self.session.execute(

@@ -3,7 +3,7 @@ from __future__ import annotations
 from fastapi import APIRouter, HTTPException, status
 
 from app.core.config import get_settings
-from app.deps import SessionDep
+from app.deps import SessionDep, WorkspaceDep
 from app.files import AssetError
 from app.galgame_workshop.annotation_import import GalgameAnnotationImports
 from app.schemas.galgame_workshop import (
@@ -13,6 +13,10 @@ from app.schemas.galgame_workshop import (
 )
 
 router = APIRouter()
+
+
+def _imports(session: SessionDep, workspace_id: str) -> GalgameAnnotationImports:
+    return GalgameAnnotationImports(session, workspace_id, get_settings())
 
 
 def _error(exc: AssetError) -> HTTPException:
@@ -28,11 +32,12 @@ def _error(exc: AssetError) -> HTTPException:
 )
 async def preview_annotation_import(
     session: SessionDep,
+    workspace_id: WorkspaceDep,
     project_id: str,
     body: GalgameAnnotationImportIn,
 ) -> GalgameAnnotationImportPreviewOut:
     try:
-        return await GalgameAnnotationImports(session, get_settings()).preview(project_id, body)
+        return await _imports(session, workspace_id).preview(project_id, body)
     except AssetError as exc:
         raise _error(exc) from None
 
@@ -44,11 +49,12 @@ async def preview_annotation_import(
 )
 async def create_annotation_import(
     session: SessionDep,
+    workspace_id: WorkspaceDep,
     project_id: str,
     body: GalgameAnnotationImportIn,
 ) -> GalgameAnnotationImportTaskOut:
     try:
-        return await GalgameAnnotationImports(session, get_settings()).create(project_id, body)
+        return await _imports(session, workspace_id).create(project_id, body)
     except AssetError as exc:
         raise _error(exc) from None
 
@@ -59,10 +65,11 @@ async def create_annotation_import(
 )
 async def get_annotation_import(
     session: SessionDep,
+    workspace_id: WorkspaceDep,
     project_id: str,
     import_id: str,
 ) -> GalgameAnnotationImportTaskOut:
     try:
-        return await GalgameAnnotationImports(session, get_settings()).get(project_id, import_id)
+        return await _imports(session, workspace_id).get(project_id, import_id)
     except AssetError as exc:
         raise _error(exc) from None

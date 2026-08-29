@@ -344,6 +344,7 @@ class GalgameVideoExports:
         return _task_out(task)
 
     async def frame(self, project_id: str, body: GalgameVideoExportFrameIn) -> bytes:
+        project = await self._project(project_id)
         preview_body = GalgameVideoExportPreviewIn.model_validate(
             body.model_dump(mode="json", by_alias=True)
         )
@@ -405,7 +406,9 @@ class GalgameVideoExports:
                 prepare_audio_envelopes,
                 document,
                 asset_paths,
-                cache_dir=self.storage.project_root("galgame-workshop", project_id)
+                cache_dir=self.storage.project_root(
+                    "galgame-workshop", project_id, workspace_id=project.workspace_id
+                )
                 / "derived"
                 / "audio-envelopes",
                 asset_fingerprints=asset_fingerprints,

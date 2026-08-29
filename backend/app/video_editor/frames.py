@@ -80,8 +80,9 @@ def render_plan_frame(plan: RenderPlan, *, time_us: int, width: int = 960) -> by
 
 
 class VideoEditorFrames:
-    def __init__(self, session: AsyncSession) -> None:
+    def __init__(self, session: AsyncSession, workspace_id: str) -> None:
         self.session = session
+        self.workspace_id = workspace_id
         self.storage = AssetStorage(get_settings())
 
     async def render(
@@ -106,7 +107,7 @@ class VideoEditorFrames:
         if time_us < 0 or time_us > timeline_duration_us(document):
             raise VideoEditorValidationError("预览时间超出时间轴", code="invalid_time")
         cache = (
-            self.storage.project_root("video-editor", project_id)
+            self.storage.project_root("video-editor", project_id, workspace_id=self.workspace_id)
             / "derived"
             / f"frame-r{revision}-t{time_us}-w{width}.png"
         )

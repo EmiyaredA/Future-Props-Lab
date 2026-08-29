@@ -34,8 +34,9 @@ def project_out(row: VisualWorkshopProject) -> VisualWorkshopProjectOut:
 
 
 class VisualWorkshopProjects:
-    def __init__(self, session: AsyncSession) -> None:
+    def __init__(self, session: AsyncSession, workspace_id: str) -> None:
         self.session = session
+        self.workspace_id = workspace_id
         self.storage = AssetStorage(get_settings())
 
     async def list(self) -> VisualWorkshopProjectListOut:
@@ -66,7 +67,13 @@ class VisualWorkshopProjects:
         row = VisualWorkshopProject(title=body.title, kind=body.kind, status="draft")
         self.session.add(row)
         await self.session.flush()
-        async with creating_project_layout(self.session, self.storage, "visual-workshop", row.id):
+        async with creating_project_layout(
+            self.session,
+            self.storage,
+            "visual-workshop",
+            row.id,
+            workspace_id=self.workspace_id,
+        ):
             self.session.add(VisualCanvasDocument(project_id=row.id, nodes=[]))
         await self.session.refresh(row)
         return project_out(row)
@@ -125,6 +132,7 @@ class VisualWorkshopProjects:
             self.storage,
             "visual-workshop",
             project_id,
+            workspace_id=self.workspace_id,
             legacy_paths=legacy_paths,
         ):
             result = await self.session.execute(

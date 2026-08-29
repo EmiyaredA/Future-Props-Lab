@@ -113,6 +113,7 @@ async def _cleanup(provider_id: str, project_id: str) -> None:
             str(asset["storage_key"]),
             visual_project_id=project_id,
             galgame_project_id=None,
+            workspace_id=str(asset["workspace_id"]),
         )
         path.unlink(missing_ok=True)
 
@@ -139,10 +140,10 @@ async def test_video_submit_materializes_asset_ids_and_keeps_legacy_urls(
         submitted.update(kwargs)
         return "provider-task"
 
-    async def fake_image(asset_id: str) -> str:
+    async def fake_image(asset_id: str, _workspace_id: str) -> str:
         return f"data:image/png;base64,{asset_id}"
 
-    async def fake_temporary(asset_id: str, kind: str) -> str:
+    async def fake_temporary(asset_id: str, kind: str, _workspace_id: str) -> str:
         return f"https://temp.sh/{kind}-{asset_id}"
 
     runner = VisualGenerationRunner()
@@ -155,6 +156,7 @@ async def test_video_submit_materializes_asset_ids_and_keeps_legacy_urls(
         base_url="https://api.example/v1",
         api_key="secret",
         model_slug="video-model",
+        workspace_id="default",
         payload={
             "prompt": "参考运镜",
             "mode": "reference",
@@ -196,7 +198,7 @@ async def test_temporary_upload_failure_happens_before_provider_submission(
         provider_called = True
         return "provider-task"
 
-    async def failed_upload(_asset_id: str, _kind: str) -> str:
+    async def failed_upload(_asset_id: str, _kind: str, _workspace_id: str) -> str:
         raise TemporaryMediaError("private upstream response")
 
     runner = VisualGenerationRunner()
@@ -209,6 +211,7 @@ async def test_temporary_upload_failure_happens_before_provider_submission(
             base_url="https://api.example/v1",
             api_key="secret",
             model_slug="video-model",
+            workspace_id="default",
             payload={
                 "prompt": "参考运镜",
                 "mode": "reference",

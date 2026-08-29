@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from app.concurrency.polling_runner import PollingTaskRunner
 from app.core.config import Settings, get_settings
 from app.core.db import SessionLocal
-from app.core.tenant_context import bind_workspace
+from app.core.tenant_context import bind_workspace, require_workspace_id
 from app.core.time import utc_now
 from app.files.library import AssetLibrary
 from app.files.storage import AssetStorage
@@ -94,7 +94,10 @@ class GalgameVideoEditorHandoffRunner(PollingTaskRunner):
             row = await session.get(GalgameVideoEditorHandoffTask, task_id)
             if row is None:
                 return
-            bind_workspace(session, row.workspace_id)
+            bind_workspace(
+                session,
+                require_workspace_id(row.workspace_id, subject="video handoff task"),
+            )
             if status is not None:
                 row.status = status
             if progress is not None:
@@ -116,7 +119,9 @@ class GalgameVideoEditorHandoffRunner(PollingTaskRunner):
             return row is None or row.cancel_requested
 
     async def _discard_project(self, project_id: str, workspace_id: str) -> None:
-        staged = self.storage.stage_project_root("video-editor", project_id)
+        staged = self.storage.stage_project_root(
+            "video-editor", project_id, workspace_id=workspace_id
+        )
         try:
             async with self.session_factory() as session:
                 bind_workspace(session, workspace_id)
@@ -136,7 +141,8 @@ class GalgameVideoEditorHandoffRunner(PollingTaskRunner):
                 task = await session.get(GalgameVideoEditorHandoffTask, task_id)
                 if task is None or task.status != "queued":
                     return
-                bind_workspace(session, task.workspace_id)
+                workspace_id = require_workspace_id(task.workspace_id, subject="video handoff task")
+                bind_workspace(session, workspace_id)
                 task.status = "running"
                 task.started_at = task.started_at or utc_now()
                 task.progress = 2
@@ -146,7 +152,6 @@ class GalgameVideoEditorHandoffRunner(PollingTaskRunner):
                 source_project = await session.get(GalgameWorkshopProject, task.project_id)
                 if snapshot is None or source_project is None:
                     raise RuntimeError("Story 快照或源项目不存在")
-                workspace_id = task.workspace_id
                 document = dict(snapshot.document)
                 payload = dict(task.request_payload)
                 detail = dict(task.result_detail or {})
@@ -273,6 +278,7 @@ class GalgameVideoEditorHandoffRunner(PollingTaskRunner):
                     library = AssetLibrary(session, self.settings)
                     copied, staged = await library.stage_local_copy(
                         source_path,
+                        workspace_id=workspace_id,
                         filename=filename,
                         content_type=content_type,
                         video_editor_project_id=created_project_id,

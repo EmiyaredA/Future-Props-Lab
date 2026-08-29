@@ -6,14 +6,13 @@ import os
 from pathlib import Path
 from uuid import uuid4
 
-from fastapi import UploadFile
 from PIL import Image, UnidentifiedImageError
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import Settings
-from app.core.tenant_context import current_workspace_id
 from app.core.time import iso_utc
+from app.files.incoming import IncomingFile
 from app.models import ModelTestAttachment, ModelTestConversation
 from app.schemas.model_test import ModelTestAttachmentListOut, ModelTestAttachmentOut
 
@@ -92,12 +91,13 @@ def _read_base64(path: Path) -> str:
 
 
 class ModelTestAttachments:
-    def __init__(self, session: AsyncSession, settings: Settings) -> None:
+    def __init__(self, session: AsyncSession, settings: Settings, workspace_id: str) -> None:
         self.session = session
         self.settings = settings
+        self.workspace_id = workspace_id
 
     def _root(self) -> Path:
-        return self.settings.workspace_model_test_path(current_workspace_id(), "attachments")
+        return self.settings.workspace_model_test_path(self.workspace_id, "attachments")
 
     async def _conversation(self, conversation_id: str) -> ModelTestConversation:
         row = await self.session.get(ModelTestConversation, conversation_id)
@@ -106,7 +106,7 @@ class ModelTestAttachments:
         return row
 
     async def upload(
-        self, conversation_id: str, uploads: list[UploadFile]
+        self, conversation_id: str, uploads: list[IncomingFile]
     ) -> ModelTestAttachmentListOut:
         await self._conversation(conversation_id)
         if not uploads:

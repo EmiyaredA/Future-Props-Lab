@@ -16,7 +16,7 @@ from app.agents.harness import (
     ToolExecutionContext,
 )
 from app.core.db import SessionLocal
-from app.core.tenant_context import bind_workspace, current_workspace_id
+from app.core.tenant_context import bind_workspace
 from app.models import (
     VisualAsset,
     VisualGenerationTask,
@@ -36,7 +36,10 @@ _generation_input = TypeAdapter(GenerationTaskCreateIn)
 
 
 def _scope_workspace(context: ToolExecutionContext) -> str:
-    return str(context.scope.get("workspace_id") or current_workspace_id())
+    workspace_id = str(context.scope.get("workspace_id") or "").strip()
+    if not workspace_id:
+        raise ValueError("工具执行上下文缺少 Workspace 归属")
+    return workspace_id
 
 
 def _json_text(value: Any, limit: int = 12_000) -> str:

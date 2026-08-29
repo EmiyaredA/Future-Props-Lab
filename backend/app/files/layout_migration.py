@@ -51,8 +51,20 @@ async def reconcile_project_trash(session: AsyncSession, storage: AssetStorage) 
         "galgame-workshop": GalgameWorkshopProject,
         "video-editor": VideoEditorProject,
     }
-    for application_id, model in project_models.items():
-        application_trash = root / application_id
+    trash_scopes: list[tuple[str, str, Path]] = []
+    for child in root.iterdir():
+        if not child.is_dir():
+            continue
+        if child.name in project_models:
+            trash_scopes.append(("default", child.name, child))
+            continue
+        for application_id in project_models:
+            application_trash = child / application_id
+            if application_trash.is_dir():
+                trash_scopes.append((child.name, application_id, application_trash))
+
+    for workspace_id, application_id, application_trash in trash_scopes:
+        model = project_models[application_id]
         if not application_trash.is_dir():
             continue
         for staged_path in application_trash.iterdir():
@@ -61,8 +73,9 @@ async def reconcile_project_trash(session: AsyncSession, storage: AssetStorage) 
             project_id, _separator, nonce = staged_path.name.rpartition("--trash--")
             if not project_id or len(nonce) != 32:
                 continue
-            original = storage.project_root(application_id, project_id)
-            exists = await session.get(model, project_id) is not None
+            original = storage.project_root(application_id, project_id, workspace_id=workspace_id)
+            row = await session.get(model, project_id)
+            exists = row is not None and row.workspace_id == workspace_id
             if exists and not original.exists():
                 original.parent.mkdir(parents=True, exist_ok=True)
                 os.replace(staged_path, original)
@@ -87,8 +100,9 @@ def _same_content(source: Path, target: Path) -> bool:
 
 
 class StorageLayoutMigration:
-    def __init__(self, session: AsyncSession, settings: Settings) -> None:
+    def __init__(self, session: AsyncSession, settings: Settings, workspace_id: str) -> None:
         self.session = session
+        self.workspace_id = workspace_id
         self.storage = AssetStorage(settings)
 
     async def _projects(self) -> tuple[list[str], list[str], list[str]]:
@@ -136,7 +150,9 @@ class StorageLayoutMigration:
     async def status(self) -> StorageLayoutStatusOut:
         visual_ids, galgame_ids, video_editor_ids = await self._projects()
         pending_projects = sum(
-            not self.storage.project_root(application_id, project_id).is_dir()
+            not self.storage.project_root(
+                application_id, project_id, workspace_id=self.workspace_id
+            ).is_dir()
             for application_id, project_ids in (
                 ("visual-workshop", visual_ids),
                 ("galgame-workshop", galgame_ids),
@@ -161,6 +177,7 @@ class StorageLayoutMigration:
                 visual_project_id=asset.project_id,
                 galgame_project_id=asset.galgame_project_id,
                 video_editor_project_id=asset.video_editor_project_id,
+                workspace_id=self.workspace_id,
             )
             if not source.is_file():
                 missing += 1
@@ -188,7 +205,9 @@ class StorageLayoutMigration:
                 ("video-editor", video_editor_ids),
             ):
                 for project_id in project_ids:
-                    if self.storage.ensure_project_layout(application_id, project_id):
+                    if self.storage.ensure_project_layout(
+                        application_id, project_id, workspace_id=self.workspace_id
+                    ):
                         migrated_projects += 1
 
             pending = await self._pending(limit)
@@ -202,6 +221,7 @@ class StorageLayoutMigration:
                     visual_project_id=asset.project_id,
                     galgame_project_id=asset.galgame_project_id,
                     video_editor_project_id=asset.video_editor_project_id,
+                    workspace_id=self.workspace_id,
                 )
                 temp_path: Path | None = None
                 created_target = False
@@ -235,6 +255,7 @@ class StorageLayoutMigration:
                             visual_project_id=asset.project_id,
                             galgame_project_id=asset.galgame_project_id,
                             video_editor_project_id=asset.video_editor_project_id,
+                            workspace_id=self.workspace_id,
                         )
                         await asyncio.to_thread(_copy_verified, source, temp_path, asset.byte_size)
                         os.replace(temp_path, target)

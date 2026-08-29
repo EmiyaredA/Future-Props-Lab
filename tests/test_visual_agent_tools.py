@@ -76,6 +76,7 @@ async def test_generation_tool_atomically_creates_task_and_canvas_placeholder() 
                     run_id="run-1",
                     tool_call_id="generation-1",
                     scope={
+                        "workspace_id": "default",
                         "project_id": project["id"],
                         "image_model_id": model.id,
                     },
@@ -111,6 +112,7 @@ async def test_generation_tool_atomically_creates_task_and_canvas_placeholder() 
                         run_id="run-2",
                         tool_call_id="generation-2",
                         scope={
+                            "workspace_id": "default",
                             "project_id": project["id"],
                             "image_model_id": model.id,
                         },
@@ -141,6 +143,7 @@ async def test_generation_tool_atomically_creates_task_and_canvas_placeholder() 
                     run_id="run-unavailable",
                     tool_call_id="generation-unavailable",
                     scope={
+                        "workspace_id": "default",
                         "project_id": project["id"],
                         "image_model_id": model.id,
                     },
@@ -168,6 +171,7 @@ async def test_generation_tool_atomically_creates_task_and_canvas_placeholder() 
                     run_id="run-3",
                     tool_call_id="generation-3",
                     scope={
+                        "workspace_id": "default",
                         "project_id": project["id"],
                         "image_model_id": model.id,
                     },

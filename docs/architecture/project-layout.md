@@ -9,12 +9,12 @@ Future-Props-Lab/
 ├── .gitattributes     # 文档图片、固定字体与 VAD 资产的 Git LFS 边界
 ├── backend/app/
 │   ├── main.py        # FastAPI 装配、生命周期与健康探针
-│   ├── deps.py        # HTTP/WebSocket 会话和 Studio 鉴权依赖
+│   ├── deps.py        # HTTP/WebSocket 会话、Studio 鉴权与 WorkspaceDep
 │   ├── problem_details.py # 统一协议错误映射
 │   ├── accounts/      # 账号、Session、审计、API Key、Workspace 与公开投影
 │   ├── concurrency/   # revision/CAS 与通用单进程轮询 Runner 生命周期
 │   ├── core/          # 配置、数据库、时间与密钥基础设施
-│   ├── files/         # 文件策略、落盘、公共库、项目文件事务、引用与旧布局迁移
+│   ├── files/         # IncomingFile、文件策略、显式 Workspace 落盘、项目事务与旧布局迁移
 │   ├── agents/        # 供应商无关 Agent Harness、Reactive 工具循环与内存审批
 │   ├── llm/           # 模型目录、供应商适配、共享生成/实时运行时、测试工作台和调用日志
 │   ├── tool_navigation/ # 工具收藏与最近使用状态规则
@@ -149,7 +149,10 @@ Future-Props-Lab/
   文档演示图，只为后端、Web 和 E2E Job 选择性拉取各自运行资产，并独立检查 LFS 指针完整性。
 - 根 `/health`、`/ready` 是无版本探针，其他业务路由由统一的 `/v1` router 注册。
 - `accounts/` 负责账号与 Workspace 用例；请求通过 Cookie Session 或绑定单一 Workspace 的
-  Management API Key 生成 `StudioPrincipal`。业务模块只从 Principal 取得当前 Workspace，
+  Management API Key 生成 `StudioPrincipal`，`deps.WorkspaceDep` 只从该 Principal 派生租户 ID。
+  业务模块不使用 ContextVar 或 `default` 回退；后台任务从持久任务记录恢复 Workspace，缺失归属
+  立即失败。HTTP 上传在路由层适配为 `files.IncomingFile`，业务模块不依赖 FastAPI `UploadFile`；
+  `AssetStorage` 项目路径与写入方法要求显式 `workspace_id`，`path_for(asset)` 只读取已验证资产归属。
   平台管理员切换到其他空间时也不会自动创建成员关系。
 
 ## 数据与运行边界

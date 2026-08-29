@@ -80,8 +80,8 @@ async def test_storage_layout_migrates_library_and_project_assets_in_batches() -
             await _make_legacy(galgame_asset["id"]),
         ]
         storage = AssetStorage(get_settings())
-        storage.remove_project_root("visual-workshop", visual["id"])
-        storage.remove_project_root("galgame-workshop", galgame["id"])
+        storage.remove_project_root("visual-workshop", visual["id"], workspace_id="default")
+        storage.remove_project_root("galgame-workshop", galgame["id"], workspace_id="default")
 
         status = (await client.get("/v1/file-storage/layout")).json()
         assert status["pending_projects"] == 2
@@ -154,6 +154,7 @@ async def test_storage_layout_reports_missing_and_conflicting_files_without_data
                 conflict_row.storage_key,
                 visual_project_id=None,
                 galgame_project_id=None,
+                workspace_id="default",
             ).read_bytes()
             == b"different-target"
         )
@@ -188,8 +189,12 @@ async def test_startup_reconciles_interrupted_project_deletes() -> None:
         ).json()
 
     storage = AssetStorage(get_settings())
-    visual_staged = storage.stage_project_root("visual-workshop", visual["id"])
-    galgame_staged = storage.stage_project_root("galgame-workshop", galgame["id"])
+    visual_staged = storage.stage_project_root(
+        "visual-workshop", visual["id"], workspace_id="default"
+    )
+    galgame_staged = storage.stage_project_root(
+        "galgame-workshop", galgame["id"], workspace_id="default"
+    )
     assert visual_staged is not None and galgame_staged is not None
 
     async with SessionLocal() as session:
@@ -199,7 +204,9 @@ async def test_startup_reconciles_interrupted_project_deletes() -> None:
         await session.commit()
         await reconcile_project_trash(session, storage)
 
-    assert storage.project_root("visual-workshop", visual["id"]).is_dir()
+    assert storage.project_root("visual-workshop", visual["id"], workspace_id="default").is_dir()
     assert not visual_staged.staged.exists()
-    assert not storage.project_root("galgame-workshop", galgame["id"]).exists()
+    assert not storage.project_root(
+        "galgame-workshop", galgame["id"], workspace_id="default"
+    ).exists()
     assert not galgame_staged.staged.exists()

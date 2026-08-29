@@ -191,6 +191,29 @@ def test_backend_routes_do_not_own_persistence() -> None:
     assert not violations, "路由层不得直接依赖持久化实现：\n" + "\n".join(violations)
 
 
+def test_business_modules_do_not_depend_on_fastapi_upload_file() -> None:
+    violations: list[str] = []
+    route_root = BACKEND_APP / "routes"
+    for path in _python_files(BACKEND_APP):
+        if path.is_relative_to(route_root):
+            continue
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.ImportFrom) or node.module != "fastapi":
+                continue
+            if any(alias.name == "UploadFile" for alias in node.names):
+                violations.append(f"{_relative(path)}:{node.lineno}")
+    assert not violations, "业务模块必须依赖 files.IncomingFile，而不是 FastAPI UploadFile：\n" + (
+        "\n".join(violations)
+    )
+
+
+def test_workspace_context_has_no_ambient_fallback() -> None:
+    source = (BACKEND_APP / "core" / "tenant_context.py").read_text(encoding="utf-8")
+    assert "ContextVar" not in source
+    assert "current_workspace_id" not in source
+
+
 def test_backend_production_code_has_no_wildcard_imports() -> None:
     violations: list[str] = []
     for path in _python_files(BACKEND_APP):

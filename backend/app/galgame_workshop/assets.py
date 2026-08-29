@@ -2,13 +2,12 @@ from __future__ import annotations
 
 from pathlib import Path, PurePosixPath
 
-from fastapi import UploadFile
 from sqlalchemy import delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.concurrency.revisions import RevisionConflictError
 from app.core.config import Settings
-from app.files import AssetError, AssetLibrary
+from app.files import AssetError, AssetLibrary, IncomingFile
 from app.files.policy import GALGAME_EXTENSIONS
 from app.files.storage import AssetStorage
 from app.galgame_workshop.asset_analysis import GalgameAssetAnalysisMixin
@@ -39,9 +38,10 @@ from app.schemas.galgame_workshop import (
 
 
 class GalgameProjectAssets(GalgameAssetAnalysisMixin):
-    def __init__(self, session: AsyncSession, settings: Settings) -> None:
+    def __init__(self, session: AsyncSession, settings: Settings, workspace_id: str) -> None:
         self.session = session
         self.settings = settings
+        self.workspace_id = workspace_id
         self.storage = AssetStorage(settings)
         self.library = AssetLibrary(session, settings)
 
@@ -131,7 +131,7 @@ class GalgameProjectAssets(GalgameAssetAnalysisMixin):
         )
 
     async def upload(
-        self, project_id: str, upload: UploadFile, *, category: str | None = None
+        self, project_id: str, upload: IncomingFile, *, category: str | None = None
     ) -> GalgameProjectAssetOut:
         await self._project(project_id)
         selected_category = category or (
@@ -145,9 +145,10 @@ class GalgameProjectAssets(GalgameAssetAnalysisMixin):
             project_id, [upload.filename or "asset"], selected_category
         )
         planned = preview.items[0]
-        upload.filename = planned.final_name
         row = await self.library.store_upload(
             upload,
+            workspace_id=self.workspace_id,
+            filename_override=planned.final_name,
             galgame_project_id=project_id,
             allowed_extensions=GALGAME_EXTENSIONS,
         )
@@ -157,7 +158,7 @@ class GalgameProjectAssets(GalgameAssetAnalysisMixin):
         return galgame_asset_out(row, metadata)
 
     async def batch_upload(
-        self, project_id: str, uploads: list[UploadFile], category: str
+        self, project_id: str, uploads: list[IncomingFile], category: str
     ) -> GalgameAssetBatchUploadOut:
         if not uploads:
             raise AssetError("至少选择一个文件", code="empty_upload")
@@ -166,9 +167,10 @@ class GalgameProjectAssets(GalgameAssetAnalysisMixin):
         )
         items: list[GalgameProjectAssetOut] = []
         for upload, planned in zip(uploads, preview.items, strict=True):
-            upload.filename = planned.final_name
             row = await self.library.store_upload(
                 upload,
+                workspace_id=self.workspace_id,
+                filename_override=planned.final_name,
                 galgame_project_id=project_id,
                 allowed_extensions=GALGAME_EXTENSIONS,
             )

@@ -17,9 +17,10 @@ from app.schemas.galgame_workshop import (
 class GalgameReadiness:
     """Composes Story control-flow checks with the asset package manifest."""
 
-    def __init__(self, session: AsyncSession, settings: Settings) -> None:
+    def __init__(self, session: AsyncSession, settings: Settings, workspace_id: str) -> None:
         self.session = session
         self.settings = settings
+        self.workspace_id = workspace_id
 
     async def report(self, project_id: str) -> GalgameStoryRouteReportOut:
         stories = GalgameStoryDocuments(self.session)
@@ -84,9 +85,9 @@ class GalgameReadiness:
                             path=path,
                         )
                     )
-        manifest = await GalgameProjectAssets(self.session, self.settings).package_manifest(
-            project_id
-        )
+        manifest = await GalgameProjectAssets(
+            self.session, self.settings, self.workspace_id
+        ).package_manifest(project_id)
         existing_codes = {(issue.code, issue.message) for issue in errors}
         for issue in manifest.issues:
             identity = (issue.code, issue.message)

@@ -361,6 +361,7 @@ class AudioAnnotationProjects:
                 )
             filename = task.input_filename
             mime_type = task.input_mime_type
+            task_workspace_id = task.workspace_id
             text = task.result_text or ""
             try:
                 segments = [
@@ -388,7 +389,7 @@ class AudioAnnotationProjects:
                 asset = None
             if asset is None:
                 source_path = (
-                    self.settings.workspace_model_test_path(task.workspace_id, "references")
+                    self.settings.workspace_model_test_path(task_workspace_id, "references")
                     / task.input_storage_key
                 )
                 if not source_path.is_file():
@@ -401,6 +402,7 @@ class AudioAnnotationProjects:
                 try:
                     asset, cleanup_path = await self.library.stage_local_copy(
                         source_path,
+                        workspace_id=task_workspace_id,
                         filename=filename,
                         content_type=mime_type,
                         allowed_extensions=TRANSCRIPTION_AUDIO_EXTENSIONS,

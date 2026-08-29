@@ -968,5 +968,6 @@ async def test_visual_video_generation_uses_scoped_media_asset_ids() -> None:
                 str(asset["storage_key"]),
                 visual_project_id=str(asset["project_id"]),
                 galgame_project_id=None,
+                workspace_id=str(asset["workspace_id"]),
             )
             path.unlink(missing_ok=True)

@@ -1,14 +1,15 @@
 from __future__ import annotations
 
+import io
 import time
 import wave
 from uuid import uuid4
 
-from fastapi import UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.audio_annotation.projects import MIN_SEGMENT_MS, AudioAnnotationError
 from app.core.credentials import decrypt_secret
+from app.files.incoming import IncomingFile
 from app.llm.providers.transcription import TranscriptionResult, transcribe_model_audio
 from app.llm.transcription import (
     max_transcription_input_bytes,
@@ -53,18 +54,17 @@ class AudioAnnotationTranscription:
         return model, provider
 
     @staticmethod
-    def _validate_wav(
-        upload: UploadFile,
+    async def _validate_wav(
+        upload: IncomingFile,
         *,
         expected_duration_ms: int,
         max_bytes: int,
-    ) -> tuple[int, int]:
+    ) -> tuple[bytes, int]:
         content_type = (upload.content_type or "application/octet-stream").lower().strip()
         if content_type not in _WAV_MIME_TYPES:
             raise AudioAnnotationError("片段音频必须为 WAV", code="invalid_segment_audio")
-        upload.file.seek(0, 2)
-        byte_size = upload.file.tell()
-        upload.file.seek(0)
+        payload = await upload.read(max_bytes + 1)
+        byte_size = len(payload)
         if byte_size <= 0:
             raise AudioAnnotationError("片段音频不能为空", code="empty_segment_audio")
         if byte_size > max_bytes:
@@ -74,7 +74,7 @@ class AudioAnnotationTranscription:
                 status=413,
             )
         try:
-            with wave.open(upload.file, "rb") as source:
+            with wave.open(io.BytesIO(payload), "rb") as source:
                 frame_rate = source.getframerate()
                 frame_count = source.getnframes()
                 if frame_rate <= 0 or frame_count <= 0 or source.getcomptype() != "NONE":
@@ -84,13 +84,11 @@ class AudioAnnotationTranscription:
             raise AudioAnnotationError(
                 "片段音频不是有效的 PCM WAV", code="invalid_segment_audio"
             ) from exc
-        finally:
-            upload.file.seek(0)
         if abs(duration_ms - expected_duration_ms) > 100:
             raise AudioAnnotationError(
                 "片段音频时长与所选范围不一致", code="segment_audio_duration_mismatch"
             )
-        return byte_size, duration_ms
+        return payload, duration_ms
 
     async def _log(
         self,
@@ -155,7 +153,7 @@ class AudioAnnotationTranscription:
         self,
         project_id: str,
         *,
-        upload: UploadFile,
+        upload: IncomingFile,
         model_id: str,
         segment_id: str,
         start_ms: int,
@@ -190,11 +188,12 @@ class AudioAnnotationTranscription:
                 model,
                 provider,
             )
-            byte_size, _duration_ms = self._validate_wav(
+            payload, _duration_ms = await self._validate_wav(
                 upload,
                 expected_duration_ms=end_ms - start_ms,
                 max_bytes=max_transcription_input_bytes(provider),
             )
+            byte_size = len(payload)
             filename = f"segment-{segment_id}.wav"
             workspace_id = project.workspace_id
             provider_kind = provider.kind
@@ -212,7 +211,7 @@ class AudioAnnotationTranscription:
                     api_key=api_key,
                     model=model_slug,
                     filename=filename,
-                    source=upload.file,
+                    source=io.BytesIO(payload),
                     mime_type="audio/wav",
                     byte_size=byte_size,
                     language=resolved_language,

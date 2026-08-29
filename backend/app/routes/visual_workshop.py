@@ -3,7 +3,7 @@ from __future__ import annotations
 from fastapi import APIRouter, HTTPException, Query
 
 from app.core.config import get_settings
-from app.deps import SessionDep
+from app.deps import SessionDep, WorkspaceDep
 from app.files import AssetError, VisualAssets
 from app.schemas.files import (
     VisualAssetImportIn,
@@ -42,22 +42,27 @@ def _canvas_error(exc: VisualCanvasError) -> HTTPException:
 
 
 @router.get("", response_model=VisualWorkshopProjectListOut)
-async def list_projects(session: SessionDep) -> VisualWorkshopProjectListOut:
-    return await VisualWorkshopProjects(session).list()
+async def list_projects(
+    session: SessionDep, workspace_id: WorkspaceDep
+) -> VisualWorkshopProjectListOut:
+    return await VisualWorkshopProjects(session, workspace_id).list()
 
 
 @router.post("", response_model=VisualWorkshopProjectOut)
 async def create_project(
     session: SessionDep,
+    workspace_id: WorkspaceDep,
     body: VisualWorkshopProjectCreateIn,
 ) -> VisualWorkshopProjectOut:
-    return await VisualWorkshopProjects(session).create(body)
+    return await VisualWorkshopProjects(session, workspace_id).create(body)
 
 
 @router.get("/{project_id}", response_model=VisualWorkshopProjectOut)
-async def get_project(session: SessionDep, project_id: str) -> VisualWorkshopProjectOut:
+async def get_project(
+    session: SessionDep, workspace_id: WorkspaceDep, project_id: str
+) -> VisualWorkshopProjectOut:
     try:
-        return await VisualWorkshopProjects(session).get(project_id)
+        return await VisualWorkshopProjects(session, workspace_id).get(project_id)
     except VisualWorkshopProjectNotFoundError as exc:
         raise _not_found(exc) from None
 
@@ -85,11 +90,12 @@ async def put_canvas(
 @router.patch("/{project_id}", response_model=VisualWorkshopProjectOut)
 async def patch_project(
     session: SessionDep,
+    workspace_id: WorkspaceDep,
     project_id: str,
     body: VisualWorkshopProjectPatchIn,
 ) -> VisualWorkshopProjectOut:
     try:
-        return await VisualWorkshopProjects(session).patch(project_id, body)
+        return await VisualWorkshopProjects(session, workspace_id).patch(project_id, body)
     except VisualWorkshopProjectNotFoundError as exc:
         raise _not_found(exc) from None
 
@@ -97,11 +103,12 @@ async def patch_project(
 @router.delete("/{project_id}")
 async def delete_project(
     session: SessionDep,
+    workspace_id: WorkspaceDep,
     project_id: str,
     expected_revision: int = Query(ge=0),
 ) -> dict[str, bool]:
     try:
-        await VisualWorkshopProjects(session).delete(project_id, expected_revision)
+        await VisualWorkshopProjects(session, workspace_id).delete(project_id, expected_revision)
     except VisualWorkshopProjectNotFoundError as exc:
         raise _not_found(exc) from None
     return {"deleted": True}
@@ -110,11 +117,14 @@ async def delete_project(
 @router.post("/{project_id}/asset-references", response_model=VisualAssetOut)
 async def create_asset_reference(
     session: SessionDep,
+    workspace_id: WorkspaceDep,
     project_id: str,
     body: VisualAssetReferenceCreateIn,
 ) -> VisualAssetOut:
     try:
-        return await VisualAssets(session, get_settings()).create_reference(project_id, body)
+        return await VisualAssets(session, get_settings(), workspace_id).create_reference(
+            project_id, body
+        )
     except AssetError as exc:
         raise _asset_error(exc) from None
 
@@ -122,11 +132,14 @@ async def create_asset_reference(
 @router.post("/{project_id}/asset-imports", response_model=VisualAssetListOut)
 async def import_assets(
     session: SessionDep,
+    workspace_id: WorkspaceDep,
     project_id: str,
     body: VisualAssetImportIn,
 ) -> VisualAssetListOut:
     try:
-        return await VisualAssets(session, get_settings()).import_assets(project_id, body)
+        return await VisualAssets(session, get_settings(), workspace_id).import_assets(
+            project_id, body
+        )
     except AssetError as exc:
         raise _asset_error(exc) from None
 
@@ -134,12 +147,13 @@ async def import_assets(
 @router.patch("/{project_id}/asset-references/{reference_id}", response_model=VisualAssetOut)
 async def patch_asset_reference(
     session: SessionDep,
+    workspace_id: WorkspaceDep,
     project_id: str,
     reference_id: str,
     body: VisualAssetReferencePatchIn,
 ) -> VisualAssetOut:
     try:
-        return await VisualAssets(session, get_settings()).patch_reference(
+        return await VisualAssets(session, get_settings(), workspace_id).patch_reference(
             project_id, reference_id, body
         )
     except AssetError as exc:
@@ -149,12 +163,13 @@ async def patch_asset_reference(
 @router.delete("/{project_id}/asset-references/{reference_id}")
 async def delete_asset_reference(
     session: SessionDep,
+    workspace_id: WorkspaceDep,
     project_id: str,
     reference_id: str,
     expected_revision: int = Query(ge=0),
 ) -> dict[str, bool]:
     try:
-        await VisualAssets(session, get_settings()).delete_reference(
+        await VisualAssets(session, get_settings(), workspace_id).delete_reference(
             project_id, reference_id, expected_revision
         )
     except AssetError as exc:

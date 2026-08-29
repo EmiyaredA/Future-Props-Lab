@@ -5,7 +5,6 @@ from datetime import UTC, datetime
 from sqlalchemy import and_, case, delete, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.tenant_context import current_workspace_id
 from app.core.time import iso_utc
 from app.llm.call_logs.reproduction import (
     ReproductionBundle,
@@ -44,8 +43,9 @@ def _detail(row: LlmCallLog) -> CallLogOut:
 
 
 class CallLogService:
-    def __init__(self, session: AsyncSession) -> None:
+    def __init__(self, session: AsyncSession, workspace_id: str) -> None:
         self.session = session
+        self.workspace_id = workspace_id
 
     async def list(
         self,
@@ -164,7 +164,7 @@ class CallLogService:
         result = await self.session.execute(
             delete(LlmCallLog).where(
                 LlmCallLog.id == log_id,
-                LlmCallLog.workspace_id == current_workspace_id(),
+                LlmCallLog.workspace_id == self.workspace_id,
             )
         )
         await self.session.commit()
@@ -176,7 +176,7 @@ class CallLogService:
         result = await self.session.execute(
             delete(LlmCallLog).where(
                 LlmCallLog.id.in_(ids),
-                LlmCallLog.workspace_id == current_workspace_id(),
+                LlmCallLog.workspace_id == self.workspace_id,
             )
         )
         await self.session.commit()

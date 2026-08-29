@@ -5,14 +5,13 @@ import os
 from pathlib import Path
 from uuid import uuid4
 
-from fastapi import UploadFile
 from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.concurrency.revisions import RevisionConflictError
 from app.core.config import Settings, get_settings
-from app.core.tenant_context import current_workspace_id
 from app.core.time import iso_utc
+from app.files.incoming import IncomingFile
 from app.files.policy import ALLOWED_FILES, looks_like
 from app.files.storage import AssetStorage
 from app.llm.providers.senseaudio_asr import MAX_ASR_FILE_BYTES
@@ -156,8 +155,11 @@ def _copy_limited(source_path: Path, target_path: Path, max_bytes: int) -> int:
 
 
 class ModelTestTranscription:
-    def __init__(self, session: AsyncSession, settings: Settings | None = None) -> None:
+    def __init__(
+        self, session: AsyncSession, workspace_id: str, settings: Settings | None = None
+    ) -> None:
         self.session = session
+        self.workspace_id = workspace_id
         self.settings = settings or get_settings()
         self.asset_storage = AssetStorage(self.settings)
 
@@ -212,7 +214,7 @@ class ModelTestTranscription:
 
     async def create_upload(
         self,
-        upload: UploadFile,
+        upload: IncomingFile,
         *,
         model_id: str,
         parameters: ModelTestTranscriptionParametersIn,
@@ -235,7 +237,7 @@ class ModelTestTranscription:
         snapshots = (model.id, model.slug, provider.id, provider.name, provider.kind)
         max_bytes = _max_input_bytes(provider)
         await self.session.rollback()
-        workspace_id = current_workspace_id()
+        workspace_id = self.workspace_id
         storage_key, temp_path, final_path = self._paths(workspace_id)
         size = 0
         try:

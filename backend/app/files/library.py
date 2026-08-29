@@ -5,10 +5,10 @@ import os
 from pathlib import Path
 from uuid import uuid4
 
-from fastapi import UploadFile
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import Settings
+from app.files.incoming import IncomingFile
 from app.files.policy import (
     ALLOWED_FILES,
     display_name_without_original_extension,
@@ -44,15 +44,17 @@ class AssetLibrary:
 
     async def store_upload(
         self,
-        upload: UploadFile,
+        upload: IncomingFile,
         *,
+        workspace_id: str,
+        filename_override: str | None = None,
         visual_project_id: str | None = None,
         galgame_project_id: str | None = None,
         video_editor_project_id: str | None = None,
         folder_id: str | None = None,
         allowed_extensions: set[str] | None = None,
     ) -> VisualAsset:
-        filename = Path(upload.filename or "").name
+        filename = Path(filename_override or upload.filename or "").name
         extension = Path(filename).suffix.lower()
         config = ALLOWED_FILES.get(extension)
         if (
@@ -72,6 +74,7 @@ class AssetLibrary:
             visual_project_id=visual_project_id,
             galgame_project_id=galgame_project_id,
             video_editor_project_id=video_editor_project_id,
+            workspace_id=workspace_id,
         )
         size = 0
         head = bytearray()
@@ -94,6 +97,7 @@ class AssetLibrary:
                 raise AssetError("JSON 文件内容无效", code="invalid_file_content")
             os.replace(temp_path, final_path)
             row = VisualAsset(
+                workspace_id=workspace_id,
                 project_id=visual_project_id,
                 galgame_project_id=galgame_project_id,
                 video_editor_project_id=video_editor_project_id,
@@ -121,6 +125,7 @@ class AssetLibrary:
         self,
         source_path: Path,
         *,
+        workspace_id: str,
         filename: str,
         content_type: str,
         folder_id: str | None = None,
@@ -156,6 +161,7 @@ class AssetLibrary:
             visual_project_id=None,
             galgame_project_id=galgame_project_id,
             video_editor_project_id=video_editor_project_id,
+            workspace_id=workspace_id,
         )
 
         def copy_file() -> tuple[int, bytes]:
@@ -183,6 +189,7 @@ class AssetLibrary:
                 raise AssetError("JSON 文件内容无效", code="invalid_file_content")
             os.replace(temp_path, final_path)
             row = VisualAsset(
+                workspace_id=workspace_id,
                 project_id=None,
                 galgame_project_id=galgame_project_id,
                 video_editor_project_id=video_editor_project_id,

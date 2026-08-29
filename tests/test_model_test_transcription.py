@@ -268,7 +268,7 @@ async def test_transcription_upload_formats_runner_segments_logs_and_cas_cleanup
         async with SessionLocal() as session:
             bind_workspace(session, other_workspace_id)
             with pytest.raises(ModelTestTranscriptionError, match="不存在"):
-                await ModelTestTranscription(session).get(task_ids[0])
+                await ModelTestTranscription(session, "default").get(task_ids[0])
 
         mismatch = await client.post(
             "/v1/model-test/transcription-tasks/upload",

@@ -12,7 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from app.concurrency.polling_runner import PollingTaskRunner
 from app.core.config import Settings, get_settings
 from app.core.db import SessionLocal
-from app.core.tenant_context import bind_workspace
+from app.core.tenant_context import bind_workspace, require_workspace_id
 from app.core.time import utc_now
 from app.files.digests import sha256_file
 from app.files.library import AssetLibrary
@@ -207,7 +207,10 @@ class VideoEditorRunner(PollingTaskRunner):
     async def _get(self, session: AsyncSession, task_id: str) -> VideoEditorTask | None:
         task = await session.get(VideoEditorTask, task_id)
         if task:
-            bind_workspace(session, task.workspace_id)
+            bind_workspace(
+                session,
+                require_workspace_id(task.workspace_id, subject="video editor task"),
+            )
         return task
 
     async def _set(
@@ -291,7 +294,12 @@ class VideoEditorRunner(PollingTaskRunner):
             metadata.revision += 1
             await session.commit()
             source = self.storage.path_for(asset)
-            derived = self.storage.project_root("video-editor", task.project_id) / "derived"
+            derived = (
+                self.storage.project_root(
+                    "video-editor", task.project_id, workspace_id=task.workspace_id
+                )
+                / "derived"
+            )
             derived.mkdir(parents=True, exist_ok=True)
             probe, proxy, thumbnail, waveform, fingerprint = await asyncio.to_thread(
                 _prepare_media, source, asset, derived
@@ -424,6 +432,7 @@ class VideoEditorRunner(PollingTaskRunner):
                 title = project.title if project else "video-editor"
                 asset, staged = await AssetLibrary(session, self.settings).stage_local_copy(
                     output,
+                    workspace_id=workspace_id,
                     filename=f"{title}-{task_id[:8]}.mp4",
                     content_type="video/mp4",
                     video_editor_project_id=project_id,

@@ -107,8 +107,14 @@ class ModelCatalogService:
     def categories(self) -> ModelCategoryListOut:
         return ModelCategoryListOut(items=list(MODEL_CATEGORIES))
 
+    def _workspace_id(self) -> str:
+        workspace_id = str(self.session.info.get("workspace_id") or "").strip()
+        if not workspace_id:
+            raise RuntimeError("model catalog session is not bound to a workspace")
+        return workspace_id
+
     async def catalog(self) -> ModelCatalogOut:
-        workspace_id = str(self.session.info.get("workspace_id") or "default")
+        workspace_id = self._workspace_id()
         state = await self.session.get(ModelCatalogState, workspace_id)
         revision = int(state.revision if state else 0)
         providers = (
@@ -158,8 +164,7 @@ class ModelCatalogService:
         result = await self.session.execute(
             update(ModelCatalogState)
             .where(
-                ModelCatalogState.workspace_id
-                == str(self.session.info.get("workspace_id") or "default"),
+                ModelCatalogState.workspace_id == self._workspace_id(),
                 ModelCatalogState.revision == expected,
             )
             .values(revision=ModelCatalogState.revision + 1)

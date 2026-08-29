@@ -35,8 +35,9 @@ def project_out(row: GalgameWorkshopProject) -> GalgameWorkshopProjectOut:
 
 
 class GalgameWorkshopProjects:
-    def __init__(self, session: AsyncSession) -> None:
+    def __init__(self, session: AsyncSession, workspace_id: str) -> None:
         self.session = session
+        self.workspace_id = workspace_id
         self.storage = AssetStorage(get_settings())
 
     async def list(self) -> GalgameWorkshopProjectListOut:
@@ -67,7 +68,13 @@ class GalgameWorkshopProjects:
         row = GalgameWorkshopProject(title=body.title, status="draft")
         self.session.add(row)
         await self.session.flush()
-        async with creating_project_layout(self.session, self.storage, "galgame-workshop", row.id):
+        async with creating_project_layout(
+            self.session,
+            self.storage,
+            "galgame-workshop",
+            row.id,
+            workspace_id=self.workspace_id,
+        ):
             self.session.add(
                 GalgameStoryDocument(
                     project_id=row.id,
@@ -84,7 +91,9 @@ class GalgameWorkshopProjects:
     ) -> GalgameWorkshopProjectOut:
         await self._row(project_id)
         if body.status == "completed":
-            report = await GalgameReadiness(self.session, get_settings()).report(project_id)
+            report = await GalgameReadiness(self.session, get_settings(), self.workspace_id).report(
+                project_id
+            )
             if not report.ready:
                 raise GalgameStoryNotReadyError(report)
         values: dict[str, object] = {
@@ -133,6 +142,7 @@ class GalgameWorkshopProjects:
             self.storage,
             "galgame-workshop",
             project_id,
+            workspace_id=self.workspace_id,
             legacy_paths=legacy_paths,
         ):
             result = await self.session.execute(

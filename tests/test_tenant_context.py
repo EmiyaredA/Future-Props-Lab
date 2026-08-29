@@ -6,7 +6,11 @@ import pytest
 from sqlalchemy import delete, select, update
 
 from app.core.db import SessionLocal
-from app.core.tenant_context import TenantScopeError, bind_workspace
+from app.core.tenant_context import (
+    TenantScopeError,
+    bind_workspace,
+    require_workspace_id,
+)
 from app.llm.call_logs.service import CallLogService
 from app.models import LlmCallLog
 
@@ -24,6 +28,11 @@ def _log(log_id: str, workspace_id: str, *, model: str) -> LlmCallLog:
         latency_ms=1,
         status="success",
     )
+
+
+def test_missing_background_workspace_fails_closed() -> None:
+    with pytest.raises(TenantScopeError, match="missing workspace ownership"):
+        require_workspace_id("", subject="background task")
 
 
 @pytest.mark.asyncio
@@ -86,7 +95,10 @@ async def test_call_log_batch_delete_cannot_cross_workspace() -> None:
     try:
         async with SessionLocal() as session:
             bind_workspace(session, first_workspace)
-            assert await CallLogService(session).batch_delete([first_id, second_id]) == 1
+            assert (
+                await CallLogService(session, first_workspace).batch_delete([first_id, second_id])
+                == 1
+            )
 
         async with SessionLocal() as session:
             assert await session.get(LlmCallLog, first_id) is None

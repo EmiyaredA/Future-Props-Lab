@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException, Query
 
-from app.deps import SessionDep
+from app.deps import SessionDep, WorkspaceDep
 from app.galgame_workshop.errors import (
     GalgameStoryNotReadyError,
     GalgameWorkshopProjectNotFoundError,
@@ -20,22 +20,27 @@ router = APIRouter()
 
 
 @router.get("", response_model=GalgameWorkshopProjectListOut)
-async def list_projects(session: SessionDep) -> GalgameWorkshopProjectListOut:
-    return await GalgameWorkshopProjects(session).list()
+async def list_projects(
+    session: SessionDep, workspace_id: WorkspaceDep
+) -> GalgameWorkshopProjectListOut:
+    return await GalgameWorkshopProjects(session, workspace_id).list()
 
 
 @router.post("", response_model=GalgameWorkshopProjectOut)
 async def create_project(
     session: SessionDep,
+    workspace_id: WorkspaceDep,
     body: GalgameWorkshopProjectCreateIn,
 ) -> GalgameWorkshopProjectOut:
-    return await GalgameWorkshopProjects(session).create(body)
+    return await GalgameWorkshopProjects(session, workspace_id).create(body)
 
 
 @router.get("/{project_id}", response_model=GalgameWorkshopProjectOut)
-async def get_project(session: SessionDep, project_id: str) -> GalgameWorkshopProjectOut:
+async def get_project(
+    session: SessionDep, workspace_id: WorkspaceDep, project_id: str
+) -> GalgameWorkshopProjectOut:
     try:
-        return await GalgameWorkshopProjects(session).get(project_id)
+        return await GalgameWorkshopProjects(session, workspace_id).get(project_id)
     except GalgameWorkshopProjectNotFoundError as exc:
         raise _not_found(exc) from None
 
@@ -43,11 +48,12 @@ async def get_project(session: SessionDep, project_id: str) -> GalgameWorkshopPr
 @router.patch("/{project_id}", response_model=GalgameWorkshopProjectOut)
 async def patch_project(
     session: SessionDep,
+    workspace_id: WorkspaceDep,
     project_id: str,
     body: GalgameWorkshopProjectPatchIn,
 ) -> GalgameWorkshopProjectOut:
     try:
-        return await GalgameWorkshopProjects(session).patch(project_id, body)
+        return await GalgameWorkshopProjects(session, workspace_id).patch(project_id, body)
     except GalgameWorkshopProjectNotFoundError as exc:
         raise _not_found(exc) from None
     except GalgameStoryNotReadyError as exc:
@@ -64,11 +70,12 @@ async def patch_project(
 @router.delete("/{project_id}")
 async def delete_project(
     session: SessionDep,
+    workspace_id: WorkspaceDep,
     project_id: str,
     expected_revision: int = Query(ge=0),
 ) -> dict[str, bool]:
     try:
-        await GalgameWorkshopProjects(session).delete(project_id, expected_revision)
+        await GalgameWorkshopProjects(session, workspace_id).delete(project_id, expected_revision)
     except GalgameWorkshopProjectNotFoundError as exc:
         raise _not_found(exc) from None
     return {"deleted": True}

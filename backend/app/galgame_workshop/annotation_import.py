@@ -6,7 +6,6 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import Settings, get_settings
-from app.core.tenant_context import current_workspace_id
 from app.core.time import iso_utc
 from app.files import AssetError
 from app.files.digests import sha256_file
@@ -95,8 +94,11 @@ def _curtain_intervals(segments: list[AudioAnnotationSegment], duration_ms: int)
 
 
 class GalgameAnnotationImports:
-    def __init__(self, session: AsyncSession, settings: Settings | None = None) -> None:
+    def __init__(
+        self, session: AsyncSession, workspace_id: str, settings: Settings | None = None
+    ) -> None:
         self.session = session
+        self.workspace_id = workspace_id
         self.settings = settings or get_settings()
         self.storage = AssetStorage(self.settings)
 
@@ -433,7 +435,7 @@ class GalgameAnnotationImports:
                 detail={"issues": [item.model_dump(mode="json") for item in preview.issues]},
             )
         task = GalgameAnnotationImportTask(
-            workspace_id=current_workspace_id(),
+            workspace_id=self.workspace_id,
             project_id=project_id,
             source_project_id=body.source_project_id,
             request_id=body.request_id,

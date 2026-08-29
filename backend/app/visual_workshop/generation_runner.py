@@ -13,7 +13,7 @@ from app.concurrency.polling_runner import PollingTaskRunner
 from app.core.config import Settings, get_settings
 from app.core.credentials import decrypt_secret
 from app.core.db import SessionLocal
-from app.core.tenant_context import bind_workspace, current_workspace_id
+from app.core.tenant_context import bind_workspace, require_workspace_id
 from app.core.time import utc_now
 from app.files.storage import TARGET_STORAGE_VERSION, AssetStorage
 from app.llm.generation_runtime import (
@@ -60,7 +60,10 @@ class VisualGenerationRunner(PollingTaskRunner):
     async def _load_task(self, session: AsyncSession, task_id: str) -> VisualGenerationTask | None:
         task = await session.get(VisualGenerationTask, task_id)
         if task is not None:
-            bind_workspace(session, task.workspace_id)
+            bind_workspace(
+                session,
+                require_workspace_id(task.workspace_id, subject="visual generation task"),
+            )
         return task
 
     async def recover(self) -> None:
@@ -134,6 +137,7 @@ class VisualGenerationRunner(PollingTaskRunner):
                 payload = dict(task.request_payload or {})
                 model_slug = task.model_slug
                 provider_kind = task.provider_kind
+                workspace_id = task.workspace_id
                 if status == "queued":
                     task.status = "submitting"
                     task.revision += 1
@@ -149,6 +153,7 @@ class VisualGenerationRunner(PollingTaskRunner):
                     api_key=api_key,
                     model_slug=model_slug,
                     payload=payload,
+                    workspace_id=workspace_id,
                 )
                 async with self.session_factory() as session:
                     current = await self._load_task(session, task_id)
@@ -209,9 +214,9 @@ class VisualGenerationRunner(PollingTaskRunner):
         except Exception as exc:
             await self._fail(task_id, _safe_task_error(exc))
 
-    async def _asset_data_uri(self, asset_id: str) -> str:
+    async def _asset_data_uri(self, asset_id: str, workspace_id: str) -> str:
         async with self.session_factory() as session:
-            bind_workspace(session, current_workspace_id())
+            bind_workspace(session, workspace_id)
             asset = await session.get(VisualAsset, asset_id)
             if asset is None or asset.media_kind != "image":
                 raise ValueError("参考图片已不存在")
@@ -222,9 +227,11 @@ class VisualGenerationRunner(PollingTaskRunner):
             raise ValueError("参考图片超过 SenseAudio 的 30 MB 限制")
         return await read_data_uri(path=path, mime_type=mime_type, max_bytes=30 * 1024 * 1024)
 
-    async def _temporary_asset_url(self, asset_id: str, expected_kind: str) -> str:
+    async def _temporary_asset_url(
+        self, asset_id: str, expected_kind: str, workspace_id: str
+    ) -> str:
         async with self.session_factory() as session:
-            bind_workspace(session, current_workspace_id())
+            bind_workspace(session, workspace_id)
             asset = await session.get(VisualAsset, asset_id)
             if asset is None or asset.media_kind != expected_kind:
                 raise TemporaryMediaError("参考素材已不存在或类型不匹配")
@@ -245,10 +252,15 @@ class VisualGenerationRunner(PollingTaskRunner):
         api_key: str,
         model_slug: str,
         payload: dict,
+        workspace_id: str,
     ) -> str:
         if provider_kind == "senseaudio_image":
             reference_id = payload.get("reference_asset_id")
-            reference = await self._asset_data_uri(str(reference_id)) if reference_id else None
+            reference = (
+                await self._asset_data_uri(str(reference_id), workspace_id)
+                if reference_id
+                else None
+            )
             return await submit_generation_task(
                 provider_kind=provider_kind,
                 base_url=base_url,
@@ -266,7 +278,9 @@ class VisualGenerationRunner(PollingTaskRunner):
             content.append(
                 {
                     "type": "image",
-                    "url": await self._asset_data_uri(payload["first_frame_asset_id"]),
+                    "url": await self._asset_data_uri(
+                        payload["first_frame_asset_id"], workspace_id
+                    ),
                     "role": "first_frame",
                 }
             )
@@ -274,7 +288,9 @@ class VisualGenerationRunner(PollingTaskRunner):
                 content.append(
                     {
                         "type": "image",
-                        "url": await self._asset_data_uri(payload["last_frame_asset_id"]),
+                        "url": await self._asset_data_uri(
+                            payload["last_frame_asset_id"], workspace_id
+                        ),
                         "role": "last_frame",
                     }
                 )
@@ -283,7 +299,7 @@ class VisualGenerationRunner(PollingTaskRunner):
                 content.append(
                     {
                         "type": "image",
-                        "url": await self._asset_data_uri(asset_id),
+                        "url": await self._asset_data_uri(asset_id, workspace_id),
                         "role": "reference",
                     }
                 )
@@ -291,14 +307,18 @@ class VisualGenerationRunner(PollingTaskRunner):
                 content.append(
                     {
                         "type": "audio",
-                        "audio_url": await self._temporary_asset_url(str(asset_id), "audio"),
+                        "audio_url": await self._temporary_asset_url(
+                            str(asset_id), "audio", workspace_id
+                        ),
                     }
                 )
             for asset_id in payload.get("video_asset_ids", []):
                 content.append(
                     {
                         "type": "video",
-                        "video_url": await self._temporary_asset_url(str(asset_id), "video"),
+                        "video_url": await self._temporary_asset_url(
+                            str(asset_id), "video", workspace_id
+                        ),
                     }
                 )
             # Compatibility for tasks queued before asset-ID based references were introduced.

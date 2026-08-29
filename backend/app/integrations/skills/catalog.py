@@ -5,7 +5,6 @@ import shutil
 import zipfile
 from pathlib import Path
 
-from fastapi import UploadFile
 from sqlalchemy import delete, func, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -13,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.concurrency.revisions import RevisionConflictError
 from app.core.config import get_settings
 from app.core.time import iso_utc, utc_now
+from app.files.incoming import IncomingFile
 from app.integrations.common import (
     DuplicateIntegrationError,
     IntegrationNotFoundError,
@@ -129,7 +129,7 @@ class SkillCatalog:
         )
         return [_version_out(row) for row in rows]
 
-    async def create(self, upload: UploadFile, *, enabled: bool) -> SkillOut:
+    async def create(self, upload: IncomingFile, *, enabled: bool) -> SkillOut:
         staged = await self.storage.stage(upload)
         row = SkillIntegration(
             name=staged.name,
@@ -177,7 +177,7 @@ class SkillCatalog:
         )
 
     async def add_version(
-        self, skill_id: str, upload: UploadFile, *, expected_revision: int
+        self, skill_id: str, upload: IncomingFile, *, expected_revision: int
     ) -> SkillOut:
         current = await self._get(skill_id)
         snapshot = await self._out(current)

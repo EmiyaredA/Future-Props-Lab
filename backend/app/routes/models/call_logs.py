@@ -4,7 +4,7 @@ from datetime import datetime
 
 from fastapi import APIRouter, HTTPException, Query, Response
 
-from app.deps import SessionDep
+from app.deps import SessionDep, WorkspaceDep
 from app.llm.call_logs import CallLogService, ReproductionUnavailableError
 from app.schemas.call_log import (
     BatchDeleteIn,
@@ -14,6 +14,10 @@ from app.schemas.call_log import (
 )
 
 router = APIRouter(prefix="/llm-call-logs", tags=["model-logs"])
+
+
+def _logs(session: SessionDep, workspace_id: str) -> CallLogService:
+    return CallLogService(session, workspace_id)
 
 
 def _date(value: str | None, *, end: bool = False) -> datetime | None:
@@ -30,6 +34,7 @@ def _date(value: str | None, *, end: bool = False) -> datetime | None:
 @router.get("", response_model=CallLogListOut)
 async def list_logs(
     session: SessionDep,
+    workspace_id: WorkspaceDep,
     q: str = Query("", max_length=200),
     call_source: str = Query(
         "",
@@ -48,7 +53,7 @@ async def list_logs(
     page: int = Query(1, ge=1),
     page_size: int = Query(25, ge=1, le=100),
 ) -> CallLogListOut:
-    return await CallLogService(session).list(
+    return await _logs(session, workspace_id).list(
         q=q.strip(),
         call_source=call_source,
         provider_kind=provider_kind,
@@ -62,13 +67,13 @@ async def list_logs(
 
 
 @router.get("/stats", response_model=CallLogStatsOut)
-async def stats(session: SessionDep) -> CallLogStatsOut:
-    return await CallLogService(session).stats()
+async def stats(session: SessionDep, workspace_id: WorkspaceDep) -> CallLogStatsOut:
+    return await _logs(session, workspace_id).stats()
 
 
 @router.get("/{log_id}", response_model=CallLogOut)
-async def detail(session: SessionDep, log_id: str) -> CallLogOut:
-    row = await CallLogService(session).get(log_id)
+async def detail(session: SessionDep, workspace_id: WorkspaceDep, log_id: str) -> CallLogOut:
+    row = await _logs(session, workspace_id).get(log_id)
     if row is None:
         raise HTTPException(404, {"code": "not_found", "message": "调用日志不存在"})
     return row
@@ -79,9 +84,11 @@ async def detail(session: SessionDep, log_id: str) -> CallLogOut:
     response_class=Response,
     responses={200: {"content": {"application/zip": {}}}},
 )
-async def reproduction_bundle(session: SessionDep, log_id: str) -> Response:
+async def reproduction_bundle(
+    session: SessionDep, workspace_id: WorkspaceDep, log_id: str
+) -> Response:
     try:
-        bundle = await CallLogService(session).reproduction_bundle(log_id)
+        bundle = await _logs(session, workspace_id).reproduction_bundle(log_id)
     except ReproductionUnavailableError as exc:
         raise HTTPException(
             409,
@@ -97,12 +104,16 @@ async def reproduction_bundle(session: SessionDep, log_id: str) -> Response:
 
 
 @router.delete("/{log_id}")
-async def delete_one(session: SessionDep, log_id: str) -> dict[str, bool]:
-    if not await CallLogService(session).delete(log_id):
+async def delete_one(
+    session: SessionDep, workspace_id: WorkspaceDep, log_id: str
+) -> dict[str, bool]:
+    if not await _logs(session, workspace_id).delete(log_id):
         raise HTTPException(404, {"code": "not_found", "message": "调用日志不存在"})
     return {"ok": True}
 
 
 @router.post("/batch-delete")
-async def batch_delete(session: SessionDep, body: BatchDeleteIn) -> dict[str, int]:
-    return {"deleted": await CallLogService(session).batch_delete(body.ids)}
+async def batch_delete(
+    session: SessionDep, workspace_id: WorkspaceDep, body: BatchDeleteIn
+) -> dict[str, int]:
+    return {"deleted": await _logs(session, workspace_id).batch_delete(body.ids)}

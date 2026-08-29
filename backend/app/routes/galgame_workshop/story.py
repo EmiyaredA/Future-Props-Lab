@@ -6,7 +6,7 @@ from typing import Annotated
 from fastapi import APIRouter, File, Form, UploadFile
 
 from app.core.config import get_settings
-from app.deps import SessionDep
+from app.deps import SessionDep, WorkspaceDep
 from app.galgame_workshop.errors import (
     GalgameStoryDocumentInvalidError,
     GalgameStoryDocumentNotFoundError,
@@ -119,6 +119,7 @@ async def patch_story_stage_expression(
 @router.post("/{project_id}/story/import", response_model=GalgameStoryDocumentOut)
 async def import_legacy_story(
     session: SessionDep,
+    workspace_id: WorkspaceDep,
     project_id: str,
     expected_revision: Annotated[int, Form(alias="expectedRevision", ge=0)],
     file: Annotated[UploadFile, File()],
@@ -131,7 +132,7 @@ async def import_legacy_story(
             document = json.loads(payload.decode("utf-8-sig"))
         except (UnicodeDecodeError, json.JSONDecodeError) as exc:
             raise GalgameStoryDocumentInvalidError("Story 导入文件不是有效的 UTF-8 JSON") from exc
-        return await GalgameStoryMigrations(session).import_legacy(
+        return await GalgameStoryMigrations(session, workspace_id).import_legacy(
             project_id,
             expected_revision=expected_revision,
             document=document,
@@ -148,9 +149,11 @@ async def import_legacy_story(
 
 
 @router.get("/{project_id}/story/report", response_model=GalgameStoryRouteReportOut)
-async def get_story_report(session: SessionDep, project_id: str) -> GalgameStoryRouteReportOut:
+async def get_story_report(
+    session: SessionDep, workspace_id: WorkspaceDep, project_id: str
+) -> GalgameStoryRouteReportOut:
     try:
-        return await GalgameReadiness(session, get_settings()).report(project_id)
+        return await GalgameReadiness(session, get_settings(), workspace_id).report(project_id)
     except (
         GalgameWorkshopProjectNotFoundError,
         GalgameStoryDocumentNotFoundError,

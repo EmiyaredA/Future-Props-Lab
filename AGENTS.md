@@ -53,6 +53,9 @@
   供应商原始事件。
 - 账号、Session、审计、Management API Key 与 Workspace 治理归属 `backend/app/accounts/`；
   `StudioPrincipal` 是业务请求的唯一租户来源，业务 API 不接受客户端提交 `workspace_id`。
+  路由需要显式租户参数时使用 `WorkspaceDep`；不得新增 ContextVar、`default` 回退或其他环境式
+  Workspace 来源。业务文件用例依赖 `files.IncomingFile`，`UploadFile` 只能出现在路由适配层；
+  `AssetStorage` 的项目路径与写入方法必须显式传入 `workspace_id`。
   根资源必须直接保存 `workspace_id`，子资源通过已校验的根资源继承；跨 Workspace 的 ID 一律
   按不存在处理。后台执行器必须从任务记录恢复 Workspace，不能依赖请求上下文。
 - Web 不保存密码、Session、CSRF 或 Management API Key 明文；Session 只使用 HttpOnly Cookie，

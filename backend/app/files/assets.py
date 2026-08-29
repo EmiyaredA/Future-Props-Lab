@@ -5,7 +5,6 @@ import shutil
 from pathlib import Path
 from uuid import uuid4
 
-from fastapi import UploadFile
 from sqlalchemy import delete, select, update
 from sqlalchemy.exc import IntegrityError
 
@@ -18,6 +17,7 @@ from app.files.asset_scope import (
     is_library_asset,
     is_visual_project_asset,
 )
+from app.files.incoming import IncomingFile
 from app.files.library import AssetError
 from app.files.policy import display_name_without_original_extension
 from app.files.storage import TARGET_STORAGE_VERSION
@@ -343,7 +343,7 @@ class VisualAssets(VisualAssetContext):
 
     async def upload(
         self,
-        upload: UploadFile,
+        upload: IncomingFile,
         *,
         project_id: str | None,
         folder_id: str | None,
@@ -353,6 +353,7 @@ class VisualAssets(VisualAssetContext):
         await self._validate_folder_scope(folder_id, project_id)
         row = await self.library.store_upload(
             upload,
+            workspace_id=self.workspace_id,
             visual_project_id=project_id,
             folder_id=folder_id,
         )
@@ -567,6 +568,7 @@ class VisualAssets(VisualAssetContext):
                     visual_project_id=project_id,
                     galgame_project_id=None,
                     video_editor_project_id=None,
+                    workspace_id=self.workspace_id,
                 )
                 try:
                     shutil.copyfile(source_path, temp_path)
@@ -575,6 +577,7 @@ class VisualAssets(VisualAssetContext):
                     temp_path.unlink(missing_ok=True)
                 copied_paths.append(final_path)
                 imported = VisualAsset(
+                    workspace_id=self.workspace_id,
                     project_id=project_id,
                     galgame_project_id=None,
                     folder_id=None,

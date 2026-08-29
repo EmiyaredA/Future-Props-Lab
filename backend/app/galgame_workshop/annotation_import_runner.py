@@ -14,7 +14,7 @@ from app.concurrency.polling_runner import PollingTaskRunner
 from app.concurrency.revisions import RevisionConflictError
 from app.core.config import Settings, get_settings
 from app.core.db import SessionLocal
-from app.core.tenant_context import bind_workspace
+from app.core.tenant_context import bind_workspace, require_workspace_id
 from app.core.time import utc_now
 from app.files.digests import sha256_file
 from app.files.library import AssetLibrary
@@ -137,8 +137,9 @@ class GalgameAnnotationImportRunner(PollingTaskRunner):
         task = await session.get(GalgameAnnotationImportTask, task_id)
         if task is None:
             return None
+        workspace_id = require_workspace_id(task.workspace_id, subject="annotation import task")
         project = await session.get(GalgameWorkshopProject, task.project_id)
-        if project is None or project.workspace_id != task.workspace_id:
+        if project is None or project.workspace_id != workspace_id:
             task.status = "failed"
             task.progress = 0
             task.result_detail = {"phase": "failed", "code": "workspace_mismatch"}
@@ -148,7 +149,7 @@ class GalgameAnnotationImportRunner(PollingTaskRunner):
             task.finished_at = utc_now()
             await session.commit()
             return None
-        bind_workspace(session, task.workspace_id)
+        bind_workspace(session, workspace_id)
         return task
 
     async def recover(self) -> None:
@@ -227,11 +228,12 @@ class GalgameAnnotationImportRunner(PollingTaskRunner):
                 task.updated_at = utc_now()
                 body = GalgameAnnotationImportIn.model_validate(task.request_payload)
                 project_id = task.project_id
+                workspace_id = task.workspace_id
                 await session.commit()
 
             async with self.session_factory() as session:
-                bind_workspace(session, task.workspace_id)
-                imports = GalgameAnnotationImports(session, self.settings)
+                bind_workspace(session, workspace_id)
+                imports = GalgameAnnotationImports(session, workspace_id, self.settings)
                 preview = await imports.preview(project_id, body)
                 if not preview.ready:
                     conflicts = {"source_revision_conflict", "story_revision_conflict"}
@@ -317,7 +319,7 @@ class GalgameAnnotationImportRunner(PollingTaskRunner):
                     checksum = await asyncio.to_thread(sha256_file, output_path)
 
                     async with self.session_factory() as session:
-                        bind_workspace(session, task.workspace_id)
+                        bind_workspace(session, workspace_id)
                         existing = (
                             await session.execute(
                                 select(VisualAsset, GalgameAssetMetadata)
@@ -339,6 +341,7 @@ class GalgameAnnotationImportRunner(PollingTaskRunner):
                             library = AssetLibrary(session, self.settings)
                             asset, staged_path = await library.stage_local_copy(
                                 output_path,
+                                workspace_id=workspace_id,
                                 filename=filename,
                                 content_type="audio/mp4",
                                 galgame_project_id=project_id,
@@ -404,7 +407,7 @@ class GalgameAnnotationImportRunner(PollingTaskRunner):
                     asset["fileId"] = generated[asset["fileId"]]
 
             async with self.session_factory() as session:
-                bind_workspace(session, task.workspace_id)
+                bind_workspace(session, workspace_id)
                 master_metadata = await session.get(GalgameAssetMetadata, body.master_asset_id)
                 if master_metadata is None or master_metadata.project_id != project_id:
                     raise RuntimeError("完整主音轨素材元数据已不存在")
@@ -431,7 +434,9 @@ class GalgameAnnotationImportRunner(PollingTaskRunner):
                         "storyRevision": saved_revision,
                     },
                 )
-                report = await GalgameReadiness(session, self.settings).report(project_id)
+                report = await GalgameReadiness(session, self.settings, workspace_id).report(
+                    project_id
+                )
                 if not report.ready or report.errors or report.warnings:
                     messages = [issue.message for issue in report.errors + report.warnings]
                     raise RuntimeError("线路报告未通过：" + "；".join(messages))

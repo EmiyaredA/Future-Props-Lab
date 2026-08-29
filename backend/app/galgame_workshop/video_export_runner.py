@@ -15,7 +15,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from app.concurrency.polling_runner import PollingTaskRunner
 from app.core.config import Settings, get_settings
 from app.core.db import SessionLocal
-from app.core.tenant_context import bind_workspace
+from app.core.tenant_context import bind_workspace, require_workspace_id
 from app.core.time import utc_now
 from app.files.digests import sha256_file
 from app.files.library import AssetLibrary
@@ -132,7 +132,10 @@ class GalgameVideoExportRunner(PollingTaskRunner):
             task = await session.get(GalgameVideoExportTask, task_id)
             if task is None:
                 return
-            bind_workspace(session, task.workspace_id)
+            bind_workspace(
+                session,
+                require_workspace_id(task.workspace_id, subject="video export task"),
+            )
             detail = dict(task.result_detail or {})
             if phase is not None:
                 detail["phase"] = phase
@@ -165,7 +168,8 @@ class GalgameVideoExportRunner(PollingTaskRunner):
                 task = await session.get(GalgameVideoExportTask, task_id)
                 if task is None or task.status != "queued":
                     return
-                bind_workspace(session, task.workspace_id)
+                workspace_id = require_workspace_id(task.workspace_id, subject="video export task")
+                bind_workspace(session, workspace_id)
                 task.status = "running"
                 task.started_at = task.started_at or utc_now()
                 task.result_detail = {**(task.result_detail or {}), "phase": "preparing"}
@@ -177,7 +181,6 @@ class GalgameVideoExportRunner(PollingTaskRunner):
                 if snapshot is None or project is None:
                     raise RuntimeError("导出快照或项目已不存在")
                 document = dict(snapshot.document)
-                workspace_id = task.workspace_id
                 project_id = task.project_id
                 payload = dict(task.request_payload)
                 total_ms = int((task.result_detail or {}).get("totalMs", 0))
@@ -336,6 +339,7 @@ class GalgameVideoExportRunner(PollingTaskRunner):
                     library = AssetLibrary(session, self.settings)
                     asset, staged_path = await library.stage_local_copy(
                         output_path,
+                        workspace_id=workspace_id,
                         filename=filename,
                         content_type="video/mp4",
                         galgame_project_id=project_id,

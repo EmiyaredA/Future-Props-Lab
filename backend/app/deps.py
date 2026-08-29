@@ -284,6 +284,14 @@ StudioAuth = Annotated[StudioPrincipal, Depends(require_studio_auth)]
 PublicStudioAuth = Annotated[StudioPrincipal, Depends(require_public_studio_auth)]
 
 
+def workspace_from_principal(principal: StudioAuth) -> str:
+    """Expose the authenticated workspace without another source of tenant truth."""
+    return principal.workspace_id
+
+
+WorkspaceDep = Annotated[str, Depends(workspace_from_principal)]
+
+
 def require_recent_reauthentication(principal: StudioPrincipal) -> None:
     if principal.auth_kind != "session":
         raise _forbidden("browser_session_required", "必须使用浏览器 Session")

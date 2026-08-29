@@ -23,6 +23,9 @@ test("真实前后端可通过 UI 创建视觉项目并上传项目图片", asyn
     buffer: PNG,
   });
 
-  await expect(page.getByText("真实烟测.png").first()).toBeVisible();
+  const uploadedAsset = page.getByRole("button", { name: "预览 真实烟测" });
+  await expect(uploadedAsset).toBeVisible();
+  await expect(uploadedAsset).toContainText("真实烟测");
+  await expect(uploadedAsset).toContainText(/图片\s*PNG\s*68 B/);
   await expect(page.getByText("已成功上传 1 个文件")).toBeVisible();
 });
