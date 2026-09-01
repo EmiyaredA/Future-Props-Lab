@@ -1,10 +1,29 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { VideoEditorPreview } from "@features/video-editor/VideoEditorPreview";
+import {
+  exactFramePath,
+  uploadVideoEditorAsset,
+} from "@features/video-editor/api";
+import { fetchApiBlob } from "@platform/api/client";
 import type {
   VideoEditorAsset,
   VideoEditorTimeline,
 } from "@features/video-editor/types";
+
+vi.mock("@platform/api/client", async () => {
+  const actual = await vi.importActual<typeof import("@platform/api/client")>(
+    "@platform/api/client",
+  );
+  return { ...actual, fetchApiBlob: vi.fn() };
+});
+
+vi.mock("@features/video-editor/api", async () => {
+  const actual = await vi.importActual<
+    typeof import("@features/video-editor/api")
+  >("@features/video-editor/api");
+  return { ...actual, uploadVideoEditorAsset: vi.fn() };
+});
 
 const timeline: VideoEditorTimeline = {
   projectId: "editor-1",
@@ -113,6 +132,17 @@ const assets: VideoEditorAsset[] = [
 
 describe("video editor preview playback", () => {
   beforeEach(() => {
+    vi.restoreAllMocks();
+    vi.mocked(fetchApiBlob).mockReset();
+    vi.mocked(uploadVideoEditorAsset).mockReset();
+    Object.defineProperty(URL, "createObjectURL", {
+      configurable: true,
+      value: vi.fn(() => "blob:frame"),
+    });
+    Object.defineProperty(URL, "revokeObjectURL", {
+      configurable: true,
+      value: vi.fn(),
+    });
     vi.spyOn(HTMLMediaElement.prototype, "pause").mockImplementation(() => {});
     vi.spyOn(HTMLMediaElement.prototype, "play").mockResolvedValue();
   });
@@ -141,6 +171,7 @@ describe("video editor preview playback", () => {
   });
 
   it("keeps one audio player across continuous split boundaries", () => {
+    const play = vi.mocked(HTMLMediaElement.prototype.play);
     const props = {
       projectId: "editor-1",
       timeline,
@@ -157,11 +188,43 @@ describe("video editor preview playback", () => {
     );
     const audio = container.querySelector("audio")!;
     expect(audio.currentTime).toBeCloseTo(1.99, 6);
+    expect(play).toHaveBeenCalledTimes(2);
 
     rerender(<VideoEditorPreview {...props} playheadUs={2_010_000} />);
 
     expect(container.querySelector("audio")).toBe(audio);
     expect(audio.currentTime).toBeCloseTo(1.99, 6);
+    expect(play).toHaveBeenCalledTimes(2);
+  });
+
+  it("does not restart media playback on every playhead refresh", () => {
+    const play = vi.mocked(HTMLMediaElement.prototype.play);
+    const props = {
+      projectId: "editor-1",
+      timeline,
+      assets,
+      setPlayheadUs: vi.fn(),
+      playing: true,
+      setPlaying: vi.fn(),
+      selectedClipId: "video-1",
+      preciseFrame: true,
+      onPreciseFrameChange: vi.fn(),
+    };
+    const { rerender } = render(
+      <VideoEditorPreview {...props} playheadUs={1_000_000} />,
+    );
+    expect(play).toHaveBeenCalledTimes(2);
+
+    for (let frame = 1; frame <= 12; frame += 1) {
+      rerender(
+        <VideoEditorPreview
+          {...props}
+          playheadUs={1_000_000 + frame * 16_667}
+        />,
+      );
+    }
+
+    expect(play).toHaveBeenCalledTimes(2);
   });
 
   it("keeps source jump cuts on separate audio players", () => {
@@ -207,5 +270,67 @@ describe("video editor preview playback", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "精确停帧" }));
     expect(onPreciseFrameChange).toHaveBeenCalledWith(false);
+  });
+
+  it("exports the locked full-resolution program frame into project assets", async () => {
+    const setPlaying = vi.fn();
+    const setPlayheadUs = vi.fn();
+    const onFrameSaved = vi.fn();
+    const download = vi
+      .spyOn(HTMLAnchorElement.prototype, "click")
+      .mockImplementation(() => {});
+    vi.mocked(fetchApiBlob).mockResolvedValue(
+      new Blob(["frame"], { type: "image/png" }),
+    );
+    vi.mocked(uploadVideoEditorAsset).mockResolvedValue(assets[0]!);
+
+    render(
+      <VideoEditorPreview
+        projectId="editor-1"
+        projectTitle="预告片"
+        timeline={timeline}
+        assets={assets}
+        playheadUs={3_250_000}
+        setPlayheadUs={setPlayheadUs}
+        playing
+        setPlaying={setPlaying}
+        selectedClipId="video-1"
+        preciseFrame
+        onPreciseFrameChange={vi.fn()}
+        onFrameSaved={onFrameSaved}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "导出当前节目帧" }));
+    expect(setPlaying).toHaveBeenCalledWith(false);
+    expect(await screen.findByAltText("当前导出视频帧预览")).toBeVisible();
+    expect(fetchApiBlob).toHaveBeenCalledWith(
+      exactFramePath("editor-1", 1, 3_250_000, 1920),
+      expect.objectContaining({ signal: expect.any(AbortSignal) }),
+    );
+
+    const scrubber = screen.getByRole("slider", {
+      name: "导出视频帧时间点",
+    });
+    fireEvent.change(scrubber, { target: { value: "4.5" } });
+    fireEvent.pointerUp(scrubber);
+    await waitFor(() =>
+      expect(fetchApiBlob).toHaveBeenCalledWith(
+        exactFramePath("editor-1", 1, 4_500_000, 1920),
+        expect.objectContaining({ signal: expect.any(AbortSignal) }),
+      ),
+    );
+    expect(setPlayheadUs).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole("button", { name: "导出并保存" }));
+    await waitFor(() =>
+      expect(uploadVideoEditorAsset).toHaveBeenCalledTimes(1),
+    );
+    const [projectId, file] = vi.mocked(uploadVideoEditorAsset).mock.calls[0]!;
+    expect(projectId).toBe("editor-1");
+    expect(file).toBeInstanceOf(File);
+    expect(file.name).toBe("预告片-frame_00-00-04-500.png");
+    expect(onFrameSaved).toHaveBeenCalledOnce();
+    expect(download).toHaveBeenCalledOnce();
   });
 });

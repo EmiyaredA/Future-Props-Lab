@@ -23,13 +23,14 @@ import {
 import { CustomSelect } from "@shared/ui/CustomSelect";
 import {
   buildFrameFileName,
+  canvasToBlob,
   FRAME_FORMAT_OPTIONS,
   frameBaseNameFromFile,
   isAcceptedVideoFile,
   MIME_BY_FRAME_FORMAT,
   sanitizeExportBaseName,
   type ImageFormat,
-} from "@features/tools/videoFrameExport";
+} from "@shared/media/videoFrameExport";
 import "@features/tools/video-frame-exporter.css";
 
 type FramePreview = {
@@ -58,30 +59,6 @@ function formatPlaybackTime(seconds: number): string {
   const milliseconds = totalMilliseconds % 1000;
   const prefix = hours ? `${pad(hours)}:` : "";
   return `${prefix}${pad(minutes)}:${pad(wholeSeconds)}.${pad(milliseconds, 3)}`;
-}
-
-function canvasToBlob(
-  canvas: HTMLCanvasElement,
-  mimeType: string,
-  quality: number,
-): Promise<Blob> {
-  return new Promise((resolve, reject) => {
-    canvas.toBlob(
-      (blob) => {
-        if (!blob) {
-          reject(new Error("当前浏览器无法生成所选图片格式。"));
-          return;
-        }
-        if (blob.type && blob.type !== mimeType) {
-          reject(new Error("当前浏览器不支持所选图片格式，请尝试其他格式。"));
-          return;
-        }
-        resolve(blob);
-      },
-      mimeType,
-      quality,
-    );
-  });
 }
 
 export function VideoFrameExporterPage({ onBack }: { onBack: () => void }) {

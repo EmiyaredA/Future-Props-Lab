@@ -1,0 +1,395 @@
+.frame-export-backdrop {
+  position: fixed;
+  z-index: 1200;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: var(--overlay);
+  backdrop-filter: blur(10px);
+}
+
+.frame-export-dialog {
+  width: min(820px, 100%);
+  max-height: calc(100vh - 40px);
+  padding: 20px;
+  overflow: auto;
+  border: 1px solid var(--border-strong);
+  border-radius: 18px;
+  background: var(--surface);
+  box-shadow: 0 30px 90px rgb(0 0 0 / 38%);
+}
+
+.frame-export-dialog > header,
+.frame-export-dialog > header > div,
+.frame-export-dialog > footer,
+.frame-export-dialog > footer button,
+.frame-export-heading-icon,
+.frame-export-timestamp {
+  display: flex;
+  align-items: center;
+}
+
+.frame-export-dialog > header {
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.frame-export-dialog > header > div {
+  min-width: 0;
+  gap: 12px;
+}
+
+.frame-export-dialog h2,
+.frame-export-dialog p {
+  margin: 0;
+}
+
+.frame-export-dialog h2 {
+  color: var(--text-strong);
+  font-size: 19px;
+}
+
+.frame-export-dialog header p {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.frame-export-heading-icon {
+  width: 38px;
+  height: 38px;
+  flex: none;
+  justify-content: center;
+  border-radius: 11px;
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.frame-export-heading-icon svg,
+.frame-export-dialog > header > button svg,
+.frame-export-dialog > footer svg {
+  width: 18px;
+  height: 18px;
+}
+
+.frame-export-dialog > header > button {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  flex: none;
+  place-items: center;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--muted);
+}
+
+.frame-export-dialog > header > button:hover {
+  background: var(--surface-hover);
+  color: var(--text-strong);
+}
+
+.frame-export-body {
+  margin-top: 18px;
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(250px, 0.85fr);
+  gap: 18px;
+}
+
+.frame-export-preview {
+  position: relative;
+  min-height: 260px;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: #080808;
+}
+
+.frame-export-viewer {
+  min-width: 0;
+}
+
+.frame-export-preview img {
+  width: 100%;
+  height: 100%;
+  max-height: 430px;
+  display: block;
+  object-fit: contain;
+}
+
+.frame-export-preview > span:not(.frame-export-loading) {
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  padding: 5px 8px;
+  border-radius: 7px;
+  background: rgb(0 0 0 / 70%);
+  color: white;
+  font-size: 11px;
+}
+
+.frame-export-loading {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #b7b7b7;
+  font-size: 12px;
+}
+
+.frame-export-loading svg,
+.frame-export-refreshing svg,
+.frame-export-dialog .spin {
+  animation: frame-export-spin 0.9s linear infinite;
+}
+
+.frame-export-refreshing {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: rgb(0 0 0 / 45%);
+  color: white;
+  font-size: 12px;
+}
+
+.frame-export-refreshing svg {
+  width: 16px;
+  height: 16px;
+}
+
+.frame-export-scrubber {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  margin-top: 12px;
+}
+
+.frame-export-scrubber label {
+  display: block;
+  min-width: 0;
+}
+
+.frame-export-scrubber input[type="range"] {
+  width: 100%;
+  height: 18px;
+  margin: 0;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.frame-export-scrubber input[type="range"]::-webkit-slider-runnable-track {
+  height: 5px;
+  border-radius: 999px;
+  background: linear-gradient(
+    to right,
+    var(--accent) 0 var(--frame-export-progress),
+    var(--border-strong) var(--frame-export-progress) 100%
+  );
+}
+
+.frame-export-scrubber input[type="range"]::-webkit-slider-thumb {
+  width: 16px;
+  height: 16px;
+  margin-top: -5.5px;
+  appearance: none;
+  border: 3px solid var(--surface);
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+
+.frame-export-scrubber input[type="range"]::-moz-range-track {
+  height: 5px;
+  border-radius: 999px;
+  background: var(--border-strong);
+}
+
+.frame-export-scrubber input[type="range"]::-moz-range-progress {
+  height: 5px;
+  border-radius: 999px;
+  background: var(--accent);
+}
+
+.frame-export-scrubber input[type="range"]::-moz-range-thumb {
+  width: 10px;
+  height: 10px;
+  border: 3px solid var(--surface);
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+
+.frame-export-scrubber input[type="range"]:focus-visible {
+  outline: none;
+}
+
+.frame-export-scrubber input[type="range"]:focus-visible::-webkit-slider-thumb {
+  box-shadow:
+    0 0 0 1px var(--accent),
+    0 0 0 4px var(--accent-soft);
+}
+
+.frame-export-scrubber input[type="range"]:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.frame-export-scrubber > span {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  white-space: nowrap;
+  color: var(--text-strong);
+  font-size: 11px;
+}
+
+.frame-export-scrubber i {
+  color: var(--muted);
+  font-style: normal;
+}
+
+.frame-export-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.frame-export-settings {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.frame-export-settings > label:not(.frame-export-timestamp) {
+  display: grid;
+  gap: 7px;
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.frame-export-settings input[type="text"],
+.frame-export-settings > label > input:not([type]) {
+  width: 100%;
+}
+
+.frame-export-settings input:not([type="range"]):not([type="checkbox"]) {
+  min-height: 40px;
+  padding: 0 11px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--bg);
+  color: var(--text-strong);
+  outline: 0;
+}
+
+.frame-export-settings input:focus-visible,
+.frame-export-dialog button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.frame-export-timestamp {
+  gap: 8px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.frame-export-settings output {
+  padding: 9px 10px;
+  overflow-wrap: anywhere;
+  border-radius: 8px;
+  background: var(--surface-soft);
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.frame-export-error {
+  margin-top: 14px !important;
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-radius: 9px;
+  background: var(--danger-soft);
+  color: var(--danger);
+  font-size: 12px;
+}
+
+.frame-export-error button {
+  flex: none;
+  padding: 4px 8px;
+  border: 1px solid currentColor;
+  border-radius: 7px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: 700;
+}
+
+.frame-export-dialog > footer {
+  justify-content: flex-end;
+  gap: 9px;
+  margin-top: 18px;
+}
+
+.frame-export-dialog > footer button {
+  min-height: 39px;
+  padding: 0 15px;
+  justify-content: center;
+  gap: 7px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface);
+  color: var(--text);
+  font-weight: 700;
+}
+
+.frame-export-dialog > footer button.primary {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: white;
+}
+
+.frame-export-dialog button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+@keyframes frame-export-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 720px) {
+  .frame-export-body {
+    grid-template-columns: 1fr;
+  }
+
+  .frame-export-preview {
+    min-height: 200px;
+  }
+
+  .frame-export-scrubber {
+    grid-template-columns: 1fr;
+    gap: 5px;
+  }
+
+  .frame-export-scrubber > span {
+    justify-self: end;
+  }
+}

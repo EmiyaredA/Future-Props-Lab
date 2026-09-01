@@ -823,3 +823,111 @@ test("keeps wheel scrolling inside an attached node editor", async () => {
   expect(wheel.defaultPrevented).toBe(false);
   expect(screen.getByRole("button", { name: "100%" })).toBeInTheDocument();
 });
+
+test("exports a paused video frame and creates an unconnected image node", async () => {
+  vi.mocked(getVisualCanvas).mockResolvedValueOnce({
+    project_id: "project-1",
+    edges: [],
+    nodes: [
+      {
+        id: "video-1",
+        kind: "video",
+        title: "镜头一",
+        position: { x: 240, y: 120 },
+        asset_id: "asset-video",
+      },
+    ],
+    revision: 0,
+    updated_at: "2026-08-03T08:00:00Z",
+  });
+  vi.mocked(uploadManagedFile).mockResolvedValue({
+    id: "asset-frame",
+    project_id: "project-1",
+    folder_id: null,
+    original_filename: "镜头一-frame_00-00-03-250.png",
+    display_name: "镜头一-frame_00-00-03-250",
+    media_kind: "image",
+    mime_type: "image/png",
+    byte_size: 5,
+    revision: 0,
+    created_at: "2026-08-03T08:00:00Z",
+    updated_at: "2026-08-03T08:00:00Z",
+    source: "project",
+    is_reference: false,
+    reference_id: null,
+  });
+  const pause = vi
+    .spyOn(HTMLMediaElement.prototype, "pause")
+    .mockImplementation(() => {});
+  const download = vi
+    .spyOn(HTMLAnchorElement.prototype, "click")
+    .mockImplementation(() => {});
+  const drawImage = vi.fn();
+  vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue({
+    drawImage,
+  } as unknown as CanvasRenderingContext2D);
+  vi.spyOn(HTMLCanvasElement.prototype, "toBlob").mockImplementation(
+    (callback, type) => callback(new Blob(["frame"], { type })),
+  );
+
+  const user = userEvent.setup();
+  const { container } = renderCanvas();
+  const node = await waitFor(() => {
+    const current = container.querySelector<HTMLElement>(
+      "[data-node-id='video-1']",
+    );
+    expect(current).not.toBeNull();
+    return current!;
+  });
+  await user.click(node.querySelector<HTMLElement>(".canvas-node-media")!);
+  const video = node.querySelector("video")!;
+  Object.defineProperties(video, {
+    currentTime: { configurable: true, writable: true, value: 3.25 },
+    duration: { configurable: true, value: 10 },
+    readyState: { configurable: true, value: 2 },
+    seeking: { configurable: true, value: false },
+    videoWidth: { configurable: true, value: 1920 },
+    videoHeight: { configurable: true, value: 1080 },
+  });
+  fireEvent.loadedData(video);
+  const exportButton = screen.getByRole("button", {
+    name: "导出当前视频帧",
+  });
+  await waitFor(() => expect(exportButton).toBeEnabled());
+  await user.click(exportButton);
+
+  expect(pause).toHaveBeenCalled();
+  expect(await screen.findByAltText("当前导出视频帧预览")).toBeVisible();
+  expect(drawImage).toHaveBeenCalledWith(video, 0, 0, 1920, 1080);
+  const scrubber = screen.getByRole("slider", {
+    name: "导出视频帧时间点",
+  });
+  fireEvent.change(scrubber, { target: { value: "5.5" } });
+  fireEvent.pointerUp(scrubber);
+  await waitFor(() => expect(video.currentTime).toBe(5.5));
+  fireEvent.seeked(video);
+  await waitFor(() => expect(drawImage).toHaveBeenCalledTimes(2));
+  await user.click(screen.getByRole("button", { name: "导出并保存" }));
+
+  await waitFor(() => expect(uploadManagedFile).toHaveBeenCalledTimes(1));
+  const [file, projectId] = vi.mocked(uploadManagedFile).mock.calls[0]!;
+  expect(projectId).toBe("project-1");
+  expect(file.name).toBe("镜头一-frame_00-00-05-500.png");
+  await waitFor(() =>
+    expect(putVisualCanvas).toHaveBeenCalledWith(
+      "project-1",
+      expect.arrayContaining([
+        expect.objectContaining({
+          kind: "image",
+          asset_id: "asset-frame",
+          position: { x: 608, y: 120 },
+        }),
+      ]),
+      expect.any(Number),
+      [],
+    ),
+  );
+  expect(container.querySelector(".canvas-node.image.selected")).not.toBeNull();
+  expect(download).toHaveBeenCalledOnce();
+  expect(video.currentTime).toBe(3.25);
+});

@@ -221,10 +221,18 @@ export const cancelVideoEditorSegmentExport = async (
     ),
   );
 
+export const exactFramePath = (
+  projectId: string,
+  revision: number,
+  timeUs: number,
+  width = 960,
+) =>
+  `/v1/video-editor/projects/${encodeURIComponent(projectId)}/preview/frame?revision=${revision}&timeUs=${Math.max(0, Math.round(timeUs))}&width=${width}`;
+
 export const exactFrameUrl = (
   projectId: string,
   revision: number,
   timeUs: number,
   width = 960,
 ) =>
-  `${import.meta.env.VITE_API_BASE || ""}/v1/video-editor/projects/${encodeURIComponent(projectId)}/preview/frame?revision=${revision}&timeUs=${Math.max(0, Math.round(timeUs))}&width=${width}`;
+  `${import.meta.env.VITE_API_BASE || ""}${exactFramePath(projectId, revision, timeUs, width)}`;

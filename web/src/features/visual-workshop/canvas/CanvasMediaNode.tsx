@@ -1,9 +1,14 @@
-import type { PointerEvent as ReactPointerEvent } from "react";
+import {
+  useEffect,
+  useRef,
+  type PointerEvent as ReactPointerEvent,
+} from "react";
 import {
   Copy,
   Download,
   Eye,
   Image,
+  ImageDown,
   Music,
   RefreshCw,
   Trash2,
@@ -41,12 +46,26 @@ function previewSourceForNode(node: MediaNode) {
   return { assetId: null, kind: node.kind, fallback: false };
 }
 
-export function CanvasMediaPreview({ node }: { node: MediaNode }) {
+export function CanvasMediaPreview({
+  node,
+  onVideoReadyChange,
+}: {
+  node: MediaNode;
+  onVideoReadyChange?: (video: HTMLVideoElement | null) => void;
+}) {
   const preview = previewSourceForNode(node);
+  const readyChangeRef = useRef(onVideoReadyChange);
+  readyChangeRef.current = onVideoReadyChange;
   const { url, error } = useApiBlobUrl(
     preview.assetId ? `/v1/files/${preview.assetId}/content` : null,
   );
   const missing = Boolean(error);
+  useEffect(
+    () => () => {
+      readyChangeRef.current?.(null);
+    },
+    [url],
+  );
 
   if (url && preview.kind === "image")
     return (
@@ -56,7 +75,17 @@ export function CanvasMediaPreview({ node }: { node: MediaNode }) {
         draggable={false}
       />
     );
-  if (url && preview.kind === "video") return <video src={url} controls />;
+  if (url && preview.kind === "video")
+    return (
+      <video
+        src={url}
+        controls
+        playsInline
+        onLoadedData={(event) => readyChangeRef.current?.(event.currentTarget)}
+        onEmptied={() => readyChangeRef.current?.(null)}
+        onError={() => readyChangeRef.current?.(null)}
+      />
+    );
   if (url && preview.kind === "audio") return <audio src={url} controls />;
   const Icon =
     node.kind === "image" ? Image : node.kind === "video" ? Video : Music;
@@ -75,11 +104,15 @@ export function CanvasMediaNodeActions({
   onReplace,
   onCopy,
   onDelete,
+  canExportFrame = false,
+  onExportFrame,
 }: {
   node: MediaNode;
   onReplace: () => void;
   onCopy: () => void;
   onDelete: () => void;
+  canExportFrame?: boolean;
+  onExportFrame?: () => void;
 }) {
   const { url } = useApiBlobUrl(
     node.asset_id ? `/v1/files/${node.asset_id}/content` : null,
@@ -120,6 +153,20 @@ export function CanvasMediaNodeActions({
       >
         <Copy aria-hidden />
       </button>
+      {node.kind === "video" ? (
+        <button
+          aria-label="导出当前视频帧"
+          title="导出当前视频帧"
+          disabled={!canExportFrame}
+          onPointerDown={stopPointer}
+          onClick={(event) => {
+            event.stopPropagation();
+            onExportFrame?.();
+          }}
+        >
+          <ImageDown aria-hidden />
+        </button>
+      ) : null}
       <a
         aria-label="下载素材"
         aria-disabled={!url}

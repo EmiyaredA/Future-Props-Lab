@@ -154,6 +154,7 @@ export function VideoEditorPage({
         />
         <VideoEditorPreview
           projectId={projectId}
+          projectTitle={project.title}
           timeline={timeline}
           assets={assets}
           playheadUs={editor.playheadUs}
@@ -163,6 +164,7 @@ export function VideoEditorPage({
           selectedClipId={editor.selectedClipId}
           preciseFrame={editor.preciseFrame}
           onPreciseFrameChange={editor.setPreciseFrame}
+          onFrameSaved={() => editor.assets.refetch()}
         />
         <VideoEditorInspector
           clip={editor.selected}

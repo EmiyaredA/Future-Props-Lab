@@ -9,11 +9,13 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   invalidateFileScope,
   type AssetViewMode,
+  type ManagedFile,
   uploadManagedFile,
 } from "@features/files";
 import { visualWorkshopQueryKeys } from "@features/visual-workshop/queryKeys";
 import {
   DEFAULT_VIEWPORT,
+  NODE_SIZE,
   NODE_DRAG_BLOCKER_SELECTOR,
   clampZoom,
   cloneNode,
@@ -365,6 +367,45 @@ export function useVisualCanvasController({
     },
     [edgesRef, replaceNodes, setEdges],
   );
+  const addCapturedFrameNode = useCallback(
+    async (sourceNodeId: string, asset: ManagedFile) => {
+      const source = nodesRef.current.find((node) => node.id === sourceNodeId);
+      if (!source || source.kind !== "video")
+        throw new Error("源视频节点已不存在，图片已保留在项目素材中。");
+      const node: VisualCanvasNode = {
+        id: nextNodeId("image"),
+        kind: "image",
+        title: asset.display_name,
+        position: {
+          x: source.position.x + NODE_SIZE.video.width + 48,
+          y: source.position.y,
+        },
+        asset_id: asset.id,
+      };
+      if (autoSave.current) {
+        clearTimeout(autoSave.current);
+        autoSave.current = undefined;
+      }
+      const next = [...nodesRef.current, node];
+      nodesRef.current = next;
+      setNodes(next);
+      setSelectedId(node.id);
+      setSelectedEdgeId(undefined);
+      setAssetsOpen(false);
+      enqueueSave(next);
+      void invalidateFileScope(client, projectId);
+      await prepareCanvasForAgent();
+    },
+    [
+      autoSave,
+      client,
+      enqueueSave,
+      nodesRef,
+      prepareCanvasForAgent,
+      projectId,
+      setNodes,
+    ],
+  );
   const copySelected = useCallback(() => {
     const selected = nodesRef.current.find((node) => node.id === selectedId);
     if (selected) clipboard.current = structuredClone(selected);
@@ -634,6 +675,7 @@ export function useVisualCanvasController({
     setZoom,
     screenToWorld,
     createNode,
+    addCapturedFrameNode,
     removeNode,
     copySelected,
     pasteNode,

@@ -8,6 +8,7 @@ import {
   sanitizeExportBaseName,
 } from "@features/tools/videoFrameExport";
 import { VideoFrameExporterPage } from "@features/tools/VideoFrameExporterPage";
+import { encodeFrameSnapshot } from "@shared/media/videoFrameExport";
 
 const drawImage = vi.fn();
 const createObjectURL = vi.fn();
@@ -71,6 +72,45 @@ test("formats safe timestamped export file names", () => {
       new File(["video"], "clip.mov", { type: "application/octet-stream" }),
     ),
   ).toBe(true);
+});
+
+test("encodes a captured frame into the selected lossy format", async () => {
+  const close = vi.fn();
+  const bitmap = { close } as unknown as ImageBitmap;
+  const original = globalThis.createImageBitmap;
+  Object.defineProperty(globalThis, "createImageBitmap", {
+    configurable: true,
+    value: vi.fn(async () => bitmap),
+  });
+  try {
+    const blob = await encodeFrameSnapshot(
+      {
+        blob: new Blob(["png"], { type: "image/png" }),
+        capturedAt: 1.25,
+        width: 1920,
+        height: 1080,
+      },
+      "jpeg",
+      80,
+    );
+
+    expect(blob.type).toBe("image/jpeg");
+    expect(drawImage).toHaveBeenCalledWith(bitmap, 0, 0, 1920, 1080);
+    expect(HTMLCanvasElement.prototype.toBlob).toHaveBeenCalledWith(
+      expect.any(Function),
+      "image/jpeg",
+      0.8,
+    );
+    expect(close).toHaveBeenCalledOnce();
+  } finally {
+    if (original)
+      Object.defineProperty(globalThis, "createImageBitmap", {
+        configurable: true,
+        value: original,
+      });
+    else
+      delete (globalThis as { createImageBitmap?: unknown }).createImageBitmap;
+  }
 });
 
 test("uploads, seeks, previews and downloads an original-size frame", async () => {

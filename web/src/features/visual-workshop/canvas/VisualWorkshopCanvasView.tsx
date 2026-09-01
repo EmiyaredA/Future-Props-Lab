@@ -1,3 +1,4 @@
+import { useCallback, useRef, useState } from "react";
 import {
   ArrowLeft,
   CircleQuestionMark,
@@ -24,13 +25,17 @@ import {
   Video,
   X,
 } from "lucide-react";
-import { AssetBrowser } from "@features/files";
+import { AssetBrowser, uploadManagedFile } from "@features/files";
 import { ProjectAssistantPanel } from "@features/visual-workshop/assistant/ProjectAssistantPanel";
 import { CanvasNodeInspector } from "@features/visual-workshop/canvas/CanvasNodeInspector";
 import {
   CanvasMediaNodeActions,
   CanvasMediaPreview,
 } from "@features/visual-workshop/canvas/CanvasMediaNode";
+import {
+  VisualCanvasFrameExportDialog,
+  type VisualCanvasFrameExport,
+} from "@features/visual-workshop/canvas/VisualCanvasFrameExportDialog";
 import {
   DEFAULT_VIEWPORT,
   NODE_SIZE,
@@ -39,7 +44,6 @@ import {
 import { ThemeToggle } from "@shared/ui/ThemeToggle";
 import { useVisualCanvasController } from "@features/visual-workshop/canvas/useVisualCanvasController";
 import "@features/visual-workshop/visual-workshop.css";
-
 function connectionPath(
   source: { x: number; y: number },
   target: { x: number; y: number },
@@ -110,6 +114,7 @@ export function VisualWorkshopCanvasView({
     upload,
     setZoom,
     createNode,
+    addCapturedFrameNode,
     removeNode,
     removeEdge,
     canConnect,
@@ -125,6 +130,23 @@ export function VisualWorkshopCanvasView({
     stopNodeDrag,
     openContextMenu,
   } = controller;
+  const videoElements = useRef(new Map<string, HTMLVideoElement>());
+  const [readyVideoIds, setReadyVideoIds] = useState(() => new Set<string>());
+  const [frameExport, setFrameExport] = useState<VisualCanvasFrameExport>();
+  const registerVideo = useCallback(
+    (nodeId: string, video: HTMLVideoElement | null) => {
+      if (video) videoElements.current.set(nodeId, video);
+      else videoElements.current.delete(nodeId);
+      setReadyVideoIds((current) => {
+        if (current.has(nodeId) === Boolean(video)) return current;
+        const next = new Set(current);
+        if (video) next.add(nodeId);
+        else next.delete(nodeId);
+        return next;
+      });
+    },
+    [],
+  );
   if (projectQuery.isLoading || canvasQuery.isLoading)
     return (
       <div className="canvas-state">
@@ -381,6 +403,20 @@ export function VisualWorkshopCanvasView({
                   ) : selected && node.kind !== "text" ? (
                     <CanvasMediaNodeActions
                       node={node}
+                      canExportFrame={
+                        node.kind === "video" && readyVideoIds.has(node.id)
+                      }
+                      onExportFrame={() => {
+                        if (node.kind !== "video") return;
+                        const video = videoElements.current.get(node.id);
+                        if (!video) return;
+                        video.pause();
+                        setFrameExport({
+                          node,
+                          video,
+                          capturedAt: video.currentTime,
+                        });
+                      }}
                       onReplace={() => {
                         setSelectedId(node.id);
                         setMediaEditorTab("content");
@@ -410,7 +446,12 @@ export function VisualWorkshopCanvasView({
                   />
                 ) : (
                   <div className="canvas-node-media">
-                    <CanvasMediaPreview node={node} />
+                    <CanvasMediaPreview
+                      node={node}
+                      onVideoReadyChange={(video) =>
+                        registerVideo(node.id, video)
+                      }
+                    />
                     <button
                       type="button"
                       className="canvas-media-replace"
@@ -666,6 +707,16 @@ export function VisualWorkshopCanvasView({
         onClose={() => setAssistantOpen(false)}
         prepareCanvas={prepareCanvasForAgent}
       />
+      {frameExport ? (
+        <VisualCanvasFrameExportDialog
+          frameExport={frameExport}
+          onClose={() => setFrameExport(undefined)}
+          onSave={async (file) => {
+            const asset = await uploadManagedFile(file, projectId);
+            await addCapturedFrameNode(frameExport.node.id, asset);
+          }}
+        />
+      ) : null}
       {conflict ? (
         <div className="canvas-conflict" role="alert">
           <span>

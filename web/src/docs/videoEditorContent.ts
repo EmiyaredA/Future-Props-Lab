@@ -61,6 +61,9 @@ const videoEditorTimeline: GuidePage = {
     {
       id: "exact-preview",
       title: "代理预览与精确帧的边界",
+      paragraphs: [
+        "在节目监视器点击“导出当前帧”会暂停并锁定当前 revision，打开图片设置弹窗；可以在弹窗内拖动进度条重新选择时间点，不会改变主时间线播放头。导出的最终合成画面包含全部可见轨道、文字、变换和项目背景；图片会下载到本机并加入当前剪辑素材区，但不会自动插入时间线。",
+      ],
       table: {
         headers: ["能力", "适用场景", "结果"],
         rows: [

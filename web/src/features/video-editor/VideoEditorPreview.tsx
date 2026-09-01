@@ -1,11 +1,21 @@
-import { useEffect, useMemo, useRef } from "react";
-import { Maximize2, Pause, Play, SkipBack, SkipForward } from "lucide-react";
-import { exactFrameUrl } from "./api";
+import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  ImageDown,
+  Maximize2,
+  Pause,
+  Play,
+  SkipBack,
+  SkipForward,
+} from "lucide-react";
+import { fetchApiBlob } from "@platform/api/client";
+import { FrameExportDialog } from "@shared/ui/FrameExportDialog";
+import { exactFramePath, exactFrameUrl, uploadVideoEditorAsset } from "./api";
 import {
   clipOpacityAt,
   clipPropertyAt,
   formatTime,
   frameUs,
+  timelineDuration,
 } from "./editorModel";
 import {
   previewMediaGeometry,
@@ -40,9 +50,13 @@ function ProxyVideo({
       (clip.sourceInUs + playheadUs - clip.timelineStartUs) / 1_000_000;
     if (!playing || Math.abs(node.currentTime - target) > 0.12)
       node.currentTime = Math.max(0, target);
+  }, [clip, playheadUs, playing]);
+  useEffect(() => {
+    const node = video.current;
+    if (!node) return;
     if (playing) void node.play().catch(() => undefined);
     else node.pause();
-  }, [clip, playheadUs, playing]);
+  }, [playing]);
   return (
     <video
       ref={video}
@@ -114,13 +128,10 @@ function ProxyAudioChain({
       item.timelineStartUs <= playheadUs &&
       item.timelineStartUs + item.durationUs > playheadUs,
   );
+  const active = Boolean(clip);
   useEffect(() => {
     const node = audio.current;
-    if (!node) return;
-    if (!clip) {
-      node.pause();
-      return;
-    }
+    if (!node || !clip) return;
     const target =
       (clip.sourceInUs + playheadUs - clip.timelineStartUs) / 1_000_000;
     if (!playing || Math.abs(node.currentTime - target) > 0.12)
@@ -137,14 +148,19 @@ function ProxyAudioChain({
         ),
       ),
     );
-    if (playing) void node.play().catch(() => undefined);
-    else node.pause();
   }, [clip, playheadUs, playing]);
+  useEffect(() => {
+    const node = audio.current;
+    if (!node) return;
+    if (playing && active) void node.play().catch(() => undefined);
+    else node.pause();
+  }, [active, playing]);
   return <audio ref={audio} src={source} preload="auto" />;
 }
 
 export function VideoEditorPreview({
   projectId,
+  projectTitle = "剪辑",
   timeline,
   assets,
   playheadUs,
@@ -154,8 +170,10 @@ export function VideoEditorPreview({
   selectedClipId,
   preciseFrame,
   onPreciseFrameChange,
+  onFrameSaved,
 }: {
   projectId: string;
+  projectTitle?: string;
   timeline: VideoEditorTimeline;
   assets: VideoEditorAsset[];
   playheadUs: number;
@@ -165,7 +183,16 @@ export function VideoEditorPreview({
   selectedClipId?: string;
   preciseFrame: boolean;
   onPreciseFrameChange: (value: boolean) => void;
+  onFrameSaved?: () => void | Promise<unknown>;
 }) {
+  const [frameExport, setFrameExport] = useState<{
+    revision: number;
+    timeUs: number;
+    durationUs: number;
+    stepUs: number;
+    width: number;
+    height: number;
+  }>();
   const assetMap = useMemo(
     () => new Map(assets.map((asset) => [asset.id, asset])),
     [assets],
@@ -196,6 +223,24 @@ export function VideoEditorPreview({
             onClick={() => onPreciseFrameChange(!preciseFrame)}
           >
             精确停帧
+          </button>
+          <button
+            aria-label="导出当前节目帧"
+            title="导出当前节目帧"
+            onClick={() => {
+              setPlaying(false);
+              const stepUs = frameUs(fps);
+              setFrameExport({
+                revision: timeline.revision,
+                timeUs: playheadUs,
+                durationUs: timelineDuration(timeline),
+                stepUs,
+                width: timeline.document.settings?.width ?? 1920,
+                height: timeline.document.settings?.height ?? 1080,
+              });
+            }}
+          >
+            <ImageDown aria-hidden />
           </button>
           <button aria-label="全屏预览">
             <Maximize2 aria-hidden />
@@ -362,6 +407,36 @@ export function VideoEditorPreview({
         <strong>{formatTime(playheadUs)}</strong>
         <span>{fps} FPS · Space 播放 · ← → 逐帧</span>
       </footer>
+      {frameExport ? (
+        <FrameExportDialog
+          baseName={`${projectTitle}-frame`}
+          destination="下载到本机，并加入当前剪辑的素材区"
+          initialTime={frameExport.timeUs / 1_000_000}
+          maxTime={
+            Math.max(0, frameExport.durationUs - frameExport.stepUs) / 1_000_000
+          }
+          step={frameExport.stepUs / 1_000_000}
+          loadSnapshot={async (capturedAt, signal) => ({
+            blob: await fetchApiBlob(
+              exactFramePath(
+                projectId,
+                frameExport.revision,
+                Math.round(capturedAt * 1_000_000),
+                frameExport.width,
+              ),
+              { signal },
+            ),
+            capturedAt,
+            width: frameExport.width,
+            height: frameExport.height,
+          })}
+          onClose={() => setFrameExport(undefined)}
+          onSave={async (file) => {
+            await uploadVideoEditorAsset(projectId, file);
+            await onFrameSaved?.();
+          }}
+        />
+      ) : null}
     </section>
   );
 }

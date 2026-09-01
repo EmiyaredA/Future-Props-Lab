@@ -281,6 +281,11 @@
   opacity: 0.35;
 }
 
+.canvas-node-actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.35;
+}
+
 .canvas-node-actions button:last-child:hover {
   background: var(--danger-soft);
   color: var(--danger);

@@ -37,7 +37,7 @@ Future-Props-Lab/
 │   ├── features/      # 账号治理、首页、AI 应用、文件管理、工坊、工具导航、集成中心与模型功能
 │   ├── generated/     # OpenAPI 生成物
 │   ├── platform/      # Cookie/CSRF、API 客户端、认证事件与浏览器语音基础设施
-│   └── shared/        # 品牌与主题 UI
+│   └── shared/        # 无业务归属的媒体处理、品牌与主题 UI
 ├── web/scripts/       # Web 构建与维护脚本；正式视频导出不在这里执行
 ├── web/public/docs/   # 文档中心使用的当前真实界面截图
 ├── web/tests/         # Web 组件测试
@@ -139,7 +139,8 @@ Future-Props-Lab/
   `features/audio-annotation/queryKeys.ts` 是各功能缓存键的唯一 owner；跨功能调用只复用 factory。
   `platform/api/useApiBlobUrl.ts` 统一鉴权预览请求的取消、竞态保护和 Object URL 回收，带独立缓存、
   重试预加载或多音轨调度的媒体运行时继续由所属 feature 管理。`shared/ui/project-library/` 只拥有
-  项目卡片、快照导入/导出/目录按钮、重命名/删除对话框和无业务 API 依赖的集合更新规则。
+  项目卡片、快照导入/导出/目录按钮、重命名/删除对话框和无业务 API 依赖的集合更新规则；
+  `shared/media/` 只拥有浏览器侧通用帧捕获、图片编码与安全文件命名，不持有项目 API。
 - `features/accounts/` 拥有 Workspace 治理、个人资料与安全、平台账号页面和账号 API/Mutation；
   `app/StudioSession.ts` 只提供 Session Context，认证与业务请求统一经过 `platform/api` 客户端。
 - Character Workspace 的 ViewModel 由独立 `characterWorkspaceViewModel.ts` 拥有，展示子面板不再
