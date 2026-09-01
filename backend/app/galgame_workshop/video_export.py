@@ -24,6 +24,7 @@ from app.galgame_workshop.video_export_planning import (
     _plan_route,
 )
 from app.galgame_workshop.video_lip_sync import prepare_audio_envelopes
+from app.media_rendering.frame_renderer import render_plan_frame
 from app.models import (
     GalgameAssetMetadata,
     GalgameStorySnapshot,
@@ -43,7 +44,6 @@ from app.schemas.galgame_workshop import (
     GalgameVideoExportTaskListOut,
     GalgameVideoExportTaskOut,
 )
-from app.video_editor.frames import render_plan_frame
 
 __all__ = ["EXPORT_PACKAGING_POLICY", "GalgameVideoExports"]
 
@@ -78,6 +78,7 @@ def _task_out(row: GalgameVideoExportTask) -> GalgameVideoExportTaskOut:
         endingLabel=str(result.get("endingLabel", "")),
         outputAssetId=row.output_asset_id,
         outputFilename=result.get("outputFilename"),
+        cancelRequested=row.cancel_requested,
         error=row.error,
         revision=row.revision,
         createdAt=iso_utc(row.created_at),

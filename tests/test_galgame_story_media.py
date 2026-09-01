@@ -448,6 +448,75 @@ async def test_galgame_cg_asset_delete_reports_variant_location() -> None:
 
 
 @pytest.mark.asyncio
+async def test_galgame_cg_asset_repair_rebinds_story_asset() -> None:
+    transport = httpx.ASGITransport(app=app)
+    png = b"\x89PNG\r\n\x1a\nrepair-content"
+    async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+        project = (
+            await client.post("/v1/galgame-workshop/projects", json={"title": "CG 修复"})
+        ).json()
+        old_asset = (
+            await client.post(
+                f"/v1/galgame-workshop/projects/{project['id']}/assets",
+                files={"upload": ("old.png", png, "image/png")},
+            )
+        ).json()
+        replacement = (
+            await client.post(
+                f"/v1/galgame-workshop/projects/{project['id']}/assets",
+                files={"upload": ("replacement.png", png, "image/png")},
+            )
+        ).json()
+        document = playable_story()
+        document["assets"] = [
+            {
+                "id": "cg-repair-asset",
+                "type": "image",
+                "role": "storyCg",
+                "fileId": old_asset["id"],
+                "status": "ready",
+            }
+        ]
+        document["cgs"] = [
+            {
+                "id": "cg-repair",
+                "name": "待修复 CG",
+                "description": "",
+                "variants": [
+                    {
+                        "id": "normal",
+                        "label": "默认",
+                        "assetId": "cg-repair-asset",
+                    }
+                ],
+                "defaultVariantId": "normal",
+            }
+        ]
+        saved = await client.put(
+            f"/v1/galgame-workshop/projects/{project['id']}/story",
+            json={"expected_revision": 0, "document": document},
+        )
+        assert saved.status_code == 200, saved.text
+
+        repaired = await client.post(
+            f"/v1/galgame-workshop/projects/{project['id']}/assets/repair",
+            json={
+                "expectedStoryRevision": saved.json()["revision"],
+                "storyAssetId": "cg-repair-asset",
+                "replacementFileId": replacement["id"],
+            },
+        )
+        assert repaired.status_code == 200, repaired.text
+        assert repaired.json()["revision"] == saved.json()["revision"] + 1
+        story_asset = next(
+            item
+            for item in repaired.json()["document"]["assets"]
+            if item["id"] == "cg-repair-asset"
+        )
+        assert story_asset["fileId"] == replacement["id"]
+
+
+@pytest.mark.asyncio
 async def test_galgame_timeline_master_readiness_checks_exact_media_duration() -> None:
     transport = httpx.ASGITransport(app=app)
     audio = b"\x00\x00\x00\x18ftypM4A complete-drama"

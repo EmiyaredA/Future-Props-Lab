@@ -28,73 +28,24 @@ import { AssetBrowser } from "@features/files";
 import { ProjectAssistantPanel } from "@features/visual-workshop/assistant/ProjectAssistantPanel";
 import { CanvasNodeInspector } from "@features/visual-workshop/canvas/CanvasNodeInspector";
 import {
+  CanvasMediaNodeActions,
+  CanvasMediaPreview,
+} from "@features/visual-workshop/canvas/CanvasMediaNode";
+import {
   DEFAULT_VIEWPORT,
+  NODE_SIZE,
   nodeLabel,
 } from "@features/visual-workshop/canvas/geometry";
-import type { VisualCanvasNode } from "@features/visual-workshop/api";
-import { useApiBlobUrl } from "@platform/api/useApiBlobUrl";
 import { ThemeToggle } from "@shared/ui/ThemeToggle";
 import { useVisualCanvasController } from "@features/visual-workshop/canvas/useVisualCanvasController";
 import "@features/visual-workshop/visual-workshop.css";
 
-type MediaNode = Exclude<VisualCanvasNode, { kind: "text" }>;
-type PreviewSource = {
-  assetId: string | null;
-  kind: MediaNode["kind"];
-  fallback: boolean;
-};
-
-function previewSourceForNode(node: MediaNode): PreviewSource {
-  if (node.asset_id) {
-    return { assetId: node.asset_id, kind: node.kind, fallback: false };
-  }
-  if (node.kind === "image" && node.generation_draft?.reference_asset_id) {
-    return {
-      assetId: node.generation_draft.reference_asset_id,
-      kind: "image",
-      fallback: true,
-    };
-  }
-  if (node.kind === "video" && node.generation_draft) {
-    const draft = node.generation_draft;
-    const imageId =
-      draft.first_frame_asset_id ??
-      draft.reference_asset_ids?.[0] ??
-      draft.last_frame_asset_id;
-    if (imageId) return { assetId: imageId, kind: "image", fallback: true };
-    const videoId = draft.video_asset_ids?.[0];
-    if (videoId) return { assetId: videoId, kind: "video", fallback: true };
-  }
-  return { assetId: null, kind: node.kind, fallback: false };
-}
-
-function CanvasMediaPreview({ node }: { node: MediaNode }) {
-  const preview = previewSourceForNode(node);
-  const { url, error } = useApiBlobUrl(
-    preview.assetId ? `/v1/files/${preview.assetId}/content` : null,
-  );
-  const missing = Boolean(error);
-
-  if (url && preview.kind === "image")
-    return (
-      <img
-        src={url}
-        alt={preview.fallback ? "生成参考素材预览" : ""}
-        draggable={false}
-      />
-    );
-  if (url && preview.kind === "video") return <video src={url} controls />;
-  if (url && preview.kind === "audio") return <audio src={url} controls />;
-  const Icon =
-    node.kind === "image" ? Image : node.kind === "video" ? Video : Music;
-  return (
-    <div className={`canvas-media-placeholder${missing ? " is-missing" : ""}`}>
-      <Icon aria-hidden />
-      <span>
-        {missing ? "素材已删除" : `选择或上传${nodeLabel(node.kind)}`}
-      </span>
-    </div>
-  );
+function connectionPath(
+  source: { x: number; y: number },
+  target: { x: number; y: number },
+) {
+  const bend = Math.max(72, Math.abs(target.x - source.x) * 0.45);
+  return `M ${source.x} ${source.y} C ${source.x + bend} ${source.y}, ${target.x - bend} ${target.y}, ${target.x} ${target.y}`;
 }
 
 export function VisualWorkshopCanvasView({
@@ -111,6 +62,7 @@ export function VisualWorkshopCanvasView({
     pan,
     revisionRef,
     nodesRef,
+    edgesRef,
     conflictRef,
     saveFailureRef,
     autoSave,
@@ -120,6 +72,11 @@ export function VisualWorkshopCanvasView({
     setViewport,
     nodes,
     setNodes,
+    edges,
+    setEdges,
+    selectedEdgeId,
+    setSelectedEdgeId,
+    connection,
     selectedId,
     setSelectedId,
     mediaEditorTab,
@@ -154,6 +111,10 @@ export function VisualWorkshopCanvasView({
     setZoom,
     createNode,
     removeNode,
+    removeEdge,
+    canConnect,
+    startConnection,
+    finishConnection,
     pasteNode,
     fitView,
     onSurfacePointerDown,
@@ -163,7 +124,6 @@ export function VisualWorkshopCanvasView({
     moveNode,
     stopNodeDrag,
     openContextMenu,
-    selectedMedia,
   } = controller;
   if (projectQuery.isLoading || canvasQuery.isLoading)
     return (
@@ -285,6 +245,63 @@ export function VisualWorkshopCanvasView({
             transform: `translate(${viewport.x}px, ${viewport.y}px) scale(${viewport.zoom})`,
           }}
         >
+          <svg className="canvas-edge-layer" aria-label="节点连线">
+            {edges.map((edge) => {
+              const source = nodes.find(
+                (node) => node.id === edge.source_node_id,
+              );
+              const target = nodes.find(
+                (node) => node.id === edge.target_node_id,
+              );
+              if (!source || !target) return null;
+              const sourceSize = NODE_SIZE[source.kind];
+              const targetSize = NODE_SIZE[target.kind];
+              return (
+                <path
+                  key={edge.id}
+                  className={edge.id === selectedEdgeId ? "selected" : ""}
+                  d={connectionPath(
+                    {
+                      x: source.position.x + sourceSize.width,
+                      y: source.position.y + sourceSize.height / 2,
+                    },
+                    {
+                      x: target.position.x,
+                      y: target.position.y + targetSize.height / 2,
+                    },
+                  )}
+                  onPointerDown={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    setSelectedId(undefined);
+                    setSelectedEdgeId(edge.id);
+                  }}
+                  onDoubleClick={() => removeEdge(edge.id)}
+                />
+              );
+            })}
+            {connection
+              ? (() => {
+                  const source = nodes.find(
+                    (node) => node.id === connection.sourceNodeId,
+                  );
+                  if (!source) return null;
+                  const size = NODE_SIZE[source.kind];
+                  return (
+                    <path
+                      className="preview"
+                      d={connectionPath(
+                        {
+                          x: source.position.x + size.width,
+                          y: source.position.y + size.height / 2,
+                        },
+                        { x: connection.x, y: connection.y },
+                      )}
+                    />
+                  );
+                })()
+              : null}
+          </svg>
           {nodes.map((node) => {
             const selected = node.id === selectedId;
             return (
@@ -300,11 +317,9 @@ export function VisualWorkshopCanvasView({
                 onClick={(event) => {
                   event.stopPropagation();
                   setSelectedId(node.id);
+                  setSelectedEdgeId(undefined);
                   setAssetsOpen(false);
-                  if (
-                    (node.kind === "image" || node.kind === "video") &&
-                    selectedId !== node.id
-                  ) {
+                  if (node.kind !== "text" && selectedId !== node.id) {
                     setMediaEditorTab("generate");
                   }
                 }}
@@ -314,6 +329,8 @@ export function VisualWorkshopCanvasView({
                     <Image className="canvas-node-kind-icon" aria-hidden />
                   ) : node.kind === "video" ? (
                     <Video className="canvas-node-kind-icon" aria-hidden />
+                  ) : node.kind === "audio" ? (
+                    <Music className="canvas-node-kind-icon" aria-hidden />
                   ) : null}
                   {selected ? (
                     <input
@@ -336,7 +353,7 @@ export function VisualWorkshopCanvasView({
                   (node.kind === "image" || node.kind === "video") ? (
                     <Pencil className="canvas-node-title-edit" aria-hidden />
                   ) : null}
-                  {selected ? (
+                  {selected && node.kind === "text" ? (
                     <span className="canvas-node-actions">
                       <button
                         aria-label="复制节点"
@@ -361,6 +378,19 @@ export function VisualWorkshopCanvasView({
                         <Trash2 aria-hidden />
                       </button>
                     </span>
+                  ) : selected && node.kind !== "text" ? (
+                    <CanvasMediaNodeActions
+                      node={node}
+                      onReplace={() => {
+                        setSelectedId(node.id);
+                        setMediaEditorTab("content");
+                        setAssetsOpen(false);
+                      }}
+                      onCopy={() => {
+                        clipboard.current = structuredClone(node);
+                      }}
+                      onDelete={() => removeNode(node.id)}
+                    />
                   ) : null}
                 </header>
                 {node.kind === "text" ? (
@@ -381,52 +411,69 @@ export function VisualWorkshopCanvasView({
                 ) : (
                   <div className="canvas-node-media">
                     <CanvasMediaPreview node={node} />
-                    {node.kind === "image" || node.kind === "video" ? (
-                      <button
-                        type="button"
-                        className="canvas-media-replace"
-                        aria-label={
-                          node.asset_id
-                            ? `替换${nodeLabel(node.kind)}素材`
-                            : `选择${nodeLabel(node.kind)}素材`
-                        }
-                        onPointerDown={(event) => event.stopPropagation()}
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          setSelectedId(node.id);
-                          setMediaEditorTab("content");
-                          setAssetsOpen(false);
-                        }}
-                      >
-                        <RefreshCw aria-hidden />
-                        {node.asset_id ? "替换" : "选择素材"}
-                      </button>
-                    ) : null}
+                    <button
+                      type="button"
+                      className="canvas-media-replace"
+                      aria-label={
+                        node.asset_id
+                          ? `替换${nodeLabel(node.kind)}素材`
+                          : `选择${nodeLabel(node.kind)}素材`
+                      }
+                      onPointerDown={(event) => event.stopPropagation()}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        setSelectedId(node.id);
+                        setMediaEditorTab("content");
+                        setAssetsOpen(false);
+                      }}
+                    >
+                      <RefreshCw aria-hidden />
+                      {node.asset_id ? "替换" : "选择素材"}
+                    </button>
                   </div>
                 )}
-                {node.kind === "image" || node.kind === "video" ? (
+                {node.kind !== "text" ? (
                   <>
-                    <span
-                      className="canvas-node-port is-input"
-                      aria-hidden="true"
+                    <button
+                      type="button"
+                      className={`canvas-node-port is-input${
+                        connection &&
+                        canConnect(connection.sourceNodeId, node.id)
+                          ? " is-valid-target"
+                          : ""
+                      }`}
+                      aria-label={`连接到${node.title}`}
+                      onPointerDown={(event) => event.stopPropagation()}
+                      onPointerUp={(event) => finishConnection(event, node.id)}
                     >
                       <Plus />
-                    </span>
-                    <span
+                    </button>
+                    <button
+                      type="button"
                       className="canvas-node-port is-output"
-                      aria-hidden="true"
+                      aria-label={`从${node.title}创建连线`}
+                      onPointerDown={(event) => startConnection(event, node.id)}
                     >
                       <Plus />
-                    </span>
+                    </button>
                   </>
                 ) : null}
-                {selected &&
-                (node.kind === "image" || node.kind === "video") ? (
+                {selected && node.kind !== "text" ? (
                   <CanvasNodeInspector
                     embedded
                     initialTab={mediaEditorTab}
                     projectId={projectId}
                     node={node}
+                    upstreamNodes={edges
+                      .filter((edge) => edge.target_node_id === node.id)
+                      .flatMap((edge) => {
+                        const upstream = nodes.find(
+                          (item) => item.id === edge.source_node_id,
+                        );
+                        return upstream && upstream.kind !== "text"
+                          ? [upstream]
+                          : [];
+                      })}
                     onClose={() => setSelectedId(undefined)}
                     onPrepareCanvas={prepareCanvasForAgent}
                     onPatch={(patch, immediate) =>
@@ -613,16 +660,6 @@ export function VisualWorkshopCanvasView({
           )}
         </aside>
       ) : null}
-      {selectedMedia && selectedMedia.kind === "audio" ? (
-        <CanvasNodeInspector
-          projectId={projectId}
-          node={selectedMedia}
-          onClose={() => setSelectedId(undefined)}
-          onPatch={(patch, immediate) =>
-            patchNode(selectedMedia.id, patch, immediate)
-          }
-        />
-      ) : null}
       <ProjectAssistantPanel
         projectId={projectId}
         open={assistantOpen}
@@ -638,10 +675,12 @@ export function VisualWorkshopCanvasView({
           <button
             onClick={() => {
               nodesRef.current = conflict.nodes;
+              edgesRef.current = conflict.edges;
               revisionRef.current = conflict.revision;
               conflictRef.current = false;
               saveFailureRef.current = "";
               setNodes(conflict.nodes);
+              setEdges(conflict.edges);
               setConflict(undefined);
               setSaveState("saved");
             }}
@@ -666,11 +705,7 @@ export function VisualWorkshopCanvasView({
         <div className="canvas-save-error">{saveMessage}</div>
       ) : null}
       <div
-        className={`canvas-controls${
-          assetsOpen || (selectedMedia && selectedMedia.kind === "audio")
-            ? " with-assets"
-            : ""
-        }`}
+        className={`canvas-controls${assetsOpen ? " with-assets" : ""}`}
         aria-label="画布视图控制"
       >
         <div className="canvas-control-mode" aria-hidden>

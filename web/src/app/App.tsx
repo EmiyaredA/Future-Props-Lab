@@ -196,6 +196,7 @@ export default function App() {
     return (
       <PageBoundary>
         <VideoEditorPage
+          key={route.projectId}
           projectId={route.projectId}
           onBack={() => navigate("video-editor-projects")}
         />

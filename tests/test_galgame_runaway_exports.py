@@ -44,6 +44,9 @@ def test_full_export_requires_explicit_option() -> None:
         "diagnostic-mother-identity-v4-786s-802s",
         "diagnostic-luka-speaker-1649s-1656s",
     ]
+    assert requested_exports("speaker-fix") == [
+        ("diagnostic-luka-speaker-fix-526s-539s", 526_000, 539_000)
+    ]
     assert [item[0] for item in requested_exports("portrait-review") if item] == [
         "portrait-faris-private-38s-43s",
         "portrait-kurisu-mayuri-shy-219s-233s",

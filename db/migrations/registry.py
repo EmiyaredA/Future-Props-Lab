@@ -39,6 +39,8 @@ from db.migrations.versions import (
     r0034_realtime_tool_calls,
     r0035_video_editor,
     r0036_galgame_video_editor_handoffs,
+    r0037_media_workshop_upgrade,
+    r0038_media_workshop_tasks_and_audio,
 )
 
 
@@ -179,6 +181,15 @@ MIGRATIONS = (
     Migration(
         r0036_galgame_video_editor_handoffs.MIGRATION_ID,
         r0036_galgame_video_editor_handoffs.SQL,
+    ),
+    Migration(
+        r0037_media_workshop_upgrade.MIGRATION_ID,
+        r0037_media_workshop_upgrade.SQL,
+    ),
+    Migration(
+        r0038_media_workshop_tasks_and_audio.MIGRATION_ID,
+        r0038_media_workshop_tasks_and_audio.SQL,
+        foreign_keys_off=True,
     ),
 )
 

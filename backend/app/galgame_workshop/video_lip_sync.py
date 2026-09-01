@@ -4,6 +4,7 @@ import hashlib
 import json
 import math
 import os
+import select
 import signal
 import subprocess
 import sys
@@ -74,6 +75,8 @@ class _LipTracker:
             self.noise_floor_db = self.noise_floor_db * 0.9 + sample * 0.1
             self.frame = 0
             self.voiced_started_at_us = None
+            self.last_voiced_at_us = None
+            self.opening = 0
             return 0
         above_noise = level_db - self.noise_floor_db
         detected = 2 if above_noise >= 11 else (1 if above_noise >= 5 else 0)
@@ -100,17 +103,31 @@ class _LipTracker:
 
 
 def _read_exact(stream: Any, size: int, cancel: threading.Event | None) -> bytes:
-    chunks: list[bytes] = []
+    descriptor = stream.fileno()
+    was_blocking = os.get_blocking(descriptor)
+    if was_blocking:
+        os.set_blocking(descriptor, False)
+    chunks = bytearray()
     remaining = size
-    while remaining > 0:
-        if cancel and cancel.is_set():
-            break
-        chunk = stream.read(remaining)
-        if not chunk:
-            break
-        chunks.append(chunk)
-        remaining -= len(chunk)
-    return b"".join(chunks)
+    try:
+        while remaining > 0:
+            if cancel and cancel.is_set():
+                break
+            readable, _, _ = select.select([descriptor], [], [], 0.1)
+            if not readable:
+                continue
+            try:
+                chunk = os.read(descriptor, remaining)
+            except BlockingIOError:
+                continue
+            if not chunk:
+                break
+            chunks.extend(chunk)
+            remaining -= len(chunk)
+    finally:
+        if was_blocking:
+            os.set_blocking(descriptor, True)
+    return bytes(chunks)
 
 
 def analyze_audio_envelope(path: Path, *, cancel: threading.Event | None = None) -> AudioEnvelope:

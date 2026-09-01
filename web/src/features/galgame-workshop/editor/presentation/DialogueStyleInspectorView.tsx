@@ -18,6 +18,7 @@ import { CustomColorPicker } from "@shared/ui/CustomColorPicker";
 import { CustomSelect } from "@shared/ui/CustomSelect";
 
 import { useDialogueStyleController } from "@features/galgame-workshop/editor/presentation/useDialogueStyleController";
+import { DialogueStageFocusSettings } from "@features/galgame-workshop/editor/presentation/DialogueStageFocusSettings";
 import {
   DIALOGUE_STYLE_PRESETS as PRESETS,
   DIALOGUE_VISIBILITY_OPTIONS as VISIBILITY_OPTIONS,
@@ -38,7 +39,6 @@ export function DialogueStyleInspectorView({
     uploadTarget,
     uploadError,
     style,
-    stageStyle,
     dialogueAsset,
     usedFileIds,
     updateStyle,
@@ -48,7 +48,6 @@ export function DialogueStyleInspectorView({
     updateSpeakerName,
     updateAdvanceIndicator,
     applyPreset,
-    updateStageStyle,
     components,
     selectedAssetForTarget,
     updateComponent,
@@ -72,67 +71,7 @@ export function DialogueStyleInspectorView({
           <small>所有对白与旁白共用这套样式</small>
         </div>
       </header>
-      <div className="galgame-dialogue-style-section galgame-stage-style-section">
-        <label className="galgame-stage-checkbox">
-          <input
-            type="checkbox"
-            checked={stageStyle.speakerFocusEnabled}
-            onChange={(event) =>
-              updateStageStyle({ speakerFocusEnabled: event.target.checked })
-            }
-          />
-          <span>多人同屏时自动突出当前说话者</span>
-        </label>
-        <label className="galgame-stage-checkbox">
-          <input
-            type="checkbox"
-            checked={stageStyle.lipSyncEnabled}
-            onChange={(event) =>
-              updateStageStyle({ lipSyncEnabled: event.target.checked })
-            }
-          />
-          <span>使用配套闭口、半口和张口帧驱动口型</span>
-        </label>
-        <label className="galgame-stage-range">
-          <span>
-            非说话者亮度
-            <em>{Math.round(stageStyle.inactiveBrightness * 100)}%</em>
-          </span>
-          <input
-            aria-label="非说话者亮度"
-            type="range"
-            min="0"
-            max="1"
-            step="0.05"
-            value={stageStyle.inactiveBrightness}
-            style={rangeProgress(stageStyle.inactiveBrightness, 0, 1)}
-            onChange={(event) =>
-              updateStageStyle({
-                inactiveBrightness: Number(event.target.value),
-              })
-            }
-          />
-        </label>
-        <label className="galgame-stage-range">
-          <span>
-            聚焦切换时长 <em>{stageStyle.focusTransitionMs}ms</em>
-          </span>
-          <input
-            aria-label="聚焦切换时长"
-            type="range"
-            min="0"
-            max="5000"
-            step="50"
-            value={stageStyle.focusTransitionMs}
-            style={rangeProgress(stageStyle.focusTransitionMs, 0, 5000)}
-            onChange={(event) =>
-              updateStageStyle({
-                focusTransitionMs: Number(event.target.value),
-              })
-            }
-          />
-        </label>
-      </div>
+      <DialogueStageFocusSettings controller={controller} />
       <div className="galgame-dialogue-style-section">
         <label>样式预设</label>
         <div className="galgame-dialogue-presets">

@@ -5,9 +5,8 @@ from datetime import datetime
 from sqlalchemy import JSON, DateTime, ForeignKey, Index, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.core.ids import new_id
-from app.core.time import utc_now
 from app.models.base import Base
+from app.models.defaults import new_id, utc_now
 
 
 class VisualWorkshopProject(Base):
@@ -39,6 +38,7 @@ class VisualCanvasDocument(Base):
         primary_key=True,
     )
     nodes: Mapped[list[dict]] = mapped_column(JSON, default=list)
+    edges: Mapped[list[dict]] = mapped_column(JSON, default=list)
     revision: Mapped[int] = mapped_column(Integer, default=0)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, onupdate=utc_now)
 

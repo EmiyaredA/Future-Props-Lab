@@ -1,9 +1,13 @@
 from __future__ import annotations
 
-from sqlalchemy import delete, select, update
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.concurrency.revisions import require_revision_write
+from app.concurrency.project_records import (
+    delete_revisioned_project,
+    load_workspace_project,
+    patch_revisioned_project,
+)
 from app.core.config import get_settings
 from app.core.time import iso_utc, utc_now
 from app.files.project_transactions import creating_project_layout, deleting_project_layout
@@ -44,7 +48,9 @@ class GalgameWorkshopProjects:
         rows = (
             (
                 await self.session.execute(
-                    select(GalgameWorkshopProject).order_by(
+                    select(GalgameWorkshopProject)
+                    .where(GalgameWorkshopProject.workspace_id == self.workspace_id)
+                    .order_by(
                         GalgameWorkshopProject.updated_at.desc(),
                         GalgameWorkshopProject.created_at.desc(),
                     )
@@ -56,16 +62,21 @@ class GalgameWorkshopProjects:
         return GalgameWorkshopProjectListOut(items=[project_out(row) for row in rows])
 
     async def _row(self, project_id: str) -> GalgameWorkshopProject:
-        row = await self.session.get(GalgameWorkshopProject, project_id)
-        if row is None:
-            raise GalgameWorkshopProjectNotFoundError("项目不存在")
-        return row
+        return await load_workspace_project(
+            self.session,
+            GalgameWorkshopProject,
+            project_id,
+            self.workspace_id,
+            not_found=lambda: GalgameWorkshopProjectNotFoundError("项目不存在"),
+        )
 
     async def get(self, project_id: str) -> GalgameWorkshopProjectOut:
         return project_out(await self._row(project_id))
 
     async def create(self, body: GalgameWorkshopProjectCreateIn) -> GalgameWorkshopProjectOut:
-        row = GalgameWorkshopProject(title=body.title, status="draft")
+        row = GalgameWorkshopProject(
+            workspace_id=self.workspace_id, title=body.title, status="draft"
+        )
         self.session.add(row)
         await self.session.flush()
         async with creating_project_layout(
@@ -104,18 +115,13 @@ class GalgameWorkshopProjects:
             values["title"] = body.title
         if body.status is not None:
             values["status"] = body.status
-        result = await self.session.execute(
-            update(GalgameWorkshopProject)
-            .where(
-                GalgameWorkshopProject.id == project_id,
-                GalgameWorkshopProject.revision == body.expected_revision,
-            )
-            .values(**values)
-        )
-        await require_revision_write(
+        await patch_revisioned_project(
             self.session,
-            result,
-            expected=body.expected_revision,
+            GalgameWorkshopProject,
+            project_id,
+            self.workspace_id,
+            expected_revision=body.expected_revision,
+            values=values,
             load_current=lambda: self.get(project_id),
         )
         await self.session.commit()
@@ -145,15 +151,11 @@ class GalgameWorkshopProjects:
             workspace_id=self.workspace_id,
             legacy_paths=legacy_paths,
         ):
-            result = await self.session.execute(
-                delete(GalgameWorkshopProject).where(
-                    GalgameWorkshopProject.id == project_id,
-                    GalgameWorkshopProject.revision == expected_revision,
-                )
-            )
-            await require_revision_write(
+            await delete_revisioned_project(
                 self.session,
-                result,
-                expected=expected_revision,
+                GalgameWorkshopProject,
+                project_id,
+                self.workspace_id,
+                expected_revision=expected_revision,
                 load_current=lambda: self.get(project_id),
             )

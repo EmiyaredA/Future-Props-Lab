@@ -10,6 +10,7 @@ import userEvent from "@testing-library/user-event";
 import type { ReactNode } from "react";
 import { beforeEach, vi } from "vitest";
 import { GalgameWorkshopEditorPage } from "@features/galgame-workshop/editor";
+import { fetchApiDownload } from "@platform/api/client";
 import {
   getGalgameStoryDocument,
   getGalgameStoryReport,
@@ -31,6 +32,7 @@ vi.mock("@platform/api/client", async () => {
   return {
     ...actual,
     fetchApiBlob: vi.fn().mockResolvedValue(new Blob(["audio"])),
+    fetchApiDownload: vi.fn(),
   };
 });
 
@@ -227,6 +229,10 @@ beforeEach(() => {
     revision: 0,
     created_at: "2026-08-05T08:00:00Z",
     updated_at: "2026-08-05T08:00:00Z",
+  });
+  vi.mocked(fetchApiDownload).mockResolvedValue({
+    blob: new Blob(["image"], { type: "image/png" }),
+    filename: "preview.png",
   });
   vi.mocked(putGalgameStoryDocument).mockImplementation(
     async (_projectId, document, expectedRevision) => ({
@@ -688,6 +694,7 @@ test("operates on scene and CG rows through item menus", async () => {
   });
   await user.click(roofTrigger);
   const roofMenu = screen.getByRole("menu", { name: "天台 操作" });
+  expect(roofMenu.parentElement).toHaveClass("galgame-editor-page");
   expect(screen.getByLabelText("场景名称")).toHaveValue("大厅");
   expect(
     within(roofMenu).getByRole("menuitem", { name: "移动到 城市" }),
@@ -802,6 +809,163 @@ test("operates on scene and CG rows through item menus", async () => {
   expect(screen.getByLabelText("CG 名称")).toHaveValue("雨夜 CG");
   expect(screen.queryByText("复制当前项")).not.toBeInTheDocument();
 }, 15_000);
+
+test("downloads the active scene layer and CG variant from item menus", async () => {
+  const user = userEvent.setup();
+  vi.mocked(getGalgameStoryDocument).mockResolvedValueOnce({
+    ...story,
+    document: {
+      ...story.document,
+      assets: [
+        {
+          id: "asset-room",
+          type: "image",
+          role: "sceneLayer",
+          fileId: "file-room",
+          status: "ready",
+        },
+        {
+          id: "asset-window",
+          type: "image",
+          role: "sceneLayer",
+          fileId: "file-window",
+          status: "ready",
+        },
+        {
+          id: "asset-cg-default",
+          type: "image",
+          role: "storyCg",
+          fileId: "file-cg-default",
+          status: "ready",
+        },
+        {
+          id: "asset-cg-smile",
+          type: "image",
+          role: "storyCg",
+          fileId: "file-cg-smile",
+          status: "ready",
+        },
+      ],
+      scenes: [
+        {
+          id: "scene-room",
+          name: "实验室",
+          description: "",
+          layers: [
+            {
+              id: "layer-room",
+              name: "房间",
+              assetId: "asset-room",
+              distance: 1,
+              offsetX: 0,
+              offsetY: 0,
+            },
+            {
+              id: "layer-window",
+              name: "窗光",
+              assetId: "asset-window",
+              distance: 0.8,
+              offsetX: 0,
+              offsetY: 0,
+            },
+          ],
+        },
+        {
+          id: "scene-empty",
+          name: "空场景",
+          description: "",
+          layers: [],
+        },
+      ],
+      cgs: [
+        {
+          id: "cg-multi",
+          name: "多差分 CG",
+          description: "",
+          variants: [
+            {
+              id: "variant-default",
+              label: "默认",
+              assetId: "asset-cg-default",
+            },
+            {
+              id: "variant-smile",
+              label: "微笑",
+              assetId: "asset-cg-smile",
+            },
+          ],
+          defaultVariantId: "variant-default",
+        },
+      ],
+    },
+  });
+  const downloadedNames: string[] = [];
+  const anchorClick = vi
+    .spyOn(HTMLAnchorElement.prototype, "click")
+    .mockImplementation(function (this: HTMLAnchorElement) {
+      downloadedNames.push(this.download);
+    });
+  renderEditor();
+  await screen.findByText("纵向切片");
+  await openAssetSection(user, "场景");
+
+  await user.click(screen.getByDisplayValue("窗光").closest("article")!);
+  await user.click(screen.getByRole("button", { name: "更多操作 实验室" }));
+  let finishFirstDownload!: (download: {
+    blob: Blob;
+    filename: string | null;
+  }) => void;
+  vi.mocked(fetchApiDownload).mockReturnValueOnce(
+    new Promise((resolve) => {
+      finishFirstDownload = resolve;
+    }),
+  );
+  const firstDownload = screen.getByRole("menuitem", { name: "下载图片" });
+  await user.click(firstDownload);
+  expect(firstDownload).toBeDisabled();
+  await user.click(firstDownload);
+  expect(fetchApiDownload).toHaveBeenCalledTimes(1);
+  finishFirstDownload({
+    blob: new Blob(["window"], { type: "image/png" }),
+    filename: "窗光.png",
+  });
+  await waitFor(() =>
+    expect(fetchApiDownload).toHaveBeenLastCalledWith(
+      "/v1/files/file-window/download",
+    ),
+  );
+  expect(anchorClick).toHaveBeenCalledTimes(1);
+  expect(downloadedNames).toEqual(["窗光.png"]);
+  expect(URL.revokeObjectURL).toHaveBeenCalledWith("blob:editor-audio");
+
+  await user.click(screen.getByRole("button", { name: "更多操作 多差分 CG" }));
+  await user.click(screen.getByRole("menuitem", { name: "下载图片" }));
+  await waitFor(() =>
+    expect(fetchApiDownload).toHaveBeenLastCalledWith(
+      "/v1/files/file-cg-default/download",
+    ),
+  );
+
+  await user.click(screen.getByRole("button", { name: /多差分 CG 2 个差分/ }));
+  await user.click(screen.getByDisplayValue("微笑").closest("article")!);
+  await user.click(screen.getByRole("button", { name: "更多操作 多差分 CG" }));
+  await user.click(screen.getByRole("menuitem", { name: "下载图片" }));
+  await waitFor(() =>
+    expect(fetchApiDownload).toHaveBeenLastCalledWith(
+      "/v1/files/file-cg-smile/download",
+    ),
+  );
+
+  await user.click(screen.getByRole("button", { name: "更多操作 空场景" }));
+  expect(screen.getByRole("menuitem", { name: "下载图片" })).toBeDisabled();
+
+  await user.keyboard("{Escape}");
+  vi.mocked(fetchApiDownload).mockRejectedValueOnce(new Error("下载网络失败"));
+  await user.click(screen.getByRole("button", { name: "更多操作 多差分 CG" }));
+  await user.click(screen.getByRole("menuitem", { name: "下载图片" }));
+  expect(await screen.findByRole("status")).toHaveTextContent("下载网络失败");
+  anchorClick.mockRestore();
+});
 
 test("uploads video from the asset overview and inserts a selectable Video Block", async () => {
   const user = userEvent.setup();

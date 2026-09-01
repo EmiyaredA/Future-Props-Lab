@@ -4,8 +4,6 @@ export type VisualSelection = { kind: "scene" | "cg"; id: string };
 
 export type VisualMenuState = {
   item: VisualSelection;
-  left: number;
-  top: number;
   trigger: HTMLButtonElement;
 };
 
@@ -16,6 +14,31 @@ export type PickerTarget = {
 
 export function clamp(value: number, minimum: number, maximum: number) {
   return Math.min(Math.max(value, minimum), maximum);
+}
+
+export function visualMenuPosition(
+  trigger: Pick<DOMRect, "bottom" | "left" | "right" | "top">,
+  menu: Pick<DOMRect, "height" | "width">,
+  viewport: { height: number; width: number },
+) {
+  const margin = 8;
+  const gap = 4;
+  const maxLeft = Math.max(margin, viewport.width - menu.width - margin);
+  const maxTop = Math.max(margin, viewport.height - menu.height - margin);
+  const right = Math.max(margin, trigger.right + gap);
+  const left =
+    right + menu.width <= viewport.width - margin
+      ? right
+      : clamp(trigger.left - menu.width - gap, margin, maxLeft);
+  const below = trigger.bottom + gap;
+  const above = trigger.top - menu.height - gap;
+  const top =
+    below + menu.height <= viewport.height - margin
+      ? below
+      : above >= margin
+        ? above
+        : clamp(trigger.top, margin, maxTop);
+  return { left, top };
 }
 
 export function cleanLabel(filename: string, fallback: string) {

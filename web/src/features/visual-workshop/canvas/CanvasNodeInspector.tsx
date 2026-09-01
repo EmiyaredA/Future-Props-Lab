@@ -5,7 +5,15 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import { Image, LoaderCircle, Music, Upload, Video, X } from "lucide-react";
+import {
+  Image,
+  Link2,
+  LoaderCircle,
+  Music,
+  Upload,
+  Video,
+  X,
+} from "lucide-react";
 import {
   fileQueryKeys,
   getFiles,
@@ -21,6 +29,7 @@ import {
   type VisualCanvasNode,
 } from "@features/visual-workshop/api";
 import { visualWorkshopQueryKeys } from "@features/visual-workshop/queryKeys";
+import { useApiBlobUrl } from "@platform/api/useApiBlobUrl";
 
 type MediaNode = Exclude<VisualCanvasNode, { kind: "text" }>;
 
@@ -32,6 +41,29 @@ const ACCEPT: Record<MediaNode["kind"], string> = {
 
 function mediaIcon(kind: MediaNode["kind"]) {
   return kind === "image" ? Image : kind === "video" ? Video : Music;
+}
+
+function LinkedMaterial({ node }: { node: MediaNode }) {
+  const { url } = useApiBlobUrl(
+    node.asset_id
+      ? `/v1/files/${encodeURIComponent(node.asset_id)}/content`
+      : null,
+  );
+  const Icon = mediaIcon(node.kind);
+  return (
+    <div className={node.asset_id ? "ready" : "waiting"}>
+      <span>
+        {url && node.kind === "image" ? (
+          <img src={url} alt="" />
+        ) : (
+          <Icon aria-hidden />
+        )}
+        <Link2 aria-hidden />
+      </span>
+      <strong>{node.title}</strong>
+      <small>{node.asset_id ? "动态引用上游素材" : "等待上游素材"}</small>
+    </div>
+  );
 }
 
 function useProjectMedia(projectId: string, kind: MediaKind) {
@@ -88,6 +120,7 @@ export function CanvasNodeInspector({
   onTaskLinked,
   embedded = false,
   initialTab,
+  upstreamNodes = [],
 }: {
   projectId: string;
   node: MediaNode;
@@ -100,11 +133,11 @@ export function CanvasNodeInspector({
   onTaskLinked?: (taskId: string) => void;
   embedded?: boolean;
   initialTab?: "content" | "generate";
+  upstreamNodes?: MediaNode[];
 }) {
   const client = useQueryClient();
   const input = useRef<HTMLInputElement>(null);
-  const preferredTab =
-    initialTab ?? (embedded && node.kind === "video" ? "generate" : "content");
+  const preferredTab = initialTab ?? (embedded ? "generate" : "content");
   const [tab, setTab] = useState<"content" | "generate">(preferredTab);
   const { files, loading } = useProjectMedia(projectId, node.kind);
   const selected = files.find((file) => file.id === node.asset_id);
@@ -115,10 +148,7 @@ export function CanvasNodeInspector({
       onPatch({ asset_id: file.id }, true);
     },
   });
-  const taskId =
-    node.kind === "image" || node.kind === "video"
-      ? node.generation_task_id
-      : undefined;
+  const taskId = node.generation_task_id;
   const task = useQuery({
     queryKey: visualWorkshopQueryKeys.generationTask(taskId),
     queryFn: () => getGenerationTask(taskId!),
@@ -147,10 +177,7 @@ export function CanvasNodeInspector({
   }, [node.asset_id, onPatch, task.data]);
 
   const Icon = mediaIcon(node.kind);
-  const isAttachedComposer =
-    embedded &&
-    (node.kind === "image" || node.kind === "video") &&
-    tab === "generate";
+  const isAttachedComposer = embedded && tab === "generate";
   return (
     <aside
       className={`canvas-node-inspector${embedded ? ` is-embedded is-${node.kind}` : ""}`}
@@ -179,7 +206,7 @@ export function CanvasNodeInspector({
           </button>
         </header>
       ) : null}
-      {node.kind !== "audio" && !isAttachedComposer ? (
+      {!isAttachedComposer ? (
         <nav className="canvas-inspector-tabs" role="tablist">
           <button
             className={tab === "content" ? "active" : ""}
@@ -199,34 +226,44 @@ export function CanvasNodeInspector({
           </button>
         </nav>
       ) : null}
-      {tab === "generate" && node.kind !== "audio" ? (
-        <GenerationDrawer
-          compact
-          projectId={projectId}
-          canvasNodeId={node.id}
-          lockedKind={node.kind}
-          draft={node.generation_draft}
-          onClose={isAttachedComposer ? onClose : () => setTab("content")}
-          onDraftChange={(generationDraft, immediate) =>
-            onPatch(
-              { generation_draft: generationDraft } as Partial<MediaNode>,
-              immediate,
-            )
-          }
-          onBeforeSubmit={async () => {
-            return onPrepareCanvas?.();
-          }}
-          onTaskCreated={(created) => {
-            if (onTaskLinked) {
-              onTaskLinked(created.id);
-              return;
+      {tab === "generate" ? (
+        <>
+          {upstreamNodes.length ? (
+            <div className="canvas-linked-materials">
+              <b>上游引用</b>
+              {upstreamNodes.map((upstream) => (
+                <LinkedMaterial key={upstream.id} node={upstream} />
+              ))}
+            </div>
+          ) : null}
+          <GenerationDrawer
+            compact
+            projectId={projectId}
+            canvasNodeId={node.id}
+            lockedKind={node.kind}
+            draft={node.generation_draft}
+            onClose={isAttachedComposer ? onClose : () => setTab("content")}
+            onDraftChange={(generationDraft, immediate) =>
+              onPatch(
+                { generation_draft: generationDraft } as Partial<MediaNode>,
+                immediate,
+              )
             }
-            return onPatch(
-              { generation_task_id: created.id, asset_id: null },
-              true,
-            );
-          }}
-        />
+            onBeforeSubmit={async () => {
+              return onPrepareCanvas?.();
+            }}
+            onTaskCreated={(created) => {
+              if (onTaskLinked) {
+                onTaskLinked(created.id);
+                return;
+              }
+              return onPatch(
+                { generation_task_id: created.id, asset_id: null },
+                true,
+              );
+            }}
+          />
+        </>
       ) : (
         <div className="canvas-inspector-content">
           <input

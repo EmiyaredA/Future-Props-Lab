@@ -1,6 +1,10 @@
 export const visualWorkshopQueryKeys = {
   projects: ["visual-workshop-projects"] as const,
   projectsForMediaSource: ["visual-workshop-projects", "media-source"] as const,
+  projectsForSegmentTarget: [
+    "visual-workshop-projects",
+    "segment-target",
+  ] as const,
   project: (projectId: string) =>
     ["visual-workshop-project", projectId] as const,
   canvas: (projectId: string) => ["visual-workshop-canvas", projectId] as const,

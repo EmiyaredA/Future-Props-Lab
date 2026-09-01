@@ -112,19 +112,45 @@ def apply_operations(document: dict, body: VideoEditorTimelineBatchIn) -> dict:
                 sourceInUs=data["sourceInUs"],
             )
         elif kind == "splitClip":
-            track, clip = _find_clip(result, data["clipId"])
-            offset = data["atUs"] - clip["timelineStartUs"]
-            if offset <= 0 or offset >= clip["durationUs"]:
-                raise VideoEditorValidationError("分割点必须位于 Clip 内部", code="invalid_split")
-            right = deepcopy(clip)
-            right.update(
-                id=data["newClipId"],
-                timelineStartUs=data["atUs"],
-                durationUs=clip["durationUs"] - offset,
-                sourceInUs=clip.get("sourceInUs", 0) + offset,
-            )
-            clip["durationUs"] = offset
-            track["clips"].append(right)
+            selected_track, selected_clip = _find_clip(result, data["clipId"])
+            group_id = selected_clip.get("linkGroupId")
+            candidates = [(selected_track, selected_clip)]
+            if group_id:
+                candidates = [
+                    (track, clip)
+                    for track in result["tracks"]
+                    for clip in track["clips"]
+                    if clip.get("linkGroupId") == group_id
+                    and clip["timelineStartUs"]
+                    < data["atUs"]
+                    < clip["timelineStartUs"] + clip["durationUs"]
+                ]
+            linked_ids = data.get("linkedNewClipIds") or {}
+            right_group_id = data.get("newLinkGroupId") or f"right-{data['newClipId']}"
+            if len(right_group_id) > 64:
+                right_group_id = right_group_id[:64]
+            for index, (track, clip) in enumerate(candidates):
+                offset = data["atUs"] - clip["timelineStartUs"]
+                if offset <= 0 or offset >= clip["durationUs"]:
+                    raise VideoEditorValidationError(
+                        "分割点必须位于 Clip 内部", code="invalid_split"
+                    )
+                new_id = (
+                    data["newClipId"]
+                    if clip["id"] == data["clipId"]
+                    else linked_ids.get(clip["id"]) or f"{data['newClipId'][:48]}-{index}"
+                )
+                right = deepcopy(clip)
+                right.update(
+                    id=new_id,
+                    timelineStartUs=data["atUs"],
+                    durationUs=clip["durationUs"] - offset,
+                    sourceInUs=clip.get("sourceInUs", 0) + offset,
+                )
+                if group_id:
+                    right["linkGroupId"] = right_group_id
+                clip["durationUs"] = offset
+                track["clips"].append(right)
         elif kind in {"removeClip", "rippleDelete"}:
             track, removed = _remove_clip(result, data["clipId"])
             if kind == "rippleDelete":
@@ -253,11 +279,12 @@ async def validate_timeline(session: AsyncSession, project_id: str, document: di
 
 
 class VideoEditorTimelines:
-    def __init__(self, session: AsyncSession) -> None:
+    def __init__(self, session: AsyncSession, workspace_id: str) -> None:
         self.session = session
+        self.workspace_id = workspace_id
 
     async def row(self, project_id: str) -> VideoEditorTimeline:
-        await VideoEditorProjects(self.session).row(project_id)
+        await VideoEditorProjects(self.session, self.workspace_id).row(project_id)
         row = await self.session.get(VideoEditorTimeline, project_id)
         if row is None:
             raise VideoEditorNotFoundError("时间轴不存在")
@@ -278,10 +305,12 @@ class VideoEditorTimelines:
     async def apply(
         self, project_id: str, body: VideoEditorTimelineBatchIn
     ) -> VideoEditorTimelineOut:
+        await VideoEditorProjects(self.session, self.workspace_id).row(project_id)
         existing = (
             await self.session.execute(
                 select(VideoEditorOperationBatch).where(
                     VideoEditorOperationBatch.project_id == project_id,
+                    VideoEditorOperationBatch.workspace_id == self.workspace_id,
                     VideoEditorOperationBatch.request_id == body.request_id,
                 )
             )
@@ -328,6 +357,7 @@ class VideoEditorTimelines:
             )
         self.session.add(
             VideoEditorOperationBatch(
+                workspace_id=self.workspace_id,
                 project_id=project_id,
                 request_id=body.request_id,
                 base_revision=body.expected_revision,
@@ -337,7 +367,10 @@ class VideoEditorTimelines:
         )
         await self.session.execute(
             update(VideoEditorProject)
-            .where(VideoEditorProject.id == project_id)
+            .where(
+                VideoEditorProject.id == project_id,
+                VideoEditorProject.workspace_id == self.workspace_id,
+            )
             .values(updated_at=now)
         )
         await self.session.commit()

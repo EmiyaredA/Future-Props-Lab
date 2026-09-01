@@ -25,6 +25,7 @@ test("enters the visual workshop, persists projects, and supports deep navigatio
   let canvas = {
     project_id: "e2e-project",
     nodes: [] as Array<Record<string, unknown>>,
+    edges: [] as Array<Record<string, unknown>>,
     revision: 0,
     updated_at: "2026-08-03T08:00:00Z",
   };
@@ -408,10 +409,12 @@ test("enters the visual workshop, persists projects, and supports deep navigatio
   await expect(page).toHaveURL(
     /\/apps\/visual-workshop\/projects\/e2e-project\/canvas$/,
   );
-  await expect(page.getByText("未命名项目")).toBeVisible();
-  await expect(page.getByText("100%")).toBeVisible();
+  await expect(page.getByText("未命名项目")).toBeVisible({ timeout: 15_000 });
+  const zoom = page.locator(".canvas-zoom-value");
+  await zoom.click();
+  await expect(zoom).toHaveText("100%");
   await page.getByRole("button", { name: "放大" }).click();
-  await expect(page.getByText("110%")).toBeVisible();
+  await expect(zoom).toHaveText("110%");
   await page.getByRole("button", { name: "素材库" }).click();
   await expect(
     page.getByRole("complementary", { name: "项目素材库" }),

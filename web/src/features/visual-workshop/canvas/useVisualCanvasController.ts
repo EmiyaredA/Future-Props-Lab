@@ -13,10 +13,8 @@ import {
 } from "@features/files";
 import { visualWorkshopQueryKeys } from "@features/visual-workshop/queryKeys";
 import {
-  ATTACHED_EDITOR_SIZE,
   DEFAULT_VIEWPORT,
   NODE_DRAG_BLOCKER_SELECTOR,
-  NODE_SIZE,
   clampZoom,
   cloneNode,
   nextNodeId,
@@ -28,12 +26,13 @@ import {
   getVisualCanvas,
   getVisualWorkshopProject,
   patchVisualWorkshopProject,
-  putVisualCanvas,
-  type VisualCanvasDocument,
+  type VisualCanvasEdge,
   type VisualCanvasNode,
 } from "@features/visual-workshop/api";
-import { ApiError } from "@platform/api/client";
 import type { VisualWorkshopCanvasPageProps } from "@features/visual-workshop/canvas/visualCanvasTypes";
+import { canConnectCanvasNodes } from "@features/visual-workshop/canvas/canvasGraph";
+import { fitCanvasViewport } from "@features/visual-workshop/canvas/canvasFit";
+import { useCanvasPersistence } from "@features/visual-workshop/canvas/useCanvasPersistence";
 
 type ContextMenuState = {
   left: number;
@@ -65,18 +64,17 @@ export function useVisualCanvasController({
       }
     | undefined
   >(undefined);
-  const revisionRef = useRef(0);
-  const nodesRef = useRef<VisualCanvasNode[]>([]);
-  const conflictRef = useRef(false);
-  const saveFailureRef = useRef("");
-  const saveQueue = useRef(Promise.resolve());
-  const autoSave = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const clipboard = useRef<VisualCanvasNode | undefined>(undefined);
   const pendingFitNode = useRef<string | undefined>(undefined);
   const lastPointer = useRef({ x: 0, y: 0 });
   const uploadPosition = useRef({ x: 0, y: 0 });
   const [viewport, setViewport] = useState(() => readViewport(projectId));
-  const [nodes, setNodes] = useState<VisualCanvasNode[]>([]);
+  const [selectedEdgeId, setSelectedEdgeId] = useState<string>();
+  const [connection, setConnection] = useState<{
+    sourceNodeId: string;
+    x: number;
+    y: number;
+  }>();
   const [selectedId, setSelectedId] = useState<string>();
   const [mediaEditorTab, setMediaEditorTab] = useState<"content" | "generate">(
     "generate",
@@ -88,11 +86,6 @@ export function useVisualCanvasController({
   const [assetView, setAssetView] = useState<AssetViewMode>("list");
   const [editingTitle, setEditingTitle] = useState(false);
   const [title, setTitle] = useState("");
-  const [saveState, setSaveState] = useState<
-    "saved" | "saving" | "error" | "conflict"
-  >("saved");
-  const [saveMessage, setSaveMessage] = useState("");
-  const [conflict, setConflict] = useState<VisualCanvasDocument>();
   const projectQuery = useQuery({
     queryKey: visualWorkshopQueryKeys.project(projectId),
     queryFn: () => getVisualWorkshopProject(projectId),
@@ -102,122 +95,72 @@ export function useVisualCanvasController({
     queryFn: () => getVisualCanvas(projectId),
   });
   const canvasReady = projectQuery.isSuccess && canvasQuery.isSuccess;
+  const {
+    revisionRef,
+    nodesRef,
+    edgesRef,
+    conflictRef,
+    saveFailureRef,
+    autoSave,
+    nodes,
+    setNodes,
+    edges,
+    setEdges,
+    saveState,
+    setSaveState,
+    saveMessage,
+    setSaveMessage,
+    conflict,
+    setConflict,
+    enqueueSave,
+    prepareCanvasForAgent,
+    replaceNodes,
+    patchNode,
+    replaceEdges,
+  } = useCanvasPersistence(projectId, canvasQuery.data);
 
   useEffect(() => {
     if (projectQuery.data) setTitle(projectQuery.data.title);
   }, [projectQuery.data]);
-  useEffect(() => {
-    if (!canvasQuery.data) return;
-    nodesRef.current = canvasQuery.data.nodes;
-    revisionRef.current = canvasQuery.data.revision;
-    setNodes(canvasQuery.data.nodes);
-  }, [canvasQuery.data]);
-  useEffect(() => {
-    nodesRef.current = nodes;
-  }, [nodes]);
   useEffect(() => {
     window.localStorage.setItem(
       `fpl_canvas_viewport_${projectId}`,
       JSON.stringify(viewport),
     );
   }, [projectId, viewport]);
-  useEffect(
-    () => () => {
-      if (autoSave.current) clearTimeout(autoSave.current);
+  const addEdge = useCallback(
+    (sourceNodeId: string, targetNodeId: string) => {
+      const edge: VisualCanvasEdge = {
+        id: `edge-${crypto.randomUUID()}`,
+        source_node_id: sourceNodeId,
+        target_node_id: targetNodeId,
+      };
+      replaceEdges((current) => [...current, edge], true);
+      setSelectedEdgeId(edge.id);
     },
-    [],
+    [replaceEdges],
   );
-
-  const enqueueSave = useCallback(
-    (snapshot: VisualCanvasNode[]) => {
-      const copy = structuredClone(snapshot);
-      saveQueue.current = saveQueue.current.then(async () => {
-        if (conflictRef.current) return;
-        setSaveState("saving");
-        setSaveMessage("");
-        saveFailureRef.current = "";
-        try {
-          const updated = await putVisualCanvas(
-            projectId,
-            copy,
-            revisionRef.current,
-          );
-          revisionRef.current = updated.revision;
-          setSaveState("saved");
-        } catch (error) {
-          if (error instanceof ApiError && error.status === 409) {
-            const current = error.problem.current as
-              VisualCanvasDocument | undefined;
-            if (current) {
-              conflictRef.current = true;
-              setConflict(current);
-              setSaveState("conflict");
-              return;
-            }
-          }
-          setSaveState("error");
-          const message =
-            error instanceof Error ? error.message : "画布保存失败";
-          saveFailureRef.current = message;
-          setSaveMessage(message);
-        }
-      });
-    },
-    [projectId],
-  );
-
-  const prepareCanvasForAgent = useCallback(async () => {
-    if (autoSave.current) {
-      clearTimeout(autoSave.current);
-      autoSave.current = undefined;
-      enqueueSave(nodesRef.current);
-    }
-    await saveQueue.current;
-    if (conflictRef.current) {
-      throw new Error("画布存在保存冲突，请先选择要使用的版本");
-    }
-    if (saveFailureRef.current) {
-      throw new Error(`画布尚未保存：${saveFailureRef.current}`);
-    }
-    return revisionRef.current;
-  }, [enqueueSave]);
-
-  const replaceNodes = useCallback(
-    (
-      updater:
-        | VisualCanvasNode[]
-        | ((current: VisualCanvasNode[]) => VisualCanvasNode[]),
-      immediate = false,
-    ) => {
-      setNodes((current) => {
-        const next = typeof updater === "function" ? updater(current) : updater;
-        nodesRef.current = next;
-        if (autoSave.current) clearTimeout(autoSave.current);
-        if (immediate) enqueueSave(next);
-        else
-          autoSave.current = setTimeout(
-            () => enqueueSave(nodesRef.current),
-            650,
-          );
-        return next;
-      });
-    },
-    [enqueueSave],
-  );
-
-  const patchNode = useCallback(
-    (nodeId: string, patch: Partial<VisualCanvasNode>, immediate = false) => {
-      replaceNodes(
-        (current) =>
-          current.map((node) =>
-            node.id === nodeId
-              ? ({ ...node, ...patch } as VisualCanvasNode)
-              : node,
-          ),
-        immediate,
+  const removeEdge = useCallback(
+    (edgeId: string) => {
+      replaceEdges(
+        (current) => current.filter((edge) => edge.id !== edgeId),
+        true,
+      );
+      setSelectedEdgeId((current) =>
+        current === edgeId ? undefined : current,
       );
     },
-    [replaceNodes],
+    [replaceEdges],
+  );
+  const canConnect = useCallback(
+    (sourceNodeId: string, targetNodeId: string) =>
+      canConnectCanvasNodes(
+        nodesRef.current,
+        edgesRef.current,
+        sourceNodeId,
+        targetNodeId,
+      ),
+    [edgesRef, nodesRef],
   );
   const linkGenerationTask = useCallback(
     (nodeId: string, taskId: string) => {
@@ -226,7 +169,7 @@ export function useVisualCanvasController({
         autoSave.current = undefined;
       }
       const next = nodesRef.current.map((node) =>
-        node.id === nodeId && (node.kind === "image" || node.kind === "video")
+        node.id === nodeId && node.kind !== "text"
           ? ({
               ...node,
               generation_task_id: taskId,
@@ -243,7 +186,16 @@ export function useVisualCanvasController({
         queryKey: visualWorkshopQueryKeys.canvas(projectId),
       });
     },
-    [client, projectId],
+    [
+      autoSave,
+      client,
+      nodesRef,
+      projectId,
+      revisionRef,
+      setNodes,
+      setSaveMessage,
+      setSaveState,
+    ],
   );
 
   useEffect(() => {
@@ -358,6 +310,27 @@ export function useVisualCanvasController({
     },
     [viewport],
   );
+  const startConnection = useCallback(
+    (event: PointerEvent<HTMLElement>, sourceNodeId: string) => {
+      event.preventDefault();
+      event.stopPropagation();
+      const point = screenToWorld(event.clientX, event.clientY);
+      setConnection({ sourceNodeId, ...point });
+      setSelectedId(sourceNodeId);
+      setSelectedEdgeId(undefined);
+    },
+    [screenToWorld],
+  );
+  const finishConnection = useCallback(
+    (event: PointerEvent<HTMLElement>, targetNodeId: string) => {
+      event.preventDefault();
+      event.stopPropagation();
+      if (connection && canConnect(connection.sourceNodeId, targetNodeId))
+        addEdge(connection.sourceNodeId, targetNodeId);
+      setConnection(undefined);
+    },
+    [addEdge, canConnect, connection],
+  );
   const createNode = useCallback(
     (kind: NodeKind, position: { x: number; y: number }) => {
       const count =
@@ -371,26 +344,31 @@ export function useVisualCanvasController({
       const node = (
         kind === "text" ? { ...base, text: "" } : base
       ) as VisualCanvasNode;
-      if (kind === "image" || kind === "video")
-        pendingFitNode.current = node.id;
+      if (kind !== "text") pendingFitNode.current = node.id;
       replaceNodes((current) => [...current, node], true);
       setSelectedId(node.id);
       setAssetsOpen(false);
       setContextMenu(undefined);
     },
-    [replaceNodes],
+    [nodesRef, replaceNodes],
   );
   const removeNode = useCallback(
     (id: string) => {
+      const nextEdges = edgesRef.current.filter(
+        (edge) => edge.source_node_id !== id && edge.target_node_id !== id,
+      );
+      edgesRef.current = nextEdges;
+      setEdges(nextEdges);
       replaceNodes((current) => current.filter((node) => node.id !== id), true);
       setSelectedId((current) => (current === id ? undefined : current));
+      setSelectedEdgeId(undefined);
     },
-    [replaceNodes],
+    [edgesRef, replaceNodes, setEdges],
   );
   const copySelected = useCallback(() => {
     const selected = nodesRef.current.find((node) => node.id === selectedId);
     if (selected) clipboard.current = structuredClone(selected);
-  }, [selectedId]);
+  }, [nodesRef, selectedId]);
   const pasteNode = useCallback(
     (position?: { x: number; y: number }) => {
       if (!clipboard.current) return;
@@ -419,73 +397,17 @@ export function useVisualCanvasController({
         ".canvas-node-inspector:not(.is-embedded), .canvas-assets-drawer, .project-assistant-panel.is-open",
       );
       const panelBounds = panel?.getBoundingClientRect();
-      let availableLeft = 0;
-      let availableRight = bounds.width;
-      if (panelBounds) {
-        if (panelBounds.left < bounds.left + bounds.width / 2) {
-          availableLeft = Math.min(
-            bounds.width,
-            Math.max(0, panelBounds.right - bounds.left + 24),
-          );
-        } else {
-          availableRight = Math.max(
-            0,
-            Math.min(bounds.width, panelBounds.left - bounds.left - 24),
-          );
-        }
-      }
-      const availableWidth = Math.max(1, availableRight - availableLeft);
-      const padding = 120;
-      const expandedId = expandedMediaId ?? selectedId;
-      const attachedEditor = (node: VisualCanvasNode) =>
-        node.id === expandedId ? ATTACHED_EDITOR_SIZE[node.kind] : undefined;
-      const minX = Math.min(
-        ...nodesRef.current.map((node) => {
-          const editor = attachedEditor(node);
-          return editor
-            ? node.position.x -
-                Math.max(0, (editor.width - NODE_SIZE[node.kind].width) / 2)
-            : node.position.x;
-        }),
-      );
-      const minY = Math.min(...nodesRef.current.map((node) => node.position.y));
-      const maxX = Math.max(
-        ...nodesRef.current.map((node) => {
-          const editor = attachedEditor(node);
-          return (
-            node.position.x +
-            NODE_SIZE[node.kind].width +
-            (editor
-              ? Math.max(0, (editor.width - NODE_SIZE[node.kind].width) / 2)
-              : 0)
-          );
-        }),
-      );
-      const maxY = Math.max(
-        ...nodesRef.current.map((node) => {
-          const editor = attachedEditor(node);
-          return (
-            node.position.y +
-            NODE_SIZE[node.kind].height +
-            (editor ? editor.gap + editor.height : 0)
-          );
-        }),
-      );
-      const zoom = clampZoom(
-        Math.min(
-          1.4,
-          (availableWidth - padding * 2) / Math.max(1, maxX - minX),
-          (bounds.height - padding * 2) / Math.max(1, maxY - minY),
+      setViewport(
+        fitCanvasViewport(
+          nodesRef.current,
+          expandedMediaId ?? selectedId,
+          bounds,
+          panelBounds,
         ),
       );
-      setViewport({
-        zoom,
-        x: availableLeft + availableWidth / 2 - ((minX + maxX) / 2) * zoom,
-        y: bounds.height / 2 - ((minY + maxY) / 2) * zoom,
-      });
       setContextMenu(undefined);
     },
-    [selectedId],
+    [nodesRef, selectedId],
   );
 
   useEffect(() => {
@@ -504,6 +426,7 @@ export function useVisualCanvasController({
       if (event.key === "Escape") {
         setContextMenu(undefined);
         setSelectedId(undefined);
+        setSelectedEdgeId(undefined);
         return;
       }
       if (editing) return;
@@ -518,11 +441,24 @@ export function useVisualCanvasController({
       if ((event.key === "Delete" || event.key === "Backspace") && selectedId) {
         event.preventDefault();
         removeNode(selectedId);
+      } else if (
+        (event.key === "Delete" || event.key === "Backspace") &&
+        selectedEdgeId
+      ) {
+        event.preventDefault();
+        removeEdge(selectedEdgeId);
       }
     };
     window.addEventListener("keydown", handleKeys);
     return () => window.removeEventListener("keydown", handleKeys);
-  }, [copySelected, pasteNode, removeNode, selectedId]);
+  }, [
+    copySelected,
+    pasteNode,
+    removeEdge,
+    removeNode,
+    selectedEdgeId,
+    selectedId,
+  ]);
 
   const onSurfacePointerDown = (event: PointerEvent<HTMLDivElement>) => {
     if (event.button !== 0 || event.target !== event.currentTarget) return;
@@ -538,6 +474,12 @@ export function useVisualCanvasController({
   };
   const onSurfacePointerMove = (event: PointerEvent<HTMLDivElement>) => {
     lastPointer.current = screenToWorld(event.clientX, event.clientY);
+    if (connection) {
+      setConnection((current) =>
+        current ? { ...current, ...lastPointer.current } : current,
+      );
+      return;
+    }
     const activePan = pan.current;
     if (!activePan) return;
     const nextX = activePan.originX + event.clientX - activePan.x;
@@ -550,6 +492,7 @@ export function useVisualCanvasController({
   };
   const stopPan = () => {
     pan.current = undefined;
+    setConnection(undefined);
   };
   const startNodeDrag = (
     event: PointerEvent<HTMLElement>,
@@ -598,10 +541,7 @@ export function useVisualCanvasController({
     nodeDrag.current = undefined;
     if (autoSave.current) clearTimeout(autoSave.current);
     enqueueSave(nodesRef.current);
-    if (
-      !completed.moved &&
-      (completed.kind === "image" || completed.kind === "video")
-    )
+    if (!completed.moved && completed.kind !== "text")
       setMediaEditorTab("generate");
   };
   const openContextMenu = (event: React.MouseEvent<HTMLDivElement>) => {
@@ -625,8 +565,6 @@ export function useVisualCanvasController({
     lastPointer.current = world;
   };
   const selectedNode = nodes.find((node) => node.id === selectedId);
-  const selectedMedia =
-    selectedNode?.kind === "text" ? undefined : selectedNode;
 
   return {
     projectId,
@@ -637,6 +575,7 @@ export function useVisualCanvasController({
     pan,
     revisionRef,
     nodesRef,
+    edgesRef,
     conflictRef,
     saveFailureRef,
     autoSave,
@@ -646,6 +585,12 @@ export function useVisualCanvasController({
     setViewport,
     nodes,
     setNodes,
+    edges,
+    setEdges,
+    selectedEdgeId,
+    setSelectedEdgeId,
+    connection,
+    setConnection,
     selectedId,
     setSelectedId,
     mediaEditorTab,
@@ -676,6 +621,12 @@ export function useVisualCanvasController({
     enqueueSave,
     prepareCanvasForAgent,
     replaceNodes,
+    replaceEdges,
+    addEdge,
+    removeEdge,
+    canConnect,
+    startConnection,
+    finishConnection,
     patchNode,
     linkGenerationTask,
     renameMutation,
@@ -695,6 +646,5 @@ export function useVisualCanvasController({
     stopNodeDrag,
     openContextMenu,
     selectedNode,
-    selectedMedia,
   };
 }

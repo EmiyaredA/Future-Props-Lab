@@ -28,6 +28,7 @@ from app.schemas.galgame_workshop.project_content import (
 from app.schemas.galgame_workshop.project_content import (
     GalgameStoryVariable as GalgameStoryVariable,
 )
+from app.schemas.project_snapshots import ProjectSnapshotImportWarning
 
 GalgameWorkshopProjectStatus = Literal["draft", "completed"]
 
@@ -43,6 +44,11 @@ class GalgameWorkshopProjectOut(BaseModel):
 
 class GalgameWorkshopProjectListOut(BaseModel):
     items: list[GalgameWorkshopProjectOut]
+
+
+class GalgameProjectSnapshotImportOut(BaseModel):
+    project: GalgameWorkshopProjectOut
+    warnings: list[ProjectSnapshotImportWarning] = Field(default_factory=list)
 
 
 class GalgameWorkshopProjectCreateIn(BaseModel):

@@ -5,7 +5,9 @@
   grid-template-rows: 58px minmax(330px, 56vh) 42px minmax(260px, 1fr);
   overflow: hidden;
   color: var(--text);
-  background: #0d1018;
+  background:
+    radial-gradient(circle at 52% -20%, rgb(103 86 230 / 8%), transparent 42%),
+    #0b0e15;
 }
 .ve-editor button {
   color: inherit;
@@ -13,17 +15,22 @@
 .ve-editor-topbar {
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 0 16px;
+  gap: 10px;
+  padding: 0 14px;
   border-bottom: 1px solid #2b3040;
-  background: #151925;
+  background: rgb(18 22 33 / 94%);
+  box-shadow: 0 8px 26px rgb(0 0 0 / 20%);
+  backdrop-filter: blur(18px);
 }
 .ve-back {
-  width: 34px;
-  height: 34px;
+  width: 32px;
+  height: 32px;
   display: grid;
   place-items: center;
   padding: 0;
+  border: 1px solid #303647;
+  border-radius: 10px;
+  background: #1a1f2b;
 }
 .ve-back svg {
   width: 18px;
@@ -32,14 +39,33 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  min-width: 270px;
+  min-width: 290px;
+  padding: 5px 10px 5px 6px;
+  border: 1px solid transparent;
+  border-radius: 12px;
 }
 .ve-editor-title > svg {
-  width: 28px;
+  width: 24px;
   color: #8e80ff;
 }
 .ve-editor-title div {
   display: grid;
+}
+.ve-editor-title input {
+  width: 210px;
+  padding: 1px 4px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  outline: none;
+  background: transparent;
+  color: #f5f6fb;
+  font: inherit;
+  font-weight: 760;
+}
+.ve-editor-title input:hover,
+.ve-editor-title input:focus {
+  border-color: #373d50;
+  background: #111520;
 }
 .ve-editor-title small {
   color: #8991a6;
@@ -51,6 +77,9 @@
   margin-left: auto;
   color: #8f98ad;
   font-size: 12px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgb(91 210 161 / 7%);
 }
 .ve-save-state svg {
   width: 15px;
@@ -59,6 +88,10 @@
 .ve-top-actions {
   display: flex;
   gap: 7px;
+  padding: 4px;
+  border: 1px solid #292f3e;
+  border-radius: 12px;
+  background: #111520;
 }
 .ve-top-actions button {
   display: flex;
@@ -66,13 +99,15 @@
   gap: 6px;
   height: 34px;
   padding: 0 11px;
-  border: 1px solid #303647;
-  background: #1b202e;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
 }
 .ve-top-actions button.primary {
   border-color: #7567f0;
   color: white;
   background: #695bdd;
+  box-shadow: 0 7px 18px rgb(105 91 221 / 24%);
 }
 .ve-top-actions svg {
   width: 16px;
@@ -144,21 +179,31 @@
 .ve-asset {
   width: 100%;
   display: grid;
-  grid-template-columns: 54px 1fr 18px;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  gap: 9px;
   margin-bottom: 7px;
-  padding: 7px;
   text-align: left;
   border: 1px solid transparent;
   background: #191e2b;
 }
-.ve-asset:hover {
+.ve-asset:hover,
+.ve-asset:focus-within {
   border-color: #655bd1;
   background: #202638;
 }
-.ve-asset > img,
-.ve-asset > span {
+.ve-asset-main {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 54px minmax(0, 1fr);
+  align-items: center;
+  gap: 9px;
+  padding: 7px;
+  text-align: left;
+  border: 0;
+  background: transparent;
+}
+.ve-asset-main > img,
+.ve-asset-main > span:first-child {
   width: 54px;
   height: 38px;
   display: grid;
@@ -167,7 +212,7 @@
   border-radius: 5px;
   background: #0c0f16;
 }
-.ve-asset > div {
+.ve-asset-copy {
   min-width: 0;
   display: grid;
 }
@@ -180,9 +225,42 @@
 .ve-asset small {
   color: #8991a6;
 }
-.ve-asset > svg {
-  width: 15px;
+.ve-asset-controls {
+  display: grid;
+  gap: 2px;
+  padding-right: 5px;
+}
+.ve-asset-controls button {
+  width: 25px;
+  height: 25px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 5px;
   color: #8d81f7;
+  background: transparent;
+}
+.ve-asset-controls button:hover:not(:disabled),
+.ve-asset-controls button:focus-visible {
+  background: #30364b;
+}
+.ve-asset-controls svg {
+  width: 14px;
+}
+.ve-asset-controls .ve-asset-delete {
+  color: #c8848b;
+}
+.ve-asset-controls .ve-asset-delete:hover,
+.ve-asset-controls .ve-asset-delete:focus-visible {
+  color: #ffb2b9;
+  background: #4a2730;
+}
+.ve-asset-delete-error {
+  display: block;
+  margin-top: 10px;
+  color: var(--danger);
+  font-weight: 650;
 }
 .ve-import-dialog {
   width: min(620px, 100%);
@@ -262,21 +340,30 @@
 }
 .ve-stage-layer {
   position: absolute;
-  max-width: 100%;
 }
 .ve-stage-layer.selected {
   outline: 1px solid #8374ff;
 }
-.ve-stage-layer img,
-.ve-stage-layer video {
+.ve-stage-layer > img {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.ve-stage-media-crop {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+.ve-stage-media-crop video {
+  position: absolute;
   display: block;
   max-width: none;
-  width: 100%;
 }
 .ve-stage-layer i {
   display: block;
-  width: 1920px;
-  height: 1080px;
+  width: 100%;
+  height: 100%;
 }
 .ve-stage-layer span {
   display: block;

@@ -9,7 +9,10 @@ test("builds a deterministic image, black-card, and title edit", async ({
   page,
 }) => {
   await page.goto("/apps/video-editor");
-  await page.getByRole("button", { name: "新建剪辑" }).click();
+  await page
+    .locator(".workshop-page-header")
+    .getByRole("button", { name: "新建剪辑" })
+    .click();
   await expect(page.getByText("视频剪辑工坊 · revision")).toBeVisible();
 
   await page.locator('input[type="file"]').setInputFiles({
@@ -36,10 +39,24 @@ test("builds a deterministic image, black-card, and title edit", async ({
   await page.getByRole("button", { name: "文字卡" }).click();
   await expect(page.locator(".ve-clip.text")).toHaveCount(1);
 
+  await page.screenshot({
+    path: "public/docs/video-editor-timeline.jpg",
+    type: "jpeg",
+    quality: 85,
+  });
+
   await page.getByRole("button", { name: "导出视频" }).click();
   await page.locator(".ve-preset-grid button").first().click();
   await page.getByRole("button", { name: "运行预检" }).click();
   await expect(page.getByText(/预检通过/)).toBeVisible();
   await page.getByRole("button", { name: "开始确定性渲染" }).click();
   await expect(page.getByRole("dialog")).toBeHidden();
+
+  await page.goto("/apps/video-editor");
+  await expect(page.locator(".workshop-project-card")).toHaveCount(1);
+  await page.screenshot({
+    path: "public/docs/video-editor-projects.jpg",
+    type: "jpeg",
+    quality: 85,
+  });
 });

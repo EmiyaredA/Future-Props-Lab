@@ -21,7 +21,6 @@ import {
   listWorkspaceMembers,
   listWorkspaces,
   putAvatar,
-  reauthenticate,
   updateProfile,
   updateWorkspace,
 } from "./api";
@@ -43,10 +42,10 @@ export function useAccountWorkspacePanel(session: AccountSessionContext) {
   const [inviteUsername, setInviteUsername] = useState("");
   const [displayName, setDisplayName] = useState(me.user.display_name);
   const [email, setEmail] = useState(me.user.email || "");
-  const [reauthPassword, setReauthPassword] = useState("");
   const [keyName, setKeyName] = useState("");
   const [keyWrite, setKeyWrite] = useState(false);
   const [revealedKey, setRevealedKey] = useState("");
+  const [revealedKeyCopied, setRevealedKeyCopied] = useState(false);
   const [newUsername, setNewUsername] = useState("");
   const [newDisplayName, setNewDisplayName] = useState("");
   const [temporaryPassword, setTemporaryPassword] = useState("");
@@ -115,15 +114,6 @@ export function useAccountWorkspacePanel(session: AccountSessionContext) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
-  const reauthenticateUser = async (event: FormEvent) => {
-    event.preventDefault();
-    await report(async () => {
-      await reauthenticate(reauthPassword);
-      setReauthPassword("");
-      setNotice("身份已重新验证，敏感操作将在 10 分钟内保持解锁。");
-    });
-  };
-
   const saveProfile = async (event: FormEvent) => {
     event.preventDefault();
     await report(async () => {
@@ -186,7 +176,17 @@ export function useAccountWorkspacePanel(session: AccountSessionContext) {
       );
       setKeyName("");
       setRevealedKey(result.secret);
+      setRevealedKeyCopied(false);
       await loadSecurity();
+    });
+  };
+
+  const copyRevealedKey = async () => {
+    if (!revealedKey) return;
+    await report(async () => {
+      await navigator.clipboard.writeText(revealedKey);
+      setRevealedKeyCopied(true);
+      setNotice("Management API Key 已复制。");
     });
   };
 
@@ -206,6 +206,7 @@ export function useAccountWorkspacePanel(session: AccountSessionContext) {
     setError("");
     setNotice("");
     setRevealedKey("");
+    setRevealedKeyCopied(false);
     setTemporaryPassword("");
   };
 
@@ -235,13 +236,12 @@ export function useAccountWorkspacePanel(session: AccountSessionContext) {
     setDisplayName,
     email,
     setEmail,
-    reauthPassword,
-    setReauthPassword,
     keyName,
     setKeyName,
     keyWrite,
     setKeyWrite,
     revealedKey,
+    revealedKeyCopied,
     newUsername,
     setNewUsername,
     newDisplayName,
@@ -259,13 +259,13 @@ export function useAccountWorkspacePanel(session: AccountSessionContext) {
     loadGovernance,
     loadSecurity,
     loadAccounts,
-    reauthenticate: reauthenticateUser,
     saveProfile,
     uploadAvatar,
     changePassword,
     saveWorkspace,
     invite,
     createKey,
+    copyRevealedKey,
     createAccount,
     close,
   };

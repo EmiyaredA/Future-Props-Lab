@@ -16,8 +16,8 @@ import {
 } from "@features/galgame-workshop/editor/timeline";
 import { dialogueSpeakerIds } from "@features/galgame-workshop/editor/dialogue";
 import { TimelineTrackLabels } from "@features/galgame-workshop/editor/TimelineTrackLabels";
-import { StoryTimelineToolbar } from "@features/galgame-workshop/editor/StoryTimelineToolbar";
 import { timelineCharacterColor } from "@features/galgame-workshop/editor/timelineCharacterColor";
+import { StoryTimelineToolbarPanel } from "@features/galgame-workshop/editor/timeline/StoryTimelineToolbarPanel";
 import { useStoryTimelineController } from "@features/galgame-workshop/editor/timeline/useStoryTimelineController";
 
 export function StoryTimelineTracksView({
@@ -32,31 +32,18 @@ export function StoryTimelineTracksView({
     selectedGapId,
     onSelectGap,
     onFragment,
-    preferences,
-    onPreferencesChange,
     onRequestAddMenu,
-    addControl,
     readOnly,
-    estimated,
-    zoom,
     ripple,
-    loop,
     characterTracksExpanded,
-    playing,
-    ready,
-    durationInput,
-    setDurationInput,
     durationHint,
-    setDurationHint,
     error,
-    setHiddenCharacterTrackIds,
     scrollRef,
     rulerScrollRef,
     trackRef,
     attachedCharacterEvents,
     cgs,
     cgRanges,
-    characterTrackIds,
     characters,
     cues,
     durationMs,
@@ -68,7 +55,6 @@ export function StoryTimelineTracksView({
     trackWidth,
     activeCue,
     visibleCharacterTrackIds,
-    setCharacterTrackVisible,
     laneHeight,
     lanes,
     laneTop,
@@ -77,79 +63,19 @@ export function StoryTimelineTracksView({
     seek,
     startPlayheadDrag,
     seekPlayheadWithKeyboard,
-    toggle,
-    auditionSelected,
-    commitDuration,
-    setSelectedEdgeAtPlayhead,
-    skip,
     startDrag,
     moveWithKeyboard,
     moveCueEdgeWithKeyboard,
     moveGapEdgeWithKeyboard,
     moveCgRangeWithKeyboard,
-    ticks,
     selectBlock,
-    fitTimelineWidth,
   } = controller;
   return (
     <section
       className={`galgame-timeline-editor${readOnly ? " is-readonly" : ""}`}
       aria-label={readOnly ? "试玩剧情时间轴" : "多轨剧情时间轴"}
     >
-      <div className="galgame-timeline-controls">
-        <StoryTimelineToolbar
-          readOnly={readOnly}
-          playing={playing}
-          ready={ready}
-          positionMs={displayPositionMs}
-          durationMs={durationMs}
-          estimated={estimated}
-          addControl={addControl}
-          selectedBlockId={selectedBlockId}
-          loop={loop}
-          preferences={preferences}
-          zoom={zoom}
-          characterTrackIds={characterTrackIds}
-          characterTracksExpanded={characterTracksExpanded}
-          ripple={ripple}
-          durationInput={durationInput}
-          visibleCharacterTrackIds={visibleCharacterTrackIds}
-          characters={characters}
-          skip={skip}
-          toggle={toggle}
-          auditionSelected={auditionSelected}
-          setSelectedEdgeAtPlayhead={setSelectedEdgeAtPlayhead}
-          onPreferencesChange={onPreferencesChange}
-          fitTimelineWidth={fitTimelineWidth}
-          setDurationInput={setDurationInput}
-          setDurationHint={setDurationHint}
-          commitDuration={commitDuration}
-          setCharacterTrackVisible={setCharacterTrackVisible}
-          setHiddenCharacterTrackIds={setHiddenCharacterTrackIds}
-        />
-        <div className="galgame-timeline-ruler-row">
-          <strong>时间</strong>
-          <div ref={rulerScrollRef} className="galgame-timeline-ruler-scroll">
-            <div
-              className="galgame-timeline-ruler"
-              style={{ width: `${trackWidth}px` }}
-              aria-hidden
-            >
-              {ticks.map((tick) => (
-                <i
-                  key={tick}
-                  className={tick % 60_000 === 0 ? "major" : ""}
-                  style={{
-                    left: `${(tick / Math.max(1, durationMs)) * trackWidth}px`,
-                  }}
-                >
-                  <span>{formatTimecode(tick).slice(0, 5)}</span>
-                </i>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
+      <StoryTimelineToolbarPanel controller={controller} />
       {durationHint ? (
         <small className="galgame-timeline-hint" role="status">
           {durationHint}

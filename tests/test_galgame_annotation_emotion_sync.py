@@ -76,8 +76,17 @@ def test_syncs_story_expression_labels_without_changing_speakers() -> None:
         "speakerPreservedCount": 2,
     }
 
+    scoped, scoped_audit = build_synced_document(annotation, story, segment_ordinals={1})
+    assert scoped["segments"][0]["emotion"] == "害羞"
+    assert scoped["segments"][1]["emotion"] == "旧值"
+    assert scoped_audit == {
+        "emotionChangedCount": 1,
+        "emotionTaggedCount": 2,
+        "speakerPreservedCount": 2,
+    }
 
-def test_syncs_live_audio_speaker_to_story_without_touching_expression() -> None:
+
+def test_syncs_live_audio_speaker_expression_cast_asset_and_emotion() -> None:
     audio = {
         "speakers": [
             {"id": "kurisu-audio", "name": "牧濑红莉栖"},
@@ -97,13 +106,21 @@ def test_syncs_live_audio_speaker_to_story_without_touching_expression() -> None
             {
                 "id": "kurisu",
                 "name": "牧濑红莉栖",
-                "expressions": [{"id": "smile", "label": "闭眼微笑"}],
+                "expressions": [{"id": "kurisu-serious", "label": "手扶领带·严肃"}],
             },
             {
                 "id": "luka",
                 "name": "漆原琉华",
-                "expressions": [{"id": "smile", "label": "睁眼微笑"}],
+                "expressions": [{"id": "ruk-clb-e002-f000", "label": "手抚衣领·担忧"}],
             },
+        ],
+        "assets": [
+            {
+                "id": "voice-line-138",
+                "label": "牧濑红莉栖 · 标注 0138",
+                "type": "audio",
+                "role": "voiceLine",
+            }
         ],
         "chapters": [
             {
@@ -117,7 +134,7 @@ def test_syncs_live_audio_speaker_to_story_without_touching_expression() -> None
                                 "members": [
                                     {
                                         "characterId": "kurisu",
-                                        "expressionId": "smile",
+                                        "expressionId": "kurisu-serious",
                                     }
                                 ],
                             },
@@ -132,18 +149,19 @@ def test_syncs_live_audio_speaker_to_story_without_touching_expression() -> None
                                     },
                                     {
                                         "characterId": "kurisu",
-                                        "expressionId": "smile",
+                                        "expressionId": "kurisu-serious",
                                     },
                                 ],
                             },
                             {
-                                "id": "line-1",
+                                "id": "runaway-annotated-line-0138",
                                 "type": "dialogue",
                                 "startMs": 100,
                                 "endMs": 200,
                                 "characterId": "kurisu",
                                 "speakerIds": ["kurisu"],
-                                "expressionId": "smile",
+                                "expressionId": "kurisu-serious",
+                                "voiceAssetId": "voice-line-138",
                                 "text": "等着你哦。",
                             },
                         ]
@@ -158,23 +176,38 @@ def test_syncs_live_audio_speaker_to_story_without_touching_expression() -> None
     next_cast = document["chapters"][0]["fragments"][0]["blocks"][1]
     dialogue = document["chapters"][0]["fragments"][0]["blocks"][2]
     assert dialogue == {
-        "id": "line-1",
+        "id": "runaway-annotated-line-0138",
         "type": "dialogue",
         "startMs": 100,
         "endMs": 200,
         "characterId": "luka",
         "speakerIds": ["luka"],
-        "expressionId": "smile",
+        "expressionId": "ruk-clb-e002-f000",
+        "voiceAssetId": "voice-line-138",
         "text": "等着你哦。",
     }
     assert audit["speakerChangedCount"] == 1
-    assert audit["speakerChanges"][0]["blockId"] == "line-1"
+    assert audit["speakerChanges"][0]["blockId"] == "runaway-annotated-line-0138"
+    assert audit["expressionChangedCount"] == 1
+    assert audit["assetLabelChangedCount"] == 1
+    assert document["assets"][0]["label"] == "漆原琉华 · 标注 0138"
     assert current_cast["members"][0] == {
         "characterId": "luka",
-        "expressionId": "smile",
+        "expressionId": "ruk-clb-e002-f000",
     }
     assert next_cast["members"][1] == {
         "characterId": "luka",
-        "expressionId": "smile",
+        "expressionId": "ruk-clb-e002-f000",
     }
     assert audit["stageCastChangedCount"] == 2
+
+    synced_annotation, emotion_audit = build_synced_document(audio, document)
+    assert synced_annotation["segments"][0]["emotion"] == "手抚衣领·担忧"
+    assert emotion_audit["emotionChangedCount"] == 1
+
+    repeated, repeated_audit = sync_story_speakers(document, synced_annotation)
+    assert repeated == document
+    assert repeated_audit["speakerChangedCount"] == 0
+    assert repeated_audit["expressionChangedCount"] == 0
+    assert repeated_audit["assetLabelChangedCount"] == 0
+    assert repeated_audit["stageCastChangedCount"] == 0

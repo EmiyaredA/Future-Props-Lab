@@ -57,6 +57,27 @@ GALGAME_EXTENSIONS = {
     ".json",
 }
 
+VIDEO_EDITABLE_EXTENSIONS = {
+    ".mp4",
+    ".mov",
+    ".mkv",
+    ".webm",
+    ".wav",
+    ".mp3",
+    ".m4a",
+    ".aac",
+    ".flac",
+    ".ogg",
+    ".png",
+    ".jpg",
+    ".jpeg",
+    ".webp",
+    ".ttf",
+    ".otf",
+    ".woff",
+    ".woff2",
+}
+
 
 def looks_like(extension: str, head: bytes) -> bool:
     if extension in {".txt", ".md", ".json"}:

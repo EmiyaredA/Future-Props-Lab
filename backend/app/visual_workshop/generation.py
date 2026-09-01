@@ -17,6 +17,7 @@ from app.models import (
     VisualWorkshopProject,
 )
 from app.schemas.visual_workshop import (
+    AudioGenerationTaskCreateIn,
     GenerationModelOptionOut,
     GenerationOptionsOut,
     GenerationTaskCreateIn,
@@ -91,7 +92,14 @@ class VisualGeneration:
                 .where(
                     ModelProvider.enabled.is_(True),
                     ModelEntry.enabled.is_(True),
-                    ModelProvider.kind.in_(("senseaudio_image", "senseaudio_video")),
+                    ModelProvider.kind.in_(
+                        (
+                            "senseaudio_image",
+                            "senseaudio_video",
+                            "senseaudio_music",
+                            "senseaudio_sfx",
+                        )
+                    ),
                 )
                 .order_by(ModelProvider.sort_order, ModelEntry.sort_order)
             )
@@ -102,7 +110,13 @@ class VisualGeneration:
                     id=model.id,
                     provider_id=provider.id,
                     provider_name=provider.name,
-                    kind="image" if provider.kind == "senseaudio_image" else "video",
+                    kind=(
+                        "image"
+                        if provider.kind == "senseaudio_image"
+                        else "video"
+                        if provider.kind == "senseaudio_video"
+                        else "audio"
+                    ),
                     slug=model.slug,
                     label=model.label or model.slug,
                     description=model.description,
@@ -118,13 +132,17 @@ class VisualGeneration:
             raise GenerationError("项目不存在", code="not_found", status=404)
         return row
 
-    async def _model(self, model_id: str, kind: str) -> tuple[ModelEntry, ModelProvider]:
+    async def _model(
+        self, model_id: str, kind: str, audio_mode: str | None = None
+    ) -> tuple[ModelEntry, ModelProvider]:
         model = await self.session.get(ModelEntry, model_id)
         if model is None:
             raise GenerationError("生成模型不存在", code="model_unavailable", status=404)
         provider = await self.session.get(ModelProvider, model.provider_id)
         capability = f"{kind}_generation"
-        expected_provider_kind = f"senseaudio_{kind}"
+        expected_provider_kind = (
+            f"senseaudio_{audio_mode}" if kind == "audio" else f"senseaudio_{kind}"
+        )
         if (
             provider is None
             or not provider.enabled
@@ -209,11 +227,104 @@ class VisualGeneration:
                 "画布已变化，请刷新后重试", code="canvas_revision_conflict", status=409
             )
 
+    async def _resolve_canvas_references(
+        self, project_id: str, body: GenerationTaskCreateIn
+    ) -> GenerationTaskCreateIn:
+        if body.canvas_node_id is None or body.expected_canvas_revision is None:
+            return body
+        canvas = await self.session.get(VisualCanvasDocument, project_id)
+        if canvas is None:
+            raise GenerationError("项目画布不存在", code="canvas_not_found", status=404)
+        if canvas.revision != body.expected_canvas_revision:
+            raise GenerationError(
+                "画布已变化，请刷新后重试",
+                code="canvas_revision_conflict",
+                status=409,
+            )
+        nodes = {str(node.get("id")): node for node in (canvas.nodes or [])}
+        target = nodes.get(body.canvas_node_id)
+        if target is None:
+            raise GenerationError("画布节点不存在", code="canvas_node_not_found", status=404)
+        if target.get("kind") != body.kind:
+            raise GenerationError("画布节点类型与生成任务不匹配", code="canvas_kind_mismatch")
+
+        incoming = [
+            edge
+            for edge in (canvas.edges or [])
+            if edge.get("target_node_id") == body.canvas_node_id
+        ]
+        if not incoming:
+            return body
+        linked: dict[str, list[str]] = {"image": [], "video": [], "audio": []}
+        for edge in incoming:
+            source = nodes.get(str(edge.get("source_node_id")))
+            if source is None:
+                raise GenerationError("上游节点不存在", code="invalid_canvas_edge")
+            source_kind = str(source.get("kind") or "")
+            asset_id = str(source.get("asset_id") or "")
+            if source_kind not in linked:
+                raise GenerationError("上游节点类型不支持素材引用", code="invalid_canvas_edge")
+            if not asset_id:
+                raise GenerationError(
+                    f"上游节点“{source.get('title') or source.get('id')}”正在等待素材",
+                    code="upstream_asset_pending",
+                    status=409,
+                )
+            linked[source_kind].append(asset_id)
+
+        payload = body.model_dump(mode="json")
+        if isinstance(body, ImageGenerationTaskCreateIn):
+            if linked["video"] or linked["audio"]:
+                raise GenerationError("图片节点只能引用上游图片", code="canvas_kind_mismatch")
+            references = list(
+                dict.fromkeys(
+                    [
+                        *linked["image"],
+                        *([body.reference_asset_id] if body.reference_asset_id else []),
+                    ]
+                )
+            )
+            if len(references) > 1:
+                raise GenerationError(
+                    "当前图片模型最多接收一个参考图片", code="too_many_references"
+                )
+            payload["reference_asset_id"] = references[0] if references else None
+            return ImageGenerationTaskCreateIn.model_validate(payload)
+
+        if isinstance(body, AudioGenerationTaskCreateIn):
+            if linked["image"] or linked["video"]:
+                raise GenerationError("音频节点只能引用上游音频", code="canvas_kind_mismatch")
+            if body.mode == "sfx":
+                raise GenerationError("音效生成不接收上游素材", code="canvas_kind_mismatch")
+            payload["reference_asset_ids"] = list(
+                dict.fromkeys([*linked["audio"], *body.reference_asset_ids])
+            )
+            return AudioGenerationTaskCreateIn.model_validate(payload)
+
+        payload.update(
+            {
+                "mode": "reference",
+                "first_frame_asset_id": None,
+                "last_frame_asset_id": None,
+                "reference_asset_ids": list(
+                    dict.fromkeys([*linked["image"], *body.reference_asset_ids])
+                ),
+                "video_asset_ids": list(dict.fromkeys([*linked["video"], *body.video_asset_ids])),
+                "audio_asset_ids": list(dict.fromkeys([*linked["audio"], *body.audio_asset_ids])),
+            }
+        )
+        return VideoGenerationTaskCreateIn.model_validate(payload)
+
     async def prepare_create(
         self, project_id: str, body: GenerationTaskCreateIn
     ) -> VisualGenerationTask:
         await self._project(project_id)
-        model, provider = await self._model(body.model_id, body.kind)
+        body = await self._resolve_canvas_references(project_id, body)
+        model, provider = await self._model(
+            body.model_id,
+            body.kind,
+            body.mode if isinstance(body, AudioGenerationTaskCreateIn) else None,
+        )
         payload = body.model_dump(
             mode="json",
             exclude={"canvas_node_id", "expected_canvas_revision"},
@@ -246,6 +357,9 @@ class VisualGeneration:
                 await self._reference_asset(project_id, asset_id, "audio")
             for asset_id in body.video_asset_ids:
                 await self._reference_asset(project_id, asset_id, "video")
+        elif isinstance(body, AudioGenerationTaskCreateIn):
+            for asset_id in body.reference_asset_ids:
+                await self._reference_asset(project_id, asset_id, "audio")
         row = VisualGenerationTask(
             project_id=project_id,
             provider_id=provider.id,

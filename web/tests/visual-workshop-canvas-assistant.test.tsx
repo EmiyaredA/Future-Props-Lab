@@ -130,6 +130,7 @@ beforeEach(() => {
   vi.mocked(getVisualWorkshopProject).mockResolvedValue(project);
   vi.mocked(getVisualCanvas).mockResolvedValue({
     project_id: "project-1",
+    edges: [],
     nodes: [],
     revision: 0,
     updated_at: "2026-08-03T08:00:00Z",
@@ -137,6 +138,7 @@ beforeEach(() => {
   vi.mocked(putVisualCanvas).mockImplementation(
     async (_projectId, nodes, expectedRevision) => ({
       project_id: "project-1",
+      edges: [],
       nodes,
       revision: expectedRevision + 1,
       updated_at: "2026-08-03T08:00:01Z",

@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Check,
   Maximize2,
@@ -12,24 +11,24 @@ import {
 } from "lucide-react";
 import { ApiError } from "@platform/api/client";
 import {
-  prependProject,
   ProjectEditorDialog,
   ProjectLibraryCard,
-  removeProject,
-  upsertProject,
-  type ProjectEditorState,
+  ProjectSnapshotCardActions,
+  ProjectSnapshotImportButton,
+  useProjectLibraryController,
 } from "@shared/ui/project-library";
 import {
   createGalgameWorkshopProject,
   deleteGalgameWorkshopProject,
+  exportGalgameWorkshopProjectSnapshot,
   getGalgameWorkshopProjects,
+  importGalgameWorkshopProjectSnapshot,
+  openGalgameWorkshopProjectFolder,
   patchGalgameWorkshopProject,
   type GalgameWorkshopProject,
 } from "@features/galgame-workshop/api";
 import "@features/galgame-workshop/galgameStyles";
 import { galgameQueryKeys } from "@features/galgame-workshop/queryKeys";
-
-type Editor = ProjectEditorState<GalgameWorkshopProject> | null;
 
 function errorMessage(error: unknown) {
   if (error instanceof ApiError && error.problem.code === "revision_conflict")
@@ -42,63 +41,33 @@ export function GalgameWorkshopProjectsPage({
 }: {
   onOpenProject?: (projectId: string) => void;
 }) {
-  const client = useQueryClient();
   const [query, setQuery] = useState("");
-  const [editor, setEditor] = useState<Editor>(null);
-  const [notice, setNotice] = useState("");
-  const projectsQuery = useQuery({
+  const {
+    projectsQuery,
+    editor,
+    setEditor,
+    notice,
+    setNotice,
+    createMutation,
+    patchMutation,
+    deleteMutation,
+    importMutation,
+    exportMutation,
+    openFolderMutation,
+    pending,
+  } = useProjectLibraryController<GalgameWorkshopProject>({
     queryKey: galgameQueryKeys.projects,
-    queryFn: getGalgameWorkshopProjects,
-  });
-  const refresh = () =>
-    void client.invalidateQueries({ queryKey: galgameQueryKeys.projects });
-  const createMutation = useMutation({
-    mutationFn: () => createGalgameWorkshopProject("未命名工程"),
-    onSuccess: (project) => {
-      client.setQueryData(
-        galgameQueryKeys.projects,
-        (current: { items: GalgameWorkshopProject[] } | undefined) =>
-          prependProject(current, project),
-      );
-      onOpenProject(project.id);
-    },
-    onError: (error) => setNotice(errorMessage(error)),
-  });
-  const patchMutation = useMutation({
-    mutationFn: ({
-      project,
-      changes,
-    }: {
-      project: GalgameWorkshopProject;
-      changes: Partial<Pick<GalgameWorkshopProject, "title" | "status">>;
-    }) => patchGalgameWorkshopProject(project, changes),
-    onSuccess: (updated) => {
-      client.setQueryData(
-        galgameQueryKeys.projects,
-        (current: { items: GalgameWorkshopProject[] } | undefined) =>
-          upsertProject(current, updated),
-      );
-      setEditor(null);
-    },
-    onError: (error) => {
-      setNotice(errorMessage(error));
-      refresh();
-    },
-  });
-  const deleteMutation = useMutation({
-    mutationFn: deleteGalgameWorkshopProject,
-    onSuccess: (_data, project) => {
-      client.setQueryData(
-        galgameQueryKeys.projects,
-        (current: { items: GalgameWorkshopProject[] } | undefined) =>
-          removeProject(current, project.id),
-      );
-      setEditor(null);
-    },
-    onError: (error) => {
-      setNotice(errorMessage(error));
-      refresh();
-    },
+    listProjects: getGalgameWorkshopProjects,
+    createProject: () => createGalgameWorkshopProject("未命名工程"),
+    patchProject: ({ project, changes }) =>
+      patchGalgameWorkshopProject(project, changes),
+    deleteProject: deleteGalgameWorkshopProject,
+    importSnapshot: importGalgameWorkshopProjectSnapshot,
+    exportSnapshot: (project) =>
+      exportGalgameWorkshopProjectSnapshot(project.id),
+    openFolder: (project) => openGalgameWorkshopProjectFolder(project.id),
+    onOpenProject,
+    errorMessage,
   });
   const projects = projectsQuery.data?.items ?? [];
   const filtered = projects.filter((project) => {
@@ -106,10 +75,6 @@ export function GalgameWorkshopProjectsPage({
       .toLocaleLowerCase("zh-CN")
       .includes(query.trim().toLocaleLowerCase("zh-CN"));
   });
-  const pending =
-    createMutation.isPending ||
-    patchMutation.isPending ||
-    deleteMutation.isPending;
 
   return (
     <section className="workshop-page workshop-projects-page galgame-library-page">
@@ -118,14 +83,20 @@ export function GalgameWorkshopProjectsPage({
           <h1>我的 Galgame 工程</h1>
           <p>管理故事工程，从剧本结构进入分支试玩与线路检查。</p>
         </div>
-        <button
-          className="workshop-primary"
-          disabled={createMutation.isPending}
-          onClick={() => createMutation.mutate()}
-        >
-          <Plus aria-hidden />
-          {createMutation.isPending ? "正在创建…" : "新建工程"}
-        </button>
+        <div className="workshop-page-header-actions">
+          <ProjectSnapshotImportButton
+            pending={importMutation.isPending}
+            onImport={(file) => importMutation.mutate(file)}
+          />
+          <button
+            className="workshop-primary"
+            disabled={createMutation.isPending}
+            onClick={() => createMutation.mutate()}
+          >
+            <Plus aria-hidden />
+            {createMutation.isPending ? "正在创建…" : "新建工程"}
+          </button>
+        </div>
       </header>
       <div className="workshop-toolbar workshop-toolbar-simple">
         <label>
@@ -174,6 +145,19 @@ export function GalgameWorkshopProjectsPage({
                 </button>
               </div>
               <div className="workshop-project-secondary-actions">
+                <ProjectSnapshotCardActions
+                  title={project.title}
+                  exporting={
+                    exportMutation.isPending &&
+                    exportMutation.variables?.id === project.id
+                  }
+                  opening={
+                    openFolderMutation.isPending &&
+                    openFolderMutation.variables?.id === project.id
+                  }
+                  onExport={() => exportMutation.mutate(project)}
+                  onOpenFolder={() => openFolderMutation.mutate(project)}
+                />
                 <button
                   aria-label="重命名"
                   title="重命名"

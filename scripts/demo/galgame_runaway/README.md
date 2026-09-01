@@ -22,7 +22,7 @@
 | `apply_cgs` | 只更新受管剧情 CG | `--project-id`、`--source-root` |
 | `apply_transition_cards` | 只更新受管过场卡 | `--project-id` |
 | `ground_portraits` | 立绘底边锚定与透明边距审计 | `--project-id` |
-| `annotation_emotion_sync` | 同步广播剧标注与角色表情 | `--galgame-project-id`、`--annotation`、`--export` |
+| `annotation_emotion_sync` | 同步广播剧标注与角色表情 | `--galgame-project-id`、`--audio-project-id`（或 `--annotation`）、`--export` |
 | `exports` | 提交并下载演示视频验收片段 | `--project-id` |
 | `phone_overlay` | 从指定图集生成手机叠加图 | `--atlas`、`--output` |
 
@@ -32,5 +32,8 @@
 uv run python -m scripts.demo.galgame_runaway.exports submit \
   --project-id <project-id> --only random-sample
 ```
+
+同步广播标注前可先追加 `--dry-run` 生成只读差异审计；正式保存与只读预演都会在
+`.runtime/galgame-import-backups/` 生成审计 JSON，也可用 `--audit-out` 指定输出路径。
 
 素材来源、许可状态、校验值和生产构建边界见 [`docs/assets/MANIFEST.md`](../../../docs/assets/MANIFEST.md)。

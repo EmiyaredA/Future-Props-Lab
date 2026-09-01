@@ -12,3 +12,13 @@ export {
   upsertProject,
   type ProjectCollection,
 } from "./projectCollection";
+export {
+  ProjectSnapshotCardActions,
+  ProjectSnapshotImportButton,
+} from "./ProjectSnapshotControls";
+export { downloadProjectSnapshot } from "./downloadProjectSnapshot";
+export {
+  useProjectLibraryController,
+  type ProjectLibraryAdapter,
+  type ProjectPatch,
+} from "./useProjectLibraryController";

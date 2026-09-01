@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 
 class VideoEditorProjectSettings(BaseModel):
@@ -160,6 +160,21 @@ class SplitClipOperation(BaseModel):
     clip_id: str = Field(alias="clipId")
     at_us: int = Field(alias="atUs", gt=0)
     new_clip_id: str = Field(alias="newClipId")
+    linked_new_clip_ids: dict[str, str] = Field(default_factory=dict, alias="linkedNewClipIds")
+    new_link_group_id: str | None = Field(
+        default=None, alias="newLinkGroupId", min_length=1, max_length=64
+    )
+
+    @field_validator("linked_new_clip_ids")
+    @classmethod
+    def valid_linked_ids(cls, value: dict[str, str]) -> dict[str, str]:
+        if len(value) > 100 or any(
+            not key.strip() or not item.strip() for key, item in value.items()
+        ):
+            raise ValueError("关联分割的 Clip ID 不能为空")
+        if len(value.values()) != len(set(value.values())):
+            raise ValueError("关联分割的新 Clip ID 不能重复")
+        return value
 
 
 class LinkClipsOperation(BaseModel):

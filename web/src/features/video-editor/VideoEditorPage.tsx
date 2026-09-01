@@ -2,6 +2,7 @@ import { useState } from "react";
 import {
   ArrowLeft,
   Film,
+  Layers3,
   Plus,
   Redo2,
   Save,
@@ -15,11 +16,14 @@ import { VideoEditorExportDialog } from "./VideoEditorExportDialog";
 import { VideoEditorInspector } from "./VideoEditorInspector";
 import { VideoEditorPreview } from "./VideoEditorPreview";
 import { VideoEditorTimeline } from "./VideoEditorTimeline";
+import { VideoEditorSegmentExportDialog } from "./VideoEditorSegmentExportDialog";
+import { MAX_TIMELINE_ZOOM, MIN_TIMELINE_ZOOM } from "./timelineScale";
 import { useVideoEditor } from "./useVideoEditor";
 import type { VideoEditorAsset, VideoEditorClip } from "./types";
 import "./video-editor.css";
 import "./video-editor-workspace.css";
 import "./video-editor-timeline.css";
+import "./video-editor-segments.css";
 
 export function VideoEditorPage({
   projectId,
@@ -30,6 +34,8 @@ export function VideoEditorPage({
 }) {
   const editor = useVideoEditor(projectId);
   const [exportOpen, setExportOpen] = useState(false);
+  const [segmentExportOpen, setSegmentExportOpen] = useState(false);
+  const [titleDraft, setTitleDraft] = useState("");
   if (editor.project.isLoading || editor.timeline.isLoading)
     return <div className="ve-editor-state">正在装配剪辑工作区…</div>;
   if (!editor.project.data || !editor.timeline.data)
@@ -97,7 +103,26 @@ export function VideoEditorPage({
         <div className="ve-editor-title">
           <Film aria-hidden />
           <div>
-            <strong>{project.title}</strong>
+            <input
+              aria-label="项目名称"
+              maxLength={120}
+              value={titleDraft || project.title}
+              onFocus={() => setTitleDraft(project.title)}
+              onChange={(event) => setTitleDraft(event.target.value)}
+              onBlur={() => {
+                const title = titleDraft.trim();
+                if (title && title !== project.title)
+                  void editor.renameProject(title);
+                setTitleDraft("");
+              }}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") event.currentTarget.blur();
+                if (event.key === "Escape") {
+                  setTitleDraft("");
+                  event.currentTarget.blur();
+                }
+              }}
+            />
             <small>视频剪辑工坊 · revision {timeline.revision}</small>
           </div>
         </div>
@@ -114,6 +139,9 @@ export function VideoEditorPage({
           </button>
           <button className="primary" onClick={() => setExportOpen(true)}>
             <Film aria-hidden /> 导出视频
+          </button>
+          <button onClick={() => setSegmentExportOpen(true)}>
+            <Layers3 aria-hidden /> 分段导入
           </button>
         </div>
       </header>
@@ -133,6 +161,8 @@ export function VideoEditorPage({
           playing={editor.playing}
           setPlaying={editor.setPlaying}
           selectedClipId={editor.selectedClipId}
+          preciseFrame={editor.preciseFrame}
+          onPreciseFrameChange={editor.setPreciseFrame}
         />
         <VideoEditorInspector
           clip={editor.selected}
@@ -188,8 +218,9 @@ export function VideoEditorPage({
           <input
             aria-label="时间轴缩放"
             type="range"
-            min="30"
-            max="240"
+            min={MIN_TIMELINE_ZOOM}
+            max={MAX_TIMELINE_ZOOM}
+            step="5"
             value={editor.zoom}
             onChange={(event) => editor.setZoom(Number(event.target.value))}
           />
@@ -203,8 +234,11 @@ export function VideoEditorPage({
         playheadUs={editor.playheadUs}
         setPlayheadUs={editor.setPlayheadUs}
         zoom={editor.zoom}
+        scrollLeft={editor.timelineScrollLeft}
+        onScrollLeftChange={editor.setTimelineScrollLeft}
         selectedClipId={editor.selectedClipId}
-        setSelectedClipId={editor.setSelectedClipId}
+        selectedClipIds={editor.selectedClipIds}
+        selectClip={editor.selectClip}
         commit={editor.commit}
         onDropAsset={(asset, trackId, startUs) =>
           addAsset(asset, startUs, trackId)
@@ -215,6 +249,15 @@ export function VideoEditorPage({
           projectId={projectId}
           revision={timeline.revision}
           onClose={() => setExportOpen(false)}
+        />
+      ) : null}
+      {segmentExportOpen ? (
+        <VideoEditorSegmentExportDialog
+          projectId={projectId}
+          timeline={timeline}
+          assets={assets}
+          selectedClipIds={editor.selectedClipIds}
+          onClose={() => setSegmentExportOpen(false)}
         />
       ) : null}
     </div>

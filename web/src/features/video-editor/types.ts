@@ -12,5 +12,9 @@ export type VideoEditorKeyframe = components["schemas"]["VideoEditorKeyframe"];
 export type VideoEditorOperation =
   components["schemas"]["VideoEditorTimelineBatchIn"]["operations"][number];
 export type VideoEditorTask = components["schemas"]["VideoEditorTaskOut"];
+export type VideoEditorSegmentExportInput =
+  components["schemas"]["VideoEditorSegmentExportCreateIn"];
+export type VideoEditorSegmentExportItem =
+  components["schemas"]["VideoEditorSegmentExportItem"];
 export type VideoEditorPreset =
   components["schemas"]["VideoEditorRenderPreviewIn"]["preset"];

@@ -1,7 +1,7 @@
 import type { CSSProperties } from "react";
 import type { SelectOption } from "@shared/ui/CustomSelect";
 
-export type GenerationKind = "image" | "video";
+export type GenerationKind = "image" | "video" | "audio";
 export type VideoMode = "text" | "image" | "frames" | "reference";
 
 export const MEDIA_ACCEPT: Record<"image" | "video" | "audio", string> = {

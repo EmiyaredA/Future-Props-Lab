@@ -1,5 +1,10 @@
 import type { components } from "@generated/api";
-import { api, unwrap } from "@platform/api/client";
+import {
+  api,
+  fetchApiDownload,
+  fetchApiJson,
+  unwrap,
+} from "@platform/api/client";
 import { postSse } from "@platform/api/sse";
 
 export type VisualWorkshopProject =
@@ -7,15 +12,22 @@ export type VisualWorkshopProject =
 export type VisualWorkshopProjectKind =
   components["schemas"]["VisualWorkshopProjectCreateIn"]["kind"];
 export type VisualWorkshopProjectStatus = VisualWorkshopProject["status"];
+export type VisualProjectSnapshotImport =
+  components["schemas"]["VisualProjectSnapshotImportOut"];
 export type VisualCanvasDocument =
   components["schemas"]["VisualCanvasDocumentOut"];
 export type VisualCanvasNode = VisualCanvasDocument["nodes"][number];
+export type VisualCanvasEdge = VisualCanvasDocument["edges"][number];
 export type VisualCanvasImageGenerationDraft =
   components["schemas"]["VisualCanvasImageGenerationDraft"];
 export type VisualCanvasVideoGenerationDraft =
   components["schemas"]["VisualCanvasVideoGenerationDraft"];
+export type VisualCanvasAudioGenerationDraft =
+  components["schemas"]["VisualCanvasAudioGenerationDraft"];
 export type VisualCanvasGenerationDraft =
-  VisualCanvasImageGenerationDraft | VisualCanvasVideoGenerationDraft;
+  | VisualCanvasImageGenerationDraft
+  | VisualCanvasVideoGenerationDraft
+  | VisualCanvasAudioGenerationDraft;
 export type GenerationOptions = components["schemas"]["GenerationOptionsOut"];
 export type GenerationTask = components["schemas"]["GenerationTaskOut"];
 export type GenerationTaskStatus = GenerationTask["status"];
@@ -23,8 +35,12 @@ export type ImageGenerationTaskInput =
   components["schemas"]["ImageGenerationTaskCreateIn"];
 export type VideoGenerationTaskInput =
   components["schemas"]["VideoGenerationTaskCreateIn"];
+export type AudioGenerationTaskInput =
+  components["schemas"]["AudioGenerationTaskCreateIn"];
 export type GenerationTaskInput =
-  ImageGenerationTaskInput | VideoGenerationTaskInput;
+  | ImageGenerationTaskInput
+  | VideoGenerationTaskInput
+  | AudioGenerationTaskInput;
 export type VisualAssistantConversation =
   components["schemas"]["VisualAssistantConversationOut"];
 export type VisualAssistantConversationSummary =
@@ -104,6 +120,28 @@ export async function deleteVisualWorkshopProject(
   );
 }
 
+export function exportVisualWorkshopProjectSnapshot(projectId: string) {
+  return fetchApiDownload(
+    `/v1/visual-workshop/projects/${encodeURIComponent(projectId)}/snapshot`,
+  );
+}
+
+export function importVisualWorkshopProjectSnapshot(file: File) {
+  const body = new FormData();
+  body.append("file", file);
+  return fetchApiJson<VisualProjectSnapshotImport>(
+    "/v1/visual-workshop/projects/snapshot-imports",
+    { method: "POST", body },
+  );
+}
+
+export function openVisualWorkshopProjectFolder(projectId: string) {
+  return fetchApiJson<components["schemas"]["ProjectFolderOpenOut"]>(
+    `/v1/visual-workshop/projects/${encodeURIComponent(projectId)}/open-folder`,
+    { method: "POST" },
+  );
+}
+
 export async function getVisualCanvas(projectId: string) {
   return unwrap(
     await api.GET("/v1/visual-workshop/projects/{project_id}/canvas", {
@@ -116,11 +154,12 @@ export async function putVisualCanvas(
   projectId: string,
   nodes: VisualCanvasNode[],
   expectedRevision: number,
+  edges: VisualCanvasEdge[] = [],
 ) {
   return unwrap(
     await api.PUT("/v1/visual-workshop/projects/{project_id}/canvas", {
       params: { path: { project_id: projectId } },
-      body: { nodes, expected_revision: expectedRevision },
+      body: { nodes, edges, expected_revision: expectedRevision },
     }),
   );
 }

@@ -17,11 +17,17 @@ from app.core.time import utc_now
 from app.files.digests import sha256_file
 from app.files.library import AssetLibrary
 from app.files.storage import AssetStorage
-from app.models import VideoEditorAssetMetadata, VideoEditorProject, VideoEditorTask, VisualAsset
+from app.media_rendering.render_engine import RenderCancelled, render_document
+from app.models import (
+    VideoEditorAssetMetadata,
+    VideoEditorProject,
+    VideoEditorTask,
+    VisualAsset,
+)
 from app.schemas.video_editor import VideoEditorTimelineDocument
 from app.video_editor.media import probe_media
-from app.video_editor.render_engine import RenderCancelled, render_document
 from app.video_editor.rendering import PRESETS
+from app.video_editor.segment_runner import VideoEditorSegmentTaskRunner
 
 
 def _run(args: list[str]) -> None:
@@ -261,6 +267,8 @@ class VideoEditorRunner(PollingTaskRunner):
                 kind = task.kind
             if kind == "media":
                 await self._process_media(task_id)
+            elif kind == "segment_export":
+                await self._process_segment_export(task_id)
             else:
                 await self._process_render(task_id)
         except RenderCancelled:
@@ -325,8 +333,22 @@ class VideoEditorRunner(PollingTaskRunner):
                 if task is None or task.cancel_requested:
                     event.set()
                     return
-                if task.status != "running":
-                    return
+
+    async def _raise_if_cancelled(self, task_id: str) -> None:
+        async with self.session_factory() as session:
+            task = await self._get(session, task_id)
+            if task is None or task.cancel_requested:
+                raise RenderCancelled()
+
+    async def _process_segment_export(self, task_id: str) -> None:
+        await VideoEditorSegmentTaskRunner(
+            session_factory=self.session_factory,
+            settings=self.settings,
+            storage=self.storage,
+            get_task=self._get,
+            set_task=self._set,
+            raise_if_cancelled=self._raise_if_cancelled,
+        ).process(task_id)
 
     async def _process_render(self, task_id: str) -> None:
         async with self.session_factory() as session:

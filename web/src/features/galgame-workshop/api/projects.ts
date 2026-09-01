@@ -1,4 +1,10 @@
-import { api, unwrap } from "@platform/api/client";
+import type { components } from "@generated/api";
+import {
+  api,
+  fetchApiDownload,
+  fetchApiJson,
+  unwrap,
+} from "@platform/api/client";
 import type { GalgameWorkshopProject } from "./types";
 
 export async function getGalgameWorkshopProjects() {
@@ -43,5 +49,27 @@ export async function deleteGalgameWorkshopProject(
         query: { expected_revision: project.revision },
       },
     }),
+  );
+}
+
+export function exportGalgameWorkshopProjectSnapshot(projectId: string) {
+  return fetchApiDownload(
+    `/v1/galgame-workshop/projects/${encodeURIComponent(projectId)}/snapshot`,
+  );
+}
+
+export function importGalgameWorkshopProjectSnapshot(file: File) {
+  const body = new FormData();
+  body.append("file", file);
+  return fetchApiJson<components["schemas"]["GalgameProjectSnapshotImportOut"]>(
+    "/v1/galgame-workshop/projects/snapshot-imports",
+    { method: "POST", body },
+  );
+}
+
+export function openGalgameWorkshopProjectFolder(projectId: string) {
+  return fetchApiJson<components["schemas"]["ProjectFolderOpenOut"]>(
+    `/v1/galgame-workshop/projects/${encodeURIComponent(projectId)}/open-folder`,
+    { method: "POST" },
   );
 }

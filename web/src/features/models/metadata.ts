@@ -11,6 +11,14 @@ export const providerMetadata = {
     label: "SenseAudio 视频",
     optionLabel: "SenseAudio 视频生成",
   },
+  senseaudio_music: {
+    label: "SenseAudio 音乐",
+    optionLabel: "SenseAudio 音乐生成",
+  },
+  senseaudio_sfx: {
+    label: "SenseAudio 音效",
+    optionLabel: "SenseAudio 音效生成",
+  },
   senseaudio_asr: {
     label: "SenseAudio 语音识别",
     optionLabel: "SenseAudio 专业说话人识别",
@@ -32,6 +40,7 @@ export const capabilityMetadata = {
   tools: { label: "工具" },
   image_generation: { label: "图片生成" },
   video_generation: { label: "视频生成" },
+  audio_generation: { label: "音频生成" },
   speech_recognition: { label: "语音识别" },
   voice: { label: "端到端语音" },
 } as const;

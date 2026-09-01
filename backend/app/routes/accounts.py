@@ -38,7 +38,6 @@ from app.deps import (
     SessionDep,
     authenticate_studio_request,
     client_ip,
-    require_recent_reauthentication,
 )
 from app.schemas.accounts import (
     AccountAvatarDeleteIn,
@@ -164,12 +163,10 @@ async def _browser_auth(request: Request, session: SessionDep, *, forced: bool =
     return principal
 
 
-async def _platform_auth(request: Request, session: SessionDep, *, recent: bool = False):
+async def _platform_auth(request: Request, session: SessionDep):
     principal = await _browser_auth(request, session)
     if not principal.is_platform_admin:
         raise HTTPException(403, detail={"code": "platform_admin_required"})
-    if recent:
-        require_recent_reauthentication(principal)
     return principal
 
 
@@ -403,7 +400,6 @@ async def api_keys(request: Request, session: SessionDep):
 @router.post("/account/api-keys", response_model=ApiKeyCreatedOut, status_code=201)
 async def add_api_key(request: Request, session: SessionDep, body: ApiKeyCreateIn):
     principal = await _browser_auth(request, session)
-    require_recent_reauthentication(principal)
     key, secret = await create_api_key(
         session,
         principal,
@@ -418,7 +414,6 @@ async def add_api_key(request: Request, session: SessionDep, body: ApiKeyCreateI
 @router.post("/account/api-keys/{key_id}/revoke", response_model=ApiKeyOut)
 async def remove_api_key(key_id: str, request: Request, session: SessionDep, body: RevokeApiKeyIn):
     principal = await _browser_auth(request, session)
-    require_recent_reauthentication(principal)
     key = await revoke_api_key(
         session,
         principal,
@@ -501,7 +496,7 @@ async def platform_accounts(request: Request, session: SessionDep):
 
 @router.post("/platform/accounts", response_model=AccountCreatedOut, status_code=201)
 async def add_account(request: Request, session: SessionDep, body: AccountCreateIn):
-    principal = await _platform_auth(request, session, recent=True)
+    principal = await _platform_auth(request, session)
     try:
         user, _workspace, temporary = await create_account(
             session,
@@ -521,7 +516,7 @@ async def add_account(request: Request, session: SessionDep, body: AccountCreate
 
 @router.patch("/platform/accounts/{user_id}", response_model=AccountOut)
 async def update_account(user_id: str, request: Request, session: SessionDep, body: AccountPatchIn):
-    principal = await _platform_auth(request, session, recent=True)
+    principal = await _platform_auth(request, session)
     try:
         user = await patch_account_status(
             session,
@@ -540,7 +535,7 @@ async def update_account(user_id: str, request: Request, session: SessionDep, bo
 
 @router.post("/platform/accounts/{user_id}/reset-password", response_model=ResetPasswordOut)
 async def reset_account_password(user_id: str, request: Request, session: SessionDep):
-    principal = await _platform_auth(request, session, recent=True)
+    principal = await _platform_auth(request, session)
     rows = await list_accounts(session)
     user = next((item for item in rows if item.id == user_id), None)
     if user is None:

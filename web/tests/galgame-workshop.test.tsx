@@ -6,7 +6,10 @@ import { GalgameWorkshopProjectsPage } from "@features/galgame-workshop/projects
 import {
   createGalgameWorkshopProject,
   deleteGalgameWorkshopProject,
+  exportGalgameWorkshopProjectSnapshot,
   getGalgameWorkshopProjects,
+  importGalgameWorkshopProjectSnapshot,
+  openGalgameWorkshopProjectFolder,
   patchGalgameWorkshopProject,
 } from "@features/galgame-workshop/api";
 
@@ -18,7 +21,10 @@ vi.mock("@features/galgame-workshop/api", async () => {
     ...actual,
     createGalgameWorkshopProject: vi.fn(),
     deleteGalgameWorkshopProject: vi.fn(),
+    exportGalgameWorkshopProjectSnapshot: vi.fn(),
     getGalgameWorkshopProjects: vi.fn(),
+    importGalgameWorkshopProjectSnapshot: vi.fn(),
+    openGalgameWorkshopProjectFolder: vi.fn(),
     patchGalgameWorkshopProject: vi.fn(),
   };
 });
@@ -55,6 +61,17 @@ beforeEach(() => {
     }),
   );
   vi.mocked(deleteGalgameWorkshopProject).mockResolvedValue({ deleted: true });
+  vi.mocked(exportGalgameWorkshopProjectSnapshot).mockResolvedValue({
+    blob: new Blob(["snapshot"]),
+    filename: "galgame-snapshot.zip",
+  });
+  vi.mocked(importGalgameWorkshopProjectSnapshot).mockResolvedValue({
+    project: { ...project, id: "project-copy", title: "命运石之门（副本）" },
+    warnings: [],
+  });
+  vi.mocked(openGalgameWorkshopProjectFolder).mockResolvedValue({
+    opened: true,
+  });
 });
 
 test("creates an unnamed project and opens overview without a dialog", async () => {
@@ -100,4 +117,31 @@ test("renames, completes, restores, searches, and deletes projects", async () =>
   await user.click(screen.getByRole("button", { name: "确认删除" }));
   await waitFor(() => expect(deleteGalgameWorkshopProject).toHaveBeenCalled());
   expect(await screen.findByText("还没有 Galgame 工程")).toBeInTheDocument();
+});
+
+test("imports and opens a Galgame snapshot copy", async () => {
+  vi.mocked(getGalgameWorkshopProjects).mockResolvedValueOnce({
+    items: [project],
+  });
+  const onOpenProject = vi.fn();
+  const user = userEvent.setup();
+  renderPage({ onOpenProject });
+  expect(await screen.findByText("命运石之门")).toBeInTheDocument();
+  await user.click(
+    screen.getByRole("button", { name: "打开“命运石之门”项目文件夹" }),
+  );
+  await waitFor(() =>
+    expect(openGalgameWorkshopProjectFolder).toHaveBeenCalledWith("project-1"),
+  );
+  await user.upload(
+    screen.getByLabelText("选择项目快照压缩包"),
+    new File(["zip"], "story.zip", { type: "application/zip" }),
+  );
+  await waitFor(() =>
+    expect(importGalgameWorkshopProjectSnapshot).toHaveBeenCalled(),
+  );
+  expect(onOpenProject).toHaveBeenCalledWith("project-copy");
+  expect(
+    screen.getByRole("button", { name: "导出“命运石之门”项目快照" }),
+  ).toBeEnabled();
 });

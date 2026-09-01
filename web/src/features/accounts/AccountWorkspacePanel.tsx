@@ -50,13 +50,12 @@ export function AccountWorkspacePanel({
     setDisplayName,
     email,
     setEmail,
-    reauthPassword,
-    setReauthPassword,
     keyName,
     setKeyName,
     keyWrite,
     setKeyWrite,
     revealedKey,
+    revealedKeyCopied,
     newUsername,
     setNewUsername,
     newDisplayName,
@@ -74,13 +73,13 @@ export function AccountWorkspacePanel({
     loadGovernance,
     loadSecurity,
     loadAccounts,
-    reauthenticate,
     saveProfile,
     uploadAvatar,
     changePassword,
     saveWorkspace,
     invite,
     createKey,
+    copyRevealedKey,
     createAccount,
     close,
   } = useAccountWorkspacePanel(session);
@@ -499,26 +498,6 @@ export function AccountWorkspacePanel({
                       修改密码
                     </button>
                   </form>
-                  <form
-                    className="settings-section"
-                    onSubmit={(event) => void reauthenticate(event)}
-                  >
-                    <h3>敏感操作解锁</h3>
-                    <p>创建密钥、管理成员或账号前，请重新验证密码。</p>
-                    <label>
-                      <span>当前密码</span>
-                      <input
-                        type="password"
-                        value={reauthPassword}
-                        onChange={(event) =>
-                          setReauthPassword(event.target.value)
-                        }
-                      />
-                    </label>
-                    <button className="btn" disabled={!reauthPassword}>
-                      重新验证
-                    </button>
-                  </form>
                   <section className="settings-section">
                     <h3>活动会话</h3>
                     {sessions.map((item) => (
@@ -571,6 +550,15 @@ export function AccountWorkspacePanel({
                       <div className="secret-once">
                         <strong>请立即复制，只显示这一次</strong>
                         <code>{revealedKey}</code>
+                        <div className="button-row">
+                          <button
+                            type="button"
+                            className="btn small"
+                            onClick={() => void copyRevealedKey()}
+                          >
+                            {revealedKeyCopied ? "已复制" : "复制密钥"}
+                          </button>
+                        </div>
                       </div>
                     ) : null}
                     <label>

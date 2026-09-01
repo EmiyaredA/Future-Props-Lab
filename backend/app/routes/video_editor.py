@@ -4,9 +4,18 @@ from typing import Annotated
 
 from fastapi import APIRouter, File, HTTPException, Query, UploadFile
 from fastapi.responses import FileResponse, Response
+from starlette.background import BackgroundTask
 
-from app.deps import SessionDep, WorkspaceDep
-from app.files import AssetError
+from app.core.config import get_settings
+from app.deps import SessionDep, StudioAuth, WorkspaceDep
+from app.files import (
+    AssetError,
+    AssetStorage,
+    ProjectFolderError,
+    ProjectSnapshotError,
+    open_project_folder,
+)
+from app.schemas.project_snapshots import ProjectFolderOpenOut
 from app.schemas.video_editor import (
     VideoEditorAssetImportIn,
     VideoEditorAssetListOut,
@@ -16,9 +25,11 @@ from app.schemas.video_editor import (
     VideoEditorProjectListOut,
     VideoEditorProjectOut,
     VideoEditorProjectPatchIn,
+    VideoEditorProjectSnapshotImportOut,
     VideoEditorRenderCreateIn,
     VideoEditorRenderPreviewIn,
     VideoEditorRenderPreviewOut,
+    VideoEditorSegmentExportCreateIn,
     VideoEditorTaskListOut,
     VideoEditorTaskOut,
     VideoEditorTimelineBatchIn,
@@ -29,6 +40,8 @@ from app.video_editor.frames import VideoEditorFrames
 from app.video_editor.media import VideoEditorMedia, guessed_mime
 from app.video_editor.projects import VideoEditorProjects
 from app.video_editor.rendering import VideoEditorRenders
+from app.video_editor.segment_exports import VideoEditorSegmentExports
+from app.video_editor.snapshots import VideoEditorProjectSnapshots
 from app.video_editor.timeline import VideoEditorTimelines
 
 router = APIRouter(prefix="/video-editor", tags=["video-editor"])
@@ -41,6 +54,8 @@ def _error(exc: Exception) -> HTTPException:
         return HTTPException(422, {"code": exc.code, "message": str(exc)})
     if isinstance(exc, AssetError):
         return HTTPException(exc.status, {"code": exc.code, "message": str(exc), **exc.detail})
+    if isinstance(exc, (ProjectSnapshotError, ProjectFolderError)):
+        return HTTPException(exc.status, {"code": exc.code, "message": str(exc)})
     return HTTPException(500, {"code": "video_editor_error", "message": str(exc)})
 
 
@@ -58,6 +73,20 @@ async def create_project(
     return await VideoEditorProjects(session, workspace_id).create(body)
 
 
+@router.post("/projects/snapshot-imports", response_model=VideoEditorProjectSnapshotImportOut)
+async def import_project_snapshot(
+    session: SessionDep,
+    workspace_id: WorkspaceDep,
+    file: Annotated[UploadFile, File()],
+) -> VideoEditorProjectSnapshotImportOut:
+    try:
+        return await VideoEditorProjectSnapshots(
+            session, get_settings(), workspace_id
+        ).import_snapshot(file)
+    except ProjectSnapshotError as exc:
+        raise _error(exc) from None
+
+
 @router.get("/projects/{project_id}", response_model=VideoEditorProjectOut)
 async def get_project(
     session: SessionDep, workspace_id: WorkspaceDep, project_id: str
@@ -66,6 +95,53 @@ async def get_project(
         return await VideoEditorProjects(session, workspace_id).get(project_id)
     except VideoEditorNotFoundError as exc:
         raise _error(exc) from None
+
+
+@router.get(
+    "/projects/{project_id}/snapshot",
+    response_class=FileResponse,
+    responses={200: {"content": {"application/zip": {}}}},
+)
+async def export_project_snapshot(
+    session: SessionDep, workspace_id: WorkspaceDep, project_id: str
+) -> FileResponse:
+    try:
+        exported = await VideoEditorProjectSnapshots(session, get_settings(), workspace_id).export(
+            project_id
+        )
+    except ProjectSnapshotError as exc:
+        raise _error(exc) from None
+    return FileResponse(
+        exported.path,
+        media_type="application/zip",
+        filename=exported.filename,
+        background=BackgroundTask(exported.path.unlink, missing_ok=True),
+    )
+
+
+@router.post("/projects/{project_id}/open-folder", response_model=ProjectFolderOpenOut)
+async def reveal_project_folder(
+    principal: StudioAuth,
+    session: SessionDep,
+    workspace_id: WorkspaceDep,
+    project_id: str,
+) -> ProjectFolderOpenOut:
+    if principal.auth_kind != "session":
+        raise HTTPException(
+            403,
+            {"code": "browser_session_required", "message": "打开文件夹必须使用浏览器 Session"},
+        )
+    try:
+        await VideoEditorProjects(session, workspace_id).get(project_id)
+        await open_project_folder(
+            AssetStorage(get_settings()),
+            "video-editor",
+            project_id,
+            workspace_id=workspace_id,
+        )
+    except (VideoEditorNotFoundError, ProjectFolderError) as exc:
+        raise _error(exc) from None
+    return ProjectFolderOpenOut()
 
 
 @router.patch("/projects/{project_id}", response_model=VideoEditorProjectOut)
@@ -185,19 +261,24 @@ async def asset_variant(
 
 
 @router.get("/projects/{project_id}/timeline", response_model=VideoEditorTimelineOut)
-async def get_timeline(session: SessionDep, project_id: str) -> VideoEditorTimelineOut:
+async def get_timeline(
+    session: SessionDep, workspace_id: WorkspaceDep, project_id: str
+) -> VideoEditorTimelineOut:
     try:
-        return await VideoEditorTimelines(session).get(project_id)
+        return await VideoEditorTimelines(session, workspace_id).get(project_id)
     except VideoEditorNotFoundError as exc:
         raise _error(exc) from None
 
 
 @router.post("/projects/{project_id}/timeline/operations", response_model=VideoEditorTimelineOut)
 async def apply_timeline_operations(
-    session: SessionDep, project_id: str, body: VideoEditorTimelineBatchIn
+    session: SessionDep,
+    workspace_id: WorkspaceDep,
+    project_id: str,
+    body: VideoEditorTimelineBatchIn,
 ) -> VideoEditorTimelineOut:
     try:
-        return await VideoEditorTimelines(session).apply(project_id, body)
+        return await VideoEditorTimelines(session, workspace_id).apply(project_id, body)
     except (VideoEditorNotFoundError, VideoEditorValidationError) as exc:
         raise _error(exc) from None
 
@@ -226,40 +307,104 @@ async def exact_frame(
 
 @router.post("/projects/{project_id}/renders/preflight", response_model=VideoEditorRenderPreviewOut)
 async def render_preflight(
-    session: SessionDep, project_id: str, body: VideoEditorRenderPreviewIn
+    session: SessionDep,
+    workspace_id: WorkspaceDep,
+    project_id: str,
+    body: VideoEditorRenderPreviewIn,
 ) -> VideoEditorRenderPreviewOut:
     try:
-        return await VideoEditorRenders(session).preview(project_id, body)
+        return await VideoEditorRenders(session, workspace_id).preview(project_id, body)
     except (VideoEditorNotFoundError, VideoEditorValidationError) as exc:
         raise _error(exc) from None
 
 
 @router.post("/projects/{project_id}/renders", response_model=VideoEditorTaskOut)
 async def create_render(
-    session: SessionDep, project_id: str, body: VideoEditorRenderCreateIn
+    session: SessionDep,
+    workspace_id: WorkspaceDep,
+    project_id: str,
+    body: VideoEditorRenderCreateIn,
 ) -> VideoEditorTaskOut:
     try:
-        return await VideoEditorRenders(session).create(project_id, body)
+        return await VideoEditorRenders(session, workspace_id).create(project_id, body)
     except (VideoEditorNotFoundError, VideoEditorValidationError) as exc:
         raise _error(exc) from None
 
 
 @router.get("/projects/{project_id}/renders", response_model=VideoEditorTaskListOut)
-async def list_renders(session: SessionDep, project_id: str) -> VideoEditorTaskListOut:
-    return await VideoEditorRenders(session).list(project_id)
+async def list_renders(
+    session: SessionDep, workspace_id: WorkspaceDep, project_id: str
+) -> VideoEditorTaskListOut:
+    try:
+        return await VideoEditorRenders(session, workspace_id).list(project_id)
+    except VideoEditorNotFoundError as exc:
+        raise _error(exc) from None
 
 
 @router.get("/projects/{project_id}/renders/{task_id}", response_model=VideoEditorTaskOut)
-async def get_render(session: SessionDep, project_id: str, task_id: str) -> VideoEditorTaskOut:
+async def get_render(
+    session: SessionDep, workspace_id: WorkspaceDep, project_id: str, task_id: str
+) -> VideoEditorTaskOut:
     try:
-        return await VideoEditorRenders(session).get(project_id, task_id)
+        return await VideoEditorRenders(session, workspace_id).get(project_id, task_id)
     except VideoEditorNotFoundError as exc:
         raise _error(exc) from None
 
 
 @router.post("/projects/{project_id}/renders/{task_id}/cancel", response_model=VideoEditorTaskOut)
-async def cancel_render(session: SessionDep, project_id: str, task_id: str) -> VideoEditorTaskOut:
+async def cancel_render(
+    session: SessionDep, workspace_id: WorkspaceDep, project_id: str, task_id: str
+) -> VideoEditorTaskOut:
     try:
-        return await VideoEditorRenders(session).cancel(project_id, task_id)
+        return await VideoEditorRenders(session, workspace_id).cancel(project_id, task_id)
+    except VideoEditorNotFoundError as exc:
+        raise _error(exc) from None
+
+
+@router.post("/projects/{project_id}/segment-exports", response_model=VideoEditorTaskOut)
+async def create_segment_export(
+    session: SessionDep,
+    workspace_id: WorkspaceDep,
+    project_id: str,
+    body: VideoEditorSegmentExportCreateIn,
+) -> VideoEditorTaskOut:
+    try:
+        return await VideoEditorSegmentExports(session, workspace_id).create(project_id, body)
+    except (VideoEditorNotFoundError, VideoEditorValidationError) as exc:
+        raise _error(exc) from None
+
+
+@router.get("/projects/{project_id}/segment-exports", response_model=VideoEditorTaskListOut)
+async def list_segment_exports(
+    session: SessionDep, workspace_id: WorkspaceDep, project_id: str
+) -> VideoEditorTaskListOut:
+    try:
+        return await VideoEditorSegmentExports(session, workspace_id).list(project_id)
+    except VideoEditorNotFoundError as exc:
+        raise _error(exc) from None
+
+
+@router.get(
+    "/projects/{project_id}/segment-exports/{task_id}",
+    response_model=VideoEditorTaskOut,
+)
+async def get_segment_export(
+    session: SessionDep, workspace_id: WorkspaceDep, project_id: str, task_id: str
+) -> VideoEditorTaskOut:
+    try:
+        return await VideoEditorSegmentExports(session, workspace_id).get(project_id, task_id)
+    except VideoEditorNotFoundError as exc:
+        raise _error(exc) from None
+
+
+@router.post(
+    "/projects/{project_id}/segment-exports/{task_id}/cancel",
+    response_model=VideoEditorTaskOut,
+)
+async def cancel_segment_export(
+    session: SessionDep, workspace_id: WorkspaceDep, project_id: str, task_id: str
+) -> VideoEditorTaskOut:
+    try:
+        return await VideoEditorSegmentExports(session, workspace_id).cancel(project_id, task_id)
     except VideoEditorNotFoundError as exc:
         raise _error(exc) from None

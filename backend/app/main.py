@@ -15,7 +15,8 @@ from app.concurrency.polling_runner import RunnerSupervisor
 from app.concurrency.revisions import RevisionConflictError
 from app.core.config import get_settings
 from app.core.db import SessionLocal, engine
-from app.files.layout_migration import reconcile_project_trash
+from app.files.layout_migration import reconcile_project_trash, reconcile_snapshot_imports
+from app.files.project_snapshots import cleanup_snapshot_staging
 from app.files.storage import AssetStorage
 from app.galgame_workshop.annotation_import_runner import GalgameAnnotationImportRunner
 from app.galgame_workshop.asr import GalgameAsrRunner
@@ -43,10 +44,12 @@ settings = get_settings()
 
 @asynccontextmanager
 async def lifespan(lifespan_app: FastAPI) -> AsyncIterator[None]:
+    cleanup_snapshot_staging(settings)
     apply_migrations(settings.database_path)
     await reconcile_profile_avatars()
     async with SessionLocal() as session:
         await reconcile_project_trash(session, AssetStorage(settings))
+        await reconcile_snapshot_imports(session, AssetStorage(settings))
         await seed_sayflow_text_catalog(session)
     await recover_interrupted_visual_assistant_runs()
     await recover_interrupted_model_test_runs()
@@ -84,6 +87,7 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["Content-Disposition"],
 )
 app.include_router(api_router)
 app.add_exception_handler(StarletteHTTPException, http_exception_handler)

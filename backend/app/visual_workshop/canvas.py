@@ -30,6 +30,7 @@ def canvas_out(row: VisualCanvasDocument) -> VisualCanvasDocumentOut:
     return VisualCanvasDocumentOut(
         project_id=row.project_id,
         nodes=row.nodes or [],
+        edges=row.edges or [],
         revision=row.revision,
         updated_at=iso_utc(row.updated_at),
     )
@@ -77,6 +78,10 @@ class VisualCanvasDocuments:
                 )
                 expected.extend((asset_id, "audio") for asset_id in draft.audio_asset_ids)
                 expected.extend((asset_id, "video") for asset_id in draft.video_asset_ids)
+            if node.kind == "audio" and node.generation_draft:
+                expected.extend(
+                    (asset_id, "audio") for asset_id in node.generation_draft.reference_asset_ids
+                )
         if not expected:
             return
         expected_ids = {asset_id for asset_id, _ in expected}
@@ -124,6 +129,8 @@ class VisualCanvasDocuments:
                     )
                     if asset_id
                 )
+            if node.get("kind") == "audio":
+                existing_asset_ids.update(draft.get("reference_asset_ids") or [])
         for asset_id, kind in expected:
             asset = assets.get(asset_id)
             if asset is None:
@@ -141,7 +148,7 @@ class VisualCanvasDocuments:
         expected = {
             node.generation_task_id: node.kind
             for node in nodes
-            if node.kind in {"image", "video"} and node.generation_task_id is not None
+            if node.kind in {"image", "video", "audio"} and node.generation_task_id is not None
         }
         if not expected:
             return
@@ -179,6 +186,7 @@ class VisualCanvasDocuments:
             )
             .values(
                 nodes=[node.model_dump(mode="json") for node in body.nodes],
+                edges=[edge.model_dump(mode="json") for edge in body.edges],
                 revision=body.expected_revision + 1,
                 updated_at=now,
             )

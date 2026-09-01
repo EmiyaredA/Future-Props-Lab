@@ -250,7 +250,9 @@ OpenAPI 或执行定时健康检查。
 
 - `GET/POST /v1/visual-workshop/projects`：按最近更新时间读取项目或新建项目。
 - `GET/PATCH/DELETE /v1/visual-workshop/projects/{project_id}`：读取、修改或删除单个项目。
-- `GET/PUT /v1/visual-workshop/projects/{project_id}/canvas`：读取或以 CAS 保存完整节点画布。
+- `GET /v1/visual-workshop/projects/{project_id}/snapshot` 与 `POST /v1/visual-workshop/projects/snapshot-imports`：下载可移植 ZIP，或上传 `file` 并创建全新副本。
+- `POST /v1/visual-workshop/projects/{project_id}/open-folder`：在运行 Studio 的电脑上打开服务端推导的项目目录。
+- `GET/PUT /v1/visual-workshop/projects/{project_id}/canvas`：读取或以 CAS 保存完整节点与连线画布。
 - `POST /v1/visual-workshop/projects/{project_id}/asset-references`：把文件管理中的文件引用到项目。
 - `PATCH/DELETE /v1/visual-workshop/projects/{project_id}/asset-references/{reference_id}`：整理或移除项目引用。
 - `GET/POST /v1/visual-workshop/projects/{project_id}/conversations`：读取或新建项目对话。
@@ -263,13 +265,19 @@ OpenAPI 或执行定时健康检查。
 修改和删除必须携带项目的 `expected_revision`；冲突返回 `409 revision_conflict` 以及服务器
 当前项目快照。Web 新建流程固定创建名为“未命名项目”的 canvas 项目并直接进入项目画布；
 旧的 image/video 项目仍可按画布打开。画布文档保存文本、图片、视频和音频节点的标题、内容、
-素材/生成任务引用与世界坐标，并使用独立于项目元数据的 `revision`。图片和视频节点还可携带
+素材/生成任务引用与世界坐标，并使用独立于项目元数据的 `revision`。画布的 `edges` 保存动态节点
+引用并拒绝自连、重复边、类型不兼容和依赖环；删除节点时同时清理关联边。图片、视频和音频节点均可携带
 `generation_draft`，分别保存节点级提示词、模型、生成参数与参考素材选择；草稿允许尚未满足生成
 条件，但仍校验字段范围、素材数量、媒体类型和项目归属。`PUT` 必须携带
-`expected_revision`；冲突返回服务器画布快照，Web 不会静默覆盖。图片/视频节点创建生成任务后
+`expected_revision`；冲突返回服务器画布快照，Web 不会静默覆盖。媒体节点创建生成任务后
 保存任务 ID，任务完成时把结果素材回填到原节点，同时保留原生成草稿。Web 对草稿文字使用画布
 自动保存，对素材和离散参数立即保存，并在创建生成任务前等待画布保存完成。上传文件本身立即进入
 项目素材库，取消草稿选择不会删除文件。视口缩放和平移仍属于浏览器本地偏好。
+
+连线不复制素材 ID。创建下游生成任务时，后端按提交的画布 revision 解析上游节点当前素材，再与
+手工参考素材合并、去重并执行项目/Workspace 校验；上游改名或替换素材无需重建连线。图片节点只
+接收图片，视频节点接收图片、视频和音频，音乐节点只接收音频，音效模式拒绝入边；上游没有素材时
+返回 `409 upstream_asset_pending`。
 
 项目对话标题和模型配置使用独立会话 revision 做 CAS。`PATCH` 可通过 `model_id`、
 `image_model_id`、`video_model_id` 分别固定 Agent 的对话、图像生成和视频生成模型，传 `null`
@@ -318,6 +326,8 @@ ID、消息数量、画布摘要和素材 ID；不保存图片 Base64、临时�
 
 - `GET/POST /v1/galgame-workshop/projects`：按最近更新时间读取工程或新建空白工程。
 - `GET/PATCH/DELETE /v1/galgame-workshop/projects/{project_id}`：读取、修改或删除单个工程。
+- `GET /v1/galgame-workshop/projects/{project_id}/snapshot` 与 `POST /v1/galgame-workshop/projects/snapshot-imports`：导出或导入为全新 Galgame 工程副本。
+- `POST /v1/galgame-workshop/projects/{project_id}/open-folder`：在运行 Studio 的电脑上打开项目目录。
 - `GET/PUT /v1/galgame-workshop/projects/{project_id}/story`：读取或整份 CAS 保存 Story 1.4 故事文档。
 - `PATCH /v1/galgame-workshop/projects/{project_id}/story/dialogue`：以 Story revision CAS 快速保存单条对白的文本、表情与立绘演出，不重传整份文档或重建素材引用。
 - `PATCH /v1/galgame-workshop/projects/{project_id}/story/stage-expression`：以 Story revision CAS 快速保存 `showCharacter` 或 `setStageCast` 中一个舞台角色的表情，不重传整份故事。
@@ -352,15 +362,26 @@ ID、消息数量、画布摘要和素材 ID；不保存图片 Base64、临时�
 ### 视频剪辑工坊
 
 - `GET/POST /v1/video-editor/projects` 与 `GET/PATCH/DELETE /v1/video-editor/projects/{project_id}`：管理 Workspace 隔离的剪辑项目；修改和删除使用 revision CAS。
+- `GET /v1/video-editor/projects/{project_id}/snapshot` 与 `POST /v1/video-editor/projects/snapshot-imports`：导出或导入为全新剪辑项目副本。
+- `POST /v1/video-editor/projects/{project_id}/open-folder`：在运行 Studio 的电脑上打开项目目录。
 - `GET /v1/video-editor/import-sources`：列出当前 Workspace 可复制到剪辑项目的文件库、视觉工坊与 Galgame 素材。
 - `GET/POST /v1/video-editor/projects/{project_id}/assets`：读取或上传项目素材；`POST .../assets/import` 将源文件物理复制为项目快照。
 - `POST /v1/video-editor/projects/{project_id}/assets/{asset_id}/proxy/retry`：重试 FFprobe、540p 代理、缩略图和波形生成。
 - `GET /v1/video-editor/projects/{project_id}/timeline`：读取微秒级 16:9 多轨时间轴。
 - `POST /v1/video-editor/projects/{project_id}/timeline/operations`：以 `expectedRevision`、`requestId` 原子提交轨道、Clip、链接、转场和关键帧操作；批次只增加一次 revision，同一 requestId 幂等。
+- `POST/GET /v1/video-editor/projects/{project_id}/segment-exports`：按不可变时间轴快照幂等创建或列出分段导入任务；每段单独保存名称、源范围、分辨率、帧率、质量和音频策略。
+- `GET /v1/video-editor/projects/{project_id}/segment-exports/{task_id}` 与 `POST .../{task_id}/cancel`：读取逐段进度、最终素材/节点映射或取消任务。
 - `GET /v1/video-editor/projects/{project_id}/preview/frame`：按 revision、`timeUs` 和宽度返回服务端精确 PNG 帧。
 - `POST /v1/video-editor/projects/{project_id}/renders/preflight`：检查素材就绪、范围和画面空档，并返回包含时间轴、素材指纹和输出规格的 fingerprint。
 - `POST/GET /v1/video-editor/projects/{project_id}/renders`：从不可变时间轴快照创建或列出后台 H.264/AAC MP4 渲染任务；正式渲染不会启动浏览器录屏。
 - `GET /v1/video-editor/projects/{project_id}/renders/{task_id}` 与 `POST .../{task_id}/cancel`：读取进度、失败原因、输出素材或取消完整 FFmpeg 进程树。
+
+三种快照共用版本化清单，只包含当前可编辑文档及其依赖素材；不包含对话、任务历史、代理、缩略图、波形、缓存或未被当前工程使用的历史输出。导入在隔离目录校验路径、声明文件、展开大小、文件数、实际大小和 SHA-256，然后重建项目、素材和引用 ID。共享文件会成为副本的私有素材；无法在目标 Workspace 匹配的模型绑定会清空并通过 `{code, field, message}` 警告返回。打开文件夹只允许具有写权限的浏览器 Session；Management API Key 始终返回 `403`，且请求不接受客户端路径。
+
+时间轴的 `splitClip` 会在同一帧原子分割覆盖播放头且共享 `linkGroupId` 的画面与原声音轨，左半段
+保留原链接组，右半段使用新的链接组。分段导入只编码视频 Clip 的源区间，不合成字幕、转场或其他
+轨道叠层；输出统一为 H.264/yuv420p MP4，保留音频时使用 AAC。全部分段编码成功后才在目标视觉
+项目中一次性创建素材引用和横向独立视频节点，失败或取消不保留半批数据。
 
 项目素材响应的 `transcriptSegments[]` 与转写任务的 `resultSegments[]` 使用统一的
 `{ speaker, startMs, endMs, text }` 形状。SenseAudio ASR Pro 请求启用说话人分离、自动标点和
@@ -607,10 +628,10 @@ Fragment 播放到结尾。自动模式连续按精确时间推进；选择出�
 淡出。没有精确时间轴的旧 Fragment 仍可按配音结束后 400ms 或文本估时自动播放。声音加载
 失败时回退到确定性主题舞台。当前格式仅供工坊内部使用，不代表 LetsGal 原生工程或导入兼容。
 
-## 图片与视频生成
+## 图片、视频与音频生成
 
-- `GET /v1/visual-workshop/generation-options`：返回已启用的 SenseAudio 图片/视频模型及图片尺寸。
-- `POST /v1/visual-workshop/projects/{project_id}/generation-tasks`：创建图片或视频异步任务。
+- `GET /v1/visual-workshop/generation-options`：返回已启用的 SenseAudio 图片、视频、音乐与音效模型及图片尺寸。
+- `POST /v1/visual-workshop/projects/{project_id}/generation-tasks`：创建图片、视频或音频生成任务。
 - `GET /v1/visual-workshop/generation-tasks`：按项目、类型、状态分页筛选任务。
 - `GET /v1/visual-workshop/generation-tasks/{task_id}`：读取单个任务。
 - `POST /v1/visual-workshop/generation-tasks/{task_id}/retry-materialization`：只重试已生成结果的本地保存。
@@ -630,7 +651,9 @@ Data URI 或素材内容。
 4–15 秒，参考模式最多 9 张项目图片、3 个音频素材 ID 和 3 个视频素材 ID，且不能仅提供音频。
 图片以 Data URI 发送；音频和视频由后端临时托管后再提交，临时 URL 不进入任务快照或日志。
 执行器仍兼容升级前已排队任务中的旧 URL 字段。视觉模型不进入模型服务页的固定 `OK` 快速诊断，
-但可在模型测试页执行真实生成测试。
+但可在模型测试页执行真实生成测试。音乐任务通过 Music 2.0 异步接口生成纯音乐/BGM，可接收项目
+音频参考；音效通过同步接口固定生成一个变体且不接收入边。音频结果与视觉结果共用安全下载流程，
+按文件头与 MIME 双重识别 MP3、WAV、M4A 和 OGG 后原子落盘；确定性测试不调用真实供应商。
 
 ## 文件管理与项目素材
 

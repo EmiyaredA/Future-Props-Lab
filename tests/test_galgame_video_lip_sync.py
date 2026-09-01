@@ -93,3 +93,11 @@ def test_lip_tracker_limits_quieter_voice_to_half_open() -> None:
     ] == [1, 1, 0, 1]
     assert tracker.update(-100, True, 400_000, 10) != 0
     assert tracker.update(-100, True, 500_001, 10) == 0
+
+
+def test_lip_tracker_forgets_previous_opening_after_playback_stops() -> None:
+    tracker = _LipTracker()
+    assert tracker.update(-20, True, 0, 10) == 1
+    assert tracker.update(-20, True, 100_000, 10) == 2
+    assert tracker.update(-100, False, 120_000, 10) == 0
+    assert tracker.update(-100, True, 140_000, 10) == 0

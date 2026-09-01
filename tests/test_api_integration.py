@@ -17,6 +17,15 @@ from db.migrations.registry import LATEST_MIGRATION_ID
 
 
 @pytest.mark.asyncio
+async def test_cors_exposes_download_filenames() -> None:
+    transport = httpx.ASGITransport(app=app)
+    async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+        response = await client.get("/health", headers={"Origin": "http://127.0.0.1:3000"})
+    exposed = response.headers.get("access-control-expose-headers", "").lower()
+    assert "content-disposition" in exposed
+
+
+@pytest.mark.asyncio
 async def test_ready_rejects_unhealthy_background_runners() -> None:
     previous = getattr(app.state, "runner_supervisor", None)
     app.state.runner_supervisor = SimpleNamespace(is_healthy=False)

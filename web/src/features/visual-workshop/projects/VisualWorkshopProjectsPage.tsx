@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Check,
   FolderOpen,
@@ -13,25 +12,25 @@ import {
 } from "lucide-react";
 import { ApiError } from "@platform/api/client";
 import {
-  prependProject,
   ProjectEditorDialog,
   ProjectLibraryCard,
-  removeProject,
-  upsertProject,
-  type ProjectEditorState,
+  ProjectSnapshotCardActions,
+  ProjectSnapshotImportButton,
+  useProjectLibraryController,
 } from "@shared/ui/project-library";
 import {
   createVisualWorkshopProject,
   deleteVisualWorkshopProject,
+  exportVisualWorkshopProjectSnapshot,
   getVisualWorkshopProjects,
+  importVisualWorkshopProjectSnapshot,
+  openVisualWorkshopProjectFolder,
   patchVisualWorkshopProject,
   type VisualWorkshopProject,
   type VisualWorkshopProjectStatus,
 } from "@features/visual-workshop/api";
 import { visualWorkshopQueryKeys } from "@features/visual-workshop/queryKeys";
 import "@features/visual-workshop/visual-workshop.css";
-
-type Editor = ProjectEditorState<VisualWorkshopProject> | null;
 
 function errorMessage(error: unknown) {
   if (error instanceof ApiError && error.problem.code === "revision_conflict")
@@ -46,68 +45,36 @@ export function VisualWorkshopProjectsPage({
   onOpenProject?: (projectId: string) => void;
   onOpenAssets?: (projectId: string) => void;
 }) {
-  const client = useQueryClient();
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState<"all" | VisualWorkshopProjectStatus>(
     "all",
   );
-  const [editor, setEditor] = useState<Editor>(null);
-  const [notice, setNotice] = useState("");
-  const projectsQuery = useQuery({
+  const {
+    projectsQuery,
+    editor,
+    setEditor,
+    notice,
+    setNotice,
+    createMutation,
+    patchMutation,
+    deleteMutation,
+    importMutation,
+    exportMutation,
+    openFolderMutation,
+    pending,
+  } = useProjectLibraryController<VisualWorkshopProject>({
     queryKey: visualWorkshopQueryKeys.projects,
-    queryFn: getVisualWorkshopProjects,
-  });
-  const refresh = () =>
-    void client.invalidateQueries({
-      queryKey: visualWorkshopQueryKeys.projects,
-    });
-  const createMutation = useMutation({
-    mutationFn: () => createVisualWorkshopProject("未命名项目", "canvas"),
-    onSuccess: (project) => {
-      client.setQueryData(
-        visualWorkshopQueryKeys.projects,
-        (current: { items: VisualWorkshopProject[] } | undefined) =>
-          prependProject(current, project),
-      );
-      onOpenProject(project.id);
-    },
-    onError: (error) => setNotice(errorMessage(error)),
-  });
-  const patchMutation = useMutation({
-    mutationFn: ({
-      project,
-      changes,
-    }: {
-      project: VisualWorkshopProject;
-      changes: Partial<Pick<VisualWorkshopProject, "title" | "status">>;
-    }) => patchVisualWorkshopProject(project, changes),
-    onSuccess: (updated) => {
-      client.setQueryData(
-        visualWorkshopQueryKeys.projects,
-        (current: { items: VisualWorkshopProject[] } | undefined) =>
-          upsertProject(current, updated),
-      );
-      setEditor(null);
-    },
-    onError: (error) => {
-      setNotice(errorMessage(error));
-      refresh();
-    },
-  });
-  const deleteMutation = useMutation({
-    mutationFn: deleteVisualWorkshopProject,
-    onSuccess: (_data, project) => {
-      client.setQueryData(
-        visualWorkshopQueryKeys.projects,
-        (current: { items: VisualWorkshopProject[] } | undefined) =>
-          removeProject(current, project.id),
-      );
-      setEditor(null);
-    },
-    onError: (error) => {
-      setNotice(errorMessage(error));
-      refresh();
-    },
+    listProjects: getVisualWorkshopProjects,
+    createProject: () => createVisualWorkshopProject("未命名项目", "canvas"),
+    patchProject: ({ project, changes }) =>
+      patchVisualWorkshopProject(project, changes),
+    deleteProject: deleteVisualWorkshopProject,
+    importSnapshot: importVisualWorkshopProjectSnapshot,
+    exportSnapshot: (project) =>
+      exportVisualWorkshopProjectSnapshot(project.id),
+    openFolder: (project) => openVisualWorkshopProjectFolder(project.id),
+    onOpenProject,
+    errorMessage,
   });
   const filtered = (projectsQuery.data?.items ?? []).filter((project) => {
     if (status !== "all" && project.status !== status) return false;
@@ -115,10 +82,6 @@ export function VisualWorkshopProjectsPage({
       .toLocaleLowerCase("zh-CN")
       .includes(query.trim().toLocaleLowerCase("zh-CN"));
   });
-  const pending =
-    createMutation.isPending ||
-    patchMutation.isPending ||
-    deleteMutation.isPending;
 
   return (
     <section className="workshop-page workshop-projects-page">
@@ -127,14 +90,20 @@ export function VisualWorkshopProjectsPage({
           <h1>我的创作项目</h1>
           <p>所有项目统一使用沉浸式创作画布。</p>
         </div>
-        <button
-          className="workshop-primary"
-          disabled={createMutation.isPending}
-          onClick={() => createMutation.mutate()}
-        >
-          <Plus aria-hidden />
-          {createMutation.isPending ? "正在创建…" : "新建项目"}
-        </button>
+        <div className="workshop-page-header-actions">
+          <ProjectSnapshotImportButton
+            pending={importMutation.isPending}
+            onImport={(file) => importMutation.mutate(file)}
+          />
+          <button
+            className="workshop-primary"
+            disabled={createMutation.isPending}
+            onClick={() => createMutation.mutate()}
+          >
+            <Plus aria-hidden />
+            {createMutation.isPending ? "正在创建…" : "新建项目"}
+          </button>
+        </div>
       </header>
       <div className="workshop-toolbar workshop-toolbar-simple">
         <label>
@@ -201,6 +170,19 @@ export function VisualWorkshopProjectsPage({
                 </button>
               </div>
               <div className="workshop-project-secondary-actions">
+                <ProjectSnapshotCardActions
+                  title={project.title}
+                  exporting={
+                    exportMutation.isPending &&
+                    exportMutation.variables?.id === project.id
+                  }
+                  opening={
+                    openFolderMutation.isPending &&
+                    openFolderMutation.variables?.id === project.id
+                  }
+                  onExport={() => exportMutation.mutate(project)}
+                  onOpenFolder={() => openFolderMutation.mutate(project)}
+                />
                 <button
                   aria-label="重命名"
                   title="重命名"

@@ -12,7 +12,6 @@ import { stableId } from "@features/galgame-workshop/editor/model";
 import { type StoryImagePickerState } from "@features/galgame-workshop/editor/StoryImagePicker";
 import {
   cgReferences,
-  clamp,
   cleanLabel,
   sceneReferences,
   type PickerTarget,
@@ -654,19 +653,7 @@ export function useVisualWorkspaceController({
       setItemMenu(undefined);
       return;
     }
-    const bounds = trigger.getBoundingClientRect();
-    const width = 236;
-    const itemCount = item.kind === "scene" ? 7 + groups.length : 4;
-    const estimatedHeight = Math.min(
-      window.innerHeight - 16,
-      itemCount * 38 + 34,
-    );
-    const left = clamp(bounds.right - width, 8, window.innerWidth - width - 8);
-    const top =
-      bounds.bottom + estimatedHeight + 4 <= window.innerHeight - 8
-        ? bounds.bottom + 4
-        : Math.max(8, bounds.top - estimatedHeight - 4);
-    setItemMenu({ item, left, top, trigger });
+    setItemMenu({ item, trigger });
   };
 
   const menuScene =

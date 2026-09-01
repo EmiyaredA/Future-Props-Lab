@@ -1,3 +1,8 @@
+from app.llm.providers.senseaudio_audio import (
+    create_music_task,
+    create_sound_effect,
+    get_music_task,
+)
 from app.llm.providers.senseaudio_image import create_image_task, get_image_task
 from app.llm.providers.senseaudio_video import create_video_task, get_video_task
 from app.llm.providers.streaming import (
@@ -13,10 +18,13 @@ __all__ = [
     "DiagnosticResult",
     "ImageInput",
     "TextDelta",
-    "invoke_diagnostic",
     "create_image_task",
+    "create_music_task",
+    "create_sound_effect",
     "get_image_task",
-    "create_video_task",
+    "get_music_task",
     "get_video_task",
+    "create_video_task",
+    "invoke_diagnostic",
     "stream_text_completion",
 ]

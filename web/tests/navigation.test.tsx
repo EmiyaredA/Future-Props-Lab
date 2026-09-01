@@ -166,7 +166,7 @@ test("renders the Galgame workshop brand", () => {
 });
 
 test("renders the video editor shell from its module configuration", () => {
-  render(
+  const { container } = render(
     <WorkshopShell
       module={VIDEO_EDITOR_MODULE}
       page="video-editor-tasks"
@@ -175,6 +175,10 @@ test("renders the video editor shell from its module configuration", () => {
     >
       <div>剪辑任务</div>
     </WorkshopShell>,
+  );
+  expect(container.querySelector(".workshop-brand img")).toHaveAttribute(
+    "src",
+    "/brand/video-editor-mark.png",
   );
   expect(
     screen.getByRole("navigation", { name: "视频剪辑工坊导航" }),
@@ -243,4 +247,22 @@ test("opens documentation deep links and follows browser navigation", () => {
   expect(
     screen.getByRole("heading", { name: "试玩与线路检查", level: 1 }),
   ).toBeInTheDocument();
+});
+
+test("includes the video editor delivery guide in documentation search", () => {
+  window.history.replaceState({}, "", "/docs.html");
+  render(<DocsApp />);
+  fireEvent.change(screen.getByRole("searchbox", { name: "搜索使用指南" }), {
+    target: { value: "代理" },
+  });
+  const directory = screen.getByRole("complementary", { name: "功能目录" });
+  const link = within(directory).getByRole("link", {
+    name: "剪辑工程、快照与素材",
+  });
+  expect(link).toBeInTheDocument();
+  fireEvent.click(link);
+  expect(
+    screen.getByRole("heading", { name: "剪辑工程、快照与素材", level: 1 }),
+  ).toBeInTheDocument();
+  expect(window.location.search).toBe("?page=video-editor-projects");
 });

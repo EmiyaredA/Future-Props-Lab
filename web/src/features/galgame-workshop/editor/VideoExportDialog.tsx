@@ -35,6 +35,7 @@ import {
   VideoExportHistory,
 } from "@features/galgame-workshop/editor/VideoExportTaskProgress";
 import { useDebouncedValue } from "@features/galgame-workshop/editor/useDebouncedValue";
+import { galgameQueryKeys } from "@features/galgame-workshop/queryKeys";
 import {
   FULL_CAPTURE_FRAME,
   normalizeCaptureFrame,
@@ -154,6 +155,9 @@ export function VideoExportDialog({
   const [submissionStatus, setSubmissionStatus] = useState("");
   const [lastCreatedTask, setLastCreatedTask] =
     useState<GalgameVideoExportTask>();
+  const [cancellingTaskIds, setCancellingTaskIds] = useState<Set<string>>(
+    () => new Set(),
+  );
   useEffect(() => {
     if (!open) return;
     const seededClip =
@@ -245,8 +249,9 @@ export function VideoExportDialog({
         (scope === "clip" && !clipError)),
     retry: false,
   });
+  const videoExportsKey = galgameQueryKeys.videoExports(projectId);
   const tasks = useQuery({
-    queryKey: ["galgame-video-exports", projectId],
+    queryKey: videoExportsKey,
     queryFn: () => listGalgameVideoExports(projectId),
     enabled: open,
     refetchInterval: (query) =>
@@ -275,7 +280,7 @@ export function VideoExportDialog({
       setSubmissionStatus("导出任务已创建，正在后台处理。");
       setLastCreatedTask(task);
       client.setQueryData(
-        ["galgame-video-exports", projectId],
+        videoExportsKey,
         (current: { items: (typeof task)[] } | undefined) => ({
           items: [
             task,
@@ -284,7 +289,7 @@ export function VideoExportDialog({
         }),
       );
       void client.invalidateQueries({
-        queryKey: ["galgame-video-exports", projectId],
+        queryKey: videoExportsKey,
       });
     },
     onError: (reason) => {
@@ -295,10 +300,34 @@ export function VideoExportDialog({
   const cancel = useMutation({
     mutationFn: (exportId: string) =>
       cancelGalgameVideoExport(projectId, exportId),
-    onSuccess: () =>
-      client.invalidateQueries({
-        queryKey: ["galgame-video-exports", projectId],
-      }),
+    onMutate: (exportId) => {
+      setError("");
+      setCancellingTaskIds((current) => new Set(current).add(exportId));
+    },
+    onSuccess: (task) => {
+      setLastCreatedTask((current) =>
+        current?.id === task.id ? task : current,
+      );
+      client.setQueryData(
+        videoExportsKey,
+        (current: { items: GalgameVideoExportTask[] } | undefined) => ({
+          items: (current?.items ?? []).map((item) =>
+            item.id === task.id ? task : item,
+          ),
+        }),
+      );
+      void client.invalidateQueries({ queryKey: videoExportsKey });
+    },
+    onError: (reason) => {
+      setError(reason instanceof Error ? reason.message : "无法取消视频导出");
+    },
+    onSettled: (_task, _reason, exportId) => {
+      setCancellingTaskIds((current) => {
+        const next = new Set(current);
+        next.delete(exportId);
+        return next;
+      });
+    },
   });
   const exportChecking = previewUpdating || preview.isFetching;
   const exportReady = !exportChecking && Boolean(preview.data?.ready);
@@ -677,6 +706,7 @@ export function VideoExportDialog({
             loading={tasks.isFetching && !visibleTasks.length}
             refreshing={tasks.isFetching && Boolean(visibleTasks.length)}
             error={tasks.isError ? tasks.error.message : undefined}
+            cancellingTaskIds={cancellingTaskIds}
             onRetry={() => void tasks.refetch()}
             onCancel={(taskId) => cancel.mutate(taskId)}
           />

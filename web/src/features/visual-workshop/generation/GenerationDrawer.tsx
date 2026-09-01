@@ -3,8 +3,16 @@ import { useGenerationDrawerController } from "@features/visual-workshop/generat
 import { CompactImageGenerationDrawer } from "@features/visual-workshop/generation/CompactImageGenerationDrawer";
 import { CompactVideoGenerationDrawer } from "@features/visual-workshop/generation/CompactVideoGenerationDrawer";
 import { StandardGenerationDrawer } from "@features/visual-workshop/generation/StandardGenerationDrawer";
+import { CompactAudioGenerationDrawer } from "@features/visual-workshop/generation/CompactAudioGenerationDrawer";
 
 export function GenerationDrawer(props: GenerationDrawerProps) {
+  if (props.compact && props.lockedKind === "audio") {
+    return <CompactAudioGenerationDrawer {...props} />;
+  }
+  return <VisualGenerationDrawer {...props} />;
+}
+
+function VisualGenerationDrawer(props: GenerationDrawerProps) {
   const controller = useGenerationDrawerController(props);
   if (controller.compact && controller.lockedKind === "image") {
     return <CompactImageGenerationDrawer controller={controller} />;

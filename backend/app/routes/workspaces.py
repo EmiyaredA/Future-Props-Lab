@@ -17,7 +17,6 @@ from app.deps import (
     SessionDep,
     authenticate_studio_request,
     client_ip,
-    require_recent_reauthentication,
 )
 from app.schemas.accounts import (
     WorkspaceInvitationActionIn,
@@ -115,7 +114,6 @@ async def set_active_workspace(request: Request, session: SessionDep, body: Work
 @router.patch("/current", response_model=WorkspaceOut)
 async def update_workspace(request: Request, session: SessionDep, body: WorkspacePatchIn):
     principal = await _browser_auth(request, session)
-    require_recent_reauthentication(principal)
     try:
         workspace = await patch_workspace(
             session,
@@ -149,7 +147,6 @@ async def delete_member(
     body: WorkspaceMemberRemoveIn,
 ):
     principal = await _browser_auth(request, session)
-    require_recent_reauthentication(principal)
     try:
         await remove_member(
             session,
@@ -182,7 +179,6 @@ async def workspace_invitations(request: Request, session: SessionDep):
 )
 async def invite_member(request: Request, session: SessionDep, body: WorkspaceInvitationCreateIn):
     principal = await _browser_auth(request, session)
-    require_recent_reauthentication(principal)
     try:
         invitation = await create_invitation(
             session,
@@ -204,7 +200,6 @@ async def revoke_invitation(
     body: WorkspaceInvitationActionIn,
 ):
     principal = await _browser_auth(request, session)
-    require_recent_reauthentication(principal)
     try:
         await act_on_invitation(
             session,

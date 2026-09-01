@@ -1,3 +1,4 @@
+from datetime import timedelta
 from uuid import uuid4
 
 import httpx
@@ -6,9 +7,18 @@ from sqlalchemy import func, select
 
 from app.accounts.passwords import normalize_username
 from app.accounts.provisioning import create_account
+from app.accounts.security import hash_secret
 from app.core.db import SessionLocal
+from app.core.time import utc_now
 from app.main import app
-from app.models import ModelProvider, SecurityAuditEvent, User, Workspace, WorkspaceMembership
+from app.models import (
+    AuthSession,
+    ModelProvider,
+    SecurityAuditEvent,
+    User,
+    Workspace,
+    WorkspaceMembership,
+)
 
 
 async def create_test_account(*, platform_admin: bool = False) -> tuple[str, str]:
@@ -182,3 +192,34 @@ async def test_management_key_scope_and_workspace_isolation() -> None:
             )
         ).status_code == 403
         assert (await api_client.get("/v1/account/sessions")).status_code == 403
+
+
+@pytest.mark.asyncio
+@pytest.mark.real_auth
+async def test_management_key_creation_does_not_require_password_reauthentication() -> None:
+    username, temporary = await create_test_account()
+    transport = httpx.ASGITransport(app=app)
+    async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+        await login_and_change_password(client, username, temporary)
+        raw_session = client.cookies.get("fpl_session")
+        assert raw_session
+
+        async with SessionLocal() as session:
+            auth_session = await session.scalar(
+                select(AuthSession).where(AuthSession.token_hash == hash_secret(raw_session))
+            )
+            assert auth_session is not None
+            auth_session.reauthenticated_at = utc_now() - timedelta(days=1)
+            await session.commit()
+
+        created = await client.post(
+            "/v1/account/api-keys",
+            headers=unsafe_headers(client),
+            json={
+                "name": "no-secondary-password-check",
+                "scopes": ["studio:read", "studio:write"],
+                "expires_in_days": 1,
+            },
+        )
+        assert created.status_code == 201, created.text
+        assert created.json()["secret"].startswith("fpm_")

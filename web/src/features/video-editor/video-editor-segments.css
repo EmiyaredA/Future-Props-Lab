@@ -1,0 +1,362 @@
+.ve-segment-backdrop {
+  z-index: 80;
+  padding: 28px;
+  align-items: center;
+}
+
+.ve-segment-dialog {
+  width: min(1180px, 96vw);
+  max-height: 92vh;
+  display: flex;
+  overflow: hidden;
+  flex-direction: column;
+  border: 1px solid var(--border-strong);
+  border-radius: 22px;
+  background: color-mix(in srgb, var(--surface) 97%, #0b0c10);
+  box-shadow: 0 32px 90px rgb(0 0 0 / 55%);
+}
+
+.ve-segment-dialog > header,
+.ve-segment-dialog > footer {
+  padding: 18px 22px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.ve-segment-dialog > header > div,
+.ve-segment-dialog > header > div > div {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.ve-segment-dialog h2,
+.ve-segment-dialog p {
+  margin: 0;
+}
+
+.ve-segment-dialog h2 {
+  font-size: 18px;
+}
+
+.ve-segment-dialog header p,
+.ve-segment-dialog footer span {
+  color: var(--faint);
+  font-size: 11px;
+}
+
+.ve-segment-dialog header svg {
+  width: 20px;
+  color: var(--accent);
+}
+
+.ve-segment-dialog button,
+.ve-segment-dialog input,
+.ve-segment-choice summary {
+  min-height: 38px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-soft);
+  color: var(--text);
+}
+
+.ve-segment-dialog button {
+  padding: 0 13px;
+}
+
+.ve-segment-dialog button:hover,
+.ve-segment-dialog button.active {
+  border-color: color-mix(in srgb, var(--accent) 72%, var(--border));
+  background: color-mix(in srgb, var(--accent) 13%, var(--surface-soft));
+  color: var(--text-strong);
+}
+
+.ve-segment-dialog button.primary {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: white;
+}
+
+.ve-segment-dialog button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.ve-segment-scope {
+  padding: 14px 22px 0;
+  display: flex;
+  gap: 8px;
+}
+
+.ve-segment-scope button {
+  min-width: 128px;
+  font-weight: 750;
+}
+
+.ve-segment-scope span {
+  margin-left: 8px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: var(--surface-hover);
+  color: var(--faint);
+}
+
+.ve-segment-batch {
+  margin: 14px 22px;
+  padding: 12px;
+  display: grid;
+  grid-template-columns: auto repeat(4, minmax(116px, 1fr)) auto;
+  align-items: center;
+  gap: 9px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--surface-soft) 88%, transparent);
+}
+
+.ve-segment-batch > strong {
+  padding: 0 6px;
+  font-size: 12px;
+}
+
+.ve-segment-batch .apply {
+  white-space: nowrap;
+}
+
+.ve-segment-choice {
+  position: relative;
+  min-width: 0;
+}
+
+.ve-segment-choice summary {
+  padding: 0 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 11px;
+  list-style: none;
+  cursor: pointer;
+}
+
+.ve-segment-choice summary::-webkit-details-marker {
+  display: none;
+}
+
+.ve-segment-choice summary svg {
+  width: 13px;
+  transition: transform 150ms ease;
+}
+
+.ve-segment-choice[open] summary svg {
+  transform: rotate(180deg);
+}
+
+.ve-segment-choice > div {
+  position: absolute;
+  z-index: 12;
+  top: calc(100% + 6px);
+  right: 0;
+  left: 0;
+  min-width: 138px;
+  padding: 5px;
+  border: 1px solid var(--border-strong);
+  border-radius: 11px;
+  background: var(--surface);
+  box-shadow: 0 16px 36px rgb(0 0 0 / 35%);
+}
+
+.ve-segment-choice > div button {
+  width: 100%;
+  min-height: 34px;
+  padding: 0 8px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  border: 0;
+  background: transparent;
+  font-size: 11px;
+  text-align: left;
+}
+
+.ve-segment-choice > div button svg,
+.ve-segment-choice > div button span {
+  width: 13px;
+  height: 13px;
+}
+
+.ve-segment-list {
+  min-height: 180px;
+  padding: 0 22px 16px;
+  display: grid;
+  gap: 10px;
+  overflow-y: auto;
+}
+
+.ve-segment-list article {
+  padding: 12px;
+  display: grid;
+  grid-template-columns: 136px minmax(0, 1fr) 180px;
+  align-items: center;
+  gap: 14px;
+  border: 1px solid var(--border);
+  border-radius: 15px;
+  background: color-mix(in srgb, var(--surface-soft) 70%, transparent);
+}
+
+.ve-segment-thumb {
+  position: relative;
+  height: 76px;
+  display: grid;
+  overflow: hidden;
+  place-items: center;
+  border-radius: 10px;
+  background: #07080b;
+  color: var(--faint);
+}
+
+.ve-segment-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.ve-segment-thumb > span {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  border-radius: 7px;
+  background: rgb(0 0 0 / 72%);
+  color: white;
+  font-size: 10px;
+}
+
+.ve-segment-main {
+  min-width: 0;
+  display: grid;
+  gap: 7px;
+}
+
+.ve-segment-main label {
+  display: grid;
+  grid-template-columns: 68px 1fr;
+  align-items: center;
+  gap: 8px;
+  color: var(--faint);
+  font-size: 10px;
+}
+
+.ve-segment-main input,
+.ve-segment-target > input {
+  width: 100%;
+  padding: 0 11px;
+  outline: none;
+}
+
+.ve-segment-main input:focus,
+.ve-segment-target > input:focus {
+  border-color: var(--accent);
+}
+
+.ve-segment-main > small {
+  color: var(--faint);
+  font-size: 10px;
+}
+
+.ve-segment-configs {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(100px, 1fr));
+  gap: 7px;
+}
+
+.ve-segment-filename {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 20px 1fr;
+  align-items: center;
+  gap: 3px 8px;
+}
+
+.ve-segment-filename svg {
+  grid-row: 1 / 3;
+  width: 17px;
+  color: var(--accent);
+}
+
+.ve-segment-filename small {
+  color: var(--faint);
+  font-size: 9px;
+}
+
+.ve-segment-filename strong {
+  overflow: hidden;
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ve-segment-target {
+  margin: 0 22px 16px;
+  padding: 12px;
+  display: grid;
+  grid-template-columns: auto auto 1fr;
+  align-items: center;
+  gap: 10px;
+  border-top: 1px solid var(--border);
+}
+
+.ve-target-modes,
+.ve-target-projects {
+  display: flex;
+  gap: 7px;
+  overflow-x: auto;
+}
+
+.ve-target-projects button {
+  white-space: nowrap;
+}
+
+.ve-target-projects span,
+.ve-segment-error {
+  color: var(--faint);
+  font-size: 11px;
+}
+
+.ve-segment-error {
+  margin: -8px 22px 12px;
+  color: var(--danger);
+}
+
+.ve-segment-dialog > footer {
+  border-top: 1px solid var(--border);
+  border-bottom: 0;
+  justify-content: flex-end;
+}
+
+.ve-segment-dialog > footer span {
+  margin-right: auto;
+}
+
+@media (max-width: 900px) {
+  .ve-segment-batch {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .ve-segment-list article {
+    grid-template-columns: 110px 1fr;
+  }
+
+  .ve-segment-filename {
+    grid-column: 2;
+  }
+
+  .ve-segment-configs {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}

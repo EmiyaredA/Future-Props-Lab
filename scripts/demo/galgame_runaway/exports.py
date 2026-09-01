@@ -64,6 +64,7 @@ EXPRESSION_SYNC_EXPORTS = (
     ("diagnostic-mother-identity-v4-786s-802s", 786_000, 802_000),
     ("diagnostic-luka-speaker-1649s-1656s", 1_649_000, 1_656_000),
 )
+SPEAKER_FIX_EXPORTS = (("diagnostic-luka-speaker-fix-526s-539s", 526_000, 539_000),)
 SCENE_TIME_EXPORTS = (
     ("scene-main-day-switch-145s-160s", 145_000, 160_000),
     ("scene-day-to-evening-964s-980s", 964_000, 980_000),
@@ -121,6 +122,8 @@ def requested_exports(
         return [*LATEST_FIX_EXPORTS]
     if only == "expression-sync":
         return [*EXPRESSION_SYNC_EXPORTS]
+    if only == "speaker-fix":
+        return [*SPEAKER_FIX_EXPORTS]
     if only == "scene-time":
         return [*SCENE_TIME_EXPORTS]
     if only == "portrait-review":
@@ -289,6 +292,7 @@ def main() -> None:
             "latest-review",
             "latest-fixes",
             "expression-sync",
+            "speaker-fix",
             "scene-time",
             "portrait-review",
             "final-cgs",

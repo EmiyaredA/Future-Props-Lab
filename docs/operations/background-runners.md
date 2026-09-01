@@ -1,6 +1,6 @@
 # 后台 Runner 运维
 
-模型测试生成、语音识别、视觉生成、Galgame 标注导入和视频导出均由同一进程内的轮询 Runner 执行。
+模型测试生成、语音识别、视觉/音频生成、Galgame 标注导入、视频导出和剪辑分段导入均由同一进程内的轮询 Runner 执行。
 Runner 不是独立服务，也不应在多进程间共享同一 SQLite 任务队列。
 
 通用启动、停止、退避、健康状态和并发上限位于 `app/concurrency/polling_runner.py`。各功能包只实现

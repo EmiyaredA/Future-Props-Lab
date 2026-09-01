@@ -26,6 +26,7 @@ from app.galgame_workshop.video_export_planning import (
     PRESETS,
 )
 from app.galgame_workshop.video_lip_sync import prepare_audio_envelopes
+from app.media_rendering.render_engine import RenderCancelled, render_plan
 from app.models import (
     GalgameAssetMetadata,
     GalgameProjectAssetReference,
@@ -34,7 +35,6 @@ from app.models import (
     GalgameWorkshopProject,
     VisualAsset,
 )
-from app.video_editor.render_engine import RenderCancelled, render_plan
 
 
 def _safe_filename(value: str) -> str:
@@ -162,6 +162,10 @@ class GalgameVideoExportRunner(PollingTaskRunner):
             task = await session.get(GalgameVideoExportTask, task_id)
             return task is None or task.cancel_requested
 
+    async def _raise_if_cancelled(self, task_id: str) -> None:
+        if await self._cancel_requested(task_id):
+            raise InterruptedError("视频导出已取消")
+
     async def _process(self, task_id: str) -> None:
         try:
             async with self.session_factory() as session:
@@ -231,6 +235,7 @@ class GalgameVideoExportRunner(PollingTaskRunner):
                     if item.get("fileId") in duration_by_file
                 }
 
+            await self._raise_if_cancelled(task_id)
             with TemporaryDirectory(prefix=f"galgame-video-{task_id}-") as temp_dir:
                 root = Path(temp_dir)
                 output_path = root / "output.mp4"
@@ -256,6 +261,7 @@ class GalgameVideoExportRunner(PollingTaskRunner):
                         cancel_event.set()
                     await asyncio.sleep(0.25)
                 envelopes = await analysis
+                await self._raise_if_cancelled(task_id)
                 compiled = await asyncio.to_thread(
                     compile_galgame_render_plan,
                     document,
@@ -266,6 +272,7 @@ class GalgameVideoExportRunner(PollingTaskRunner):
                     asset_duration_ms=asset_duration_ms,
                     audio_envelopes=envelopes,
                 )
+                await self._raise_if_cancelled(task_id)
                 await self._set(task_id, phase="rendering", progress=3)
                 render_progress = [3]
 
@@ -305,10 +312,12 @@ class GalgameVideoExportRunner(PollingTaskRunner):
                         finished=True,
                     )
                     return
+                await self._raise_if_cancelled(task_id)
                 if not output_path.is_file():
                     raise RuntimeError("确定性渲染器没有生成输出文件")
                 await self._set(task_id, phase="verifying", progress=90)
                 probe = await asyncio.to_thread(_probe_video, output_path)
+                await self._raise_if_cancelled(task_id)
                 streams = probe.get("streams", [])
                 video = next((item for item in streams if item.get("codec_type") == "video"), None)
                 audio = next((item for item in streams if item.get("codec_type") == "audio"), None)
@@ -333,6 +342,7 @@ class GalgameVideoExportRunner(PollingTaskRunner):
                 project_label = _safe_filename(project.title)
                 ending_filename = _safe_filename(ending_label)
                 filename = f"{project_label}-{ending_filename}-{timestamp}.mp4"
+                await self._raise_if_cancelled(task_id)
                 await self._set(task_id, phase="registering", progress=95)
                 async with self.session_factory() as session:
                     bind_workspace(session, workspace_id)

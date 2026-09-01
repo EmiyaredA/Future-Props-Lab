@@ -17,6 +17,8 @@ const phaseLabel: Record<GalgameVideoExportTask["phase"], string> = {
   cancelled: "已取消",
 };
 
+const EMPTY_TASK_IDS: ReadonlySet<string> = new Set();
+
 function formatDuration(milliseconds: number) {
   const seconds = Math.round(milliseconds / 1000);
   const hours = Math.floor(seconds / 3600);
@@ -76,18 +78,26 @@ export function ActiveVideoExportStatus({
           ) : null}
           <span>
             <strong>
-              {task.status === "completed"
-                ? "视频导出完成"
-                : task.status === "failed"
-                  ? "视频导出失败"
-                  : task.status === "cancelled"
-                    ? "视频导出已取消"
-                    : "视频正在后台导出"}
+              {task.cancelRequested &&
+              ["queued", "running"].includes(task.status)
+                ? "正在取消视频导出"
+                : task.status === "completed"
+                  ? "视频导出完成"
+                  : task.status === "failed"
+                    ? "视频导出失败"
+                    : task.status === "cancelled"
+                      ? "视频导出已取消"
+                      : "视频正在后台导出"}
             </strong>
             <small>
-              {phaseLabel[task.phase]} · {task.progress}%
+              {task.cancelRequested &&
+              ["queued", "running"].includes(task.status)
+                ? "正在等待渲染器安全停止"
+                : `${phaseLabel[task.phase]} · ${task.progress}%`}
               {["queued", "running"].includes(task.status)
-                ? " · 可以关闭窗口，任务会继续运行"
+                ? task.cancelRequested
+                  ? " · 可以关闭窗口，取消会在后台完成"
+                  : " · 可以关闭窗口，任务会继续运行"
                 : ""}
             </small>
             {task.error ? <em>{task.error}</em> : null}
@@ -139,6 +149,7 @@ export function VideoExportHistory({
   loading,
   refreshing,
   error,
+  cancellingTaskIds = EMPTY_TASK_IDS,
   onRetry,
   onCancel,
 }: {
@@ -147,6 +158,7 @@ export function VideoExportHistory({
   loading: boolean;
   refreshing: boolean;
   error?: string;
+  cancellingTaskIds?: ReadonlySet<string>;
   onRetry: () => void;
   onCancel: (taskId: string) => void;
 }) {
@@ -174,30 +186,47 @@ export function VideoExportHistory({
           </span>
         </div>
       ) : (
-        tasks.map((task) => (
-          <article key={task.id}>
-            <TaskProgress task={task} />
-            {task.status === "completed" ? (
-              <button
-                type="button"
-                onClick={() =>
-                  void downloadGalgameVideoExport(
-                    projectId,
-                    task.id,
-                    task.outputFilename || "galgame-export.mp4",
-                  )
-                }
-              >
-                <Download aria-hidden /> 下载
-              </button>
-            ) : ["queued", "running"].includes(task.status) ? (
-              <button type="button" onClick={() => onCancel(task.id)}>
-                取消
-              </button>
-            ) : null}
-            {task.error ? <p>{task.error}</p> : null}
-          </article>
-        ))
+        tasks.map((task) => {
+          const cancelling =
+            cancellingTaskIds.has(task.id) ||
+            (Boolean(task.cancelRequested) &&
+              ["queued", "running"].includes(task.status));
+          return (
+            <article key={task.id}>
+              <TaskProgress task={task} />
+              {task.status === "completed" ? (
+                <button
+                  type="button"
+                  onClick={() =>
+                    void downloadGalgameVideoExport(
+                      projectId,
+                      task.id,
+                      task.outputFilename || "galgame-export.mp4",
+                    )
+                  }
+                >
+                  <Download aria-hidden /> 下载
+                </button>
+              ) : ["queued", "running"].includes(task.status) ? (
+                <button
+                  type="button"
+                  disabled={cancelling}
+                  onClick={() => onCancel(task.id)}
+                >
+                  {cancelling ? (
+                    <>
+                      <LoaderCircle className="spinning" aria-hidden />
+                      取消中…
+                    </>
+                  ) : (
+                    "取消"
+                  )}
+                </button>
+              ) : null}
+              {task.error ? <p>{task.error}</p> : null}
+            </article>
+          );
+        })
       )}
       {!loading && !tasks.length && !error ? (
         <p className="galgame-video-empty">还没有导出记录</p>

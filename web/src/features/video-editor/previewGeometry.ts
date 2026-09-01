@@ -1,0 +1,115 @@
+import type { VideoEditorAsset, VideoEditorClip } from "./types";
+
+export const VIDEO_EDITOR_CANVAS_WIDTH = 1920;
+export const VIDEO_EDITOR_CANVAS_HEIGHT = 1080;
+
+const VIDEO_PROXY_WIDTH = 960;
+const VIDEO_PROXY_HEIGHT = 540;
+
+type Dimensions = {
+  width: number;
+  height: number;
+};
+
+type ProbeStream = {
+  codec_type?: unknown;
+  width?: unknown;
+  height?: unknown;
+};
+
+export type VideoProxyCrop = {
+  leftPercent: number;
+  topPercent: number;
+  widthPercent: number;
+  heightPercent: number;
+};
+
+export type PreviewMediaGeometry = Dimensions & {
+  proxyCrop?: VideoProxyCrop;
+};
+
+const positiveNumber = (value: unknown) =>
+  typeof value === "number" && Number.isFinite(value) && value > 0
+    ? value
+    : undefined;
+
+export function mediaProbeDimensions(
+  asset?: VideoEditorAsset,
+): Dimensions | undefined {
+  const probe = asset?.probe;
+  if (!probe || typeof probe !== "object") return undefined;
+  const streams = Array.isArray(probe.streams)
+    ? (probe.streams as ProbeStream[])
+    : [];
+  const stream = streams.find(
+    (item) =>
+      item?.codec_type === "video" &&
+      positiveNumber(item.width) &&
+      positiveNumber(item.height),
+  );
+  const width = positiveNumber(stream?.width) ?? positiveNumber(probe.width);
+  const height = positiveNumber(stream?.height) ?? positiveNumber(probe.height);
+  return width && height ? { width, height } : undefined;
+}
+
+function fittedDimensions(
+  clip: VideoEditorClip,
+  source: Dimensions,
+): Dimensions {
+  if (clip.fitMode === "cover" || clip.fitMode === "contain") {
+    const ratio =
+      clip.fitMode === "cover"
+        ? Math.max(
+            VIDEO_EDITOR_CANVAS_WIDTH / source.width,
+            VIDEO_EDITOR_CANVAS_HEIGHT / source.height,
+          )
+        : Math.min(
+            VIDEO_EDITOR_CANVAS_WIDTH / source.width,
+            VIDEO_EDITOR_CANVAS_HEIGHT / source.height,
+          );
+    return { width: source.width * ratio, height: source.height * ratio };
+  }
+  if (clip.fitMode === "height" && clip.heightPercent) {
+    const ratio =
+      (VIDEO_EDITOR_CANVAS_HEIGHT * clip.heightPercent) / 100 / source.height;
+    return { width: source.width * ratio, height: source.height * ratio };
+  }
+  return source;
+}
+
+export function paddedVideoProxyCrop(source: Dimensions): VideoProxyCrop {
+  const proxyScale = Math.min(
+    VIDEO_PROXY_WIDTH / source.width,
+    VIDEO_PROXY_HEIGHT / source.height,
+  );
+  const contentWidth = source.width * proxyScale;
+  const contentHeight = source.height * proxyScale;
+  return {
+    leftPercent:
+      (-((VIDEO_PROXY_WIDTH - contentWidth) / 2) / contentWidth) * 100,
+    topPercent:
+      (-((VIDEO_PROXY_HEIGHT - contentHeight) / 2) / contentHeight) * 100,
+    widthPercent: (VIDEO_PROXY_WIDTH / contentWidth) * 100,
+    heightPercent: (VIDEO_PROXY_HEIGHT / contentHeight) * 100,
+  };
+}
+
+export function previewMediaGeometry(
+  clip: VideoEditorClip,
+  asset?: VideoEditorAsset,
+): PreviewMediaGeometry | undefined {
+  if (clip.kind === "color")
+    return {
+      width: VIDEO_EDITOR_CANVAS_WIDTH,
+      height: VIDEO_EDITOR_CANVAS_HEIGHT,
+    };
+  if (clip.kind !== "video" && clip.kind !== "image") return undefined;
+  const source = mediaProbeDimensions(asset) ?? {
+    width: VIDEO_EDITOR_CANVAS_WIDTH,
+    height: VIDEO_EDITOR_CANVAS_HEIGHT,
+  };
+  return {
+    ...fittedDimensions(clip, source),
+    proxyCrop: clip.kind === "video" ? paddedVideoProxyCrop(source) : undefined,
+  };
+}

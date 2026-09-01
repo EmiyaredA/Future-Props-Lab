@@ -2,7 +2,8 @@
 
 未来道具研究所的模型基础设施管理台。项目从 Sayflow 的工程边界中提取了模型目录、模型调用日志、管理端主题与文档中心壳，不包含 Bot、知识库、电话接入、浏览器扩展和多实例部署；实时语音仅作为模型测试能力，文件语音识别、录音分段标注与 Galgame 配音流程仍是正式能力。
 
-运行环境要求 Node.js 24、npm 11+、Python 3.11+ 与 Git LFS；持续集成同时验证 Python 3.11
+运行环境要求 Node.js 24、npm 11+、Python 3.11+、Git LFS，以及提供 H.264/libx264 与 AAC 编码能力的
+FFmpeg/FFprobe；持续集成同时验证 Python 3.11
 最低支持版本和 Python 3.14。克隆后先运行 `git lfs install`；若检出时跳过了 LFS 对象，运行
 `git lfs pull` 后再执行安装。
 
@@ -15,22 +16,27 @@
 
 首次启动会自动创建 `.runtime/future-props.db` 并执行迁移，不需要 Docker 或独立数据库服务。`npm run db:migrate` 与 `npm run db:migrate:check` 仍可用于手动诊断。
 
-全新的模型目录会播种两条文本通道、两条默认停用的 SenseAudio 视觉通道、一条默认停用的
-SenseAudio 专业说话人识别通道和一条默认停用的 SenseAudio 实时语音通道：OpenAI 兼容网关
+全新的模型目录会播种两条文本通道、两条默认停用的 SenseAudio 视觉通道、两条默认停用的
+SenseAudio 音乐/音效通道、一条默认停用的 SenseAudio 专业说话人识别通道和一条默认停用的
+SenseAudio 实时语音通道：OpenAI 兼容网关
 包含官方文本清单的 16 个模型，Anthropic 通道包含 Claude Haiku 4.5；图片通道包含 4 个官方
 图片模型，视频通道包含 Doubao Seedance 2.0，语音识别通道包含 SenseAudio ASR Pro 1.5，
-实时通道包含 `senseaudio-realtime-1.0`。
+实时通道包含 `senseaudio-realtime-1.0`，音频通道包含 Music 2.0 与 SFX 1.0。
 所有供应商默认不带 API Key，需要在“模型服务”
-页面分别填写；视觉模型只会在图片/视频节点中明确提交“创建生成任务”后使用，打开画布、右键
+页面分别填写；媒体模型只会在图片/视频/音频节点中明确提交“创建生成任务”后使用，打开画布、右键
 创建节点或选择节点都不会调用模型，也不会触发模型测试的付费快速诊断。
 
-已有目录升级时会补充尚不存在的文本模型、两条默认停用的视觉通道、专业说话人识别和实时语音通道，不覆盖既有供应商凭证、
+已有目录升级时会补充尚不存在的文本模型、默认停用的视觉与音乐/音效通道、专业说话人识别和实时语音通道，不覆盖既有供应商凭证、
 启停状态、模型描述或其他手工配置，也不会重新加入此前删除的旧文本模型。默认清单是随代码
 发布的审核快照，应用启动时不会联网同步官网；完成迁移后，后续编辑和删除不会被启动流程覆盖。
 
 Studio 默认地址为 <http://127.0.0.1:3000>，打开后进入账号登录页；API 文档为 <http://127.0.0.1:9000/docs>。应用保持单机 SQLite 与单进程运行，同时支持多个账号和逻辑隔离的 Workspace。一级“文件管理”保存可被视觉项目引用的图片、视频、音频与文档；工具导航聚合站内模型能力与常用公开研发工具，并按 Workspace 持久化收藏和最近使用记录。独立“集成中心”用于按 Workspace 管理和验证工具 API、MCP 服务与本地不可变版本 Skill，v1 不把这些资源注入 Agent 执行。基模型菜单包含持久化多轮“模型测试”、只返回本地 Mock 数据的“测试工具”、供应商与模型管理，以及可按快速诊断/模型测试区分的调用日志；具备完整纯文本请求的日志可导出不含密钥的复现包，用标准库脚本执行同步串行或异步并发批量调用。模型测试支持文本、图片、视频、语音识别与端到端实时语音；文本会话可为声明工具能力的 OpenAI/Anthropic 模型绑定测试工具，展示参数、Mock 结果和多轮执行步骤。实时页使用聊天式消息流，提供免按键双工、自动断句、双方转写、流式播放、说话打断和本地 Mock 工具调用；转写与音频只保留在当前页面内存中，工具调用详情会写入测试记录。文件语音可从本地上传或从当前 Workspace 文件管理选择，自定义 Pro 端点单文件限 100 MB，其余模型限 10 MB。识别页按模型能力显示语言、翻译、时间戳、文本整理、说话人、标点、热词与缩写参数，并可导出 JSON 1.1 或创建录音标注任务。
 
 Galgame 工坊使用 Story 1.4 管理角色表情/皮肤、真实多层场景、剧情 CG、BGM、音效、语音、视频和资源总览。项目素材拥有稳定虚拟路径、媒体元数据与打包策略；语音识别通过已启用且声明 `speech_recognition` 能力的 OpenAI 兼容或 SenseAudio ASR 模型执行。SenseAudio ASR Pro 会保存带说话人和起止时间的句级分段，不随应用捆绑大型本地模型。
+
+视频剪辑工坊使用 Workspace 隔离的工程、素材快照和微秒级多轨时间线，支持代理预览、后端确定性
+精确帧、关联片段交接、片段导出与完整 MP4 渲染。视觉创作、Galgame 和视频剪辑三套工坊共用项目
+快照生命周期，但各自保留领域文档、事务与错误规则；使用方法见应用内文档中心。
 
 备份时先停止应用，再同时复制 `.runtime/future-props.db`、`.runtime/library/assets/`、
 `.runtime/applications/`、
@@ -39,3 +45,6 @@ Galgame 工坊使用 Story 1.4 管理角色表情/皮肤、真实多层场景、
 `FPL_DATABASE_PATH` 调整，这些文件目录都位于数据库所在目录下。
 
 详细说明见 [贡献指南](CONTRIBUTING.md)、[项目结构](docs/architecture/project-layout.md)、[素材清单](docs/assets/MANIFEST.md)、[生产部署](docs/operations/production-deployment.md)、[开发交付说明](docs/architecture/handoff-readiness.md)、[环境变量](docs/reference/configuration.md)、[故障排查](docs/operations/troubleshooting.md)、[后台 Runner 运维](docs/operations/background-runners.md)、[文件与事务约束](docs/operations/file-transactions.md) 和 [API 参考](docs/reference/api.md)。
+
+当前仓库交付声明为“仅限内部开发交接，未授予再分发许可”；素材的具体来源与限制以
+[素材清单](docs/assets/MANIFEST.md) 为准。本声明不替代后续由权利人确认的正式许可证。

@@ -7,10 +7,16 @@ import {
   getVideoEditorTimeline,
   listVideoEditorAssets,
   listVideoEditorRenders,
+  patchVideoEditorProject,
 } from "./api";
 import type { VideoEditorOperation } from "./types";
 import { frameUs, timelineDuration } from "./editorModel";
 import { videoEditorQueryKeys } from "./queryKeys";
+import {
+  loadVideoEditorWorkspacePreferences,
+  storeVideoEditorWorkspacePreferences,
+  type VideoEditorWorkspacePreferences,
+} from "./workspacePreferences";
 
 type HistoryEntry = {
   redo: VideoEditorOperation[];
@@ -18,6 +24,9 @@ type HistoryEntry = {
 };
 
 export function useVideoEditor(projectId: string) {
+  const [initialWorkspacePreferences] = useState(() =>
+    loadVideoEditorWorkspacePreferences(projectId),
+  );
   const client = useQueryClient();
   const project = useQuery({
     queryKey: videoEditorQueryKeys.project(projectId),
@@ -42,15 +51,32 @@ export function useVideoEditor(projectId: string) {
     queryFn: () => listVideoEditorRenders(projectId),
     refetchInterval: 1200,
   });
-  const [selectedClipId, setSelectedClipId] = useState<string>();
-  const [playheadUs, setPlayheadUs] = useState(0);
+  const [selectedClipId, setSelectedClipId] = useState<string | undefined>(
+    initialWorkspacePreferences.selectedClipIds.at(-1),
+  );
+  const [selectedClipIds, setSelectedClipIds] = useState<string[]>(
+    initialWorkspacePreferences.selectedClipIds,
+  );
+  const [playheadUs, setPlayheadState] = useState(
+    initialWorkspacePreferences.playheadUs,
+  );
   const [playing, setPlaying] = useState(false);
-  const [zoom, setZoom] = useState(80);
+  const [zoom, setZoom] = useState(initialWorkspacePreferences.zoom);
+  const [timelineScrollLeft, setTimelineScrollLeft] = useState(
+    initialWorkspacePreferences.timelineScrollLeft,
+  );
+  const [preciseFrame, setPreciseFrame] = useState(
+    initialWorkspacePreferences.preciseFrame,
+  );
   const [notice, setNotice] = useState("");
   const [undoStack, setUndoStack] = useState<HistoryEntry[]>([]);
   const [redoStack, setRedoStack] = useState<HistoryEntry[]>([]);
   const clock = useRef({ startedAt: 0, startedUs: 0 });
-  const playheadRef = useRef(0);
+  const playheadRef = useRef(initialWorkspacePreferences.playheadUs);
+  const latestWorkspacePreferences = useRef<VideoEditorWorkspacePreferences>({
+    ...initialWorkspacePreferences,
+    selectedClipIds: [...initialWorkspacePreferences.selectedClipIds],
+  });
 
   const mutation = useMutation({
     mutationFn: ({ operations }: { operations: VideoEditorOperation[] }) => {
@@ -75,6 +101,18 @@ export function useVideoEditor(projectId: string) {
         );
         void timeline.refetch();
       } else setNotice(error instanceof Error ? error.message : "保存失败");
+    },
+  });
+  const renameMutation = useMutation({
+    mutationFn: (title: string) => {
+      if (!project.data) throw new Error("项目尚未就绪");
+      return patchVideoEditorProject(project.data, { title });
+    },
+    onSuccess: (next) => {
+      client.setQueryData(videoEditorQueryKeys.project(projectId), next);
+      void client.invalidateQueries({
+        queryKey: videoEditorQueryKeys.projects,
+      });
     },
   });
 
@@ -104,9 +142,22 @@ export function useVideoEditor(projectId: string) {
   };
 
   const durationUs = timelineDuration(timeline.data);
-  useEffect(() => {
-    playheadRef.current = playheadUs;
-  }, [playheadUs]);
+  const setPlayheadUs = useCallback(
+    (update: number | ((value: number) => number)) => {
+      const requested =
+        typeof update === "function" ? update(playheadRef.current) : update;
+      const next = Math.max(0, Math.min(durationUs, requested));
+      playheadRef.current = next;
+      setPlayheadState(next);
+      if (playing) {
+        clock.current = {
+          startedAt: performance.now(),
+          startedUs: next,
+        };
+      }
+    },
+    [durationUs, playing],
+  );
   useEffect(() => {
     if (!playing) return;
     clock.current = {
@@ -119,16 +170,37 @@ export function useVideoEditor(projectId: string) {
         clock.current.startedUs +
         (performance.now() - clock.current.startedAt) * 1000;
       if (next >= durationUs) {
-        setPlayheadUs(durationUs);
+        playheadRef.current = durationUs;
+        setPlayheadState(durationUs);
         setPlaying(false);
         return;
       }
-      setPlayheadUs(next);
+      playheadRef.current = next;
+      setPlayheadState(next);
       frame = requestAnimationFrame(tick);
     };
     frame = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(frame);
   }, [durationUs, playing]);
+  useEffect(() => {
+    if (!timeline.data) return;
+    const validClipIds = new Set(
+      (timeline.data.document.tracks ?? []).flatMap((track) =>
+        (track.clips ?? []).map((clip) => clip.id),
+      ),
+    );
+    setSelectedClipIds((current) => {
+      const next = current.filter((clipId) => validClipIds.has(clipId));
+      setSelectedClipId((selectedId) =>
+        selectedId && validClipIds.has(selectedId) ? selectedId : next.at(-1),
+      );
+      return next.length === current.length ? current : next;
+    });
+    if (playheadRef.current > durationUs) {
+      playheadRef.current = durationUs;
+      setPlayheadState(durationUs);
+    }
+  }, [durationUs, timeline.data]);
   useEffect(() => {
     const keydown = (event: KeyboardEvent) => {
       if (
@@ -157,11 +229,61 @@ export function useVideoEditor(projectId: string) {
     };
     window.addEventListener("keydown", keydown);
     return () => window.removeEventListener("keydown", keydown);
-  }, [durationUs, timeline.data]);
+  }, [durationUs, setPlayheadUs, timeline.data]);
 
   const selected = (timeline.data?.document.tracks ?? [])
     .flatMap((track) => track.clips ?? [])
     .find((clip) => clip.id === selectedClipId);
+  const selectClip = useCallback((clipId?: string, additive = false) => {
+    setSelectedClipIds((current) => {
+      if (!clipId) {
+        setSelectedClipId(undefined);
+        return [];
+      }
+      if (!additive) {
+        setSelectedClipId(clipId);
+        return [clipId];
+      }
+      const next = current.includes(clipId)
+        ? current.filter((id) => id !== clipId)
+        : [...current, clipId];
+      setSelectedClipId(next.at(-1));
+      return next;
+    });
+  }, []);
+  latestWorkspacePreferences.current = {
+    version: 1,
+    playheadUs,
+    selectedClipIds,
+    zoom,
+    timelineScrollLeft,
+    preciseFrame,
+  };
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      storeVideoEditorWorkspacePreferences(
+        projectId,
+        latestWorkspacePreferences.current,
+      );
+    }, 150);
+    return () => window.clearTimeout(timer);
+  }, [
+    playheadUs,
+    preciseFrame,
+    projectId,
+    selectedClipIds,
+    timelineScrollLeft,
+    zoom,
+  ]);
+  useEffect(
+    () => () => {
+      storeVideoEditorWorkspacePreferences(
+        projectId,
+        latestWorkspacePreferences.current,
+      );
+    },
+    [projectId],
+  );
   return {
     project,
     timeline,
@@ -169,7 +291,9 @@ export function useVideoEditor(projectId: string) {
     tasks,
     selected,
     selectedClipId,
-    setSelectedClipId,
+    setSelectedClipId: selectClip,
+    selectedClipIds,
+    selectClip,
     playheadUs,
     setPlayheadUs,
     playing,
@@ -177,6 +301,10 @@ export function useVideoEditor(projectId: string) {
     durationUs,
     zoom,
     setZoom,
+    timelineScrollLeft,
+    setTimelineScrollLeft,
+    preciseFrame,
+    setPreciseFrame,
     notice,
     setNotice,
     commit,
@@ -185,5 +313,7 @@ export function useVideoEditor(projectId: string) {
     canUndo: Boolean(undoStack.length),
     canRedo: Boolean(redoStack.length),
     saving: mutation.isPending,
+    renameProject: renameMutation.mutateAsync,
+    renaming: renameMutation.isPending,
   };
 }

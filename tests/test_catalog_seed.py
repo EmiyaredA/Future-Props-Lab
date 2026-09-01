@@ -78,6 +78,8 @@ async def test_sayflow_text_catalog_seed_is_complete_and_idempotent(tmp_path: Pa
             ("SenseAudio 视频生成", "senseaudio_video"),
             ("SenseAudio 专业说话人识别", "senseaudio_asr"),
             ("SenseAudio 实时语音", "senseaudio_realtime"),
+            ("SenseAudio 音乐生成", "senseaudio_music"),
+            ("SenseAudio 音效生成", "senseaudio_sfx"),
         }
         assert all(item.api_key_ciphertext == "" for item in providers)
         assert {item.name: item.enabled for item in providers} == {
@@ -87,6 +89,8 @@ async def test_sayflow_text_catalog_seed_is_complete_and_idempotent(tmp_path: Pa
             "SenseAudio 视频生成": False,
             "SenseAudio 专业说话人识别": False,
             "SenseAudio 实时语音": False,
+            "SenseAudio 音乐生成": False,
+            "SenseAudio 音效生成": False,
         }
         openai_models = sorted(
             (item for item in models if item.provider_id == "f0000000-0000-4000-8000-000000000001"),
@@ -152,6 +156,28 @@ async def test_sayflow_text_catalog_seed_is_complete_and_idempotent(tmp_path: Pa
                 "senseaudio-realtime-1.0",
                 ("voice",),
                 ("end_to_end_speech",),
+            )
+        }
+        assert {
+            (item.slug, tuple(item.capabilities), tuple(item.categories))
+            for item in models
+            if item.provider_id == "f0000000-0000-4000-8000-000000000008"
+        } == {
+            (
+                "senseaudio-music-2.0-260626",
+                ("audio_generation",),
+                ("music_generation",),
+            )
+        }
+        assert {
+            (item.slug, tuple(item.capabilities), tuple(item.categories))
+            for item in models
+            if item.provider_id == "f0000000-0000-4000-8000-000000000009"
+        } == {
+            (
+                "senseaudio-sfx-1.0-260626",
+                ("audio_generation",),
+                ("music_generation",),
             )
         }
         assert state is not None and state.revision == 1

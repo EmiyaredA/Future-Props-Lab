@@ -25,14 +25,14 @@ import {
   timelineCues,
   timelineGaps,
 } from "@features/galgame-workshop/editor/timeline";
-import {
-  MAX_TIMELINE_ZOOM,
-  MIN_TIMELINE_ZOOM,
-} from "@features/galgame-workshop/editor/timelinePreferences";
 import { TimelineClock } from "@features/galgame-workshop/editor/timelineClock";
 import { storyTimelineEditorModel } from "@features/galgame-workshop/editor/storyTimelineEditorModel";
 import type { TimelineDragState as DragState } from "@features/galgame-workshop/editor/timelineDragState";
 import type { StoryTimelineEditorProps } from "@features/galgame-workshop/editor/storyTimelineEditorProps";
+import {
+  fittedTimelineZoom,
+  timelineTrackGeometry,
+} from "@features/galgame-workshop/editor/timeline/timelineTrackGeometry";
 
 const TIMELINE_LABEL_WIDTH = 168;
 const PREVIEW_SYNC_INTERVAL_MS = 100;
@@ -104,7 +104,6 @@ export function useStoryTimelineController({
   const onPreviewPositionRef = useRef(onPreviewPosition);
   onPreviewPositionRef.current = onPreviewPosition;
   const lastPreviewSyncRef = useRef(Number.NEGATIVE_INFINITY);
-  const trackWidth = Math.max(640, (durationMs / 60_000) * zoom);
   const activeCue = activeTimelineCue(fragment, displayPositionMs);
   const visibleCharacterTrackIds = useMemo(
     () =>
@@ -121,32 +120,32 @@ export function useStoryTimelineController({
       return next;
     });
   };
-  const laneHeight = 40;
-  const lanes = useMemo(
-    () => [
-      { id: "scene", label: "场景" },
-      { id: "cg", label: "CG" },
-      ...(characterTracksExpanded
-        ? visibleCharacterTrackIds.map((characterId) => ({
-            id: `character:${characterId}`,
-            label: characters.get(characterId)?.name ?? "未知角色",
-          }))
-        : []),
-      { id: "dialogue", label: "对白 / 角色 / 配音" },
-      { id: "bgm", label: "BGM" },
-      { id: "ambient", label: "环境音" },
-      { id: "sfx", label: "音效" },
-      { id: "structure", label: "分支 / 结局" },
+  const {
+    trackWidth,
+    laneHeight,
+    lanes,
+    laneTop,
+    dialogueTop,
+    trackHeight,
+    tickEveryMs,
+    ticks,
+  } = useMemo(
+    () =>
+      timelineTrackGeometry({
+        durationMs,
+        zoom,
+        characterTracksExpanded,
+        visibleCharacterTrackIds,
+        characters,
+      }),
+    [
+      characterTracksExpanded,
+      characters,
+      durationMs,
+      visibleCharacterTrackIds,
+      zoom,
     ],
-    [characterTracksExpanded, characters, visibleCharacterTrackIds],
   );
-  const laneTop = (laneId: string) =>
-    Math.max(
-      0,
-      lanes.findIndex((lane) => lane.id === laneId),
-    ) * laneHeight;
-  const dialogueTop = laneTop("dialogue");
-  const trackHeight = lanes.length * laneHeight;
   useEffect(() => {
     if (readOnly) return;
     let active = true;
@@ -690,32 +689,14 @@ export function useStoryTimelineController({
     );
   };
 
-  const tickEveryMs = zoom >= 600 ? 5000 : zoom >= 240 ? 10_000 : 30_000;
-  const ticks = Array.from(
-    { length: Math.floor(durationMs / tickEveryMs) + 1 },
-    (_, index) => index * tickEveryMs,
-  );
   const selectBlock = (blockId: string) => onSelectBlock(blockId);
   const fitTimelineWidth = () => {
     const container = scrollRef.current;
     if (!container || durationMs <= 0) return;
-    const configuredLabelWidth = Number.parseFloat(
-      globalThis
-        .getComputedStyle(container)
-        .getPropertyValue("--galgame-timeline-label-width"),
-    );
-    const labelWidth = Number.isFinite(configuredLabelWidth)
-      ? configuredLabelWidth
-      : TIMELINE_LABEL_WIDTH;
-    const availableWidth = Math.max(320, container.clientWidth - labelWidth);
-    const fittedZoom = Math.min(
-      MAX_TIMELINE_ZOOM,
-      Math.max(
-        MIN_TIMELINE_ZOOM,
-        Math.floor((availableWidth * 60_000) / durationMs),
-      ),
-    );
-    onPreferencesChange({ ...preferences, zoom: fittedZoom });
+    onPreferencesChange({
+      ...preferences,
+      zoom: fittedTimelineZoom(container, durationMs, TIMELINE_LABEL_WIDTH),
+    });
   };
 
   return {

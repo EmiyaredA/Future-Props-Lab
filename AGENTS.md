@@ -53,6 +53,11 @@
   供应商原始事件。
 - 图片/视频后台任务的状态转换由 `llm/generation_runtime.GenerationTaskDriver` 唯一编排；各功能
   只提供任务存取、素材组装/落盘和调用日志钩子。`submitting` 中断必须安全失败，禁止自动重提。
+- 确定性时间线画面与视频渲染由 `backend/app/media_rendering/` 统一拥有；Galgame 直接导出不得
+  依赖 `video_editor/` 实现，只有显式的视频编辑器交接用例可以跨功能调用。
+- ORM 的 ID/时间默认工厂由 `models/` 自有模块维护，`models` 不得反向依赖 `core`；生产 Python 包
+  不得形成强依赖环。Workspace 项目记录的加载、CAS 更新和删除原语可复用
+  `concurrency/project_records.py`，但事务、默认文档、快照和领域规则必须留在所属功能包。
 - Story 总校验保持纯函数分层：身份/角色、素材、国际化、时间轴、流程与表现层规则归属
   `schemas/galgame_workshop/story_validation.py`；Pydantic Story 入口只负责迁移适配和统一调用。
 - 账号、Session、审计、Management API Key 与 Workspace 治理归属 `backend/app/accounts/`；

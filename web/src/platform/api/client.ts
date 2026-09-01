@@ -79,6 +79,41 @@ export async function fetchApiBlob(
   const response = await requestApi(path, init);
   return response.blob();
 }
+
+export type ApiDownload = {
+  blob: Blob;
+  filename: string | null;
+};
+
+export function filenameFromContentDisposition(
+  value: string | null,
+): string | null {
+  if (!value) return null;
+  const encoded = value.match(/filename\*\s*=\s*UTF-8''([^;]+)/i)?.[1];
+  if (encoded) {
+    try {
+      return decodeURIComponent(encoded.trim()).replace(/[\\/]/g, "_");
+    } catch {
+      // Fall through to the quoted/plain filename form.
+    }
+  }
+  const plain = value.match(/filename\s*=\s*(?:"((?:\\.|[^"])*)"|([^;]+))/i);
+  const filename = (plain?.[1] ?? plain?.[2])?.trim().replace(/\\"/g, '"');
+  return filename ? filename.replace(/[\\/]/g, "_") : null;
+}
+
+export async function fetchApiDownload(
+  path: string,
+  init: RequestInit = {},
+): Promise<ApiDownload> {
+  const response = await requestApi(path, init);
+  return {
+    blob: await response.blob(),
+    filename: filenameFromContentDisposition(
+      response.headers.get("Content-Disposition"),
+    ),
+  };
+}
 api.use({
   async onRequest({ request }) {
     return applySessionHeaders(request);

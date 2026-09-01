@@ -10,6 +10,7 @@ const moduleDefinition = {
     capabilities: ["视频", "多轨剪辑", "字幕", "确定性导出"],
     path: "/apps/video-editor",
     icon: Film,
+    brandImage: "/brand/video-editor-mark.png",
   },
   supportsProjects: true,
   shell: "video-editor",

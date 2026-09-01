@@ -130,6 +130,7 @@ beforeEach(() => {
   vi.mocked(getVisualWorkshopProject).mockResolvedValue(project);
   vi.mocked(getVisualCanvas).mockResolvedValue({
     project_id: "project-1",
+    edges: [],
     nodes: [],
     revision: 0,
     updated_at: "2026-08-03T08:00:00Z",
@@ -137,6 +138,7 @@ beforeEach(() => {
   vi.mocked(putVisualCanvas).mockImplementation(
     async (_projectId, nodes, expectedRevision) => ({
       project_id: "project-1",
+      edges: [],
       nodes,
       revision: expectedRevision + 1,
       updated_at: "2026-08-03T08:00:01Z",
@@ -376,6 +378,7 @@ test("keeps the local draft visible when canvas CAS conflicts", async () => {
         code: "revision_conflict",
         current: {
           project_id: "project-1",
+          edges: [],
           nodes: [],
           revision: 3,
           updated_at: "2026-08-03T08:10:00Z",
@@ -401,6 +404,7 @@ test("keeps the local draft visible when canvas CAS conflicts", async () => {
 test("renders video nodes as an attached 16:9 creation workspace", async () => {
   vi.mocked(getVisualCanvas).mockResolvedValueOnce({
     project_id: "project-1",
+    edges: [],
     nodes: [
       {
         id: "video-1",
@@ -432,6 +436,7 @@ test("renders video nodes as an attached 16:9 creation workspace", async () => {
 test("renders video node draft references as the canvas preview", async () => {
   vi.mocked(getVisualCanvas).mockResolvedValueOnce({
     project_id: "project-1",
+    edges: [],
     nodes: [
       {
         id: "video-1",
@@ -477,6 +482,7 @@ test("renders video node draft references as the canvas preview", async () => {
 test("creates video tasks with the selected canvas node link", async () => {
   vi.mocked(getVisualCanvas).mockResolvedValue({
     project_id: "project-1",
+    edges: [],
     nodes: [
       {
         id: "video-1",
@@ -572,12 +578,14 @@ test("creates video tasks with the selected canvas node link", async () => {
     "project-1",
     expect.any(Array),
     0,
+    expect.any(Array),
   );
 });
 
 test("keeps the viewport unchanged when selecting an image node or its material action", async () => {
   vi.mocked(getVisualCanvas).mockResolvedValueOnce({
     project_id: "project-1",
+    edges: [],
     nodes: [
       {
         id: "image-1",
@@ -618,6 +626,7 @@ test("keeps the viewport unchanged when selecting an image node or its material 
 test("drags a selected video node from its preview and saves zoom-adjusted coordinates", async () => {
   vi.mocked(getVisualCanvas).mockResolvedValueOnce({
     project_id: "project-1",
+    edges: [],
     nodes: [
       {
         id: "video-1",
@@ -666,6 +675,7 @@ test("drags a selected video node from its preview and saves zoom-adjusted coord
 test("does not start node dragging from interactive video controls", async () => {
   vi.mocked(getVisualCanvas).mockResolvedValueOnce({
     project_id: "project-1",
+    edges: [],
     nodes: [
       {
         id: "video-1",
@@ -781,6 +791,7 @@ test("captures trackpad pinch zoom after the asynchronous canvas mount", async (
 test("keeps wheel scrolling inside an attached node editor", async () => {
   vi.mocked(getVisualCanvas).mockResolvedValueOnce({
     project_id: "project-1",
+    edges: [],
     nodes: [
       {
         id: "video-1",

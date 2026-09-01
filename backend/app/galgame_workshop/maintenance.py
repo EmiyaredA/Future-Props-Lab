@@ -40,7 +40,7 @@ class GalgameMaintenance:
             project_id,
             GalgameStoryDocumentPutIn.model_validate(
                 {
-                    "expectedRevision": body.expected_story_revision,
+                    "expected_revision": body.expected_story_revision,
                     "document": payload,
                 }
             ),

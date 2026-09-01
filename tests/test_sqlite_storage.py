@@ -125,6 +125,8 @@ def test_existing_r0001_database_upgrades_without_rewriting_history(tmp_path: Pa
             ("r0034_realtime_tool_calls",),
             ("r0035_video_editor",),
             ("r0036_galgame_video_editor_handoffs",),
+            ("r0037_media_workshop_upgrade",),
+            ("r0038_media_workshop_tasks_and_audio",),
         ]
         assert connection.execute("SELECT COUNT(*) FROM model_test_conversations").fetchone() == (
             0,
@@ -378,8 +380,8 @@ def test_r0021_adds_senseaudio_asr_to_each_existing_workspace(tmp_path: Path) ->
             1,
         ),
     ]
-    assert revisions["default"] == default_revision + 3
-    assert revisions[workspace_id] == 6
+    assert revisions["default"] == default_revision + 4
+    assert revisions[workspace_id] == 7
     assert "transcript_segments" in metadata_columns
     assert "result_segments" in task_columns
     assert apply_migrations(database_path) == (
@@ -472,7 +474,7 @@ def test_r0030_adds_realtime_voice_and_clones_workspace_credentials(tmp_path: Pa
         '["end_to_end_speech"]',
     )
     assert all(row[1:] == expected_model for row in models)
-    assert revisions == {keyed_workspace: 8, empty_workspace: 5}
+    assert revisions == {keyed_workspace: 9, empty_workspace: 6}
     assert existing_model == ("existing-senseaudio-provider",)
     assert foreign_key_errors == []
 
@@ -544,7 +546,7 @@ def test_r0025_clones_existing_asr_credentials_and_enabled_state(tmp_path: Path)
         '["speech_recognition"]',
         '["speech_recognition"]',
     )
-    assert revision == before_revision + 2
+    assert revision == before_revision + 3
 
 
 def test_r0026_expands_transcription_storage_limit_and_preserves_tasks(tmp_path: Path) -> None:
@@ -929,11 +931,12 @@ def test_existing_default_catalog_is_extended_without_overwriting_user_data(
     ]
     assert "senseaudio-vl-1.0-260319" not in all_slugs
     assert len(all_slugs) == 15
-    assert revision == (12,)
+    assert revision == (13,)
     assert stored_categories == {
         "[]",
         '["speech_recognition"]',
         '["end_to_end_speech"]',
+        '["music_generation"]',
     }
 
     assert apply_migrations(database_path) == (
@@ -943,8 +946,8 @@ def test_existing_default_catalog_is_extended_without_overwriting_user_data(
     with connect_database(database_path) as connection:
         assert connection.execute(
             "SELECT revision FROM model_catalog_state WHERE id = 'default'"
-        ).fetchone() == (12,)
-        assert connection.execute("SELECT COUNT(*) FROM model_entries").fetchone() == (23,)
+        ).fetchone() == (13,)
+        assert connection.execute("SELECT COUNT(*) FROM model_entries").fetchone() == (25,)
 
 
 def test_catalog_upgrade_does_not_recreate_deleted_default_provider(tmp_path: Path) -> None:
@@ -965,13 +968,13 @@ def test_catalog_upgrade_does_not_recreate_deleted_default_provider(tmp_path: Pa
         assert connection.execute(
             "SELECT COUNT(*) FROM model_providers WHERE kind = 'senseaudio_asr'"
         ).fetchone() == (2,)
-        assert connection.execute("SELECT COUNT(*) FROM model_entries").fetchone() == (3,)
+        assert connection.execute("SELECT COUNT(*) FROM model_entries").fetchone() == (5,)
         assert connection.execute(
             "SELECT COUNT(*) FROM model_providers WHERE kind = 'senseaudio_realtime'"
         ).fetchone() == (1,)
         assert connection.execute(
             "SELECT revision FROM model_catalog_state WHERE id = 'default'"
-        ).fetchone() == (7,)
+        ).fetchone() == (8,)
 
 
 def test_r0007_upgrade_adds_visual_tasks_and_preserves_provider_credentials(

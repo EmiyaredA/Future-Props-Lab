@@ -31,8 +31,8 @@ from app.galgame_workshop.video_lip_sync import (
     LipSyncSchedule,
     build_lip_sync_schedule,
 )
+from app.media_rendering.contracts import RenderCaptureFrame, RenderPlan
 from app.schemas.video_editor import VideoEditorTimelineDocument
-from app.video_editor.render_plan import RenderCaptureFrame, RenderPlan
 
 COMPILER_VERSION = "galgame-render-plan-v3"
 FLOATING_TEXT_FONT_ASSET_ID = "galgame-floating-text-noto-sans-sc"

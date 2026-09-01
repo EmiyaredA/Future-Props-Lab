@@ -175,6 +175,7 @@ class GalgameVideoExportTaskOut(BaseModel):
     ending_label: str = Field(default="", alias="endingLabel")
     output_asset_id: str | None = Field(default=None, alias="outputAssetId")
     output_filename: str | None = Field(default=None, alias="outputFilename")
+    cancel_requested: bool = Field(alias="cancelRequested")
     error: str | None = None
     revision: int
     created_at: str = Field(alias="createdAt")

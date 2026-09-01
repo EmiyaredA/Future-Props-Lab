@@ -8,6 +8,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.concurrency.revisions import RevisionConflictError
 from app.core.time import iso_utc, utc_now
+from app.media_rendering.evaluator import timeline_duration_us, visual_gaps
+from app.media_rendering.presets import RENDER_PRESETS
 from app.models import VideoEditorAssetMetadata, VideoEditorTask, VideoEditorTimeline
 from app.schemas.video_editor import (
     VideoEditorRenderCreateIn,
@@ -19,15 +21,9 @@ from app.schemas.video_editor import (
     VideoEditorTimelineDocument,
 )
 from app.video_editor.errors import VideoEditorNotFoundError, VideoEditorValidationError
-from app.video_editor.evaluator import timeline_duration_us, visual_gaps
 from app.video_editor.projects import VideoEditorProjects
 
-PRESETS = {
-    "720p30": (1280, 720, 30),
-    "1080p30": (1920, 1080, 30),
-    "720p60": (1280, 720, 60),
-    "1080p60": (1920, 1080, 60),
-}
+PRESETS = RENDER_PRESETS
 
 
 def task_out(row: VideoEditorTask) -> VideoEditorTaskOut:
@@ -48,11 +44,12 @@ def task_out(row: VideoEditorTask) -> VideoEditorTaskOut:
 
 
 class VideoEditorRenders:
-    def __init__(self, session: AsyncSession) -> None:
+    def __init__(self, session: AsyncSession, workspace_id: str) -> None:
         self.session = session
+        self.workspace_id = workspace_id
 
     async def _timeline(self, project_id: str) -> VideoEditorTimeline:
-        await VideoEditorProjects(self.session).row(project_id)
+        await VideoEditorProjects(self.session, self.workspace_id).row(project_id)
         row = await self.session.get(VideoEditorTimeline, project_id)
         if row is None:
             raise VideoEditorNotFoundError("时间轴不存在")
@@ -162,6 +159,7 @@ class VideoEditorRenders:
             await self.session.execute(
                 select(VideoEditorTask).where(
                     VideoEditorTask.project_id == project_id,
+                    VideoEditorTask.workspace_id == self.workspace_id,
                     VideoEditorTask.request_id == body.request_id,
                 )
             )
@@ -181,6 +179,7 @@ class VideoEditorRenders:
             raise VideoEditorValidationError("预检结果已过期", code="preview_stale")
         timeline = await self._timeline(project_id)
         task = VideoEditorTask(
+            workspace_id=self.workspace_id,
             project_id=project_id,
             request_id=body.request_id,
             kind="render",
@@ -199,13 +198,14 @@ class VideoEditorRenders:
         return task_out(task)
 
     async def list(self, project_id: str) -> VideoEditorTaskListOut:
-        await VideoEditorProjects(self.session).row(project_id)
+        await VideoEditorProjects(self.session, self.workspace_id).row(project_id)
         rows = list(
             (
                 await self.session.execute(
                     select(VideoEditorTask)
                     .where(
                         VideoEditorTask.project_id == project_id,
+                        VideoEditorTask.workspace_id == self.workspace_id,
                         VideoEditorTask.kind == "render",
                     )
                     .order_by(VideoEditorTask.created_at.desc())
@@ -215,11 +215,13 @@ class VideoEditorRenders:
         return VideoEditorTaskListOut(items=[task_out(row) for row in rows])
 
     async def get(self, project_id: str, task_id: str) -> VideoEditorTaskOut:
+        await VideoEditorProjects(self.session, self.workspace_id).row(project_id)
         row = (
             await self.session.execute(
                 select(VideoEditorTask).where(
                     VideoEditorTask.id == task_id,
                     VideoEditorTask.project_id == project_id,
+                    VideoEditorTask.workspace_id == self.workspace_id,
                 )
             )
         ).scalar_one_or_none()
@@ -228,11 +230,13 @@ class VideoEditorRenders:
         return task_out(row)
 
     async def cancel(self, project_id: str, task_id: str) -> VideoEditorTaskOut:
+        await VideoEditorProjects(self.session, self.workspace_id).row(project_id)
         row = (
             await self.session.execute(
                 select(VideoEditorTask).where(
                     VideoEditorTask.id == task_id,
                     VideoEditorTask.project_id == project_id,
+                    VideoEditorTask.workspace_id == self.workspace_id,
                 )
             )
         ).scalar_one_or_none()

@@ -3,6 +3,8 @@ PROVIDER_DEFAULT_CATEGORIES: dict[str, tuple[str, ...]] = {
     "senseaudio_video": ("video_generation",),
     "senseaudio_asr": ("speech_recognition",),
     "senseaudio_realtime": ("end_to_end_speech",),
+    "senseaudio_music": ("music_generation",),
+    "senseaudio_sfx": ("music_generation",),
 }
 
 

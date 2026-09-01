@@ -18,22 +18,44 @@ class GenerationMaterializationError(Exception):
 
 def generated_type(head: bytes, content_type: str) -> tuple[str, str, str] | None:
     normalized_type = content_type.split(";", 1)[0].strip().lower()
+    accepted_types: set[str]
     if head.startswith(b"\x89PNG\r\n\x1a\n"):
         detected = ("image", "image/png", ".png")
+        accepted_types = {"image/png"}
     elif head.startswith(b"\xff\xd8\xff"):
         detected = ("image", "image/jpeg", ".jpg")
+        accepted_types = {"image/jpeg"}
     elif head.startswith(b"RIFF") and head[8:12] == b"WEBP":
         detected = ("image", "image/webp", ".webp")
+        accepted_types = {"image/webp"}
+    elif head.startswith(b"RIFF") and head[8:12] == b"WAVE":
+        detected = ("audio", "audio/wav", ".wav")
+        accepted_types = {"audio/wav", "audio/x-wav", "audio/wave"}
     elif head.startswith((b"GIF87a", b"GIF89a")):
         detected = ("image", "image/gif", ".gif")
+        accepted_types = {"image/gif"}
+    elif head.startswith(b"ID3") or (
+        len(head) >= 2 and head[0] == 0xFF and (head[1] & 0xE0) == 0xE0
+    ):
+        detected = ("audio", "audio/mpeg", ".mp3")
+        accepted_types = {"audio/mpeg", "audio/mp3"}
     elif b"ftyp" in head[4:16]:
-        mime = "video/quicktime" if normalized_type == "video/quicktime" else "video/mp4"
-        detected = ("video", mime, ".mov" if mime == "video/quicktime" else ".mp4")
+        if normalized_type in {"audio/mp4", "audio/x-m4a", "audio/m4a"}:
+            detected = ("audio", "audio/mp4", ".m4a")
+            accepted_types = {"audio/mp4", "audio/x-m4a", "audio/m4a"}
+        else:
+            mime = "video/quicktime" if normalized_type == "video/quicktime" else "video/mp4"
+            detected = ("video", mime, ".mov" if mime == "video/quicktime" else ".mp4")
+            accepted_types = {mime}
     elif head.startswith(b"\x1aE\xdf\xa3"):
         detected = ("video", "video/webm", ".webm")
+        accepted_types = {"video/webm"}
+    elif head.startswith(b"OggS"):
+        detected = ("audio", "audio/ogg", ".ogg")
+        accepted_types = {"audio/ogg", "application/ogg"}
     else:
         return None
-    return detected if normalized_type == detected[1] else None
+    return detected if normalized_type in accepted_types else None
 
 
 async def assert_public_https(url: str) -> None:
@@ -120,7 +142,7 @@ async def download_generated_media(
 
     detected = generated_type(bytes(head), content_type)
     if size == 0 or detected is None:
-        raise GenerationMaterializationError("生成结果不是受支持的图片或视频")
+        raise GenerationMaterializationError("生成结果不是受支持的图片、视频或音频")
     return size, *detected
 
 

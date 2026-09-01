@@ -1,8 +1,15 @@
-import { api, fetchApiJson, unwrap } from "@platform/api/client";
+import type { components } from "@generated/api";
+import {
+  api,
+  fetchApiDownload,
+  fetchApiJson,
+  unwrap,
+} from "@platform/api/client";
 import type {
   VideoEditorOperation,
   VideoEditorPreset,
   VideoEditorProject,
+  VideoEditorSegmentExportInput,
 } from "./types";
 
 export const listVideoEditorProjects = async () =>
@@ -39,6 +46,25 @@ export const deleteVideoEditorProject = async (project: VideoEditorProject) =>
     }),
   );
 
+export const exportVideoEditorProjectSnapshot = (projectId: string) =>
+  fetchApiDownload(
+    `/v1/video-editor/projects/${encodeURIComponent(projectId)}/snapshot`,
+  );
+
+export function importVideoEditorProjectSnapshot(file: File) {
+  const body = new FormData();
+  body.append("file", file);
+  return fetchApiJson<
+    components["schemas"]["VideoEditorProjectSnapshotImportOut"]
+  >("/v1/video-editor/projects/snapshot-imports", { method: "POST", body });
+}
+
+export const openVideoEditorProjectFolder = (projectId: string) =>
+  fetchApiJson<components["schemas"]["ProjectFolderOpenOut"]>(
+    `/v1/video-editor/projects/${encodeURIComponent(projectId)}/open-folder`,
+    { method: "POST" },
+  );
+
 export const getVideoEditorTimeline = async (projectId: string) =>
   unwrap(
     await api.GET("/v1/video-editor/projects/{project_id}/timeline", {
@@ -67,6 +93,19 @@ export const listVideoEditorAssets = async (projectId: string) =>
     await api.GET("/v1/video-editor/projects/{project_id}/assets", {
       params: { path: { project_id: projectId } },
     }),
+  );
+
+export const deleteVideoEditorAsset = async (
+  projectId: string,
+  assetId: string,
+) =>
+  unwrap(
+    await api.DELETE(
+      "/v1/video-editor/projects/{project_id}/assets/{asset_id}",
+      {
+        params: { path: { project_id: projectId, asset_id: assetId } },
+      },
+    ),
   );
 
 export const listVideoEditorImportSources = async () =>
@@ -137,6 +176,47 @@ export const cancelVideoEditorRender = async (
   unwrap(
     await api.POST(
       "/v1/video-editor/projects/{project_id}/renders/{task_id}/cancel",
+      { params: { path: { project_id: projectId, task_id: taskId } } },
+    ),
+  );
+
+export const createVideoEditorSegmentExport = async (
+  projectId: string,
+  body: Omit<VideoEditorSegmentExportInput, "requestId">,
+  requestId = crypto.randomUUID(),
+) =>
+  unwrap(
+    await api.POST("/v1/video-editor/projects/{project_id}/segment-exports", {
+      params: { path: { project_id: projectId } },
+      body: { ...body, requestId },
+    }),
+  );
+
+export const listVideoEditorSegmentExports = async (projectId: string) =>
+  unwrap(
+    await api.GET("/v1/video-editor/projects/{project_id}/segment-exports", {
+      params: { path: { project_id: projectId } },
+    }),
+  );
+
+export const getVideoEditorSegmentExport = async (
+  projectId: string,
+  taskId: string,
+) =>
+  unwrap(
+    await api.GET(
+      "/v1/video-editor/projects/{project_id}/segment-exports/{task_id}",
+      { params: { path: { project_id: projectId, task_id: taskId } } },
+    ),
+  );
+
+export const cancelVideoEditorSegmentExport = async (
+  projectId: string,
+  taskId: string,
+) =>
+  unwrap(
+    await api.POST(
+      "/v1/video-editor/projects/{project_id}/segment-exports/{task_id}/cancel",
       { params: { path: { project_id: projectId, task_id: taskId } } },
     ),
   );

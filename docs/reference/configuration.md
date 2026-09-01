@@ -2,7 +2,7 @@
 
 后端只读取 `backend/.env`，可从 `backend/.env.example` 创建。
 
-本轮架构整改没有新增环境变量。Workspace 由登录 Session 或 Management API Key 派生，后台任务从
+项目快照只新增容量和文件数安全上限。Workspace 由登录 Session 或 Management API Key 派生，后台任务从
 自身持久记录恢复归属，均不提供 `workspace_id` 环境变量或 `default` 回退。生成任务状态机也不需要
 独立 Worker 配置，仍由单进程应用生命周期管理。
 
@@ -12,6 +12,8 @@ Web 的 `VITE_API_BASE` 是执行 `npm run build` 时读取的构建变量，不
 - `FPL_DATABASE_PATH`：可选 SQLite 文件路径，默认 `.runtime/future-props.db`；相对路径以仓库根目录为准。
 - `FPL_VISUAL_ASSET_MAX_BYTES`：文件管理与项目素材的单文件上限，默认 `209715200`（200 MiB）。
 - `FPL_GALGAME_EXPORT_MAX_BYTES`：Galgame 导出 MP4 的单文件上限，默认 `8589934592`（8 GiB）。
+- `FPL_PROJECT_SNAPSHOT_MAX_BYTES`：项目快照上传体积、展开总量和导出声明总量上限，默认 `8589934592`（8 GiB）。
+- `FPL_PROJECT_SNAPSHOT_MAX_FILES`：项目快照最大文件数（含清单与项目 JSON），默认 `10000`。
 - `FPL_TEMP_MEDIA_UPLOAD_URL`：可选的视频生成参考音频/视频临时托管上传地址，默认留空。配置后必须是无凭证 HTTPS 地址；未配置时需要外传参考媒体的请求会在发起网络访问前返回明确配置错误。
 - `FPL_MCP_STDIO_ALLOWED_COMMANDS`：允许 MCP stdio 启动的绝对可执行文件路径，使用系统路径分隔符
   分隔多项；默认空，即完全禁用 stdio。命令解析后必须精确命中白名单，参数始终按数组传递且不使用 shell。

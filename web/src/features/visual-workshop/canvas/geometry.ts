@@ -6,15 +6,16 @@ export type NodeKind = VisualCanvasNode["kind"];
 export const DEFAULT_VIEWPORT: Viewport = { x: 0, y: 0, zoom: 1 };
 export const NODE_SIZE: Record<NodeKind, { width: number; height: number }> = {
   text: { width: 300, height: 180 },
-  image: { width: 480, height: 304 },
-  video: { width: 480, height: 304 },
-  audio: { width: 320, height: 150 },
+  image: { width: 320, height: 214 },
+  video: { width: 320, height: 214 },
+  audio: { width: 300, height: 132 },
 };
 export const ATTACHED_EDITOR_SIZE: Partial<
   Record<NodeKind, { width: number; height: number; gap: number }>
 > = {
-  image: { width: 760, height: 420, gap: 22 },
-  video: { width: 760, height: 460, gap: 22 },
+  image: { width: 980, height: 460, gap: 22 },
+  video: { width: 980, height: 500, gap: 22 },
+  audio: { width: 980, height: 450, gap: 22 },
 };
 export const NODE_DRAG_BLOCKER_SELECTOR = [
   "a",

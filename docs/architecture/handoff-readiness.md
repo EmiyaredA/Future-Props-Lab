@@ -31,7 +31,7 @@ Workspace 隔离，但不提供多实例部署、外置数据库、Bot、知识�
 | Node.js / npm | Node.js 24、npm 11+ | Web 构建、组件测试、工具脚本 |
 | Python | 3.11+；CI 同时覆盖 3.11 与 3.14 | FastAPI、任务执行器、迁移与后端测试 |
 | SQLite | 应用内置驱动 | `.runtime/future-props.db` 是单机真源，不支持直接运维写入 |
-| FFmpeg / FFprobe | 系统命令可用 | 视频导出、媒体探测；缺失时相关能力会明确失败 |
+| FFmpeg / FFprobe | 系统命令可用，并提供 H.264/libx264、AAC、PNG 编解码能力 | 视频导出、媒体探测；缺失时相关能力会明确失败 |
 | Chromium | 通过 Playwright 单独安装 | 仅 E2E；当前不承诺其他浏览器的完整自动化旅程 |
 | Git LFS | 3.7.1+；克隆后执行 `git lfs install` | 管理文档图片、固定字体和 VAD 资产 |
 | 模型供应商 | 网络和有效凭证按功能选配 | 确定性测试不调用真实供应商；交付方需另做凭证与配额验收 |
@@ -40,22 +40,28 @@ Workspace 隔离，但不提供多实例部署、外置数据库、Bot、知识�
 [`配置参考`](../reference/configuration.md)，部署步骤见
 [`生产部署`](../operations/production-deployment.md)。
 
+本次本机验收使用 FFmpeg 8.1.2 / FFprobe 8.1.2，并确认 `libx264`、`aac` 与 `png` 编码器可见；这只是
+已验证环境，不宣称未经测试的最低 FFmpeg 版本。接手机器可执行
+`ffmpeg -version`、`ffprobe -version` 和
+`ffmpeg -hide_banner -encoders | grep -E 'libx264|aac|png'` 检查同等能力。
+
 ## 迁移与兼容状态
 
-- 2026-08-29 本地只读检查显示 SQLite schema 已到
-  `r0036_galgame_video_editor_handoffs`，与当前 migration registry 一致。
+- 当前 migration registry 最新版本为 `r0038_media_workshop_tasks_and_audio`；交接前通过
+  `npm run db:migrate:check` 只读确认目标数据库处于同一连续前缀。
 - migration 只允许在 `db/migrations/versions/` 追加并登记，不得改写已登记版本、checksum 或
   `schema_migrations`。
 - Story 当前写入版本为 1.4；1.0–1.3 仅保留读取兼容。运行期 Story 固化必须使用受鉴权的迁移 API，
   流程见 [`Story 1.4 迁移运维`](../operations/story-migrations.md)。
-- 七批整改不新增数据库 migration，也不改变 HTTP、SSE、WebSocket 或 SQLite 契约。
+- 本轮架构整改不新增数据库 migration，也不改变既有业务 REST、SSE、WebSocket 或 SQLite 契约；
+  唯一协议层补充是 CORS 允许浏览器读取响应中的 `Content-Disposition`。
 
 ## 质量验收记录
 
-2026-08-29 七批整改最终验收：336 个后端测试、428 个 Web 测试和 22 条完整 Chromium E2E 全部
-通过；录音标注用例另以 3 个 worker 并行重复三轮通过，未增加测试超时。Python/Web lint、
-Python/Web format-check、OpenAPI stale-check、生产 Web build、LFS 指针完整性及数据库迁移状态检查
-同时通过。`architecture_size_baseline.json` 的 production/tests 均为空。测试过程未调用真实模型供应商。
+2026-08-30 架构整改最终验收：357 个后端测试、457 个 Web 测试和 23 条完整 Chromium E2E 全部
+通过。Python/Web lint、Python/Web format-check、OpenAPI stale-check、生产 Web build、r0038 数据库
+迁移状态、LFS 指针/对象完整性以及文档资产数量与聚合摘要检查同时通过。
+`architecture_size_baseline.json` 的 production/tests 均为空。测试过程未调用真实模型供应商。
 
 标准质量命令：
 
@@ -78,10 +84,12 @@ npm run test:e2e
 | HTTP 与租户 | `routes/` + `WorkspaceDep` | 客户端不提交 Workspace；跨空间 ID 按不存在处理 |
 | 文件输入与落盘 | `files.IncomingFile` + `AssetStorage` | 业务不依赖 FastAPI；写路径必须显式 Workspace |
 | 图片/视频后台任务 | `llm/generation_runtime/GenerationTaskDriver` | 短事务状态转换；网络在事务外；提交中断不重提 |
+| 确定性媒体渲染 | `media_rendering/` | Galgame 直接导出与视频剪辑共用契约；业务包不反向拥有渲染实现 |
+| Workspace 项目原语 | `concurrency/project_records.py` | 显式租户谓词和 revision CAS；不提交事务、不承载领域默认值 |
 | Story 1.4 校验 | `schemas/galgame_workshop/story_validation.py` | 角色、素材、国际化、时间轴、流程、表现层纯函数分层 |
 | Agent Harness | `agents/harness/phases.py` | 上下文、模型、提案、审批和执行阶段保持既有事件顺序 |
 | 广播剧导入 | `annotation_import_runner.py` 的阶段方法 | 预检、裁切、验收、落位、结算和补偿独立 |
-| Web 公共维护点 | feature query key、元数据 owner、Blob URL Hook | owner 外不复制缓存键、能力映射或对象 URL 生命周期 |
+| Web 公共维护点 | 项目库控制器、feature query key、元数据 owner、Blob URL Hook | owner 外不复制项目生命周期、缓存键、能力映射或对象 URL 生命周期 |
 | 源码尺寸 | 架构测试 + 空尺寸基线 | 生产与测试均无豁免，按语义拆分而非编号分片 |
 
 仍保留的兼容层只有明确的外部兼容：Story 1.0–1.3 读取/导入适配、默认 Workspace 的历史文件目录、
@@ -92,6 +100,11 @@ npm run test:e2e
 浏览器增加媒体设备旅程；确认全部演示素材的再分发授权；如未来引入多实例，再单独设计外部队列、
 PostgreSQL 和分布式任务认领。本次整改不提前引入这些范围。
 
+下一阶段尺寸技术债仅登记、不在本轮机械拆分：后端
+`schemas/galgame_workshop/blocks.py` 已到 700 行；Web 的 `files/AssetBrowser.tsx`、
+`models/catalog/ModelServicePage.tsx`、Galgame 编辑器若干控制器和模型测试面板处于 780–796 行区间。
+它们当前均通过硬上限且没有尺寸豁免；新增功能前应先按所属用例拆分，避免继续贴线上限增长。
+
 ## 演示数据与仓库素材边界
 
 `docs/assets/` 的图片和演示媒体用于文档或可复现内容制作，不是运行期用户数据；来源、许可证状态、
@@ -101,6 +114,8 @@ PostgreSQL 和分布式任务认领。本次整改不提前引入这些范围。
 
 当前分支的文档图片、固定字体和 VAD 运行资产已增量迁移到 Git LFS。迁移不改写既有历史，因此只能
 阻止后续提交继续膨胀，不能立即减小既有 Git 历史；旧提交中的二进制对象仍会随完整历史传输。
+交付声明统一为“仅限内部开发交接，未授予再分发许可”；仓库中存在文件或 LFS 对象不构成许可授予，
+本轮也不新增或推定根许可证。
 
 ## 已知限制
 
@@ -111,8 +126,9 @@ PostgreSQL 和分布式任务认领。本次整改不提前引入这些范围。
 
 ## 回滚与恢复
 
-每批均为独立 Git 提交，可从最后一批开始逆序回退并重新执行质量门禁。本轮没有 schema 变化；若应用尚未写入新业务数据，
-可直接恢复上一代码版本。任何可能写入数据库、任务状态或素材的升级，开始前都应先停止应用，并同时
+本轮在现有未提交改动之上实施，没有执行提交、rebase 或历史改写，因此不能假设每项整改已经对应独立
+Git 提交。交付方应先审阅差异并按自身发布流程形成可追踪变更。本轮没有 schema 变化；若应用尚未写入
+新业务数据，可通过已审核的版本发布流程恢复上一代码版本。任何可能写入数据库、任务状态或素材的升级，开始前都应先停止应用，并同时
 备份 SQLite 主文件以及 `workspaces/`、`profiles/`、`library/assets/`、`applications/`、
 `model-test/attachments/`、`model-test/references/` 和 `model-test/generated/`。
 

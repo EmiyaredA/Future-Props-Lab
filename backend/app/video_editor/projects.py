@@ -1,9 +1,13 @@
 from __future__ import annotations
 
-from sqlalchemy import delete, select, update
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.concurrency.revisions import require_revision_write
+from app.concurrency.project_records import (
+    delete_revisioned_project,
+    load_workspace_project,
+    patch_revisioned_project,
+)
 from app.core.config import get_settings
 from app.core.time import iso_utc, utc_now
 from app.files.project_transactions import creating_project_layout, deleting_project_layout
@@ -68,27 +72,27 @@ def default_timeline() -> dict:
 
 
 class VideoEditorProjects:
-    def __init__(self, session: AsyncSession, workspace_id: str | None = None) -> None:
+    def __init__(self, session: AsyncSession, workspace_id: str) -> None:
         self.session = session
         self.workspace_id = workspace_id
         self.storage = AssetStorage(get_settings())
 
-    def _required_workspace(self) -> str:
-        if not self.workspace_id:
-            raise ValueError("workspace_id is required for video editor file operations")
-        return self.workspace_id
-
     async def row(self, project_id: str) -> VideoEditorProject:
-        row = await self.session.get(VideoEditorProject, project_id)
-        if row is None:
-            raise VideoEditorNotFoundError("剪辑项目不存在")
-        return row
+        return await load_workspace_project(
+            self.session,
+            VideoEditorProject,
+            project_id,
+            self.workspace_id,
+            not_found=lambda: VideoEditorNotFoundError("剪辑项目不存在"),
+        )
 
     async def list(self) -> VideoEditorProjectListOut:
         rows = (
             (
                 await self.session.execute(
-                    select(VideoEditorProject).order_by(VideoEditorProject.updated_at.desc())
+                    select(VideoEditorProject)
+                    .where(VideoEditorProject.workspace_id == self.workspace_id)
+                    .order_by(VideoEditorProject.updated_at.desc())
                 )
             )
             .scalars()
@@ -100,7 +104,7 @@ class VideoEditorProjects:
         return project_out(await self.row(project_id))
 
     async def create(self, body: VideoEditorProjectCreateIn) -> VideoEditorProjectOut:
-        row = VideoEditorProject(title=body.title, status="draft")
+        row = VideoEditorProject(workspace_id=self.workspace_id, title=body.title, status="draft")
         self.session.add(row)
         await self.session.flush()
         async with creating_project_layout(
@@ -108,7 +112,7 @@ class VideoEditorProjects:
             self.storage,
             "video-editor",
             row.id,
-            workspace_id=self._required_workspace(),
+            workspace_id=self.workspace_id,
         ):
             self.session.add(VideoEditorTimeline(project_id=row.id, document=default_timeline()))
         await self.session.refresh(row)
@@ -126,18 +130,13 @@ class VideoEditorProjects:
             values["title"] = body.title
         if body.status is not None:
             values["status"] = body.status
-        result = await self.session.execute(
-            update(VideoEditorProject)
-            .where(
-                VideoEditorProject.id == project_id,
-                VideoEditorProject.revision == body.expected_revision,
-            )
-            .values(**values)
-        )
-        await require_revision_write(
+        await patch_revisioned_project(
             self.session,
-            result,
-            expected=body.expected_revision,
+            VideoEditorProject,
+            project_id,
+            self.workspace_id,
+            expected_revision=body.expected_revision,
+            values=values,
             load_current=lambda: self.get(project_id),
         )
         await self.session.commit()
@@ -164,18 +163,14 @@ class VideoEditorProjects:
             self.storage,
             "video-editor",
             project_id,
-            workspace_id=self._required_workspace(),
+            workspace_id=self.workspace_id,
             legacy_paths=legacy,
         ):
-            result = await self.session.execute(
-                delete(VideoEditorProject).where(
-                    VideoEditorProject.id == project_id,
-                    VideoEditorProject.revision == expected_revision,
-                )
-            )
-            await require_revision_write(
+            await delete_revisioned_project(
                 self.session,
-                result,
-                expected=expected_revision,
+                VideoEditorProject,
+                project_id,
+                self.workspace_id,
+                expected_revision=expected_revision,
                 load_current=lambda: self.get(project_id),
             )

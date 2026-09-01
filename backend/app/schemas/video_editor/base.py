@@ -4,6 +4,8 @@ from typing import Literal
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
+from app.schemas.project_snapshots import ProjectSnapshotImportWarning
+
 VideoEditorPreset = Literal["720p30", "1080p30", "720p60", "1080p60"]
 VideoEditorTaskStatus = Literal["queued", "running", "completed", "failed", "cancelled"]
 
@@ -48,6 +50,11 @@ class VideoEditorProjectOut(BaseModel):
 
 class VideoEditorProjectListOut(BaseModel):
     items: list[VideoEditorProjectOut]
+
+
+class VideoEditorProjectSnapshotImportOut(BaseModel):
+    project: VideoEditorProjectOut
+    warnings: list[ProjectSnapshotImportWarning] = Field(default_factory=list)
 
 
 class VideoEditorAssetImportIn(BaseModel):
@@ -127,11 +134,62 @@ class VideoEditorRenderPreviewOut(BaseModel):
     warnings: list[VideoEditorRenderIssue] = Field(default_factory=list)
 
 
+class VideoEditorSegmentExportTarget(BaseModel):
+    project_id: str | None = Field(default=None, alias="projectId", min_length=1, max_length=64)
+    new_project_title: str | None = Field(
+        default=None, alias="newProjectTitle", min_length=1, max_length=120
+    )
+
+    @model_validator(mode="after")
+    def exactly_one_target(self) -> VideoEditorSegmentExportTarget:
+        if (self.project_id is None) == (self.new_project_title is None):
+            raise ValueError("必须选择已有工作坊项目或填写新项目名称")
+        if self.new_project_title is not None:
+            self.new_project_title = self.new_project_title.strip()
+            if not self.new_project_title:
+                raise ValueError("新项目名称不能为空")
+        return self
+
+
+class VideoEditorSegmentExportItem(BaseModel):
+    clip_id: str = Field(alias="clipId", min_length=1, max_length=64)
+    name: str = Field(min_length=1, max_length=120)
+    resolution: Literal["source", "720p", "1080p"] = "source"
+    fps: Literal["source", 30, 60] = "source"
+    quality: Literal["high", "balanced", "small"] = "balanced"
+    audio_mode: Literal["keep", "mute"] = Field(default="keep", alias="audioMode")
+
+    @field_validator("name")
+    @classmethod
+    def clean_name(cls, value: str) -> str:
+        cleaned = value.strip()
+        if not cleaned:
+            raise ValueError("分段名称不能为空")
+        return cleaned
+
+
+class VideoEditorSegmentExportCreateIn(BaseModel):
+    expected_revision: int = Field(alias="expectedRevision", ge=0)
+    request_id: str = Field(alias="requestId", min_length=8, max_length=64)
+    target: VideoEditorSegmentExportTarget
+    segments: list[VideoEditorSegmentExportItem] = Field(min_length=1, max_length=100)
+
+    @field_validator("segments")
+    @classmethod
+    def unique_segments(
+        cls, value: list[VideoEditorSegmentExportItem]
+    ) -> list[VideoEditorSegmentExportItem]:
+        clip_ids = [item.clip_id for item in value]
+        if len(clip_ids) != len(set(clip_ids)):
+            raise ValueError("同一 Clip 不能重复导出")
+        return value
+
+
 class VideoEditorTaskOut(BaseModel):
     id: str
     project_id: str = Field(alias="projectId")
     request_id: str = Field(alias="requestId")
-    kind: Literal["media", "render"]
+    kind: Literal["media", "render", "segment_export"]
     status: VideoEditorTaskStatus
     progress: int = Field(ge=0, le=100)
     output_asset_id: str | None = Field(default=None, alias="outputAssetId")

@@ -287,6 +287,77 @@ def test_backend_avoids_generic_abstract_layer_directories() -> None:
     assert not violations, "请按具体能力命名后端目录：\n" + "\n".join(violations)
 
 
+def test_models_do_not_depend_on_runtime_core() -> None:
+    violations = [
+        f"{_relative(path)} imports {module}"
+        for path in _python_files(BACKEND_APP / "models")
+        for module in _python_imports(path)
+        if _matches_module(module, "app.core")
+    ]
+    assert not violations, "ORM 模型不得反向依赖运行时 core：\n" + "\n".join(violations)
+
+
+def test_backend_production_packages_have_no_dependency_cycles() -> None:
+    packages = {
+        path.name
+        for path in BACKEND_APP.iterdir()
+        if path.is_dir() and path.name != "routes" and (path / "__init__.py").is_file()
+    }
+    graph: dict[str, set[str]] = {package: set() for package in packages}
+    for package in packages:
+        for path in _python_files(BACKEND_APP / package):
+            for module in _python_imports(path):
+                parts = module.split(".")
+                if len(parts) >= 2 and parts[0] == "app" and parts[1] in packages:
+                    target = parts[1]
+                    if target != package:
+                        graph[package].add(target)
+
+    visiting: list[str] = []
+    visited: set[str] = set()
+    cycles: set[tuple[str, ...]] = set()
+
+    def visit(package: str) -> None:
+        if package in visited:
+            return
+        if package in visiting:
+            start = visiting.index(package)
+            cycles.add(tuple(visiting[start:] + [package]))
+            return
+        visiting.append(package)
+        for target in sorted(graph[package]):
+            visit(target)
+        visiting.pop()
+        visited.add(package)
+
+    for package in sorted(packages):
+        visit(package)
+    assert not cycles, "后端生产包不得形成强依赖环：\n" + "\n".join(
+        " -> ".join(cycle) for cycle in sorted(cycles)
+    )
+
+
+def test_media_rendering_and_galgame_keep_feature_boundaries() -> None:
+    shared_violations = [
+        f"{_relative(path)} imports {module}"
+        for path in _python_files(BACKEND_APP / "media_rendering")
+        for module in _python_imports(path)
+        if _matches_module(module, "app.video_editor")
+        or _matches_module(module, "app.galgame_workshop")
+    ]
+    galgame_violations = [
+        f"{_relative(path)} imports {module}"
+        for path in _python_files(BACKEND_APP / "galgame_workshop")
+        if path.name not in {"video_handoff.py", "video_handoff_runner.py"}
+        for module in _python_imports(path)
+        if _matches_module(module, "app.video_editor")
+    ]
+    violations = shared_violations + galgame_violations
+    assert not violations, "共享渲染和 Galgame 直接导出不得依赖视频编辑器实现：\n" + "\n".join(
+        violations
+    )
+
+
 def test_agent_harness_is_provider_independent() -> None:
     violations = [
         f"{_relative(path)} imports {module}"
@@ -538,6 +609,7 @@ def test_documented_core_directories_exist() -> None:
         "backend/app/core",
         "backend/app/files",
         "backend/app/llm",
+        "backend/app/media_rendering",
         "backend/app/models",
         "backend/app/routes",
         "backend/app/schemas",
@@ -561,6 +633,23 @@ def test_documented_core_directories_exist() -> None:
     )
     missing = [path for path in required if not (REPO_ROOT / path).is_dir()]
     assert not missing, "项目结构文档声明的核心目录缺失：\n" + "\n".join(missing)
+
+
+def test_delivery_docs_match_current_migration_and_three_workshops() -> None:
+    from db.migrations.registry import LATEST_MIGRATION_ID
+
+    handoff = (REPO_ROOT / "docs" / "architecture" / "handoff-readiness.md").read_text(
+        encoding="utf-8"
+    )
+    layout = (REPO_ROOT / "docs" / "architecture" / "project-layout.md").read_text(encoding="utf-8")
+    guide = (WEB_SRC / "docs" / "content.ts").read_text(encoding="utf-8")
+    assert LATEST_MIGRATION_ID in handoff
+    assert "双工坊" not in layout + guide
+    assert all(workshop in guide for workshop in ("视觉创作工坊", "Galgame 工坊", "视频剪辑工坊"))
+    assert all(
+        (REPO_ROOT / "web" / "public" / "docs" / filename).is_file()
+        for filename in ("video-editor-projects.jpg", "video-editor-timeline.jpg")
+    )
 
 
 def test_galgame_protocol_and_schema_modules_stay_split() -> None:

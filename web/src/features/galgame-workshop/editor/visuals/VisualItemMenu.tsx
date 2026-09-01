@@ -1,14 +1,19 @@
+import { useLayoutEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import {
   Check,
   Copy,
+  Download,
   Eye,
   FolderOpen,
+  LoaderCircle,
   Pencil,
   Trash2,
   Undo2,
 } from "lucide-react";
 import type { useVisualWorkspaceController } from "@features/galgame-workshop/editor/useVisualWorkspaceController";
+import { visualMenuPosition } from "@features/galgame-workshop/editor/visuals/model";
+import { fetchApiDownload } from "@platform/api/client";
 
 type VisualWorkspaceViewModel = ReturnType<typeof useVisualWorkspaceController>;
 
@@ -26,7 +31,75 @@ export function VisualItemMenu({ model }: { model: VisualWorkspaceViewModel }) {
     duplicateVisual,
     menuReferences,
     removeVisual,
+    selection,
+    selectedLayer,
+    selectedVariant,
+    assetsById,
+    onNotice,
   } = model;
+  const [position, setPosition] = useState<{
+    key: string;
+    left: number;
+    top: number;
+  }>();
+  const [downloadingFileId, setDownloadingFileId] = useState<string>();
+  const menuKey = itemMenu ? `${itemMenu.item.kind}:${itemMenu.item.id}` : "";
+  const menuAssetId = menuScene
+    ? (selection?.kind === "scene" && selection.id === menuScene.id
+        ? selectedLayer
+        : menuScene.layers?.[0]
+      )?.assetId
+    : menuCg
+      ? (selection?.kind === "cg" && selection.id === menuCg.id
+          ? selectedVariant
+          : ((menuCg.variants ?? []).find(
+              (variant) => variant.id === menuCg.defaultVariantId,
+            ) ?? menuCg.variants?.[0])
+        )?.assetId
+      : undefined;
+  const menuFileId = assetsById.get(menuAssetId ?? "")?.fileId;
+
+  useLayoutEffect(() => {
+    if (!itemMenu || !menuRef.current) return;
+    const next = visualMenuPosition(
+      itemMenu.trigger.getBoundingClientRect(),
+      menuRef.current.getBoundingClientRect(),
+      { width: window.innerWidth, height: window.innerHeight },
+    );
+    setPosition({ key: menuKey, ...next });
+  }, [itemMenu, menuKey, menuRef]);
+
+  const downloadImage = async () => {
+    if (!menuFileId || downloadingFileId) return;
+    const downloadMenuKey = menuKey;
+    setDownloadingFileId(menuFileId);
+    try {
+      const download = await fetchApiDownload(
+        `/v1/files/${encodeURIComponent(menuFileId)}/download`,
+      );
+      const url = URL.createObjectURL(download.blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download =
+        download.filename ??
+        `${(menuScene?.name ?? menuCg?.name ?? "图片").replace(/[\\/]/g, "-")}.png`;
+      try {
+        anchor.click();
+      } finally {
+        URL.revokeObjectURL(url);
+      }
+      setItemMenu((current) =>
+        current && `${current.item.kind}:${current.item.id}` === downloadMenuKey
+          ? undefined
+          : current,
+      );
+    } catch (error) {
+      onNotice(error instanceof Error ? error.message : "下载失败，请重试。");
+    } finally {
+      setDownloadingFileId(undefined);
+    }
+  };
+
   return (
     <>
       {itemMenu && (menuScene || menuCg)
@@ -37,7 +110,11 @@ export function VisualItemMenu({ model }: { model: VisualWorkspaceViewModel }) {
               className="galgame-visual-item-menu"
               role="menu"
               aria-label={`${menuScene?.name ?? menuCg?.name} 操作`}
-              style={{ left: itemMenu.left, top: itemMenu.top }}
+              style={
+                position?.key === menuKey
+                  ? { left: position.left, top: position.top }
+                  : { left: 0, top: 0, visibility: "hidden" }
+              }
             >
               <button
                 type="button"
@@ -49,6 +126,20 @@ export function VisualItemMenu({ model }: { model: VisualWorkspaceViewModel }) {
               >
                 <Eye aria-hidden />
                 打开{menuScene ? "场景" : " CG"}
+              </button>
+              <button
+                type="button"
+                role="menuitem"
+                disabled={!menuFileId || Boolean(downloadingFileId)}
+                title={menuFileId ? undefined : "当前资源没有可下载的图片。"}
+                onClick={() => void downloadImage()}
+              >
+                {downloadingFileId ? (
+                  <LoaderCircle aria-hidden />
+                ) : (
+                  <Download aria-hidden />
+                )}
+                {downloadingFileId ? "下载中…" : "下载图片"}
               </button>
               <button
                 type="button"
@@ -146,7 +237,8 @@ export function VisualItemMenu({ model }: { model: VisualWorkspaceViewModel }) {
                 删除{menuScene ? "场景" : " CG"}
               </button>
             </div>,
-            globalThis.document.body,
+            itemMenu.trigger.closest(".galgame-editor-page") ??
+              globalThis.document.body,
           )
         : null}
     </>

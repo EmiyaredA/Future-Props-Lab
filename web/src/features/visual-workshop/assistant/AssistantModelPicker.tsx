@@ -56,14 +56,16 @@ export function AssistantModelPicker({
   const models = useMemo<AgentConfigModel[]>(
     () => [
       ...textModels.map((model) => ({ ...model, kind: "text" as const })),
-      ...(generationOptions?.models ?? []).map((model) => ({
-        ...model,
-        kind: model.kind,
-        capabilities:
-          model.kind === "image"
-            ? ["image_generation", ...(model.sizes?.length ? ["sizes"] : [])]
-            : ["video_generation"],
-      })),
+      ...(generationOptions?.models ?? [])
+        .filter((model) => model.kind !== "audio")
+        .map((model) => ({
+          ...model,
+          kind: model.kind as "image" | "video",
+          capabilities:
+            model.kind === "image"
+              ? ["image_generation", ...(model.sizes?.length ? ["sizes"] : [])]
+              : ["video_generation"],
+        })),
     ],
     [generationOptions?.models, textModels],
   );

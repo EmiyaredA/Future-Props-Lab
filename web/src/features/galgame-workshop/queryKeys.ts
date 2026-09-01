@@ -15,6 +15,8 @@ export const galgameQueryKeys = {
     ["galgame-asset-overview", projectId] as const,
   packageManifest: (projectId: string) =>
     ["galgame-package-manifest", projectId] as const,
+  videoExports: (projectId: string) =>
+    ["galgame-video-exports", projectId] as const,
 };
 
 export function invalidateGalgameAssetQueries(

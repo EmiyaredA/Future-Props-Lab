@@ -154,6 +154,44 @@
   width: 16px;
 }
 
+.workshop-page-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.workshop-secondary {
+  min-height: 40px;
+  padding: 0 15px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface-raised, var(--bg));
+  color: var(--text-strong);
+  font-weight: 700;
+}
+
+.workshop-secondary:hover:not(:disabled) {
+  border-color: var(--accent-line);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.workshop-secondary svg {
+  width: 16px;
+}
+
+.project-snapshot-file-input {
+  position: fixed;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
 .workshop-toolbar {
   margin-bottom: 20px;
   display: grid;

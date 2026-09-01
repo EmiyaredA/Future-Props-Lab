@@ -127,6 +127,7 @@ async def test_video_export_preview_select_create_idempotency_and_cancel() -> No
         )
         assert cancelled.status_code == 200
         assert cancelled.json()["status"] == "cancelled"
+        assert cancelled.json()["cancelRequested"] is True
 
 
 @pytest.mark.asyncio

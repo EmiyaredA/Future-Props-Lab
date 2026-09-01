@@ -13,6 +13,7 @@ from app.core.db import SessionLocal
 from app.core.tenant_context import bind_workspace, require_workspace_id
 from app.core.time import utc_now
 from app.files.library import AssetLibrary
+from app.files.policy import VIDEO_EDITABLE_EXTENSIONS
 from app.files.storage import AssetStorage
 from app.galgame_workshop.video_compiler import (
     COMPILER_VERSION,
@@ -31,7 +32,6 @@ from app.models import (
     VideoEditorTimeline,
     VisualAsset,
 )
-from app.video_editor.media import VIDEO_EDITOR_EXTENSIONS
 
 
 class GalgameVideoEditorHandoffRunner(PollingTaskRunner):
@@ -282,7 +282,7 @@ class GalgameVideoEditorHandoffRunner(PollingTaskRunner):
                         filename=filename,
                         content_type=content_type,
                         video_editor_project_id=created_project_id,
-                        allowed_extensions=VIDEO_EDITOR_EXTENSIONS,
+                        allowed_extensions=VIDEO_EDITABLE_EXTENSIONS,
                     )
                     try:
                         session.add(

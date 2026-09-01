@@ -1,15 +1,19 @@
 import { useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { apiErrorMessage } from "@platform/api/errors";
+import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
 import {
   FilePlus2,
   Image,
   Library,
   Music2,
+  Trash2,
   Type,
   Upload,
   Video,
 } from "lucide-react";
 import {
+  deleteVideoEditorAsset,
   importVideoEditorAssets,
   listVideoEditorImportSources,
   uploadVideoEditorAsset,
@@ -41,6 +45,8 @@ export function VideoEditorAssetPanel({
   const client = useQueryClient();
   const [showImport, setShowImport] = useState(false);
   const [chosen, setChosen] = useState<string[]>([]);
+  const [deleting, setDeleting] = useState<VideoEditorAsset>();
+  const [deleteError, setDeleteError] = useState("");
   const sources = useQuery({
     queryKey: videoEditorQueryKeys.importSources,
     queryFn: listVideoEditorImportSources,
@@ -62,6 +68,21 @@ export function VideoEditorAssetPanel({
       refresh();
     },
   });
+  const remove = useMutation({
+    mutationFn: (assetId: string) => deleteVideoEditorAsset(projectId, assetId),
+    onSuccess: () => {
+      setDeleting(undefined);
+      setDeleteError("");
+      refresh();
+    },
+    onError: (error) => {
+      setDeleteError(apiErrorMessage(error, "素材删除失败，请稍后重试。"));
+    },
+  });
+  const requestDelete = (asset: VideoEditorAsset) => {
+    setDeleteError("");
+    setDeleting(asset);
+  };
   return (
     <aside className="ve-assets-panel">
       <header>
@@ -98,37 +119,65 @@ export function VideoEditorAssetPanel({
       <div className="ve-assets-list">
         {assets.map((asset) => {
           const Icon = iconFor(asset.mediaKind);
+          const ready = asset.processingStatus === "ready";
+          const processing = ["queued", "processing"].includes(
+            asset.processingStatus,
+          );
           return (
-            <button
+            <div
               key={asset.id}
               className="ve-asset"
-              disabled={asset.processingStatus !== "ready"}
-              draggable={asset.processingStatus === "ready"}
+              draggable={ready}
               onDragStart={(event) =>
                 event.dataTransfer.setData(
                   "application/x-video-editor-asset",
                   asset.id,
                 )
               }
-              onDoubleClick={() => onAdd(asset)}
             >
-              {asset.thumbnailUrl ? (
-                <img src={asset.thumbnailUrl} alt="" />
-              ) : (
-                <span>
-                  <Icon aria-hidden />
+              <button
+                type="button"
+                className="ve-asset-main"
+                disabled={!ready}
+                aria-label={`双击将“${asset.displayName}”添加到时间轴`}
+                onDoubleClick={() => onAdd(asset)}
+              >
+                {asset.thumbnailUrl ? (
+                  <img src={asset.thumbnailUrl} alt="" />
+                ) : (
+                  <span>
+                    <Icon aria-hidden />
+                  </span>
+                )}
+                <span className="ve-asset-copy">
+                  <strong>{asset.displayName}</strong>
+                  <small>
+                    {ready ? asset.mediaKind : asset.processingStatus}
+                  </small>
                 </span>
-              )}
-              <div>
-                <strong>{asset.displayName}</strong>
-                <small>
-                  {asset.processingStatus === "ready"
-                    ? asset.mediaKind
-                    : asset.processingStatus}
-                </small>
+              </button>
+              <div className="ve-asset-controls">
+                <button
+                  type="button"
+                  disabled={!ready}
+                  aria-label={`将“${asset.displayName}”添加到时间轴`}
+                  title="添加到时间轴"
+                  onClick={() => onAdd(asset)}
+                >
+                  <FilePlus2 aria-hidden />
+                </button>
+                <button
+                  type="button"
+                  className="ve-asset-delete"
+                  disabled={processing}
+                  aria-label={`删除素材“${asset.displayName}”`}
+                  title={processing ? "素材处理中，完成后可删除" : "删除素材"}
+                  onClick={() => requestDelete(asset)}
+                >
+                  <Trash2 aria-hidden />
+                </button>
               </div>
-              <FilePlus2 aria-label="添加到时间轴" />
-            </button>
+            </div>
           );
         })}
       </div>
@@ -175,6 +224,29 @@ export function VideoEditorAssetPanel({
           </section>
         </div>
       ) : null}
+      <ConfirmDialog
+        open={Boolean(deleting)}
+        title={deleting ? `删除“${deleting.displayName}”？` : "删除素材？"}
+        description={
+          <>
+            <span>删除后将清理该项目中的源文件，且无法撤销。</span>
+            {deleteError ? (
+              <strong className="ve-asset-delete-error" role="alert">
+                {deleteError}
+              </strong>
+            ) : null}
+          </>
+        }
+        confirmLabel="确认删除"
+        pending={remove.isPending}
+        onCancel={() => {
+          setDeleting(undefined);
+          setDeleteError("");
+        }}
+        onConfirm={() => {
+          if (deleting) remove.mutate(deleting.id);
+        }}
+      />
     </aside>
   );
 }

@@ -1,82 +1,20 @@
 from __future__ import annotations
 
-import io
 import os
-import subprocess
-from functools import lru_cache
-from pathlib import Path
 
-from PIL import Image
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.concurrency.revisions import RevisionConflictError
 from app.core.config import get_settings
 from app.files.storage import AssetStorage
+from app.media_rendering.contracts import RenderCaptureFrame, RenderPlan
+from app.media_rendering.evaluator import timeline_duration_us
+from app.media_rendering.frame_renderer import render_plan_frame
 from app.models import VideoEditorTimeline, VisualAsset
-from app.schemas.video_editor import VideoEditorClip, VideoEditorTimelineDocument
+from app.schemas.video_editor import VideoEditorTimelineDocument
 from app.video_editor.errors import VideoEditorNotFoundError, VideoEditorValidationError
-from app.video_editor.evaluator import FrameSource, TimelineFrameRenderer, timeline_duration_us
 from app.video_editor.projects import VideoEditorProjects
-from app.video_editor.render_plan import RenderPlan
-
-
-def _extract_video_frame(path: Path, source_us: int) -> Image.Image:
-    result = subprocess.run(
-        [
-            "ffmpeg",
-            "-hide_banner",
-            "-loglevel",
-            "error",
-            "-ss",
-            f"{source_us / 1_000_000:.6f}",
-            "-i",
-            str(path),
-            "-frames:v",
-            "1",
-            "-f",
-            "image2pipe",
-            "-vcodec",
-            "png",
-            "pipe:1",
-        ],
-        check=True,
-        capture_output=True,
-    )
-    return Image.open(io.BytesIO(result.stdout)).convert("RGBA")
-
-
-@lru_cache(maxsize=64)
-def _load_image(path: str) -> Image.Image:
-    with Image.open(path) as source:
-        return source.convert("RGBA")
-
-
-def render_plan_frame(plan: RenderPlan, *, time_us: int, width: int = 960) -> bytes:
-    def image_for_clip(clip: VideoEditorClip, local_us: int) -> Image.Image | None:
-        path = plan.asset_paths.get(clip.asset_id or "")
-        if path is None:
-            return None
-        if clip.kind == "video":
-            return _extract_video_frame(path, clip.source_in_us + local_us)
-        if clip.kind == "image":
-            return _load_image(str(path)).copy()
-        return None
-
-    frame = TimelineFrameRenderer(
-        plan.document,
-        FrameSource(
-            image_for_clip=image_for_clip,
-            font_for_clip=lambda clip: plan.asset_paths.get(clip.font_asset_id or ""),
-        ),
-    ).render(time_us)
-    capture = plan.capture_frame
-    frame = frame.crop(
-        (capture.x, capture.y, capture.x + capture.width, capture.y + capture.height)
-    ).resize((width, width * 9 // 16), Image.Resampling.LANCZOS)
-    output = io.BytesIO()
-    frame.save(output, format="PNG", optimize=False)
-    return output.getvalue()
 
 
 class VideoEditorFrames:
@@ -93,7 +31,7 @@ class VideoEditorFrames:
         time_us: int,
         width: int = 960,
     ) -> bytes:
-        await VideoEditorProjects(self.session).row(project_id)
+        await VideoEditorProjects(self.session, self.workspace_id).row(project_id)
         timeline = await self.session.get(VideoEditorTimeline, project_id)
         if timeline is None:
             raise VideoEditorNotFoundError("时间轴不存在")
@@ -136,26 +74,18 @@ class VideoEditorFrames:
         )
         paths = {asset.id: self.storage.path_for(asset) for asset in assets}
 
-        def image_for_clip(clip: VideoEditorClip, local_us: int) -> Image.Image | None:
-            path = paths.get(clip.asset_id or "")
-            if path is None:
-                return None
-            if clip.kind == "video":
-                return _extract_video_frame(path, clip.source_in_us + local_us)
-            if clip.kind == "image":
-                return _load_image(str(path)).copy()
-            return None
-
-        frame = TimelineFrameRenderer(
-            document,
-            FrameSource(
-                image_for_clip=image_for_clip,
-                font_for_clip=lambda clip: paths.get(clip.font_asset_id or ""),
+        payload = render_plan_frame(
+            RenderPlan(
+                document=document,
+                asset_paths=paths,
+                capture_frame=RenderCaptureFrame(
+                    width=document.settings.width,
+                    height=document.settings.height,
+                ),
             ),
-        ).render(time_us, size=(width, width * 9 // 16))
-        output = io.BytesIO()
-        frame.save(output, format="PNG", optimize=False)
-        payload = output.getvalue()
+            time_us=time_us,
+            width=width,
+        )
         temporary = cache.with_suffix(f".{os.getpid()}.tmp")
         try:
             temporary.write_bytes(payload)

@@ -168,7 +168,7 @@ button.galgame-visual-browser-open {
 
 .galgame-visual-item-menu > button:hover,
 .galgame-visual-item-menu > button:focus-visible {
-  background: var(--gal-soft);
+  background: var(--gal-s-strong);
   outline: none;
 }
 

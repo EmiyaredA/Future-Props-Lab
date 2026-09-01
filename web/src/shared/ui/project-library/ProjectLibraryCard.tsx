@@ -17,7 +17,7 @@ export function ProjectLibraryCard({
   children,
 }: {
   project: ProjectLibraryItem;
-  cover: "canvas" | "galgame";
+  cover: "canvas" | "galgame" | "video";
   coverTitle: string;
   coverDescription: string;
   onOpen: () => void;

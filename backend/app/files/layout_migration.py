@@ -83,6 +83,36 @@ async def reconcile_project_trash(session: AsyncSession, storage: AssetStorage) 
                 shutil.rmtree(staged_path, ignore_errors=True)
 
 
+async def reconcile_snapshot_imports(session: AsyncSession, storage: AssetStorage) -> None:
+    """完成或清理进程中断的项目快照导入。"""
+    project_models = {
+        "visual-workshop": VisualWorkshopProject,
+        "galgame-workshop": GalgameWorkshopProject,
+        "video-editor": VideoEditorProject,
+    }
+    markers = list(storage.settings.applications_path.glob("*/projects/*/.snapshot-importing"))
+    workspaces_root = storage.settings.runtime_path / "workspaces"
+    if workspaces_root.is_dir():
+        markers.extend(workspaces_root.glob("*/applications/*/projects/*/.snapshot-importing"))
+    for marker in markers:
+        project_root = marker.parent
+        application_id = project_root.parent.parent.name
+        model = project_models.get(application_id)
+        if model is None:
+            continue
+        workspace_id = (
+            project_root.parents[3].name
+            if project_root.parents[2].name == "applications"
+            and project_root.parents[3].parent.name == "workspaces"
+            else "default"
+        )
+        row = await session.get(model, project_root.name)
+        if row is not None and row.workspace_id == workspace_id:
+            marker.unlink(missing_ok=True)
+        else:
+            shutil.rmtree(project_root, ignore_errors=True)
+
+
 def _copy_verified(source: Path, target: Path, expected_size: int) -> None:
     shutil.copyfile(source, target)
     if source.stat().st_size != expected_size or target.stat().st_size != expected_size:

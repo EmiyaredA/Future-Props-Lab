@@ -32,6 +32,8 @@ class Settings(BaseSettings):
     fpl_skill_archive_max_bytes: int = 10 * 1024 * 1024
     fpl_skill_expanded_max_bytes: int = 50 * 1024 * 1024
     fpl_skill_max_files: int = 500
+    fpl_project_snapshot_max_bytes: int = 8 * 1024 * 1024 * 1024
+    fpl_project_snapshot_max_files: int = 10_000
 
     @model_validator(mode="after")
     def validate_security(self) -> Settings:
@@ -57,6 +59,8 @@ class Settings(BaseSettings):
             < 1
         ):
             raise ValueError("Skill archive limits must be positive")
+        if min(self.fpl_project_snapshot_max_bytes, self.fpl_project_snapshot_max_files) < 1:
+            raise ValueError("Project snapshot limits must be positive")
         allowed_commands = [
             item.strip()
             for item in self.fpl_mcp_stdio_allowed_commands.split(os.pathsep)

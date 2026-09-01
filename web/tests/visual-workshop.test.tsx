@@ -6,7 +6,10 @@ import { VisualWorkshopProjectsPage } from "@features/visual-workshop/projects";
 import {
   createVisualWorkshopProject,
   deleteVisualWorkshopProject,
+  exportVisualWorkshopProjectSnapshot,
   getVisualWorkshopProjects,
+  importVisualWorkshopProjectSnapshot,
+  openVisualWorkshopProjectFolder,
   patchVisualWorkshopProject,
 } from "@features/visual-workshop/api";
 
@@ -18,7 +21,10 @@ vi.mock("@features/visual-workshop/api", async () => {
     ...actual,
     createVisualWorkshopProject: vi.fn(),
     deleteVisualWorkshopProject: vi.fn(),
+    exportVisualWorkshopProjectSnapshot: vi.fn(),
     getVisualWorkshopProjects: vi.fn(),
+    importVisualWorkshopProjectSnapshot: vi.fn(),
+    openVisualWorkshopProjectFolder: vi.fn(),
     patchVisualWorkshopProject: vi.fn(),
   };
 });
@@ -62,6 +68,17 @@ beforeEach(() => {
     }),
   );
   vi.mocked(deleteVisualWorkshopProject).mockResolvedValue({ deleted: true });
+  vi.mocked(exportVisualWorkshopProjectSnapshot).mockResolvedValue({
+    blob: new Blob(["snapshot"]),
+    filename: "visual-workshop-snapshot.zip",
+  });
+  vi.mocked(importVisualWorkshopProjectSnapshot).mockResolvedValue({
+    project: { ...project, id: "project-copy", title: "产品主视觉（副本）" },
+    warnings: [],
+  });
+  vi.mocked(openVisualWorkshopProjectFolder).mockResolvedValue({
+    opened: true,
+  });
 });
 
 test("creates an unnamed canvas project and opens it without a dialog", async () => {
@@ -105,4 +122,54 @@ test("renames, completes, restores, filters, and deletes projects", async () => 
   await user.click(screen.getByRole("button", { name: "确认删除" }));
   await waitFor(() => expect(deleteVisualWorkshopProject).toHaveBeenCalled());
   expect(await screen.findByText("还没有创作项目")).toBeInTheDocument();
+});
+
+test("imports, exports, and opens a visual project snapshot", async () => {
+  vi.mocked(getVisualWorkshopProjects).mockResolvedValueOnce({
+    items: [project],
+  });
+  const createObjectURL = vi.fn(() => "blob:snapshot");
+  const revokeObjectURL = vi.fn();
+  Object.defineProperty(URL, "createObjectURL", {
+    configurable: true,
+    value: createObjectURL,
+  });
+  Object.defineProperty(URL, "revokeObjectURL", {
+    configurable: true,
+    value: revokeObjectURL,
+  });
+  const click = vi
+    .spyOn(HTMLAnchorElement.prototype, "click")
+    .mockImplementation(() => undefined);
+  const onOpenProject = vi.fn();
+  const user = userEvent.setup();
+  renderPage({ onOpenProject });
+  expect(await screen.findByText("产品主视觉")).toBeInTheDocument();
+
+  await user.click(
+    screen.getByRole("button", { name: "导出“产品主视觉”项目快照" }),
+  );
+  await waitFor(() =>
+    expect(exportVisualWorkshopProjectSnapshot).toHaveBeenCalledWith(
+      "project-1",
+    ),
+  );
+  expect(createObjectURL).toHaveBeenCalled();
+  expect(click).toHaveBeenCalled();
+  expect(revokeObjectURL).toHaveBeenCalledWith("blob:snapshot");
+
+  await user.click(
+    screen.getByRole("button", { name: "打开“产品主视觉”项目文件夹" }),
+  );
+  await waitFor(() =>
+    expect(openVisualWorkshopProjectFolder).toHaveBeenCalledWith("project-1"),
+  );
+  await user.upload(
+    screen.getByLabelText("选择项目快照压缩包"),
+    new File(["zip"], "project.zip", { type: "application/zip" }),
+  );
+  await waitFor(() =>
+    expect(importVisualWorkshopProjectSnapshot).toHaveBeenCalled(),
+  );
+  expect(onOpenProject).toHaveBeenCalledWith("project-copy");
 });

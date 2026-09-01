@@ -1,22 +1,40 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, HTTPException, Query
+from typing import Annotated
 
-from app.deps import SessionDep, WorkspaceDep
+from fastapi import APIRouter, File, HTTPException, Query, UploadFile
+from fastapi.responses import FileResponse
+from starlette.background import BackgroundTask
+
+from app.core.config import get_settings
+from app.deps import SessionDep, StudioAuth, WorkspaceDep
+from app.files import (
+    AssetStorage,
+    ProjectFolderError,
+    ProjectSnapshotError,
+    open_project_folder,
+)
 from app.galgame_workshop.errors import (
     GalgameStoryNotReadyError,
     GalgameWorkshopProjectNotFoundError,
 )
 from app.galgame_workshop.projects import GalgameWorkshopProjects
+from app.galgame_workshop.snapshots import GalgameProjectSnapshots
 from app.routes.galgame_workshop._shared import _not_found
 from app.schemas.galgame_workshop import (
+    GalgameProjectSnapshotImportOut,
     GalgameWorkshopProjectCreateIn,
     GalgameWorkshopProjectListOut,
     GalgameWorkshopProjectOut,
     GalgameWorkshopProjectPatchIn,
 )
+from app.schemas.project_snapshots import ProjectFolderOpenOut
 
 router = APIRouter()
+
+
+def _project_file_error(exc: ProjectSnapshotError | ProjectFolderError) -> HTTPException:
+    return HTTPException(exc.status, {"code": exc.code, "message": str(exc)})
 
 
 @router.get("", response_model=GalgameWorkshopProjectListOut)
@@ -35,6 +53,20 @@ async def create_project(
     return await GalgameWorkshopProjects(session, workspace_id).create(body)
 
 
+@router.post("/snapshot-imports", response_model=GalgameProjectSnapshotImportOut)
+async def import_project_snapshot(
+    session: SessionDep,
+    workspace_id: WorkspaceDep,
+    file: Annotated[UploadFile, File()],
+) -> GalgameProjectSnapshotImportOut:
+    try:
+        return await GalgameProjectSnapshots(session, get_settings(), workspace_id).import_snapshot(
+            file
+        )
+    except ProjectSnapshotError as exc:
+        raise _project_file_error(exc) from None
+
+
 @router.get("/{project_id}", response_model=GalgameWorkshopProjectOut)
 async def get_project(
     session: SessionDep, workspace_id: WorkspaceDep, project_id: str
@@ -43,6 +75,55 @@ async def get_project(
         return await GalgameWorkshopProjects(session, workspace_id).get(project_id)
     except GalgameWorkshopProjectNotFoundError as exc:
         raise _not_found(exc) from None
+
+
+@router.get(
+    "/{project_id}/snapshot",
+    response_class=FileResponse,
+    responses={200: {"content": {"application/zip": {}}}},
+)
+async def export_project_snapshot(
+    session: SessionDep, workspace_id: WorkspaceDep, project_id: str
+) -> FileResponse:
+    try:
+        exported = await GalgameProjectSnapshots(session, get_settings(), workspace_id).export(
+            project_id
+        )
+    except ProjectSnapshotError as exc:
+        raise _project_file_error(exc) from None
+    return FileResponse(
+        exported.path,
+        media_type="application/zip",
+        filename=exported.filename,
+        background=BackgroundTask(exported.path.unlink, missing_ok=True),
+    )
+
+
+@router.post("/{project_id}/open-folder", response_model=ProjectFolderOpenOut)
+async def reveal_project_folder(
+    principal: StudioAuth,
+    session: SessionDep,
+    workspace_id: WorkspaceDep,
+    project_id: str,
+) -> ProjectFolderOpenOut:
+    if principal.auth_kind != "session":
+        raise HTTPException(
+            403,
+            {"code": "browser_session_required", "message": "打开文件夹必须使用浏览器 Session"},
+        )
+    try:
+        await GalgameWorkshopProjects(session, workspace_id).get(project_id)
+        await open_project_folder(
+            AssetStorage(get_settings()),
+            "galgame-workshop",
+            project_id,
+            workspace_id=workspace_id,
+        )
+    except GalgameWorkshopProjectNotFoundError as exc:
+        raise _not_found(exc) from None
+    except ProjectFolderError as exc:
+        raise _project_file_error(exc) from None
+    return ProjectFolderOpenOut()
 
 
 @router.patch("/{project_id}", response_model=GalgameWorkshopProjectOut)

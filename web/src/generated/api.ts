@@ -716,6 +716,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/galgame-workshop/projects/snapshot-imports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Import Project Snapshot */
+        post: operations["import_project_snapshot_v1_galgame_workshop_projects_snapshot_imports_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/galgame-workshop/projects/{project_id}": {
         parameters: {
             query?: never;
@@ -992,6 +1009,40 @@ export interface paths {
         head?: never;
         /** Patch Asset Transcript */
         patch: operations["patch_asset_transcript_v1_galgame_workshop_projects__project_id__assets__asset_id__transcript_patch"];
+        trace?: never;
+    };
+    "/v1/galgame-workshop/projects/{project_id}/open-folder": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reveal Project Folder */
+        post: operations["reveal_project_folder_v1_galgame_workshop_projects__project_id__open_folder_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/galgame-workshop/projects/{project_id}/snapshot": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Export Project Snapshot */
+        get: operations["export_project_snapshot_v1_galgame_workshop_projects__project_id__snapshot_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/v1/galgame-workshop/projects/{project_id}/story": {
@@ -2401,6 +2452,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/video-editor/projects/snapshot-imports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Import Project Snapshot */
+        post: operations["import_project_snapshot_v1_video_editor_projects_snapshot_imports_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/video-editor/projects/{project_id}": {
         parameters: {
             query?: never;
@@ -2506,6 +2574,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/video-editor/projects/{project_id}/open-folder": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reveal Project Folder */
+        post: operations["reveal_project_folder_v1_video_editor_projects__project_id__open_folder_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/video-editor/projects/{project_id}/preview/frame": {
         parameters: {
             query?: never;
@@ -2586,6 +2671,75 @@ export interface paths {
         put?: never;
         /** Cancel Render */
         post: operations["cancel_render_v1_video_editor_projects__project_id__renders__task_id__cancel_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/video-editor/projects/{project_id}/segment-exports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Segment Exports */
+        get: operations["list_segment_exports_v1_video_editor_projects__project_id__segment_exports_get"];
+        put?: never;
+        /** Create Segment Export */
+        post: operations["create_segment_export_v1_video_editor_projects__project_id__segment_exports_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/video-editor/projects/{project_id}/segment-exports/{task_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Segment Export */
+        get: operations["get_segment_export_v1_video_editor_projects__project_id__segment_exports__task_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/video-editor/projects/{project_id}/segment-exports/{task_id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Cancel Segment Export */
+        post: operations["cancel_segment_export_v1_video_editor_projects__project_id__segment_exports__task_id__cancel_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/video-editor/projects/{project_id}/snapshot": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Export Project Snapshot */
+        get: operations["export_project_snapshot_v1_video_editor_projects__project_id__snapshot_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -2706,6 +2860,23 @@ export interface paths {
         put?: never;
         /** Create Project */
         post: operations["create_project_v1_visual_workshop_projects_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/visual-workshop/projects/snapshot-imports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Import Project Snapshot */
+        post: operations["import_project_snapshot_v1_visual_workshop_projects_snapshot_imports_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2900,6 +3071,40 @@ export interface paths {
         put?: never;
         /** Create Generation Task */
         post: operations["create_generation_task_v1_visual_workshop_projects__project_id__generation_tasks_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/visual-workshop/projects/{project_id}/open-folder": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reveal Project Folder */
+        post: operations["reveal_project_folder_v1_visual_workshop_projects__project_id__open_folder_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/visual-workshop/projects/{project_id}/snapshot": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Export Project Snapshot */
+        get: operations["export_project_snapshot_v1_visual_workshop_projects__project_id__snapshot_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -3323,6 +3528,58 @@ export interface components {
             /** Peaks */
             peaks: number[][];
         };
+        /** AudioGenerationTaskCreateIn */
+        AudioGenerationTaskCreateIn: {
+            /** Canvas Node Id */
+            canvas_node_id?: string | null;
+            /** Duration */
+            duration?: number | null;
+            /** Expected Canvas Revision */
+            expected_canvas_revision?: number | null;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "audio";
+            /**
+             * Mode
+             * @default music
+             * @enum {string}
+             */
+            mode: "music" | "sfx";
+            /** Model Id */
+            model_id: string;
+            /**
+             * Output Format
+             * @default mp3
+             * @enum {string}
+             */
+            output_format: "mp3" | "wav";
+            /** Prompt */
+            prompt: string;
+            /**
+             * Prompt Influence
+             * @default 0.5
+             */
+            prompt_influence: number;
+            /** Reference Asset Ids */
+            reference_asset_ids?: string[];
+            /**
+             * Smart Duration
+             * @default true
+             */
+            smart_duration: boolean;
+            /**
+             * Style
+             * @default
+             */
+            style: string;
+            /**
+             * Theme
+             * @default
+             */
+            theme: string;
+        };
         /** AuthMeOut */
         AuthMeOut: {
             /** Must Change Password */
@@ -3368,6 +3625,21 @@ export interface components {
         Body_import_legacy_story_v1_galgame_workshop_projects__project_id__story_import_post: {
             /** Expectedrevision */
             expectedRevision: number;
+            /** File */
+            file: string;
+        };
+        /** Body_import_project_snapshot_v1_galgame_workshop_projects_snapshot_imports_post */
+        Body_import_project_snapshot_v1_galgame_workshop_projects_snapshot_imports_post: {
+            /** File */
+            file: string;
+        };
+        /** Body_import_project_snapshot_v1_video_editor_projects_snapshot_imports_post */
+        Body_import_project_snapshot_v1_video_editor_projects_snapshot_imports_post: {
+            /** File */
+            file: string;
+        };
+        /** Body_import_project_snapshot_v1_visual_workshop_projects_snapshot_imports_post */
+        Body_import_project_snapshot_v1_visual_workshop_projects_snapshot_imports_post: {
             /** File */
             file: string;
         };
@@ -4124,6 +4396,12 @@ export interface components {
             packagingPolicy?: ("auto" | "include" | "exclude") | null;
             /** Virtualpath */
             virtualPath?: string | null;
+        };
+        /** GalgameProjectSnapshotImportOut */
+        GalgameProjectSnapshotImportOut: {
+            project: components["schemas"]["GalgameWorkshopProjectOut"];
+            /** Warnings */
+            warnings?: components["schemas"]["ProjectSnapshotImportWarning"][];
         };
         /** GalgameStoryAnimateSpriteBlock */
         GalgameStoryAnimateSpriteBlock: {
@@ -6774,6 +7052,8 @@ export interface components {
         };
         /** GalgameVideoExportTaskOut */
         GalgameVideoExportTaskOut: {
+            /** Cancelrequested */
+            cancelRequested: boolean;
             /** Createdat */
             createdAt: string;
             /**
@@ -6910,7 +7190,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "image" | "video";
+            kind: "image" | "video" | "audio";
             /** Label */
             label: string;
             /** Provider Id */
@@ -6950,7 +7230,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "image" | "video";
+            kind: "image" | "video" | "audio";
             /** Model Id */
             model_id: string | null;
             /** Model Slug */
@@ -6965,7 +7245,7 @@ export interface components {
              * Provider Kind
              * @enum {string}
              */
-            provider_kind: "senseaudio_image" | "senseaudio_video";
+            provider_kind: "senseaudio_image" | "senseaudio_video" | "senseaudio_music" | "senseaudio_sfx";
             /** Provider Name */
             provider_name: string;
             /** Provider Task Id */
@@ -7301,7 +7581,7 @@ export interface components {
         /** ModelEntryIn */
         ModelEntryIn: {
             /** Capabilities */
-            capabilities?: ("chat" | "vision" | "tools" | "image_generation" | "video_generation" | "speech_recognition" | "voice")[];
+            capabilities?: ("chat" | "vision" | "tools" | "image_generation" | "video_generation" | "speech_recognition" | "voice" | "audio_generation")[];
             /** Categories */
             categories?: ("text_generation" | "other_general" | "speech_synthesis" | "speech_recognition" | "music_generation" | "video_generation" | "image_generation" | "end_to_end_speech")[];
             /**
@@ -7327,7 +7607,7 @@ export interface components {
         /** ModelEntryOut */
         ModelEntryOut: {
             /** Capabilities */
-            capabilities: ("chat" | "vision" | "tools" | "image_generation" | "video_generation" | "speech_recognition" | "voice")[];
+            capabilities: ("chat" | "vision" | "tools" | "image_generation" | "video_generation" | "speech_recognition" | "voice" | "audio_generation")[];
             /** Categories */
             categories: ("text_generation" | "other_general" | "speech_synthesis" | "speech_recognition" | "music_generation" | "video_generation" | "image_generation" | "end_to_end_speech")[];
             /** Description */
@@ -8241,6 +8521,27 @@ export interface components {
              */
             type: "moveClip";
         };
+        /** ProjectFolderOpenOut */
+        ProjectFolderOpenOut: {
+            /**
+             * Opened
+             * @default true
+             * @constant
+             */
+            opened: true;
+        };
+        /** ProjectSnapshotImportWarning */
+        ProjectSnapshotImportWarning: {
+            /**
+             * Code
+             * @constant
+             */
+            code: "model_binding_unavailable";
+            /** Field */
+            field: string;
+            /** Message */
+            message: string;
+        };
         /** ProviderEnabledIn */
         ProviderEnabledIn: {
             /** Enabled */
@@ -8271,7 +8572,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "openai" | "anthropic" | "senseaudio_image" | "senseaudio_video" | "senseaudio_asr" | "senseaudio_realtime";
+            kind: "openai" | "anthropic" | "senseaudio_image" | "senseaudio_video" | "senseaudio_asr" | "senseaudio_realtime" | "senseaudio_music" | "senseaudio_sfx";
             /** Name */
             name: string;
         };
@@ -8297,7 +8598,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "openai" | "anthropic" | "senseaudio_image" | "senseaudio_video" | "senseaudio_asr" | "senseaudio_realtime";
+            kind: "openai" | "anthropic" | "senseaudio_image" | "senseaudio_video" | "senseaudio_asr" | "senseaudio_realtime" | "senseaudio_music" | "senseaudio_sfx";
             /** Models */
             models: components["schemas"]["ModelEntryOut"][];
             /** Name */
@@ -8433,7 +8734,7 @@ export interface components {
              * Provider Kind
              * @enum {string}
              */
-            provider_kind: "openai" | "anthropic" | "senseaudio_image" | "senseaudio_video" | "senseaudio_asr" | "senseaudio_realtime";
+            provider_kind: "openai" | "anthropic" | "senseaudio_image" | "senseaudio_video" | "senseaudio_asr" | "senseaudio_realtime" | "senseaudio_music" | "senseaudio_sfx";
             /** Provider Name */
             provider_name: string;
             /** Slug */
@@ -8638,8 +8939,14 @@ export interface components {
             atUs: number;
             /** Clipid */
             clipId: string;
+            /** Linkednewclipids */
+            linkedNewClipIds?: {
+                [key: string]: string;
+            };
             /** Newclipid */
             newClipId: string;
+            /** Newlinkgroupid */
+            newLinkGroupId?: string | null;
             /**
              * @description discriminator enum property added by openapi-typescript
              * @enum {string}
@@ -9215,6 +9522,12 @@ export interface components {
              */
             width: 1920;
         };
+        /** VideoEditorProjectSnapshotImportOut */
+        VideoEditorProjectSnapshotImportOut: {
+            project: components["schemas"]["VideoEditorProjectOut"];
+            /** Warnings */
+            warnings?: components["schemas"]["ProjectSnapshotImportWarning"][];
+        };
         /** VideoEditorRenderCreateIn */
         VideoEditorRenderCreateIn: {
             /** Endus */
@@ -9288,6 +9601,54 @@ export interface components {
             /** Warnings */
             warnings?: components["schemas"]["VideoEditorRenderIssue"][];
         };
+        /** VideoEditorSegmentExportCreateIn */
+        VideoEditorSegmentExportCreateIn: {
+            /** Expectedrevision */
+            expectedRevision: number;
+            /** Requestid */
+            requestId: string;
+            /** Segments */
+            segments: components["schemas"]["VideoEditorSegmentExportItem"][];
+            target: components["schemas"]["VideoEditorSegmentExportTarget"];
+        };
+        /** VideoEditorSegmentExportItem */
+        VideoEditorSegmentExportItem: {
+            /**
+             * Audiomode
+             * @default keep
+             * @enum {string}
+             */
+            audioMode: "keep" | "mute";
+            /** Clipid */
+            clipId: string;
+            /**
+             * Fps
+             * @default source
+             * @enum {unknown}
+             */
+            fps: "source" | 30 | 60;
+            /** Name */
+            name: string;
+            /**
+             * Quality
+             * @default balanced
+             * @enum {string}
+             */
+            quality: "high" | "balanced" | "small";
+            /**
+             * Resolution
+             * @default source
+             * @enum {string}
+             */
+            resolution: "source" | "720p" | "1080p";
+        };
+        /** VideoEditorSegmentExportTarget */
+        VideoEditorSegmentExportTarget: {
+            /** Newprojecttitle */
+            newProjectTitle?: string | null;
+            /** Projectid */
+            projectId?: string | null;
+        };
         /** VideoEditorTaskListOut */
         VideoEditorTaskListOut: {
             /** Items */
@@ -9305,7 +9666,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "media" | "render";
+            kind: "media" | "render" | "segment_export";
             /** Outputassetid */
             outputAssetId?: string | null;
             /** Progress */
@@ -9885,10 +10246,59 @@ export interface components {
              */
             type: "text";
         };
+        /** VisualCanvasAudioGenerationDraft */
+        VisualCanvasAudioGenerationDraft: {
+            /** Duration */
+            duration?: number | null;
+            /**
+             * Mode
+             * @default music
+             * @enum {string}
+             */
+            mode: "music" | "sfx";
+            /** Model Id */
+            model_id?: string | null;
+            /**
+             * Output Format
+             * @default mp3
+             * @enum {string}
+             */
+            output_format: "mp3" | "wav";
+            /**
+             * Prompt
+             * @default
+             */
+            prompt: string;
+            /**
+             * Prompt Influence
+             * @default 0.5
+             */
+            prompt_influence: number;
+            /** Reference Asset Ids */
+            reference_asset_ids?: string[];
+            /**
+             * Smart Duration
+             * @default true
+             */
+            smart_duration: boolean;
+            /**
+             * Style
+             * @default
+             */
+            style: string;
+            /**
+             * Theme
+             * @default
+             */
+            theme: string;
+        };
         /** VisualCanvasAudioNode */
         VisualCanvasAudioNode: {
             /** Asset Id */
             asset_id?: string | null;
+            generation_draft?: components["schemas"]["VisualCanvasAudioGenerationDraft"] | null;
+            /** Generation Task Id */
+            generation_task_id?: string | null;
             /** Id */
             id: string;
             /**
@@ -9902,6 +10312,8 @@ export interface components {
         };
         /** VisualCanvasDocumentOut */
         VisualCanvasDocumentOut: {
+            /** Edges */
+            edges: components["schemas"]["VisualCanvasEdge"][];
             /** Nodes */
             nodes: (components["schemas"]["VisualCanvasTextNode"] | components["schemas"]["VisualCanvasImageNode"] | components["schemas"]["VisualCanvasVideoNode"] | components["schemas"]["VisualCanvasAudioNode"])[];
             /** Project Id */
@@ -9913,10 +10325,21 @@ export interface components {
         };
         /** VisualCanvasDocumentPutIn */
         VisualCanvasDocumentPutIn: {
+            /** Edges */
+            edges?: components["schemas"]["VisualCanvasEdge"][];
             /** Expected Revision */
             expected_revision: number;
             /** Nodes */
             nodes?: (components["schemas"]["VisualCanvasTextNode"] | components["schemas"]["VisualCanvasImageNode"] | components["schemas"]["VisualCanvasVideoNode"] | components["schemas"]["VisualCanvasAudioNode"])[];
+        };
+        /** VisualCanvasEdge */
+        VisualCanvasEdge: {
+            /** Id */
+            id: string;
+            /** Source Node Id */
+            source_node_id: string;
+            /** Target Node Id */
+            target_node_id: string;
         };
         /** VisualCanvasImageGenerationDraft */
         VisualCanvasImageGenerationDraft: {
@@ -10055,6 +10478,12 @@ export interface components {
             position: components["schemas"]["VisualCanvasPosition"];
             /** Title */
             title: string;
+        };
+        /** VisualProjectSnapshotImportOut */
+        VisualProjectSnapshotImportOut: {
+            project: components["schemas"]["VisualWorkshopProjectOut"];
+            /** Warnings */
+            warnings?: components["schemas"]["ProjectSnapshotImportWarning"][];
         };
         /** VisualWorkshopProjectCreateIn */
         VisualWorkshopProjectCreateIn: {
@@ -11942,6 +12371,39 @@ export interface operations {
             };
         };
     };
+    import_project_snapshot_v1_galgame_workshop_projects_snapshot_imports_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_import_project_snapshot_v1_galgame_workshop_projects_snapshot_imports_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GalgameProjectSnapshotImportOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_project_v1_galgame_workshop_projects__project_id__get: {
         parameters: {
             query?: never;
@@ -12673,6 +13135,68 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reveal_project_folder_v1_galgame_workshop_projects__project_id__open_folder_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectFolderOpenOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    export_project_snapshot_v1_galgame_workshop_projects__project_id__snapshot_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/zip": unknown;
                 };
             };
             /** @description Validation Error */
@@ -16116,6 +16640,39 @@ export interface operations {
             };
         };
     };
+    import_project_snapshot_v1_video_editor_projects_snapshot_imports_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_import_project_snapshot_v1_video_editor_projects_snapshot_imports_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VideoEditorProjectSnapshotImportOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_project_v1_video_editor_projects__project_id__get: {
         parameters: {
             query?: never;
@@ -16417,6 +16974,37 @@ export interface operations {
             };
         };
     };
+    reveal_project_folder_v1_video_editor_projects__project_id__open_folder_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectFolderOpenOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     exact_frame_v1_video_editor_projects__project_id__preview_frame_get: {
         parameters: {
             query: {
@@ -16604,6 +17192,167 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["VideoEditorTaskOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_segment_exports_v1_video_editor_projects__project_id__segment_exports_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VideoEditorTaskListOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_segment_export_v1_video_editor_projects__project_id__segment_exports_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VideoEditorSegmentExportCreateIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VideoEditorTaskOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_segment_export_v1_video_editor_projects__project_id__segment_exports__task_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+                task_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VideoEditorTaskOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    cancel_segment_export_v1_video_editor_projects__project_id__segment_exports__task_id__cancel_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+                task_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VideoEditorTaskOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    export_project_snapshot_v1_video_editor_projects__project_id__snapshot_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/zip": unknown;
                 };
             };
             /** @description Validation Error */
@@ -16840,6 +17589,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["VisualWorkshopProjectOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    import_project_snapshot_v1_visual_workshop_projects_snapshot_imports_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_import_project_snapshot_v1_visual_workshop_projects_snapshot_imports_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VisualProjectSnapshotImportOut"];
                 };
             };
             /** @description Validation Error */
@@ -17444,7 +18226,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["ImageGenerationTaskCreateIn"] | components["schemas"]["VideoGenerationTaskCreateIn"];
+                "application/json": components["schemas"]["ImageGenerationTaskCreateIn"] | components["schemas"]["VideoGenerationTaskCreateIn"] | components["schemas"]["AudioGenerationTaskCreateIn"];
             };
         };
         responses: {
@@ -17455,6 +18237,68 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["GenerationTaskOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reveal_project_folder_v1_visual_workshop_projects__project_id__open_folder_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectFolderOpenOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    export_project_snapshot_v1_visual_workshop_projects__project_id__snapshot_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/zip": unknown;
                 };
             };
             /** @description Validation Error */

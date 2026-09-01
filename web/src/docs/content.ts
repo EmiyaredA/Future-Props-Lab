@@ -1,51 +1,26 @@
-export type GuideImage = {
-  src: string;
-  alt: string;
-  caption: string;
-};
+import type { GuideGroup, GuidePage } from "./types";
+import { VIDEO_EDITOR_GUIDES } from "./videoEditorContent";
 
-export type GuideTable = {
-  headers: string[];
-  rows: string[][];
-};
-
-export type GuideSection = {
-  id: string;
-  title: string;
-  paragraphs?: string[];
-  steps?: string[];
-  bullets?: string[];
-  note?: string;
-  table?: GuideTable;
-  image?: GuideImage;
-};
-
-export type GuidePage = {
-  id: string;
-  group: "开始使用" | "视觉创作工坊" | "Galgame 工坊";
-  title: string;
-  eyebrow: string;
-  lead: string;
-  sections: GuideSection[];
-};
-
-export type GuideGroup = {
-  title: GuidePage["group"];
-  pages: GuidePage[];
-};
+export type {
+  GuideGroup,
+  GuideImage,
+  GuidePage,
+  GuideSection,
+  GuideTable,
+} from "./types";
 
 const overview: GuidePage = {
   id: "overview",
   group: "开始使用",
   title: "未来道具研究所使用指南",
   eyebrow: "DOCUMENTATION",
-  lead: "从视觉素材生成到分支故事编排，这里按真实界面说明两个创作工坊的完整工作流。",
+  lead: "从视觉素材生成到分支故事编排和多轨剪辑，这里按真实界面说明三个 AI 应用的工作流。",
   sections: [
     {
       id: "choose-workshop",
       title: "选择创作工坊",
       paragraphs: [
-        "视觉创作工坊适合组织文本、图片、视频和音频素材，并通过生成模型或创作助手扩展画布。Galgame 工坊适合维护章节、Fragment、Block、角色、场景、声音和可试玩线路。",
+        "视觉创作工坊适合组织文本、图片、视频和音频素材；Galgame 工坊适合维护可试玩分支故事；视频剪辑工坊适合多轨时间线与确定性成片。",
       ],
       table: {
         headers: ["目标", "推荐入口", "最终结果"],
@@ -56,6 +31,7 @@ const overview: GuidePage = {
             "项目素材、画布节点与生成任务",
           ],
           ["编写分支视觉小说", "Galgame 工坊", "可试玩故事、时间轴与线路报告"],
+          ["组装多轨成片", "视频剪辑工坊", "时间线、代理预览与 MP4"],
           ["验证模型是否可用", "Studio 模型服务", "独立的模型测试记录"],
         ],
       },
@@ -65,12 +41,23 @@ const overview: GuidePage = {
       title: "本地优先与自动保存",
       bullets: [
         "项目顶栏可在剧本、资产、叙事地图、个性化和设置之间切换；⌘/Ctrl+K 会搜索章节、Fragment、Block 正文与摘要、角色、场景和资源并直接定位。",
-        "两个工坊都使用本机项目数据，不会自动创建云端协作空间。",
+        "三个工坊都使用本机项目数据，不会自动创建云端协作空间。",
         "画布和故事采用 revision 检测并发冲突；发生冲突时先检查服务器快照，不会静默覆盖。",
         "图片和视频生成是异步任务；完成结果会进入对应项目素材库。",
         "删除仍被项目引用的素材前，需要先解除引用。",
       ],
       note: "文档以当前可见功能和实际界面为准；模型能力、时长和分辨率选项取决于已配置的生成模型。",
+    },
+    {
+      id: "project-snapshots",
+      title: "携带、复制和定位项目",
+      steps: [
+        "在视觉创作、Galgame 或视频剪辑的项目卡片上点击“导出项目快照”，下载当前可编辑状态与所需素材的 ZIP。",
+        "在项目列表点击“导入快照”并选择 ZIP；校验通过后会创建名为“原名称（副本）”的全新项目并直接打开。",
+        "共享素材会转为副本的私有文件；不可用的模型绑定会清空并显示提示，不会丢弃提示词与生成参数。",
+        "点击“打开项目文件夹”会在运行 Future Props Lab 的电脑上打开对应目录。",
+      ],
+      note: "快照不保存历史，不覆盖原项目，也不包含助手对话、任务历史、视频代理和派生缓存。打开目录只对有写权限的浏览器 Session 开放。",
     },
     {
       id: "model-test-speech",
@@ -640,6 +627,10 @@ export const GUIDE_GROUPS: GuideGroup[] = [
   {
     title: "Galgame 工坊",
     pages: [galgameQuickstart, galgameStory, galgameTimeline, galgamePreview],
+  },
+  {
+    title: "视频剪辑工坊",
+    pages: VIDEO_EDITOR_GUIDES,
   },
 ];
 

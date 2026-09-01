@@ -3,6 +3,7 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, vi } from "vitest";
 import {
+  cancelGalgameVideoExport,
   createGalgameVideoEditorHandoff,
   createGalgameVideoExport,
   listGalgameVideoEditorHandoffs,
@@ -27,6 +28,7 @@ vi.mock("@features/galgame-workshop/api", async () => {
   >("@features/galgame-workshop/api");
   return {
     ...actual,
+    cancelGalgameVideoExport: vi.fn(),
     createGalgameVideoEditorHandoff: vi.fn(),
     createGalgameVideoExport: vi.fn(),
     listGalgameVideoExports: vi.fn(),
@@ -71,6 +73,7 @@ const createdTask: GalgameVideoExportTask = {
   storyRevision: 3,
   status: "queued",
   phase: "queued",
+  cancelRequested: false,
   progress: 0,
   renderedMs: 0,
   totalMs: 2000,
@@ -172,6 +175,12 @@ beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(listGalgameVideoExports).mockResolvedValue({ items: [] });
   vi.mocked(listGalgameVideoEditorHandoffs).mockResolvedValue({ items: [] });
+  vi.mocked(cancelGalgameVideoExport).mockResolvedValue({
+    ...createdTask,
+    status: "cancelled",
+    phase: "cancelled",
+    cancelRequested: true,
+  });
   vi.mocked(createGalgameVideoEditorHandoff).mockResolvedValue({
     id: "handoff-one",
     projectId: "project-one",
@@ -309,6 +318,77 @@ test("shows immediate feedback and prevents duplicate export submissions", async
 
   pendingCreate.resolve(createdTask);
   expect(await screen.findByText("视频正在后台导出")).toBeInTheDocument();
+});
+
+test("shows cancellation progress and keeps a running task disabled after the request succeeds", async () => {
+  const user = userEvent.setup();
+  const runningTask: GalgameVideoExportTask = {
+    ...createdTask,
+    status: "running",
+    phase: "rendering",
+    progress: 8,
+    renderedMs: 162_000,
+    totalMs: 1_780_344,
+  };
+  const cancellingTask = {
+    ...runningTask,
+    cancelRequested: true,
+    revision: runningTask.revision + 1,
+  };
+  const pendingCancel = deferred<GalgameVideoExportTask>();
+  vi.mocked(listGalgameVideoExports)
+    .mockResolvedValueOnce({ items: [runningTask] })
+    .mockResolvedValue({ items: [cancellingTask] });
+  vi.mocked(cancelGalgameVideoExport).mockReturnValue(pendingCancel.promise);
+  renderDialog();
+
+  await user.click(await screen.findByRole("button", { name: "取消" }));
+  expect(cancelGalgameVideoExport).toHaveBeenCalledWith(
+    "project-one",
+    "export-one",
+  );
+  const pendingButton = screen.getByRole("button", { name: "取消中…" });
+  expect(pendingButton).toBeDisabled();
+  await user.click(pendingButton);
+  expect(cancelGalgameVideoExport).toHaveBeenCalledTimes(1);
+
+  pendingCancel.resolve(cancellingTask);
+  expect(await screen.findByText("正在取消视频导出")).toBeInTheDocument();
+  expect(screen.getByText(/正在等待渲染器安全停止/)).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "取消中…" })).toBeDisabled();
+});
+
+test("reports a cancellation failure and lets the user retry", async () => {
+  const user = userEvent.setup();
+  vi.mocked(listGalgameVideoExports).mockResolvedValue({
+    items: [
+      {
+        ...createdTask,
+        status: "running",
+        phase: "rendering",
+        progress: 8,
+      },
+    ],
+  });
+  vi.mocked(cancelGalgameVideoExport)
+    .mockRejectedValueOnce(new Error("取消请求超时"))
+    .mockResolvedValueOnce({
+      ...createdTask,
+      status: "cancelled",
+      phase: "cancelled",
+      cancelRequested: true,
+    });
+  renderDialog();
+
+  await user.click(await screen.findByRole("button", { name: "取消" }));
+  expect(await screen.findByRole("alert")).toHaveTextContent("取消请求超时");
+  const retry = screen.getByRole("button", { name: "取消" });
+  expect(retry).toBeEnabled();
+
+  await user.click(retry);
+  await waitFor(() =>
+    expect(cancelGalgameVideoExport).toHaveBeenCalledTimes(2),
+  );
 });
 
 test("recovers from a failed export submission", async () => {

@@ -1,10 +1,21 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, HTTPException, Query
+from typing import Annotated
+
+from fastapi import APIRouter, File, HTTPException, Query, UploadFile
+from fastapi.responses import FileResponse
+from starlette.background import BackgroundTask
 
 from app.core.config import get_settings
-from app.deps import SessionDep, WorkspaceDep
-from app.files import AssetError, VisualAssets
+from app.deps import SessionDep, StudioAuth, WorkspaceDep
+from app.files import (
+    AssetError,
+    AssetStorage,
+    ProjectFolderError,
+    ProjectSnapshotError,
+    VisualAssets,
+    open_project_folder,
+)
 from app.schemas.files import (
     VisualAssetImportIn,
     VisualAssetListOut,
@@ -12,9 +23,11 @@ from app.schemas.files import (
     VisualAssetReferenceCreateIn,
     VisualAssetReferencePatchIn,
 )
+from app.schemas.project_snapshots import ProjectFolderOpenOut
 from app.schemas.visual_workshop import (
     VisualCanvasDocumentOut,
     VisualCanvasDocumentPutIn,
+    VisualProjectSnapshotImportOut,
     VisualWorkshopProjectCreateIn,
     VisualWorkshopProjectListOut,
     VisualWorkshopProjectOut,
@@ -25,6 +38,7 @@ from app.visual_workshop.projects import (
     VisualWorkshopProjectNotFoundError,
     VisualWorkshopProjects,
 )
+from app.visual_workshop.snapshots import VisualWorkshopProjectSnapshots
 
 router = APIRouter(prefix="/visual-workshop/projects", tags=["visual-workshop"])
 
@@ -38,6 +52,10 @@ def _asset_error(exc: AssetError) -> HTTPException:
 
 
 def _canvas_error(exc: VisualCanvasError) -> HTTPException:
+    return HTTPException(exc.status, {"code": exc.code, "message": str(exc)})
+
+
+def _project_file_error(exc: ProjectSnapshotError | ProjectFolderError) -> HTTPException:
     return HTTPException(exc.status, {"code": exc.code, "message": str(exc)})
 
 
@@ -57,6 +75,20 @@ async def create_project(
     return await VisualWorkshopProjects(session, workspace_id).create(body)
 
 
+@router.post("/snapshot-imports", response_model=VisualProjectSnapshotImportOut)
+async def import_project_snapshot(
+    session: SessionDep,
+    workspace_id: WorkspaceDep,
+    file: Annotated[UploadFile, File()],
+) -> VisualProjectSnapshotImportOut:
+    try:
+        return await VisualWorkshopProjectSnapshots(
+            session, get_settings(), workspace_id
+        ).import_snapshot(file)
+    except ProjectSnapshotError as exc:
+        raise _project_file_error(exc) from None
+
+
 @router.get("/{project_id}", response_model=VisualWorkshopProjectOut)
 async def get_project(
     session: SessionDep, workspace_id: WorkspaceDep, project_id: str
@@ -65,6 +97,55 @@ async def get_project(
         return await VisualWorkshopProjects(session, workspace_id).get(project_id)
     except VisualWorkshopProjectNotFoundError as exc:
         raise _not_found(exc) from None
+
+
+@router.get(
+    "/{project_id}/snapshot",
+    response_class=FileResponse,
+    responses={200: {"content": {"application/zip": {}}}},
+)
+async def export_project_snapshot(
+    session: SessionDep, workspace_id: WorkspaceDep, project_id: str
+) -> FileResponse:
+    try:
+        exported = await VisualWorkshopProjectSnapshots(
+            session, get_settings(), workspace_id
+        ).export(project_id)
+    except ProjectSnapshotError as exc:
+        raise _project_file_error(exc) from None
+    return FileResponse(
+        exported.path,
+        media_type="application/zip",
+        filename=exported.filename,
+        background=BackgroundTask(exported.path.unlink, missing_ok=True),
+    )
+
+
+@router.post("/{project_id}/open-folder", response_model=ProjectFolderOpenOut)
+async def reveal_project_folder(
+    principal: StudioAuth,
+    session: SessionDep,
+    workspace_id: WorkspaceDep,
+    project_id: str,
+) -> ProjectFolderOpenOut:
+    if principal.auth_kind != "session":
+        raise HTTPException(
+            403,
+            {"code": "browser_session_required", "message": "打开文件夹必须使用浏览器 Session"},
+        )
+    try:
+        await VisualWorkshopProjects(session, workspace_id).get(project_id)
+        await open_project_folder(
+            AssetStorage(get_settings()),
+            "visual-workshop",
+            project_id,
+            workspace_id=workspace_id,
+        )
+    except VisualWorkshopProjectNotFoundError as exc:
+        raise _not_found(exc) from None
+    except ProjectFolderError as exc:
+        raise _project_file_error(exc) from None
+    return ProjectFolderOpenOut()
 
 
 @router.get("/{project_id}/canvas", response_model=VisualCanvasDocumentOut)

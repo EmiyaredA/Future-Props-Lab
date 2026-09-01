@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { Maximize2, Pause, Play, SkipBack, SkipForward } from "lucide-react";
 import { exactFrameUrl } from "./api";
 import {
@@ -7,6 +7,12 @@ import {
   formatTime,
   frameUs,
 } from "./editorModel";
+import {
+  previewMediaGeometry,
+  VIDEO_EDITOR_CANVAS_HEIGHT,
+  VIDEO_EDITOR_CANVAS_WIDTH,
+  type VideoProxyCrop,
+} from "./previewGeometry";
 import type {
   VideoEditorAsset,
   VideoEditorClip,
@@ -18,11 +24,13 @@ function ProxyVideo({
   clip,
   playheadUs,
   playing,
+  crop,
 }: {
   source: string;
   clip: VideoEditorClip;
   playheadUs: number;
   playing: boolean;
+  crop: VideoProxyCrop;
 }) {
   const video = useRef<HTMLVideoElement>(null);
   useEffect(() => {
@@ -30,32 +38,92 @@ function ProxyVideo({
     if (!node) return;
     const target =
       (clip.sourceInUs + playheadUs - clip.timelineStartUs) / 1_000_000;
-    if (Math.abs(node.currentTime - target) > 0.12)
+    if (!playing || Math.abs(node.currentTime - target) > 0.12)
       node.currentTime = Math.max(0, target);
     if (playing) void node.play().catch(() => undefined);
     else node.pause();
   }, [clip, playheadUs, playing]);
-  return <video ref={video} muted src={source} preload="auto" />;
+  return (
+    <video
+      ref={video}
+      muted
+      src={source}
+      preload="auto"
+      style={{
+        left: `${crop.leftPercent}%`,
+        top: `${crop.topPercent}%`,
+        width: `${crop.widthPercent}%`,
+        height: `${crop.heightPercent}%`,
+      }}
+    />
+  );
 }
 
-function ProxyAudio({
+type PreviewAudioChain = {
+  id: string;
+  assetId: string;
+  clips: VideoEditorClip[];
+};
+
+function buildPreviewAudioChains(
+  timeline: VideoEditorTimeline,
+): PreviewAudioChain[] {
+  return (timeline.document.tracks ?? [])
+    .filter((track) => track.kind === "audio" && !track.muted)
+    .flatMap((track) => {
+      const chains: PreviewAudioChain[] = [];
+      const clips = [...(track.clips ?? [])]
+        .filter((clip) => Boolean(clip.assetId))
+        .sort((left, right) => left.timelineStartUs - right.timelineStartUs);
+      for (const clip of clips) {
+        const chain = chains.at(-1);
+        const previous = chain?.clips.at(-1);
+        const isContinuous =
+          previous &&
+          previous.assetId === clip.assetId &&
+          previous.sourceLoop === clip.sourceLoop &&
+          previous.timelineStartUs + previous.durationUs ===
+            clip.timelineStartUs &&
+          previous.sourceInUs + previous.durationUs === clip.sourceInUs;
+        if (chain && isContinuous) chain.clips.push(clip);
+        else
+          chains.push({
+            id: `${track.id}:${clip.id}`,
+            assetId: clip.assetId!,
+            clips: [clip],
+          });
+      }
+      return chains;
+    });
+}
+
+function ProxyAudioChain({
   source,
-  clip,
+  clips,
   playheadUs,
   playing,
 }: {
   source: string;
-  clip: VideoEditorClip;
+  clips: VideoEditorClip[];
   playheadUs: number;
   playing: boolean;
 }) {
   const audio = useRef<HTMLAudioElement>(null);
+  const clip = clips.find(
+    (item) =>
+      item.timelineStartUs <= playheadUs &&
+      item.timelineStartUs + item.durationUs > playheadUs,
+  );
   useEffect(() => {
     const node = audio.current;
     if (!node) return;
+    if (!clip) {
+      node.pause();
+      return;
+    }
     const target =
       (clip.sourceInUs + playheadUs - clip.timelineStartUs) / 1_000_000;
-    if (Math.abs(node.currentTime - target) > 0.12)
+    if (!playing || Math.abs(node.currentTime - target) > 0.12)
       node.currentTime = Math.max(0, target);
     node.volume = Math.max(
       0,
@@ -84,6 +152,8 @@ export function VideoEditorPreview({
   playing,
   setPlaying,
   selectedClipId,
+  preciseFrame,
+  onPreciseFrameChange,
 }: {
   projectId: string;
   timeline: VideoEditorTimeline;
@@ -93,8 +163,9 @@ export function VideoEditorPreview({
   playing: boolean;
   setPlaying: (value: boolean | ((value: boolean) => boolean)) => void;
   selectedClipId?: string;
+  preciseFrame: boolean;
+  onPreciseFrameChange: (value: boolean) => void;
 }) {
-  const [precise, setPrecise] = useState(true);
   const assetMap = useMemo(
     () => new Map(assets.map((asset) => [asset.id, asset])),
     [assets],
@@ -109,14 +180,10 @@ export function VideoEditorPreview({
         clip.timelineStartUs <= playheadUs &&
         clip.timelineStartUs + clip.durationUs > playheadUs,
     );
-  const activeAudio = (timeline.document.tracks ?? [])
-    .filter((track) => track.kind === "audio" && !track.muted)
-    .flatMap((track) => track.clips ?? [])
-    .filter(
-      (clip) =>
-        clip.timelineStartUs <= playheadUs &&
-        clip.timelineStartUs + clip.durationUs > playheadUs,
-    );
+  const audioChains = useMemo(
+    () => buildPreviewAudioChains(timeline),
+    [timeline],
+  );
   const preciseUrl = exactFrameUrl(projectId, timeline.revision, playheadUs);
   return (
     <section className="ve-preview-panel">
@@ -125,8 +192,8 @@ export function VideoEditorPreview({
         <div>
           <span>1920 × 1080</span>
           <button
-            className={precise ? "active" : ""}
-            onClick={() => setPrecise((value) => !value)}
+            className={preciseFrame ? "active" : ""}
+            onClick={() => onPreciseFrameChange(!preciseFrame)}
           >
             精确停帧
           </button>
@@ -144,6 +211,7 @@ export function VideoEditorPreview({
         >
           {active.map((clip) => {
             const asset = assetMap.get(clip.assetId ?? "");
+            const geometry = previewMediaGeometry(clip, asset);
             const transform = clip.transform ?? {
               x: 960,
               y: 540,
@@ -188,8 +256,14 @@ export function VideoEditorPreview({
                   ? "translate(0, 0)"
                   : "translate(-50%, -50%)";
             const style = {
-              left: `${(x / 1920) * 100}%`,
-              top: `${(y / 1080) * 100}%`,
+              left: `${(x / VIDEO_EDITOR_CANVAS_WIDTH) * 100}%`,
+              top: `${(y / VIDEO_EDITOR_CANVAS_HEIGHT) * 100}%`,
+              width: geometry
+                ? `${(geometry.width / VIDEO_EDITOR_CANVAS_WIDTH) * 100}%`
+                : undefined,
+              height: geometry
+                ? `${(geometry.height / VIDEO_EDITOR_CANVAS_HEIGHT) * 100}%`
+                : undefined,
               opacity: clipOpacityAt(clip, localUs),
               filter: `brightness(${brightness})`,
               transformOrigin:
@@ -198,7 +272,7 @@ export function VideoEditorPreview({
                   : transform.anchor === "topLeft"
                     ? "top left"
                     : "center",
-              transform: `${anchorTranslate} scale(${scaleX}, ${scaleY}) rotate(${rotation}deg)`,
+              transform: `${anchorTranslate} rotate(${rotation}deg) scale(${clip.flipX ? -scaleX : scaleX}, ${scaleY})`,
             };
             return (
               <div
@@ -206,13 +280,18 @@ export function VideoEditorPreview({
                 className={`ve-stage-layer ${selectedClipId === clip.id ? "selected" : ""}`}
                 style={style}
               >
-                {clip.kind === "video" && asset?.proxyUrl ? (
-                  <ProxyVideo
-                    source={asset.proxyUrl}
-                    clip={clip}
-                    playheadUs={playheadUs}
-                    playing={playing}
-                  />
+                {clip.kind === "video" &&
+                asset?.proxyUrl &&
+                geometry?.proxyCrop ? (
+                  <div className="ve-stage-media-crop">
+                    <ProxyVideo
+                      source={asset.proxyUrl}
+                      clip={clip}
+                      playheadUs={playheadUs}
+                      playing={playing}
+                      crop={geometry.proxyCrop}
+                    />
+                  </div>
                 ) : clip.kind === "image" && asset ? (
                   <img src={`/v1/files/${asset.id}/content`} alt="" />
                 ) : clip.kind === "text" ? (
@@ -230,7 +309,7 @@ export function VideoEditorPreview({
               </div>
             );
           })}
-          {!playing && precise ? (
+          {!playing && preciseFrame ? (
             <img
               className="ve-precise-frame"
               key={preciseUrl}
@@ -244,13 +323,13 @@ export function VideoEditorPreview({
           <span className="ve-safe-area" aria-hidden />
         </div>
         <div className="ve-proxy-audio" aria-hidden>
-          {activeAudio.map((clip) => {
-            const asset = assetMap.get(clip.assetId ?? "");
+          {audioChains.map((chain) => {
+            const asset = assetMap.get(chain.assetId);
             return asset?.proxyUrl ? (
-              <ProxyAudio
-                key={clip.id}
+              <ProxyAudioChain
+                key={chain.id}
                 source={asset.proxyUrl}
-                clip={clip}
+                clips={chain.clips}
                 playheadUs={playheadUs}
                 playing={playing}
               />

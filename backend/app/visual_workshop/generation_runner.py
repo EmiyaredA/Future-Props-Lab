@@ -146,6 +146,19 @@ class VisualGenerationRunner(PollingTaskRunner):
         payload: dict,
         workspace_id: str,
     ) -> str:
+        if provider_kind in {"senseaudio_music", "senseaudio_sfx"}:
+            reference_urls = [
+                await self._temporary_asset_url(str(asset_id), "audio", workspace_id)
+                for asset_id in payload.get("reference_asset_ids", [])
+            ]
+            return await submit_generation_task(
+                provider_kind=provider_kind,
+                base_url=base_url,
+                api_key=api_key,
+                model_slug=model_slug,
+                payload=payload,
+                audio_reference_urls=reference_urls,
+            )
         if provider_kind == "senseaudio_image":
             reference_id = payload.get("reference_asset_id")
             reference = (

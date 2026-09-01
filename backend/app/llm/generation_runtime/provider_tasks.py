@@ -9,11 +9,15 @@ from app.core.outbound_urls import require_safe_provider_base_url
 from app.llm.generation_runtime.media import GenerationMaterializationError
 from app.llm.providers import (
     create_image_task,
+    create_music_task,
+    create_sound_effect,
     create_video_task,
     get_image_task,
+    get_music_task,
     get_video_task,
 )
 from app.llm.providers._senseaudio import (
+    ProviderTaskStatus,
     SenseAudioProviderError,
     sanitize_provider_message,
 )
@@ -47,8 +51,9 @@ async def submit_generation_task(
     payload: dict[str, Any],
     image_reference: str | None = None,
     video_content: list[dict[str, object]] | None = None,
+    audio_reference_urls: list[str] | None = None,
 ) -> str:
-    """Submit a normalized image or video task through the provider boundary."""
+    """Submit a normalized image, video, music, or sound-effect task."""
     base_url = require_safe_provider_base_url(base_url)
     if provider_kind == "senseaudio_image":
         return await create_image_task(
@@ -59,6 +64,29 @@ async def submit_generation_task(
             size=str(payload["size"]),
             seed=payload.get("seed"),
             reference=image_reference,
+        )
+    if provider_kind == "senseaudio_music":
+        return await create_music_task(
+            base_url=base_url,
+            api_key=api_key,
+            model=model_slug,
+            prompt=str(payload["prompt"]),
+            theme=str(payload.get("theme") or ""),
+            style=str(payload.get("style") or ""),
+            duration=payload.get("duration"),
+            output_format=str(payload.get("output_format") or "mp3"),
+            reference_urls=audio_reference_urls or [],
+        )
+    if provider_kind == "senseaudio_sfx":
+        return await create_sound_effect(
+            base_url=base_url,
+            api_key=api_key,
+            model=model_slug,
+            text=str(payload["prompt"]),
+            duration=payload.get("duration"),
+            smart_duration=bool(payload.get("smart_duration", True)),
+            prompt_influence=float(payload.get("prompt_influence", 0.5)),
+            output_format=str(payload.get("output_format") or "mp3"),
         )
 
     content = video_content or []
@@ -86,6 +114,14 @@ async def poll_generation_task(
             api_key=api_key,
             task_id=provider_task_id,
         )
+    if provider_kind == "senseaudio_music":
+        return await get_music_task(
+            base_url=base_url,
+            api_key=api_key,
+            task_id=provider_task_id,
+        )
+    if provider_kind == "senseaudio_sfx":
+        return ProviderTaskStatus(status="completed", progress=100, result_url=provider_task_id)
     return await get_video_task(
         base_url=base_url,
         api_key=api_key,

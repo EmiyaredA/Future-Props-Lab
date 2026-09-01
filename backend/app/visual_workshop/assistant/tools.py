@@ -124,7 +124,10 @@ async def visual_context_source(workspace_id: str, project_id: str) -> list[Cont
         ),
         ContextFragment(
             "canvas",
-            _json_text(nodes, CANVAS_CONTEXT_LIMIT),
+            _json_text(
+                {"nodes": nodes, "edges": [edge.model_dump(mode="json") for edge in canvas.edges]},
+                CANVAS_CONTEXT_LIMIT,
+            ),
             priority=90,
             character_budget=CANVAS_CONTEXT_LIMIT,
         ),
@@ -176,6 +179,7 @@ async def _read_canvas(arguments: dict[str, Any], context: ToolExecutionContext)
     data = {
         "canvas_revision": canvas.revision,
         "nodes": [_compact_node(dict(item)) for item in canvas.nodes],
+        "edges": [edge.model_dump(mode="json") for edge in canvas.edges],
     }
     return Observation(
         context.tool_call_id,
@@ -273,11 +277,27 @@ async def _inspect_generation_task(
 
 
 def _apply_operations(
-    current: list[dict[str, Any]], operations: list[dict[str, Any]]
-) -> list[dict[str, Any]]:
-    result = [dict(item) for item in current]
+    current_nodes: list[dict[str, Any]],
+    current_edges: list[dict[str, Any]],
+    operations: list[dict[str, Any]],
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    result = [dict(item) for item in current_nodes]
+    edges = [dict(item) for item in current_edges]
     for operation in operations:
         op = operation.get("op")
+        if op == "add_edge":
+            edge = dict(operation.get("edge") or {})
+            if not edge.get("id"):
+                edge["id"] = f"edge-{uuid4()}"
+            edges.append(edge)
+            continue
+        if op == "delete_edge":
+            edge_id = str(operation.get("edge_id") or "")
+            before = len(edges)
+            edges = [edge for edge in edges if edge.get("id") != edge_id]
+            if len(edges) == before:
+                raise ValueError(f"连线不存在：{edge_id}")
+            continue
         if op == "add":
             node = dict(operation.get("node") or {})
             if not node.get("id"):
@@ -292,13 +312,18 @@ def _apply_operations(
             raise ValueError(f"节点不存在：{node_id}")
         if op == "delete":
             result.pop(index)
+            edges = [
+                edge
+                for edge in edges
+                if edge.get("source_node_id") != node_id and edge.get("target_node_id") != node_id
+            ]
         elif op == "update":
             changes = dict(operation.get("changes") or {})
             changes.pop("id", None)
             result[index] = {**result[index], **changes}
         else:
             raise ValueError(f"不支持的画布操作：{op}")
-    return result
+    return result, edges
 
 
 async def _apply_canvas_changes(
@@ -325,10 +350,15 @@ async def _apply_canvas_changes(
                 retryable=True,
             )
         try:
-            nodes = _apply_operations([dict(item) for item in current.nodes], operations)
+            nodes, edges = _apply_operations(
+                [node.model_dump(mode="json") for node in current.nodes],
+                [edge.model_dump(mode="json") for edge in current.edges],
+                operations,
+            )
             body = VisualCanvasDocumentPutIn(
                 expected_revision=current.revision,
                 nodes=nodes,
+                edges=edges,
             )
         except (ValueError, ValidationError) as exc:
             return Observation(
@@ -388,6 +418,7 @@ async def _start_generation_on_canvas(
             canvas_body = VisualCanvasDocumentPutIn(
                 expected_revision=current.revision,
                 nodes=[*current.nodes, node],
+                edges=current.edges,
             )
             updated = await documents.replace(project_id, canvas_body)
             await session.commit()
@@ -418,6 +449,7 @@ async def _start_generation_on_canvas(
         "node": node,
         "canvas_revision": updated.revision,
         "nodes": updated.nodes,
+        "edges": updated.edges,
     }
     return Observation(
         context.tool_call_id,
@@ -507,7 +539,7 @@ def visual_agent_tools(
         ),
         _tool(
             "apply_canvas_changes",
-            "批量新增、更新或删除画布节点；把同一需求的多个变更合并到一次调用",
+            "批量新增、更新或删除画布节点和连线；把同一需求的多个变更合并到一次调用",
             {
                 "type": "object",
                 "properties": {
@@ -554,7 +586,7 @@ def build_visual_agent_definition(
         "给出清晰且可执行的创作帮助。需要最新事实时优先调用读取工具。"
         "只有在工具返回成功 Observation 后才能声称已执行操作。"
         "画布写入和图片/视频生成必须等待用户确认；等待、拒绝或冲突时不得声称已完成。"
-        "多个相关画布改动必须合并到一次 apply_canvas_changes 调用。"
+        "多个相关画布节点或连线改动必须合并到一次 apply_canvas_changes 调用。"
         "不要删除项目、删除素材、上传文件或调用未提供的能力。"
     )
     if image_model_id:

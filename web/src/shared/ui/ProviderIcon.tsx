@@ -7,6 +7,8 @@ export function ProviderIcon({
     | "anthropic"
     | "senseaudio_image"
     | "senseaudio_video"
+    | "senseaudio_music"
+    | "senseaudio_sfx"
     | "senseaudio_asr"
     | "senseaudio_realtime";
   size?: number;

@@ -12,9 +12,10 @@ Future-Props-Lab/
 │   ├── deps.py        # HTTP/WebSocket 会话、Studio 鉴权与 WorkspaceDep
 │   ├── problem_details.py # 统一协议错误映射
 │   ├── accounts/      # 账号、Session、审计、API Key、Workspace 与公开投影
-│   ├── concurrency/   # revision/CAS 与通用单进程轮询 Runner 生命周期
-│   ├── core/          # 配置、数据库、时间与密钥基础设施
+│   ├── concurrency/   # revision/CAS、Workspace 项目记录原语与通用单进程轮询 Runner 生命周期
+│   ├── core/          # 配置、数据库与密钥基础设施
 │   ├── files/         # IncomingFile、文件策略、显式 Workspace 落盘、项目事务与旧布局迁移
+│   ├── media_rendering/ # 供应商/业务无关的 RenderPlan、帧求值、视频渲染与取消控制
 │   ├── agents/        # 供应商无关 Agent Harness、Reactive 工具循环与内存审批
 │   ├── llm/           # 模型目录、供应商适配、共享生成/实时运行时、测试工作台和调用日志
 │   ├── tool_navigation/ # 工具收藏与最近使用状态规则
@@ -22,8 +23,8 @@ Future-Props-Lab/
 │   ├── audio_annotation/ # Workspace 录音标注任务、文档/波形 CAS 与导入校验
 │   ├── visual_workshop/ # 视觉工坊项目、画布、助手、生成任务与领域适配器
 │   ├── galgame_workshop/ # Galgame 工程、Story 1.4 CAS、Story→RenderPlan 编译、剪辑交接、素材/ASR 与线路分析
-│   ├── video_editor/ # API 驱动的多轨时间轴、代理/精确帧、RenderPlan 求值与 FFmpeg 后台合成
-│   ├── models/        # SQLAlchemy 持久化形状
+│   ├── video_editor/ # API 驱动的多轨时间轴、代理/精确帧、片段交接与后台任务
+│   ├── models/        # SQLAlchemy 持久化形状及其自有 ID/时间默认工厂
 │   ├── routes/        # `/v1` HTTP/SSE 协议边界；Galgame 按九类协议模块拆分
 │   └── schemas/       # Pydantic 请求与响应形状；Galgame 项目内容、Block 核心/流程与视频剪辑按职责拆包
 ├── db/migrations/
@@ -32,7 +33,7 @@ Future-Props-Lab/
 │   └── runner.py      # checksum、连续前缀检查和事务应用
 ├── web/src/
 │   ├── app/           # Studio 入口、Session Context、路由、配置驱动工坊壳与应用注册表
-│   ├── docs/          # 数据驱动的双工坊使用指南、搜索、目录与深链接
+│   ├── docs/          # 数据驱动的三工坊使用指南、搜索、目录与深链接
 │   ├── features/      # 账号治理、首页、AI 应用、文件管理、工坊、工具导航、集成中心与模型功能
 │   ├── generated/     # OpenAPI 生成物
 │   ├── platform/      # Cookie/CSRF、API 客户端、认证事件与浏览器语音基础设施
@@ -99,7 +100,8 @@ Future-Props-Lab/
   角色/多层场景/音视频素材生命周期、虚拟打包路径、语音识别任务、立绘尺寸快照恢复、Fragment 线路分析与
   只读 Story 快照驱动的视频导出与分层剪辑交接任务，
   `video_editor/` 负责与 Story 解耦的微秒级多轨文档、类型化原子操作、项目素材快照、代理媒体、
-  后端精确停帧和固定帧网格的 FFmpeg/Pillow 合成。正式剪辑渲染只依赖不可变时间轴快照和原素材，
+  后端精确停帧和剪辑任务；`media_rendering/` 统一拥有 RenderPlan 契约、确定性帧求值、固定帧网格的
+  FFmpeg/Pillow 合成和取消控制。正式剪辑渲染只依赖不可变时间轴快照和原素材，
   不启动 Chromium、Playwright 或浏览器录屏；Pillow 只承担文字透明层和二维像素合成，音频 PTS
   与最终封装由 FFmpeg 统一处理。
   均不预置项目或素材。Studio 一级
@@ -123,6 +125,13 @@ Future-Props-Lab/
   遍历和打包投影继续共享一个大型类文件。
 - 视觉助手对话生命周期与发送事务保留在 `visual_workshop/assistant/conversations.py`，附件权限、
   内容投影、图片编码和文档提取集中在同目录 `attachments.py`，避免会话持久化依赖具体媒体解析。
+- 版本化项目快照的 ZIP64 流式校验、临时文件清理和跨平台目录打开命令由
+  `files/project_snapshots.py` 与 `files/project_folders.py` 拥有；画布、Story 和时间线的
+  类型化投影、ID 重映射与模型语义匹配仍位于三个所属工坊。
+- `concurrency/project_records.py` 只提供显式 Workspace 谓词下的项目加载、revision CAS 更新和删除
+  原语，不自动提交事务也不承载默认文档、就绪状态、快照投影或领域错误规则；三套工坊继续拥有各自
+  用例。Web 的 `shared/ui/project-library/useProjectLibraryController.ts` 通过功能适配器统一项目列表、
+  创建、改名、删除、快照导入导出、缓存和错误恢复，不依赖任何业务 feature。
 - Web 的依赖方向是 `app → features → shared/platform/generated`。`platform/` 与 `shared/`
   不依赖 `features/` 或 `app/`，`features/` 不依赖 `app/`；入口装配留在 `app/`，业务代码不
   放回 `web/src/` 根目录，生成契约不手工修改。
@@ -130,7 +139,7 @@ Future-Props-Lab/
   `features/audio-annotation/queryKeys.ts` 是各功能缓存键的唯一 owner；跨功能调用只复用 factory。
   `platform/api/useApiBlobUrl.ts` 统一鉴权预览请求的取消、竞态保护和 Object URL 回收，带独立缓存、
   重试预加载或多音轨调度的媒体运行时继续由所属 feature 管理。`shared/ui/project-library/` 只拥有
-  项目卡片、重命名/删除对话框和无 API 依赖的集合更新规则。
+  项目卡片、快照导入/导出/目录按钮、重命名/删除对话框和无业务 API 依赖的集合更新规则。
 - `features/accounts/` 拥有 Workspace 治理、个人资料与安全、平台账号页面和账号 API/Mutation；
   `app/StudioSession.ts` 只提供 Session Context，认证与业务请求统一经过 `platform/api` 客户端。
 - Character Workspace 的 ViewModel 由独立 `characterWorkspaceViewModel.ts` 拥有，展示子面板不再
@@ -144,8 +153,12 @@ Future-Props-Lab/
   家族维护，时间轴、角色与视觉工作区把交互 Hook、业务 mutation、派生 ViewModel 和视图分开，
   不允许把拆出的内部状态重新摊平成跨模块共享的巨型返回值。
 - `web/src/docs/` 是独立文档入口的数据与展示边界，按页面和章节驱动视觉创作工坊、Galgame
-  工坊指南，负责本地全文搜索、`docs.html?page=...#section` 深链接、响应式导航和主题；配套截图只
+  工坊与视频剪辑工坊指南，负责本地全文搜索、`docs.html?page=...#section` 深链接、响应式导航和主题；配套截图只
   存放于 `web/public/docs/`，不作为产品状态或测试数据源。
+- `scripts/demo/galgame_runaway/performance_upgrade.py` 只保留兼容入口、CLI 和流程编排；稳定演出规格、素材上传、
+  Story 变换/演出块、审计报告与 API/CAS 辅助分别归属同目录 `performance_assets.py`、
+  `performance_spec.py`、`performance_transform.py`/`performance_story.py`、`performance_audit.py` 和
+  `performance_http.py`，旧函数入口通过兼容重导出继续可用。
 - Web 组件和 E2E 测试按编辑器作者工作流、时间轴/角色、音频/舞台、播放器表现、画布助手和分支旅程
   等领域行为拆分；共享 mock/data builder 保留在所属测试能力内。测试文件不使用编号分片，单文件
   不超过 1,200 行，尺寸豁免基线保持为空。
@@ -170,7 +183,7 @@ Future-Props-Lab/
 `applications/visual-workshop/projects/<project-id>/{assets,generated}/`；Galgame 项目使用
 `applications/galgame-workshop/projects/<project-id>/{assets,derived,exports}/`；视频剪辑项目使用
 `applications/video-editor/projects/<project-id>/{assets,derived,exports}/`。项目目录只保存素材、
-派生文件和导出快照，标题变化不改变目录。模型测试对话图片保存在 `model-test/attachments/`，生成参考
+派生文件和正式导出结果，不保存快照历史；标题变化不改变目录。模型测试对话图片保存在 `model-test/attachments/`，生成参考
 素材及语音识别输入的任务私有副本保存在 `model-test/references/`，生成结果保存在 `model-test/generated/`。
 Skill 不可变版本保存在 `workspaces/<workspace-id>/integrations/skills/<skill-id>/<version>/`。
 本地临时分镜、场景图与未定稿草稿放在仓库根目录 `.scratch/`，与 `.runtime/`
@@ -180,14 +193,14 @@ Skill 不可变版本保存在 `workspaces/<workspace-id>/integrations/skills/<s
 和文档。`r0019_project_storage_layout` 只增加存储版本；旧文件由受鉴权的显式迁移 API 校验并搬迁，
 schema migration 不执行文件 I/O。
 
-目录配置、模型测试会话、测试工具与生成任务、视觉工坊项目、含节点级生成草稿的节点画布、项目对话、文件夹、文件和项目引用
+目录配置、模型测试会话、测试工具与生成任务、视觉工坊项目、含节点级生成草稿和动态连线的节点画布、项目对话、文件夹、文件和项目引用
 使用 revision/CAS 防止静默覆盖；Galgame 工坊工程元数据与整份故事文档分别使用 revision/CAS，
 故事冲突保留服务器完整快照，完成态工程在故事修改后恢复草稿。Story 1.4 的角色、素材、国际化、
 时间轴、流程与表现层交叉校验由 `schemas/galgame_workshop/story_validation.py` 的纯函数拥有；
 旧 Story 1.0–1.3 的格式转换只由
 `schemas/galgame_workshop/story_legacy.py` 适配器拥有；`galgame_workshop/story_migrations.py`
 通过正式 `/v1` API 执行状态预检、受 Workspace 约束的批量 CAS 固化和单工程旧文件导入，不以
-schema migration 或直接数据库修改替代运行期迁移。工具单项状态通过幂等更新和原子 upsert 写入。图片/视频生成任务持久化
+schema migration 或直接数据库修改替代运行期迁移。工具单项状态通过幂等更新和原子 upsert 写入。图片/视频/音频生成任务持久化
 供应商/模型快照和规范化参数，FastAPI 生命周期中的单机执行器负责恢复、轮询与安全下载；视觉工坊
 和模型测试复用 `concurrency/polling_runner.py` 的生命周期与并发控制，并由
 `llm/generation_runtime/GenerationTaskDriver` 统一编排 queued、submitting、pending、processing
@@ -197,7 +210,7 @@ schema migration 或直接数据库修改替代运行期迁移。工具单项状
 项目对话同样在发送准备与流式结算阶段使用独立短事务，并复用统一供应商适配边界。视觉工坊
 Agent 是通用 Harness 的首个消费者：读取画布、素材和生成任务无需确认，画布写入和外部生成必须
 经过内存审批；工具步骤持久化到对话消息，运行和审批等待不持久化，服务重启会安全取消遗留状态。
-写工具复用视觉工坊校验与短事务，批量节点变更只执行一次画布 CAS，生成任务与占位节点原子创建，
+写工具复用视觉工坊校验与短事务，批量节点/连线变更只执行一次画布 CAS，生成任务与占位节点原子创建，
 且不与 `model_test_*` 数据混用。
 
 模型测试对话、测试工具、工具调用快照、图片附件及生成结果是独立的 Workspace 调试数据，不进入视觉

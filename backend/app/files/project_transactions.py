@@ -50,6 +50,42 @@ async def creating_project_layout(
 
 
 @asynccontextmanager
+async def importing_project_layout(
+    session: AsyncSession,
+    storage: AssetStorage,
+    application_id: str,
+    project_id: str,
+    *,
+    workspace_id: str,
+) -> AsyncIterator[None]:
+    """以持久标记暂存导入项目，让启动补偿能识别中断状态。"""
+    created_root = storage.ensure_project_layout(
+        application_id, project_id, workspace_id=workspace_id
+    )
+    root = storage.project_root(application_id, project_id, workspace_id=workspace_id)
+    marker = root / ".snapshot-importing"
+    try:
+        marker.write_text("1", encoding="ascii")
+    except BaseException:
+        if created_root:
+            storage.remove_project_root(application_id, project_id, workspace_id=workspace_id)
+        raise
+    try:
+        yield
+        await session.commit()
+    except BaseException:
+        await session.rollback()
+        if created_root:
+            storage.remove_project_root(application_id, project_id, workspace_id=workspace_id)
+        raise
+    try:
+        marker.unlink(missing_ok=True)
+    except OSError:
+        # 数据库与项目目录已经提交；遗留标记由下次启动补偿清理。
+        pass
+
+
+@asynccontextmanager
 async def deleting_project_layout(
     session: AsyncSession,
     storage: AssetStorage,

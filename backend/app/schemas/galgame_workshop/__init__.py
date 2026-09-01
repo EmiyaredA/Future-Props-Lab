@@ -40,6 +40,7 @@ from app.schemas.galgame_workshop.assets import (
     GalgameProjectAssetPatchIn,
 )
 from app.schemas.galgame_workshop.base import (
+    GalgameProjectSnapshotImportOut,
     GalgameStoryAsset,
     GalgameStoryAudioAsset,
     GalgameStoryCg,

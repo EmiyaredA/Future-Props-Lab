@@ -777,7 +777,8 @@ async def test_visual_generation_options_creation_filters_and_active_provider_gu
                 "audio_asset_ids": ["audio-only"],
             },
         )
-        assert invalid_video_mode.status_code == 422
+        assert invalid_video_mode.status_code == 409
+        assert invalid_video_mode.json()["code"] == "model_unavailable"
         duplicate_reference = await client.post(
             f"/v1/visual-workshop/projects/{project['id']}/generation-tasks",
             json={

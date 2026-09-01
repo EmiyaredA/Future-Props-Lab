@@ -99,6 +99,7 @@ async function installVisualWorkshopRoutes(
 ) {
   let canvas = {
     project_id: project.id,
+    edges: [],
     nodes: [
       {
         id: "persona-image-node",
@@ -244,11 +245,13 @@ async function installVisualWorkshopRoutes(
     if (url.pathname.endsWith("/canvas")) {
       if (request.method() === "PUT") {
         const body = request.postDataJSON() as {
+          edges: typeof canvas.edges;
           nodes: typeof canvas.nodes;
           expected_revision: number;
         };
         canvas = {
           ...canvas,
+          edges: body.edges,
           nodes: body.nodes,
           revision: body.expected_revision + 1,
         };

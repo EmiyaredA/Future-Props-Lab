@@ -13,6 +13,7 @@ from app.core.config import Settings, get_settings
 from app.core.time import iso_utc
 from app.files.incoming import IncomingFile
 from app.files.library import AssetLibrary
+from app.files.policy import VIDEO_EDITABLE_EXTENSIONS
 from app.files.storage import AssetStorage
 from app.models import (
     VideoEditorAssetMetadata,
@@ -30,26 +31,7 @@ from app.schemas.video_editor import (
 from app.video_editor.errors import VideoEditorNotFoundError, VideoEditorValidationError
 from app.video_editor.projects import VideoEditorProjects
 
-VIDEO_EDITOR_EXTENSIONS = {
-    ".mp4",
-    ".mov",
-    ".mkv",
-    ".webm",
-    ".wav",
-    ".mp3",
-    ".m4a",
-    ".aac",
-    ".flac",
-    ".ogg",
-    ".png",
-    ".jpg",
-    ".jpeg",
-    ".webp",
-    ".ttf",
-    ".otf",
-    ".woff",
-    ".woff2",
-}
+VIDEO_EDITOR_EXTENSIONS = VIDEO_EDITABLE_EXTENSIONS
 
 
 def probe_media(path: Path) -> dict:

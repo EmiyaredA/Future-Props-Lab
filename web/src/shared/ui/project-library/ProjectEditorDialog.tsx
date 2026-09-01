@@ -1,4 +1,4 @@
-import type { FormEvent } from "react";
+import { useEffect, useId, useRef, type FormEvent } from "react";
 import { X } from "lucide-react";
 
 export type ProjectEditorState<T> =
@@ -24,7 +24,30 @@ export function ProjectEditorDialog<T extends { title: string }>({
   onRename: () => void;
   onDelete: () => void;
 }) {
-  const titleId = `project-editor-${noun}`;
+  const id = useId();
+  const titleId = `${id}-title`;
+  const descriptionId = `${id}-description`;
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const cancelRef = useRef(onCancel);
+  const pendingRef = useRef(pending);
+  cancelRef.current = onCancel;
+  pendingRef.current = pending;
+  useEffect(() => {
+    const previous = document.activeElement as HTMLElement | null;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && !pendingRef.current) cancelRef.current();
+    };
+    document.addEventListener("keydown", onKeyDown);
+    (
+      inputRef.current ??
+      dialogRef.current?.querySelector<HTMLElement>("button")
+    )?.focus();
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      previous?.focus();
+    };
+  }, []);
   const submit = (event: FormEvent) => {
     event.preventDefault();
     onRename();
@@ -32,10 +55,12 @@ export function ProjectEditorDialog<T extends { title: string }>({
   return (
     <div className="workshop-dialog-backdrop" role="presentation">
       <div
+        ref={dialogRef}
         className="workshop-dialog"
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
+        aria-describedby={editor.mode === "delete" ? descriptionId : undefined}
       >
         <header>
           <div>
@@ -48,7 +73,12 @@ export function ProjectEditorDialog<T extends { title: string }>({
                 : `删除“${editor.project.title}”？`}
             </h2>
           </div>
-          <button disabled={pending} aria-label="关闭" onClick={onCancel}>
+          <button
+            type="button"
+            disabled={pending}
+            aria-label="关闭"
+            onClick={onCancel}
+          >
             <X aria-hidden />
           </button>
         </header>
@@ -57,7 +87,7 @@ export function ProjectEditorDialog<T extends { title: string }>({
             <label>
               {noun}名称
               <input
-                autoFocus
+                ref={inputRef}
                 required
                 maxLength={120}
                 value={editor.title}
@@ -65,7 +95,7 @@ export function ProjectEditorDialog<T extends { title: string }>({
               />
             </label>
             <div className="workshop-dialog-actions">
-              <button type="button" onClick={onCancel}>
+              <button type="button" disabled={pending} onClick={onCancel}>
                 取消
               </button>
               <button
@@ -78,10 +108,17 @@ export function ProjectEditorDialog<T extends { title: string }>({
           </form>
         ) : (
           <div className="workshop-delete-copy">
-            <p>{deleteDescription}</p>
+            <p id={descriptionId}>{deleteDescription}</p>
             <div>
-              <button onClick={onCancel}>取消</button>
-              <button className="danger" disabled={pending} onClick={onDelete}>
+              <button type="button" disabled={pending} onClick={onCancel}>
+                取消
+              </button>
+              <button
+                type="button"
+                className="danger"
+                disabled={pending}
+                onClick={onDelete}
+              >
                 确认删除
               </button>
             </div>

@@ -1,4 +1,4 @@
-import { useMemo, useRef } from "react";
+import { useLayoutEffect, useMemo, useRef, type CSSProperties } from "react";
 import {
   Copy,
   ArrowDown,
@@ -13,6 +13,7 @@ import {
   VolumeX,
 } from "lucide-react";
 import { formatTime, snapUs } from "./editorModel";
+import { getTimelineRulerStepSeconds } from "./timelineScale";
 import type {
   VideoEditorAsset,
   VideoEditorClip,
@@ -26,8 +27,11 @@ export function VideoEditorTimeline({
   playheadUs,
   setPlayheadUs,
   zoom,
+  scrollLeft,
+  onScrollLeftChange,
   selectedClipId,
-  setSelectedClipId,
+  selectedClipIds,
+  selectClip,
   commit,
   onDropAsset,
 }: {
@@ -36,8 +40,11 @@ export function VideoEditorTimeline({
   playheadUs: number;
   setPlayheadUs: (value: number) => void;
   zoom: number;
+  scrollLeft: number;
+  onScrollLeftChange: (value: number) => void;
   selectedClipId?: string;
-  setSelectedClipId: (value?: string) => void;
+  selectedClipIds: string[];
+  selectClip: (value?: string, additive?: boolean) => void;
   commit: (
     redo: VideoEditorOperation[],
     undo?: VideoEditorOperation[],
@@ -49,6 +56,11 @@ export function VideoEditorTimeline({
   ) => void;
 }) {
   const scroller = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const node = scroller.current;
+    if (node && Math.abs(node.scrollLeft - scrollLeft) > 0.5)
+      node.scrollLeft = scrollLeft;
+  }, [scrollLeft]);
   const fps = timeline.document.settings?.fps ?? 30;
   const tracks = [...(timeline.document.tracks ?? [])].sort(
     (a, b) => a.order - b.order,
@@ -61,10 +73,18 @@ export function VideoEditorTimeline({
       ),
     ),
   );
+  const rulerStepSeconds = getTimelineRulerStepSeconds(zoom);
   const rulers = useMemo(
-    () => Array.from({ length: seconds + 1 }, (_, index) => index),
-    [seconds],
+    () =>
+      Array.from(
+        { length: Math.floor(seconds / rulerStepSeconds) + 1 },
+        (_, index) => index * rulerStepSeconds,
+      ),
+    [rulerStepSeconds, seconds],
   );
+  const timelineScaleStyle = {
+    "--timeline-tick": `${rulerStepSeconds * zoom}px`,
+  } as CSSProperties;
   const positionUs = (clientX: number) => {
     const rect = scroller.current?.getBoundingClientRect();
     const scrollLeft = scroller.current?.scrollLeft ?? 0;
@@ -85,7 +105,7 @@ export function VideoEditorTimeline({
       [{ type: ripple ? "rippleDelete" : "removeClip", clipId: selected.id }],
       [{ type: "addClip", clip: selected }],
     );
-    setSelectedClipId(undefined);
+    selectClip(undefined);
   };
   const splitSelected = () => {
     if (
@@ -95,26 +115,49 @@ export function VideoEditorTimeline({
     )
       return;
     const newId = crypto.randomUUID();
+    const splitAt = snapUs(playheadUs, fps);
+    const linked = selected.linkGroupId
+      ? [...clipById.values()].filter(
+          (clip) =>
+            clip.linkGroupId === selected.linkGroupId &&
+            clip.timelineStartUs < splitAt &&
+            splitAt < clip.timelineStartUs + clip.durationUs,
+        )
+      : [selected];
+    const newIds = Object.fromEntries(
+      linked
+        .filter((clip) => clip.id !== selected.id)
+        .map((clip) => [clip.id, crypto.randomUUID()]),
+    );
+    const allNewIds = new Map([
+      [selected.id, newId],
+      ...Object.entries(newIds),
+    ]);
     void commit(
       [
         {
           type: "splitClip",
           clipId: selected.id,
-          atUs: snapUs(playheadUs, fps),
+          atUs: splitAt,
           newClipId: newId,
+          linkedNewClipIds: newIds,
+          newLinkGroupId: `link-${crypto.randomUUID()}`,
         },
       ],
       [
-        { type: "removeClip", clipId: newId },
-        {
-          type: "trimClip",
-          clipId: selected.id,
-          timelineStartUs: selected.timelineStartUs,
-          durationUs: selected.durationUs,
-          sourceInUs: selected.sourceInUs,
-        },
+        ...linked.map((clip) => ({
+          type: "removeClip" as const,
+          clipId: allNewIds.get(clip.id)!,
+        })),
+        ...linked.map((clip) => ({
+          type: "trimClip" as const,
+          clipId: clip.id,
+          timelineStartUs: clip.timelineStartUs,
+          durationUs: clip.durationUs,
+          sourceInUs: clip.sourceInUs,
+        })),
       ],
-    );
+    ).then(() => selectClip(newId));
   };
   return (
     <section className="ve-timeline-panel">
@@ -266,7 +309,14 @@ export function VideoEditorTimeline({
             </div>
           ))}
         </div>
-        <div className="ve-tracks-scroll" ref={scroller}>
+        <div
+          className="ve-tracks-scroll"
+          ref={scroller}
+          style={timelineScaleStyle}
+          onScroll={(event) =>
+            onScrollLeftChange(event.currentTarget.scrollLeft)
+          }
+        >
           <div
             className="ve-ruler"
             style={{ width: `${seconds * zoom}px` }}
@@ -335,7 +385,7 @@ export function VideoEditorTimeline({
                 {(track.clips ?? []).map((clip: VideoEditorClip) => (
                   <button
                     key={clip.id}
-                    className={`ve-clip ${clip.kind} ${selectedClipId === clip.id ? "selected" : ""}`}
+                    className={`ve-clip ${clip.kind} ${selectedClipIds.includes(clip.id) ? "selected" : ""}`}
                     style={{
                       left: `${(clip.timelineStartUs / 1_000_000) * zoom}px`,
                       width: `${Math.max(18, (clip.durationUs / 1_000_000) * zoom)}px`,
@@ -349,7 +399,7 @@ export function VideoEditorTimeline({
                     }
                     onClick={(event) => {
                       event.stopPropagation();
-                      setSelectedClipId(clip.id);
+                      selectClip(clip.id, event.metaKey || event.ctrlKey);
                       if (
                         playheadUs < clip.timelineStartUs ||
                         playheadUs >= clip.timelineStartUs + clip.durationUs

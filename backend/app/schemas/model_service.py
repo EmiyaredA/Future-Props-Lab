@@ -13,6 +13,8 @@ ProviderKind = Literal[
     "senseaudio_video",
     "senseaudio_asr",
     "senseaudio_realtime",
+    "senseaudio_music",
+    "senseaudio_sfx",
 ]
 ModelCapability = Literal[
     "chat",
@@ -22,6 +24,7 @@ ModelCapability = Literal[
     "video_generation",
     "speech_recognition",
     "voice",
+    "audio_generation",
 ]
 ModelCategory = Literal[
     "text_generation",

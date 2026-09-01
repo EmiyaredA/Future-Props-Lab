@@ -252,6 +252,38 @@ SAYFLOW_TEXT_CATALOG = (
             ),
         ),
     ),
+    SeedProvider(
+        id="f0000000-0000-4000-8000-000000000008",
+        name="SenseAudio 音乐生成",
+        kind="senseaudio_music",
+        base_url="https://api.senseaudio.cn/v1",
+        sort_order=6,
+        models=(
+            SeedModel(
+                id="f2000000-0000-4000-8000-000000000009",
+                slug="senseaudio-music-2.0-260626",
+                label="SenseAudio Music 2.0",
+                description="面向纯音乐与背景音乐创作的异步生成模型",
+                capabilities=("audio_generation",),
+            ),
+        ),
+    ),
+    SeedProvider(
+        id="f0000000-0000-4000-8000-000000000009",
+        name="SenseAudio 音效生成",
+        kind="senseaudio_sfx",
+        base_url="https://api.senseaudio.cn/v1",
+        sort_order=7,
+        models=(
+            SeedModel(
+                id="f2000000-0000-4000-8000-000000000010",
+                slug="senseaudio-sfx-1.0-260626",
+                label="SenseAudio SFX 1.0",
+                description="根据描述同步生成短音效的模型",
+                capabilities=("audio_generation",),
+            ),
+        ),
+    ),
 )
 
 

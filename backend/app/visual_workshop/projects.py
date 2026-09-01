@@ -1,9 +1,13 @@
 from __future__ import annotations
 
-from sqlalchemy import delete, select, update
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.concurrency.revisions import require_revision_write
+from app.concurrency.project_records import (
+    delete_revisioned_project,
+    load_workspace_project,
+    patch_revisioned_project,
+)
 from app.core.config import get_settings
 from app.core.time import iso_utc, utc_now
 from app.files.project_transactions import creating_project_layout, deleting_project_layout
@@ -43,7 +47,9 @@ class VisualWorkshopProjects:
         rows = (
             (
                 await self.session.execute(
-                    select(VisualWorkshopProject).order_by(
+                    select(VisualWorkshopProject)
+                    .where(VisualWorkshopProject.workspace_id == self.workspace_id)
+                    .order_by(
                         VisualWorkshopProject.updated_at.desc(),
                         VisualWorkshopProject.created_at.desc(),
                     )
@@ -55,16 +61,21 @@ class VisualWorkshopProjects:
         return VisualWorkshopProjectListOut(items=[project_out(row) for row in rows])
 
     async def _row(self, project_id: str) -> VisualWorkshopProject:
-        row = await self.session.get(VisualWorkshopProject, project_id)
-        if row is None:
-            raise VisualWorkshopProjectNotFoundError("项目不存在")
-        return row
+        return await load_workspace_project(
+            self.session,
+            VisualWorkshopProject,
+            project_id,
+            self.workspace_id,
+            not_found=lambda: VisualWorkshopProjectNotFoundError("项目不存在"),
+        )
 
     async def get(self, project_id: str) -> VisualWorkshopProjectOut:
         return project_out(await self._row(project_id))
 
     async def create(self, body: VisualWorkshopProjectCreateIn) -> VisualWorkshopProjectOut:
-        row = VisualWorkshopProject(title=body.title, kind=body.kind, status="draft")
+        row = VisualWorkshopProject(
+            workspace_id=self.workspace_id, title=body.title, kind=body.kind, status="draft"
+        )
         self.session.add(row)
         await self.session.flush()
         async with creating_project_layout(
@@ -94,18 +105,13 @@ class VisualWorkshopProjects:
             values["kind"] = body.kind
         if body.status is not None:
             values["status"] = body.status
-        result = await self.session.execute(
-            update(VisualWorkshopProject)
-            .where(
-                VisualWorkshopProject.id == project_id,
-                VisualWorkshopProject.revision == body.expected_revision,
-            )
-            .values(**values)
-        )
-        await require_revision_write(
+        await patch_revisioned_project(
             self.session,
-            result,
-            expected=body.expected_revision,
+            VisualWorkshopProject,
+            project_id,
+            self.workspace_id,
+            expected_revision=body.expected_revision,
+            values=values,
             load_current=lambda: self.get(project_id),
         )
         await self.session.commit()
@@ -135,15 +141,11 @@ class VisualWorkshopProjects:
             workspace_id=self.workspace_id,
             legacy_paths=legacy_paths,
         ):
-            result = await self.session.execute(
-                delete(VisualWorkshopProject).where(
-                    VisualWorkshopProject.id == project_id,
-                    VisualWorkshopProject.revision == expected_revision,
-                )
-            )
-            await require_revision_write(
+            await delete_revisioned_project(
                 self.session,
-                result,
-                expected=expected_revision,
+                VisualWorkshopProject,
+                project_id,
+                self.workspace_id,
+                expected_revision=expected_revision,
                 load_current=lambda: self.get(project_id),
             )
