@@ -274,7 +274,10 @@ export function useVideoEditor(projectId: string) {
         const fps = timeline.data?.document.settings?.fps ?? 30;
         setPlaying(false);
         const direction = event.code === "ArrowLeft" ? -1 : 1;
-        if (selectedClipIds.length) {
+        // Plain arrow keys seek the playhead. Use Alt+Arrow when a clip is
+        // selected and it needs to be nudged, so selecting a clip does not
+        // unexpectedly disable timeline scrubbing.
+        if (event.altKey && selectedClipIds.length) {
           moveSelectedClips(
             direction * (event.shiftKey ? 1_000_000 : frameUs(fps)),
           );

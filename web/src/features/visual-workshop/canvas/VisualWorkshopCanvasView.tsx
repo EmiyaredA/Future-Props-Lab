@@ -76,6 +76,7 @@ export function VisualWorkshopCanvasView({
     setSelectedEdgeId,
     connection,
     selectedId,
+    actionsHiddenNodeId,
     setSelectedId,
     selectedNodeIds,
     selectionBox,
@@ -106,6 +107,7 @@ export function VisualWorkshopCanvasView({
     projectQuery,
     canvasQuery,
     enqueueSave,
+    clearHistory,
     prepareCanvasForAgent,
     patchNode,
     linkGenerationTask,
@@ -256,6 +258,7 @@ export function VisualWorkshopCanvasView({
           {nodes.map((node) => {
             const selected = selectedNodeIds.includes(node.id);
             const focused = node.id === selectedId;
+            const showNodeActions = focused && actionsHiddenNodeId !== node.id;
             const connectionClass =
               connection?.sourceNodeId === node.id
                 ? " is-connection-source"
@@ -319,7 +322,7 @@ export function VisualWorkshopCanvasView({
                   (node.kind === "image" || node.kind === "video") ? (
                     <Pencil className="canvas-node-title-edit" aria-hidden />
                   ) : null}
-                  {focused && node.kind === "text" ? (
+                  {showNodeActions && node.kind === "text" ? (
                     <span className="canvas-node-actions">
                       <button
                         aria-label="复制节点"
@@ -344,7 +347,7 @@ export function VisualWorkshopCanvasView({
                         <Trash2 aria-hidden />
                       </button>
                     </span>
-                  ) : focused && node.kind !== "text" ? (
+                  ) : showNodeActions && node.kind !== "text" ? (
                     <CanvasMediaNodeActions
                       node={node}
                       canExportFrame={
@@ -712,6 +715,7 @@ export function VisualWorkshopCanvasView({
               revisionRef.current = conflict.revision;
               conflictRef.current = false;
               saveFailureRef.current = "";
+              clearHistory();
               setNodes(conflict.nodes);
               setEdges(conflict.edges);
               setConflict(undefined);

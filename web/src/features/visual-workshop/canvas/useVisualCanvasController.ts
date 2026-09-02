@@ -117,6 +117,10 @@ export function useVisualCanvasController({
     conflict,
     setConflict,
     enqueueSave,
+    recordHistory,
+    clearHistory,
+    undo,
+    redo,
     prepareCanvasForAgent,
     replaceNodes,
     patchNode,
@@ -172,6 +176,7 @@ export function useVisualCanvasController({
         clearTimeout(autoSave.current);
         autoSave.current = undefined;
       }
+      recordHistory({ nodes: nodesRef.current, edges: edgesRef.current });
       const next = nodesRef.current.map((node) =>
         node.id === nodeId && node.kind !== "text"
           ? ({
@@ -194,7 +199,9 @@ export function useVisualCanvasController({
       autoSave,
       client,
       nodesRef,
+      edgesRef,
       projectId,
+      recordHistory,
       revisionRef,
       setNodes,
       setSaveMessage,
@@ -369,6 +376,7 @@ export function useVisualCanvasController({
     setToolMode,
     selectedNodeIds,
     setSelectedNodeIds,
+    actionsHiddenNodeId,
     selectedId,
     setSelectedId,
     selectionBox,
@@ -385,6 +393,7 @@ export function useVisualCanvasController({
     setViewport,
     nodes,
     nodesRef,
+    edgesRef,
     replaceNodes,
     connection,
     setConnection,
@@ -394,6 +403,7 @@ export function useVisualCanvasController({
     clearEdgeSelection: () => setSelectedEdgeId(undefined),
     closeAssets: () => setAssetsOpen(false),
     enqueueSave,
+    recordHistory,
     clearAutoSave: () => {
       if (autoSave.current) clearTimeout(autoSave.current);
     },
@@ -455,11 +465,13 @@ export function useVisualCanvasController({
           !removing.has(edge.source_node_id) &&
           !removing.has(edge.target_node_id),
       );
+      recordHistory({ nodes: nodesRef.current, edges: edgesRef.current });
       edgesRef.current = nextEdges;
       setEdges(nextEdges);
       replaceNodes(
         (current) => current.filter((node) => !removing.has(node.id)),
         true,
+        false,
       );
       setSelectedNodeIds((current) =>
         current.filter((id) => !removing.has(id)),
@@ -469,7 +481,14 @@ export function useVisualCanvasController({
       );
       setSelectedEdgeId(undefined);
     },
-    [edgesRef, replaceNodes, setEdges, setSelectedNodeIds],
+    [
+      edgesRef,
+      nodesRef,
+      recordHistory,
+      replaceNodes,
+      setEdges,
+      setSelectedNodeIds,
+    ],
   );
   const removeNode = useCallback(
     (id: string) => removeNodes([id]),
@@ -494,6 +513,7 @@ export function useVisualCanvasController({
         clearTimeout(autoSave.current);
         autoSave.current = undefined;
       }
+      recordHistory({ nodes: nodesRef.current, edges: edgesRef.current });
       const next = [...nodesRef.current, node];
       nodesRef.current = next;
       setNodes(next);
@@ -508,7 +528,9 @@ export function useVisualCanvasController({
       autoSave,
       client,
       enqueueSave,
+      edgesRef,
       nodesRef,
+      recordHistory,
       prepareCanvasForAgent,
       projectId,
       setNodes,
@@ -597,6 +619,8 @@ export function useVisualCanvasController({
     zoomOut: () => setZoom(viewport.zoom - 0.1),
     resetZoom,
     nudgeSelected,
+    undo,
+    redo,
   });
 
   const openContextMenu = (event: React.MouseEvent<HTMLDivElement>) => {
@@ -649,6 +673,7 @@ export function useVisualCanvasController({
     connection,
     setConnection,
     selectedId,
+    actionsHiddenNodeId,
     setSelectedId,
     selectedNodeIds,
     setSelectedNodeIds,
@@ -682,6 +707,10 @@ export function useVisualCanvasController({
     canvasQuery,
     canvasReady,
     enqueueSave,
+    recordHistory,
+    clearHistory,
+    undo,
+    redo,
     prepareCanvasForAgent,
     replaceNodes,
     replaceEdges,

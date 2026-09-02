@@ -8,6 +8,7 @@ import { VideoEditorProjectsPage } from "@features/video-editor/VideoEditorProje
 import {
   createVideoEditorSegmentExport,
   exportVideoEditorProjectSnapshot,
+  getVideoEditorSegmentExport,
   importVideoEditorProjectSnapshot,
   listVideoEditorProjects,
   openVideoEditorProjectFolder,
@@ -25,6 +26,7 @@ vi.mock("@features/video-editor/api", async () => {
   return {
     ...actual,
     createVideoEditorSegmentExport: vi.fn(),
+    getVideoEditorSegmentExport: vi.fn(),
     exportVideoEditorProjectSnapshot: vi.fn(),
     importVideoEditorProjectSnapshot: vi.fn(),
     listVideoEditorProjects: vi.fn(),
@@ -134,6 +136,20 @@ beforeEach(() => {
     progress: 0,
     resultDetail: {},
     revision: 0,
+    createdAt: "2026-08-29T00:00:00Z",
+    updatedAt: "2026-08-29T00:00:00Z",
+  });
+  vi.mocked(getVideoEditorSegmentExport).mockResolvedValue({
+    id: "task-1",
+    projectId: "editor-1",
+    requestId: "request-1",
+    kind: "segment_export",
+    status: "running",
+    progress: 42,
+    resultDetail: {
+      segments: [{ clipId: "clip-b", name: "结尾", status: "encoded" }],
+    },
+    revision: 1,
     createdAt: "2026-08-29T00:00:00Z",
     updatedAt: "2026-08-29T00:00:00Z",
   });
@@ -254,5 +270,36 @@ describe("video editor upgrade", () => {
       ctrlKey: true,
     });
     expect(selectClip).toHaveBeenCalledWith("clip-b", true);
+  });
+
+  it("keeps the dialog open and shows task progress after submission", async () => {
+    const user = userEvent.setup();
+    const onClose = vi.fn();
+    const client = new QueryClient({
+      defaultOptions: {
+        queries: { retry: false },
+        mutations: { retry: false },
+      },
+    });
+    render(
+      <QueryClientProvider client={client}>
+        <VideoEditorSegmentExportDialog
+          projectId="editor-1"
+          timeline={timeline}
+          assets={assets}
+          selectedClipIds={["clip-b"]}
+          onClose={onClose}
+        />
+      </QueryClientProvider>,
+    );
+
+    await user.click(screen.getByRole("button", { name: "开始导出并导入" }));
+    expect(await screen.findByRole("progressbar")).toHaveAttribute(
+      "aria-valuenow",
+      "42",
+    );
+    expect(screen.getByText("正在导出并导入")).toBeInTheDocument();
+    expect(screen.getByText("已编码，正在导入")).toBeInTheDocument();
+    expect(onClose).not.toHaveBeenCalled();
   });
 });

@@ -23,8 +23,8 @@
 }
 
 .video-composer-submit {
-  width: 46px;
-  height: 46px;
+  width: 40px;
+  height: 40px;
   margin-left: auto;
   display: grid;
   place-items: center;
@@ -33,7 +33,7 @@
   border-radius: 50%;
   background: var(--text-strong);
   color: var(--surface);
-  box-shadow: 0 10px 24px rgb(0 0 0 / 20%);
+  box-shadow: 0 8px 18px rgb(0 0 0 / 20%);
 }
 
 .video-composer-submit:hover:not(:disabled) {
@@ -48,7 +48,7 @@
 }
 
 .video-composer-submit svg {
-  width: 20px;
+  width: 18px;
 }
 
 .canvas-conflict {

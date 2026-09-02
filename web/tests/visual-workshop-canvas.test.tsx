@@ -351,6 +351,31 @@ test("opens an Updream-style context menu and persists created nodes", async () 
   expect(fittedX).toBeGreaterThan(200);
 });
 
+test("undoes and redoes canvas node changes with keyboard shortcuts", async () => {
+  const user = userEvent.setup();
+  const { container } = renderCanvas();
+  expect(await screen.findByText("未命名项目")).toBeInTheDocument();
+  const surface = container.querySelector(".visual-canvas-surface")!;
+
+  fireEvent.contextMenu(surface, { clientX: 260, clientY: 220 });
+  await user.click(screen.getByRole("menuitem", { name: "添加文本节点" }));
+  expect(container.querySelectorAll("[data-node-id^='text-']")).toHaveLength(1);
+
+  fireEvent.keyDown(window, { key: "z", ctrlKey: true });
+  await waitFor(() =>
+    expect(container.querySelectorAll("[data-node-id^='text-']")).toHaveLength(
+      0,
+    ),
+  );
+
+  fireEvent.keyDown(window, { key: "z", ctrlKey: true, shiftKey: true });
+  await waitFor(() =>
+    expect(container.querySelectorAll("[data-node-id^='text-']")).toHaveLength(
+      1,
+    ),
+  );
+});
+
 test.each([
   ["image", "图片"],
   ["video", "视频"],
@@ -444,6 +469,56 @@ test("uses connection ports without selecting the node or opening its inspector"
   expect(
     screen.queryByRole("complementary", { name: "节点检查器" }),
   ).not.toBeInTheDocument();
+});
+
+test("selects a connection line and removes it with Delete", async () => {
+  vi.mocked(getVisualCanvas).mockResolvedValueOnce({
+    project_id: "project-1",
+    edges: [
+      {
+        id: "edge-1",
+        source_node_id: "image-1",
+        target_node_id: "video-2",
+      },
+    ],
+    nodes: [
+      {
+        id: "image-1",
+        kind: "image",
+        title: "图片1",
+        position: { x: 240, y: 120 },
+        asset_id: null,
+      },
+      {
+        id: "video-2",
+        kind: "video",
+        title: "视频2",
+        position: { x: 640, y: 120 },
+        asset_id: null,
+      },
+    ],
+    revision: 0,
+    updated_at: "2026-08-03T08:00:00Z",
+  });
+  const user = userEvent.setup();
+  const { container } = renderCanvas();
+
+  expect(await screen.findByText("图片1")).toBeInTheDocument();
+  const edge = screen.getByRole("button", {
+    name: "连线：图片1 → 视频2",
+  });
+  await user.click(edge);
+  expect(edge).toHaveClass("hit-area");
+
+  fireEvent.keyDown(window, { key: "Delete" });
+  await waitFor(() =>
+    expect(
+      container.querySelector('[aria-label="连线：图片1 → 视频2"]'),
+    ).not.toBeInTheDocument(),
+  );
+  await waitFor(() => expect(putVisualCanvas).toHaveBeenCalled());
+  const lastCall = vi.mocked(putVisualCanvas).mock.calls.at(-1);
+  expect(lastCall?.[3]).toEqual([]);
 });
 
 test("merges direct linked assets into reference rows and prompt mentions", async () => {
@@ -974,6 +1049,18 @@ test("drags a selected video node from its preview and saves zoom-adjusted coord
   expect(
     screen.queryByRole("complementary", { name: "节点检查器" }),
   ).not.toBeInTheDocument();
+  expect(
+    node.querySelector(".canvas-media-node-actions"),
+  ).not.toBeInTheDocument();
+
+  fireEvent.pointerDown(node, {
+    button: 0,
+    clientX: 410,
+    clientY: 255,
+    pointerId: 2,
+  });
+  fireEvent.pointerUp(node, { pointerId: 2 });
+  expect(node.querySelector(".canvas-media-node-actions")).toBeInTheDocument();
   expect(vi.mocked(putVisualCanvas).mock.calls[0]?.[1][0]).toMatchObject({
     id: "video-1",
     position: { x: 340, y: 170 },

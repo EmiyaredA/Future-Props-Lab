@@ -490,11 +490,17 @@ export function VideoEditorTimeline({
           onScroll={(event) =>
             onScrollLeftChange(event.currentTarget.scrollLeft)
           }
+          onPointerDown={(event) => {
+            if (event.target === event.currentTarget) selectClip(undefined);
+          }}
         >
           <div
             className="ve-ruler"
             style={{ width: `${seconds * zoom}px` }}
-            onPointerDown={(event) => setPlayheadUs(positionUs(event.clientX))}
+            onPointerDown={(event) => {
+              selectClip(undefined);
+              setPlayheadUs(positionUs(event.clientX));
+            }}
           >
             {rulers.map((second) => (
               <span key={second} style={{ left: `${second * zoom}px` }}>
@@ -523,8 +529,10 @@ export function VideoEditorTimeline({
                 key={track.id}
                 data-track-id={track.id}
                 onPointerDown={(event) => {
-                  if (event.target === event.currentTarget)
+                  if (event.target === event.currentTarget) {
+                    selectClip(undefined);
                     setPlayheadUs(positionUs(event.clientX));
+                  }
                 }}
                 onDragOver={(event) => event.preventDefault()}
                 onDrop={(event) => {

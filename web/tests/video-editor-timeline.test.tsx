@@ -135,4 +135,31 @@ describe("video editor timeline", () => {
     fireEvent.click(screen.getByRole("button", { name: "吸附" }));
     expect(setSnapEnabled).toHaveBeenCalledWith(false);
   });
+
+  it("clears the clip selection when clicking empty timeline space", () => {
+    const selectClip = vi.fn();
+    const props = {
+      timeline,
+      assets: [],
+      playheadUs: 0,
+      setPlayheadUs: vi.fn(),
+      zoom: 80,
+      scrollLeft: 0,
+      onScrollLeftChange: vi.fn(),
+      selectedClipId: "video-left",
+      selectedClipIds: ["video-left"],
+      selectClip,
+      commit: vi.fn().mockResolvedValue(undefined),
+      onDropAsset: vi.fn(),
+    };
+    const { container } = render(<VideoEditorTimeline {...props} />);
+
+    fireEvent.pointerDown(container.querySelector(".ve-ruler")!);
+    fireEvent.pointerDown(container.querySelector(".ve-track-row")!);
+    fireEvent.pointerDown(container.querySelector(".ve-tracks-scroll")!);
+
+    expect(selectClip).toHaveBeenNthCalledWith(1, undefined);
+    expect(selectClip).toHaveBeenNthCalledWith(2, undefined);
+    expect(selectClip).toHaveBeenNthCalledWith(3, undefined);
+  });
 });

@@ -7,6 +7,15 @@ import {
   type VisualCanvasNode,
 } from "@features/visual-workshop/api";
 
+type CanvasSnapshot = {
+  nodes: VisualCanvasNode[];
+  edges: VisualCanvasEdge[];
+};
+
+function snapshotSignature(snapshot: CanvasSnapshot) {
+  return JSON.stringify(snapshot);
+}
+
 export function useCanvasPersistence(
   projectId: string,
   loaded: VisualCanvasDocument | undefined,
@@ -18,6 +27,9 @@ export function useCanvasPersistence(
   const saveFailureRef = useRef("");
   const saveQueue = useRef(Promise.resolve());
   const autoSave = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const historyPast = useRef<CanvasSnapshot[]>([]);
+  const historyFuture = useRef<CanvasSnapshot[]>([]);
+  const initialized = useRef(false);
   const [nodes, setNodes] = useState<VisualCanvasNode[]>([]);
   const [edges, setEdges] = useState<VisualCanvasEdge[]>([]);
   const [saveState, setSaveState] = useState<
@@ -28,11 +40,18 @@ export function useCanvasPersistence(
 
   useEffect(() => {
     if (!loaded) return;
+    const externalRevision =
+      initialized.current && loaded.revision !== revisionRef.current;
     nodesRef.current = loaded.nodes;
     edgesRef.current = loaded.edges;
     revisionRef.current = loaded.revision;
     setNodes(loaded.nodes);
     setEdges(loaded.edges);
+    if (!initialized.current || externalRevision) {
+      historyPast.current = [];
+      historyFuture.current = [];
+    }
+    initialized.current = true;
   }, [loaded]);
   useEffect(() => {
     nodesRef.current = nodes;
@@ -87,6 +106,60 @@ export function useCanvasPersistence(
     [projectId],
   );
 
+  const recordHistory = useCallback((snapshot: CanvasSnapshot) => {
+    const past = historyPast.current;
+    const previous = past[past.length - 1];
+    if (previous && snapshotSignature(previous) === snapshotSignature(snapshot))
+      return;
+    past.push(structuredClone(snapshot));
+    if (past.length > 100) past.shift();
+    historyFuture.current = [];
+  }, []);
+
+  const clearHistory = useCallback(() => {
+    historyPast.current = [];
+    historyFuture.current = [];
+  }, []);
+
+  const applyHistorySnapshot = useCallback(
+    (snapshot: CanvasSnapshot) => {
+      if (autoSave.current) {
+        clearTimeout(autoSave.current);
+        autoSave.current = undefined;
+      }
+      const nodesCopy = structuredClone(snapshot.nodes);
+      const edgesCopy = structuredClone(snapshot.edges);
+      nodesRef.current = nodesCopy;
+      edgesRef.current = edgesCopy;
+      setNodes(nodesCopy);
+      setEdges(edgesCopy);
+      enqueueSave(nodesCopy, edgesCopy);
+    },
+    [enqueueSave],
+  );
+
+  const undo = useCallback(() => {
+    const target = historyPast.current.pop();
+    if (!target) return false;
+    historyFuture.current.push({
+      nodes: structuredClone(nodesRef.current),
+      edges: structuredClone(edgesRef.current),
+    });
+    applyHistorySnapshot(target);
+    return true;
+  }, [applyHistorySnapshot]);
+
+  const redo = useCallback(() => {
+    const target = historyFuture.current.pop();
+    if (!target) return false;
+    historyPast.current.push({
+      nodes: structuredClone(nodesRef.current),
+      edges: structuredClone(edgesRef.current),
+    });
+    applyHistorySnapshot(target);
+    return true;
+  }, [applyHistorySnapshot]);
+
   const prepareCanvasForAgent = useCallback(async () => {
     if (autoSave.current) {
       clearTimeout(autoSave.current);
@@ -107,9 +180,13 @@ export function useCanvasPersistence(
         | VisualCanvasNode[]
         | ((current: VisualCanvasNode[]) => VisualCanvasNode[]),
       immediate = false,
+      trackHistory = true,
     ) => {
       setNodes((current) => {
         const next = typeof updater === "function" ? updater(current) : updater;
+        if (trackHistory) {
+          recordHistory({ nodes: current, edges: edgesRef.current });
+        }
         nodesRef.current = next;
         if (autoSave.current) clearTimeout(autoSave.current);
         if (immediate) enqueueSave(next);
@@ -121,7 +198,7 @@ export function useCanvasPersistence(
         return next;
       });
     },
-    [enqueueSave],
+    [edgesRef, enqueueSave, recordHistory],
   );
   const patchNode = useCallback(
     (nodeId: string, patch: Partial<VisualCanvasNode>, immediate = false) => {
@@ -143,9 +220,13 @@ export function useCanvasPersistence(
         | VisualCanvasEdge[]
         | ((current: VisualCanvasEdge[]) => VisualCanvasEdge[]),
       immediate = false,
+      trackHistory = true,
     ) => {
       setEdges((current) => {
         const next = typeof updater === "function" ? updater(current) : updater;
+        if (trackHistory) {
+          recordHistory({ nodes: nodesRef.current, edges: current });
+        }
         edgesRef.current = next;
         if (autoSave.current) clearTimeout(autoSave.current);
         if (immediate) enqueueSave(nodesRef.current, next);
@@ -157,7 +238,7 @@ export function useCanvasPersistence(
         return next;
       });
     },
-    [enqueueSave],
+    [enqueueSave, recordHistory],
   );
 
   return {
@@ -178,6 +259,10 @@ export function useCanvasPersistence(
     conflict,
     setConflict,
     enqueueSave,
+    recordHistory,
+    clearHistory,
+    undo,
+    redo,
     prepareCanvasForAgent,
     replaceNodes,
     patchNode,

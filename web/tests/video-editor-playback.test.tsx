@@ -184,7 +184,22 @@ describe("video editor playback clock", () => {
     expect(screen.getByLabelText("播放进度")).toHaveTextContent("5100000");
   });
 
-  it("nudges a selected clip with the arrow keys", async () => {
+  it("moves the playhead with the arrow keys even when a clip is selected", async () => {
+    const user = userEvent.setup();
+    render(
+      <QueryClientProvider client={testClient()}>
+        <WorkspaceProbe />
+      </QueryClientProvider>,
+    );
+    await screen.findByRole("button", { name: "选择片段" });
+    await user.click(screen.getByRole("button", { name: "选择片段" }));
+    fireEvent.keyDown(window, { code: "ArrowRight", key: "ArrowRight" });
+    expect(screen.getByLabelText("工作位置")).toHaveTextContent(
+      `${frameUs(30)}|video-1|`,
+    );
+  });
+
+  it("nudges a selected clip with Alt+arrow keys", async () => {
     const user = userEvent.setup();
     vi.mocked(applyVideoEditorOperations).mockResolvedValue(timeline as never);
     render(
@@ -194,7 +209,11 @@ describe("video editor playback clock", () => {
     );
     await screen.findByRole("button", { name: "选择片段" });
     await user.click(screen.getByRole("button", { name: "选择片段" }));
-    fireEvent.keyDown(window, { code: "ArrowRight", key: "ArrowRight" });
+    fireEvent.keyDown(window, {
+      code: "ArrowRight",
+      key: "ArrowRight",
+      altKey: true,
+    });
     await waitFor(() => expect(applyVideoEditorOperations).toHaveBeenCalled());
     expect(
       vi.mocked(applyVideoEditorOperations).mock.calls.at(-1)?.[2],

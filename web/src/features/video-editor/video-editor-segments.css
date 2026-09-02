@@ -333,6 +333,96 @@
   color: var(--danger);
 }
 
+.ve-segment-progress {
+  margin: -2px 22px 14px;
+  padding: 12px;
+  display: grid;
+  gap: 9px;
+  border: 1px solid color-mix(in srgb, var(--accent) 42%, var(--border));
+  border-radius: 13px;
+  background: color-mix(in srgb, var(--accent) 8%, var(--surface-soft));
+}
+
+.ve-segment-progress-heading {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 9px;
+}
+
+.ve-segment-progress-heading > svg {
+  width: 18px;
+  color: var(--accent);
+}
+
+.ve-segment-progress-heading > div {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.ve-segment-progress-heading small {
+  overflow: hidden;
+  color: var(--faint);
+  font-size: 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ve-segment-progress-heading b {
+  font-size: 13px;
+}
+
+.ve-segment-progress-spinner {
+  animation: ve-segment-spin 900ms linear infinite;
+}
+
+.ve-segment-progress-bar {
+  height: 7px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--surface-hover);
+}
+
+.ve-segment-progress-bar i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--accent);
+  transition: width 220ms ease;
+}
+
+.ve-segment-progress-items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.ve-segment-progress-items span {
+  padding: 4px 7px;
+  display: inline-flex;
+  gap: 5px;
+  border-radius: 6px;
+  background: var(--surface-hover);
+  color: var(--faint);
+  font-size: 10px;
+}
+
+.ve-segment-progress-items em {
+  max-width: 150px;
+  overflow: hidden;
+  color: var(--text);
+  font-style: normal;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@keyframes ve-segment-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .ve-segment-dialog > footer {
   border-top: 1px solid var(--border);
   border-bottom: 0;

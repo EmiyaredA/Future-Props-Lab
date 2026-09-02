@@ -272,19 +272,19 @@
 }
 
 .video-composer-reference .generation-image-options .generation-media-card {
-  width: 58px;
-  min-width: 58px;
-  height: 58px;
+  width: 48px;
+  min-width: 48px;
+  height: 48px;
 }
 
 .video-composer-reference
   .generation-image-options
   .generation-media-card
   > .generation-media-open {
-  width: 58px;
-  min-width: 58px;
-  height: 58px;
-  min-height: 58px;
+  width: 48px;
+  min-width: 48px;
+  height: 48px;
+  min-height: 48px;
 }
 
 .generation-media-preview-backdrop {

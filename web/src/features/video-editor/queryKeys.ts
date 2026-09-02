@@ -7,6 +7,8 @@ export const videoEditorQueryKeys = {
   renders: (projectId: string) => ["video-editor-renders", projectId] as const,
   segmentExports: (projectId: string) =>
     ["video-editor-segment-exports", projectId] as const,
+  segmentExport: (projectId: string, taskId: string) =>
+    ["video-editor-segment-export", projectId, taskId] as const,
   allRenders: (projectIds: unknown) =>
     ["video-editor-all-renders", projectIds] as const,
   importSources: ["video-editor-import-sources"] as const,

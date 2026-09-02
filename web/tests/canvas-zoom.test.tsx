@@ -34,16 +34,88 @@ function ShortcutHarness() {
   );
 }
 
-function dispatchShortcut(key: string, target: EventTarget = window) {
+function HistoryShortcutHarness({
+  undo,
+  redo,
+}: {
+  undo: () => boolean;
+  redo: () => boolean;
+}) {
+  useCanvasKeyboardShortcuts({
+    selectedNodeIds: [],
+    selectedEdgeId: undefined,
+    clearContextMenu: vi.fn(),
+    clearNodeSelection: vi.fn(),
+    clearEdgeSelection: vi.fn(),
+    selectAllNodes: vi.fn(),
+    copySelected: vi.fn(),
+    pasteAtPointer: vi.fn(),
+    removeNodes: vi.fn(),
+    removeEdge: vi.fn(),
+    setToolMode: vi.fn(),
+    fitView: vi.fn(),
+    zoomIn: vi.fn(),
+    zoomOut: vi.fn(),
+    resetZoom: vi.fn(),
+    nudgeSelected: vi.fn(),
+    undo,
+    redo,
+  });
+  return (
+    <>
+      <input aria-label="编辑框" />
+      <div role="dialog" aria-modal="true">
+        <button>弹窗按钮</button>
+      </div>
+    </>
+  );
+}
+
+function dispatchShortcut(
+  key: string,
+  target: EventTarget = window,
+  options: KeyboardEventInit = {},
+) {
   const event = new KeyboardEvent("keydown", {
     key,
     metaKey: true,
     bubbles: true,
     cancelable: true,
+    ...options,
   });
   act(() => target.dispatchEvent(event));
   return event;
 }
+
+test("routes canvas undo and redo shortcuts while preserving editor and modal input", () => {
+  const undo = vi.fn(() => true);
+  const redo = vi.fn(() => true);
+  render(<HistoryShortcutHarness undo={undo} redo={redo} />);
+
+  expect(
+    dispatchShortcut("z", window, { ctrlKey: true }).defaultPrevented,
+  ).toBe(true);
+  expect(undo).toHaveBeenCalledTimes(1);
+  expect(
+    dispatchShortcut("z", window, { ctrlKey: true, shiftKey: true }),
+  ).toHaveProperty("defaultPrevented", true);
+  expect(redo).toHaveBeenCalledTimes(1);
+  dispatchShortcut("y", window, { ctrlKey: true });
+  expect(redo).toHaveBeenCalledTimes(2);
+
+  const input = screen.getByLabelText("编辑框");
+  const inputShortcut = dispatchShortcut("z", input, { ctrlKey: true });
+  expect(inputShortcut.defaultPrevented).toBe(false);
+  expect(undo).toHaveBeenCalledTimes(1);
+
+  const modalShortcut = dispatchShortcut(
+    "z",
+    screen.getByRole("button", { name: "弹窗按钮" }),
+    { ctrlKey: true },
+  );
+  expect(modalShortcut.defaultPrevented).toBe(false);
+  expect(undo).toHaveBeenCalledTimes(1);
+});
 
 test("keeps the zoom anchor world position stable", () => {
   const zoomed = zoomViewportAt({ x: 100, y: 50, zoom: 1 }, 2, 400, 300);

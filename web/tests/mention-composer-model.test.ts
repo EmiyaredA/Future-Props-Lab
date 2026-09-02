@@ -47,4 +47,27 @@ describe("headless mention composer model", () => {
       findMentionAtCaret<Part>([part], { key: "missing", offset: 1 }),
     ).toBeNull();
   });
+
+  it("finds mentions after CJK punctuation without matching email-like text", () => {
+    const punctuationPart = textPart("参考：@分镜图");
+    expect(
+      findMentionAtCaret<Part>([punctuationPart], {
+        key: punctuationPart.key,
+        offset: punctuationPart.text.length,
+      }),
+    ).toEqual({
+      key: punctuationPart.key,
+      offset: punctuationPart.text.length,
+      start: 3,
+      query: "分镜图",
+    });
+
+    const emailPart = textPart("contact@example");
+    expect(
+      findMentionAtCaret<Part>([emailPart], {
+        key: emailPart.key,
+        offset: emailPart.text.length,
+      }),
+    ).toBeNull();
+  });
 });

@@ -69,7 +69,10 @@ export function findMentionAtCaret<P extends MentionPart>(
   );
   if (!part) return null;
   const prefix = part.text.slice(0, caret.offset);
-  const match = prefix.match(/(?:^|[\s([（【])@([^\s@]*)$/u);
+  // A mention may follow natural-language punctuation, e.g. "参考：@素材".
+  // Keep @ inside words/emails from opening the menu while accepting both
+  // ASCII and CJK punctuation (and other non-word separators).
+  const match = prefix.match(/(?:^|[^\p{L}\p{N}_@])@([^\s@]*)$/u);
   if (!match) return null;
   const query = match[1] ?? "";
   return { ...caret, start: caret.offset - query.length - 1, query };

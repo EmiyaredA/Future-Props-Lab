@@ -8,7 +8,10 @@ import {
   useRef,
   useState,
 } from "react";
-import type { VisualCanvasNode } from "@features/visual-workshop/api";
+import type {
+  VisualCanvasEdge,
+  VisualCanvasNode,
+} from "@features/visual-workshop/api";
 import {
   NODE_DRAG_BLOCKER_SELECTOR,
   NODE_SIZE,
@@ -59,8 +62,11 @@ type UseCanvasPointerInteractionsOptions = {
   setViewport: Dispatch<SetStateAction<Viewport>>;
   nodes: VisualCanvasNode[];
   nodesRef: RefObject<VisualCanvasNode[]>;
+  edgesRef: RefObject<VisualCanvasEdge[]>;
   replaceNodes: (
     updater: (current: VisualCanvasNode[]) => VisualCanvasNode[],
+    immediate?: boolean,
+    trackHistory?: boolean,
   ) => void;
   connection: ConnectionPreview | undefined;
   setConnection: Dispatch<SetStateAction<ConnectionPreview | undefined>>;
@@ -70,6 +76,10 @@ type UseCanvasPointerInteractionsOptions = {
   clearEdgeSelection: () => void;
   closeAssets: () => void;
   enqueueSave: (nodes: VisualCanvasNode[]) => void;
+  recordHistory: (snapshot: {
+    nodes: VisualCanvasNode[];
+    edges: VisualCanvasEdge[];
+  }) => void;
   clearAutoSave: () => void;
   showGenerateEditor: (nodeId: string) => void;
 };
@@ -254,6 +264,7 @@ export function useCanvasPointerInteractions({
   setViewport,
   nodes,
   nodesRef,
+  edgesRef,
   replaceNodes,
   connection,
   setConnection,
@@ -263,6 +274,7 @@ export function useCanvasPointerInteractions({
   clearEdgeSelection,
   closeAssets,
   enqueueSave,
+  recordHistory,
   clearAutoSave,
   showGenerateEditor,
 }: UseCanvasPointerInteractionsOptions) {
@@ -286,6 +298,7 @@ export function useCanvasPointerInteractions({
         y: number;
         origins: DragOrigin[];
         moved: boolean;
+        historyRecorded: boolean;
       }
     | undefined
   >(undefined);
@@ -293,6 +306,7 @@ export function useCanvasPointerInteractions({
   const toolBeforeSpace = useRef<CanvasTool | undefined>(undefined);
   const [toolMode, setToolMode] = useState<CanvasTool>("select");
   const [selectedNodeIds, setSelectedNodeIds] = useState<string[]>([]);
+  const [actionsHiddenNodeId, setActionsHiddenNodeId] = useState<string>();
   const [selectionBox, setSelectionBox] = useState<CanvasSelectionBox>();
   const [alignmentGuides, setAlignmentGuides] = useState<
     CanvasAlignmentGuide[]
@@ -366,6 +380,7 @@ export function useCanvasPointerInteractions({
       return;
     event.preventDefault();
     event.currentTarget.setPointerCapture(event.pointerId);
+    setActionsHiddenNodeId(undefined);
     closeContextMenu();
     if (shouldPan) {
       pan.current = {
@@ -449,6 +464,7 @@ export function useCanvasPointerInteractions({
     event.preventDefault();
     event.stopPropagation();
     event.currentTarget.setPointerCapture(event.pointerId);
+    setActionsHiddenNodeId(undefined);
     const ids = selectedNodeIds.includes(node.id) ? selectedNodeIds : [node.id];
     if (!selectedNodeIds.includes(node.id)) setSelectedNodeIds(ids);
     clearEdgeSelection();
@@ -467,6 +483,7 @@ export function useCanvasPointerInteractions({
           y: item.position.y,
         })),
       moved: false,
+      historyRecorded: false,
     };
   };
 
@@ -481,6 +498,11 @@ export function useCanvasPointerInteractions({
     )
       return;
     current.moved = true;
+    if (!current.historyRecorded) {
+      recordHistory({ nodes: nodesRef.current, edges: edgesRef.current });
+      current.historyRecorded = true;
+    }
+    setActionsHiddenNodeId(current.id);
     const deltaX = screenDeltaX / viewport.zoom;
     const deltaY = screenDeltaY / viewport.zoom;
     const snapped = snapCanvasNodes(
@@ -491,8 +513,11 @@ export function useCanvasPointerInteractions({
       viewport.zoom,
     );
     setAlignmentGuides(snapped.guides);
-    replaceNodes((items) =>
-      moveCanvasNodes(items, current.origins, snapped.deltaX, snapped.deltaY),
+    replaceNodes(
+      (items) =>
+        moveCanvasNodes(items, current.origins, snapped.deltaX, snapped.deltaY),
+      false,
+      false,
     );
   };
 
@@ -522,6 +547,7 @@ export function useCanvasPointerInteractions({
     setToolMode,
     selectedNodeIds,
     setSelectedNodeIds,
+    actionsHiddenNodeId,
     selectedId,
     setSelectedId,
     selectionBox,

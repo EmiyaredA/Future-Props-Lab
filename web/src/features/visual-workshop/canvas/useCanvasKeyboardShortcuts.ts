@@ -18,6 +18,8 @@ type CanvasKeyboardShortcutOptions = {
   zoomOut: () => void;
   resetZoom: () => void;
   nudgeSelected: (x: number, y: number) => void;
+  undo?: () => boolean;
+  redo?: () => boolean;
 };
 
 export function useCanvasKeyboardShortcuts({
@@ -37,6 +39,8 @@ export function useCanvasKeyboardShortcuts({
   zoomOut,
   resetZoom,
   nudgeSelected,
+  undo = () => false,
+  redo = () => false,
 }: CanvasKeyboardShortcutOptions) {
   useEffect(() => {
     const handleKeys = (event: KeyboardEvent) => {
@@ -63,7 +67,18 @@ export function useCanvasKeyboardShortcuts({
         else zoomIn();
         return;
       }
-      if (editing) return;
+      if (editing || insideModal) return;
+      if (modifier && shortcut === "z") {
+        event.preventDefault();
+        if (event.shiftKey) redo();
+        else undo();
+        return;
+      }
+      if (modifier && shortcut === "y") {
+        event.preventDefault();
+        redo();
+        return;
+      }
       if ((event.metaKey || event.ctrlKey) && shortcut === "a") {
         event.preventDefault();
         selectAllNodes();
@@ -131,5 +146,7 @@ export function useCanvasKeyboardShortcuts({
     setToolMode,
     zoomIn,
     zoomOut,
+    redo,
+    undo,
   ]);
 }

@@ -1,22 +1,50 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, ChevronDown, Film, Layers3, Volume2, X } from "lucide-react";
+import {
+  Check,
+  ChevronDown,
+  CircleCheck,
+  CircleX,
+  Film,
+  Layers3,
+  LoaderCircle,
+  Volume2,
+  X,
+} from "lucide-react";
 import {
   getVisualWorkshopProjects,
   visualWorkshopQueryKeys,
 } from "@features/visual-workshop";
-import { createVideoEditorSegmentExport } from "./api";
+import {
+  createVideoEditorSegmentExport,
+  getVideoEditorSegmentExport,
+} from "./api";
 import { formatTime } from "./editorModel";
 import { videoEditorQueryKeys } from "./queryKeys";
 import type {
   VideoEditorAsset,
   VideoEditorClip,
   VideoEditorSegmentExportItem,
+  VideoEditorTask,
   VideoEditorTimeline,
 } from "./types";
 
 type SegmentConfig = VideoEditorSegmentExportItem;
 type ConfigKey = "resolution" | "fps" | "quality" | "audioMode";
+
+const taskStatusLabels: Record<VideoEditorTask["status"], string> = {
+  queued: "排队中",
+  running: "正在导出并导入",
+  completed: "导入完成",
+  failed: "导入失败",
+  cancelled: "已取消",
+};
+
+const segmentStatusLabels: Record<string, string> = {
+  queued: "排队中",
+  encoded: "已编码，正在导入",
+  completed: "已完成",
+};
 
 const choices = {
   resolution: [
@@ -141,7 +169,24 @@ export function VideoEditorSegmentExportDialog({
   const [targetProjectId, setTargetProjectId] = useState<string>();
   const [newProjectTitle, setNewProjectTitle] = useState("分段视频工坊");
   const [requestId] = useState(() => crypto.randomUUID());
+  const [createdTask, setCreatedTask] = useState<VideoEditorTask>();
   const targetId = targetProjectId ?? availableProjects[0]?.id;
+  const task = useQuery({
+    queryKey: videoEditorQueryKeys.segmentExport(
+      projectId,
+      createdTask?.id ?? "pending",
+    ),
+    enabled: Boolean(createdTask),
+    queryFn: () =>
+      getVideoEditorSegmentExport(projectId, createdTask?.id ?? ""),
+    refetchInterval: (query) => {
+      const status = query.state.data?.status ?? createdTask?.status;
+      return status === "queued" || status === "running" ? 1000 : false;
+    },
+  });
+  const trackedTask = task.data ?? createdTask;
+  const taskActive =
+    trackedTask?.status === "queued" || trackedTask?.status === "running";
   const mutation = useMutation({
     mutationFn: () =>
       createVideoEditorSegmentExport(
@@ -159,11 +204,11 @@ export function VideoEditorSegmentExportDialog({
         },
         requestId,
       ),
-    onSuccess: () => {
+    onSuccess: (result) => {
+      setCreatedTask(result);
       void client.invalidateQueries({
         queryKey: videoEditorQueryKeys.segmentExports(projectId),
       });
-      onClose();
     },
   });
   const patchConfig = (clipId: string, patch: Partial<SegmentConfig>) =>
@@ -180,6 +225,7 @@ export function VideoEditorSegmentExportDialog({
     }));
   const assetById = new Map(assets.map((asset) => [asset.id, asset]));
   const canSubmit =
+    !createdTask &&
     activeClips.length > 0 &&
     activeClips.every((clip) => configs[clip.id].name.trim()) &&
     (targetMode === "existing"
@@ -335,15 +381,76 @@ export function VideoEditorSegmentExportDialog({
               : "任务创建失败"}
           </p>
         ) : null}
+        {trackedTask ? (
+          <div className="ve-segment-progress" aria-live="polite">
+            <div className="ve-segment-progress-heading">
+              {taskActive ? (
+                <LoaderCircle
+                  className="ve-segment-progress-spinner"
+                  aria-hidden
+                />
+              ) : trackedTask.status === "completed" ? (
+                <CircleCheck aria-hidden />
+              ) : (
+                <CircleX aria-hidden />
+              )}
+              <div>
+                <strong>{taskStatusLabels[trackedTask.status]}</strong>
+                <small>
+                  {taskActive
+                    ? "任务会在后台继续运行，关闭窗口不会中断。"
+                    : trackedTask.status === "completed"
+                      ? "所有视频片段已导入目标画布。"
+                      : trackedTask.error || "可以关闭窗口后稍后重试。"}
+                </small>
+              </div>
+              <b>{trackedTask.progress}%</b>
+            </div>
+            <div
+              className="ve-segment-progress-bar"
+              role="progressbar"
+              aria-label="分段导入进度"
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={trackedTask.progress}
+            >
+              <i style={{ width: `${trackedTask.progress}%` }} />
+            </div>
+            {Array.isArray(trackedTask.resultDetail?.segments) ? (
+              <div className="ve-segment-progress-items">
+                {(
+                  trackedTask.resultDetail.segments as Array<
+                    Record<string, unknown>
+                  >
+                ).map((segment, index) => (
+                  <span key={String(segment.clipId ?? index)}>
+                    <em>{String(segment.name || `片段 ${index + 1}`)}</em>
+                    {segmentStatusLabels[String(segment.status)] || "处理中"}
+                  </span>
+                ))}
+              </div>
+            ) : null}
+          </div>
+        ) : null}
         <footer>
-          <span>将创建 {activeClips.length} 个独立视频节点，不自动连线</span>
-          <button onClick={onClose}>取消</button>
+          <span>
+            {createdTask
+              ? `任务编号 ${createdTask.id.slice(0, 8)}`
+              : `将创建 ${activeClips.length} 个独立视频节点，不自动连线`}
+          </span>
+          <button onClick={onClose}>
+            {taskActive ? "后台运行并关闭" : "关闭"}
+          </button>
           <button
             className="primary"
             disabled={!canSubmit || mutation.isPending}
             onClick={() => mutation.mutate()}
           >
-            {mutation.isPending ? "正在创建任务…" : "开始导出并导入"}
+            {mutation.isPending
+              ? "正在创建任务…"
+              : createdTask
+                ? "任务已提交"
+                : "开始导出并导入"}
           </button>
         </footer>
       </section>

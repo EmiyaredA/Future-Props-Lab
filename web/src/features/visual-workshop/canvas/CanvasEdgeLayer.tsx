@@ -41,27 +41,59 @@ export function CanvasEdgeLayer({
         if (!source || !target) return null;
         const sourceSize = NODE_SIZE[source.kind];
         const targetSize = NODE_SIZE[target.kind];
+        const path = connectionPath(
+          {
+            x: source.position.x + sourceSize.width,
+            y: source.position.y + sourceSize.height / 2,
+          },
+          {
+            x: target.position.x,
+            y: target.position.y + targetSize.height / 2,
+          },
+        );
+        const edgeLabel = `连线：${source.title} → ${target.title}`;
         return (
-          <path
-            key={edge.id}
-            className={edge.id === selectedEdgeId ? "selected" : ""}
-            d={connectionPath(
-              {
-                x: source.position.x + sourceSize.width,
-                y: source.position.y + sourceSize.height / 2,
-              },
-              {
-                x: target.position.x,
-                y: target.position.y + targetSize.height / 2,
-              },
-            )}
-            onPointerDown={(event) => {
-              event.preventDefault();
-              event.stopPropagation();
-              onSelectEdge(edge.id);
-            }}
-            onDoubleClick={() => onRemoveEdge(edge.id)}
-          />
+          <g key={edge.id}>
+            <path
+              className="hit-area"
+              d={path}
+              role="button"
+              tabIndex={0}
+              aria-label={edgeLabel}
+              onPointerDown={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                event.currentTarget.focus();
+                onSelectEdge(edge.id);
+              }}
+              onClick={(event) => {
+                event.stopPropagation();
+                onSelectEdge(edge.id);
+              }}
+              onDoubleClick={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                onRemoveEdge(edge.id);
+              }}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  onSelectEdge(edge.id);
+                  return;
+                }
+                if (event.key !== "Delete" && event.key !== "Backspace") return;
+                event.preventDefault();
+                event.stopPropagation();
+                onRemoveEdge(edge.id);
+              }}
+            />
+            <path
+              className={edge.id === selectedEdgeId ? "selected" : ""}
+              d={path}
+              aria-hidden="true"
+            />
+          </g>
         );
       })}
       {connection
