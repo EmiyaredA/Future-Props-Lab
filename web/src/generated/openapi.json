@@ -10819,6 +10819,17 @@
             "title": "Can Retry Materialization",
             "type": "boolean"
           },
+          "canvas_node_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Canvas Node Id"
+          },
           "completed_at": {
             "anyOf": [
               {
@@ -10964,6 +10975,7 @@
           "provider_name",
           "model_slug",
           "request_payload",
+          "canvas_node_id",
           "provider_task_id",
           "status",
           "progress",
@@ -19176,6 +19188,14 @@
             "title": "Prompt",
             "type": "string"
           },
+          "prompt_reference_names": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "maxProperties": 16,
+            "title": "Prompt Reference Names",
+            "type": "object"
+          },
           "reference_asset_id": {
             "anyOf": [
               {
@@ -19405,6 +19425,14 @@
             "maxLength": 6000,
             "title": "Prompt",
             "type": "string"
+          },
+          "prompt_reference_names": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "maxProperties": 16,
+            "title": "Prompt Reference Names",
+            "type": "object"
           },
           "ratio": {
             "default": "16:9",
@@ -22306,6 +22334,23 @@
             "schema": {
               "title": "Asset Id",
               "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "download_name",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 255,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Download Name"
             }
           }
         ],
@@ -29730,6 +29775,24 @@
           },
           {
             "in": "query",
+            "name": "canvas_node_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Canvas Node Id"
+            }
+          },
+          {
+            "in": "query",
             "name": "kind",
             "required": false,
             "schema": {
@@ -29737,7 +29800,8 @@
                 {
                   "enum": [
                     "image",
-                    "video"
+                    "video",
+                    "audio"
                   ],
                   "type": "string"
                 },

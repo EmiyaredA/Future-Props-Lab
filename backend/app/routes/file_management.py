@@ -190,7 +190,10 @@ async def preview_file(
 
 @router.get("/files/{asset_id}/download")
 async def download_file(
-    session: SessionDep, workspace_id: WorkspaceDep, asset_id: str
+    session: SessionDep,
+    workspace_id: WorkspaceDep,
+    asset_id: str,
+    download_name: str | None = Query(default=None, max_length=255),
 ) -> FileResponse:
     try:
         row, path = await _assets(session, workspace_id).content(asset_id)
@@ -199,5 +202,5 @@ async def download_file(
     return FileResponse(
         path,
         media_type=row.mime_type,
-        filename=download_filename(row.display_name, row.original_filename),
+        filename=download_filename(download_name or row.display_name, row.original_filename),
     )

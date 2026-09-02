@@ -7218,6 +7218,8 @@ export interface components {
         GenerationTaskOut: {
             /** Can Retry Materialization */
             can_retry_materialization: boolean;
+            /** Canvas Node Id */
+            canvas_node_id: string | null;
             /** Completed At */
             completed_at: string | null;
             /** Created At */
@@ -10355,6 +10357,10 @@ export interface components {
              * @default
              */
             prompt: string;
+            /** Prompt Reference Names */
+            prompt_reference_names?: {
+                [key: string]: string;
+            };
             /** Reference Asset Id */
             reference_asset_id?: string | null;
             /** Seed */
@@ -10439,6 +10445,10 @@ export interface components {
              * @default
              */
             prompt: string;
+            /** Prompt Reference Names */
+            prompt_reference_names?: {
+                [key: string]: string;
+            };
             /**
              * Ratio
              * @default 16:9
@@ -12289,7 +12299,9 @@ export interface operations {
     };
     download_file_v1_files__asset_id__download_get: {
         parameters: {
-            query?: never;
+            query?: {
+                download_name?: string | null;
+            };
             header?: never;
             path: {
                 asset_id: string;
@@ -17456,7 +17468,8 @@ export interface operations {
         parameters: {
             query?: {
                 project_id?: string | null;
-                kind?: ("image" | "video") | null;
+                canvas_node_id?: string | null;
+                kind?: ("image" | "video" | "audio") | null;
                 status?: ("queued" | "submitting" | "pending" | "processing" | "completed" | "failed") | null;
                 page?: number;
                 page_size?: number;

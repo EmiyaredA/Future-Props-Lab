@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import Settings, get_settings
 from app.core.time import iso_utc, utc_now
+from app.files import download_filename
 from app.files.storage import AssetStorage
 from app.llm.providers.senseaudio_image import IMAGE_MODEL_SIZES
 from app.models import (
@@ -53,6 +54,7 @@ def generation_task_out(row: VisualGenerationTask) -> GenerationTaskOut:
         provider_name=row.provider_name,
         model_slug=row.model_slug,
         request_payload=dict(row.request_payload or {}),
+        canvas_node_id=row.canvas_node_id,
         provider_task_id=row.provider_task_id,
         status=row.status,
         progress=row.progress,
@@ -229,9 +231,9 @@ class VisualGeneration:
 
     async def _resolve_canvas_references(
         self, project_id: str, body: GenerationTaskCreateIn
-    ) -> GenerationTaskCreateIn:
+    ) -> tuple[GenerationTaskCreateIn, dict[str, str]]:
         if body.canvas_node_id is None or body.expected_canvas_revision is None:
-            return body
+            return body, {}
         canvas = await self.session.get(VisualCanvasDocument, project_id)
         if canvas is None:
             raise GenerationError("项目画布不存在", code="canvas_not_found", status=404)
@@ -254,8 +256,9 @@ class VisualGeneration:
             if edge.get("target_node_id") == body.canvas_node_id
         ]
         if not incoming:
-            return body
+            return body, {}
         linked: dict[str, list[str]] = {"image": [], "video": [], "audio": []}
+        reference_titles: dict[str, str] = {}
         for edge in incoming:
             source = nodes.get(str(edge.get("source_node_id")))
             if source is None:
@@ -271,6 +274,9 @@ class VisualGeneration:
                     status=409,
                 )
             linked[source_kind].append(asset_id)
+            reference_titles.setdefault(
+                asset_id, str(source.get("title") or source.get("id") or "素材")
+            )
 
         payload = body.model_dump(mode="json")
         if isinstance(body, ImageGenerationTaskCreateIn):
@@ -289,7 +295,7 @@ class VisualGeneration:
                     "当前图片模型最多接收一个参考图片", code="too_many_references"
                 )
             payload["reference_asset_id"] = references[0] if references else None
-            return ImageGenerationTaskCreateIn.model_validate(payload)
+            return ImageGenerationTaskCreateIn.model_validate(payload), reference_titles
 
         if isinstance(body, AudioGenerationTaskCreateIn):
             if linked["image"] or linked["video"]:
@@ -299,7 +305,7 @@ class VisualGeneration:
             payload["reference_asset_ids"] = list(
                 dict.fromkeys([*linked["audio"], *body.reference_asset_ids])
             )
-            return AudioGenerationTaskCreateIn.model_validate(payload)
+            return AudioGenerationTaskCreateIn.model_validate(payload), reference_titles
 
         payload.update(
             {
@@ -313,13 +319,13 @@ class VisualGeneration:
                 "audio_asset_ids": list(dict.fromkeys([*linked["audio"], *body.audio_asset_ids])),
             }
         )
-        return VideoGenerationTaskCreateIn.model_validate(payload)
+        return VideoGenerationTaskCreateIn.model_validate(payload), reference_titles
 
     async def prepare_create(
         self, project_id: str, body: GenerationTaskCreateIn
     ) -> VisualGenerationTask:
         await self._project(project_id)
-        body = await self._resolve_canvas_references(project_id, body)
+        body, reference_titles = await self._resolve_canvas_references(project_id, body)
         model, provider = await self._model(
             body.model_id,
             body.kind,
@@ -329,6 +335,7 @@ class VisualGeneration:
             mode="json",
             exclude={"canvas_node_id", "expected_canvas_revision"},
         )
+        reference_assets: dict[str, VisualAsset] = {}
         if isinstance(body, ImageGenerationTaskCreateIn):
             sizes = IMAGE_MODEL_SIZES.get(model.slug)
             if not sizes or body.size not in sizes:
@@ -340,7 +347,9 @@ class VisualGeneration:
                     code="prompt_too_long",
                 )
             if body.reference_asset_id:
-                await self._reference_asset(project_id, body.reference_asset_id, "image")
+                reference_assets[body.reference_asset_id] = await self._reference_asset(
+                    project_id, body.reference_asset_id, "image"
+                )
         elif isinstance(body, VideoGenerationTaskCreateIn):
             image_ids = [
                 item
@@ -352,14 +361,28 @@ class VisualGeneration:
                 if item
             ]
             for asset_id in image_ids:
-                await self._reference_asset(project_id, asset_id, "image")
+                reference_assets[asset_id] = await self._reference_asset(
+                    project_id, asset_id, "image"
+                )
             for asset_id in body.audio_asset_ids:
-                await self._reference_asset(project_id, asset_id, "audio")
+                reference_assets[asset_id] = await self._reference_asset(
+                    project_id, asset_id, "audio"
+                )
             for asset_id in body.video_asset_ids:
-                await self._reference_asset(project_id, asset_id, "video")
+                reference_assets[asset_id] = await self._reference_asset(
+                    project_id, asset_id, "video"
+                )
         elif isinstance(body, AudioGenerationTaskCreateIn):
             for asset_id in body.reference_asset_ids:
-                await self._reference_asset(project_id, asset_id, "audio")
+                reference_assets[asset_id] = await self._reference_asset(
+                    project_id, asset_id, "audio"
+                )
+        if reference_titles:
+            payload["reference_filenames"] = {
+                asset_id: download_filename(title, reference_assets[asset_id].original_filename)
+                for asset_id, title in reference_titles.items()
+                if asset_id in reference_assets
+            }
         row = VisualGenerationTask(
             project_id=project_id,
             provider_id=provider.id,
@@ -369,6 +392,7 @@ class VisualGeneration:
             provider_name=provider.name,
             model_slug=model.slug,
             request_payload=payload,
+            canvas_node_id=body.canvas_node_id,
             status="queued",
         )
         self.session.add(row)
@@ -399,6 +423,7 @@ class VisualGeneration:
         self,
         *,
         project_id: str | None,
+        canvas_node_id: str | None,
         kind: str | None,
         status: str | None,
         page: int,
@@ -407,6 +432,8 @@ class VisualGeneration:
         conditions = []
         if project_id:
             conditions.append(VisualGenerationTask.project_id == project_id)
+        if canvas_node_id:
+            conditions.append(VisualGenerationTask.canvas_node_id == canvas_node_id)
         if kind:
             conditions.append(VisualGenerationTask.generation_kind == kind)
         if status:

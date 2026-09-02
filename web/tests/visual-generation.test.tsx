@@ -16,6 +16,7 @@ import {
 } from "@features/files/api";
 import { GenerationDrawer } from "@features/visual-workshop/generation/GenerationDrawer";
 import { GenerationPromptEditor } from "@features/visual-workshop/generation/GenerationPromptEditor";
+import type { PromptManagedFile } from "@features/visual-workshop/generation/generationPromptModel";
 import { VisualWorkshopTasksPage } from "@features/visual-workshop/generation";
 import {
   createGenerationTask,
@@ -137,9 +138,47 @@ test("renders prompt asset blocks as bracketed project filenames", async () => {
   await waitFor(() => expect(onChange).toHaveBeenCalledWith("[人设图1.png]"));
 });
 
+test("hydrates legacy prompt text into a renamed asset block after assets load", async () => {
+  const onChange = vi.fn();
+  const { container, rerender } = render(
+    <GenerationPromptEditor
+      value="[reference.mp4] 参考运镜"
+      assets={[]}
+      label="视频提示词"
+      placeholder="描述画面"
+      onChange={onChange}
+    />,
+  );
+
+  expect(container.querySelector(".generation-prompt-asset")).toBeNull();
+  rerender(
+    <GenerationPromptEditor
+      value="[reference.mp4] 参考运镜"
+      assets={[
+        {
+          ...videoFile,
+          prompt_reference_name: "开局.mp4",
+          prompt_legacy_names: ["reference.mp4"],
+        } as PromptManagedFile,
+      ]}
+      label="视频提示词"
+      placeholder="描述画面"
+      onChange={onChange}
+    />,
+  );
+
+  await waitFor(() =>
+    expect(
+      container.querySelector(".generation-prompt-asset"),
+    ).toHaveTextContent("开局.mp4"),
+  );
+  expect(onChange).toHaveBeenCalledWith("[开局.mp4] 参考运镜");
+});
+
 const baseTask = {
   id: "task-12345678",
   project_id: "project-1",
+  canvas_node_id: null,
   provider_id: "provider-image",
   model_id: "model-image",
   provider_kind: "senseaudio_image" as const,
@@ -404,7 +443,42 @@ test("uses the compact image node composer with reference, size, and seed contro
   expect(await screen.findByText(/已提交 3 个生成任务/)).toBeInTheDocument();
 });
 
-test("renders prompt references from filled draft text", async () => {
+test("locks linked references, deduplicates manual selection, and consumes capacity", async () => {
+  renderWithClient(
+    <GenerationDrawer
+      compact
+      lockedKind="image"
+      projectId="project-1"
+      linkedAssetIds={{ image: ["asset-1"], video: [], audio: [] }}
+      draft={{
+        model_id: "model-image",
+        prompt: "",
+        size: "1024x1024",
+        seed: null,
+        image_count: 1,
+        reference_asset_id: "asset-1",
+      }}
+      onClose={vi.fn()}
+    />,
+  );
+
+  const linkedReference = await screen.findByRole("button", {
+    name: "参考图.png",
+  });
+  expect(screen.getAllByRole("button", { name: "参考图.png" })).toHaveLength(1);
+  expect(linkedReference.closest(".generation-media-card")).toHaveAttribute(
+    "data-linked-reference",
+    "true",
+  );
+  expect(
+    screen.queryByRole("button", { name: "移除参考文件 参考图.png" }),
+  ).not.toBeInTheDocument();
+  expect(
+    screen.getByRole("button", { name: "上传参考图片（可选）" }),
+  ).toBeDisabled();
+});
+
+test("does not resolve prompt references from unselected project files", async () => {
   const user = userEvent.setup();
   renderWithClient(
     <GenerationDrawer
@@ -435,10 +509,10 @@ test("renders prompt references from filled draft text", async () => {
   });
 
   expect(
-    await screen.findAllByRole("button", { name: "移除引用 参考图.png" }),
-  ).toHaveLength(2);
+    screen.queryByRole("button", { name: "移除引用 参考图.png" }),
+  ).not.toBeInTheDocument();
   expect(promptEditor).toHaveTextContent(
-    "生成 参考图.png 并兼容旧格式 参考图.png 并保持 @reference.png固定说明",
+    "生成 [参考图.png] 并兼容旧格式 @[参考图.png] 并保持 @reference.png固定说明",
   );
 
   await user.click(screen.getByRole("button", { name: "生成图片" }));
@@ -448,7 +522,7 @@ test("renders prompt references from filled draft text", async () => {
       kind: "image",
       model_id: "model-image",
       prompt:
-        "生成 [参考图.png] 并兼容旧格式 [参考图.png] 并保持 @reference.png固定说明",
+        "生成 [参考图.png] 并兼容旧格式 @[参考图.png] 并保持 @reference.png固定说明",
       size: "1024x1024",
       seed: null,
       reference_asset_id: null,
@@ -628,7 +702,7 @@ test("uses the compact video node composer for image-to-video tasks", async () =
   ).toBeInTheDocument();
   await user.click(screen.getByRole("button", { name: "图生视频" }));
   const startFramePicker = screen
-    .getByRole("group", { name: "选择起始画面" })
+    .getByRole("group", { name: "起始画面" })
     .querySelector<HTMLInputElement>('input[type="file"]')!;
   await user.upload(
     startFramePicker,
@@ -738,6 +812,130 @@ test("restores a node video draft, saves edits, and keeps it after submission", 
   );
   expect(
     screen.getByRole("button", { name: "参考图.png" }),
+  ).toBeInTheDocument();
+});
+
+test("retains incompatible video references with per-item disabled styling", async () => {
+  const user = userEvent.setup();
+  const onDraftChange = vi.fn();
+  renderWithClient(
+    <GenerationDrawer
+      compact
+      lockedKind="video"
+      projectId="project-1"
+      draft={{
+        model_id: "model-video",
+        prompt: "保留参考素材",
+        mode: "reference",
+        duration: 5,
+        resolution: "720p",
+        ratio: "16:9",
+        watermark: true,
+        generate_audio: false,
+        first_frame_asset_id: null,
+        last_frame_asset_id: null,
+        reference_asset_ids: ["asset-1"],
+        video_asset_ids: ["asset-video"],
+        audio_asset_ids: ["asset-audio"],
+      }}
+      onClose={vi.fn()}
+      onDraftChange={onDraftChange}
+    />,
+  );
+
+  expect(
+    await screen.findByRole("button", { name: "参考视频.mp4" }),
+  ).toBeInTheDocument();
+  await user.click(screen.getByRole("button", { name: "文生视频" }));
+
+  expect(screen.getByRole("group", { name: "参考图片" })).toBeDisabled();
+  expect(screen.getByRole("group", { name: "参考视频" })).toBeDisabled();
+  expect(screen.getByRole("group", { name: "参考音频" })).toBeDisabled();
+  expect(
+    document.querySelectorAll(
+      ".generation-image-picker.is-disabled .generation-media-card",
+    ),
+  ).toHaveLength(3);
+  const promptEditor = screen.getByRole("textbox", { name: "视频提示词" });
+  await user.click(promptEditor);
+  await user.type(promptEditor, "@");
+  expect(
+    screen.queryByRole("listbox", { name: "引用已选素材" }),
+  ).not.toBeInTheDocument();
+
+  await user.click(screen.getByRole("button", { name: "全能参考" }));
+  expect(
+    screen.getByRole("button", { name: "参考视频.mp4" }),
+  ).toBeInTheDocument();
+});
+
+test("retains music references while sound-effect mode disables them", async () => {
+  vi.mocked(getGenerationOptions).mockResolvedValueOnce({
+    models: [
+      {
+        id: "model-music",
+        provider_id: "provider-audio",
+        provider_name: "SenseAudio 音频生成",
+        kind: "audio",
+        slug: "music-generation",
+        label: "Music Generation",
+        description: "音乐生成",
+        sizes: [],
+      },
+      {
+        id: "model-sfx",
+        provider_id: "provider-audio",
+        provider_name: "SenseAudio 音频生成",
+        kind: "audio",
+        slug: "sfx-generation",
+        label: "SFX Generation",
+        description: "音效生成",
+        sizes: [],
+      },
+    ],
+  });
+  const user = userEvent.setup();
+  const onDraftChange = vi.fn();
+  renderWithClient(
+    <GenerationDrawer
+      compact
+      lockedKind="audio"
+      projectId="project-1"
+      draft={{
+        model_id: "model-music",
+        mode: "music",
+        prompt: "安静的钢琴",
+        theme: "夜晚",
+        style: "氛围",
+        duration: 15,
+        smart_duration: true,
+        prompt_influence: 0.5,
+        output_format: "mp3",
+        reference_asset_ids: ["asset-audio"],
+      }}
+      onClose={vi.fn()}
+      onDraftChange={onDraftChange}
+    />,
+  );
+
+  expect(
+    await screen.findByRole("button", { name: "参考音频.mp3" }),
+  ).toBeInTheDocument();
+  await user.click(screen.getByRole("button", { name: "音效生成" }));
+
+  expect(screen.getByRole("group", { name: "参考音频" })).toBeDisabled();
+  expect(onDraftChange).toHaveBeenLastCalledWith(
+    expect.objectContaining({
+      mode: "sfx",
+      reference_asset_ids: ["asset-audio"],
+    }),
+    true,
+  );
+
+  await user.click(screen.getByRole("button", { name: "音乐生成" }));
+  expect(screen.getByRole("group", { name: "参考音频" })).not.toBeDisabled();
+  expect(
+    screen.getByRole("button", { name: "参考音频.mp3" }),
   ).toBeInTheDocument();
 });
 

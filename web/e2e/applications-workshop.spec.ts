@@ -231,11 +231,13 @@ test("enters the visual workshop, persists projects, and supports deep navigatio
       if (request.method() === "PUT") {
         const body = request.postDataJSON() as {
           nodes: Array<Record<string, unknown>>;
+          edges?: Array<Record<string, unknown>>;
           expected_revision: number;
         };
         canvas = {
           ...canvas,
           nodes: body.nodes,
+          edges: body.edges ?? canvas.edges,
           revision: body.expected_revision + 1,
           updated_at: "2026-08-03T08:00:10Z",
         };
@@ -356,6 +358,7 @@ test("enters the visual workshop, persists projects, and supports deep navigatio
         const task = {
           id: "e2e-generation-task",
           project_id: "e2e-project",
+          canvas_node_id: body.canvas_node_id ?? null,
           provider_id: "e2e-image-provider",
           model_id: "e2e-image-model",
           provider_kind: "senseaudio_image",
@@ -458,7 +461,34 @@ test("enters the visual workshop, persists projects, and supports deep navigatio
   ).toBeVisible();
   await page.reload();
   await expect(page.getByText("图片1")).toBeVisible();
-  await page.getByText("图片1").click();
+  await page.getByText("图片1").dblclick();
+  await expect(page.getByRole("dialog", { name: "图片1" })).toBeVisible();
+  await page.getByRole("button", { name: "关闭媒体预览" }).click();
+  const outputPort = page.getByRole("button", {
+    name: "从图片1创建连线",
+  });
+  const portCenterOffset = await outputPort.evaluate((button) => {
+    const buttonBounds = button.getBoundingClientRect();
+    const iconBounds = button.querySelector("svg")!.getBoundingClientRect();
+    return {
+      x:
+        iconBounds.left +
+        iconBounds.width / 2 -
+        (buttonBounds.left + buttonBounds.width / 2),
+      y:
+        iconBounds.top +
+        iconBounds.height / 2 -
+        (buttonBounds.top + buttonBounds.height / 2),
+    };
+  });
+  expect(Math.abs(portCenterOffset.x)).toBeLessThanOrEqual(1);
+  expect(Math.abs(portCenterOffset.y)).toBeLessThanOrEqual(1);
+  await outputPort.click();
+  await expect(
+    page.getByRole("complementary", { name: "节点检查器" }),
+  ).toHaveCount(0);
+  await page.getByRole("button", { name: "替换素材" }).click();
+  await page.getByRole("tab", { name: "AI 生成" }).click();
   await page.getByRole("button", { name: "上传参考图片（可选）" }).click();
   const fileChooserPromise = page.waitForEvent("filechooser");
   await page.getByRole("menuitem", { name: /本地上传/ }).click();
@@ -497,6 +527,8 @@ test("enters the visual workshop, persists projects, and supports deep navigatio
   await page.reload();
   await expect(page.getByText("图片1")).toBeVisible();
   await page.getByText("图片1").click();
+  await page.getByRole("button", { name: "替换素材" }).click();
+  await page.getByRole("tab", { name: "AI 生成" }).click();
   const restoredPrompt = page.getByRole("textbox", { name: "图片提示词" });
   await expect(restoredPrompt).toContainText("E2E 未来城市海报");
   await expect(
@@ -509,6 +541,69 @@ test("enters the visual workshop, persists projects, and supports deep navigatio
   await expect(page.getByRole("spinbutton", { name: /种子/ })).toHaveValue(
     "42",
   );
+
+  const linkedImageNode = canvas.nodes.find((node) => node.kind === "image")!;
+  canvas = {
+    ...canvas,
+    nodes: [
+      { ...linkedImageNode, asset_id: referenceImage.id },
+      {
+        id: "e2e-linked-video",
+        kind: "video",
+        title: "连线目标视频",
+        position: { x: 980, y: 300 },
+        asset_id: null,
+        generation_draft: {
+          model_id: null,
+          prompt: "",
+          mode: "reference",
+          duration: 5,
+          resolution: "720p",
+          ratio: "16:9",
+          watermark: true,
+          generate_audio: false,
+          first_frame_asset_id: null,
+          last_frame_asset_id: null,
+          reference_asset_ids: [],
+          video_asset_ids: [],
+          audio_asset_ids: [],
+        },
+      },
+    ],
+    edges: [
+      {
+        id: "e2e-linked-edge",
+        source_node_id: linkedImageNode.id,
+        target_node_id: "e2e-linked-video",
+      },
+    ],
+    revision: canvas.revision + 1,
+  };
+  await page.reload();
+  await page.getByText("连线目标视频").click();
+  await page.getByRole("button", { name: "替换素材" }).click();
+  await page.getByRole("tab", { name: "AI 生成" }).click();
+  const linkedReferenceRow = page.getByRole("group", {
+    name: "固定参考素材",
+  });
+  await expect(linkedReferenceRow).toBeVisible();
+  await expect(page.getByText("上游引用")).toHaveCount(0);
+  await expect(
+    linkedReferenceRow.locator(
+      '.generation-media-card[data-linked-reference="true"]',
+    ),
+  ).toHaveCount(1);
+  await expect(
+    linkedReferenceRow.getByRole("button", {
+      name: "E2E 参考图.png",
+      exact: true,
+    }),
+  ).toBeVisible();
+  await expect(
+    linkedReferenceRow.getByRole("button", {
+      name: "移除参考文件 E2E 参考图.png",
+    }),
+  ).toHaveCount(0);
 
   await page.getByRole("button", { name: "对话" }).click();
   const assistantPanel = page.locator(".project-assistant-panel");

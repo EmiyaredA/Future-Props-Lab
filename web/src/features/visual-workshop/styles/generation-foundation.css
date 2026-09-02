@@ -412,7 +412,7 @@
 .project-assistant-panel {
   --assistant-width: 418px;
   position: absolute;
-  z-index: 24;
+  z-index: 60;
   top: 20px;
   right: 20px;
   bottom: 20px;

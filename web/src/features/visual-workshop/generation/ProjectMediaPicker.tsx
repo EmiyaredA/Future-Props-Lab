@@ -127,10 +127,12 @@ export function ProjectMediaPicker({
   label,
   kind = "image",
   value,
+  linkedValue = [],
   multiple = false,
   max = 1,
   minimal = false,
   uploadLast = false,
+  disabled = false,
   onChange,
   onFilesLoaded,
   onInvalidSelection,
@@ -139,10 +141,12 @@ export function ProjectMediaPicker({
   label: string;
   kind?: Extract<MediaKind, "image" | "video" | "audio">;
   value: string[];
+  linkedValue?: string[];
   multiple?: boolean;
   max?: number;
   minimal?: boolean;
   uploadLast?: boolean;
+  disabled?: boolean;
   onChange: (value: string[]) => void;
   onFilesLoaded?: (files: ManagedFile[]) => void;
   onInvalidSelection?: () => void;
@@ -159,6 +163,16 @@ export function ProjectMediaPicker({
   const [dialogMode, setDialogMode] = useState<"project" | "cross">();
   const [previewFile, setPreviewFile] = useState<ManagedFile>();
   const [optimisticFiles, setOptimisticFiles] = useState<ManagedFile[]>([]);
+  const linkedIds = useMemo(() => [...new Set(linkedValue)], [linkedValue]);
+  const linkedSet = useMemo(() => new Set(linkedIds), [linkedIds]);
+  const manualIds = useMemo(() => [...new Set(value)], [value]);
+  const combinedValue = useMemo(
+    () => [...linkedIds, ...manualIds.filter((id) => !linkedSet.has(id))],
+    [linkedIds, linkedSet, manualIds],
+  );
+  const manualLimit = Math.max(0, max - linkedIds.length);
+  const remaining = Math.max(0, max - combinedValue.length);
+  const canReplaceManual = !multiple && linkedIds.length === 0;
   const folders = useQuery({
     queryKey: fileQueryKeys.folders(projectId),
     queryFn: () => getFolders(projectId),
@@ -236,19 +250,34 @@ export function ProjectMediaPicker({
       const ids = uploaded
         .filter((file) => file.media_kind === kind)
         .map((file) => file.id);
-      onChange(
-        multiple
-          ? [...new Set([...value, ...ids])].slice(0, max)
-          : ids.slice(-1),
-      );
+      if (!multiple) {
+        onChange(linkedIds.length ? value : ids.slice(-1));
+        return;
+      }
+      const next = [...manualIds];
+      const occupied = new Set(combinedValue);
+      ids.forEach((id) => {
+        if (occupied.has(id) || occupied.size >= max) return;
+        occupied.add(id);
+        next.push(id);
+      });
+      onChange(next);
     },
   });
-  const visibleFiles = minimal
-    ? files.filter((file) => value.includes(file.id))
-    : files;
+  const visibleFiles = useMemo(() => {
+    if (!minimal) return files;
+    const byId = new Map(files.map((file) => [file.id, file]));
+    return combinedValue.flatMap((id) => {
+      const file = byId.get(id);
+      return file ? [file] : [];
+    });
+  }, [combinedValue, files, minimal]);
   const UploadIcon =
     kind === "video" ? Video : kind === "audio" ? Music : Image;
-  const remaining = Math.max(0, max - (multiple ? value.length : 0));
+
+  useEffect(() => {
+    if (disabled) setSourceMenuOpen(false);
+  }, [disabled]);
 
   useEffect(() => {
     if (!sourceMenuOpen) return;
@@ -307,7 +336,9 @@ export function ProjectMediaPicker({
       title={`上传${label}`}
       aria-haspopup="menu"
       aria-expanded={sourceMenuOpen}
-      disabled={upload.isPending}
+      disabled={
+        disabled || upload.isPending || (remaining === 0 && !canReplaceManual)
+      }
       onClick={() => setSourceMenuOpen((current) => !current)}
     >
       {upload.isPending ? (
@@ -334,7 +365,7 @@ export function ProjectMediaPicker({
           <button
             type="button"
             role="menuitem"
-            disabled={remaining === 0}
+            disabled={remaining === 0 && !canReplaceManual}
             onClick={() => {
               setSourceMenuOpen(false);
               uploadInput.current?.click();
@@ -349,6 +380,7 @@ export function ProjectMediaPicker({
           <button
             type="button"
             role="menuitem"
+            disabled={manualLimit === 0}
             onClick={() => {
               setSourceMenuOpen(false);
               setDialogMode("project");
@@ -363,7 +395,7 @@ export function ProjectMediaPicker({
           <button
             type="button"
             role="menuitem"
-            disabled={remaining === 0}
+            disabled={remaining === 0 && !canReplaceManual}
             onClick={() => {
               setSourceMenuOpen(false);
               setDialogMode("cross");
@@ -382,20 +414,22 @@ export function ProjectMediaPicker({
 
   return (
     <fieldset
-      className={`generation-image-picker${minimal ? " is-minimal" : ""}`}
+      className={`generation-image-picker${minimal ? " is-minimal" : ""}${disabled ? " is-disabled" : ""}`}
+      disabled={disabled}
+      aria-disabled={disabled}
     >
       <legend className={minimal ? "sr-only" : undefined}>{label}</legend>
       <input
         ref={uploadInput}
         hidden
         type="file"
+        disabled={disabled}
         multiple={multiple}
         accept={MEDIA_ACCEPT[kind]}
         onChange={(event) => {
-          const remaining = Math.max(0, max - (multiple ? value.length : 0));
           const selected = [...(event.target.files ?? [])].slice(
             0,
-            multiple ? remaining : 1,
+            multiple ? remaining : canReplaceManual ? 1 : remaining,
           );
           if (selected.length) upload.mutate(selected);
           event.currentTarget.value = "";
@@ -410,31 +444,44 @@ export function ProjectMediaPicker({
         <div className="generation-image-options">
           {minimal || uploadLast ? null : uploadButton}
           {visibleFiles.map((file) => {
-            const selected = value.includes(file.id);
+            const linked = linkedSet.has(file.id);
+            const selected = combinedValue.includes(file.id);
             if (minimal) {
               return (
-                <span className="generation-media-card" key={file.id}>
+                <span
+                  className={`generation-media-card${linked ? " is-linked" : ""}`}
+                  key={file.id}
+                  data-linked-reference={linked || undefined}
+                >
                   <button
                     type="button"
                     className="generation-media-open selected"
                     aria-pressed="true"
                     aria-label={file.display_name}
-                    title={`预览 ${file.display_name}`}
+                    disabled={disabled && !linked}
+                    title={
+                      linked
+                        ? `预览 ${file.display_name}（由画布连线引用）`
+                        : `预览 ${file.display_name}`
+                    }
                     onClick={() => setPreviewFile(file)}
                   >
                     <span className="generation-media-preview">
                       <GenerationMediaPreview file={file} />
                     </span>
                   </button>
-                  <button
-                    type="button"
-                    className="generation-media-remove"
-                    aria-label={`移除参考文件 ${file.display_name}`}
-                    title="移除参考文件"
-                    onClick={() =>
-                      onChange(value.filter((item) => item !== file.id))
-                    }
-                  />
+                  {linked ? null : (
+                    <button
+                      type="button"
+                      className="generation-media-remove"
+                      aria-label={`移除参考文件 ${file.display_name}`}
+                      title="移除参考文件"
+                      disabled={disabled}
+                      onClick={() =>
+                        onChange(value.filter((item) => item !== file.id))
+                      }
+                    />
+                  )}
                 </span>
               );
             }
@@ -445,15 +492,21 @@ export function ProjectMediaPicker({
                 aria-pressed={selected}
                 aria-label={file.display_name}
                 title={file.display_name}
+                disabled={disabled && !linked}
                 key={file.id}
                 onClick={() => {
+                  if (linked) {
+                    setPreviewFile(file);
+                    return;
+                  }
                   if (!multiple) {
                     onChange(selected ? [] : [file.id]);
                     return;
                   }
                   if (selected)
                     onChange(value.filter((item) => item !== file.id));
-                  else if (value.length < max) onChange([...value, file.id]);
+                  else if (combinedValue.length < max)
+                    onChange([...value, file.id]);
                 }}
               >
                 <span className="generation-media-preview">
@@ -469,7 +522,7 @@ export function ProjectMediaPicker({
       )}
       {multiple && !minimal ? (
         <small>
-          已选 {value.length}/{max}
+          已选 {combinedValue.length}/{max}
         </small>
       ) : null}
       {upload.isError ? (
@@ -493,16 +546,29 @@ export function ProjectMediaPicker({
               mode={dialogMode}
               projectId={projectId}
               kind={kind}
-              initialValue={dialogMode === "project" ? value : []}
+              initialValue={
+                dialogMode === "project"
+                  ? manualIds.filter((id) => !linkedSet.has(id))
+                  : []
+              }
               multiple={multiple}
-              limit={dialogMode === "project" ? max : multiple ? remaining : 1}
+              limit={
+                dialogMode === "project"
+                  ? manualLimit
+                  : multiple
+                    ? remaining
+                    : 1
+              }
               onClose={() => {
                 setDialogMode(undefined);
                 sourceTrigger.current?.focus();
               }}
               onConfirm={(ids, selectedFiles) => {
                 if (dialogMode === "project") {
-                  onChange(ids);
+                  onChange([
+                    ...manualIds.filter((id) => linkedSet.has(id)),
+                    ...ids,
+                  ]);
                 } else {
                   setOptimisticFiles((current) => [
                     ...current.filter(
@@ -511,11 +577,18 @@ export function ProjectMediaPicker({
                     ),
                     ...selectedFiles,
                   ]);
-                  onChange(
-                    multiple
-                      ? [...new Set([...value, ...ids])].slice(0, max)
-                      : ids.slice(-1),
-                  );
+                  if (!multiple) {
+                    onChange(linkedIds.length ? value : ids.slice(-1));
+                  } else {
+                    const next = [...manualIds];
+                    const occupied = new Set(combinedValue);
+                    ids.forEach((id) => {
+                      if (occupied.has(id) || occupied.size >= max) return;
+                      occupied.add(id);
+                      next.push(id);
+                    });
+                    onChange(next);
+                  }
                   void invalidateFileScope(client, projectId);
                 }
                 onFilesLoaded?.(selectedFiles);

@@ -327,6 +327,7 @@ async def test_snapshot_import_rejects_wrong_app_tampering_and_unsafe_members() 
             "seed": None,
             "image_count": 1,
             "reference_asset_id": None,
+            "prompt_reference_names": {},
         }
 
         unsafe_buffer = io.BytesIO()

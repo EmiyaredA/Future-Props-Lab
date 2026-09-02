@@ -8,6 +8,7 @@ import {
 } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, vi } from "vitest";
+import type { ManagedFile } from "@features/files";
 import { VisualWorkshopCanvasPage } from "@features/visual-workshop/canvas";
 import { getFiles, getFolders, uploadManagedFile } from "@features/files/api";
 import {
@@ -16,6 +17,7 @@ import {
   deleteVisualAssistantConversation,
   getGenerationOptions,
   getGenerationTask,
+  getGenerationTasks,
   getVisualAssistantConversation,
   getVisualAssistantConversations,
   getVisualAssistantModels,
@@ -26,9 +28,12 @@ import {
   putVisualCanvas,
   resolveVisualAssistantApproval,
   streamVisualAssistant,
-  type VisualAssistantConversation,
 } from "@features/visual-workshop/api";
 import { ApiError, fetchApiBlob } from "@platform/api/client";
+import {
+  assistantConversation,
+  canvasProject as project,
+} from "./support/visual-workshop-canvas-fixtures";
 
 vi.mock("@features/files/AssetBrowser", () => ({
   AssetBrowser: ({ importMode }: { importMode?: boolean }) => (
@@ -57,6 +62,7 @@ vi.mock("@features/visual-workshop/api", async () => {
     deleteVisualAssistantConversation: vi.fn(),
     getGenerationOptions: vi.fn(),
     getGenerationTask: vi.fn(),
+    getGenerationTasks: vi.fn(),
     getVisualAssistantConversation: vi.fn(),
     getVisualAssistantConversations: vi.fn(),
     getVisualAssistantModels: vi.fn(),
@@ -78,32 +84,6 @@ vi.mock("@platform/api/client", async () => {
     fetchApiBlob: vi.fn(),
   };
 });
-
-const project = {
-  id: "project-1",
-  title: "未命名项目",
-  kind: "canvas" as const,
-  status: "draft" as const,
-  revision: 0,
-  created_at: "2026-08-03T08:00:00Z",
-  updated_at: "2026-08-03T08:00:00Z",
-};
-
-const assistantConversation: VisualAssistantConversation = {
-  id: "assistant-1",
-  project_id: "project-1",
-  title: "AI 助手对话",
-  model_id: "model-chat",
-  model_slug: "demo-chat",
-  image_model_id: null,
-  image_model_slug: "",
-  video_model_id: null,
-  video_model_slug: "",
-  revision: 0,
-  created_at: "2026-08-03T08:00:00Z",
-  updated_at: "2026-08-03T08:00:00Z",
-  messages: [],
-};
 
 function renderCanvas() {
   const client = new QueryClient({
@@ -146,6 +126,7 @@ beforeEach(() => {
   );
   vi.mocked(getFolders).mockResolvedValue({ items: [] });
   vi.mocked(getFiles).mockResolvedValue({ items: [] });
+  vi.mocked(getGenerationTasks).mockResolvedValue({ items: [], total: 0 });
   vi.mocked(fetchApiBlob).mockResolvedValue(
     new Blob(["preview"], { type: "image/png" }),
   );
@@ -370,6 +351,271 @@ test("opens an Updream-style context menu and persists created nodes", async () 
   expect(fittedX).toBeGreaterThan(200);
 });
 
+test.each([
+  ["image", "图片"],
+  ["video", "视频"],
+  ["audio", "音频"],
+] as const)(
+  "keeps the viewport stable when adding a %s node",
+  async (kind, label) => {
+    window.localStorage.setItem(
+      "fpl_canvas_viewport_project-1",
+      JSON.stringify({ x: 135, y: -48, zoom: 1.3 }),
+    );
+    const user = userEvent.setup();
+    const { container } = renderCanvas();
+
+    expect(await screen.findByText("未命名项目")).toBeInTheDocument();
+    const surface = container.querySelector<HTMLElement>(
+      ".visual-canvas-surface",
+    )!;
+    const world = container.querySelector<HTMLElement>(".visual-canvas-world")!;
+    const initialTransform = world.style.transform;
+
+    fireEvent.contextMenu(surface, { clientX: 455, clientY: 312 });
+    await user.click(
+      screen.getByRole("menuitem", { name: `添加${label}节点` }),
+    );
+    await act(
+      () =>
+        new Promise<void>((resolve) =>
+          requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+        ),
+    );
+
+    const node = container.querySelector<HTMLElement>(
+      `[data-node-id^='${kind}-']`,
+    )!;
+    expect(world.style.transform).toBe(initialTransform);
+    expect(Number.parseFloat(node.style.left)).toBeCloseTo((455 - 135) / 1.3);
+    expect(Number.parseFloat(node.style.top)).toBeCloseTo((312 + 48) / 1.3);
+    expect(node).toHaveClass("selected");
+    expect(
+      screen.getByRole("complementary", { name: "节点检查器" }),
+    ).toBeVisible();
+  },
+);
+
+test("uses connection ports without selecting the node or opening its inspector", async () => {
+  vi.mocked(getVisualCanvas).mockResolvedValueOnce({
+    project_id: "project-1",
+    edges: [],
+    nodes: [
+      {
+        id: "image-1",
+        kind: "image",
+        title: "图片1",
+        position: { x: 240, y: 120 },
+        asset_id: null,
+      },
+      {
+        id: "video-2",
+        kind: "video",
+        title: "视频2",
+        position: { x: 640, y: 120 },
+        asset_id: null,
+      },
+    ],
+    revision: 0,
+    updated_at: "2026-08-03T08:00:00Z",
+  });
+  const { container } = renderCanvas();
+  expect(await screen.findByText("图片1")).toBeInTheDocument();
+  const node = container.querySelector<HTMLElement>(
+    "[data-node-id='image-1']",
+  )!;
+  expect(node).not.toHaveClass("selected");
+
+  fireEvent.pointerDown(
+    screen.getByRole("button", { name: "从图片1创建连线" }),
+    { button: 0, clientX: 560, clientY: 220 },
+  );
+  const targetPort = screen.getByRole("button", { name: "连接到视频2" });
+  const targetNode = container.querySelector<HTMLElement>(
+    "[data-node-id='video-2']",
+  )!;
+  fireEvent.pointerEnter(targetPort);
+  expect(targetPort).toHaveClass("is-valid-target");
+  expect(targetNode).toHaveClass("is-connectable-target");
+  fireEvent.pointerUp(targetPort);
+  await waitFor(() => expect(putVisualCanvas).toHaveBeenCalled());
+  expect(node).not.toHaveClass("selected");
+  expect(targetNode).not.toHaveClass("is-connectable-target");
+  expect(
+    screen.queryByRole("complementary", { name: "节点检查器" }),
+  ).not.toBeInTheDocument();
+});
+
+test("merges direct linked assets into reference rows and prompt mentions", async () => {
+  const mediaFile = (
+    id: string,
+    displayName: string,
+    mediaKind: "image" | "video" | "audio",
+  ): ManagedFile => ({
+    id,
+    project_id: "project-1",
+    folder_id: null,
+    reference_id: null,
+    original_filename: displayName,
+    display_name: displayName,
+    media_kind: mediaKind,
+    mime_type:
+      mediaKind === "image"
+        ? "image/png"
+        : mediaKind === "video"
+          ? "video/mp4"
+          : "audio/mpeg",
+    byte_size: 1024,
+    source: "project",
+    is_reference: false,
+    revision: 0,
+    created_at: "2026-08-03T08:00:00Z",
+    updated_at: "2026-08-03T08:00:00Z",
+  });
+  const files = {
+    image: [
+      mediaFile("linked-image", "连线图片.png", "image"),
+      mediaFile("manual-image", "手动图片.png", "image"),
+      mediaFile("unrelated-image", "项目其他图片.png", "image"),
+    ],
+    video: [mediaFile("linked-video", "连线视频.mp4", "video")],
+    audio: [mediaFile("linked-audio", "连线音频.mp3", "audio")],
+  };
+  vi.mocked(getFiles).mockImplementation(async ({ mediaKind }) => ({
+    items:
+      mediaKind === "image" || mediaKind === "video" || mediaKind === "audio"
+        ? files[mediaKind]
+        : [],
+  }));
+  vi.mocked(getVisualCanvas).mockResolvedValueOnce({
+    project_id: "project-1",
+    edges: [
+      {
+        id: "edge-1",
+        source_node_id: "image-1",
+        target_node_id: "video-1",
+      },
+      {
+        id: "edge-2",
+        source_node_id: "video-source",
+        target_node_id: "video-1",
+      },
+      {
+        id: "edge-3",
+        source_node_id: "audio-1",
+        target_node_id: "video-1",
+      },
+    ],
+    nodes: [
+      {
+        id: "image-1",
+        kind: "image",
+        title: "上游图片",
+        position: { x: 100, y: 120 },
+        asset_id: "linked-image",
+        generation_draft: {
+          model_id: null,
+          prompt: "这里的参考素材不能递归继承",
+          size: "1024x1024",
+          seed: null,
+          image_count: 1,
+          reference_asset_id: "unrelated-image",
+        },
+      },
+      {
+        id: "video-source",
+        kind: "video",
+        title: "上游视频",
+        position: { x: 100, y: 420 },
+        asset_id: "linked-video",
+      },
+      {
+        id: "audio-1",
+        kind: "audio",
+        title: "上游音频",
+        position: { x: 100, y: 700 },
+        asset_id: "linked-audio",
+      },
+      {
+        id: "video-1",
+        kind: "video",
+        title: "目标视频",
+        position: { x: 520, y: 120 },
+        asset_id: null,
+        generation_draft: {
+          mode: "reference",
+          prompt: "",
+          duration: 5,
+          resolution: "720p",
+          ratio: "16:9",
+          watermark: true,
+          generate_audio: false,
+          first_frame_asset_id: null,
+          last_frame_asset_id: null,
+          reference_asset_ids: ["linked-image", "manual-image"],
+          video_asset_ids: [],
+          audio_asset_ids: [],
+        },
+      },
+    ],
+    revision: 0,
+    updated_at: "2026-08-03T08:00:00Z",
+  });
+  const user = userEvent.setup();
+  renderCanvas();
+
+  const targetVideo = (await screen.findByText("目标视频")).closest(
+    ".canvas-node",
+  )!;
+  await user.click(
+    targetVideo.querySelector<HTMLElement>(".canvas-node-media")!,
+  );
+  await user.click(screen.getByRole("button", { name: "替换素材" }));
+  await user.click(screen.getByRole("tab", { name: "AI 生成" }));
+  expect(screen.getByRole("button", { name: "全能参考" })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+  const referenceBar = screen.getByRole("group", { name: "固定参考素材" });
+  expect(screen.queryByText("上游引用")).not.toBeInTheDocument();
+  const cards = referenceBar.querySelectorAll<HTMLElement>(
+    ".generation-media-card",
+  );
+  expect(cards).toHaveLength(4);
+  expect(cards[0]).toHaveAttribute("data-linked-reference", "true");
+  expect(cards[0]).toContainElement(
+    screen.getByRole("button", { name: "连线图片.png" }),
+  );
+  expect(
+    screen
+      .getByRole("button", { name: "连线图片.png" })
+      .compareDocumentPosition(
+        screen.getByRole("button", { name: "手动图片.png" }),
+      ) & Node.DOCUMENT_POSITION_FOLLOWING,
+  ).toBeTruthy();
+  expect(
+    screen.queryByRole("button", { name: "移除参考文件 连线图片.png" }),
+  ).not.toBeInTheDocument();
+  expect(
+    screen.getByRole("button", { name: "移除参考文件 手动图片.png" }),
+  ).toBeInTheDocument();
+  expect(screen.getAllByRole("button", { name: "连线图片.png" })).toHaveLength(
+    1,
+  );
+
+  const promptEditor = screen.getByRole("textbox", { name: "视频提示词" });
+  await user.click(promptEditor);
+  await user.type(promptEditor, "@");
+  const mentions = await screen.findByRole("listbox", {
+    name: "引用已选素材",
+  });
+  expect(mentions).toHaveTextContent("上游图片.png");
+  expect(mentions).toHaveTextContent("上游视频.mp4");
+  expect(mentions).toHaveTextContent("上游音频.mp3");
+  expect(mentions).toHaveTextContent("手动图片.png");
+  expect(mentions).not.toHaveTextContent("项目其他图片.png");
+});
+
 test("keeps the local draft visible when canvas CAS conflicts", async () => {
   vi.mocked(putVisualCanvas).mockRejectedValueOnce(
     new ApiError(
@@ -514,6 +760,7 @@ test("creates video tasks with the selected canvas node link", async () => {
   vi.mocked(createGenerationTask).mockResolvedValue({
     id: "task-video-1",
     project_id: "project-1",
+    canvas_node_id: "video-1",
     provider_id: "provider-video",
     model_id: "model-video",
     provider_kind: "senseaudio_video",
@@ -535,6 +782,7 @@ test("creates video tasks with the selected canvas node link", async () => {
   vi.mocked(getGenerationTask).mockResolvedValue({
     id: "task-video-1",
     project_id: "project-1",
+    canvas_node_id: "video-1",
     provider_id: "provider-video",
     model_id: "model-video",
     provider_kind: "senseaudio_video",
@@ -561,6 +809,8 @@ test("creates video tasks with the selected canvas node link", async () => {
     "[data-node-id='video-1']",
   )!;
   await user.click(node.querySelector<HTMLElement>(".canvas-node-media")!);
+  await user.click(screen.getByRole("button", { name: "替换素材" }));
+  await user.click(screen.getByRole("tab", { name: "AI 生成" }));
   await user.click(await screen.findByRole("button", { name: "生成视频" }));
 
   await waitFor(() =>
@@ -610,10 +860,17 @@ test("keeps the viewport unchanged when selecting an image node or its material 
   )!;
   await user.click(node.querySelector<HTMLElement>(".canvas-node-media")!);
 
-  expect(screen.getByRole("complementary", { name: "节点检查器" })).toHaveClass(
-    "is-embedded",
-  );
+  expect(
+    screen.getByRole("complementary", { name: "节点检查器" }),
+  ).toBeVisible();
   expect(screen.getByRole("button", { name: "110%" })).toBeInTheDocument();
+
+  await user.dblClick(node.querySelector<HTMLElement>(".canvas-node-media")!);
+  expect(screen.getByRole("dialog", { name: "图片1" })).toBeVisible();
+  expect(
+    screen.queryByRole("complementary", { name: "节点检查器" }),
+  ).toBeNull();
+  await user.click(screen.getByRole("button", { name: "关闭媒体预览" }));
 
   await user.click(screen.getByRole("button", { name: "选择图片素材" }));
   expect(screen.getByRole("tab", { name: "素材" })).toHaveAttribute(
@@ -655,9 +912,9 @@ test("drags a selected video node from its preview and saves zoom-adjusted coord
     clientY: 200,
     pointerId: 1,
   });
-  expect(screen.getByRole("complementary", { name: "节点检查器" })).toHaveClass(
-    "is-embedded",
-  );
+  expect(
+    screen.queryByRole("complementary", { name: "节点检查器" }),
+  ).not.toBeInTheDocument();
   fireEvent.pointerMove(node, {
     clientX: 410,
     clientY: 255,
@@ -666,6 +923,9 @@ test("drags a selected video node from its preview and saves zoom-adjusted coord
   fireEvent.pointerUp(node, { pointerId: 1 });
 
   await waitFor(() => expect(putVisualCanvas).toHaveBeenCalledTimes(1));
+  expect(
+    screen.queryByRole("complementary", { name: "节点检查器" }),
+  ).not.toBeInTheDocument();
   expect(vi.mocked(putVisualCanvas).mock.calls[0]?.[1][0]).toMatchObject({
     id: "video-1",
     position: { x: 340, y: 170 },
@@ -732,6 +992,7 @@ test("keeps canvas panning stable when pointer movement and release are batched"
   const surface = container.querySelector<HTMLElement>(
     ".visual-canvas-surface",
   )!;
+  fireEvent.keyDown(window, { code: "Space", key: " " });
 
   act(() => {
     surface.dispatchEvent(
@@ -759,6 +1020,7 @@ test("keeps canvas panning stable when pointer movement and release are batched"
       }),
     );
   });
+  fireEvent.keyUp(window, { code: "Space", key: " " });
 
   expect(container.querySelector(".visual-canvas")).toBeInTheDocument();
   expect(
@@ -781,14 +1043,11 @@ test("captures trackpad pinch zoom after the asynchronous canvas mount", async (
     ctrlKey: true,
     deltaY: -10,
   });
-
   fireEvent(surface, pinch);
-
   expect(pinch.defaultPrevented).toBe(true);
   expect(screen.getByRole("button", { name: "111%" })).toBeInTheDocument();
 });
-
-test("keeps wheel scrolling inside an attached node editor", async () => {
+test("keeps ordinary panel scrolling but captures panel pinch zoom", async () => {
   vi.mocked(getVisualCanvas).mockResolvedValueOnce({
     project_id: "project-1",
     edges: [],
@@ -806,24 +1065,27 @@ test("keeps wheel scrolling inside an attached node editor", async () => {
   });
   const user = userEvent.setup();
   renderCanvas();
-
   expect(await screen.findByText("视频1")).toBeInTheDocument();
   await user.click(screen.getByRole("button", { name: "选择视频素材" }));
-  const inspector = screen.getByRole("complementary", {
-    name: "节点检查器",
-  });
+  const inspector = screen.getByRole("complementary", { name: "节点检查器" });
   const wheel = new WheelEvent("wheel", {
     bubbles: true,
     cancelable: true,
     deltaY: 120,
   });
-
   fireEvent(inspector, wheel);
-
   expect(wheel.defaultPrevented).toBe(false);
   expect(screen.getByRole("button", { name: "100%" })).toBeInTheDocument();
+  const pinch = new WheelEvent("wheel", {
+    bubbles: true,
+    cancelable: true,
+    ctrlKey: true,
+    deltaY: -10,
+  });
+  fireEvent(inspector, pinch);
+  expect(pinch.defaultPrevented).toBe(true);
+  expect(screen.getByRole("button", { name: "111%" })).toBeInTheDocument();
 });
-
 test("exports a paused video frame and creates an unconnected image node", async () => {
   vi.mocked(getVisualCanvas).mockResolvedValueOnce({
     project_id: "project-1",
@@ -881,6 +1143,11 @@ test("exports a paused video frame and creates an unconnected image node", async
   });
   await user.click(node.querySelector<HTMLElement>(".canvas-node-media")!);
   const video = node.querySelector("video")!;
+  expect(video).not.toHaveAttribute("controls");
+  const playButton = await screen.findByRole("button", { name: "播放视频" });
+  await waitFor(() => expect(playButton).toBeEnabled());
+  await user.click(playButton);
+  expect(video).toHaveAttribute("controls");
   Object.defineProperties(video, {
     currentTime: { configurable: true, writable: true, value: 3.25 },
     duration: { configurable: true, value: 10 },

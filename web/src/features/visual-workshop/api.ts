@@ -150,6 +150,16 @@ export async function getVisualCanvas(projectId: string) {
   );
 }
 
+export function visualAssetDownloadPath(
+  assetId: string,
+  downloadName?: string,
+) {
+  const path = `/v1/files/${encodeURIComponent(assetId)}/download`;
+  return downloadName
+    ? `${path}?download_name=${encodeURIComponent(downloadName)}`
+    : path;
+}
+
 export async function putVisualCanvas(
   projectId: string,
   nodes: VisualCanvasNode[],
@@ -186,7 +196,8 @@ export async function createGenerationTask(
 export async function getGenerationTasks(
   filters: {
     projectId?: string;
-    kind?: "image" | "video";
+    canvasNodeId?: string;
+    kind?: "image" | "video" | "audio";
     status?: GenerationTaskStatus;
     page?: number;
     pageSize?: number;
@@ -197,6 +208,7 @@ export async function getGenerationTasks(
       params: {
         query: {
           project_id: filters.projectId,
+          canvas_node_id: filters.canvasNodeId,
           kind: filters.kind,
           status: filters.status,
           page: filters.page ?? 1,

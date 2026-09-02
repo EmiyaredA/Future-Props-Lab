@@ -3,7 +3,8 @@
   position: absolute;
   top: 50%;
   right: 7px;
-  transform: translateY(-50%);
+  transform: translateY(-50%) translateZ(0);
+  will-change: transform;
 }
 
 .video-parameter-switches {
@@ -112,7 +113,7 @@
 
 .canvas-tool-dock {
   position: absolute;
-  z-index: 15;
+  z-index: 40;
   top: 50%;
   left: 24px;
   padding: 7px;
@@ -125,7 +126,6 @@
   background: color-mix(in srgb, var(--surface) 88%, transparent);
   box-shadow: 0 18px 42px rgb(0 0 0 / 16%);
   transform: translateY(-50%);
-  backdrop-filter: blur(18px);
 }
 
 .canvas-tool-dock button {
@@ -151,7 +151,7 @@
 
 .canvas-controls {
   position: absolute;
-  z-index: 12;
+  z-index: 40;
   bottom: 24px;
   left: 50%;
   min-height: 58px;
@@ -163,8 +163,8 @@
   border-radius: 999px;
   background: color-mix(in srgb, var(--surface) 88%, transparent);
   box-shadow: 0 18px 46px rgb(0 0 0 / 16%);
-  transform: translateX(-50%);
-  backdrop-filter: blur(18px);
+  transform: translateX(-50%) translateZ(0);
+  will-change: transform;
 }
 
 .canvas-control-mode {
@@ -176,7 +176,7 @@
   background: var(--surface-soft);
 }
 
-.canvas-control-mode span {
+.canvas-control-mode button {
   width: 32px;
   height: 32px;
   display: grid;
@@ -185,7 +185,7 @@
   color: var(--faint);
 }
 
-.canvas-control-mode span.active {
+.canvas-control-mode button.active {
   background: var(--accent);
   color: white;
 }

@@ -136,6 +136,7 @@ async def test_video_submit_materializes_asset_ids_and_keeps_legacy_urls(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     submitted: dict = {}
+    temporary_calls: list[tuple[str, str, str | None]] = []
 
     async def fake_create(**kwargs) -> str:
         submitted.update(kwargs)
@@ -144,7 +145,10 @@ async def test_video_submit_materializes_asset_ids_and_keeps_legacy_urls(
     async def fake_image(asset_id: str, _workspace_id: str) -> str:
         return f"data:image/png;base64,{asset_id}"
 
-    async def fake_temporary(asset_id: str, kind: str, _workspace_id: str) -> str:
+    async def fake_temporary(
+        asset_id: str, kind: str, _workspace_id: str, filename: str | None = None
+    ) -> str:
+        temporary_calls.append((asset_id, kind, filename))
         return f"https://temp.sh/{kind}-{asset_id}"
 
     runner = VisualGenerationRunner()
@@ -164,6 +168,10 @@ async def test_video_submit_materializes_asset_ids_and_keeps_legacy_urls(
             "reference_asset_ids": ["image-1"],
             "audio_asset_ids": ["audio-1"],
             "video_asset_ids": ["video-1"],
+            "reference_filenames": {
+                "audio-1": "环境声.mp3",
+                "video-1": "开局.mp4",
+            },
             "audio_urls": ["https://legacy.example/audio.mp3"],
             "video_urls": ["https://legacy.example/video.mp4"],
             "duration": 5,
@@ -186,6 +194,10 @@ async def test_video_submit_materializes_asset_ids_and_keeps_legacy_urls(
         {"type": "audio", "audio_url": "https://legacy.example/audio.mp3"},
         {"type": "video", "video_url": "https://legacy.example/video.mp4"},
     ]
+    assert temporary_calls == [
+        ("audio-1", "audio", "环境声.mp3"),
+        ("video-1", "video", "开局.mp4"),
+    ]
 
 
 @pytest.mark.asyncio
@@ -199,7 +211,12 @@ async def test_temporary_upload_failure_happens_before_provider_submission(
         provider_called = True
         return "provider-task"
 
-    async def failed_upload(_asset_id: str, _kind: str, _workspace_id: str) -> str:
+    async def failed_upload(
+        _asset_id: str,
+        _kind: str,
+        _workspace_id: str,
+        _filename: str | None = None,
+    ) -> str:
         raise TemporaryMediaError("private upstream response")
 
     runner = VisualGenerationRunner()

@@ -55,6 +55,30 @@ async def test_upload_uses_random_filename_and_accepts_trailing_newline(tmp_path
 
 
 @pytest.mark.asyncio
+async def test_upload_uses_explicit_alias_with_forced_real_extension(tmp_path: Path) -> None:
+    source = tmp_path / "stored-without-extension"
+    source.write_bytes(b"video")
+
+    async def handler(request: httpx.Request) -> httpx.Response:
+        body = await request.aread()
+        assert "分镜-开局.exe.mp4".encode() in body
+        assert b'.exe"' not in body
+        return httpx.Response(200, text="https://temp.sh/reference.mp4")
+
+    result = await upload_temporary_media(
+        path=source,
+        mime_type="video/mp4",
+        upload_url="https://temp.sh/upload",
+        transport=httpx.MockTransport(handler),
+        retry_delay=0,
+        filename="分镜/开局.exe",
+        file_extension=".mp4",
+    )
+
+    assert result == "https://temp.sh/reference.mp4"
+
+
+@pytest.mark.asyncio
 @pytest.mark.parametrize(
     "response",
     [

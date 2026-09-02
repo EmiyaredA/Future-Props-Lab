@@ -120,7 +120,11 @@ class VisualGenerationRunner(PollingTaskRunner):
         return await read_data_uri(path=path, mime_type=mime_type, max_bytes=30 * 1024 * 1024)
 
     async def _temporary_asset_url(
-        self, asset_id: str, expected_kind: str, workspace_id: str
+        self,
+        asset_id: str,
+        expected_kind: str,
+        workspace_id: str,
+        filename: str | None = None,
     ) -> str:
         async with self.session_factory() as session:
             bind_workspace(session, workspace_id)
@@ -129,11 +133,14 @@ class VisualGenerationRunner(PollingTaskRunner):
                 raise TemporaryMediaError("参考素材已不存在或类型不匹配")
             path = self.storage.path_for(asset)
             mime_type = asset.mime_type
+            extension = Path(asset.original_filename).suffix
         return await upload_temporary_reference(
             path=path,
             mime_type=mime_type,
             upload_url=self.settings.fpl_temp_media_upload_url,
             transport=self.temporary_media_transport,
+            filename=filename,
+            file_extension=extension,
         )
 
     async def _submit(
@@ -146,9 +153,22 @@ class VisualGenerationRunner(PollingTaskRunner):
         payload: dict,
         workspace_id: str,
     ) -> str:
+        reference_filenames = payload.get("reference_filenames")
+        if not isinstance(reference_filenames, dict):
+            reference_filenames = {}
+
+        def reference_filename(asset_id: object) -> str | None:
+            value = reference_filenames.get(str(asset_id))
+            return value if isinstance(value, str) and value.strip() else None
+
         if provider_kind in {"senseaudio_music", "senseaudio_sfx"}:
             reference_urls = [
-                await self._temporary_asset_url(str(asset_id), "audio", workspace_id)
+                await self._temporary_asset_url(
+                    str(asset_id),
+                    "audio",
+                    workspace_id,
+                    reference_filename(asset_id),
+                )
                 for asset_id in payload.get("reference_asset_ids", [])
             ]
             return await submit_generation_task(
@@ -213,7 +233,10 @@ class VisualGenerationRunner(PollingTaskRunner):
                     {
                         "type": "audio",
                         "audio_url": await self._temporary_asset_url(
-                            str(asset_id), "audio", workspace_id
+                            str(asset_id),
+                            "audio",
+                            workspace_id,
+                            reference_filename(asset_id),
                         ),
                     }
                 )
@@ -222,7 +245,10 @@ class VisualGenerationRunner(PollingTaskRunner):
                     {
                         "type": "video",
                         "video_url": await self._temporary_asset_url(
-                            str(asset_id), "video", workspace_id
+                            str(asset_id),
+                            "video",
+                            workspace_id,
+                            reference_filename(asset_id),
                         ),
                     }
                 )

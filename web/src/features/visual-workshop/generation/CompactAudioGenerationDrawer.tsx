@@ -27,6 +27,7 @@ export function CompactAudioGenerationDrawer({
   onBeforeSubmit,
   onTaskCreated,
   onClose,
+  linkedAssetIds = { image: [], video: [], audio: [] },
 }: GenerationDrawerProps) {
   const audioDraft = draft as
     VisualCanvasAudioGenerationDraft | null | undefined;
@@ -67,15 +68,11 @@ export function CompactAudioGenerationDrawer({
     if (models.some((model) => model.id === modelId)) return;
     setModelId(models[0]?.id ?? "");
   }, [modelId, models]);
-  useEffect(() => {
-    if (mode === "sfx") setReferences([]);
-  }, [mode]);
-
-  const saveDraft = (immediate = false) => {
+  const saveDraft = (immediate = false, nextMode = mode) => {
     onDraftChange?.(
       {
         model_id: modelId || null,
-        mode,
+        mode: nextMode,
         prompt,
         theme,
         style,
@@ -83,7 +80,7 @@ export function CompactAudioGenerationDrawer({
         smart_duration: smartDuration,
         prompt_influence: influence,
         output_format: format,
-        reference_asset_ids: mode === "music" ? references : [],
+        reference_asset_ids: references,
       },
       immediate,
     );
@@ -145,14 +142,20 @@ export function CompactAudioGenerationDrawer({
           <button
             type="button"
             className={mode === "music" ? "active" : ""}
-            onClick={() => setMode("music")}
+            onClick={() => {
+              setMode("music");
+              saveDraft(true, "music");
+            }}
           >
             <Music aria-hidden /> 音乐生成
           </button>
           <button
             type="button"
             className={mode === "sfx" ? "active" : ""}
-            onClick={() => setMode("sfx")}
+            onClick={() => {
+              setMode("sfx");
+              saveDraft(true, "sfx");
+            }}
           >
             <Waves aria-hidden /> 音效生成
           </button>
@@ -161,22 +164,28 @@ export function CompactAudioGenerationDrawer({
           <X aria-hidden />
         </button>
       </header>
-      {mode === "music" ? (
-        <div className="audio-generation-references">
-          <strong>参考音频</strong>
-          <ProjectMediaPicker
-            projectId={projectId}
-            label="参考音频"
-            kind="audio"
-            value={references}
-            multiple
-            max={3}
-            minimal
-            uploadLast
-            onChange={setReferences}
-          />
-        </div>
-      ) : null}
+      <div className="audio-generation-reference-stack">
+        {mode === "music" ||
+        references.length ||
+        linkedAssetIds.audio.length ? (
+          <div className="audio-generation-references">
+            <strong>参考音频</strong>
+            <ProjectMediaPicker
+              projectId={projectId}
+              label="参考音频"
+              kind="audio"
+              value={references}
+              multiple
+              max={3}
+              minimal
+              uploadLast
+              disabled={mode !== "music"}
+              linkedValue={linkedAssetIds.audio}
+              onChange={setReferences}
+            />
+          </div>
+        ) : null}
+      </div>
       <div className="audio-generation-editor">
         <textarea
           maxLength={6000}

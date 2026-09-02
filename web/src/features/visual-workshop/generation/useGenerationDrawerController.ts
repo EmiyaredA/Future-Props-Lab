@@ -23,9 +23,17 @@ import {
 } from "@features/visual-workshop/generation/options";
 import { visualWorkshopQueryKeys as visualKeys } from "@features/visual-workshop/queryKeys";
 import type { GenerationDrawerProps } from "@features/visual-workshop/generation/generationDrawerTypes";
+import {
+  promptAssetReferenceNameForBase,
+  type PromptManagedFile,
+} from "@features/visual-workshop/generation/generationPromptModel";
 
 function errorMessage(error: unknown) {
   return apiErrorMessage(error, "创建任务失败，请稍后重试。");
+}
+
+function uniqueAssetIds(...groups: string[][]) {
+  return [...new Set(groups.flat())];
 }
 
 export function useGenerationDrawerController({
@@ -38,6 +46,8 @@ export function useGenerationDrawerController({
   compact = false,
   canvasNodeId,
   onClose,
+  linkedAssetIds = { image: [], video: [], audio: [] },
+  linkedReferenceNames = {},
 }: GenerationDrawerProps) {
   const client = useQueryClient();
   const imageDraft =
@@ -97,6 +107,13 @@ export function useGenerationDrawerController({
   const [promptFiles, setPromptFiles] = useState<Record<string, ManagedFile>>(
     {},
   );
+  const [promptReferenceNames, setPromptReferenceNames] = useState<
+    Record<string, string>
+  >(
+    imageDraft?.prompt_reference_names ??
+      videoDraft?.prompt_reference_names ??
+      {},
+  );
   const modelMenuRef = useRef<HTMLDetailsElement>(null);
   const rememberPromptFiles = useCallback((files: ManagedFile[]) => {
     setPromptFiles((current) => {
@@ -112,32 +129,71 @@ export function useGenerationDrawerController({
     });
   }, []);
   const selectedPromptAssetIds = useMemo(() => {
-    if (kind === "image") return imageReference;
-    if (videoMode === "image") return firstFrame;
-    if (videoMode === "frames") return [...firstFrame, ...lastFrame];
+    const linked = uniqueAssetIds(
+      linkedAssetIds.image,
+      linkedAssetIds.video,
+      linkedAssetIds.audio,
+    );
+    if (kind === "image")
+      return uniqueAssetIds(linkedAssetIds.image, imageReference);
+    if (videoMode === "image") return uniqueAssetIds(linked, firstFrame);
+    if (videoMode === "frames")
+      return uniqueAssetIds(linked, firstFrame, lastFrame);
     if (videoMode === "reference")
-      return [...references, ...videoReferences, ...audioReferences];
-    return [];
+      return uniqueAssetIds(
+        linked,
+        references,
+        videoReferences,
+        audioReferences,
+      );
+    return linked;
   }, [
     audioReferences,
     firstFrame,
     imageReference,
     kind,
     lastFrame,
+    linkedAssetIds.audio,
+    linkedAssetIds.image,
+    linkedAssetIds.video,
     references,
     videoMode,
     videoReferences,
   ]);
-  const promptAssets = useMemo(() => {
-    const byId = new Map(
-      Object.values(promptFiles).map((file) => [file.id, file]),
-    );
-    selectedPromptAssetIds.forEach((id) => {
-      const file = promptFiles[id];
-      if (file) byId.set(id, file);
+  const resolvedLinkedReferenceNames = useMemo(() => {
+    const names: Record<string, string> = {};
+    Object.entries(linkedReferenceNames).forEach(([assetId, baseName]) => {
+      const file = promptFiles[assetId];
+      if (file)
+        names[assetId] = promptAssetReferenceNameForBase(file, baseName);
     });
-    return [...byId.values()];
-  }, [promptFiles, selectedPromptAssetIds]);
+    return names;
+  }, [linkedReferenceNames, promptFiles]);
+  const promptAssets = useMemo(
+    () =>
+      selectedPromptAssetIds.flatMap((id) => {
+        const file = promptFiles[id];
+        if (!file) return [];
+        const referenceName =
+          resolvedLinkedReferenceNames[id] ?? promptReferenceNames[id];
+        if (!referenceName) return [file];
+        return [
+          {
+            ...file,
+            prompt_reference_name: referenceName,
+            prompt_legacy_names: promptReferenceNames[id]
+              ? [promptReferenceNames[id]]
+              : [],
+          } satisfies PromptManagedFile,
+        ];
+      }),
+    [
+      promptFiles,
+      promptReferenceNames,
+      resolvedLinkedReferenceNames,
+      selectedPromptAssetIds,
+    ],
+  );
   const options = useQuery({
     queryKey: visualKeys.generationOptions,
     queryFn: getGenerationOptions,
@@ -169,6 +225,7 @@ export function useGenerationDrawerController({
                 : null,
             image_count: imageCount,
             reference_asset_id: imageReference[0] ?? null,
+            prompt_reference_names: promptReferenceNames,
             ...changes,
           } as VisualCanvasImageGenerationDraft,
           immediate,
@@ -190,6 +247,7 @@ export function useGenerationDrawerController({
           reference_asset_ids: references,
           audio_asset_ids: audioReferences,
           video_asset_ids: videoReferences,
+          prompt_reference_names: promptReferenceNames,
           ...changes,
         } as VisualCanvasVideoGenerationDraft,
         immediate,
@@ -207,6 +265,7 @@ export function useGenerationDrawerController({
       modelId,
       onDraftChange,
       prompt,
+      promptReferenceNames,
       ratio,
       references,
       resolution,
@@ -217,6 +276,48 @@ export function useGenerationDrawerController({
       watermark,
     ],
   );
+  const linkedNamesReady = Object.keys(linkedReferenceNames).every((assetId) =>
+    Boolean(promptFiles[assetId]),
+  );
+  useEffect(() => {
+    if (!lockedKind || lockedKind === "audio" || !linkedNamesReady) return;
+    const current = JSON.stringify(promptReferenceNames);
+    const next = JSON.stringify(resolvedLinkedReferenceNames);
+    if (current === next) return;
+    setPromptReferenceNames(resolvedLinkedReferenceNames);
+    persistDraft(
+      { prompt_reference_names: resolvedLinkedReferenceNames },
+      true,
+    );
+  }, [
+    linkedNamesReady,
+    lockedKind,
+    persistDraft,
+    promptReferenceNames,
+    resolvedLinkedReferenceNames,
+  ]);
+  const hasLinkedVideoReferences = Boolean(
+    linkedAssetIds.image.length ||
+    linkedAssetIds.video.length ||
+    linkedAssetIds.audio.length,
+  );
+  useEffect(() => {
+    if (
+      lockedKind !== "video" ||
+      !hasLinkedVideoReferences ||
+      videoMode === "reference"
+    )
+      return;
+    setVideoMode("reference");
+    persistDraft(
+      {
+        mode: "reference",
+        first_frame_asset_id: null,
+        last_frame_asset_id: null,
+      },
+      true,
+    );
+  }, [hasLinkedVideoReferences, lockedKind, persistDraft, videoMode]);
   const invalidSelection = useCallback(() => {
     setNotice("部分已选择素材已失效，已从当前草稿移除。");
   }, []);
@@ -364,6 +465,7 @@ export function useGenerationDrawerController({
   return {
     projectId,
     onClose,
+    linkedAssetIds,
     lockedKind,
     compact,
     kind,
@@ -401,6 +503,7 @@ export function useGenerationDrawerController({
     audioReferences,
     setAudioReferences,
     videoReferences,
+    hasLinkedVideoReferences,
     setVideoReferences,
     composerExpanded,
     setComposerExpanded,

@@ -38,6 +38,7 @@ export function CompactImageGenerationDrawer({
     setComposerExpanded,
     notice,
     promptAssets,
+    linkedAssetIds,
     modelMenuRef,
     rememberPromptFiles,
     options,
@@ -64,6 +65,7 @@ export function CompactImageGenerationDrawer({
               minimal={!composerExpanded}
               uploadLast
               value={imageReference}
+              linkedValue={linkedAssetIds.image}
               onChange={(value) => {
                 setImageReference(value);
                 persistDraft({ reference_asset_id: value[0] ?? null }, true);

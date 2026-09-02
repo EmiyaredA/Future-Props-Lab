@@ -1,24 +1,17 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ArrowLeft,
   CircleQuestionMark,
   Clipboard,
   Copy,
   Focus,
-  FolderCog,
-  FolderOpen,
   Grid2X2,
-  Hand,
   Image,
   List,
-  MessageSquareText,
-  Minus,
-  MousePointer2,
   Music,
   Pencil,
   Plus,
   RefreshCw,
-  Save,
   Trash2,
   Type,
   Upload,
@@ -28,30 +21,24 @@ import {
 import { AssetBrowser, uploadManagedFile } from "@features/files";
 import { ProjectAssistantPanel } from "@features/visual-workshop/assistant/ProjectAssistantPanel";
 import { CanvasNodeInspector } from "@features/visual-workshop/canvas/CanvasNodeInspector";
+import { CanvasEdgeLayer } from "@features/visual-workshop/canvas/CanvasEdgeLayer";
+import {
+  CanvasAlignmentGuides,
+  CanvasSelectionOverlay,
+} from "@features/visual-workshop/canvas/CanvasInteractionOverlay";
+import { CanvasScreenChrome } from "@features/visual-workshop/canvas/CanvasScreenChrome";
 import {
   CanvasMediaNodeActions,
   CanvasMediaPreview,
 } from "@features/visual-workshop/canvas/CanvasMediaNode";
+import { CanvasMediaPreviewDialog } from "@features/visual-workshop/canvas/CanvasMediaPreviewDialog";
 import {
   VisualCanvasFrameExportDialog,
   type VisualCanvasFrameExport,
 } from "@features/visual-workshop/canvas/VisualCanvasFrameExportDialog";
-import {
-  DEFAULT_VIEWPORT,
-  NODE_SIZE,
-  nodeLabel,
-} from "@features/visual-workshop/canvas/geometry";
-import { ThemeToggle } from "@shared/ui/ThemeToggle";
+import { nodeLabel } from "@features/visual-workshop/canvas/geometry";
 import { useVisualCanvasController } from "@features/visual-workshop/canvas/useVisualCanvasController";
 import "@features/visual-workshop/visual-workshop.css";
-function connectionPath(
-  source: { x: number; y: number },
-  target: { x: number; y: number },
-) {
-  const bend = Math.max(72, Math.abs(target.x - source.x) * 0.45);
-  return `M ${source.x} ${source.y} C ${source.x + bend} ${source.y}, ${target.x - bend} ${target.y}, ${target.x} ${target.y}`;
-}
-
 export function VisualWorkshopCanvasView({
   controller,
 }: {
@@ -72,8 +59,9 @@ export function VisualWorkshopCanvasView({
     autoSave,
     clipboard,
     uploadPosition,
+    toolMode,
+    setToolMode,
     viewport,
-    setViewport,
     nodes,
     setNodes,
     edges,
@@ -83,8 +71,13 @@ export function VisualWorkshopCanvasView({
     connection,
     selectedId,
     setSelectedId,
+    selectedNodeIds,
+    selectionBox,
+    alignmentGuides,
     mediaEditorTab,
     setMediaEditorTab,
+    inspectedNodeId,
+    setInspectedNodeId,
     contextMenu,
     setContextMenu,
     assetsOpen,
@@ -113,6 +106,7 @@ export function VisualWorkshopCanvasView({
     renameMutation,
     upload,
     setZoom,
+    resetZoom,
     createNode,
     addCapturedFrameNode,
     removeNode,
@@ -124,15 +118,27 @@ export function VisualWorkshopCanvasView({
     fitView,
     onSurfacePointerDown,
     onSurfacePointerMove,
-    stopPan,
+    stopSurfaceInteraction,
     startNodeDrag,
     moveNode,
     stopNodeDrag,
+    consumeSuppressedNodeClick,
     openContextMenu,
   } = controller;
   const videoElements = useRef(new Map<string, HTMLVideoElement>());
   const [readyVideoIds, setReadyVideoIds] = useState(() => new Set<string>());
   const [frameExport, setFrameExport] = useState<VisualCanvasFrameExport>();
+  const [interactiveVideoId, setInteractiveVideoId] = useState<string>();
+  const [previewNodeId, setPreviewNodeId] = useState<string>();
+  const [connectionHoverTargetId, setConnectionHoverTargetId] =
+    useState<string>();
+  useEffect(() => {
+    if (interactiveVideoId && interactiveVideoId !== selectedId)
+      setInteractiveVideoId(undefined);
+  }, [interactiveVideoId, selectedId]);
+  useEffect(() => {
+    if (!connection) setConnectionHoverTargetId(undefined);
+  }, [connection]);
   const registerVideo = useCallback(
     (nodeId: string, video: HTMLVideoElement | null) => {
       if (video) videoElements.current.set(nodeId, video);
@@ -163,172 +169,93 @@ export function VisualWorkshopCanvasView({
         </button>
       </div>
     );
+  const previewNode = nodes.find(
+    (node): node is Exclude<(typeof nodes)[number], { kind: "text" }> =>
+      node.id === previewNodeId && node.kind !== "text",
+  );
 
   return (
     <div className={`visual-canvas${assistantOpen ? " has-assistant" : ""}`}>
-      <header className="visual-canvas-topbar">
-        <div className="canvas-project-identity">
-          <img
-            className="canvas-brand-mark"
-            src="/brand/visual-workshop-mark-cutout.png"
-            alt=""
-          />
-          <button aria-label="返回项目列表" onClick={onBack}>
-            <ArrowLeft aria-hidden />
-          </button>
-          {editingTitle ? (
-            <form
-              onSubmit={(event) => {
-                event.preventDefault();
-                if (title.trim()) renameMutation.mutate();
-              }}
-            >
-              <input
-                autoFocus
-                maxLength={120}
-                value={title}
-                onChange={(event) => setTitle(event.target.value)}
-                onBlur={() => {
-                  if (title.trim() && title !== projectQuery.data.title)
-                    renameMutation.mutate();
-                  else setEditingTitle(false);
-                }}
-              />
-            </form>
-          ) : (
-            <button
-              className="canvas-title"
-              onClick={() => setEditingTitle(true)}
-            >
-              {projectQuery.data.title}
-              <Pencil aria-hidden />
-            </button>
-          )}
-          <span className={`canvas-save-state ${saveState}`} role="status">
-            <Save aria-hidden />
-            {saveState === "saving"
-              ? "保存中"
-              : saveState === "saved"
-                ? "已保存"
-                : saveState === "conflict"
-                  ? "存在冲突"
-                  : "保存失败"}
-          </span>
-        </div>
-        <div className="canvas-top-actions">
-          <ThemeToggle />
-          <button
-            className={
-              assistantOpen
-                ? "active canvas-assistant-trigger"
-                : "canvas-assistant-trigger"
-            }
-            aria-label="对话"
-            aria-expanded={assistantOpen}
-            onClick={() => setAssistantOpen((value) => !value)}
-          >
-            <MessageSquareText aria-hidden />
-            对话
-          </button>
-        </div>
-      </header>
-      <nav className="canvas-tool-dock" aria-label="画布工具">
-        <button
-          className={assetsOpen ? "active" : ""}
-          aria-label="素材库"
-          title="素材库"
-          onClick={() => {
-            setSelectedId(undefined);
-            setAssetsOpen((value) => !value);
-          }}
-        >
-          <FolderOpen aria-hidden />
-        </button>
-        <button aria-label="管理素材" title="管理素材" onClick={onAssets}>
-          <FolderCog aria-hidden />
-        </button>
-      </nav>
       <div
         ref={surface}
-        className={`visual-canvas-surface${pan.current ? " is-dragging" : ""}`}
+        className={`visual-canvas-surface tool-${toolMode}${pan.current ? " is-dragging" : ""}${selectionBox ? " is-selecting" : ""}`}
         style={{
           backgroundPosition: `${viewport.x}px ${viewport.y}px`,
           backgroundSize: `${24 * viewport.zoom}px ${24 * viewport.zoom}px`,
         }}
         onPointerDown={onSurfacePointerDown}
         onPointerMove={onSurfacePointerMove}
-        onPointerUp={stopPan}
-        onPointerCancel={stopPan}
+        onPointerUp={stopSurfaceInteraction}
+        onPointerCancel={stopSurfaceInteraction}
         onContextMenu={openContextMenu}
       >
+        <CanvasScreenChrome
+          projectTitle={projectQuery.data.title}
+          title={title}
+          editingTitle={editingTitle}
+          saveState={saveState}
+          assistantOpen={assistantOpen}
+          assetsOpen={assetsOpen}
+          onBack={onBack}
+          onAssets={onAssets}
+          onStartTitleEditing={() => setEditingTitle(true)}
+          onTitleChange={setTitle}
+          onSubmitTitle={() => {
+            if (title.trim()) renameMutation.mutate();
+          }}
+          onBlurTitle={() => {
+            if (title.trim() && title !== projectQuery.data.title)
+              renameMutation.mutate();
+            else setEditingTitle(false);
+          }}
+          onToggleAssistant={() => setAssistantOpen((value) => !value)}
+          onToggleAssets={() => {
+            setSelectedId(undefined);
+            setAssetsOpen((value) => !value);
+          }}
+          controls={{
+            assetsOpen,
+            toolMode,
+            setToolMode,
+            viewport,
+            setZoom,
+            resetZoom,
+            fitView,
+          }}
+        />
+        <CanvasSelectionOverlay selectionBox={selectionBox} />
         <div
           className="visual-canvas-world"
           style={{
             transform: `translate(${viewport.x}px, ${viewport.y}px) scale(${viewport.zoom})`,
           }}
         >
-          <svg className="canvas-edge-layer" aria-label="节点连线">
-            {edges.map((edge) => {
-              const source = nodes.find(
-                (node) => node.id === edge.source_node_id,
-              );
-              const target = nodes.find(
-                (node) => node.id === edge.target_node_id,
-              );
-              if (!source || !target) return null;
-              const sourceSize = NODE_SIZE[source.kind];
-              const targetSize = NODE_SIZE[target.kind];
-              return (
-                <path
-                  key={edge.id}
-                  className={edge.id === selectedEdgeId ? "selected" : ""}
-                  d={connectionPath(
-                    {
-                      x: source.position.x + sourceSize.width,
-                      y: source.position.y + sourceSize.height / 2,
-                    },
-                    {
-                      x: target.position.x,
-                      y: target.position.y + targetSize.height / 2,
-                    },
-                  )}
-                  onPointerDown={(event) => {
-                    event.preventDefault();
-                    event.stopPropagation();
-                    setSelectedId(undefined);
-                    setSelectedEdgeId(edge.id);
-                  }}
-                  onDoubleClick={() => removeEdge(edge.id)}
-                />
-              );
-            })}
-            {connection
-              ? (() => {
-                  const source = nodes.find(
-                    (node) => node.id === connection.sourceNodeId,
-                  );
-                  if (!source) return null;
-                  const size = NODE_SIZE[source.kind];
-                  return (
-                    <path
-                      className="preview"
-                      d={connectionPath(
-                        {
-                          x: source.position.x + size.width,
-                          y: source.position.y + size.height / 2,
-                        },
-                        { x: connection.x, y: connection.y },
-                      )}
-                    />
-                  );
-                })()
-              : null}
-          </svg>
+          <CanvasAlignmentGuides guides={alignmentGuides} />
+          <CanvasEdgeLayer
+            nodes={nodes}
+            edges={edges}
+            selectedEdgeId={selectedEdgeId}
+            connection={connection}
+            onSelectEdge={(edgeId) => {
+              setSelectedId(undefined);
+              setSelectedEdgeId(edgeId);
+            }}
+            onRemoveEdge={removeEdge}
+          />
           {nodes.map((node) => {
-            const selected = node.id === selectedId;
+            const selected = selectedNodeIds.includes(node.id);
+            const focused = node.id === selectedId;
+            const connectionClass =
+              connection?.sourceNodeId === node.id
+                ? " is-connection-source"
+                : connection && connectionHoverTargetId === node.id
+                  ? canConnect(connection.sourceNodeId, node.id)
+                    ? " is-connectable-target"
+                    : " is-unavailable-target"
+                  : "";
             return (
               <article
-                className={`canvas-node ${node.kind}${selected ? " selected" : ""}`}
+                className={`canvas-node ${node.kind}${selected ? " selected" : ""}${connectionClass}`}
                 style={{ left: node.position.x, top: node.position.y }}
                 data-node-id={node.id}
                 key={node.id}
@@ -338,12 +265,18 @@ export function VisualWorkshopCanvasView({
                 onPointerCancel={stopNodeDrag}
                 onClick={(event) => {
                   event.stopPropagation();
+                  if (consumeSuppressedNodeClick(node.id)) return;
                   setSelectedId(node.id);
                   setSelectedEdgeId(undefined);
                   setAssetsOpen(false);
-                  if (node.kind !== "text" && selectedId !== node.id) {
-                    setMediaEditorTab("generate");
-                  }
+                }}
+                onDoubleClick={(event) => {
+                  if (node.kind === "text") return;
+                  event.preventDefault();
+                  event.stopPropagation();
+                  setSelectedId(node.id);
+                  setInspectedNodeId(undefined);
+                  setPreviewNodeId(node.id);
                 }}
               >
                 <header>
@@ -354,7 +287,7 @@ export function VisualWorkshopCanvasView({
                   ) : node.kind === "audio" ? (
                     <Music className="canvas-node-kind-icon" aria-hidden />
                   ) : null}
-                  {selected ? (
+                  {focused ? (
                     <input
                       aria-label="节点标题"
                       maxLength={120}
@@ -371,11 +304,11 @@ export function VisualWorkshopCanvasView({
                   ) : (
                     <strong>{node.title}</strong>
                   )}
-                  {!selected &&
+                  {!focused &&
                   (node.kind === "image" || node.kind === "video") ? (
                     <Pencil className="canvas-node-title-edit" aria-hidden />
                   ) : null}
-                  {selected && node.kind === "text" ? (
+                  {focused && node.kind === "text" ? (
                     <span className="canvas-node-actions">
                       <button
                         aria-label="复制节点"
@@ -400,7 +333,7 @@ export function VisualWorkshopCanvasView({
                         <Trash2 aria-hidden />
                       </button>
                     </span>
-                  ) : selected && node.kind !== "text" ? (
+                  ) : focused && node.kind !== "text" ? (
                     <CanvasMediaNodeActions
                       node={node}
                       canExportFrame={
@@ -419,9 +352,15 @@ export function VisualWorkshopCanvasView({
                       }}
                       onReplace={() => {
                         setSelectedId(node.id);
+                        setInspectedNodeId(node.id);
                         setMediaEditorTab("content");
                         setAssetsOpen(false);
                       }}
+                      onPreview={
+                        node.kind === "video"
+                          ? () => setInteractiveVideoId(node.id)
+                          : undefined
+                      }
                       onCopy={() => {
                         clipboard.current = structuredClone(node);
                       }}
@@ -448,6 +387,7 @@ export function VisualWorkshopCanvasView({
                   <div className="canvas-node-media">
                     <CanvasMediaPreview
                       node={node}
+                      interactive={interactiveVideoId === node.id}
                       onVideoReadyChange={(video) =>
                         registerVideo(node.id, video)
                       }
@@ -464,6 +404,7 @@ export function VisualWorkshopCanvasView({
                       onClick={(event) => {
                         event.stopPropagation();
                         setSelectedId(node.id);
+                        setInspectedNodeId(node.id);
                         setMediaEditorTab("content");
                         setAssetsOpen(false);
                       }}
@@ -479,27 +420,43 @@ export function VisualWorkshopCanvasView({
                       type="button"
                       className={`canvas-node-port is-input${
                         connection &&
+                        connectionHoverTargetId === node.id &&
                         canConnect(connection.sourceNodeId, node.id)
                           ? " is-valid-target"
                           : ""
                       }`}
                       aria-label={`连接到${node.title}`}
                       onPointerDown={(event) => event.stopPropagation()}
-                      onPointerUp={(event) => finishConnection(event, node.id)}
+                      onPointerEnter={() => {
+                        if (connection) setConnectionHoverTargetId(node.id);
+                      }}
+                      onPointerLeave={() =>
+                        setConnectionHoverTargetId((current) =>
+                          current === node.id ? undefined : current,
+                        )
+                      }
+                      onPointerUp={(event) => {
+                        setConnectionHoverTargetId(undefined);
+                        finishConnection(event, node.id);
+                      }}
+                      onClick={(event) => event.stopPropagation()}
                     >
-                      <Plus />
+                      <Plus aria-hidden />
                     </button>
                     <button
                       type="button"
                       className="canvas-node-port is-output"
                       aria-label={`从${node.title}创建连线`}
                       onPointerDown={(event) => startConnection(event, node.id)}
+                      onClick={(event) => event.stopPropagation()}
                     >
-                      <Plus />
+                      <Plus aria-hidden />
                     </button>
                   </>
                 ) : null}
-                {selected && node.kind !== "text" ? (
+                {focused &&
+                inspectedNodeId === node.id &&
+                node.kind !== "text" ? (
                   <CanvasNodeInspector
                     embedded
                     initialTab={mediaEditorTab}
@@ -515,7 +472,7 @@ export function VisualWorkshopCanvasView({
                           ? [upstream]
                           : [];
                       })}
-                    onClose={() => setSelectedId(undefined)}
+                    onClose={() => setInspectedNodeId(undefined)}
                     onPrepareCanvas={prepareCanvasForAgent}
                     onPatch={(patch, immediate) =>
                       patchNode(node.id, patch, immediate)
@@ -707,6 +664,20 @@ export function VisualWorkshopCanvasView({
         onClose={() => setAssistantOpen(false)}
         prepareCanvas={prepareCanvasForAgent}
       />
+      {previewNode ? (
+        <CanvasMediaPreviewDialog
+          projectId={projectId}
+          node={previewNode}
+          onClose={() => setPreviewNodeId(undefined)}
+          onSetCurrent={(assetId, taskId) =>
+            patchNode(
+              previewNodeId!,
+              { asset_id: assetId, generation_task_id: taskId },
+              true,
+            )
+          }
+        />
+      ) : null}
       {frameExport ? (
         <VisualCanvasFrameExportDialog
           frameExport={frameExport}
@@ -755,40 +726,6 @@ export function VisualWorkshopCanvasView({
       {saveMessage ? (
         <div className="canvas-save-error">{saveMessage}</div>
       ) : null}
-      <div
-        className={`canvas-controls${assetsOpen ? " with-assets" : ""}`}
-        aria-label="画布视图控制"
-      >
-        <div className="canvas-control-mode" aria-hidden>
-          <span className="active">
-            <MousePointer2 />
-          </span>
-          <span>
-            <Hand />
-          </span>
-        </div>
-        <i aria-hidden />
-        <button aria-label="缩小" onClick={() => setZoom(viewport.zoom - 0.1)}>
-          <Minus aria-hidden />
-        </button>
-        <button
-          className="canvas-zoom-value"
-          onClick={() => setViewport(DEFAULT_VIEWPORT)}
-        >
-          {Math.round(viewport.zoom * 100)}%
-        </button>
-        <button aria-label="放大" onClick={() => setZoom(viewport.zoom + 0.1)}>
-          <Plus aria-hidden />
-        </button>
-        <i aria-hidden />
-        <button
-          aria-label="适配视图"
-          title="适配视图"
-          onClick={() => fitView()}
-        >
-          <Focus aria-hidden />
-        </button>
-      </div>
     </div>
   );
 }

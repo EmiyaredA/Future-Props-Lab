@@ -15,7 +15,7 @@ import {
   Video,
 } from "lucide-react";
 import { nodeLabel } from "./geometry";
-import type { VisualCanvasNode } from "../api";
+import { visualAssetDownloadPath, type VisualCanvasNode } from "../api";
 import { useApiBlobUrl } from "@platform/api/useApiBlobUrl";
 
 type MediaNode = Exclude<VisualCanvasNode, { kind: "text" }>;
@@ -48,9 +48,11 @@ function previewSourceForNode(node: MediaNode) {
 
 export function CanvasMediaPreview({
   node,
+  interactive = false,
   onVideoReadyChange,
 }: {
   node: MediaNode;
+  interactive?: boolean;
   onVideoReadyChange?: (video: HTMLVideoElement | null) => void;
 }) {
   const preview = previewSourceForNode(node);
@@ -79,8 +81,12 @@ export function CanvasMediaPreview({
     return (
       <video
         src={url}
-        controls
+        controls={interactive}
+        data-canvas-media-interactive={interactive ? "true" : undefined}
         playsInline
+        onClick={(event) => {
+          if (interactive) event.stopPropagation();
+        }}
         onLoadedData={(event) => readyChangeRef.current?.(event.currentTarget)}
         onEmptied={() => readyChangeRef.current?.(null)}
         onError={() => readyChangeRef.current?.(null)}
@@ -102,6 +108,7 @@ export function CanvasMediaPreview({
 export function CanvasMediaNodeActions({
   node,
   onReplace,
+  onPreview,
   onCopy,
   onDelete,
   canExportFrame = false,
@@ -109,6 +116,7 @@ export function CanvasMediaNodeActions({
 }: {
   node: MediaNode;
   onReplace: () => void;
+  onPreview?: () => void;
   onCopy: () => void;
   onDelete: () => void;
   canExportFrame?: boolean;
@@ -120,17 +128,32 @@ export function CanvasMediaNodeActions({
   const stopPointer = (event: ReactPointerEvent) => event.stopPropagation();
   return (
     <span className="canvas-node-actions canvas-media-node-actions">
-      <a
-        aria-label="预览素材"
-        aria-disabled={!url}
-        href={url ?? undefined}
-        target="_blank"
-        rel="noreferrer"
-        onPointerDown={stopPointer}
-        onClick={(event) => event.stopPropagation()}
-      >
-        <Eye aria-hidden />
-      </a>
+      {node.kind === "video" && onPreview ? (
+        <button
+          aria-label="播放视频"
+          title="播放视频"
+          disabled={!url}
+          onPointerDown={stopPointer}
+          onClick={(event) => {
+            event.stopPropagation();
+            onPreview();
+          }}
+        >
+          <Eye aria-hidden />
+        </button>
+      ) : (
+        <a
+          aria-label="预览素材"
+          aria-disabled={!url}
+          href={url ?? undefined}
+          target="_blank"
+          rel="noreferrer"
+          onPointerDown={stopPointer}
+          onClick={(event) => event.stopPropagation()}
+        >
+          <Eye aria-hidden />
+        </a>
+      )}
       <button
         aria-label="替换素材"
         title="替换素材"
@@ -169,9 +192,12 @@ export function CanvasMediaNodeActions({
       ) : null}
       <a
         aria-label="下载素材"
-        aria-disabled={!url}
-        download={node.title}
-        href={url ?? undefined}
+        aria-disabled={!node.asset_id}
+        href={
+          node.asset_id
+            ? visualAssetDownloadPath(node.asset_id, node.title)
+            : undefined
+        }
         onPointerDown={stopPointer}
         onClick={(event) => event.stopPropagation()}
       >

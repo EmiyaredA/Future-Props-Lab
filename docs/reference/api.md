@@ -268,7 +268,9 @@ OpenAPI 或执行定时健康检查。
 素材/生成任务引用与世界坐标，并使用独立于项目元数据的 `revision`。画布的 `edges` 保存动态节点
 引用并拒绝自连、重复边、类型不兼容和依赖环；删除节点时同时清理关联边。图片、视频和音频节点均可携带
 `generation_draft`，分别保存节点级提示词、模型、生成参数与参考素材选择；草稿允许尚未满足生成
-条件，但仍校验字段范围、素材数量、媒体类型和项目归属。`PUT` 必须携带
+条件，但仍校验字段范围、素材数量、媒体类型和项目归属。图片和视频草稿的
+`prompt_reference_names` 保存素材 ID 到“画布节点标题 + 真实后缀”的局部提示词别名；它不修改
+文件库名称，旧草稿缺少该字段时按空映射处理。`PUT` 必须携带
 `expected_revision`；冲突返回服务器画布快照，Web 不会静默覆盖。媒体节点创建生成任务后
 保存任务 ID，任务完成时把结果素材回填到原节点，同时保留原生成草稿。Web 对草稿文字使用画布
 自动保存，对素材和离散参数立即保存，并在创建生成任务前等待画布保存完成。上传文件本身立即进入
@@ -277,7 +279,9 @@ OpenAPI 或执行定时健康检查。
 连线不复制素材 ID。创建下游生成任务时，后端按提交的画布 revision 解析上游节点当前素材，再与
 手工参考素材合并、去重并执行项目/Workspace 校验；上游改名或替换素材无需重建连线。图片节点只
 接收图片，视频节点接收图片、视频和音频，音乐节点只接收音频，音效模式拒绝入边；上游没有素材时
-返回 `409 upstream_asset_pending`。
+返回 `409 upstream_asset_pending`。任务的 `request_payload.reference_filenames` 由服务端按提交时
+的上游节点标题派生并保存快照，客户端不能覆盖；视频和音频参考素材临时上传时使用该名称及素材
+真实后缀，旧任务没有映射时继续使用随机文件名。
 
 项目对话标题和模型配置使用独立会话 revision 做 CAS。`PATCH` 可通过 `model_id`、
 `image_model_id`、`video_model_id` 分别固定 Agent 的对话、图像生成和视频生成模型，传 `null`
@@ -632,7 +636,7 @@ Fragment 播放到结尾。自动模式连续按精确时间推进；选择出�
 
 - `GET /v1/visual-workshop/generation-options`：返回已启用的 SenseAudio 图片、视频、音乐与音效模型及图片尺寸。
 - `POST /v1/visual-workshop/projects/{project_id}/generation-tasks`：创建图片、视频或音频生成任务。
-- `GET /v1/visual-workshop/generation-tasks`：按项目、类型、状态分页筛选任务。
+- `GET /v1/visual-workshop/generation-tasks`：按项目、画布节点、类型、状态分页筛选任务；节点筛选用于读取图片、视频或音频节点的生成历史。
 - `GET /v1/visual-workshop/generation-tasks/{task_id}`：读取单个任务。
 - `POST /v1/visual-workshop/generation-tasks/{task_id}/retry-materialization`：只重试已生成结果的本地保存。
 
@@ -661,7 +665,8 @@ Data URI 或素材内容。
 - `PATCH/DELETE /v1/file-folders/{folder_id}`：CAS 改名、移动或递归删除文件夹。
 - `GET/POST /v1/files`：按项目、当前文件夹、搜索词、媒体类型和排序查询，或 multipart 上传单文件。
 - `PATCH/DELETE /v1/files/{asset_id}`：CAS 改名、移动或删除文件。
-- `GET /v1/files/{asset_id}/content`、`/download`：鉴权预览或下载原始内容。
+- `GET /v1/files/{asset_id}/content`、`/download`：鉴权预览或下载原始内容；下载接口可传
+  `download_name` 作为本次下载的显示名，服务端始终追加素材自身的真实后缀并清理路径字符。
 - `POST /v1/visual-workshop/projects/{project_id}/asset-imports`：批量导入公共库引用，或把其他视觉项目素材复制为当前项目的独立副本。
 
 不带 `project_id` 的文件和文件夹属于 Studio 一级“文件管理”；带 `project_id` 的内容属于项目

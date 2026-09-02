@@ -135,10 +135,14 @@ async def upload_temporary_reference(
     mime_type: str,
     upload_url: str,
     transport: httpx.AsyncBaseTransport | None = None,
+    filename: str | None = None,
+    file_extension: str = "",
 ) -> str:
     return await upload_temporary_media(
         path=path,
         mime_type=mime_type,
         upload_url=upload_url,
         transport=transport,
+        filename=filename,
+        file_extension=file_extension,
     )

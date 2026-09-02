@@ -6,91 +6,10 @@
   background: color-mix(in srgb, var(--surface) 97%, #090a0d);
 }
 
-.canvas-linked-materials {
-  min-height: 58px;
-  padding: 8px 16px;
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  overflow-x: auto;
-  border-bottom: 1px solid var(--border);
-  background: color-mix(in srgb, var(--surface-soft) 72%, transparent);
-}
-
-.canvas-linked-materials > b {
-  color: var(--faint);
-  font-size: 9px;
-  white-space: nowrap;
-}
-
-.canvas-linked-materials > div {
-  min-width: 142px;
-  padding: 6px 8px;
-  display: grid;
-  grid-template-columns: 34px 1fr;
-  align-items: center;
-  gap: 2px 8px;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  background: var(--surface);
-}
-
-.canvas-linked-materials > div.waiting {
-  border-style: dashed;
-}
-
-.canvas-linked-materials > div > span {
-  position: relative;
-  width: 34px;
-  height: 34px;
-  grid-row: 1 / 3;
-  display: grid;
-  overflow: hidden;
-  place-items: center;
-  border-radius: 7px;
-  background: var(--surface-soft);
-}
-
-.canvas-linked-materials img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.canvas-linked-materials span > svg:first-child {
-  width: 15px;
-  color: var(--muted);
-}
-
-.canvas-linked-materials span > svg:last-child {
-  position: absolute;
-  right: 2px;
-  bottom: 2px;
-  width: 11px;
-  padding: 2px;
-  border-radius: 4px;
-  background: #111;
-  color: white;
-}
-
-.canvas-linked-materials strong,
-.canvas-linked-materials small {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.canvas-linked-materials strong {
-  font-size: 9px;
-}
-
-.canvas-linked-materials small {
-  color: var(--faint);
-  font-size: 8px;
-}
-
-.canvas-node-inspector.is-embedded:has(.canvas-linked-materials) {
-  height: min(560px, calc(100vh - 110px));
+.audio-generation-reference-stack {
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 
 .audio-generation-composer > header {

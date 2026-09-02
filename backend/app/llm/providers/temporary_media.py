@@ -14,6 +14,21 @@ class TemporaryMediaError(Exception):
     pass
 
 
+def _temporary_filename(path: Path, filename: str | None, file_extension: str) -> str:
+    extension = file_extension.strip().lower() or path.suffix.lower()
+    if extension and not extension.startswith("."):
+        extension = f".{extension}"
+    if not filename:
+        return f"{uuid4().hex}{extension}"
+    cleaned = "".join(
+        character if ord(character) >= 32 and character not in "/\\" else "-"
+        for character in filename.strip()
+    ).strip(" .")
+    if extension and cleaned.lower().endswith(extension):
+        cleaned = cleaned[: -len(extension)].strip(" .")
+    return f"{cleaned or 'reference'}{extension}"
+
+
 def _validated_result_url(value: str, upload_url: str) -> str:
     if len(value.encode("utf-8")) > MAX_RESPONSE_BYTES:
         raise TemporaryMediaError("临时参考素材上传返回了无效响应")
@@ -41,12 +56,14 @@ async def upload_temporary_media(
     upload_url: str,
     transport: httpx.AsyncBaseTransport | None = None,
     retry_delay: float = 0.25,
+    filename: str | None = None,
+    file_extension: str = "",
 ) -> str:
     if not upload_url.strip():
         raise TemporaryMediaError("未配置参考素材临时上传服务")
     if not path.is_file():
         raise TemporaryMediaError("参考素材文件已不存在")
-    filename = f"{uuid4().hex}{path.suffix.lower()}"
+    upload_filename = _temporary_filename(path, filename, file_extension)
     timeout = httpx.Timeout(300.0, connect=15.0, pool=30.0)
     for attempt in range(2):
         try:
@@ -55,7 +72,7 @@ async def upload_temporary_media(
                     async with client.stream(
                         "POST",
                         upload_url,
-                        files={"file": (filename, source, mime_type)},
+                        files={"file": (upload_filename, source, mime_type)},
                     ) as response:
                         if response.status_code == 429 or response.status_code >= 500:
                             if attempt == 0:

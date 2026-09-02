@@ -17,6 +17,7 @@ import {
   promptMentionAtCaret,
   promptPartLength,
   promptPartsFromValue,
+  promptPartsSignature,
   promptProjection,
   promptSelectedText,
   promptSelection,
@@ -104,11 +105,15 @@ export function GenerationPromptEditor({
     const nextParts = promptPartsFromValue(value, assets);
     const projected = promptProjection(parts);
     const nextProjected = promptProjection(nextParts);
-    if (projected === nextProjected) {
+    if (
+      projected === nextProjected &&
+      promptPartsSignature(parts) === promptPartsSignature(nextParts)
+    ) {
       if (value !== nextProjected) onChange(nextProjected);
       return;
     }
-    if (document.activeElement === editorRef.current) return;
+    if (document.activeElement === editorRef.current && value !== projected)
+      return;
     pendingDomSync.current = true;
     setParts(nextParts);
     if (value !== nextProjected) onChange(nextProjected);

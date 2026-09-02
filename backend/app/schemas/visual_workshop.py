@@ -41,6 +41,19 @@ def _clean_title(value: str) -> str:
     return cleaned
 
 
+def _clean_prompt_reference_names(value: dict[str, str]) -> dict[str, str]:
+    cleaned: dict[str, str] = {}
+    for asset_id, name in value.items():
+        clean_id = asset_id.strip()
+        clean_name = name.strip()
+        if not clean_id or len(clean_id) > 128:
+            raise ValueError("参考素材 ID 无效")
+        if not clean_name or len(clean_name) > 255:
+            raise ValueError("参考素材名称无效")
+        cleaned[clean_id] = clean_name
+    return cleaned
+
+
 class VisualWorkshopProjectOut(BaseModel):
     id: str
     title: str
@@ -100,6 +113,12 @@ class VisualCanvasImageGenerationDraft(BaseModel):
     seed: int | None = Field(default=None, ge=0)
     image_count: int = Field(default=1, ge=1, le=4)
     reference_asset_id: str | None = None
+    prompt_reference_names: dict[str, str] = Field(default_factory=dict, max_length=16)
+
+    @field_validator("prompt_reference_names")
+    @classmethod
+    def clean_prompt_reference_names(cls, value: dict[str, str]) -> dict[str, str]:
+        return _clean_prompt_reference_names(value)
 
 
 class VisualCanvasVideoGenerationDraft(BaseModel):
@@ -116,6 +135,12 @@ class VisualCanvasVideoGenerationDraft(BaseModel):
     reference_asset_ids: list[str] = Field(default_factory=list, max_length=9)
     audio_asset_ids: list[str] = Field(default_factory=list, max_length=3)
     video_asset_ids: list[str] = Field(default_factory=list, max_length=3)
+    prompt_reference_names: dict[str, str] = Field(default_factory=dict, max_length=16)
+
+    @field_validator("prompt_reference_names")
+    @classmethod
+    def clean_prompt_reference_names(cls, value: dict[str, str]) -> dict[str, str]:
+        return _clean_prompt_reference_names(value)
 
     @model_validator(mode="after")
     def references_are_unique(self) -> VisualCanvasVideoGenerationDraft:
@@ -634,6 +659,7 @@ class GenerationTaskOut(BaseModel):
     provider_name: str
     model_slug: str
     request_payload: dict
+    canvas_node_id: str | None
     provider_task_id: str | None
     status: GenerationTaskStatus
     progress: int

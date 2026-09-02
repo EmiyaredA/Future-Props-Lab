@@ -227,6 +227,14 @@ async def test_file_management_upload_folders_and_project_references() -> None:
         assert project_upload.json()["source"] == "project"
         assert project_upload.json()["display_name"] == "notes"
 
+        aliased_download = await client.get(
+            f"/v1/files/{project_upload.json()['id']}/download",
+            params={"download_name": "分镜/脚本.exe"},
+        )
+        assert aliased_download.status_code == 200
+        disposition = aliased_download.headers["content-disposition"]
+        assert "%E5%88%86%E9%95%9C-%E8%84%9A%E6%9C%AC.exe.md" in disposition
+
         transcript_upload = await client.post(
             "/v1/files",
             files={
@@ -496,6 +504,7 @@ async def test_canvas_generation_drafts_round_trip_validate_and_tolerate_stale_a
                     "seed": 42,
                     "image_count": 3,
                     "reference_asset_id": image["id"],
+                    "prompt_reference_names": {image["id"]: "分镜图1.png"},
                 },
             },
             {
@@ -517,6 +526,10 @@ async def test_canvas_generation_drafts_round_trip_validate_and_tolerate_stale_a
                     "reference_asset_ids": [image["id"]],
                     "audio_asset_ids": [audio["id"]],
                     "video_asset_ids": [video["id"]],
+                    "prompt_reference_names": {
+                        image["id"]: "分镜图1.png",
+                        video["id"]: "开局.mp4",
+                    },
                 },
             },
         ]
@@ -737,6 +750,7 @@ async def test_visual_generation_options_creation_filters_and_active_provider_gu
         assert created.status_code == 200, created.text
         task = created.json()
         assert task["status"] == "queued"
+        assert task["canvas_node_id"] == "image-node-1"
         assert task["request_payload"]["seed"] == 9
         assert "canvas_node_id" not in task["request_payload"]
         linked_canvas = (
@@ -750,7 +764,12 @@ async def test_visual_generation_options_creation_filters_and_active_provider_gu
 
         listed = await client.get(
             "/v1/visual-workshop/generation-tasks",
-            params={"project_id": project["id"], "kind": "image", "status": "queued"},
+            params={
+                "project_id": project["id"],
+                "canvas_node_id": "image-node-1",
+                "kind": "image",
+                "status": "queued",
+            },
         )
         assert listed.status_code == 200
         assert listed.json()["total"] == 1
@@ -860,6 +879,18 @@ async def test_visual_video_generation_uses_scoped_media_asset_ids() -> None:
                 b"\x89PNG\r\n\x1a\nreference",
                 "image/png",
             )
+            manual_image = await upload(
+                project_ids[0],
+                "manual.png",
+                b"\x89PNG\r\n\x1a\nmanual",
+                "image/png",
+            )
+            inherited_image = await upload(
+                project_ids[0],
+                "inherited.png",
+                b"\x89PNG\r\n\x1a\ninherited",
+                "image/png",
+            )
             audio = await upload(project_ids[0], "reference.mp3", b"ID3reference", "audio/mpeg")
             video = await upload(
                 project_ids[0],
@@ -887,12 +918,139 @@ async def test_visual_video_generation_uses_scoped_media_asset_ids() -> None:
                 },
             )
             assert created.status_code == 200, created.text
+            assert created.json()["canvas_node_id"] is None
             payload = created.json()["request_payload"]
             assert payload["reference_asset_ids"] == [image["id"]]
             assert payload["audio_asset_ids"] == [audio["id"]]
             assert payload["video_asset_ids"] == [video["id"]]
             assert "temp.sh" not in created.text
             assert "data:" not in created.text
+
+            canvas_nodes = [
+                {
+                    "id": "source-image",
+                    "kind": "image",
+                    "title": "直连图片",
+                    "position": {"x": 0, "y": 0},
+                    "asset_id": image["id"],
+                    "generation_draft": {
+                        "model_id": None,
+                        "prompt": "不应递归继承的草稿",
+                        "size": "1024x1024",
+                        "seed": None,
+                        "image_count": 1,
+                        "reference_asset_id": inherited_image["id"],
+                    },
+                },
+                {
+                    "id": "source-video",
+                    "kind": "video",
+                    "title": "直连视频",
+                    "position": {"x": 0, "y": 300},
+                    "asset_id": video["id"],
+                },
+                {
+                    "id": "source-audio",
+                    "kind": "audio",
+                    "title": "直连音频",
+                    "position": {"x": 0, "y": 600},
+                    "asset_id": audio["id"],
+                },
+                {
+                    "id": "target-video",
+                    "kind": "video",
+                    "title": "目标视频",
+                    "position": {"x": 500, "y": 200},
+                    "asset_id": None,
+                },
+            ]
+            canvas_edges = [
+                {
+                    "id": f"edge-{kind}",
+                    "source_node_id": f"source-{kind}",
+                    "target_node_id": "target-video",
+                }
+                for kind in ("image", "video", "audio")
+            ]
+            saved_canvas = await client.put(
+                f"/v1/visual-workshop/projects/{project_ids[0]}/canvas",
+                json={
+                    "expected_revision": 0,
+                    "nodes": canvas_nodes,
+                    "edges": canvas_edges,
+                },
+            )
+            assert saved_canvas.status_code == 200, saved_canvas.text
+            linked_generation = await client.post(
+                f"/v1/visual-workshop/projects/{project_ids[0]}/generation-tasks",
+                json={
+                    "kind": "video",
+                    "model_id": model.id,
+                    "prompt": "只使用直连节点主素材",
+                    "mode": "reference",
+                    "reference_asset_ids": [image["id"], manual_image["id"]],
+                    "video_asset_ids": [video["id"]],
+                    "audio_asset_ids": [audio["id"]],
+                    "canvas_node_id": "target-video",
+                    "expected_canvas_revision": 1,
+                },
+            )
+            assert linked_generation.status_code == 200, linked_generation.text
+            linked_payload = linked_generation.json()["request_payload"]
+            assert linked_payload["mode"] == "reference"
+            assert linked_payload["reference_asset_ids"] == [
+                image["id"],
+                manual_image["id"],
+            ]
+            assert inherited_image["id"] not in linked_payload["reference_asset_ids"]
+            assert linked_payload["video_asset_ids"] == [video["id"]]
+            assert linked_payload["audio_asset_ids"] == [audio["id"]]
+            assert linked_payload["reference_filenames"] == {
+                image["id"]: "直连图片.png",
+                video["id"]: "直连视频.mp4",
+                audio["id"]: "直连音频.mp3",
+            }
+
+            pending_nodes = [
+                *canvas_nodes,
+                {
+                    "id": "source-pending",
+                    "kind": "image",
+                    "title": "等待素材",
+                    "position": {"x": 0, "y": 900},
+                    "asset_id": None,
+                },
+            ]
+            pending_canvas = await client.put(
+                f"/v1/visual-workshop/projects/{project_ids[0]}/canvas",
+                json={
+                    "expected_revision": 2,
+                    "nodes": pending_nodes,
+                    "edges": [
+                        *canvas_edges,
+                        {
+                            "id": "edge-pending",
+                            "source_node_id": "source-pending",
+                            "target_node_id": "target-video",
+                        },
+                    ],
+                },
+            )
+            assert pending_canvas.status_code == 200, pending_canvas.text
+            pending_generation = await client.post(
+                f"/v1/visual-workshop/projects/{project_ids[0]}/generation-tasks",
+                json={
+                    "kind": "video",
+                    "model_id": model.id,
+                    "prompt": "等待上游素材",
+                    "mode": "reference",
+                    "reference_asset_ids": [manual_image["id"]],
+                    "canvas_node_id": "target-video",
+                    "expected_canvas_revision": 3,
+                },
+            )
+            assert pending_generation.status_code == 409
+            assert pending_generation.json()["code"] == "upstream_asset_pending"
 
             scope_mismatch = await client.post(
                 f"/v1/visual-workshop/projects/{project_ids[0]}/generation-tasks",

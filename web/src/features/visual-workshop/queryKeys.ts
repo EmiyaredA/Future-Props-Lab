@@ -12,6 +12,13 @@ export const visualWorkshopQueryKeys = {
   generationTasks: ["visual-generation-tasks"] as const,
   generationTaskList: (projectId: string, kind: unknown, status: unknown) =>
     ["visual-generation-tasks", projectId, kind, status] as const,
+  generationTaskHistory: (projectId: string, canvasNodeId: string) =>
+    [
+      "visual-generation-tasks",
+      projectId,
+      "canvas-node",
+      canvasNodeId,
+    ] as const,
   generationTask: (taskId: string | null | undefined) =>
     ["visual-generation-task", taskId] as const,
   assistantConversations: (projectId: string) =>

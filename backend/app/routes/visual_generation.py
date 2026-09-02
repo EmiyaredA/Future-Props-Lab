@@ -44,7 +44,8 @@ async def create_generation_task(
 async def list_generation_tasks(
     session: SessionDep,
     project_id: str | None = None,
-    kind: Literal["image", "video"] | None = None,
+    canvas_node_id: str | None = Query(default=None, min_length=1, max_length=64),
+    kind: Literal["image", "video", "audio"] | None = None,
     status: Literal["queued", "submitting", "pending", "processing", "completed", "failed"]
     | None = None,
     page: int = Query(default=1, ge=1),
@@ -52,6 +53,7 @@ async def list_generation_tasks(
 ) -> GenerationTaskListOut:
     return await VisualGeneration(session).list(
         project_id=project_id,
+        canvas_node_id=canvas_node_id,
         kind=kind,
         status=status,
         page=page,

@@ -62,6 +62,7 @@ export function CompactVideoGenerationDrawer({
     setComposerExpanded,
     notice,
     promptAssets,
+    linkedAssetIds,
     modelMenuRef,
     rememberPromptFiles,
     options,
@@ -71,7 +72,18 @@ export function CompactVideoGenerationDrawer({
     invalidSelection,
     createMutation,
     submit,
+    hasLinkedVideoReferences,
   } = controller;
+  const hasFrameReferences = firstFrame.length > 0 || lastFrame.length > 0;
+  const hasOmniReferences =
+    references.length > 0 ||
+    videoReferences.length > 0 ||
+    audioReferences.length > 0 ||
+    linkedAssetIds.image.length > 0 ||
+    linkedAssetIds.video.length > 0 ||
+    linkedAssetIds.audio.length > 0;
+  const showReferenceBar =
+    videoMode !== "text" || hasFrameReferences || hasOmniReferences;
   return (
     <aside
       className={`canvas-generation-drawer is-compact video-node-composer${composerExpanded ? " is-expanded" : ""}`}
@@ -85,6 +97,14 @@ export function CompactVideoGenerationDrawer({
                 type="button"
                 className={videoMode === mode.value ? "active" : ""}
                 aria-pressed={videoMode === mode.value}
+                disabled={
+                  hasLinkedVideoReferences && mode.value !== "reference"
+                }
+                title={
+                  hasLinkedVideoReferences && mode.value !== "reference"
+                    ? "存在画布连线素材时需使用全能参考"
+                    : undefined
+                }
                 key={mode.value}
                 onClick={() => {
                   setVideoMode(mode.value);
@@ -111,18 +131,20 @@ export function CompactVideoGenerationDrawer({
         </header>
 
         <div className="video-composer-body">
-          {videoMode !== "text" ? (
+          {showReferenceBar ? (
             <div
               className="video-composer-reference"
               role="group"
               aria-label="固定参考素材"
             >
-              {videoMode === "image" ? (
+              {videoMode === "image" ||
+              (firstFrame.length > 0 && videoMode !== "frames") ? (
                 <ProjectMediaPicker
                   projectId={projectId}
-                  label="选择起始画面"
+                  label="起始画面"
                   minimal
                   value={firstFrame}
+                  disabled={videoMode !== "image"}
                   onChange={(value) => {
                     setFirstFrame(value);
                     persistDraft(
@@ -168,52 +190,88 @@ export function CompactVideoGenerationDrawer({
                   />
                 </>
               ) : null}
-              {videoMode === "reference" ? (
+              {lastFrame.length > 0 && videoMode !== "frames" ? (
+                <ProjectMediaPicker
+                  projectId={projectId}
+                  label="尾帧"
+                  minimal
+                  value={lastFrame}
+                  disabled
+                  onChange={(value) => {
+                    setLastFrame(value);
+                    persistDraft(
+                      { last_frame_asset_id: value[0] ?? null },
+                      true,
+                    );
+                  }}
+                  onFilesLoaded={rememberPromptFiles}
+                  onInvalidSelection={invalidSelection}
+                />
+              ) : null}
+              {videoMode === "reference" || hasOmniReferences ? (
                 <>
-                  <ProjectMediaPicker
-                    projectId={projectId}
-                    label="参考图片"
-                    minimal
-                    value={references}
-                    multiple
-                    max={9}
-                    onChange={(value) => {
-                      setReferences(value);
-                      persistDraft({ reference_asset_ids: value }, true);
-                    }}
-                    onFilesLoaded={rememberPromptFiles}
-                    onInvalidSelection={invalidSelection}
-                  />
-                  <ProjectMediaPicker
-                    projectId={projectId}
-                    label="参考视频"
-                    kind="video"
-                    minimal
-                    value={videoReferences}
-                    multiple
-                    max={3}
-                    onChange={(value) => {
-                      setVideoReferences(value);
-                      persistDraft({ video_asset_ids: value }, true);
-                    }}
-                    onFilesLoaded={rememberPromptFiles}
-                    onInvalidSelection={invalidSelection}
-                  />
-                  <ProjectMediaPicker
-                    projectId={projectId}
-                    label="参考音频"
-                    kind="audio"
-                    minimal
-                    value={audioReferences}
-                    multiple
-                    max={3}
-                    onChange={(value) => {
-                      setAudioReferences(value);
-                      persistDraft({ audio_asset_ids: value }, true);
-                    }}
-                    onFilesLoaded={rememberPromptFiles}
-                    onInvalidSelection={invalidSelection}
-                  />
+                  {videoMode === "reference" ||
+                  references.length ||
+                  linkedAssetIds.image.length ? (
+                    <ProjectMediaPicker
+                      projectId={projectId}
+                      label="参考图片"
+                      minimal
+                      value={references}
+                      linkedValue={linkedAssetIds.image}
+                      multiple
+                      max={9}
+                      disabled={videoMode !== "reference"}
+                      onChange={(value) => {
+                        setReferences(value);
+                        persistDraft({ reference_asset_ids: value }, true);
+                      }}
+                      onFilesLoaded={rememberPromptFiles}
+                      onInvalidSelection={invalidSelection}
+                    />
+                  ) : null}
+                  {videoMode === "reference" ||
+                  videoReferences.length ||
+                  linkedAssetIds.video.length ? (
+                    <ProjectMediaPicker
+                      projectId={projectId}
+                      label="参考视频"
+                      kind="video"
+                      minimal
+                      value={videoReferences}
+                      linkedValue={linkedAssetIds.video}
+                      multiple
+                      max={3}
+                      disabled={videoMode !== "reference"}
+                      onChange={(value) => {
+                        setVideoReferences(value);
+                        persistDraft({ video_asset_ids: value }, true);
+                      }}
+                      onFilesLoaded={rememberPromptFiles}
+                      onInvalidSelection={invalidSelection}
+                    />
+                  ) : null}
+                  {videoMode === "reference" ||
+                  audioReferences.length ||
+                  linkedAssetIds.audio.length ? (
+                    <ProjectMediaPicker
+                      projectId={projectId}
+                      label="参考音频"
+                      kind="audio"
+                      minimal
+                      value={audioReferences}
+                      linkedValue={linkedAssetIds.audio}
+                      multiple
+                      max={3}
+                      disabled={videoMode !== "reference"}
+                      onChange={(value) => {
+                        setAudioReferences(value);
+                        persistDraft({ audio_asset_ids: value }, true);
+                      }}
+                      onFilesLoaded={rememberPromptFiles}
+                      onInvalidSelection={invalidSelection}
+                    />
+                  ) : null}
                 </>
               ) : null}
             </div>

@@ -16,13 +16,13 @@ import { visualWorkshopQueryKeys } from "@features/visual-workshop/queryKeys";
 import {
   DEFAULT_VIEWPORT,
   NODE_SIZE,
-  NODE_DRAG_BLOCKER_SELECTOR,
   clampZoom,
   cloneNode,
   nextNodeId,
   nodeLabel,
   readViewport,
   type NodeKind,
+  type Viewport,
 } from "@features/visual-workshop/canvas/geometry";
 import {
   getVisualCanvas,
@@ -35,6 +35,8 @@ import type { VisualWorkshopCanvasPageProps } from "@features/visual-workshop/ca
 import { canConnectCanvasNodes } from "@features/visual-workshop/canvas/canvasGraph";
 import { fitCanvasViewport } from "@features/visual-workshop/canvas/canvasFit";
 import { useCanvasPersistence } from "@features/visual-workshop/canvas/useCanvasPersistence";
+import { useCanvasPointerInteractions } from "@features/visual-workshop/canvas/useCanvasPointerInteractions";
+import { useCanvasKeyboardShortcuts } from "@features/visual-workshop/canvas/useCanvasKeyboardShortcuts";
 
 type ContextMenuState = {
   left: number;
@@ -42,6 +44,21 @@ type ContextMenuState = {
   worldX: number;
   worldY: number;
 };
+
+export function zoomViewportAt(
+  viewport: Viewport,
+  nextZoom: number,
+  anchorX: number,
+  anchorY: number,
+): Viewport {
+  const zoom = clampZoom(nextZoom);
+  const ratio = zoom / viewport.zoom;
+  return {
+    zoom,
+    x: anchorX - (anchorX - viewport.x) * ratio,
+    y: anchorY - (anchorY - viewport.y) * ratio,
+  };
+}
 
 export function useVisualCanvasController({
   projectId,
@@ -51,25 +68,10 @@ export function useVisualCanvasController({
   const client = useQueryClient();
   const surface = useRef<HTMLDivElement>(null);
   const uploadInput = useRef<HTMLInputElement>(null);
-  const pan = useRef<
-    { x: number; y: number; originX: number; originY: number } | undefined
-  >(undefined);
-  const nodeDrag = useRef<
-    | {
-        id: string;
-        kind: VisualCanvasNode["kind"];
-        x: number;
-        y: number;
-        originX: number;
-        originY: number;
-        moved: boolean;
-      }
-    | undefined
-  >(undefined);
   const clipboard = useRef<VisualCanvasNode | undefined>(undefined);
-  const pendingFitNode = useRef<string | undefined>(undefined);
   const lastPointer = useRef({ x: 0, y: 0 });
   const uploadPosition = useRef({ x: 0, y: 0 });
+  const gestureViewport = useRef<Viewport | undefined>(undefined);
   const [viewport, setViewport] = useState(() => readViewport(projectId));
   const [selectedEdgeId, setSelectedEdgeId] = useState<string>();
   const [connection, setConnection] = useState<{
@@ -77,10 +79,10 @@ export function useVisualCanvasController({
     x: number;
     y: number;
   }>();
-  const [selectedId, setSelectedId] = useState<string>();
   const [mediaEditorTab, setMediaEditorTab] = useState<"content" | "generate">(
     "generate",
   );
+  const [inspectedNodeId, setInspectedNodeId] = useState<string>();
   const [contextMenu, setContextMenu] = useState<ContextMenuState>();
   const [assetsOpen, setAssetsOpen] = useState(false);
   const [assistantOpen, setAssistantOpen] = useState(false);
@@ -205,7 +207,9 @@ export function useVisualCanvasController({
     const element = surface.current;
     if (!element) return;
     const handleWheel = (event: globalThis.WheelEvent) => {
+      const gestureWheel = event.ctrlKey || event.metaKey;
       if (
+        !gestureWheel &&
         event.target instanceof Element &&
         event.target.closest('[data-canvas-wheel="content"]')
       ) {
@@ -217,36 +221,73 @@ export function useVisualCanvasController({
       const pointerX = event.clientX - bounds.left;
       const pointerY = event.clientY - bounds.top;
       setViewport((current) => {
-        const factor = event.ctrlKey
+        const factor = gestureWheel
           ? Math.exp(-event.deltaY * 0.01)
           : event.deltaY > 0
             ? 0.9
             : 1.1;
-        const zoom = clampZoom(current.zoom * factor);
-        const ratio = zoom / current.zoom;
-        return {
-          zoom,
-          x: pointerX - (pointerX - current.x) * ratio,
-          y: pointerY - (pointerY - current.y) * ratio,
-        };
+        return zoomViewportAt(
+          current,
+          current.zoom * factor,
+          pointerX,
+          pointerY,
+        );
       });
     };
-    const preventGestureZoom = (event: Event) => event.preventDefault();
+    const handleGestureStart = (event: Event) => {
+      event.preventDefault();
+      gestureViewport.current = undefined;
+      setViewport((current) => {
+        gestureViewport.current = current;
+        return current;
+      });
+    };
+    const handleGestureChange = (event: Event) => {
+      event.preventDefault();
+      const gesture = event as Event & {
+        scale?: number;
+        clientX?: number;
+        clientY?: number;
+      };
+      const bounds = element.getBoundingClientRect();
+      const anchorX =
+        typeof gesture.clientX === "number"
+          ? gesture.clientX - bounds.left
+          : bounds.width / 2;
+      const anchorY =
+        typeof gesture.clientY === "number"
+          ? gesture.clientY - bounds.top
+          : bounds.height / 2;
+      setViewport((current) => {
+        const initial = gestureViewport.current ?? current;
+        gestureViewport.current = initial;
+        return zoomViewportAt(
+          initial,
+          initial.zoom * (gesture.scale ?? 1),
+          anchorX,
+          anchorY,
+        );
+      });
+    };
+    const handleGestureEnd = (event: Event) => {
+      event.preventDefault();
+      gestureViewport.current = undefined;
+    };
     element.addEventListener("wheel", handleWheel, { passive: false });
-    element.addEventListener("gesturestart", preventGestureZoom, {
+    element.addEventListener("gesturestart", handleGestureStart, {
       passive: false,
     });
-    element.addEventListener("gesturechange", preventGestureZoom, {
+    element.addEventListener("gesturechange", handleGestureChange, {
       passive: false,
     });
-    element.addEventListener("gestureend", preventGestureZoom, {
+    element.addEventListener("gestureend", handleGestureEnd, {
       passive: false,
     });
     return () => {
       element.removeEventListener("wheel", handleWheel);
-      element.removeEventListener("gesturestart", preventGestureZoom);
-      element.removeEventListener("gesturechange", preventGestureZoom);
-      element.removeEventListener("gestureend", preventGestureZoom);
+      element.removeEventListener("gesturestart", handleGestureStart);
+      element.removeEventListener("gesturechange", handleGestureChange);
+      element.removeEventListener("gestureend", handleGestureEnd);
     };
   }, [canvasReady]);
 
@@ -299,8 +340,18 @@ export function useVisualCanvasController({
     },
   });
 
-  const setZoom = (zoom: number) =>
-    setViewport((current) => ({ ...current, zoom: clampZoom(zoom) }));
+  const setZoom = useCallback((zoom: number) => {
+    const bounds = surface.current?.getBoundingClientRect();
+    setViewport((current) =>
+      zoomViewportAt(
+        current,
+        zoom,
+        bounds?.width ? bounds.width / 2 : 0,
+        bounds?.height ? bounds.height / 2 : 0,
+      ),
+    );
+  }, []);
+  const resetZoom = useCallback(() => setZoom(1), [setZoom]);
   const screenToWorld = useCallback(
     (clientX: number, clientY: number) => {
       const bounds = surface.current?.getBoundingClientRect();
@@ -312,13 +363,55 @@ export function useVisualCanvasController({
     },
     [viewport],
   );
+  const {
+    pan,
+    toolMode,
+    setToolMode,
+    selectedNodeIds,
+    setSelectedNodeIds,
+    selectedId,
+    setSelectedId,
+    selectionBox,
+    alignmentGuides,
+    onSurfacePointerDown,
+    onSurfacePointerMove,
+    stopSurfaceInteraction,
+    startNodeDrag,
+    moveNode,
+    stopNodeDrag,
+    consumeSuppressedNodeClick,
+  } = useCanvasPointerInteractions({
+    viewport,
+    setViewport,
+    nodes,
+    nodesRef,
+    replaceNodes,
+    connection,
+    setConnection,
+    screenToWorld,
+    lastPointer,
+    closeContextMenu: () => setContextMenu(undefined),
+    clearEdgeSelection: () => setSelectedEdgeId(undefined),
+    closeAssets: () => setAssetsOpen(false),
+    enqueueSave,
+    clearAutoSave: () => {
+      if (autoSave.current) clearTimeout(autoSave.current);
+    },
+    showGenerateEditor: (nodeId) => {
+      setMediaEditorTab("generate");
+      setInspectedNodeId(nodeId);
+    },
+  });
+  useEffect(() => {
+    if (inspectedNodeId && inspectedNodeId !== selectedId)
+      setInspectedNodeId(undefined);
+  }, [inspectedNodeId, selectedId]);
   const startConnection = useCallback(
     (event: PointerEvent<HTMLElement>, sourceNodeId: string) => {
       event.preventDefault();
       event.stopPropagation();
       const point = screenToWorld(event.clientX, event.clientY);
       setConnection({ sourceNodeId, ...point });
-      setSelectedId(sourceNodeId);
       setSelectedEdgeId(undefined);
     },
     [screenToWorld],
@@ -346,26 +439,41 @@ export function useVisualCanvasController({
       const node = (
         kind === "text" ? { ...base, text: "" } : base
       ) as VisualCanvasNode;
-      if (kind !== "text") pendingFitNode.current = node.id;
       replaceNodes((current) => [...current, node], true);
       setSelectedId(node.id);
+      if (kind !== "text") setInspectedNodeId(node.id);
       setAssetsOpen(false);
       setContextMenu(undefined);
     },
-    [nodesRef, replaceNodes],
+    [nodesRef, replaceNodes, setSelectedId],
   );
-  const removeNode = useCallback(
-    (id: string) => {
+  const removeNodes = useCallback(
+    (ids: string[]) => {
+      const removing = new Set(ids);
       const nextEdges = edgesRef.current.filter(
-        (edge) => edge.source_node_id !== id && edge.target_node_id !== id,
+        (edge) =>
+          !removing.has(edge.source_node_id) &&
+          !removing.has(edge.target_node_id),
       );
       edgesRef.current = nextEdges;
       setEdges(nextEdges);
-      replaceNodes((current) => current.filter((node) => node.id !== id), true);
-      setSelectedId((current) => (current === id ? undefined : current));
+      replaceNodes(
+        (current) => current.filter((node) => !removing.has(node.id)),
+        true,
+      );
+      setSelectedNodeIds((current) =>
+        current.filter((id) => !removing.has(id)),
+      );
+      setInspectedNodeId((current) =>
+        current && removing.has(current) ? undefined : current,
+      );
       setSelectedEdgeId(undefined);
     },
-    [edgesRef, replaceNodes, setEdges],
+    [edgesRef, replaceNodes, setEdges, setSelectedNodeIds],
+  );
+  const removeNode = useCallback(
+    (id: string) => removeNodes([id]),
+    [removeNodes],
   );
   const addCapturedFrameNode = useCallback(
     async (sourceNodeId: string, asset: ManagedFile) => {
@@ -404,6 +512,7 @@ export function useVisualCanvasController({
       prepareCanvasForAgent,
       projectId,
       setNodes,
+      setSelectedId,
     ],
   );
   const copySelected = useCallback(() => {
@@ -425,7 +534,7 @@ export function useVisualCanvasController({
       setSelectedId(next.id);
       setContextMenu(undefined);
     },
-    [replaceNodes],
+    [replaceNodes, setSelectedId],
   );
   const fitView = useCallback(
     (expandedMediaId?: string) => {
@@ -450,147 +559,52 @@ export function useVisualCanvasController({
     },
     [nodesRef, selectedId],
   );
-
-  useEffect(() => {
-    const nodeId = pendingFitNode.current;
-    if (!nodeId || selectedId !== nodeId) return;
-    pendingFitNode.current = undefined;
-    requestAnimationFrame(() => fitView(nodeId));
-  }, [fitView, nodes, selectedId]);
-
-  useEffect(() => {
-    const handleKeys = (event: KeyboardEvent) => {
-      const target = event.target;
-      const editing =
-        target instanceof Element &&
-        target.matches("input, textarea, select, [contenteditable='true']");
-      if (event.key === "Escape") {
-        setContextMenu(undefined);
-        setSelectedId(undefined);
-        setSelectedEdgeId(undefined);
-        return;
-      }
-      if (editing) return;
-      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "c") {
-        event.preventDefault();
-        copySelected();
-      }
-      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "v") {
-        event.preventDefault();
-        pasteNode(lastPointer.current);
-      }
-      if ((event.key === "Delete" || event.key === "Backspace") && selectedId) {
-        event.preventDefault();
-        removeNode(selectedId);
-      } else if (
-        (event.key === "Delete" || event.key === "Backspace") &&
-        selectedEdgeId
-      ) {
-        event.preventDefault();
-        removeEdge(selectedEdgeId);
-      }
-    };
-    window.addEventListener("keydown", handleKeys);
-    return () => window.removeEventListener("keydown", handleKeys);
-  }, [
-    copySelected,
-    pasteNode,
-    removeEdge,
-    removeNode,
-    selectedEdgeId,
-    selectedId,
-  ]);
-
-  const onSurfacePointerDown = (event: PointerEvent<HTMLDivElement>) => {
-    if (event.button !== 0 || event.target !== event.currentTarget) return;
-    event.currentTarget.setPointerCapture(event.pointerId);
-    setSelectedId(undefined);
-    setContextMenu(undefined);
-    pan.current = {
-      x: event.clientX,
-      y: event.clientY,
-      originX: viewport.x,
-      originY: viewport.y,
-    };
-  };
-  const onSurfacePointerMove = (event: PointerEvent<HTMLDivElement>) => {
-    lastPointer.current = screenToWorld(event.clientX, event.clientY);
-    if (connection) {
-      setConnection((current) =>
-        current ? { ...current, ...lastPointer.current } : current,
+  const nudgeSelected = useCallback(
+    (x: number, y: number) => {
+      const selected = new Set(selectedNodeIds);
+      replaceNodes((current) =>
+        current.map((node) =>
+          selected.has(node.id)
+            ? ({
+                ...node,
+                position: {
+                  x: node.position.x + x,
+                  y: node.position.y + y,
+                },
+              } as VisualCanvasNode)
+            : node,
+        ),
       );
-      return;
-    }
-    const activePan = pan.current;
-    if (!activePan) return;
-    const nextX = activePan.originX + event.clientX - activePan.x;
-    const nextY = activePan.originY + event.clientY - activePan.y;
-    setViewport((current) => ({
-      ...current,
-      x: nextX,
-      y: nextY,
-    }));
-  };
-  const stopPan = () => {
-    pan.current = undefined;
-    setConnection(undefined);
-  };
-  const startNodeDrag = (
-    event: PointerEvent<HTMLElement>,
-    node: VisualCanvasNode,
-  ) => {
-    const target = event.target;
-    if (
-      event.button !== 0 ||
-      (target instanceof Element && target.closest(NODE_DRAG_BLOCKER_SELECTOR))
-    )
-      return;
-    event.preventDefault();
-    event.stopPropagation();
-    event.currentTarget.setPointerCapture(event.pointerId);
-    setSelectedId(node.id);
-    setAssetsOpen(false);
-    setContextMenu(undefined);
-    nodeDrag.current = {
-      id: node.id,
-      kind: node.kind,
-      x: event.clientX,
-      y: event.clientY,
-      originX: node.position.x,
-      originY: node.position.y,
-      moved: false,
-    };
-  };
-  const moveNode = (event: PointerEvent<HTMLElement>) => {
-    if (!nodeDrag.current) return;
-    const current = nodeDrag.current;
-    if (
-      Math.abs(event.clientX - current.x) > 3 ||
-      Math.abs(event.clientY - current.y) > 3
-    )
-      current.moved = true;
-    patchNode(current.id, {
-      position: {
-        x: current.originX + (event.clientX - current.x) / viewport.zoom,
-        y: current.originY + (event.clientY - current.y) / viewport.zoom,
-      },
-    });
-  };
-  const stopNodeDrag = () => {
-    if (!nodeDrag.current) return;
-    const completed = nodeDrag.current;
-    nodeDrag.current = undefined;
-    if (autoSave.current) clearTimeout(autoSave.current);
-    enqueueSave(nodesRef.current);
-    if (!completed.moved && completed.kind !== "text")
-      setMediaEditorTab("generate");
-  };
+    },
+    [replaceNodes, selectedNodeIds],
+  );
+
+  useCanvasKeyboardShortcuts({
+    selectedNodeIds,
+    selectedEdgeId,
+    clearContextMenu: () => setContextMenu(undefined),
+    clearNodeSelection: () => setSelectedId(undefined),
+    clearEdgeSelection: () => setSelectedEdgeId(undefined),
+    selectAllNodes: () =>
+      setSelectedNodeIds(nodesRef.current.map((node) => node.id)),
+    copySelected,
+    pasteAtPointer: () => pasteNode(lastPointer.current),
+    removeNodes,
+    removeEdge,
+    setToolMode,
+    fitView,
+    zoomIn: () => setZoom(viewport.zoom + 0.1),
+    zoomOut: () => setZoom(viewport.zoom - 0.1),
+    resetZoom,
+    nudgeSelected,
+  });
+
   const openContextMenu = (event: React.MouseEvent<HTMLDivElement>) => {
     event.preventDefault();
     const bounds = event.currentTarget.getBoundingClientRect();
     const world = screenToWorld(event.clientX, event.clientY);
-    const width = 208;
-    const height = 322;
+    const width = 176;
+    const height = 246;
     setContextMenu({
       left: Math.max(
         8,
@@ -614,6 +628,8 @@ export function useVisualCanvasController({
     surface,
     uploadInput,
     pan,
+    toolMode,
+    setToolMode,
     revisionRef,
     nodesRef,
     edgesRef,
@@ -634,8 +650,14 @@ export function useVisualCanvasController({
     setConnection,
     selectedId,
     setSelectedId,
+    selectedNodeIds,
+    setSelectedNodeIds,
+    selectionBox,
+    alignmentGuides,
     mediaEditorTab,
     setMediaEditorTab,
+    inspectedNodeId,
+    setInspectedNodeId,
     contextMenu,
     setContextMenu,
     assetsOpen,
@@ -673,6 +695,7 @@ export function useVisualCanvasController({
     renameMutation,
     upload,
     setZoom,
+    resetZoom,
     screenToWorld,
     createNode,
     addCapturedFrameNode,
@@ -682,10 +705,11 @@ export function useVisualCanvasController({
     fitView,
     onSurfacePointerDown,
     onSurfacePointerMove,
-    stopPan,
+    stopSurfaceInteraction,
     startNodeDrag,
     moveNode,
     stopNodeDrag,
+    consumeSuppressedNodeClick,
     openContextMenu,
     selectedNode,
   };

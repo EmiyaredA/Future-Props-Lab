@@ -41,6 +41,7 @@ from db.migrations.versions import (
     r0036_galgame_video_editor_handoffs,
     r0037_media_workshop_upgrade,
     r0038_media_workshop_tasks_and_audio,
+    r0039_visual_generation_node_history,
 )
 
 
@@ -190,6 +191,10 @@ MIGRATIONS = (
         r0038_media_workshop_tasks_and_audio.MIGRATION_ID,
         r0038_media_workshop_tasks_and_audio.SQL,
         foreign_keys_off=True,
+    ),
+    Migration(
+        r0039_visual_generation_node_history.MIGRATION_ID,
+        r0039_visual_generation_node_history.SQL,
     ),
 )
 

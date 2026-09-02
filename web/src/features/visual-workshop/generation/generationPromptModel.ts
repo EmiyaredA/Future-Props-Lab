@@ -11,7 +11,15 @@ export const EMPTY_PROMPT_TEXT = EMPTY_COMPOSER_TEXT;
 let promptPartSequence = 0;
 
 export type PromptTextPart = { key: string; type: "text"; text: string };
-export type PromptAssetPart = { key: string; type: "asset"; file: ManagedFile };
+export type PromptManagedFile = ManagedFile & {
+  prompt_reference_name?: string;
+  prompt_legacy_names?: string[];
+};
+export type PromptAssetPart = {
+  key: string;
+  type: "asset";
+  file: PromptManagedFile;
+};
 export type PromptPart = PromptTextPart | PromptAssetPart;
 export type PromptCaret = { key: string; offset: number };
 export type PromptMention = PromptCaret & { start: number; query: string };
@@ -26,7 +34,7 @@ export function promptTextPart(text = ""): PromptTextPart {
   return { key: promptKey("text"), type: "text", text };
 }
 
-export function promptAssetPart(file: ManagedFile): PromptAssetPart {
+export function promptAssetPart(file: PromptManagedFile): PromptAssetPart {
   return { key: promptKey("asset"), type: "asset", file };
 }
 
@@ -47,6 +55,8 @@ export function promptAssetBaseName(file: ManagedFile) {
 }
 
 export function promptAssetReferenceName(file: ManagedFile) {
+  const preferred = (file as PromptManagedFile).prompt_reference_name?.trim();
+  if (preferred) return preferred;
   const baseName = promptAssetBaseName(file);
   const fallback = file.original_filename.slice(
     0,
@@ -58,6 +68,22 @@ export function promptAssetReferenceName(file: ManagedFile) {
   return `${baseName || fallback || file.display_name}${promptAssetExtension(file)}`;
 }
 
+export function promptAssetReferenceNameForBase(
+  file: ManagedFile,
+  baseName: string,
+) {
+  const extension = promptAssetExtension(file);
+  const trimmed = baseName.trim();
+  const withoutExtension =
+    extension &&
+    trimmed
+      .toLocaleLowerCase("zh-CN")
+      .endsWith(extension.toLocaleLowerCase("zh-CN"))
+      ? trimmed.slice(0, -extension.length).trim()
+      : trimmed;
+  return `${withoutExtension || promptAssetBaseName(file) || "素材"}${extension}`;
+}
+
 export function promptAssetNameMap(assets: ManagedFile[]) {
   const filesByName = new Map<string, ManagedFile>();
   for (const file of assets) {
@@ -66,6 +92,7 @@ export function promptAssetNameMap(assets: ManagedFile[]) {
       file.original_filename,
       promptAssetBaseName(file),
       promptAssetReferenceName(file),
+      ...((file as PromptManagedFile).prompt_legacy_names ?? []),
     ]) {
       if (name && !filesByName.has(name)) filesByName.set(name, file);
     }
@@ -129,6 +156,16 @@ export function promptProjection(parts: PromptPart[]) {
   return mentionProjection(
     parts,
     (part) => `[${promptAssetReferenceName(part.file)}]`,
+  );
+}
+
+export function promptPartsSignature(parts: PromptPart[]) {
+  return JSON.stringify(
+    parts.map((part) =>
+      part.type === "text"
+        ? ["text", part.text]
+        : ["asset", part.file.id, promptAssetReferenceName(part.file)],
+    ),
   );
 }
 

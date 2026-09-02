@@ -5,15 +5,7 @@ import {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import {
-  Image,
-  Link2,
-  LoaderCircle,
-  Music,
-  Upload,
-  Video,
-  X,
-} from "lucide-react";
+import { Image, LoaderCircle, Music, Upload, Video, X } from "lucide-react";
 import {
   fileQueryKeys,
   getFiles,
@@ -29,7 +21,6 @@ import {
   type VisualCanvasNode,
 } from "@features/visual-workshop/api";
 import { visualWorkshopQueryKeys } from "@features/visual-workshop/queryKeys";
-import { useApiBlobUrl } from "@platform/api/useApiBlobUrl";
 
 type MediaNode = Exclude<VisualCanvasNode, { kind: "text" }>;
 
@@ -41,29 +32,6 @@ const ACCEPT: Record<MediaNode["kind"], string> = {
 
 function mediaIcon(kind: MediaNode["kind"]) {
   return kind === "image" ? Image : kind === "video" ? Video : Music;
-}
-
-function LinkedMaterial({ node }: { node: MediaNode }) {
-  const { url } = useApiBlobUrl(
-    node.asset_id
-      ? `/v1/files/${encodeURIComponent(node.asset_id)}/content`
-      : null,
-  );
-  const Icon = mediaIcon(node.kind);
-  return (
-    <div className={node.asset_id ? "ready" : "waiting"}>
-      <span>
-        {url && node.kind === "image" ? (
-          <img src={url} alt="" />
-        ) : (
-          <Icon aria-hidden />
-        )}
-        <Link2 aria-hidden />
-      </span>
-      <strong>{node.title}</strong>
-      <small>{node.asset_id ? "动态引用上游素材" : "等待上游素材"}</small>
-    </div>
-  );
 }
 
 function useProjectMedia(projectId: string, kind: MediaKind) {
@@ -149,6 +117,27 @@ export function CanvasNodeInspector({
     },
   });
   const taskId = node.generation_task_id;
+  const linkedReferences = useMemo(() => {
+    const grouped = {
+      image: [] as string[],
+      video: [] as string[],
+      audio: [] as string[],
+    };
+    const seen = {
+      image: new Set<string>(),
+      video: new Set<string>(),
+      audio: new Set<string>(),
+    };
+    const names: Record<string, string> = {};
+    upstreamNodes.forEach((upstream) => {
+      const assetId = upstream.asset_id;
+      if (!assetId || seen[upstream.kind].has(assetId)) return;
+      seen[upstream.kind].add(assetId);
+      grouped[upstream.kind].push(assetId);
+      names[assetId] = upstream.title;
+    });
+    return { assetIds: grouped, names };
+  }, [upstreamNodes]);
   const task = useQuery({
     queryKey: visualWorkshopQueryKeys.generationTask(taskId),
     queryFn: () => getGenerationTask(taskId!),
@@ -227,43 +216,35 @@ export function CanvasNodeInspector({
         </nav>
       ) : null}
       {tab === "generate" ? (
-        <>
-          {upstreamNodes.length ? (
-            <div className="canvas-linked-materials">
-              <b>上游引用</b>
-              {upstreamNodes.map((upstream) => (
-                <LinkedMaterial key={upstream.id} node={upstream} />
-              ))}
-            </div>
-          ) : null}
-          <GenerationDrawer
-            compact
-            projectId={projectId}
-            canvasNodeId={node.id}
-            lockedKind={node.kind}
-            draft={node.generation_draft}
-            onClose={isAttachedComposer ? onClose : () => setTab("content")}
-            onDraftChange={(generationDraft, immediate) =>
-              onPatch(
-                { generation_draft: generationDraft } as Partial<MediaNode>,
-                immediate,
-              )
+        <GenerationDrawer
+          compact
+          projectId={projectId}
+          canvasNodeId={node.id}
+          lockedKind={node.kind}
+          draft={node.generation_draft}
+          linkedAssetIds={linkedReferences.assetIds}
+          linkedReferenceNames={linkedReferences.names}
+          onClose={isAttachedComposer ? onClose : () => setTab("content")}
+          onDraftChange={(generationDraft, immediate) =>
+            onPatch(
+              { generation_draft: generationDraft } as Partial<MediaNode>,
+              immediate,
+            )
+          }
+          onBeforeSubmit={async () => {
+            return onPrepareCanvas?.();
+          }}
+          onTaskCreated={(created) => {
+            if (onTaskLinked) {
+              onTaskLinked(created.id);
+              return;
             }
-            onBeforeSubmit={async () => {
-              return onPrepareCanvas?.();
-            }}
-            onTaskCreated={(created) => {
-              if (onTaskLinked) {
-                onTaskLinked(created.id);
-                return;
-              }
-              return onPatch(
-                { generation_task_id: created.id, asset_id: null },
-                true,
-              );
-            }}
-          />
-        </>
+            return onPatch(
+              { generation_task_id: created.id, asset_id: null },
+              true,
+            );
+          }}
+        />
       ) : (
         <div className="canvas-inspector-content">
           <input

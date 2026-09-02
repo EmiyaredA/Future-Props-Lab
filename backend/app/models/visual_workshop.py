@@ -47,6 +47,12 @@ class VisualGenerationTask(Base):
     __tablename__ = "visual_generation_tasks"
     __table_args__ = (
         Index("ix_visual_generation_tasks_project_created", "project_id", "created_at"),
+        Index(
+            "ix_visual_generation_tasks_project_canvas_node_created",
+            "project_id",
+            "canvas_node_id",
+            "created_at",
+        ),
         Index("ix_visual_generation_tasks_status_updated", "status", "updated_at"),
         Index("ix_visual_generation_tasks_provider", "provider_id", "status"),
     )
@@ -67,6 +73,7 @@ class VisualGenerationTask(Base):
     provider_name: Mapped[str] = mapped_column(String(120))
     model_slug: Mapped[str] = mapped_column(String(160))
     request_payload: Mapped[dict] = mapped_column(JSON, default=dict)
+    canvas_node_id: Mapped[str | None] = mapped_column(String(64), index=False)
     provider_task_id: Mapped[str | None] = mapped_column(String(255))
     status: Mapped[str] = mapped_column(String(16), default="queued")
     progress: Mapped[int] = mapped_column(Integer, default=0)

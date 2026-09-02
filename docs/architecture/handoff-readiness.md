@@ -26,15 +26,15 @@ Workspace 隔离，但不提供多实例部署、外置数据库、Bot、知识�
 
 ## 环境与外部依赖
 
-| 依赖 | 交付要求 | 用途与边界 |
-| --- | --- | --- |
-| Node.js / npm | Node.js 24、npm 11+ | Web 构建、组件测试、工具脚本 |
-| Python | 3.11+；CI 同时覆盖 3.11 与 3.14 | FastAPI、任务执行器、迁移与后端测试 |
-| SQLite | 应用内置驱动 | `.runtime/future-props.db` 是单机真源，不支持直接运维写入 |
-| FFmpeg / FFprobe | 系统命令可用，并提供 H.264/libx264、AAC、PNG 编解码能力 | 视频导出、媒体探测；缺失时相关能力会明确失败 |
-| Chromium | 通过 Playwright 单独安装 | 仅 E2E；当前不承诺其他浏览器的完整自动化旅程 |
-| Git LFS | 3.7.1+；克隆后执行 `git lfs install` | 管理文档图片、固定字体和 VAD 资产 |
-| 模型供应商 | 网络和有效凭证按功能选配 | 确定性测试不调用真实供应商；交付方需另做凭证与配额验收 |
+| 依赖             | 交付要求                                                | 用途与边界                                                |
+| ---------------- | ------------------------------------------------------- | --------------------------------------------------------- |
+| Node.js / npm    | Node.js 24、npm 11+                                     | Web 构建、组件测试、工具脚本                              |
+| Python           | 3.11+；CI 同时覆盖 3.11 与 3.14                         | FastAPI、任务执行器、迁移与后端测试                       |
+| SQLite           | 应用内置驱动                                            | `.runtime/future-props.db` 是单机真源，不支持直接运维写入 |
+| FFmpeg / FFprobe | 系统命令可用，并提供 H.264/libx264、AAC、PNG 编解码能力 | 视频导出、媒体探测；缺失时相关能力会明确失败              |
+| Chromium         | 通过 Playwright 单独安装                                | 仅 E2E；当前不承诺其他浏览器的完整自动化旅程              |
+| Git LFS          | 3.7.1+；克隆后执行 `git lfs install`                    | 管理文档图片、固定字体和 VAD 资产                         |
+| 模型供应商       | 网络和有效凭证按功能选配                                | 确定性测试不调用真实供应商；交付方需另做凭证与配额验收    |
 
 后端只读取 `backend/.env`。变量说明、文件上限与备份范围见
 [`配置参考`](../reference/configuration.md)，部署步骤见
@@ -47,14 +47,14 @@ Workspace 隔离，但不提供多实例部署、外置数据库、Bot、知识�
 
 ## 迁移与兼容状态
 
-- 当前 migration registry 最新版本为 `r0038_media_workshop_tasks_and_audio`；交接前通过
+- 当前 migration registry 最新版本为 `r0039_visual_generation_node_history`；交接前通过
   `npm run db:migrate:check` 只读确认目标数据库处于同一连续前缀。
 - migration 只允许在 `db/migrations/versions/` 追加并登记，不得改写已登记版本、checksum 或
   `schema_migrations`。
 - Story 当前写入版本为 1.4；1.0–1.3 仅保留读取兼容。运行期 Story 固化必须使用受鉴权的迁移 API，
   流程见 [`Story 1.4 迁移运维`](../operations/story-migrations.md)。
-- 本轮架构整改不新增数据库 migration，也不改变既有业务 REST、SSE、WebSocket 或 SQLite 契约；
-  唯一协议层补充是 CORS 允许浏览器读取响应中的 `Content-Disposition`。
+- `r0039_visual_generation_node_history` 为生成任务补充可空画布节点关联，回填画布当前任务并新增
+  项目、节点和创建时间复合索引；REST 契约同步支持按节点查询图片、视频和音频生成历史。
 
 ## 质量验收记录
 
@@ -79,18 +79,18 @@ npm run test:e2e
 
 ## 最终架构结果
 
-| 边界 | 整改后的 owner | 稳定性约束 |
-| --- | --- | --- |
-| HTTP 与租户 | `routes/` + `WorkspaceDep` | 客户端不提交 Workspace；跨空间 ID 按不存在处理 |
-| 文件输入与落盘 | `files.IncomingFile` + `AssetStorage` | 业务不依赖 FastAPI；写路径必须显式 Workspace |
-| 图片/视频后台任务 | `llm/generation_runtime/GenerationTaskDriver` | 短事务状态转换；网络在事务外；提交中断不重提 |
-| 确定性媒体渲染 | `media_rendering/` | Galgame 直接导出与视频剪辑共用契约；业务包不反向拥有渲染实现 |
-| Workspace 项目原语 | `concurrency/project_records.py` | 显式租户谓词和 revision CAS；不提交事务、不承载领域默认值 |
-| Story 1.4 校验 | `schemas/galgame_workshop/story_validation.py` | 角色、素材、国际化、时间轴、流程、表现层纯函数分层 |
-| Agent Harness | `agents/harness/phases.py` | 上下文、模型、提案、审批和执行阶段保持既有事件顺序 |
-| 广播剧导入 | `annotation_import_runner.py` 的阶段方法 | 预检、裁切、验收、落位、结算和补偿独立 |
-| Web 公共维护点 | 项目库控制器、feature query key、元数据 owner、Blob URL Hook | owner 外不复制项目生命周期、缓存键、能力映射或对象 URL 生命周期 |
-| 源码尺寸 | 架构测试 + 空尺寸基线 | 生产与测试均无豁免，按语义拆分而非编号分片 |
+| 边界               | 整改后的 owner                                               | 稳定性约束                                                      |
+| ------------------ | ------------------------------------------------------------ | --------------------------------------------------------------- |
+| HTTP 与租户        | `routes/` + `WorkspaceDep`                                   | 客户端不提交 Workspace；跨空间 ID 按不存在处理                  |
+| 文件输入与落盘     | `files.IncomingFile` + `AssetStorage`                        | 业务不依赖 FastAPI；写路径必须显式 Workspace                    |
+| 图片/视频后台任务  | `llm/generation_runtime/GenerationTaskDriver`                | 短事务状态转换；网络在事务外；提交中断不重提                    |
+| 确定性媒体渲染     | `media_rendering/`                                           | Galgame 直接导出与视频剪辑共用契约；业务包不反向拥有渲染实现    |
+| Workspace 项目原语 | `concurrency/project_records.py`                             | 显式租户谓词和 revision CAS；不提交事务、不承载领域默认值       |
+| Story 1.4 校验     | `schemas/galgame_workshop/story_validation.py`               | 角色、素材、国际化、时间轴、流程、表现层纯函数分层              |
+| Agent Harness      | `agents/harness/phases.py`                                   | 上下文、模型、提案、审批和执行阶段保持既有事件顺序              |
+| 广播剧导入         | `annotation_import_runner.py` 的阶段方法                     | 预检、裁切、验收、落位、结算和补偿独立                          |
+| Web 公共维护点     | 项目库控制器、feature query key、元数据 owner、Blob URL Hook | owner 外不复制项目生命周期、缓存键、能力映射或对象 URL 生命周期 |
+| 源码尺寸           | 架构测试 + 空尺寸基线                                        | 生产与测试均无豁免，按语义拆分而非编号分片                      |
 
 仍保留的兼容层只有明确的外部兼容：Story 1.0–1.3 读取/导入适配、默认 Workspace 的历史文件目录、
 旧视觉生成任务中的 URL 参考字段，以及既有 REST/SSE/WebSocket 和 SQLite schema。它们没有成为新代码
