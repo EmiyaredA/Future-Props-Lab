@@ -10,6 +10,7 @@ export type VideoEditorWorkspacePreferences = {
   zoom: number;
   timelineScrollLeft: number;
   preciseFrame: boolean;
+  snapEnabled?: boolean;
 };
 
 export function defaultVideoEditorWorkspacePreferences(): VideoEditorWorkspacePreferences {
@@ -20,6 +21,7 @@ export function defaultVideoEditorWorkspacePreferences(): VideoEditorWorkspacePr
     zoom: 80,
     timelineScrollLeft: 0,
     preciseFrame: true,
+    snapEnabled: true,
   };
 }
 
@@ -66,6 +68,10 @@ function normalize(
       typeof candidate.preciseFrame === "boolean"
         ? candidate.preciseFrame
         : defaults.preciseFrame,
+    snapEnabled:
+      typeof candidate.snapEnabled === "boolean"
+        ? candidate.snapEnabled
+        : defaults.snapEnabled,
   };
 }
 

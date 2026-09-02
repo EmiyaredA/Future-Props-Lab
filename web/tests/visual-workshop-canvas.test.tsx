@@ -679,6 +679,54 @@ test("renders video nodes as an attached 16:9 creation workspace", async () => {
   expect(screen.getByRole("tab", { name: "AI 生成" })).toBeInTheDocument();
 });
 
+test.each([0.5, 1, 2])(
+  "publishes inverse overlay geometry for canvas zoom %s",
+  async (zoom) => {
+    vi.mocked(getVisualCanvas).mockResolvedValueOnce({
+      project_id: "project-1",
+      edges: [],
+      nodes: [
+        {
+          id: "video-1",
+          kind: "video",
+          title: "视频1",
+          position: { x: 240, y: 120 },
+          asset_id: null,
+        },
+      ],
+      revision: 0,
+      updated_at: "2026-08-03T08:00:00Z",
+    });
+    window.localStorage.setItem(
+      "fpl_canvas_viewport_project-1",
+      JSON.stringify({ x: 0, y: 0, zoom }),
+    );
+    const user = userEvent.setup();
+    const { container } = renderCanvas();
+
+    expect(await screen.findByText("视频1")).toBeInTheDocument();
+    const world = container.querySelector<HTMLElement>(".visual-canvas-world")!;
+    expect(world.style.getPropertyValue("--canvas-ui-scale")).toBe(
+      String(1 / zoom),
+    );
+    expect(world.style.getPropertyValue("--canvas-media-actions-top")).toBe(
+      `${-43 / zoom}px`,
+    );
+    expect(world.style.getPropertyValue("--canvas-inspector-gap")).toBe(
+      `${22 / zoom}px`,
+    );
+
+    await user.click(screen.getByText("视频1"));
+    expect(
+      container.querySelector(".canvas-media-node-actions"),
+    ).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "选择视频素材" }));
+    expect(
+      screen.getByRole("complementary", { name: "节点检查器" }),
+    ).toHaveClass("is-embedded");
+  },
+);
+
 test("renders video node draft references as the canvas preview", async () => {
   vi.mocked(getVisualCanvas).mockResolvedValueOnce({
     project_id: "project-1",

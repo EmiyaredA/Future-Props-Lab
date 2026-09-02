@@ -1,4 +1,10 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+} from "react";
 import {
   ArrowLeft,
   CircleQuestionMark,
@@ -226,9 +232,14 @@ export function VisualWorkshopCanvasView({
         <CanvasSelectionOverlay selectionBox={selectionBox} />
         <div
           className="visual-canvas-world"
-          style={{
-            transform: `translate(${viewport.x}px, ${viewport.y}px) scale(${viewport.zoom})`,
-          }}
+          style={
+            {
+              transform: `translate(${viewport.x}px, ${viewport.y}px) scale(${viewport.zoom})`,
+              "--canvas-ui-scale": 1 / viewport.zoom,
+              "--canvas-media-actions-top": `${-43 / viewport.zoom}px`,
+              "--canvas-inspector-gap": `${22 / viewport.zoom}px`,
+            } as CSSProperties
+          }
         >
           <CanvasAlignmentGuides guides={alignmentGuides} />
           <CanvasEdgeLayer

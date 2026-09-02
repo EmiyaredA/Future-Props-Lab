@@ -1,13 +1,21 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { act, render, screen, waitFor } from "@testing-library/react";
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useVideoEditor } from "@features/video-editor/useVideoEditor";
+import { frameUs } from "@features/video-editor/editorModel";
 import {
   loadVideoEditorWorkspacePreferences,
   storeVideoEditorWorkspacePreferences,
 } from "@features/video-editor/workspacePreferences";
 import {
+  applyVideoEditorOperations,
   getVideoEditorProject,
   getVideoEditorTimeline,
   listVideoEditorAssets,
@@ -174,6 +182,29 @@ describe("video editor playback clock", () => {
     act(() => animationFrame?.(now));
 
     expect(screen.getByLabelText("播放进度")).toHaveTextContent("5100000");
+  });
+
+  it("nudges a selected clip with the arrow keys", async () => {
+    const user = userEvent.setup();
+    vi.mocked(applyVideoEditorOperations).mockResolvedValue(timeline as never);
+    render(
+      <QueryClientProvider client={testClient()}>
+        <WorkspaceProbe />
+      </QueryClientProvider>,
+    );
+    await screen.findByRole("button", { name: "选择片段" });
+    await user.click(screen.getByRole("button", { name: "选择片段" }));
+    fireEvent.keyDown(window, { code: "ArrowRight", key: "ArrowRight" });
+    await waitFor(() => expect(applyVideoEditorOperations).toHaveBeenCalled());
+    expect(
+      vi.mocked(applyVideoEditorOperations).mock.calls.at(-1)?.[2],
+    ).toEqual([
+      expect.objectContaining({
+        type: "moveClip",
+        clipId: "video-1",
+        timelineStartUs: frameUs(30),
+      }),
+    ]);
   });
 
   it("flushes and restores the complete per-project work position", async () => {

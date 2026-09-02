@@ -111,4 +111,28 @@ describe("video editor timeline", () => {
     rerender(<VideoEditorTimeline {...props} scrollLeft={125} />);
     expect(scroller.scrollLeft).toBe(125);
   });
+
+  it("toggles snapping from the timeline toolbar", () => {
+    const setSnapEnabled = vi.fn();
+    render(
+      <VideoEditorTimeline
+        timeline={timeline}
+        assets={[]}
+        playheadUs={0}
+        setPlayheadUs={vi.fn()}
+        zoom={80}
+        scrollLeft={0}
+        onScrollLeftChange={vi.fn()}
+        selectedClipId={undefined}
+        selectedClipIds={[]}
+        selectClip={vi.fn()}
+        commit={vi.fn().mockResolvedValue(undefined)}
+        onDropAsset={vi.fn()}
+        snapEnabled
+        setSnapEnabled={setSnapEnabled}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "吸附" }));
+    expect(setSnapEnabled).toHaveBeenCalledWith(false);
+  });
 });

@@ -14,6 +14,7 @@ describe("video editor workspace preferences", () => {
       zoom: 135,
       timelineScrollLeft: 720,
       preciseFrame: false,
+      snapEnabled: false,
     });
 
     expect(loadVideoEditorWorkspacePreferences("editor-1")).toEqual({
@@ -23,6 +24,7 @@ describe("video editor workspace preferences", () => {
       zoom: 135,
       timelineScrollLeft: 720,
       preciseFrame: false,
+      snapEnabled: false,
     });
     expect(loadVideoEditorWorkspacePreferences("editor-2")).toEqual(
       defaultVideoEditorWorkspacePreferences(),
@@ -66,6 +68,7 @@ describe("video editor workspace preferences", () => {
       zoom: 240,
       timelineScrollLeft: 0,
       preciseFrame: true,
+      snapEnabled: true,
     });
   });
 });

@@ -168,6 +168,22 @@
   border-radius: 5px;
   color: #dfe8ef;
   background: #253e4d;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+.ve-clip:active,
+.ve-clip.dragging {
+  cursor: grabbing;
+}
+.ve-clip.dragging {
+  z-index: 8;
+  opacity: 0.84;
+  box-shadow: 0 8px 18px rgb(0 0 0 / 28%);
+}
+.ve-clip.dragging.invalid {
+  border-color: #f87171;
+  box-shadow: 0 8px 18px rgb(248 113 113 / 30%);
 }
 .ve-clip.video {
   border-color: #3f79b5;
@@ -220,6 +236,18 @@
   border: 5px solid transparent;
   border-top-color: #ff5e6d;
 }
+.ve-snap-guide {
+  position: absolute;
+  z-index: 6;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  pointer-events: none;
+  background: #77e6bf;
+  box-shadow:
+    0 0 0 1px rgb(119 230 191 / 22%),
+    0 0 10px rgb(119 230 191 / 70%);
+}
 .ve-key-marker {
   position: absolute;
   bottom: 3px;
@@ -233,4 +261,10 @@
   border-color: #7467e8;
   color: #bcb6ff;
   background: #292642;
+}
+.ve-timeline-tools .ve-snap-toggle {
+  margin-left: 4px;
+}
+.ve-snap-toggle svg {
+  width: 13px;
 }

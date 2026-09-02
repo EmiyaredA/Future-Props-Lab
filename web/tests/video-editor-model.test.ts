@@ -6,6 +6,11 @@ import {
   snapUs,
   timelineDuration,
 } from "@features/video-editor/editorModel";
+import {
+  canPlaceClip,
+  linkedClipIds,
+  snapClipStartUs,
+} from "@features/video-editor/timelineSnap";
 import type {
   VideoEditorAsset,
   VideoEditorTimeline,
@@ -87,5 +92,113 @@ describe("video editor timeline model", () => {
       },
     } as unknown as VideoEditorTimeline;
     expect(timelineDuration(timeline)).toBe(10_000_000);
+  });
+
+  it("snaps clip starts to the timeline edge and neighboring seams", () => {
+    const firstOperation = operationsForAsset(video, tracks, 1_000_000)[0];
+    if (firstOperation?.type !== "addClip")
+      throw new Error("unexpected operation");
+    const first = {
+      ...firstOperation.clip,
+      id: "first",
+      timelineStartUs: 1_000_000,
+      durationUs: 2_000_000,
+      trackId: "v1",
+    };
+    const second = { ...first, id: "second", timelineStartUs: 5_000_000 };
+    const visualTracks = [{ ...tracks[0]!, clips: [first, second] }];
+    const moving = new Set([first.id]);
+    expect(
+      snapClipStartUs({
+        candidateUs: 2_960_000,
+        durationUs: first.durationUs,
+        targetTrackId: "v1",
+        tracks: visualTracks,
+        movingClipIds: moving,
+        fps: 30,
+        zoom: 80,
+        timelineEndUs: 30_000_000,
+        enabled: true,
+      }),
+    ).toBe(snapUs(3_000_000, 30));
+    expect(
+      snapClipStartUs({
+        candidateUs: 40_000,
+        durationUs: first.durationUs,
+        targetTrackId: "v1",
+        tracks: visualTracks,
+        movingClipIds: moving,
+        fps: 30,
+        zoom: 80,
+        timelineEndUs: 30_000_000,
+        enabled: false,
+      }),
+    ).toBe(33_333);
+    expect(
+      snapClipStartUs({
+        candidateUs: 27_960_000,
+        durationUs: first.durationUs,
+        targetTrackId: "v1",
+        tracks: visualTracks,
+        movingClipIds: moving,
+        fps: 30,
+        zoom: 80,
+        timelineEndUs: 30_000_000,
+        enabled: true,
+      }),
+    ).toBe(snapUs(28_000_000, 30));
+    expect(
+      snapClipStartUs({
+        candidateUs: 27_800_000,
+        durationUs: first.durationUs,
+        targetTrackId: "v1",
+        tracks: visualTracks,
+        movingClipIds: moving,
+        fps: 30,
+        zoom: 80,
+        timelineEndUs: 30_000_000,
+        enabled: true,
+      }),
+    ).toBe(snapUs(27_800_000, 30));
+  });
+
+  it("expands selected linked clips and rejects visual overlaps", () => {
+    const operations = operationsForAsset(video, tracks, 0);
+    if (operations[0]?.type !== "addClip" || operations[1]?.type !== "addClip")
+      throw new Error("unexpected operation");
+    const picture = {
+      ...operations[0].clip,
+      id: "picture",
+      trackId: "v1",
+      linkGroupId: "group",
+    };
+    const audio = {
+      ...operations[1].clip,
+      id: "audio",
+      trackId: "a1",
+      linkGroupId: "group",
+    };
+    const blocker = {
+      ...picture,
+      id: "blocker",
+      linkGroupId: undefined,
+      timelineStartUs: 2_000_000,
+    };
+    const allTracks = [
+      { ...tracks[0]!, clips: [picture, blocker] },
+      { ...tracks[1]!, clips: [audio] },
+    ];
+    expect(linkedClipIds([picture, audio, blocker], ["picture"])).toEqual(
+      new Set(["picture", "audio"]),
+    );
+    expect(
+      canPlaceClip(
+        picture,
+        1_000_000,
+        "v1",
+        allTracks,
+        new Set(["picture", "audio"]),
+      ),
+    ).toBe(false);
   });
 });

@@ -1,4 +1,12 @@
-import { useLayoutEffect, useMemo, useRef, type CSSProperties } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+  type PointerEvent as ReactPointerEvent,
+} from "react";
 import {
   Copy,
   ArrowDown,
@@ -6,14 +14,16 @@ import {
   Eye,
   EyeOff,
   Lock,
+  Magnet,
   Scissors,
   Trash2,
   Unlock,
   Volume2,
   VolumeX,
 } from "lucide-react";
-import { formatTime, snapUs } from "./editorModel";
+import { frameUs, formatTime, snapUs } from "./editorModel";
 import { getTimelineRulerStepSeconds } from "./timelineScale";
+import { canPlaceClip, linkedClipIds, snapClipStartUs } from "./timelineSnap";
 import type {
   VideoEditorAsset,
   VideoEditorClip,
@@ -34,6 +44,9 @@ export function VideoEditorTimeline({
   selectClip,
   commit,
   onDropAsset,
+  snapEnabled = true,
+  setSnapEnabled = () => undefined,
+  onNotice,
 }: {
   timeline: Timeline;
   assets: VideoEditorAsset[];
@@ -54,8 +67,29 @@ export function VideoEditorTimeline({
     trackId: string,
     startUs: number,
   ) => void;
+  snapEnabled?: boolean;
+  setSnapEnabled?: (value: boolean) => void;
+  onNotice?: (value: string) => void;
 }) {
   const scroller = useRef<HTMLDivElement>(null);
+  const [dragPreview, setDragPreview] = useState<
+    | {
+        positions: Map<string, { startUs: number; trackId: string }>;
+        valid: boolean;
+      }
+    | undefined
+  >();
+  const dragPreviewRef = useRef<typeof dragPreview>(undefined);
+  dragPreviewRef.current = dragPreview;
+  const [snapGuideUs, setSnapGuideUs] = useState<number>();
+  const dragRef = useRef<{ cleanup: () => void }>(undefined);
+  const dragMoveRef = useRef<
+    ((event: globalThis.PointerEvent) => void) | undefined
+  >(undefined);
+  const dragFinishRef = useRef<((event?: Event) => void) | undefined>(
+    undefined,
+  );
+  const suppressClickRef = useRef(false);
   useLayoutEffect(() => {
     const node = scroller.current;
     if (node && Math.abs(node.scrollLeft - scrollLeft) > 0.5)
@@ -85,20 +119,152 @@ export function VideoEditorTimeline({
   const timelineScaleStyle = {
     "--timeline-tick": `${rulerStepSeconds * zoom}px`,
   } as CSSProperties;
-  const positionUs = (clientX: number) => {
+  const rawPositionUs = (clientX: number) => {
     const rect = scroller.current?.getBoundingClientRect();
     const scrollLeft = scroller.current?.scrollLeft ?? 0;
-    return snapUs(
-      ((clientX - (rect?.left ?? 0) + scrollLeft) / zoom) * 1_000_000,
-      fps,
-    );
+    return ((clientX - (rect?.left ?? 0) + scrollLeft) / zoom) * 1_000_000;
   };
+  const positionUs = (clientX: number) => snapUs(rawPositionUs(clientX), fps);
   const clipById = new Map(
     tracks.flatMap((track) =>
       (track.clips ?? []).map((clip) => [clip.id, clip] as const),
     ),
   );
   const selected = selectedClipId ? clipById.get(selectedClipId) : undefined;
+
+  useEffect(
+    () => () => {
+      dragRef.current?.cleanup();
+    },
+    [],
+  );
+
+  const startClipDrag = (
+    event: ReactPointerEvent<HTMLButtonElement>,
+    clip: VideoEditorClip,
+  ) => {
+    if (event.button != null && event.button !== 0) return;
+    const sourceTrack = tracks.find((track) => track.id === clip.trackId);
+    if (!sourceTrack || sourceTrack.locked) return;
+    event.preventDefault();
+    event.stopPropagation();
+    const allClips = [...clipById.values()];
+    const baseSelection = selectedClipIds.includes(clip.id)
+      ? selectedClipIds
+      : [clip.id];
+    const movingIds = linkedClipIds(allClips, baseSelection);
+    const moving = allClips.filter((item) => movingIds.has(item.id));
+    const original = new Map(
+      moving.map((item) => [
+        item.id,
+        { startUs: item.timelineStartUs, trackId: item.trackId },
+      ]),
+    );
+    if (!selectedClipIds.includes(clip.id)) selectClip(clip.id);
+    const grabOffsetUs = rawPositionUs(event.clientX) - clip.timelineStartUs;
+    let moved = false;
+
+    const update = (pointer: globalThis.PointerEvent) => {
+      pointer.preventDefault();
+      const row =
+        typeof document.elementFromPoint === "function"
+          ? document
+              .elementFromPoint(pointer.clientX, pointer.clientY)
+              ?.closest<HTMLElement>(".ve-track-row[data-track-id]")
+          : null;
+      const targetTrack = tracks.find(
+        (track) => track.id === row?.dataset.trackId,
+      );
+      const targetTrackId = targetTrack?.id ?? clip.trackId;
+      const candidate = rawPositionUs(pointer.clientX) - grabOffsetUs;
+      const startUs = snapClipStartUs({
+        candidateUs: candidate,
+        durationUs: clip.durationUs,
+        targetTrackId,
+        tracks,
+        movingClipIds: movingIds,
+        fps,
+        zoom,
+        timelineEndUs: seconds * 1_000_000,
+        enabled: snapEnabled,
+      });
+      const deltaUs = startUs - clip.timelineStartUs;
+      moved ||= Math.abs(deltaUs) >= frameUs(fps);
+      const positions = new Map(
+        moving.map((item) => [
+          item.id,
+          {
+            startUs: Math.max(0, item.timelineStartUs + deltaUs),
+            trackId: item.id === clip.id ? targetTrackId : item.trackId,
+          },
+        ]),
+      );
+      const valid = moving.every((item) => {
+        const position = positions.get(item.id)!;
+        return canPlaceClip(
+          item,
+          position.startUs,
+          position.trackId,
+          tracks,
+          movingIds,
+        );
+      });
+      const nextPreview = { positions, valid };
+      dragPreviewRef.current = nextPreview;
+      setDragPreview(nextPreview);
+      setSnapGuideUs(snapEnabled ? startUs : undefined);
+    };
+
+    const finish = (event?: Event) => {
+      if (event) update(event as globalThis.PointerEvent);
+      const preview = dragPreviewRef.current;
+      if (moved && preview?.valid) {
+        const redo: VideoEditorOperation[] = [];
+        const undo: VideoEditorOperation[] = [];
+        for (const item of moving) {
+          const next = preview.positions.get(item.id)!;
+          const previous = original.get(item.id)!;
+          if (
+            next.startUs === previous.startUs &&
+            next.trackId === previous.trackId
+          )
+            continue;
+          redo.push({
+            type: "moveClip",
+            clipId: item.id,
+            trackId: next.trackId,
+            timelineStartUs: next.startUs,
+          });
+          undo.push({
+            type: "moveClip",
+            clipId: item.id,
+            trackId: previous.trackId,
+            timelineStartUs: previous.startUs,
+          });
+        }
+        if (redo.length) void commit(redo, undo);
+      } else if (moved && preview && !preview.valid) {
+        onNotice?.("该位置与其他片段重叠，无法移动");
+      }
+      suppressClickRef.current = moved;
+      if (moved)
+        window.setTimeout(() => (suppressClickRef.current = false), 100);
+      setDragPreview(undefined);
+      setSnapGuideUs(undefined);
+      window.removeEventListener("pointermove", update);
+      window.removeEventListener("pointerup", finish);
+      window.removeEventListener("pointercancel", finish);
+      dragRef.current = undefined;
+      dragMoveRef.current = undefined;
+      dragFinishRef.current = undefined;
+    };
+    dragRef.current = { cleanup: finish };
+    dragMoveRef.current = update;
+    dragFinishRef.current = finish;
+    window.addEventListener("pointermove", update);
+    window.addEventListener("pointerup", finish);
+    window.addEventListener("pointercancel", finish);
+  };
   const deleteSelected = (ripple = false) => {
     if (!selected) return;
     void commit(
@@ -185,6 +351,14 @@ export function VideoEditorTimeline({
         </button>
         <button disabled={!selected} onClick={() => deleteSelected(true)}>
           波纹删除
+        </button>
+        <button
+          className={`ve-snap-toggle${snapEnabled ? " active" : ""}`}
+          aria-pressed={snapEnabled}
+          onClick={() => setSnapEnabled(!snapEnabled)}
+          title={snapEnabled ? "关闭片段接缝吸附" : "开启片段接缝吸附"}
+        >
+          <Magnet aria-hidden /> {snapEnabled ? "吸附" : "吸附关闭"}
         </button>
       </header>
       <div className="ve-timeline-grid">
@@ -336,10 +510,18 @@ export function VideoEditorTimeline({
               className="ve-playhead"
               style={{ left: `${(playheadUs / 1_000_000) * zoom}px` }}
             />
+            {snapGuideUs != null ? (
+              <i
+                className="ve-snap-guide"
+                style={{ left: `${(snapGuideUs / 1_000_000) * zoom}px` }}
+                aria-hidden
+              />
+            ) : null}
             {tracks.map((track) => (
               <div
                 className={`ve-track-row ${track.kind}`}
                 key={track.id}
+                data-track-id={track.id}
                 onPointerDown={(event) => {
                   if (event.target === event.currentTarget)
                     setPlayheadUs(positionUs(event.clientX));
@@ -385,20 +567,32 @@ export function VideoEditorTimeline({
                 {(track.clips ?? []).map((clip: VideoEditorClip) => (
                   <button
                     key={clip.id}
-                    className={`ve-clip ${clip.kind} ${selectedClipIds.includes(clip.id) ? "selected" : ""}`}
+                    type="button"
+                    className={`ve-clip ${clip.kind} ${selectedClipIds.includes(clip.id) ? "selected" : ""}${dragPreview?.positions.has(clip.id) ? " dragging" : ""}${dragPreview?.positions.has(clip.id) && !dragPreview.valid ? " invalid" : ""}`}
                     style={{
-                      left: `${(clip.timelineStartUs / 1_000_000) * zoom}px`,
+                      left: `${((dragPreview?.positions.get(clip.id)?.startUs ?? clip.timelineStartUs) / 1_000_000) * zoom}px`,
                       width: `${Math.max(18, (clip.durationUs / 1_000_000) * zoom)}px`,
+                      transform:
+                        dragPreview?.positions.get(clip.id)?.trackId !==
+                          undefined &&
+                        dragPreview.positions.get(clip.id)!.trackId !==
+                          clip.trackId
+                          ? `translateY(${(tracks.findIndex((item) => item.id === dragPreview.positions.get(clip.id)!.trackId) - tracks.findIndex((item) => item.id === clip.trackId)) * 56}px)`
+                          : undefined,
                     }}
-                    draggable={!track.locked}
-                    onDragStart={(event) =>
-                      event.dataTransfer.setData(
-                        "application/x-video-editor-clip",
-                        clip.id,
-                      )
+                    onPointerDown={(event) => startClipDrag(event, clip)}
+                    onPointerMove={(event) =>
+                      dragMoveRef.current?.(event.nativeEvent)
+                    }
+                    onPointerUp={(event) =>
+                      dragFinishRef.current?.(event.nativeEvent)
                     }
                     onClick={(event) => {
                       event.stopPropagation();
+                      if (suppressClickRef.current) {
+                        suppressClickRef.current = false;
+                        return;
+                      }
                       selectClip(clip.id, event.metaKey || event.ctrlKey);
                       if (
                         playheadUs < clip.timelineStartUs ||

@@ -11,6 +11,7 @@ import {
 } from "./api";
 import type { VideoEditorOperation } from "./types";
 import { frameUs, timelineDuration } from "./editorModel";
+import { canPlaceClip, linkedClipIds } from "./timelineSnap";
 import { videoEditorQueryKeys } from "./queryKeys";
 import {
   loadVideoEditorWorkspacePreferences,
@@ -67,6 +68,9 @@ export function useVideoEditor(projectId: string) {
   );
   const [preciseFrame, setPreciseFrame] = useState(
     initialWorkspacePreferences.preciseFrame,
+  );
+  const [snapEnabled, setSnapEnabled] = useState(
+    initialWorkspacePreferences.snapEnabled,
   );
   const [notice, setNotice] = useState("");
   const [undoStack, setUndoStack] = useState<HistoryEntry[]>([]);
@@ -201,6 +205,53 @@ export function useVideoEditor(projectId: string) {
       setPlayheadState(durationUs);
     }
   }, [durationUs, timeline.data]);
+
+  const moveSelectedClips = useCallback(
+    (deltaUs: number) => {
+      if (!timeline.data || !selectedClipIds.length) return;
+      const clips = (timeline.data.document.tracks ?? []).flatMap(
+        (track) => track.clips ?? [],
+      );
+      const movingIds = linkedClipIds(clips, selectedClipIds);
+      const moving = clips.filter((clip) => movingIds.has(clip.id));
+      const nextStarts = new Map(
+        moving.map((clip) => [
+          clip.id,
+          Math.max(0, clip.timelineStartUs + deltaUs),
+        ]),
+      );
+      if (
+        moving.some(
+          (clip) =>
+            !canPlaceClip(
+              clip,
+              nextStarts.get(clip.id)!,
+              clip.trackId,
+              timeline.data!.document.tracks ?? [],
+              movingIds,
+            ),
+        )
+      ) {
+        setNotice("该位置与其他片段重叠，无法移动");
+        return;
+      }
+      const redo: VideoEditorOperation[] = moving.map((clip) => ({
+        type: "moveClip",
+        clipId: clip.id,
+        trackId: clip.trackId,
+        timelineStartUs: nextStarts.get(clip.id)!,
+      }));
+      const undo: VideoEditorOperation[] = moving.map((clip) => ({
+        type: "moveClip",
+        clipId: clip.id,
+        trackId: clip.trackId,
+        timelineStartUs: clip.timelineStartUs,
+      }));
+      void commit(redo, undo);
+    },
+    [commit, selectedClipIds, timeline.data],
+  );
+
   useEffect(() => {
     const keydown = (event: KeyboardEvent) => {
       if (
@@ -212,24 +263,37 @@ export function useVideoEditor(projectId: string) {
         event.preventDefault();
         setPlaying((value) => !value);
       }
+      if (event.code === "Home" || event.code === "End") {
+        event.preventDefault();
+        setPlaying(false);
+        setPlayheadUs(event.code === "Home" ? 0 : durationUs);
+        return;
+      }
       if (event.code === "ArrowLeft" || event.code === "ArrowRight") {
         event.preventDefault();
         const fps = timeline.data?.document.settings?.fps ?? 30;
         setPlaying(false);
-        setPlayheadUs((value) =>
-          Math.max(
-            0,
-            Math.min(
-              durationUs,
-              value + (event.code === "ArrowLeft" ? -1 : 1) * frameUs(fps),
-            ),
-          ),
-        );
+        const direction = event.code === "ArrowLeft" ? -1 : 1;
+        if (selectedClipIds.length) {
+          moveSelectedClips(
+            direction * (event.shiftKey ? 1_000_000 : frameUs(fps)),
+          );
+        } else {
+          setPlayheadUs((value) =>
+            Math.max(0, Math.min(durationUs, value + direction * frameUs(fps))),
+          );
+        }
       }
     };
     window.addEventListener("keydown", keydown);
     return () => window.removeEventListener("keydown", keydown);
-  }, [durationUs, setPlayheadUs, timeline.data]);
+  }, [
+    durationUs,
+    moveSelectedClips,
+    selectedClipIds.length,
+    setPlayheadUs,
+    timeline.data,
+  ]);
 
   const selected = (timeline.data?.document.tracks ?? [])
     .flatMap((track) => track.clips ?? [])
@@ -258,6 +322,7 @@ export function useVideoEditor(projectId: string) {
     zoom,
     timelineScrollLeft,
     preciseFrame,
+    snapEnabled,
   };
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -274,6 +339,7 @@ export function useVideoEditor(projectId: string) {
     selectedClipIds,
     timelineScrollLeft,
     zoom,
+    snapEnabled,
   ]);
   useEffect(
     () => () => {
@@ -305,6 +371,8 @@ export function useVideoEditor(projectId: string) {
     setTimelineScrollLeft,
     preciseFrame,
     setPreciseFrame,
+    snapEnabled,
+    setSnapEnabled,
     notice,
     setNotice,
     commit,

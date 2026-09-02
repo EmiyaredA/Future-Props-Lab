@@ -245,6 +245,9 @@ export function VideoEditorPage({
         onDropAsset={(asset, trackId, startUs) =>
           addAsset(asset, startUs, trackId)
         }
+        snapEnabled={editor.snapEnabled}
+        setSnapEnabled={editor.setSnapEnabled}
+        onNotice={editor.setNotice}
       />
       {exportOpen ? (
         <VideoEditorExportDialog
