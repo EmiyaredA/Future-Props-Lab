@@ -42,6 +42,7 @@ from db.migrations.versions import (
     r0037_media_workshop_upgrade,
     r0038_media_workshop_tasks_and_audio,
     r0039_visual_generation_node_history,
+    r0040_video_editor_mixed_tracks,
 )
 
 
@@ -195,6 +196,10 @@ MIGRATIONS = (
     Migration(
         r0039_visual_generation_node_history.MIGRATION_ID,
         r0039_visual_generation_node_history.SQL,
+    ),
+    Migration(
+        r0040_video_editor_mixed_tracks.MIGRATION_ID,
+        r0040_video_editor_mixed_tracks.SQL,
     ),
 )
 

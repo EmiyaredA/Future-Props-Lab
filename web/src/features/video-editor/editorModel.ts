@@ -102,6 +102,7 @@ const baseClip = (
     brightness: 1,
   },
   keyframes: [],
+  muted: false,
 });
 
 export function operationsForAsset(
@@ -121,6 +122,18 @@ export function operationsForAsset(
     if (preferred && preferred.kind !== "audio") return [];
     if (!audio) return [];
     return [{ type: "addClip", clip: baseClip(asset, audio.id, startUs) }];
+  }
+  const mixed =
+    (preferred?.kind === "mixed" ? preferred : undefined) ??
+    (!preferred ? tracks.find((track) => track.kind === "mixed") : undefined);
+  if (asset.mediaKind === "video" && mixed) {
+    if (preferred && preferred.kind !== "mixed") return [];
+    return [
+      {
+        type: "addClip",
+        clip: { ...baseClip(asset, mixed.id, startUs), kind: "video" },
+      },
+    ];
   }
   if (preferred && preferred.kind !== "visual") return [];
   if (!visual) return [];
@@ -143,12 +156,17 @@ export function operationsForAsset(
 }
 
 export const newTrack = (
-  kind: "visual" | "audio",
+  kind: "visual" | "audio" | "mixed",
   order: number,
 ): VideoEditorTrack => ({
   id: crypto.randomUUID(),
   kind,
-  name: kind === "visual" ? `画面 ${order + 1}` : `音频 ${order + 1}`,
+  name:
+    kind === "visual"
+      ? `画面 ${order + 1}`
+      : kind === "audio"
+        ? `音频 ${order + 1}`
+        : `混合 ${order + 1}`,
   order,
   locked: false,
   hidden: false,

@@ -80,6 +80,11 @@ def apply_operations(document: dict, body: VideoEditorTimelineBatchIn) -> dict:
             )
             if track is None:
                 raise VideoEditorValidationError("找不到目标轨道", code="track_not_found")
+            clip_kind = data["clip"]["kind"]
+            if (track["kind"] == "mixed" and clip_kind != "video") or (
+                track["kind"] == "audio" and clip_kind != "audio"
+            ) or (track["kind"] == "visual" and clip_kind == "audio"):
+                raise VideoEditorValidationError("Clip 类型与轨道不匹配", code="invalid_track_kind")
             track["clips"].append(data["clip"])
         elif kind == "updateClip":
             _track, clip = _find_clip(result, data["clipId"])
@@ -91,6 +96,7 @@ def apply_operations(document: dict, body: VideoEditorTimelineBatchIn) -> dict:
                 "fontSize",
                 "textColor",
                 "volume",
+                "muted",
                 "transform",
             }
             clip.update({key: value for key, value in data["patch"].items() if key in allowed})
@@ -102,6 +108,15 @@ def apply_operations(document: dict, body: VideoEditorTimelineBatchIn) -> dict:
             if target is None:
                 old_track["clips"].append(clip)
                 raise VideoEditorValidationError("找不到目标轨道", code="track_not_found")
+            if (
+                (old_track["kind"] == "mixed" and target["kind"] != "mixed")
+                or
+                (target["kind"] == "mixed" and clip["kind"] != "video")
+                or (target["kind"] == "audio" and clip["kind"] != "audio")
+                or (target["kind"] == "visual" and clip["kind"] == "audio")
+            ):
+                old_track["clips"].append(clip)
+                raise VideoEditorValidationError("Clip 类型与轨道不匹配", code="invalid_track_kind")
             clip.update(trackId=data["trackId"], timelineStartUs=data["timelineStartUs"])
             target["clips"].append(clip)
         elif kind == "trimClip":
@@ -168,6 +183,51 @@ def apply_operations(document: dict, body: VideoEditorTimelineBatchIn) -> dict:
             for clip_id in data["clipIds"]:
                 _track, clip = _find_clip(result, clip_id)
                 clip["linkGroupId"] = data["linkGroupId"]
+        elif kind == "separateClip":
+            mixed_track, clip = _find_clip(result, data["clipId"])
+            if mixed_track["kind"] != "mixed" or clip["kind"] != "video":
+                raise VideoEditorValidationError(
+                    "只有混合轨中的视频 Clip 可以分离", code="invalid_separation"
+                )
+            visual = next(
+                (item for item in result["tracks"] if item["id"] == data["visualTrackId"]),
+                None,
+            )
+            audio = next(
+                (item for item in result["tracks"] if item["id"] == data["audioTrackId"]),
+                None,
+            )
+            if visual is None or audio is None:
+                raise VideoEditorValidationError("分离目标轨道不存在", code="track_not_found")
+            if visual["kind"] != "visual" or audio["kind"] != "audio":
+                raise VideoEditorValidationError(
+                    "分离目标轨道类型不正确", code="invalid_track_kind"
+                )
+            if visual.get("locked") or audio.get("locked"):
+                raise VideoEditorValidationError("分离目标轨道已锁定", code="track_locked")
+            end = clip["timelineStartUs"] + clip["durationUs"]
+            if any(
+                clip["timelineStartUs"] < other["timelineStartUs"] + other["durationUs"]
+                and end > other["timelineStartUs"]
+                for other in visual["clips"]
+            ):
+                raise VideoEditorValidationError(
+                    "分离后视觉 Clip 与其他片段重叠", code="clip_overlap"
+                )
+            mixed_track["clips"].remove(clip)
+            picture = deepcopy(clip)
+            picture["trackId"] = visual["id"]
+            picture.pop("muted", None)
+            picture["muted"] = clip.get("muted", False)
+            sound = deepcopy(clip)
+            sound.update(
+                id=data["audioClipId"],
+                trackId=audio["id"],
+                kind="audio",
+                linkGroupId=None,
+            )
+            visual["clips"].append(picture)
+            audio["clips"].append(sound)
         elif kind == "unlinkClips":
             _track, clip = _find_clip(result, data["clipId"])
             group_id = clip.pop("linkGroupId", None)
@@ -222,7 +282,9 @@ async def validate_timeline(session: AsyncSession, project_id: str, document: di
                 raise VideoEditorValidationError("音频轨只能放置音频 Clip")
             if track["kind"] == "visual" and clip["kind"] == "audio":
                 raise VideoEditorValidationError("视觉轨不能放置音频 Clip")
-            if track["kind"] == "visual" and clip["timelineStartUs"] < previous_end:
+            if track["kind"] == "mixed" and clip["kind"] != "video":
+                raise VideoEditorValidationError("混合轨只能放置视频 Clip")
+            if track["kind"] in {"visual", "mixed"} and clip["timelineStartUs"] < previous_end:
                 raise VideoEditorValidationError(
                     "同一视觉轨上的 Clip 不能重叠", code="clip_overlap"
                 )

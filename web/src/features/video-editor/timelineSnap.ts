@@ -84,6 +84,9 @@ export function canPlaceClip(
 ) {
   const target = tracks.find((track) => track.id === targetTrackId);
   if (!target || target.locked) return false;
+  const source = tracks.find((track) => track.id === clip.trackId);
+  if (source?.kind === "mixed" && target.kind !== "mixed") return false;
+  if (target.kind === "mixed" && clip.kind !== "video") return false;
   if (target.kind === "audio" && clip.kind !== "audio") return false;
   if (target.kind === "visual" && clip.kind === "audio") return false;
   if (target.kind !== "visual") return true;

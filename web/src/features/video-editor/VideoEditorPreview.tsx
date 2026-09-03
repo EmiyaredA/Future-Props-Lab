@@ -83,11 +83,14 @@ function buildPreviewAudioChains(
   timeline: VideoEditorTimeline,
 ): PreviewAudioChain[] {
   return (timeline.document.tracks ?? [])
-    .filter((track) => track.kind === "audio" && !track.muted)
+    .filter(
+      (track) =>
+        (track.kind === "audio" || track.kind === "mixed") && !track.muted,
+    )
     .flatMap((track) => {
       const chains: PreviewAudioChain[] = [];
       const clips = [...(track.clips ?? [])]
-        .filter((clip) => Boolean(clip.assetId))
+        .filter((clip) => Boolean(clip.assetId) && !clip.muted)
         .sort((left, right) => left.timelineStartUs - right.timelineStartUs);
       for (const clip of clips) {
         const chain = chains.at(-1);
@@ -199,7 +202,10 @@ export function VideoEditorPreview({
   );
   const fps = timeline.document.settings?.fps ?? 30;
   const active = (timeline.document.tracks ?? [])
-    .filter((track) => track.kind === "visual" && !track.hidden)
+    .filter(
+      (track) =>
+        (track.kind === "visual" || track.kind === "mixed") && !track.hidden,
+    )
     .sort((left, right) => right.order - left.order)
     .flatMap((track) => track.clips ?? [])
     .filter(

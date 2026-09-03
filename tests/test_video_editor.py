@@ -68,6 +68,7 @@ async def test_video_editor_timeline_cas_idempotency_and_overlap_validation() ->
         assert timeline["revision"] == 0
         assert [track["kind"] for track in timeline["document"]["tracks"]] == [
             "visual",
+            "mixed",
             "audio",
         ]
 

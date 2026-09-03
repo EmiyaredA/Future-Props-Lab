@@ -372,7 +372,7 @@ ID、消息数量、画布摘要和素材 ID；不保存图片 Base64、临时�
 - `GET/POST /v1/video-editor/projects/{project_id}/assets`：读取或上传项目素材；`POST .../assets/import` 将源文件物理复制为项目快照。
 - `POST /v1/video-editor/projects/{project_id}/assets/{asset_id}/proxy/retry`：重试 FFprobe、540p 代理、缩略图和波形生成。
 - `GET /v1/video-editor/projects/{project_id}/timeline`：读取微秒级 16:9 多轨时间轴。
-- `POST /v1/video-editor/projects/{project_id}/timeline/operations`：以 `expectedRevision`、`requestId` 原子提交轨道、Clip、链接、转场和关键帧操作；批次只增加一次 revision，同一 requestId 幂等。
+- `POST /v1/video-editor/projects/{project_id}/timeline/operations`：以 `expectedRevision`、`requestId` 原子提交视觉、音频和混合轨道、Clip、链接、`separateClip` 分离、转场和关键帧操作；批次只增加一次 revision，同一 requestId 幂等。
 - `POST/GET /v1/video-editor/projects/{project_id}/segment-exports`：按不可变时间轴快照幂等创建或列出分段导入任务；每段单独保存名称、源范围、分辨率、帧率、质量和音频策略。
 - `GET /v1/video-editor/projects/{project_id}/segment-exports/{task_id}` 与 `POST .../{task_id}/cancel`：读取逐段进度、最终素材/节点映射或取消任务。
 - `GET /v1/video-editor/projects/{project_id}/preview/frame`：按 revision、`timeUs` 和宽度返回服务端精确 PNG 帧。

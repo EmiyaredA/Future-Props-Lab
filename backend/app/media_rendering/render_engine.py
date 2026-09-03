@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+import json
 import os
 import select
 import signal
 import subprocess
 import threading
 from collections.abc import Callable
+from functools import lru_cache
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import BinaryIO
@@ -20,6 +22,31 @@ from app.schemas.video_editor import VideoEditorClip, VideoEditorTimelineDocumen
 
 class RenderCancelled(RuntimeError):
     pass
+
+
+@lru_cache(maxsize=128)
+def _has_audio_stream(path: str) -> bool:
+    try:
+        result = subprocess.run(
+            [
+                "ffprobe",
+                "-v",
+                "error",
+                "-select_streams",
+                "a:0",
+                "-show_entries",
+                "stream=index",
+                "-of",
+                "json",
+                path,
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        return bool(json.loads(result.stdout).get("streams"))
+    except (OSError, subprocess.CalledProcessError, ValueError, json.JSONDecodeError):
+        return False
 
 
 def _terminate_process_group(process: subprocess.Popen[bytes]) -> None:
@@ -338,11 +365,14 @@ def _mux_audio(
     audio_clips = [
         clip
         for track in document.tracks
-        if track.kind == "audio" and not track.muted
+        if track.kind in {"audio", "mixed"} and not track.muted
         for clip in track.clips
         if clip.timeline_start_us < end_us
         and clip.timeline_start_us + clip.duration_us > start_us
         and clip.asset_id in asset_paths
+        and not clip.muted
+        and (track.kind == "audio" or clip.kind == "video")
+        and _has_audio_stream(str(asset_paths[clip.asset_id or ""]))
     ]
     args = ["ffmpeg", "-hide_banner", "-loglevel", "error", "-i", str(video_path)]
     filters: list[str] = []

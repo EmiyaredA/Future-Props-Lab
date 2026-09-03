@@ -689,7 +689,7 @@ test("uses the compact video node composer for image-to-video tasks", async () =
     parameterPopover?.querySelectorAll(".video-parameter-select"),
   ).toHaveLength(2);
   const durationSlider = screen.getByRole("slider", { name: "时长" });
-  expect(durationSlider).toHaveAttribute("min", "4");
+  expect(durationSlider).toHaveAttribute("min", "2");
   expect(durationSlider).toHaveAttribute("max", "15");
   fireEvent.change(durationSlider, { target: { value: "8" } });
   await user.click(screen.getByRole("combobox", { name: "清晰度" }));

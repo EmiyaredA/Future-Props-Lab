@@ -60,6 +60,7 @@ class VideoEditorClip(BaseModel):
     height_percent: float | None = Field(default=None, alias="heightPercent", gt=0, le=400)
     flip_x: bool = Field(default=False, alias="flipX")
     volume: float = Field(default=1, ge=0, le=4)
+    muted: bool | None = None
     transform: VideoEditorTransform = Field(default_factory=VideoEditorTransform)
     keyframes: list[VideoEditorKeyframe] = Field(default_factory=list, max_length=1000)
     transition_in: VideoEditorTransition | None = Field(default=None, alias="transitionIn")
@@ -81,7 +82,7 @@ class VideoEditorClip(BaseModel):
 
 class VideoEditorTrack(BaseModel):
     id: str = Field(min_length=1, max_length=64)
-    kind: Literal["visual", "audio"]
+    kind: Literal["visual", "audio", "mixed"]
     name: str = Field(min_length=1, max_length=120)
     order: int = Field(ge=0)
     locked: bool = False
@@ -183,6 +184,14 @@ class LinkClipsOperation(BaseModel):
     link_group_id: str = Field(alias="linkGroupId")
 
 
+class SeparateClipOperation(BaseModel):
+    type: Literal["separateClip"]
+    clip_id: str = Field(alias="clipId")
+    visual_track_id: str = Field(alias="visualTrackId")
+    audio_track_id: str = Field(alias="audioTrackId")
+    audio_clip_id: str = Field(alias="audioClipId", min_length=1, max_length=64)
+
+
 class KeyframeOperation(BaseModel):
     type: Literal["addKeyframe", "updateKeyframe", "removeKeyframe"]
     clip_id: str = Field(alias="clipId")
@@ -218,6 +227,7 @@ VideoEditorTimelineOperation = Annotated[
     | TrimClipOperation
     | SplitClipOperation
     | LinkClipsOperation
+    | SeparateClipOperation
     | KeyframeOperation
     | SetTransitionOperation,
     Field(discriminator="type"),

@@ -208,6 +208,15 @@ export function VideoEditorPage({
           <button
             onClick={() =>
               void editor.commit([
+                { type: "addTrack", track: newTrack("mixed", tracks.length) },
+              ])
+            }
+          >
+            <Plus aria-hidden /> 混合轨
+          </button>
+          <button
+            onClick={() =>
+              void editor.commit([
                 { type: "addTrack", track: newTrack("audio", tracks.length) },
               ])
             }

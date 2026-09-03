@@ -8850,6 +8850,22 @@ export interface components {
             /** Total */
             total: number;
         };
+        /** SeparateClipOperation */
+        SeparateClipOperation: {
+            /** Audioclipid */
+            audioClipId: string;
+            /** Audiotrackid */
+            audioTrackId: string;
+            /** Clipid */
+            clipId: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "separateClip";
+            /** Visualtrackid */
+            visualTrackId: string;
+        };
         /** SetTransitionOperation */
         SetTransitionOperation: {
             /** Clipid */
@@ -9399,6 +9415,8 @@ export interface components {
             kind: "video" | "image" | "audio" | "text" | "color";
             /** Linkgroupid */
             linkGroupId?: string | null;
+            /** Muted */
+            muted?: boolean | null;
             /** Name */
             name: string;
             /**
@@ -9696,7 +9714,7 @@ export interface components {
             /** Expectedrevision */
             expectedRevision: number;
             /** Operations */
-            operations: (components["schemas"]["AddTrackOperation"] | components["schemas"]["UpdateSettingsOperation"] | components["schemas"]["UpdateTrackOperation"] | components["schemas"]["RemoveTrackOperation"] | components["schemas"]["ReorderTrackOperation"] | components["schemas"]["AddClipOperation"] | components["schemas"]["UpdateClipOperation"] | components["schemas"]["ClipIdOperation"] | components["schemas"]["MoveClipOperation"] | components["schemas"]["TrimClipOperation"] | components["schemas"]["SplitClipOperation"] | components["schemas"]["LinkClipsOperation"] | components["schemas"]["KeyframeOperation"] | components["schemas"]["SetTransitionOperation"])[];
+            operations: (components["schemas"]["AddTrackOperation"] | components["schemas"]["UpdateSettingsOperation"] | components["schemas"]["UpdateTrackOperation"] | components["schemas"]["RemoveTrackOperation"] | components["schemas"]["ReorderTrackOperation"] | components["schemas"]["AddClipOperation"] | components["schemas"]["UpdateClipOperation"] | components["schemas"]["ClipIdOperation"] | components["schemas"]["MoveClipOperation"] | components["schemas"]["TrimClipOperation"] | components["schemas"]["SplitClipOperation"] | components["schemas"]["LinkClipsOperation"] | components["schemas"]["SeparateClipOperation"] | components["schemas"]["KeyframeOperation"] | components["schemas"]["SetTransitionOperation"])[];
             /** Requestid */
             requestId: string;
         };
@@ -9737,7 +9755,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "visual" | "audio";
+            kind: "visual" | "audio" | "mixed";
             /**
              * Locked
              * @default false

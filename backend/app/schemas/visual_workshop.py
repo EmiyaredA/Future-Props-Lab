@@ -125,7 +125,7 @@ class VisualCanvasVideoGenerationDraft(BaseModel):
     model_id: str | None = None
     prompt: str = Field(default="", max_length=6000)
     mode: Literal["text", "image", "frames", "reference"] = "text"
-    duration: int = Field(default=5, ge=4, le=15)
+    duration: int = Field(default=5, ge=2, le=15)
     resolution: Literal["480p", "720p", "1080p"] = "720p"
     ratio: Literal["16:9", "9:16", "4:3", "3:4", "1:1"] = "16:9"
     watermark: bool = True
@@ -521,7 +521,7 @@ class VideoGenerationTaskCreateIn(BaseModel):
     model_id: str
     prompt: str = Field(default="", max_length=6000)
     mode: Literal["text", "frames", "reference"] = "text"
-    duration: int = Field(default=5, ge=4, le=15)
+    duration: int = Field(default=5, ge=2, le=15)
     resolution: Literal["480p", "720p", "1080p"] = "720p"
     ratio: Literal["16:9", "9:16", "4:3", "3:4", "1:1"] = "16:9"
     watermark: bool = True

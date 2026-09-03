@@ -21,7 +21,7 @@ import {
   Volume2,
   VolumeX,
 } from "lucide-react";
-import { frameUs, formatTime, snapUs } from "./editorModel";
+import { frameUs, formatTime, newTrack, snapUs } from "./editorModel";
 import { getTimelineRulerStepSeconds } from "./timelineScale";
 import { canPlaceClip, linkedClipIds, snapClipStartUs } from "./timelineSnap";
 import type {
@@ -82,6 +82,9 @@ export function VideoEditorTimeline({
   const dragPreviewRef = useRef<typeof dragPreview>(undefined);
   dragPreviewRef.current = dragPreview;
   const [snapGuideUs, setSnapGuideUs] = useState<number>();
+  const [contextMenu, setContextMenu] = useState<
+    { clip: VideoEditorClip; left: number; top: number } | undefined
+  >();
   const dragRef = useRef<{ cleanup: () => void }>(undefined);
   const dragMoveRef = useRef<
     ((event: globalThis.PointerEvent) => void) | undefined
@@ -138,6 +141,19 @@ export function VideoEditorTimeline({
     },
     [],
   );
+  useEffect(() => {
+    if (!contextMenu) return;
+    const close = () => setContextMenu(undefined);
+    const keydown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") close();
+    };
+    window.addEventListener("pointerdown", close);
+    window.addEventListener("keydown", keydown);
+    return () => {
+      window.removeEventListener("pointerdown", close);
+      window.removeEventListener("keydown", keydown);
+    };
+  }, [contextMenu]);
 
   const startClipDrag = (
     event: ReactPointerEvent<HTMLButtonElement>,
@@ -325,6 +341,76 @@ export function VideoEditorTimeline({
       ],
     ).then(() => selectClip(newId));
   };
+  const toggleClipMute = (clip: VideoEditorClip) => {
+    const peers = clip.linkGroupId
+      ? [...clipById.values()].filter(
+          (item) =>
+            item.linkGroupId === clip.linkGroupId && item.kind === "audio",
+        )
+      : [];
+    const targets = peers.length ? peers : [clip];
+    const muted = !(targets[0]?.muted ?? false);
+    void commit(
+      targets.map((item) => ({
+        type: "updateClip" as const,
+        clipId: item.id,
+        patch: { muted },
+      })),
+      targets.map((item) => ({
+        type: "updateClip" as const,
+        clipId: item.id,
+        patch: { muted: item.muted ?? false },
+      })),
+    );
+    setContextMenu(undefined);
+  };
+  const clipIsMuted = (clip: VideoEditorClip) => {
+    if (!clip.linkGroupId) return Boolean(clip.muted);
+    const audioPeer = [...clipById.values()].find(
+      (item) => item.linkGroupId === clip.linkGroupId && item.kind === "audio",
+    );
+    return Boolean(audioPeer?.muted ?? clip.muted);
+  };
+  const separateClip = (clip: VideoEditorClip) => {
+    const sourceTrack = tracks.find((track) => track.id === clip.trackId);
+    if (!sourceTrack || sourceTrack.kind !== "mixed") return;
+    const nextOrder = Math.max(-1, ...tracks.map((track) => track.order)) + 1;
+    const visual = tracks.find(
+      (track) => track.kind === "visual" && !track.locked,
+    );
+    const audio = tracks.find(
+      (track) => track.kind === "audio" && !track.locked,
+    );
+    const visualTrack = visual ?? newTrack("visual", nextOrder);
+    const audioTrack = audio ?? newTrack("audio", nextOrder + (visual ? 0 : 1));
+    const audioClipId = crypto.randomUUID();
+    void commit(
+      [
+        ...(visual ? [] : [{ type: "addTrack" as const, track: visualTrack }]),
+        ...(audio ? [] : [{ type: "addTrack" as const, track: audioTrack }]),
+        {
+          type: "separateClip",
+          clipId: clip.id,
+          visualTrackId: visualTrack.id,
+          audioTrackId: audioTrack.id,
+          audioClipId,
+        },
+      ],
+      [
+        { type: "removeClip", clipId: clip.id },
+        { type: "removeClip", clipId: audioClipId },
+        { type: "addClip", clip },
+        ...(visual
+          ? []
+          : [{ type: "removeTrack" as const, trackId: visualTrack.id }]),
+        ...(audio
+          ? []
+          : [{ type: "removeTrack" as const, trackId: audioTrack.id }]),
+      ],
+    );
+    setContextMenu(undefined);
+    selectClip(clip.id);
+  };
   return (
     <section className="ve-timeline-panel">
       <header className="ve-timeline-tools">
@@ -416,6 +502,22 @@ export function VideoEditorTimeline({
                   )}
                 </button>
               )}
+              {track.kind === "mixed" ? (
+                <button
+                  aria-label={track.hidden ? "显示轨道" : "隐藏轨道"}
+                  onClick={() =>
+                    void commit([
+                      {
+                        type: "updateTrack",
+                        trackId: track.id,
+                        patch: { hidden: !track.hidden },
+                      },
+                    ])
+                  }
+                >
+                  {track.hidden ? <EyeOff aria-hidden /> : <Eye aria-hidden />}
+                </button>
+              ) : null}
               <button
                 aria-label="轨道上移"
                 disabled={
@@ -576,7 +678,7 @@ export function VideoEditorTimeline({
                   <button
                     key={clip.id}
                     type="button"
-                    className={`ve-clip ${clip.kind} ${selectedClipIds.includes(clip.id) ? "selected" : ""}${dragPreview?.positions.has(clip.id) ? " dragging" : ""}${dragPreview?.positions.has(clip.id) && !dragPreview.valid ? " invalid" : ""}`}
+                    className={`ve-clip ${clip.kind} ${track.kind} ${selectedClipIds.includes(clip.id) ? "selected" : ""}${dragPreview?.positions.has(clip.id) ? " dragging" : ""}${dragPreview?.positions.has(clip.id) && !dragPreview.valid ? " invalid" : ""}`}
                     style={{
                       left: `${((dragPreview?.positions.get(clip.id)?.startUs ?? clip.timelineStartUs) / 1_000_000) * zoom}px`,
                       width: `${Math.max(18, (clip.durationUs / 1_000_000) * zoom)}px`,
@@ -608,6 +710,16 @@ export function VideoEditorTimeline({
                       )
                         setPlayheadUs(clip.timelineStartUs);
                     }}
+                    onContextMenu={(event) => {
+                      event.preventDefault();
+                      event.stopPropagation();
+                      selectClip(clip.id);
+                      setContextMenu({
+                        clip,
+                        left: event.clientX,
+                        top: event.clientY,
+                      });
+                    }}
                   >
                     <span>{clip.name}</span>
                     <small>{(clip.durationUs / 1_000_000).toFixed(2)}s</small>
@@ -627,6 +739,32 @@ export function VideoEditorTimeline({
           </div>
         </div>
       </div>
+      {contextMenu ? (
+        <div
+          className="ve-clip-context-menu"
+          role="menu"
+          style={{ left: contextMenu.left, top: contextMenu.top }}
+          onPointerDown={(event) => event.stopPropagation()}
+          onContextMenu={(event) => event.preventDefault()}
+        >
+          <button
+            role="menuitem"
+            onClick={() => toggleClipMute(contextMenu.clip)}
+          >
+            {clipIsMuted(contextMenu.clip) ? "取消静音" : "静音"}
+          </button>
+          {contextMenu.clip.kind === "video" &&
+          tracks.find((track) => track.id === contextMenu.clip.trackId)
+            ?.kind === "mixed" ? (
+            <button
+              role="menuitem"
+              onClick={() => separateClip(contextMenu.clip)}
+            >
+              分离轨道
+            </button>
+          ) : null}
+        </div>
+      ) : null}
     </section>
   );
 }

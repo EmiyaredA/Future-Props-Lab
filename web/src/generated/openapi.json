@@ -15141,6 +15141,42 @@
         "title": "SecurityAuditListOut",
         "type": "object"
       },
+      "SeparateClipOperation": {
+        "properties": {
+          "audioClipId": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Audioclipid",
+            "type": "string"
+          },
+          "audioTrackId": {
+            "title": "Audiotrackid",
+            "type": "string"
+          },
+          "clipId": {
+            "title": "Clipid",
+            "type": "string"
+          },
+          "type": {
+            "const": "separateClip",
+            "title": "Type",
+            "type": "string"
+          },
+          "visualTrackId": {
+            "title": "Visualtrackid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "clipId",
+          "visualTrackId",
+          "audioTrackId",
+          "audioClipId"
+        ],
+        "title": "SeparateClipOperation",
+        "type": "object"
+      },
       "SetTransitionOperation": {
         "properties": {
           "clipId": {
@@ -16478,6 +16514,17 @@
             ],
             "title": "Linkgroupid"
           },
+          "muted": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Muted"
+          },
           "name": {
             "maxLength": 255,
             "minLength": 1,
@@ -17298,6 +17345,7 @@
                   "removeTrack": "#/components/schemas/RemoveTrackOperation",
                   "reorderTrack": "#/components/schemas/ReorderTrackOperation",
                   "rippleDelete": "#/components/schemas/ClipIdOperation",
+                  "separateClip": "#/components/schemas/SeparateClipOperation",
                   "setTransition": "#/components/schemas/SetTransitionOperation",
                   "splitClip": "#/components/schemas/SplitClipOperation",
                   "trimClip": "#/components/schemas/TrimClipOperation",
@@ -17345,6 +17393,9 @@
                 },
                 {
                   "$ref": "#/components/schemas/LinkClipsOperation"
+                },
+                {
+                  "$ref": "#/components/schemas/SeparateClipOperation"
                 },
                 {
                   "$ref": "#/components/schemas/KeyframeOperation"
@@ -17446,7 +17497,8 @@
           "kind": {
             "enum": [
               "visual",
-              "audio"
+              "audio",
+              "mixed"
             ],
             "title": "Kind",
             "type": "string"
@@ -17596,7 +17648,7 @@
           "duration": {
             "default": 5,
             "maximum": 15.0,
-            "minimum": 4.0,
+            "minimum": 2.0,
             "title": "Duration",
             "type": "integer"
           },
@@ -19367,7 +19419,7 @@
           "duration": {
             "default": 5,
             "maximum": 15.0,
-            "minimum": 4.0,
+            "minimum": 2.0,
             "title": "Duration",
             "type": "integer"
           },

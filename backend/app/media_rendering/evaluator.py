@@ -72,7 +72,7 @@ def visual_gaps(document: VideoEditorTimelineDocument) -> list[tuple[int, int]]:
             clip.timeline_start_us + clip.duration_us,
         )
         for track in document.tracks
-        if track.kind == "visual" and not track.hidden
+        if track.kind in {"visual", "mixed"} and not track.hidden
         for clip in track.clips
     )
     gaps: list[tuple[int, int]] = []
@@ -109,7 +109,7 @@ class TimelineFrameRenderer:
             (
                 track
                 for track in self.document.tracks
-                if track.kind == "visual" and not track.hidden
+                if track.kind in {"visual", "mixed"} and not track.hidden
             ),
             key=lambda track: track.order,
             reverse=True,

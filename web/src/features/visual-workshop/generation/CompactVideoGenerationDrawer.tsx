@@ -359,13 +359,13 @@ export function CompactVideoGenerationDrawer({
                 <input
                   type="range"
                   aria-label="时长"
-                  min="4"
+                  min="2"
                   max="15"
                   step="1"
                   value={duration}
                   style={
                     {
-                      "--video-duration-progress": `${((duration - 4) / 11) * 100}%`,
+                      "--video-duration-progress": `${((duration - 2) / 13) * 100}%`,
                     } as CSSProperties
                   }
                   onChange={(event) => {
@@ -377,7 +377,7 @@ export function CompactVideoGenerationDrawer({
                   onBlur={() => persistDraft({}, true)}
                 />
                 <span className="video-duration-limits" aria-hidden="true">
-                  <span>4 秒</span>
+                  <span>2 秒</span>
                   <span>15 秒</span>
                 </span>
               </label>
