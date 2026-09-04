@@ -487,7 +487,7 @@ test("selects a connection line and removes it with Delete", async () => {
         kind: "image",
         title: "图片1",
         position: { x: 240, y: 120 },
-        asset_id: null,
+        asset_id: "linked-image",
       },
       {
         id: "video-2",
@@ -495,6 +495,22 @@ test("selects a connection line and removes it with Delete", async () => {
         title: "视频2",
         position: { x: 640, y: 120 },
         asset_id: null,
+        generation_draft: {
+          mode: "reference",
+          prompt: "",
+          duration: 5,
+          resolution: "720p",
+          ratio: "16:9",
+          watermark: true,
+          generate_audio: false,
+          reference_asset_ids: ["linked-image", "manual-image"],
+          video_asset_ids: [],
+          audio_asset_ids: [],
+          prompt_reference_names: {
+            "linked-image": "图片1",
+            "manual-image": "手动图片",
+          },
+        },
       },
     ],
     revision: 0,
@@ -519,6 +535,73 @@ test("selects a connection line and removes it with Delete", async () => {
   await waitFor(() => expect(putVisualCanvas).toHaveBeenCalled());
   const lastCall = vi.mocked(putVisualCanvas).mock.calls.at(-1);
   expect(lastCall?.[3]).toEqual([]);
+  expect(lastCall?.[1]).toEqual(
+    expect.arrayContaining([
+      expect.objectContaining({
+        id: "video-2",
+        generation_draft: expect.objectContaining({
+          reference_asset_ids: ["manual-image"],
+          prompt_reference_names: { "manual-image": "手动图片" },
+        }),
+      }),
+    ]),
+  );
+});
+
+test("cleans references when deleting a node removes its edges", async () => {
+  vi.mocked(getVisualCanvas).mockResolvedValueOnce({
+    project_id: "project-1",
+    edges: [
+      { id: "edge-1", source_node_id: "source", target_node_id: "target" },
+    ],
+    nodes: [
+      {
+        id: "source",
+        kind: "image",
+        title: "来源图片",
+        position: { x: 240, y: 120 },
+        asset_id: "source-asset",
+      },
+      {
+        id: "target",
+        kind: "video",
+        title: "目标视频",
+        position: { x: 640, y: 120 },
+        asset_id: null,
+        generation_draft: {
+          mode: "reference",
+          prompt: "",
+          duration: 5,
+          resolution: "720p",
+          ratio: "16:9",
+          watermark: true,
+          generate_audio: false,
+          reference_asset_ids: ["source-asset", "manual-asset"],
+          video_asset_ids: [],
+          audio_asset_ids: [],
+        },
+      },
+    ],
+    revision: 0,
+    updated_at: "2026-08-03T08:00:00Z",
+  });
+  const { container } = renderCanvas();
+  const user = userEvent.setup();
+  expect(await screen.findByText("来源图片")).toBeInTheDocument();
+  await user.click(screen.getByText("来源图片"));
+  await user.click(screen.getByRole("button", { name: "删除节点" }));
+  await waitFor(() => expect(putVisualCanvas).toHaveBeenCalled());
+  const lastCall = vi.mocked(putVisualCanvas).mock.calls.at(-1);
+  expect(lastCall?.[3]).toEqual([]);
+  expect(lastCall?.[1]).toEqual([
+    expect.objectContaining({
+      id: "target",
+      generation_draft: expect.objectContaining({
+        reference_asset_ids: ["manual-asset"],
+      }),
+    }),
+  ]);
+  expect(container.querySelector('[data-node-id="source"]')).toBeNull();
 });
 
 test("merges direct linked assets into reference rows and prompt mentions", async () => {

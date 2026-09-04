@@ -1,5 +1,6 @@
 import {
   createGenerationTask,
+  type GenerationBatch,
   type VisualCanvasGenerationDraft,
 } from "@features/visual-workshop/api";
 import type { GenerationKind } from "@features/visual-workshop/generation/options";
@@ -25,6 +26,7 @@ export type GenerationDrawerProps = {
   onTaskCreated?: (
     task: Awaited<ReturnType<typeof createGenerationTask>>,
   ) => void | Promise<void>;
+  onBatchCreated?: (batch: GenerationBatch) => void | Promise<void>;
   compact?: boolean;
   canvasNodeId?: string;
   linkedAssetIds?: LinkedReferenceAssetIds;

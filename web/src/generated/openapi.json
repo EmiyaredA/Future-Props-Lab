@@ -10721,6 +10721,164 @@
         "title": "GalgameWorkshopProjectPatchIn",
         "type": "object"
       },
+      "GenerationBatchListOut": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/GenerationBatchOut"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total"
+        ],
+        "title": "GenerationBatchListOut",
+        "type": "object"
+      },
+      "GenerationBatchOut": {
+        "properties": {
+          "batch_kind": {
+            "enum": [
+              "generation",
+              "composition"
+            ],
+            "title": "Batch Kind",
+            "type": "string"
+          },
+          "child_task_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Child Task Ids",
+            "type": "array"
+          },
+          "completed_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completed At"
+          },
+          "completed_count": {
+            "title": "Completed Count",
+            "type": "integer"
+          },
+          "created_at": {
+            "title": "Created At",
+            "type": "string"
+          },
+          "error_message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Message"
+          },
+          "failed_count": {
+            "title": "Failed Count",
+            "type": "integer"
+          },
+          "generation_node_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Generation Node Id"
+          },
+          "grid_output": {
+            "enum": [
+              "nodes",
+              "composite"
+            ],
+            "title": "Grid Output",
+            "type": "string"
+          },
+          "grid_size": {
+            "enum": [
+              4,
+              9
+            ],
+            "title": "Grid Size",
+            "type": "integer"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "project_id": {
+            "title": "Project Id",
+            "type": "string"
+          },
+          "result_asset_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Result Asset Id"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          },
+          "status": {
+            "enum": [
+              "queued",
+              "processing",
+              "completed",
+              "failed"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "updated_at": {
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "project_id",
+          "batch_kind",
+          "grid_size",
+          "grid_output",
+          "child_task_ids",
+          "status",
+          "completed_count",
+          "failed_count",
+          "result_asset_id",
+          "error_message",
+          "generation_node_id",
+          "revision",
+          "created_at",
+          "updated_at",
+          "completed_at"
+        ],
+        "title": "GenerationBatchOut",
+        "type": "object"
+      },
       "GenerationModelOptionOut": {
         "properties": {
           "description": {
@@ -11001,6 +11159,167 @@
           }
         },
         "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "ImageCompositionCreateIn": {
+        "properties": {
+          "expected_canvas_revision": {
+            "minimum": 0.0,
+            "title": "Expected Canvas Revision",
+            "type": "integer"
+          },
+          "grid_size": {
+            "enum": [
+              4,
+              9
+            ],
+            "title": "Grid Size",
+            "type": "integer"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ImageCompositionItemIn"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "result_position": {
+            "$ref": "#/components/schemas/VisualCanvasPosition"
+          },
+          "title": {
+            "default": "",
+            "maxLength": 120,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "grid_size",
+          "items",
+          "expected_canvas_revision",
+          "result_position"
+        ],
+        "title": "ImageCompositionCreateIn",
+        "type": "object"
+      },
+      "ImageCompositionItemIn": {
+        "properties": {
+          "asset_id": {
+            "maxLength": 36,
+            "minLength": 1,
+            "title": "Asset Id",
+            "type": "string"
+          },
+          "caption": {
+            "default": "",
+            "maxLength": 120,
+            "title": "Caption",
+            "type": "string"
+          },
+          "node_id": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Node Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "node_id",
+          "asset_id"
+        ],
+        "title": "ImageCompositionItemIn",
+        "type": "object"
+      },
+      "ImageGenerationBatchCreateIn": {
+        "properties": {
+          "canvas_node_id": {
+            "anyOf": [
+              {
+                "maxLength": 64,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Canvas Node Id"
+          },
+          "expected_canvas_revision": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expected Canvas Revision"
+          },
+          "grid_output": {
+            "default": "nodes",
+            "enum": [
+              "nodes",
+              "composite"
+            ],
+            "title": "Grid Output",
+            "type": "string"
+          },
+          "grid_size": {
+            "enum": [
+              4,
+              9
+            ],
+            "title": "Grid Size",
+            "type": "integer"
+          },
+          "model_id": {
+            "title": "Model Id",
+            "type": "string"
+          },
+          "prompt": {
+            "maxLength": 6000,
+            "minLength": 1,
+            "title": "Prompt",
+            "type": "string"
+          },
+          "reference_asset_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reference Asset Id"
+          },
+          "seed": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seed"
+          },
+          "size": {
+            "default": "1024x1024",
+            "maxLength": 32,
+            "title": "Size",
+            "type": "string"
+          }
+        },
+        "required": [
+          "model_id",
+          "prompt",
+          "grid_size"
+        ],
+        "title": "ImageGenerationBatchCreateIn",
         "type": "object"
       },
       "ImageGenerationTaskCreateIn": {
@@ -19216,6 +19535,37 @@
       },
       "VisualCanvasImageGenerationDraft": {
         "properties": {
+          "grid_output": {
+            "anyOf": [
+              {
+                "enum": [
+                  "nodes",
+                  "composite"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Grid Output"
+          },
+          "grid_size": {
+            "anyOf": [
+              {
+                "enum": [
+                  1,
+                  4,
+                  9
+                ],
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Grid Size"
+          },
           "image_count": {
             "default": 1,
             "maximum": 4.0,
@@ -19294,6 +19644,17 @@
               }
             ],
             "title": "Asset Id"
+          },
+          "generation_batch_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Generation Batch Id"
           },
           "generation_draft": {
             "anyOf": [
@@ -29784,6 +30145,162 @@
         ]
       }
     },
+    "/v1/visual-workshop/generation-batches": {
+      "get": {
+        "operationId": "list_generation_batches_v1_visual_workshop_generation_batches_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "project_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Project Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 1,
+              "minimum": 1,
+              "title": "Page",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page_size",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Page Size",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenerationBatchListOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Generation Batches",
+        "tags": [
+          "visual-generation"
+        ]
+      }
+    },
+    "/v1/visual-workshop/generation-batches/{batch_id}": {
+      "get": {
+        "operationId": "get_generation_batch_v1_visual_workshop_generation_batches__batch_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "batch_id",
+            "required": true,
+            "schema": {
+              "title": "Batch Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenerationBatchOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Generation Batch",
+        "tags": [
+          "visual-generation"
+        ]
+      }
+    },
+    "/v1/visual-workshop/generation-batches/{batch_id}/retry-composition": {
+      "post": {
+        "operationId": "retry_image_composition_v1_visual_workshop_generation_batches__batch_id__retry_composition_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "batch_id",
+            "required": true,
+            "schema": {
+              "title": "Batch Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenerationBatchOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Retry Image Composition",
+        "tags": [
+          "visual-generation"
+        ]
+      }
+    },
     "/v1/visual-workshop/generation-options": {
       "get": {
         "operationId": "generation_options_v1_visual_workshop_generation_options_get",
@@ -31026,6 +31543,58 @@
         ]
       }
     },
+    "/v1/visual-workshop/projects/{project_id}/generation-batches": {
+      "post": {
+        "operationId": "create_generation_batch_v1_visual_workshop_projects__project_id__generation_batches_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ImageGenerationBatchCreateIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenerationBatchOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Generation Batch",
+        "tags": [
+          "visual-generation"
+        ]
+      }
+    },
     "/v1/visual-workshop/projects/{project_id}/generation-tasks": {
       "post": {
         "operationId": "create_generation_task_v1_visual_workshop_projects__project_id__generation_tasks_post",
@@ -31092,6 +31661,58 @@
           }
         },
         "summary": "Create Generation Task",
+        "tags": [
+          "visual-generation"
+        ]
+      }
+    },
+    "/v1/visual-workshop/projects/{project_id}/image-compositions": {
+      "post": {
+        "operationId": "create_image_composition_v1_visual_workshop_projects__project_id__image_compositions_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ImageCompositionCreateIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenerationBatchOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Image Composition",
         "tags": [
           "visual-generation"
         ]

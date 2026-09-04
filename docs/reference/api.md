@@ -636,8 +636,12 @@ Fragment 播放到结尾。自动模式连续按精确时间推进；选择出�
 
 - `GET /v1/visual-workshop/generation-options`：返回已启用的 SenseAudio 图片、视频、音乐与音效模型及图片尺寸。
 - `POST /v1/visual-workshop/projects/{project_id}/generation-tasks`：创建图片、视频或音频生成任务。
+- `POST /v1/visual-workshop/projects/{project_id}/generation-batches`：创建 4 宫格或 9 宫格图片批次，可选择独立节点或后台合成大图。
+- `POST /v1/visual-workshop/projects/{project_id}/image-compositions`：将当前项目中恰好 4 或 9 个已有图片节点按指定顺序、caption 和画布 CAS 参数创建为合成批次。
 - `GET /v1/visual-workshop/generation-tasks`：按项目、画布节点、类型、状态分页筛选任务；节点筛选用于读取图片、视频或音频节点的生成历史。
 - `GET /v1/visual-workshop/generation-tasks/{task_id}`：读取单个任务。
+- `GET /v1/visual-workshop/generation-batches` 与 `GET /v1/visual-workshop/generation-batches/{batch_id}`：读取宫格批次进度、成功/失败数量及合成素材。
+- `POST /v1/visual-workshop/generation-batches/{batch_id}/retry-composition`：重新执行失败的已有节点合成批次。
 - `POST /v1/visual-workshop/generation-tasks/{task_id}/retry-materialization`：只重试已生成结果的本地保存。
 
 任务状态统一为 `queued / submitting / pending / processing / completed / failed`。本机执行器每

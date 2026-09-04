@@ -10,6 +10,9 @@ export const visualWorkshopQueryKeys = {
   canvas: (projectId: string) => ["visual-workshop-canvas", projectId] as const,
   generationOptions: ["visual-generation-options"] as const,
   generationTasks: ["visual-generation-tasks"] as const,
+  generationBatches: ["visual-generation-batches"] as const,
+  generationBatch: (batchId: string | null | undefined) =>
+    ["visual-generation-batch", batchId] as const,
   generationTaskList: (projectId: string, kind: unknown, status: unknown) =>
     ["visual-generation-tasks", projectId, kind, status] as const,
   generationTaskHistory: (projectId: string, canvasNodeId: string) =>

@@ -88,6 +88,37 @@ class VisualGenerationTask(Base):
     completed_at: Mapped[datetime | None] = mapped_column(DateTime)
 
 
+class VisualGenerationBatch(Base):
+    __tablename__ = "visual_generation_batches"
+    __table_args__ = (
+        Index("ix_visual_generation_batches_project_created", "project_id", "created_at"),
+        Index("ix_visual_generation_batches_status_updated", "status", "updated_at"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    workspace_id: Mapped[str] = mapped_column(String(36), index=True, default="default")
+    project_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("visual_workshop_projects.id", ondelete="CASCADE")
+    )
+    batch_kind: Mapped[str] = mapped_column(String(16), default="generation")
+    grid_size: Mapped[int] = mapped_column(Integer)
+    grid_output: Mapped[str] = mapped_column(String(16), default="nodes")
+    child_task_ids: Mapped[list[str]] = mapped_column(JSON, default=list)
+    source_items: Mapped[list[dict]] = mapped_column(JSON, default=list)
+    status: Mapped[str] = mapped_column(String(16), default="queued")
+    completed_count: Mapped[int] = mapped_column(Integer, default=0)
+    failed_count: Mapped[int] = mapped_column(Integer, default=0)
+    result_asset_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("visual_assets.id", ondelete="SET NULL")
+    )
+    error_message: Mapped[str | None] = mapped_column(Text)
+    generation_node_id: Mapped[str | None] = mapped_column(String(64))
+    revision: Mapped[int] = mapped_column(Integer, default=0)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, onupdate=utc_now)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime)
+
+
 class VisualAssistantConversation(Base):
     __tablename__ = "visual_assistant_conversations"
     __table_args__ = (

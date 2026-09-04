@@ -129,6 +129,8 @@ def test_existing_r0001_database_upgrades_without_rewriting_history(tmp_path: Pa
             ("r0038_media_workshop_tasks_and_audio",),
             ("r0039_visual_generation_node_history",),
             ("r0040_video_editor_mixed_tracks",),
+            ("r0041_visual_generation_batches",),
+            ("r0042_image_compositions",),
         ]
         assert connection.execute("SELECT COUNT(*) FROM model_test_conversations").fetchone() == (
             0,

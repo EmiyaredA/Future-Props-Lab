@@ -32,7 +32,10 @@ import {
   type VisualCanvasNode,
 } from "@features/visual-workshop/api";
 import type { VisualWorkshopCanvasPageProps } from "@features/visual-workshop/canvas/visualCanvasTypes";
-import { canConnectCanvasNodes } from "@features/visual-workshop/canvas/canvasGraph";
+import {
+  canConnectCanvasNodes,
+  removeDisconnectedEdgeReferences,
+} from "@features/visual-workshop/canvas/canvasGraph";
 import { fitCanvasViewport } from "@features/visual-workshop/canvas/canvasFit";
 import { useCanvasPersistence } from "@features/visual-workshop/canvas/useCanvasPersistence";
 import { useCanvasPointerInteractions } from "@features/visual-workshop/canvas/useCanvasPointerInteractions";
@@ -148,17 +151,46 @@ export function useVisualCanvasController({
     },
     [replaceEdges],
   );
+  const commitCanvasSnapshot = useCallback(
+    (nextNodes: VisualCanvasNode[], nextEdges: VisualCanvasEdge[]) => {
+      if (autoSave.current) {
+        clearTimeout(autoSave.current);
+        autoSave.current = undefined;
+      }
+      recordHistory({ nodes: nodesRef.current, edges: edgesRef.current });
+      nodesRef.current = nextNodes;
+      edgesRef.current = nextEdges;
+      setNodes(nextNodes);
+      setEdges(nextEdges);
+      enqueueSave(nextNodes, nextEdges);
+    },
+    [
+      autoSave,
+      edgesRef,
+      enqueueSave,
+      nodesRef,
+      recordHistory,
+      setEdges,
+      setNodes,
+    ],
+  );
   const removeEdge = useCallback(
     (edgeId: string) => {
-      replaceEdges(
-        (current) => current.filter((edge) => edge.id !== edgeId),
-        true,
-      );
+      const edge = edgesRef.current.find((item) => item.id === edgeId);
+      if (edge) {
+        const nextEdges = edgesRef.current.filter((item) => item.id !== edgeId);
+        const nextNodes = removeDisconnectedEdgeReferences(
+          nodesRef.current,
+          edgesRef.current,
+          [edgeId],
+        );
+        commitCanvasSnapshot(nextNodes, nextEdges);
+      }
       setSelectedEdgeId((current) =>
         current === edgeId ? undefined : current,
       );
     },
-    [replaceEdges],
+    [commitCanvasSnapshot, edgesRef, nodesRef],
   );
   const canConnect = useCallback(
     (sourceNodeId: string, targetNodeId: string) =>
@@ -460,19 +492,25 @@ export function useVisualCanvasController({
   const removeNodes = useCallback(
     (ids: string[]) => {
       const removing = new Set(ids);
+      const removedEdgeIds = edgesRef.current
+        .filter(
+          (edge) =>
+            removing.has(edge.source_node_id) ||
+            removing.has(edge.target_node_id),
+        )
+        .map((edge) => edge.id);
       const nextEdges = edgesRef.current.filter(
         (edge) =>
           !removing.has(edge.source_node_id) &&
           !removing.has(edge.target_node_id),
       );
-      recordHistory({ nodes: nodesRef.current, edges: edgesRef.current });
-      edgesRef.current = nextEdges;
-      setEdges(nextEdges);
-      replaceNodes(
-        (current) => current.filter((node) => !removing.has(node.id)),
-        true,
-        false,
+      const cleanedNodes = removeDisconnectedEdgeReferences(
+        nodesRef.current,
+        edgesRef.current,
+        removedEdgeIds,
       );
+      const nextNodes = cleanedNodes.filter((node) => !removing.has(node.id));
+      commitCanvasSnapshot(nextNodes, nextEdges);
       setSelectedNodeIds((current) =>
         current.filter((id) => !removing.has(id)),
       );
@@ -481,14 +519,7 @@ export function useVisualCanvasController({
       );
       setSelectedEdgeId(undefined);
     },
-    [
-      edgesRef,
-      nodesRef,
-      recordHistory,
-      replaceNodes,
-      setEdges,
-      setSelectedNodeIds,
-    ],
+    [edgesRef, nodesRef, commitCanvasSnapshot, setSelectedNodeIds],
   );
   const removeNode = useCallback(
     (id: string) => removeNodes([id]),
@@ -646,6 +677,7 @@ export function useVisualCanvasController({
   const selectedNode = nodes.find((node) => node.id === selectedId);
 
   return {
+    client,
     projectId,
     onBack,
     onAssets,

@@ -62,6 +62,7 @@ from app.models.visual_workshop import (
     VisualAssistantMessage,
     VisualAssistantMessageAsset,
     VisualCanvasDocument,
+    VisualGenerationBatch,
     VisualGenerationTask,
     VisualWorkshopProject,
 )
@@ -114,6 +115,7 @@ __all__ = [
     "VisualAssetFolder",
     "VisualCanvasDocument",
     "VisualGenerationTask",
+    "VisualGenerationBatch",
     "VisualProjectAssetReference",
     "VisualWorkshopProject",
     "VideoEditorAssetMetadata",

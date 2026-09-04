@@ -10,8 +10,10 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { ManagedFile } from "@features/files";
 import {
   createGenerationTask,
+  createGenerationBatch,
   getGenerationOptions,
   type GenerationTaskInput,
+  type ImageGenerationBatchInput,
   type VisualCanvasImageGenerationDraft,
   type VisualCanvasVideoGenerationDraft,
 } from "@features/visual-workshop/api";
@@ -36,6 +38,13 @@ function uniqueAssetIds(...groups: string[][]) {
   return [...new Set(groups.flat())];
 }
 
+function sameAssetIds(left: string[], right: string[]) {
+  return (
+    left.length === right.length &&
+    left.every((id, index) => id === right[index])
+  );
+}
+
 export function useGenerationDrawerController({
   projectId,
   lockedKind,
@@ -43,6 +52,7 @@ export function useGenerationDrawerController({
   onDraftChange,
   onBeforeSubmit,
   onTaskCreated,
+  onBatchCreated,
   compact = false,
   canvasNodeId,
   onClose,
@@ -70,6 +80,12 @@ export function useGenerationDrawerController({
     imageDraft?.seed == null ? "" : String(imageDraft.seed),
   );
   const [imageCount, setImageCount] = useState(imageDraft?.image_count ?? 1);
+  const [gridSize, setGridSize] = useState<1 | 4 | 9>(
+    imageDraft?.grid_size ?? 1,
+  );
+  const [gridOutput, setGridOutput] = useState<"nodes" | "composite">(
+    imageDraft?.grid_output ?? "nodes",
+  );
   const [imageReference, setImageReference] = useState<string[]>(
     imageDraft?.reference_asset_id ? [imageDraft.reference_asset_id] : [],
   );
@@ -224,6 +240,8 @@ export function useGenerationDrawerController({
                 ? parsedSeed
                 : null,
             image_count: imageCount,
+            grid_size: gridSize,
+            grid_output: gridOutput,
             reference_asset_id: imageReference[0] ?? null,
             prompt_reference_names: promptReferenceNames,
             ...changes,
@@ -259,6 +277,8 @@ export function useGenerationDrawerController({
       firstFrame,
       generateAudio,
       imageCount,
+      gridOutput,
+      gridSize,
       imageReference,
       lastFrame,
       lockedKind,
@@ -276,6 +296,54 @@ export function useGenerationDrawerController({
       watermark,
     ],
   );
+  useEffect(() => {
+    if (lockedKind === "image") {
+      const next = imageDraft?.reference_asset_id
+        ? [imageDraft.reference_asset_id]
+        : [];
+      setImageReference((current) =>
+        sameAssetIds(current, next) ? current : next,
+      );
+      return;
+    }
+    if (lockedKind !== "video") return;
+    const nextFirstFrame = videoDraft?.first_frame_asset_id
+      ? [videoDraft.first_frame_asset_id]
+      : [];
+    const nextLastFrame = videoDraft?.last_frame_asset_id
+      ? [videoDraft.last_frame_asset_id]
+      : [];
+    const nextReferences = videoDraft?.reference_asset_ids ?? [];
+    const nextAudioReferences = videoDraft?.audio_asset_ids ?? [];
+    const nextVideoReferences = videoDraft?.video_asset_ids ?? [];
+    setFirstFrame((current) =>
+      sameAssetIds(current, nextFirstFrame) ? current : nextFirstFrame,
+    );
+    setLastFrame((current) =>
+      sameAssetIds(current, nextLastFrame) ? current : nextLastFrame,
+    );
+    setReferences((current) =>
+      sameAssetIds(current, nextReferences) ? current : nextReferences,
+    );
+    setAudioReferences((current) =>
+      sameAssetIds(current, nextAudioReferences)
+        ? current
+        : nextAudioReferences,
+    );
+    setVideoReferences((current) =>
+      sameAssetIds(current, nextVideoReferences)
+        ? current
+        : nextVideoReferences,
+    );
+  }, [
+    imageDraft?.reference_asset_id,
+    lockedKind,
+    videoDraft?.audio_asset_ids,
+    videoDraft?.first_frame_asset_id,
+    videoDraft?.last_frame_asset_id,
+    videoDraft?.reference_asset_ids,
+    videoDraft?.video_asset_ids,
+  ]);
   const linkedNamesReady = Object.keys(linkedReferenceNames).every((assetId) =>
     Boolean(promptFiles[assetId]),
   );
@@ -388,6 +456,30 @@ export function useGenerationDrawerController({
     },
     onError: (error) => setNotice(errorMessage(error)),
   });
+  const createBatchMutation = useMutation<
+    Awaited<ReturnType<typeof createGenerationBatch>>,
+    unknown,
+    ImageGenerationBatchInput
+  >({
+    mutationFn: createGenerationBatch.bind(null, projectId),
+    onSuccess: async (batch) => {
+      try {
+        await onBatchCreated?.(batch);
+      } catch (error) {
+        setNotice(`宫格任务已提交，但画布保存失败：${errorMessage(error)}`);
+        return;
+      }
+      setNotice(
+        `已提交 ${batch.grid_size} 张图片，${
+          batch.grid_output === "nodes"
+            ? "将自动排列到画布"
+            : "完成后自动拼成大图"
+        }。`,
+      );
+      void client.invalidateQueries({ queryKey: visualKeys.generationTasks });
+    },
+    onError: (error) => setNotice(errorMessage(error)),
+  });
   const submit = async (event: FormEvent) => {
     event.preventDefault();
     setNotice("");
@@ -420,6 +512,19 @@ export function useGenerationDrawerController({
             }
           : {};
       if (kind === "image") {
+        if (gridSize === 4 || gridSize === 9) {
+          createBatchMutation.mutate({
+            model_id: modelId,
+            prompt,
+            size,
+            seed: seed === "" ? null : Number(seed),
+            reference_asset_id: imageReference[0] ?? null,
+            grid_size: gridSize,
+            grid_output: gridOutput,
+            ...canvasLink,
+          });
+          return;
+        }
         const body = {
           kind: "image",
           model_id: modelId,
@@ -480,6 +585,10 @@ export function useGenerationDrawerController({
     setSeed,
     imageCount,
     setImageCount,
+    gridSize,
+    setGridSize,
+    gridOutput,
+    setGridOutput,
     imageReference,
     setImageReference,
     videoMode,
@@ -519,6 +628,8 @@ export function useGenerationDrawerController({
     persistDraft,
     invalidSelection,
     createMutation,
+    createBatchMutation,
+    isSubmitting: createMutation.isPending || createBatchMutation.isPending,
     submit,
   };
 }

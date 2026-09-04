@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from uuid import uuid4
+
 from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -13,9 +15,16 @@ from app.models import (
     ModelProvider,
     VisualAsset,
     VisualCanvasDocument,
+    VisualGenerationBatch,
     VisualGenerationTask,
     VisualProjectAssetReference,
     VisualWorkshopProject,
+)
+from app.schemas.visual_generation import (
+    GenerationBatchListOut,
+    GenerationBatchOut,
+    ImageCompositionCreateIn,
+    ImageGenerationBatchCreateIn,
 )
 from app.schemas.visual_workshop import (
     AudioGenerationTaskCreateIn,
@@ -27,6 +36,10 @@ from app.schemas.visual_workshop import (
     ImageGenerationTaskCreateIn,
     VideoGenerationTaskCreateIn,
 )
+from app.visual_workshop.batch_nodes import attach_grid_nodes
+from app.visual_workshop.batch_retry import reopen_batch_after_retry
+from app.visual_workshop.composition import create_composition, retry_composition
+from app.visual_workshop.generation_common import GenerationError, generation_batch_out
 
 ACTIVE_TASK_STATUSES = ("queued", "submitting", "pending", "processing")
 REFERENCE_MIME_TYPES = {
@@ -34,13 +47,6 @@ REFERENCE_MIME_TYPES = {
     "audio": {"audio/mpeg", "audio/wav", "audio/x-wav", "audio/mp4", "audio/x-m4a", "audio/ogg"},
     "video": {"video/mp4", "video/quicktime", "video/webm"},
 }
-
-
-class GenerationError(Exception):
-    def __init__(self, message: str, *, code: str = "generation_error", status: int = 422) -> None:
-        super().__init__(message)
-        self.code = code
-        self.status = status
 
 
 def generation_task_out(row: VisualGenerationTask) -> GenerationTaskOut:
@@ -277,7 +283,6 @@ class VisualGeneration:
             reference_titles.setdefault(
                 asset_id, str(source.get("title") or source.get("id") or "素材")
             )
-
         payload = body.model_dump(mode="json")
         if isinstance(body, ImageGenerationTaskCreateIn):
             if linked["video"] or linked["audio"]:
@@ -296,7 +301,6 @@ class VisualGeneration:
                 )
             payload["reference_asset_id"] = references[0] if references else None
             return ImageGenerationTaskCreateIn.model_validate(payload), reference_titles
-
         if isinstance(body, AudioGenerationTaskCreateIn):
             if linked["image"] or linked["video"]:
                 raise GenerationError("音频节点只能引用上游音频", code="canvas_kind_mismatch")
@@ -306,7 +310,6 @@ class VisualGeneration:
                 dict.fromkeys([*linked["audio"], *body.reference_asset_ids])
             )
             return AudioGenerationTaskCreateIn.model_validate(payload), reference_titles
-
         payload.update(
             {
                 "mode": "reference",
@@ -384,6 +387,7 @@ class VisualGeneration:
                 if asset_id in reference_assets
             }
         row = VisualGenerationTask(
+            workspace_id=str(self.session.info.get("workspace_id", "default")),
             project_id=project_id,
             provider_id=provider.id,
             model_id=model.id,
@@ -413,11 +417,187 @@ class VisualGeneration:
         await self.session.refresh(row)
         return generation_task_out(row)
 
+    async def create_batch(
+        self, project_id: str, body: ImageGenerationBatchCreateIn
+    ) -> GenerationBatchOut:
+        await self._project(project_id)
+        if body.grid_size not in (4, 9):
+            raise GenerationError("宫格数量必须为 4 或 9", code="invalid_grid_size")
+        model, _provider = await self._model(body.model_id, "image")
+        sizes = IMAGE_MODEL_SIZES.get(model.slug)
+        if not sizes or body.size not in sizes:
+            raise GenerationError("当前模型不支持所选图片尺寸", code="unsupported_size")
+        prompt_limit = 6000 if model.slug == "senseaudio-image-2.0-260319" else 2000
+        if len(body.prompt) > prompt_limit:
+            raise GenerationError(
+                f"当前模型提示词最多支持 {prompt_limit} 个字符", code="prompt_too_long"
+            )
+        resolved_body, _ = await self._resolve_canvas_references(
+            project_id,
+            ImageGenerationTaskCreateIn(
+                kind="image",
+                model_id=body.model_id,
+                prompt=body.prompt,
+                size=body.size,
+                seed=body.seed,
+                reference_asset_id=body.reference_asset_id,
+                canvas_node_id=body.canvas_node_id,
+                expected_canvas_revision=body.expected_canvas_revision,
+            ),
+        )
+        resolved_reference_id = resolved_body.reference_asset_id
+        if resolved_reference_id:
+            await self._reference_asset(project_id, resolved_reference_id, "image")
+        batch_id = str(uuid4())
+        task_ids: list[str] = []
+        for index in range(body.grid_size):
+            task_body = ImageGenerationTaskCreateIn(
+                kind="image",
+                model_id=body.model_id,
+                prompt=body.prompt,
+                size=body.size,
+                seed=body.seed + index if body.seed is not None else None,
+                reference_asset_id=resolved_reference_id,
+                canvas_node_id=(
+                    body.canvas_node_id if index == 0 and body.grid_output == "nodes" else None
+                ),
+                expected_canvas_revision=(
+                    body.expected_canvas_revision
+                    if index == 0 and body.grid_output == "nodes"
+                    else None
+                ),
+            )
+            row = await self.prepare_create(project_id, task_body)
+            payload = dict(row.request_payload or {})
+            payload["generation_batch_id"] = batch_id
+            payload["generation_batch_index"] = index
+            row.request_payload = payload
+            task_ids.append(row.id)
+        batch = VisualGenerationBatch(
+            id=batch_id,
+            workspace_id=str(self.session.info.get("workspace_id", "default")),
+            project_id=project_id,
+            grid_size=body.grid_size,
+            grid_output=body.grid_output,
+            child_task_ids=task_ids,
+            generation_node_id=body.canvas_node_id,
+            status="queued",
+        )
+        self.session.add(batch)
+        await self.session.flush()
+        if body.grid_output == "nodes" and body.canvas_node_id is not None:
+            await self._attach_grid_nodes_to_canvas(
+                project_id=project_id,
+                node_id=body.canvas_node_id,
+                expected_revision=body.expected_canvas_revision or 0,
+                batch_id=batch_id,
+                task_ids=task_ids,
+                grid_size=body.grid_size,
+            )
+        if body.grid_output == "composite" and body.canvas_node_id is not None:
+            await self._attach_batch_to_canvas_node(
+                project_id=project_id,
+                node_id=body.canvas_node_id,
+                expected_revision=body.expected_canvas_revision or 0,
+                batch_id=batch_id,
+            )
+        await self.session.commit()
+        await self.session.refresh(batch)
+        return generation_batch_out(batch)
+
+    async def create_composition(
+        self, project_id: str, body: ImageCompositionCreateIn
+    ) -> GenerationBatchOut:
+        return await create_composition(self, project_id, body)
+
+    async def retry_composition(self, batch_id: str) -> GenerationBatchOut:
+        return await retry_composition(self, batch_id)
+
+    async def _attach_grid_nodes_to_canvas(
+        self,
+        *,
+        project_id: str,
+        node_id: str,
+        expected_revision: int,
+        batch_id: str,
+        task_ids: list[str],
+        grid_size: int,
+    ) -> None:
+        await attach_grid_nodes(
+            self,
+            project_id=project_id,
+            node_id=node_id,
+            expected_revision=expected_revision,
+            batch_id=batch_id,
+            task_ids=task_ids,
+            grid_size=grid_size,
+        )
+
+    async def _attach_batch_to_canvas_node(
+        self, *, project_id: str, node_id: str, expected_revision: int, batch_id: str
+    ) -> None:
+        row = await self.session.get(VisualCanvasDocument, project_id)
+        if row is None:
+            raise GenerationError("项目画布不存在", code="canvas_not_found", status=404)
+        nodes = [dict(node) for node in (row.nodes or [])]
+        for node in nodes:
+            if node.get("id") == node_id:
+                if node.get("kind") != "image":
+                    raise GenerationError(
+                        "画布节点类型与生成任务不匹配", code="canvas_kind_mismatch"
+                    )
+                node["generation_batch_id"] = batch_id
+                node["generation_task_id"] = None
+                node["asset_id"] = None
+                break
+        else:
+            raise GenerationError("画布节点不存在", code="canvas_node_not_found", status=404)
+        result = await self.session.execute(
+            update(VisualCanvasDocument)
+            .where(
+                VisualCanvasDocument.project_id == project_id,
+                VisualCanvasDocument.revision == expected_revision,
+            )
+            .values(nodes=nodes, revision=expected_revision + 1, updated_at=utc_now())
+        )
+        if result.rowcount != 1:
+            raise GenerationError(
+                "画布已变化，请刷新后重试", code="canvas_revision_conflict", status=409
+            )
+
     async def get(self, task_id: str) -> GenerationTaskOut:
         row = await self.session.get(VisualGenerationTask, task_id)
         if row is None:
             raise GenerationError("生成任务不存在", code="not_found", status=404)
         return generation_task_out(row)
+
+    async def get_batch(self, batch_id: str) -> GenerationBatchOut:
+        row = await self.session.get(VisualGenerationBatch, batch_id)
+        if row is None:
+            raise GenerationError("生成批次不存在", code="not_found", status=404)
+        return generation_batch_out(row)
+
+    async def list_batches(
+        self, project_id: str | None = None, page: int = 1, page_size: int = 50
+    ) -> GenerationBatchListOut:
+        conditions = []
+        if project_id:
+            conditions.append(VisualGenerationBatch.project_id == project_id)
+        total = await self.session.scalar(
+            select(func.count(VisualGenerationBatch.id)).where(*conditions)
+        )
+        rows = list(
+            await self.session.scalars(
+                select(VisualGenerationBatch)
+                .where(*conditions)
+                .order_by(VisualGenerationBatch.created_at.desc())
+                .offset((page - 1) * page_size)
+                .limit(page_size)
+            )
+        )
+        return GenerationBatchListOut(
+            items=[generation_batch_out(row) for row in rows], total=int(total or 0)
+        )
 
     async def list(
         self,
@@ -469,5 +649,6 @@ class VisualGeneration:
         row.error_message = None
         row.revision += 1
         row.updated_at = utc_now()
+        await reopen_batch_after_retry(self.session, row)
         await self.session.commit()
         return generation_task_out(row)

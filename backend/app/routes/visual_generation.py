@@ -5,6 +5,12 @@ from typing import Literal
 from fastapi import APIRouter, HTTPException, Query
 
 from app.deps import SessionDep
+from app.schemas.visual_generation import (
+    GenerationBatchListOut,
+    GenerationBatchOut,
+    ImageCompositionCreateIn,
+    ImageGenerationBatchCreateIn,
+)
 from app.schemas.visual_workshop import (
     GenerationOptionsOut,
     GenerationTaskCreateIn,
@@ -40,6 +46,36 @@ async def create_generation_task(
         raise _generation_error(exc) from None
 
 
+@router.post(
+    "/projects/{project_id}/generation-batches",
+    response_model=GenerationBatchOut,
+)
+async def create_generation_batch(
+    session: SessionDep,
+    project_id: str,
+    body: ImageGenerationBatchCreateIn,
+) -> GenerationBatchOut:
+    try:
+        return await VisualGeneration(session).create_batch(project_id, body)
+    except GenerationError as exc:
+        raise _generation_error(exc) from None
+
+
+@router.post(
+    "/projects/{project_id}/image-compositions",
+    response_model=GenerationBatchOut,
+)
+async def create_image_composition(
+    session: SessionDep,
+    project_id: str,
+    body: ImageCompositionCreateIn,
+) -> GenerationBatchOut:
+    try:
+        return await VisualGeneration(session).create_composition(project_id, body)
+    except GenerationError as exc:
+        raise _generation_error(exc) from None
+
+
 @router.get("/generation-tasks", response_model=GenerationTaskListOut)
 async def list_generation_tasks(
     session: SessionDep,
@@ -67,6 +103,35 @@ async def get_generation_task(session: SessionDep, task_id: str) -> GenerationTa
         return await VisualGeneration(session).get(task_id)
     except GenerationError as exc:
         raise _generation_error(exc) from None
+
+
+@router.get("/generation-batches/{batch_id}", response_model=GenerationBatchOut)
+async def get_generation_batch(session: SessionDep, batch_id: str) -> GenerationBatchOut:
+    try:
+        return await VisualGeneration(session).get_batch(batch_id)
+    except GenerationError as exc:
+        raise _generation_error(exc) from None
+
+
+@router.post(
+    "/generation-batches/{batch_id}/retry-composition",
+    response_model=GenerationBatchOut,
+)
+async def retry_image_composition(session: SessionDep, batch_id: str) -> GenerationBatchOut:
+    try:
+        return await VisualGeneration(session).retry_composition(batch_id)
+    except GenerationError as exc:
+        raise _generation_error(exc) from None
+
+
+@router.get("/generation-batches", response_model=GenerationBatchListOut)
+async def list_generation_batches(
+    session: SessionDep,
+    project_id: str | None = None,
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=50, ge=1, le=100),
+) -> GenerationBatchListOut:
+    return await VisualGeneration(session).list_batches(project_id, page, page_size)
 
 
 @router.post(

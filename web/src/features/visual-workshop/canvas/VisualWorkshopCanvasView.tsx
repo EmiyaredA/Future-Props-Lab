@@ -37,6 +37,8 @@ import {
   CanvasMediaNodeActions,
   CanvasMediaPreview,
 } from "@features/visual-workshop/canvas/CanvasMediaNode";
+import type { GenerationBatch } from "@features/visual-workshop/api";
+import { visualWorkshopQueryKeys } from "@features/visual-workshop/queryKeys";
 import { CanvasMediaPreviewDialog } from "@features/visual-workshop/canvas/CanvasMediaPreviewDialog";
 import {
   VisualCanvasFrameExportDialog,
@@ -44,6 +46,7 @@ import {
 } from "@features/visual-workshop/canvas/VisualCanvasFrameExportDialog";
 import { nodeLabel } from "@features/visual-workshop/canvas/geometry";
 import { useVisualCanvasController } from "@features/visual-workshop/canvas/useVisualCanvasController";
+import { useImageGridComposition } from "@features/visual-workshop/canvas/useImageGridComposition";
 import "@features/visual-workshop/visual-workshop.css";
 export function VisualWorkshopCanvasView({
   controller,
@@ -51,6 +54,7 @@ export function VisualWorkshopCanvasView({
   controller: ReturnType<typeof useVisualCanvasController>;
 }) {
   const {
+    client,
     projectId,
     onBack,
     onAssets,
@@ -79,6 +83,7 @@ export function VisualWorkshopCanvasView({
     actionsHiddenNodeId,
     setSelectedId,
     selectedNodeIds,
+    setSelectedNodeIds,
     selectionBox,
     alignmentGuides,
     mediaEditorTab,
@@ -140,6 +145,17 @@ export function VisualWorkshopCanvasView({
   const [previewNodeId, setPreviewNodeId] = useState<string>();
   const [connectionHoverTargetId, setConnectionHoverTargetId] =
     useState<string>();
+  const { openComposition, selectionToolbar, compositionOverlay } =
+    useImageGridComposition({
+      projectId,
+      nodes,
+      selectedNodeIds,
+      revisionRef,
+      client,
+      setSelectedNodeIds,
+      setInspectedNodeId,
+      setAssetsOpen,
+    });
   useEffect(() => {
     if (interactiveVideoId && interactiveVideoId !== selectedId)
       setInteractiveVideoId(undefined);
@@ -232,6 +248,7 @@ export function VisualWorkshopCanvasView({
           }}
         />
         <CanvasSelectionOverlay selectionBox={selectionBox} />
+        {selectionToolbar}
         <div
           className="visual-canvas-world"
           style={
@@ -378,6 +395,11 @@ export function VisualWorkshopCanvasView({
                       onCopy={() => {
                         clipboard.current = structuredClone(node);
                       }}
+                      onCompose={
+                        node.kind === "image"
+                          ? () => openComposition([node.id])
+                          : undefined
+                      }
                       onDelete={() => removeNode(node.id)}
                     />
                   ) : null}
@@ -494,6 +516,21 @@ export function VisualWorkshopCanvasView({
                     onTaskLinked={(taskId) =>
                       linkGenerationTask(node.id, taskId)
                     }
+                    onBatchCreated={async (batch: GenerationBatch) => {
+                      if (batch.grid_output === "composite") {
+                        patchNode(
+                          node.id,
+                          {
+                            generation_batch_id: batch.id,
+                            generation_task_id: null,
+                          },
+                          true,
+                        );
+                      }
+                      await client.invalidateQueries({
+                        queryKey: visualWorkshopQueryKeys.canvas(projectId),
+                      });
+                    }}
                   />
                 ) : null}
               </article>
@@ -702,6 +739,7 @@ export function VisualWorkshopCanvasView({
           }}
         />
       ) : null}
+      {compositionOverlay}
       {conflict ? (
         <div className="canvas-conflict" role="alert">
           <span>

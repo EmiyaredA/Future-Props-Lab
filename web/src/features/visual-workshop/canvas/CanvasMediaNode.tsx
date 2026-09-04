@@ -9,6 +9,7 @@ import {
   Eye,
   Image,
   ImageDown,
+  Grid2X2,
   Music,
   RefreshCw,
   Trash2,
@@ -111,6 +112,7 @@ export function CanvasMediaNodeActions({
   onPreview,
   onCopy,
   onDelete,
+  onCompose,
   canExportFrame = false,
   onExportFrame,
 }: {
@@ -119,6 +121,7 @@ export function CanvasMediaNodeActions({
   onPreview?: () => void;
   onCopy: () => void;
   onDelete: () => void;
+  onCompose?: () => void;
   canExportFrame?: boolean;
   onExportFrame?: () => void;
 }) {
@@ -176,6 +179,19 @@ export function CanvasMediaNodeActions({
       >
         <Copy aria-hidden />
       </button>
+      {node.kind === "image" && node.asset_id && onCompose ? (
+        <button
+          aria-label="合成宫格"
+          title="合成宫格"
+          onPointerDown={stopPointer}
+          onClick={(event) => {
+            event.stopPropagation();
+            onCompose();
+          }}
+        >
+          <Grid2X2 aria-hidden />
+        </button>
+      ) : null}
       {node.kind === "video" ? (
         <button
           aria-label="导出当前视频帧"

@@ -31,6 +31,13 @@ export type VisualCanvasGenerationDraft =
 export type GenerationOptions = components["schemas"]["GenerationOptionsOut"];
 export type GenerationTask = components["schemas"]["GenerationTaskOut"];
 export type GenerationTaskStatus = GenerationTask["status"];
+export type GenerationBatch = components["schemas"]["GenerationBatchOut"];
+export type GenerationBatchList =
+  components["schemas"]["GenerationBatchListOut"];
+export type ImageGenerationBatchInput =
+  components["schemas"]["ImageGenerationBatchCreateIn"];
+export type ImageCompositionInput =
+  components["schemas"]["ImageCompositionCreateIn"];
 export type ImageGenerationTaskInput =
   components["schemas"]["ImageGenerationTaskCreateIn"];
 export type VideoGenerationTaskInput =
@@ -190,6 +197,55 @@ export async function createGenerationTask(
         body,
       },
     ),
+  );
+}
+
+export async function createGenerationBatch(
+  projectId: string,
+  body: ImageGenerationBatchInput,
+) {
+  return unwrap(
+    await api.POST(
+      "/v1/visual-workshop/projects/{project_id}/generation-batches",
+      { params: { path: { project_id: projectId } }, body },
+    ),
+  );
+}
+
+export async function createImageComposition(
+  projectId: string,
+  body: ImageCompositionInput,
+) {
+  return unwrap(
+    await api.POST(
+      "/v1/visual-workshop/projects/{project_id}/image-compositions",
+      { params: { path: { project_id: projectId } }, body },
+    ),
+  );
+}
+
+export async function getGenerationBatch(batchId: string) {
+  return unwrap(
+    await api.GET("/v1/visual-workshop/generation-batches/{batch_id}", {
+      params: { path: { batch_id: batchId } },
+    }),
+  );
+}
+
+export async function retryImageComposition(batchId: string) {
+  return unwrap(
+    await api.POST(
+      "/v1/visual-workshop/generation-batches/{batch_id}/retry-composition",
+      { params: { path: { batch_id: batchId } } },
+    ),
+  );
+}
+
+export async function getGenerationBatches(projectId?: string) {
+  return unwrap(
+    await api.GET("/v1/visual-workshop/generation-batches", {
+      params: { query: { project_id: projectId, page: 1, page_size: 50 } },
+    }),
   );
 }
 

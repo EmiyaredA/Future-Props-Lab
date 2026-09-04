@@ -18,6 +18,9 @@ import {
 import { GenerationDrawer } from "@features/visual-workshop/generation/GenerationDrawer";
 import {
   getGenerationTask,
+  getGenerationBatch,
+  retryImageComposition,
+  type GenerationBatch,
   type VisualCanvasNode,
 } from "@features/visual-workshop/api";
 import { visualWorkshopQueryKeys } from "@features/visual-workshop/queryKeys";
@@ -86,6 +89,7 @@ export function CanvasNodeInspector({
   onPatch,
   onPrepareCanvas,
   onTaskLinked,
+  onBatchCreated,
   embedded = false,
   initialTab,
   upstreamNodes = [],
@@ -99,6 +103,7 @@ export function CanvasNodeInspector({
   ) => void | Promise<void>;
   onPrepareCanvas?: () => Promise<number>;
   onTaskLinked?: (taskId: string) => void;
+  onBatchCreated?: (batch: GenerationBatch) => void | Promise<void>;
   embedded?: boolean;
   initialTab?: "content" | "generate";
   upstreamNodes?: MediaNode[];
@@ -117,6 +122,7 @@ export function CanvasNodeInspector({
     },
   });
   const taskId = node.generation_task_id;
+  const batchId = node.kind === "image" ? node.generation_batch_id : null;
   const linkedReferences = useMemo(() => {
     const grouped = {
       image: [] as string[],
@@ -150,6 +156,16 @@ export function CanvasNodeInspector({
         : false;
     },
   });
+  const batch = useQuery({
+    queryKey: visualWorkshopQueryKeys.generationBatch(batchId),
+    queryFn: () => getGenerationBatch(batchId!),
+    enabled: Boolean(batchId),
+    refetchInterval: (query) =>
+      query.state.data?.status &&
+      ["queued", "processing"].includes(query.state.data.status)
+        ? 1500
+        : false,
+  });
 
   useEffect(() => {
     setTab(preferredTab);
@@ -164,6 +180,15 @@ export function CanvasNodeInspector({
       onPatch({ asset_id: task.data.result_asset_id }, true);
     }
   }, [node.asset_id, onPatch, task.data]);
+  useEffect(() => {
+    if (
+      batch.data?.status === "completed" &&
+      batch.data.result_asset_id &&
+      batch.data.result_asset_id !== node.asset_id
+    ) {
+      onPatch({ asset_id: batch.data.result_asset_id }, true);
+    }
+  }, [batch.data, node.asset_id, onPatch]);
 
   const Icon = mediaIcon(node.kind);
   const isAttachedComposer = embedded && tab === "generate";
@@ -244,6 +269,7 @@ export function CanvasNodeInspector({
               true,
             );
           }}
+          onBatchCreated={onBatchCreated}
         />
       ) : (
         <div className="canvas-inspector-content">
@@ -284,6 +310,43 @@ export function CanvasNodeInspector({
               <span>{task.data.progress}%</span>
               {task.data.error_message ? (
                 <small>{task.data.error_message}</small>
+              ) : null}
+            </div>
+          ) : null}
+          {batch.data ? (
+            <div
+              className={`canvas-node-task ${batch.data.status}`}
+              role="status"
+            >
+              <strong>
+                {batch.data.grid_size === 4 ? "4" : "9"} 宫格 ·{" "}
+                {batch.data.batch_kind === "composition"
+                  ? "节点合成"
+                  : "新图生成"}{" "}
+                · {batch.data.status}
+              </strong>
+              <span>
+                {batch.data.completed_count}/{batch.data.grid_size}
+              </span>
+              {batch.data.error_message ? (
+                <small>{batch.data.error_message}</small>
+              ) : null}
+              {batch.data.batch_kind === "composition" &&
+              batch.data.status === "failed" ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    void retryImageComposition(batch.data!.id).then(() => {
+                      void client.invalidateQueries({
+                        queryKey: visualWorkshopQueryKeys.generationBatch(
+                          batch.data!.id,
+                        ),
+                      });
+                    });
+                  }}
+                >
+                  重新合成
+                </button>
               ) : null}
             </div>
           ) : null}

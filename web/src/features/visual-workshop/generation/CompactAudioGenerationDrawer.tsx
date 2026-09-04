@@ -65,6 +65,15 @@ export function CompactAudioGenerationDrawer({
         : model.slug.includes("sfx")),
   );
   useEffect(() => {
+    const next = audioDraft?.reference_asset_ids ?? [];
+    setReferences((current) =>
+      current.length === next.length &&
+      current.every((id, index) => id === next[index])
+        ? current
+        : next,
+    );
+  }, [audioDraft?.reference_asset_ids]);
+  useEffect(() => {
     if (models.some((model) => model.id === modelId)) return;
     setModelId(models[0]?.id ?? "");
   }, [modelId, models]);

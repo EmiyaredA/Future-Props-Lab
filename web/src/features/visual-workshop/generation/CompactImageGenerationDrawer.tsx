@@ -32,6 +32,10 @@ export function CompactImageGenerationDrawer({
     setSeed,
     imageCount,
     setImageCount,
+    gridSize,
+    setGridSize,
+    gridOutput,
+    setGridOutput,
     imageReference,
     setImageReference,
     composerExpanded,
@@ -48,7 +52,7 @@ export function CompactImageGenerationDrawer({
     selectedImageSize,
     persistDraft,
     invalidSelection,
-    createMutation,
+    isSubmitting,
     submit,
   } = controller;
   return (
@@ -260,37 +264,92 @@ export function CompactImageGenerationDrawer({
           </details>
           <details className="image-composer-count">
             <summary role="button" aria-label="生成数量">
-              ×{imageCount}
+              {gridSize === 1 ? `×${imageCount}` : `${gridSize}宫格`}
               <ChevronDown aria-hidden />
             </summary>
-            <div role="listbox" aria-label="选择生成数量">
+            <div role="listbox" aria-label="选择图片输出方式">
               {[1, 2, 3, 4].map((count) => (
                 <button
                   type="button"
                   role="option"
-                  aria-selected={imageCount === count}
+                  aria-selected={gridSize === 1 && imageCount === count}
                   key={count}
                   onClick={(event) => {
                     setImageCount(count);
-                    persistDraft({ image_count: count }, true);
+                    setGridSize(1);
+                    persistDraft({ image_count: count, grid_size: 1 }, true);
                     event.currentTarget
                       .closest("details")
                       ?.removeAttribute("open");
                   }}
                 >
                   ×{count}
-                  {imageCount === count ? <Check aria-hidden /> : null}
+                  {gridSize === 1 && imageCount === count ? (
+                    <Check aria-hidden />
+                  ) : null}
+                </button>
+              ))}
+              {[4, 9].map((count) => (
+                <button
+                  type="button"
+                  role="option"
+                  aria-selected={gridSize === count}
+                  key={`grid-${count}`}
+                  onClick={(event) => {
+                    const next = count as 4 | 9;
+                    setGridSize(next);
+                    persistDraft({ grid_size: next }, true);
+                    event.currentTarget
+                      .closest("details")
+                      ?.removeAttribute("open");
+                  }}
+                >
+                  {count} 宫格
+                  {gridSize === count ? <Check aria-hidden /> : null}
                 </button>
               ))}
             </div>
           </details>
+          {gridSize > 1 ? (
+            <details className="image-composer-count image-grid-output">
+              <summary role="button" aria-label="宫格输出方式">
+                {gridOutput === "nodes" ? "独立节点" : "合成大图"}
+                <ChevronDown aria-hidden />
+              </summary>
+              <div role="listbox" aria-label="选择宫格输出方式">
+                {(
+                  [
+                    ["nodes", "独立节点"],
+                    ["composite", "合成大图"],
+                  ] as const
+                ).map(([value, label]) => (
+                  <button
+                    type="button"
+                    role="option"
+                    aria-selected={gridOutput === value}
+                    key={value}
+                    onClick={(event) => {
+                      setGridOutput(value);
+                      persistDraft({ grid_output: value }, true);
+                      event.currentTarget
+                        .closest("details")
+                        ?.removeAttribute("open");
+                    }}
+                  >
+                    {label}
+                    {gridOutput === value ? <Check aria-hidden /> : null}
+                  </button>
+                ))}
+              </div>
+            </details>
+          ) : null}
           <button
             className="video-composer-submit"
-            disabled={createMutation.isPending || !modelId || !prompt.trim()}
+            disabled={isSubmitting || !modelId || !prompt.trim()}
             type="submit"
-            aria-label={createMutation.isPending ? "正在提交" : "生成图片"}
+            aria-label={isSubmitting ? "正在提交" : "生成图片"}
           >
-            {createMutation.isPending ? (
+            {isSubmitting ? (
               <LoaderCircle className="spinning" aria-hidden />
             ) : (
               <ArrowUp aria-hidden />

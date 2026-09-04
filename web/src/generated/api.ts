@@ -2780,6 +2780,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/visual-workshop/generation-batches": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Generation Batches */
+        get: operations["list_generation_batches_v1_visual_workshop_generation_batches_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/visual-workshop/generation-batches/{batch_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Generation Batch */
+        get: operations["get_generation_batch_v1_visual_workshop_generation_batches__batch_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/visual-workshop/generation-batches/{batch_id}/retry-composition": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Retry Image Composition */
+        post: operations["retry_image_composition_v1_visual_workshop_generation_batches__batch_id__retry_composition_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/visual-workshop/generation-options": {
         parameters: {
             query?: never;
@@ -3060,6 +3111,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/visual-workshop/projects/{project_id}/generation-batches": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create Generation Batch */
+        post: operations["create_generation_batch_v1_visual_workshop_projects__project_id__generation_batches_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/visual-workshop/projects/{project_id}/generation-tasks": {
         parameters: {
             query?: never;
@@ -3071,6 +3139,23 @@ export interface paths {
         put?: never;
         /** Create Generation Task */
         post: operations["create_generation_task_v1_visual_workshop_projects__project_id__generation_tasks_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/visual-workshop/projects/{project_id}/image-compositions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create Image Composition */
+        post: operations["create_image_composition_v1_visual_workshop_projects__project_id__image_compositions_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -7180,6 +7265,60 @@ export interface components {
             /** Title */
             title?: string | null;
         };
+        /** GenerationBatchListOut */
+        GenerationBatchListOut: {
+            /** Items */
+            items: components["schemas"]["GenerationBatchOut"][];
+            /** Total */
+            total: number;
+        };
+        /** GenerationBatchOut */
+        GenerationBatchOut: {
+            /**
+             * Batch Kind
+             * @enum {string}
+             */
+            batch_kind: "generation" | "composition";
+            /** Child Task Ids */
+            child_task_ids: string[];
+            /** Completed At */
+            completed_at: string | null;
+            /** Completed Count */
+            completed_count: number;
+            /** Created At */
+            created_at: string;
+            /** Error Message */
+            error_message: string | null;
+            /** Failed Count */
+            failed_count: number;
+            /** Generation Node Id */
+            generation_node_id: string | null;
+            /**
+             * Grid Output
+             * @enum {string}
+             */
+            grid_output: "nodes" | "composite";
+            /**
+             * Grid Size
+             * @enum {integer}
+             */
+            grid_size: 4 | 9;
+            /** Id */
+            id: string;
+            /** Project Id */
+            project_id: string;
+            /** Result Asset Id */
+            result_asset_id: string | null;
+            /** Revision */
+            revision: number;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "queued" | "processing" | "completed" | "failed";
+            /** Updated At */
+            updated_at: string;
+        };
         /** GenerationModelOptionOut */
         GenerationModelOptionOut: {
             /** Description */
@@ -7272,6 +7411,67 @@ export interface components {
         HTTPValidationError: {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
+        };
+        /** ImageCompositionCreateIn */
+        ImageCompositionCreateIn: {
+            /** Expected Canvas Revision */
+            expected_canvas_revision: number;
+            /**
+             * Grid Size
+             * @enum {integer}
+             */
+            grid_size: 4 | 9;
+            /** Items */
+            items: components["schemas"]["ImageCompositionItemIn"][];
+            result_position: components["schemas"]["VisualCanvasPosition"];
+            /**
+             * Title
+             * @default
+             */
+            title: string;
+        };
+        /** ImageCompositionItemIn */
+        ImageCompositionItemIn: {
+            /** Asset Id */
+            asset_id: string;
+            /**
+             * Caption
+             * @default
+             */
+            caption: string;
+            /** Node Id */
+            node_id: string;
+        };
+        /** ImageGenerationBatchCreateIn */
+        ImageGenerationBatchCreateIn: {
+            /** Canvas Node Id */
+            canvas_node_id?: string | null;
+            /** Expected Canvas Revision */
+            expected_canvas_revision?: number | null;
+            /**
+             * Grid Output
+             * @default nodes
+             * @enum {string}
+             */
+            grid_output: "nodes" | "composite";
+            /**
+             * Grid Size
+             * @enum {integer}
+             */
+            grid_size: 4 | 9;
+            /** Model Id */
+            model_id: string;
+            /** Prompt */
+            prompt: string;
+            /** Reference Asset Id */
+            reference_asset_id?: string | null;
+            /** Seed */
+            seed?: number | null;
+            /**
+             * Size
+             * @default 1024x1024
+             */
+            size: string;
         };
         /** ImageGenerationTaskCreateIn */
         ImageGenerationTaskCreateIn: {
@@ -10363,6 +10563,10 @@ export interface components {
         };
         /** VisualCanvasImageGenerationDraft */
         VisualCanvasImageGenerationDraft: {
+            /** Grid Output */
+            grid_output?: ("nodes" | "composite") | null;
+            /** Grid Size */
+            grid_size?: (1 | 4 | 9) | null;
             /**
              * Image Count
              * @default 1
@@ -10393,6 +10597,8 @@ export interface components {
         VisualCanvasImageNode: {
             /** Asset Id */
             asset_id?: string | null;
+            /** Generation Batch Id */
+            generation_batch_id?: string | null;
             generation_draft?: components["schemas"]["VisualCanvasImageGenerationDraft"] | null;
             /** Generation Task Id */
             generation_task_id?: string | null;
@@ -17462,6 +17668,101 @@ export interface operations {
             };
         };
     };
+    list_generation_batches_v1_visual_workshop_generation_batches_get: {
+        parameters: {
+            query?: {
+                project_id?: string | null;
+                page?: number;
+                page_size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GenerationBatchListOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_generation_batch_v1_visual_workshop_generation_batches__batch_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                batch_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GenerationBatchOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    retry_image_composition_v1_visual_workshop_generation_batches__batch_id__retry_composition_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                batch_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GenerationBatchOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     generation_options_v1_visual_workshop_generation_options_get: {
         parameters: {
             query?: never;
@@ -18246,6 +18547,41 @@ export interface operations {
             };
         };
     };
+    create_generation_batch_v1_visual_workshop_projects__project_id__generation_batches_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ImageGenerationBatchCreateIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GenerationBatchOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     create_generation_task_v1_visual_workshop_projects__project_id__generation_tasks_post: {
         parameters: {
             query?: never;
@@ -18268,6 +18604,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["GenerationTaskOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_image_composition_v1_visual_workshop_projects__project_id__image_compositions_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ImageCompositionCreateIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GenerationBatchOut"];
                 };
             };
             /** @description Validation Error */

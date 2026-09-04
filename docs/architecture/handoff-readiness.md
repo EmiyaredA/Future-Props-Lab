@@ -47,7 +47,7 @@ Workspace 隔离，但不提供多实例部署、外置数据库、Bot、知识�
 
 ## 迁移与兼容状态
 
-- 当前 migration registry 最新版本为 `r0039_visual_generation_node_history`；交接前通过
+- 当前 migration registry 最新版本为 `r0042_image_compositions`；交接前通过
   `npm run db:migrate:check` 只读确认目标数据库处于同一连续前缀。
 - migration 只允许在 `db/migrations/versions/` 追加并登记，不得改写已登记版本、checksum 或
   `schema_migrations`。
@@ -55,6 +55,8 @@ Workspace 隔离，但不提供多实例部署、外置数据库、Bot、知识�
   流程见 [`Story 1.4 迁移运维`](../operations/story-migrations.md)。
 - `r0039_visual_generation_node_history` 为生成任务补充可空画布节点关联，回填画布当前任务并新增
   项目、节点和创建时间复合索引；REST 契约同步支持按节点查询图片、视频和音频生成历史。
+- `r0041_visual_generation_batches` 新增 4/9 宫格图片生成批次和后台合成状态。
+- `r0042_image_compositions` 扩展批次以持久化已有图片节点合成源和 caption 快照。
 
 ## 质量验收记录
 

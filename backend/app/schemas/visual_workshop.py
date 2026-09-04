@@ -112,6 +112,8 @@ class VisualCanvasImageGenerationDraft(BaseModel):
     size: str = Field(default="1024x1024", min_length=1, max_length=32)
     seed: int | None = Field(default=None, ge=0)
     image_count: int = Field(default=1, ge=1, le=4)
+    grid_size: Literal[1, 4, 9] | None = None
+    grid_output: Literal["nodes", "composite"] | None = None
     reference_asset_id: str | None = None
     prompt_reference_names: dict[str, str] = Field(default_factory=dict, max_length=16)
 
@@ -202,6 +204,7 @@ class VisualCanvasImageNode(VisualCanvasNodeBase):
     kind: Literal["image"]
     asset_id: str | None = None
     generation_task_id: str | None = None
+    generation_batch_id: str | None = None
     generation_draft: VisualCanvasImageGenerationDraft | None = None
 
 

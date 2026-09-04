@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import {
   getGenerationTasks,
+  getGenerationBatches,
   getVisualWorkshopProjects,
   retryGenerationMaterialization,
   type GenerationTask,
@@ -94,6 +95,19 @@ export function VisualWorkshopTasksPage({
         ? 5_000
         : false,
   });
+  const batches = useQuery({
+    queryKey: [
+      ...visualWorkshopQueryKeys.generationBatches,
+      projectId || "all",
+    ],
+    queryFn: () => getGenerationBatches(projectId || undefined),
+    refetchInterval: (query) =>
+      query.state.data?.items.some((batch) =>
+        ["queued", "processing"].includes(batch.status),
+      )
+        ? 5_000
+        : false,
+  });
   const retry = useMutation({
     mutationFn: retryGenerationMaterialization,
     onSuccess: () =>
@@ -156,6 +170,33 @@ export function VisualWorkshopTasksPage({
         />
         <span>共 {tasks.data?.total ?? 0} 个任务</span>
       </div>
+      {batches.data?.items.length ? (
+        <div className="generation-batch-summary" aria-label="宫格生成批次">
+          {batches.data.items.slice(0, 3).map((batch) => (
+            <div className="generation-batch-chip" key={batch.id}>
+              <strong>
+                {batch.grid_size === 4 ? "4 宫格" : "9 宫格"}
+                {batch.batch_kind === "composition"
+                  ? " · 节点合成"
+                  : " · 新图生成"}
+              </strong>
+              <span>
+                {batch.completed_count}/{batch.grid_size}
+                {batch.grid_output === "composite"
+                  ? " · 合成大图"
+                  : " · 独立节点"}
+              </span>
+              <em className={batch.status}>
+                {batch.status === "completed"
+                  ? "已完成"
+                  : batch.status === "failed"
+                    ? "有失败"
+                    : "处理中"}
+              </em>
+            </div>
+          ))}
+        </div>
+      ) : null}
       {tasks.isLoading ? (
         <div className="workshop-state">
           <LoaderCircle className="spinning" aria-hidden />

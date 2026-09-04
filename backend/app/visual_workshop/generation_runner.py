@@ -5,6 +5,7 @@ from pathlib import Path
 from uuid import uuid4
 
 import httpx
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.concurrency.polling_runner import PollingTaskRunner
@@ -28,7 +29,13 @@ from app.llm.generation_runtime import (
     upload_temporary_reference,
 )
 from app.llm.providers.temporary_media import TemporaryMediaError
-from app.models import VisualAsset, VisualGenerationTask
+from app.media_rendering.image_grid import render_image_grid
+from app.models import (
+    VisualAsset,
+    VisualCanvasDocument,
+    VisualGenerationBatch,
+    VisualGenerationTask,
+)
 from app.visual_workshop.generation import ACTIVE_TASK_STATUSES
 
 MaterializationError = GenerationMaterializationError
@@ -56,6 +63,7 @@ class VisualGenerationRunner(PollingTaskRunner):
         self.storage = AssetStorage(self.settings)
         self.download_transport = download_transport
         self.temporary_media_transport = temporary_media_transport
+        self._composing_batches: set[str] = set()
         self.task_store = GenerationTaskStore(
             session_factory=self.session_factory,
             task_type=VisualGenerationTask,
@@ -77,16 +85,263 @@ class VisualGenerationRunner(PollingTaskRunner):
 
     async def recover(self) -> None:
         await self.task_driver.recover()
+        await self._refresh_batches()
 
     async def process_once(self) -> None:
         task_ids = await self.task_store.active_task_ids()
         await self.run_concurrently(task_ids, self._process_task)
+        await self._refresh_batches()
 
     async def _fail(self, task_id: str, message: str, *, result_url: str = "") -> None:
         await self.task_store.fail(task_id, message, result_url=result_url)
 
     async def _process_task(self, task_id: str) -> None:
         await self.task_driver.process(task_id)
+
+    async def _refresh_batches(self) -> None:
+        async with self.session_factory() as session:
+            batch_ids = list(
+                await session.scalars(
+                    select(VisualGenerationBatch.id).where(
+                        VisualGenerationBatch.status.in_(("queued", "processing"))
+                    )
+                )
+            )
+        for batch_id in batch_ids:
+            await self._refresh_batch(batch_id)
+
+    async def _refresh_batch(self, batch_id: str) -> None:
+        async with self.session_factory() as session:
+            batch = await session.get(VisualGenerationBatch, batch_id)
+            if batch is None or batch.status == "completed":
+                return
+            if batch.batch_kind == "composition":
+                batch.status = "processing"
+                batch.completed_count = 0
+                batch.failed_count = 0
+                batch.updated_at = utc_now()
+                batch.revision += 1
+                await session.commit()
+            else:
+                tasks = list(
+                    await session.scalars(
+                        select(VisualGenerationTask).where(
+                            VisualGenerationTask.id.in_(list(batch.child_task_ids or []))
+                        )
+                    )
+                )
+                completed = sum(task.status == "completed" for task in tasks)
+                failed = sum(task.status == "failed" for task in tasks)
+                batch.completed_count = completed
+                batch.failed_count = failed
+                batch.updated_at = utc_now()
+                batch.revision += 1
+                if failed:
+                    batch.status = "failed"
+                    batch.error_message = f"{failed} 个子任务生成失败"
+                    batch.completed_at = batch.updated_at
+                    await session.commit()
+                    return
+                if completed != batch.grid_size:
+                    batch.status = "processing"
+                    await session.commit()
+                    return
+                if batch.grid_output == "nodes":
+                    task_assets = {task.id: task.result_asset_id for task in tasks}
+                    canvas_row = await session.get(VisualCanvasDocument, batch.project_id)
+                    if canvas_row is not None:
+                        nodes = [dict(node) for node in (canvas_row.nodes or [])]
+                        changed = False
+                        for node in nodes:
+                            if node.get("generation_batch_id") != batch.id:
+                                continue
+                            asset_id = task_assets.get(node.get("generation_task_id"))
+                            if asset_id and node.get("asset_id") != asset_id:
+                                node["asset_id"] = asset_id
+                                changed = True
+                        if changed:
+                            await session.execute(
+                                update(VisualCanvasDocument)
+                                .where(
+                                    VisualCanvasDocument.project_id == batch.project_id,
+                                    VisualCanvasDocument.revision == canvas_row.revision,
+                                )
+                                .values(
+                                    nodes=nodes,
+                                    revision=canvas_row.revision + 1,
+                                    updated_at=utc_now(),
+                                )
+                            )
+                    batch.status = "completed"
+                    batch.completed_at = batch.updated_at
+                    await session.commit()
+                    return
+                await session.commit()
+        if batch_id in self._composing_batches:
+            return
+        self._composing_batches.add(batch_id)
+        try:
+            await self._compose_batch(batch_id)
+        finally:
+            self._composing_batches.discard(batch_id)
+
+    async def _compose_batch(self, batch_id: str) -> None:
+        async with self.session_factory() as session:
+            batch = await session.get(VisualGenerationBatch, batch_id)
+            if batch is None or batch.result_asset_id or batch.status == "completed":
+                return
+            if batch.batch_kind == "composition":
+                source_items = list(batch.source_items or [])
+                asset_ids = [str(item.get("asset_id") or "") for item in source_items]
+                captions = [str(item.get("caption") or "") for item in source_items]
+            else:
+                tasks = list(
+                    await session.scalars(
+                        select(VisualGenerationTask).where(
+                            VisualGenerationTask.id.in_(list(batch.child_task_ids or []))
+                        )
+                    )
+                )
+                by_id = {task.id: task for task in tasks}
+                ordered = [by_id.get(task_id) for task_id in batch.child_task_ids]
+                if any(task is None or not task.result_asset_id for task in ordered):
+                    return
+                asset_ids = [str(task.result_asset_id) for task in ordered if task is not None]
+                captions = [""] * len(asset_ids)
+            assets = [await session.get(VisualAsset, asset_id) for asset_id in asset_ids]
+            if any(asset is None for asset in assets):
+                return
+            paths = [self.storage.path_for(asset) for asset in assets if asset is not None]
+            workspace_id = batch.workspace_id
+            project_id = batch.project_id
+            grid_size = batch.grid_size
+            generation_node_id = batch.generation_node_id
+
+        storage_key = f"grid-{batch_id}"
+        async with self.session_factory() as session:
+            existing = await session.scalar(
+                select(VisualAsset).where(
+                    VisualAsset.storage_key == storage_key,
+                    VisualAsset.project_id == project_id,
+                    VisualAsset.workspace_id == workspace_id,
+                )
+            )
+            if existing is not None:
+                batch = await session.get(VisualGenerationBatch, batch_id)
+                if batch is None or batch.result_asset_id:
+                    return
+                if generation_node_id:
+                    canvas_row = await session.get(VisualCanvasDocument, project_id)
+                    if canvas_row is not None:
+                        nodes = [dict(node) for node in (canvas_row.nodes or [])]
+                        for node in nodes:
+                            if (
+                                node.get("id") == generation_node_id
+                                and node.get("generation_batch_id") == batch_id
+                            ):
+                                node["asset_id"] = existing.id
+                                break
+                        await session.execute(
+                            update(VisualCanvasDocument)
+                            .where(
+                                VisualCanvasDocument.project_id == project_id,
+                                VisualCanvasDocument.revision == canvas_row.revision,
+                            )
+                            .values(
+                                nodes=nodes,
+                                revision=canvas_row.revision + 1,
+                                updated_at=utc_now(),
+                            )
+                        )
+                batch.result_asset_id = existing.id
+                batch.status = "completed"
+                batch.completed_count = batch.grid_size
+                batch.failed_count = 0
+                batch.error_message = None
+                batch.completed_at = utc_now()
+                batch.updated_at = batch.completed_at
+                batch.revision += 1
+                await session.commit()
+                return
+        temp_path, final_path = self.storage.prepare_write(
+            storage_key,
+            visual_project_id=project_id,
+            galgame_project_id=None,
+            workspace_id=workspace_id,
+        )
+        try:
+            render_image_grid(paths, captions, temp_path, grid_size)
+            byte_size = temp_path.stat().st_size
+            os.replace(temp_path, final_path)
+            async with self.session_factory() as session:
+                batch = await session.get(VisualGenerationBatch, batch_id)
+                if batch is None or batch.result_asset_id:
+                    final_path.unlink(missing_ok=True)
+                    return
+                side = 2 if batch.grid_size == 4 else 3
+                filename = f"grid-{side}x{side}-{batch.id[:8]}.png"
+                asset = await session.scalar(
+                    select(VisualAsset).where(VisualAsset.storage_key == storage_key)
+                )
+                if asset is None:
+                    asset = VisualAsset(
+                        workspace_id=batch.workspace_id,
+                        project_id=batch.project_id,
+                        folder_id=None,
+                        original_filename=filename,
+                        display_name=filename,
+                        storage_key=storage_key,
+                        storage_version=TARGET_STORAGE_VERSION,
+                        media_kind="image",
+                        mime_type="image/png",
+                        byte_size=byte_size,
+                    )
+                    session.add(asset)
+                    await session.flush()
+                if generation_node_id:
+                    canvas_row = await session.get(VisualCanvasDocument, project_id)
+                    if canvas_row is not None:
+                        nodes = [dict(node) for node in (canvas_row.nodes or [])]
+                        for node in nodes:
+                            if (
+                                node.get("id") == generation_node_id
+                                and node.get("generation_batch_id") == batch_id
+                            ):
+                                node["asset_id"] = asset.id
+                                break
+                        await session.execute(
+                            update(VisualCanvasDocument)
+                            .where(
+                                VisualCanvasDocument.project_id == project_id,
+                                VisualCanvasDocument.revision == canvas_row.revision,
+                            )
+                            .values(
+                                nodes=nodes,
+                                revision=canvas_row.revision + 1,
+                                updated_at=utc_now(),
+                            )
+                        )
+                batch.result_asset_id = asset.id
+                batch.status = "completed"
+                batch.completed_count = batch.grid_size
+                batch.failed_count = 0
+                batch.error_message = None
+                batch.completed_at = utc_now()
+                batch.updated_at = batch.completed_at
+                batch.revision += 1
+                await session.commit()
+        except Exception as exc:
+            temp_path.unlink(missing_ok=True)
+            final_path.unlink(missing_ok=True)
+            async with self.session_factory() as session:
+                batch = await session.get(VisualGenerationBatch, batch_id)
+                if batch is not None and batch.status != "completed":
+                    batch.status = "failed"
+                    batch.error_message = f"宫格合成失败：{safe_generation_error(exc)}"
+                    batch.completed_at = utc_now()
+                    batch.updated_at = batch.completed_at
+                    batch.revision += 1
+                    await session.commit()
 
     async def _submit_context(self, task: GenerationTaskContext) -> str:
         return await self._submit(
