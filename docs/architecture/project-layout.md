@@ -15,7 +15,7 @@ Future-Props-Lab/
 │   ├── concurrency/   # revision/CAS、Workspace 项目记录原语与通用单进程轮询 Runner 生命周期
 │   ├── core/          # 配置、数据库与密钥基础设施
 │   ├── files/         # IncomingFile、文件策略、显式 Workspace 落盘、项目事务与旧布局迁移
-│   ├── media_rendering/ # 供应商/业务无关的 RenderPlan、帧求值、视频渲染与取消控制
+│   ├── media_rendering/ # 供应商/业务无关的 RenderPlan、帧求值、源时间/变速滤镜、视频渲染与取消控制
 │   ├── agents/        # 供应商无关 Agent Harness、Reactive 工具循环与内存审批
 │   ├── llm/           # 模型目录、供应商适配、共享生成/实时运行时、测试工作台和调用日志
 │   ├── tool_navigation/ # 工具收藏与最近使用状态规则
@@ -33,7 +33,7 @@ Future-Props-Lab/
 │   └── runner.py      # checksum、连续前缀检查和事务应用
 ├── web/src/
 │   ├── app/           # Studio 入口、Session Context、路由、配置驱动工坊壳与应用注册表
-│   ├── docs/          # 数据驱动的三工坊使用指南、搜索、目录与深链接
+│   ├── docs/          # Markdown 使用正文、分类与上下文目录、搜索、阅读器及旧链接映射
 │   ├── features/      # 账号治理、首页、AI 应用、文件管理、工坊、工具导航、集成中心与模型功能
 │   ├── generated/     # OpenAPI 生成物
 │   ├── platform/      # Cookie/CSRF、API 客户端、认证事件与浏览器语音基础设施
@@ -153,9 +153,13 @@ Future-Props-Lab/
   同名旧文件只承担兼容转发或页面编排。Block 设置与 Inspector 均按文字、舞台、媒体、流程和系统
   家族维护，时间轴、角色与视觉工作区把交互 Hook、业务 mutation、派生 ViewModel 和视图分开，
   不允许把拆出的内部状态重新摊平成跨模块共享的巨型返回值。
-- `web/src/docs/` 是独立文档入口的数据与展示边界，按页面和章节驱动视觉创作工坊、Galgame
-  工坊与视频剪辑工坊指南，负责本地全文搜索、`docs.html?page=...#section` 深链接、响应式导航和主题；配套截图只
-  存放于 `web/public/docs/`，不作为产品状态或测试数据源。
+- `web/src/docs/` 是独立文档入口的数据与展示边界。`articles/` 按能力维护唯一的 Markdown
+  使用正文，`content.ts` 与 `types.ts` 维护分类、分组和应用/工具上下文；开发者与 API 分类直接
+  加载仓库已有 Markdown，不保存副本。`legacyLinks.json` 显式映射拆分后的旧章节。
+  阅读器从正文派生二三级目录、全文搜索和复制内容，保留 `docs.html?page=...#section`、前进后退、
+  主题与移动端抽屉。配套截图及逐图来源只存于 `web/public/docs/`，不作为产品状态或测试数据源。
+  `web/scripts/documentation-coverage.mjs` 从正文与来源清单生成文章覆盖表；文档结构回归在
+  `web/tests/docs-content.test.ts`，浏览器阅读旅程在 `web/e2e/docs.spec.ts`。
 - `scripts/demo/galgame_runaway/performance_upgrade.py` 只保留兼容入口、CLI 和流程编排；稳定演出规格、素材上传、
   Story 变换/演出块、审计报告与 API/CAS 辅助分别归属同目录 `performance_assets.py`、
   `performance_spec.py`、`performance_transform.py`/`performance_story.py`、`performance_audit.py` 和

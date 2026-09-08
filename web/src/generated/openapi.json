@@ -15496,6 +15496,50 @@
         "title": "SeparateClipOperation",
         "type": "object"
       },
+      "SetAssetOrganizationOperation": {
+        "properties": {
+          "organization": {
+            "$ref": "#/components/schemas/VideoEditorAssetOrganization"
+          },
+          "type": {
+            "const": "setAssetOrganization",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "organization"
+        ],
+        "title": "SetAssetOrganizationOperation",
+        "type": "object"
+      },
+      "SetClipSpeedOperation": {
+        "properties": {
+          "clipId": {
+            "title": "Clipid",
+            "type": "string"
+          },
+          "playbackRate": {
+            "maximum": 4.0,
+            "minimum": 0.25,
+            "title": "Playbackrate",
+            "type": "number"
+          },
+          "type": {
+            "const": "setClipSpeed",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "clipId",
+          "playbackRate"
+        ],
+        "title": "SetClipSpeedOperation",
+        "type": "object"
+      },
       "SetTransitionOperation": {
         "properties": {
           "clipId": {
@@ -16539,6 +16583,36 @@
         "title": "ValidationError",
         "type": "object"
       },
+      "VideoEditorAssetFolder": {
+        "properties": {
+          "assetIds": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 10000,
+            "title": "Assetids",
+            "type": "array"
+          },
+          "id": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "VideoEditorAssetFolder",
+        "type": "object"
+      },
       "VideoEditorAssetImportIn": {
         "properties": {
           "assetIds": {
@@ -16571,6 +16645,28 @@
           "items"
         ],
         "title": "VideoEditorAssetListOut",
+        "type": "object"
+      },
+      "VideoEditorAssetOrganization": {
+        "properties": {
+          "folders": {
+            "items": {
+              "$ref": "#/components/schemas/VideoEditorAssetFolder"
+            },
+            "maxItems": 100,
+            "title": "Folders",
+            "type": "array"
+          },
+          "rootAssetIds": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 10000,
+            "title": "Rootassetids",
+            "type": "array"
+          }
+        },
+        "title": "VideoEditorAssetOrganization",
         "type": "object"
       },
       "VideoEditorAssetOut": {
@@ -16750,7 +16846,7 @@
             "type": "integer"
           },
           "fitMode": {
-            "default": "native",
+            "default": "cover",
             "enum": [
               "native",
               "cover",
@@ -16849,6 +16945,19 @@
             "minLength": 1,
             "title": "Name",
             "type": "string"
+          },
+          "playbackRate": {
+            "anyOf": [
+              {
+                "maximum": 4.0,
+                "minimum": 0.25,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Playbackrate"
           },
           "sourceInUs": {
             "default": 0,
@@ -17178,6 +17287,21 @@
             "default": 1080,
             "title": "Height",
             "type": "integer"
+          },
+          "videoFitPolicyVersion": {
+            "anyOf": [
+              {
+                "enum": [
+                  0,
+                  1
+                ],
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Videofitpolicyversion"
           },
           "width": {
             "const": 1920,
@@ -17665,6 +17789,8 @@
                   "reorderTrack": "#/components/schemas/ReorderTrackOperation",
                   "rippleDelete": "#/components/schemas/ClipIdOperation",
                   "separateClip": "#/components/schemas/SeparateClipOperation",
+                  "setAssetOrganization": "#/components/schemas/SetAssetOrganizationOperation",
+                  "setClipSpeed": "#/components/schemas/SetClipSpeedOperation",
                   "setTransition": "#/components/schemas/SetTransitionOperation",
                   "splitClip": "#/components/schemas/SplitClipOperation",
                   "trimClip": "#/components/schemas/TrimClipOperation",
@@ -17682,6 +17808,9 @@
                 },
                 {
                   "$ref": "#/components/schemas/UpdateSettingsOperation"
+                },
+                {
+                  "$ref": "#/components/schemas/SetAssetOrganizationOperation"
                 },
                 {
                   "$ref": "#/components/schemas/UpdateTrackOperation"
@@ -17709,6 +17838,9 @@
                 },
                 {
                   "$ref": "#/components/schemas/SplitClipOperation"
+                },
+                {
+                  "$ref": "#/components/schemas/SetClipSpeedOperation"
                 },
                 {
                   "$ref": "#/components/schemas/LinkClipsOperation"
@@ -17746,6 +17878,9 @@
       },
       "VideoEditorTimelineDocument": {
         "properties": {
+          "assetOrganization": {
+            "$ref": "#/components/schemas/VideoEditorAssetOrganization"
+          },
           "schemaVersion": {
             "const": "1.0",
             "default": "1.0",

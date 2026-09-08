@@ -1,0 +1,436 @@
+[
+  {
+    "file": "account-profile.jpg",
+    "scene": "个人资料",
+    "source": "隔离数据库；正式账号用例和 API；本项目真实 UI",
+    "capturedAt": "2026-09-08",
+    "viewport": {
+      "width": 1600,
+      "height": 1000
+    },
+    "theme": "dark",
+    "data": "自写旁白、合成音视频和本机确定性响应；不代表外部模型效果",
+    "license": "本项目 UI 截图；沿用仓库仅限内部开发交接声明；未新增第三方素材",
+    "sha256": "cfe7af07a6083388db148e6d5c52207884295b5b69205aa695e3527973ab3461"
+  },
+  {
+    "file": "account-security.jpg",
+    "scene": "会话和管理 API Key",
+    "source": "隔离数据库；正式 /v1 API；自建合成音视频；真实 Chromium 界面",
+    "capturedAt": "2026-09-08",
+    "viewport": {
+      "width": 1600,
+      "height": 1000
+    },
+    "theme": "dark",
+    "data": "自写旁白、合成音视频和本机确定性响应；不代表外部模型效果",
+    "license": "本项目 UI 截图；沿用仓库仅限内部开发交接声明；未新增第三方素材",
+    "sha256": "e4b503febb901bd36162e90e9b4e7bc8260e57c0b1a4e68ced0491c2b04625ed"
+  },
+  {
+    "file": "account-workspace.jpg",
+    "scene": "工作空间设置与切换",
+    "source": "隔离数据库；正式账号用例和 API；本项目真实 UI",
+    "capturedAt": "2026-09-08",
+    "viewport": {
+      "width": 1600,
+      "height": 1000
+    },
+    "theme": "dark",
+    "data": "自写旁白、合成音视频和本机确定性响应；不代表外部模型效果",
+    "license": "本项目 UI 截图；沿用仓库仅限内部开发交接声明；未新增第三方素材",
+    "sha256": "7d5277d841db929489a3bc56d005415aff1f36f3bb2a1f05c7304c363c3af9b7"
+  },
+  {
+    "file": "annotation-editor.jpg",
+    "scene": "已加载波形与双人标注",
+    "source": "隔离数据库；正式 API；自建演示数据",
+    "capturedAt": "2026-09-08",
+    "viewport": {
+      "width": 1600,
+      "height": 1000
+    },
+    "theme": "dark",
+    "data": "自写旁白、合成音视频和本机确定性响应；不代表外部模型效果",
+    "license": "本项目 UI 截图；沿用仓库仅限内部开发交接声明；未新增第三方素材",
+    "sha256": "e71f2a14f9da083e8dd1663a05e04f54571945cdc504242bb69e3b6185336c4d"
+  },
+  {
+    "file": "annotation-export.jpg",
+    "scene": "项目 JSON 与 SRT 格式选择",
+    "source": "隔离数据库；正式 API；自建演示数据",
+    "capturedAt": "2026-09-08",
+    "viewport": {
+      "width": 1600,
+      "height": 1000
+    },
+    "theme": "dark",
+    "data": "自写旁白、合成音视频和本机确定性响应；不代表外部模型效果",
+    "license": "本项目 UI 截图；沿用仓库仅限内部开发交接声明；未新增第三方素材",
+    "sha256": "b6345cbfa48fe8bbe2e4dc6b2cc6f5fd02750544e08c15c1d213c1912befd5af"
+  },
+  {
+    "file": "files-library.jpg",
+    "scene": "文件列表与预览入口",
+    "source": "隔离数据库；正式 /v1 API；自建合成音视频；真实 Chromium 界面",
+    "capturedAt": "2026-09-08",
+    "viewport": {
+      "width": 1600,
+      "height": 1000
+    },
+    "theme": "dark",
+    "data": "自写旁白、合成音视频和本机确定性响应；不代表外部模型效果",
+    "license": "本项目 UI 截图；沿用仓库仅限内部开发交接声明；未新增第三方素材",
+    "sha256": "32746ad8f414f48c771dfd6fd2d0c03116fb233bcfef4e3c27f40bf634e72e0d"
+  },
+  {
+    "file": "frames-export.jpg",
+    "scene": "合成视频原分辨率帧预览",
+    "source": "隔离数据库；正式 API；自建合成媒体、文字及本机确定性响应",
+    "capturedAt": "2026-09-08",
+    "viewport": {
+      "width": 1600,
+      "height": 1000
+    },
+    "theme": "dark",
+    "data": "自写旁白、合成音视频和本机确定性响应；不代表外部模型效果",
+    "license": "本项目 UI 截图；沿用仓库仅限内部开发交接声明；未新增第三方素材",
+    "sha256": "d0e65e479e47cc35e449ae32d15a93d3df180f6c5c1b3a62592767d53f9808ac"
+  },
+  {
+    "file": "galgame-editor.jpg",
+    "scene": "剧本编辑与旁白示例",
+    "source": "隔离数据库；正式 API；自建合成媒体、文字及本机确定性响应",
+    "capturedAt": "2026-09-08",
+    "viewport": {
+      "width": 1600,
+      "height": 1000
+    },
+    "theme": "dark",
+    "data": "自写旁白、合成音视频和本机确定性响应；不代表外部模型效果",
+    "license": "本项目 UI 截图；沿用仓库仅限内部开发交接声明；未新增第三方素材",
+    "sha256": "e15622d0ff15fc4e75d0e2df4574e6750a84ebfd0bd8e4ca3c294e73da8abe45"
+  },
+  {
+    "file": "galgame-localization.jpg",
+    "scene": "多语言编辑入口",
+    "source": "隔离数据库；正式 API；自建合成媒体、文字及本机确定性响应",
+    "capturedAt": "2026-09-08",
+    "viewport": {
+      "width": 1600,
+      "height": 1000
+    },
+    "theme": "dark",
+    "data": "自写旁白、合成音视频和本机确定性响应；不代表外部模型效果",
+    "license": "本项目 UI 截图；沿用仓库仅限内部开发交接声明；未新增第三方素材",
+    "sha256": "6807b526aeb0976a8950bea2f2e74d08764c25029cec09d3fb3033431a4ab1d5"
+  },
+  {
+    "file": "galgame-overview.jpg",
+    "scene": "工程概览与检查入口",
+    "source": "隔离数据库；正式 API；自建合成媒体、文字及本机确定性响应",
+    "capturedAt": "2026-09-08",
+    "viewport": {
+      "width": 1600,
+      "height": 1000
+    },
+    "theme": "dark",
+    "data": "自写旁白、合成音视频和本机确定性响应；不代表外部模型效果",
+    "license": "本项目 UI 截图；沿用仓库仅限内部开发交接声明；未新增第三方素材",
+    "sha256": "fd7155aedebbfc28675086cb56c33b528db6d103d824d80494932daceb7a52c8"
+  },
+  {
+    "file": "galgame-player-report.jpg",
+    "scene": "短篇试玩界面",
+    "source": "隔离数据库；正式 API；自建合成媒体、文字及本机确定性响应",
+    "capturedAt": "2026-09-08",
+    "viewport": {
+      "width": 1600,
+      "height": 1000
+    },
+    "theme": "dark",
+    "data": "自写旁白、合成音视频和本机确定性响应；不代表外部模型效果",
+    "license": "本项目 UI 截图；沿用仓库仅限内部开发交接声明；未新增第三方素材",
+    "sha256": "a8d5eba3549cdef81476cf60d31bf7a4f0d4608667999556a804461ee4026b48"
+  },
+  {
+    "file": "galgame-timeline.jpg",
+    "scene": "两段旁白的剧情时间轴",
+    "source": "隔离数据库；正式 API；自建演示数据",
+    "capturedAt": "2026-09-08",
+    "viewport": {
+      "width": 1600,
+      "height": 1000
+    },
+    "theme": "dark",
+    "data": "自写旁白、合成音视频和本机确定性响应；不代表外部模型效果",
+    "license": "本项目 UI 截图；沿用仓库仅限内部开发交接声明；未新增第三方素材",
+    "sha256": "d21f6d7e8a8d7ec9a221d330c7222c162cf459ad7288acfb55057d6a196a40a8"
+  },
+  {
+    "file": "integration-api-form.jpg",
+    "scene": "新建工具 API填写界面",
+    "source": "隔离数据库；正式 API；自建演示数据；无付费调用",
+    "capturedAt": "2026-09-08",
+    "viewport": {
+      "width": 1600,
+      "height": 1000
+    },
+    "theme": "dark",
+    "data": "自写旁白、合成音视频和本机确定性响应；不代表外部模型效果",
+    "license": "本项目 UI 截图；沿用仓库仅限内部开发交接声明；未新增第三方素材",
+    "sha256": "713b327ae852af1707096c5a0abe765c9e002d2d1634537130827c5918fed554"
+  },
+  {
+    "file": "integration-mcp-form.jpg",
+    "scene": "添加 MCP填写界面",
+    "source": "隔离数据库；正式 API；自建演示数据；无付费调用",
+    "capturedAt": "2026-09-08",
+    "viewport": {
+      "width": 1600,
+      "height": 1000
+    },
+    "theme": "dark",
+    "data": "自写旁白、合成音视频和本机确定性响应；不代表外部模型效果",
+    "license": "本项目 UI 截图；沿用仓库仅限内部开发交接声明；未新增第三方素材",
+    "sha256": "078c89d1bad5fa734a9922cc20268d7ef63eac67196e650d205dbc39d3296b73"
+  },
+  {
+    "file": "integration-skill-form.jpg",
+    "scene": "上传 Skill填写界面",
+    "source": "隔离数据库；正式 API；自建演示数据；无付费调用",
+    "capturedAt": "2026-09-08",
+    "viewport": {
+      "width": 1600,
+      "height": 1000
+    },
+    "theme": "dark",
+    "data": "自写旁白、合成音视频和本机确定性响应；不代表外部模型效果",
+    "license": "本项目 UI 截图；沿用仓库仅限内部开发交接声明；未新增第三方素材",
+    "sha256": "400d5296a6b80dc49b462ff47697c5509126a0f8de1ce5f784c53e4497c477ca"
+  },
+  {
+    "file": "logs-detail.jpg",
+    "scene": "调用详情；响应来自本机确定性服务",
+    "source": "隔离数据库；正式 API；自建演示数据",
+    "capturedAt": "2026-09-08",
+    "viewport": {
+      "width": 1600,
+      "height": 1000
+    },
+    "theme": "dark",
+    "data": "自写旁白、合成音视频和本机确定性响应；不代表外部模型效果",
+    "license": "本项目 UI 截图；沿用仓库仅限内部开发交接声明；未新增第三方素材",
+    "sha256": "ae5855f832204069d8355b6085b3a38e802176c64679135cc37fabb1887a6a49"
+  },
+  {
+    "file": "logs-list.jpg",
+    "scene": "本机模型连接测试的真实日志",
+    "source": "隔离数据库；正式 API；自建合成媒体、文字及本机确定性响应",
+    "capturedAt": "2026-09-08",
+    "viewport": {
+      "width": 1600,
+      "height": 1000
+    },
+    "theme": "dark",
+    "data": "自写旁白、合成音视频和本机确定性响应；不代表外部模型效果",
+    "license": "本项目 UI 截图；沿用仓库仅限内部开发交接声明；未新增第三方素材",
+    "sha256": "9c71451217fc4135e5651bc972b6b18351e6ec79f30b3d1e5d3bec1b56ff0cc9"
+  },
+  {
+    "file": "models-catalog.jpg",
+    "scene": "供应商与模型目录",
+    "source": "隔离数据库；正式 /v1 API；自建合成音视频；真实 Chromium 界面",
+    "capturedAt": "2026-09-08",
+    "viewport": {
+      "width": 1600,
+      "height": 1000
+    },
+    "theme": "dark",
+    "data": "自写旁白、合成音视频和本机确定性响应；不代表外部模型效果",
+    "license": "本项目 UI 截图；沿用仓库仅限内部开发交接声明；未新增第三方素材",
+    "sha256": "7332d390810ffdd3737c6e32b43f5d322c34ce94912a470ed82cc80b21bfe760"
+  },
+  {
+    "file": "provider-form.jpg",
+    "scene": "＋ 添加供应商填写界面",
+    "source": "隔离数据库；正式 API；自建演示数据；无付费调用",
+    "capturedAt": "2026-09-08",
+    "viewport": {
+      "width": 1600,
+      "height": 1000
+    },
+    "theme": "dark",
+    "data": "自写旁白、合成音视频和本机确定性响应；不代表外部模型效果",
+    "license": "本项目 UI 截图；沿用仓库仅限内部开发交接声明；未新增第三方素材",
+    "sha256": "287adec8d51afc67434a0ac00bb518ebc5e21c3c4278375e0fe9d6f8f632be53"
+  },
+  {
+    "file": "test-chat.jpg",
+    "scene": "文本对话，展示本机确定性流式响应，未调用外部模型",
+    "source": "隔离数据库；正式 API；自建演示数据；无付费调用",
+    "capturedAt": "2026-09-08",
+    "viewport": {
+      "width": 1600,
+      "height": 1000
+    },
+    "theme": "dark",
+    "data": "自写旁白、合成音视频和本机确定性响应；不代表外部模型效果",
+    "license": "本项目 UI 截图；沿用仓库仅限内部开发交接声明；未新增第三方素材",
+    "sha256": "8273a2044b43958f59af6fab45b416f3cf1250a79d4a8a8afa0928160323ff98"
+  },
+  {
+    "file": "test-image.jpg",
+    "scene": "图片生成配置态，不代表实际模型结果",
+    "source": "隔离数据库；正式 API；自建演示数据；无付费调用",
+    "capturedAt": "2026-09-08",
+    "viewport": {
+      "width": 1600,
+      "height": 1000
+    },
+    "theme": "dark",
+    "data": "自写旁白、合成音视频和本机确定性响应；不代表外部模型效果",
+    "license": "本项目 UI 截图；沿用仓库仅限内部开发交接声明；未新增第三方素材",
+    "sha256": "ce2957b7fb48557102a3b933f460617d970b08ad849395c9ef3be1085acd4b82"
+  },
+  {
+    "file": "test-realtime.jpg",
+    "scene": "实时语音配置态，不代表实际模型结果",
+    "source": "隔离数据库；正式 API；自建演示数据；无付费调用",
+    "capturedAt": "2026-09-08",
+    "viewport": {
+      "width": 1600,
+      "height": 1000
+    },
+    "theme": "dark",
+    "data": "自写旁白、合成音视频和本机确定性响应；不代表外部模型效果",
+    "license": "本项目 UI 截图；沿用仓库仅限内部开发交接声明；未新增第三方素材",
+    "sha256": "2ec8c660c3cc595d718e3b3a055427c46c2f494b2db4ec9a7d0d75b344ea0e27"
+  },
+  {
+    "file": "test-transcription.jpg",
+    "scene": "语音识别配置态，不代表实际模型结果",
+    "source": "隔离数据库；正式 API；自建演示数据；无付费调用",
+    "capturedAt": "2026-09-08",
+    "viewport": {
+      "width": 1600,
+      "height": 1000
+    },
+    "theme": "dark",
+    "data": "自写旁白、合成音视频和本机确定性响应；不代表外部模型效果",
+    "license": "本项目 UI 截图；沿用仓库仅限内部开发交接声明；未新增第三方素材",
+    "sha256": "b4350e0340f9a242c296142ec072872c04564cbae3c06888c5f998238a577562"
+  },
+  {
+    "file": "test-video.jpg",
+    "scene": "视频生成配置态，不代表实际模型结果",
+    "source": "隔离数据库；正式 API；自建演示数据；无付费调用",
+    "capturedAt": "2026-09-08",
+    "viewport": {
+      "width": 1600,
+      "height": 1000
+    },
+    "theme": "dark",
+    "data": "自写旁白、合成音视频和本机确定性响应；不代表外部模型效果",
+    "license": "本项目 UI 截图；沿用仓库仅限内部开发交接声明；未新增第三方素材",
+    "sha256": "12164f0068eef648a516e215172d26b10fcaff7a3101d33f65f117a3ca97002b"
+  },
+  {
+    "file": "tools-navigation.jpg",
+    "scene": "工具分类",
+    "source": "隔离数据库；正式 /v1 API；自建合成音视频；真实 Chromium 界面",
+    "capturedAt": "2026-09-08",
+    "viewport": {
+      "width": 1600,
+      "height": 1000
+    },
+    "theme": "dark",
+    "data": "自写旁白、合成音视频和本机确定性响应；不代表外部模型效果",
+    "license": "本项目 UI 截图；沿用仓库仅限内部开发交接声明；未新增第三方素材",
+    "sha256": "3e3adbc4161c8e978a319022acb4ded5b51fbb827efafb814edd0943e032d4ce"
+  },
+  {
+    "file": "video-editor-projects.jpg",
+    "scene": "临时剪辑项目与快照入口",
+    "source": "隔离数据库；正式 API；自建演示数据",
+    "capturedAt": "2026-09-08",
+    "viewport": {
+      "width": 1600,
+      "height": 1000
+    },
+    "theme": "dark",
+    "data": "自写旁白、合成音视频和本机确定性响应；不代表外部模型效果",
+    "license": "本项目 UI 截图；沿用仓库仅限内部开发交接声明；未新增第三方素材",
+    "sha256": "c19ae74e4ae3582e35bdbe1e7094b514afdee4001fbe54a621fce380b1dffd00"
+  },
+  {
+    "file": "video-editor-timeline.jpg",
+    "scene": "6 秒视频调整为 2 倍速，时间线显示 3 秒；包含素材整理入口",
+    "source": "隔离数据库；正式 API；合成媒体与确定性演示内容",
+    "capturedAt": "2026-09-08",
+    "viewport": {
+      "width": 1600,
+      "height": 1000
+    },
+    "theme": "dark",
+    "data": "自写旁白、合成音视频和本机确定性响应；不代表外部模型效果",
+    "license": "本项目 UI 截图；沿用仓库仅限内部开发交接声明；未新增第三方素材",
+    "sha256": "2e5941e9021fa6d0510a914fd1c34daa950a8aed94d3ff8e0aa4987cb6162cbb"
+  },
+  {
+    "file": "video-render-preflight.jpg",
+    "scene": "真实预检状态",
+    "source": "隔离数据库；正式 API；合成媒体与确定性演示内容",
+    "capturedAt": "2026-09-08",
+    "viewport": {
+      "width": 1600,
+      "height": 1000
+    },
+    "theme": "dark",
+    "data": "自写旁白、合成音视频和本机确定性响应；不代表外部模型效果",
+    "license": "本项目 UI 截图；沿用仓库仅限内部开发交接声明；未新增第三方素材",
+    "sha256": "8dd24a42078ac389739eac9f6701980c3f5ec07575a5b67d6296e4555d8ede3c"
+  },
+  {
+    "file": "visual-canvas.jpg",
+    "scene": "文字、图像与视频节点",
+    "source": "隔离数据库；正式 API；自建合成媒体、文字及本机确定性响应",
+    "capturedAt": "2026-09-08",
+    "viewport": {
+      "width": 1600,
+      "height": 1000
+    },
+    "theme": "dark",
+    "data": "自写旁白、合成音视频和本机确定性响应；不代表外部模型效果",
+    "license": "本项目 UI 截图；沿用仓库仅限内部开发交接声明；未新增第三方素材",
+    "sha256": "b29e4c09c58c0cd11d411c35d6ad2f60fd40b893dd5148577b413e32b1bd3869"
+  },
+  {
+    "file": "visual-tasks.jpg",
+    "scene": "本机服务返回不含图片的响应，任务失败状态",
+    "source": "隔离数据库；正式 API；本机确定性错误",
+    "capturedAt": "2026-09-08",
+    "viewport": {
+      "width": 1600,
+      "height": 1000
+    },
+    "theme": "dark",
+    "data": "自写旁白、合成音视频和本机确定性响应；不代表外部模型效果",
+    "license": "本项目 UI 截图；沿用仓库仅限内部开发交接声明；未新增第三方素材",
+    "sha256": "c1a3c90dff131b766803239dc02779cc74f5ce825e01d12fa48f0024a0208cd1"
+  },
+  {
+    "file": "visual-video-generation.jpg",
+    "scene": "视频节点选中状态",
+    "source": "隔离数据库；正式 API；自建合成媒体、文字及本机确定性响应",
+    "capturedAt": "2026-09-08",
+    "viewport": {
+      "width": 1600,
+      "height": 1000
+    },
+    "theme": "dark",
+    "data": "自写旁白、合成音视频和本机确定性响应；不代表外部模型效果",
+    "license": "本项目 UI 截图；沿用仓库仅限内部开发交接声明；未新增第三方素材",
+    "sha256": "bb0cc76296c285b6e88d22fb6996726fbbf6e657dcc8f907babced2c95df214c"
+  }
+]

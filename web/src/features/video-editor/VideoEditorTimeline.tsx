@@ -7,23 +7,15 @@ import {
   type CSSProperties,
   type PointerEvent as ReactPointerEvent,
 } from "react";
-import {
-  Copy,
-  ArrowDown,
-  ArrowUp,
-  Eye,
-  EyeOff,
-  Lock,
-  Magnet,
-  Scissors,
-  Trash2,
-  Unlock,
-  Volume2,
-  VolumeX,
-} from "lucide-react";
-import { frameUs, formatTime, newTrack, snapUs } from "./editorModel";
+import { Copy, Download, Magnet, Scissors, Trash2 } from "lucide-react";
+import { formatTime, newTrack, snapUs } from "./editorModel";
 import { getTimelineRulerStepSeconds } from "./timelineScale";
-import { canPlaceClip, linkedClipIds, snapClipStartUs } from "./timelineSnap";
+import { VideoEditorTrackHeads } from "./VideoEditorTrackHeads";
+import {
+  VideoEditorSeparator,
+  type VideoEditorSeparatorProps,
+} from "./VideoEditorSeparator";
+import { useTimelineClipDrag } from "./useTimelineClipDrag";
 import type {
   VideoEditorAsset,
   VideoEditorClip,
@@ -39,6 +31,10 @@ export function VideoEditorTimeline({
   zoom,
   scrollLeft,
   onScrollLeftChange,
+  scrollTop = 0,
+  onScrollTopChange,
+  trackHeaderWidth = 176,
+  headerSeparator,
   selectedClipId,
   selectedClipIds,
   selectClip,
@@ -47,6 +43,7 @@ export function VideoEditorTimeline({
   snapEnabled = true,
   setSnapEnabled = () => undefined,
   onNotice,
+  onRequestSegmentExport,
 }: {
   timeline: Timeline;
   assets: VideoEditorAsset[];
@@ -55,6 +52,10 @@ export function VideoEditorTimeline({
   zoom: number;
   scrollLeft: number;
   onScrollLeftChange: (value: number) => void;
+  scrollTop?: number;
+  onScrollTopChange?: (value: number) => void;
+  trackHeaderWidth?: number;
+  headerSeparator?: VideoEditorSeparatorProps;
   selectedClipId?: string;
   selectedClipIds: string[];
   selectClip: (value?: string, additive?: boolean) => void;
@@ -70,34 +71,30 @@ export function VideoEditorTimeline({
   snapEnabled?: boolean;
   setSnapEnabled?: (value: boolean) => void;
   onNotice?: (value: string) => void;
+  onRequestSegmentExport?: (clipId: string) => void;
 }) {
   const scroller = useRef<HTMLDivElement>(null);
-  const [dragPreview, setDragPreview] = useState<
-    | {
-        positions: Map<string, { startUs: number; trackId: string }>;
-        valid: boolean;
-      }
-    | undefined
-  >();
-  const dragPreviewRef = useRef<typeof dragPreview>(undefined);
-  dragPreviewRef.current = dragPreview;
-  const [snapGuideUs, setSnapGuideUs] = useState<number>();
+  const canvas = useRef<HTMLDivElement>(null);
+  const [selectionBox, setSelectionBox] = useState<{
+    x: number;
+    y: number;
+    w: number;
+    h: number;
+  }>();
   const [contextMenu, setContextMenu] = useState<
     { clip: VideoEditorClip; left: number; top: number } | undefined
   >();
-  const dragRef = useRef<{ cleanup: () => void }>(undefined);
-  const dragMoveRef = useRef<
-    ((event: globalThis.PointerEvent) => void) | undefined
-  >(undefined);
-  const dragFinishRef = useRef<((event?: Event) => void) | undefined>(
-    undefined,
-  );
-  const suppressClickRef = useRef(false);
+  const contextMenuRef = useRef<HTMLDivElement>(null);
   useLayoutEffect(() => {
     const node = scroller.current;
     if (node && Math.abs(node.scrollLeft - scrollLeft) > 0.5)
       node.scrollLeft = scrollLeft;
   }, [scrollLeft]);
+  useLayoutEffect(() => {
+    const node = scroller.current;
+    if (node && Math.abs(node.scrollTop - scrollTop) > 0.5)
+      node.scrollTop = scrollTop;
+  }, [scrollTop]);
   const fps = timeline.document.settings?.fps ?? 30;
   const tracks = [...(timeline.document.tracks ?? [])].sort(
     (a, b) => a.order - b.order,
@@ -123,11 +120,50 @@ export function VideoEditorTimeline({
     "--timeline-tick": `${rulerStepSeconds * zoom}px`,
   } as CSSProperties;
   const rawPositionUs = (clientX: number) => {
-    const rect = scroller.current?.getBoundingClientRect();
-    const scrollLeft = scroller.current?.scrollLeft ?? 0;
-    return ((clientX - (rect?.left ?? 0) + scrollLeft) / zoom) * 1_000_000;
+    const rect = canvas.current?.getBoundingClientRect();
+    return ((clientX - (rect?.left ?? 0)) / zoom) * 1_000_000;
   };
   const positionUs = (clientX: number) => snapUs(rawPositionUs(clientX), fps);
+  const startMarquee = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (event.button !== 0 || (event.target as HTMLElement).closest(".ve-clip"))
+      return;
+    const origin = { x: event.clientX, y: event.clientY };
+    const update = (move: PointerEvent) => {
+      setSelectionBox({
+        x: Math.min(origin.x, move.clientX),
+        y: Math.min(origin.y, move.clientY),
+        w: Math.abs(move.clientX - origin.x),
+        h: Math.abs(move.clientY - origin.y),
+      });
+    };
+    const finish = (up: PointerEvent) => {
+      const left = Math.min(origin.x, up.clientX);
+      const right = Math.max(origin.x, up.clientX);
+      const top = Math.min(origin.y, up.clientY);
+      const bottom = Math.max(origin.y, up.clientY);
+      if (right - left > 4 || bottom - top > 4) {
+        const ids = [...document.querySelectorAll<HTMLElement>(".ve-clip")]
+          .filter((node) => {
+            const rect = node.getBoundingClientRect();
+            return (
+              rect.right > left &&
+              rect.left < right &&
+              rect.bottom > top &&
+              rect.top < bottom
+            );
+          })
+          .map((node) => node.dataset.clipId)
+          .filter((id): id is string => Boolean(id));
+        selectClip(ids[0], false);
+        for (const id of ids.slice(1)) selectClip(id, true);
+      }
+      setSelectionBox(undefined);
+      window.removeEventListener("pointermove", update);
+      window.removeEventListener("pointerup", finish);
+    };
+    window.addEventListener("pointermove", update);
+    window.addEventListener("pointerup", finish);
+  };
   const clipById = new Map(
     tracks.flatMap((track) =>
       (track.clips ?? []).map((clip) => [clip.id, clip] as const),
@@ -135,12 +171,6 @@ export function VideoEditorTimeline({
   );
   const selected = selectedClipId ? clipById.get(selectedClipId) : undefined;
 
-  useEffect(
-    () => () => {
-      dragRef.current?.cleanup();
-    },
-    [],
-  );
   useEffect(() => {
     if (!contextMenu) return;
     const close = () => setContextMenu(undefined);
@@ -155,132 +185,44 @@ export function VideoEditorTimeline({
     };
   }, [contextMenu]);
 
-  const startClipDrag = (
-    event: ReactPointerEvent<HTMLButtonElement>,
-    clip: VideoEditorClip,
-  ) => {
-    if (event.button != null && event.button !== 0) return;
-    const sourceTrack = tracks.find((track) => track.id === clip.trackId);
-    if (!sourceTrack || sourceTrack.locked) return;
-    event.preventDefault();
-    event.stopPropagation();
-    const allClips = [...clipById.values()];
-    const baseSelection = selectedClipIds.includes(clip.id)
-      ? selectedClipIds
-      : [clip.id];
-    const movingIds = linkedClipIds(allClips, baseSelection);
-    const moving = allClips.filter((item) => movingIds.has(item.id));
-    const original = new Map(
-      moving.map((item) => [
-        item.id,
-        { startUs: item.timelineStartUs, trackId: item.trackId },
-      ]),
+  // Keep the menu fully inside the viewport when the clip is near an edge.
+  // The menu dimensions are only known after it has been rendered, so clamp
+  // the coordinates in a layout effect to avoid it being clipped by the
+  // browser window.
+  useLayoutEffect(() => {
+    const menu = contextMenuRef.current;
+    if (!menu || !contextMenu) return;
+    const bounds = menu.getBoundingClientRect();
+    const padding = 8;
+    const left = Math.max(
+      padding,
+      Math.min(contextMenu.left, window.innerWidth - bounds.width - padding),
     );
-    if (!selectedClipIds.includes(clip.id)) selectClip(clip.id);
-    const grabOffsetUs = rawPositionUs(event.clientX) - clip.timelineStartUs;
-    let moved = false;
-
-    const update = (pointer: globalThis.PointerEvent) => {
-      pointer.preventDefault();
-      const row =
-        typeof document.elementFromPoint === "function"
-          ? document
-              .elementFromPoint(pointer.clientX, pointer.clientY)
-              ?.closest<HTMLElement>(".ve-track-row[data-track-id]")
-          : null;
-      const targetTrack = tracks.find(
-        (track) => track.id === row?.dataset.trackId,
+    const top = Math.max(
+      padding,
+      Math.min(contextMenu.top, window.innerHeight - bounds.height - padding),
+    );
+    if (left !== contextMenu.left || top !== contextMenu.top) {
+      setContextMenu((current) =>
+        current ? { ...current, left, top } : current,
       );
-      const targetTrackId = targetTrack?.id ?? clip.trackId;
-      const candidate = rawPositionUs(pointer.clientX) - grabOffsetUs;
-      const startUs = snapClipStartUs({
-        candidateUs: candidate,
-        durationUs: clip.durationUs,
-        targetTrackId,
-        tracks,
-        movingClipIds: movingIds,
-        fps,
-        zoom,
-        timelineEndUs: seconds * 1_000_000,
-        enabled: snapEnabled,
-      });
-      const deltaUs = startUs - clip.timelineStartUs;
-      moved ||= Math.abs(deltaUs) >= frameUs(fps);
-      const positions = new Map(
-        moving.map((item) => [
-          item.id,
-          {
-            startUs: Math.max(0, item.timelineStartUs + deltaUs),
-            trackId: item.id === clip.id ? targetTrackId : item.trackId,
-          },
-        ]),
-      );
-      const valid = moving.every((item) => {
-        const position = positions.get(item.id)!;
-        return canPlaceClip(
-          item,
-          position.startUs,
-          position.trackId,
-          tracks,
-          movingIds,
-        );
-      });
-      const nextPreview = { positions, valid };
-      dragPreviewRef.current = nextPreview;
-      setDragPreview(nextPreview);
-      setSnapGuideUs(snapEnabled ? startUs : undefined);
-    };
+    }
+  }, [contextMenu]);
 
-    const finish = (event?: Event) => {
-      if (event) update(event as globalThis.PointerEvent);
-      const preview = dragPreviewRef.current;
-      if (moved && preview?.valid) {
-        const redo: VideoEditorOperation[] = [];
-        const undo: VideoEditorOperation[] = [];
-        for (const item of moving) {
-          const next = preview.positions.get(item.id)!;
-          const previous = original.get(item.id)!;
-          if (
-            next.startUs === previous.startUs &&
-            next.trackId === previous.trackId
-          )
-            continue;
-          redo.push({
-            type: "moveClip",
-            clipId: item.id,
-            trackId: next.trackId,
-            timelineStartUs: next.startUs,
-          });
-          undo.push({
-            type: "moveClip",
-            clipId: item.id,
-            trackId: previous.trackId,
-            timelineStartUs: previous.startUs,
-          });
-        }
-        if (redo.length) void commit(redo, undo);
-      } else if (moved && preview && !preview.valid) {
-        onNotice?.("该位置与其他片段重叠，无法移动");
-      }
-      suppressClickRef.current = moved;
-      if (moved)
-        window.setTimeout(() => (suppressClickRef.current = false), 100);
-      setDragPreview(undefined);
-      setSnapGuideUs(undefined);
-      window.removeEventListener("pointermove", update);
-      window.removeEventListener("pointerup", finish);
-      window.removeEventListener("pointercancel", finish);
-      dragRef.current = undefined;
-      dragMoveRef.current = undefined;
-      dragFinishRef.current = undefined;
-    };
-    dragRef.current = { cleanup: finish };
-    dragMoveRef.current = update;
-    dragFinishRef.current = finish;
-    window.addEventListener("pointermove", update);
-    window.addEventListener("pointerup", finish);
-    window.addEventListener("pointercancel", finish);
-  };
+  const { dragPreview, snapGuideUs, suppressClickRef, startClipDrag } =
+    useTimelineClipDrag({
+      scroller,
+      tracks,
+      selectedClipIds,
+      selectClip,
+      rawPositionUs,
+      fps,
+      zoom,
+      seconds,
+      snapEnabled,
+      commit,
+      onNotice,
+    });
   const deleteSelected = (ripple = false) => {
     if (!selected) return;
     void commit(
@@ -290,14 +232,14 @@ export function VideoEditorTimeline({
     selectClip(undefined);
   };
   const splitSelected = () => {
+    const splitAt = snapUs(playheadUs, fps);
     if (
       !selected ||
-      playheadUs <= selected.timelineStartUs ||
-      playheadUs >= selected.timelineStartUs + selected.durationUs
+      splitAt <= selected.timelineStartUs ||
+      splitAt >= selected.timelineStartUs + selected.durationUs
     )
       return;
     const newId = crypto.randomUUID();
-    const splitAt = snapUs(playheadUs, fps);
     const linked = selected.linkGroupId
       ? [...clipById.values()].filter(
           (clip) =>
@@ -447,295 +389,191 @@ export function VideoEditorTimeline({
           <Magnet aria-hidden /> {snapEnabled ? "吸附" : "吸附关闭"}
         </button>
       </header>
-      <div className="ve-timeline-grid">
-        <div className="ve-track-heads">
-          <div className="ve-ruler-spacer" />
-          {tracks.map((track) => (
-            <div key={track.id}>
-              <strong>{track.name}</strong>
-              <button
-                aria-label={track.locked ? "解锁轨道" : "锁定轨道"}
-                onClick={() =>
-                  void commit([
-                    {
-                      type: "updateTrack",
-                      trackId: track.id,
-                      patch: { locked: !track.locked },
-                    },
-                  ])
-                }
-              >
-                {track.locked ? <Lock aria-hidden /> : <Unlock aria-hidden />}
-              </button>
-              {track.kind === "visual" ? (
-                <button
-                  aria-label={track.hidden ? "显示轨道" : "隐藏轨道"}
-                  onClick={() =>
-                    void commit([
-                      {
-                        type: "updateTrack",
-                        trackId: track.id,
-                        patch: { hidden: !track.hidden },
-                      },
-                    ])
-                  }
-                >
-                  {track.hidden ? <EyeOff aria-hidden /> : <Eye aria-hidden />}
-                </button>
-              ) : (
-                <button
-                  aria-label={track.muted ? "取消静音" : "静音轨道"}
-                  onClick={() =>
-                    void commit([
-                      {
-                        type: "updateTrack",
-                        trackId: track.id,
-                        patch: { muted: !track.muted },
-                      },
-                    ])
-                  }
-                >
-                  {track.muted ? (
-                    <VolumeX aria-hidden />
-                  ) : (
-                    <Volume2 aria-hidden />
-                  )}
-                </button>
-              )}
-              {track.kind === "mixed" ? (
-                <button
-                  aria-label={track.hidden ? "显示轨道" : "隐藏轨道"}
-                  onClick={() =>
-                    void commit([
-                      {
-                        type: "updateTrack",
-                        trackId: track.id,
-                        patch: { hidden: !track.hidden },
-                      },
-                    ])
-                  }
-                >
-                  {track.hidden ? <EyeOff aria-hidden /> : <Eye aria-hidden />}
-                </button>
-              ) : null}
-              <button
-                aria-label="轨道上移"
-                disabled={
-                  track.order === Math.min(...tracks.map((item) => item.order))
-                }
-                onClick={() => {
-                  const previous = tracks.find(
-                    (item) => item.order === track.order - 1,
-                  );
-                  if (previous)
-                    void commit([
-                      {
-                        type: "reorderTrack",
-                        trackId: track.id,
-                        order: previous.order,
-                      },
-                      {
-                        type: "reorderTrack",
-                        trackId: previous.id,
-                        order: track.order,
-                      },
-                    ]);
-                }}
-              >
-                <ArrowUp aria-hidden />
-              </button>
-              <button
-                aria-label="轨道下移"
-                disabled={
-                  track.order === Math.max(...tracks.map((item) => item.order))
-                }
-                onClick={() => {
-                  const next = tracks.find(
-                    (item) => item.order === track.order + 1,
-                  );
-                  if (next)
-                    void commit([
-                      {
-                        type: "reorderTrack",
-                        trackId: track.id,
-                        order: next.order,
-                      },
-                      {
-                        type: "reorderTrack",
-                        trackId: next.id,
-                        order: track.order,
-                      },
-                    ]);
-                }}
-              >
-                <ArrowDown aria-hidden />
-              </button>
-              <button
-                aria-label="删除空轨道"
-                disabled={
-                  Boolean(track.clips?.length) ||
-                  tracks.filter((item) => item.kind === track.kind).length === 1
-                }
-                onClick={() =>
-                  void commit([{ type: "removeTrack", trackId: track.id }])
-                }
-              >
-                <Trash2 aria-hidden />
-              </button>
-            </div>
-          ))}
-        </div>
+      <div
+        className="ve-timeline-viewport"
+        style={
+          { "--ve-track-head-width": `${trackHeaderWidth}px` } as CSSProperties
+        }
+      >
+        {headerSeparator ? (
+          <VideoEditorSeparator
+            {...headerSeparator}
+            className="ve-track-head-separator"
+          />
+        ) : null}
         <div
           className="ve-tracks-scroll"
           ref={scroller}
           style={timelineScaleStyle}
-          onScroll={(event) =>
-            onScrollLeftChange(event.currentTarget.scrollLeft)
-          }
+          onScroll={(event) => {
+            onScrollLeftChange(event.currentTarget.scrollLeft);
+            onScrollTopChange?.(event.currentTarget.scrollTop);
+          }}
           onPointerDown={(event) => {
             if (event.target === event.currentTarget) selectClip(undefined);
           }}
         >
           <div
-            className="ve-ruler"
-            style={{ width: `${seconds * zoom}px` }}
-            onPointerDown={(event) => {
-              selectClip(undefined);
-              setPlayheadUs(positionUs(event.clientX));
-            }}
+            className="ve-timeline-grid"
+            style={{ minWidth: `${seconds * zoom + trackHeaderWidth}px` }}
           >
-            {rulers.map((second) => (
-              <span key={second} style={{ left: `${second * zoom}px` }}>
-                {formatTime(second * 1_000_000).slice(0, 5)}
-              </span>
-            ))}
-          </div>
-          <div
-            className="ve-track-canvas"
-            style={{ width: `${seconds * zoom}px` }}
-          >
-            <i
-              className="ve-playhead"
-              style={{ left: `${(playheadUs / 1_000_000) * zoom}px` }}
-            />
-            {snapGuideUs != null ? (
-              <i
-                className="ve-snap-guide"
-                style={{ left: `${(snapGuideUs / 1_000_000) * zoom}px` }}
-                aria-hidden
-              />
-            ) : null}
-            {tracks.map((track) => (
+            <div className="ve-track-heads">
+              <div className="ve-ruler-spacer" />
+              <VideoEditorTrackHeads tracks={tracks} commit={commit} />
+            </div>
+            <div className="ve-track-content">
               <div
-                className={`ve-track-row ${track.kind}`}
-                key={track.id}
-                data-track-id={track.id}
+                className="ve-ruler"
+                style={{ width: `${seconds * zoom}px` }}
                 onPointerDown={(event) => {
-                  if (event.target === event.currentTarget) {
-                    selectClip(undefined);
-                    setPlayheadUs(positionUs(event.clientX));
-                  }
-                }}
-                onDragOver={(event) => event.preventDefault()}
-                onDrop={(event) => {
-                  const asset = assets.find(
-                    (item) =>
-                      item.id ===
-                      event.dataTransfer.getData(
-                        "application/x-video-editor-asset",
-                      ),
-                  );
-                  if (asset)
-                    onDropAsset(asset, track.id, positionUs(event.clientX));
-                  const clipId = event.dataTransfer.getData(
-                    "application/x-video-editor-clip",
-                  );
-                  const clip = clipById.get(clipId);
-                  if (clip && !track.locked) {
-                    const start = positionUs(event.clientX);
-                    void commit(
-                      [
-                        {
-                          type: "moveClip",
-                          clipId,
-                          trackId: track.id,
-                          timelineStartUs: start,
-                        },
-                      ],
-                      [
-                        {
-                          type: "moveClip",
-                          clipId,
-                          trackId: clip.trackId,
-                          timelineStartUs: clip.timelineStartUs,
-                        },
-                      ],
-                    );
-                  }
+                  selectClip(undefined);
+                  setPlayheadUs(positionUs(event.clientX));
                 }}
               >
-                {(track.clips ?? []).map((clip: VideoEditorClip) => (
-                  <button
-                    key={clip.id}
-                    type="button"
-                    className={`ve-clip ${clip.kind} ${track.kind} ${selectedClipIds.includes(clip.id) ? "selected" : ""}${dragPreview?.positions.has(clip.id) ? " dragging" : ""}${dragPreview?.positions.has(clip.id) && !dragPreview.valid ? " invalid" : ""}`}
-                    style={{
-                      left: `${((dragPreview?.positions.get(clip.id)?.startUs ?? clip.timelineStartUs) / 1_000_000) * zoom}px`,
-                      width: `${Math.max(18, (clip.durationUs / 1_000_000) * zoom)}px`,
-                      transform:
-                        dragPreview?.positions.get(clip.id)?.trackId !==
-                          undefined &&
-                        dragPreview.positions.get(clip.id)!.trackId !==
-                          clip.trackId
-                          ? `translateY(${(tracks.findIndex((item) => item.id === dragPreview.positions.get(clip.id)!.trackId) - tracks.findIndex((item) => item.id === clip.trackId)) * 56}px)`
-                          : undefined,
-                    }}
-                    onPointerDown={(event) => startClipDrag(event, clip)}
-                    onPointerMove={(event) =>
-                      dragMoveRef.current?.(event.nativeEvent)
-                    }
-                    onPointerUp={(event) =>
-                      dragFinishRef.current?.(event.nativeEvent)
-                    }
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      if (suppressClickRef.current) {
-                        suppressClickRef.current = false;
-                        return;
-                      }
-                      selectClip(clip.id, event.metaKey || event.ctrlKey);
-                      if (
-                        playheadUs < clip.timelineStartUs ||
-                        playheadUs >= clip.timelineStartUs + clip.durationUs
-                      )
-                        setPlayheadUs(clip.timelineStartUs);
-                    }}
-                    onContextMenu={(event) => {
-                      event.preventDefault();
-                      event.stopPropagation();
-                      selectClip(clip.id);
-                      setContextMenu({
-                        clip,
-                        left: event.clientX,
-                        top: event.clientY,
-                      });
-                    }}
-                  >
-                    <span>{clip.name}</span>
-                    <small>{(clip.durationUs / 1_000_000).toFixed(2)}s</small>
-                    {(clip.keyframes ?? []).map((keyframe) => (
-                      <i
-                        className="ve-key-marker"
-                        key={keyframe.id}
-                        style={{
-                          left: `${(keyframe.timeUs / clip.durationUs) * 100}%`,
-                        }}
-                      />
-                    ))}
-                  </button>
+                {rulers.map((second) => (
+                  <span key={second} style={{ left: `${second * zoom}px` }}>
+                    {formatTime(second * 1_000_000).slice(0, 5)}
+                  </span>
                 ))}
               </div>
-            ))}
+              <div
+                className="ve-track-canvas"
+                ref={canvas}
+                style={{ width: `${seconds * zoom}px` }}
+                onPointerDown={startMarquee}
+              >
+                {selectionBox ? (
+                  <i
+                    className="ve-selection-box"
+                    style={{
+                      left: selectionBox.x,
+                      top: selectionBox.y,
+                      width: selectionBox.w,
+                      height: selectionBox.h,
+                    }}
+                  />
+                ) : null}
+                <i
+                  className="ve-playhead"
+                  style={{ left: `${(playheadUs / 1_000_000) * zoom}px` }}
+                />
+                {snapGuideUs != null ? (
+                  <i
+                    className="ve-snap-guide"
+                    style={{ left: `${(snapGuideUs / 1_000_000) * zoom}px` }}
+                    aria-hidden
+                  />
+                ) : null}
+                {tracks.map((track) => (
+                  <div
+                    className={`ve-track-row ${track.kind}`}
+                    key={track.id}
+                    data-track-id={track.id}
+                    onPointerDown={(event) => {
+                      if (event.target === event.currentTarget) {
+                        selectClip(undefined);
+                        setPlayheadUs(positionUs(event.clientX));
+                      }
+                    }}
+                    onDragOver={(event) => event.preventDefault()}
+                    onDrop={(event) => {
+                      const asset = assets.find(
+                        (item) =>
+                          item.id ===
+                          event.dataTransfer.getData(
+                            "application/x-video-editor-asset",
+                          ),
+                      );
+                      if (asset)
+                        onDropAsset(asset, track.id, positionUs(event.clientX));
+                      const clipId = event.dataTransfer.getData(
+                        "application/x-video-editor-clip",
+                      );
+                      const clip = clipById.get(clipId);
+                      if (clip && !track.locked) {
+                        const start = positionUs(event.clientX);
+                        void commit(
+                          [
+                            {
+                              type: "moveClip",
+                              clipId,
+                              trackId: track.id,
+                              timelineStartUs: start,
+                            },
+                          ],
+                          [
+                            {
+                              type: "moveClip",
+                              clipId,
+                              trackId: clip.trackId,
+                              timelineStartUs: clip.timelineStartUs,
+                            },
+                          ],
+                        );
+                      }
+                    }}
+                  >
+                    {(track.clips ?? []).map((clip: VideoEditorClip) => (
+                      <button
+                        key={clip.id}
+                        type="button"
+                        data-clip-id={clip.id}
+                        className={`ve-clip ${clip.kind} ${track.kind} ${selectedClipIds.includes(clip.id) ? "selected" : ""}${dragPreview?.positions.has(clip.id) ? " dragging" : ""}${dragPreview?.positions.has(clip.id) && !dragPreview.valid ? " invalid" : ""}`}
+                        style={{
+                          left: `${((dragPreview?.positions.get(clip.id)?.startUs ?? clip.timelineStartUs) / 1_000_000) * zoom}px`,
+                          width: `${Math.max(18, (clip.durationUs / 1_000_000) * zoom)}px`,
+                          transform:
+                            dragPreview?.positions.get(clip.id)?.trackId !==
+                              undefined &&
+                            dragPreview.positions.get(clip.id)!.trackId !==
+                              clip.trackId
+                              ? `translateY(${(tracks.findIndex((item) => item.id === dragPreview.positions.get(clip.id)!.trackId) - tracks.findIndex((item) => item.id === clip.trackId)) * 56}px)`
+                              : undefined,
+                        }}
+                        onPointerDown={(event) => startClipDrag(event, clip)}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          if (suppressClickRef.current) {
+                            suppressClickRef.current = false;
+                            return;
+                          }
+                          selectClip(clip.id, event.metaKey || event.ctrlKey);
+                          if (
+                            playheadUs < clip.timelineStartUs ||
+                            playheadUs >= clip.timelineStartUs + clip.durationUs
+                          )
+                            setPlayheadUs(clip.timelineStartUs);
+                        }}
+                        onContextMenu={(event) => {
+                          event.preventDefault();
+                          event.stopPropagation();
+                          selectClip(clip.id);
+                          setContextMenu({
+                            clip,
+                            left: event.clientX,
+                            top: event.clientY,
+                          });
+                        }}
+                      >
+                        <span>{clip.name}</span>
+                        <small>
+                          {(clip.durationUs / 1_000_000).toFixed(2)}s
+                        </small>
+                        {(clip.keyframes ?? []).map((keyframe) => (
+                          <i
+                            className="ve-key-marker"
+                            key={keyframe.id}
+                            style={{
+                              left: `${(keyframe.timeUs / clip.durationUs) * 100}%`,
+                            }}
+                          />
+                        ))}
+                      </button>
+                    ))}
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -743,6 +581,7 @@ export function VideoEditorTimeline({
         <div
           className="ve-clip-context-menu"
           role="menu"
+          ref={contextMenuRef}
           style={{ left: contextMenu.left, top: contextMenu.top }}
           onPointerDown={(event) => event.stopPropagation()}
           onContextMenu={(event) => event.preventDefault()}
@@ -752,6 +591,41 @@ export function VideoEditorTimeline({
             onClick={() => toggleClipMute(contextMenu.clip)}
           >
             {clipIsMuted(contextMenu.clip) ? "取消静音" : "静音"}
+          </button>
+          <button
+            role="menuitem"
+            onClick={() => {
+              const clip = contextMenu.clip;
+              setContextMenu(undefined);
+              void commit(
+                [{ type: "removeClip", clipId: clip.id }],
+                [{ type: "addClip", clip }],
+              );
+              selectClip(undefined);
+            }}
+          >
+            删除片段
+          </button>
+          {contextMenu.clip.kind === "video" && onRequestSegmentExport ? (
+            <button
+              role="menuitem"
+              onClick={() => {
+                const clip = contextMenu.clip;
+                setContextMenu(undefined);
+                onRequestSegmentExport?.(clip.id);
+              }}
+            >
+              <Download aria-hidden /> 导出视频片段
+            </button>
+          ) : null}
+          <button
+            role="menuitem"
+            onClick={() => {
+              setContextMenu(undefined);
+              splitSelected();
+            }}
+          >
+            在播放头处分割
           </button>
           {contextMenu.clip.kind === "video" &&
           tracks.find((track) => track.id === contextMenu.clip.trackId)

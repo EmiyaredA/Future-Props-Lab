@@ -1,26 +1,55 @@
 import { Diamond, Link, Link2Off, Trash2 } from "lucide-react";
+import { useEffect, useState } from "react";
 import type { VideoEditorClip, VideoEditorOperation } from "./types";
+import { ClipSpeedControl } from "./ClipSpeedControl";
+import "./video-editor-inspector.css";
 
 const numberValue = (event: React.ChangeEvent<HTMLInputElement>) =>
   Number(event.target.value || 0);
 
+const clipKindLabels: Record<VideoEditorClip["kind"], string> = {
+  video: "视频片段",
+  audio: "音频片段",
+  image: "图片片段",
+  text: "文字片段",
+  color: "色彩片段",
+};
+
 export function VideoEditorInspector({
   clip,
+  clips = [],
   playheadUs,
   commit,
 }: {
   clip?: VideoEditorClip;
+  clips?: VideoEditorClip[];
   playheadUs: number;
   commit: (
     redo: VideoEditorOperation[],
     undo?: VideoEditorOperation[],
   ) => Promise<void>;
 }) {
+  const [transitionDurations, setTransitionDurations] = useState<
+    Record<"in" | "out", number>
+  >({ in: 500_000, out: 500_000 });
+  useEffect(() => {
+    setTransitionDurations({
+      in: clip?.transitionIn?.durationUs ?? 500_000,
+      out: clip?.transitionOut?.durationUs ?? 500_000,
+    });
+  }, [
+    clip?.id,
+    clip?.transitionIn?.durationUs,
+    clip?.transitionOut?.durationUs,
+  ]);
   if (!clip)
     return (
       <aside className="ve-inspector empty">
         <header>
-          <strong>属性</strong>
+          <div>
+            <strong>属性</strong>
+            <small>未选择片段</small>
+          </div>
         </header>
         <div>
           <Diamond aria-hidden />
@@ -77,9 +106,12 @@ export function VideoEditorInspector({
       <header>
         <div>
           <strong>属性</strong>
-          <small>{clip.kind}</small>
+          <small>{clipKindLabels[clip.kind]}</small>
         </div>
         <button
+          className="ve-inspector-link-action"
+          type="button"
+          aria-label={clip.linkGroupId ? "解除片段链接" : "当前片段未链接"}
           title={clip.linkGroupId ? "解除链接" : "当前未链接"}
           disabled={!clip.linkGroupId}
           onClick={() =>
@@ -89,9 +121,16 @@ export function VideoEditorInspector({
           {clip.linkGroupId ? <Link aria-hidden /> : <Link2Off aria-hidden />}
         </button>
       </header>
-      <section>
-        <label>
-          名称
+      <section className="ve-inspector-section ve-clip-section">
+        <div className="ve-section-heading">
+          <div>
+            <h3>片段信息</h3>
+            <p>时间线中的基础信息</p>
+          </div>
+          <span>{clipKindLabels[clip.kind]}</span>
+        </div>
+        <label className="ve-stacked-field">
+          <span>名称</span>
           <input
             key={`${clip.id}-name-${clip.name}`}
             defaultValue={clip.name}
@@ -102,8 +141,8 @@ export function VideoEditorInspector({
           />
         </label>
         {clip.kind === "text" ? (
-          <label>
-            文字
+          <label className="ve-stacked-field">
+            <span>文字内容</span>
             <textarea
               key={`${clip.id}-text-${clip.text}`}
               defaultValue={clip.text ?? ""}
@@ -115,8 +154,8 @@ export function VideoEditorInspector({
           </label>
         ) : null}
         {clip.kind === "color" ? (
-          <label>
-            颜色
+          <label className="ve-stacked-field">
+            <span>颜色</span>
             <input
               key={`${clip.id}-color-${clip.color}`}
               defaultValue={clip.color ?? "#000000"}
@@ -130,125 +169,223 @@ export function VideoEditorInspector({
             />
           </label>
         ) : null}
-        <label className="ve-key-field">
-          <span>开始 (s)</span>
-          <input
-            type="number"
-            step="0.001"
-            defaultValue={(clip.timelineStartUs / 1_000_000).toFixed(3)}
-            onBlur={(event) => {
-              const next = Math.max(0, numberValue(event) * 1_000_000);
-              if (next !== clip.timelineStartUs)
-                void commit(
-                  [
-                    {
-                      type: "moveClip",
-                      clipId: clip.id,
-                      trackId: clip.trackId,
-                      timelineStartUs: next,
-                    },
-                  ],
-                  [
-                    {
-                      type: "moveClip",
-                      clipId: clip.id,
-                      trackId: clip.trackId,
-                      timelineStartUs: clip.timelineStartUs,
-                    },
-                  ],
-                );
-            }}
-          />
-          <span />
-        </label>
-        <label className="ve-key-field">
-          <span>时长 (s)</span>
-          <input
-            type="number"
-            min="0.001"
-            step="0.001"
-            defaultValue={(clip.durationUs / 1_000_000).toFixed(3)}
-            onBlur={(event) => {
-              const next = Math.max(1000, numberValue(event) * 1_000_000);
-              if (next !== clip.durationUs)
-                void commit(
-                  [
-                    {
-                      type: "trimClip",
-                      clipId: clip.id,
-                      timelineStartUs: clip.timelineStartUs,
-                      durationUs: next,
-                      sourceInUs: clip.sourceInUs,
-                    },
-                  ],
-                  [
-                    {
-                      type: "trimClip",
-                      clipId: clip.id,
-                      timelineStartUs: clip.timelineStartUs,
-                      durationUs: clip.durationUs,
-                      sourceInUs: clip.sourceInUs,
-                    },
-                  ],
-                );
-            }}
-          />
-          <span />
-        </label>
+        <div className="ve-field-grid">
+          <label className="ve-stacked-field">
+            <span>
+              开始时间 <small>秒</small>
+            </span>
+            <input
+              type="number"
+              step="0.001"
+              defaultValue={(clip.timelineStartUs / 1_000_000).toFixed(3)}
+              onBlur={(event) => {
+                const next = Math.max(0, numberValue(event) * 1_000_000);
+                if (next !== clip.timelineStartUs)
+                  void commit(
+                    [
+                      {
+                        type: "moveClip",
+                        clipId: clip.id,
+                        trackId: clip.trackId,
+                        timelineStartUs: next,
+                      },
+                    ],
+                    [
+                      {
+                        type: "moveClip",
+                        clipId: clip.id,
+                        trackId: clip.trackId,
+                        timelineStartUs: clip.timelineStartUs,
+                      },
+                    ],
+                  );
+              }}
+            />
+          </label>
+          <label className="ve-stacked-field">
+            <span>
+              片段时长 <small>秒</small>
+            </span>
+            <input
+              type="number"
+              min="0.001"
+              step="0.001"
+              defaultValue={(clip.durationUs / 1_000_000).toFixed(3)}
+              onBlur={(event) => {
+                const next = Math.max(1000, numberValue(event) * 1_000_000);
+                if (next !== clip.durationUs)
+                  void commit(
+                    [
+                      {
+                        type: "trimClip",
+                        clipId: clip.id,
+                        timelineStartUs: clip.timelineStartUs,
+                        durationUs: next,
+                        sourceInUs: clip.sourceInUs,
+                      },
+                    ],
+                    [
+                      {
+                        type: "trimClip",
+                        clipId: clip.id,
+                        timelineStartUs: clip.timelineStartUs,
+                        durationUs: clip.durationUs,
+                        sourceInUs: clip.sourceInUs,
+                      },
+                    ],
+                  );
+              }}
+            />
+          </label>
+        </div>
       </section>
-      {clip.kind !== "audio" ? (
-        <section>
-          <h3>变换</h3>
-          {(
-            [
-              "x",
-              "y",
-              "scaleX",
-              "scaleY",
-              "rotation",
-              "opacity",
-              "brightness",
-            ] as const
-          ).map((property) => (
-            <label className="ve-key-field" key={property}>
-              <span>{property}</span>
+      {clip.kind === "video" || clip.kind === "audio" ? (
+        <ClipSpeedControl
+          key={clip.id}
+          clip={clip}
+          clips={clips}
+          commit={commit}
+        />
+      ) : null}
+      {clip.kind === "video" ? (
+        <section className="ve-inspector-section">
+          <div className="ve-section-heading">
+            <div>
+              <h3>画面适配</h3>
+              <p>选择素材填充画布的方式</p>
+            </div>
+          </div>
+          <div
+            className="ve-fit-mode-options"
+            role="group"
+            aria-label="视频画面适配"
+          >
+            {(
+              [
+                ["cover", "铺满裁切"],
+                ["contain", "完整显示"],
+                ["native", "原始尺寸"],
+                ["height", "按高度"],
+              ] as const
+            ).map(([mode, label]) => (
+              <button
+                type="button"
+                key={mode}
+                aria-pressed={clip.fitMode === mode}
+                onClick={() => {
+                  if (clip.fitMode === mode) return;
+                  void update(
+                    {
+                      fitMode: mode,
+                      ...(mode === "height" && !clip.heightPercent
+                        ? { heightPercent: 100 }
+                        : {}),
+                    },
+                    {
+                      fitMode: clip.fitMode,
+                      heightPercent: clip.heightPercent,
+                    },
+                  );
+                }}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          {clip.fitMode === "height" ? (
+            <label>
+              高度占画布 (%)
               <input
                 type="number"
-                step={
-                  property.startsWith("scale") ||
-                  property === "opacity" ||
-                  property === "brightness"
-                    ? 0.01
-                    : 1
-                }
-                defaultValue={transform[property]}
+                min="1"
+                max="400"
+                step="1"
+                defaultValue={clip.heightPercent ?? 100}
                 onBlur={(event) => {
-                  const value = numberValue(event);
-                  if (value !== transform[property])
+                  const value = Math.max(1, Math.min(400, numberValue(event)));
+                  if (value !== (clip.heightPercent ?? 100))
                     void update(
-                      {
-                        transform: {
-                          ...transform,
-                          [property]: numberValue(event),
-                        },
-                      },
-                      { transform },
+                      { heightPercent: value },
+                      { heightPercent: clip.heightPercent },
                     );
                 }}
               />
-              <button
-                aria-label={`为 ${property} 添加关键帧`}
-                onClick={() => void addKeyframe(property, transform[property])}
-              >
-                <Diamond aria-hidden />
-              </button>
             </label>
-          ))}
+          ) : null}
+        </section>
+      ) : null}
+      {clip.kind !== "audio" ? (
+        <section className="ve-inspector-section">
+          <div className="ve-section-heading">
+            <div>
+              <h3>变换</h3>
+              <p>调整位置、比例与画面表现</p>
+            </div>
+          </div>
+          <div className="ve-property-grid">
+            {(
+              [
+                ["x", "位置 X"],
+                ["y", "位置 Y"],
+                ["scaleX", "水平缩放"],
+                ["scaleY", "垂直缩放"],
+                ["rotation", "旋转"],
+                ["opacity", "不透明度"],
+                ["brightness", "亮度"],
+              ] as const
+            ).map(([property, label]) => (
+              <label className="ve-property-field" key={property}>
+                <span>{label}</span>
+                <div className="ve-input-with-action">
+                  <input
+                    aria-label={label}
+                    type="number"
+                    step={
+                      property.startsWith("scale") ||
+                      property === "opacity" ||
+                      property === "brightness"
+                        ? 0.01
+                        : 1
+                    }
+                    defaultValue={transform[property]}
+                    onBlur={(event) => {
+                      const value = numberValue(event);
+                      if (value !== transform[property])
+                        void update(
+                          {
+                            transform: {
+                              ...transform,
+                              [property]: numberValue(event),
+                            },
+                          },
+                          { transform },
+                        );
+                    }}
+                  />
+                  <button
+                    type="button"
+                    aria-label={`为${label}添加关键帧`}
+                    title={`为${label}添加关键帧`}
+                    onClick={() =>
+                      void addKeyframe(property, transform[property])
+                    }
+                  >
+                    <Diamond aria-hidden />
+                  </button>
+                </div>
+              </label>
+            ))}
+          </div>
         </section>
       ) : (
-        <section>
-          <h3>音频</h3>
-          <label className="ve-key-field">
+        <section className="ve-inspector-section">
+          <div className="ve-section-heading">
+            <div>
+              <h3>音频</h3>
+              <p>控制片段音量与关键帧</p>
+            </div>
+          </div>
+          <label className="ve-key-field ve-audio-volume-field">
             <span>音量</span>
             <input
               type="number"
@@ -264,52 +401,134 @@ export function VideoEditorInspector({
                 )
               }
             />
-            <button onClick={() => void addKeyframe("volume", clip.volume)}>
+            <button
+              type="button"
+              aria-label="为音量添加关键帧"
+              onClick={() => void addKeyframe("volume", clip.volume)}
+            >
               <Diamond aria-hidden />
             </button>
           </label>
         </section>
       )}
-      <section>
-        <h3>转场</h3>
-        <div className="ve-transition-buttons">
-          {(clip.kind === "audio"
-            ? ["audio-crossfade"]
-            : ["crossfade", "fade-black", "fade-white"]
-          ).map((kind) => (
-            <button
-              key={kind}
-              onClick={() =>
-                void commit([
-                  {
-                    type: "setTransition",
-                    clipId: clip.id,
-                    edge: "in",
-                    transition: {
-                      kind: kind as "crossfade",
-                      durationUs: 500_000,
-                    },
-                  },
-                ])
-              }
-            >
-              {kind}
-            </button>
-          ))}
-          <button
-            onClick={() =>
-              void commit([
-                { type: "setTransition", clipId: clip.id, edge: "in" },
-              ])
-            }
-          >
-            清除
-          </button>
+      {clip.kind === "video" || clip.kind === "audio" ? (
+        <section className="ve-inspector-section">
+          <div className="ve-section-heading">
+            <div>
+              <h3>{clip.kind === "audio" ? "淡入淡出" : "转场"}</h3>
+              <p>让片段边缘衔接得更自然</p>
+            </div>
+          </div>
+          <div className="ve-transition-grid">
+            {(["in", "out"] as const).map((edge) => {
+              const transition =
+                edge === "in" ? clip.transitionIn : clip.transitionOut;
+              const kind =
+                transition?.kind ??
+                (clip.kind === "audio" ? "audio-crossfade" : "crossfade");
+              const durationUs = transitionDurations[edge];
+              const edgeLabel = edge === "in" ? "淡入" : "淡出";
+              return (
+                <div
+                  className={`ve-transition-card${transition ? " is-active" : ""}`}
+                  key={edge}
+                >
+                  <div className="ve-transition-card-header">
+                    <div>
+                      <strong>{edgeLabel}</strong>
+                      <small>{transition ? "已启用" : "未启用"}</small>
+                    </div>
+                    <button
+                      type="button"
+                      aria-pressed={Boolean(transition)}
+                      onClick={() =>
+                        void commit([
+                          transition
+                            ? { type: "setTransition", clipId: clip.id, edge }
+                            : {
+                                type: "setTransition",
+                                clipId: clip.id,
+                                edge,
+                                transition: { kind, durationUs },
+                              },
+                        ])
+                      }
+                    >
+                      {transition ? "关闭" : "启用"}
+                    </button>
+                  </div>
+                  <label>
+                    <span>
+                      持续时间 <small>秒</small>
+                    </span>
+                    <input
+                      aria-label={`${edgeLabel}时长（秒）`}
+                      type="number"
+                      min="0"
+                      max={(clip.durationUs / 1_000_000).toFixed(3)}
+                      step="0.1"
+                      value={(durationUs / 1_000_000).toFixed(3)}
+                      onChange={(event) =>
+                        setTransitionDurations((current) => ({
+                          ...current,
+                          [edge]: Math.max(
+                            0,
+                            Math.min(
+                              clip.durationUs,
+                              numberValue(event) * 1_000_000,
+                            ),
+                          ),
+                        }))
+                      }
+                      onBlur={(event) => {
+                        const next = Math.max(
+                          0,
+                          Math.min(
+                            clip.durationUs,
+                            numberValue(event) * 1_000_000,
+                          ),
+                        );
+                        setTransitionDurations((current) => ({
+                          ...current,
+                          [edge]: next,
+                        }));
+                        if (transition)
+                          void update(
+                            {
+                              [edge === "in"
+                                ? "transitionIn"
+                                : "transitionOut"]: {
+                                ...transition,
+                                durationUs: next,
+                              },
+                            },
+                            {
+                              [edge === "in"
+                                ? "transitionIn"
+                                : "transitionOut"]: transition,
+                            },
+                          );
+                      }}
+                    />
+                  </label>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      ) : null}
+      <section className="ve-inspector-section ve-keyframe-section">
+        <div className="ve-section-heading">
+          <div>
+            <h3>关键帧</h3>
+            <p>在播放头位置记录参数变化</p>
+          </div>
+          <span>{clip.keyframes?.length ?? 0}</span>
         </div>
-      </section>
-      <section>
-        <h3>关键帧 · {clip.keyframes?.length ?? 0}</h3>
         <div className="ve-keyframes">
+          {(clip.keyframes?.length ?? 0) === 0 ? (
+            <p className="ve-keyframes-empty">点击参数旁的菱形按钮添加关键帧</p>
+          ) : null}
           {(clip.keyframes ?? []).map((keyframe) => (
             <div key={keyframe.id}>
               <Diamond aria-hidden />
@@ -319,6 +538,7 @@ export function VideoEditorInspector({
               </span>
               <button
                 className="ve-key-easing"
+                type="button"
                 title="切换插值"
                 onClick={() => {
                   const modes = [
@@ -352,6 +572,7 @@ export function VideoEditorInspector({
                 {keyframe.interpolation}
               </button>
               <button
+                type="button"
                 aria-label="删除关键帧"
                 onClick={() =>
                   void commit([

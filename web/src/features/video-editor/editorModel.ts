@@ -9,6 +9,8 @@ import type {
 export const frameUs = (fps: number) => Math.round(1_000_000 / fps);
 export const snapUs = (value: number, fps: number) =>
   Math.max(0, Math.round(value / frameUs(fps)) * frameUs(fps));
+export const clipSourceTimeUs = (clip: VideoEditorClip, localUs: number) =>
+  clip.sourceInUs + Math.floor(localUs * (clip.playbackRate ?? 1));
 export const timelineDuration = (timeline?: VideoEditorTimeline) =>
   Math.max(
     1_000_000,
@@ -72,6 +74,27 @@ export function clipOpacityAt(clip: VideoEditorClip, localUs: number) {
   return Math.max(0, Math.min(1, opacity));
 }
 
+/** Returns the audio envelope applied by clip-level audio crossfades. */
+export function clipAudioGainAt(clip: VideoEditorClip, localUs: number) {
+  let gain = 1;
+  if (
+    clip.transitionIn?.kind === "audio-crossfade" &&
+    clip.transitionIn.durationUs > 0
+  ) {
+    gain *= Math.min(1, Math.max(0, localUs) / clip.transitionIn.durationUs);
+  }
+  if (
+    clip.transitionOut?.kind === "audio-crossfade" &&
+    clip.transitionOut.durationUs > 0
+  ) {
+    gain *= Math.min(
+      1,
+      Math.max(0, clip.durationUs - localUs) / clip.transitionOut.durationUs,
+    );
+  }
+  return Math.max(0, Math.min(1, gain));
+}
+
 const baseClip = (
   asset: VideoEditorAsset,
   trackId: string,
@@ -84,11 +107,12 @@ const baseClip = (
   timelineStartUs: startUs,
   durationUs: Number(asset.probe?.durationUs || 5_000_000),
   sourceInUs: 0,
+  playbackRate: 1,
   sourceLoop: false,
   assetId: asset.id,
   fontSize: 72,
   textColor: "#ffffff",
-  fitMode: "native",
+  fitMode: "cover",
   flipX: false,
   volume: 1,
   transform: {
@@ -154,6 +178,12 @@ export function operationsForAsset(
     { type: "addClip", clip: sound },
   ];
 }
+
+export const trackKindLabels = {
+  visual: "视觉轨",
+  mixed: "混合轨",
+  audio: "音频轨",
+} as const;
 
 export const newTrack = (
   kind: "visual" | "audio" | "mixed",

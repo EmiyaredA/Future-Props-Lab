@@ -1,0 +1,237 @@
+.ve-assets-panel > header > div {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.ve-assets-panel > header button {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  color: #a99fff;
+  background: transparent;
+}
+.ve-assets-panel > header button:hover:not(:disabled),
+.ve-assets-panel > header button:focus-visible {
+  border-color: #4b456f;
+  background: #27243c;
+}
+.ve-assets-panel > header button svg {
+  width: 16px;
+}
+.ve-asset-group {
+  margin-bottom: 8px;
+  border: 1px solid #292f3f;
+  border-radius: 7px;
+  background: #151a25;
+}
+.ve-asset-folder-row {
+  min-height: 34px;
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr) auto;
+  align-items: center;
+  padding: 2px 3px 2px 6px;
+  border-radius: 6px;
+  color: #c5c9d5;
+}
+.ve-asset-folder-row:hover,
+.ve-asset-folder-row:focus-within {
+  background: #202636;
+}
+.ve-folder-drag {
+  height: 26px;
+  display: grid;
+  place-items: center;
+  color: #9388f7;
+  cursor: grab;
+}
+.ve-folder-drag:active {
+  cursor: grabbing;
+}
+.ve-folder-drag svg {
+  width: 15px;
+}
+.ve-folder-toggle,
+.ve-root-assets-toggle {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 14px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 3px;
+  text-align: left;
+  border: 0;
+  background: transparent;
+}
+.ve-folder-toggle svg,
+.ve-root-assets-toggle svg {
+  width: 12px;
+  color: #7f879b;
+}
+.ve-folder-toggle strong,
+.ve-root-assets-toggle strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+}
+.ve-folder-toggle small,
+.ve-root-assets-toggle small {
+  min-width: 18px;
+  color: #7f879b;
+  text-align: center;
+  font-size: 10px;
+}
+.ve-folder-controls {
+  display: flex;
+  opacity: 0;
+}
+.ve-asset-folder-row:hover .ve-folder-controls,
+.ve-asset-folder-row:focus-within .ve-folder-controls {
+  opacity: 1;
+}
+.ve-folder-controls button {
+  width: 21px;
+  height: 25px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  color: #979fb2;
+  background: transparent;
+}
+.ve-folder-controls button:hover:not(:disabled),
+.ve-folder-controls button:focus-visible {
+  color: #c7c0ff;
+  background: #34394d;
+}
+.ve-folder-controls button:last-child {
+  color: #c8848b;
+}
+.ve-folder-controls svg {
+  width: 12px;
+}
+.ve-folder-assets {
+  min-height: 28px;
+  padding: 0 4px 4px;
+}
+.ve-folder-assets > p {
+  margin: 0;
+  padding: 8px;
+  border: 1px dashed #303748;
+  border-radius: 5px;
+  color: #666f84;
+  text-align: center;
+  font-size: 10px;
+}
+.ve-root-assets {
+  border-style: dashed;
+  background: #111620;
+}
+.ve-root-assets-toggle {
+  width: 100%;
+  min-height: 34px;
+  padding: 5px 8px;
+}
+.ve-asset-wrap {
+  margin-top: 5px;
+}
+.ve-asset-wrap:first-child {
+  margin-top: 0;
+}
+.ve-asset-wrap .ve-asset {
+  margin-bottom: 0;
+}
+.ve-asset-wrap[draggable="true"] {
+  cursor: grab;
+}
+.ve-asset-wrap[draggable="true"]:active {
+  cursor: grabbing;
+}
+.ve-asset-organize-menu {
+  display: grid;
+  gap: 3px;
+  margin-top: 2px;
+  padding: 6px;
+  border: 1px solid #3b4257;
+  border-radius: 6px;
+  background: #202635;
+  box-shadow: 0 10px 25px rgb(0 0 0 / 24%);
+}
+.ve-asset-organize-menu > div {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+}
+.ve-asset-organize-menu > strong {
+  padding: 4px 5px 1px;
+  color: #848da2;
+  font-size: 9px;
+  text-transform: uppercase;
+}
+.ve-asset-organize-menu button {
+  min-height: 27px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 7px;
+  border: 0;
+  border-radius: 4px;
+  text-align: left;
+  background: transparent;
+  font-size: 10px;
+}
+.ve-asset-organize-menu button:hover:not(:disabled),
+.ve-asset-organize-menu button:focus-visible {
+  background: #343a4e;
+}
+.ve-asset-organize-menu button:disabled {
+  opacity: 0.42;
+}
+.ve-asset-organize-menu svg {
+  width: 12px;
+}
+.ve-folder-name-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 27px 27px;
+  gap: 4px;
+  margin-bottom: 7px;
+  padding: 5px;
+  border: 1px solid #50478b;
+  border-radius: 7px;
+  background: #1c2130;
+}
+.ve-folder-name-form input {
+  min-width: 0;
+  height: 28px;
+  padding: 0 7px;
+  border: 1px solid #41485c;
+  border-radius: 5px;
+  outline: 0;
+  color: #f0f1f6;
+  background: #10141e;
+}
+.ve-folder-name-form input:focus {
+  border-color: #7669ef;
+}
+.ve-folder-name-form button {
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 5px;
+  color: #a99fff;
+  background: #30364a;
+}
+.ve-folder-name-form button svg {
+  width: 13px;
+}
+.ve-folder-name-form small {
+  grid-column: 1 / -1;
+  color: #ff9ea6;
+  font-size: 10px;
+}

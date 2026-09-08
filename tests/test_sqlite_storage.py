@@ -131,6 +131,7 @@ def test_existing_r0001_database_upgrades_without_rewriting_history(tmp_path: Pa
             ("r0040_video_editor_mixed_tracks",),
             ("r0041_visual_generation_batches",),
             ("r0042_image_compositions",),
+            ("r0043_video_editor_playback_rate",),
         ]
         assert connection.execute("SELECT COUNT(*) FROM model_test_conversations").fetchone() == (
             0,

@@ -8,6 +8,17 @@ import { VIDEO_EDITOR_MODULE } from "@features/video-editor/module";
 import { VISUAL_WORKSHOP_MODULE } from "@features/visual-workshop/module";
 import { DocsApp } from "../src/docs/DocsApp";
 
+function openDocsSearch() {
+  HTMLDialogElement.prototype.showModal = function () {
+    this.setAttribute("open", "");
+  };
+  HTMLDialogElement.prototype.close = function () {
+    this.removeAttribute("open");
+  };
+  fireEvent.click(screen.getByRole("button", { name: "搜索文档" }));
+  return screen.getByRole("dialog", { name: "搜索文档" });
+}
+
 test("renders integrations after tools and before the base model group", () => {
   const navigate = vi.fn();
   render(<StudioSidebar page="model-service" navigate={navigate} />);
@@ -194,28 +205,29 @@ test("renders and searches the documentation center", () => {
   vi.spyOn(window, "scrollTo").mockImplementation(() => undefined);
   render(<DocsApp />);
   expect(
-    screen.getByRole("heading", { name: "未来道具研究所使用指南" }),
+    screen.getByRole("heading", { name: "欢迎使用未来道具研究所" }),
   ).toBeInTheDocument();
   expect(screen.getByRole("link", { name: "返回 Studio" })).toHaveAttribute(
     "href",
-    "/model-service",
+    "/",
   );
   expect(screen.getByRole("group", { name: "外观模式" })).toBeInTheDocument();
   expect(
     screen.getByRole("complementary", { name: "本页目录" }),
   ).toBeInTheDocument();
 
+  const results = openDocsSearch();
   fireEvent.change(screen.getByRole("searchbox", { name: "搜索使用指南" }), {
     target: { value: "波纹" },
   });
   const directory = screen.getByRole("complementary", { name: "功能目录" });
   expect(
-    within(directory).getByRole("link", { name: "剧情时间轴" }),
+    within(results).getByRole("link", { name: /剧情时间轴/ }),
   ).toBeInTheDocument();
   expect(
-    within(directory).queryByRole("link", { name: "视频生成" }),
+    within(results).queryByRole("link", { name: "视频生成" }),
   ).not.toBeInTheDocument();
-  fireEvent.click(within(directory).getByRole("link", { name: "剧情时间轴" }));
+  fireEvent.click(within(results).getByRole("link", { name: /剧情时间轴/ }));
   expect(
     screen.getByRole("heading", { name: "剧情时间轴", level: 1 }),
   ).toBeInTheDocument();
@@ -252,17 +264,17 @@ test("opens documentation deep links and follows browser navigation", () => {
 test("includes the video editor delivery guide in documentation search", () => {
   window.history.replaceState({}, "", "/docs.html");
   render(<DocsApp />);
+  const results = openDocsSearch();
   fireEvent.change(screen.getByRole("searchbox", { name: "搜索使用指南" }), {
     target: { value: "代理" },
   });
-  const directory = screen.getByRole("complementary", { name: "功能目录" });
-  const link = within(directory).getByRole("link", {
-    name: "剪辑工程、快照与素材",
+  const link = within(results).getByRole("link", {
+    name: /项目与快照/,
   });
   expect(link).toBeInTheDocument();
   fireEvent.click(link);
   expect(
-    screen.getByRole("heading", { name: "剪辑工程、快照与素材", level: 1 }),
+    screen.getByRole("heading", { name: "项目与快照", level: 1 }),
   ).toBeInTheDocument();
   expect(window.location.search).toBe("?page=video-editor-projects");
 });

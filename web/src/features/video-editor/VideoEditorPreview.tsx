@@ -1,4 +1,10 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+} from "react";
 import {
   ImageDown,
   Maximize2,
@@ -12,7 +18,9 @@ import { FrameExportDialog } from "@shared/ui/FrameExportDialog";
 import { exactFramePath, exactFrameUrl, uploadVideoEditorAsset } from "./api";
 import {
   clipOpacityAt,
+  clipAudioGainAt,
   clipPropertyAt,
+  clipSourceTimeUs,
   formatTime,
   frameUs,
   timelineDuration,
@@ -47,7 +55,8 @@ function ProxyVideo({
     const node = video.current;
     if (!node) return;
     const target =
-      (clip.sourceInUs + playheadUs - clip.timelineStartUs) / 1_000_000;
+      clipSourceTimeUs(clip, playheadUs - clip.timelineStartUs) / 1_000_000;
+    node.playbackRate = clip.playbackRate ?? 1;
     if (!playing || Math.abs(node.currentTime - target) > 0.12)
       node.currentTime = Math.max(0, target);
   }, [clip, playheadUs, playing]);
@@ -99,9 +108,10 @@ function buildPreviewAudioChains(
           previous &&
           previous.assetId === clip.assetId &&
           previous.sourceLoop === clip.sourceLoop &&
+          (previous.playbackRate ?? 1) === (clip.playbackRate ?? 1) &&
           previous.timelineStartUs + previous.durationUs ===
             clip.timelineStartUs &&
-          previous.sourceInUs + previous.durationUs === clip.sourceInUs;
+          clipSourceTimeUs(previous, previous.durationUs) === clip.sourceInUs;
         if (chain && isContinuous) chain.clips.push(clip);
         else
           chains.push({
@@ -136,20 +146,16 @@ function ProxyAudioChain({
     const node = audio.current;
     if (!node || !clip) return;
     const target =
-      (clip.sourceInUs + playheadUs - clip.timelineStartUs) / 1_000_000;
+      clipSourceTimeUs(clip, playheadUs - clip.timelineStartUs) / 1_000_000;
+    node.playbackRate = clip.playbackRate ?? 1;
+    node.preservesPitch = true;
     if (!playing || Math.abs(node.currentTime - target) > 0.12)
       node.currentTime = Math.max(0, target);
+    const localUs = playheadUs - clip.timelineStartUs;
     node.volume = Math.max(
       0,
-      Math.min(
-        1,
-        clipPropertyAt(
-          clip,
-          "volume",
-          playheadUs - clip.timelineStartUs,
-          clip.volume,
-        ),
-      ),
+      Math.min(1, clipPropertyAt(clip, "volume", localUs, clip.volume)) *
+        clipAudioGainAt(clip, localUs),
     );
   }, [clip, playheadUs, playing]);
   useEffect(() => {
@@ -196,11 +202,17 @@ export function VideoEditorPreview({
     width: number;
     height: number;
   }>();
+  const [showCanvasGuides, setShowCanvasGuides] = useState(true);
+  const stageRef = useRef<HTMLDivElement>(null);
   const assetMap = useMemo(
     () => new Map(assets.map((asset) => [asset.id, asset])),
     [assets],
   );
   const fps = timeline.document.settings?.fps ?? 30;
+  const canvasWidth =
+    timeline.document.settings?.width ?? VIDEO_EDITOR_CANVAS_WIDTH;
+  const canvasHeight =
+    timeline.document.settings?.height ?? VIDEO_EDITOR_CANVAS_HEIGHT;
   const active = (timeline.document.tracks ?? [])
     .filter(
       (track) =>
@@ -223,10 +235,21 @@ export function VideoEditorPreview({
       <header>
         <strong>节目监视器</strong>
         <div>
-          <span>1920 × 1080</span>
+          <span>
+            {canvasWidth} × {canvasHeight}
+          </span>
+          <button
+            className={showCanvasGuides ? "active" : ""}
+            onClick={() => setShowCanvasGuides((value) => !value)}
+            aria-pressed={showCanvasGuides}
+            title="显示或隐藏画布边界辅助线"
+          >
+            边界线
+          </button>
           <button
             className={preciseFrame ? "active" : ""}
             onClick={() => onPreciseFrameChange(!preciseFrame)}
+            title="暂停或拖动时始终使用与导出一致的精确画面"
           >
             精确停帧
           </button>
@@ -248,21 +271,43 @@ export function VideoEditorPreview({
           >
             <ImageDown aria-hidden />
           </button>
-          <button aria-label="全屏预览">
+          <button
+            aria-label="全屏预览"
+            title="全屏预览"
+            onClick={() => {
+              const node = stageRef.current;
+              if (!node) return;
+              if (document.fullscreenElement) {
+                void document.exitFullscreen();
+              } else {
+                void node.requestFullscreen?.();
+              }
+            }}
+          >
             <Maximize2 aria-hidden />
           </button>
         </div>
       </header>
-      <div className="ve-stage-wrap">
+      <div
+        className="ve-stage-wrap"
+        style={
+          { "--ve-canvas-ratio": canvasWidth / canvasHeight } as CSSProperties
+        }
+      >
         <div
+          ref={stageRef}
           className="ve-stage"
           style={{
+            aspectRatio: canvasWidth / canvasHeight,
             background: timeline.document.settings?.backgroundColor ?? "#000",
           }}
         >
           {active.map((clip) => {
             const asset = assetMap.get(clip.assetId ?? "");
-            const geometry = previewMediaGeometry(clip, asset);
+            const geometry = previewMediaGeometry(clip, asset, {
+              width: canvasWidth,
+              height: canvasHeight,
+            });
             const transform = clip.transform ?? {
               x: 960,
               y: 540,
@@ -307,13 +352,13 @@ export function VideoEditorPreview({
                   ? "translate(0, 0)"
                   : "translate(-50%, -50%)";
             const style = {
-              left: `${(x / VIDEO_EDITOR_CANVAS_WIDTH) * 100}%`,
-              top: `${(y / VIDEO_EDITOR_CANVAS_HEIGHT) * 100}%`,
+              left: `${(x / canvasWidth) * 100}%`,
+              top: `${(y / canvasHeight) * 100}%`,
               width: geometry
-                ? `${(geometry.width / VIDEO_EDITOR_CANVAS_WIDTH) * 100}%`
+                ? `${(geometry.width / canvasWidth) * 100}%`
                 : undefined,
               height: geometry
-                ? `${(geometry.height / VIDEO_EDITOR_CANVAS_HEIGHT) * 100}%`
+                ? `${(geometry.height / canvasHeight) * 100}%`
                 : undefined,
               opacity: clipOpacityAt(clip, localUs),
               filter: `brightness(${brightness})`,
@@ -360,7 +405,7 @@ export function VideoEditorPreview({
               </div>
             );
           })}
-          {!playing && preciseFrame ? (
+          {!playing ? (
             <img
               className="ve-precise-frame"
               key={preciseUrl}
@@ -371,6 +416,15 @@ export function VideoEditorPreview({
               }}
             />
           ) : null}
+          <span
+            className={`ve-canvas-guides ${showCanvasGuides ? "is-visible" : ""}`}
+            aria-hidden="true"
+          >
+            <i className="ve-canvas-guides-label">
+              画布边界 · {canvasWidth} × {canvasHeight}
+            </i>
+            <i className="ve-canvas-guides-center" />
+          </span>
           <span className="ve-safe-area" aria-hidden />
         </div>
         <div className="ve-proxy-audio" aria-hidden>
@@ -398,7 +452,11 @@ export function VideoEditorPreview({
         >
           <SkipBack aria-hidden />
         </button>
-        <button className="play" onClick={() => setPlaying((value) => !value)}>
+        <button
+          className="play"
+          aria-label={playing ? "暂停" : "播放"}
+          onClick={() => setPlaying((value) => !value)}
+        >
           {playing ? <Pause aria-hidden /> : <Play aria-hidden />}
         </button>
         <button

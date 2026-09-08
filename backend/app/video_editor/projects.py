@@ -45,7 +45,9 @@ def default_timeline() -> dict:
             "height": 1080,
             "fps": 30,
             "backgroundColor": "#000000",
+            "videoFitPolicyVersion": 1,
         },
+        "assetOrganization": {"folders": [], "rootAssetIds": []},
         "tracks": [
             {
                 "id": "visual-1",

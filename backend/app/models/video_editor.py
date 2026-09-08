@@ -34,6 +34,7 @@ class VideoEditorTimeline(Base):
     project_id: Mapped[str] = mapped_column(
         String(36), ForeignKey("video_editor_projects.id", ondelete="CASCADE"), primary_key=True
     )
+    # Clip playbackRate is stored inside this JSON; legacy snapshots default to 1x.
     document: Mapped[dict] = mapped_column(JSON, default=dict)
     revision: Mapped[int] = mapped_column(Integer, default=0)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, onupdate=utc_now)

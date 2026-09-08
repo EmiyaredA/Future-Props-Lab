@@ -45,6 +45,7 @@ from db.migrations.versions import (
     r0040_video_editor_mixed_tracks,
     r0041_visual_generation_batches,
     r0042_image_compositions,
+    r0043_video_editor_playback_rate,
 )
 
 
@@ -208,6 +209,7 @@ MIGRATIONS = (
         r0041_visual_generation_batches.SQL,
     ),
     Migration(r0042_image_compositions.MIGRATION_ID, r0042_image_compositions.SQL),
+    Migration(r0043_video_editor_playback_rate.MIGRATION_ID, r0043_video_editor_playback_rate.SQL),
 )
 
 LATEST_MIGRATION_ID = MIGRATIONS[-1].migration_id

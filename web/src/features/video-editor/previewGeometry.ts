@@ -55,23 +55,17 @@ export function mediaProbeDimensions(
 function fittedDimensions(
   clip: VideoEditorClip,
   source: Dimensions,
+  canvas: Dimensions,
 ): Dimensions {
   if (clip.fitMode === "cover" || clip.fitMode === "contain") {
     const ratio =
       clip.fitMode === "cover"
-        ? Math.max(
-            VIDEO_EDITOR_CANVAS_WIDTH / source.width,
-            VIDEO_EDITOR_CANVAS_HEIGHT / source.height,
-          )
-        : Math.min(
-            VIDEO_EDITOR_CANVAS_WIDTH / source.width,
-            VIDEO_EDITOR_CANVAS_HEIGHT / source.height,
-          );
+        ? Math.max(canvas.width / source.width, canvas.height / source.height)
+        : Math.min(canvas.width / source.width, canvas.height / source.height);
     return { width: source.width * ratio, height: source.height * ratio };
   }
   if (clip.fitMode === "height" && clip.heightPercent) {
-    const ratio =
-      (VIDEO_EDITOR_CANVAS_HEIGHT * clip.heightPercent) / 100 / source.height;
+    const ratio = (canvas.height * clip.heightPercent) / 100 / source.height;
     return { width: source.width * ratio, height: source.height * ratio };
   }
   return source;
@@ -97,11 +91,15 @@ export function paddedVideoProxyCrop(source: Dimensions): VideoProxyCrop {
 export function previewMediaGeometry(
   clip: VideoEditorClip,
   asset?: VideoEditorAsset,
+  canvas: Dimensions = {
+    width: VIDEO_EDITOR_CANVAS_WIDTH,
+    height: VIDEO_EDITOR_CANVAS_HEIGHT,
+  },
 ): PreviewMediaGeometry | undefined {
   if (clip.kind === "color")
     return {
-      width: VIDEO_EDITOR_CANVAS_WIDTH,
-      height: VIDEO_EDITOR_CANVAS_HEIGHT,
+      width: canvas.width,
+      height: canvas.height,
     };
   if (clip.kind !== "video" && clip.kind !== "image") return undefined;
   const source = mediaProbeDimensions(asset) ?? {
@@ -109,7 +107,7 @@ export function previewMediaGeometry(
     height: VIDEO_EDITOR_CANVAS_HEIGHT,
   };
   return {
-    ...fittedDimensions(clip, source),
+    ...fittedDimensions(clip, source, canvas),
     proxyCrop: clip.kind === "video" ? paddedVideoProxyCrop(source) : undefined,
   };
 }

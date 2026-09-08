@@ -124,6 +124,155 @@ async def test_video_editor_timeline_cas_idempotency_and_overlap_validation() ->
 
 
 @pytest.mark.asyncio
+async def test_video_editor_asset_organization_validation_and_delete_cleanup() -> None:
+    await _reset()
+    transport = httpx.ASGITransport(app=app)
+    async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+        project = (
+            await client.post("/v1/video-editor/projects", json={"title": "素材编排"})
+        ).json()
+        asset_ids: list[str] = []
+        for filename in ("scene-a.png", "scene-b.png"):
+            image = io.BytesIO()
+            Image.new("RGB", (16, 16), "#674fd1").save(image, format="PNG")
+            response = await client.post(
+                f"/v1/video-editor/projects/{project['id']}/assets",
+                files={"upload": (filename, image.getvalue(), "image/png")},
+            )
+            assert response.status_code == 200, response.text
+            asset_ids.append(response.json()["id"])
+
+        organization = {
+            "folders": [{"id": "folder-scenes", "name": " 场景 ", "assetIds": [asset_ids[0]]}],
+            "rootAssetIds": [asset_ids[1]],
+        }
+        saved = await client.post(
+            f"/v1/video-editor/projects/{project['id']}/timeline/operations",
+            json={
+                "expectedRevision": 0,
+                "requestId": "organize-assets-1",
+                "operations": [{"type": "setAssetOrganization", "organization": organization}],
+            },
+        )
+        assert saved.status_code == 200, saved.text
+        assert saved.json()["document"]["assetOrganization"] == {
+            "folders": [{"id": "folder-scenes", "name": "场景", "assetIds": [asset_ids[0]]}],
+            "rootAssetIds": [asset_ids[1]],
+        }
+
+        duplicate = await client.post(
+            f"/v1/video-editor/projects/{project['id']}/timeline/operations",
+            json={
+                "expectedRevision": 1,
+                "requestId": "organize-assets-duplicate",
+                "operations": [
+                    {
+                        "type": "setAssetOrganization",
+                        "organization": {
+                            "folders": [
+                                {
+                                    "id": "folder-scenes",
+                                    "name": "场景",
+                                    "assetIds": [asset_ids[0]],
+                                }
+                            ],
+                            "rootAssetIds": [asset_ids[0]],
+                        },
+                    }
+                ],
+            },
+        )
+        assert duplicate.status_code == 422
+        duplicate_name = await client.post(
+            f"/v1/video-editor/projects/{project['id']}/timeline/operations",
+            json={
+                "expectedRevision": 1,
+                "requestId": "organize-folders-duplicate-name",
+                "operations": [
+                    {
+                        "type": "setAssetOrganization",
+                        "organization": {
+                            "folders": [
+                                {"id": "folder-a", "name": "场景", "assetIds": []},
+                                {"id": "folder-b", "name": "场景", "assetIds": []},
+                            ],
+                            "rootAssetIds": asset_ids,
+                        },
+                    }
+                ],
+            },
+        )
+        assert duplicate_name.status_code == 422
+
+        other = (await client.post("/v1/video-editor/projects", json={"title": "其他工程"})).json()
+        other_image = io.BytesIO()
+        Image.new("RGB", (16, 16), "#222222").save(other_image, format="PNG")
+        foreign_asset = (
+            await client.post(
+                f"/v1/video-editor/projects/{other['id']}/assets",
+                files={"upload": ("foreign.png", other_image.getvalue(), "image/png")},
+            )
+        ).json()
+        foreign = await client.post(
+            f"/v1/video-editor/projects/{project['id']}/timeline/operations",
+            json={
+                "expectedRevision": 1,
+                "requestId": "organize-assets-foreign",
+                "operations": [
+                    {
+                        "type": "setAssetOrganization",
+                        "organization": {
+                            "folders": [],
+                            "rootAssetIds": [foreign_asset["id"]],
+                        },
+                    }
+                ],
+            },
+        )
+        assert foreign.status_code == 422
+        assert foreign.json()["code"] == "invalid_asset"
+
+        deleted = await client.delete(
+            f"/v1/video-editor/projects/{project['id']}/assets/{asset_ids[0]}"
+        )
+        assert deleted.status_code == 200, deleted.text
+        timeline = (await client.get(f"/v1/video-editor/projects/{project['id']}/timeline")).json()
+        assert timeline["revision"] == 2
+        assert timeline["document"]["assetOrganization"]["folders"][0]["assetIds"] == []
+        used = await client.post(
+            f"/v1/video-editor/projects/{project['id']}/timeline/operations",
+            json={
+                "expectedRevision": 2,
+                "requestId": "organize-assets-used",
+                "operations": [
+                    {
+                        "type": "addClip",
+                        "clip": {
+                            "id": "organized-image",
+                            "trackId": "visual-1",
+                            "kind": "image",
+                            "name": "scene-b",
+                            "timelineStartUs": 0,
+                            "durationUs": 1_000_000,
+                            "sourceInUs": 0,
+                            "assetId": asset_ids[1],
+                        },
+                    }
+                ],
+            },
+        )
+        assert used.status_code == 200, used.text
+        blocked = await client.delete(
+            f"/v1/video-editor/projects/{project['id']}/assets/{asset_ids[1]}"
+        )
+        assert blocked.status_code == 422
+        assert blocked.json()["code"] == "asset_in_use"
+        unchanged = (await client.get(f"/v1/video-editor/projects/{project['id']}/timeline")).json()
+        assert unchanged["revision"] == 3
+        assert unchanged["document"]["assetOrganization"]["rootAssetIds"] == [asset_ids[1]]
+
+
+@pytest.mark.asyncio
 async def test_video_editor_media_is_copied_and_proxy_metadata_is_retryable() -> None:
     await _reset()
     image = io.BytesIO()
@@ -218,6 +367,42 @@ def test_video_editor_frame_evaluator_interpolates_and_marks_gaps() -> None:
         FrameSource(image_for_clip=lambda _clip, _time: None, font_for_clip=lambda _clip: None),
     ).render(2_000_000, size=(320, 180))
     assert frame.size == (320, 180)
+
+
+def test_video_editor_cover_fit_fills_canvas_without_letterboxing() -> None:
+    clip = {
+        **color_clip("portrait", 0, 1_000_000),
+        "kind": "image",
+        "name": "portrait",
+        "assetId": "portrait",
+        "color": None,
+        "fitMode": "cover",
+    }
+    document = VideoEditorTimelineDocument.model_validate(
+        {
+            "settings": {"width": 1920, "height": 1080, "backgroundColor": "#000000"},
+            "tracks": [
+                {
+                    "id": "visual-1",
+                    "kind": "visual",
+                    "name": "V1",
+                    "order": 0,
+                    "clips": [clip],
+                }
+            ],
+        }
+    )
+    portrait = Image.new("RGBA", (400, 800), (220, 40, 30, 255))
+    frame = TimelineFrameRenderer(
+        document,
+        FrameSource(
+            image_for_clip=lambda _clip, _time: portrait.copy(),
+            font_for_clip=lambda _clip: None,
+        ),
+    ).render(0)
+
+    assert frame.getpixel((0, 0)) == (220, 40, 30)
+    assert frame.getpixel((1919, 1079)) == (220, 40, 30)
 
 
 def test_video_editor_frame_evaluator_honors_bottom_anchor_and_brightness() -> None:

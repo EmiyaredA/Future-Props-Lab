@@ -652,6 +652,17 @@ def test_delivery_docs_match_current_migration_and_three_workshops() -> None:
     )
 
 
+def test_documentation_markdown_and_compatibility_sources_are_present() -> None:
+    docs_root = WEB_SRC / "docs"
+    assert len(list((docs_root / "articles").rglob("*.md"))) >= 105
+    assert (docs_root / "legacyLinks.json").is_file()
+    content = (docs_root / "content.ts").read_text(encoding="utf-8")
+    assert "import.meta.glob" in content
+    assert "architecture,operations,reference" in content
+    assert not (docs_root / "videoEditorContent.ts").exists()
+    assert (REPO_ROOT / "web/public/docs/sources.json").is_file()
+
+
 def test_galgame_protocol_and_schema_modules_stay_split() -> None:
     route_root = BACKEND_APP / "routes" / "galgame_workshop"
     assert {"projects.py", "story.py", "assets.py", "asr.py", "maintenance.py"}.issubset(

@@ -1,190 +1,194 @@
-import { useEffect, useMemo, useRef, useState, type MouseEvent } from "react";
-import {
-  ArrowLeft,
-  ArrowRight,
-  BookOpenText,
-  ChevronRight,
-  Menu,
-  Search,
-  X,
-} from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Search, Menu, X } from "lucide-react";
 import { BrandMark } from "@shared/ui/BrandMark";
 import { ThemeToggle } from "@shared/ui/ThemeToggle";
 import {
-  GUIDE_GROUPS,
+  CATEGORY_LABELS,
   GUIDE_PAGES,
+  GROUPS,
+  pageHref,
   guideSearchText,
-  type GuidePage,
-  type GuideSection,
+  searchHeading,
+  resolveLocation,
 } from "./content";
-
-function pageFromLocation() {
-  const requested = new URLSearchParams(window.location.search).get("page");
-  return GUIDE_PAGES.find((page) => page.id === requested) ?? GUIDE_PAGES[0];
-}
-
-function pageHref(page: GuidePage) {
-  return `/docs.html?page=${encodeURIComponent(page.id)}`;
-}
-
-function Section({ section }: { section: GuideSection }) {
-  return (
-    <section className="docs-article-section" id={section.id}>
-      <h2>{section.title}</h2>
-      {section.paragraphs?.map((paragraph) => (
-        <p key={paragraph}>{paragraph}</p>
-      ))}
-      {section.steps?.length ? (
-        <ol className="docs-steps">
-          {section.steps.map((step) => (
-            <li key={step}>{step}</li>
-          ))}
-        </ol>
-      ) : null}
-      {section.bullets?.length ? (
-        <ul className="docs-bullets">
-          {section.bullets.map((bullet) => (
-            <li key={bullet}>{bullet}</li>
-          ))}
-        </ul>
-      ) : null}
-      {section.table ? (
-        <div className="docs-table-wrap">
-          <table>
-            <thead>
-              <tr>
-                {section.table.headers.map((header) => (
-                  <th key={header}>{header}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {section.table.rows.map((row) => (
-                <tr key={row.join("|")}>
-                  {row.map((cell, index) =>
-                    index === 0 ? (
-                      <th scope="row" key={cell}>
-                        {cell}
-                      </th>
-                    ) : (
-                      <td key={cell}>{cell}</td>
-                    ),
-                  )}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      ) : null}
-      {section.image ? (
-        <figure className="docs-shot">
-          <a href={section.image.src} target="_blank" rel="noreferrer">
-            <img
-              src={section.image.src}
-              alt={section.image.alt}
-              loading="lazy"
-            />
-          </a>
-          <figcaption>{section.image.caption}</figcaption>
-        </figure>
-      ) : null}
-      {section.note ? (
-        <aside className="docs-note">{section.note}</aside>
-      ) : null}
-    </section>
+import { DocsMarkdown, CopyButton } from "./DocsMarkdown";
+import { DocsNavigation } from "./DocsNavigation";
+function currentLocation() {
+  return resolveLocation(
+    new URLSearchParams(location.search).get("page") || "overview",
+    location.hash,
   );
 }
-
+function currentPage() {
+  return currentLocation().page;
+}
+function scrollToLocation() {
+  const { section } = currentLocation();
+  if (section) document.getElementById(section)?.scrollIntoView();
+  else window.scrollTo(0, 0);
+}
 export function DocsApp() {
-  const searchRef = useRef<HTMLInputElement>(null);
-  const [page, setPage] = useState(pageFromLocation);
+  const [page, setPage] = useState(currentPage);
+  const [drawer, setDrawer] = useState(false);
   const [query, setQuery] = useState("");
-  const [drawerOpen, setDrawerOpen] = useState(false);
-  const [activeSection, setActiveSection] = useState(
-    page.sections[0]?.id ?? "",
-  );
-  const [readingProgress, setReadingProgress] = useState(0);
-  const pageIndex = GUIDE_PAGES.findIndex(
-    (candidate) => candidate.id === page.id,
-  );
-  const previous = GUIDE_PAGES[pageIndex - 1];
-  const next = GUIDE_PAGES[pageIndex + 1];
-  const normalizedQuery = query.trim().toLocaleLowerCase("zh-CN");
-  const matches = useMemo(
-    () =>
-      normalizedQuery
-        ? new Set(
-            GUIDE_PAGES.filter((candidate) =>
-              guideSearchText(candidate).includes(normalizedQuery),
-            ).map((candidate) => candidate.id),
-          )
-        : new Set(GUIDE_PAGES.map((candidate) => candidate.id)),
-    [normalizedQuery],
-  );
-
-  useEffect(() => {
-    const onPopState = () => setPage(pageFromLocation());
-    window.addEventListener("popstate", onPopState);
-    return () => window.removeEventListener("popstate", onPopState);
+  const [all, setAll] = useState(false);
+  const [active, setActive] = useState("");
+  const [image, setImage] = useState<{ src: string; alt: string } | null>(null);
+  const search = useRef<HTMLDialogElement>(null);
+  const lightbox = useRef<HTMLDialogElement>(null);
+  const drawerRef = useRef<HTMLElement>(null);
+  const menuRef = useRef<HTMLButtonElement>(null);
+  const priorFocus = useRef<HTMLElement | null>(null);
+  const input = useRef<HTMLInputElement>(null);
+  const openImage = useCallback((src: string, alt: string) => {
+    priorFocus.current = document.activeElement as HTMLElement;
+    setImage({ src, alt });
   }, []);
-
+  const siblings = GUIDE_PAGES.filter(
+    (p) =>
+      p.category === page.category &&
+      (page.context ? p.context === page.context : !p.context),
+  );
+  const index = siblings.findIndex((p) => p.id === page.id);
+  const term = query.trim().toLocaleLowerCase("zh-CN");
+  const matches = GUIDE_PAGES.filter(
+    (p) =>
+      (all || p.category === page.category) &&
+      term &&
+      guideSearchText(p).includes(term),
+  );
+  const openSearch = () => {
+    priorFocus.current = document.activeElement as HTMLElement;
+    search.current?.showModal();
+    input.current?.focus();
+  };
   useEffect(() => {
-    const onKeyDown = (event: KeyboardEvent) => {
-      const target = event.target as HTMLElement | null;
-      const editing =
-        target instanceof HTMLInputElement ||
-        target instanceof HTMLTextAreaElement ||
-        target?.isContentEditable;
-      if (event.key === "/" && !editing && !event.metaKey && !event.ctrlKey) {
+    function sync() {
+      setPage(currentPage());
+      setDrawer(false);
+      requestAnimationFrame(scrollToLocation);
+    }
+    function click(event: MouseEvent) {
+      const a = (event.target as Element).closest<HTMLAnchorElement>("a[href]");
+      if (
+        !a ||
+        a.target ||
+        event.button ||
+        event.metaKey ||
+        event.ctrlKey ||
+        event.altKey ||
+        event.shiftKey
+      )
+        return;
+      const url = new URL(a.href, location.href);
+      if (url.origin !== location.origin || url.pathname !== "/docs.html")
+        return;
+      event.preventDefault();
+      history.pushState({}, "", url);
+      sync();
+      search.current?.close();
+      requestAnimationFrame(() => {
+        scrollToLocation();
+        if (!url.hash) {
+          document.querySelector<HTMLHeadingElement>(".docs-prose h1")?.focus();
+        }
+      });
+    }
+    function key(event: KeyboardEvent) {
+      if (
+        event.key === "Escape" &&
+        (search.current?.open || lightbox.current?.open)
+      ) {
         event.preventDefault();
-        searchRef.current?.focus();
+        search.current?.close();
+        lightbox.current?.close();
+        return;
       }
+      const editing = (event.target as HTMLElement).closest(
+        "input,textarea,[contenteditable=true]",
+      );
+      if (
+        (event.key === "/" && !editing) ||
+        ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k")
+      ) {
+        event.preventDefault();
+        openSearch();
+      }
+    }
+    window.addEventListener("popstate", sync);
+    document.addEventListener("click", click);
+    document.addEventListener("keydown", key);
+    return () => {
+      window.removeEventListener("popstate", sync);
+      document.removeEventListener("click", click);
+      document.removeEventListener("keydown", key);
     };
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
   }, []);
-
   useEffect(() => {
-    document.title = `${page.title} · 未来道具研究所文档中心`;
-    setActiveSection(page.sections[0]?.id ?? "");
+    document.title = page.title + " · 未来道具研究所文档中心";
+    const timer = requestAnimationFrame(scrollToLocation);
     const update = () => {
-      const article = document.querySelector<HTMLElement>(".docs-article");
-      if (!article) return;
-      const sections = page.sections
-        .map((section) => document.getElementById(section.id))
-        .filter((element): element is HTMLElement => Boolean(element));
-      const active = [...sections]
-        .reverse()
-        .find((section) => section.getBoundingClientRect().top <= 150);
-      setActiveSection(active?.id ?? sections[0]?.id ?? "");
-      const bounds = article.getBoundingClientRect();
-      const available = Math.max(1, bounds.height - window.innerHeight + 120);
-      setReadingProgress(
-        Math.round(Math.min(1, Math.max(0, -bounds.top / available)) * 100),
+      const headings = page.headings.filter((h) => h.level > 1);
+      setActive(
+        [...headings]
+          .reverse()
+          .find(
+            (h) =>
+              (document.getElementById(h.id)?.getBoundingClientRect().top ??
+                Infinity) < 160,
+          )?.id ||
+          headings[0]?.id ||
+          "",
       );
     };
     update();
     window.addEventListener("scroll", update, { passive: true });
-    window.addEventListener("resize", update);
     return () => {
+      cancelAnimationFrame(timer);
       window.removeEventListener("scroll", update);
-      window.removeEventListener("resize", update);
     };
   }, [page]);
-
-  const navigate = (
-    event: MouseEvent<HTMLAnchorElement>,
-    target: GuidePage,
-  ) => {
-    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey)
-      return;
-    event.preventDefault();
-    window.history.pushState({}, "", pageHref(target));
-    setPage(target);
-    setDrawerOpen(false);
-    window.scrollTo?.({ top: 0, behavior: "auto" });
+  useEffect(() => {
+    if (image) lightbox.current?.showModal();
+  }, [image]);
+  useEffect(() => {
+    if (!drawer) return;
+    const before = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    drawerRef.current?.querySelector<HTMLElement>("a,button,summary")?.focus();
+    const key = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setDrawer(false);
+        menuRef.current?.focus();
+      }
+      if (e.key === "Tab") {
+        const items = Array.from(
+          drawerRef.current?.querySelectorAll<HTMLElement>(
+            "a,button,summary",
+          ) || [],
+        ).filter((el) => el.getClientRects().length);
+        const first = items[0],
+          last = items.at(-1);
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          last?.focus();
+        }
+        if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first?.focus();
+        }
+      }
+    };
+    document.addEventListener("keydown", key);
+    return () => {
+      document.body.style.overflow = before;
+      document.removeEventListener("keydown", key);
+    };
+  }, [drawer]);
+  const closeDrawer = () => {
+    setDrawer(false);
+    menuRef.current?.focus();
   };
-
   return (
     <div className="docs-shell">
       <a className="docs-skip-link" href="#docs-content">
@@ -192,174 +196,194 @@ export function DocsApp() {
       </a>
       <header className="docs-header">
         <button
-          type="button"
+          ref={menuRef}
           className="docs-menu-button"
-          aria-label={drawerOpen ? "关闭功能目录" : "打开功能目录"}
-          aria-expanded={drawerOpen}
-          onClick={() => setDrawerOpen((current) => !current)}
+          aria-label={drawer ? "关闭功能目录" : "打开功能目录"}
+          aria-expanded={drawer}
+          onClick={() => (drawer ? closeDrawer() : setDrawer(true))}
         >
-          {drawerOpen ? <X aria-hidden /> : <Menu aria-hidden />}
+          {drawer ? <X /> : <Menu />}
         </button>
-        <a
-          className="docs-brand"
-          href={pageHref(GUIDE_PAGES[0])}
-          onClick={(event) => navigate(event, GUIDE_PAGES[0])}
-        >
-          <BrandMark size={38} />
+        <a className="docs-brand" href={pageHref("overview")}>
+          <BrandMark size={34} />
           <span>
             <strong>未来道具研究所</strong>
             <small>文档中心</small>
           </span>
         </a>
         <nav className="docs-primary-nav" aria-label="文档中心分类">
-          <a
-            aria-current="page"
-            href={pageHref(GUIDE_PAGES[0])}
-            onClick={(event) => navigate(event, GUIDE_PAGES[0])}
-          >
-            使用指南
-          </a>
+          {Object.entries(CATEGORY_LABELS).map(([key, label]) => (
+            <a
+              key={key}
+              aria-current={page.category === key ? "page" : undefined}
+              href={pageHref(GUIDE_PAGES.find((p) => p.category === key)!)}
+            >
+              {label}
+            </a>
+          ))}
         </nav>
-        <label className="docs-search">
-          <Search aria-hidden />
-          <span className="sr-only">搜索使用指南</span>
-          <input
-            ref={searchRef}
-            type="search"
-            aria-label="搜索使用指南"
-            placeholder="搜索视频、时间轴或线路检查"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-          />
-          <kbd>/</kbd>
-        </label>
         <div className="docs-actions">
-          <a href="/model-service">返回 Studio</a>
+          <button
+            className="docs-search-trigger"
+            onClick={openSearch}
+            aria-label="搜索文档"
+          >
+            <Search size={18} />
+            <kbd>⌘ K</kbd>
+          </button>
+          <a href="/">返回 Studio</a>
           <ThemeToggle compact />
         </div>
       </header>
-
       <div className="docs-layout">
         <aside
-          className={`docs-sidebar${drawerOpen ? " open" : ""}`}
+          ref={drawerRef}
+          className={"docs-sidebar" + (drawer ? " open" : "")}
           aria-label="功能目录"
         >
-          {GUIDE_GROUPS.map((group) => {
-            const pages = group.pages.filter((candidate) =>
-              matches.has(candidate.id),
-            );
-            if (!pages.length) return null;
-            return (
-              <section key={group.title} className="docs-nav-group">
-                <h2>{group.title}</h2>
-                {pages.map((candidate) => (
-                  <a
-                    key={candidate.id}
-                    className={candidate.id === page.id ? "active" : ""}
-                    aria-current={candidate.id === page.id ? "page" : undefined}
-                    href={pageHref(candidate)}
-                    onClick={(event) => navigate(event, candidate)}
-                  >
-                    {candidate.title}
-                  </a>
-                ))}
-              </section>
-            );
-          })}
-          {!matches.size ? (
-            <p className="docs-nav-empty">没有找到匹配的指南。</p>
-          ) : null}
-        </aside>
-        <button
-          type="button"
-          className={`docs-drawer-backdrop${drawerOpen ? " open" : ""}`}
-          aria-label="关闭功能目录"
-          onClick={() => setDrawerOpen(false)}
-        />
-
-        <main className="docs-main" id="docs-content">
-          <article className="docs-article">
-            <div className="docs-breadcrumbs">
+          <nav className="docs-mobile-categories" aria-label="移动端文档分类">
+            {Object.entries(CATEGORY_LABELS).map(([key, label]) => (
               <a
-                href={pageHref(GUIDE_PAGES[0])}
-                onClick={(event) => navigate(event, GUIDE_PAGES[0])}
+                key={key}
+                href={pageHref(GUIDE_PAGES.find((p) => p.category === key)!)}
               >
-                文档中心
-              </a>
-              <ChevronRight aria-hidden />
-              <span>{page.group}</span>
-            </div>
-            <span className="docs-eyebrow">{page.eyebrow}</span>
-            <h1 tabIndex={-1}>{page.title}</h1>
-            <p className="docs-lead">{page.lead}</p>
-            {page.sections.map((section) => (
-              <Section key={section.id} section={section} />
-            ))}
-            <nav className="docs-page-nav" aria-label="上一篇和下一篇">
-              {previous ? (
-                <a
-                  href={pageHref(previous)}
-                  onClick={(event) => navigate(event, previous)}
-                >
-                  <ArrowLeft aria-hidden />
-                  <span>
-                    <small>上一篇</small>
-                    <strong>{previous.title}</strong>
-                  </span>
-                </a>
-              ) : (
-                <span />
-              )}
-              {next ? (
-                <a
-                  className="next"
-                  href={pageHref(next)}
-                  onClick={(event) => navigate(event, next)}
-                >
-                  <span>
-                    <small>下一篇</small>
-                    <strong>{next.title}</strong>
-                  </span>
-                  <ArrowRight aria-hidden />
-                </a>
-              ) : (
-                <span />
-              )}
-            </nav>
-            <footer className="docs-footer">
-              未来道具研究所文档中心 · 以当前可见功能和实际界面为准
-            </footer>
-          </article>
-        </main>
-
-        <aside className="docs-toc" aria-label="本页目录">
-          <h2>
-            <BookOpenText aria-hidden /> 本页目录
-          </h2>
-          <nav>
-            {page.sections.map((section) => (
-              <a
-                key={section.id}
-                className={activeSection === section.id ? "active" : ""}
-                aria-current={
-                  activeSection === section.id ? "location" : undefined
-                }
-                href={`#${section.id}`}
-              >
-                {section.title}
+                {label}
               </a>
             ))}
           </nav>
-          <div className="docs-progress" aria-label="阅读进度">
-            <span>
-              阅读进度 <strong>{readingProgress}%</strong>
-            </span>
-            <i>
-              <b style={{ width: `${readingProgress}%` }} />
-            </i>
-          </div>
+          <DocsNavigation page={page} />
+        </aside>
+        <button
+          className={"docs-drawer-backdrop" + (drawer ? " open" : "")}
+          aria-label="关闭功能目录"
+          onClick={closeDrawer}
+        />
+        <main className="docs-main" id="docs-content">
+          <article className="docs-article">
+            <div className="docs-article-toolbar">
+              <div className="docs-breadcrumbs">
+                <a href={pageHref("overview")}>文档中心</a>
+                <span> / {GROUPS.find((g) => g.id === page.group)?.title}</span>
+              </div>
+              <CopyButton value={page.markdown} label="复制页面" />
+            </div>
+            {page.id === "overview" && (
+              <button className="docs-home-search" onClick={openSearch}>
+                <Search size={18} />
+                搜索文档、指南和 API…<kbd>⌘ K</kbd>
+              </button>
+            )}
+            <DocsMarkdown page={page} onImage={openImage} />
+            <nav className="docs-page-nav" aria-label="上一篇和下一篇">
+              {index > 0 ? (
+                <a href={pageHref(siblings[index - 1])}>
+                  ← 上一篇
+                  <br />
+                  {siblings[index - 1].title}
+                </a>
+              ) : (
+                <span />
+              )}
+              {index >= 0 && index < siblings.length - 1 ? (
+                <a className="next" href={pageHref(siblings[index + 1])}>
+                  下一篇 →<br />
+                  {siblings[index + 1].title}
+                </a>
+              ) : null}
+            </nav>
+            <footer className="docs-footer">
+              未来道具研究所 · 使用说明以当前工作空间权限及所选模型能力为准
+            </footer>
+          </article>
+        </main>
+        <aside className="docs-toc" aria-label="本页目录">
+          <h2>在此页面</h2>
+          <nav>
+            {page.headings
+              .filter((h) => h.level > 1)
+              .map((h) => (
+                <a
+                  key={h.id}
+                  className={active === h.id ? "active" : ""}
+                  aria-current={active === h.id ? "location" : undefined}
+                  style={{ paddingLeft: h.level === 3 ? 24 : 12 }}
+                  href={"#" + encodeURIComponent(h.id)}
+                >
+                  {h.title}
+                </a>
+              ))}
+          </nav>
         </aside>
       </div>
+      <dialog
+        ref={search}
+        className="docs-search-dialog"
+        onClose={() => priorFocus.current?.focus()}
+        aria-label="搜索文档"
+      >
+        <div className="docs-dialog-top">
+          <input
+            ref={input}
+            type="search"
+            aria-label="搜索使用指南"
+            placeholder="搜索文章、操作或错误信息"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+          <button aria-label="关闭搜索" onClick={() => search.current?.close()}>
+            <X />
+          </button>
+        </div>
+        <label className="docs-search-scope">
+          <input
+            type="checkbox"
+            checked={all}
+            onChange={(e) => setAll(e.target.checked)}
+          />
+          搜索全部分类
+        </label>
+        <p role="status">
+          {term
+            ? `找到 ${matches.length} 篇文章`
+            : "输入关键词，搜索正文与章节标题"}
+        </p>
+        <div className="docs-search-results">
+          {matches.map((p) => {
+            const heading = searchHeading(p, term);
+            const text = p.markdown.replace(/[#*`>]/g, "");
+            const at = text.toLowerCase().indexOf(term);
+            return (
+              <a key={p.id} href={pageHref(p, heading?.id)}>
+                <small>
+                  {CATEGORY_LABELS[p.category]} ·{" "}
+                  {GROUPS.find((g) => g.id === p.group)?.title}
+                </small>
+                <strong>
+                  {p.title}
+                  {heading ? " / " + heading.title : ""}
+                </strong>
+                <span>
+                  {text.slice(Math.max(0, at - 35), Math.max(0, at - 35) + 140)}
+                </span>
+              </a>
+            );
+          })}
+        </div>
+      </dialog>
+      <dialog
+        ref={lightbox}
+        className="docs-lightbox"
+        onClose={() => {
+          setImage(null);
+          priorFocus.current?.focus();
+        }}
+        aria-label="图片预览"
+      >
+        <button autoFocus onClick={() => lightbox.current?.close()}>
+          关闭图片
+        </button>
+        {image && <img src={image.src} alt={image.alt} />}
+      </dialog>
     </div>
   );
 }

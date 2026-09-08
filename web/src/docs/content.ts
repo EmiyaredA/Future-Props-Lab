@@ -1,661 +1,208 @@
-import type { GuideGroup, GuidePage } from "./types";
-import { VIDEO_EDITOR_GUIDES } from "./videoEditorContent";
-
-export type {
-  GuideGroup,
-  GuideImage,
-  GuidePage,
-  GuideSection,
-  GuideTable,
-} from "./types";
-
-const overview: GuidePage = {
-  id: "overview",
-  group: "开始使用",
-  title: "未来道具研究所使用指南",
-  eyebrow: "DOCUMENTATION",
-  lead: "从视觉素材生成到分支故事编排和多轨剪辑，这里按真实界面说明三个 AI 应用的工作流。",
-  sections: [
-    {
-      id: "choose-workshop",
-      title: "选择创作工坊",
-      paragraphs: [
-        "视觉创作工坊适合组织文本、图片、视频和音频素材；Galgame 工坊适合维护可试玩分支故事；视频剪辑工坊适合多轨时间线与确定性成片。",
-      ],
-      table: {
-        headers: ["目标", "推荐入口", "最终结果"],
-        rows: [
-          [
-            "生成或整理视频素材",
-            "视觉创作工坊",
-            "项目素材、画布节点与生成任务",
-          ],
-          ["编写分支视觉小说", "Galgame 工坊", "可试玩故事、时间轴与线路报告"],
-          ["组装多轨成片", "视频剪辑工坊", "时间线、代理预览与 MP4"],
-          ["验证模型是否可用", "Studio 模型服务", "独立的模型测试记录"],
-        ],
-      },
-    },
-    {
-      id: "local-first",
-      title: "本地优先与自动保存",
-      bullets: [
-        "项目顶栏可在剧本、资产、叙事地图、个性化和设置之间切换；⌘/Ctrl+K 会搜索章节、Fragment、Block 正文与摘要、角色、场景和资源并直接定位。",
-        "三个工坊都使用本机项目数据，不会自动创建云端协作空间。",
-        "画布和故事采用 revision 检测并发冲突；发生冲突时先检查服务器快照，不会静默覆盖。",
-        "图片和视频生成是异步任务；完成结果会进入对应项目素材库。",
-        "删除仍被项目引用的素材前，需要先解除引用。",
-      ],
-      note: "文档以当前可见功能和实际界面为准；模型能力、时长和分辨率选项取决于已配置的生成模型。",
-    },
-    {
-      id: "project-snapshots",
-      title: "携带、复制和定位项目",
-      steps: [
-        "在视觉创作、Galgame 或视频剪辑的项目卡片上点击“导出项目快照”，下载当前可编辑状态与所需素材的 ZIP。",
-        "在项目列表点击“导入快照”并选择 ZIP；校验通过后会创建名为“原名称（副本）”的全新项目并直接打开。",
-        "共享素材会转为副本的私有文件；不可用的模型绑定会清空并显示提示，不会丢弃提示词与生成参数。",
-        "点击“打开项目文件夹”会在运行 Future Props Lab 的电脑上打开对应目录。",
-      ],
-      note: "快照不保存历史，不覆盖原项目，也不包含助手对话、任务历史、视频代理和派生缓存。打开目录只对有写权限的浏览器 Session 开放。",
-    },
-    {
-      id: "model-test-speech",
-      title: "测试语音识别模型",
-      steps: [
-        "在模型服务中启用 SenseAudio ASR Pro 或 ASR API 专业语音识别；也可以为 OpenAI 兼容模型声明 speech_recognition 能力并配置 API Key。",
-        "进入模型测试并切换到“语音识别”，上传本地音频或从当前 Workspace 的文件管理中选择。",
-        "参数区会按当前模型显示真正生效的语言、翻译、字词时间戳、文本整理、说话人、最大人数、标点、热词和缩写设置；切换模型后会恢复该模型默认值。",
-        "任务会在后台运行；完成后可试听、复制全文，并查看任务参数、译文、说话人、重叠候选、处理提示和默认收起的字词时间戳。",
-        "完成后可以导出可移植的识别 JSON 1.1，或直接创建录音标注任务；录音标注的“导入项目”兼容识别 JSON 1.0/1.1，并要求选择对应音频。标注只使用原语言识别文本。",
-        "在录音标注编辑器中也可以选择语音识别模型，并在模型下方明确设置原语言与目标语言；目标为原文时只转写，选择其他受支持语言时会创建或切换到对应版本并写入译文，模型不支持的目标语言不可选择，已有文字需要确认后才会替换。",
-        "一个录音片段可以同时勾选多位说话人；列表、波形标签和 SRT 导出会按选择顺序显示全部说话人，旧项目的单人标注保持兼容。",
-        "选中录音片段后，可用“紧接上一段”或“紧接下一段”把当前片段的一侧贴齐相邻片段，快速消除对应间隙；文字、说话人和另一侧时间保持不变。",
-      ],
-      note: "支持 MP3、WAV、M4A、OGG 且不会自动切片；ASR API 专业语音识别最大 100 MB，其余当前模型最大 10 MB，超限文件会在选择器中禁用。",
-    },
-    {
-      id: "model-log-reproduction",
-      title: "导出模型调用复现包",
-      steps: [
-        "进入“模型调用日志”，打开一条保存了完整纯文本消息的 OpenAI 或 Anthropic 调用详情，点击“导出复现包”。",
-        "解压 ZIP 并先阅读 README；通过 REPRO_API_KEY 环境变量提供测试密钥，包内不会包含管理台保存的凭证。",
-        "使用 sync 模式串行多次调用，或使用 async 模式设置调用次数和并发上限；每次响应和延迟汇总会写入 results 时间戳目录。",
-        "需要切换到测试网关时设置 REPRO_BASE_URL。批量调用可能产生真实费用和限流，应先用小批量与测试凭证验证。",
-      ],
-      note: "实时语音、语音识别、图片、视频及带附件的文本日志没有保存原始输入，详情页会说明无法导出的原因，不会生成内容不完整的复现包。",
-    },
-    {
-      id: "model-test-realtime-voice",
-      title: "测试实时语音模型",
-      steps: [
-        "在模型服务中为 SenseAudio 实时语音配置 API Key、保持 WSS 地址并启用 senseaudio-realtime-1.0。",
-        "进入模型测试并切换到“实时语音”，可配置音色、开场白、系统提示词、测试工具、VAD 阈值与断句、播放缓冲、说话打断和麦克风处理，然后允许浏览器使用麦克风。",
-        "开始通话后直接说话即可；页面会自动判断停顿、提交当前语句，并以聊天消息卡按轮次保留双方转写及语音。工具调用卡会嵌入对应模型回复，可展开查看参数、Mock 结果或失败原因。",
-        "通话中可独立静音麦克风或扬声器；结束通话或离开实时语音页会关闭麦克风、音频上下文和连接，但最近一次测试的转写和双方语音可在切换页面后回来查看、回放。",
-      ],
-      note: "固定音频协议为单声道 PCM16：输入 16 kHz、输出 24 kHz。转写和双方音频只保存在当前浏览器页面进程内，音频缓存上限为 64 MiB；开始新通话、刷新、关闭页面、登出或切换 Workspace 后清除。工具调用快照、参数、结果、状态和耗时会写入测试记录；调用日志只保存工具摘要，不保存转写正文或音频。VAD 初始化失败时需重试，不会降级为不可靠的免按键通话。",
-    },
-    {
-      id: "reading-path",
-      title: "推荐阅读顺序",
-      steps: [
-        "第一次生成视频：阅读“视觉创作工坊快速开始”与“视频生成”。",
-        "第一次制作 Galgame：阅读“Galgame 快速开始”与“剧本、角色、场景与声音”。",
-        "需要校准整轨配音：阅读“剧情时间轴”。",
-        "交付前：完成“试玩与线路检查”中的检查清单。",
-      ],
-    },
-  ],
-};
-
-const visualQuickstart: GuidePage = {
-  id: "visual-quickstart",
-  group: "视觉创作工坊",
-  title: "视觉创作工坊快速开始",
-  eyebrow: "VISUAL WORKSHOP",
-  lead: "用一个项目承载画布、私有素材、生成任务和创作助手对话。",
-  sections: [
-    {
-      id: "create-project",
-      title: "创建并进入项目",
-      steps: [
-        "从 AI 应用打开视觉创作工坊，点击“新建项目”。",
-        "在项目卡片中打开画布；需要整理文件时进入“素材”。",
-        "在画布空白处右键，添加文本、图片、视频或音频节点。",
-        "拖动节点组织空间，使用右下角控制缩放或适应屏幕。",
-      ],
-      image: {
-        src: "/docs/visual-canvas.jpg",
-        alt: "视觉创作工坊画布，包含文本、图片和视频节点",
-        caption:
-          "画布是项目的创作工作区；节点位置、标题、内容和生成草稿都会自动保存。",
-      },
-    },
-    {
-      id: "save-state",
-      title: "看懂保存状态",
-      bullets: [
-        "“保存中”表示本次修改正在写入项目画布。",
-        "“已保存”表示当前 revision 已落盘。",
-        "“存在冲突”表示另一页面更新过画布，需要选择保留本地或载入服务器版本。",
-        "“保存失败”通常是服务不可用或输入不符合校验规则。",
-      ],
-    },
-    {
-      id: "first-result",
-      title: "完成第一个结果",
-      steps: [
-        "添加图片或视频节点并选中它。",
-        "在节点检查器切换到“生成”，选择模型并填写提示词。",
-        "提交任务后可继续编辑画布，无需停留等待。",
-        "在“生成任务”查看进度；完成的媒体会绑定到节点并进入素材库。",
-      ],
-    },
-  ],
-};
-
-const visualCanvas: GuidePage = {
-  id: "visual-canvas-assets",
-  group: "视觉创作工坊",
-  title: "画布与素材",
-  eyebrow: "CANVAS & ASSETS",
-  lead: "画布负责组织创作关系，素材库负责管理可以被节点和生成任务引用的真实文件。",
-  sections: [
-    {
-      id: "canvas-actions",
-      title: "画布常用操作",
-      table: {
-        headers: ["操作", "入口", "说明"],
-        rows: [
-          ["添加节点", "画布空白处右键", "支持文本、图片、视频和音频"],
-          ["移动节点", "拖动节点卡片", "只改变画布位置，不修改素材文件"],
-          [
-            "复制节点",
-            "选中节点后的复制按钮",
-            "复制节点配置，素材仍复用同一引用",
-          ],
-          ["替换素材", "媒体节点上的“替换”", "从当前项目素材中重新绑定"],
-          [
-            "导出视频帧",
-            "选中视频节点后的导出帧按钮",
-            "暂停后可在弹窗内拖动进度条重新选帧；设置格式后下载图片，同时在右侧创建未连线图片节点",
-          ],
-          ["适应屏幕", "右下角视图控制", "把现有节点重新框入可视区域"],
-        ],
-      },
-    },
-    {
-      id: "asset-sources",
-      title: "素材的三种来源",
-      bullets: [
-        "项目私有素材：直接上传到当前项目，只在该项目内管理。",
-        "公共文件：从 Studio 文件管理导入引用，原文件仍由文件管理维护。",
-        "跨项目素材：从其他视觉项目复制独立副本，来源项目后续整理或删除不会影响当前项目。",
-        "生成结果：图片或视频任务完成后自动加入当前项目素材库。",
-      ],
-      note: "引用中的公共文件或项目素材不能直接删除；先在画布、提示词引用或任务配置中解除关联。",
-    },
-    {
-      id: "asset-drawer",
-      title: "在画布内浏览素材",
-      paragraphs: [
-        "点击左侧素材库按钮可以在不离开画布的情况下搜索和筛选项目素材。卡片视图适合看缩略图，列表视图更适合按名称快速定位；“管理素材”会打开完整素材页面。",
-      ],
-    },
-  ],
-};
-
-const visualVideo: GuidePage = {
-  id: "visual-video",
-  group: "视觉创作工坊",
-  title: "视频生成",
-  eyebrow: "VIDEO GENERATION",
-  lead: "根据镜头目标选择纯文本、图生视频、首尾帧或参考素材模式，再由当前模型能力决定可用参数。",
-  sections: [
-    {
-      id: "open-generator",
-      title: "打开视频生成器",
-      steps: [
-        "在画布空白处右键添加视频节点，或选中已有视频节点。",
-        "打开节点检查器的“生成”页签，确认当前类型为视频。",
-        "选择可用的视频生成模型；没有模型时先回到模型服务完成配置。",
-        "描述镜头主体、动作、运镜、光线和氛围，再选择输入方式。",
-      ],
-      image: {
-        src: "/docs/visual-video-generation.jpg",
-        alt: "视频节点的 AI 生成面板，展示提示词、参数和输入方式",
-        caption: "生成草稿保存在节点中；刷新或离开画布后仍可继续编辑。",
-      },
-    },
-    {
-      id: "input-modes",
-      title: "四种输入方式",
-      table: {
-        headers: ["模式", "需要的素材", "适用场景"],
-        rows: [
-          ["纯文本", "无需参考素材", "从描述直接生成新镜头"],
-          ["图生视频", "一张起始画面", "让静态构图产生动作"],
-          ["首尾帧", "必选首帧，可选尾帧", "控制镜头起点和目标画面"],
-          [
-            "参考素材",
-            "最多 9 图、3 视频、3 音频",
-            "综合借鉴角色、运动、节奏或声音",
-          ],
-        ],
-      },
-    },
-    {
-      id: "video-options",
-      title: "参数与提交",
-      bullets: [
-        "时长、比例和分辨率只显示当前模型支持的取值；切换模型后应重新核对。",
-        "“保留水印”控制供应商输出中的水印选项。",
-        "“生成音频”请求模型同时生成声音，是否生效取决于模型能力。",
-        "参考音频和视频在提交前会经过临时 HTTPS 托管；链接不会写入任务快照或调用日志。",
-      ],
-      note: "提交前确认提示词和素材引用。任务创建后会固定模型与参数快照，修改节点草稿不会反向改变已提交任务。",
-    },
-    {
-      id: "prompt-pattern",
-      title: "镜头描述模板",
-      paragraphs: [
-        "可以按“主体与环境 → 动作 → 镜头运动 → 光线与风格 → 节奏与限制”的顺序写提示词。例如：雨夜研究所走廊，调查员快步靠近闪烁的终端，镜头缓慢推进，冷蓝应急灯与浅景深，动作连贯，不改变人物服装。",
-      ],
-    },
-  ],
-};
-
-const visualTasks: GuidePage = {
-  id: "visual-tasks-assistant",
-  group: "视觉创作工坊",
-  title: "生成任务与创作助手",
-  eyebrow: "TASKS & ASSISTANT",
-  lead: "任务页负责追踪异步生成，创作助手负责理解当前画布并在确认后执行写操作。",
-  sections: [
-    {
-      id: "task-queue",
-      title: "追踪生成任务",
-      paragraphs: [
-        "打开工坊侧栏的“生成任务”，可以按项目、图片/视频类型和状态筛选。任务卡片展示进度、模型和提示词摘要；完成结果会自动保存到对应项目素材库。",
-      ],
-      image: {
-        src: "/docs/visual-tasks.jpg",
-        alt: "视觉创作工坊生成任务列表及筛选器",
-        caption: "任务在后台轮询，离开画布不会中断已经提交的生成。",
-      },
-    },
-    {
-      id: "assistant",
-      title: "使用创作助手",
-      steps: [
-        "在画布右上角打开“对话”，选择文本、图像和视频模型。",
-        "让助手总结画布、检查素材或规划下一步；读取操作无需确认。",
-        "助手准备修改画布或创建生成任务时，先查看工具步骤和影响范围。",
-        "确认后执行；发生 revision 冲突时重新读取画布再继续。",
-      ],
-    },
-    {
-      id: "troubleshooting",
-      title: "常见问题",
-      table: {
-        headers: ["现象", "检查方式"],
-        rows: [
-          ["没有可用视频模型", "在模型服务中检查供应商配置和视频生成模型状态"],
-          ["参考素材无法提交", "确认类型正确、文件仍存在且数量未超过模式上限"],
-          ["任务长时间停留", "查看任务错误信息和后端就绪状态，再决定是否重试"],
-          ["结果未绑定节点", "刷新画布并确认任务属于同一项目、目标节点仍存在"],
-        ],
-      },
-    },
-  ],
-};
-
-const galgameQuickstart: GuidePage = {
-  id: "galgame-quickstart",
-  group: "Galgame 工坊",
-  title: "Galgame 工坊快速开始",
-  eyebrow: "GALGAME WORKSHOP",
-  lead: "一个工程对应一部完整剧本；先建立入口章和最小可玩线路，再逐步补齐资产与精确演出。",
-  sections: [
-    {
-      id: "create-story",
-      title: "创建最小可玩工程",
-      steps: [
-        "新建工程并进入概览，确认工程处于草稿状态。",
-        "进入编辑器，为入口 Fragment 添加场景、对白或旁白。",
-        "使用分支、条件或调用 Block 执行目标 Fragment；章节结束后会进入下一启用章节。",
-        "打开试玩验证节奏，再用工程检查定位断路、不可达 Fragment 和循环。",
-      ],
-      image: {
-        src: "/docs/galgame-overview.jpg",
-        alt: "Galgame 工程概览，展示章节、角色、场景、Fragment 和结局摘要",
-        caption: "工程概览把编辑入口、故事规模和线路就绪状态放在同一页面。",
-      },
-    },
-    {
-      id: "story-model",
-      title: "理解章节、Fragment 与 Block",
-      bullets: [
-        "工程通过 entryChapterId 指定入口章；入口章不能删除或禁用。章节可以排序，章内入口 Fragment 是该章开始位置。",
-        "Fragment 是可调用的剧情节点；Branch、If 与 Call Fragment 执行目标后会回到调用位置。",
-        "Block 按顺序描述文本、舞台演出、媒体、变量逻辑、章节推进和返回入口章。",
-        "角色、场景、剧情 CG、变量和素材使用稳定 ID，被 Block 引用后不要随意更换。",
-      ],
-    },
-    {
-      id: "autosave",
-      title: "自动保存与冲突",
-      paragraphs: [
-        "故事以整份文档通过 revision CAS 保存。页面会显示保存中、已保存、保存失败或存在冲突；冲突时可以载入服务器快照，或在明确确认后用本地故事覆盖。任何故事修改都会把已完成工程恢复为草稿。",
-      ],
-    },
-    {
-      id: "creator-workspaces",
-      title: "叙事地图、个性化与设置",
-      bullets: [
-        "叙事地图左侧维护变量并列出分支，右侧图谱由当前 Story 和线路关系实时派生；可缩放、平移、高亮相邻因果链并双击跳回剧本。",
-        "个性化集中调整对话框底图、颜色、字体、舞台聚焦、口型同步和自定义 UI，并使用入口章节实时预览。",
-        "设置页维护项目名称、简介、入口章、画布分辨率以及角色默认锚点、尺寸和二维位置预设。五个内置位置可自由移动和排序，也可增加自定义位置；项目名称使用独立 revision，其他设置随 Story CAS 保存。",
-      ],
-    },
-  ],
-};
-
-const galgameStory: GuidePage = {
-  id: "galgame-story-assets",
-  group: "Galgame 工坊",
-  title: "剧本、角色、画面与声音",
-  eyebrow: "STORY & ASSETS",
-  lead: "把剧情事实、舞台状态和素材引用分开维护，才能让预览和线路检查保持确定性。",
-  sections: [
-    {
-      id: "script-flow",
-      title: "Block 卡片与演出时间轴",
-      paragraphs: [
-        "剧本工作区左侧选择章节和 Fragment，中间默认使用 Block 卡片按剧情顺序创作，列表顶部会随选中卡片展示执行后的全部在场角色、表情、位置、距离和发言状态；右侧上方持续显示大幅舞台预览，下方停靠属性、样式和线路检查。需要校准精确切点或独立舞台动作时，切换到“演出”查看同一批 Block 的多轨时间投影。",
-        "卡片、JSON 与演出读取同一组 Block：卡片负责创作顺序和正文，JSON 是可复制的顶层只读检查视图，右侧独立的演出入口负责精确时间。纯文本与 Ren’Py 不再作为编辑入口。",
-        "顶部“运行”会冻结当前内存 Story 并进入独占式快速预演台：左侧显示前一句、当前句和下一句，中间使用完整 16:9 舞台，右侧只读检查舞台、变量、分支和日志，底部按 Fragment 类型显示时间轴或步骤进度；快速修改产生的实时草稿可以保存当前项，也可以按顺序全部保存；也可以在独立窗口打开并手动重新载入最新编辑内容。",
-        "视频导出可在完整舞台与自定义 16:9 取景间切换；拖拽框、八向控制点和数字输入保持同步。取景偏好仅保存在当前浏览器与项目下，安全区和辅助网格不会进入成片。",
-      ],
-      image: {
-        src: "/docs/galgame-editor.jpg",
-        alt: "Galgame Block 卡片剧本编辑器，包含 Fragment、对白卡片、属性和游戏预览",
-        caption:
-          "卡片主视图让对白、场景、声音与分支顺序保持直观；高级参数仍在右侧检查器中编辑。",
-      },
-    },
-    {
-      id: "characters-scenes",
-      title: "角色、场景与剧情 CG",
-      bullets: [
-        "角色可设置主题色、默认立绘和多种表情；每个表情支持静态图片、按时间播放的普通序列帧，或由配音音量驱动的闭口、半口、张口三帧口型，Spine 与 Live2D 入口会明确显示为暂未支持。名称、主题色、默认显示名、默认表情与默认皮肤会同步到剧本；把新表情设为默认时，显式绑定旧默认的对白会转为跟随角色默认，真正指定了其他表情的对白仍保留逐句覆盖。",
-        "角色资产提供合并后的位置与尺寸舞台，可在大画布中调整站位、基准尺寸与锚点；全局方案固定存在，也可为已有角色复制并维护独立方案。角色资产是运行时坐标与尺寸的唯一事实源。",
-        "一条对白可以勾选多个同时说话角色；对话框会并列显示姓名，舞台上的这些角色会一起获得聚焦和口型响应。主角色继续承载本句表情、立绘和配音。",
-        "对白卡片和角色登场 Block 选择远、中、近距离档位与角色资产中的位置预设；Block 只维护亮度、透明度、翻转、层级和过渡，不再保存可覆盖资产配置的自由站位。",
-        "场景统一由按渲染顺序排列的图层组成；每层可设置距离与偏移，编辑器支持隔离、镜头缩放和视差预览，预览镜头不会改写 Camera Block。",
-        "顶层“资产”按游戏数据、音频和资源管理分组展示角色、场景、CG、BGM、音效、语音和资源总览，并显示各类数量。",
-        "剧情 CG 通过显示/隐藏 Block 显式演出。显示新 CG 会替换当前 CG；隐藏后恢复一直保留的背景和角色。场景切换与分支跳转不会自动关闭 CG。",
-        "CG 支持全屏与叠加两种模式：全屏的 cover 会铺满裁切，contain 会以黑色留边完整显示；叠加模式可在舞台直接拖动和等比缩放，并调整透明度及角色前后位置。",
-        "脚本预览中的角色不可拖动；调整资产位置或切换对白卡片的人物呈现后，预览会按资产预设重新计算位置。",
-      ],
-    },
-    {
-      id: "story-localization",
-      title: "人工多语言校对",
-      paragraphs: [
-        "“多语言”与“演出”并列在剧本工作区右侧入口。中栏会切换为源文与译文对照，自动提取对白、旁白、段落、浮动文字、系统消息、分支提示与选项以及结局标签；章节名、Fragment 名、角色名和场景名不会进入译稿。",
-        "每条译文引用稳定的 Block ID 和字段，不复制 Block，也不改变剧情顺序或线路。首次输入译文、添加或删除语言、修改游戏启动语言时才自动保存；仅打开或切换多语言工作区不会产生保存。",
-      ],
-      image: {
-        src: "/docs/galgame-localization.jpg",
-        alt: "Galgame 多语言译稿校对台，展示源文、英文译文、完成进度和实时预览",
-        caption:
-          "源文改变后旧译文会保留并标记为待复核；正式运行遇到缺失、空白或过期译文时自动回退源语言。",
-      },
-    },
-    {
-      id: "official-dialogue-blocks",
-      title: "官方剧情对话 Block",
-      bullets: [
-        "旁白没有角色名和立绘；空旁白按 Tab 可选择角色并原地转成对白，输入 # 会转成只供作者查看的绿色注释。",
-        "对白支持固定或变量显示名、逐句表情、舞台立绘、仅对白头像、立绘皮肤和组末保留；连续同角色对白用主题色连线。",
-        "选中文字后出现排版工具条，可设置粗体、斜体、删除线、颜色、背景色、8–200px 字号、注音，并插入变量、换行、等待和对白内联表情。",
-        "连续剧情段落会在试玩中合并为全屏阅读；段落参数只修改后续段落的速度、淡入、揭示、阅读态、历史数量和样式，不产生可见内容。",
-        "系统消息是真正的模态框：提示为单按钮，确认为双按钮并可写入布尔变量。取消和 Esc 写入 false。",
-        "定时等待可被跳过模式绕过；玩家继续等待只响应继续按钮、左键、空格、Enter 和向下滚轮，不受自动播放或跳过影响。",
-        "幕布支持全屏、上下黑边、左右黑边和四周黑边，可设置合上/打开、颜色、不透明度、动画时长以及是否等待动画完成。幕布与等待都提供截图风格的紧凑卡片和右侧专属属性。",
-        "旧 1.0/1.1 Story 会在读取时升级为 1.3；旧多背景场景确定性拆分，旧 text 保持可读，首次富文本编辑后写入结构化 content，同时继续生成兼容文本摘要。",
-      ],
-    },
-    {
-      id: "sound-assets",
-      title: "资产中心、声音与视频",
-      bullets: [
-        "资源总览展示总数量/体积、引用与游离、预计打包体积、类型分布和健康摘要；详情可维护虚拟路径、Hash、元数据与自动/强制打包/强制排除策略。",
-        "角色页区分编辑器缩略图与逐表情对白头像，并支持皮肤矩阵、画面高度和图形覆盖；旧尺寸维护会先预览，再保存快照后应用。",
-        "语音模块按角色、旁白和未知分组；可选择已启用的 OpenAI 兼容、SenseAudio ASR Pro 或 ASR API 专业语音识别模型、自动/中文/日语与 1–8 并发，支持待处理识别、强制重识别、手工修正和对白自动匹配。两种专业 ASR 都会在详情中显示带说话人和起止时间的句级分段。",
-        "backgroundMusic、ambientSound 和 soundEffect 由声音 Block 播放、停止和淡入淡出。",
-        "MP4、WebM 与 MOV 可批量导入并在视频工作区预览；浏览器无法解码时保留原文件并提示转码，再通过 Video Block 选择、播放或停止。",
-        "顺序执行的 Fragment 不保存 timeline、startMs、endMs 或 atMs。进入精确演出后，对白/旁白使用 startMs 和 endMs；场景、CG 与声音事件可使用 atMs。角色事件不写 atMs 时跟随对白，写入后表示独立演出；时间轴只用 durationMs 定义剧情总长。",
-        "时间轴中的正式 BGM 会跟随剧情时钟播放、暂停和跳转；非循环 BGM 播完后保持静音。",
-        "BGM 与环境音由播放/停止事件推导持续状态；场景切换不会暗中替换它们。",
-      ],
-    },
-  ],
-};
-
-const galgameTimeline: GuidePage = {
-  id: "galgame-timeline",
-  group: "Galgame 工坊",
-  title: "剧情时间轴",
-  eyebrow: "TIMELINE EDITING",
-  lead: "卡片视图负责写作顺序；演出视图负责精确切点、并行声音和独立舞台动作。",
-  sections: [
-    {
-      id: "open-timeline",
-      title: "从卡片切换到演出",
-      steps: [
-        "剧本默认打开 Block 卡片视图。对白和旁白可直接编辑正文；对白卡还提供主角色、表情、现有配音、立绘模式和句后保留快捷项。多说话人、上传或生成配音、变换与转场继续在右侧属性中设置。",
-        "选中 Block 后按 Tab 可打开上下文插入面板：最左列提供当前卡片的高频快捷设置，其余四列完整列出角色、文本、演出和逻辑 Block；新 Block 会插到当前 Block 前。快捷设置会保持面板打开并自动保存，正文、素材、角色、变量、Fragment 引用和分支结构通过“在右侧属性中编辑”继续处理。空 Fragment 可聚焦空状态后按 Tab，或使用“添加第一个 Block”。对白中按 Enter 新建同角色下一句，Shift+Enter 换行；空白新句再次按 Enter 会删除空 Block，并把焦点送到相邻卡片。",
-        "连续且说话人集合相同的对白显示为一组；附着到对白且没有 atMs 的角色事件会随对白组成稳定移动包，场景、声音、逻辑 Block 或独立 atMs 事件会结束分组。",
-        "点击“演出”查看统一多轨时间轴。无 timeline 的 Fragment 只在界面中按文本长度估时，切换视图本身不会保存；第一次拖动、精确输入或在播放头新增内容时才物化精确时间轴。",
-        "整轨录音应作为 backgroundMusic 素材，通过 BGM 播放 Block 放入时间轴；编辑试听与正式试玩使用同一条声音事件。",
-        "左侧固定显示轨道名称，右侧按真实时间展示场景、CG、对白/角色/配音、BGM、环境音、SFX 和结构标记。对白块直接标出说话角色、表情、配音、立绘模式与句后状态；CG 持续区间可整体移动或拖动双端。",
-        "没有 atMs 的角色登场或退场会跟随下一句对白，移动对白时一起移动；单独拖动角色事件后才会成为独立演出。工具栏“演出细节”可展开逐角色轨，精确设置仍可逐个隐藏或恢复。",
-        "用缩放滑杆调整每分钟像素宽度；点击轨道空白处，或直接拖动红色播放头来跳转时间。",
-      ],
-      image: {
-        src: "/docs/galgame-timeline.jpg",
-        alt: "Galgame 可编辑剧情时间轴，展示正式 BGM、整合角色演出的对白轨和演出细节开关",
-        caption:
-          "时间轴不会创建 Gap Block；所有无对白区间都由相邻对白边界和独立剧情总长推导。",
-      },
-    },
-    {
-      id: "direct-editing",
-      title: "卡片重排与轨道编辑",
-      bullets: [
-        "无精确时间的卡片按 Block 顺序直接插入、移动和删除，不会因为估算投影而写入时间字段。",
-        "已有精确时间的对白卡移动时会连同附着角色事件一起移动，并从最早受影响位置波纹重排；每句原时长和句后间隙保留，显式 atMs 的独立演出保持绝对时间。",
-        "在精确片段中从卡片插入对白，会按估算时长和默认 300ms 间隙打开空间；删除会关闭对应时间空间，同时保留固定事件和结尾留白所需的总长。",
-        "点击对白、场景、角色、CG 或声音内容项，右侧属性面板会直接显示对应设置。",
-        "点击无对白区间可以精确调整它的有效边界；这类区间由相邻对白和剧情总长推导，不会新增 Block。",
-        "分支和章节结局显示为时间轴末尾的独立结构标记，可像其他 Block 一样直接选择。",
-      ],
-    },
-    {
-      id: "normal-vs-ripple",
-      title: "普通裁切与波纹编辑",
-      table: {
-        headers: ["操作", "普通模式", "波纹编辑"],
-        rows: [
-          [
-            "拖动对白块",
-            "移动所选并补偿连续相邻块",
-            "所选及全部后续对白整体移动",
-          ],
-          [
-            "拉伸 A 的右边界",
-            "调整 A/B 的共享切点",
-            "改变 A 时长，B 及后续整体移动",
-          ],
-          ["缩短 A", "B 可扩展到新切点", "B 时长不变并前移，尾部形成空白"],
-          [
-            "向右拉伸",
-            "受相邻对白限制；末尾 Block 可自动扩展剧情长度",
-            "自动增长剧情长度，并保留原有结尾留白",
-          ],
-        ],
-      },
-      note: "波纹编辑只影响所选块的右边界和后续对白；开始边界与无对白区间仍按普通边界语义编辑。",
-    },
-    {
-      id: "precision-tools",
-      title: "精确时间工具",
-      bullets: [
-        "默认拖动吸附到 100ms；拖动时按住 Alt 可精确到 1ms。",
-        "边界获得焦点后使用方向键每次移动 100ms，按住 Shift 每次移动 1 秒。",
-        "右侧属性面板接受 mm:ss.mmm 时间码，并共享当前波纹编辑模式。",
-        "“预听所选”会提前 300ms 播放当前正式 BGM；可开启循环所选反复检查切点。",
-        "移动播放头后，可直接把它设为所选对白的开始或结束。",
-        "精确设置允许输入剧情长度；若短于最后一个 Block 会自动保留到该 Block 结束。",
-        "在播放头位置可以连续添加多个不同角色、声音或舞台事件；右侧检查器可精确修改 atMs。",
-        "编辑时间轴与正式试玩共用逐句配音、BGM、环境音和 SFX；正式 BGM 会精确跟随播放头。",
-      ],
-    },
-    {
-      id: "timeline-validation",
-      title: "保存校验",
-      bullets: [
-        "起止时间必须非负、开始早于结束，单句至少保留 100ms。",
-        "对白之间不能重叠，也不能超过剧情时间轴总长；向右编辑会自动扩展该总长。",
-        "timeline 只保存 durationMs；声音素材必须由 audio Block 引用，并与 bgm、ambient 或 sfx 通道角色匹配。",
-        "同一时刻只允许一次场景切换、一个 CG 事件、同一角色一次调整，以及每个持续声音通道一次播放；多个角色和多个 SFX 可以并行。归约顺序为场景、角色退场、角色登场、CG、声音、对白。",
-        "所有合法修改仍通过整份 Story CAS 自动保存。",
-      ],
-    },
-  ],
-};
-
-const galgamePreview: GuidePage = {
-  id: "galgame-preview-report",
-  group: "Galgame 工坊",
-  title: "试玩与线路检查",
-  eyebrow: "PREVIEW & ROUTE REPORT",
-  lead: "试玩验证真实演出，线路检查验证结构可达性；两者都通过后再把工程标记为完成。",
-  sections: [
-    {
-      id: "preview",
-      title: "编辑预览与完整试玩",
-      bullets: [
-        "运行菜单支持从项目入口、当前章节或当前 Block 开始；编辑器会记住每个 Fragment 最后选择的 Block，返回后立即重放对应舞台状态。",
-        "编辑模式会把当前 Fragment、卡片所选 Block 或演出播放头同步到中间上方舞台；进入演出视图后，舞台和时间轴高度可拖动调整并保存在浏览器。",
-        "演出视图由时间轴独占试听控制，上方舞台只同步画面；试玩时控制权切换到上方播放器。若当前仍在演出视图，时间轴会以只读方式跟随当前 Fragment、内容项和精确播放头。",
-        "试玩默认手动推进，也可切换自动播放；偏好只保存在玩家本地，不会改写故事。",
-        "手动模式运行到下一句对白或旁白开始前并等待点击；首句前的演出会先播放，纯演出 Fragment 会播放到结尾。自动模式沿同一时间轴连续推进，选择出现时两者都会暂停。",
-        "首次点击会先完成尚未显示完的文字或转场，再次点击才进入下一步；跳转会重建舞台与持续声音状态，不补播中间 SFX。",
-        "时间轴 Fragment 使用独立剧情时钟切换对白和舞台事件；当前有效 BGM 同步播放、暂停和跳转。",
-        "全屏与前景叠加 CG 会覆盖角色，后景叠加 CG 位于背景和角色之间；它们都不会挡住自定义 UI、对话框、选项或系统交互，淡入淡出会遵守系统的减少动态效果设置。",
-        "浏览器首次播放声音可能需要一次明确点击授权。",
-      ],
-      image: {
-        src: "/docs/galgame-player-report.jpg",
-        alt: "Galgame 游戏预览和工程线路检查报告",
-        caption: "试玩负责感受节奏，线路报告负责证明入口、分支和结局结构完整。",
-      },
-    },
-    {
-      id: "route-report",
-      title: "读懂线路报告",
-      table: {
-        headers: ["结果", "含义", "处理方式"],
-        rows: [
-          [
-            "自然停止",
-            "顶层 Fragment 顺序执行到末尾",
-            "这是合法停止，无需补终止 Block",
-          ],
-          ["不可达 Fragment", "入口没有路径到达", "补充分支引用或删除孤立内容"],
-          [
-            "悬空引用",
-            "目标 Fragment、角色、场景或素材不存在",
-            "选择有效目标或恢复实体",
-          ],
-          [
-            "递归",
-            "调用链回到已在栈中的 Fragment",
-            "无出口递归必须修复；可退出递归会给出警告",
-          ],
-          [
-            "没有最终停止点",
-            "所有可达路径都无法结束",
-            "增加自然停止、章节结束或可退出条件",
-          ],
-        ],
-      },
-    },
-    {
-      id: "video-export",
-      title: "导出路线视频",
-      bullets: [
-        "编辑器顶部的“导出视频”可以导出完整路线，也可以单选一个片段或多选多个片段后按故事顺序合并导出。带时间轴的当前片段还可使用“快速试片”，只导出指定起止时间。",
-        "完整路线会按实际剧情顺序推演；遇到分支时逐项选择，直到显示确定的结局和预计时长。片段导出不会跳转到未选择的内容。",
-        "快速试片默认取当前播放头之后 10 秒，播放头在结尾时自动取最后 10 秒；可拖动双端范围条、输入毫秒时间码或使用 5/10/30 秒快捷按钮，单次最长 5 分钟。",
-        "快速试片直接恢复区间起点的场景、角色、镜头、字幕和声音，不需要先播放前面的内容；系统会在起点前最多预热 500ms，并自动裁掉预热部分。",
-        "默认输出 1080p / 30fps，也可选择体积更小的 720p / 30fps 或性能要求更高的 1080p / 60fps。",
-        "任务在后台使用独立渲染器完成，离开编辑器不会中断；导出记录会显示准备、渲染、编码、校验和保存阶段，并支持取消与下载。",
-        "成片只包含游戏舞台、立绘、特效、幕布、选择和字幕，不包含编辑器、播放控制条或鼠标。分支显示 2 秒，最后 0.5 秒高亮所选项。",
-        "导出使用创建任务时的只读 Story 快照，不修改故事；完成的 MP4 同时登记到当前项目的 exports 资产目录。",
-      ],
-      note: "主音轨剧情以完整音频作为唯一时间基准，不会重复播放逐句配音；素材失效、路线循环、预览版本过期、磁盘不足或输出参数不达标时不会交付成片。",
-    },
-    {
-      id: "delivery-checklist",
-      title: "完成前检查清单",
-      steps: [
-        "从章节入口试玩每个选择，确认角色、背景、声音和变量状态正确。",
-        "检查每条时间轴对白切点和开场/结尾无对白区间。",
-        "打开完整线路报告，解释或修复不可达 Fragment 与循环。",
-        "确认至少一个结局可达且报告处于就绪状态，再标记工程完成。",
-      ],
-    },
-  ],
-};
-
-export const GUIDE_GROUPS: GuideGroup[] = [
-  { title: "开始使用", pages: [overview] },
+import type { DocHeading, DocsGroup, GuidePage } from "./types";
+import legacyLinks from "./legacyLinks.json";
+export type { GuidePage } from "./types";
+export const GROUPS: DocsGroup[] = [
+  { id: "start", title: "开始使用", section: "开始使用" },
+  { id: "account", title: "工作空间与账号", section: "平台基础" },
+  { id: "files", title: "文件管理", section: "平台基础" },
+  { id: "integrations", title: "集成中心", section: "平台基础" },
+  { id: "models", title: "模型服务", section: "模型能力" },
+  { id: "testing", title: "模型测试", section: "模型能力" },
+  { id: "logs", title: "调用日志", section: "模型能力" },
+  { id: "apps", title: "应用与项目", section: "AI 应用" },
   {
+    id: "visual",
     title: "视觉创作工坊",
-    pages: [visualQuickstart, visualCanvas, visualVideo, visualTasks],
+    section: "AI 应用",
+    context: "visual",
+    parent: "apps-overview",
   },
   {
+    id: "galgame",
     title: "Galgame 工坊",
-    pages: [galgameQuickstart, galgameStory, galgameTimeline, galgamePreview],
+    section: "AI 应用",
+    context: "galgame",
+    parent: "apps-overview",
   },
   {
+    id: "video",
     title: "视频剪辑工坊",
-    pages: VIDEO_EDITOR_GUIDES,
+    section: "AI 应用",
+    context: "video",
+    parent: "apps-overview",
   },
+  { id: "tools", title: "工具导航", section: "工具" },
+  {
+    id: "annotation",
+    title: "录音分段标注",
+    section: "工具",
+    context: "annotation",
+    parent: "tools-overview",
+  },
+  {
+    id: "frames",
+    title: "视频帧导出",
+    section: "工具",
+    context: "frames",
+    parent: "tools-overview",
+  },
+  { id: "external", title: "外部工具", section: "工具" },
+  { id: "help", title: "通用帮助", section: "通用帮助" },
+  { id: "engineering", title: "架构与开发", section: "开发者文档" },
+  { id: "operations", title: "部署与运维", section: "开发者文档" },
+  { id: "api", title: "API 参考", section: "API 参考" },
 ];
-
-export const GUIDE_PAGES = GUIDE_GROUPS.flatMap((group) => group.pages);
-
+export function headingId(text: string) {
+  return text
+    .toLowerCase()
+    .replace(/<[^>]*>/g, "")
+    .replace(/[^\p{L}\p{N}\s_-]/gu, "")
+    .trim()
+    .replace(/\s+/g, "-");
+}
+export function parseArticle(raw: string) {
+  const headings: DocHeading[] = [];
+  const counts = new Map<string, number>();
+  let fenced = false;
+  const markdown = raw
+    .replace(/^<!-- docs:.*-->\s*/, "")
+    .replace(/^<!-- prerequisites -->\s*/gm, "")
+    .split("\n")
+    .map((line) => {
+      if (/^\s*(```|~~~)/.test(line)) fenced = !fenced;
+      if (fenced) return line;
+      const match = /^(#{1,3}) (.+?)(?:\s+\{#([^}]+)\})?\s*$/.exec(line);
+      if (!match) return line;
+      const [, hashes, title, explicit] = match;
+      const base = explicit || headingId(title);
+      const count = counts.get(base) || 0;
+      counts.set(base, count + 1);
+      const id = explicit || (count ? base + "-" + count : base);
+      headings.push({
+        id,
+        title: title.replace(/[`*]/g, ""),
+        level: hashes.length,
+      });
+      return hashes + " " + title;
+    })
+    .join("\n");
+  return { markdown, headings };
+}
+const articles = import.meta.glob("./articles/**/*.md", {
+  query: "?raw",
+  import: "default",
+  eager: true,
+}) as Record<string, string>;
+const references = import.meta.glob(
+  [
+    "../../../docs/{architecture,operations,reference}/*.md",
+    "../../../{README,CONTRIBUTING}.md",
+    "../../../docs/assets/MANIFEST.md",
+  ],
+  { query: "?raw", import: "default", eager: true },
+) as Record<string, string>;
+export const GUIDE_PAGES: GuidePage[] = Object.entries(articles).map(
+  ([source, raw]) => {
+    const meta = JSON.parse(/^<!-- docs: (.*) -->/.exec(raw)?.[1] || "{}");
+    const group = GROUPS.find((item) => item.id === meta.group);
+    if (!group) throw new Error("Unknown documentation group: " + source);
+    return {
+      ...meta,
+      id: source.split("/").pop()!.replace(/\.md$/, ""),
+      category: "use",
+      context: group.context,
+      source,
+      ...parseArticle(raw),
+    };
+  },
+);
+for (const [source, raw] of Object.entries(references)) {
+  const api = source.endsWith("/api.md");
+  const name = source.split("/").pop()!.replace(/\.md$/, "");
+  const parsed = parseArticle(raw);
+  GUIDE_PAGES.push({
+    id: api ? "api-reference" : "dev-" + name,
+    title: parsed.headings[0]?.title || name,
+    lead: "",
+    group: api
+      ? "api"
+      : source.includes("/architecture/")
+        ? "engineering"
+        : "operations",
+    category: api ? "api" : "developer",
+    order: 0,
+    source,
+    evidence: [source.replace("../../../", "")],
+    ...parsed,
+  });
+}
+GUIDE_PAGES.sort(
+  (a, b) =>
+    GROUPS.findIndex((g) => g.id === a.group) -
+      GROUPS.findIndex((g) => g.id === b.group) ||
+    a.order - b.order ||
+    a.id.localeCompare(b.id),
+);
+export const PAGE_BY_ID = new Map(GUIDE_PAGES.map((page) => [page.id, page]));
+export function resolveLocation(pageId: string, hash: string) {
+  let decoded = hash.replace(/^#/, "");
+  try {
+    decoded = decodeURIComponent(decoded);
+  } catch {
+    decoded = "";
+  }
+  const key = pageId + "#" + decoded;
+  const alias = (legacyLinks as Record<string, string>)[key];
+  const [id, section] = alias ? alias.split("#") : [pageId, decoded];
+  return { page: PAGE_BY_ID.get(id) || PAGE_BY_ID.get("overview")!, section };
+}
+export const CATEGORY_LABELS = {
+  use: "使用文档",
+  developer: "开发者文档",
+  api: "API 参考",
+} as const;
+export function pageHref(page: GuidePage | string, section?: string) {
+  return (
+    "/docs.html?page=" +
+    encodeURIComponent(typeof page === "string" ? page : page.id) +
+    (section ? "#" + encodeURIComponent(section) : "")
+  );
+}
 export function guideSearchText(page: GuidePage) {
-  return [
-    page.title,
-    page.group,
-    page.lead,
-    ...page.sections.flatMap((section) => [
-      section.title,
-      ...(section.paragraphs ?? []),
-      ...(section.steps ?? []),
-      ...(section.bullets ?? []),
-      section.note ?? "",
-      ...(section.table?.headers ?? []),
-      ...(section.table?.rows.flat() ?? []),
-    ]),
-  ]
-    .join(" ")
-    .toLocaleLowerCase("zh-CN");
+  return (page.title + " " + page.lead + " " + page.markdown).toLocaleLowerCase(
+    "zh-CN",
+  );
+}
+export function searchHeading(page: GuidePage, term: string) {
+  const titleMatch = page.headings.find(
+    (h) => h.level > 1 && h.title.toLocaleLowerCase("zh-CN").includes(term),
+  );
+  if (titleMatch) return titleMatch;
+  const matchAt = page.markdown.toLocaleLowerCase("zh-CN").indexOf(term);
+  if (matchAt < 0) return undefined;
+  const before = page.markdown.slice(0, matchAt);
+  const parsed = parseArticle(before);
+  const last = parsed.headings.at(-1);
+  return last && last.level > 1
+    ? page.headings.find((h) => h.id === last.id)
+    : undefined;
+}
+export function resolveDocLink(page: GuidePage, href: string) {
+  if (!href || /^(https?:|mailto:|#|\/)/.test(href)) return href;
+  const clean = (source: string) =>
+    source.startsWith("./articles/")
+      ? "web/src/docs/" + source.slice(2)
+      : source.replace(/^\.\.\/\.\.\/\.\.\//, "");
+  const url = new URL(href, "https://docs.invalid/" + clean(page.source));
+  const target = GUIDE_PAGES.find(
+    (candidate) => "/" + clean(candidate.source) === url.pathname,
+  );
+  if (target) return pageHref(target) + url.hash;
+  if (url.pathname.startsWith("/web/public/"))
+    return url.pathname.slice("/web/public".length) + url.hash;
+  return (
+    "https://github.com/EmiyaredA/Future-Props-Lab/blob/HEAD" +
+    url.pathname +
+    url.hash
+  );
 }

@@ -17,6 +17,7 @@ from PIL import Image
 from app.media_rendering.contracts import RenderCaptureFrame, RenderPlan
 from app.media_rendering.evaluator import FrameSource, TimelineFrameRenderer
 from app.media_rendering.presets import RENDER_PRESETS
+from app.media_rendering.speed import audio_speed_filters, source_time_us
 from app.schemas.video_editor import VideoEditorClip, VideoEditorTimelineDocument
 
 
@@ -47,6 +48,34 @@ def _has_audio_stream(path: str) -> bool:
         return bool(json.loads(result.stdout).get("streams"))
     except (OSError, subprocess.CalledProcessError, ValueError, json.JSONDecodeError):
         return False
+
+
+@lru_cache(maxsize=128)
+def _video_dimensions(path: str) -> tuple[int, int] | None:
+    try:
+        result = subprocess.run(
+            [
+                "ffprobe",
+                "-v",
+                "error",
+                "-select_streams",
+                "v:0",
+                "-show_entries",
+                "stream=width,height",
+                "-of",
+                "json",
+                path,
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        stream = (json.loads(result.stdout).get("streams") or [{}])[0]
+        width = int(stream.get("width") or 0)
+        height = int(stream.get("height") or 0)
+        return (width, height) if width > 0 and height > 0 else None
+    except (OSError, subprocess.CalledProcessError, ValueError, TypeError, json.JSONDecodeError):
+        return None
 
 
 def _terminate_process_group(process: subprocess.Popen[bytes]) -> None:
@@ -167,8 +196,9 @@ class _VideoDecoder:
         fps: int,
         canvas_size: tuple[int, int],
         cancel: threading.Event,
+        playback_rate: float = 1,
     ) -> None:
-        self.width, self.height = canvas_size
+        self.width, self.height = _video_dimensions(str(path)) or canvas_size
         self.cancel = cancel
         self.process = subprocess.Popen(
             [
@@ -182,11 +212,7 @@ class _VideoDecoder:
                 str(path),
                 "-an",
                 "-vf",
-                (
-                    f"fps={fps},scale={self.width}:{self.height}:"
-                    "force_original_aspect_ratio=decrease,"
-                    f"pad={self.width}:{self.height}:(ow-iw)/2:(oh-ih)/2:color=black@0,format=rgba"
-                ),
+                f"setpts=(PTS-STARTPTS)/{playback_rate:.8g},fps={fps},format=rgba",
                 "-f",
                 "rawvideo",
                 "-pix_fmt",
@@ -244,8 +270,10 @@ def _render_segment(
             decoder = decoders.get(clip.id)
             if decoder is None:
                 effective_start = max(segment_start_us, clip.timeline_start_us)
-                source_us = clip.source_in_us + effective_start - clip.timeline_start_us
-                decoder = _VideoDecoder(path, source_us, fps, canvas_size, cancel)
+                source_us = source_time_us(clip, effective_start - clip.timeline_start_us)
+                decoder = _VideoDecoder(
+                    path, source_us, fps, canvas_size, cancel, clip.playback_rate or 1
+                )
                 decoders[clip.id] = decoder
             return decoder.next()
         return None
@@ -380,14 +408,16 @@ def _mux_audio(
     for index, clip in enumerate(audio_clips, start=1):
         intersection_start = max(start_us, clip.timeline_start_us)
         intersection_end = min(end_us, clip.timeline_start_us + clip.duration_us)
-        source_start = clip.source_in_us + intersection_start - clip.timeline_start_us
+        source_start = source_time_us(clip, intersection_start - clip.timeline_start_us)
         clip_duration = (intersection_end - intersection_start) / 1_000_000
+        playback_rate = clip.playback_rate or 1
+        source_duration = clip_duration * playback_rate
         input_args = [
             *(["-stream_loop", "-1"] if clip.source_loop else []),
             "-ss",
             f"{source_start / 1_000_000:.6f}",
             "-t",
-            f"{clip_duration:.6f}",
+            f"{source_duration:.6f}",
             "-i",
             str(asset_paths[clip.asset_id or ""]),
         ]
@@ -395,14 +425,23 @@ def _mux_audio(
         delay_ms = round((intersection_start - start_us) / 1000)
         volume = _volume_expression(clip, intersection_start - clip.timeline_start_us)
         chain = [
-            f"[{index}:a]atrim=start=0:end={clip_duration:.6f}",
+            f"[{index}:a]atrim=start=0:end={source_duration:.6f}",
             "asetpts=PTS-STARTPTS",
+            *audio_speed_filters(playback_rate),
             "aresample=48000",
             f"volume='{volume}':eval=frame",
         ]
-        if clip.transition_in and clip.transition_in.kind == "audio-crossfade":
+        if (
+            clip.transition_in
+            and clip.transition_in.kind == "audio-crossfade"
+            and clip.transition_in.duration_us > 0
+        ):
             chain.append(f"afade=t=in:st=0:d={clip.transition_in.duration_us / 1_000_000:.6f}")
-        if clip.transition_out and clip.transition_out.kind == "audio-crossfade":
+        if (
+            clip.transition_out
+            and clip.transition_out.kind == "audio-crossfade"
+            and clip.transition_out.duration_us > 0
+        ):
             fade_start = max(0, clip_duration - clip.transition_out.duration_us / 1_000_000)
             fade_duration = clip.transition_out.duration_us / 1_000_000
             chain.append(f"afade=t=out:st={fade_start:.6f}:d={fade_duration:.6f}")

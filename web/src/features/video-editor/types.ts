@@ -6,6 +6,10 @@ export type VideoEditorTimeline =
   components["schemas"]["VideoEditorTimelineOut"];
 export type VideoEditorTimelineDocument =
   components["schemas"]["VideoEditorTimelineDocument"];
+export type VideoEditorAssetFolder =
+  components["schemas"]["VideoEditorAssetFolder"];
+export type VideoEditorAssetOrganization =
+  components["schemas"]["VideoEditorAssetOrganization"];
 export type VideoEditorTrack = components["schemas"]["VideoEditorTrack"];
 export type VideoEditorClip = components["schemas"]["VideoEditorClip"];
 export type VideoEditorKeyframe = components["schemas"]["VideoEditorKeyframe"];

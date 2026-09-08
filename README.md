@@ -38,6 +38,12 @@ Galgame 工坊使用 Story 1.4 管理角色表情/皮肤、真实多层场景、
 精确帧、关联片段交接、片段导出与完整 MP4 渲染。视觉创作、Galgame 和视频剪辑三套工坊共用项目
 快照生命周期，但各自保留领域文档、事务与错误规则；使用方法见应用内文档中心。
 
+文档中心位于 [docs.html](http://127.0.0.1:3000/docs.html?page=overview)，也可从 Studio
+侧栏打开。使用文档覆盖平台、模型、三个工坊和内置/外部工具；开发者与 API 分类直接展示仓库
+已有说明。支持全文搜索（`/` 或 `⌘/Ctrl+K`）、应用/工具独立目录、图片放大和旧章节深链接。
+正文真源位于 `web/src/docs/articles/`，核验依据与截图见
+[文档覆盖清单](docs/architecture/documentation-coverage.md)。
+
 备份时先停止应用，再同时复制 `.runtime/future-props.db`、`.runtime/library/assets/`、
 `.runtime/applications/`、
 `.runtime/model-test/attachments/`、`.runtime/model-test/references/` 与

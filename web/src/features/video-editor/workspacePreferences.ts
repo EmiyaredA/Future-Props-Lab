@@ -1,3 +1,8 @@
+import {
+  normalizeEditorLayout,
+  DEFAULT_EDITOR_LAYOUT,
+  type VideoEditorLayout,
+} from "./editorLayout";
 import { MAX_TIMELINE_ZOOM, MIN_TIMELINE_ZOOM } from "./timelineScale";
 
 const WORKSPACE_PREFERENCES_VERSION = 1;
@@ -9,6 +14,8 @@ export type VideoEditorWorkspacePreferences = {
   selectedClipIds: string[];
   zoom: number;
   timelineScrollLeft: number;
+  timelineScrollTop?: number;
+  layout?: VideoEditorLayout;
   preciseFrame: boolean;
   snapEnabled?: boolean;
 };
@@ -20,6 +27,8 @@ export function defaultVideoEditorWorkspacePreferences(): VideoEditorWorkspacePr
     selectedClipIds: [],
     zoom: 80,
     timelineScrollLeft: 0,
+    timelineScrollTop: 0,
+    layout: { ...DEFAULT_EDITOR_LAYOUT },
     preciseFrame: true,
     snapEnabled: true,
   };
@@ -64,6 +73,8 @@ function normalize(
       candidate.timelineScrollLeft,
       defaults.timelineScrollLeft,
     ),
+    timelineScrollTop: finiteNonNegative(candidate.timelineScrollTop, 0),
+    layout: normalizeEditorLayout(candidate.layout),
     preciseFrame:
       typeof candidate.preciseFrame === "boolean"
         ? candidate.preciseFrame

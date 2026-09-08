@@ -120,6 +120,7 @@ class VideoEditorSegmentExports:
                 "clipId": clip.id,
                 "name": item.name,
                 "sourceInUs": clip.source_in_us,
+                "playbackRate": clip.playback_rate,
                 "durationUs": clip.duration_us,
                 "assetId": clip.asset_id,
                 "status": "queued",

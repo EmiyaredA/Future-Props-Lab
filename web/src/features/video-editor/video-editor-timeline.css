@@ -67,33 +67,74 @@
 .ve-timeline-grid {
   min-height: 0;
   display: grid;
-  grid-template-columns: 150px 1fr;
+  grid-template-columns: var(--ve-track-head-width, 176px) minmax(0, 1fr);
+  align-items: stretch;
 }
 .ve-track-heads {
-  z-index: 4;
+  position: sticky;
+  left: 0;
+  z-index: 10;
   border-right: 1px solid #323746;
   background: #151925;
 }
 .ve-ruler-spacer {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: #151925;
   height: 26px;
   border-bottom: 1px solid #303645;
 }
-.ve-track-heads > div:not(.ve-ruler-spacer) {
+.ve-track-head {
   height: 56px;
+  color: #dfe8ef;
+  display: grid;
+  grid-template-rows: 22px 23px;
+  gap: 2px;
+  padding: 4px 7px;
+  border-bottom: 1px solid #252a37;
+}
+.ve-track-heading {
+  min-width: 0;
   display: flex;
   align-items: center;
-  gap: 5px;
-  padding: 0 7px;
-  border-bottom: 1px solid #252a37;
+  gap: 7px;
+}
+.ve-track-kind {
+  flex: none;
+  padding: 1px 5px;
+  border: 1px solid #43677b;
+  border-radius: 4px;
+  background: #253e4d;
+  color: #dfe8ef;
+  font-size: 10px;
+  line-height: 16px;
+  white-space: nowrap;
+}
+.ve-track-head.mixed .ve-track-kind {
+  border-color: #5d76c2;
+  background: #303a60;
+}
+.ve-track-head.audio .ve-track-kind {
+  border-color: #8a58ae;
+  background: #543568;
 }
 .ve-track-heads strong {
   flex: 1;
+  min-width: 0;
   overflow: hidden;
   font-size: 11px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.ve-track-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
 .ve-track-heads button {
+  flex: none;
+  color: inherit;
   width: 23px;
   height: 23px;
   display: grid;
@@ -102,16 +143,33 @@
   border: 0;
   background: transparent;
 }
+.ve-track-heads button:focus-visible {
+  outline: 2px solid #a89cff;
+  outline-offset: 1px;
+  border-radius: 3px;
+}
 .ve-track-heads svg {
   width: 13px;
 }
 .ve-tracks-scroll {
   min-width: 0;
+  height: 100%;
   overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-color: #54506f #151925;
+  scrollbar-width: thin;
+}
+.ve-track-content {
+  min-width: 0;
+}
+.ve-timeline-viewport {
+  position: relative;
+  min-height: 0;
+  overflow: hidden;
 }
 .ve-ruler {
   position: sticky;
-  z-index: 3;
+  z-index: 9;
   top: 0;
   height: 26px;
   min-width: 100%;
@@ -297,4 +355,11 @@
 }
 .ve-snap-toggle svg {
   width: 13px;
+}
+.ve-selection-box {
+  position: fixed;
+  z-index: 5;
+  pointer-events: none;
+  border: 1px solid var(--accent, #8b5cf6);
+  background: color-mix(in srgb, var(--accent, #8b5cf6) 18%, transparent);
 }

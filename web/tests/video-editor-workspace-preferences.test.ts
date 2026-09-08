@@ -18,6 +18,7 @@ describe("video editor workspace preferences", () => {
     });
 
     expect(loadVideoEditorWorkspacePreferences("editor-1")).toEqual({
+      ...defaultVideoEditorWorkspacePreferences(),
       version: 1,
       playheadUs: 4_200_000,
       selectedClipIds: ["clip-a", "clip-b"],
@@ -62,6 +63,7 @@ describe("video editor workspace preferences", () => {
     );
 
     expect(loadVideoEditorWorkspacePreferences("editor-1")).toEqual({
+      ...defaultVideoEditorWorkspacePreferences(),
       version: 1,
       playheadUs: 0,
       selectedClipIds: ["clip-a"],

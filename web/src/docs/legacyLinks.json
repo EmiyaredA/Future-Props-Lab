@@ -1,0 +1,16 @@
+{
+  "overview#choose-workshop": "apps-overview#choose-workshop",
+  "overview#project-snapshots": "project-snapshots#project-snapshots",
+  "overview#model-test-speech": "test-transcription#model-test-speech",
+  "overview#model-test-realtime-voice": "test-realtime#model-test-realtime-voice",
+  "overview#model-log-reproduction": "logs-reproduction#model-log-reproduction",
+  "visual-canvas-assets#asset-sources": "visual-assets#asset-sources",
+  "visual-canvas-assets#asset-drawer": "visual-assets#asset-drawer",
+  "visual-tasks-assistant#assistant": "visual-assistant#assistant",
+  "galgame-story-assets#story-localization": "galgame-localization#story-localization",
+  "galgame-preview-report#video-export": "galgame-video-export#video-export",
+  "video-editor-projects#assets-and-proxies": "video-assets#assets-and-proxies",
+  "video-editor-timeline#exact-preview": "video-preview#exact-preview",
+  "video-editor-delivery#segment-export": "video-segments#segment-export",
+  "video-editor-delivery#failure-recovery": "video-recovery#failure-recovery"
+}

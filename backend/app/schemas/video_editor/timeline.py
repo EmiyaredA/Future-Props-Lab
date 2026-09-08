@@ -12,6 +12,52 @@ class VideoEditorProjectSettings(BaseModel):
     background_color: str = Field(
         default="#000000", alias="backgroundColor", pattern=r"^#[0-9a-fA-F]{6}$"
     )
+    video_fit_policy_version: Literal[0, 1] | None = Field(
+        default=None, alias="videoFitPolicyVersion"
+    )
+
+
+class VideoEditorAssetFolder(BaseModel):
+    id: str = Field(min_length=1, max_length=64)
+    name: str = Field(min_length=1, max_length=80)
+    asset_ids: list[str] = Field(default_factory=list, alias="assetIds", max_length=10_000)
+
+    @field_validator("name")
+    @classmethod
+    def normalized_name(cls, value: str) -> str:
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("素材文件夹名称不能为空")
+        return normalized
+
+    @field_validator("asset_ids")
+    @classmethod
+    def valid_asset_ids(cls, value: list[str]) -> list[str]:
+        if any(not asset_id.strip() or len(asset_id) > 64 for asset_id in value):
+            raise ValueError("素材 ID 无效")
+        return value
+
+
+class VideoEditorAssetOrganization(BaseModel):
+    folders: list[VideoEditorAssetFolder] = Field(default_factory=list, max_length=100)
+    root_asset_ids: list[str] = Field(default_factory=list, alias="rootAssetIds", max_length=10_000)
+
+    @model_validator(mode="after")
+    def unique_folders_and_assets(self) -> VideoEditorAssetOrganization:
+        folder_ids = [folder.id for folder in self.folders]
+        if len(folder_ids) != len(set(folder_ids)):
+            raise ValueError("素材文件夹 ID 必须唯一")
+        names = [folder.name.casefold() for folder in self.folders]
+        if len(names) != len(set(names)):
+            raise ValueError("素材文件夹名称不能重复")
+        asset_ids = [*self.root_asset_ids]
+        for folder in self.folders:
+            asset_ids.extend(folder.asset_ids)
+        if any(not asset_id.strip() or len(asset_id) > 64 for asset_id in asset_ids):
+            raise ValueError("素材 ID 无效")
+        if len(asset_ids) != len(set(asset_ids)):
+            raise ValueError("同一素材只能出现在一个文件夹位置")
+        return self
 
 
 class VideoEditorTransform(BaseModel):
@@ -46,6 +92,7 @@ class VideoEditorClip(BaseModel):
     timeline_start_us: int = Field(alias="timelineStartUs", ge=0)
     duration_us: int = Field(alias="durationUs", gt=0)
     source_in_us: int = Field(default=0, alias="sourceInUs", ge=0)
+    playback_rate: float | None = Field(default=None, alias="playbackRate", ge=0.25, le=4)
     source_loop: bool = Field(default=False, alias="sourceLoop")
     asset_id: str | None = Field(default=None, alias="assetId")
     text: str | None = Field(default=None, max_length=4000)
@@ -55,7 +102,7 @@ class VideoEditorClip(BaseModel):
     text_color: str = Field(default="#ffffff", alias="textColor", pattern=r"^#[0-9a-fA-F]{6}$")
     text_max_width: int | None = Field(default=None, alias="textMaxWidth", ge=80, le=1920)
     fit_mode: Literal["native", "cover", "contain", "height"] = Field(
-        default="native", alias="fitMode"
+        default="cover", alias="fitMode"
     )
     height_percent: float | None = Field(default=None, alias="heightPercent", gt=0, le=400)
     flip_x: bool = Field(default=False, alias="flipX")
@@ -69,6 +116,8 @@ class VideoEditorClip(BaseModel):
 
     @model_validator(mode="after")
     def required_source(self) -> VideoEditorClip:
+        if self.kind not in {"video", "audio"} and self.playback_rate not in {None, 1}:
+            raise ValueError("只有视频和音频 Clip 可以变速")
         if self.kind in {"video", "image", "audio"} and not self.asset_id:
             raise ValueError("媒体 Clip 必须引用素材")
         if self.kind == "text" and not self.text:
@@ -94,6 +143,9 @@ class VideoEditorTrack(BaseModel):
 class VideoEditorTimelineDocument(BaseModel):
     schema_version: Literal["1.0"] = Field(default="1.0", alias="schemaVersion")
     settings: VideoEditorProjectSettings = Field(default_factory=VideoEditorProjectSettings)
+    asset_organization: VideoEditorAssetOrganization = Field(
+        default_factory=VideoEditorAssetOrganization, alias="assetOrganization"
+    )
     tracks: list[VideoEditorTrack] = Field(default_factory=list)
 
 
@@ -105,6 +157,11 @@ class AddTrackOperation(BaseModel):
 class UpdateSettingsOperation(BaseModel):
     type: Literal["updateSettings"]
     patch: dict
+
+
+class SetAssetOrganizationOperation(BaseModel):
+    type: Literal["setAssetOrganization"]
+    organization: VideoEditorAssetOrganization
 
 
 class UpdateTrackOperation(BaseModel):
@@ -154,6 +211,12 @@ class TrimClipOperation(BaseModel):
     timeline_start_us: int = Field(alias="timelineStartUs", ge=0)
     duration_us: int = Field(alias="durationUs", gt=0)
     source_in_us: int = Field(alias="sourceInUs", ge=0)
+
+
+class SetClipSpeedOperation(BaseModel):
+    type: Literal["setClipSpeed"]
+    clip_id: str = Field(alias="clipId")
+    playback_rate: float = Field(alias="playbackRate", ge=0.25, le=4)
 
 
 class SplitClipOperation(BaseModel):
@@ -217,6 +280,7 @@ class SetTransitionOperation(BaseModel):
 VideoEditorTimelineOperation = Annotated[
     AddTrackOperation
     | UpdateSettingsOperation
+    | SetAssetOrganizationOperation
     | UpdateTrackOperation
     | RemoveTrackOperation
     | ReorderTrackOperation
@@ -226,6 +290,7 @@ VideoEditorTimelineOperation = Annotated[
     | MoveClipOperation
     | TrimClipOperation
     | SplitClipOperation
+    | SetClipSpeedOperation
     | LinkClipsOperation
     | SeparateClipOperation
     | KeyframeOperation

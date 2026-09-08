@@ -9066,6 +9066,27 @@ export interface components {
             /** Visualtrackid */
             visualTrackId: string;
         };
+        /** SetAssetOrganizationOperation */
+        SetAssetOrganizationOperation: {
+            organization: components["schemas"]["VideoEditorAssetOrganization"];
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "setAssetOrganization";
+        };
+        /** SetClipSpeedOperation */
+        SetClipSpeedOperation: {
+            /** Clipid */
+            clipId: string;
+            /** Playbackrate */
+            playbackRate: number;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "setClipSpeed";
+        };
         /** SetTransitionOperation */
         SetTransitionOperation: {
             /** Clipid */
@@ -9517,6 +9538,15 @@ export interface components {
             /** Error Type */
             type: string;
         };
+        /** VideoEditorAssetFolder */
+        VideoEditorAssetFolder: {
+            /** Assetids */
+            assetIds?: string[];
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+        };
         /** VideoEditorAssetImportIn */
         VideoEditorAssetImportIn: {
             /** Assetids */
@@ -9526,6 +9556,13 @@ export interface components {
         VideoEditorAssetListOut: {
             /** Items */
             items: components["schemas"]["VideoEditorAssetOut"][];
+        };
+        /** VideoEditorAssetOrganization */
+        VideoEditorAssetOrganization: {
+            /** Folders */
+            folders?: components["schemas"]["VideoEditorAssetFolder"][];
+            /** Rootassetids */
+            rootAssetIds?: string[];
         };
         /** VideoEditorAssetOut */
         VideoEditorAssetOut: {
@@ -9586,7 +9623,7 @@ export interface components {
             durationUs: number;
             /**
              * Fitmode
-             * @default native
+             * @default cover
              * @enum {string}
              */
             fitMode: "native" | "cover" | "contain" | "height";
@@ -9619,6 +9656,8 @@ export interface components {
             muted?: boolean | null;
             /** Name */
             name: string;
+            /** Playbackrate */
+            playbackRate?: number | null;
             /**
              * Sourceinus
              * @default 0
@@ -9735,6 +9774,8 @@ export interface components {
              * @constant
              */
             height: 1080;
+            /** Videofitpolicyversion */
+            videoFitPolicyVersion?: (0 | 1) | null;
             /**
              * Width
              * @default 1920
@@ -9914,12 +9955,13 @@ export interface components {
             /** Expectedrevision */
             expectedRevision: number;
             /** Operations */
-            operations: (components["schemas"]["AddTrackOperation"] | components["schemas"]["UpdateSettingsOperation"] | components["schemas"]["UpdateTrackOperation"] | components["schemas"]["RemoveTrackOperation"] | components["schemas"]["ReorderTrackOperation"] | components["schemas"]["AddClipOperation"] | components["schemas"]["UpdateClipOperation"] | components["schemas"]["ClipIdOperation"] | components["schemas"]["MoveClipOperation"] | components["schemas"]["TrimClipOperation"] | components["schemas"]["SplitClipOperation"] | components["schemas"]["LinkClipsOperation"] | components["schemas"]["SeparateClipOperation"] | components["schemas"]["KeyframeOperation"] | components["schemas"]["SetTransitionOperation"])[];
+            operations: (components["schemas"]["AddTrackOperation"] | components["schemas"]["UpdateSettingsOperation"] | components["schemas"]["SetAssetOrganizationOperation"] | components["schemas"]["UpdateTrackOperation"] | components["schemas"]["RemoveTrackOperation"] | components["schemas"]["ReorderTrackOperation"] | components["schemas"]["AddClipOperation"] | components["schemas"]["UpdateClipOperation"] | components["schemas"]["ClipIdOperation"] | components["schemas"]["MoveClipOperation"] | components["schemas"]["TrimClipOperation"] | components["schemas"]["SplitClipOperation"] | components["schemas"]["SetClipSpeedOperation"] | components["schemas"]["LinkClipsOperation"] | components["schemas"]["SeparateClipOperation"] | components["schemas"]["KeyframeOperation"] | components["schemas"]["SetTransitionOperation"])[];
             /** Requestid */
             requestId: string;
         };
         /** VideoEditorTimelineDocument */
         VideoEditorTimelineDocument: {
+            assetOrganization?: components["schemas"]["VideoEditorAssetOrganization"];
             /**
              * Schemaversion
              * @default 1.0

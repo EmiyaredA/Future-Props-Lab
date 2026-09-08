@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from copy import deepcopy
+from math import floor
 
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -48,10 +49,12 @@ def apply_operations(document: dict, body: VideoEditorTimelineBatchIn) -> dict:
         data = operation.model_dump(mode="json", by_alias=True, exclude_none=True)
         kind = data.pop("type")
         if kind == "updateSettings":
-            allowed = {"fps", "backgroundColor"}
+            allowed = {"fps", "backgroundColor", "videoFitPolicyVersion"}
             result["settings"].update(
                 {key: value for key, value in data["patch"].items() if key in allowed}
             )
+        elif kind == "setAssetOrganization":
+            result["assetOrganization"] = data["organization"]
         elif kind == "addTrack":
             result["tracks"].append(data["track"])
         elif kind == "updateTrack":
@@ -81,9 +84,11 @@ def apply_operations(document: dict, body: VideoEditorTimelineBatchIn) -> dict:
             if track is None:
                 raise VideoEditorValidationError("找不到目标轨道", code="track_not_found")
             clip_kind = data["clip"]["kind"]
-            if (track["kind"] == "mixed" and clip_kind != "video") or (
-                track["kind"] == "audio" and clip_kind != "audio"
-            ) or (track["kind"] == "visual" and clip_kind == "audio"):
+            if (
+                (track["kind"] == "mixed" and clip_kind != "video")
+                or (track["kind"] == "audio" and clip_kind != "audio")
+                or (track["kind"] == "visual" and clip_kind == "audio")
+            ):
                 raise VideoEditorValidationError("Clip 类型与轨道不匹配", code="invalid_track_kind")
             track["clips"].append(data["clip"])
         elif kind == "updateClip":
@@ -97,6 +102,8 @@ def apply_operations(document: dict, body: VideoEditorTimelineBatchIn) -> dict:
                 "textColor",
                 "volume",
                 "muted",
+                "fitMode",
+                "heightPercent",
                 "transform",
             }
             clip.update({key: value for key, value in data["patch"].items() if key in allowed})
@@ -109,9 +116,12 @@ def apply_operations(document: dict, body: VideoEditorTimelineBatchIn) -> dict:
                 old_track["clips"].append(clip)
                 raise VideoEditorValidationError("找不到目标轨道", code="track_not_found")
             if (
-                (old_track["kind"] == "mixed" and target["kind"] != "mixed")
-                or
-                (target["kind"] == "mixed" and clip["kind"] != "video")
+                (
+                    old_track["kind"] == "mixed"
+                    and target["kind"] != "mixed"
+                    and clip["kind"] != "audio"
+                )
+                or (target["kind"] == "mixed" and clip["kind"] != "video")
                 or (target["kind"] == "audio" and clip["kind"] != "audio")
                 or (target["kind"] == "visual" and clip["kind"] == "audio")
             ):
@@ -126,6 +136,29 @@ def apply_operations(document: dict, body: VideoEditorTimelineBatchIn) -> dict:
                 durationUs=data["durationUs"],
                 sourceInUs=data["sourceInUs"],
             )
+        elif kind == "setClipSpeed":
+            _track, selected = _find_clip(result, data["clipId"])
+            group = selected.get("linkGroupId")
+            for track in result["tracks"]:
+                for clip in track["clips"]:
+                    if clip["id"] != selected["id"] and not (
+                        group and clip.get("linkGroupId") == group
+                    ):
+                        continue
+                    if track.get("locked"):
+                        raise VideoEditorValidationError("轨道已锁定", code="track_locked")
+                    if clip["kind"] not in {"audio", "video"}:
+                        raise VideoEditorValidationError("只有视频和音频 Clip 可以变速")
+                    ratio = clip.get("playbackRate", 1) / data["playbackRate"]
+                    duration = max(1, floor(clip["durationUs"] * ratio))
+                    for key in clip.get("keyframes", []):
+                        key["timeUs"] = min(duration, round(key["timeUs"] * ratio))
+                    for edge in ("transitionIn", "transitionOut"):
+                        if clip.get(edge):
+                            clip[edge]["durationUs"] = min(
+                                duration, 10_000_000, round(clip[edge]["durationUs"] * ratio)
+                            )
+                    clip.update(durationUs=duration, playbackRate=data["playbackRate"])
         elif kind == "splitClip":
             selected_track, selected_clip = _find_clip(result, data["clipId"])
             group_id = selected_clip.get("linkGroupId")
@@ -160,7 +193,8 @@ def apply_operations(document: dict, body: VideoEditorTimelineBatchIn) -> dict:
                     id=new_id,
                     timelineStartUs=data["atUs"],
                     durationUs=clip["durationUs"] - offset,
-                    sourceInUs=clip.get("sourceInUs", 0) + offset,
+                    sourceInUs=clip.get("sourceInUs", 0)
+                    + floor(offset * clip.get("playbackRate", 1)),
                 )
                 if group_id:
                     right["linkGroupId"] = right_group_id
@@ -270,7 +304,7 @@ async def validate_timeline(session: AsyncSession, project_id: str, document: di
     if len(track_orders) != len(set(track_orders)):
         raise VideoEditorValidationError("轨道顺序必须唯一", code="duplicate_track_order")
     clip_ids: list[str] = []
-    asset_ids: set[str] = set()
+    clip_asset_ids: set[str] = set()
     for track in dumped["tracks"]:
         track["clips"].sort(key=lambda clip: (clip["timelineStartUs"], clip["id"]))
         previous_end = 0
@@ -295,9 +329,14 @@ async def validate_timeline(session: AsyncSession, project_id: str, document: di
                     raise VideoEditorValidationError("转场长度不能超过 Clip")
             for key in ("assetId", "fontAssetId"):
                 if clip.get(key):
-                    asset_ids.add(clip[key])
+                    clip_asset_ids.add(clip[key])
     if len(clip_ids) != len(set(clip_ids)):
         raise VideoEditorValidationError("Clip ID 必须全局唯一")
+    organization = dumped.get("assetOrganization") or {}
+    organized_asset_ids = set(organization.get("rootAssetIds") or [])
+    for folder in organization.get("folders") or []:
+        organized_asset_ids.update(folder.get("assetIds") or [])
+    asset_ids = clip_asset_ids | organized_asset_ids
     if asset_ids:
         rows = (
             await session.execute(
@@ -315,7 +354,7 @@ async def validate_timeline(session: AsyncSession, project_id: str, document: di
         assets = {asset.id: (asset, metadata) for asset, metadata in rows}
         if set(assets) != asset_ids:
             raise VideoEditorValidationError(
-                "时间轴引用了不属于当前项目的素材", code="invalid_asset"
+                "时间轴或素材编排引用了不属于当前项目的素材", code="invalid_asset"
             )
         for track in dumped["tracks"]:
             for clip in track["clips"]:
@@ -333,7 +372,15 @@ async def validate_timeline(session: AsyncSession, project_id: str, document: di
                         "Clip 类型与素材类型不匹配", code="invalid_asset_kind"
                     )
                 duration_us = int((metadata.probe or {}).get("durationUs") or 0)
-                if duration_us and clip.get("sourceInUs", 0) + clip["durationUs"] > duration_us:
+                if (
+                    duration_us
+                    and not clip.get("sourceLoop")
+                    and (
+                        clip.get("sourceInUs", 0)
+                        + floor(clip["durationUs"] * clip.get("playbackRate", 1))
+                        > duration_us
+                    )
+                ):
                     raise VideoEditorValidationError(
                         "Clip 源区间超出素材时长", code="invalid_source_range"
                     )
@@ -367,7 +414,6 @@ class VideoEditorTimelines:
     async def apply(
         self, project_id: str, body: VideoEditorTimelineBatchIn
     ) -> VideoEditorTimelineOut:
-        await VideoEditorProjects(self.session, self.workspace_id).row(project_id)
         existing = (
             await self.session.execute(
                 select(VideoEditorOperationBatch).where(
@@ -436,4 +482,11 @@ class VideoEditorTimelines:
             .values(updated_at=now)
         )
         await self.session.commit()
-        return await self.get(project_id)
+        # The validated document is already the committed result. Returning it
+        # avoids a second project/timeline read on every small edit such as a split.
+        return VideoEditorTimelineOut(
+            projectId=project_id,
+            revision=body.expected_revision + 1,
+            document=document,
+            updatedAt=iso_utc(now),
+        )

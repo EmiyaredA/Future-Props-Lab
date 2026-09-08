@@ -308,8 +308,11 @@ export function VideoEditorSegmentExportDialog({
                   </label>
                   <small>
                     源范围 {formatTime(clip.sourceInUs)} –{" "}
-                    {formatTime(clip.sourceInUs + clip.durationUs)} · 时长{" "}
-                    {formatTime(clip.durationUs)}
+                    {formatTime(
+                      clip.sourceInUs +
+                        Math.floor(clip.durationUs * (clip.playbackRate ?? 1)),
+                    )}{" "}
+                    · 时长 {formatTime(clip.durationUs)}
                   </small>
                   <div className="ve-segment-configs">
                     {(Object.keys(choices) as ConfigKey[]).map((key) => (

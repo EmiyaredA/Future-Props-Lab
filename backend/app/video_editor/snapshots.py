@@ -43,7 +43,7 @@ def _copy_title(title: str) -> str:
 
 
 def _timeline_asset_ids(document: dict) -> set[str]:
-    return {
+    ids = {
         str(clip[key])
         for track in document.get("tracks", [])
         if isinstance(track, dict)
@@ -52,6 +52,11 @@ def _timeline_asset_ids(document: dict) -> set[str]:
         for key in ("assetId", "fontAssetId")
         if clip.get(key)
     }
+    organization = document.get("assetOrganization") or {}
+    ids.update(str(asset_id) for asset_id in organization.get("rootAssetIds") or [])
+    for folder in organization.get("folders") or []:
+        ids.update(str(asset_id) for asset_id in folder.get("assetIds") or [])
+    return ids
 
 
 def _asset_record(asset: VisualAsset) -> dict:
@@ -215,6 +220,17 @@ class VideoEditorProjectSnapshots:
                             if clip[key] not in asset_ids:
                                 raise ProjectSnapshotError("时间线引用的素材未包含在项目快照中")
                             clip[key] = asset_ids[clip[key]]
+            organization = timeline_dump.get("assetOrganization") or {}
+            for key in ("rootAssetIds",):
+                for index, asset_id in enumerate(organization.get(key) or []):
+                    if asset_id not in asset_ids:
+                        raise ProjectSnapshotError("素材编排引用的素材未包含在项目快照中")
+                    organization[key][index] = asset_ids[asset_id]
+            for folder in organization.get("folders") or []:
+                for index, asset_id in enumerate(folder.get("assetIds") or []):
+                    if asset_id not in asset_ids:
+                        raise ProjectSnapshotError("素材编排引用的素材未包含在项目快照中")
+                    folder["assetIds"][index] = asset_ids[asset_id]
             project = VideoEditorProject(
                 id=new_id(),
                 workspace_id=self.workspace_id,

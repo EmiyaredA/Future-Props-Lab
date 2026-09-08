@@ -82,6 +82,16 @@ describe("video editor live preview geometry", () => {
     ).toMatchObject({ width: 1920, height: 3413.333333333333 });
   });
 
+  it("uses the timeline canvas instead of hard-coded 1920×1080 dimensions", () => {
+    const geometry = previewMediaGeometry(
+      { ...clip, fitMode: "cover" },
+      { ...asset, probe: { width: 640, height: 480 } },
+      { width: 1280, height: 720 },
+    );
+
+    expect(geometry).toMatchObject({ width: 1280, height: 960 });
+  });
+
   it("crops letterboxing from portrait proxies before canvas transforms", () => {
     const crop = paddedVideoProxyCrop({ width: 1080, height: 1920 });
 

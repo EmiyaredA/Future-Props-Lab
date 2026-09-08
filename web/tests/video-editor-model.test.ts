@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  clipAudioGainAt,
   formatTime,
   frameUs,
   operationsForAsset,
@@ -8,6 +9,7 @@ import {
 } from "@features/video-editor/editorModel";
 import {
   canPlaceClip,
+  clipPlacementError,
   linkedClipIds,
   snapClipStartUs,
 } from "@features/video-editor/timelineSnap";
@@ -53,6 +55,29 @@ const video: VideoEditorAsset = {
 };
 
 describe("video editor timeline model", () => {
+  it("applies audio fade envelopes at both clip edges", () => {
+    const operation = operationsForAsset(video, tracks, 0)[1];
+    if (operation?.type !== "addClip") throw new Error("unexpected operation");
+    const clip = {
+      ...operation.clip,
+      transitionIn: { kind: "audio-crossfade" as const, durationUs: 1_000_000 },
+      transitionOut: {
+        kind: "audio-crossfade" as const,
+        durationUs: 2_000_000,
+      },
+    };
+    expect(clipAudioGainAt(clip, 0)).toBe(0);
+    expect(clipAudioGainAt(clip, 500_000)).toBe(0.5);
+    expect(clipAudioGainAt(clip, 2_000_000)).toBe(1);
+    expect(clipAudioGainAt(clip, 7_000_000)).toBe(0.5);
+    expect(
+      clipAudioGainAt(
+        { ...clip, transitionIn: { ...clip.transitionIn, durationUs: 0 } },
+        0,
+      ),
+    ).toBe(1);
+  });
+
   it("snaps microseconds to exact 30/60 fps grids", () => {
     expect(frameUs(30)).toBe(33_333);
     expect(frameUs(60)).toBe(16_667);
@@ -120,7 +145,7 @@ describe("video editor timeline model", () => {
         timelineEndUs: 30_000_000,
         enabled: true,
       }),
-    ).toBe(snapUs(3_000_000, 30));
+    ).toBe(3_000_000);
     expect(
       snapClipStartUs({
         candidateUs: 40_000,
@@ -146,7 +171,7 @@ describe("video editor timeline model", () => {
         timelineEndUs: 30_000_000,
         enabled: true,
       }),
-    ).toBe(snapUs(28_000_000, 30));
+    ).toBe(28_000_000);
     expect(
       snapClipStartUs({
         candidateUs: 27_800_000,
@@ -160,6 +185,84 @@ describe("video editor timeline model", () => {
         enabled: true,
       }),
     ).toBe(snapUs(27_800_000, 30));
+  });
+
+  it.each([30, 60])("preserves exact clip seams at %i fps", (fps) => {
+    const operation = operationsForAsset(video, tracks, 0)[0];
+    if (operation?.type !== "addClip") throw new Error("unexpected operation");
+    const neighbor = {
+      ...operation.clip,
+      id: "neighbor",
+      timelineStartUs: 4_000_000,
+      durationUs: 2_333_333,
+    };
+    const moving = { ...neighbor, id: "moving", durationUs: 3_042_000 };
+    for (const kind of ["visual", "mixed"] as const) {
+      const seamTracks = [{ ...tracks[0]!, kind, clips: [neighbor] }];
+      const movingIds = new Set([moving.id]);
+      for (const expectedStartUs of [
+        neighbor.timelineStartUs - moving.durationUs,
+        neighbor.timelineStartUs + neighbor.durationUs,
+      ]) {
+        const startUs = snapClipStartUs({
+          candidateUs: expectedStartUs + 20_000,
+          durationUs: moving.durationUs,
+          targetTrackId: "v1",
+          tracks: seamTracks,
+          movingClipIds: movingIds,
+          fps,
+          zoom: 80,
+          timelineEndUs: 30_000_000,
+          enabled: true,
+        });
+        expect(startUs).toBe(expectedStartUs);
+        expect(canPlaceClip(moving, startUs, "v1", seamTracks, movingIds)).toBe(
+          true,
+        );
+      }
+      expect(
+        canPlaceClip(
+          moving,
+          neighbor.timelineStartUs + neighbor.durationUs - 1,
+          "v1",
+          seamTracks,
+          movingIds,
+        ),
+      ).toBe(false);
+      expect(
+        canPlaceClip(
+          moving,
+          neighbor.timelineStartUs - moving.durationUs + 1,
+          "v1",
+          seamTracks,
+          movingIds,
+        ),
+      ).toBe(false);
+    }
+  });
+
+  it("explains how to move video out of a mixed track", () => {
+    const operation = operationsForAsset(video, tracks, 0)[0];
+    if (operation?.type !== "addClip") throw new Error("unexpected operation");
+    const clip = { ...operation.clip, trackId: "mixed" };
+    const allTracks = [
+      ...tracks,
+      {
+        ...tracks[0]!,
+        id: "mixed",
+        kind: "mixed" as const,
+        name: "原声视频",
+        clips: [clip],
+      },
+    ];
+    expect(
+      clipPlacementError(clip, 0, "v1", allTracks, new Set([clip.id])),
+    ).toBe(
+      "混合轨的视频不能直接移入视觉轨「V1」，请先右键片段选择「分离轨道」",
+    );
+    expect(
+      clipPlacementError(clip, 0, "mixed", allTracks, new Set([clip.id])),
+    ).toBeUndefined();
   });
 
   it("expands selected linked clips and rejects visual overlaps", () => {

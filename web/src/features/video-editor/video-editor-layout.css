@@ -1,0 +1,56 @@
+.ve-editor-shell {
+  height: 100dvh;
+  overflow: auto;
+}
+.ve-assets-panel {
+  display: grid;
+  grid-template-rows: 42px auto auto minmax(0, 1fr);
+  overflow: hidden;
+}
+.ve-panel-separator {
+  position: relative;
+  z-index: 11;
+  background: #252a3a;
+  touch-action: none;
+  user-select: none;
+  outline: none;
+}
+.ve-panel-separator::after {
+  content: "";
+  position: absolute;
+  border-radius: 2px;
+  background: #78718f;
+}
+.ve-panel-separator.vertical {
+  cursor: col-resize;
+}
+.ve-panel-separator.vertical::after {
+  width: 2px;
+  height: 30px;
+  left: 2px;
+  top: calc(50% - 15px);
+}
+.ve-panel-separator.horizontal {
+  cursor: row-resize;
+}
+.ve-panel-separator.horizontal::after {
+  height: 2px;
+  width: 30px;
+  top: 2px;
+  left: calc(50% - 15px);
+}
+.ve-panel-separator:hover,
+.ve-panel-separator:focus-visible {
+  background: #6453ad;
+}
+.ve-panel-separator:focus-visible::after,
+.ve-panel-separator:hover::after {
+  background: #e3deff;
+}
+.ve-track-head-separator {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 6px;
+  left: calc(var(--ve-track-head-width, 176px) - 3px);
+}

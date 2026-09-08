@@ -9,6 +9,7 @@ from PIL import Image
 
 from app.media_rendering.contracts import RenderPlan
 from app.media_rendering.evaluator import FrameSource, TimelineFrameRenderer
+from app.media_rendering.speed import source_time_us
 from app.schemas.video_editor import VideoEditorClip
 
 
@@ -49,7 +50,7 @@ def render_plan_frame(plan: RenderPlan, *, time_us: int, width: int = 960) -> by
         if path is None:
             return None
         if clip.kind == "video":
-            return _extract_video_frame(path, clip.source_in_us + local_us)
+            return _extract_video_frame(path, source_time_us(clip, local_us))
         if clip.kind == "image":
             return _load_image(str(path)).copy()
         return None

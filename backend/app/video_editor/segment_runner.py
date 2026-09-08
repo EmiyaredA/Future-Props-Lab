@@ -15,6 +15,7 @@ from app.core.time import utc_now
 from app.files.library import AssetLibrary
 from app.files.storage import AssetStorage
 from app.media_rendering.render_engine import RenderCancelled
+from app.media_rendering.speed import audio_speed_filters
 from app.models import (
     VideoEditorAssetMetadata,
     VideoEditorTask,
@@ -55,6 +56,7 @@ def encode_segment(
     quality: str,
     audio_mode: str,
     probe: dict,
+    playback_rate: float = 1,
     cancel_event: Event | None = None,
 ) -> None:
     preset, crf, audio_bitrate = SEGMENT_QUALITY[quality]
@@ -63,16 +65,18 @@ def encode_segment(
         "-hide_banner",
         "-loglevel",
         "error",
-        "-i",
-        str(source),
         "-ss",
         f"{source_in_us / 1_000_000:.6f}",
+        "-t",
+        f"{duration_us * playback_rate / 1_000_000:.6f}",
+        "-i",
+        str(source),
         "-t",
         f"{duration_us / 1_000_000:.6f}",
         "-map",
         "0:v:0",
     ]
-    filters: list[str] = []
+    filters: list[str] = [f"setpts=(PTS-STARTPTS)/{playback_rate:.8g}"]
     dimensions = _dimensions(probe, resolution)
     if dimensions:
         width, height = dimensions
@@ -98,6 +102,9 @@ def encode_segment(
     )
     if audio_mode == "keep":
         args.extend(["-map", "0:a?", "-c:a", "aac", "-b:a", audio_bitrate])
+        speed_filters = audio_speed_filters(playback_rate)
+        if speed_filters:
+            args.extend(["-af", ",".join(speed_filters)])
     else:
         args.append("-an")
     args.extend(["-movflags", "+faststart", "-y", str(output)])
@@ -254,6 +261,7 @@ class VideoEditorSegmentTaskRunner:
                 output,
                 source_in_us=int(item["sourceInUs"]),
                 duration_us=int(item["durationUs"]),
+                playback_rate=float(item.get("playbackRate", 1)),
                 resolution=str(config["resolution"]),
                 fps=config["fps"],
                 quality=str(config["quality"]),

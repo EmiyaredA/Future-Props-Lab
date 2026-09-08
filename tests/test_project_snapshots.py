@@ -179,6 +179,29 @@ async def test_galgame_and_video_snapshots_round_trip_assets_and_editable_docume
             files={"upload": ("frame.png", video_content, "image/png")},
         )
         assert uploaded.status_code == 200, uploaded.text
+        organized = await client.post(
+            f"/v1/video-editor/projects/{video['id']}/timeline/operations",
+            json={
+                "expectedRevision": 0,
+                "requestId": "snapshot-organized-assets",
+                "operations": [
+                    {
+                        "type": "setAssetOrganization",
+                        "organization": {
+                            "folders": [
+                                {
+                                    "id": "folder-frames",
+                                    "name": "Frames",
+                                    "assetIds": [uploaded.json()["id"]],
+                                }
+                            ],
+                            "rootAssetIds": [],
+                        },
+                    }
+                ],
+            },
+        )
+        assert organized.status_code == 200, organized.text
         timeline_before = (
             await client.get(f"/v1/video-editor/projects/{video['id']}/timeline")
         ).json()["document"]
@@ -195,12 +218,24 @@ async def test_galgame_and_video_snapshots_round_trip_assets_and_editable_docume
         copied_timeline = (
             await client.get(f"/v1/video-editor/projects/{video_copy['id']}/timeline")
         ).json()["document"]
-        assert copied_timeline == timeline_before
         copied_video_assets = (
             await client.get(f"/v1/video-editor/projects/{video_copy['id']}/assets")
         ).json()["items"]
         assert len(copied_video_assets) == 1
         assert copied_video_assets[0]["id"] != uploaded.json()["id"]
+        assert copied_timeline == {
+            **timeline_before,
+            "assetOrganization": {
+                "folders": [
+                    {
+                        "id": "folder-frames",
+                        "name": "Frames",
+                        "assetIds": [copied_video_assets[0]["id"]],
+                    }
+                ],
+                "rootAssetIds": [],
+            },
+        }
         assert copied_video_assets[0]["processingStatus"] == "queued"
         assert (
             await client.get(f"/v1/files/{copied_video_assets[0]['id']}/content")

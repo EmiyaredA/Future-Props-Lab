@@ -1,3 +1,4 @@
+import { DEFAULT_EDITOR_LAYOUT } from "./editorLayout";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ApiError } from "@platform/api/client";
@@ -66,6 +67,12 @@ export function useVideoEditor(projectId: string) {
   const [timelineScrollLeft, setTimelineScrollLeft] = useState(
     initialWorkspacePreferences.timelineScrollLeft,
   );
+  const [timelineScrollTop, setTimelineScrollTop] = useState(
+    initialWorkspacePreferences.timelineScrollTop ?? 0,
+  );
+  const [layout, setLayout] = useState(
+    initialWorkspacePreferences.layout ?? { ...DEFAULT_EDITOR_LAYOUT },
+  );
   const [preciseFrame, setPreciseFrame] = useState(
     initialWorkspacePreferences.preciseFrame,
   );
@@ -76,6 +83,7 @@ export function useVideoEditor(projectId: string) {
   const [undoStack, setUndoStack] = useState<HistoryEntry[]>([]);
   const [redoStack, setRedoStack] = useState<HistoryEntry[]>([]);
   const clock = useRef({ startedAt: 0, startedUs: 0 });
+  const fitPolicyMigrationRevision = useRef<number | undefined>(undefined);
   const playheadRef = useRef(initialWorkspacePreferences.playheadUs);
   const latestWorkspacePreferences = useRef<VideoEditorWorkspacePreferences>({
     ...initialWorkspacePreferences,
@@ -130,20 +138,45 @@ export function useVideoEditor(projectId: string) {
     },
     [mutation],
   );
-  const undo = async () => {
+  useEffect(() => {
+    const current = timeline.data;
+    if (!current || current.document.settings?.videoFitPolicyVersion === 1)
+      return;
+    if (fitPolicyMigrationRevision.current === current.revision) return;
+    fitPolicyMigrationRevision.current = current.revision;
+    const clips = (current.document.tracks ?? [])
+      .flatMap((track) => track.clips ?? [])
+      .filter((clip) => clip.kind === "video" && clip.fitMode !== "cover")
+      .slice(0, 199);
+    const operations: VideoEditorOperation[] = clips.map((clip) => ({
+      type: "updateClip",
+      clipId: clip.id,
+      patch: { fitMode: "cover" },
+    }));
+    if (clips.length < 199) {
+      operations.push({
+        type: "updateSettings",
+        patch: { videoFitPolicyVersion: 1 },
+      });
+    }
+    void commit(operations).catch(() => {
+      fitPolicyMigrationRevision.current = undefined;
+    });
+  }, [commit, timeline.data]);
+  const undo = useCallback(async () => {
     const entry = undoStack.at(-1);
     if (!entry) return;
     await mutation.mutateAsync({ operations: entry.undo });
     setUndoStack((items) => items.slice(0, -1));
     setRedoStack((items) => [...items, entry]);
-  };
-  const redo = async () => {
+  }, [mutation, undoStack]);
+  const redo = useCallback(async () => {
     const entry = redoStack.at(-1);
     if (!entry) return;
     await mutation.mutateAsync({ operations: entry.redo });
     setRedoStack((items) => items.slice(0, -1));
     setUndoStack((items) => [...items, entry]);
-  };
+  }, [mutation, redoStack]);
 
   const durationUs = timelineDuration(timeline.data);
   const setPlayheadUs = useCallback(
@@ -255,10 +288,23 @@ export function useVideoEditor(projectId: string) {
   useEffect(() => {
     const keydown = (event: KeyboardEvent) => {
       if (
+        event.defaultPrevented ||
+        (event.target instanceof HTMLElement &&
+          event.target.closest('[role="separator"]')) ||
         event.target instanceof HTMLInputElement ||
         event.target instanceof HTMLTextAreaElement
       )
         return;
+      if ((event.metaKey || event.ctrlKey) && event.code === "KeyZ") {
+        event.preventDefault();
+        void (event.shiftKey ? redo() : undo());
+        return;
+      }
+      if ((event.metaKey || event.ctrlKey) && event.code === "KeyY") {
+        event.preventDefault();
+        void redo();
+        return;
+      }
       if (event.code === "Space") {
         event.preventDefault();
         setPlaying((value) => !value);
@@ -296,6 +342,8 @@ export function useVideoEditor(projectId: string) {
     selectedClipIds.length,
     setPlayheadUs,
     timeline.data,
+    redo,
+    undo,
   ]);
 
   const selected = (timeline.data?.document.tracks ?? [])
@@ -324,6 +372,8 @@ export function useVideoEditor(projectId: string) {
     selectedClipIds,
     zoom,
     timelineScrollLeft,
+    timelineScrollTop,
+    layout,
     preciseFrame,
     snapEnabled,
   };
@@ -341,18 +391,24 @@ export function useVideoEditor(projectId: string) {
     projectId,
     selectedClipIds,
     timelineScrollLeft,
+    timelineScrollTop,
+    layout,
     zoom,
     snapEnabled,
   ]);
-  useEffect(
-    () => () => {
+  useEffect(() => {
+    const persist = () => {
       storeVideoEditorWorkspacePreferences(
         projectId,
         latestWorkspacePreferences.current,
       );
-    },
-    [projectId],
-  );
+    };
+    window.addEventListener("pagehide", persist);
+    return () => {
+      window.removeEventListener("pagehide", persist);
+      persist();
+    };
+  }, [projectId]);
   return {
     project,
     timeline,
@@ -371,7 +427,11 @@ export function useVideoEditor(projectId: string) {
     zoom,
     setZoom,
     timelineScrollLeft,
+    timelineScrollTop,
+    layout,
     setTimelineScrollLeft,
+    setTimelineScrollTop,
+    setLayout,
     preciseFrame,
     setPreciseFrame,
     snapEnabled,

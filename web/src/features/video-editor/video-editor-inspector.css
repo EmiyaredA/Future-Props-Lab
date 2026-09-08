@@ -1,0 +1,539 @@
+.ve-inspector {
+  overflow-x: hidden;
+  overflow-y: auto;
+  border-right: 0;
+  background:
+    radial-gradient(circle at 100% 0%, rgb(111 91 232 / 9%), transparent 260px),
+    #11151f;
+  scrollbar-color: #3a4052 transparent;
+  scrollbar-width: thin;
+}
+
+.ve-inspector > header {
+  position: sticky;
+  z-index: 4;
+  top: 0;
+  height: 58px;
+  padding: 0 16px;
+  border-bottom-color: rgb(53 59 76 / 85%);
+  background: rgb(17 21 31 / 88%);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 14%);
+  backdrop-filter: blur(16px);
+}
+
+.ve-inspector > header > div {
+  display: grid;
+  gap: 2px;
+}
+
+.ve-inspector > header strong {
+  color: #f1f2f8;
+  font-size: 13px;
+  font-weight: 720;
+  letter-spacing: 0.02em;
+}
+
+.ve-inspector > header small {
+  color: #858da2;
+  font-size: 10px;
+}
+
+.ve-inspector > header .ve-inspector-link-action {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid #33394a;
+  border-radius: 9px;
+  color: #b6afef;
+  background: #1a1f2c;
+}
+
+.ve-inspector > header .ve-inspector-link-action:hover:not(:disabled) {
+  border-color: #6258bc;
+  color: #dedaff;
+  background: #24263c;
+}
+
+.ve-inspector > header .ve-inspector-link-action:disabled {
+  opacity: 0.52;
+}
+
+.ve-inspector > header svg {
+  width: 15px;
+}
+
+.ve-inspector .ve-inspector-section {
+  position: relative;
+  margin: 10px 10px 0;
+  padding: 14px;
+  border: 1px solid #292f3e;
+  border-radius: 12px;
+  background: linear-gradient(145deg, rgb(27 32 45 / 94%), rgb(20 25 36 / 94%));
+  box-shadow: 0 7px 20px rgb(0 0 0 / 10%);
+}
+
+.ve-inspector .ve-inspector-section:last-child {
+  margin-bottom: 12px;
+}
+
+.ve-inspector .ve-clip-section {
+  border-color: #34384d;
+  background:
+    linear-gradient(115deg, rgb(111 91 232 / 7%), transparent 55%),
+    linear-gradient(145deg, rgb(27 32 45 / 96%), rgb(20 25 36 / 96%));
+}
+
+.ve-section-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 13px;
+}
+
+.ve-section-heading > div {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.ve-inspector .ve-section-heading h3 {
+  margin: 0;
+  color: #dadde8;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.025em;
+}
+
+.ve-section-heading p {
+  margin: 0;
+  color: #777f93;
+  font-size: 10px;
+  line-height: 1.45;
+}
+
+.ve-section-heading > span {
+  flex: none;
+  min-width: 22px;
+  padding: 3px 7px;
+  border: 1px solid rgb(118 104 232 / 28%);
+  border-radius: 999px;
+  color: #bdb6ff;
+  background: rgb(105 91 221 / 12%);
+  font-size: 9px;
+  line-height: 1.35;
+  text-align: center;
+}
+
+.ve-inspector label {
+  color: #99a2b6;
+  font-size: 10px;
+}
+
+.ve-inspector .ve-stacked-field {
+  display: grid;
+  gap: 6px;
+  margin: 0 0 11px;
+}
+
+.ve-inspector .ve-stacked-field:last-child {
+  margin-bottom: 0;
+}
+
+.ve-inspector label > span {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.ve-inspector label small {
+  color: #687186;
+  font-size: 9px;
+  font-weight: 500;
+}
+
+.ve-inspector input,
+.ve-inspector textarea {
+  min-width: 0;
+  width: 100%;
+  border: 1px solid #32394a;
+  border-radius: 8px;
+  outline: 0;
+  color: #eef0f7;
+  background: #0d111a;
+  box-shadow: inset 0 1px 1px rgb(0 0 0 / 18%);
+  transition:
+    border-color 140ms ease,
+    background 140ms ease,
+    box-shadow 140ms ease;
+}
+
+.ve-inspector input {
+  height: 36px;
+  padding: 0 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+.ve-inspector textarea {
+  min-height: 76px;
+  padding: 9px 10px;
+  resize: vertical;
+}
+
+.ve-inspector input:hover:not(:disabled),
+.ve-inspector textarea:hover:not(:disabled) {
+  border-color: #444c62;
+  background: #0f1420;
+}
+
+.ve-inspector input:focus-visible,
+.ve-inspector textarea:focus-visible {
+  border-color: #786bf0;
+  box-shadow: 0 0 0 3px rgb(118 104 232 / 15%);
+}
+
+.ve-inspector button:focus-visible {
+  outline: 2px solid #8c80f6;
+  outline-offset: 2px;
+}
+
+.ve-field-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 9px;
+}
+
+.ve-field-grid .ve-stacked-field {
+  min-width: 0;
+  margin-bottom: 0;
+}
+
+.ve-fit-mode-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 7px;
+}
+
+.ve-fit-mode-options button {
+  position: relative;
+  min-height: 36px;
+  padding: 7px 8px;
+  border: 1px solid #343b4c;
+  border-radius: 8px;
+  color: #a7afc1;
+  background: #121722;
+  font-size: 10px;
+  transition:
+    border-color 130ms ease,
+    color 130ms ease,
+    background 130ms ease,
+    transform 130ms ease;
+}
+
+.ve-fit-mode-options button:hover {
+  border-color: #505870;
+  color: #d8dbe6;
+  background: #191e2b;
+}
+
+.ve-fit-mode-options button:active {
+  transform: translateY(1px);
+}
+
+.ve-fit-mode-options button[aria-pressed="true"] {
+  border-color: #786cf0;
+  color: #e1ddff;
+  background: linear-gradient(
+    135deg,
+    rgb(111 91 232 / 28%),
+    rgb(86 72 184 / 17%)
+  );
+  box-shadow: inset 0 0 0 1px rgb(171 159 255 / 8%);
+}
+
+.ve-fit-mode-options + label {
+  display: grid;
+  gap: 6px;
+  margin-top: 11px;
+}
+
+.ve-property-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 9px;
+}
+
+.ve-property-field {
+  min-width: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.ve-property-field:last-child {
+  grid-column: 1 / -1;
+}
+
+.ve-input-with-action {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 34px;
+  gap: 5px;
+}
+
+.ve-input-with-action button,
+.ve-key-field button {
+  height: 36px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 1px solid #343b4d;
+  border-radius: 8px;
+  color: #9fa7ba;
+  background: #191e2a;
+  transition:
+    border-color 130ms ease,
+    color 130ms ease,
+    background 130ms ease;
+}
+
+.ve-input-with-action button:hover,
+.ve-key-field button:hover {
+  border-color: #7468dd;
+  color: #c9c2ff;
+  background: rgb(105 91 221 / 17%);
+}
+
+.ve-input-with-action svg,
+.ve-key-field svg {
+  width: 12px;
+}
+
+.ve-key-field {
+  display: grid;
+  grid-template-columns: 62px minmax(0, 1fr) 34px;
+  align-items: center;
+  gap: 7px;
+}
+
+.ve-speed-control {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 64px;
+  align-items: end;
+  gap: 8px;
+}
+
+.ve-speed-control .ve-stacked-field {
+  margin-bottom: 0;
+}
+
+.ve-primary-action {
+  height: 36px;
+  padding: 0 12px;
+  border: 1px solid #7468e8;
+  border-radius: 8px;
+  color: #f4f2ff;
+  background: linear-gradient(135deg, #7164e7, #5d50c8);
+  box-shadow: 0 6px 15px rgb(76 61 188 / 18%);
+  font-size: 10px;
+}
+
+.ve-primary-action:hover:not(:disabled) {
+  filter: brightness(1.09);
+}
+
+.ve-primary-action:disabled {
+  border-color: #343a49;
+  color: #676f82;
+  background: #1a1f2b;
+  box-shadow: none;
+}
+
+.ve-field-help,
+.ve-field-error {
+  margin: 9px 0 0;
+  color: #747d91;
+  font-size: 9px;
+  line-height: 1.55;
+}
+
+.ve-field-error {
+  color: #f19aa3;
+}
+
+.ve-transition-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.ve-transition-card {
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid #303747;
+  border-radius: 9px;
+  background: #111620;
+  transition:
+    border-color 140ms ease,
+    background 140ms ease;
+}
+
+.ve-transition-card.is-active {
+  border-color: rgb(116 104 232 / 70%);
+  background: linear-gradient(150deg, rgb(105 91 221 / 14%), #121722 65%);
+}
+
+.ve-transition-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.ve-transition-card-header > div {
+  display: grid;
+  gap: 1px;
+}
+
+.ve-transition-card-header strong {
+  color: #d4d8e4;
+  font-size: 10px;
+}
+
+.ve-transition-card-header small {
+  color: #697286;
+  font-size: 8px;
+}
+
+.ve-transition-card.is-active .ve-transition-card-header small {
+  color: #9b92ec;
+}
+
+.ve-transition-card-header button {
+  padding: 4px 7px;
+  border: 1px solid #3a4152;
+  border-radius: 6px;
+  color: #929bad;
+  background: #1a202c;
+  font-size: 9px;
+}
+
+.ve-transition-card-header button[aria-pressed="true"] {
+  border-color: #665bbd;
+  color: #c7c0ff;
+  background: rgb(105 91 221 / 18%);
+}
+
+.ve-transition-card label {
+  display: grid;
+  gap: 5px;
+}
+
+.ve-keyframes {
+  display: grid;
+  gap: 6px;
+}
+
+.ve-keyframes > div {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 34px;
+  padding: 6px 7px;
+  border: 1px solid #2e3545;
+  border-radius: 8px;
+  color: #b4bbca;
+  background: #111620;
+  font-size: 9px;
+}
+
+.ve-keyframes > div > svg {
+  flex: none;
+  width: 11px;
+  color: #8274f4;
+}
+
+.ve-keyframes > div > span {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ve-keyframes button {
+  padding: 3px 5px;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  color: #9ca5b8;
+  background: transparent;
+  font-size: 8px;
+}
+
+.ve-keyframes button:hover {
+  border-color: #3e465a;
+  color: #d7d2ff;
+  background: #202635;
+}
+
+.ve-keyframes button.ve-key-easing {
+  color: #aaa2f5;
+}
+
+.ve-keyframes button svg {
+  width: 11px;
+}
+
+.ve-keyframes-empty {
+  margin: 0;
+  padding: 16px 12px;
+  border: 1px dashed #333a4c;
+  border-radius: 9px;
+  color: #70798d;
+  background: rgb(12 16 24 / 40%);
+  font-size: 9px;
+  line-height: 1.5;
+  text-align: center;
+}
+
+.ve-inspector.empty > div {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  margin: 18px 12px;
+  padding: 48px 24px;
+  border: 1px dashed #303749;
+  border-radius: 12px;
+  text-align: center;
+  color: #7f889d;
+  background: rgb(20 25 36 / 70%);
+}
+
+.ve-inspector.empty > div svg {
+  width: 28px;
+  color: #796de0;
+}
+
+.ve-inspector.empty > div strong {
+  color: #c9cdda;
+}
+
+.ve-inspector.empty > div p {
+  margin: 0;
+  font-size: 10px;
+  line-height: 1.6;
+}
+
+@media (max-height: 760px) {
+  .ve-inspector .ve-inspector-section {
+    padding: 12px;
+  }
+
+  .ve-section-heading {
+    margin-bottom: 10px;
+  }
+}
