@@ -71,7 +71,9 @@ def ensure_registry(connection: sqlite3.Connection) -> None:
 def migration_state(connection: sqlite3.Connection) -> tuple[list[Migration], list[Migration]]:
     ensure_registry(connection)
     rows = connection.execute(
-        "SELECT migration_id, checksum FROM schema_migrations ORDER BY applied_at, migration_id"
+        # IDs are immutable labels, not sort keys. Timestamp precision is one second;
+        # insertion order preserves the registered application sequence across ties.
+        "SELECT migration_id, checksum FROM schema_migrations ORDER BY rowid"
     ).fetchall()
     known = {migration.migration_id: migration for migration in MIGRATIONS}
     applied: list[Migration] = []

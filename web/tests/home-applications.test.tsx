@@ -25,26 +25,30 @@ test("home keeps the three destinations equal and links model shortcuts", async 
 test("application center filters and records recent application access", async () => {
   const user = userEvent.setup();
   const open = vi.fn();
-  const { container } = render(
+  render(
     <ApplicationCenterPage
       applications={APPLICATION_DEFINITIONS}
       onOpen={open}
     />,
   );
   expect(screen.getByText("还没有访问记录")).toBeInTheDocument();
-  expect(container.querySelector(".application-icon img")).toHaveAttribute(
-    "src",
-    "/brand/visual-workshop-mark.png",
-  );
-  expect(
-    container.querySelectorAll(".application-icon img")[1],
-  ).toHaveAttribute("src", "/brand/galgame-workshop-mark.png");
-  expect(
-    container.querySelectorAll(".application-icon img")[2],
-  ).toHaveAttribute("src", "/brand/video-editor-mark.png");
+  for (const [name, asset] of [
+    ["思绪工坊", "thought-workshop"],
+    ["视觉创作工坊", "visual-workshop"],
+    ["Galgame 工坊", "galgame-workshop"],
+    ["视频剪辑工坊", "video-editor"],
+  ]) {
+    expect(
+      screen.getByRole("button", { name: `打开${name}` }).querySelector("img"),
+    ).toHaveAttribute("src", `/brand/${asset}-mark.png`);
+  }
   expect(screen.queryByText("AI 应用")).not.toBeInTheDocument();
   await user.click(screen.getByRole("button", { name: "效率协作" }));
-  expect(screen.getByText("没有找到匹配的应用")).toBeInTheDocument();
+  expect(
+    screen.getByRole("button", { name: "打开思绪工坊" }),
+  ).toBeInTheDocument();
+  await user.click(screen.getByRole("button", { name: "打开思绪工坊" }));
+  expect(open).toHaveBeenCalledWith("/apps/thought-workshop");
   await user.click(screen.getByRole("button", { name: "全部应用" }));
   await user.type(screen.getByRole("textbox", { name: "搜索AI应用" }), "视频");
   await user.click(screen.getByRole("button", { name: "打开视觉创作工坊" }));

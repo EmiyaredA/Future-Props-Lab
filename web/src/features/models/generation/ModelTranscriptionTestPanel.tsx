@@ -1,3 +1,4 @@
+import { useModelCompactPanels } from "@features/models/workspace/useModelCompactPanels";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -92,6 +93,7 @@ export function ModelTranscriptionTestPanel({
   onSelectMode: (mode: ModelTestMode) => void;
   onOpenAudioAnnotation: (projectId: string) => void;
 }) {
+  const compact = useModelCompactPanels("transcription");
   const client = useQueryClient();
   const [activeId, setActiveId] = useState<string | null>(null);
   const [taskSearch, setTaskSearch] = useState("");
@@ -268,7 +270,10 @@ export function ModelTranscriptionTestPanel({
   };
 
   return (
-    <section className="model-test-page transcription-test-page">
+    <section
+      data-compact-panel={compact.panel}
+      className="model-test-page transcription-test-page"
+    >
       <ModelTestWorkspaceHeader
         activeMode="speech"
         availableModes={availableModes}
@@ -285,6 +290,7 @@ export function ModelTranscriptionTestPanel({
           </button>
         </div>
       ) : null}
+      {compact.tabs}
       <div className="transcription-test-grid">
         <aside className="transcription-history">
           <div className="transcription-section-head">

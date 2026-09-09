@@ -17,10 +17,14 @@ BACKEND_ASSETS = (
     Path("backend/app/galgame_workshop/assets/NotoSansSC-Medium.ttf"),
 )
 WEB_ASSETS = (
+    Path("web/public/brand/thought-workshop-mark.png"),
     Path("web/public/voice-vad/silero_vad_v5.onnx"),
     Path("web/public/voice-vad/ort-wasm-simd-threaded.wasm"),
 )
 EXPECTED_SHA256 = {
+    Path(
+        "web/public/brand/thought-workshop-mark.png"
+    ): "4706bb94b1d94898ea52f63dfa5167cbda9ad34fe55a25857a4ed9b1e49a12c9",
     Path("backend/app/galgame_workshop/assets/NotoSansSC-Regular.ttf"): (
         "2c76254f6fc379fddfce0a7e84fb5385bb135d3e399294f6eeb6680d0365b74b"
     ),
@@ -184,7 +188,9 @@ def main() -> None:
             "backend/app/galgame_workshop/assets/*.ttf",
         )
     if args.web or args.all:
-        require_materialized(WEB_ASSETS, "web/public/voice-vad/*")
+        require_materialized(
+            WEB_ASSETS, "web/public/voice-vad/*,web/public/brand/thought-workshop-mark.png"
+        )
 
 
 if __name__ == "__main__":

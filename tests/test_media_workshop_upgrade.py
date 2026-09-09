@@ -295,6 +295,7 @@ async def test_segment_export_creation_is_idempotent_and_preserves_each_config()
             "name": "开场镜头",
             "sourceInUs": 2_000_000,
             "durationUs": 4_000_000,
+            "playbackRate": 1,
             "assetId": asset_id,
             "status": "queued",
             "progress": 0,
@@ -368,6 +369,7 @@ async def test_video_editor_business_routes_hide_other_workspace_projects() -> N
                 ),
                 ("GET", f"{root}/segment-exports", None),
                 ("GET", f"{root}/segment-exports/task-id", None),
+                ("GET", f"{root}/segment-exports/task-id/download", None),
                 ("POST", f"{root}/segment-exports/task-id/cancel", None),
             )
             for method, path, body in requests:

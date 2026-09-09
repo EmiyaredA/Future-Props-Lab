@@ -1,0 +1,238 @@
+@media (max-width: 1200px) {
+  .galgame-editor-page {
+    min-width: 0;
+    max-width: 100%;
+  }
+  .galgame-editor-page .galgame-editor-header {
+    height: auto;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 8px 12px;
+  }
+  .galgame-editor-project {
+    min-width: 0;
+    flex: 1;
+  }
+  .galgame-editor-project input {
+    max-width: 100%;
+    min-width: 0;
+  }
+  .galgame-editor-project > span {
+    flex: 1;
+    overflow: hidden;
+  }
+  .galgame-editor-project strong {
+    max-width: 100%;
+  }
+  .galgame-editor-back {
+    flex-shrink: 0;
+  }
+  .galgame-editor-actions {
+    flex-wrap: wrap;
+    max-width: 100%;
+    gap: 6px;
+  }
+  .galgame-editor-tabs {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+  }
+  .galgame-editor-tabs button {
+    flex: none;
+    white-space: nowrap;
+  }
+  .galgame-editor-page .galgame-script-workbench {
+    display: block;
+    height: auto;
+    min-height: 0;
+    max-width: 100%;
+    overflow: visible;
+  }
+  .galgame-script-workbench
+    > :is(.galgame-panel-resizer, .galgame-stage-resizer) {
+    display: none;
+  }
+  .galgame-script-workbench
+    > :is(
+      .galgame-block-panel,
+      .galgame-preview-panel,
+      .galgame-fragment-panel
+    ) {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    min-height: 0;
+  }
+  .galgame-editor-page[data-mobile-panel="script"]
+    .galgame-script-workbench
+    > :is(.galgame-preview-panel, .galgame-fragment-panel),
+  .galgame-editor-page[data-mobile-panel="structure"]
+    .galgame-script-workbench
+    > :is(.galgame-preview-panel, .galgame-block-panel),
+  .galgame-editor-page[data-mobile-panel="preview"]
+    .galgame-script-workbench
+    > :is(.galgame-fragment-panel, .galgame-block-panel) {
+    display: none;
+  }
+  .galgame-editor-page[data-mobile-panel="structure"]
+    .galgame-script-workbench
+    > .galgame-fragment-panel {
+    display: block;
+    position: static;
+    transform: none;
+    visibility: visible;
+    max-height: none;
+  }
+  .galgame-editor-page[data-mobile-panel="preview"] .galgame-preview-panel {
+    display: flex;
+    flex-direction: column;
+  }
+  .galgame-script-workbench:not([data-stage-collapsed="true"])
+    .galgame-preview-focus {
+    height: clamp(260px, calc(var(--visible-height, 100dvh) / 2), 520px);
+  }
+  .galgame-preview-panel > * {
+    min-width: 0;
+    max-width: 100%;
+    flex-shrink: 0;
+  }
+  .galgame-preview-panel .galgame-stage-resizer {
+    display: none;
+  }
+  .galgame-block-toolbar {
+    flex-wrap: wrap;
+    min-width: 0;
+    height: auto;
+    gap: 8px;
+  }
+  .galgame-block-toolbar > * {
+    min-width: 0;
+  }
+  .galgame-editor-page .galgame-structure-drawer-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    min-height: 32px;
+    padding: 5px;
+    border: 1px solid var(--gal-line);
+    border-radius: 5px;
+    color: var(--gal-muted);
+    background: var(--gal-surface);
+  }
+}
+@media (max-width: 700px) {
+  .galgame-editor-page .galgame-editor-tabs button {
+    font-size: 12px;
+    gap: 5px;
+  }
+  .galgame-editor-page .galgame-editor-tabs {
+    gap: 10px;
+  }
+  .galgame-script-view-switch {
+    flex-wrap: wrap;
+  }
+  .galgame-preview-panel .galgame-player-resolution {
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 1200px) {
+  .galgame-editor-page .galgame-asset-center {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+  .galgame-asset-center > aside {
+    min-height: 0;
+    padding-block: 8px;
+    display: flex;
+    overflow-x: auto;
+    align-items: center;
+    gap: 12px;
+  }
+  .galgame-asset-center > aside > header {
+    display: none;
+  }
+  .galgame-asset-center .galgame-asset-nav-group {
+    flex-direction: row;
+    flex-shrink: 0;
+  }
+  .galgame-asset-nav-group > small {
+    display: none;
+  }
+  .galgame-asset-center > aside .galgame-asset-nav-group button {
+    flex: none;
+    white-space: nowrap;
+  }
+  .galgame-editor-page .galgame-character-workspace {
+    min-width: 0;
+    display: block;
+    max-width: 100%;
+  }
+  .galgame-character-workspace[data-character-panel="list"]
+    > .galgame-character-detail-panel,
+  .galgame-character-workspace[data-character-panel="detail"]
+    > .galgame-character-list-panel {
+    display: none;
+  }
+  .galgame-character-workspace
+    > :is(.galgame-character-list-panel, .galgame-character-detail-panel) {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+  }
+  .galgame-character-detail-panel > header {
+    flex-wrap: wrap;
+  }
+  .galgame-character-detail-panel > header nav {
+    overflow-x: auto;
+    max-width: 100%;
+  }
+  .galgame-character-detail-panel > header nav button {
+    flex-shrink: 0;
+  }
+  .galgame-character-detail-panel .galgame-portrait-editor {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+  .galgame-character-detail-panel .galgame-expression-column {
+    width: 100%;
+    min-width: 0;
+  }
+  .galgame-character-template-table {
+    display: block;
+    max-width: 100%;
+    overflow: auto;
+  }
+}
+
+@media (max-width: 1200px) {
+  .galgame-editor-page[data-mobile-panel] {
+    height: var(--visible-height, 100dvh);
+    min-height: 0;
+  }
+  .galgame-editor-page
+    > :is(header, nav, .galgame-editor-statusbar, .galgame-inline-notice) {
+    flex-shrink: 0;
+  }
+  .galgame-editor-page
+    > :is(
+      .galgame-script-workbench,
+      .galgame-asset-center,
+      .galgame-narrative-workspace,
+      .galgame-personalization-workspace,
+      .galgame-project-settings
+    ) {
+    min-height: 0;
+    flex: 1;
+    overflow: auto;
+  }
+  .galgame-editor-page .galgame-narrative-canvas > header {
+    flex-wrap: wrap;
+    height: auto;
+    gap: 8px;
+  }
+  .galgame-narrative-canvas > header > div:last-child {
+    flex-wrap: wrap;
+  }
+}

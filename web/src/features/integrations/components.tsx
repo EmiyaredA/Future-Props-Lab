@@ -22,6 +22,7 @@ export function IntegrationModal({
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.defaultPrevented) return;
       if (event.key === "Escape") closeRef.current();
       if (event.key !== "Tab" || !dialog.current) return;
       const focusable = Array.from(

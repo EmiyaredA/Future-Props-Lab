@@ -23,6 +23,7 @@ Future-Props-Lab/
 │   ├── audio_annotation/ # Workspace 录音标注任务、文档/波形 CAS 与导入校验
 │   ├── visual_workshop/ # 视觉工坊项目、画布、助手、生成任务与领域适配器
 │   ├── galgame_workshop/ # Galgame 工程、Story 1.4 CAS、Story→RenderPlan 编译、剪辑交接、素材/ASR 与线路分析
+│   ├── thought_workshop/ # Workspace 富文本笔记、图片引用、AI 写作与可移植备份
 │   ├── video_editor/ # API 驱动的多轨时间轴、代理/精确帧、片段交接与后台任务
 │   ├── models/        # SQLAlchemy 持久化形状及其自有 ID/时间默认工厂
 │   ├── routes/        # `/v1` HTTP/SSE 协议边界；Galgame 按九类协议模块拆分
@@ -91,7 +92,8 @@ Future-Props-Lab/
   映射归属 `llm/transcription/`，录音标注、模型测试和 Galgame 只依赖该能力边界。
   删除任务不会删除原音频，被任务引用的音频不能从文件库删除。
 - AI 应用目录同样由 Web 静态注册表维护，应用最近访问记录只保存在浏览器本地。视觉创作工坊、
-  Galgame 工坊与视频剪辑工坊通过应用模块配置品牌、导航和 active 规则，共用 `app/layout/WorkshopShell`；
+  Galgame 工坊与视频剪辑工坊通过应用模块配置品牌、导航和 active 规则，共用 `app/layout/WorkshopShell`；侧栏展示由 `shared/ui/WorkshopSidebar.tsx` 统一拥有，
+  包括品牌、返回卡片、图标导航和主题切换。思绪工坊复用该展示组件，知识库状态与目录仍由功能模块管理；
   后端 `files/` 负责公共文件元数据、文件夹、存储校验、项目引用，以及三个工坊创建/删除时数据库与
   文件目录的一致性补偿，
   `visual_workshop/` 负责真实项目、revisioned 节点画布、项目对话与图片/视频异步生成任务，
@@ -106,7 +108,7 @@ Future-Props-Lab/
   与最终封装由 FFmpeg 统一处理。
   均不预置项目或素材。Studio 一级
   “文件管理”和项目素材浏览器复用同一文件 API；Galgame 上传图片、音视频与字体也复用公共存储、内容签名和媒体元数据校验，
-  但只能通过 Galgame 工程素材 API 修改或删除。公共文件被视觉或 Galgame 工程引用期间禁止删除，
+  但只能通过 Galgame 工程素材 API 修改或删除。`files/document_references.py` 统一检查文档与知识库封面的公共文件删除保护。公共文件被视觉或 Galgame 工程引用期间禁止删除，
   对话消息引用的项目素材也必须先解除引用才能删除。
 - Galgame 视频导出按 `video_export_planning.py` 路线/片段/试片纯规划、`video_compiler.py`
   冻结 Story 到共享 `RenderPlan` 的编译、`video_compiler_events.py` 的绝对时间状态归约、
@@ -190,6 +192,8 @@ Future-Props-Lab/
 `applications/video-editor/projects/<project-id>/{assets,derived,exports}/`。项目目录只保存素材、
 派生文件和正式导出结果，不保存快照历史；标题变化不改变目录。模型测试对话图片保存在 `model-test/attachments/`，生成参考
 素材及语音识别输入的任务私有副本保存在 `model-test/references/`，生成结果保存在 `model-test/generated/`。
+Skill 的可编辑标签保存在 `integration_skills.tags`，与目录配置共用 revision/CAS，
+不属于内容版本；文件存储显式使用已鉴权 Workspace。
 Skill 不可变版本保存在 `workspaces/<workspace-id>/integrations/skills/<skill-id>/<version>/`。
 本地临时分镜、场景图与未定稿草稿放在仓库根目录 `.scratch/`，与 `.runtime/`
 一样被 git 忽略，不进入文档资产或产品素材真源。FastAPI 启动时自动创建
@@ -231,3 +235,32 @@ Bot 会话、知识库、电话接入、浏览器扩展或多实例租户部署�
 Sayflow 的 PostgreSQL、多实例 worker、扩展、共享 runtime 包、知识库、评测仓和部署体系不属于
 当前架构。只有出现至少两个真实消费者或明确交付需求时，才创建 `packages/`、`extension/`、
 `evals/`、`deploy/` 等目录，并同时补充本索引、运行命令和架构测试。
+
+## 思绪工坊
+
+`backend/app/thought_workshop/` 拥有文档项目、目录、正文、回收站与文件备份。这里的「知识库」是文档项目容器的名称，不提供模型检索、文件内容解析或独立权限系统。
+
+- `knowledge.py`：知识库元数据、封面归属、首页创建、库级 revision/CAS、整库删除与恢复。
+- `directory.py`：库内多级文件夹、移动排序、循环校验和子项提升；移动正文归属时推进文档 revision。
+- `notes.py`：显式知识库归属下的正文读写、自动保存冲突快照、文件引用投影。
+- `attachments.py`：附件上传；公共类型与签名校验由 `files/policy.py` 拥有。
+- `portability.py` / `archive_structure.py`：v3 备份的预检、磁盘暂存、短事务与失败补偿。
+- `legacy_import.py`：唯一的 v1/v2 备份转换边界。生产读写没有旧笔记本模型、接口或默认知识库回退。
+- `schemas/thought_document.py`：无业务依赖的富文本允许列表、搜索文本与文件引用投影；正文保持 v2。
+
+`web/src/features/thought-workshop/` 拥有知识库卡片、首页阅读与编辑、多级目录、保存队列、写作助手、格式转换与唯一 `queryKeys.ts`。`KnowledgeSidebar` 将库切换、搜索、直观筛选入口和独立滚动目录融入旧版侧栏；筛选结果在右侧显示，离开编辑器前沿用保存保护。`KnowledgeTree` 提供拖动与键盘菜单；旧笔记 URL 只根据文档 ID 跳转到包含知识库 ID 与文档 ID 的新地址。共享项目卡片的可选封面与元信息保持其他应用默认行为。
+
+样式按职责分为 `knowledge.css`（项目列表与知识库布局）、`thought-workshop.css`（保存冲突与助手面板）、`writing-layout.css`（编辑布局与标签）、`editor.css`（正文与工具栏）、`attachments.css`（文件卡片），所有覆盖限定在思绪工坊。共享侧栏样式位于 `shared/ui/workshop-sidebar.css`；`CustomSelect` 默认使用自绘顶层菜单避开目录滚动裁切，并根据可见视口向上或向下展开，保留原 DOM 焦点范围。
+
+根知识库与文档显式保存 Workspace；子目录继承已验证的知识库归属。所有请求通过 `WorkspaceDep` 获取租户，模型注册中的租户过滤仅作额外防护。正文使用文档 revision，目录与库元数据使用库 revision，跨层修改在同一短事务中完成。
+
+`thought_note_assets` 保护正文图片和附件，知识库封面通过外键与文件库用例保护，包括回收站。迁移 `0046_thought_knowledge_bases` 将每个有旧数据的 Workspace 转为「我的知识库」，旧笔记本成为顶层文件夹，移除旧表与字段，保留文档 ID 和所有内容。空空间不创建默认项目。迁移无运行时 app 依赖，并已在隔离数据库验证后登记。
+
+
+## 前端屏幕适配
+
+`shared/ui/ResponsiveSidebar.tsx` 拥有主控制台与普通工坊的单实例抽屉外壳；品牌、业务导航和账号入口仍通过原组件提供。`ViewportBounds.tsx` 同步可见视口高度和偏移，供软键盘出现时的面板与菜单约束使用。`useDrawerFocus.ts` 统一抽屉/弹窗的键盘范围与焦点恢复；`CompactPanelTabs` 仅提供面板切换展示，不拥有编辑器实例、文档或播放状态。`QueryFeedback` 展示加载失败及重试。
+
+视频、Galgame、录音标注与模型测试的布局状态和适配 CSS 留在各自功能目录。Galgame 的独立预演也保留舞台、台词队列和检查器，布局规则由 `editor/fast-preview-compact.css` 拥有。紧凑面板通过 CSS 控制可见性，切换屏幕尺寸不重建业务控制器。思绪工坊侧栏背景随整页延伸，内部导航固定在可用视口。全站不使用根级横向溢出隐藏代替宽度修正。
+
+`web/e2e/responsive-inventory.ts` 维护全部应用路由与独立入口的适配归属；`responsive-site`、`responsive-editors`、`responsive-panels`、`responsive-states` 分别负责入口、编辑工作区、账号/公开页/模型子面板及请求状态矩阵，`responsive-forms` 检查表单及嵌套菜单。`responsive-capture.ts` 检查页面宽度和可见弹层边界并保存实页截图。`web/tests/responsive-coverage.test.ts` 对路由联合类型与 HTML 构建入口执行遗漏检查；`viewport-bounds.test.tsx` 验证模拟可见视口收缩时的菜单定位及监听清理。验收记录见 `docs/reference/responsive-verification.md`。

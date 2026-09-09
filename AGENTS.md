@@ -4,7 +4,8 @@
 
 - 每次正式处理仓库任务前先阅读本文件；所有命令默认在仓库根目录执行。
 - 本项目定位为单机部署的模型基础设施管理台，支持同一进程和同一 SQLite 内的多账号与逻辑多
-  Workspace 隔离；实时语音仅用于模型测试，不引入 Bot、知识库、电话接入、浏览器扩展或多实例部署能力。
+  Workspace 隔离；实时语音仅用于模型测试，不引入 Bot、模型检索知识库（RAG）、电话接入、浏览器扩展或多实例部署能力。
+  思绪工坊中的「知识库」仅表示文档项目容器，沿用 Workspace 权限与 AI 写作。
 - 目录职责以 [`docs/architecture/project-layout.md`](docs/architecture/project-layout.md)
   为唯一完整索引；新增目录或改变职责时同步更新该文件。
 - Python 命令与临时诊断优先通过 `uv run` 执行。
@@ -41,7 +42,7 @@
 - Web 的 `platform/` 与 `shared/` 不得依赖 `features/` 或 `app/`，`features/` 不得依赖
   `app/`；业务代码不得堆回 `web/src/` 根目录。生产请求通过 OpenAPI 生成类型访问后端，
   `generated/` 文件不得手工编辑。
-- Models、Visual Workshop 与 Audio Annotation 的 TanStack Query 键由各自 `queryKeys.ts` 唯一
+- Models、Visual Workshop、Thought Workshop 与 Audio Annotation 的 TanStack Query 键由各自 `queryKeys.ts` 唯一
   维护；跨功能消费者导入 owner 的 key factory，不得复制同名缓存键。鉴权文件预览统一使用
   `platform/api/useApiBlobUrl.ts` 管理取消、竞态和 Object URL 回收；自有缓存或多音轨播放器除外。
 - Web 中面向用户可见的交互控件不得直接暴露浏览器默认外观或原生弹层。下拉菜单、颜色选择、
@@ -119,6 +120,8 @@
   OpenAPI 等生成文件排除。历史超限基线只能下降不能增长，不得新增编号式 CSS 分片；构建预算脚本
   只读产物，不得在构建后拆分或改写 CSS。`architecture_size_baseline.json` 的 production/tests
   均保持空对象，不得重新增加尺寸豁免。
+- 新增 Web 路由或独立 HTML 入口时，同步更新 `web/e2e/responsive-inventory.ts` 与相应适配用例；
+  页面不得依靠根级隐藏横向溢出来通过检查，复杂区域使用明确的局部滚动和可点击操作入口。
 - 修复问题时先定位根因和同类风险；保留用户已有的未提交改动，不覆盖或顺手重写无关文件。
 - 新增或替换 `docs/` 图片、固定字体或 VAD 二进制时同步更新 `docs/assets/MANIFEST.md`，并执行
   `git lfs fsck`；未核清来源和许可证的演示素材不得视为可再分发资产。

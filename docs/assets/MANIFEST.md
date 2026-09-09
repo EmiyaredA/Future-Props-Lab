@@ -32,6 +32,7 @@ SHA-256，也可在跳过 LFS 下载的检出中使用指针 OID，避免把指�
 | --- | --- | --- | --- | --- | --- |
 | `backend/app/galgame_workshop/assets/NotoSansSC-Regular.ttf` | 确定性中文对白渲染 | Noto Sans SC 固定字体 | SIL OFL 1.1，见同目录 `OFL.txt` | `2c76254f6fc379fddfce0a7e84fb5385bb135d3e399294f6eeb6680d0365b74b` | 后端需要 |
 | `backend/app/galgame_workshop/assets/NotoSansSC-Medium.ttf` | 确定性中文标题渲染 | Noto Sans SC 固定字体 | SIL OFL 1.1，见同目录 `OFL.txt` | `ca094f6b0001fb048ca39ddd797a0cdb0179e1e55c6561e111c49c3e6a61d7b7` | 后端需要 |
+| `web/public/brand/thought-workshop-mark.png` | 思绪工坊应用卡片、侧栏及最近访问头像 | 内置 ImageGen 生成，菲莉丝角色与既有工坊徽章为参考；[来源与提示词](thought-workshop-avatar.md) | 原作角色无独立再分发授权，沿用内部开发交接范围 | `4706bb94b1d94898ea52f63dfa5167cbda9ad34fe55a25857a4ed9b1e49a12c9` | Web 需要 |
 | `web/public/voice-vad/silero_vad_v5.onnx` | 浏览器实时语音 VAD | `@ricky0123/vad-web@0.0.30` 随包模型 | npm 包声明 ISC；对外再分发前仍应核对模型上游条款 | `2623a2953f6ff3d2c1e61740c6cdb7168133479b267dfef114a4a3cc5bdd788f` | Web 需要 |
 | `web/public/voice-vad/ort-wasm-simd-threaded.wasm` | 浏览器 ONNX Runtime | `onnxruntime-web@1.27.0` | MIT | `d1ab1b94b16a65b29d710d0b587b29e7bed336827577623913479b8afe8113e6` | Web 需要 |
 

@@ -1,0 +1,32 @@
+.compact-panel-tabs {
+  display: none;
+}
+@media (max-width: 1200px) {
+  .compact-panel-tabs {
+    display: flex;
+    flex: none;
+    gap: 6px;
+    padding: 6px 12px;
+    overflow-x: auto;
+    background: var(--surface, #161b26);
+    border-block: 1px solid var(--border, #303647);
+  }
+  .compact-panel-tabs button {
+    flex: 1 0 auto;
+    min-height: 36px;
+    padding: 6px 12px;
+    white-space: nowrap;
+    color: var(--text);
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 8px;
+  }
+  .compact-panel-tabs button[aria-pressed="true"] {
+    color: var(--accent);
+    border-color: var(--accent-line);
+    background: var(--accent-soft);
+  }
+}
+.compact-panel-tabs {
+  flex-shrink: 0;
+}

@@ -1,10 +1,11 @@
+import { FileEmptyState } from "./FileEmptyState";
+import { useDrawerFocus } from "@shared/ui/useDrawerFocus";
 import { createPortal } from "react-dom";
 import {
   AlertCircle,
   ArrowDownAZ,
   CheckCircle2,
   Download,
-  File,
   Filter,
   Folder,
   FolderOpen,
@@ -112,6 +113,11 @@ export function AssetBrowser({
     viewMode,
     onViewModeChange,
   });
+  const fileDialog = useDrawerFocus<HTMLDivElement>(
+    closeEditor,
+    !!editor,
+    false,
+  );
 
   return (
     <section className={`file-browser${compact ? " is-compact" : ""}`}>
@@ -387,7 +393,7 @@ export function AssetBrowser({
               </strong>
               <span>
                 {upload.isPending
-                  ? "支持图片、视频、音频、PDF、文本与 JSON 文件，可一次选择多个"
+                  ? "支持图片、视频、音频、PDF、Office、文本、CSV、JSON 与 ZIP，可一次选择多个"
                   : "请检查失败原因后重新上传"}
               </span>
             </div>
@@ -451,7 +457,9 @@ export function AssetBrowser({
                       ? `正在上传 ${completedUploads}/${uploads.length}`
                       : "上传文件"}
                   </strong>
-                  <small>图片、视频、音频、PDF 与文本文件</small>
+                  <small>
+                    图片、视频、音频、PDF、Office、文本、CSV、JSON 与 ZIP
+                  </small>
                 </span>
                 <span className="file-upload-card-action">
                   <Plus aria-hidden /> 可多选
@@ -620,25 +628,12 @@ export function AssetBrowser({
           ) : null}
         </div>
       ) : (
-        <div className="file-empty">
-          <File aria-hidden />
-          <strong>
-            {importMode
-              ? query.trim() || kind !== "all"
-                ? "没有找到可导入的文件"
-                : "文件管理中还没有可导入的文件"
-              : "这个文件夹还是空的"}
-          </strong>
-          {!importMode ? (
-            <button
-              type="button"
-              disabled={upload.isPending}
-              onClick={() => fileInput.current?.click()}
-            >
-              <Upload aria-hidden /> 上传第一个文件
-            </button>
-          ) : null}
-        </div>
+        <FileEmptyState
+          importing={importMode}
+          filtered={!!query.trim() || kind !== "all"}
+          busy={upload.isPending}
+          onUpload={() => fileInput.current?.click()}
+        />
       )}
       {act.isPending ? (
         <div className="file-busy" role="status">
@@ -666,6 +661,7 @@ export function AssetBrowser({
           }}
         >
           <div
+            ref={fileDialog}
             className="file-dialog"
             role="dialog"
             aria-modal="true"

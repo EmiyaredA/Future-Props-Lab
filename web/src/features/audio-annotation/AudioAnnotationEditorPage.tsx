@@ -1,3 +1,5 @@
+import { useState } from "react";
+import { CompactPanelTabs } from "@shared/ui/CompactPanelTabs";
 import {
   ArrowLeft,
   ChevronLeft,
@@ -44,6 +46,7 @@ import { useAudioAnnotationEditorController } from "./useAudioAnnotationEditorCo
 import "@features/audio-annotation/audio-annotation-import.css";
 import "@features/audio-annotation/audio-annotation.css";
 import "@features/audio-annotation/audio-annotation-responsive.css";
+import "./audio-annotation-compact.css";
 
 export function AudioAnnotationEditorPage({
   projectId,
@@ -60,6 +63,7 @@ export function AudioAnnotationEditorPage({
   ) => void;
   speakerImportSource?: SpeakerImportSource;
 }) {
+  const [mobilePanel, setMobilePanel] = useState("waveform");
   const controller = useAudioAnnotationEditorController({
     projectId,
     workspaceId,
@@ -68,7 +72,10 @@ export function AudioAnnotationEditorPage({
   });
   if (controller.status === "error")
     return (
-      <section className="page annotation-editor-page">
+      <section
+        className="page annotation-editor-page"
+        data-mobile-panel={mobilePanel}
+      >
         <p className="annotation-error">任务加载失败，请返回后重试。</p>
         <button type="button" className="btn" onClick={controller.onBack}>
           返回任务列表
@@ -77,7 +84,10 @@ export function AudioAnnotationEditorPage({
     );
   if (controller.status === "loading")
     return (
-      <section className="page annotation-editor-page">
+      <section
+        className="page annotation-editor-page"
+        data-mobile-panel={mobilePanel}
+      >
         <div className="page-loading">正在加载录音标注任务…</div>
       </section>
     );
@@ -144,7 +154,10 @@ export function AudioAnnotationEditorPage({
     zoomRatio,
   } = controller;
   return (
-    <section className="page annotation-editor-page">
+    <section
+      className="page annotation-editor-page"
+      data-mobile-panel={mobilePanel}
+    >
       <header className="annotation-editor-header">
         <div className="annotation-editor-title">
           <button
@@ -208,6 +221,15 @@ export function AudioAnnotationEditorPage({
         </div>
       ) : null}
 
+      <CompactPanelTabs
+        label="录音标注面板"
+        value={mobilePanel}
+        onChange={setMobilePanel}
+        options={[
+          { value: "waveform", label: "波形与片段" },
+          { value: "inspector", label: "编辑片段" },
+        ]}
+      />
       <div className="annotation-editor-grid">
         <div className="annotation-editor-main">
           <section className="card annotation-waveform-card">

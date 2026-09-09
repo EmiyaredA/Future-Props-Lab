@@ -25,6 +25,7 @@ export function TextInputDialog({
   const titleId = useId();
   const inputId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
+  const formRef = useRef<HTMLFormElement>(null);
   const cancelRef = useRef(onCancel);
   const [value, setValue] = useState(initialValue);
   cancelRef.current = onCancel;
@@ -32,15 +33,37 @@ export function TextInputDialog({
   useEffect(() => {
     if (!open) return;
     const previouslyFocused = document.activeElement as HTMLElement | null;
+    const previousOverflow = document.body.style.overflow;
+    const ownsScrollLock = previousOverflow !== "hidden";
+    if (ownsScrollLock) document.body.style.overflow = "hidden";
     setValue(initialValue);
     const close = (event: KeyboardEvent) => {
+      if (event.isComposing) return;
       if (event.key === "Escape") cancelRef.current();
+      if (event.key === "Tab") {
+        const controls = formRef.current?.querySelectorAll<HTMLElement>(
+          'button:not(:disabled), input:not(:disabled), [tabindex="0"]',
+        );
+        const first = controls?.[0];
+        const last = controls?.[controls.length - 1];
+        if (event.shiftKey && document.activeElement === first) {
+          event.preventDefault();
+          last?.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+          event.preventDefault();
+          first?.focus();
+        }
+      }
     };
     window.addEventListener("keydown", close);
-    requestAnimationFrame(() => inputRef.current?.focus());
+    const frame = requestAnimationFrame(() =>
+      inputRef.current?.focus({ preventScroll: true }),
+    );
     return () => {
       window.removeEventListener("keydown", close);
-      previouslyFocused?.focus();
+      cancelAnimationFrame(frame);
+      if (ownsScrollLock) document.body.style.overflow = previousOverflow;
+      previouslyFocused?.focus({ preventScroll: true });
     };
   }, [initialValue, open]);
 
@@ -58,6 +81,7 @@ export function TextInputDialog({
       }}
     >
       <form
+        ref={formRef}
         className="modal-card text-input-dialog"
         role="dialog"
         aria-modal="true"

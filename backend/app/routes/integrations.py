@@ -6,7 +6,7 @@ from typing import Annotated
 from fastapi import APIRouter, File, Form, HTTPException, Query, UploadFile
 from fastapi.responses import StreamingResponse
 
-from app.deps import SessionDep, StudioAuth
+from app.deps import SessionDep, StudioAuth, WorkspaceDep
 from app.integrations.common import (
     DuplicateIntegrationError,
     IntegrationNotFoundError,
@@ -27,6 +27,7 @@ from app.schemas.integrations import (
     McpValidationOut,
     SkillCatalogOut,
     SkillOut,
+    SkillTagsIn,
     SkillUpdateIn,
     SkillVersionOut,
     ToolApiCatalogOut,
@@ -198,39 +199,47 @@ async def validate_mcp(
 
 
 @router.get("/skills", response_model=SkillCatalogOut)
-async def skills(session: SessionDep) -> SkillCatalogOut:
-    return await SkillCatalog(session).catalog()
+async def skills(session: SessionDep, workspace_id: WorkspaceDep) -> SkillCatalogOut:
+    return await SkillCatalog(session, workspace_id).catalog()
 
 
 @router.post("/skills", response_model=SkillOut, status_code=201)
 async def create_skill(
     principal: StudioAuth,
     session: SessionDep,
+    workspace_id: WorkspaceDep,
     file: Annotated[UploadFile, File()],
     enabled: Annotated[bool, Form()] = False,
+    tags: Annotated[list[str] | None, Form(max_length=12)] = None,
 ) -> SkillOut:
     _owner(principal)
     try:
-        return await SkillCatalog(session).create(file, enabled=enabled)
+        return await SkillCatalog(session, workspace_id).create(
+            file, enabled=enabled, tags=SkillTagsIn(tags=tags or []).tags
+        )
     except (DuplicateIntegrationError, IntegrationValidationError) as exc:
         _raise_integration(exc)
 
 
 @router.get("/skills/{skill_id}", response_model=SkillOut)
-async def skill(session: SessionDep, skill_id: str) -> SkillOut:
+async def skill(session: SessionDep, workspace_id: WorkspaceDep, skill_id: str) -> SkillOut:
     try:
-        return await SkillCatalog(session).get(skill_id)
+        return await SkillCatalog(session, workspace_id).get(skill_id)
     except IntegrationNotFoundError as exc:
         _raise_integration(exc)
 
 
 @router.patch("/skills/{skill_id}", response_model=SkillOut)
 async def update_skill(
-    principal: StudioAuth, session: SessionDep, skill_id: str, body: SkillUpdateIn
+    principal: StudioAuth,
+    session: SessionDep,
+    workspace_id: WorkspaceDep,
+    skill_id: str,
+    body: SkillUpdateIn,
 ) -> SkillOut:
     _owner(principal)
     try:
-        return await SkillCatalog(session).update(skill_id, body)
+        return await SkillCatalog(session, workspace_id).update(skill_id, body)
     except IntegrationNotFoundError as exc:
         _raise_integration(exc)
 
@@ -239,21 +248,24 @@ async def update_skill(
 async def delete_skill(
     principal: StudioAuth,
     session: SessionDep,
+    workspace_id: WorkspaceDep,
     skill_id: str,
     expected_revision: int = Query(ge=0),
 ) -> DeleteOut:
     _owner(principal)
     try:
-        await SkillCatalog(session).delete(skill_id, expected_revision)
+        await SkillCatalog(session, workspace_id).delete(skill_id, expected_revision)
     except IntegrationNotFoundError as exc:
         _raise_integration(exc)
     return DeleteOut()
 
 
 @router.get("/skills/{skill_id}/versions", response_model=list[SkillVersionOut])
-async def skill_versions(session: SessionDep, skill_id: str) -> list[SkillVersionOut]:
+async def skill_versions(
+    session: SessionDep, workspace_id: WorkspaceDep, skill_id: str
+) -> list[SkillVersionOut]:
     try:
-        return await SkillCatalog(session).versions(skill_id)
+        return await SkillCatalog(session, workspace_id).versions(skill_id)
     except IntegrationNotFoundError as exc:
         _raise_integration(exc)
 
@@ -262,13 +274,14 @@ async def skill_versions(session: SessionDep, skill_id: str) -> list[SkillVersio
 async def add_skill_version(
     principal: StudioAuth,
     session: SessionDep,
+    workspace_id: WorkspaceDep,
     skill_id: str,
     file: Annotated[UploadFile, File()],
     expected_revision: Annotated[int, Form(ge=0)],
 ) -> SkillOut:
     _owner(principal)
     try:
-        return await SkillCatalog(session).add_version(
+        return await SkillCatalog(session, workspace_id).add_version(
             skill_id, file, expected_revision=expected_revision
         )
     except (
@@ -280,9 +293,11 @@ async def add_skill_version(
 
 
 @router.get("/skills/{skill_id}/versions/{version}/content")
-async def skill_version_content(session: SessionDep, skill_id: str, version: str):
+async def skill_version_content(
+    session: SessionDep, workspace_id: WorkspaceDep, skill_id: str, version: str
+):
     try:
-        filename, content = await SkillCatalog(session).version_zip(skill_id, version)
+        filename, content = await SkillCatalog(session, workspace_id).version_zip(skill_id, version)
     except IntegrationNotFoundError as exc:
         _raise_integration(exc)
     return StreamingResponse(

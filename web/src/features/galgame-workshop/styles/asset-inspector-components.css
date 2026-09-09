@@ -67,6 +67,7 @@
 }
 
 :root[data-theme="dark"] .galgame-workshop-shell,
+:root[data-theme="dark"] .galgame-fast-preview,
 :root[data-theme="dark"] .galgame-editor-page,
 :root[data-theme="dark"] .galgame-route-report-backdrop,
 :root[data-theme="dark"] .galgame-block-command-backdrop,
@@ -205,6 +206,17 @@
 .galgame-library-page .workshop-project-grid {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 18px;
+}
+
+@media (max-width: 1200px) {
+  .galgame-library-page .workshop-project-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 700px) {
+  .galgame-library-page .workshop-project-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 .galgame-library-page .workshop-project-card {

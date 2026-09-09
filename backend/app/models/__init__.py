@@ -48,6 +48,12 @@ from app.models.model_test_tools import (
     ModelTestTool,
     ModelTestToolCall,
 )
+from app.models.thought_workshop import (
+    ThoughtFolder,
+    ThoughtKnowledgeBase,
+    ThoughtNote,
+    ThoughtNoteAsset,
+)
 from app.models.tool_navigation import ToolNavigationItem
 from app.models.video_editor import (
     VideoEditorAssetMetadata,
@@ -69,6 +75,10 @@ from app.models.visual_workshop import (
 from app.models.workspace import Workspace
 
 __all__ = [
+    "ThoughtNote",
+    "ThoughtNoteAsset",
+    "ThoughtKnowledgeBase",
+    "ThoughtFolder",
     "Base",
     "AuthSession",
     "AudioAnnotationDocument",

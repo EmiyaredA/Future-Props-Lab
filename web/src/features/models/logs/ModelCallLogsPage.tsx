@@ -172,6 +172,7 @@ export function ModelCallLogsPage() {
                 { value: "model_diagnostic", label: "快速诊断" },
                 { value: "model_playground", label: "模型测试" },
                 { value: "visual_workshop_assistant", label: "视觉助手" },
+                { value: "thought_workshop_assistant", label: "思绪工坊写作" },
               ]}
             />
             <CustomSelect

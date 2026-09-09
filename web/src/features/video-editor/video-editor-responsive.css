@@ -1,0 +1,118 @@
+@media (max-width: 1200px) {
+  .ve-editor-shell .ve-editor {
+    height: var(--visible-height, 100dvh);
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  .ve-editor-topbar {
+    flex-wrap: wrap;
+    padding: 8px 12px;
+    gap: 6px;
+    flex: none;
+  }
+  .ve-editor-title {
+    min-width: 0;
+    flex: 1;
+  }
+  .ve-editor-title > div {
+    min-width: 0;
+  }
+  .ve-editor-title input {
+    width: 100%;
+    min-width: 0;
+  }
+  .ve-top-actions {
+    width: 100%;
+    overflow-x: auto;
+    flex-shrink: 0;
+    padding-bottom: 3px;
+  }
+  .ve-top-actions button {
+    flex: none;
+    white-space: nowrap;
+    min-height: 36px;
+  }
+  .ve-editor-body {
+    display: block;
+    flex: 1;
+    min-height: 100px;
+    overflow: auto;
+  }
+  .ve-editor-body > :is(.ve-assets-panel, .ve-inspector, .ve-preview-panel) {
+    height: 100%;
+    min-height: 0;
+    width: 100%;
+    overflow-y: auto;
+  }
+  .ve-preview-panel > header {
+    flex-wrap: wrap;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+  .ve-preview-panel > header button {
+    white-space: nowrap;
+  }
+  .ve-editor > .ve-panel-separator,
+  .ve-editor-body > .ve-panel-separator {
+    display: none;
+  }
+  .ve-editor-shell[data-mobile-panel="preview"]
+    .ve-editor-body
+    > :is(.ve-assets-panel, .ve-inspector),
+  .ve-editor-shell[data-mobile-panel="assets"]
+    .ve-editor-body
+    > :is(.ve-preview-panel, .ve-inspector),
+  .ve-editor-shell[data-mobile-panel="inspector"]
+    .ve-editor-body
+    > :is(.ve-preview-panel, .ve-assets-panel) {
+    display: none;
+  }
+  .ve-timeline-bar {
+    flex: none;
+    min-height: 40px;
+    gap: 12px;
+    overflow-x: auto;
+  }
+  .ve-timeline-bar > div {
+    flex: none;
+  }
+  .ve-timeline-bar button {
+    white-space: nowrap;
+  }
+  .ve-timeline-panel {
+    flex: 0 0 30%;
+    min-height: 120px;
+  }
+  .ve-timeline-tools {
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+  .ve-timeline-tools > * {
+    flex-shrink: 0;
+  }
+  .ve-transport {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .ve-editor .compact-panel-tabs {
+    --surface: #161b26;
+    --text: #dfe8ef;
+  }
+}
+@media (max-height: 500px) and (max-width: 1200px) {
+  .ve-editor-shell {
+    overflow-y: auto;
+  }
+  .ve-editor-shell .ve-editor {
+    min-height: 500px;
+  }
+}
+.ve-dialog-backdrop {
+  top: var(--visible-top, 0px);
+  height: var(--visible-height, 100dvh);
+  bottom: auto;
+}
+.ve-export-dialog {
+  max-height: calc(var(--visible-height, 100dvh) - 32px);
+}

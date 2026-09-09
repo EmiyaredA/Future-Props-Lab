@@ -26,6 +26,17 @@ export default defineConfig({
       },
       output: {
         manualChunks(id) {
+          if (id.includes("node_modules/prosemirror-"))
+            return "notes-prosemirror";
+          if (id.includes("node_modules/@tiptap/")) return "notes-tiptap";
+          if (id.includes("node_modules/katex/")) return "notes-math";
+          if (id.includes("node_modules/mermaid/") && id.includes("chunk-")) {
+            return `notes-mermaid-${id
+              .split("/")
+              .pop()
+              ?.replace(/\.mjs$/, "")}`;
+          }
+
           if (
             id.includes("@ricky0123/vad-web") ||
             id.includes("onnxruntime-common") ||

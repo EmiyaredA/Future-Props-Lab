@@ -151,6 +151,20 @@ class VideoEditorProjectSnapshots:
                 )
             ).scalars()
         )
+        segment_details = await self.session.scalars(
+            select(VideoEditorTask.result_detail).where(
+                VideoEditorTask.project_id == project_id,
+                VideoEditorTask.workspace_id == self.workspace_id,
+                VideoEditorTask.kind == "segment_export",
+                VideoEditorTask.status == "completed",
+            )
+        )
+        output_ids.update(
+            item["assetId"]
+            for detail in segment_details
+            for item in (detail or {}).get("segments", [])
+            if item.get("status") == "completed" and item.get("assetId")
+        )
         all_assets = list(
             (
                 await self.session.execute(

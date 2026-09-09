@@ -45,13 +45,10 @@ export function GalgameEditorStructurePanel({
     selectedFragment,
     setExpandedChapterId,
     setStructureQuery,
-    structureDrawerOpen,
     structureQuery,
   } = model;
   return (
-    <aside
-      className={`galgame-fragment-panel${structureDrawerOpen ? " is-drawer-open" : ""}`}
-    >
+    <aside className="galgame-fragment-panel">
       <div className="galgame-panel-heading">
         <span>
           <small>剧本结构</small>

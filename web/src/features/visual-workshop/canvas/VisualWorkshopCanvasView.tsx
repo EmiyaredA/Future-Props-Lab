@@ -1,3 +1,4 @@
+import { CanvasContextMenu } from "./CanvasContextMenu";
 import {
   useCallback,
   useEffect,
@@ -8,9 +9,7 @@ import {
 import {
   ArrowLeft,
   CircleQuestionMark,
-  Clipboard,
   Copy,
-  Focus,
   Grid2X2,
   Image,
   List,
@@ -19,8 +18,6 @@ import {
   Plus,
   RefreshCw,
   Trash2,
-  Type,
-  Upload,
   Video,
   X,
 } from "lucide-react";
@@ -232,8 +229,23 @@ export function VisualWorkshopCanvasView({
               renameMutation.mutate();
             else setEditingTitle(false);
           }}
-          onToggleAssistant={() => setAssistantOpen((value) => !value)}
+          onCreate={() => {
+            setContextMenu({
+              left: 16,
+              top: 126,
+              worldX: (innerWidth / 2 - viewport.x) / viewport.zoom,
+              worldY: (innerHeight / 2 - viewport.y) / viewport.zoom,
+            });
+          }}
+          onToggleAssistant={() => {
+            if (innerWidth <= 1200) {
+              setAssetsOpen(false);
+              setSelectedId(undefined);
+            }
+            setAssistantOpen((value) => !value);
+          }}
           onToggleAssets={() => {
+            if (innerWidth <= 1200) setAssistantOpen(false);
             setSelectedId(undefined);
             setAssetsOpen((value) => !value);
           }}
@@ -551,83 +563,19 @@ export function VisualWorkshopCanvasView({
         }}
       />
       {contextMenu ? (
-        <div
-          className="canvas-context-menu"
-          role="menu"
-          style={{ left: contextMenu.left, top: contextMenu.top }}
-          onContextMenu={(event) => event.preventDefault()}
-        >
-          <button
-            role="menuitem"
-            onClick={() => {
-              uploadPosition.current = {
-                x: contextMenu.worldX,
-                y: contextMenu.worldY,
-              };
-              setContextMenu(undefined);
-              uploadInput.current?.click();
-            }}
-          >
-            <Upload aria-hidden /> 上传
-          </button>
-          <button
-            role="menuitem"
-            onClick={() =>
-              createNode("text", {
-                x: contextMenu.worldX,
-                y: contextMenu.worldY,
-              })
-            }
-          >
-            <Type aria-hidden /> 添加文本节点
-          </button>
-          <button
-            role="menuitem"
-            onClick={() =>
-              createNode("image", {
-                x: contextMenu.worldX,
-                y: contextMenu.worldY,
-              })
-            }
-          >
-            <Image aria-hidden /> 添加图片节点
-          </button>
-          <button
-            role="menuitem"
-            onClick={() =>
-              createNode("video", {
-                x: contextMenu.worldX,
-                y: contextMenu.worldY,
-              })
-            }
-          >
-            <Video aria-hidden /> 添加视频节点
-          </button>
-          <button
-            role="menuitem"
-            onClick={() =>
-              createNode("audio", {
-                x: contextMenu.worldX,
-                y: contextMenu.worldY,
-              })
-            }
-          >
-            <Music aria-hidden /> 添加音频节点
-          </button>
-          <button role="menuitem" onClick={() => fitView()}>
-            <Focus aria-hidden /> 适应屏幕
-          </button>
-          <i aria-hidden />
-          <button
-            role="menuitem"
-            disabled={!clipboard.current}
-            onClick={() =>
-              pasteNode({ x: contextMenu.worldX, y: contextMenu.worldY })
-            }
-          >
-            <Clipboard aria-hidden /> 粘贴
-          </button>
-        </div>
+        <CanvasContextMenu
+          position={contextMenu}
+          onCreate={createNode}
+          onFit={fitView}
+          onPaste={pasteNode}
+          canPaste={!!clipboard.current}
+          onClose={() => setContextMenu(undefined)}
+          onUpload={(point) => {
+            uploadPosition.current = point;
+            setContextMenu(undefined);
+            uploadInput.current?.click();
+          }}
+        />
       ) : null}
       {assetsOpen ? (
         <aside className="canvas-assets-drawer" aria-label="项目素材库">

@@ -1,3 +1,4 @@
+import { useDrawerFocus } from "@shared/ui/useDrawerFocus";
 import { MessageSquareText, Plus, Search } from "lucide-react";
 import type { ModelTestConversationSummary } from "@features/models/api";
 
@@ -36,6 +37,7 @@ export function ModelTestConversationPanel({
   onSelect: (id: string) => void;
   onClose: () => void;
 }) {
+  const drawer = useDrawerFocus(onClose, open);
   const normalized = search.trim().toLowerCase();
   const filtered = normalized
     ? items.filter((item) =>
@@ -45,7 +47,11 @@ export function ModelTestConversationPanel({
       )
     : items;
   return (
-    <aside className={`conversation-panel${open ? " mobile-open" : ""}`}>
+    <aside
+      ref={drawer}
+      aria-label="历史对话"
+      className={`conversation-panel${open ? " mobile-open" : ""}`}
+    >
       <div className="panel-heading">
         <strong>历史对话</strong>
       </div>

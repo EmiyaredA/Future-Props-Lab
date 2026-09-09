@@ -1,0 +1,73 @@
+@media (max-width: 1200px) {
+  .annotation-project-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .annotation-editor-page .annotation-editor-grid {
+    display: block;
+  }
+  .annotation-editor-page[data-mobile-panel="waveform"] .annotation-inspector,
+  .annotation-editor-page[data-mobile-panel="inspector"]
+    .annotation-editor-main {
+    display: none;
+  }
+  .annotation-editor-page .annotation-inspector {
+    position: static;
+    width: 100%;
+    max-height: none;
+  }
+  .annotation-editor-page .annotation-editor-header {
+    flex-wrap: wrap;
+  }
+  .annotation-editor-page .annotation-editor-title {
+    min-width: 0;
+  }
+  .annotation-editor-page .annotation-editor-actions {
+    flex-wrap: wrap;
+    max-width: 100%;
+  }
+  .annotation-editor-page .annotation-waveform-tools {
+    flex-wrap: wrap;
+  }
+  .annotation-editor-page .annotation-segment-table-card {
+    overflow-x: auto;
+  }
+}
+
+@media (max-width: 700px) {
+  .annotation-projects-header {
+    flex-direction: column;
+    gap: 16px;
+  }
+  .annotation-project-actions {
+    flex-wrap: wrap;
+  }
+  .annotation-project-actions button {
+    white-space: nowrap;
+  }
+  .annotation-project-summary {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .annotation-project-summary label {
+    width: 100%;
+    min-width: 0;
+  }
+  .annotation-project-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .annotation-editor-page .annotation-waveform-meta {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .annotation-editor-page .annotation-waveform-tools {
+    width: 100%;
+    justify-content: flex-start;
+    margin: 0;
+  }
+  .annotation-editor-page .annotation-waveform-navigator {
+    flex-wrap: wrap;
+  }
+  .annotation-editor-page .annotation-waveform-navigator small {
+    width: 100%;
+  }
+}

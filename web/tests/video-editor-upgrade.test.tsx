@@ -1,11 +1,23 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { VideoEditorSegmentExportDialog } from "@features/video-editor/VideoEditorSegmentExportDialog";
 import { VideoEditorTimeline } from "@features/video-editor/VideoEditorTimeline";
+import { VideoEditorTasksPage } from "@features/video-editor/VideoEditorTasksPage";
+import { fetchApiDownload } from "@platform/api/client";
+import { downloadProjectSnapshot } from "@shared/ui/project-library/downloadProjectSnapshot";
 import { VideoEditorProjectsPage } from "@features/video-editor/VideoEditorProjectsPage";
 import {
+  downloadVideoEditorSegments,
+  listVideoEditorRenders,
+  listVideoEditorSegmentExports,
   createVideoEditorSegmentExport,
   exportVideoEditorProjectSnapshot,
   getVideoEditorSegmentExport,
@@ -25,6 +37,9 @@ vi.mock("@features/video-editor/api", async () => {
   >("@features/video-editor/api");
   return {
     ...actual,
+    downloadVideoEditorSegments: vi.fn(),
+    listVideoEditorRenders: vi.fn(),
+    listVideoEditorSegmentExports: vi.fn(),
     createVideoEditorSegmentExport: vi.fn(),
     getVideoEditorSegmentExport: vi.fn(),
     exportVideoEditorProjectSnapshot: vi.fn(),
@@ -39,6 +54,14 @@ vi.mock("@features/visual-workshop", async () => {
   >("@features/visual-workshop");
   return { ...actual, getVisualWorkshopProjects: vi.fn() };
 });
+
+vi.mock("@shared/ui/project-library/downloadProjectSnapshot", () => ({
+  downloadProjectSnapshot: vi.fn(),
+}));
+vi.mock("@platform/api/client", async (original) => ({
+  ...(await original<typeof import("@platform/api/client")>()),
+  fetchApiDownload: vi.fn(),
+}));
 
 const timeline: Timeline = {
   projectId: "editor-1",
@@ -223,12 +246,17 @@ describe("video editor upgrade", () => {
     );
 
     expect(screen.getByDisplayValue("结尾")).toBeVisible();
-    expect(screen.queryByDisplayValue("开场")).not.toBeInTheDocument();
-    await user.clear(screen.getByLabelText("视频名称"));
+    expect(
+      screen.getByRole("checkbox", { name: "选择片段 1：开场" }),
+    ).not.toBeChecked();
+    expect(
+      screen.getByRole("checkbox", { name: "选择片段 2：结尾" }),
+    ).toBeChecked();
+    await user.clear(screen.getByLabelText("片段 2 视频名称"));
     expect(
       screen.getByRole("button", { name: "开始导出并导入" }),
     ).toBeDisabled();
-    await user.type(screen.getByLabelText("视频名称"), "  最终片段  ");
+    await user.type(screen.getByLabelText("片段 2 视频名称"), "  最终片段  ");
     await user.click(screen.getByRole("button", { name: "新建画布项目" }));
     await user.clear(screen.getByLabelText("新画布项目名称"));
     await user.type(screen.getByLabelText("新画布项目名称"), "成片工坊");
@@ -301,5 +329,165 @@ describe("video editor upgrade", () => {
     expect(screen.getByText("正在导出并导入")).toBeInTheDocument();
     expect(screen.getByText("已编码，正在导入")).toBeInTheDocument();
     expect(onClose).not.toHaveBeenCalled();
+  });
+  it("preserves settings when toggling clips and applies batch settings only to checked clips", async () => {
+    const user = userEvent.setup();
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    render(
+      <QueryClientProvider client={client}>
+        <VideoEditorSegmentExportDialog
+          projectId="editor-1"
+          timeline={timeline}
+          assets={assets}
+          selectedClipIds={[]}
+          onClose={vi.fn()}
+        />
+      </QueryClientProvider>,
+    );
+    const first = screen.getByRole("checkbox", { name: "选择片段 1：开场" });
+    const second = screen.getByRole("checkbox", { name: "选择片段 2：结尾" });
+    expect(first).toBeChecked();
+    expect(second).toBeChecked();
+    await user.clear(screen.getByLabelText("片段 1 视频名称"));
+    await user.type(screen.getByLabelText("片段 1 视频名称"), "新名称");
+    await user.click(screen.getByRole("button", { name: "清空" }));
+    expect(
+      screen.getByRole("button", { name: "开始导出并导入" }),
+    ).toBeDisabled();
+    await user.click(first);
+    await user.click(screen.getByRole("combobox", { name: "批量quality" }));
+    await user.click(screen.getByRole("option", { name: "高质量" }));
+    await user.click(screen.getByRole("button", { name: "应用到勾选片段" }));
+    await user.click(first);
+    await user.click(first);
+    expect(screen.getByLabelText("片段 1 视频名称")).toHaveValue("新名称");
+    expect(
+      screen.getByRole("combobox", { name: "新名称quality" }),
+    ).toHaveTextContent("高质量");
+    expect(
+      screen.getByRole("combobox", { name: "结尾quality" }),
+    ).toHaveTextContent("均衡");
+    await user.clear(screen.getByLabelText("片段 2 视频名称"));
+    expect(
+      screen.getByRole("button", { name: "开始导出并导入" }),
+    ).toBeEnabled();
+    await user.click(screen.getByRole("button", { name: "全选" }));
+    expect(
+      screen.getByRole("button", { name: "开始导出并导入" }),
+    ).toBeDisabled();
+  });
+
+  it("exports without a canvas, restores target settings, and locks the submitted configuration", async () => {
+    vi.mocked(getVisualWorkshopProjects).mockResolvedValue({ items: [] });
+    const user = userEvent.setup();
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    render(
+      <QueryClientProvider client={client}>
+        <VideoEditorSegmentExportDialog
+          projectId="editor-1"
+          timeline={timeline}
+          assets={assets}
+          selectedClipIds={["clip-b"]}
+          onClose={vi.fn()}
+        />
+      </QueryClientProvider>,
+    );
+    const toggle = screen.getByRole("checkbox", { name: "导入画布项目" });
+    expect(
+      screen.getByRole("button", { name: "开始导出并导入" }),
+    ).toBeDisabled();
+    await user.click(screen.getByRole("button", { name: "新建画布项目" }));
+    await user.clear(screen.getByLabelText("新画布项目名称"));
+    await user.type(screen.getByLabelText("新画布项目名称"), "保留名称");
+    await user.click(toggle);
+    expect(screen.queryByLabelText("新画布项目名称")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "开始导出" })).toBeEnabled();
+    await user.click(toggle);
+    expect(screen.getByLabelText("新画布项目名称")).toHaveValue("保留名称");
+    await user.click(toggle);
+    await user.click(screen.getByRole("button", { name: "开始导出" }));
+    await waitFor(() =>
+      expect(createVideoEditorSegmentExport).toHaveBeenCalledWith(
+        "editor-1",
+        expect.objectContaining({
+          target: null,
+          segments: [expect.objectContaining({ clipId: "clip-b" })],
+        }),
+        expect.any(String),
+      ),
+    );
+    expect(toggle).toBeDisabled();
+    expect(
+      screen.getByRole("checkbox", { name: "选择片段 1：开场" }),
+    ).toBeDisabled();
+    expect(screen.getByLabelText("片段 2 视频名称")).toBeDisabled();
+    expect(await screen.findByText("正在导出")).toBeInTheDocument();
+    expect(screen.getByText("已编码，正在保存")).toBeInTheDocument();
+  });
+
+  it("offers individual and ZIP downloads from the task list after the dialog has closed", async () => {
+    const task = await vi.mocked(getVideoEditorSegmentExport)(
+      "editor-1",
+      "task-1",
+    );
+    vi.mocked(listVideoEditorRenders).mockResolvedValue({ items: [] });
+    vi.mocked(listVideoEditorSegmentExports).mockResolvedValue({
+      items: [
+        {
+          ...task,
+          status: "completed",
+          progress: 100,
+          resultDetail: {
+            importRequested: false,
+            segments: [
+              {
+                assetId: "output-a",
+                name: "片段",
+                status: "completed",
+                outputFilename: "片段.mp4",
+              },
+            ],
+          },
+        },
+      ],
+    });
+    vi.mocked(downloadVideoEditorSegments).mockResolvedValue({
+      blob: new Blob(["zip"]),
+      filename: "片段.zip",
+    });
+    vi.mocked(fetchApiDownload).mockResolvedValue({
+      blob: new Blob(["mp4"]),
+      filename: "片段.mp4",
+    });
+    const user = userEvent.setup();
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    render(
+      <QueryClientProvider client={client}>
+        <VideoEditorTasksPage onOpenProject={vi.fn()} />
+      </QueryClientProvider>,
+    );
+    const title = await screen.findByText("分段导出");
+    const card = within(title.closest("article")!);
+    await user.click(card.getByRole("button", { name: "全部打包下载" }));
+    await waitFor(() =>
+      expect(downloadVideoEditorSegments).toHaveBeenCalledWith(
+        "editor-1",
+        "task-1",
+      ),
+    );
+    await waitFor(() => expect(downloadProjectSnapshot).toHaveBeenCalled());
+    await user.click(card.getByRole("button", { name: "逐段下载（1）" }));
+    await user.click(card.getByRole("button", { name: "下载片段 1：片段" }));
+    await waitFor(() =>
+      expect(fetchApiDownload).toHaveBeenCalledWith(
+        "/v1/files/output-a/download",
+      ),
+    );
   });
 });

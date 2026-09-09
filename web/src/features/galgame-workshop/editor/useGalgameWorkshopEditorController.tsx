@@ -129,7 +129,6 @@ export function useGalgameWorkshopEditorController({
     setSelectedTimelineGapId,
     setStageViewportPreferences,
     setStaleVoiceBlocks,
-    setStructureDrawerOpen,
     setStructureQuery,
     setTimelinePreferences,
     setTimelinePreviewMs,
@@ -138,7 +137,6 @@ export function useGalgameWorkshopEditorController({
     setWorkspace,
     stageViewportPreferences,
     staleVoiceBlocks,
-    structureDrawerOpen,
     structureQuery,
     terminates,
     timelineFragment,
@@ -157,7 +155,6 @@ export function useGalgameWorkshopEditorController({
     setSelectedTimelineGapId(undefined);
     setSelectedBlockId(undefined);
     setTimelinePreviewMs(null);
-    setStructureDrawerOpen(false);
   };
   const selectChapter = (nextChapter: GalgameStoryChapter) => {
     const fragment =
@@ -169,7 +166,6 @@ export function useGalgameWorkshopEditorController({
     setSelectedBlockId(undefined);
     setSelectedTimelineGapId(undefined);
     setTimelinePreviewMs(null);
-    setStructureDrawerOpen(false);
   };
   const addChapter = () => {
     const id = stableId();
@@ -728,8 +724,6 @@ export function useGalgameWorkshopEditorController({
     setStructureQuery,
     expandedChapterId,
     setExpandedChapterId,
-    structureDrawerOpen,
-    setStructureDrawerOpen,
     projectQuery,
     refetchStory,
     reportQuery,

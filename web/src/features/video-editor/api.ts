@@ -236,3 +236,11 @@ export const exactFrameUrl = (
   width = 960,
 ) =>
   `${import.meta.env.VITE_API_BASE || ""}${exactFramePath(projectId, revision, timeUs, width)}`;
+
+export const downloadVideoEditorSegments = (
+  projectId: string,
+  taskId: string,
+) =>
+  fetchApiDownload(
+    `/v1/video-editor/projects/${encodeURIComponent(projectId)}/segment-exports/${encodeURIComponent(taskId)}/download`,
+  );

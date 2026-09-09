@@ -1,3 +1,4 @@
+import { CompactPanelTabs } from "@shared/ui/CompactPanelTabs";
 import { useVideoEditorLayout } from "./useVideoEditorLayout";
 import { VideoEditorSeparator } from "./VideoEditorSeparator";
 import { useState } from "react";
@@ -29,6 +30,7 @@ import "./video-editor-workspace.css";
 import "./video-editor-timeline.css";
 import "./video-editor-segments.css";
 import "./video-editor-layout.css";
+import "./video-editor-responsive.css";
 
 export function VideoEditorPage({
   projectId,
@@ -38,6 +40,7 @@ export function VideoEditorPage({
   onBack: () => void;
 }) {
   const editor = useVideoEditor(projectId);
+  const [mobilePanel, setMobilePanel] = useState("preview");
   const workspaceLayout = useVideoEditorLayout(editor.layout, editor.setLayout);
   const [exportOpen, setExportOpen] = useState(false);
   const [segmentExportOpen, setSegmentExportOpen] = useState(false);
@@ -116,7 +119,7 @@ export function VideoEditorPage({
     );
   };
   return (
-    <div className="ve-editor-shell">
+    <div className="ve-editor-shell" data-mobile-panel={mobilePanel}>
       <div
         className="ve-editor"
         ref={workspaceLayout.ref}
@@ -236,10 +239,20 @@ export function VideoEditorPage({
                 setSegmentExportOpen(true);
               }}
             >
-              <Layers3 aria-hidden /> 分段导入
+              <Layers3 aria-hidden /> 分段导出
             </button>
           </div>
         </header>
+        <CompactPanelTabs
+          label="剪辑面板"
+          value={mobilePanel}
+          onChange={setMobilePanel}
+          options={[
+            { value: "preview", label: "预览" },
+            { value: "assets", label: "素材" },
+            { value: "inspector", label: "属性" },
+          ]}
+        />
         <main className="ve-editor-body">
           <VideoEditorAssetPanel
             projectId={projectId}

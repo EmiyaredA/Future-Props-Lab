@@ -1,0 +1,10 @@
+export const thoughtKeys = {
+  all: ["thought-workshop"] as const,
+  notes: (query: object) => [...thoughtKeys.all, "notes", query] as const,
+  projectLists: () => [...thoughtKeys.all, "projects"] as const,
+  projects: (query = "", trash = false) =>
+    [...thoughtKeys.all, "projects", query, trash] as const,
+  directory: (id: string) => [...thoughtKeys.all, "directory", id] as const,
+  note: (id: string) => [...thoughtKeys.all, "note", id] as const,
+  models: () => [...thoughtKeys.all, "models"] as const,
+};

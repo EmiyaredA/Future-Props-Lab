@@ -1,0 +1,92 @@
+.thought-attachment {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 18px 0;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text);
+  max-width: 100%;
+}
+.thought-attachment.is-selected {
+  outline: 2px solid #e57b59;
+}
+.thought-attachment-info {
+  flex: 1;
+  min-width: 0;
+}
+.thought-attachment-info strong {
+  display: block;
+  font-size: 15px;
+  overflow-wrap: anywhere;
+}
+.thought-attachment-info small {
+  display: block;
+  font-size: 12px;
+  color: var(--muted);
+}
+.thought-attachment-grip {
+  cursor: grab;
+  color: var(--muted);
+}
+.thought-attachment button,
+.thought-upload-list button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  background: var(--bg);
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+}
+.thought-attachment button:focus-visible,
+.thought-upload-list button:focus-visible {
+  outline: 2px solid #e57b59;
+  outline-offset: 2px;
+}
+.thought-upload-list {
+  max-width: 780px;
+  margin: 12px auto;
+  padding: 0 16px;
+  font-size: 13px;
+}
+.thought-upload-list > div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+  overflow-wrap: anywhere;
+}
+.thought-upload-list span {
+  flex: 1;
+  min-width: 0;
+}
+.thought-toolbar .thought-tool-insert > button {
+  width: auto;
+  flex-shrink: 0;
+  white-space: nowrap;
+  gap: 5px;
+  padding-inline: 8px;
+}
+@media (max-width: 700px) {
+  .thought-attachment {
+    gap: 8px;
+    padding: 12px 8px;
+  }
+  .thought-attachment-grip {
+    display: none;
+  }
+  .thought-tool-insert {
+    flex-wrap: wrap;
+  }
+}
+
+.thought-toolbar .thought-tool-insert > button svg {
+  flex-shrink: 0;
+}

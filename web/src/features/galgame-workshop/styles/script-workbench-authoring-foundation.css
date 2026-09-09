@@ -19,15 +19,11 @@
   flex: 1;
 }
 
-.galgame-structure-drawer-backdrop {
-  display: none;
-}
-
 .galgame-structure-drawer-toggle {
   display: grid;
 }
 
-@media (min-width: 1280px) {
+@media (min-width: 1201px) {
   .galgame-structure-drawer-toggle {
     display: none;
   }

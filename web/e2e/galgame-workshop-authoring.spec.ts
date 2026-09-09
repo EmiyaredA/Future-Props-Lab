@@ -229,22 +229,28 @@ test("authors two chapters across card and performance views and plays into the 
   await expect(
     workbench.locator(":scope > .galgame-fragment-panel"),
   ).toBeInViewport();
-  await page
-    .getByRole("button", { name: "关闭剧本结构" })
-    .click({ position: { x: 1000, y: 400 } });
-
   await page.setViewportSize({ width: 900, height: 900 });
-  const [structureBox, cardsBox, previewBox, inspectorBox] = await Promise.all(
-    [
-      workbench.locator(":scope > .galgame-fragment-panel"),
-      workbench.locator(":scope > .galgame-block-panel"),
-      workbench.locator(".galgame-preview-focus"),
-      workbench.locator(".galgame-inspector-tabs"),
-    ].map((locator) => locator.boundingBox()),
-  );
-  expect(structureBox?.y).toBeLessThan(cardsBox?.y ?? 0);
-  expect(cardsBox?.y).toBeLessThan(previewBox?.y ?? 0);
-  expect(previewBox?.y).toBeLessThan(inspectorBox?.y ?? 0);
+  const compactPanels = page.locator(".compact-panel-tabs").first();
+  for (const [label, selector] of [
+    ["结构", ":scope > .galgame-fragment-panel"],
+    ["剧本", ":scope > .galgame-block-panel"],
+    ["预览与属性", ":scope > .galgame-preview-panel"],
+  ]) {
+    await compactPanels
+      .getByRole("button", { name: label, exact: true })
+      .click();
+    await expect(workbench.locator(selector)).toBeVisible();
+    expect(
+      (await workbench.locator(selector).boundingBox())!.width,
+    ).toBeGreaterThan(850);
+  }
+  const previewBox = await workbench
+    .locator(".galgame-preview-focus")
+    .boundingBox();
+  const inspectorBox = await workbench
+    .locator(".galgame-inspector-tabs")
+    .boundingBox();
+  expect(previewBox!.y).toBeLessThan(inspectorBox!.y);
   expect(
     await page.evaluate(() => document.documentElement.scrollWidth),
   ).toBeLessThanOrEqual(900);

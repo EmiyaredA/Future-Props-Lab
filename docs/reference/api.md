@@ -204,6 +204,13 @@ MCP v1 支持 Streamable HTTP 与 stdio，不支持旧 SSE。HTTP 可选 Bearer�
 并覆盖当前工具快照。Skill 创建与加版使用 multipart ZIP；允许一个包装目录，但拒绝路径穿越、
 绝对路径、符号链接、重复路径及超限包。每个版本在本地不可变，包内脚本不会执行。
 
+Skill 列表和详情返回 `tags: string[]`。创建时用 multipart 重复字段 `tags` 传入标签，
+省略默认为空；PATCH 可传 `tags`，省略保留现值，`[]` 清空，`null` 或非数组返回 422。
+最多 12 个标签，去首尾空白、空项和重复值。标签与启停、默认版本共用 `expected_revision`
+进行 CAS；仅修改标签不新增内容版本，追加版本和切换默认版本不覆盖标签。
+`integration_skills.tags` 为非空 JSON 数组，迁移 `0047_skill_tags` 将旧条目初始化为 `[]`。
+标签仅属于当前 Workspace，文件路径显式从已鉴权 Workspace 派生。
+
 集成中心 v1 只管理与验证资源，不会把工具 API、MCP 或 Skill 注入 Agent Harness，也不会导入
 OpenAPI 或执行定时健康检查。
 
@@ -387,6 +394,27 @@ ID、消息数量、画布摘要和素材 ID；不保存图片 Base64、临时�
 保留原链接组，右半段使用新的链接组。分段导入只编码视频 Clip 的源区间，不合成字幕、转场或其他
 轨道叠层；输出统一为 H.264/yuv420p MP4，保留音频时使用 AAC。全部分段编码成功后才在目标视觉
 项目中一次性创建素材引用和横向独立视频节点，失败或取消不保留半批数据。
+
+### 分段导出与可选画布导入
+
+分段任务创建请求的 `target` 必须显式提供；`null` 表示仅导出，已有目标对象继续使用
+`{projectId}` 或 `{newProjectTitle}`。服务端仅编码 `segments` 中的片段（1–100 个，不允许重复 Clip），
+保存提交时的时间轴快照和各段参数；`expectedRevision` 冲突返回 409，缺失返回 422。
+任务创建仍按 `requestId` 幂等，同一 ID 不得重用于不同请求。
+
+结果详情增加 `importRequested`，纯导出时 `targetProjectId` 为 null，各段完成后提供
+`assetId`、`outputFilename` 和 `spec`，`nodeId` 为 null；导入模式继续返回素材/节点映射。
+历史任务缺少模式字段时按原导入模式展示，不改写历史快照。纯导出文件归属源剪辑项目，
+未被编辑文档使用的输出不进入项目快照。
+
+- `GET /v1/files/{asset_id}/download`：沿用鉴权文件下载，获取单段 MP4。
+- `GET /v1/video-editor/projects/{project_id}/segment-exports/{task_id}/download`：
+  获取完成任务的全部片段 ZIP，文件按请求顺序加三位序号并清理非法文件名字符。
+  未完成返回 409；任务、输出素材或文件缺失返回 404，不返回缺段 ZIP。
+  校验 Workspace 与任务归属，打包使用临时文件并在响应结束后清理。
+
+任务列表同时呈现完整渲染与分段导出，支持关闭导出弹窗后的进度查询和文件下载。
+
 
 项目素材响应的 `transcriptSegments[]` 与转写任务的 `resultSegments[]` 使用统一的
 `{ speaker, startMs, endMs, text }` 形状。SenseAudio ASR Pro 请求启用说话人分离、自动标点和
@@ -681,7 +709,7 @@ Data URI 或素材内容。
 文件夹最多五层。
 
 允许 JPEG、PNG、WebP、GIF、AVIF、MP4、WebM、MOV、MP3、WAV、M4A、OGG、PDF、TXT、
-Markdown 与 JSON；服务端同时校验扩展名、MIME、文件头和配置的大小上限，JSON 还会执行完整语法解析。
+Markdown、JSON、Word（doc/docx）、Excel（xls/xlsx）、PPT（ppt/pptx）、CSV 与 ZIP；服务端同时校验扩展名、MIME、文件头和配置的大小上限。现代 Office 校验 ZIP 内对应文档结构，旧 Office 校验复合文档签名；文本检查 UTF-8，JSON 执行完整语法解析。ZIP 保存原文件，不自动展开。
 文件使用随机存储键保存，
 原始文件名不参与磁盘路径构造。
 
@@ -694,3 +722,57 @@ Markdown 与 JSON；服务端同时校验扩展名、MIME、文件头和配置�
 `/ready` 成功响应继续返回 `status` 与当前 schema；数据库不可用、Runner 未启动或退出、或任一
 Runner 连续失败达到 3 次时返回 503。单轮 Runner 异常会被记录并按有上限指数退避重试，成功一轮后
 清零连续失败计数。
+
+
+## 思绪工坊
+
+所有接口位于 `/v1/thought-workshop`，使用现有 Studio Cookie/CSRF 或 Management API Key，
+Workspace 仅从认证主体派生。跨空间 ID 返回 404。
+
+| 接口 | 行为 |
+| --- | --- |
+| `GET/POST /knowledge-bases` | 查询（query、trash）／创建知识库，自动创建空白首页 |
+| `GET/PUT /knowledge-bases/{id}` | 读取／带 expected_revision 修改名称、简介、cover_asset_id |
+| `DELETE /knowledge-bases/{id}` | 带 expected_revision 整库移入回收站 |
+| `POST /knowledge-bases/{id}/restore` | 带 expected_revision 恢复，保留原文档回收站状态 |
+| `GET /knowledge-bases/{id}/directory` | 库快照、全部多级文件夹与未删除普通文档 |
+| `POST /knowledge-bases/{id}/documents` | expected_revision、title、folder_id 创建空文档 |
+| `POST /knowledge-bases/{id}/folders` | expected_revision、title、parent_id 创建文件夹 |
+| `PUT /knowledge-bases/{id}/folders/{folder_id}` | expected_revision、title 重命名（归属仅由 move 修改） |
+| `DELETE /knowledge-bases/{id}/folders/{folder_id}` | expected_revision 删除，直接子项提升到上级 |
+| `POST /knowledge-bases/{id}/move` | expected_revision、kind(folder/document)、item_id、parent_id、before_id；库内移动与排序 |
+| `GET /notes` | 必填 knowledge_base_id；query、folder_id（unfiled 为根目录）、tag、view、sort、offset、limit；普通文档摘要不含正文和首页 |
+| `POST /notes` | knowledge_base_id、folder_id、expected_knowledge_revision 与 v2 正文，原子创建文档 |
+| `GET/PUT /notes/{id}` | 读取／带 expected_revision 保存完整文档和元数据 |
+| `DELETE /notes/{id}` | 带 expected_revision 与 expected_knowledge_revision 移入回收站；permanent=true 永久删除回收站笔记 |
+| `POST /notes/{id}/restore` | 带 expected_revision 与 expected_knowledge_revision 恢复 |
+| `POST /images` | multipart upload 上传公共图片，返回 asset_id |
+| `POST /attachments` | multipart upload 上传公共附件，返回 asset_id、filename、mime_type、byte_size |
+| `GET /models` | 当前空间可用的写作模型 |
+| `POST /notes/{id}/assistant` | model_id、expected_revision、action、instruction、selection；返回 SSE |
+| `GET /backup` | v3 完整 ZIP；可用 knowledge_base_id 选择单库（包括回收站） |
+| `POST /imports` | multipart upload 创建副本，返回 knowledge_base_ids 和普通 note_ids；Markdown 包可指定 knowledge_base_id 与 expected_revision 导入当前库 |
+
+正文 `schema_version=2`（历史版本仅在备份导入转换层处理）、`document` 为允许列表校验的 Tiptap JSON；图片仅保存 assetId，
+不保存临时 URL。标签最多 30 个、每个 40 字，标题最多 240 字，正文最多 2 MiB。
+缺少 expected_revision 返回 422；CAS 冲突返回 409 与 current 完整快照，客户端不得静默覆盖。
+
+写作 action 为 summary、polish、continue、tasks 或 custom；选区必须仍属于保存版本。
+SSE 为 `data: {"type":"delta","text":"…"}`、`complete` 或 `error`（含 message），不暴露供应商
+原始事件。断开取消生成，调用日志记录脱敏元数据，来源为 thought_workshop_assistant。
+
+备份格式 thought-workshop-backup、version=3（导入转换层兼容 v1/v2），ZIP 中 manifest.json 包含 knowledge_bases、folders、notes 和
+assets；每个 asset 声明 id、path、filename、content_type。导入重映射 ID、校验全部文档与文件，
+成功才提交；失败回滚并清理暂存文件。复用项目快照的大小和文件数限制，manifest 上限 32 MiB。
+Markdown 转换在 Web 所属功能中完成，再经同一个导入 API 校验写入；HTML 和 Markdown 导出读取
+受鉴权的笔记、图片与附件，在浏览器内形成离线文件。完整备份上传不在浏览器展开；Markdown 内容包保留 128 MiB 解析限制。
+
+块级 `attachment` 节点保存 `attrs: {assetId, filename, mimeType, byteSize}`。服务端校验公共文件归属并用文件库元数据覆盖展示字段；缺失或跨空间文件返回 404，不支持的类型返回 422。附件支持 pdf、doc/docx、xls/xlsx、ppt/pptx、txt、md、csv、json、zip；复用文件库扩展名、MIME、签名、Office ZIP 结构及实际大小校验，默认单文件 200 MiB（fpl_visual_asset_max_bytes），超限返回 413。下载复用 `GET /v1/files/{asset_id}/download` 的鉴权与 Workspace 隔离。
+
+图片和附件共同受 thought_note_assets 引用保护，包括回收站；删除卡片不删除文件。搜索与 AI 只投影附件文件名。迁移 0045 仅升级现有文档版本标记，保留正文、revision 和引用。
+
+知识库名称最多 120 字，简介最多 2000 字；封面必须引用当前 Workspace 的公共图片。home_note_id 指向独立的空白首页文档，不能单独移动、删除或恢复。知识库回收站状态隐藏全部内容，恢复不会清除文档原有 deleted_at。
+
+知识库与目录修改使用库级 revision；文档保存使用文档 revision。移动文档推进文档修订号，正文 PUT 拒绝变更 knowledge_base_id/folder_id，目录移动只能通过 move。跨库目录引用及循环目录被拒绝。无 notebook_id 或旧笔记本接口，也没有隐式创建默认知识库的生产路径。
+
+0046 迁移保留原文档 ID、正文、标签、收藏、回收站、修订号和附件引用；旧笔记本转成顶层文件夹后移除。首页是独立文档。v3 导入重新分配所有 ID，验证目录与唯一首页、文件归属，文件暂存完成后才进入写事务，失败清理文件与记录。旧 URL 兼容仅在 Web 跳转层。

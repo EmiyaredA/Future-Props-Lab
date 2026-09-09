@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.concurrency.revisions import RevisionConflictError
 from app.core.config import get_settings
+from app.core.tenant_context import require_workspace_id
 from app.core.time import iso_utc, utc_now
 from app.files.incoming import IncomingFile
 from app.integrations.common import (
@@ -23,6 +24,7 @@ from app.models import SkillIntegration, SkillVersion
 from app.schemas.integrations import (
     SkillCatalogOut,
     SkillOut,
+    SkillTagsIn,
     SkillUpdateIn,
     SkillVersionOut,
 )
@@ -42,14 +44,14 @@ def _version_out(row: SkillVersion) -> SkillVersionOut:
 
 
 class SkillCatalog:
-    def __init__(self, session: AsyncSession) -> None:
+    def __init__(self, session: AsyncSession, workspace_id: str) -> None:
         self.session = session
-        workspace_id = str(session.info.get("workspace_id") or "default")
-        self.storage = SkillArchiveStorage(get_settings(), workspace_id)
+        self.workspace_id = require_workspace_id(workspace_id, subject="Skill catalog")
+        self.storage = SkillArchiveStorage(get_settings(), self.workspace_id)
 
     async def _get(self, skill_id: str) -> SkillIntegration:
         row = await self.session.get(SkillIntegration, skill_id)
-        if row is None:
+        if row is None or row.workspace_id != self.workspace_id:
             raise IntegrationNotFoundError("Skill 不存在")
         return row
 
@@ -70,6 +72,7 @@ class SkillCatalog:
             default_version=row.default_version,
             latest_version=row.latest_version,
             version_count=await self._version_count(row.id),
+            tags=row.tags,
             enabled=row.enabled,
             status=row.status,
             status_message=row.status_message,
@@ -85,9 +88,9 @@ class SkillCatalog:
         rows = (
             (
                 await self.session.execute(
-                    select(SkillIntegration).order_by(
-                        SkillIntegration.updated_at.desc(), SkillIntegration.name
-                    )
+                    select(SkillIntegration)
+                    .where(SkillIntegration.workspace_id == self.workspace_id)
+                    .order_by(SkillIntegration.updated_at.desc(), SkillIntegration.name)
                 )
             )
             .scalars()
@@ -129,9 +132,14 @@ class SkillCatalog:
         )
         return [_version_out(row) for row in rows]
 
-    async def create(self, upload: IncomingFile, *, enabled: bool) -> SkillOut:
+    async def create(
+        self, upload: IncomingFile, *, enabled: bool, tags: list[str] | None = None
+    ) -> SkillOut:
+        metadata = SkillTagsIn(tags=tags or [])
         staged = await self.storage.stage(upload)
         row = SkillIntegration(
+            workspace_id=self.workspace_id,
+            tags=metadata.tags,
             name=staged.name,
             description=staged.description,
             enabled=enabled,
@@ -256,6 +264,7 @@ class SkillCatalog:
                 SkillIntegration.revision == body.expected_revision,
             )
             .values(
+                **({"tags": body.tags} if "tags" in body.model_fields_set else {}),
                 enabled=body.enabled,
                 default_version=body.default_version,
                 revision=SkillIntegration.revision + 1,

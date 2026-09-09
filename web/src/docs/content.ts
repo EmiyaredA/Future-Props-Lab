@@ -31,6 +31,13 @@ export const GROUPS: DocsGroup[] = [
     context: "video",
     parent: "apps-overview",
   },
+  {
+    id: "thought",
+    title: "思绪工坊",
+    section: "AI 应用",
+    context: "thought",
+    parent: "apps-overview",
+  },
   { id: "tools", title: "工具导航", section: "工具" },
   {
     id: "annotation",

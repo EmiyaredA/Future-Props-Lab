@@ -46,6 +46,10 @@ from db.migrations.versions import (
     r0041_visual_generation_batches,
     r0042_image_compositions,
     r0043_video_editor_playback_rate,
+    r0044_thought_workshop,
+    r0045_thought_attachments,
+    r0046_thought_knowledge_bases,
+    r0047_skill_tags,
 )
 
 
@@ -210,6 +214,14 @@ MIGRATIONS = (
     ),
     Migration(r0042_image_compositions.MIGRATION_ID, r0042_image_compositions.SQL),
     Migration(r0043_video_editor_playback_rate.MIGRATION_ID, r0043_video_editor_playback_rate.SQL),
+    Migration(r0044_thought_workshop.MIGRATION_ID, r0044_thought_workshop.SQL),
+    Migration(r0045_thought_attachments.MIGRATION_ID, r0045_thought_attachments.SQL),
+    Migration(
+        r0046_thought_knowledge_bases.MIGRATION_ID,
+        r0046_thought_knowledge_bases.SQL,
+        foreign_keys_off=True,
+    ),
+    Migration(r0047_skill_tags.MIGRATION_ID, r0047_skill_tags.SQL),
 )
 
 LATEST_MIGRATION_ID = MIGRATIONS[-1].migration_id

@@ -171,7 +171,7 @@ class VideoEditorSegmentExportItem(BaseModel):
 class VideoEditorSegmentExportCreateIn(BaseModel):
     expected_revision: int = Field(alias="expectedRevision", ge=0)
     request_id: str = Field(alias="requestId", min_length=8, max_length=64)
-    target: VideoEditorSegmentExportTarget
+    target: VideoEditorSegmentExportTarget | None
     segments: list[VideoEditorSegmentExportItem] = Field(min_length=1, max_length=100)
 
     @field_validator("segments")

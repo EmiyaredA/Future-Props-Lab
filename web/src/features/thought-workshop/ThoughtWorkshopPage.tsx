@@ -1,0 +1,734 @@
+import type { JSONContent } from "@tiptap/react";
+import {
+  lazy,
+  Suspense,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { BookOpen, Plus, Search } from "lucide-react";
+import { CustomSelect } from "@shared/ui/CustomSelect";
+import { TextInputDialog } from "@shared/ui/TextInputDialog";
+import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
+import { KnowledgeSidebar } from "./KnowledgeSidebar";
+import { documentViews } from "./knowledgeViews";
+import { ProjectLibraryCard } from "@shared/ui/project-library/ProjectLibraryCard";
+import {
+  deleteNote,
+  downloadBackup,
+  getNote,
+  listNotes,
+  restoreNote,
+  uploadImage,
+  type KnowledgeBase,
+  type Note,
+} from "./api";
+import {
+  createKnowledge,
+  createDocument,
+  createFolder,
+  getDirectory,
+  listKnowledge,
+  moveEntry,
+  removeFolder,
+  renameFolder,
+  restoreKnowledge,
+  trashKnowledge,
+  updateKnowledge,
+} from "./knowledgeApi";
+import { KnowledgeTree, type TreeItem } from "./KnowledgeTree";
+import { KnowledgeCover } from "./KnowledgeCover";
+import { thoughtKeys } from "./queryKeys";
+import { download } from "./download";
+import { useDrawerFocus } from "@shared/ui/useDrawerFocus";
+import type { NavigationGuard } from "./NoteEditorPane";
+import "./thought-workshop.css";
+import "./writing-layout.css";
+import "./knowledge.css";
+const NoteEditorPane = lazy(() =>
+  import("./NoteEditorPane").then((m) => ({ default: m.NoteEditorPane })),
+);
+const RichEditor = lazy(() =>
+  import("./RichEditor").then((m) => ({ default: m.RichEditor })),
+);
+
+type Input = {
+  title: string;
+  initial?: string;
+  apply: (value: string) => Promise<unknown>;
+};
+export function ThoughtWorkshopPage({
+  page,
+  projectId,
+  noteId,
+  onNavigate,
+  onBack,
+  onModels,
+  registerNavigationGuard,
+}: {
+  page: string;
+  projectId?: string;
+  noteId?: string;
+  onNavigate: (project?: string, document?: string, replace?: boolean) => void;
+  onBack: () => void;
+  onModels: () => void;
+  registerNavigationGuard: NavigationGuard;
+}) {
+  const client = useQueryClient();
+  const [query, setQuery] = useState("");
+  const [trash, setTrash] = useState(false);
+  const [view, setView] = useState("all");
+  const [browsing, setBrowsing] = useState(false);
+  const [notice, setNotice] = useState("");
+  const [busy, setBusy] = useState(false);
+  const operationQueue = useRef<Promise<void>>(Promise.resolve());
+  const pendingOperations = useRef(0);
+  const [input, setInput] = useState<Input | null>(null);
+  const [confirm, setConfirm] = useState<{
+    title: string;
+    description: string;
+    apply: () => Promise<unknown>;
+  } | null>(null);
+  const [moving, setMoving] = useState<TreeItem | null>(null);
+  const [moveParent, setMoveParent] = useState("");
+  const [drawer, setDrawer] = useState(false);
+  const [editHome, setEditHome] = useState(false);
+  const [coverProject, setCoverProject] = useState<KnowledgeBase | null>(null);
+  const editorGuard = useRef<Parameters<NavigationGuard>[0]>(null);
+  const registerEditorGuard = useCallback<NavigationGuard>(
+    (guard) => {
+      editorGuard.current = guard;
+      registerNavigationGuard(guard);
+    },
+    [registerNavigationGuard],
+  );
+  const toggleHome = () => {
+    const proceed = () => setEditHome((value) => !value);
+    if (!editorGuard.current?.(proceed)) proceed();
+  };
+  const coverInput = useRef<HTMLInputElement>(null);
+  const importInput = useRef<HTMLInputElement>(null);
+  const focus = useDrawerFocus(() => setDrawer(false), drawer);
+  const projects = useQuery({
+    retry: false,
+    queryKey: thoughtKeys.projects(projectId ? "" : query, trash),
+    queryFn: ({ signal }) =>
+      listKnowledge(projectId ? "" : query, trash, signal),
+  });
+  const directory = useQuery({
+    retry: false,
+    queryKey: thoughtKeys.directory(projectId || ""),
+    queryFn: ({ signal }) => getDirectory(projectId!, signal),
+    enabled: !!projectId,
+  });
+  const project = directory.data?.knowledge_base;
+  const currentId = noteId || project?.home_note_id;
+  const note = useQuery({
+    retry: false,
+    queryKey: thoughtKeys.note(currentId || ""),
+    queryFn: ({ signal }) => getNote(currentId!, signal),
+    enabled: !!currentId,
+  });
+  const hasHomeContent = (
+    note.data?.document as JSONContent | undefined
+  )?.content?.some(
+    (block) => block.type !== "paragraph" || block.content?.length,
+  );
+  const filtered = useQuery({
+    retry: false,
+    queryKey: thoughtKeys.notes({ knowledge_base_id: projectId, query, view }),
+    queryFn: ({ signal }) =>
+      listNotes(
+        {
+          knowledge_base_id: projectId!,
+          query,
+          view: view as "all" | "recent" | "favorites" | "trash",
+          limit: 100,
+        },
+        signal,
+      ),
+    enabled: !!projectId && browsing,
+  });
+  useEffect(() => {
+    setQuery("");
+    setView("all");
+    setBrowsing(false);
+    setDrawer(false);
+    setEditHome(false);
+    setTrash(false);
+  }, [projectId, noteId]);
+  useEffect(() => {
+    if (page === "thought-workshop-legacy" && note.data)
+      onNavigate(
+        note.data.knowledge_base_id,
+        note.data.is_home ? undefined : note.data.id,
+        true,
+      );
+  }, [page, note.data, onNavigate]);
+  const refresh = () => client.invalidateQueries({ queryKey: thoughtKeys.all });
+  const run = (work: () => Promise<unknown>) => {
+    pendingOperations.current += 1;
+    setBusy(true);
+    const next = operationQueue.current.then(async () => {
+      setNotice("");
+      try {
+        await work();
+        await refresh();
+      } catch (e) {
+        setNotice(e instanceof Error ? e.message : "操作失败，请重试");
+        await refresh();
+      } finally {
+        pendingOperations.current -= 1;
+        setBusy(pendingOperations.current > 0);
+      }
+    });
+    operationQueue.current = next;
+    return next;
+  };
+  const guarded = (proceed: () => void) => {
+    if (!editorGuard.current?.(proceed)) proceed();
+  };
+  const selectView = (next: string) =>
+    guarded(() => {
+      setView(next);
+      setQuery("");
+      setBrowsing(true);
+      setDrawer(false);
+    });
+  const search = (value: string) =>
+    guarded(() => {
+      setQuery(value);
+      setBrowsing(true);
+    });
+  const open = (id?: string) =>
+    guarded(() => {
+      setBrowsing(false);
+      setQuery("");
+      setDrawer(false);
+      onNavigate(projectId, id === project?.home_note_id ? undefined : id);
+    });
+  const save = (saved: Note) => {
+    client.setQueryData(thoughtKeys.note(saved.id), saved);
+    void client.invalidateQueries({ queryKey: thoughtKeys.projectLists() });
+    void client.invalidateQueries({
+      queryKey: thoughtKeys.directory(saved.knowledge_base_id),
+    });
+  };
+  const create = (parent: string | null = null) =>
+    run(async () => {
+      const n = await createDocument(project!, parent);
+      open(n.id);
+    });
+  const backup = (id?: string) =>
+    run(async () => download(await downloadBackup(id), "思绪工坊备份.zip"));
+  const metadata = (p: KnowledgeBase, field: "title" | "description") =>
+    setInput({
+      title: field === "title" ? "重命名知识库" : "修改简介",
+      initial: p[field] || "",
+      apply: (value) => updateKnowledge(p, { [field]: value }),
+    });
+  const projectAction = (value: string, p: KnowledgeBase) => {
+    if (value === "rename") metadata(p, "title");
+    if (value === "description") metadata(p, "description");
+    if (value === "cover") {
+      setCoverProject(p);
+      coverInput.current?.click();
+    }
+    if (value === "clear-cover")
+      void run(() => updateKnowledge(p, { cover_asset_id: null }));
+    if (value === "export") void backup(p.id);
+    if (value === "trash")
+      setConfirm({
+        title: "移入知识库回收站？",
+        description:
+          "知识库及其内容将整体隐藏。恢复后保留原目录和文档回收站状态。",
+        apply: async () => {
+          await trashKnowledge(p);
+          if (projectId) {
+            registerNavigationGuard(null);
+            editorGuard.current = null;
+            onNavigate();
+          }
+        },
+      });
+  };
+  const treeAction = (value: string, item: TreeItem) => {
+    if (value === "new-document") void create(item.value.id);
+    if (value === "new-folder")
+      setInput({
+        title: "新建子文件夹",
+        apply: (title) => createFolder(project!, title, item.value.id),
+      });
+    if (value === "rename" && item.kind === "folder")
+      setInput({
+        title: "重命名文件夹",
+        initial: item.value.title,
+        apply: (title) => renameFolder(project!, item.value, title),
+      });
+    if (value === "move") {
+      setMoving(item);
+      setMoveParent("");
+    }
+    if (value === "delete")
+      setConfirm({
+        title: item.kind === "folder" ? "删除文件夹？" : "文档移入回收站？",
+        description:
+          item.kind === "folder"
+            ? "直接子文件夹和文档将移到上一级，内容不会被删除。"
+            : "可在当前知识库的文档回收站恢复。",
+        apply: async () => {
+          if (item.kind === "folder") await removeFolder(project!, item.value);
+          else {
+            await deleteNote(item.value);
+            if (noteId === item.value.id) {
+              registerNavigationGuard(null);
+              editorGuard.current = null;
+              open();
+            }
+          }
+        },
+      });
+  };
+  const projectOptions = [
+    { value: "", label: "更多", disabled: true },
+    { value: "rename", label: "重命名" },
+    { value: "description", label: "修改简介" },
+    { value: "cover", label: "更换封面" },
+    { value: "clear-cover", label: "恢复默认封面" },
+    { value: "export", label: "导出知识库" },
+    { value: "trash", label: "移入回收站" },
+  ];
+  const errors =
+    (notice !== "导入完成" ? notice : "") ||
+    directory.error?.message ||
+    note.error?.message ||
+    projects.error?.message ||
+    filtered.error?.message;
+  return (
+    <div
+      className={`thought-shell knowledge-shell ${projectId ? "inside-knowledge" : ""}`}
+    >
+      {drawer && (
+        <button
+          className="knowledge-backdrop"
+          aria-label="关闭目录遮罩"
+          onClick={() => setDrawer(false)}
+        />
+      )}
+      <KnowledgeSidebar
+        sidebarRef={focus}
+        drawer={drawer}
+        close={() => setDrawer(false)}
+        onBack={onBack}
+        onNavigate={onNavigate}
+        project={project}
+        projects={projects.data || []}
+        inside={!!projectId}
+        query={query}
+        search={search}
+        view={view}
+        browsing={browsing}
+        noteId={noteId}
+        home={() => open()}
+        selectView={selectView}
+        trash={trash}
+        selectTrash={(value) => {
+          setTrash(value);
+          setDrawer(false);
+        }}
+      >
+        <div className="knowledge-directory-label">
+          <span>目录</span>
+          <CustomSelect
+            escapeClipping
+            showChevron={false}
+            ariaLabel="目录操作"
+            value=""
+            options={[
+              { value: "", label: "+", disabled: true },
+              { value: "document", label: "新建文档" },
+              { value: "folder", label: "新建文件夹" },
+            ]}
+            onChange={(value) => {
+              if (value === "document") void create();
+              else
+                setInput({
+                  title: "新建文件夹",
+                  apply: (title) => createFolder(project!, title),
+                });
+            }}
+          />
+        </div>
+        {directory.data && (
+          <KnowledgeTree
+            directory={directory.data}
+            activeId={browsing ? undefined : currentId}
+            open={open}
+            action={treeAction}
+            move={(body) => void run(() => moveEntry(project!, body))}
+          />
+        )}
+      </KnowledgeSidebar>
+      <main className="knowledge-main">
+        <header className="knowledge-topbar">
+          <button
+            className="btn knowledge-mobile"
+            onClick={() => setDrawer(true)}
+          >
+            目录
+          </button>
+          <div className="knowledge-breadcrumb">
+            <button onClick={() => onNavigate()}>知识库</button>
+            {project && (
+              <>
+                <span>/</span>
+                <button onClick={() => open()}>{project.title}</button>
+                <span>/</span>
+                <span>
+                  {browsing
+                    ? documentViews.find((v) => v.id === view)?.label
+                    : noteId
+                      ? note.data?.title || "文档"
+                      : "首页"}
+                </span>
+              </>
+            )}
+          </div>
+          <div className="knowledge-top-actions">
+            <button
+              className="btn"
+              disabled={busy}
+              onClick={() => importInput.current?.click()}
+            >
+              导入
+            </button>
+            {project ? (
+              <>
+                <CustomSelect
+                  ariaLabel="知识库更多操作"
+                  value=""
+                  options={projectOptions}
+                  onChange={(v) => projectAction(v, project)}
+                />
+                <button
+                  className="btn primary"
+                  disabled={busy}
+                  onClick={() => void create()}
+                >
+                  <Plus size={16} />
+                  新建文档
+                </button>
+              </>
+            ) : (
+              <>
+                <button className="btn" onClick={() => void backup()}>
+                  完整备份
+                </button>
+                <button
+                  className="btn primary"
+                  disabled={busy}
+                  onClick={() =>
+                    setInput({
+                      title: "创建知识库",
+                      apply: async (title) => {
+                        const p = await createKnowledge(title);
+                        onNavigate(p.id);
+                      },
+                    })
+                  }
+                >
+                  <Plus size={16} />
+                  创建知识库
+                </button>
+              </>
+            )}
+          </div>
+        </header>
+        {errors && (
+          <div role="alert" className="thought-error">
+            {errors}
+            <button className="btn" onClick={() => void refresh()}>
+              重试
+            </button>
+          </div>
+        )}
+        {busy && (
+          <p role="status" className="knowledge-notice">
+            正在处理…
+          </p>
+        )}
+        {!projectId && page !== "thought-workshop-legacy" ? (
+          <section className="knowledge-library">
+            <div className="knowledge-library-heading">
+              <div>
+                <span>YOUR KNOWLEDGE, CONNECTED</span>
+                <h1>{trash ? "知识库回收站" : "我的知识库"}</h1>
+                <p>为想法建立一个空间，让知识有序生长。</p>
+              </div>
+              <label className="knowledge-search">
+                <Search size={17} />
+                <input
+                  aria-label="搜索知识库"
+                  placeholder="搜索知识库…"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                />
+              </label>
+            </div>
+            <div className="knowledge-cards">
+              {projects.data?.map((p) => (
+                <ProjectLibraryCard
+                  key={p.id}
+                  project={p}
+                  cover="canvas"
+                  coverTitle={p.title}
+                  coverDescription=""
+                  coverContent={<KnowledgeCover assetId={p.cover_asset_id} />}
+                  metadata={<span>{p.document_count} 篇文档</span>}
+                  description={p.description || "一个属于你的知识空间"}
+                  onOpen={() => !trash && onNavigate(p.id)}
+                >
+                  {trash ? (
+                    <button
+                      className="btn"
+                      onClick={() => void run(() => restoreKnowledge(p))}
+                    >
+                      恢复知识库
+                    </button>
+                  ) : (
+                    <>
+                      <button className="btn" onClick={() => onNavigate(p.id)}>
+                        进入知识库
+                      </button>
+                      <CustomSelect
+                        ariaLabel={`${p.title}操作`}
+                        value=""
+                        options={projectOptions}
+                        onChange={(v) => projectAction(v, p)}
+                      />
+                    </>
+                  )}
+                </ProjectLibraryCard>
+              ))}
+            </div>
+            {projects.isLoading && <p role="status">正在加载知识库…</p>}
+            {projects.data?.length === 0 && (
+              <div className="knowledge-empty">
+                <BookOpen size={40} />
+                <h2>{trash ? "回收站为空" : "创建你的第一个知识库"}</h2>
+                <p>用文件夹组织文档，随时记录、整理和继续写作。</p>
+              </div>
+            )}
+          </section>
+        ) : browsing ? (
+          <section className="knowledge-results" aria-label="文档筛选结果">
+            <h1>
+              {query
+                ? "搜索结果"
+                : documentViews.find((v) => v.id === view)?.label}
+            </h1>
+            {query && <p>搜索「{query}」</p>}
+            {filtered.isLoading && <p role="status">正在加载文档…</p>}
+            <div className="knowledge-filtered">
+              {filtered.data?.items.map((n) => (
+                <div key={n.id}>
+                  <button onClick={() => open(n.id)}>{n.title}</button>
+                  {view === "trash" && (
+                    <>
+                      <button onClick={() => void run(() => restoreNote(n))}>
+                        恢复
+                      </button>
+                      <button
+                        onClick={() =>
+                          setConfirm({
+                            title: "永久删除文档？",
+                            description:
+                              "正文将永久删除。引用的文件仍由文件管理负责清理。",
+                            apply: async () => {
+                              await deleteNote(n, true);
+                              if (noteId === n.id) open();
+                            },
+                          })
+                        }
+                      >
+                        永久删除
+                      </button>
+                    </>
+                  )}
+                </div>
+              ))}
+              {filtered.data?.total === 0 && <p>没有符合条件的文档</p>}
+            </div>
+          </section>
+        ) : (
+          <>
+            {project && !noteId && (
+              <>
+                <KnowledgeCover assetId={project.cover_asset_id} />
+                <div className="knowledge-home-heading">
+                  <span>知识库首页</span>
+                  <h1>{project.title}</h1>
+                  {project.description && <p>{project.description}</p>}
+                  <button className="btn" onClick={toggleHome}>
+                    {editHome ? "返回阅读" : "编辑首页"}
+                  </button>
+                </div>
+              </>
+            )}
+            {note.isLoading && (
+              <p role="status" className="knowledge-notice">
+                正在加载文档…
+              </p>
+            )}
+            {note.data &&
+              (!projectId || note.data.knowledge_base_id === projectId) && (
+                <Suspense fallback={<p>编辑器加载中…</p>}>
+                  {note.data.deleted_at ? (
+                    <div className="knowledge-empty">
+                      <p>这篇文档在回收站中</p>
+                      <button
+                        className="btn"
+                        onClick={() => void run(() => restoreNote(note.data!))}
+                      >
+                        恢复文档
+                      </button>
+                    </div>
+                  ) : note.data.is_home && !editHome ? (
+                    <div className="knowledge-home-reading">
+                      <RichEditor
+                        key={note.data.id}
+                        document={note.data.document}
+                        readOnly
+                        onChange={() => {}}
+                        onReady={() => {}}
+                      />
+                      {!hasHomeContent && (
+                        <p className="knowledge-home-empty">
+                          这里是知识库首页。点击「编辑首页」，写下介绍、目标或常用资料。
+                        </p>
+                      )}
+                    </div>
+                  ) : (
+                    <NoteEditorPane
+                      key={note.data.id}
+                      note={note.data}
+                      onSaved={save}
+                      onOpen={open}
+                      onModels={onModels}
+                      onDirectory={() => setDrawer(true)}
+                      registerNavigationGuard={registerEditorGuard}
+                    />
+                  )}
+                </Suspense>
+              )}
+          </>
+        )}
+        <input
+          ref={coverInput}
+          hidden
+          type="file"
+          accept="image/png,image/jpeg,image/webp,image/gif"
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+            e.target.value = "";
+            if (f && coverProject)
+              void run(async () => {
+                const uploaded = await uploadImage(f);
+                await updateKnowledge(coverProject, {
+                  cover_asset_id: uploaded.asset_id,
+                });
+              });
+          }}
+        />
+        <input
+          ref={importInput}
+          hidden
+          type="file"
+          accept=".zip,.md,.markdown"
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+            e.target.value = "";
+            if (f)
+              void run(async () => {
+                const { importFile } = await import("./portability");
+                const result = await importFile(f, project);
+                setNotice(result.warnings?.join(" ") || "导入完成");
+                if (result.open_note_id) {
+                  const importedNote = await getNote(result.open_note_id);
+                  onNavigate(importedNote.knowledge_base_id, importedNote.id);
+                } else {
+                  const active = await listKnowledge("", false);
+                  const first = active.find((p) =>
+                    result.knowledge_base_ids?.includes(p.id),
+                  );
+                  onNavigate(first?.id);
+                }
+              });
+          }}
+        />
+        <p className="knowledge-import-hint">
+          完整备份由服务器校验；Markdown 内容包上限 128 MiB。
+        </p>
+      </main>
+      <TextInputDialog
+        open={!!input}
+        title={input?.title || ""}
+        label="名称或内容"
+        initialValue={input?.initial}
+        onCancel={() => setInput(null)}
+        onConfirm={(value) => {
+          const pending = input;
+          setInput(null);
+          if (pending) void run(() => pending.apply(value));
+        }}
+      />
+      <ConfirmDialog
+        open={!!confirm}
+        title={confirm?.title || ""}
+        description={confirm?.description || ""}
+        onCancel={() => setConfirm(null)}
+        onConfirm={() => {
+          const pending = confirm;
+          setConfirm(null);
+          if (pending) void run(pending.apply);
+        }}
+      />
+      <ConfirmDialog
+        open={!!moving}
+        title="移动到"
+        description={
+          <div>
+            <p>选择目标文件夹，文档仅在当前知识库内移动。</p>
+            <CustomSelect
+              ariaLabel="目标文件夹"
+              value={moveParent}
+              options={[
+                { value: "", label: "知识库根目录" },
+                ...(directory.data?.folders || [])
+                  .filter((f) => f.id !== moving?.value.id)
+                  .map((f) => ({ value: f.id, label: f.title })),
+              ]}
+              onChange={setMoveParent}
+            />
+          </div>
+        }
+        confirmLabel="移动"
+        onCancel={() => setMoving(null)}
+        onConfirm={() => {
+          const item = moving;
+          setMoving(null);
+          if (item)
+            void run(() =>
+              moveEntry(project!, {
+                kind: item.kind,
+                item_id: item.value.id,
+                parent_id: moveParent || null,
+              }),
+            );
+        }}
+      />
+    </div>
+  );
+}

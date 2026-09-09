@@ -1,4 +1,6 @@
-import { Suspense } from "react";
+import { CompactPanelTabs } from "@shared/ui/CompactPanelTabs";
+import "../styles/compact-workspaces.css";
+import { Suspense, useState } from "react";
 import {
   ArrowLeft,
   Film,
@@ -57,6 +59,7 @@ export function GalgameWorkshopEditorView({
 }: {
   model: EditorPageViewModel;
 }) {
+  const [mobilePanel, setMobilePanel] = useState("script");
   const segmentPreview = useEditorSegmentPreviewController(model);
   if (model.status === "loading")
     return (
@@ -133,8 +136,6 @@ export function GalgameWorkshopEditorView({
     setStaleVoiceBlocks,
     focusedCharacterId,
     setFocusedCharacterId,
-    structureDrawerOpen,
-    setStructureDrawerOpen,
     projectQuery,
     refetchStory,
     reportQuery,
@@ -182,7 +183,7 @@ export function GalgameWorkshopEditorView({
     <Suspense
       fallback={<div className="page-loading">正在加载编辑器模块…</div>}
     >
-      <section className="galgame-editor-page">
+      <section className="galgame-editor-page" data-mobile-panel={mobilePanel}>
         <header className="galgame-editor-header">
           <div className="galgame-editor-project">
             <button
@@ -284,6 +285,18 @@ export function GalgameWorkshopEditorView({
           </div>
         ) : null}
 
+        {workspace === "script" && (
+          <CompactPanelTabs
+            label="剧本面板"
+            value={mobilePanel}
+            onChange={setMobilePanel}
+            options={[
+              { value: "script", label: "剧本" },
+              { value: "structure", label: "结构" },
+              { value: "preview", label: "预览与属性" },
+            ]}
+          />
+        )}
         {workspace === "script" ? (
           <div
             ref={editorGridRef}
@@ -295,13 +308,6 @@ export function GalgameWorkshopEditorView({
             style={editorGridStyle}
           >
             <GalgameEditorStructurePanel model={model} />
-
-            <button
-              type="button"
-              className={`galgame-structure-drawer-backdrop${structureDrawerOpen ? " is-open" : ""}`}
-              aria-label="关闭剧本结构"
-              onClick={() => setStructureDrawerOpen(false)}
-            />
 
             <div
               className="galgame-panel-resizer"
@@ -318,7 +324,10 @@ export function GalgameWorkshopEditorView({
               onDoubleClick={() => resetSidebarWidth("left")}
             />
 
-            <GalgameEditorScriptWorkspace model={model} />
+            <GalgameEditorScriptWorkspace
+              model={model}
+              onOpenStructure={() => setMobilePanel("structure")}
+            />
 
             <div
               className={`galgame-stage-resizer${stageViewportPreferences.collapsed ? " is-disabled" : ""}`}

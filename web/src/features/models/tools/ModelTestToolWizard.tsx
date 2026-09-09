@@ -1,3 +1,4 @@
+import { useDrawerFocus } from "@shared/ui/useDrawerFocus";
 import { useMemo, useState } from "react";
 import { Check, Plus, Trash2, X } from "lucide-react";
 import { CustomSelect } from "@shared/ui/CustomSelect";
@@ -91,6 +92,7 @@ export function ModelTestToolWizard({
   onClose: () => void;
   onSave: (input: ModelTestToolInput) => Promise<void>;
 }) {
+  const modal = useDrawerFocus(onClose, true, false);
   const [step, setStep] = useState<1 | 2>(1);
   const [form, setForm] = useState(() => initial(tool));
   const [schemaText, setSchemaText] = useState(() =>
@@ -151,11 +153,11 @@ export function ModelTestToolWizard({
       onMouseDown={(event) => event.target === event.currentTarget && onClose()}
     >
       <section
+        ref={modal}
         className="test-tool-wizard"
         role="dialog"
         aria-modal="true"
         aria-labelledby="test-tool-wizard-title"
-        onKeyDown={(event) => event.key === "Escape" && onClose()}
       >
         <header>
           <h2 id="test-tool-wizard-title">

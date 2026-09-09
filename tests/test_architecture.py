@@ -166,6 +166,7 @@ def test_feature_query_keys_have_one_owner() -> None:
             '"audio-annotation-waveform"',
             '"audio-annotation-library-audio"',
         ),
+        WEB_SRC / "features" / "thought-workshop" / "queryKeys.ts": ('["thought-workshop"]',),
     }
     allowed_route_metadata = {WEB_SRC / "features" / "visual-workshop" / "module.ts"}
     violations: list[str] = []

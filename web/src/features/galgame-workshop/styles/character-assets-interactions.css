@@ -183,11 +183,6 @@
 }
 
 @media (max-width: 1100px) {
-  .galgame-character-workspace {
-    min-width: 1030px;
-    grid-template-columns: 240px 500px 290px;
-  }
-
   .galgame-character-template-table {
     min-width: 700px;
   }

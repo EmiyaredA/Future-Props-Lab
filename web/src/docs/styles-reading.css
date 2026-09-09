@@ -307,7 +307,7 @@
 }
 .docs-search-dialog {
   width: min(720px, calc(100vw - 32px));
-  max-height: 80vh;
+  max-height: min(80vh, calc(var(--visible-height, 100dvh) - 32px));
   box-sizing: border-box;
   padding: 22px;
   background: var(--bg);
@@ -318,6 +318,13 @@
 .docs-search-dialog::backdrop,
 .docs-lightbox::backdrop {
   background: rgb(0 0 0 / 70%);
+}
+.docs-search-dialog,
+.docs-lightbox {
+  top: calc(var(--visible-top, 0px) + var(--visible-height, 100dvh) / 2);
+  bottom: auto;
+  margin-block: 0;
+  transform: translateY(-50%);
 }
 .docs-dialog-top {
   display: flex;
@@ -384,7 +391,7 @@
 }
 .docs-lightbox {
   max-width: 94vw;
-  max-height: 94vh;
+  max-height: calc(var(--visible-height, 100dvh) - 32px);
   background: var(--bg);
   color: var(--text);
   border: 1px solid var(--border);
@@ -398,7 +405,7 @@
 .docs-lightbox img {
   display: block;
   max-width: 90vw;
-  max-height: 80vh;
+  max-height: min(80vh, calc(var(--visible-height, 100dvh) - 100px));
   object-fit: contain;
 }
 .docs-mobile-categories {

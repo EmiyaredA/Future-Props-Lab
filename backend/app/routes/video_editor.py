@@ -41,6 +41,7 @@ from app.video_editor.media import VideoEditorMedia, guessed_mime
 from app.video_editor.projects import VideoEditorProjects
 from app.video_editor.rendering import VideoEditorRenders
 from app.video_editor.segment_exports import VideoEditorSegmentExports
+from app.video_editor.segment_files import download_segments
 from app.video_editor.snapshots import VideoEditorProjectSnapshots
 from app.video_editor.timeline import VideoEditorTimelines
 
@@ -408,3 +409,23 @@ async def cancel_segment_export(
         return await VideoEditorSegmentExports(session, workspace_id).cancel(project_id, task_id)
     except VideoEditorNotFoundError as exc:
         raise _error(exc) from None
+
+
+@router.get(
+    "/projects/{project_id}/segment-exports/{task_id}/download",
+    response_class=FileResponse,
+    responses={200: {"content": {"application/zip": {}}}},
+)
+async def download_segment_export(
+    session: SessionDep, workspace_id: WorkspaceDep, project_id: str, task_id: str
+) -> FileResponse:
+    try:
+        path = await download_segments(session, get_settings(), workspace_id, project_id, task_id)
+    except (VideoEditorNotFoundError, AssetError) as exc:
+        raise _error(exc) from None
+    return FileResponse(
+        path,
+        media_type="application/zip",
+        filename=f"segments-{task_id[:8]}.zip",
+        background=BackgroundTask(path.unlink, missing_ok=True),
+    )

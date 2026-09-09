@@ -7,6 +7,7 @@ import {
   type ReactNode,
 } from "react";
 import "@shared/ui/custom-select.css";
+import { useSelectPopover } from "./useSelectPopover";
 
 export type SelectOption = {
   value: string;
@@ -36,6 +37,7 @@ export function CustomSelect({
   className = "",
   leadingIcon,
   showChevron = true,
+  escapeClipping = true,
 }: {
   value: string;
   options: SelectOption[];
@@ -45,11 +47,14 @@ export function CustomSelect({
   className?: string;
   leadingIcon?: ReactNode;
   showChevron?: boolean;
+  escapeClipping?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
   const root = useRef<HTMLDivElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
+  const menu = useRef<HTMLDivElement>(null);
+  useSelectPopover(open && escapeClipping, trigger, menu);
   const optionRefs = useRef<Array<HTMLButtonElement | null>>([]);
   const listId = useId();
   const selected = options.find((option) => option.value === value);
@@ -180,6 +185,8 @@ export function CustomSelect({
       </button>
       {open ? (
         <div
+          ref={menu}
+          popover={escapeClipping ? "manual" : undefined}
           className="custom-select-menu"
           id={listId}
           role="listbox"

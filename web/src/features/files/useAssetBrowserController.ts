@@ -210,18 +210,6 @@ export function useAssetBrowserController({
   }, [editor, folders]);
 
   useEffect(() => {
-    if (!editor) return;
-    const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape" && !act.isPending) {
-        setEditor(null);
-        setEditorError("");
-      }
-    };
-    document.addEventListener("keydown", closeOnEscape);
-    return () => document.removeEventListener("keydown", closeOnEscape);
-  }, [act.isPending, editor]);
-
-  useEffect(() => {
     window.localStorage.setItem(VIEW_KEY, view);
   }, [view]);
 

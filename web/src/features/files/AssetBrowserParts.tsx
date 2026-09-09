@@ -41,7 +41,7 @@ export type FileEditor =
 
 export const VIEW_KEY = "fpl_file_browser_view";
 export const ACCEPT =
-  ".jpg,.jpeg,.png,.webp,.gif,.avif,.mp4,.webm,.mov,.mp3,.wav,.m4a,.ogg,.pdf,.txt,.md,.json";
+  ".jpg,.jpeg,.png,.webp,.gif,.avif,.mp4,.webm,.mov,.mp3,.wav,.m4a,.ogg,.pdf,.txt,.md,.json,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.csv,.zip";
 export const KIND_OPTIONS: SelectOption[] = [
   { value: "all", label: "全部类型" },
   { value: "image", label: "图片" },

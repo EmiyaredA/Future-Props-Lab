@@ -1,5 +1,5 @@
 .ve-editor {
-  min-width: 1160px;
+  min-width: 0;
   height: max(506px, 100dvh);
   display: grid;
   grid-template-rows: 58px var(--ve-upper-height, 440px) 6px 42px var(

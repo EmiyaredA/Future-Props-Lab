@@ -4,12 +4,17 @@ import type { LucideIcon } from "lucide-react";
 export type ApplicationRouteMatch = {
   page: string;
   projectId?: string;
+  documentId?: string;
 };
 
 export type ApplicationModule = {
   definition: ApplicationDefinition;
   supportsProjects: boolean;
-  shell: "visual-workshop" | "galgame-workshop" | "video-editor";
+  shell:
+    | "visual-workshop"
+    | "galgame-workshop"
+    | "video-editor"
+    | "thought-workshop";
   shellConfig: {
     className?: string;
     brandClassName?: string;
@@ -23,7 +28,11 @@ export type ApplicationModule = {
     }[];
   };
   matchPath: (pathname: string) => ApplicationRouteMatch | undefined;
-  pathFor: (page: string, projectId?: string) => string | undefined;
+  pathFor: (
+    page: string,
+    projectId?: string,
+    documentId?: string,
+  ) => string | undefined;
   pages: Readonly<Record<string, () => Promise<{ default: unknown }>>>;
 };
 

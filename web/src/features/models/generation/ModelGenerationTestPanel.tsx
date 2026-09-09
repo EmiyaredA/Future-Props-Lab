@@ -1,3 +1,4 @@
+import { useModelCompactPanels } from "@features/models/workspace/useModelCompactPanels";
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -65,6 +66,7 @@ export function ModelGenerationTestPanel({
   onSelectModel: (modelId: string) => void;
   onSelectMode: (mode: ModelTestMode) => void;
 }) {
+  const compact = useModelCompactPanels("generation");
   const client = useQueryClient();
   const currentModel = models.find((model) => model.value === modelId);
   const kind = currentModel ? modelGenerationKind(currentModel) : null;
@@ -389,7 +391,10 @@ export function ModelGenerationTestPanel({
     : "";
 
   return (
-    <section className="model-test-page generation-test-page">
+    <section
+      data-compact-panel={compact.panel}
+      className="model-test-page generation-test-page"
+    >
       <ModelTestWorkspaceHeader
         activeMode={generationKind}
         availableModes={availableModes}
@@ -422,6 +427,7 @@ export function ModelGenerationTestPanel({
           </button>
         </div>
       ) : null}
+      {compact.tabs}
       <div className="generation-test-grid">
         <aside className="generation-test-history">
           <div className="generation-history-head">

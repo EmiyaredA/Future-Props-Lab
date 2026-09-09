@@ -1,3 +1,4 @@
+import { QueryFeedback } from "@shared/ui/QueryFeedback";
 import { useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -36,6 +37,7 @@ import type {
 import { audioAnnotationQueryKeys } from "@features/audio-annotation/queryKeys";
 import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
 import "@features/audio-annotation/audio-annotation.css";
+import "./audio-annotation-compact.css";
 
 function bytes(value: number) {
   return value < 1024 * 1024
@@ -417,6 +419,11 @@ export function AudioAnnotationProjectsPage({
         </p>
       ) : null}
 
+      <QueryFeedback
+        error={projectsQuery.error}
+        pending={projectsQuery.isLoading}
+        onRetry={projectsQuery.refetch}
+      />
       <div className="annotation-project-grid">
         {projects.map((project) => {
           const progress = project.segment_count

@@ -17,6 +17,7 @@ from app.files.asset_scope import (
     is_library_asset,
     is_visual_project_asset,
 )
+from app.files.document_references import protect_document_references
 from app.files.incoming import IncomingFile
 from app.files.library import AssetError
 from app.files.policy import display_name_without_original_extension
@@ -205,6 +206,7 @@ class VisualAssets(VisualAssetContext):
         )
         asset_ids = [item.id for item in assets]
         if asset_ids:
+            await protect_document_references(self.session, asset_ids)
             conversation_reference = await self.session.scalar(
                 select(VisualAssistantMessageAsset.id)
                 .where(VisualAssistantMessageAsset.asset_id.in_(asset_ids))
@@ -393,6 +395,7 @@ class VisualAssets(VisualAssetContext):
     async def delete_asset(self, asset_id: str, expected_revision: int) -> None:
         row = await self._asset(asset_id)
         ensure_library_managed(row)
+        await protect_document_references(self.session, [asset_id])
         conversation_reference = await self.session.scalar(
             select(VisualAssistantMessageAsset.id)
             .where(VisualAssistantMessageAsset.asset_id == asset_id)

@@ -63,7 +63,7 @@ class VideoEditorSegmentExports:
                 timeline.revision,
                 {"revision": timeline.revision, "document": timeline.document},
             )
-        if body.target.project_id:
+        if body.target and body.target.project_id:
             target = (
                 await self.session.execute(
                     select(VisualWorkshopProject).where(
@@ -120,7 +120,7 @@ class VideoEditorSegmentExports:
                 "clipId": clip.id,
                 "name": item.name,
                 "sourceInUs": clip.source_in_us,
-                "playbackRate": clip.playback_rate,
+                "playbackRate": clip.playback_rate or 1,
                 "durationUs": clip.duration_us,
                 "assetId": clip.asset_id,
                 "status": "queued",
@@ -137,8 +137,9 @@ class VideoEditorSegmentExports:
             snapshot_document=timeline.document,
             result_detail={
                 "timelineRevision": timeline.revision,
+                "importRequested": body.target is not None,
                 "targetCanvasRevision": (
-                    target_canvas.revision if body.target.project_id else None
+                    target_canvas.revision if body.target and body.target.project_id else None
                 ),
                 "segments": detail_segments,
             },
@@ -178,7 +179,7 @@ class VideoEditorSegmentExports:
             )
         ).scalar_one_or_none()
         if row is None:
-            raise VideoEditorNotFoundError("分段导入任务不存在")
+            raise VideoEditorNotFoundError("分段导出任务不存在")
         return task_out(row)
 
     async def cancel(self, project_id: str, task_id: str) -> VideoEditorTaskOut:
@@ -194,7 +195,7 @@ class VideoEditorSegmentExports:
             )
         ).scalar_one_or_none()
         if row is None:
-            raise VideoEditorNotFoundError("分段导入任务不存在")
+            raise VideoEditorNotFoundError("分段导出任务不存在")
         if row.status in {"queued", "running"}:
             row.cancel_requested = True
             if row.status == "queued":

@@ -1,3 +1,4 @@
+import { QueryFeedback } from "@shared/ui/QueryFeedback";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -353,6 +354,7 @@ export function ModelTestToolsPage({
           </button>
         </div>
       </div>
+      <QueryFeedback error={query.error} onRetry={query.refetch} />
       {error ? <p className="test-tool-form-error">{error}</p> : null}
       <div className="test-tools-layout">
         <div className="test-tools-list">

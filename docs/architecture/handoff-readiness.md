@@ -47,7 +47,7 @@ Workspace 隔离，但不提供多实例部署、外置数据库、Bot、知识�
 
 ## 迁移与兼容状态
 
-- 当前 migration registry 最新版本为 `r0042_image_compositions`；交接前通过
+- 当前 migration registry 最新版本为 `0047_skill_tags`；交接前通过
   `npm run db:migrate:check` 只读确认目标数据库处于同一连续前缀。
 - migration 只允许在 `db/migrations/versions/` 追加并登记，不得改写已登记版本、checksum 或
   `schema_migrations`。
@@ -138,3 +138,12 @@ Git 提交。交付方应先审阅差异并按自身发布流程形成可追踪�
 `/ready` 和目标 Workspace。不得只恢复其中一部分，不得手工回写 SQLite、migration checksum 或
 任务记录。详细步骤见 [`生产部署`](../operations/production-deployment.md) 和
 [`故障排查`](../operations/troubleshooting.md)。
+
+思绪工坊新增富文本笔记、图片引用与笔记本表，迁移仅创建 schema，不预置用户笔记。
+
+思绪工坊迁移保留已落库的 ID `0044_thought_workshop`；迁移记录按插入顺序核对注册前缀，
+不依赖 ID 字典序或秒级时间戳。迁移 SQL 与既有 checksum 不变。
+
+附件扩展通过 `0045_thought_attachments` 升级笔记版本标记为 v2，保留正文与修订号；迁移已先在隔离数据库验证。v2 备份包含附件原始文件，兼容导入 v1。
+
+知识库项目化通过 `0046_thought_knowledge_bases` 将旧笔记本迁为文件夹，保留文档身份与正文；v3 备份包含首页、封面、目录与文件。旧版本仅在导入转换层适配。

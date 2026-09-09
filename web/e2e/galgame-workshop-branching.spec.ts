@@ -66,6 +66,7 @@ test("builds, saves, checks, and plays a branching Galgame slice", async ({
   page,
 }, testInfo) => {
   test.setTimeout(120_000);
+  page.setDefaultTimeout(10000);
   let projects: Array<Record<string, unknown>> = [];
   let storyRevision = 0;
   let projectAssets: Array<Record<string, unknown>> = [];
@@ -514,14 +515,17 @@ test("builds, saves, checks, and plays a branching Galgame slice", async ({
   expect(wideStagePanels[0]?.y).toBe(wideStagePanels[1]?.y);
   expect(wideStagePanels[1]?.y).toBe(wideStagePanels[2]?.y);
   await page.setViewportSize({ width: 1200, height: 1000 });
+  await page.getByRole("button", { name: "角色详情", exact: true }).click();
   const compactStagePanels = await Promise.all(
     ["is-presets", "is-position", "is-size"].map((className) =>
       page.locator(`.galgame-stage-parameter-panel.${className}`).boundingBox(),
     ),
   );
   expect(compactStagePanels.every(Boolean)).toBe(true);
-  expect(compactStagePanels[0]?.y).toBeLessThan(compactStagePanels[1]?.y ?? 0);
-  expect(compactStagePanels[1]?.y).toBe(compactStagePanels[2]?.y);
+  for (const panel of compactStagePanels) {
+    expect(panel!.width).toBeGreaterThan(100);
+    expect(panel!.x + panel!.width).toBeLessThanOrEqual(1200);
+  }
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.getByRole("button", { name: "新建角色" }).click();
   await expect(page.getByText("选择一个表情查看详情")).toBeVisible();
@@ -858,6 +862,10 @@ test("builds, saves, checks, and plays a branching Galgame slice", async ({
   ]) {
     await page.setViewportSize(viewport);
     await expect(page.locator(".galgame-editor-grid")).toBeVisible();
+    if (viewport.width <= 1200)
+      await page
+        .getByRole("button", { name: "预览与属性", exact: true })
+        .click();
     await page.getByRole("button", { name: "查看完整报告" }).click();
     routeDialog = page.getByRole("dialog", { name: "工程检查" });
     await expect(routeDialog).toBeVisible();
@@ -921,6 +929,8 @@ test("builds, saves, checks, and plays a branching Galgame slice", async ({
   ]) {
     await page.setViewportSize(viewport);
     await expect(page.locator(".galgame-character-workspace")).toBeVisible();
+    if (viewport.width <= 1200)
+      await page.getByRole("button", { name: "角色详情", exact: true }).click();
     const [
       expressionPreviewBounds,
       expressionSettingsBounds,
@@ -976,7 +986,9 @@ test("builds, saves, checks, and plays a branching Galgame slice", async ({
       expect(expressionSettingsBounds!.width).toBeGreaterThanOrEqual(700);
       expect(expressionPreviewBounds!.width).toBeGreaterThanOrEqual(630);
     }
-    expect(expressionRailBounds!.width).toBeLessThanOrEqual(261);
+    expect(expressionRailBounds!.width).toBeLessThanOrEqual(
+      viewport.width <= 1200 ? viewport.width : 261,
+    );
     expect(flipControlBounds!.height).toBeLessThanOrEqual(71);
     const expressionPreviewCenter =
       expressionPreviewBounds!.x + expressionPreviewBounds!.width / 2;
@@ -1058,7 +1070,7 @@ test("builds, saves, checks, and plays a branching Galgame slice", async ({
   }
 
   await page.getByRole("button", { name: "工程概览" }).click();
-  await expect(page.locator(".workshop-sidebar")).toBeVisible();
+  await expect(page.locator(".workshop-sidebar")).toHaveCount(1);
   await expect(page.getByRole("button", { name: "标记完成" })).toBeEnabled();
   await page.getByRole("button", { name: "标记完成" }).click();
   await expect(page.getByText("已完成")).toBeVisible();

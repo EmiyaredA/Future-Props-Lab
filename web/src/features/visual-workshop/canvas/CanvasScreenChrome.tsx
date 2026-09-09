@@ -5,6 +5,7 @@ import {
   FolderOpen,
   MessageSquareText,
   Pencil,
+  Plus,
   Save,
 } from "lucide-react";
 import { CanvasViewControls } from "@features/visual-workshop/canvas/CanvasViewControls";
@@ -26,6 +27,7 @@ type CanvasScreenChromeProps = {
   onBlurTitle: () => void;
   onToggleAssistant: () => void;
   onToggleAssets: () => void;
+  onCreate: () => void;
 };
 
 export function CanvasScreenChrome({
@@ -44,6 +46,7 @@ export function CanvasScreenChrome({
   onBlurTitle,
   onToggleAssistant,
   onToggleAssets,
+  onCreate,
 }: CanvasScreenChromeProps) {
   return (
     <>
@@ -107,6 +110,9 @@ export function CanvasScreenChrome({
         </div>
       </header>
       <nav className="canvas-tool-dock" aria-label="画布工具">
+        <button aria-label="添加内容" title="添加内容" onClick={onCreate}>
+          <Plus aria-hidden />
+        </button>
         <button
           className={assetsOpen ? "active" : ""}
           aria-label="素材库"

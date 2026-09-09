@@ -8,6 +8,7 @@ const databasePath =
 
 export default defineConfig({
   testDir: "./e2e",
+  outputDir: process.env.FPL_E2E_OUTPUT || "test-results",
   globalSetup: "./e2e/global-setup.ts",
   timeout: 30_000,
   expect: { timeout: 5_000 },
@@ -16,7 +17,20 @@ export default defineConfig({
     storageState: "e2e/.auth-state.json",
     trace: "retain-on-failure",
   },
-  projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
+  projects: [
+    {
+      name: process.env.FPL_E2E_BROWSER || "chromium",
+      use: {
+        ...devices[
+          process.env.FPL_E2E_BROWSER === "webkit"
+            ? "Desktop Safari"
+            : process.env.FPL_E2E_BROWSER === "firefox"
+              ? "Desktop Firefox"
+              : "Desktop Chrome"
+        ],
+      },
+    },
+  ],
   webServer: [
     {
       command:

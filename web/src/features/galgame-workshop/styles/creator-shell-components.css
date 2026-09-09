@@ -315,32 +315,7 @@
   }
 }
 
-@media (max-width: 1279px) and (min-width: 981px) {
-  .galgame-editor-grid {
-    grid-template-columns:
-      minmax(180px, var(--galgame-fragment-width))
-      6px minmax(400px, 1fr) 6px minmax(420px, var(--galgame-preview-width));
-  }
-  .galgame-editor-actions > .theme-toggle {
-    display: none;
-  }
-  .galgame-save-state {
-    display: none;
-  }
-  .galgame-global-search {
-    width: min(310px, 28vw);
-  }
-  .galgame-character-workspace {
-    grid-template-columns: 220px minmax(480px, 1fr) 330px;
-  }
-}
-
 @media (max-width: 980px) {
-  .galgame-editor-page {
-    height: auto;
-    min-height: 100vh;
-    overflow: visible;
-  }
   .galgame-global-search {
     order: 3;
     width: 100%;

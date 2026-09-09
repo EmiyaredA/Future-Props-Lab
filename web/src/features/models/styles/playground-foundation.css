@@ -81,7 +81,7 @@
   }
 }
 
-@media (max-width: 1180px) {
+@media (max-width: 1200px) {
   .playground-grid {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -89,15 +89,16 @@
   .settings-panel {
     position: fixed;
     z-index: 45;
-    top: 0;
-    bottom: 0;
-    width: min(300px, 88vw);
+    top: var(--visible-top, 0px);
+    height: var(--visible-height, 100dvh);
+    visibility: hidden;
+    width: min(340px, 92vw);
     box-shadow: 0 0 50px rgb(0 0 0 / 24%);
     transition: transform 0.18s ease;
   }
   .conversation-panel {
-    left: 220px;
-    transform: translateX(calc(-100% - 220px));
+    left: 0;
+    transform: translateX(-100%);
   }
   .settings-panel {
     right: 0;
@@ -106,6 +107,7 @@
   .conversation-panel.mobile-open,
   .settings-panel.mobile-open {
     transform: translateX(0);
+    visibility: visible;
   }
   .mobile-panel-actions {
     display: flex;
@@ -143,11 +145,11 @@
     grid-template-columns: 1fr 1fr;
   }
   .model-test-page {
-    height: auto;
-    min-height: 720px;
+    height: calc(var(--visible-height, 100dvh) - 48px);
+    min-height: 0;
   }
   .playground-grid {
-    min-height: 640px;
+    min-height: 0;
   }
   .conversation-panel {
     left: 0;

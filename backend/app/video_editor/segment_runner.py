@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.core.config import Settings
 from app.core.time import utc_now
+from app.files.digests import sha256_file
 from app.files.library import AssetLibrary
 from app.files.storage import AssetStorage
 from app.media_rendering.render_engine import RenderCancelled
@@ -25,6 +26,7 @@ from app.models import (
     VisualWorkshopProject,
 )
 from app.video_editor.media import probe_media
+from app.video_editor.segment_files import segment_filename
 
 SEGMENT_QUALITY = {
     "high": ("slow", "18", "256k"),
@@ -261,7 +263,7 @@ class VideoEditorSegmentTaskRunner:
                 output,
                 source_in_us=int(item["sourceInUs"]),
                 duration_us=int(item["durationUs"]),
-                playback_rate=float(item.get("playbackRate", 1)),
+                playback_rate=float(item.get("playbackRate") or 1),
                 resolution=str(config["resolution"]),
                 fps=config["fps"],
                 quality=str(config["quality"]),
@@ -332,46 +334,73 @@ class VideoEditorSegmentTaskRunner:
                 task = await self.get_task(session, task_id)
                 if task is None or task.cancel_requested:
                     raise RenderCancelled()
-                canvas, target_project_id, created_project_root = await self._target_canvas(
-                    session,
-                    target_payload,
-                    target_project_id,
-                    workspace_id,
-                    detail,
-                )
-                nodes = [dict(node) for node in (canvas.nodes or [])]
-                results = []
-                library = AssetLibrary(session, self.settings)
-                for index, (output, config, item) in enumerate(outputs):
-                    filename = f"{config['name']}.mp4"
+                source_project_id = task.project_id
+            # Stage every file before opening the short persistence transaction.
+            staged_assets = []
+            async with self.session_factory() as staging_session:
+                library = AssetLibrary(staging_session, self.settings)
+                for output, config, item in outputs:
+                    await self.raise_if_cancelled(task_id)
                     asset, staged = await library.stage_local_copy(
                         output,
                         workspace_id=workspace_id,
-                        filename=filename,
+                        filename=segment_filename(str(config["name"])),
                         content_type="video/mp4",
+                        video_editor_project_id=source_project_id if not target_payload else None,
                         allowed_extensions={".mp4"},
                         max_bytes=self.settings.fpl_visual_asset_max_bytes,
+                        defer_persistence=True,
                     )
                     staged_paths.append(staged)
-                    session.add(
-                        VisualProjectAssetReference(
-                            project_id=target_project_id,
-                            asset_id=asset.id,
-                            folder_id=None,
-                            display_name=str(config["name"]),
+                    fingerprint = await asyncio.to_thread(sha256_file, output)
+                    staged_assets.append((asset, config, item, fingerprint))
+            await self.raise_if_cancelled(task_id)
+            async with self.session_factory() as session:
+                task = await self.get_task(session, task_id)
+                if task is None or task.cancel_requested:
+                    raise RenderCancelled()
+                canvas = None
+                if target_payload:
+                    canvas, target_project_id, created_project_root = await self._target_canvas(
+                        session, target_payload, target_project_id, workspace_id, detail
+                    )
+                nodes = [dict(node) for node in (canvas.nodes or [])] if canvas else []
+                results = []
+                session.add_all([asset for asset, *_ in staged_assets])
+                await session.flush()
+                for index, (asset, config, item, fingerprint) in enumerate(staged_assets):
+                    filename = asset.original_filename
+                    node_id = None
+                    if canvas:
+                        session.add(
+                            VisualProjectAssetReference(
+                                project_id=target_project_id,
+                                asset_id=asset.id,
+                                folder_id=None,
+                                display_name=str(config["name"]),
+                            )
                         )
-                    )
-                    node_id = f"segment-{task_id[:8]}-{index + 1}"
-                    nodes.append(
-                        {
-                            "id": node_id,
-                            "kind": "video",
-                            "title": str(config["name"]),
-                            "position": {"x": index * 540, "y": 0},
-                            "asset_id": asset.id,
-                            "generation_task_id": None,
-                        }
-                    )
+                        node_id = f"segment-{task_id[:8]}-{index + 1}"
+                        nodes.append(
+                            {
+                                "id": node_id,
+                                "kind": "video",
+                                "title": str(config["name"]),
+                                "position": {"x": index * 540, "y": 0},
+                                "asset_id": asset.id,
+                                "generation_task_id": None,
+                            }
+                        )
+                    else:
+                        session.add(
+                            VideoEditorAssetMetadata(
+                                asset_id=asset.id,
+                                project_id=source_project_id,
+                                processing_status="ready",
+                                probe=item["outputProbe"],
+                                fingerprint=fingerprint,
+                            )
+                        )
                     spec = {
                         "resolution": config["resolution"],
                         "fps": config["fps"],
@@ -395,24 +424,26 @@ class VideoEditorSegmentTaskRunner:
                             "spec": spec,
                         }
                     )
-                expected_revision = canvas.revision
-                result = await session.execute(
-                    update(VisualCanvasDocument)
-                    .where(
-                        VisualCanvasDocument.project_id == target_project_id,
-                        VisualCanvasDocument.revision == expected_revision,
+                if canvas:
+                    expected_revision = canvas.revision
+                    result = await session.execute(
+                        update(VisualCanvasDocument)
+                        .where(
+                            VisualCanvasDocument.project_id == target_project_id,
+                            VisualCanvasDocument.revision == expected_revision,
+                        )
+                        .values(
+                            nodes=nodes,
+                            revision=expected_revision + 1,
+                            updated_at=utc_now(),
+                        )
                     )
-                    .values(
-                        nodes=nodes,
-                        revision=expected_revision + 1,
-                        updated_at=utc_now(),
-                    )
-                )
-                if result.rowcount != 1:
-                    raise RuntimeError("目标工作坊画布已变化，请重新提交")
+                    if result.rowcount != 1:
+                        raise RuntimeError("目标工作坊画布已变化，请重新提交")
                 detail.update(
                     {
                         "targetProjectId": target_project_id,
+                        "importRequested": bool(target_payload),
                         "segments": segment_details,
                         "results": results,
                     }
@@ -447,13 +478,16 @@ class VideoEditorSegmentTaskRunner:
         if target_project_id:
             project = await session.get(VisualWorkshopProject, target_project_id)
             canvas = await session.get(VisualCanvasDocument, target_project_id)
-            if project is None or canvas is None:
+            if project is None or project.workspace_id != workspace_id or canvas is None:
                 raise RuntimeError("目标工作坊项目不存在")
             if canvas.revision != detail.get("targetCanvasRevision"):
                 raise RuntimeError("目标工作坊画布已变化，请重新提交")
             return canvas, target_project_id, False
         project = VisualWorkshopProject(
-            title=str(target_payload["newProjectTitle"]), kind="canvas", status="draft"
+            workspace_id=workspace_id,
+            title=str(target_payload["newProjectTitle"]),
+            kind="canvas",
+            status="draft",
         )
         session.add(project)
         await session.flush()

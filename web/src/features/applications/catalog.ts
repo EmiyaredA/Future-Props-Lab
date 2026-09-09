@@ -23,6 +23,9 @@ export const APPLICATION_CATEGORIES: Array<{
 ];
 
 export const APPLICATION_TAGS = [
+  "笔记",
+  "富文本",
+  "AI写作",
   "图像",
   "视频",
   "画布",

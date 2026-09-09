@@ -13,8 +13,10 @@ import type { ReadyEditorPageViewModel } from "./editorViewModel";
 
 export function GalgameEditorScriptWorkspace({
   model,
+  onOpenStructure,
 }: {
   model: ReadyEditorPageViewModel;
+  onOpenStructure: () => void;
 }) {
   const {
     addAllCharactersBlock,
@@ -42,7 +44,6 @@ export function GalgameEditorScriptWorkspace({
     setSelectedBlockId,
     setSelectedTimelineGapId,
     setStaleVoiceBlocks,
-    setStructureDrawerOpen,
     setTimelinePreferences,
     setTimelinePreviewMs,
     terminates,
@@ -60,7 +61,7 @@ export function GalgameEditorScriptWorkspace({
               type="button"
               className="galgame-structure-drawer-toggle"
               aria-label="打开剧本结构"
-              onClick={() => setStructureDrawerOpen(true)}
+              onClick={onOpenStructure}
             >
               <BookOpenText aria-hidden />
             </button>

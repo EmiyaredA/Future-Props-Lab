@@ -1,3 +1,6 @@
+import { useDrawerFocus } from "@shared/ui/useDrawerFocus";
+import { ActionIcon, Toggle } from "./CatalogControls";
+import { QueryFeedback } from "@shared/ui/QueryFeedback";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import "@features/models/models.css";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -51,45 +54,6 @@ function visibleCapabilities(model: ModelEntry) {
   );
 }
 
-function ActionIcon({
-  kind,
-}: {
-  kind: "edit" | "delete" | "key" | "revision";
-}) {
-  const paths = {
-    edit: (
-      <path d="M4 16.5V20h3.5L18 9.5 14.5 6 4 16.5ZM13 7.5l3.5 3.5M15.5 5l1.2-1.2a1.4 1.4 0 0 1 2 0l1.5 1.5a1.4 1.4 0 0 1 0 2L19 8.5" />
-    ),
-    delete: <path d="M4 7h16M9 7V4h6v3m3 0-1 13H7L6 7m4 4v5m4-5v5" />,
-    key: (
-      <path d="M14 9a5 5 0 1 1-1.4-3.5A5 5 0 0 1 14 9Zm0 0h7m-3 0v3m-3-3v2" />
-    ),
-    revision: <path d="M4 12a8 8 0 1 0 2.3-5.7L4 8.5M4 4v4.5h4.5M12 8v4l3 2" />,
-  };
-  return (
-    <svg className="ui-action-icon" viewBox="0 0 24 24" aria-hidden>
-      {paths[kind]}
-    </svg>
-  );
-}
-
-function Toggle({ on, onClick }: { on: boolean; onClick: () => void }) {
-  return (
-    <button
-      className={`switch${on ? " on" : ""}`}
-      role="switch"
-      aria-checked={on}
-      aria-label={on ? "已启用" : "未启用"}
-      onClick={(event) => {
-        event.stopPropagation();
-        onClick();
-      }}
-    >
-      <span />
-    </button>
-  );
-}
-
 function ProviderForm({
   initial,
   onCancel,
@@ -99,6 +63,7 @@ function ProviderForm({
   onCancel: () => void;
   onSave: (input: ProviderInput) => Promise<void>;
 }) {
+  const modal = useDrawerFocus<HTMLFormElement>(onCancel, true, false);
   const [name, setName] = useState(initial?.name ?? "");
   const [kind, setKind] = useState<Provider["kind"]>(initial?.kind ?? "openai");
   const [baseUrl, setBaseUrl] = useState(initial?.base_url ?? "");
@@ -121,6 +86,10 @@ function ProviderForm({
   };
   return (
     <form
+      ref={modal}
+      role="dialog"
+      aria-modal="true"
+      aria-label={initial ? "编辑供应商" : "添加供应商"}
       className="modal-card form-stack"
       onSubmit={(event) => void submit(event)}
     >
@@ -204,6 +173,7 @@ function ModelForm({
   onCancel: () => void;
   onSave: (input: ModelInput) => Promise<void>;
 }) {
+  const modal = useDrawerFocus<HTMLFormElement>(onCancel, true, false);
   const [slug, setSlug] = useState(initial?.slug ?? "");
   const [label, setLabel] = useState(initial?.label ?? "");
   const [description, setDescription] = useState(initial?.description ?? "");
@@ -245,6 +215,10 @@ function ModelForm({
   };
   return (
     <form
+      ref={modal}
+      role="dialog"
+      aria-modal="true"
+      aria-label={initial ? "编辑模型" : "添加模型"}
       className="modal-card form-stack"
       onSubmit={(event) => void submit(event)}
     >
@@ -467,6 +441,13 @@ export function ModelServicePage() {
           ＋ 添加供应商
         </button>
       </header>
+      <QueryFeedback
+        error={catalogQuery.error ?? categoriesQuery.error}
+        onRetry={() => {
+          void catalogQuery.refetch();
+          void categoriesQuery.refetch();
+        }}
+      />
       {error ? (
         <div className="inline-alert danger" role="alert">
           {error}

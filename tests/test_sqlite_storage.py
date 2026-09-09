@@ -86,7 +86,7 @@ def test_existing_r0001_database_upgrades_without_rewriting_history(tmp_path: Pa
     )
     with connect_database(database_path) as connection:
         migrations = connection.execute(
-            "SELECT migration_id FROM schema_migrations ORDER BY migration_id"
+            "SELECT migration_id FROM schema_migrations ORDER BY rowid"
         ).fetchall()
         assert migrations == [
             ("r0001_initial",),
@@ -132,6 +132,10 @@ def test_existing_r0001_database_upgrades_without_rewriting_history(tmp_path: Pa
             ("r0041_visual_generation_batches",),
             ("r0042_image_compositions",),
             ("r0043_video_editor_playback_rate",),
+            ("0044_thought_workshop",),
+            ("0045_thought_attachments",),
+            ("0046_thought_knowledge_bases",),
+            ("0047_skill_tags",),
         ]
         assert connection.execute("SELECT COUNT(*) FROM model_test_conversations").fetchone() == (
             0,

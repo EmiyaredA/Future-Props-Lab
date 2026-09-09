@@ -1,3 +1,15 @@
+@media (min-width: 801px) {
+  .visual-canvas:has(.canvas-node-inspector.is-embedded) .canvas-controls {
+    top: 20px;
+    bottom: auto;
+  }
+}
+@media (max-width: 800px) {
+  .visual-canvas:has(.canvas-node-inspector.is-embedded) .canvas-controls {
+    display: none;
+  }
+}
+
 .assistant-model-summary {
   min-width: 0;
   padding: 5px 7px;
@@ -52,37 +64,6 @@
 }
 
 @media (max-width: 800px) {
-  .workshop-shell {
-    grid-template-columns: 78px minmax(0, 1fr);
-  }
-  .workshop-sidebar {
-    padding-inline: 9px;
-  }
-  .workshop-brand div,
-  .workshop-back-copy,
-  .workshop-sidebar nav span {
-    display: none;
-  }
-  .workshop-brand {
-    justify-content: center;
-    padding-inline: 0;
-  }
-  .workshop-back,
-  .workshop-sidebar nav button {
-    justify-content: center;
-    padding: 0;
-  }
-  .workshop-back {
-    width: 42px;
-    min-height: 42px;
-    margin-inline: auto;
-  }
-  .workshop-sidebar .theme-toggle {
-    grid-template-columns: 1fr;
-  }
-  .workshop-sidebar .theme-toggle button {
-    font-size: 0;
-  }
   .workshop-page {
     padding: 24px 18px 40px;
   }
@@ -141,7 +122,29 @@
     max-width: 40vw;
   }
   .canvas-tool-dock {
+    top: 74px;
+    left: 10px;
+    display: flex;
+    flex-direction: row;
+    transform: none;
+  }
+  .canvas-project-identity {
+    flex: 1;
+    min-width: 0;
+    gap: 5px;
+  }
+  .canvas-project-identity .canvas-title {
+    min-width: 0;
+    flex: 1;
+  }
+  .canvas-brand-mark {
     display: none;
+  }
+  .visual-canvas {
+    height: var(--visible-height, 100dvh);
+  }
+  .canvas-tool-dock:has(~ .canvas-assets-drawer) {
+    z-index: 2;
   }
   .canvas-assets-drawer {
     top: 68px;

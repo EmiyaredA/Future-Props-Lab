@@ -1,0 +1,173 @@
+# 思绪工坊验收记录
+
+验收日期：2026-09-08。入口：`/apps/thought-workshop`。
+
+## 长页面侧栏背景修正（2026-09-08）
+
+完整页面截图暴露了侧栏仅有一屏高度、正文继续向下延伸时左下方背景中断的问题。思绪工坊增加随正文等高的侧栏背景列，内部导航继续随屏固定；目录独立滚动、主题切换保持在视口底部。手机抽屉不占用正文宽度。浏览器回归对长正文的明暗主题检查背景列与正文等高、滚动到底部时侧栏位置及主题切换可见性，同时继续检查手机抽屉；相关组件测试、格式、lint 和生产构建通过。下方链接的首页截图已替换为修正版本。
+
+## 旧版侧栏融合补充验收（2026-09-08）
+
+以旧版应用外壳为视觉基准，保留头像与品牌分隔线、带说明的返回卡片、图标导航、暖橙选中态和底部主题切换。知识库列表与库内页面始终只有一套侧栏；桌面宽 236px，1200px 以下使用同一组件的抽屉。库内首页、全部文档、最近编辑、收藏文档和文档回收站直接可见；筛选与搜索显示在右侧，目录独立滚动。切换视图和搜索继续使用未保存内容保护。
+
+共用侧栏提取到 shared/ui，其他工坊复用原视觉。目录和库切换菜单采用自绘顶层显示，避免滚动区域裁切，保留键盘、Esc 和抽屉焦点范围。移除新版重复侧栏结构与替代样式，不恢复旧笔记本生产逻辑。本次未修改后端、接口、数据库或迁移，保留所有已有未提交工作。
+
+- 全量 Web：103 个文件、563 项通过，包含三个其他工坊的品牌、导航、返回与主题切换回归。
+- 浏览器：14 条旅程通过；覆盖单侧栏、刷新、旧链接、库内筛选与搜索、收藏、删除恢复、目录移动、保存保护、中文输入、附件、AI 确定性响应与导入导出。
+- 视觉：1600×1000、1280×800、390×844 的明暗主题，覆盖卡片、空首页、长正文、长标题、多级目录与抽屉；无页面横向溢出。检查菜单末项可点击、视口边界和关闭后的焦点恢复。
+- lint、format:check、contracts:check 和生产构建通过。
+- 架构：34 项通过，仅两项其他模块已有文件超限失败（visual-workshop CSS 607 行、canvas 测试 1418 行）；未扩大基线。本轮没有后端变更，未重复全量后端测试。
+
+截图与日志位于 `output/thought-sidebar/`：
+
+- [知识库卡片与旧版侧栏](../../output/thought-sidebar/cards-1600-dark.png)
+- [知识库内部深色首页](../../output/thought-sidebar/home-1600-dark.png)
+- [浅色首页](../../output/thought-sidebar/home-1280-light.png)
+- [手机目录](../../output/thought-sidebar/directory-390-dark.png)
+- [手机目录菜单](../../output/thought-sidebar/directory-menu-390-dark.png)
+
+## 知识库项目化验收（当前版本，2026-09-08）
+
+入口已统一为知识库卡片 → 首页 → 多级目录与文档。首页默认阅读、整页富文本编辑，复用表格、图片、附件、链接、公式、图表、自动保存与 AI 写作。桌面侧栏 236px、正文最大 780px，手机目录使用抽屉；保留应用头像和明暗主题。
+
+知识库支持名称、简介、封面、搜索、整体回收站与恢复；目录支持嵌套、拖动排序、键盘菜单移动和排序。文件夹删除提升直接子项。文档创建、删除、恢复与目录修改使用库 revision/CAS，正文保留文档 revision；移动文档推进文档 revision，旧编辑页不能覆盖归属。封面与正文文件均保护回收站引用。
+
+迁移 `0046_thought_knowledge_bases` 已在隔离数据库验证后登记。保留旧文档 ID、内容、标签、收藏、回收站、修订号和附件引用；旧笔记本转成顶层文件夹，移除旧表和 notebook_id。无旧数据的空间保持空列表。历史迁移未改写，未通过临时脚本修改持久数据库。
+
+生产旧笔记本模型、接口、分类控件、全局笔记列表、旧缓存键与失效样式已移除。兼容仅保留旧 URL 替换历史记录后跳转，以及 `legacy_import.py` 的 v1/v2 备份转换。OpenAPI 与 Web 生成契约不含 notebook_id 或旧笔记本接口。
+
+v3 备份包括知识库、封面、首页、多级目录和附件，支持单库及全部导出。导入重新分配 ID、验证唯一首页和目录归属、保留回收站、文件暂存后短事务写入，失败补偿。Markdown 内容包进入当前库或创建新库；完整备份创建副本，不把多库文档错误打开到其他知识库。
+
+| 检查 | 最终结果 |
+| --- | --- |
+| 思绪工坊后端 | 43 项通过；涵盖迁移、Workspace/鉴权、目录循环、移动/删除冲突、首页保护、整库恢复、封面与附件引用、v3 往返、v1/v2 导入、失败回滚与 AI 确定性流 |
+| 全量后端 | 422 项通过；4 项已有失败，见下表 |
+| 全量 Web | 102 个文件、559 项通过 |
+| 最终相关 Web / 共享项目卡片回归 | 7 个文件、24 项通过 |
+| Chromium 浏览器旅程 | 13 项全部通过；额外扩展知识库视觉矩阵旅程通过 |
+| 架构 | 依赖、租户、迁移、路由等检查通过；仅保留两项其他模块的文件超限失败 |
+| lint / format:check / contracts:check | 全部通过 |
+| 生产构建 | 通过资源检查、TypeScript、生产打包与产物预算检查 |
+| legacy 扫描 | 正常读写无旧笔记本符号；仅独立旧备份转换层保留旧字段 |
+
+已知失败与本次改动无关，保持原有范围，不扩大豁免：
+
+| 已有失败 | 原因 |
+| --- | --- |
+| `test_source_modules_are_split_into_reviewable_files` | `web/src/features/visual-workshop/styles/project-library-foundation.css` 607 行，超过 600 行 |
+| `test_test_modules_are_split_into_reviewable_files` | `web/tests/visual-workshop-canvas.test.tsx` 1418 行，超过 1200 行 |
+| `test_segment_export_creation_is_idempotent_and_preserves_each_config` | 其他模块输出包含 `playbackRate: None`，旧断言未包含该字段 |
+| `test_snapshot_import_rejects_wrong_app_tampering_and_unsafe_members` | 其他模块输出包含 `grid_output: None` 与 `grid_size: None`，旧断言未包含这些字段 |
+
+真实截图位于 `output/thought-knowledge/`，由正式 API 和隔离数据库构建测试内容，没有向用户知识库写入示例。检查视口为 1600×1000、1280×800、390×844；分别覆盖明暗首页、空首页、卡片、长标题、多级目录抽屉，以及包含表格、图片、附件和链接的编辑正文。实际检查中文可读性、对齐、按钮对比度、弹层位置和页面横向溢出。截图关闭过渡动画，最近更新时间明确使用 UTC，避免本地时区偏差。检查日志保存在同目录的 `checks/`。
+
+- [深色知识库首页](../../output/thought-knowledge/home-1600-dark.png)
+- [浅色知识库首页](../../output/thought-knowledge/home-1600-light.png)
+- [手机卡片列表](../../output/thought-knowledge/cards-390-light.png)
+- [手机目录抽屉](../../output/thought-knowledge/directory-390-dark.png)
+- [普通文档与附件](../../output/thought-knowledge/attachments-1600-dark.png)
+
+以下为此前笔记版与附件版的历史验收记录，接口和页面以本节为准。
+
+## 首版实现（历史记录）
+
+- Workspace 隔离的笔记、单层笔记本、标签、搜索、收藏置顶和回收站。
+- Tiptap 3 结构化富文本，图片文件引用、表格、公式、Mermaid 和按需加载。
+- 串行自动保存、手动重试、revision 冲突暂停、服务器版本查看与本地副本恢复。
+- 当前笔记或选区的 AI 流式写作，取消、错误提示、上下文冻结与过期选区保护。
+- 完整 ZIP 备份追加导入、Markdown 图片包互通和包含内嵌资源的离线 HTML 导出。
+- 菲莉丝头像用于应用卡片、工坊侧栏和最近访问；[来源与生成提示词](../assets/thought-workshop-avatar.md)。
+
+## 自动验证
+
+| 检查 | 结果 |
+| --- | --- |
+| 思绪工坊后端专用测试 | 14 通过，覆盖迁移重入、Workspace/权限、CAS、引用保护、备份往返、导入提交阶段失败回滚、恶意文档、AI 增量/失败/取消 |
+| 思绪工坊 Web 专用测试 | 4 通过，覆盖富文本 JSON 往返、Markdown、保存队列和冲突保留 |
+| Chromium 完整旅程 | 5 通过，覆盖应用入口、保存重开、AI 插入、备份导入、图片上传、公式/图表、HTML/Markdown 导出、撤销重做、窄屏抽屉、保存失败、真实 CAS 冲突、过期选区、冷启动弹窗样式/键盘焦点与加载超时后重试 |
+| 中文组合输入 | Chromium 中模拟 composition/input 事件，验证组合阶段不保存、结束后保存；未以真实系统输入法候选窗作为自动化替身 |
+| 架构检查 | 除下列两个已有文件尺寸超限检查外，34 项通过 |
+| 全量后端 | 393 通过，4 失败，详见下表 |
+| 全量 Web | 548 通过，1 失败，详见下表 |
+| Python/Web lint、格式检查、OpenAPI 契约检查 | 通过 |
+| 生产构建与分包预算 | 通过；富文本编辑器与图表按需加载 |
+| LFS 资产校验、指针校验及 fsck | 通过 |
+
+未调用真实模型供应商。AI 验收使用确定性替身。
+
+## 仓库其他模块仍未通过的检查
+
+本次没有修改这些功能实现或放宽测试断言。
+
+| 检查 | 失败内容 |
+| --- | --- |
+| `tests/test_architecture.py::test_source_modules_are_split_into_reviewable_files` | `web/src/features/visual-workshop/styles/project-library-foundation.css` 为 607 行，超过 600 行限制 |
+| `tests/test_architecture.py::test_test_modules_are_split_into_reviewable_files` | `web/tests/visual-workshop-canvas.test.tsx` 为 1418 行，超过 1200 行限制 |
+| `tests/test_media_workshop_upgrade.py::test_segment_export_creation_is_idempotent_and_preserves_each_config` | 预期快照未包含实际返回的 `playbackRate: null` |
+| `tests/test_project_snapshots.py::test_snapshot_import_rejects_wrong_app_tampering_and_unsafe_members` | 预期快照未包含实际返回的 `grid_output: null` 与 `grid_size: null` |
+| `web/tests/galgame-workshop-editor-audio-stage.test.tsx` 的多角色舞台编辑用例 | 10 秒超时；单独复跑也超时 |
+
+## 迁移与浏览器复核
+
+新增迁移 `0044_thought_workshop` 已先在临时数据库验证。现有开发服务自动重载期间将它应用到本机数据库，随后保留已落库的 ID 和 SQL，未手工修改数据库或迁移记录。
+迁移状态检查改为按记录插入顺序读取，避免同秒执行时按 ID 名称排序造成的误报；隔离数据库重复应用测试通过，本机登记前缀与 checksum 经只读验证一致。
+
+头像替换后，另外使用内置浏览器登录隔离测试环境，目视检查应用卡片、侧栏、最近访问及深浅主题；检查结束后关闭测试页面与服务。现有用户笔记未作为测试数据修改。
+
+后续修复了共享输入弹窗依赖模型页面懒加载样式的问题，弹窗独立维护遮罩、居中、输入框和焦点循环。
+本机笔记持续加载的原因是开发服务旧进程在重载退出阶段等待长连接；数据库已处于最新版本。
+恢复后端后，已在 Chrome 本机环境确认笔记列表和新建笔记本弹窗正常。笔记读取增加 15 秒超时与手动重试，
+开发启动命令增加 10 秒请求退出等待上限。针对本次修复的 Web 组件测试 8 项通过，lint、格式检查和构建通过。
+
+
+## 专注写作界面改版验收（2026-09-08）
+
+本节记录后续 UI 改版的验证结果，上文首版结果保留为历史记录。
+
+- 思绪工坊局部采用 216px 侧栏、紧凑面包屑与保存栏、标题上方的分组工具栏、最大 780px 正文列；深浅主题与窄屏均已检查。
+- 导入和完整备份归入「更多」，返回入口位于面包屑；原有保存、离开保护、导出、AI 写作与冲突处理继续可用。
+- 标签以胶囊显示，失焦或 Enter 提交，Esc 取消，Ctrl/Cmd+S 先提交标签再保存。采用服务器版本后，展示与再次编辑均使用服务器标签。
+- 修复待办清单样式仅匹配导出 HTML 属性、未匹配 Tiptap 实际编辑节点的问题；浏览器断言验证勾选框和正文首行的垂直对齐。
+- 保留现有应用头像，不新增网页宠物；没有修改后端、公开契约、迁移或用户笔记。
+
+| 检查 | 本轮结果 |
+| --- | --- |
+| 全量 Web 测试 | 100 个测试文件、552 项通过；包含 3 项新增标签编辑测试 |
+| Chromium 回归 | 原有 5 项旅程通过；新增 4 项布局与服务器标签同步旅程通过，布局修复后已定向复验 |
+| 明暗主题与布局 | 1600×1000、1280×800、390×844；空笔记、示例内容、长正文、菜单、目录、写作助手；无页面横向溢出 |
+| 静态、格式与契约 | `npm run lint`、`npm run format:check`、`npm run contracts:check` 通过 |
+| 生产构建 | `npm run build` 通过，包含资源校验、TypeScript、Vite 和分包预算 |
+| 架构检查 | 34 项通过；仍有上文记录的 visual-workshop CSS 607 行与 canvas 测试 1418 行两项历史超限，本轮未增长 |
+
+浏览器使用独立端口与临时目录下的全新 SQLite/文件存储，测试数据通过正式 API 或页面创建。AI 使用确定性模拟响应，未调用真实模型供应商。检查完成后测试服务自动退出。
+
+实际截图保存在本机忽略目录 `output/thought-ui/`，包括 desktop/laptop/mobile 的 light、dark、empty、directory 和 assistant 状态；这些是验收产物，不作为产品资源发布。
+
+## 附件与常用插入入口（2026-09-08）
+
+实现表格、图片、附件、链接四个可见入口，保留完整表格编辑与其他富文本能力。附件节点显示文件名、类型、大小及下载按钮，支持顺序多文件上传、混合拖入、失败重试、选区映射、删除和撤销重做；笔记切换后不插入迟到的上传结果。临时上传状态不进入正文或自动保存。
+
+附件上传复用公共文件库，支持 PDF、doc/docx、xls/xlsx、ppt/pptx、TXT、Markdown、CSV、JSON、ZIP，默认单文件 200 MiB，服务端配置为准。通用校验涵盖扩展名、MIME、签名、Office ZIP 目录结构、完整 UTF-8 文本、JSON 和实际大小。ZIP 附件保持原文件，不自动展开。
+
+服务端保存时校验同空间公共文件并规范化附件元数据；图片和附件共同受引用表保护，包括回收站。搜索与 AI 仅投影附件文件名。新增迁移 `0045_thought_attachments` 在注册前通过独立临时数据库测试，再登记升级版本标记；保留正文与 revision。
+
+完整备份 v2 包含附件原文并重新分配导入 ID，兼容 v1。Markdown ZIP 恢复相对附件链接与图片，网页链接保留；含附件的 HTML 导出为 ZIP。完整备份识别只扫描压缩条目，不在浏览器解压附件；Markdown 内容包继续限制 128 MiB。文件暂存使用延迟登记模式，复制和校验结束后执行短事务，失败补偿覆盖图片与附件。
+
+### 验证结果
+
+- 生产构建通过：运行资产、TypeScript、生产打包与产物预算检查全部完成。
+- lint、格式检查、生成契约一致性检查通过。
+- 后端全量：417 通过、4 项其他模块既有失败，见下方。附件相关格式、伪装内容、空文件、超限、下载鉴权、跨空间引用、删除保护、CAS、v1 兼容、备份往返及失败补偿均通过。
+- Web 全量最终复验：101 个文件、556 项测试全部通过（单 worker）。此前与其他门禁并行的运行出现 6 项 Galgame 超时，受影响模块单独复测 41 项通过后，再完整复验通过；未放宽超时阈值或修改这些模块的实现。
+- 浏览器：12 条旅程通过。覆盖四个入口、多文件、拖入、重试、下载字节一致、撤销重做、笔记切换隔离、Markdown／HTML／完整备份，及已有中文输入、保存失败、版本冲突、刷新恢复、确定性 AI 插入和抽屉焦点恢复。
+- 1600×1000、1280×800、390×844 下检查明暗主题与无页面横向溢出，逐项验证插入按钮文字不溢出；保留空笔记、长正文、目录和助手展开回归。
+- 截图人工检查修复了旧工具栏固定宽度导致的文字折行，确认卡片文件名、下载按钮及中文对比度可读。真实截图保存在忽略目录 `output/thought-attachments/`：六张 `{1600,1280,390}-{light,dark}.png`；使用临时数据库测试笔记，未写入用户笔记。
+
+### 与本次改动无关的后端失败
+
+1. `test_source_modules_are_split_into_reviewable_files`：`web/src/features/visual-workshop/styles/project-library-foundation.css` 为 607 行，上限 600。
+2. `test_test_modules_are_split_into_reviewable_files`：`web/tests/visual-workshop-canvas.test.tsx` 为 1418 行，上限 1200。
+3. `tests/test_media_workshop_upgrade.py::test_segment_export_creation_is_idempotent_and_preserves_each_config`：已有序列化结果多出 `playbackRate: None`，与断言不同。
+4. `tests/test_project_snapshots.py::test_snapshot_import_rejects_wrong_app_tampering_and_unsafe_members`：已有序列化结果多出 `grid_output: None` 与 `grid_size: None`，与断言不同。
+
+未改动这些模块的生产行为或放宽尺寸基线。工作区原有未提交修改均保留，未执行提交或发布。

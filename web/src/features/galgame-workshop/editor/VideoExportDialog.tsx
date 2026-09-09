@@ -1,3 +1,4 @@
+import { useDrawerFocus } from "@shared/ui/useDrawerFocus";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -95,6 +96,7 @@ export function VideoExportDialog({
   languageOptions: string[];
   onClose: () => void;
 }) {
+  const modal = useDrawerFocus(onClose, open, false);
   const client = useQueryClient();
   const [preset, setPreset] = useState<GalgameVideoExportPreset>("1080p30");
   const captureStorageKey = `fpl:galgame-video-capture:v1:${projectId}`;
@@ -186,14 +188,6 @@ export function VideoExportDialog({
     preferredLocale,
     storyRevision,
   ]);
-  useEffect(() => {
-    if (!open) return;
-    const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
-    };
-    window.addEventListener("keydown", closeOnEscape);
-    return () => window.removeEventListener("keydown", closeOnEscape);
-  }, [onClose, open]);
   useEffect(() => {
     try {
       localStorage.setItem(captureStorageKey, JSON.stringify(captureFrame));
@@ -359,6 +353,7 @@ export function VideoExportDialog({
   return (
     <div className="galgame-video-export-backdrop" role="presentation">
       <section
+        ref={modal}
         className="galgame-video-export-dialog"
         role="dialog"
         aria-modal="true"

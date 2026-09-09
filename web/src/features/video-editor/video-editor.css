@@ -422,7 +422,7 @@
 .ve-task-list article small {
   color: var(--text-muted);
 }
-.ve-task-list article span {
+.ve-task-list .ve-task-progress {
   height: 4px;
   overflow: hidden;
   border-radius: 4px;

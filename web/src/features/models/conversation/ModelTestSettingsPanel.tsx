@@ -1,3 +1,4 @@
+import { useDrawerFocus } from "@shared/ui/useDrawerFocus";
 import { useEffect, useState, type CSSProperties } from "react";
 import { Info, RotateCcw, SlidersHorizontal } from "lucide-react";
 import type {
@@ -30,6 +31,7 @@ export function ModelTestSettingsPanel({
   onPatch: (changes: ModelTestConversationPatch) => Promise<void>;
   onClose: () => void;
 }) {
+  const drawer = useDrawerFocus(onClose, open);
   const [temperature, setTemperature] = useState(
     conversation?.temperature ?? 0.7,
   );
@@ -37,7 +39,11 @@ export function ModelTestSettingsPanel({
     setTemperature(conversation?.temperature ?? 0.7);
   }, [conversation?.id, conversation?.revision, conversation?.temperature]);
   return (
-    <aside className={`settings-panel${open ? " mobile-open" : ""}`}>
+    <aside
+      ref={drawer}
+      aria-label="测试参数"
+      className={`settings-panel${open ? " mobile-open" : ""}`}
+    >
       <div className="panel-heading settings-heading">
         <div className="settings-heading-copy">
           <span>

@@ -2366,6 +2366,302 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/thought-workshop/attachments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Attachments */
+        post: operations["attachments_v1_thought_workshop_attachments_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/thought-workshop/backup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Backup */
+        get: operations["backup_v1_thought_workshop_backup_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/thought-workshop/images": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Upload Image */
+        post: operations["upload_image_v1_thought_workshop_images_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/thought-workshop/imports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Imports */
+        post: operations["imports_v1_thought_workshop_imports_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/thought-workshop/knowledge-bases": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Knowledge Bases */
+        get: operations["knowledge_bases_v1_thought_workshop_knowledge_bases_get"];
+        put?: never;
+        /** Create Knowledge Base */
+        post: operations["create_knowledge_base_v1_thought_workshop_knowledge_bases_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/thought-workshop/knowledge-bases/{project_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Knowledge Base */
+        get: operations["knowledge_base_v1_thought_workshop_knowledge_bases__project_id__get"];
+        /** Update Knowledge Base */
+        put: operations["update_knowledge_base_v1_thought_workshop_knowledge_bases__project_id__put"];
+        post?: never;
+        /** Trash Knowledge Base */
+        delete: operations["trash_knowledge_base_v1_thought_workshop_knowledge_bases__project_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/thought-workshop/knowledge-bases/{project_id}/directory": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Directory */
+        get: operations["directory_v1_thought_workshop_knowledge_bases__project_id__directory_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/thought-workshop/knowledge-bases/{project_id}/documents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create Document */
+        post: operations["create_document_v1_thought_workshop_knowledge_bases__project_id__documents_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/thought-workshop/knowledge-bases/{project_id}/folders": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create Folder */
+        post: operations["create_folder_v1_thought_workshop_knowledge_bases__project_id__folders_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/thought-workshop/knowledge-bases/{project_id}/folders/{folder_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Rename Folder */
+        put: operations["rename_folder_v1_thought_workshop_knowledge_bases__project_id__folders__folder_id__put"];
+        post?: never;
+        /** Delete Folder */
+        delete: operations["delete_folder_v1_thought_workshop_knowledge_bases__project_id__folders__folder_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/thought-workshop/knowledge-bases/{project_id}/move": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Move Entry */
+        post: operations["move_entry_v1_thought_workshop_knowledge_bases__project_id__move_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/thought-workshop/knowledge-bases/{project_id}/restore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Restore Knowledge Base */
+        post: operations["restore_knowledge_base_v1_thought_workshop_knowledge_bases__project_id__restore_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/thought-workshop/models": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Writing Models */
+        get: operations["writing_models_v1_thought_workshop_models_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/thought-workshop/notes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Notes */
+        get: operations["list_notes_v1_thought_workshop_notes_get"];
+        put?: never;
+        /** Create Note */
+        post: operations["create_note_v1_thought_workshop_notes_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/thought-workshop/notes/{note_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Note */
+        get: operations["get_note_v1_thought_workshop_notes__note_id__get"];
+        /** Put Note */
+        put: operations["put_note_v1_thought_workshop_notes__note_id__put"];
+        post?: never;
+        /** Delete Note */
+        delete: operations["delete_note_v1_thought_workshop_notes__note_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/thought-workshop/notes/{note_id}/assistant": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Assistant */
+        post: operations["assistant_v1_thought_workshop_notes__note_id__assistant_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/thought-workshop/notes/{note_id}/restore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Restore Note */
+        post: operations["restore_note_v1_thought_workshop_notes__note_id__restore_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/tool-navigation/state": {
         parameters: {
             query?: never;
@@ -2723,6 +3019,23 @@ export interface paths {
         put?: never;
         /** Cancel Segment Export */
         post: operations["cancel_segment_export_v1_video_editor_projects__project_id__segment_exports__task_id__cancel_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/video-editor/projects/{project_id}/segment-exports/{task_id}/download": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Download Segment Export */
+        get: operations["download_segment_export_v1_video_editor_projects__project_id__segment_exports__task_id__download_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -3686,6 +3999,11 @@ export interface components {
             /** File */
             file: string;
         };
+        /** Body_attachments_v1_thought_workshop_attachments_post */
+        Body_attachments_v1_thought_workshop_attachments_post: {
+            /** Upload */
+            upload: string;
+        };
         /** Body_batch_upload_project_assets_v1_galgame_workshop_projects__project_id__assets_batch_post */
         Body_batch_upload_project_assets_v1_galgame_workshop_projects__project_id__assets_batch_post: {
             /**
@@ -3705,6 +4023,8 @@ export interface components {
             enabled: boolean;
             /** File */
             file: string;
+            /** Tags */
+            tags?: string[] | null;
         };
         /** Body_import_legacy_story_v1_galgame_workshop_projects__project_id__story_import_post */
         Body_import_legacy_story_v1_galgame_workshop_projects__project_id__story_import_post: {
@@ -3727,6 +4047,11 @@ export interface components {
         Body_import_project_snapshot_v1_visual_workshop_projects_snapshot_imports_post: {
             /** File */
             file: string;
+        };
+        /** Body_imports_v1_thought_workshop_imports_post */
+        Body_imports_v1_thought_workshop_imports_post: {
+            /** Upload */
+            upload: string;
         };
         /** Body_put_avatar_v1_account_profile_avatar_put */
         Body_put_avatar_v1_account_profile_avatar_put: {
@@ -3775,6 +4100,11 @@ export interface components {
         Body_upload_generation_assets_v1_model_test_generation_assets_post: {
             /** Files */
             files: string[];
+        };
+        /** Body_upload_image_v1_thought_workshop_images_post */
+        Body_upload_image_v1_thought_workshop_images_post: {
+            /** Upload */
+            upload: string;
         };
         /** Body_upload_project_asset_v1_galgame_workshop_projects__project_id__assets_post */
         Body_upload_project_asset_v1_galgame_workshop_projects__project_id__assets_post: {
@@ -7546,6 +7876,79 @@ export interface components {
              */
             type: "addKeyframe" | "removeKeyframe" | "updateKeyframe";
         };
+        /** KnowledgeBaseIn */
+        KnowledgeBaseIn: {
+            /** Cover Asset Id */
+            cover_asset_id?: string | null;
+            /**
+             * Description
+             * @default
+             */
+            description: string;
+            /** Title */
+            title: string;
+        };
+        /** KnowledgeBaseOut */
+        KnowledgeBaseOut: {
+            /** Cover Asset Id */
+            cover_asset_id?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Deleted At */
+            deleted_at: string | null;
+            /**
+             * Description
+             * @default
+             */
+            description: string;
+            /**
+             * Document Count
+             * @default 0
+             */
+            document_count: number;
+            /** Home Note Id */
+            home_note_id: string;
+            /** Id */
+            id: string;
+            /** Revision */
+            revision: number;
+            /** Title */
+            title: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /** KnowledgeBasePut */
+        KnowledgeBasePut: {
+            /** Cover Asset Id */
+            cover_asset_id?: string | null;
+            /**
+             * Description
+             * @default
+             */
+            description: string;
+            /** Expected Revision */
+            expected_revision: number;
+            /** Title */
+            title: string;
+        };
+        /** KnowledgeNoteCreate */
+        KnowledgeNoteCreate: {
+            /** Expected Revision */
+            expected_revision: number;
+            /** Folder Id */
+            folder_id?: string | null;
+            /**
+             * Title
+             * @default 未命名文档
+             */
+            title: string;
+        };
         /** LinkClipsOperation */
         LinkClipsOperation: {
             /** Clipids */
@@ -9139,6 +9542,8 @@ export interface components {
             status: "unchecked" | "healthy" | "failed";
             /** Status Message */
             status_message: string;
+            /** Tags */
+            tags: string[];
             /** Updated At */
             updated_at: string;
             /** Version Count */
@@ -9152,6 +9557,8 @@ export interface components {
             enabled: boolean;
             /** Expected Revision */
             expected_revision: number;
+            /** Tags */
+            tags?: string[];
         };
         /** SkillVersionOut */
         SkillVersionOut: {
@@ -9260,6 +9667,292 @@ export interface components {
             ok: boolean;
             /** Output */
             output: string;
+        };
+        /** ThoughtAssistantIn */
+        ThoughtAssistantIn: {
+            /**
+             * Action
+             * @enum {string}
+             */
+            action: "summary" | "polish" | "continue" | "tasks" | "custom";
+            /** Expected Revision */
+            expected_revision: number;
+            /**
+             * Instruction
+             * @default
+             */
+            instruction: string;
+            /** Model Id */
+            model_id: string;
+            /**
+             * Selection
+             * @default
+             */
+            selection: string;
+        };
+        /** ThoughtAttachmentOut */
+        ThoughtAttachmentOut: {
+            /** Asset Id */
+            asset_id: string;
+            /** Byte Size */
+            byte_size: number;
+            /** Filename */
+            filename: string;
+            /** Mime Type */
+            mime_type: string;
+        };
+        /** ThoughtDirectoryOut */
+        ThoughtDirectoryOut: {
+            /** Documents */
+            documents: components["schemas"]["ThoughtNoteSummary"][];
+            /** Folders */
+            folders: components["schemas"]["ThoughtFolderOut"][];
+            knowledge_base: components["schemas"]["KnowledgeBaseOut"];
+        };
+        /** ThoughtFolderIn */
+        ThoughtFolderIn: {
+            /** Expected Revision */
+            expected_revision: number;
+            /** Parent Id */
+            parent_id?: string | null;
+            /** Title */
+            title: string;
+        };
+        /** ThoughtFolderOut */
+        ThoughtFolderOut: {
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Id */
+            id: string;
+            /** Knowledge Base Id */
+            knowledge_base_id: string;
+            /** Parent Id */
+            parent_id: string | null;
+            /** Position */
+            position: number;
+            /** Title */
+            title: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /** ThoughtImageOut */
+        ThoughtImageOut: {
+            /** Asset Id */
+            asset_id: string;
+        };
+        /** ThoughtImportOut */
+        ThoughtImportOut: {
+            /** Knowledge Base Ids */
+            knowledge_base_ids?: string[];
+            /** Note Ids */
+            note_ids: string[];
+            /** Warnings */
+            warnings?: string[];
+        };
+        /** ThoughtModelOut */
+        ThoughtModelOut: {
+            /** Id */
+            id: string;
+            /** Label */
+            label: string;
+        };
+        /** ThoughtMoveIn */
+        ThoughtMoveIn: {
+            /** Before Id */
+            before_id?: string | null;
+            /** Expected Revision */
+            expected_revision: number;
+            /** Item Id */
+            item_id: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "folder" | "document";
+            /** Parent Id */
+            parent_id?: string | null;
+        };
+        /** ThoughtNoteCreate */
+        ThoughtNoteCreate: {
+            /** Document */
+            document?: {
+                [key: string]: unknown;
+            };
+            /** Expected Knowledge Revision */
+            expected_knowledge_revision: number;
+            /**
+             * Favorite
+             * @default false
+             */
+            favorite: boolean;
+            /** Folder Id */
+            folder_id?: string | null;
+            /** Knowledge Base Id */
+            knowledge_base_id: string;
+            /**
+             * Pinned
+             * @default false
+             */
+            pinned: boolean;
+            /**
+             * Schema Version
+             * @default 2
+             * @constant
+             */
+            schema_version: 2;
+            /** Tags */
+            tags?: string[];
+            /**
+             * Title
+             * @default 未命名笔记
+             */
+            title: string;
+        };
+        /** ThoughtNoteList */
+        ThoughtNoteList: {
+            /** Items */
+            items: components["schemas"]["ThoughtNoteSummary"][];
+            /** Tags */
+            tags: string[];
+            /** Total */
+            total: number;
+        };
+        /** ThoughtNoteOut */
+        ThoughtNoteOut: {
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Deleted At */
+            deleted_at: string | null;
+            /** Document */
+            document: {
+                [key: string]: unknown;
+            };
+            /** Excerpt */
+            excerpt: string;
+            /** Favorite */
+            favorite: boolean;
+            /** Folder Id */
+            folder_id: string | null;
+            /** Id */
+            id: string;
+            /** Is Home */
+            is_home: boolean;
+            /** Knowledge Base Id */
+            knowledge_base_id: string;
+            /** Pinned */
+            pinned: boolean;
+            /** Position */
+            position: number;
+            /** Revision */
+            revision: number;
+            /**
+             * Schema Version
+             * @constant
+             */
+            schema_version: 2;
+            /** Tags */
+            tags: string[];
+            /** Title */
+            title: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /** ThoughtNotePut */
+        ThoughtNotePut: {
+            /** Document */
+            document?: {
+                [key: string]: unknown;
+            };
+            /** Expected Revision */
+            expected_revision: number;
+            /**
+             * Favorite
+             * @default false
+             */
+            favorite: boolean;
+            /** Folder Id */
+            folder_id?: string | null;
+            /** Knowledge Base Id */
+            knowledge_base_id: string;
+            /**
+             * Pinned
+             * @default false
+             */
+            pinned: boolean;
+            /**
+             * Schema Version
+             * @default 2
+             * @constant
+             */
+            schema_version: 2;
+            /** Tags */
+            tags?: string[];
+            /**
+             * Title
+             * @default 未命名笔记
+             */
+            title: string;
+        };
+        /** ThoughtNoteSummary */
+        ThoughtNoteSummary: {
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Deleted At */
+            deleted_at: string | null;
+            /** Excerpt */
+            excerpt: string;
+            /** Favorite */
+            favorite: boolean;
+            /** Folder Id */
+            folder_id: string | null;
+            /** Id */
+            id: string;
+            /** Is Home */
+            is_home: boolean;
+            /** Knowledge Base Id */
+            knowledge_base_id: string;
+            /** Pinned */
+            pinned: boolean;
+            /** Position */
+            position: number;
+            /** Revision */
+            revision: number;
+            /** Tags */
+            tags: string[];
+            /** Title */
+            title: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /** ThoughtNoteTransitionIn */
+        ThoughtNoteTransitionIn: {
+            /** Expected Knowledge Revision */
+            expected_knowledge_revision: number;
+            /** Expected Revision */
+            expected_revision: number;
+        };
+        /** ThoughtRevisionIn */
+        ThoughtRevisionIn: {
+            /** Expected Revision */
+            expected_revision: number;
         };
         /** ToolApiCatalogOut */
         ToolApiCatalogOut: {
@@ -9870,7 +10563,7 @@ export interface components {
             requestId: string;
             /** Segments */
             segments: components["schemas"]["VideoEditorSegmentExportItem"][];
-            target: components["schemas"]["VideoEditorSegmentExportTarget"];
+            target: components["schemas"]["VideoEditorSegmentExportTarget"] | null;
         };
         /** VideoEditorSegmentExportItem */
         VideoEditorSegmentExportItem: {
@@ -16759,6 +17452,821 @@ export interface operations {
             };
         };
     };
+    attachments_v1_thought_workshop_attachments_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_attachments_v1_thought_workshop_attachments_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ThoughtAttachmentOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    backup_v1_thought_workshop_backup_get: {
+        parameters: {
+            query?: {
+                knowledge_base_id?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    upload_image_v1_thought_workshop_images_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_upload_image_v1_thought_workshop_images_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ThoughtImageOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    imports_v1_thought_workshop_imports_post: {
+        parameters: {
+            query?: {
+                knowledge_base_id?: string | null;
+                expected_revision?: number | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_imports_v1_thought_workshop_imports_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ThoughtImportOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    knowledge_bases_v1_thought_workshop_knowledge_bases_get: {
+        parameters: {
+            query?: {
+                query?: string;
+                trash?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KnowledgeBaseOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_knowledge_base_v1_thought_workshop_knowledge_bases_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["KnowledgeBaseIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KnowledgeBaseOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    knowledge_base_v1_thought_workshop_knowledge_bases__project_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KnowledgeBaseOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_knowledge_base_v1_thought_workshop_knowledge_bases__project_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["KnowledgeBasePut"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KnowledgeBaseOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    trash_knowledge_base_v1_thought_workshop_knowledge_bases__project_id__delete: {
+        parameters: {
+            query: {
+                expected_revision: number;
+            };
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KnowledgeBaseOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    directory_v1_thought_workshop_knowledge_bases__project_id__directory_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ThoughtDirectoryOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_document_v1_thought_workshop_knowledge_bases__project_id__documents_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["KnowledgeNoteCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ThoughtNoteOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_folder_v1_thought_workshop_knowledge_bases__project_id__folders_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ThoughtFolderIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ThoughtDirectoryOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    rename_folder_v1_thought_workshop_knowledge_bases__project_id__folders__folder_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+                folder_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ThoughtFolderIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ThoughtDirectoryOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_folder_v1_thought_workshop_knowledge_bases__project_id__folders__folder_id__delete: {
+        parameters: {
+            query: {
+                expected_revision: number;
+            };
+            header?: never;
+            path: {
+                project_id: string;
+                folder_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ThoughtDirectoryOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    move_entry_v1_thought_workshop_knowledge_bases__project_id__move_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ThoughtMoveIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ThoughtDirectoryOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    restore_knowledge_base_v1_thought_workshop_knowledge_bases__project_id__restore_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ThoughtRevisionIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KnowledgeBaseOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    writing_models_v1_thought_workshop_models_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ThoughtModelOut"][];
+                };
+            };
+        };
+    };
+    list_notes_v1_thought_workshop_notes_get: {
+        parameters: {
+            query: {
+                knowledge_base_id: string;
+                query?: string;
+                folder_id?: string;
+                tag?: string;
+                view?: "all" | "recent" | "favorites" | "pinned" | "trash";
+                sort?: "updated" | "title";
+                offset?: number;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ThoughtNoteList"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_note_v1_thought_workshop_notes_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ThoughtNoteCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ThoughtNoteOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_note_v1_thought_workshop_notes__note_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                note_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ThoughtNoteOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    put_note_v1_thought_workshop_notes__note_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                note_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ThoughtNotePut"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ThoughtNoteOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_note_v1_thought_workshop_notes__note_id__delete: {
+        parameters: {
+            query: {
+                expected_revision: number;
+                permanent?: boolean;
+                expected_knowledge_revision: number;
+            };
+            header?: never;
+            path: {
+                note_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ThoughtNoteOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    assistant_v1_thought_workshop_notes__note_id__assistant_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                note_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ThoughtAssistantIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                    "text/event-stream": {
+                        /**
+                         * Message
+                         * @default
+                         */
+                        message: string;
+                        /**
+                         * Text
+                         * @default
+                         */
+                        text: string;
+                        /**
+                         * Type
+                         * @enum {string}
+                         */
+                        type: "delta" | "complete" | "error";
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    restore_note_v1_thought_workshop_notes__note_id__restore_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                note_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ThoughtNoteTransitionIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ThoughtNoteOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_state_v1_tool_navigation_state_get: {
         parameters: {
             query?: never;
@@ -17600,6 +19108,38 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["VideoEditorTaskOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    download_segment_export_v1_video_editor_projects__project_id__segment_exports__task_id__download_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+                task_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/zip": unknown;
                 };
             };
             /** @description Validation Error */

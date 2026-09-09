@@ -62,8 +62,11 @@
 .integration-modal-backdrop {
   position: fixed;
   z-index: 1000;
-  inset: 0;
-  padding: 24px;
+  top: var(--visible-top, 0px);
+  height: var(--visible-height, 100dvh);
+  left: 0;
+  right: 0;
+  padding: 16px;
   display: grid;
   place-items: center;
   background: var(--overlay);
@@ -71,7 +74,7 @@
 
 .integration-modal {
   width: min(570px, 100%);
-  max-height: min(820px, calc(100vh - 48px));
+  max-height: min(820px, calc(var(--visible-height, 100dvh) - 32px));
   overflow: auto;
   border: 1px solid var(--border);
   border-radius: 14px;

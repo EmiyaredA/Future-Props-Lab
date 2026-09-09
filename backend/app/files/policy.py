@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import codecs
 import json
+import zipfile
 from pathlib import Path
 
 ALLOWED_FILES: dict[str, tuple[str, set[str]]] = {
@@ -28,6 +29,20 @@ ALLOWED_FILES: dict[str, tuple[str, set[str]]] = {
     ),
     ".woff": ("font", {"font/woff", "application/font-woff", "application/octet-stream"}),
     ".woff2": ("font", {"font/woff2", "application/octet-stream"}),
+    ".doc": ("document", {"application/msword"}),
+    ".xls": ("document", {"application/vnd.ms-excel"}),
+    ".ppt": ("document", {"application/vnd.ms-powerpoint"}),
+    ".docx": (
+        "document",
+        {"application/vnd.openxmlformats-officedocument.wordprocessingml.document"},
+    ),
+    ".xlsx": ("document", {"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"}),
+    ".pptx": (
+        "document",
+        {"application/vnd.openxmlformats-officedocument.presentationml.presentation"},
+    ),
+    ".csv": ("document", {"text/csv", "application/csv", "text/plain", "application/vnd.ms-excel"}),
+    ".zip": ("document", {"application/zip", "application/x-zip-compressed"}),
     ".pdf": ("document", {"application/pdf"}),
     ".txt": ("document", {"text/plain"}),
     ".md": ("document", {"text/markdown", "text/plain"}),
@@ -80,12 +95,16 @@ VIDEO_EDITABLE_EXTENSIONS = {
 
 
 def looks_like(extension: str, head: bytes) -> bool:
-    if extension in {".txt", ".md", ".json"}:
+    if extension in {".txt", ".md", ".json", ".csv"}:
         try:
             decoded = codecs.getincrementaldecoder("utf-8")().decode(head, final=False)
             return b"\x00" not in head and bool(decoded)
         except UnicodeDecodeError:
             return False
+    if extension in {".doc", ".xls", ".ppt"}:
+        return head.startswith(bytes.fromhex("d0cf11e0a1b11ae1"))
+    if extension in {".zip", ".docx", ".xlsx", ".pptx"}:
+        return head.startswith((b"PK\x03\x04", b"PK\x05\x06"))
     checks = {
         ".jpg": head.startswith(b"\xff\xd8\xff"),
         ".jpeg": head.startswith(b"\xff\xd8\xff"),
@@ -136,3 +155,54 @@ def download_filename(display_name: str, original_filename: str) -> str:
     safe_base = base.replace("/", "-").replace("\\", "-").strip()
     fallback = display_name_without_original_extension(original_filename, original_filename)
     return f"{safe_base or fallback or 'download'}{Path(original_filename).suffix}"
+
+
+ATTACHMENT_EXTENSIONS = {
+    ".pdf",
+    ".doc",
+    ".docx",
+    ".xls",
+    ".xlsx",
+    ".ppt",
+    ".pptx",
+    ".txt",
+    ".md",
+    ".csv",
+    ".json",
+    ".zip",
+}
+
+
+def validate_file_structure(path: Path, extension: str) -> bool:
+    """Validate complete text and archive structure without extracting file contents."""
+    if extension == ".json":
+        return validate_json_file(path)
+    if extension in {".txt", ".md", ".csv"}:
+        try:
+            with path.open(encoding="utf-8-sig") as source:
+                while chunk := source.read(1024 * 1024):
+                    if "\x00" in chunk:
+                        return False
+            return True
+        except UnicodeDecodeError:
+            return False
+    if extension in {".zip", ".docx", ".xlsx", ".pptx"}:
+        try:
+            with zipfile.ZipFile(path) as archive:
+                names = set(archive.namelist())
+                required = {
+                    ".docx": "word/document.xml",
+                    ".xlsx": "xl/workbook.xml",
+                    ".pptx": "ppt/presentation.xml",
+                }
+                if extension != ".zip":
+                    if not {"[Content_Types].xml", "_rels/.rels", required[extension]} <= names:
+                        return False
+                    for name in ("[Content_Types].xml", "_rels/.rels", required[extension]):
+                        info = archive.getinfo(name)
+                        if info.file_size == 0 or info.flag_bits & 1:
+                            return False
+                return True
+        except (OSError, ValueError, zipfile.BadZipFile):
+            return False
+    return True

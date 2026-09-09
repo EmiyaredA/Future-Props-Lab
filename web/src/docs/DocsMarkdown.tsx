@@ -110,7 +110,10 @@ export const DocsMarkdown = memo(function DocsMarkdown({
               <button
                 type="button"
                 aria-label={"放大图片：" + alt}
-                onClick={() => onImage(src, alt)}
+                onClick={(event) => {
+                  event.currentTarget.focus();
+                  onImage(src, alt);
+                }}
               >
                 <img src={src} alt={alt} loading="lazy" />
               </button>

@@ -96,6 +96,7 @@ class SkillIntegration(Base):
     description: Mapped[str] = mapped_column(String(1000), default="")
     default_version: Mapped[str] = mapped_column(String(24), default="v1")
     latest_version: Mapped[str] = mapped_column(String(24), default="v1")
+    tags: Mapped[list[str]] = mapped_column(JSON, default=list, server_default="[]")
     enabled: Mapped[bool] = mapped_column(Boolean, default=False)
     status: Mapped[str] = mapped_column(String(16), default="healthy")
     status_message: Mapped[str] = mapped_column(String(500), default="")

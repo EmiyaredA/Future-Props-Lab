@@ -1,0 +1,84 @@
+@media (max-width: 1200px) {
+  .model-test-page[data-compact-panel] {
+    height: calc(var(--visible-height, 100dvh) - 48px);
+    min-height: 0;
+  }
+  .model-test-page[data-compact-panel]
+    > :is(
+      .generation-test-grid,
+      .transcription-test-grid,
+      .realtime-voice-layout
+    ) {
+    display: block;
+    min-height: 0;
+    flex: 1;
+    overflow: auto;
+  }
+  .model-test-page[data-compact-panel]
+    :is(.generation-test-result, .transcription-result, .realtime-voice-stage) {
+    min-height: 0;
+    height: 100%;
+  }
+  .model-test-page[data-compact-panel="result"]
+    :is(
+      .generation-test-history,
+      .generation-test-settings,
+      .transcription-history,
+      .transcription-settings,
+      .realtime-voice-settings
+    ),
+  .model-test-page[data-compact-panel="settings"]
+    :is(
+      .generation-test-history,
+      .generation-test-result,
+      .transcription-history,
+      .transcription-result,
+      .realtime-voice-stage
+    ),
+  .model-test-page[data-compact-panel="history"]
+    :is(
+      .generation-test-result,
+      .generation-test-settings,
+      .transcription-result,
+      .transcription-settings
+    ) {
+    display: none;
+  }
+  .model-test-page[data-compact-panel]
+    :is(.generation-test-history, .transcription-history) {
+    max-height: none;
+    height: 100%;
+  }
+  .model-test-page[data-compact-panel]
+    :is(
+      .generation-test-settings,
+      .transcription-settings,
+      .realtime-voice-settings
+    ) {
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+  }
+  .model-test-page[data-compact-panel] .generation-test-settings form {
+    display: flex;
+    flex-direction: column;
+  }
+  .model-test-page[data-compact-panel] .generation-submit-wrap {
+    position: sticky;
+    bottom: 0;
+    padding-bottom: max(8px, env(safe-area-inset-bottom));
+    background: var(--surface);
+  }
+}
+
+@media (max-width: 700px) {
+  .model-test-workspace-header .model-test-mode-tabs {
+    display: flex;
+    flex-wrap: wrap;
+  }
+  .model-test-workspace-header .model-test-mode-tabs button {
+    flex: 1 0 100px;
+    font-size: 12px;
+    min-height: 38px;
+  }
+}

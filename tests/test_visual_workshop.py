@@ -13,6 +13,8 @@ from app.main import app
 from app.models import (
     ModelEntry,
     ModelProvider,
+    ThoughtKnowledgeBase,
+    ThoughtNote,
     VisualAsset,
     VisualAssetFolder,
     VisualGenerationTask,
@@ -176,6 +178,8 @@ async def test_visual_workshop_routes_use_studio_auth() -> None:
 async def test_file_management_upload_folders_and_project_references() -> None:
     async with SessionLocal() as session:
         await session.execute(delete(VisualProjectAssetReference))
+        await session.execute(delete(ThoughtKnowledgeBase))
+        await session.execute(delete(ThoughtNote))
         await session.execute(delete(VisualAsset))
         await session.execute(delete(VisualAssetFolder))
         await session.execute(delete(VisualWorkshopProject))
@@ -454,7 +458,7 @@ async def test_file_management_rejects_invalid_content_and_scope() -> None:
         assert invalid_json.json()["code"] == "invalid_file_content"
         unsupported = await client.post(
             "/v1/files",
-            files={"upload": ("archive.zip", b"PK contents", "application/zip")},
+            files={"upload": ("unsupported.exe", b"executable", "application/octet-stream")},
         )
         assert unsupported.status_code == 422
         assert unsupported.json()["code"] == "unsupported_file_type"

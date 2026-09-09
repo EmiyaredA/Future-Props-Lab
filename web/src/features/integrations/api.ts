@@ -85,14 +85,19 @@ export const getMcpTools = async (current: McpServer) =>
 export const getSkills = async () =>
   unwrap(await api.GET("/v1/integrations/skills"));
 
-export async function createSkill(file: File, enabled: boolean) {
+export async function createSkill(
+  file: File,
+  enabled: boolean,
+  tags: string[] = [],
+) {
   return unwrap(
     await api.POST("/v1/integrations/skills", {
-      body: { file: file as unknown as string, enabled },
+      body: { file: file as unknown as string, enabled, tags },
       bodySerializer() {
         const data = new FormData();
         data.set("file", file);
         data.set("enabled", String(enabled));
+        tags.forEach((tag) => data.append("tags", tag));
         return data;
       },
     }),
@@ -121,6 +126,7 @@ export const updateSkill = async (
   current: Skill,
   enabled: boolean,
   defaultVersion: string,
+  tags?: string[],
 ) =>
   unwrap(
     await api.PATCH("/v1/integrations/skills/{skill_id}", {
@@ -129,6 +135,7 @@ export const updateSkill = async (
         expected_revision: current.revision,
         enabled,
         default_version: defaultVersion,
+        ...(tags === undefined ? {} : { tags }),
       },
     }),
   );

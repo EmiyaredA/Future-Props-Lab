@@ -290,7 +290,7 @@ export function useVideoEditor(projectId: string) {
       if (
         event.defaultPrevented ||
         (event.target instanceof HTMLElement &&
-          event.target.closest('[role="separator"]')) ||
+          event.target.closest('[role="separator"], [aria-modal="true"]')) ||
         event.target instanceof HTMLInputElement ||
         event.target instanceof HTMLTextAreaElement
       )

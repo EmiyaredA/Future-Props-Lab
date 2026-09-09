@@ -1,3 +1,4 @@
+import { useModelCompactPanels } from "@features/models/workspace/useModelCompactPanels";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Waves } from "lucide-react";
@@ -139,6 +140,7 @@ export function ModelRealtimeVoiceTestPanel({
   onSelectMode: (mode: ModelTestMode) => void;
   onSelectModel: (modelId: string) => void;
 }) {
+  const compact = useModelCompactPanels("realtime");
   const optionsQuery = useQuery({
     queryKey: modelQueryKeys.realtimeOptions,
     queryFn: getRealtimeVoiceOptions,
@@ -306,7 +308,10 @@ export function ModelRealtimeVoiceTestPanel({
   ) => setParameters((current) => ({ ...current, [key]: value }));
 
   return (
-    <section className="model-test-page realtime-voice-page">
+    <section
+      data-compact-panel={compact.panel}
+      className="model-test-page realtime-voice-page"
+    >
       <ModelTestWorkspaceHeader
         activeMode="realtime_voice"
         availableModes={availableModes}
@@ -320,6 +325,7 @@ export function ModelRealtimeVoiceTestPanel({
         modelDisabled={active}
       />
 
+      {compact.tabs}
       <div className="realtime-voice-layout">
         <aside className="realtime-voice-settings">
           <div className="realtime-panel-heading">

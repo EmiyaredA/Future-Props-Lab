@@ -7,6 +7,7 @@ import {
   Plus,
   Search,
   Trash2,
+  Tags,
 } from "lucide-react";
 import {
   addSkillVersion,
@@ -28,6 +29,13 @@ import {
 import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
 import { CustomSelect } from "@shared/ui/CustomSelect";
 import { ApiError } from "@platform/api/client";
+
+import {
+  SkillTagField,
+  SkillTagDialog,
+} from "@features/integrations/SkillTags";
+import "@features/integrations/skill-tags.css";
+import { parseSkillTags } from "@features/integrations/skillTags";
 
 const KEY = ["integrations", "skills"] as const;
 
@@ -57,12 +65,14 @@ function UploadDialog({
   title: string;
   pending: boolean;
   onClose: () => void;
-  onUpload: (file: File, enabled: boolean) => void;
+  onUpload: (file: File, enabled: boolean, tags: string[]) => void;
   showEnabled: boolean;
 }) {
   const input = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
   const [enabled, setEnabled] = useState(false);
+  const [tagsText, setTagsText] = useState("");
+  const tags = parseSkillTags(tagsText);
   return (
     <IntegrationModal title={title} onClose={onClose}>
       <div className="integration-form">
@@ -86,6 +96,9 @@ function UploadDialog({
           />
         </div>
         {showEnabled ? (
+          <SkillTagField value={tagsText} onChange={setTagsText} />
+        ) : null}
+        {showEnabled ? (
           <ToggleButton
             value={enabled}
             onChange={setEnabled}
@@ -99,8 +112,8 @@ function UploadDialog({
           <button
             type="button"
             className="btn primary"
-            disabled={!file || pending}
-            onClick={() => file && onUpload(file, enabled)}
+            disabled={!file || pending || tags.length > 12}
+            onClick={() => file && onUpload(file, enabled, tags)}
           >
             {pending ? "校验并导入中…" : "上传并校验"}
           </button>
@@ -132,10 +145,19 @@ export function SkillPanel({
   const [selectedVersion, setSelectedVersion] = useState("");
   const [removing, setRemoving] = useState<Skill | null>(null);
   const [notice, setNotice] = useState("");
+  const [tagFilter, setTagFilter] = useState("all");
+  const [editingTags, setEditingTags] = useState<Skill | null>(null);
   const refresh = () => client.invalidateQueries({ queryKey: KEY });
   const create = useMutation({
-    mutationFn: ({ file, enabled }: { file: File; enabled: boolean }) =>
-      createSkill(file, enabled),
+    mutationFn: ({
+      file,
+      enabled,
+      tags,
+    }: {
+      file: File;
+      enabled: boolean;
+      tags: string[];
+    }) => createSkill(file, enabled, tags),
     onSuccess: (skill) => {
       setUploading(false);
       setNotice(`${skill.name} 已通过校验并导入。`);
@@ -201,6 +223,32 @@ export function SkillPanel({
       }
     },
   });
+  const editTags = useMutation({
+    mutationFn: ({ skill, tags }: { skill: Skill; tags: string[] }) =>
+      updateSkill(skill, skill.enabled, skill.default_version, tags),
+    onSuccess: () => {
+      setEditingTags(null);
+      setNotice("Skill 标签已更新。");
+      void refresh();
+    },
+    onError: (error) => {
+      if (
+        error instanceof ApiError &&
+        error.problem.code === "revision_conflict"
+      ) {
+        setEditingTags(null);
+        setNotice(errorMessage(error));
+        void refresh();
+      }
+    },
+  });
+  const tagOptions = [
+    ...new Set((query.data?.items ?? []).flatMap((skill) => skill.tags)),
+  ].sort((a, b) => a.localeCompare(b, "zh-CN"));
+  const activeTagFilter =
+    tagFilter.startsWith("tag:") && !tagOptions.includes(tagFilter.slice(4))
+      ? "all"
+      : tagFilter;
   const remove = useMutation({
     mutationFn: deleteSkill,
     onSuccess: () => {
@@ -221,13 +269,17 @@ export function SkillPanel({
     () =>
       (query.data?.items ?? []).filter(
         (item) =>
-          `${item.name} ${item.description}`
+          `${item.name} ${item.description} ${item.tags.join(" ")}`
             .toLowerCase()
             .includes(search.toLowerCase()) &&
           (status === "all" ||
-            (status === "enabled" ? item.enabled : !item.enabled)),
+            (status === "enabled" ? item.enabled : !item.enabled)) &&
+          (activeTagFilter === "all" ||
+            (activeTagFilter === "untagged"
+              ? item.tags.length === 0
+              : item.tags.includes(activeTagFilter.slice(4)))),
       ),
-    [query.data, search, status],
+    [query.data, search, status, activeTagFilter],
   );
   const openVersions = async (skill: Skill) => {
     setViewing(skill);
@@ -250,12 +302,12 @@ export function SkillPanel({
   };
   return (
     <div className="integration-panel">
-      <div className="integration-toolbar">
+      <div className="integration-toolbar skill-toolbar">
         <label className="integration-search">
           <Search aria-hidden />
           <input
             aria-label="搜索 Skill"
-            placeholder="搜索 Skill 名称或说明"
+            placeholder="搜索 Skill 名称、说明或标签"
             value={search}
             onChange={(e) => onSearchChange(e.target.value)}
           />
@@ -269,6 +321,16 @@ export function SkillPanel({
             { value: "draft", label: "草稿" },
           ]}
           onChange={onStatusChange}
+        />
+        <CustomSelect
+          ariaLabel="Skill 标签筛选"
+          value={activeTagFilter}
+          options={[
+            { value: "all", label: "全部标签" },
+            { value: "untagged", label: "无标签" },
+            ...tagOptions.map((tag) => ({ value: `tag:${tag}`, label: tag })),
+          ]}
+          onChange={setTagFilter}
         />
         {canManage ? (
           <button
@@ -305,6 +367,13 @@ export function SkillPanel({
                 </header>
                 <h3>{item.name}</h3>
                 <p>{item.description}</p>
+                <div className="skill-tags" aria-label={`${item.name} 标签`}>
+                  {item.tags.length ? (
+                    item.tags.map((tag) => <span key={tag}>{tag}</span>)
+                  ) : (
+                    <small>无标签</small>
+                  )}
+                </div>
                 <div className="integration-card-meta">
                   <code>{item.default_version}</code>
                   <span>{item.version_count} 个不可变版本</span>
@@ -318,6 +387,18 @@ export function SkillPanel({
                     >
                       <Layers3 aria-hidden />
                     </button>
+                    {canManage ? (
+                      <button
+                        type="button"
+                        aria-label={`编辑 ${item.name} 标签`}
+                        onClick={() => {
+                          editTags.reset();
+                          setEditingTags(item);
+                        }}
+                      >
+                        <Tags aria-hidden />
+                      </button>
+                    ) : null}
                     {canManage ? (
                       <button
                         aria-label={`删除 ${item.name}`}
@@ -362,7 +443,9 @@ export function SkillPanel({
           pending={create.isPending}
           onClose={() => setUploading(false)}
           showEnabled
-          onUpload={(file, enabled) => create.mutate({ file, enabled })}
+          onUpload={(file, enabled, tags) =>
+            create.mutate({ file, enabled, tags })
+          }
         />
       ) : null}
       {addingTo ? (
@@ -461,6 +544,16 @@ export function SkillPanel({
             ))}
           </div>
         </IntegrationModal>
+      ) : null}
+      {editingTags ? (
+        <SkillTagDialog
+          key={editingTags.id}
+          skill={editingTags}
+          pending={editTags.isPending}
+          error={editTags.isError ? errorMessage(editTags.error) : ""}
+          onClose={() => setEditingTags(null)}
+          onSave={(tags) => editTags.mutate({ skill: editingTags, tags })}
+        />
       ) : null}
       <ConfirmDialog
         open={Boolean(removing)}

@@ -15,6 +15,9 @@ export type StudioPage =
   | "model-call-logs";
 
 export type WorkshopPage =
+  | "thought-workshop-notes"
+  | "thought-workshop-editor"
+  | "thought-workshop-legacy"
   | "visual-workshop-projects"
   | "visual-workshop-canvas"
   | "visual-workshop-assets"
@@ -39,10 +42,15 @@ export type VideoEditorPage = Extract<WorkshopPage, `video-editor-${string}`>;
 
 export type AppPage = StudioPage | WorkshopPage;
 
-export type AppRoute = { page: AppPage; projectId?: string };
+export type AppRoute = {
+  page: AppPage;
+  projectId?: string;
+  documentId?: string;
+};
 
 export function isWorkshopPage(page: AppPage): page is WorkshopPage {
   return (
+    page.startsWith("thought-workshop-") ||
     page.startsWith("visual-workshop-") ||
     page.startsWith("galgame-workshop-") ||
     page.startsWith("video-editor-")
@@ -102,12 +110,19 @@ export function parseRoute(pathname = window.location.pathname): AppRoute {
   return { page: "home" };
 }
 
-export function pathFor(page: AppPage, projectId?: string): string {
-  const applicationPath = applicationPathFor(page, projectId);
+export function pathFor(
+  page: AppPage,
+  projectId?: string,
+  documentId?: string,
+): string {
+  const applicationPath = applicationPathFor(page, projectId, documentId);
   if (applicationPath) return applicationPath;
   if (page === "audio-annotation-editor" && projectId)
     return `/tools/audio-annotation/${encodeURIComponent(projectId)}`;
   const paths: Record<AppPage, string> = {
+    "thought-workshop-notes": "/apps/thought-workshop",
+    "thought-workshop-editor": "/apps/thought-workshop",
+    "thought-workshop-legacy": "/apps/thought-workshop",
     home: "/home",
     apps: "/apps",
     files: "/files",
@@ -142,3 +157,9 @@ import {
   applicationPathFor,
   matchApplicationPath,
 } from "@app/applicationRegistry";
+
+export function isThoughtWorkshopPage(
+  page: AppPage,
+): page is Extract<WorkshopPage, `thought-workshop-${string}`> {
+  return page.startsWith("thought-workshop-");
+}

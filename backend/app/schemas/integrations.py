@@ -258,6 +258,7 @@ class SkillOut(BaseModel):
     default_version: str
     latest_version: str
     version_count: int
+    tags: list[str]
     enabled: bool
     status: IntegrationStatus
     status_message: str
@@ -284,7 +285,16 @@ class SkillCatalogOut(BaseModel):
     version_count: int
 
 
-class SkillUpdateIn(BaseModel):
+class SkillTagsIn(BaseModel):
+    tags: list[str] = Field(default_factory=list, max_length=12)
+
+    @field_validator("tags")
+    @classmethod
+    def clean_tags(cls, value: list[str]) -> list[str]:
+        return _clean_tags(value)
+
+
+class SkillUpdateIn(SkillTagsIn):
     expected_revision: int = Field(ge=0)
     enabled: bool
     default_version: str = Field(min_length=2, max_length=24, pattern=r"^v[1-9][0-9]*$")

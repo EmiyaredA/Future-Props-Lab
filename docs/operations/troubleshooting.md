@@ -12,6 +12,12 @@
 SQLite、`schema_migrations` 或 migration checksum。Runner 退避与恢复流程见
 [后台 Runner 运维](background-runners.md)。
 
+若页面一直加载，且 `/health`、`/ready` 都不返回，但迁移检查已经是最新版本，优先检查开发服务
+是否停在重载退出阶段。旧进程等待长连接结束时，新进程尚未启动，监听端口存在也不代表服务可用。
+开发启动命令包含 `--timeout-graceful-shutdown 10`；旧版本启动的服务需要重新启动才会使用这个参数。
+不要通过重新迁移或修改数据库处理此类问题。思绪工坊列表请求超过 15 秒会显示超时提示，可在服务
+恢复后点击“重试”。
+
 首次升级账号系统后，运行 `npm run account -- create-admin --username <用户名>` 创建管理员并认领
 `default` Workspace。若环境里仍有 `FPL_STUDIO_TOKEN`，后端会拒绝启动；删除它后改用账号 Session
 或 Management API Key。管理员遗失密码时使用 `npm run account -- reset-password --username <用户名>`。

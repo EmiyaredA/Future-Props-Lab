@@ -2,9 +2,12 @@
   position: fixed;
   z-index: 1200;
   inset: 0;
+  top: var(--visible-top, 0px);
+  bottom: auto;
+  height: var(--visible-height, 100dvh);
   display: grid;
   place-items: center;
-  padding: 24px;
+  padding: 16px;
   background: rgb(2 8 18 / 76%);
   backdrop-filter: blur(8px);
 }
@@ -12,8 +15,9 @@
 .galgame-video-export-dialog {
   display: flex;
   flex-direction: column;
-  width: min(1120px, 96vw);
-  max-height: min(880px, 94vh);
+  width: min(1120px, calc(100vw - 32px));
+  min-width: 0;
+  max-height: min(880px, calc(var(--visible-height, 100dvh) - 32px));
   overflow: hidden;
   border: 1px solid var(--gal-line);
   border-radius: 18px;

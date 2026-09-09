@@ -1,0 +1,64 @@
+.galgame-fast-preview-stage {
+  --gal-text: #edf1f6;
+  --gal-muted: #a5b4c8;
+  --gal-surface: #172231;
+  color: var(--gal-text);
+}
+
+@media (max-width: 1200px) {
+  .galgame-fast-preview[data-mobile-panel] {
+    top: var(--visible-top, 0px);
+    height: var(--visible-height, 100dvh);
+    bottom: auto;
+    grid-template-rows: auto auto minmax(0, 1fr) auto;
+  }
+  .galgame-fast-preview > header,
+  .galgame-fast-preview > header nav,
+  .galgame-fast-preview > footer {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .galgame-fast-preview > header {
+    padding: 10px 12px;
+  }
+  .galgame-fast-preview > header > span {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  .galgame-fast-preview > header button {
+    white-space: nowrap;
+    padding: 8px;
+  }
+  .galgame-fast-preview .galgame-fast-preview-body {
+    display: block;
+    overflow: auto;
+  }
+  .galgame-fast-preview-body > * {
+    min-width: 0;
+    max-width: 100%;
+    min-height: 100%;
+  }
+  .galgame-fast-preview[data-mobile-panel="stage"]
+    .galgame-fast-preview-body
+    > :not(.galgame-fast-preview-stage),
+  .galgame-fast-preview[data-mobile-panel="dialogue"]
+    .galgame-fast-preview-body
+    > :not(.galgame-preview-dialogue-queue),
+  .galgame-fast-preview[data-mobile-panel="inspector"]
+    .galgame-fast-preview-body
+    > :not(.galgame-fast-preview-inspector) {
+    display: none;
+  }
+  .galgame-fast-preview[data-mobile-panel="dialogue"]
+    .galgame-preview-dialogue-queue {
+    display: flex;
+  }
+  .galgame-fast-preview[data-mobile-panel="inspector"]
+    .galgame-fast-preview-inspector {
+    display: block;
+  }
+  .galgame-fast-preview > footer input {
+    min-width: 0;
+    max-width: 100%;
+  }
+}

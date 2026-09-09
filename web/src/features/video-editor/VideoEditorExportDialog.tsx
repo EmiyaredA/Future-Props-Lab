@@ -1,3 +1,4 @@
+import { useDrawerFocus } from "@shared/ui/useDrawerFocus";
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { AlertTriangle, Film, X } from "lucide-react";
@@ -16,6 +17,7 @@ export function VideoEditorExportDialog({
   revision: number;
   onClose: () => void;
 }) {
+  const modal = useDrawerFocus(onClose, true, false);
   const client = useQueryClient();
   const [preset, setPreset] = useState<VideoEditorPreset>("1080p30");
   const [preview, setPreview] =
@@ -44,6 +46,7 @@ export function VideoEditorExportDialog({
   return (
     <div className="ve-dialog-backdrop ve-export-backdrop">
       <section
+        ref={modal}
         className="ve-export-dialog"
         role="dialog"
         aria-modal="true"

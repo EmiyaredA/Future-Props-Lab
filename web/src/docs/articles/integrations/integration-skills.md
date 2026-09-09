@@ -1,6 +1,6 @@
-<!-- docs: {"group":"integrations","order":4,"title":"Skill 导入、版本与启停","lead":"用不可变版本管理 Skill 内容包。","evidence":["web/src/features/integrations/IntegrationCenterPage.tsx","web/src/features/integrations/ToolApiPanel.tsx","web/src/features/integrations/McpPanel.tsx","web/src/features/integrations/SkillPanel.tsx"]} -->
+<!-- docs: {"group":"integrations","order":4,"title":"Skill 导入、标签与版本管理","lead":"用不可变版本管理 Skill 内容包。","evidence":["web/src/features/integrations/IntegrationCenterPage.tsx","web/src/features/integrations/ToolApiPanel.tsx","web/src/features/integrations/McpPanel.tsx","web/src/features/integrations/SkillPanel.tsx"]} -->
 
-# Skill 导入、版本与启停
+# Skill 导入、标签与版本管理
 
 <!-- prerequisites -->
 
@@ -10,7 +10,7 @@
 
 ## 准备 ZIP
 
-导入包最大 10 MiB，必须包含根目录的 SKILL.md。不要把它放在额外顶层文件夹里，也不要打包凭证或无关运行数据。
+导入包最大 10 MiB，必须包含根目录的 SKILL.md。也支持一个包含 SKILL.md 的包装目录，也不要打包凭证或无关运行数据。
 
 ![Skill ZIP 导入对话框](/docs/integration-skill-form.jpg "真实界面 · 隔离演示数据；合成素材或本机确定性响应，不代表外部模型效果。")
 
@@ -18,9 +18,27 @@
 
 1. 进入“集成中心 → Skill”，选择导入。
 2. 点击“选择文件”，检查选中的 ZIP。
-3. 选择是否“导入后启用”，点击“上传并校验”。
+3. 输入标签（可选），支持中英文逗号分隔，最多 12 个；选择是否“导入后启用”，点击“上传并校验”。
 4. 在详情查看版本列表，按需下载版本或追加新版本。
 
 ## 更新与启停
 
 已有版本保持不可变；修改内容后添加新版本。启停调整当前目录条目的可用状态，不修改历史版本里的文件。发生版本冲突时刷新列表再操作，不覆盖其他窗口刚保存的配置。
+
+## 标签管理与筛选
+
+卡片显示当前标签；点击卡片上的“编辑标签”按钮可以修改分类，清空输入后保存即移除全部标签。
+标签在保存时会自动去重并清理空白。只有当前空间的管理者可以编辑，普通成员仍可查看和筛选。
+
+工具栏的标签筛选提供“全部标签”“无标签”和当前空间已有标签，可与状态筛选及搜索一起使用。
+搜索支持 Skill 名称、说明和标签。标签独立于不可变版本：编辑标签不会增加版本，
+上传新版本、启停和切换默认版本也不会改变标签。发生并发冲突时会刷新目录，请重新打开后再编辑。
+
+## MiniMax H3 官方包
+
+[官方目录](https://github.com/MiniMax-AI/MiniMax-H3/tree/main/skills) 包含核心提示词技能和 8 个风格技能。
+导入时分别打包每个技能目录，保留原始 SKILL.md、中文说明及 references 等配套文件。
+可统一使用“MiniMax H3”标签，再按“提示词”“产品广告”“3D 动画”等用途分类。
+
+集成中心的“启用”表示目录状态；本页不会自动调用 Skill 或执行视频生成。
+官方风格技能依赖 MiniMax Hub，其运行环境要求仍以包内说明为准。

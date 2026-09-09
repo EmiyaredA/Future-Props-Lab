@@ -985,7 +985,7 @@ test("resizes both script sidebars and remembers their widths", async () => {
   );
 });
 
-test("opens and closes the compact script structure drawer", async () => {
+test("switches compact script panels without remounting the structure", async () => {
   const previousWidth = window.innerWidth;
   Object.defineProperty(window, "innerWidth", {
     configurable: true,
@@ -997,17 +997,28 @@ test("opens and closes the compact script structure drawer", async () => {
   const structure = container.querySelector<HTMLElement>(
     ".galgame-fragment-panel",
   )!;
-  expect(structure).not.toHaveClass("is-drawer-open");
+  const workspace = container.querySelector(".galgame-editor-page")!;
+  expect(workspace).toHaveAttribute("data-mobile-panel", "script");
   fireEvent.click(
     screen.getByRole("button", { name: "打开剧本结构", hidden: true }),
   );
-  expect(structure).toHaveClass("is-drawer-open");
+  expect(workspace).toHaveAttribute("data-mobile-panel", "structure");
+  // jsdom does not evaluate the compact media query; browser tests cover visibility.
+  const panels = container.querySelector('nav[aria-label="剧本面板"]')!;
+  expect(
+    within(panels as HTMLElement).getByRole("button", {
+      name: "结构",
+      hidden: true,
+    }),
+  ).toHaveAttribute("aria-pressed", "true");
   fireEvent.click(
-    container.querySelector<HTMLButtonElement>(
-      ".galgame-structure-drawer-backdrop",
-    )!,
+    within(panels as HTMLElement).getByRole("button", {
+      name: "剧本",
+      hidden: true,
+    }),
   );
-  expect(structure).not.toHaveClass("is-drawer-open");
+  expect(workspace).toHaveAttribute("data-mobile-panel", "script");
+  expect(container.querySelector(".galgame-fragment-panel")).toBe(structure);
   Object.defineProperty(window, "innerWidth", {
     configurable: true,
     value: previousWidth,

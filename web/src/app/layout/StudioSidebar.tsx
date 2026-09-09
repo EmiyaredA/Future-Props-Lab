@@ -1,3 +1,4 @@
+import { ResponsiveSidebar } from "@shared/ui/ResponsiveSidebar";
 import { useState } from "react";
 import { BrandMark } from "@shared/ui/BrandMark";
 import { IntegrationIcon } from "@shared/ui/IntegrationIcon";
@@ -117,116 +118,118 @@ export function StudioSidebar({
     page === "audio-annotation-editor";
   const integrationsActive = page.startsWith("integrations-");
   return (
-    <aside className="studio-sidebar">
-      <div className="sidebar-brand">
-        <BrandMark size={36} />
-        <div>
-          <strong>未来道具研究所</strong>
-          <span>Future Props Lab</span>
-        </div>
-      </div>
-      <div className="sidebar-rule" />
-      <nav aria-label="主导航">
-        <button
-          className={`nav-primary${page === "home" ? " active" : ""}`}
-          aria-current={page === "home" ? "page" : undefined}
-          onClick={() => navigate("home")}
-        >
-          <HomeIcon />
-          <span>首页</span>
-        </button>
-        <button
-          className={`nav-primary${page === "apps" ? " active" : ""}`}
-          aria-current={page === "apps" ? "page" : undefined}
-          onClick={() => navigate("apps")}
-        >
-          <AppsIcon />
-          <span>AI应用</span>
-        </button>
-        <button
-          className={`nav-primary${page === "files" ? " active" : ""}`}
-          aria-current={page === "files" ? "page" : undefined}
-          onClick={() => navigate("files")}
-        >
-          <FilesIcon />
-          <span>文件管理</span>
-        </button>
-        <button
-          className={`nav-primary${toolsActive ? " active" : ""}`}
-          aria-current={toolsActive ? "page" : undefined}
-          onClick={() => navigate("tools")}
-        >
-          <CompassIcon />
-          <span>工具导航</span>
-        </button>
-        <button
-          className={`nav-primary${integrationsActive ? " active" : ""}`}
-          aria-current={integrationsActive ? "page" : undefined}
-          onClick={() => navigate("integrations-tool-apis")}
-        >
-          <IntegrationIcon />
-          <span>集成中心</span>
-        </button>
-        <button
-          className="nav-group"
-          aria-label="基模型"
-          aria-expanded={expanded}
-          onClick={() => setExpanded((value) => !value)}
-        >
-          <CubeIcon />
-          <span>基模型</span>
-          <Chevron open={expanded} />
-        </button>
-        {expanded ? (
-          <div className="nav-sub" role="group" aria-label="基模型子菜单">
-            <button
-              className={page === "model-test" ? "active" : ""}
-              aria-current={page === "model-test" ? "page" : undefined}
-              onClick={() => navigate("model-test")}
-            >
-              <TestIcon />
-              <span>模型测试</span>
-            </button>
-            <button
-              className={page === "model-test-tools" ? "active" : ""}
-              aria-current={page === "model-test-tools" ? "page" : undefined}
-              onClick={() => navigate("model-test-tools")}
-            >
-              <TestToolIcon />
-              <span>测试工具</span>
-            </button>
-            <button
-              className={page === "model-service" ? "active" : ""}
-              aria-current={page === "model-service" ? "page" : undefined}
-              onClick={() => navigate("model-service")}
-            >
-              <ServiceIcon />
-              <span>模型服务</span>
-            </button>
-            <button
-              className={page === "model-call-logs" ? "active" : ""}
-              aria-current={page === "model-call-logs" ? "page" : undefined}
-              onClick={() => navigate("model-call-logs")}
-            >
-              <LogsIcon />
-              <span>模型调用日志</span>
-            </button>
+    <ResponsiveSidebar label="主导航" routeKey={page}>
+      <aside className="studio-sidebar">
+        <div className="sidebar-brand">
+          <BrandMark size={36} />
+          <div>
+            <strong>未来道具研究所</strong>
+            <span>Future Props Lab</span>
           </div>
-        ) : null}
-      </nav>
-      <footer className="sidebar-footer">
-        {session ? <AccountWorkspacePanel session={session} /> : null}
+        </div>
         <div className="sidebar-rule" />
-        <button
-          className="docs-entry"
-          onClick={() =>
-            window.open("/docs.html", "_blank", "noopener,noreferrer")
-          }
-        >
-          文档中心
-        </button>
-        <ThemeToggle />
-      </footer>
-    </aside>
+        <nav aria-label="主导航">
+          <button
+            className={`nav-primary${page === "home" ? " active" : ""}`}
+            aria-current={page === "home" ? "page" : undefined}
+            onClick={() => navigate("home")}
+          >
+            <HomeIcon />
+            <span>首页</span>
+          </button>
+          <button
+            className={`nav-primary${page === "apps" ? " active" : ""}`}
+            aria-current={page === "apps" ? "page" : undefined}
+            onClick={() => navigate("apps")}
+          >
+            <AppsIcon />
+            <span>AI应用</span>
+          </button>
+          <button
+            className={`nav-primary${page === "files" ? " active" : ""}`}
+            aria-current={page === "files" ? "page" : undefined}
+            onClick={() => navigate("files")}
+          >
+            <FilesIcon />
+            <span>文件管理</span>
+          </button>
+          <button
+            className={`nav-primary${toolsActive ? " active" : ""}`}
+            aria-current={toolsActive ? "page" : undefined}
+            onClick={() => navigate("tools")}
+          >
+            <CompassIcon />
+            <span>工具导航</span>
+          </button>
+          <button
+            className={`nav-primary${integrationsActive ? " active" : ""}`}
+            aria-current={integrationsActive ? "page" : undefined}
+            onClick={() => navigate("integrations-tool-apis")}
+          >
+            <IntegrationIcon />
+            <span>集成中心</span>
+          </button>
+          <button
+            className="nav-group"
+            aria-label="基模型"
+            aria-expanded={expanded}
+            onClick={() => setExpanded((value) => !value)}
+          >
+            <CubeIcon />
+            <span>基模型</span>
+            <Chevron open={expanded} />
+          </button>
+          {expanded ? (
+            <div className="nav-sub" role="group" aria-label="基模型子菜单">
+              <button
+                className={page === "model-test" ? "active" : ""}
+                aria-current={page === "model-test" ? "page" : undefined}
+                onClick={() => navigate("model-test")}
+              >
+                <TestIcon />
+                <span>模型测试</span>
+              </button>
+              <button
+                className={page === "model-test-tools" ? "active" : ""}
+                aria-current={page === "model-test-tools" ? "page" : undefined}
+                onClick={() => navigate("model-test-tools")}
+              >
+                <TestToolIcon />
+                <span>测试工具</span>
+              </button>
+              <button
+                className={page === "model-service" ? "active" : ""}
+                aria-current={page === "model-service" ? "page" : undefined}
+                onClick={() => navigate("model-service")}
+              >
+                <ServiceIcon />
+                <span>模型服务</span>
+              </button>
+              <button
+                className={page === "model-call-logs" ? "active" : ""}
+                aria-current={page === "model-call-logs" ? "page" : undefined}
+                onClick={() => navigate("model-call-logs")}
+              >
+                <LogsIcon />
+                <span>模型调用日志</span>
+              </button>
+            </div>
+          ) : null}
+        </nav>
+        <footer className="sidebar-footer">
+          {session ? <AccountWorkspacePanel session={session} /> : null}
+          <div className="sidebar-rule" />
+          <button
+            className="docs-entry"
+            onClick={() =>
+              window.open("/docs.html", "_blank", "noopener,noreferrer")
+            }
+          >
+            文档中心
+          </button>
+          <ThemeToggle />
+        </footer>
+      </aside>
+    </ResponsiveSidebar>
   );
 }

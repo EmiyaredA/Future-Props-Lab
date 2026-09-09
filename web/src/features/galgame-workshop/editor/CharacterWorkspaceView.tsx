@@ -1,3 +1,5 @@
+import { useState } from "react";
+import { CompactPanelTabs } from "@shared/ui/CompactPanelTabs";
 import {
   Check,
   FileImage,
@@ -27,6 +29,7 @@ export function CharacterWorkspaceView({
 }: {
   model: CharacterWorkspaceViewModel;
 }) {
+  const [compactPanel, setCompactPanel] = useState("list");
   const {
     projectId,
     document,
@@ -83,6 +86,7 @@ export function CharacterWorkspaceView({
   } = model;
   return (
     <section
+      data-character-panel={compactPanel}
       className={`galgame-character-workspace ${
         expressionDetailLayout ? "is-expression-detail" : ""
       } ${workspaceMode === "stage" ? "is-stage-settings" : ""}`}
@@ -108,6 +112,15 @@ export function CharacterWorkspaceView({
           </button>
         ) : null}
       </header>
+      <CompactPanelTabs
+        label="角色编辑面板"
+        value={compactPanel}
+        onChange={setCompactPanel}
+        options={[
+          { value: "list", label: "角色列表" },
+          { value: "detail", label: "角色详情" },
+        ]}
+      />
       <CharacterListPanel model={model} />
 
       <main className="galgame-character-detail-panel">

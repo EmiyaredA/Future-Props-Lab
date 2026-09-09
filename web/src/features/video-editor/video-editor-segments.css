@@ -6,6 +6,7 @@
 
 .ve-segment-dialog {
   width: min(1180px, 96vw);
+  color: var(--text);
   max-height: 92vh;
   display: flex;
   overflow: hidden;
@@ -125,70 +126,9 @@
   white-space: nowrap;
 }
 
-.ve-segment-choice {
-  position: relative;
-  min-width: 0;
-}
-
-.ve-segment-choice summary {
-  padding: 0 10px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  font-size: 11px;
-  list-style: none;
-  cursor: pointer;
-}
-
-.ve-segment-choice summary::-webkit-details-marker {
-  display: none;
-}
-
-.ve-segment-choice summary svg {
-  width: 13px;
-  transition: transform 150ms ease;
-}
-
-.ve-segment-choice[open] summary svg {
-  transform: rotate(180deg);
-}
-
-.ve-segment-choice > div {
-  position: absolute;
-  z-index: 12;
-  top: calc(100% + 6px);
-  right: 0;
-  left: 0;
-  min-width: 138px;
-  padding: 5px;
-  border: 1px solid var(--border-strong);
-  border-radius: 11px;
-  background: var(--surface);
-  box-shadow: 0 16px 36px rgb(0 0 0 / 35%);
-}
-
-.ve-segment-choice > div button {
-  width: 100%;
-  min-height: 34px;
-  padding: 0 8px;
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  border: 0;
-  background: transparent;
-  font-size: 11px;
-  text-align: left;
-}
-
-.ve-segment-choice > div button svg,
-.ve-segment-choice > div button span {
-  width: 13px;
-  height: 13px;
-}
-
 .ve-segment-list {
-  min-height: 180px;
+  min-height: 0;
+  flex-shrink: 0;
   padding: 0 22px 16px;
   display: grid;
   gap: 10px;
@@ -198,7 +138,7 @@
 .ve-segment-list article {
   padding: 12px;
   display: grid;
-  grid-template-columns: 136px minmax(0, 1fr) 180px;
+  grid-template-columns: 32px 120px minmax(0, 1fr) 160px;
   align-items: center;
   gap: 14px;
   border: 1px solid var(--border);
@@ -245,7 +185,7 @@
 
 .ve-segment-main label {
   display: grid;
-  grid-template-columns: 68px 1fr;
+  grid-template-columns: 68px minmax(0, 1fr);
   align-items: center;
   gap: 8px;
   color: var(--faint);
@@ -435,18 +375,179 @@
 
 @media (max-width: 900px) {
   .ve-segment-batch {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .ve-segment-list article {
-    grid-template-columns: 110px 1fr;
+    grid-template-columns: 32px 100px minmax(0, 1fr);
   }
 
   .ve-segment-filename {
-    grid-column: 2;
+    grid-column: 3;
   }
 
   .ve-segment-configs {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.ve-segment-body {
+  min-height: 0;
+  overflow: auto;
+}
+.ve-segment-scope {
+  align-items: center;
+  flex-wrap: wrap;
+}
+.ve-segment-dialog .ve-segment-check {
+  width: 28px;
+  height: 28px;
+  min-height: 28px;
+  padding: 3px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: 1px solid var(--border-strong);
+  border-radius: 7px;
+}
+.ve-segment-check svg {
+  width: 18px;
+  height: 18px;
+}
+.ve-segment-check[aria-checked="true"],
+.ve-segment-import-toggle[aria-checked="true"] .ve-segment-check {
+  color: white;
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.ve-segment-list article[data-selected="false"] {
+  background: var(--surface);
+}
+.ve-segment-import {
+  margin: 0 22px 16px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+.ve-segment-import-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.ve-segment-import small {
+  color: var(--faint);
+}
+.ve-segment-dialog :is(button, input):focus-visible,
+.ve-segment-downloads button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.ve-segment-downloads {
+  min-width: 0;
+}
+.ve-segment-body > .ve-segment-downloads {
+  margin: 0 22px 16px;
+}
+.ve-segment-downloads > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.ve-segment-downloads ul {
+  max-height: 220px;
+  overflow: auto;
+  padding: 0;
+  list-style: none;
+}
+.ve-segment-downloads li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 6px 0;
+}
+.ve-segment-downloads li span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.ve-segment-downloads li button {
+  flex-shrink: 0;
+}
+.ve-segment-downloads p {
+  color: var(--danger);
+}
+@media (max-width: 600px) {
+  .ve-segment-backdrop {
+    padding: 8px;
+  }
+  .ve-segment-dialog {
+    width: 100%;
+    max-height: calc(var(--visible-height, 100dvh) - 16px);
+  }
+  .ve-segment-dialog > header > div {
+    align-items: flex-start;
+  }
+  .ve-segment-dialog > header > div > div {
+    display: block;
+  }
+  .ve-segment-scope button {
+    min-width: 0;
+  }
+  .ve-segment-list article {
+    grid-template-columns: 32px minmax(0, 1fr);
+  }
+  .ve-segment-thumb {
+    width: 120px;
+  }
+  .ve-segment-main,
+  .ve-segment-filename {
+    grid-column: 1 / -1;
+  }
+  .ve-segment-main input {
+    min-width: 0;
+  }
+  .ve-segment-target {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .ve-segment-dialog > footer {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .ve-segment-dialog > footer > span {
+    width: 100%;
+  }
+}
+
+.ve-segment-downloads button {
+  min-height: 36px;
+  padding: 6px 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  color: var(--text);
+  background: var(--surface-soft);
+}
+.ve-segment-downloads button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.ve-task-list article {
+  flex-wrap: wrap;
+}
+.ve-task-list article > div {
+  min-width: 0;
+}
+.ve-task-list article > .ve-segment-downloads {
+  flex: 1 1 100%;
+}
+
+.ve-segment-dialog .custom-select {
+  min-width: 0;
+}
+@media (max-width: 600px) {
+  .ve-segment-batch > strong,
+  .ve-segment-batch > .apply {
+    grid-column: 1 / -1;
   }
 }

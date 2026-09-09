@@ -154,7 +154,6 @@ export function useGalgameWorkshopEditorBase({
   const [focusedCharacterId, setFocusedCharacterId] = useState<string>();
   const [structureQuery, setStructureQuery] = useState("");
   const [expandedChapterId, setExpandedChapterId] = useState<string>();
-  const [structureDrawerOpen, setStructureDrawerOpen] = useState(false);
 
   useEffect(() => {
     storeTimelinePreferences(timelinePreferences);
@@ -754,7 +753,6 @@ export function useGalgameWorkshopEditorBase({
     setSelectedTimelineGapId,
     setStageViewportPreferences,
     setStaleVoiceBlocks,
-    setStructureDrawerOpen,
     setStructureQuery,
     setTimelinePreferences,
     setTimelinePreviewMs,
@@ -763,7 +761,6 @@ export function useGalgameWorkshopEditorBase({
     setWorkspace,
     stageViewportPreferences,
     staleVoiceBlocks,
-    structureDrawerOpen,
     structureQuery,
     terminates,
     timelineFragment,

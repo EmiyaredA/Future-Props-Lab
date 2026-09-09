@@ -14,12 +14,14 @@ import { useStudioSession } from "@app/StudioSession";
 import { galgameSpeakerImportSource } from "@app/integrations/galgameSpeakerImport";
 import {
   APPLICATION_DEFINITIONS,
+  THOUGHT_WORKSHOP_MODULE,
   GALGAME_WORKSHOP_MODULE,
   VISUAL_WORKSHOP_MODULE,
   VIDEO_EDITOR_MODULE,
 } from "@app/applicationRegistry";
 import {
   isGalgameWorkshopPage,
+  isThoughtWorkshopPage,
   isVisualWorkshopPage,
   isVideoEditorPage,
   parseRoute,
@@ -111,6 +113,8 @@ const VideoEditorProjectsPage = lazy(VIDEO_EDITOR_MODULE.pages.projects);
 const VideoEditorPage = lazy(VIDEO_EDITOR_MODULE.pages.editor);
 const VideoEditorTasksPage = lazy(VIDEO_EDITOR_MODULE.pages.tasks);
 
+const ThoughtWorkshopPage = lazy(THOUGHT_WORKSHOP_MODULE.pages.notes);
+
 function PageBoundary({ children }: { children: ReactNode }) {
   return (
     <Suspense fallback={<div className="page-loading">正在加载…</div>}>
@@ -125,22 +129,49 @@ export default function App() {
   const navigationGuard = useRef<
     ((continueNavigation: () => void) => boolean) | null
   >(null);
+  const routeRef = useRef(route);
+  routeRef.current = route;
   const page = route.page;
   useEffect(() => {
     if (window.location.pathname === "/")
       window.history.replaceState({}, "", "/home");
-    const pop = () => setRoute(parseRoute());
+    const pop = () => {
+      const next = parseRoute();
+      if (
+        navigationGuard.current?.(() => {
+          window.history.pushState(
+            {},
+            "",
+            pathFor(next.page, next.projectId, next.documentId),
+          );
+          setRoute(next);
+        })
+      ) {
+        const previous = routeRef.current;
+        window.history.pushState(
+          {},
+          "",
+          pathFor(previous.page, previous.projectId, previous.documentId),
+        );
+        return;
+      }
+      setRoute(next);
+    };
     window.addEventListener("popstate", pop);
     return () => window.removeEventListener("popstate", pop);
   }, []);
-  const commitNavigation = (next: AppPage, projectId?: string) => {
-    const path = pathFor(next, projectId);
+  const commitNavigation = (
+    next: AppPage,
+    projectId?: string,
+    documentId?: string,
+  ) => {
+    const path = pathFor(next, projectId, documentId);
     if (path !== window.location.pathname)
       window.history.pushState({}, "", path);
-    setRoute({ page: next, projectId });
+    setRoute({ page: next, projectId, documentId });
   };
-  const navigate = (next: AppPage, projectId?: string) => {
-    const commit = () => commitNavigation(next, projectId);
+  const navigate = (next: AppPage, projectId?: string, documentId?: string) => {
+    const commit = () => commitNavigation(next, projectId, documentId);
     if (navigationGuard.current?.(commit)) return;
     commit();
   };
@@ -152,11 +183,44 @@ export default function App() {
   );
   const navigatePath = (path: string) => {
     const next = parseRoute(path);
-    navigate(next.page, next.projectId);
+    navigate(next.page, next.projectId, next.documentId);
   };
 
   if (me.workspace.access_kind === "public_viewer") {
     return <PublicWorkspaceShowcase />;
+  }
+
+  if (isThoughtWorkshopPage(page)) {
+    return (
+      <PageBoundary>
+        <ThoughtWorkshopPage
+          key={me.workspace.id}
+          page={page}
+          projectId={route.projectId}
+          noteId={route.documentId}
+          onNavigate={(project, document, replace) => {
+            const next = project
+              ? "thought-workshop-editor"
+              : "thought-workshop-notes";
+            if (replace) {
+              window.history.replaceState(
+                {},
+                "",
+                pathFor(next, project, document),
+              );
+              setRoute({
+                page: next,
+                projectId: project,
+                documentId: document,
+              });
+            } else navigate(next, project, document);
+          }}
+          onBack={() => navigate("apps")}
+          onModels={() => navigate("model-service")}
+          registerNavigationGuard={registerNavigationGuard}
+        />
+      </PageBoundary>
+    );
   }
 
   if (page === "visual-workshop-canvas" && route.projectId) {

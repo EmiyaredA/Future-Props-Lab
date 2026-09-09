@@ -1,0 +1,212 @@
+:root[data-theme="dark"] .thought-shell {
+  --bg: #191a1b;
+  --surface: #202123;
+  --surface-soft: #252628;
+  --surface-hover: #2c2d2f;
+  --text: #e7e5e1;
+  --text-strong: #f5f3ef;
+  --muted: #a6a5a2;
+  --faint: #92928f;
+  --border: #303133;
+  --border-strong: #48494b;
+  --accent: #e68a63;
+  --accent-hover: #f39a75;
+  --accent-soft: #362823;
+  --accent-line: #684a3c;
+}
+.thought-shell .theme-toggle {
+  border: 0;
+  background: transparent;
+}
+.thought-shell .theme-toggle button.active {
+  box-shadow: none;
+  background: var(--surface-soft);
+}
+.thought-document {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  min-height: calc(100vh - 64px);
+  background: var(--bg);
+}
+.thought-document-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  min-height: 52px;
+  padding: 8px 28px 12px;
+  border-bottom: 1px solid var(--border);
+  position: relative;
+  z-index: 6;
+}
+.thought-document-bar .custom-select {
+  min-width: 84px;
+}
+.thought-document-bar .custom-select-trigger {
+  min-height: 34px;
+  font-size: 12px;
+  background: transparent;
+}
+.thought-document-bar .custom-select-menu {
+  right: 0;
+  left: auto;
+}
+.thought-document-bar .thought-directory-toggle {
+  background: transparent;
+  border-color: transparent;
+  padding-left: 0;
+}
+.thought-document-bar .thought-save-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 11px;
+  margin-right: auto;
+  padding-left: 12px;
+  border-left: 1px solid var(--border);
+}
+.thought-save-state.is-error,
+.thought-save-state.is-conflict {
+  color: var(--danger);
+}
+.thought-note-heading {
+  width: calc(100% - 64px);
+  max-width: 780px;
+  margin: 0 auto;
+  padding: 32px 0 8px;
+}
+.thought-note-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+.thought-note-meta > button,
+.thought-note-tags > button {
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  padding: 7px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.thought-note-meta > button:hover,
+.thought-note-tags > button:hover {
+  color: var(--text);
+  background: var(--surface-hover);
+}
+.thought-note-meta .thought-pin {
+  margin-left: auto;
+}
+.thought-title-input {
+  width: 100%;
+  padding: 0;
+  font-size: 36px;
+  font-weight: 650;
+  letter-spacing: -0.035em;
+  color: var(--text-strong);
+  border: 0;
+  background: transparent;
+  line-height: 1.5;
+  border-radius: 4px;
+}
+.thought-note-tags {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  min-height: 34px;
+  margin-top: 12px;
+}
+.thought-note-tags > button {
+  font-size: 12px;
+}
+.thought-tag {
+  padding: 4px 12px;
+  border-radius: 20px;
+  color: var(--muted);
+  background: var(--surface-soft);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+  max-width: 100%;
+}
+.thought-tags-input {
+  width: 100%;
+  min-height: 34px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 10px;
+  background: var(--surface);
+  font-size: 12px;
+}
+.thought-document-footer {
+  color: var(--muted);
+  font-size: 11px;
+  margin: auto 24px 0;
+  padding: 14px 0;
+  border-top: 1px solid var(--border);
+}
+.thought-document > .thought-error,
+.thought-document > .thought-conflict,
+.is-editing > .thought-error {
+  margin: 12px 24px;
+}
+.thought-document .thought-rich-editor {
+  flex: 1;
+}
+.thought-assistant {
+  margin-right: 16px;
+}
+@media (max-width: 1200px) {
+  .thought-assistant {
+    margin: 0;
+  }
+}
+@media (max-width: 700px) {
+  .thought-shell .theme-toggle {
+    padding: 0;
+  }
+  .thought-shell .theme-toggle button {
+    min-height: 28px;
+    font-size: 11px;
+  }
+  .thought-document-bar {
+    padding: 8px 16px;
+    gap: 6px;
+  }
+  .thought-document-bar .thought-save-state {
+    flex: 1;
+  }
+  .thought-document-bar .thought-save-state::after {
+    content: "";
+  }
+  .thought-document-bar .thought-directory-toggle {
+    min-width: 100px;
+  }
+  .thought-document-bar .thought-save-state {
+    min-width: calc(100% - 112px);
+  }
+  .thought-note-heading {
+    width: calc(100% - 32px);
+    padding: 24px 0 4px;
+  }
+  .thought-title-input {
+    font-size: 27px;
+  }
+  .thought-note-meta {
+    gap: 5px;
+  }
+  .thought-document {
+    min-height: calc(100dvh - 220px);
+  }
+  .thought-document-footer {
+    margin-left: 16px;
+    margin-right: 16px;
+  }
+}

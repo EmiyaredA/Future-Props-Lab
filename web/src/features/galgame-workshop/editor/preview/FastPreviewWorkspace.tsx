@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { CompactPanelTabs } from "@shared/ui/CompactPanelTabs";
+import "../fast-preview-compact.css";
 import {
   ExternalLink,
   Eye,
@@ -104,6 +106,7 @@ export function FastPreviewWorkspace({
     edits: FastPreviewStoryEdit[],
   ) => Promise<FastPreviewStoryEditResult>;
 }) {
+  const [mobilePanel, setMobilePanel] = useState("stage");
   const playerRef = useRef<StoryPlayerHandle>(null);
   const editPauseRequestedRef = useRef(false);
   const editRestorePendingRef = useRef(false);
@@ -438,6 +441,7 @@ export function FastPreviewWorkspace({
   return (
     <main
       className="galgame-fast-preview"
+      data-mobile-panel={mobilePanel}
       data-authoring-overlays={showAuthoringOverlays ? "true" : "false"}
     >
       <header>
@@ -488,6 +492,16 @@ export function FastPreviewWorkspace({
           </button>
         </nav>
       </header>
+      <CompactPanelTabs
+        label="预演面板"
+        value={mobilePanel}
+        onChange={setMobilePanel}
+        options={[
+          { value: "stage", label: "舞台" },
+          { value: "dialogue", label: "台词队列" },
+          { value: "inspector", label: "检查与编辑" },
+        ]}
+      />
       <section className="galgame-fast-preview-body">
         <FastPreviewDialogueQueue
           document={previewDocument}

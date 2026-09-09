@@ -13,7 +13,7 @@ from app.files.policy import (
     ALLOWED_FILES,
     display_name_without_original_extension,
     looks_like,
-    validate_json_file,
+    validate_file_structure,
 )
 from app.files.storage import TARGET_STORAGE_VERSION, AssetStorage
 from app.models import VisualAsset
@@ -93,8 +93,8 @@ class AssetLibrary:
                     target.write(chunk)
             if size == 0 or not looks_like(extension, bytes(head)):
                 raise AssetError("文件内容与声明的类型不匹配", code="invalid_file_content")
-            if extension == ".json" and not validate_json_file(temp_path):
-                raise AssetError("JSON 文件内容无效", code="invalid_file_content")
+            if not await asyncio.to_thread(validate_file_structure, temp_path, extension):
+                raise AssetError("文件内容或内部结构无效", code="invalid_file_content")
             os.replace(temp_path, final_path)
             row = VisualAsset(
                 workspace_id=workspace_id,
@@ -133,11 +133,13 @@ class AssetLibrary:
         video_editor_project_id: str | None = None,
         allowed_extensions: set[str] | None = None,
         max_bytes: int | None = None,
+        defer_persistence: bool = False,
     ) -> tuple[VisualAsset, Path]:
         """Stage an existing local file for an enclosing atomic use case.
 
         The caller owns the surrounding transaction and must remove the returned
-        path if a later database operation fails.
+        path if a later database operation fails. With defer_persistence, the caller
+        must also add the returned row after all file staging has completed.
         """
         safe_name = Path(filename).name
         extension = Path(safe_name).suffix.lower()
@@ -185,8 +187,8 @@ class AssetLibrary:
             size, head = await asyncio.to_thread(copy_file)
             if size == 0 or not looks_like(extension, head):
                 raise AssetError("文件内容与声明的类型不匹配", code="invalid_file_content")
-            if extension == ".json" and not validate_json_file(temp_path):
-                raise AssetError("JSON 文件内容无效", code="invalid_file_content")
+            if not await asyncio.to_thread(validate_file_structure, temp_path, extension):
+                raise AssetError("文件内容或内部结构无效", code="invalid_file_content")
             os.replace(temp_path, final_path)
             row = VisualAsset(
                 workspace_id=workspace_id,
@@ -204,8 +206,9 @@ class AssetLibrary:
                 ),
                 byte_size=size,
             )
-            self.session.add(row)
-            await self.session.flush()
+            if not defer_persistence:
+                self.session.add(row)
+                await self.session.flush()
             return row, final_path
         except Exception:
             temp_path.unlink(missing_ok=True)

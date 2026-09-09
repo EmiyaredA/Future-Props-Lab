@@ -16,6 +16,7 @@ from app.routes.models import (
     model_test_transcription,
 )
 from app.routes.public_workspace import router as public_workspace_router
+from app.routes.thought_workshop import router as thought_workshop_router
 from app.routes.tool_navigation import router as tool_navigation_router
 from app.routes.video_editor import router as video_editor_router
 from app.routes.visual_assistant import router as visual_assistant_router
@@ -47,3 +48,5 @@ api_router.include_router(visual_assistant_router, dependencies=[Depends(require
 api_router.include_router(visual_generation_router, dependencies=[Depends(require_studio_auth)])
 api_router.include_router(galgame_workshop_router, dependencies=[Depends(require_studio_auth)])
 api_router.include_router(video_editor_router, dependencies=[Depends(require_studio_auth)])
+
+api_router.include_router(thought_workshop_router, dependencies=[Depends(require_studio_auth)])
