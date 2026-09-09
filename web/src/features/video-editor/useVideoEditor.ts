@@ -81,6 +81,9 @@ export function useVideoEditor(projectId: string) {
   const [snapEnabled, setSnapEnabled] = useState(
     initialWorkspacePreferences.snapEnabled,
   );
+  const [speedRippleEnabled, setSpeedRippleEnabled] = useState(
+    initialWorkspacePreferences.speedRippleEnabled ?? true,
+  );
   const [notice, setNotice] = useState("");
   const [undoStack, setUndoStack] = useState<HistoryEntry[]>([]);
   const [redoStack, setRedoStack] = useState<HistoryEntry[]>([]);
@@ -379,6 +382,7 @@ export function useVideoEditor(projectId: string) {
     layout,
     preciseFrame,
     snapEnabled,
+    speedRippleEnabled,
   };
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -398,6 +402,7 @@ export function useVideoEditor(projectId: string) {
     layout,
     zoom,
     snapEnabled,
+    speedRippleEnabled,
   ]);
   useEffect(() => {
     const persist = () => {
@@ -438,7 +443,9 @@ export function useVideoEditor(projectId: string) {
     preciseFrame,
     setPreciseFrame,
     snapEnabled,
+    speedRippleEnabled,
     setSnapEnabled,
+    setSpeedRippleEnabled,
     notice,
     setNotice,
     commit,

@@ -24,7 +24,7 @@ export function linkedClipIds(
   );
 }
 
-export function snapClipStartUs({
+export function snapClipPosition({
   candidateUs,
   durationUs,
   targetTrackId,
@@ -34,6 +34,7 @@ export function snapClipStartUs({
   zoom,
   timelineEndUs,
   enabled,
+  minimumStartUs = 0,
 }: {
   candidateUs: number;
   durationUs: number;
@@ -44,37 +45,58 @@ export function snapClipStartUs({
   zoom: number;
   timelineEndUs: number;
   enabled: boolean;
+  minimumStartUs?: number;
 }) {
-  const frameAligned = snapUs(Math.max(0, candidateUs), fps);
-  if (!enabled) return frameAligned;
+  const frameAligned = Math.max(
+    minimumStartUs,
+    snapUs(Math.max(0, candidateUs), fps),
+  );
+  if (!enabled) return { startUs: frameAligned, guideUs: undefined };
 
-  const targets = new Set<number>([0, Math.max(0, timelineEndUs - durationUs)]);
+  const targets: { startUs: number; guideUs: number }[] = [
+    { startUs: 0, guideUs: 0 },
+    { startUs: timelineEndUs - durationUs, guideUs: timelineEndUs },
+  ];
   const targetTrack = tracks.find((track) => track.id === targetTrackId);
   for (const clip of targetTrack?.clips ?? []) {
     if (movingClipIds.has(clip.id)) continue;
-    targets.add(clip.timelineStartUs);
-    targets.add(clip.timelineStartUs - durationUs);
-    targets.add(clip.timelineStartUs + clip.durationUs);
-    targets.add(clip.timelineStartUs + clip.durationUs - durationUs);
+    for (const edge of [
+      clip.timelineStartUs,
+      clip.timelineStartUs + clip.durationUs,
+    ]) {
+      targets.push(
+        { startUs: edge, guideUs: edge },
+        { startUs: edge - durationUs, guideUs: edge },
+      );
+    }
   }
 
   const thresholdUs = Math.max(
     frameUs(fps),
     (TIMELINE_SNAP_DISTANCE_PX / Math.max(1, zoom)) * 1_000_000,
   );
-  let best = frameAligned;
+  let best = {
+    startUs: frameAligned,
+    guideUs: undefined as number | undefined,
+  };
   let bestDistance = Number.POSITIVE_INFINITY;
   for (const target of targets) {
-    if (target < 0) continue;
+    if (target.startUs < minimumStartUs) continue;
     // Media boundaries need not lie on the frame grid. Preserve the exact
     // seam so rounding cannot introduce a gap or an overlap.
-    const distance = Math.abs(target - frameAligned);
+    const distance = Math.abs(target.startUs - frameAligned);
     if (distance <= thresholdUs && distance < bestDistance) {
       best = target;
       bestDistance = distance;
     }
   }
   return best;
+}
+
+export function snapClipStartUs(
+  options: Parameters<typeof snapClipPosition>[0],
+) {
+  return snapClipPosition(options).startUs;
 }
 
 export function canPlaceClip(
@@ -100,11 +122,13 @@ export function clipPlacementError(
   tracks: VideoEditorTrack[],
   movingClipIds: Set<string>,
 ): string | undefined {
+  if (startUs < 0) return "片段不能移到时间轴起点之前";
   const target = tracks.find((track) => track.id === targetTrackId);
   if (!target) return "目标轨道已不存在，请重新选择轨道";
   const targetName = `${trackKindLabels[target.kind]}「${target.name}」`;
   if (target.locked) return `${targetName}已锁定，请先解锁再移动片段`;
   const source = tracks.find((track) => track.id === clip.trackId);
+  if (source?.locked) return "片段所在轨道已锁定，请先解锁再移动片段";
   if (
     source?.kind === "mixed" &&
     target.kind !== "mixed" &&

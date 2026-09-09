@@ -10379,6 +10379,16 @@ export interface components {
             /** Temporary Password */
             temporary_password: string;
         };
+        /** RestoreClipStatesOperation */
+        RestoreClipStatesOperation: {
+            /** Clips */
+            clips: components["schemas"]["VideoEditorClip"][];
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            type: "restoreClipStates";
+        };
         /** RevokeApiKeyIn */
         RevokeApiKeyIn: {
             /** Expected Revision */
@@ -10584,6 +10594,11 @@ export interface components {
             clipId: string;
             /** Playbackrate */
             playbackRate: number;
+            /**
+             * Ripple
+             * @default false
+             */
+            ripple: boolean;
             /**
              * @description discriminator enum property added by openapi-typescript
              * @enum {string}
@@ -11960,7 +11975,7 @@ export interface components {
             /** Expectedrevision */
             expectedRevision: number;
             /** Operations */
-            operations: (components["schemas"]["AddTrackOperation"] | components["schemas"]["UpdateSettingsOperation"] | components["schemas"]["SetAssetOrganizationOperation"] | components["schemas"]["UpdateTrackOperation"] | components["schemas"]["RemoveTrackOperation"] | components["schemas"]["ReorderTrackOperation"] | components["schemas"]["AddClipOperation"] | components["schemas"]["UpdateClipOperation"] | components["schemas"]["ClipIdOperation"] | components["schemas"]["MoveClipOperation"] | components["schemas"]["TrimClipOperation"] | components["schemas"]["SplitClipOperation"] | components["schemas"]["SetClipSpeedOperation"] | components["schemas"]["LinkClipsOperation"] | components["schemas"]["SeparateClipOperation"] | components["schemas"]["KeyframeOperation"] | components["schemas"]["SetTransitionOperation"])[];
+            operations: (components["schemas"]["AddTrackOperation"] | components["schemas"]["UpdateSettingsOperation"] | components["schemas"]["SetAssetOrganizationOperation"] | components["schemas"]["UpdateTrackOperation"] | components["schemas"]["RemoveTrackOperation"] | components["schemas"]["ReorderTrackOperation"] | components["schemas"]["AddClipOperation"] | components["schemas"]["UpdateClipOperation"] | components["schemas"]["ClipIdOperation"] | components["schemas"]["MoveClipOperation"] | components["schemas"]["TrimClipOperation"] | components["schemas"]["SplitClipOperation"] | components["schemas"]["SetClipSpeedOperation"] | components["schemas"]["RestoreClipStatesOperation"] | components["schemas"]["LinkClipsOperation"] | components["schemas"]["SeparateClipOperation"] | components["schemas"]["KeyframeOperation"] | components["schemas"]["SetTransitionOperation"])[];
             /** Requestid */
             requestId: string;
         };

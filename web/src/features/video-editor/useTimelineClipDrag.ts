@@ -5,11 +5,10 @@ import {
   type PointerEvent as ReactPointerEvent,
   type RefObject,
 } from "react";
-import { frameUs } from "./editorModel";
 import {
   clipPlacementError,
   linkedClipIds,
-  snapClipStartUs,
+  snapClipPosition,
 } from "./timelineSnap";
 import type {
   VideoEditorClip,
@@ -69,6 +68,7 @@ export function useTimelineClipDrag({
     event.preventDefault();
     event.stopPropagation();
     const pointerId = event.pointerId;
+    const origin = { x: event.clientX, y: event.clientY };
     const allClips = tracks.flatMap((track) => track.clips ?? []);
     const movingIds = linkedClipIds(
       allClips,
@@ -88,6 +88,11 @@ export function useTimelineClipDrag({
     let latestPointer: PointerEvent | undefined;
 
     const update = (pointer: PointerEvent) => {
+      if (
+        !moved &&
+        Math.hypot(pointer.clientX - origin.x, pointer.clientY - origin.y) < 3
+      )
+        return;
       // A translated clip still belongs to its source row in the DOM. Hit
       // test the stable row bounds, not the element under the moving clip.
       const row = rows.find((node) => {
@@ -100,7 +105,7 @@ export function useTimelineClipDrag({
         );
       });
       const targetTrackId = row?.dataset.trackId ?? clip.trackId;
-      const startUs = snapClipStartUs({
+      const { startUs, guideUs } = snapClipPosition({
         candidateUs: rawPositionUs(pointer.clientX) - grabOffsetUs,
         durationUs: clip.durationUs,
         targetTrackId,
@@ -110,15 +115,17 @@ export function useTimelineClipDrag({
         zoom,
         timelineEndUs: seconds * 1_000_000,
         enabled: snapEnabled,
+        minimumStartUs:
+          clip.timelineStartUs -
+          Math.min(...moving.map((item) => item.timelineStartUs)),
       });
       const deltaUs = startUs - clip.timelineStartUs;
-      moved ||=
-        Math.abs(deltaUs) >= frameUs(fps) || targetTrackId !== clip.trackId;
+      moved ||= deltaUs !== 0 || targetTrackId !== clip.trackId;
       const positions = new Map(
         moving.map((item) => [
           item.id,
           {
-            startUs: Math.max(0, item.timelineStartUs + deltaUs),
+            startUs: item.timelineStartUs + deltaUs,
             trackId: item.id === clip.id ? targetTrackId : item.trackId,
           },
         ]),
@@ -136,6 +143,7 @@ export function useTimelineClipDrag({
         })
         .find(Boolean);
       const valid = !error;
+      setSnapGuideUs(valid ? guideUs : undefined);
       if (
         preview?.valid === valid &&
         moving.every((item) => {
@@ -150,7 +158,6 @@ export function useTimelineClipDrag({
         return;
       preview = { positions, valid, error };
       setDragPreview(preview);
-      setSnapGuideUs(snapEnabled ? startUs : undefined);
     };
     const move = (pointer: PointerEvent) => {
       if (pointer.pointerId !== pointerId) return;
@@ -168,6 +175,7 @@ export function useTimelineClipDrag({
       window.removeEventListener("pointerup", finish);
       window.removeEventListener("pointercancel", cancel);
       window.removeEventListener("blur", cancel);
+      window.removeEventListener("keydown", keydown);
       cleanupRef.current = undefined;
     };
     const clearPreview = () => {
@@ -183,6 +191,9 @@ export function useTimelineClipDrag({
       cleanup();
       suppressClick();
       clearPreview();
+    };
+    const keydown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") cancel();
     };
     const finish = (pointer: PointerEvent) => {
       if (pointer.pointerId !== pointerId) return;
@@ -234,6 +245,7 @@ export function useTimelineClipDrag({
     window.addEventListener("pointerup", finish);
     window.addEventListener("pointercancel", cancel);
     window.addEventListener("blur", cancel);
+    window.addEventListener("keydown", keydown);
   };
   return { dragPreview, snapGuideUs, suppressClickRef, startClipDrag };
 }

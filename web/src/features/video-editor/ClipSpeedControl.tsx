@@ -1,13 +1,18 @@
 import { useEffect, useState } from "react";
+import { linkedClipIds } from "./timelineSnap";
 import type { VideoEditorClip, VideoEditorOperation } from "./types";
 
 export function ClipSpeedControl({
   clip,
   clips,
+  ripple = true,
+  onRippleChange,
   commit,
 }: {
   clip: VideoEditorClip;
   clips: VideoEditorClip[];
+  ripple?: boolean;
+  onRippleChange?: (value: boolean) => void;
   commit: (
     redo: VideoEditorOperation[],
     undo?: VideoEditorOperation[],
@@ -28,27 +33,36 @@ export function ClipSpeedControl({
       return;
     }
     if (saving || rate === currentRate) return;
-    const affected = [
-      clip,
-      ...clips.filter(
-        (item) =>
-          item.id !== clip.id &&
-          clip.linkGroupId &&
-          item.linkGroupId === clip.linkGroupId,
-      ),
-    ];
+    const allClips = clips.some((item) => item.id === clip.id)
+      ? clips
+      : [...clips, clip];
+    const speedIds = linkedClipIds(allClips, [clip.id]);
+    const followingIds = ripple
+      ? linkedClipIds(
+          allClips,
+          allClips
+            .filter(
+              (item) =>
+                item.trackId === clip.trackId &&
+                !speedIds.has(item.id) &&
+                item.timelineStartUs >= clip.timelineStartUs + clip.durationUs,
+            )
+            .map((item) => item.id),
+        )
+      : new Set<string>();
     const undo: VideoEditorOperation[] = [
-      ...affected.map((item) => ({
-        type: "removeClip" as const,
-        clipId: item.id,
-      })),
-      ...affected.map((item) => ({ type: "addClip" as const, clip: item })),
+      {
+        type: "restoreClipStates",
+        clips: allClips.filter(
+          (item) => speedIds.has(item.id) || followingIds.has(item.id),
+        ),
+      },
     ];
     setSaving(true);
     setError("");
     try {
       await commit(
-        [{ type: "setClipSpeed", clipId: clip.id, playbackRate: rate }],
+        [{ type: "setClipSpeed", clipId: clip.id, playbackRate: rate, ripple }],
         undo,
       );
     } catch (reason) {
@@ -68,6 +82,22 @@ export function ClipSpeedControl({
         </div>
         <span>{currentRate}×</span>
       </div>
+      <button
+        type="button"
+        role="switch"
+        aria-checked={ripple}
+        className="ve-speed-ripple"
+        disabled={saving}
+        onClick={() => onRippleChange?.(!ripple)}
+      >
+        <span>后续片段跟随</span>
+        <span className="ve-switch-indicator" aria-hidden />
+      </button>
+      <p className="ve-field-help">
+        {ripple
+          ? "同轨后续片段及其关联音频随时长变化移动，保留原有间隔。"
+          : "仅调整当前片段及关联媒体，后续片段保持原位。"}
+      </p>
       <div className="ve-speed-control">
         <label className="ve-stacked-field">
           <span>

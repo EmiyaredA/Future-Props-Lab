@@ -217,6 +217,19 @@ class SetClipSpeedOperation(BaseModel):
     type: Literal["setClipSpeed"]
     clip_id: str = Field(alias="clipId")
     playback_rate: float = Field(alias="playbackRate", ge=0.25, le=4)
+    ripple: bool = False
+
+
+class RestoreClipStatesOperation(BaseModel):
+    type: Literal["restoreClipStates"]
+    clips: list[VideoEditorClip] = Field(min_length=1)
+
+    @field_validator("clips")
+    @classmethod
+    def unique_clips(cls, clips: list[VideoEditorClip]) -> list[VideoEditorClip]:
+        if len({clip.id for clip in clips}) != len(clips):
+            raise ValueError("恢复片段 ID 不得重复")
+        return clips
 
 
 class SplitClipOperation(BaseModel):
@@ -291,6 +304,7 @@ VideoEditorTimelineOperation = Annotated[
     | TrimClipOperation
     | SplitClipOperation
     | SetClipSpeedOperation
+    | RestoreClipStatesOperation
     | LinkClipsOperation
     | SeparateClipOperation
     | KeyframeOperation

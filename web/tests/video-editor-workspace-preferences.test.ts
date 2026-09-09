@@ -15,6 +15,7 @@ describe("video editor workspace preferences", () => {
       timelineScrollLeft: 720,
       preciseFrame: false,
       snapEnabled: false,
+      speedRippleEnabled: false,
     });
 
     expect(loadVideoEditorWorkspacePreferences("editor-1")).toEqual({
@@ -26,6 +27,7 @@ describe("video editor workspace preferences", () => {
       timelineScrollLeft: 720,
       preciseFrame: false,
       snapEnabled: false,
+      speedRippleEnabled: false,
     });
     expect(loadVideoEditorWorkspacePreferences("editor-2")).toEqual(
       defaultVideoEditorWorkspacePreferences(),

@@ -18,6 +18,7 @@ export type VideoEditorWorkspacePreferences = {
   layout?: VideoEditorLayout;
   preciseFrame: boolean;
   snapEnabled?: boolean;
+  speedRippleEnabled?: boolean;
 };
 
 export function defaultVideoEditorWorkspacePreferences(): VideoEditorWorkspacePreferences {
@@ -31,6 +32,7 @@ export function defaultVideoEditorWorkspacePreferences(): VideoEditorWorkspacePr
     layout: { ...DEFAULT_EDITOR_LAYOUT },
     preciseFrame: true,
     snapEnabled: true,
+    speedRippleEnabled: true,
   };
 }
 
@@ -79,6 +81,10 @@ function normalize(
       typeof candidate.preciseFrame === "boolean"
         ? candidate.preciseFrame
         : defaults.preciseFrame,
+    speedRippleEnabled:
+      typeof candidate.speedRippleEnabled === "boolean"
+        ? candidate.speedRippleEnabled
+        : defaults.speedRippleEnabled,
     snapEnabled:
       typeof candidate.snapEnabled === "boolean"
         ? candidate.snapEnabled

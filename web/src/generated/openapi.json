@@ -16752,6 +16752,29 @@
         "title": "ResetPasswordOut",
         "type": "object"
       },
+      "RestoreClipStatesOperation": {
+        "properties": {
+          "clips": {
+            "items": {
+              "$ref": "#/components/schemas/VideoEditorClip"
+            },
+            "minItems": 1,
+            "title": "Clips",
+            "type": "array"
+          },
+          "type": {
+            "const": "restoreClipStates",
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "clips"
+        ],
+        "title": "RestoreClipStatesOperation",
+        "type": "object"
+      },
       "RevokeApiKeyIn": {
         "properties": {
           "expected_revision": {
@@ -17198,6 +17221,11 @@
             "minimum": 0.25,
             "title": "Playbackrate",
             "type": "number"
+          },
+          "ripple": {
+            "default": false,
+            "title": "Ripple",
+            "type": "boolean"
           },
           "type": {
             "const": "setClipSpeed",
@@ -20676,6 +20704,7 @@
                   "removeKeyframe": "#/components/schemas/KeyframeOperation",
                   "removeTrack": "#/components/schemas/RemoveTrackOperation",
                   "reorderTrack": "#/components/schemas/ReorderTrackOperation",
+                  "restoreClipStates": "#/components/schemas/RestoreClipStatesOperation",
                   "rippleDelete": "#/components/schemas/ClipIdOperation",
                   "separateClip": "#/components/schemas/SeparateClipOperation",
                   "setAssetOrganization": "#/components/schemas/SetAssetOrganizationOperation",
@@ -20730,6 +20759,9 @@
                 },
                 {
                   "$ref": "#/components/schemas/SetClipSpeedOperation"
+                },
+                {
+                  "$ref": "#/components/schemas/RestoreClipStatesOperation"
                 },
                 {
                   "$ref": "#/components/schemas/LinkClipsOperation"

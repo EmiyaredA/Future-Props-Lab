@@ -137,13 +137,53 @@ def apply_operations(document: dict, body: VideoEditorTimelineBatchIn) -> dict:
                 sourceInUs=data["sourceInUs"],
             )
         elif kind == "setClipSpeed":
-            _track, selected = _find_clip(result, data["clipId"])
+            selected_track, selected = _find_clip(result, data["clipId"])
             group = selected.get("linkGroupId")
+            old_end = selected["timelineStartUs"] + selected["durationUs"]
+            delta = (
+                max(
+                    1,
+                    floor(
+                        selected["durationUs"]
+                        * (selected.get("playbackRate", 1) / data["playbackRate"])
+                    ),
+                )
+                - selected["durationUs"]
+            )
+            speed_ids = {
+                clip["id"]
+                for track in result["tracks"]
+                for clip in track["clips"]
+                if clip["id"] == selected["id"] or (group and clip.get("linkGroupId") == group)
+            }
+            following = [
+                clip
+                for clip in selected_track["clips"]
+                if data["ripple"]
+                and clip["timelineStartUs"] >= old_end
+                and clip["id"] not in speed_ids
+            ]
+            following_ids = {clip["id"] for clip in following}
+            following_groups = {
+                clip["linkGroupId"] for clip in following if clip.get("linkGroupId")
+            }
             for track in result["tracks"]:
                 for clip in track["clips"]:
-                    if clip["id"] != selected["id"] and not (
-                        group and clip.get("linkGroupId") == group
-                    ):
+                    if clip["id"] not in speed_ids:
+                        if delta and (
+                            clip["id"] in following_ids
+                            or clip.get("linkGroupId") in following_groups
+                        ):
+                            if track.get("locked"):
+                                raise VideoEditorValidationError(
+                                    "后续片段的轨道已锁定", code="track_locked"
+                                )
+                            start = clip["timelineStartUs"] + delta
+                            if start < 0:
+                                raise VideoEditorValidationError(
+                                    "后续关联片段不能移到时间轴起点之前", code="invalid_clip_start"
+                                )
+                            clip["timelineStartUs"] = start
                         continue
                     if track.get("locked"):
                         raise VideoEditorValidationError("轨道已锁定", code="track_locked")
@@ -159,6 +199,17 @@ def apply_operations(document: dict, body: VideoEditorTimelineBatchIn) -> dict:
                                 duration, 10_000_000, round(clip[edge]["durationUs"] * ratio)
                             )
                     clip.update(durationUs=duration, playbackRate=data["playbackRate"])
+        elif kind == "restoreClipStates":
+            for restored in data["clips"]:
+                track, current = _find_clip(result, restored["id"])
+                if track.get("locked"):
+                    raise VideoEditorValidationError("恢复片段的轨道已锁定", code="track_locked")
+                if restored["trackId"] != track["id"]:
+                    raise VideoEditorValidationError(
+                        "恢复片段不能改变所属轨道", code="invalid_track_kind"
+                    )
+                current.clear()
+                current.update(restored)
         elif kind == "splitClip":
             selected_track, selected_clip = _find_clip(result, data["clipId"])
             group_id = selected_clip.get("linkGroupId")

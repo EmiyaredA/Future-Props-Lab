@@ -65,7 +65,9 @@ export function VideoEditorAssetPanel({
   onAdd,
   onAddGenerated,
   onOrganizationChange,
+  onTimelineAssetDrag,
 }: {
+  onTimelineAssetDrag?: (asset?: VideoEditorAsset) => void;
   projectId: string;
   assets: VideoEditorAsset[];
   organization?: VideoEditorAssetOrganization;
@@ -216,8 +218,12 @@ export function VideoEditorAssetPanel({
         onDragStart={(event) => {
           event.dataTransfer.effectAllowed = "copyMove";
           event.dataTransfer.setData(ORGANIZE_ASSET_TYPE, asset.id);
-          if (ready) event.dataTransfer.setData(TIMELINE_ASSET_TYPE, asset.id);
+          if (ready) {
+            event.dataTransfer.setData(TIMELINE_ASSET_TYPE, asset.id);
+            onTimelineAssetDrag?.(asset);
+          }
         }}
+        onDragEnd={() => onTimelineAssetDrag?.()}
         onDragOver={allowAssetDrop}
         onDrop={(event) => dropAsset(event, folderId, asset.id)}
       >

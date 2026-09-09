@@ -45,6 +45,7 @@ export function VideoEditorPage({
   const [exportOpen, setExportOpen] = useState(false);
   const [segmentExportOpen, setSegmentExportOpen] = useState(false);
   const [segmentExportClipId, setSegmentExportClipId] = useState<string>();
+  const [draggingAsset, setDraggingAsset] = useState<VideoEditorAsset>();
   const [titleDraft, setTitleDraft] = useState("");
   if (editor.project.isLoading || editor.timeline.isLoading)
     return <div className="ve-editor-state">正在装配剪辑工作区…</div>;
@@ -76,7 +77,7 @@ export function VideoEditorPage({
     const operations = operationsForAsset(
       asset,
       tracks,
-      snapUs(startUs, fps),
+      trackId ? startUs : snapUs(startUs, fps),
       trackId,
     );
     if (operations.length) void editor.commit(operations);
@@ -260,6 +261,7 @@ export function VideoEditorPage({
             organization={timeline.document.assetOrganization}
             disabled={editor.saving}
             onAdd={addAsset}
+            onTimelineAssetDrag={setDraggingAsset}
             onAddGenerated={addGenerated}
             onOrganizationChange={(organization) =>
               void editor.commit(
@@ -295,6 +297,8 @@ export function VideoEditorPage({
             {...workspaceLayout.separator("inspectorWidth")}
           />
           <VideoEditorInspector
+            speedRippleEnabled={editor.speedRippleEnabled}
+            setSpeedRippleEnabled={editor.setSpeedRippleEnabled}
             clip={editor.selected}
             clips={tracks.flatMap((track) => track.clips ?? [])}
             playheadUs={editor.playheadUs}
@@ -402,6 +406,7 @@ export function VideoEditorPage({
             setSegmentExportClipId(clipId);
             setSegmentExportOpen(true);
           }}
+          draggingAsset={draggingAsset}
           snapEnabled={editor.snapEnabled}
           setSnapEnabled={editor.setSnapEnabled}
           onNotice={editor.setNotice}

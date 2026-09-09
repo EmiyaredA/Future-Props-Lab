@@ -18,11 +18,15 @@ const clipKindLabels: Record<VideoEditorClip["kind"], string> = {
 export function VideoEditorInspector({
   clip,
   clips = [],
+  speedRippleEnabled = true,
+  setSpeedRippleEnabled,
   playheadUs,
   commit,
 }: {
   clip?: VideoEditorClip;
   clips?: VideoEditorClip[];
+  speedRippleEnabled?: boolean;
+  setSpeedRippleEnabled?: (value: boolean) => void;
   playheadUs: number;
   commit: (
     redo: VideoEditorOperation[],
@@ -244,6 +248,8 @@ export function VideoEditorInspector({
           key={clip.id}
           clip={clip}
           clips={clips}
+          ripple={speedRippleEnabled}
+          onRippleChange={setSpeedRippleEnabled}
           commit={commit}
         />
       ) : null}

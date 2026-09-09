@@ -15,6 +15,7 @@ import {
   VideoEditorSeparator,
   type VideoEditorSeparatorProps,
 } from "./VideoEditorSeparator";
+import { useTimelineAssetDrop } from "./useTimelineAssetDrop";
 import { useTimelineClipDrag } from "./useTimelineClipDrag";
 import type {
   VideoEditorAsset,
@@ -40,11 +41,13 @@ export function VideoEditorTimeline({
   selectClip,
   commit,
   onDropAsset,
+  draggingAsset,
   snapEnabled = true,
   setSnapEnabled = () => undefined,
   onNotice,
   onRequestSegmentExport,
 }: {
+  draggingAsset?: VideoEditorAsset;
   timeline: Timeline;
   assets: VideoEditorAsset[];
   playheadUs: number;
@@ -223,6 +226,19 @@ export function VideoEditorTimeline({
       commit,
       onNotice,
     });
+  const { assetGuideUs, dragOver, drop, dragLeave } = useTimelineAssetDrop({
+    draggingAsset,
+    assets,
+    tracks,
+    rawPositionUs,
+    fps,
+    zoom,
+    seconds,
+    snapEnabled,
+    onDropAsset,
+    onNotice,
+  });
+  const guideUs = snapGuideUs ?? assetGuideUs;
   const deleteSelected = (ripple = false) => {
     if (!selected) return;
     void commit(
@@ -457,10 +473,10 @@ export function VideoEditorTimeline({
                   className="ve-playhead"
                   style={{ left: `${(playheadUs / 1_000_000) * zoom}px` }}
                 />
-                {snapGuideUs != null ? (
+                {guideUs != null ? (
                   <i
                     className="ve-snap-guide"
-                    style={{ left: `${(snapGuideUs / 1_000_000) * zoom}px` }}
+                    style={{ left: `${(guideUs / 1_000_000) * zoom}px` }}
                     aria-hidden
                   />
                 ) : null}
@@ -475,43 +491,9 @@ export function VideoEditorTimeline({
                         setPlayheadUs(positionUs(event.clientX));
                       }
                     }}
-                    onDragOver={(event) => event.preventDefault()}
-                    onDrop={(event) => {
-                      const asset = assets.find(
-                        (item) =>
-                          item.id ===
-                          event.dataTransfer.getData(
-                            "application/x-video-editor-asset",
-                          ),
-                      );
-                      if (asset)
-                        onDropAsset(asset, track.id, positionUs(event.clientX));
-                      const clipId = event.dataTransfer.getData(
-                        "application/x-video-editor-clip",
-                      );
-                      const clip = clipById.get(clipId);
-                      if (clip && !track.locked) {
-                        const start = positionUs(event.clientX);
-                        void commit(
-                          [
-                            {
-                              type: "moveClip",
-                              clipId,
-                              trackId: track.id,
-                              timelineStartUs: start,
-                            },
-                          ],
-                          [
-                            {
-                              type: "moveClip",
-                              clipId,
-                              trackId: clip.trackId,
-                              timelineStartUs: clip.timelineStartUs,
-                            },
-                          ],
-                        );
-                      }
-                    }}
+                    onDragOver={(event) => dragOver(event, track.id)}
+                    onDragLeave={dragLeave}
+                    onDrop={(event) => drop(event, track.id)}
                   >
                     {(track.clips ?? []).map((clip: VideoEditorClip) => (
                       <button

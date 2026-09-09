@@ -34,6 +34,7 @@ from app.schemas.video_editor.timeline import (
     MoveClipOperation,
     RemoveTrackOperation,
     ReorderTrackOperation,
+    RestoreClipStatesOperation,
     SeparateClipOperation,
     SetAssetOrganizationOperation,
     SetClipSpeedOperation,
