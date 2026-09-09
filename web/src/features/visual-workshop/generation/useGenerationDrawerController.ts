@@ -225,6 +225,10 @@ export function useGenerationDrawerController({
   const selectedImageSize =
     availableImageSizes.find((option) => option.value === size) ??
     availableImageSizes[0];
+  const draftPrompt = imageDraft?.prompt ?? videoDraft?.prompt ?? "";
+  useEffect(() => {
+    setPrompt((current) => (current === draftPrompt ? current : draftPrompt));
+  }, [draftPrompt]);
   const persistDraft = useCallback(
     (changes: Record<string, unknown> = {}, immediate = false) => {
       if (!lockedKind || !onDraftChange) return;

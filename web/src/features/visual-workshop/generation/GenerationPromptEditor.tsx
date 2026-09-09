@@ -39,6 +39,7 @@ export function GenerationPromptEditor({
   placeholder,
   onChange,
   onBlur,
+  canvasHistoryShortcuts = false,
 }: {
   value: string;
   assets: ManagedFile[];
@@ -46,6 +47,7 @@ export function GenerationPromptEditor({
   placeholder: string;
   onChange: (value: string) => void;
   onBlur?: () => void;
+  canvasHistoryShortcuts?: boolean;
 }) {
   const editorRef = useRef<HTMLDivElement>(null);
   const lastCaret = useRef<PromptCaret | undefined>(undefined);
@@ -112,12 +114,16 @@ export function GenerationPromptEditor({
       if (value !== nextProjected) onChange(nextProjected);
       return;
     }
-    if (document.activeElement === editorRef.current && value !== projected)
+    if (
+      !canvasHistoryShortcuts &&
+      document.activeElement === editorRef.current &&
+      value !== projected
+    )
       return;
     pendingDomSync.current = true;
     setParts(nextParts);
     if (value !== nextProjected) onChange(nextProjected);
-  }, [assets, onChange, parts, value]);
+  }, [assets, canvasHistoryShortcuts, onChange, parts, value]);
 
   useEffect(() => setActiveOption(0), [query]);
 
@@ -474,6 +480,9 @@ export function GenerationPromptEditor({
         aria-multiline="true"
         aria-autocomplete="list"
         aria-expanded={Boolean(mention)}
+        data-canvas-history-shortcuts={
+          canvasHistoryShortcuts ? "true" : undefined
+        }
         data-empty={!promptProjection(parts).length}
         data-placeholder={placeholder}
         contentEditable

@@ -60,6 +60,9 @@ export function useCanvasKeyboardShortcuts({
       const insideModal =
         event.target instanceof Element &&
         Boolean(event.target.closest('[role="dialog"][aria-modal="true"]'));
+      const usesCanvasHistory =
+        event.target instanceof Element &&
+        Boolean(event.target.closest("[data-canvas-history-shortcuts='true']"));
       if (modifier && !insideModal && ["+", "=", "-", "0"].includes(shortcut)) {
         event.preventDefault();
         if (shortcut === "-") zoomOut();
@@ -67,18 +70,18 @@ export function useCanvasKeyboardShortcuts({
         else zoomIn();
         return;
       }
-      if (editing || insideModal) return;
-      if (modifier && shortcut === "z") {
+      if (
+        modifier &&
+        !insideModal &&
+        (shortcut === "z" || shortcut === "y") &&
+        (!editing || usesCanvasHistory)
+      ) {
         event.preventDefault();
-        if (event.shiftKey) redo();
+        if (shortcut === "y" || event.shiftKey) redo();
         else undo();
         return;
       }
-      if (modifier && shortcut === "y") {
-        event.preventDefault();
-        redo();
-        return;
-      }
+      if (editing || insideModal) return;
       if ((event.metaKey || event.ctrlKey) && shortcut === "a") {
         event.preventDefault();
         selectAllNodes();

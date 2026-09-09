@@ -99,6 +99,7 @@ export function CompactImageGenerationDrawer({
               assets={promptAssets}
               label="图片提示词"
               placeholder="描述你想生成的画面…"
+              canvasHistoryShortcuts
               onChange={(value) => {
                 setPrompt(value);
                 persistDraft({ prompt: value });

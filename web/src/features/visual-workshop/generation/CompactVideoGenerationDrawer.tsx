@@ -282,6 +282,7 @@ export function CompactVideoGenerationDrawer({
               assets={promptAssets}
               label="视频提示词"
               placeholder="描述您的修改或生成需求…"
+              canvasHistoryShortcuts
               onChange={(value) => {
                 setPrompt(value);
                 persistDraft({ prompt: value });

@@ -184,6 +184,14 @@ export function useCanvasPersistence(
     ) => {
       setNodes((current) => {
         const next = typeof updater === "function" ? updater(current) : updater;
+        if (next === current) {
+          if (immediate) {
+            if (autoSave.current) clearTimeout(autoSave.current);
+            autoSave.current = undefined;
+            enqueueSave(current);
+          }
+          return current;
+        }
         if (trackHistory) {
           recordHistory({ nodes: current, edges: edgesRef.current });
         }
@@ -202,15 +210,21 @@ export function useCanvasPersistence(
   );
   const patchNode = useCallback(
     (nodeId: string, patch: Partial<VisualCanvasNode>, immediate = false) => {
-      replaceNodes(
-        (current) =>
-          current.map((node) =>
-            node.id === nodeId
-              ? ({ ...node, ...patch } as VisualCanvasNode)
-              : node,
-          ),
-        immediate,
-      );
+      replaceNodes((current) => {
+        let changed = false;
+        const next = current.map((node) => {
+          if (node.id !== nodeId) return node;
+          const record = node as unknown as Record<string, unknown>;
+          const unchanged = Object.entries(patch).every(
+            ([key, value]) =>
+              JSON.stringify(record[key]) === JSON.stringify(value),
+          );
+          if (unchanged) return node;
+          changed = true;
+          return { ...node, ...patch } as VisualCanvasNode;
+        });
+        return changed ? next : current;
+      }, immediate);
     },
     [replaceNodes],
   );

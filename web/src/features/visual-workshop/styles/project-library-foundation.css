@@ -102,11 +102,11 @@
 .canvas-edge-layer path.preview {
   stroke: color-mix(in srgb, var(--accent) 75%, white);
   stroke-dasharray: 7 6;
-  pointer-events: none;
 }
 
 .canvas-node {
   position: absolute;
+  z-index: 2;
   overflow: hidden;
   border: 1px solid color-mix(in srgb, var(--border-strong) 82%, transparent);
   border-radius: 13px;
@@ -119,11 +119,6 @@
 .canvas-node.text {
   width: 300px;
   height: 180px;
-}
-
-.canvas-node.image {
-  width: 320px;
-  height: 214px;
 }
 
 .canvas-node.image,
@@ -147,6 +142,7 @@
 }
 
 .canvas-node.selected {
+  z-index: 5;
   border-color: var(--accent);
   box-shadow:
     0 0 0 2px color-mix(in srgb, var(--accent) 28%, transparent),
@@ -155,7 +151,6 @@
 
 .canvas-node.image.selected,
 .canvas-node.video.selected {
-  z-index: 5;
   border: 0;
   box-shadow: none;
 }
@@ -268,12 +263,7 @@
 
 /* Keep the floating toolbar out of the way while the node itself is being pressed;
    a simple click can expose it after release without showing it during a hold. */
-.canvas-node:active:not(:has(.canvas-node-actions:active))
-  .canvas-node-actions {
-  visibility: hidden;
-  pointer-events: none;
-}
-
+.canvas-node:active:not(:has(.canvas-node-actions:active)) .canvas-node-actions,
 .canvas-node:has(> .canvas-node-media:active) .canvas-node-actions {
   visibility: hidden;
   pointer-events: none;

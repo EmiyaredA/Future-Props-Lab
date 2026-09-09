@@ -379,6 +379,41 @@ test("undoes and redoes canvas node changes with keyboard shortcuts", async () =
   );
 });
 
+test("undoes and redoes node prompt edits while the prompt editor is focused", async () => {
+  const user = userEvent.setup();
+  const { container } = renderCanvas();
+  expect(await screen.findByText("未命名项目")).toBeInTheDocument();
+  const surface = container.querySelector(".visual-canvas-surface")!;
+
+  fireEvent.contextMenu(surface, { clientX: 260, clientY: 220 });
+  await user.click(screen.getByRole("menuitem", { name: "添加图片节点" }));
+  const promptEditor = screen.getByRole("textbox", { name: "图片提示词" });
+
+  await user.click(promptEditor);
+  await user.type(promptEditor, "光");
+  expect(promptEditor).toHaveAttribute("data-empty", "false");
+
+  fireEvent.keyDown(promptEditor, { key: "z", ctrlKey: true });
+  await waitFor(() =>
+    expect(promptEditor).toHaveAttribute("data-empty", "true"),
+  );
+
+  fireEvent.keyDown(promptEditor, {
+    key: "z",
+    ctrlKey: true,
+    shiftKey: true,
+  });
+  await waitFor(() =>
+    expect(promptEditor).toHaveAttribute("data-empty", "false"),
+  );
+  expect(promptEditor).toHaveTextContent("光");
+
+  await user.type(promptEditor, "影");
+  await user.click(screen.getByRole("button", { name: "展开图片生成器" }));
+  fireEvent.keyDown(window, { key: "z", ctrlKey: true });
+  await waitFor(() => expect(promptEditor).toHaveTextContent("光"));
+});
+
 test.each([
   ["image", "图片"],
   ["video", "视频"],

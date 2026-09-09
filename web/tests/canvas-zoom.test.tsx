@@ -64,6 +64,11 @@ function HistoryShortcutHarness({
   return (
     <>
       <input aria-label="编辑框" />
+      <div
+        aria-label="画布提示词"
+        contentEditable
+        data-canvas-history-shortcuts="true"
+      />
       <div role="dialog" aria-modal="true">
         <button>弹窗按钮</button>
       </div>
@@ -108,13 +113,21 @@ test("routes canvas undo and redo shortcuts while preserving editor and modal in
   expect(inputShortcut.defaultPrevented).toBe(false);
   expect(undo).toHaveBeenCalledTimes(1);
 
+  const prompt = screen.getByLabelText("画布提示词");
+  expect(
+    dispatchShortcut("z", prompt, { ctrlKey: true }).defaultPrevented,
+  ).toBe(true);
+  expect(undo).toHaveBeenCalledTimes(2);
+  dispatchShortcut("y", prompt, { ctrlKey: true });
+  expect(redo).toHaveBeenCalledTimes(3);
+
   const modalShortcut = dispatchShortcut(
     "z",
     screen.getByRole("button", { name: "弹窗按钮" }),
     { ctrlKey: true },
   );
   expect(modalShortcut.defaultPrevented).toBe(false);
-  expect(undo).toHaveBeenCalledTimes(1);
+  expect(undo).toHaveBeenCalledTimes(2);
 });
 
 test("keeps the zoom anchor world position stable", () => {
