@@ -1,3 +1,4 @@
+import { useWorkspacePermission } from "@platform/auth/WorkspacePermissions";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -70,6 +71,7 @@ export function VisualWorkshopTasksPage({
   onOpenProject: (projectId: string) => void;
   onOpenAssets: (projectId: string) => void;
 }) {
+  const canWrite = useWorkspacePermission("content.write");
   const client = useQueryClient();
   const [projectId, setProjectId] = useState("");
   const [kind, setKind] = useState<"" | "image" | "video">("");
@@ -256,7 +258,7 @@ export function VisualWorkshopTasksPage({
                       <ExternalLink aria-hidden /> 打开素材
                     </button>
                   ) : null}
-                  {task.can_retry_materialization ? (
+                  {canWrite && task.can_retry_materialization ? (
                     <button
                       disabled={retry.isPending}
                       onClick={() => retry.mutate(task.id)}

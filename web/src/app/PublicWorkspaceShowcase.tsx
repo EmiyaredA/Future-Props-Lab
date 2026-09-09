@@ -17,6 +17,7 @@ type PublicAsset = {
   preview_url: string;
 };
 type PublicProject = {
+  is_official: boolean;
   id: string;
   title: string;
   status: string;
@@ -85,7 +86,14 @@ export function PublicWorkspaceShowcase() {
               <article className="showcase-project" key={project.id}>
                 <div>
                   <small>{project.status}</small>
-                  <h3>{project.title}</h3>
+                  <h3>
+                    {project.title}{" "}
+                    {project.is_official && (
+                      <small className="workshop-status completed">
+                        官方作品
+                      </small>
+                    )}
+                  </h3>
                 </div>
                 <AssetGallery assets={project.assets} assetUrl={assetUrl} />
                 <button
@@ -237,7 +245,12 @@ function ShowcaseSection({
           <article className="showcase-project" key={project.id}>
             <div>
               <small>{project.kind || project.status}</small>
-              <h3>{project.title}</h3>
+              <h3>
+                {project.title}{" "}
+                {project.is_official && (
+                  <small className="workshop-status completed">官方作品</small>
+                )}
+              </h3>
             </div>
             <AssetGallery assets={project.assets} assetUrl={assetUrl} />
           </article>

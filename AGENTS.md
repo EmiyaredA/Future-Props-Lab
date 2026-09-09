@@ -68,6 +68,10 @@
   `AssetStorage` 的项目路径与写入方法必须显式传入 `workspace_id`。
   根资源必须直接保存 `workspace_id`，子资源通过已校验的根资源继承；跨 Workspace 的 ID 一律
   按不存在处理。后台执行器必须从任务记录恢复 Workspace，不能依赖请求上下文。
+- 固定 Workspace 权限由 `accounts/permissions.py` 维护，业务 HTTP/SSE 操作必须登记在
+  `accounts/route_permissions.py`；架构测试禁止未登记路由。Web 统一消费 Principal 的有效权限，
+  只读浏览页面由各功能模块拥有，账号查询键由 `features/accounts/queryKeys.ts` 唯一维护。
+- 平台模板同步项与运行额度记录属于账号治理，跨空间访问由 `accounts/` 显式校验；固定演示运行时 `demo_runtime/` 不得依赖账号治理或模型目录，治理入口仍在 `accounts/`。
 - Web 不保存密码、Session、CSRF 或 Management API Key 明文；Session 只使用 HttpOnly Cookie，
   写请求统一携带可读 CSRF Cookie 对应的请求头。API Key 明文和临时密码只允许展示一次。
 - 修改安装、启动、环境变量、依赖或目录路径时，同步检查根与 Web 的 `package.json`、

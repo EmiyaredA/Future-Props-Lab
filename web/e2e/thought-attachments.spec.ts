@@ -55,6 +55,27 @@ test("visible insert controls, file cards, downloads and portable archives acros
   await expect(prose.locator(".thought-image img")).toHaveCount(1);
   await prose.locator(".thought-image img").click();
   await page.getByLabel("图片宽度", { exact: true }).fill("120");
+  await page.getByLabel("图片图注", { exact: true }).fill("灵感色卡图注");
+  await page.getByRole("button", { name: "图片居中", exact: true }).click();
+  await page.getByRole("button", { name: "裁剪", exact: true }).click();
+  const cropDialog = page.getByRole("dialog", { name: "裁剪图片" });
+  await cropDialog.getByRole("button", { name: "4:3", exact: true }).click();
+  await page.screenshot({
+    path: testInfo.outputPath("image-crop-1600-light.png"),
+  });
+  await page.setViewportSize({ width: 390, height: 844 });
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth + 2,
+    ),
+  ).toBe(true);
+  await page.screenshot({
+    path: testInfo.outputPath("image-crop-390-light.png"),
+  });
+  await page.setViewportSize({ width: 1600, height: 1000 });
+  await cropDialog
+    .getByRole("button", { name: "应用裁剪", exact: true })
+    .click();
   await prose.press("ControlOrMeta+End");
   await prose.press("Enter");
   const chooser = page.waitForEvent("filechooser");
@@ -84,9 +105,14 @@ test("visible insert controls, file cards, downloads and portable archives acros
   await prose.press("Space");
   await expect(prose.locator('a[href="https://example.com"]')).toBeVisible();
   await page.getByRole("button", { name: "保存", exact: true }).click();
-  await expect(page.getByText("已保存", { exact: true })).toBeVisible();
+  await expect(page.locator(".thought-save-state")).toContainText("已保存");
   await page.reload();
   await expect(prose.locator(".thought-attachment")).toHaveCount(2);
+  await expect(prose.locator(".thought-image-caption")).toHaveText(
+    "灵感色卡图注",
+  );
+  await expect(prose.locator(".thought-image-align-center")).toBeVisible();
+  await expect(prose.locator(".thought-image-crop-viewport")).toBeVisible();
   const fileDownload = page.waitForEvent("download");
   await page
     .getByRole("button", { name: "下载 项目计划.txt", exact: true })
@@ -131,11 +157,13 @@ test("visible insert controls, file cards, downloads and portable archives acros
   expect(
     Object.keys(htmlFiles).filter((k) => k.startsWith("attachments/")),
   ).toHaveLength(2);
-  expect(
-    strFromU8(
-      htmlFiles[Object.keys(htmlFiles).find((k) => k.endsWith(".html"))!],
-    ),
-  ).toContain("attachments/");
+  const exportedHtml = strFromU8(
+    htmlFiles[Object.keys(htmlFiles).find((k) => k.endsWith(".html"))!],
+  );
+  expect(exportedHtml).toContain("attachments/");
+  expect(exportedHtml).toContain("thought-export-image-crop");
+  expect(exportedHtml).toContain("<figcaption>灵感色卡图注</figcaption>");
+  expect(exportedHtml).toContain('data-align="center"');
   const mdDownload = page.waitForEvent("download");
   await page.getByRole("combobox", { name: "导出笔记", exact: true }).click();
   await page.getByRole("option", { name: "Markdown", exact: true }).click();
@@ -145,6 +173,10 @@ test("visible insert controls, file cards, downloads and portable archives acros
   expect(
     Object.keys(files).filter((k) => k.startsWith("attachments/")),
   ).toHaveLength(2);
+  const markdown = strFromU8(
+    files[Object.keys(files).find((key) => key.endsWith(".md"))!],
+  );
+  expect(markdown).toContain("*灵感色卡图注*");
   const mdImported = page.waitForResponse(
     (r) =>
       r.url().includes("/thought-workshop/imports") &&
@@ -168,7 +200,7 @@ test("visible insert controls, file cards, downloads and portable archives acros
   const backup = await fs.readFile((await (await backupDownload).path())!);
   expect(
     JSON.parse(strFromU8(unzipSync(backup)["manifest.json"])).version,
-  ).toBe(3);
+  ).toBe(5);
   const imported = page.waitForResponse(
     (r) =>
       r.url().includes("/thought-workshop/imports") &&

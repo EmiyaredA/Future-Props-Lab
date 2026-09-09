@@ -1,7 +1,16 @@
+// 账号公共入口、工作区全屏弹窗与管理抽屉由 account-ui.spec.ts 验证。
+// 模型目录、供应商连接树与编辑弹窗由 model-catalog.spec.ts 补充明暗主题及手机检查。
 import type { AppPage } from "../src/app/routes";
 
 // Every application route must name its responsive scenario owner.
 export const responsiveOwners = {
+  "management-accounts": "shell",
+  "management-workspaces": "shell",
+  "management-audit": "shell",
+  "management-invites": "shell",
+  "management-settings": "shell",
+  "management-services": "shell",
+  "management-permissions": "shell",
   home: "shell",
   apps: "shell",
   files: "shell",
@@ -38,6 +47,13 @@ export const publicSurfaces = [
   "docs",
 ] as const;
 export const staticPaths = [
+  "/management/accounts",
+  "/management/workspaces",
+  "/management/audit",
+  "/management/invites",
+  "/management/settings",
+  "/management/services",
+  "/management/permissions",
   "/home",
   "/apps",
   "/files",

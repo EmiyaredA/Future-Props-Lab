@@ -62,8 +62,11 @@ export function markdownWarnings(doc: JSONContent): string[] {
     )
       warnings.add("合并单元格将展开为普通表格，建议另存完整备份。");
     if (node.type === "details") warnings.add("折叠段落将展开为正文。");
-    if (node.type === "image")
-      warnings.add("图片保留在附件中，尺寸排版将省略。");
+    if (node.type === "image") {
+      warnings.add("图片保留在附件中，尺寸、裁剪与对齐将省略。");
+      if (node.attrs?.caption)
+        warnings.add("图片图注将导出为图片下方的普通文字。");
+    }
     node.content?.forEach(visit);
   };
   visit(doc);
@@ -86,14 +89,18 @@ export function toMarkdown(
       tokens[token] = `[${name}](${encodedFilePath(path)})`;
       return { type: "paragraph", content: [{ type: "text", text: token }] };
     }
-    if (node.type === "image")
-      return {
-        type: "image",
-        attrs: {
-          src: imagePaths[String(node.attrs?.assetId)] || "",
-          alt: node.attrs?.alt || "",
-        },
-      };
+    if (node.type === "image") {
+      const token = `THOUGHTEXPORT${index++}TOKEN`;
+      const alt = String(node.attrs?.alt || "").replace(/[\\[\]]/g, "\\$&");
+      const path = encodedFilePath(
+        imagePaths[String(node.attrs?.assetId)] || "",
+      );
+      const caption = String(node.attrs?.caption || "").trim();
+      tokens[token] = caption
+        ? `![${alt}](${path})\n\n*${caption.replace(/\*/g, "\\*")}*`
+        : `![${alt}](${path})`;
+      return { type: "paragraph", content: [{ type: "text", text: token }] };
+    }
     if (["inlineMath", "blockMath", "mermaid"].includes(node.type || "")) {
       const token = `THOUGHTEXPORT${index++}TOKEN`;
       tokens[token] =

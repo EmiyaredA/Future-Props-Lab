@@ -277,6 +277,7 @@ beforeEach(() => {
   vi.mocked(getVisualWorkshopProjects).mockResolvedValue({
     items: [
       {
+        is_official: false,
         id: "project-1",
         title: "产品主视觉",
         kind: "canvas",
@@ -286,6 +287,7 @@ beforeEach(() => {
         updated_at: "2026-08-03T08:00:00Z",
       },
       {
+        is_official: false,
         id: "project-2",
         title: "其他视觉项目",
         kind: "canvas",

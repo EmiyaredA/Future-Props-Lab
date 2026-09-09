@@ -4,6 +4,8 @@ from urllib.parse import urlsplit
 
 from fastapi import APIRouter, HTTPException, WebSocket
 
+from app.accounts.errors import AccountError
+from app.accounts.runtime_quotas import acquire, release
 from app.core.config import get_settings
 from app.deps import SessionDep, StudioAuth, resolve_studio_websocket_principal
 from app.llm.realtime import list_realtime_models, run_realtime_model_test
@@ -39,5 +41,42 @@ async def realtime_socket(websocket: WebSocket) -> None:
     except HTTPException as exc:
         await websocket.close(code=4401 if exc.status_code == 401 else 4403)
         return
+    try:
+        lease_id = await acquire(principal, voice=True)
+    except AccountError:
+        await websocket.close(code=4429, reason="runtime_quota_exceeded")
+        return
     await websocket.accept()
-    await run_realtime_model_test(websocket, workspace_id=workspace_id)
+    current_principal = principal
+
+    async def check_access():
+        nonlocal current_principal
+        try:
+            current = await resolve_studio_websocket_principal(websocket)
+            current_principal = current
+            if current.workspace_id != workspace_id or current.session_id != principal.session_id:
+                raise HTTPException(403)
+        except HTTPException:
+            await websocket.close(code=4403, reason="workspace_access_changed")
+            from starlette.websockets import WebSocketDisconnect
+
+            raise WebSocketDisconnect(4403) from None
+
+    original_send = websocket.send_json
+
+    async def projected_send(event, mode="text"):
+        if not current_principal.allows("diagnostics.realtime"):
+            event = {
+                key: value
+                for key, value in event.items()
+                if key not in {"timings", "usage", "provider_event", "diagnostics", "raw"}
+            }
+        await original_send(event, mode=mode)
+
+    websocket.send_json = projected_send
+    try:
+        await run_realtime_model_test(
+            websocket, workspace_id=workspace_id, check_access=check_access
+        )
+    finally:
+        await release(lease_id)

@@ -9,6 +9,7 @@ import httpx
 
 from app.agents.harness.contracts import ImageInput
 from app.core.outbound_urls import require_safe_provider_base_url
+from app.demo_runtime.runtime import mock_transport
 
 
 @dataclass(frozen=True)
@@ -59,6 +60,7 @@ async def stream_text_completion(
     transport: httpx.AsyncBaseTransport | None = None,
 ) -> AsyncIterator[TextDelta]:
     base_url = require_safe_provider_base_url(base_url)
+    transport = mock_transport(base_url, transport)
     timeout = httpx.Timeout(120.0, connect=15.0)
     async with httpx.AsyncClient(timeout=timeout, transport=transport) as client:
         if kind == "openai":

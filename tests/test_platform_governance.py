@@ -1,0 +1,159 @@
+from contextlib import aclosing
+from uuid import uuid4
+
+import httpx
+import pytest
+from sqlalchemy import select
+
+from app.accounts.model_template_sync import ModelTemplateSyncRunner
+from app.core.db import SessionLocal
+from app.main import app
+from app.models import ModelProvider, User
+from test_workspace_governance import client_account
+
+pytestmark = pytest.mark.real_auth
+
+
+@pytest.mark.asyncio
+async def test_three_roles_and_policy_cas():
+    admin, _, _, _ = await client_account(admin=True)
+    async with aclosing(admin):
+        role_user = (
+            await admin.post(
+                "/v1/platform/accounts",
+                json={"username": f"ops-{uuid4().hex[:12]}", "platform_role": "admin"},
+            )
+        ).json()["account"]
+        assert role_user["platform_role"] == "admin" and not role_user["is_platform_admin"]
+        me = (await admin.get("/v1/auth/me")).json()
+        assert me["user"]["platform_role"] == "super_admin"
+        state = (await admin.get("/v1/platform/permission-policy")).json()
+        assert state["value"]["admin"]["view_model_diagnostics"]
+        assert not state["value"]["member"]["view_model_diagnostics"]
+        patched = await admin.patch(
+            "/v1/platform/permission-policy",
+            json={"expected_revision": state["revision"], "value": state["value"]},
+        )
+        assert patched.status_code == 200, patched.text
+        stale = await admin.patch(
+            "/v1/platform/permission-policy",
+            json={"expected_revision": state["revision"], "value": state["value"]},
+        )
+        assert stale.status_code == 409, stale.text
+        assert (
+            await admin.patch("/v1/platform/permission-policy", json={"value": state["value"]})
+        ).status_code == 422
+        state["value"]["member"]["mark_workshop_official"] = True
+        assert (
+            await admin.patch(
+                "/v1/platform/permission-policy",
+                json={"expected_revision": patched.json()["revision"], "value": state["value"]},
+            )
+        ).status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_registration_code_redemption_and_secret_boundaries():
+    admin, _, _, _ = await client_account(admin=True)
+    async with aclosing(admin):
+        created = await admin.post(
+            "/v1/platform/registration-invite-codes", json={"name": "新成员", "max_uses": 1}
+        )
+        assert created.status_code == 201, created.text
+        code = created.json()["secret"]
+        row = created.json()["invite"]
+        assert code not in (await admin.get("/v1/platform/registration-invite-codes")).text
+        user = f"reg-{uuid4().hex[:12]}"
+        async with httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=app), base_url="http://test"
+        ) as guest:
+            registered = await guest.post(
+                "/v1/auth/register",
+                json={
+                    "username": user,
+                    "password": "Registration-Password!2026",
+                    "invite_code": code,
+                },
+            )
+            assert registered.status_code == 201, registered.text
+            assert registered.json()["user"]["platform_role"] == "member"
+            assert not registered.json()["must_change_password"]
+            assert "diagnostics.model" not in registered.json()["workspace"]["permission_keys"]
+            denied = await guest.post(
+                "/v1/auth/register",
+                json={
+                    "username": f"reg-{uuid4().hex[:12]}",
+                    "password": "Registration-Password!2026",
+                    "invite_code": code,
+                },
+            )
+            assert denied.status_code == 422, denied.text
+        history = await admin.get(f"/v1/platform/registration-invite-codes/{row['id']}/redemptions")
+        assert history.json()["total"] == 1 and history.json()["items"][0]["username"] == user
+        stale = await admin.patch(
+            f"/v1/platform/registration-invite-codes/{row['id']}",
+            json={"enabled": False, "expected_revision": row["revision"]},
+        )
+        assert stale.status_code == 409, stale.text
+        assert code not in stale.text and "ciphertext" not in stale.text
+        async with SessionLocal() as session:
+            assert await session.scalar(select(User.id).where(User.username == user))
+
+
+@pytest.mark.asyncio
+async def test_template_preview_secret_preservation_and_initialization():
+    admin, _, _, _ = await client_account(admin=True)
+    async with aclosing(admin):
+        state = (await admin.get("/v1/platform/model-service-templates/member")).json()
+        name = f"template-{uuid4().hex[:8]}"
+        value = {
+            "providers": [
+                {
+                    "template_key": name,
+                    "name": name,
+                    "kind": "openai",
+                    "base_url": "https://example.invalid/v1",
+                    "api_key": "template-secret-never-output",
+                    "models": [
+                        {"template_key": name + "-model", "slug": name, "capabilities": ["chat"]}
+                    ],
+                }
+            ],
+            "defaults": {"chat": name + "-model"},
+        }
+        saved = await admin.put(
+            "/v1/platform/model-service-templates/member",
+            json={"value": value, "expected_revision": state["revision"]},
+        )
+        assert saved.status_code == 200, saved.text
+        assert "template-secret-never-output" not in saved.text and "ciphertext" not in saved.text
+        assert saved.json()["value"]["providers"][0]["has_api_key"]
+        created = await admin.post(
+            "/v1/platform/accounts", json={"username": f"tmpl-{uuid4().hex[:10]}"}
+        )
+        assert created.status_code == 201, created.text
+        preview = await admin.post(
+            "/v1/platform/model-service-templates/member/preview",
+            json={"expected_template_revision": saved.json()["revision"]},
+        )
+        assert preview.status_code == 201, preview.text
+        job = preview.json()
+        assert job["status"] == "preview"
+        assert "ciphertext" not in preview.text
+        started = await admin.post(
+            f"/v1/platform/model-service-templates/sync-jobs/{job['id']}/start",
+            json={"expected_revision": job["revision"]},
+        )
+        assert started.status_code == 200, started.text
+        worker = ModelTemplateSyncRunner()
+        for _ in range(len(job["items"]) + 1):
+            await worker.process_once()
+        finished = (
+            await admin.get(f"/v1/platform/model-service-templates/sync-jobs/{job['id']}")
+        ).json()
+        assert finished["status"] == "completed", finished
+        assert any(item["status"] == "succeeded" for item in finished["items"]), finished
+        async with SessionLocal() as session:
+            assert await session.scalar(
+                select(ModelProvider.id).where(ModelProvider.template_key == name)
+            )

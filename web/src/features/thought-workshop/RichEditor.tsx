@@ -5,15 +5,19 @@ import {
   type Editor,
   type JSONContent,
 } from "@tiptap/react";
-import { BubbleMenu } from "@tiptap/react/menus";
 import { TextInputDialog } from "@shared/ui/TextInputDialog";
 import { editorExtensions } from "./editorExtensions";
-import { EditorToolbar } from "./EditorToolbar";
 import { useFileUploads } from "./useFileUploads";
 import { attachmentAccept } from "./AttachmentNode";
+import { BlockEditorChrome } from "./BlockEditorChrome";
+import { EditorContextMenus } from "./EditorContextMenus";
+import type { InsertCallbacks } from "./blockCommands";
 import "./attachments.css";
 import "katex/dist/katex.min.css";
 import "./editor.css";
+import "./block-editor.css";
+import { HistoryDecorations, historyDecorationKey } from "./HistoryDecorations";
+import type { HistoryMark } from "./historyDiff";
 
 export function RichEditor({
   document,
@@ -21,7 +25,13 @@ export function RichEditor({
   onReady,
   beforeContent,
   readOnly = false,
+  historyMarks,
+  historyAuthor = "",
+  onCompositionChange,
 }: {
+  historyMarks?: HistoryMark[];
+  historyAuthor?: string;
+  onCompositionChange?: (active: boolean) => void;
   beforeContent?: ReactNode;
   readOnly?: boolean;
   document: JSONContent;
@@ -30,26 +40,50 @@ export function RichEditor({
 }) {
   const file = useRef<HTMLInputElement>(null);
   const attachmentFile = useRef<HTMLInputElement>(null);
+  const uploadPosition = useRef<number | undefined>(undefined);
+  const canvas = useRef<HTMLDivElement>(null);
   const [error, setError] = useState("");
   const [dialog, setDialog] = useState<{
     kind: "link" | "math";
     value: string;
     pos?: number;
+    insertAt?: number;
     inline?: boolean;
   } | null>(null);
   const callback = useRef(onChange);
   callback.current = onChange;
+  const compositionCallback = useRef(onCompositionChange);
+  compositionCallback.current = onCompositionChange;
   const ready = useRef(onReady);
   ready.current = onReady;
   const uploadRef = useRef<(files: File[], position?: number) => void>(
     () => {},
   );
+  const insertCallbacks = useRef<InsertCallbacks>({
+    image: (position) => {
+      uploadPosition.current = position;
+      file.current?.click();
+    },
+    attachment: (position) => {
+      uploadPosition.current = position;
+      attachmentFile.current?.click();
+    },
+    math: (inline, position) =>
+      setDialog({ kind: "math", value: "", inline, insertAt: position }),
+  });
   const editor = useEditor({
     immediatelyRender: false,
     editable: !readOnly,
-    extensions: editorExtensions((latex, pos, inline) => {
-      if (!readOnly) setDialog({ kind: "math", value: latex, pos, inline });
-    }, readOnly),
+    extensions: [
+      ...editorExtensions(
+        (latex, pos, inline) => {
+          if (!readOnly) setDialog({ kind: "math", value: latex, pos, inline });
+        },
+        readOnly,
+        insertCallbacks.current,
+      ),
+      HistoryDecorations,
+    ],
     content: document,
     shouldRerenderOnTransaction: true,
     editorProps: {
@@ -90,16 +124,22 @@ export function RichEditor({
         return parsed.body.innerHTML;
       },
       handleDOMEvents: {
+        compositionstart: () => {
+          compositionCallback.current?.(true);
+          return false;
+        },
         compositionend: (view) => {
           setTimeout(() => {
             if (!view.isDestroyed) callback.current(view.state.doc.toJSON());
+            compositionCallback.current?.(false);
           }, 0);
           return false;
         },
       },
     },
-    onUpdate: ({ editor: current }) => {
-      if (!current.view.composing) callback.current(current.getJSON());
+    onUpdate: ({ editor: current, transaction }) => {
+      if (transaction.docChanged && !current.view.composing)
+        callback.current(current.getJSON());
     },
   });
   useEffect(() => {
@@ -115,6 +155,15 @@ export function RichEditor({
       editor.commands.setContent(document, { emitUpdate: false });
   }, [editor, document]);
   useEffect(() => {
+    if (editor && !editor.isDestroyed)
+      editor.view.dispatch(
+        editor.state.tr.setMeta(historyDecorationKey, {
+          marks: readOnly ? (historyMarks ?? []) : [],
+          author: historyAuthor,
+        }),
+      );
+  }, [editor, document, readOnly, historyMarks, historyAuthor]);
+  useEffect(() => {
     editor?.setEditable(!readOnly, false);
   }, [editor, readOnly]);
   const uploads = useFileUploads(editor);
@@ -124,15 +173,6 @@ export function RichEditor({
     setDialog({ kind: "link", value: editor.getAttributes("link").href || "" });
   return (
     <div className="thought-rich-editor">
-      {!readOnly && (
-        <EditorToolbar
-          editor={editor}
-          onImage={() => file.current?.click()}
-          onAttachment={() => attachmentFile.current?.click()}
-          onLink={link}
-          onMath={(inline) => setDialog({ kind: "math", value: "", inline })}
-        />
-      )}
       <input
         hidden
         ref={file}
@@ -140,7 +180,11 @@ export function RichEditor({
         accept="image/png,image/jpeg,image/webp,image/gif"
         multiple
         onChange={(e) => {
-          uploadRef.current(Array.from(e.target.files || []));
+          uploadRef.current(
+            Array.from(e.target.files || []),
+            uploadPosition.current,
+          );
+          uploadPosition.current = undefined;
           e.target.value = "";
         }}
       />
@@ -152,7 +196,11 @@ export function RichEditor({
         accept={attachmentAccept}
         multiple
         onChange={(e) => {
-          uploadRef.current(Array.from(e.target.files || []));
+          uploadRef.current(
+            Array.from(e.target.files || []),
+            uploadPosition.current,
+          );
+          uploadPosition.current = undefined;
           e.target.value = "";
         }}
       />
@@ -189,22 +237,17 @@ export function RichEditor({
         </p>
       )}
       {beforeContent}
-      <EditorContent editor={editor} />
-      {!readOnly && (
-        <BubbleMenu editor={editor} className="thought-bubble">
-          <button onClick={() => editor.chain().focus().toggleBold().run()}>
-            粗体
-          </button>
-          <button
-            onClick={() =>
-              editor.chain().focus().toggleHighlight({ color: "#edc36c" }).run()
-            }
-          >
-            高亮
-          </button>
-          <button onClick={link}>链接</button>
-        </BubbleMenu>
-      )}
+      <div ref={canvas} className="thought-editor-canvas">
+        <EditorContent editor={editor} />
+        <BlockEditorChrome
+          editor={editor}
+          canvas={canvas}
+          callbacks={insertCallbacks.current}
+          onError={setError}
+          readOnly={readOnly}
+        />
+      </div>
+      {!readOnly ? <EditorContextMenus editor={editor} onLink={link} /> : null}
       <TextInputDialog
         open={!!dialog}
         title={dialog?.kind === "link" ? "添加链接" : "编辑公式"}
@@ -237,9 +280,15 @@ export function RichEditor({
                   .focus()
                   .updateBlockMath({ latex: value, pos: dialog.pos })
                   .run();
-            } else if (dialog.inline)
-              editor.chain().focus().insertInlineMath({ latex: value }).run();
-            else editor.chain().focus().insertBlockMath({ latex: value }).run();
+            } else {
+              const chain = editor.chain().focus();
+              if (dialog.insertAt !== undefined)
+                chain.setTextSelection(
+                  Math.min(dialog.insertAt, editor.state.doc.content.size),
+                );
+              if (dialog.inline) chain.insertInlineMath({ latex: value }).run();
+              else chain.insertBlockMath({ latex: value }).run();
+            }
           }
           setDialog(null);
         }}

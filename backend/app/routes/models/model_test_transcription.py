@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from fastapi import APIRouter, File, Form, HTTPException, Query, UploadFile
+from fastapi import APIRouter, File, Form, HTTPException, Query, Request, UploadFile
 from fastapi.responses import FileResponse
 
 from app.deps import SessionDep, WorkspaceDep
@@ -10,6 +10,7 @@ from app.llm.playground.transcription import (
     ModelTestTranscription,
     ModelTestTranscriptionError,
 )
+from app.routes.model_capacity import task_admission
 from app.schemas.model_test import (
     ModelTestTranscriptionCreateIn,
     ModelTestTranscriptionOptionListOut,
@@ -38,6 +39,7 @@ async def transcription_options(
 
 @router.post("/transcription-tasks/upload", response_model=ModelTestTranscriptionTaskOut)
 async def upload_transcription_task(
+    request: Request,
     session: SessionDep,
     workspace_id: WorkspaceDep,
     upload: Annotated[UploadFile, File()],
@@ -53,9 +55,10 @@ async def upload_transcription_task(
     abbreviations: Annotated[bool | None, Form()] = None,
 ) -> ModelTestTranscriptionTaskOut:
     try:
-        return await _transcription(session, workspace_id).create_upload(
+        result = await _transcription(session, workspace_id).create_upload(
             upload,
             model_id=model_id,
+            admission=task_admission(request, session, "transcription"),
             parameters=ModelTestTranscriptionParametersIn(
                 language=language,
                 target_language=target_language,
@@ -68,18 +71,23 @@ async def upload_transcription_task(
                 abbreviations=abbreviations,
             ),
         )
+        return result
     except ModelTestTranscriptionError as exc:
         raise _translate(exc) from None
 
 
 @router.post("/transcription-tasks", response_model=ModelTestTranscriptionTaskOut)
 async def create_transcription_task(
+    request: Request,
     session: SessionDep,
     workspace_id: WorkspaceDep,
     body: ModelTestTranscriptionCreateIn,
 ) -> ModelTestTranscriptionTaskOut:
     try:
-        return await _transcription(session, workspace_id).create_from_library(body)
+        result = await _transcription(session, workspace_id).create_from_library(
+            body, admission=task_admission(request, session, "transcription")
+        )
+        return result
     except ModelTestTranscriptionError as exc:
         raise _translate(exc) from None
 

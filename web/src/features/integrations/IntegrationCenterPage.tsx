@@ -72,7 +72,7 @@ export function IntegrationCenterPage({
       </div>
       {!canManage ? (
         <div className="integration-readonly" role="status">
-          当前为只读模式，仅 Workspace Owner 可以管理和验证集成。
+          当前为只读模式，拥有者与工作区管理员可以管理和验证集成。
         </div>
       ) : null}
       <div

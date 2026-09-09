@@ -63,3 +63,16 @@ test("notifies when workspace access changes", async () => {
   await expect(requestApi("/v1/private")).rejects.toBeInstanceOf(ApiError);
   expect(notified).toHaveBeenCalledTimes(1);
 });
+
+test("successful no-content responses allow account workflows to continue", async () => {
+  const { unwrap } = await import("@platform/api/client");
+  await expect(
+    unwrap({ response: new Response(null, { status: 204 }) }),
+  ).resolves.toBeUndefined();
+  await expect(
+    unwrap({
+      error: { detail: "没有权限" },
+      response: new Response(null, { status: 403 }),
+    }),
+  ).rejects.toMatchObject({ status: 403 });
+});

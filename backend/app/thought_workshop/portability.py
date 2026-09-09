@@ -22,11 +22,11 @@ from app.files.policy import ATTACHMENT_EXTENSIONS
 from app.files.project_snapshots import _validate_member
 from app.files.storage import AssetStorage
 from app.models.files import VisualAsset
-from app.models.thought_workshop import ThoughtFolder, ThoughtKnowledgeBase, ThoughtNote
+from app.models.thought_workshop import ThoughtKnowledgeBase, ThoughtNote
 from app.schemas.thought_document import file_ids
-from app.schemas.thought_knowledge import ThoughtFolderOut
 from app.schemas.thought_workshop import ThoughtImportOut, ThoughtNoteIn
-from app.thought_workshop.archive_structure import validate_structure
+from app.thought_workshop.archive_structure import convert_v3_folders_to_notes, validate_structure
+from app.thought_workshop.history_archive import export_history, import_history, validate_history
 from app.thought_workshop.knowledge import KnowledgeBases
 from app.thought_workshop.legacy_import import convert_legacy_backup
 from app.thought_workshop.notes import Notes, ThoughtError, note_out
@@ -64,11 +64,6 @@ async def export_backup(
         else [*await knowledge.list(), *await knowledge.list(trash=True)]
     )
     project_ids = [p.id for p in projects]
-    folders = (
-        await notes.session.scalars(
-            select(ThoughtFolder).where(ThoughtFolder.knowledge_base_id.in_(project_ids))
-        )
-    ).all()
     rows = (
         await notes.session.scalars(
             select(ThoughtNote)
@@ -80,7 +75,9 @@ async def export_backup(
         )
     ).all()
     documents = [note_out(row).model_dump(mode="json") for row in rows]
+    history = await export_history(notes.session, [row.id for row in rows])
     ids = {asset_id for doc in documents for asset_id in file_ids(doc["document"])}
+    ids.update(asset_id for record in history for asset_id in file_ids(record["document"]))
     ids.update(p.cover_asset_id for p in projects if p.cover_asset_id)
     assets = (
         (
@@ -100,9 +97,10 @@ async def export_backup(
     sources = [(r.id, storage.path_for(r), r.original_filename, r.mime_type) for r in assets]
     payload = {
         "format": FORMAT,
-        "version": 3,
+        "version": 5,
+        "history": history,
         "knowledge_bases": [r.model_dump(mode="json") for r in projects],
-        "folders": [ThoughtFolderOut.model_validate(r).model_dump(mode="json") for r in folders],
+        "folders": [],
         "notes": documents,
         "assets": [
             {"id": rid, "path": f"assets/{rid}", "filename": name, "content_type": mime}
@@ -160,12 +158,14 @@ def validate_archive(
         if (
             not isinstance(payload, dict)
             or payload.get("format") != FORMAT
-            or payload.get("version") not in {1, 2, 3}
+            or payload.get("version") not in {1, 2, 3, 4, 5}
         ):
             raise ThoughtError("不支持的备份格式或版本")
         payload = convert_legacy_backup(payload)
+        payload = convert_v3_folders_to_notes(payload)
         parsed = validate_structure(payload)
-        for group in ("knowledge_bases", "folders", "notes"):
+        validate_history(payload)
+        for group in ("knowledge_bases", "notes"):
             for record in payload.get(group, []):
                 archive_times(record)
         assets = payload.get("assets", [])
@@ -223,10 +223,8 @@ async def import_backup(
                 mapping[asset["id"]] = row.id
         notes.session.add_all(staged_rows)
         knowledge = KnowledgeBases(notes.session, notes.workspace_id)
-        project_mapping, folder_mapping = (
-            {},
-            {f["id"]: str(uuid4()) for f in payload.get("folders", [])},
-        )
+        project_mapping = {}
+        note_mapping = {n["id"]: str(uuid4()) for n in payload.get("notes", [])}
         project_rows = {}
         if knowledge_base_id:
             if expected_revision is None:
@@ -252,50 +250,50 @@ async def import_backup(
             project_mapping[project["id"]], project_rows[project["id"]] = row.id, row
         await notes.session.flush()
         # Parent-first insertion works with immediate SQLite foreign keys.
-        pending = list(payload.get("folders", []))
-        inserted = set()
-        while pending:
-            for folder in list(pending):
-                if folder.get("parent_id") and folder["parent_id"] not in inserted:
-                    continue
-                notes.session.add(
-                    ThoughtFolder(
-                        id=folder_mapping[folder["id"]],
-                        knowledge_base_id=project_mapping[folder["knowledge_base_id"]],
-                        title=folder["title"],
-                        parent_id=folder_mapping.get(folder.get("parent_id")),
-                        position=folder.get("position", 0),
-                        **{k: folder[k] for k in ("created_at", "updated_at") if folder.get(k)},
-                    )
-                )
-                await notes.session.flush()
-                inserted.add(folder["id"])
-                pending.remove(folder)
+        pending = list(zip(payload["notes"], parsed, strict=True))
+        inserted: set[str] = set()
         result = []
-        for source, body in zip(payload["notes"], parsed, strict=True):
-            if knowledge_base_id and source.get("is_home"):
-                continue
-            document = copy.deepcopy(body.document)
-            remap_images(document, mapping)
-            body = body.model_copy(
-                update={
-                    "document": document,
-                    "knowledge_base_id": project_mapping[body.knowledge_base_id],
-                    "folder_id": folder_mapping.get(body.folder_id),
-                }
-            )
-            # Restoring a trashed project is staged as active until all notes are validated.
-            row = await notes.create(body, commit=False, importing=True)
-            row.is_home, row.position = bool(source.get("is_home")), source.get("position", 0)
-            for key in ("created_at", "updated_at", "deleted_at"):
-                if source.get(key):
-                    setattr(row, key, source[key])
-            if row.is_home:
-                project_rows[source["knowledge_base_id"]].home_note_id = row.id
-            if not row.is_home:
-                result.append(row.id)
+        while pending:
+            progressed = False
+            for index, (source, body) in enumerate(list(pending)):
+                if source.get("parent_id") and source["parent_id"] not in inserted:
+                    continue
+                if knowledge_base_id and source.get("is_home"):
+                    pending.pop(index)
+                    progressed = True
+                    break
+                document = copy.deepcopy(body.document)
+                remap_images(document, mapping)
+                created = body.model_copy(
+                    update={
+                        "document": document,
+                        "knowledge_base_id": project_mapping[body.knowledge_base_id],
+                        "parent_id": note_mapping.get(body.parent_id) if body.parent_id else None,
+                    }
+                )
+                row = await notes.create(
+                    created,
+                    commit=False,
+                    importing=True,
+                    note_id=note_mapping[source["id"]],
+                )
+                row.is_home, row.position = bool(source.get("is_home")), source.get("position", 0)
+                for key in ("created_at", "updated_at", "deleted_at"):
+                    if source.get(key):
+                        setattr(row, key, source[key])
+                if row.is_home:
+                    project_rows[source["knowledge_base_id"]].home_note_id = row.id
+                if not row.is_home:
+                    result.append(row.id)
+                inserted.add(source["id"])
+                pending.pop(index)
+                progressed = True
+                break
+            if not progressed:
+                raise ThoughtError("备份目录循环或归属错误")
         for row in project_rows.values():
             await knowledge.cover(row.cover_asset_id)
+        await import_history(notes, payload, inserted, note_mapping, mapping, remap_images)
         await notes.session.commit()
         files.clear()
         return ThoughtImportOut(

@@ -1,3 +1,4 @@
+import { useWorkspacePermission } from "@platform/auth/WorkspacePermissions";
 import { FormEvent, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Clock3, ExternalLink, Search, Star, Tag } from "lucide-react";
@@ -85,6 +86,7 @@ export function ToolNavigationPage({
 }: {
   onOpenInternal: (path: string) => void;
 }) {
+  const canWrite = useWorkspacePermission("content.write");
   const queryClient = useQueryClient();
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState<"all" | ToolCategory>("all");
@@ -214,7 +216,7 @@ export function ToolNavigationPage({
     } else {
       onOpenInternal(tool.target.path);
     }
-    usageMutation.mutate(tool.id);
+    if (canWrite) usageMutation.mutate(tool.id);
   };
 
   const submitSearch = (event: FormEvent) => event.preventDefault();
@@ -301,6 +303,7 @@ export function ToolNavigationPage({
                   className={`tool-favorite${favorite ? " active" : ""}`}
                   type="button"
                   aria-label={`${favorite ? "取消收藏" : "收藏"}${tool.name}`}
+                  disabled={!canWrite}
                   aria-pressed={favorite}
                   onClick={() =>
                     favoriteMutation.mutate({

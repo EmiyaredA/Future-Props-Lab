@@ -55,6 +55,7 @@ def _clean_prompt_reference_names(value: dict[str, str]) -> dict[str, str]:
 
 
 class VisualWorkshopProjectOut(BaseModel):
+    is_official: bool = False
     id: str
     title: str
     kind: VisualWorkshopProjectKind

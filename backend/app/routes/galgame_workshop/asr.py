@@ -1,11 +1,12 @@
 from __future__ import annotations
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
 
 from app.deps import SessionDep
 from app.files import AssetError
 from app.galgame_workshop.asr import GalgameAsrService
 from app.routes.galgame_workshop._shared import _asset_error
+from app.routes.model_capacity import task_admission
 from app.schemas.galgame_workshop import (
     GalgameAsrSettingsOut,
     GalgameAsrSettingsPatchIn,
@@ -42,10 +43,13 @@ async def patch_asr_settings(
     response_model=GalgameTranscriptionTaskListOut,
 )
 async def create_transcriptions(
-    session: SessionDep, project_id: str, body: GalgameTranscriptionCreateIn
+    request: Request, session: SessionDep, project_id: str, body: GalgameTranscriptionCreateIn
 ) -> GalgameTranscriptionTaskListOut:
     try:
-        return await GalgameAsrService(session).create_tasks(project_id, body)
+        result = await GalgameAsrService(session).create_tasks(
+            project_id, body, admission=task_admission(request, session, "galgame_asr")
+        )
+        return result
     except AssetError as exc:
         raise _asset_error(exc) from None
 

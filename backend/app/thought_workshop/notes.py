@@ -10,7 +10,6 @@ from app.files.policy import ATTACHMENT_EXTENSIONS
 from app.models.defaults import utc_now
 from app.models.files import VisualAsset
 from app.models.thought_workshop import (
-    ThoughtFolder,
     ThoughtKnowledgeBase,
     ThoughtNote,
     ThoughtNoteAsset,
@@ -24,6 +23,7 @@ from app.schemas.thought_workshop import (
     ThoughtNoteSummary,
 )
 from app.thought_workshop.errors import ThoughtError
+from app.thought_workshop.history import CONTENT_FIELDS, History
 from app.thought_workshop.knowledge import KnowledgeBases
 
 
@@ -35,9 +35,10 @@ def note_out(row: ThoughtNote) -> ThoughtNoteOut:
 
 
 class Notes:
-    def __init__(self, session: AsyncSession, workspace_id: str):
+    def __init__(self, session: AsyncSession, workspace_id: str, author_id: str | None = None):
         self.session = session
         self.workspace_id = workspace_id
+        self.author_id = author_id
 
     async def get(self, note_id: str) -> ThoughtNote:
         row = await self.session.scalar(
@@ -58,7 +59,7 @@ class Notes:
         *,
         query: str = "",
         knowledge_base_id: str,
-        folder_id: str = "",
+        parent_id: str = "",
         tag: str = "",
         view: str = "all",
         sort: str = "updated",
@@ -74,11 +75,11 @@ class Notes:
             if view == "trash"
             else ThoughtNote.deleted_at.is_(None),
         ]
-        if folder_id:
+        if parent_id:
             filters.append(
-                ThoughtNote.folder_id.is_(None)
-                if folder_id == "unfiled"
-                else ThoughtNote.folder_id == folder_id
+                ThoughtNote.parent_id.is_(None)
+                if parent_id == "unfiled"
+                else ThoughtNote.parent_id == parent_id
             )
         if view == "favorites":
             filters.append(ThoughtNote.favorite.is_(True))
@@ -134,15 +135,18 @@ class Notes:
         await KnowledgeBases(self.session, self.workspace_id).get(
             body.knowledge_base_id, include_deleted=importing
         )
-        if body.folder_id:
-            folder = await self.session.scalar(
-                select(ThoughtFolder).where(
-                    ThoughtFolder.id == body.folder_id,
-                    ThoughtFolder.knowledge_base_id == body.knowledge_base_id,
+        if body.parent_id and not importing:
+            parent = await self.session.scalar(
+                select(ThoughtNote).where(
+                    ThoughtNote.id == body.parent_id,
+                    ThoughtNote.knowledge_base_id == body.knowledge_base_id,
+                    ThoughtNote.workspace_id == self.workspace_id,
+                    ThoughtNote.is_home.is_(False),
+                    ThoughtNote.deleted_at.is_(None),
                 )
             )
-            if folder is None:
-                raise ThoughtError("文件夹不存在", 404, "not_found")
+            if parent is None:
+                raise ThoughtError("父文档不存在", 404, "not_found")
         ids = file_ids(body.document)
         images = image_ids(body.document)
         body.schema_version = 2
@@ -184,7 +188,12 @@ class Notes:
         )
 
     async def create(
-        self, body: ThoughtNoteIn, *, commit: bool = True, importing: bool = False
+        self,
+        body: ThoughtNoteIn,
+        *,
+        commit: bool = True,
+        importing: bool = False,
+        note_id: str | None = None,
     ) -> ThoughtNote:
         ids = await self.validate_refs(body, importing=importing)
         row = ThoughtNote(
@@ -192,15 +201,21 @@ class Notes:
             **body.model_dump(),
             search_text=document_text(body.document),
         )
+        if note_id:
+            row.id = note_id
         self.session.add(row)
         await self.session.flush()
         await self.references(row.id, ids)
+        if not importing:
+            await History(self.session).append(row, self.author_id, "create")
         if commit:
             await self.session.commit()
             await self.session.refresh(row)
         return row
 
-    async def put(self, note_id: str, body: ThoughtNotePut) -> ThoughtNoteOut:
+    async def put(
+        self, note_id: str, body: ThoughtNotePut, *, restoring: bool = False
+    ) -> ThoughtNoteOut:
         current = await self.get(note_id)
         if current.deleted_at:
             raise ThoughtError("请先恢复笔记", 409, "note_deleted")
@@ -208,11 +223,12 @@ class Notes:
             await self.conflict(note_id, body.expected_revision)
         if (
             current.knowledge_base_id != body.knowledge_base_id
-            or current.folder_id != body.folder_id
+            or current.parent_id != body.parent_id
         ):
             raise ThoughtError("请使用目录移动操作修改文档归属")
         ids = await self.validate_refs(body)
-        values = body.model_dump(exclude={"expected_revision", "knowledge_base_id", "folder_id"})
+        content_changed = any(getattr(current, key) != getattr(body, key) for key in CONTENT_FIELDS)
+        values = body.model_dump(exclude={"expected_revision", "knowledge_base_id", "parent_id"})
         values.update(
             search_text=document_text(body.document),
             revision=body.expected_revision + 1,
@@ -231,6 +247,10 @@ class Notes:
         if result.rowcount != 1:
             await self.conflict(note_id, body.expected_revision)
         await self.references(note_id, ids)
+        if content_changed or restoring:
+            await History(self.session).append(
+                await self.get(note_id), self.author_id, "restore" if restoring else "edit"
+            )
         await self.session.execute(
             update(ThoughtKnowledgeBase)
             .where(ThoughtKnowledgeBase.id == current.knowledge_base_id)
@@ -239,13 +259,65 @@ class Notes:
         await self.session.commit()
         return note_out(await self.get(note_id))
 
+    async def history_list(self, note_id: str, cursor: str | None, limit: int):
+        await self.get(note_id)
+        return await History(self.session).list(note_id, cursor, limit)
+
+    async def history_detail(self, note_id: str, history_id: str):
+        await self.get(note_id)
+        return await History(self.session).detail(note_id, history_id)
+
+    async def restore_history(self, note_id: str, history_id: str, expected: int):
+        current = await self.get(note_id)
+        selected = await History(self.session).get(note_id, history_id)
+        body = ThoughtNotePut(
+            **{
+                key: getattr(current, key)
+                for key in ThoughtNoteIn.model_fields
+                if key not in CONTENT_FIELDS
+            },
+            **{key: getattr(selected, key) for key in CONTENT_FIELDS},
+            expected_revision=expected,
+        )
+        return await self.put(note_id, body, restoring=True)
+
     async def conflict(self, note_id: str, expected: int) -> None:
         await self.session.rollback()
         current = note_out(await self.get(note_id))
         raise RevisionConflictError(expected, current.revision, current.model_dump(mode="json"))
 
+    async def _descendant_ids(self, note: ThoughtNote) -> list[str]:
+        pending = [note.id]
+        found: list[str] = []
+        seen = {note.id}
+        while pending:
+            parent = pending.pop()
+            children = (
+                await self.session.scalars(
+                    select(ThoughtNote.id).where(
+                        ThoughtNote.knowledge_base_id == note.knowledge_base_id,
+                        ThoughtNote.parent_id == parent,
+                        ThoughtNote.is_home.is_(False),
+                        ThoughtNote.deleted_at.is_(None),
+                    )
+                )
+            ).all()
+            for child_id in children:
+                if child_id in seen:
+                    continue
+                seen.add(child_id)
+                found.append(child_id)
+                pending.append(child_id)
+        return found
+
     async def transition(
-        self, note_id: str, expected: int, action: str, expected_knowledge: int
+        self,
+        note_id: str,
+        expected: int,
+        action: str,
+        expected_knowledge: int,
+        *,
+        cascade_children: bool = False,
     ) -> ThoughtNoteOut:
         row = await self.get(note_id)
         if row.is_home:
@@ -263,17 +335,79 @@ class Notes:
         )
         if action == "purge":
             result = await self.session.execute(delete(ThoughtNote).where(*predicate))
-        else:
+            if result.rowcount != 1:
+                await self.conflict(note_id, expected)
+            await self.session.commit()
+            return snapshot
+        if action == "restore":
             result = await self.session.execute(
                 update(ThoughtNote)
                 .where(*predicate)
+                .values(deleted_at=None, updated_at=utc_now(), revision=expected + 1)
+            )
+            if result.rowcount != 1:
+                await self.conflict(note_id, expected)
+            await self.session.commit()
+            return note_out(await self.get(note_id))
+
+        parent_id = row.parent_id
+        if cascade_children:
+            targets = [note_id, *await self._descendant_ids(row)]
+        else:
+            await self.session.execute(
+                update(ThoughtNote)
+                .where(
+                    ThoughtNote.knowledge_base_id == row.knowledge_base_id,
+                    ThoughtNote.parent_id == note_id,
+                    ThoughtNote.deleted_at.is_(None),
+                )
                 .values(
-                    deleted_at=None if action == "restore" else utc_now(),
+                    parent_id=parent_id,
+                    revision=ThoughtNote.revision + 1,
                     updated_at=utc_now(),
-                    revision=expected + 1,
                 )
             )
+            targets = [note_id]
+        result = await self.session.execute(
+            update(ThoughtNote)
+            .where(
+                ThoughtNote.id == note_id,
+                ThoughtNote.workspace_id == self.workspace_id,
+                ThoughtNote.revision == expected,
+                ThoughtNote.deleted_at.is_(None),
+            )
+            .values(deleted_at=utc_now(), updated_at=utc_now(), revision=expected + 1)
+        )
         if result.rowcount != 1:
             await self.conflict(note_id, expected)
+        if len(targets) > 1:
+            await self.session.execute(
+                update(ThoughtNote)
+                .where(
+                    ThoughtNote.id.in_(targets[1:]),
+                    ThoughtNote.workspace_id == self.workspace_id,
+                    ThoughtNote.deleted_at.is_(None),
+                )
+                .values(
+                    deleted_at=utc_now(),
+                    updated_at=utc_now(),
+                    revision=ThoughtNote.revision + 1,
+                )
+            )
+        siblings = (
+            await self.session.scalars(
+                select(ThoughtNote)
+                .where(
+                    ThoughtNote.knowledge_base_id == row.knowledge_base_id,
+                    ThoughtNote.workspace_id == self.workspace_id,
+                    ThoughtNote.parent_id == parent_id,
+                    ThoughtNote.is_home.is_(False),
+                    ThoughtNote.deleted_at.is_(None),
+                )
+                .order_by(ThoughtNote.position, ThoughtNote.id)
+            )
+        ).all()
+        for position, sibling in enumerate(siblings):
+            sibling.position = position
         await self.session.commit()
-        return snapshot if action == "purge" else note_out(await self.get(note_id))
+        return note_out(await self.get(note_id))

@@ -35,7 +35,7 @@ import {
   SkillTagDialog,
 } from "@features/integrations/SkillTags";
 import "@features/integrations/skill-tags.css";
-import { parseSkillTags } from "@features/integrations/skillTags";
+import { parseSkillTags } from "@features/integrations/skillTagValues";
 
 const KEY = ["integrations", "skills"] as const;
 

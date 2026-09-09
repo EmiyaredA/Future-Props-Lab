@@ -246,14 +246,14 @@ export async function importFile(file: File, project?: KnowledgeBase) {
       schema_version: 2,
       id: crypto.randomUUID(),
       knowledge_base_id: "markdown-project",
-      folder_id: null,
+      parent_id: null,
       is_home: false,
     };
   });
   output["manifest.json"] = strToU8(
     JSON.stringify({
       format: "thought-workshop-backup",
-      version: 3,
+      version: 4,
       notes: [
         ...notes,
         {
@@ -261,6 +261,7 @@ export async function importFile(file: File, project?: KnowledgeBase) {
           knowledge_base_id: "markdown-project",
           title: "首页",
           is_home: true,
+          parent_id: null,
           schema_version: 2,
           document: { type: "doc", content: [{ type: "paragraph" }] },
         },
@@ -296,17 +297,88 @@ const dataUrl = (blob: Blob) =>
     reader.onerror = reject;
     reader.readAsDataURL(blob);
   });
+
+type ExportCrop = {
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+};
+
+function exportCrop(figure: HTMLElement): ExportCrop | null {
+  const values = [
+    figure.dataset.cropLeft,
+    figure.dataset.cropTop,
+    figure.dataset.cropWidth,
+    figure.dataset.cropHeight,
+  ].map(Number);
+  if (values.some((value) => !Number.isFinite(value))) return null;
+  const [left, top, width, height] = values;
+  if (width < 1 || height < 1 || left + width > 100 || top + height > 100)
+    return null;
+  return { left, top, width, height };
+}
+
+async function imageSize(blob: Blob) {
+  if (typeof createImageBitmap === "function") {
+    const bitmap = await createImageBitmap(blob);
+    const size = { width: bitmap.width, height: bitmap.height };
+    bitmap.close();
+    return size;
+  }
+  const source = await dataUrl(blob);
+  return new Promise<{ width: number; height: number }>((resolve, reject) => {
+    const image = new Image();
+    image.onload = () =>
+      resolve({ width: image.naturalWidth, height: image.naturalHeight });
+    image.onerror = reject;
+    image.src = source;
+  });
+}
+
+async function prepareExportImage(
+  parsed: Document,
+  image: HTMLImageElement,
+  blob: Blob,
+) {
+  const figure = image.closest<HTMLElement>("figure[data-thought-image]");
+  image.src = await dataUrl(blob);
+  image.removeAttribute("data-asset-id");
+  if (!figure) return;
+  const displayWidth = Number(image.getAttribute("width"));
+  figure.classList.add("thought-export-figure");
+  figure.style.width = displayWidth
+    ? `min(100%, ${displayWidth}px)`
+    : "fit-content";
+  figure.style.maxWidth = "100%";
+  image.removeAttribute("width");
+  image.style.width = "100%";
+  const crop = exportCrop(figure);
+  if (!crop) return;
+  const natural = await imageSize(blob);
+  const viewport = parsed.createElement("div");
+  viewport.className = "thought-export-image-crop";
+  viewport.style.aspectRatio = String(
+    (natural.width * crop.width) / (natural.height * crop.height),
+  );
+  image.style.width = `${10000 / crop.width}%`;
+  image.style.height = `${10000 / crop.height}%`;
+  image.style.left = `${(-crop.left / crop.width) * 100}%`;
+  image.style.top = `${(-crop.top / crop.height) * 100}%`;
+  image.style.maxWidth = "none";
+  image.before(viewport);
+  viewport.append(image);
+}
+
 export async function exportHtml(note: Note, editor: Editor) {
   const parsed = new DOMParser().parseFromString(editor.getHTML(), "text/html");
   for (const image of parsed.querySelectorAll<HTMLImageElement>(
     "img[data-asset-id]",
   )) {
-    image.src = await dataUrl(
-      await fetchApiBlob(
-        `/v1/files/${encodeURIComponent(image.dataset.assetId || "")}/content`,
-      ),
+    const blob = await fetchApiBlob(
+      `/v1/files/${encodeURIComponent(image.dataset.assetId || "")}/content`,
     );
-    image.removeAttribute("data-asset-id");
+    await prepareExportImage(parsed, image, blob);
   }
   const files: Record<string, Uint8Array> = {};
   for (const card of parsed.querySelectorAll<HTMLElement>(
@@ -364,7 +436,7 @@ export async function exportHtml(note: Note, editor: Editor) {
   const heading = parsed.createElement("h1");
   heading.textContent = note.title;
   parsed.body.prepend(heading);
-  const html = `<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${heading.innerHTML}</title><style>body{max-width:900px;margin:48px auto;padding:24px;font:16px/1.8 system-ui;color:#242621}img,svg{max-width:100%;height:auto}table{border-collapse:collapse;width:100%}td,th{border:1px solid #bbb;padding:8px}blockquote{border-left:3px solid #e57b59;margin:16px 0;padding-left:20px}pre{background:#f4f1ec;padding:16px;white-space:pre-wrap}math[display=block]{margin:24px}a{color:#b95437}li[data-type=taskItem]{list-style:none}</style><body>${parsed.body.innerHTML}</body></html>`;
+  const html = `<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${heading.innerHTML}</title><style>body{max-width:900px;margin:48px auto;padding:24px;font:16px/1.8 system-ui;color:#242621}img,svg{max-width:100%;height:auto}table{border-collapse:collapse;width:100%}td,th{border:1px solid #bbb;padding:8px}blockquote{border-left:3px solid #e57b59;margin:16px 0;padding-left:20px}pre{background:#f4f1ec;padding:16px;white-space:pre-wrap}math[display=block]{margin:24px}a{color:#b95437}li[data-type=taskItem]{list-style:none}.thought-export-figure{margin:24px 0}.thought-export-figure[data-align=center]{margin-left:auto;margin-right:auto}.thought-export-figure[data-align=right]{margin-left:auto}.thought-export-figure>img{display:block;width:100%}.thought-export-figure figcaption{margin-top:8px;color:#686b65;text-align:center}.thought-export-image-crop{position:relative;width:100%;overflow:hidden;border-radius:8px}.thought-export-image-crop img{position:absolute;display:block}</style><body>${parsed.body.innerHTML}</body></html>`;
   if (Object.keys(files).length) {
     files[`${safeName(note.title)}.html`] = strToU8(html);
     download(

@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { api } from "@platform/api/client";
+import { replaceDeveloperDocuments } from "./content";
 import { Search, Menu, X } from "lucide-react";
 import { BrandMark } from "@shared/ui/BrandMark";
 import { ThemeToggle } from "@shared/ui/ThemeToggle";
@@ -29,6 +31,31 @@ function scrollToLocation() {
 }
 export function DocsApp() {
   const [page, setPage] = useState(currentPage);
+  useEffect(() => {
+    let active = true;
+    let epoch = 0;
+    const refreshProtected = async () => {
+      const request = ++epoch;
+      try {
+        const response = await api.GET("/v1/account/developer-documents");
+        if (!active || request !== epoch) return;
+        replaceDeveloperDocuments(response.data?.items || []);
+      } catch {
+        if (!active || request !== epoch) return;
+        replaceDeveloperDocuments([]);
+      }
+      setPage(currentPage());
+    };
+    void refreshProtected();
+    window.addEventListener("focus", refreshProtected);
+    const timer = window.setInterval(refreshProtected, 30000);
+    return () => {
+      active = false;
+      window.clearInterval(timer);
+      window.removeEventListener("focus", refreshProtected);
+      replaceDeveloperDocuments([]);
+    };
+  }, []);
   const [drawer, setDrawer] = useState(false);
   const [query, setQuery] = useState("");
   const [all, setAll] = useState(false);
@@ -212,15 +239,17 @@ export function DocsApp() {
           </span>
         </a>
         <nav className="docs-primary-nav" aria-label="文档中心分类">
-          {Object.entries(CATEGORY_LABELS).map(([key, label]) => (
-            <a
-              key={key}
-              aria-current={page.category === key ? "page" : undefined}
-              href={pageHref(GUIDE_PAGES.find((p) => p.category === key)!)}
-            >
-              {label}
-            </a>
-          ))}
+          {Object.entries(CATEGORY_LABELS)
+            .filter(([key]) => GUIDE_PAGES.some((p) => p.category === key))
+            .map(([key, label]) => (
+              <a
+                key={key}
+                aria-current={page.category === key ? "page" : undefined}
+                href={pageHref(GUIDE_PAGES.find((p) => p.category === key)!)}
+              >
+                {label}
+              </a>
+            ))}
         </nav>
         <div className="docs-actions">
           <button
@@ -242,14 +271,16 @@ export function DocsApp() {
           aria-label="功能目录"
         >
           <nav className="docs-mobile-categories" aria-label="移动端文档分类">
-            {Object.entries(CATEGORY_LABELS).map(([key, label]) => (
-              <a
-                key={key}
-                href={pageHref(GUIDE_PAGES.find((p) => p.category === key)!)}
-              >
-                {label}
-              </a>
-            ))}
+            {Object.entries(CATEGORY_LABELS)
+              .filter(([key]) => GUIDE_PAGES.some((p) => p.category === key))
+              .map(([key, label]) => (
+                <a
+                  key={key}
+                  href={pageHref(GUIDE_PAGES.find((p) => p.category === key)!)}
+                >
+                  {label}
+                </a>
+              ))}
           </nav>
           <DocsNavigation page={page} />
         </aside>

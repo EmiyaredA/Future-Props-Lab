@@ -10,7 +10,7 @@ class ThoughtNoteIn(BaseModel):
     model_config = ConfigDict(extra="forbid")
     title: str = Field(default="未命名笔记", min_length=1, max_length=240)
     knowledge_base_id: str
-    folder_id: str | None = None
+    parent_id: str | None = None
     schema_version: Literal[2] = 2
     document: dict = Field(default_factory=empty_document)
     tags: list[str] = Field(default_factory=list, max_length=30)
@@ -58,7 +58,7 @@ class ThoughtNoteSummary(BaseModel):
     id: str
     title: str
     knowledge_base_id: str
-    folder_id: str | None
+    parent_id: str | None
     position: int
     is_home: bool
     tags: list[str]

@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { setThoughtTheme } from "./thought-helpers";
+import { newDocument, setThoughtTheme } from "./thought-helpers";
 
 async function expectSingleNavigation(page: Page) {
   await expect(page.getByRole("complementary")).toHaveCount(1);
@@ -16,6 +16,58 @@ async function expectSingleNavigation(page: Page) {
   ).toHaveCount(0);
   await expect(page.getByRole("group", { name: "外观模式" })).toHaveCount(1);
 }
+
+test("document action menu follows the directory row and stays within the viewport", async ({
+  page,
+}, info) => {
+  await page.setViewportSize({ width: 1600, height: 1000 });
+  await page.goto("/apps/thought-workshop");
+  await newDocument(page);
+  const trigger = page.getByRole("button", {
+    name: "未命名文档操作",
+    exact: true,
+  });
+  await trigger.click();
+  const menu = page.getByRole("menu", {
+    name: "未命名文档操作",
+    exact: true,
+  });
+  await expect(menu).toBeVisible();
+  await expect(menu.getByRole("menuitem")).toHaveCount(5);
+  await expect(menu.getByRole("separator")).toHaveCount(2);
+  const triggerBox = await trigger.boundingBox();
+  const menuBox = await menu.boundingBox();
+  expect(triggerBox && menuBox).toBeTruthy();
+  expect(menuBox!.x).toBeGreaterThan(triggerBox!.x + triggerBox!.width);
+  await page.screenshot({
+    animations: "disabled",
+    path: info.outputPath("document-action-menu-1600-light.png"),
+  });
+  await page.keyboard.press("Escape");
+  await expect(menu).toHaveCount(0);
+  await expect(trigger).toBeFocused();
+  await trigger.click();
+  await page.getByLabel("笔记标题", { exact: true }).click();
+  await expect(menu).toHaveCount(0);
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.evaluate(() => {
+    document.documentElement.dataset.theme = "dark";
+  });
+  await page.getByRole("button", { name: "目录", exact: true }).click();
+  await trigger.click();
+  await expect(menu).toBeVisible();
+  const mobileMenuBox = await menu.boundingBox();
+  expect(mobileMenuBox).toBeTruthy();
+  expect(mobileMenuBox!.x).toBeGreaterThanOrEqual(12);
+  expect(mobileMenuBox!.x + mobileMenuBox!.width).toBeLessThanOrEqual(378);
+  expect(mobileMenuBox!.y).toBeGreaterThanOrEqual(12);
+  expect(mobileMenuBox!.y + mobileMenuBox!.height).toBeLessThanOrEqual(832);
+  await page.screenshot({
+    animations: "disabled",
+    path: info.outputPath("document-action-menu-390-dark.png"),
+  });
+});
 
 test("knowledge cards, editable home, nested folders, moves, old links and responsive views", async ({
   page,
@@ -158,10 +210,29 @@ test("knowledge cards, editable home, nested folders, moves, old links and respo
   await expectSingleNavigation(page);
   expect(filterRequests.length).toBeGreaterThan(0);
   expect(filterRequests.every((id) => id === projectId)).toBe(true);
-  await page
-    .getByRole("combobox", { name: "一份有层次的设计笔记操作", exact: true })
+  const documentMenuTrigger = page.getByRole("button", {
+    name: "一份有层次的设计笔记操作",
+    exact: true,
+  });
+  await documentMenuTrigger.click();
+  const documentMenu = page.getByRole("menu", {
+    name: "一份有层次的设计笔记操作",
+    exact: true,
+  });
+  await expect(documentMenu).toBeVisible();
+  const documentMenuTriggerBox = await documentMenuTrigger.boundingBox();
+  const documentMenuBox = await documentMenu.boundingBox();
+  expect(documentMenuTriggerBox && documentMenuBox).toBeTruthy();
+  expect(documentMenuBox!.x).toBeGreaterThan(
+    documentMenuTriggerBox!.x + documentMenuTriggerBox!.width,
+  );
+  await page.screenshot({
+    animations: "disabled",
+    path: info.outputPath("document-action-menu-1600-light.png"),
+  });
+  await documentMenu
+    .getByRole("menuitem", { name: "移动到…", exact: true })
     .click();
-  await page.getByRole("option", { name: "移动到…", exact: true }).click();
   await page.getByRole("combobox", { name: "目标文件夹", exact: true }).click();
   await page.getByRole("option", { name: "体验观察", exact: true }).click();
   await page.getByRole("button", { name: "移动", exact: true }).click();
@@ -176,9 +247,9 @@ test("knowledge cards, editable home, nested folders, moves, old links and respo
     )
     .not.toBeNull();
   await page
-    .getByRole("combobox", { name: "一份有层次的设计笔记操作", exact: true })
+    .getByRole("button", { name: "一份有层次的设计笔记操作", exact: true })
     .click();
-  await page.getByRole("option", { name: "删除", exact: true }).click();
+  await page.getByRole("menuitem", { name: "删除", exact: true }).click();
   await page
     .getByRole("alertdialog")
     .getByRole("button", { name: "确认", exact: true })

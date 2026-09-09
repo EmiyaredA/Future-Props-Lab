@@ -43,10 +43,20 @@ import { ModelTestConversationPanel } from "@features/models/conversation/ModelT
 import { ModelTestSettingsPanel } from "@features/models/conversation/ModelTestSettingsPanel";
 import { ModelTestDialogs } from "@features/models/conversation/ModelTestDialogs";
 import { errorPresentation } from "@features/models/conversation/modelTestPresentation";
+import {
+  availableCatalogModels,
+  preferredChatModel,
+  preferredModeModel,
+  useInitialCatalogModel,
+} from "./catalogTestSelection";
 export function ModelTestPage({
   onOpenAudioAnnotation = () => undefined,
+  initialModelId,
+  onInitialModelHandled,
 }: {
   onOpenAudioAnnotation?: (projectId: string) => void;
+  initialModelId?: string | null;
+  onInitialModelHandled?: () => void;
 }) {
   const queryClient = useQueryClient();
   const catalogQuery = useQuery({
@@ -91,25 +101,10 @@ export function ModelTestPage({
   const abortRef = useRef<AbortController | null>(null);
   const activeMessageIdRef = useRef<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const autoCreated = useRef(false);
+  const autoCreated = useRef(Boolean(initialModelId));
 
   const availableModels = useMemo(
-    () =>
-      (catalogQuery.data?.providers ?? []).flatMap((provider) =>
-        provider.enabled
-          ? provider.models
-              .filter((model) => model.enabled)
-              .map((model) => ({
-                value: model.id,
-                label: model.label || model.slug,
-                description: `${provider.name} · ${model.slug}`,
-                capabilities: Array.from(
-                  new Set([...model.capabilities, ...model.categories]),
-                ),
-                providerKind: provider.kind,
-              }))
-          : [],
-      ),
+    () => availableCatalogModels(catalogQuery.data),
     [catalogQuery.data],
   );
   const textModels = useMemo(
@@ -123,7 +118,9 @@ export function ModelTestPage({
   );
   const createMutation = useMutation({
     mutationFn: (modelId?: string) =>
-      createModelTestConversation(modelId ?? textModels[0]?.value),
+      createModelTestConversation(
+        modelId ?? preferredChatModel(catalogQuery.data, textModels),
+      ),
     onSuccess: async (conversation) => {
       queryClient.setQueryData(
         modelQueryKeys.conversation(conversation.id),
@@ -152,6 +149,14 @@ export function ModelTestPage({
       setError(cause instanceof Error ? cause.message : String(cause)),
   });
 
+  useInitialCatalogModel({
+    modelId: initialModelId,
+    catalog: catalogQuery.data,
+    onChat: createMutation.mutate,
+    onOther: setGenerationModelId,
+    onError: setError,
+    onHandled: onInitialModelHandled,
+  });
   useEffect(() => {
     const items = conversationsQuery.data?.items;
     if (!items) return;
@@ -462,23 +467,12 @@ export function ModelTestPage({
       setGenerationModelId(null);
       return;
     }
-    const candidates = availableModels.filter((model) => {
-      if (mode === "speech") {
-        return (
-          ["openai", "senseaudio_asr"].includes(model.providerKind) &&
-          model.capabilities.includes("speech_recognition")
-        );
-      }
-      if (mode === "realtime_voice")
-        return model.capabilities.includes("voice");
-      return (
-        model.providerKind ===
-        (mode === "image" ? "senseaudio_image" : "senseaudio_video")
-      );
-    });
-    const remembered = lastGenerationModelByMode.current[mode];
-    const next =
-      candidates.find((model) => model.value === remembered) ?? candidates[0];
+    const next = preferredModeModel(
+      availableModels,
+      mode,
+      lastGenerationModelByMode.current[mode],
+      catalogQuery.data?.default_model_ids,
+    );
     if (!next) return;
     lastGenerationModelByMode.current[mode] = next.value;
     setGenerationModelId(next.value);

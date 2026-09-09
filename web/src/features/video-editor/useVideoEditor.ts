@@ -1,3 +1,4 @@
+import { useWorkspacePermission } from "@platform/auth/WorkspacePermissions";
 import { DEFAULT_EDITOR_LAYOUT } from "./editorLayout";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -26,6 +27,7 @@ type HistoryEntry = {
 };
 
 export function useVideoEditor(projectId: string) {
+  const canWrite = useWorkspacePermission("content.write");
   const [initialWorkspacePreferences] = useState(() =>
     loadVideoEditorWorkspacePreferences(projectId),
   );
@@ -139,6 +141,7 @@ export function useVideoEditor(projectId: string) {
     [mutation],
   );
   useEffect(() => {
+    if (!canWrite) return;
     const current = timeline.data;
     if (!current || current.document.settings?.videoFitPolicyVersion === 1)
       return;
@@ -162,7 +165,7 @@ export function useVideoEditor(projectId: string) {
     void commit(operations).catch(() => {
       fitPolicyMigrationRevision.current = undefined;
     });
-  }, [commit, timeline.data]);
+  }, [canWrite, commit, timeline.data]);
   const undo = useCallback(async () => {
     const entry = undoStack.at(-1);
     if (!entry) return;

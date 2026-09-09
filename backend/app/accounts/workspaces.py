@@ -5,12 +5,13 @@ from datetime import timedelta
 from sqlalchemy import and_, func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.accounts.governance_transactions import begin_governance, cas, revoke_workspace_keys
+from app.accounts.member_roles import require_member_assignment
 from app.accounts.principal import StudioPrincipal
 from app.accounts.service import AccountError, add_audit_event
 from app.core.time import utc_now
 from app.models import (
     AuthSession,
-    ManagementApiKey,
     User,
     Workspace,
     WorkspaceInvitation,
@@ -48,7 +49,7 @@ async def resolve_access(
     membership = await active_membership(session, user_id=user.id, workspace_id=workspace.id)
     if membership is not None and membership.role == "owner":
         return "owner", membership
-    if user.is_platform_admin:
+    if user.platform_role in {"admin", "super_admin"}:
         return "platform_admin", membership
     if membership is not None:
         return "member", membership
@@ -64,13 +65,16 @@ async def list_workspaces(
     query: str,
     page: int,
     page_size: int,
+    visibility: str = "",
 ) -> tuple[list[dict], int]:
     membership = WorkspaceMembership.__table__.alias("viewer_membership")
     owner_member = WorkspaceMembership.__table__.alias("owner_membership")
     owner = User.__table__.alias("owner_user")
     conditions = [owner_member.c.role == "owner", owner_member.c.status == "active"]
-    if not principal.is_platform_admin:
+    if not principal.can_manage_all_workspaces:
         conditions.append(or_(membership.c.status == "active", Workspace.visibility == "public"))
+    if visibility:
+        conditions.append(Workspace.visibility == visibility)
     if query.strip():
         term = f"%{query.strip()}%"
         conditions.append(
@@ -92,6 +96,7 @@ async def list_workspaces(
             and_(
                 membership.c.workspace_id == Workspace.id,
                 membership.c.user_id == principal.user_id,
+                membership.c.status == "active",
             ),
         )
         .join(owner_member, owner_member.c.workspace_id == Workspace.id)
@@ -107,18 +112,35 @@ async def list_workspaces(
         )
     ).all()
     items: list[dict] = []
+    counts = (
+        dict(
+            (
+                await session.execute(
+                    select(WorkspaceMembership.workspace_id, func.count())
+                    .where(
+                        WorkspaceMembership.status == "active",
+                        WorkspaceMembership.workspace_id.in_([r[0].id for r in rows]),
+                    )
+                    .group_by(WorkspaceMembership.workspace_id)
+                )
+            ).all()
+        )
+        if rows
+        else {}
+    )
     for workspace, role, username, display_name in rows:
         if role == "owner":
             access = "owner"
-        elif principal.is_platform_admin:
+        elif principal.can_manage_all_workspaces:
             access = "platform_admin"
-        elif role == "member":
+        elif role in {"member", "admin", "viewer"}:
             access = "member"
         else:
             access = "public_viewer"
         items.append(
             {
                 "workspace": workspace,
+                "member_count": counts.get(workspace.id, 0),
                 "access_kind": access,
                 "role": role,
                 "owner_username": username,
@@ -159,7 +181,7 @@ async def switch_workspace(
 def require_workspace_governance(principal: StudioPrincipal) -> None:
     if principal.auth_kind != "session":
         raise AccountError("browser_session_required")
-    if principal.workspace_access not in {"owner", "platform_admin"}:
+    if not principal.allows("workspace.manage"):
         raise AccountError("workspace_owner_required")
 
 
@@ -172,6 +194,7 @@ async def patch_workspace(
     expected_revision: int,
     client_ip: str,
 ) -> Workspace:
+    principal = await begin_governance(session, principal)
     require_workspace_governance(principal)
     workspace = await session.get(Workspace, principal.workspace_id)
     if workspace is None:
@@ -179,9 +202,14 @@ async def patch_workspace(
     if workspace.revision != expected_revision:
         raise AccountError("revision_conflict", current=workspace)
     previous_visibility = workspace.visibility
-    workspace.name = name.strip()
-    workspace.visibility = visibility
-    workspace.revision += 1
+    workspace = await cas(
+        session,
+        Workspace,
+        workspace.id,
+        expected_revision,
+        name=name.strip(),
+        visibility=visibility,
+    )
     add_audit_event(
         session,
         "workspace.updated",
@@ -232,6 +260,7 @@ async def remove_member(
     expected_revision: int,
     client_ip: str,
 ) -> None:
+    principal = await begin_governance(session, principal)
     require_workspace_governance(principal)
     membership = await session.scalar(
         select(WorkspaceMembership).where(
@@ -241,22 +270,13 @@ async def remove_member(
     )
     if membership is None:
         raise AccountError("membership_not_found")
-    if membership.role == "owner":
-        raise AccountError("owner_cannot_be_removed")
+    require_member_assignment(principal, membership.user_id, membership.role, "member")
     if membership.revision != expected_revision:
         raise AccountError("revision_conflict", current=membership)
-    membership.status = "removed"
-    membership.revision += 1
-    now = utc_now()
-    await session.execute(
-        update(ManagementApiKey)
-        .where(
-            ManagementApiKey.user_id == membership.user_id,
-            ManagementApiKey.workspace_id == principal.workspace_id,
-            ManagementApiKey.revoked_at.is_(None),
-        )
-        .values(revoked_at=now, revision=ManagementApiKey.revision + 1)
+    membership = await cas(
+        session, WorkspaceMembership, membership.id, expected_revision, status="removed"
     )
+    await revoke_workspace_keys(session, membership.user_id, principal.workspace_id)
     add_audit_event(
         session,
         "workspace.member_removed",
@@ -285,15 +305,18 @@ async def create_invitation(
     principal: StudioPrincipal,
     username: str,
     client_ip: str,
+    role: str = "member",
 ) -> WorkspaceInvitation:
+    principal = await begin_governance(session, principal)
     require_workspace_governance(principal)
+    require_member_assignment(principal, "", "member", role)
     await expire_invitations(session)
     normalized = username.strip().lower()
     invitee = await session.scalar(
         select(User).where(
             User.username_normalized == normalized,
             User.status == "active",
-            User.is_platform_admin.is_(False),
+            User.platform_role == "member",
         )
     )
     if invitee is None or invitee.id == principal.user_id:
@@ -317,6 +340,7 @@ async def create_invitation(
         invitee_user_id=invitee.id,
         invited_by_user_id=principal.user_id,
         status="pending",
+        role=role,
         expires_at=utc_now() + timedelta(days=7),
     )
     session.add(invitation)
@@ -338,6 +362,8 @@ async def invitation_views(
     principal: StudioPrincipal,
     current_workspace_only: bool,
 ) -> list[dict]:
+    if current_workspace_only:
+        require_workspace_governance(principal)
     await expire_invitations(session)
     invitee = User.__table__.alias("invitee")
     inviter = User.__table__.alias("inviter")
@@ -373,6 +399,7 @@ async def invitation_views(
             "invitee_display_name": invitee_display_name,
             "inviter_username": inviter_username,
             "status": row.status,
+            "role": row.role,
             "expires_at": row.expires_at,
             "responded_at": row.responded_at,
             "revision": row.revision,
@@ -391,12 +418,11 @@ async def act_on_invitation(
     action: str,
     client_ip: str,
 ) -> None:
+    principal = await begin_governance(session, principal)
     await expire_invitations(session)
     invitation = await session.get(WorkspaceInvitation, invitation_id)
-    if invitation is None or invitation.status != "pending":
+    if invitation is None:
         raise AccountError("invitation_not_found")
-    if invitation.revision != expected_revision:
-        raise AccountError("revision_conflict", current=invitation)
     if action in {"accepted", "declined"}:
         if invitation.invitee_user_id != principal.user_id:
             raise AccountError("invitation_not_found")
@@ -404,9 +430,21 @@ async def act_on_invitation(
         require_workspace_governance(principal)
         if invitation.workspace_id != principal.workspace_id:
             raise AccountError("invitation_not_found")
-    invitation.status = action
-    invitation.responded_at = utc_now()
-    invitation.revision += 1
+        require_member_assignment(
+            principal, invitation.invitee_user_id, invitation.role, invitation.role
+        )
+    if invitation.revision != expected_revision:
+        raise AccountError("revision_conflict", current=invitation)
+    if invitation.status != "pending":
+        raise AccountError("invitation_not_found")
+    invitation = await cas(
+        session,
+        WorkspaceInvitation,
+        invitation.id,
+        expected_revision,
+        status=action,
+        responded_at=utc_now(),
+    )
     if action == "accepted":
         membership = await session.scalar(
             select(WorkspaceMembership).where(
@@ -419,14 +457,21 @@ async def act_on_invitation(
                 WorkspaceMembership(
                     user_id=principal.user_id,
                     workspace_id=invitation.workspace_id,
-                    role="member",
+                    role=invitation.role,
                     status="active",
                 )
             )
         else:
-            membership.status = "active"
-            membership.role = "member"
-            membership.revision += 1
+            if membership.status == "active":
+                raise AccountError("already_a_member")
+            await cas(
+                session,
+                WorkspaceMembership,
+                membership.id,
+                membership.revision,
+                status="active",
+                role=invitation.role,
+            )
     add_audit_event(
         session,
         f"workspace.invitation_{action}",

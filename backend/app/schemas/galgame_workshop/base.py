@@ -34,6 +34,7 @@ GalgameWorkshopProjectStatus = Literal["draft", "completed"]
 
 
 class GalgameWorkshopProjectOut(BaseModel):
+    is_official: bool = False
     id: str
     title: str
     status: GalgameWorkshopProjectStatus

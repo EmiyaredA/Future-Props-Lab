@@ -24,6 +24,7 @@ class User(Base):
     password_hash: Mapped[str] = mapped_column(Text)
     status: Mapped[str] = mapped_column(String(16), default="active", index=True)
     is_platform_admin: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
+    platform_role: Mapped[str] = mapped_column(String(16), default="member", index=True)
     must_change_password: Mapped[bool] = mapped_column(Boolean, default=True)
     revision: Mapped[int] = mapped_column(Integer, default=0)
     last_login_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
@@ -75,6 +76,8 @@ class AuthSession(Base):
 
 class WorkspaceInvitation(Base):
     __tablename__ = "workspace_invitations"
+
+    role: Mapped[str] = mapped_column(String(16), default="member")
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
     workspace_id: Mapped[str] = mapped_column(

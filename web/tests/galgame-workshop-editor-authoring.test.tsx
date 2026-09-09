@@ -104,6 +104,7 @@ vi.mock("@features/galgame-workshop/editor/StoryAudioPreview", () => ({
 }));
 
 const project = {
+  is_official: false,
   id: "project-1",
   title: "纵向切片",
   status: "draft" as const,

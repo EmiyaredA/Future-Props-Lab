@@ -94,6 +94,13 @@ async def update_tool_api(
 ) -> ToolApiOut:
     _owner(principal)
     try:
+        existing = await ToolApiCatalog(session).get(integration_id)
+        if (
+            existing.sensitive_result
+            and not body.sensitive_result
+            and not principal.allows("tools.sensitive")
+        ):
+            raise HTTPException(403, {"code": "sensitive_tool_permission_required"})
         return await ToolApiCatalog(session).update(integration_id, body)
     except (IntegrationNotFoundError, DuplicateIntegrationError) as exc:
         _raise_integration(exc)
@@ -123,7 +130,12 @@ async def validate_tool_api(
 ) -> ToolApiValidationOut:
     _owner(principal)
     try:
-        return await ToolApiCatalog(session).validate(integration_id, body.input)
+        catalog = ToolApiCatalog(session)
+        resource = await catalog.get(integration_id)
+        result = await catalog.validate(integration_id, body.input)
+        if resource.sensitive_result and not principal.allows("tools.sensitive"):
+            result = result.model_copy(update={"response_preview": "敏感工具内容已隐藏"})
+        return result
     except IntegrationNotFoundError as exc:
         _raise_integration(exc)
 
@@ -159,6 +171,13 @@ async def update_mcp(
 ) -> McpOut:
     _owner(principal)
     try:
+        existing = await McpCatalog(session).get(integration_id)
+        if (
+            existing.sensitive_result
+            and not body.sensitive_result
+            and not principal.allows("tools.sensitive")
+        ):
+            raise HTTPException(403, {"code": "sensitive_tool_permission_required"})
         return await McpCatalog(session).update(integration_id, body)
     except (IntegrationNotFoundError, DuplicateIntegrationError) as exc:
         _raise_integration(exc)

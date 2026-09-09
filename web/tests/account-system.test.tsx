@@ -25,7 +25,9 @@ beforeEach(() => {
 });
 
 const me = {
+  policy_revision: 0,
   user: {
+    platform_role: "super_admin" as const,
     id: "user-1",
     username: "admin",
     display_name: "管理员",
@@ -41,6 +43,17 @@ const me = {
     revision: 0,
     access_kind: "owner",
     role: "owner",
+    permission_keys: [
+      "content.read",
+      "content.write",
+      "models.use",
+      "configuration.manage",
+      "logs.read",
+      "workspace.manage",
+      "members.manage",
+      "members.assign_admin",
+      "audit.read",
+    ],
   },
   must_change_password: false,
   session_expires_at: "2026-08-27T00:00:00Z",
@@ -111,4 +124,79 @@ test("returns to the login screen when the shared API client reports session exp
   expect(
     await screen.findByRole("heading", { name: "登录 Future Props Lab" }),
   ).toBeInTheDocument();
+});
+
+test("permission refresh clears sensitive cached data and remounts the workspace", async () => {
+  const { useWorkspacePermission } =
+    await import("@platform/auth/WorkspacePermissions");
+  const cache = new QueryClient();
+  function PermissionView() {
+    const writable = useWorkspacePermission("content.write");
+    return <button disabled={!writable}>保存内容</button>;
+  }
+  accountApi.getMe.mockResolvedValue(me);
+  render(
+    <QueryClientProvider client={cache}>
+      <StudioAuthGate>
+        <PermissionView />
+      </StudioAuthGate>
+    </QueryClientProvider>,
+  );
+  expect(await screen.findByRole("button", { name: "保存内容" })).toBeEnabled();
+  cache.setQueryData(["private-logs"], { confidential: "old-workspace" });
+  accountApi.getMe.mockResolvedValue({
+    ...me,
+    workspace: {
+      ...me.workspace,
+      role: "viewer",
+      permission_keys: ["content.read"],
+    },
+  });
+  act(() =>
+    window.dispatchEvent(new Event("future-props:permissions-changed")),
+  );
+  await waitFor(() =>
+    expect(screen.getByRole("button", { name: "保存内容" })).toBeDisabled(),
+  );
+  expect(cache.getQueryData(["private-logs"])).toBeUndefined();
+});
+
+test("workspace switch waits for the unsaved-edit guard before calling the API", async () => {
+  const { useStudioSession } = await import("@app/StudioSession");
+  accountApi.getMe.mockResolvedValue(me);
+  accountApi.switchWorkspace.mockRejectedValue(new Error("切换测试冲突"));
+  function Switch() {
+    const session = useStudioSession();
+    return (
+      <button onClick={() => void session.switchWorkspace("workspace-2")}>
+        切换空间
+      </button>
+    );
+  }
+  let continuation: (() => void) | undefined;
+  const guard = (event: Event) => {
+    event.preventDefault();
+    continuation = (event as CustomEvent<() => void>).detail;
+  };
+  window.addEventListener("future-props:before-workspace-switch", guard);
+  try {
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <StudioAuthGate>
+          <Switch />
+        </StudioAuthGate>
+      </QueryClientProvider>,
+    );
+    await userEvent.click(
+      await screen.findByRole("button", { name: "切换空间" }),
+    );
+    expect(accountApi.switchWorkspace).not.toHaveBeenCalled();
+    act(() => continuation?.());
+    await screen.findByRole("alert");
+    expect(accountApi.switchWorkspace).toHaveBeenCalledExactlyOnceWith(
+      "workspace-2",
+    );
+  } finally {
+    window.removeEventListener("future-props:before-workspace-switch", guard);
+  }
 });

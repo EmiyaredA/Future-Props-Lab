@@ -12,7 +12,7 @@ export async function newDocument(page: Page) {
       page.getByRole("button", { name: "编辑首页", exact: true }),
     ).toBeVisible();
   }
-  await page.getByRole("button", { name: "新建文档", exact: true }).click();
+  await page.locator(".knowledge-directory-add").click();
   await expect(page.getByLabel("笔记标题", { exact: true })).toBeVisible();
 }
 export async function setThoughtTheme(page: Page, theme: string) {

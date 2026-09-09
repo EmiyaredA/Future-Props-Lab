@@ -36,6 +36,7 @@ vi.mock("@features/models/api", async () => {
   return {
     ...actual,
     getCatalog: vi.fn().mockResolvedValue({
+      default_model_ids: {},
       revision: 2,
       providers: [
         {
@@ -469,10 +470,10 @@ test("shows provider catalog categories without the redundant diagnostics entry"
   expect(await screen.findByText("主模型网关")).toBeInTheDocument();
   expect(await screen.findByText("Model X")).toBeInTheDocument();
   expect(container.querySelector(".model-glyph")).toBeNull();
-  expect(screen.getByText("类别 / 能力")).toBeInTheDocument();
-  expect(screen.getByText("文本生成")).toBeInTheDocument();
+  expect(screen.getByText("支持能力")).toBeInTheDocument();
+  expect(screen.getByRole("tab", { name: "对话" })).toBeInTheDocument();
   expect(screen.getByText("状态")).toBeInTheDocument();
-  expect(screen.getAllByText("已启用")).toHaveLength(2);
+  expect(screen.getAllByText("已启用")).toHaveLength(5);
   expect(screen.queryByRole("button", { name: "测试调用" })).toBeNull();
   expect(screen.queryByText("查看模型测试产生的调用日志")).toBeNull();
 });
@@ -480,7 +481,7 @@ test("shows provider catalog categories without the redundant diagnostics entry"
 test("does not repeat a capability that is already shown as a category", async () => {
   const user = userEvent.setup();
   renderWithQuery(<ModelServicePage />);
-  await user.click(await screen.findByRole("button", { name: /图片供应商/ }));
+  await user.click(await screen.findByRole("tab", { name: "图片" }));
   expect(screen.getAllByText("图片生成")).toHaveLength(1);
 });
 
@@ -489,13 +490,15 @@ test("offers the SenseAudio speaker recognition provider and ASR capability", as
   renderWithQuery(<ModelServicePage />);
   await screen.findByText("主模型网关");
 
-  await user.click(screen.getByRole("button", { name: /添加供应商/ }));
-  await user.click(screen.getByRole("combobox", { name: "通道类型" }));
+  await user.click(screen.getByRole("tab", { name: "接入管理" }));
+  await user.click(screen.getAllByRole("button", { name: "添加连接" })[0]);
+  await user.click(screen.getByRole("combobox", { name: "接入协议" }));
   expect(
     screen.getByRole("option", { name: "SenseAudio 专业说话人识别" }),
   ).toBeInTheDocument();
   await user.click(screen.getByRole("button", { name: "关闭" }));
 
+  await user.click(screen.getByRole("tab", { name: "模型目录" }));
   await user.click(screen.getByRole("button", { name: /添加模型/ }));
   expect(screen.getByRole("button", { name: "语音识别" })).toBeInTheDocument();
 });
@@ -897,5 +900,18 @@ test("resets dynamic transcription controls when switching ASR models", async ()
   );
   expect(
     screen.queryByRole("switch", { name: /文本整理/ }),
+  ).not.toBeInTheDocument();
+});
+
+test("read-only workspace users can inspect defaults without save controls", async () => {
+  const user = userEvent.setup();
+  renderWithQuery(<ModelServicePage canWrite={false} />);
+  await user.click(await screen.findByRole("button", { name: "默认模型用途" }));
+  expect(
+    screen.getByRole("dialog", { name: "工作区默认模型" }),
+  ).toBeInTheDocument();
+  expect(screen.getByRole("combobox", { name: "对话默认模型" })).toBeDisabled();
+  expect(
+    screen.queryByRole("button", { name: "保存更改" }),
   ).not.toBeInTheDocument();
 });

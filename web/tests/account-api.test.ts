@@ -45,7 +45,7 @@ test("keeps invitation and one-time API key creation on the shared client", asyn
   await inviteWorkspaceMember("developer");
   expect(client.POST).toHaveBeenCalledWith(
     "/v1/account/workspaces/current/invitations",
-    { body: { username: "developer" } },
+    { body: { username: "developer", role: "member" } },
   );
 
   await createApiKey("交付密钥", ["studio:read", "studio:write"]);

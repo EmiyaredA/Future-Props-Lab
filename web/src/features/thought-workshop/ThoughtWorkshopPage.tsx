@@ -28,22 +28,21 @@ import {
 import {
   createKnowledge,
   createDocument,
-  createFolder,
   getDirectory,
   listKnowledge,
   moveEntry,
-  removeFolder,
-  renameFolder,
   restoreKnowledge,
   trashKnowledge,
   updateKnowledge,
 } from "./knowledgeApi";
-import { KnowledgeTree, type TreeItem } from "./KnowledgeTree";
+import { KnowledgeTree } from "./KnowledgeTree";
 import { KnowledgeCover } from "./KnowledgeCover";
+import { DeleteDocumentDialog } from "./DeleteDocumentDialog";
 import { thoughtKeys } from "./queryKeys";
 import { download } from "./download";
 import { useDrawerFocus } from "@shared/ui/useDrawerFocus";
 import type { NavigationGuard } from "./NoteEditorPane";
+import type { NoteSummary } from "./api";
 import "./thought-workshop.css";
 import "./writing-layout.css";
 import "./knowledge.css";
@@ -91,8 +90,9 @@ export function ThoughtWorkshopPage({
     description: string;
     apply: () => Promise<unknown>;
   } | null>(null);
-  const [moving, setMoving] = useState<TreeItem | null>(null);
+  const [moving, setMoving] = useState<NoteSummary | null>(null);
   const [moveParent, setMoveParent] = useState("");
+  const [deleteTarget, setDeleteTarget] = useState<NoteSummary | null>(null);
   const [drawer, setDrawer] = useState(false);
   const [editHome, setEditHome] = useState(false);
   const [coverProject, setCoverProject] = useState<KnowledgeBase | null>(null);
@@ -211,6 +211,7 @@ export function ThoughtWorkshopPage({
     });
   const save = (saved: Note) => {
     client.setQueryData(thoughtKeys.note(saved.id), saved);
+    void client.invalidateQueries({ queryKey: thoughtKeys.history(saved.id) });
     void client.invalidateQueries({ queryKey: thoughtKeys.projectLists() });
     void client.invalidateQueries({
       queryKey: thoughtKeys.directory(saved.knowledge_base_id),
@@ -254,42 +255,53 @@ export function ThoughtWorkshopPage({
         },
       });
   };
-  const treeAction = (value: string, item: TreeItem) => {
-    if (value === "new-document") void create(item.value.id);
-    if (value === "new-folder")
-      setInput({
-        title: "新建子文件夹",
-        apply: (title) => createFolder(project!, title, item.value.id),
-      });
-    if (value === "rename" && item.kind === "folder")
-      setInput({
-        title: "重命名文件夹",
-        initial: item.value.title,
-        apply: (title) => renameFolder(project!, item.value, title),
-      });
+  const treeAction = (value: string, item: NoteSummary) => {
+    if (value === "new-document") void create(item.id);
     if (value === "move") {
       setMoving(item);
       setMoveParent("");
     }
-    if (value === "delete")
+    if (value === "delete") {
+      const hasChildren = (directory.data?.documents || []).some(
+        (doc) => doc.parent_id === item.id,
+      );
+      if (hasChildren) {
+        setDeleteTarget(item);
+        return;
+      }
       setConfirm({
-        title: item.kind === "folder" ? "删除文件夹？" : "文档移入回收站？",
-        description:
-          item.kind === "folder"
-            ? "直接子文件夹和文档将移到上一级，内容不会被删除。"
-            : "可在当前知识库的文档回收站恢复。",
+        title: "文档移入回收站？",
+        description: "可在当前知识库的文档回收站恢复。",
         apply: async () => {
-          if (item.kind === "folder") await removeFolder(project!, item.value);
-          else {
-            await deleteNote(item.value);
-            if (noteId === item.value.id) {
-              registerNavigationGuard(null);
-              editorGuard.current = null;
-              open();
-            }
+          await deleteNote(item);
+          if (noteId === item.id) {
+            registerNavigationGuard(null);
+            editorGuard.current = null;
+            open();
           }
         },
       });
+    }
+  };
+  const removeDocument = async (item: NoteSummary, cascade: boolean) => {
+    await deleteNote(item, false, cascade);
+    const byId = new Map(
+      (directory.data?.documents || []).map((doc) => [doc.id, doc]),
+    );
+    let current = noteId ? byId.get(noteId) : undefined;
+    let shouldLeave = noteId === item.id;
+    while (cascade && current) {
+      if (current.id === item.id) {
+        shouldLeave = true;
+        break;
+      }
+      current = current.parent_id ? byId.get(current.parent_id) : undefined;
+    }
+    if (shouldLeave) {
+      registerNavigationGuard(null);
+      editorGuard.current = null;
+      open();
+    }
   };
   const projectOptions = [
     { value: "", label: "更多", disabled: true },
@@ -341,25 +353,14 @@ export function ThoughtWorkshopPage({
       >
         <div className="knowledge-directory-label">
           <span>目录</span>
-          <CustomSelect
-            escapeClipping
-            showChevron={false}
-            ariaLabel="目录操作"
-            value=""
-            options={[
-              { value: "", label: "+", disabled: true },
-              { value: "document", label: "新建文档" },
-              { value: "folder", label: "新建文件夹" },
-            ]}
-            onChange={(value) => {
-              if (value === "document") void create();
-              else
-                setInput({
-                  title: "新建文件夹",
-                  apply: (title) => createFolder(project!, title),
-                });
-            }}
-          />
+          <button
+            type="button"
+            className="knowledge-directory-add"
+            aria-label="新建文档"
+            onClick={() => void create()}
+          >
+            +
+          </button>
         </div>
         {directory.data && (
           <KnowledgeTree
@@ -700,15 +701,28 @@ export function ThoughtWorkshopPage({
         title="移动到"
         description={
           <div>
-            <p>选择目标文件夹，文档仅在当前知识库内移动。</p>
+            <p>选择目标父文档，文档仅在当前知识库内移动。</p>
             <CustomSelect
-              ariaLabel="目标文件夹"
+              ariaLabel="目标父文档"
               value={moveParent}
               options={[
                 { value: "", label: "知识库根目录" },
-                ...(directory.data?.folders || [])
-                  .filter((f) => f.id !== moving?.value.id)
-                  .map((f) => ({ value: f.id, label: f.title })),
+                ...(directory.data?.documents || [])
+                  .filter((doc) => {
+                    if (!moving || doc.id === moving.id) return false;
+                    const blocked = new Set<string>([moving.id]);
+                    const walk = (id: string) => {
+                      for (const child of directory.data?.documents || []) {
+                        if (child.parent_id === id && !blocked.has(child.id)) {
+                          blocked.add(child.id);
+                          walk(child.id);
+                        }
+                      }
+                    };
+                    walk(moving.id);
+                    return !blocked.has(doc.id);
+                  })
+                  .map((doc) => ({ value: doc.id, label: doc.title })),
               ]}
               onChange={setMoveParent}
             />
@@ -722,11 +736,26 @@ export function ThoughtWorkshopPage({
           if (item)
             void run(() =>
               moveEntry(project!, {
-                kind: item.kind,
-                item_id: item.value.id,
+                item_id: item.id,
                 parent_id: moveParent || null,
               }),
             );
+        }}
+      />
+      <DeleteDocumentDialog
+        open={!!deleteTarget}
+        title={deleteTarget?.title || ""}
+        pending={busy}
+        onCancel={() => setDeleteTarget(null)}
+        onDeleteSelf={() => {
+          const item = deleteTarget;
+          setDeleteTarget(null);
+          if (item) void run(() => removeDocument(item, false));
+        }}
+        onDeleteSubtree={() => {
+          const item = deleteTarget;
+          setDeleteTarget(null);
+          if (item) void run(() => removeDocument(item, true));
         }}
       />
     </div>

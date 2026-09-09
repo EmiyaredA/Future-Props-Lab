@@ -100,14 +100,11 @@ const articles = import.meta.glob("./articles/**/*.md", {
   import: "default",
   eager: true,
 }) as Record<string, string>;
-const references = import.meta.glob(
-  [
-    "../../../docs/{architecture,operations,reference}/*.md",
-    "../../../{README,CONTRIBUTING}.md",
-    "../../../docs/assets/MANIFEST.md",
-  ],
-  { query: "?raw", import: "default", eager: true },
-) as Record<string, string>;
+const references = import.meta.glob(["../../../docs/reference/api.md"], {
+  query: "?raw",
+  import: "default",
+  eager: true,
+}) as Record<string, string>;
 export const GUIDE_PAGES: GuidePage[] = Object.entries(articles).map(
   ([source, raw]) => {
     const meta = JSON.parse(/^<!-- docs: (.*) -->/.exec(raw)?.[1] || "{}");
@@ -212,4 +209,32 @@ export function resolveDocLink(page: GuidePage, href: string) {
     url.pathname +
     url.hash
   );
+}
+
+// Protected markdown is fetched after authentication; never bundled into the public site.
+export function replaceDeveloperDocuments(
+  items: { id: string; source: string; group: string; markdown: string }[],
+) {
+  for (let index = GUIDE_PAGES.length - 1; index >= 0; index--) {
+    if (GUIDE_PAGES[index].category === "developer") {
+      PAGE_BY_ID.delete(GUIDE_PAGES[index].id);
+      GUIDE_PAGES.splice(index, 1);
+    }
+  }
+  for (const item of items) {
+    const parsed = parseArticle(item.markdown);
+    const page: GuidePage = {
+      id: item.id,
+      title: parsed.headings[0]?.title || item.id,
+      lead: "",
+      group: item.group,
+      category: "developer",
+      order: 0,
+      source: item.source,
+      evidence: [item.source.replace("../../../", "")],
+      ...parsed,
+    };
+    GUIDE_PAGES.push(page);
+    PAGE_BY_ID.set(page.id, page);
+  }
 }

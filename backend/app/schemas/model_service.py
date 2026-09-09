@@ -5,6 +5,7 @@ from typing import Literal
 from pydantic import BaseModel, Field, model_validator
 
 from app.core.outbound_urls import normalize_provider_base_url, normalize_provider_websocket_url
+from app.schemas.model_supplier import ModelSupplierOut
 
 ProviderKind = Literal[
     "openai",
@@ -49,6 +50,9 @@ class ModelEntryIn(BaseModel):
 
 
 class ModelEntryOut(BaseModel):
+    origin: Literal["user", "role_template"] = "user"
+    template_key: str | None = None
+    managed_fields: list[str] = Field(default_factory=list)
     id: str
     provider_id: str
     slug: str
@@ -62,6 +66,7 @@ class ModelEntryOut(BaseModel):
 class ProviderIn(BaseModel):
     expected_catalog_revision: int = Field(ge=0)
     name: str = Field(min_length=1, max_length=120)
+    supplier_id: str | None = None
     kind: ProviderKind
     base_url: str = Field(default="", max_length=512)
     api_key: str = ""
@@ -78,8 +83,12 @@ class ProviderIn(BaseModel):
 
 
 class ProviderOut(BaseModel):
+    origin: Literal["user", "role_template"] = "user"
+    template_key: str | None = None
+    managed_fields: list[str] = Field(default_factory=list)
     id: str
     name: str
+    supplier_id: str | None = None
     kind: ProviderKind
     base_url: str
     enabled: bool
@@ -89,7 +98,9 @@ class ProviderOut(BaseModel):
 
 
 class ModelCatalogOut(BaseModel):
+    default_model_ids: dict[str, str] = Field(default_factory=dict)
     revision: int
+    suppliers: list[ModelSupplierOut] = Field(default_factory=list)
     providers: list[ProviderOut]
 
 
@@ -129,3 +140,8 @@ class ModelCategoryOut(BaseModel):
 
 class ModelCategoryListOut(BaseModel):
     items: list[ModelCategoryOut]
+
+
+class ModelDefaultsIn(BaseModel):
+    expected_revision: int = Field(ge=0)
+    default_model_ids: dict[ModelCapability, str]

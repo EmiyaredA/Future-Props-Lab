@@ -30,6 +30,7 @@ vi.mock("@features/galgame-workshop/api", async () => {
 });
 
 const project = {
+  is_official: false,
   id: "project-1",
   title: "命运石之门",
   status: "draft" as const,

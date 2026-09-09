@@ -29,6 +29,7 @@ def project_out(row: VisualWorkshopProject) -> VisualWorkshopProjectOut:
     return VisualWorkshopProjectOut(
         id=row.id,
         title=row.title,
+        is_official=row.is_official,
         kind=row.kind,
         status=row.status,
         revision=row.revision,

@@ -31,6 +31,7 @@ def project_out(row: GalgameWorkshopProject) -> GalgameWorkshopProjectOut:
     return GalgameWorkshopProjectOut(
         id=row.id,
         title=row.title,
+        is_official=row.is_official,
         status=row.status,  # type: ignore[arg-type]
         revision=row.revision,
         created_at=iso_utc(row.created_at),

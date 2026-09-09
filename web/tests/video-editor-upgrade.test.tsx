@@ -140,6 +140,7 @@ beforeEach(() => {
   vi.mocked(getVisualWorkshopProjects).mockResolvedValue({
     items: [
       {
+        is_official: false,
         id: "canvas-1",
         title: "广告画布",
         kind: "canvas",

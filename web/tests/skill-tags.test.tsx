@@ -147,11 +147,11 @@ test("combines text, status and tag filters including untagged and no results", 
     screen.getByRole("heading", { name: "h3-prompt-writing" }),
   ).toBeVisible();
   await user.click(screen.getByRole("combobox", { name: "Skill 状态筛选" }));
-  await user.click(screen.getByRole("option", { name: "草稿", exact: true }));
+  await user.click(screen.getByRole("option", { name: "草稿" }));
   expect(screen.getByText("没有匹配的 Skill。")).toBeVisible();
   await user.clear(screen.getByRole("textbox", { name: "搜索 Skill" }));
   await user.click(screen.getByRole("combobox", { name: "Skill 标签筛选" }));
-  await user.click(screen.getByRole("option", { name: "无标签", exact: true }));
+  await user.click(screen.getByRole("option", { name: "无标签" }));
   expect(screen.getByRole("heading", { name: "plain-skill" })).toBeVisible();
 });
 

@@ -1,4 +1,5 @@
 import { renderDiagram } from "./diagram";
+import { ManagedImageView } from "./ManagedImageView";
 import { useEffect, useId, useState } from "react";
 import { Node, mergeAttributes } from "@tiptap/core";
 import {
@@ -6,57 +7,31 @@ import {
   ReactNodeViewRenderer,
   type NodeViewProps,
 } from "@tiptap/react";
-import { useApiBlobUrl } from "@platform/api/useApiBlobUrl";
 
-function ManagedImageView({
-  node,
-  selected,
-  updateAttributes,
-  editor,
-}: NodeViewProps) {
-  const { url, error } = useApiBlobUrl(
-    `/v1/files/${encodeURIComponent(String(node.attrs.assetId))}/content`,
-  );
-  return (
-    <NodeViewWrapper className={`thought-image ${selected ? "selected" : ""}`}>
-      {url ? (
-        <img
-          src={url}
-          alt={String(node.attrs.alt || "笔记图片")}
-          style={{ width: node.attrs.width || "auto", maxWidth: "100%" }}
-        />
-      ) : (
-        <span>{error ? "图片读取失败" : "图片加载中…"}</span>
-      )}
-      {selected && editor.isEditable && (
-        <div className="thought-image-controls" contentEditable={false}>
-          <label>
-            宽度{" "}
-            <input
-              aria-label="图片宽度"
-              type="number"
-              min={40}
-              max={2000}
-              value={node.attrs.width || 480}
-              onChange={(e) =>
-                updateAttributes({
-                  width: Math.max(40, Math.min(2000, Number(e.target.value))),
-                })
-              }
-            />
-          </label>
-          <label>
-            替代文字{" "}
-            <input
-              aria-label="图片替代文字"
-              value={node.attrs.alt || ""}
-              onChange={(e) => updateAttributes({ alt: e.target.value })}
-            />
-          </label>
-        </div>
-      )}
-    </NodeViewWrapper>
-  );
+function numberAttribute(element: Element, name: string) {
+  const value = element.getAttribute(name);
+  if (value === null || value === "") return null;
+  const number = Number(value);
+  return Number.isFinite(number) ? number : null;
+}
+
+function imageAttributes(image: HTMLImageElement, figure?: Element) {
+  const source = figure ?? image;
+  const align = source.getAttribute("data-align");
+  return {
+    assetId: image.getAttribute("data-asset-id"),
+    alt: image.getAttribute("alt") || "",
+    caption:
+      figure?.querySelector("figcaption")?.textContent ||
+      image.getAttribute("data-caption") ||
+      "",
+    width: numberAttribute(image, "width"),
+    align: align === "center" || align === "right" ? align : "left",
+    cropLeft: numberAttribute(source, "data-crop-left"),
+    cropTop: numberAttribute(source, "data-crop-top"),
+    cropWidth: numberAttribute(source, "data-crop-width"),
+    cropHeight: numberAttribute(source, "data-crop-height"),
+  };
 }
 
 export const ManagedImage = Node.create({
@@ -71,27 +46,64 @@ export const ManagedImage = Node.create({
       title: { default: null },
       width: { default: null },
       height: { default: null },
+      caption: { default: "" },
+      align: { default: "left" },
+      cropLeft: { default: null },
+      cropTop: { default: null },
+      cropWidth: { default: null },
+      cropHeight: { default: null },
     };
   },
   parseHTML() {
     return [
       {
+        tag: "figure[data-thought-image]",
+        getAttrs: (element) => {
+          const img = element.querySelector("img[data-asset-id]");
+          if (!(img instanceof HTMLImageElement)) return false;
+          return imageAttributes(img, element);
+        },
+      },
+      {
         tag: "img[data-asset-id]",
-        getAttrs: (element) => ({
-          assetId: element.getAttribute("data-asset-id"),
-          alt: element.getAttribute("alt") || "",
-        }),
+        getAttrs: (element) =>
+          element instanceof HTMLImageElement
+            ? imageAttributes(element)
+            : false,
       },
     ];
   },
   renderHTML({ node }) {
-    return [
+    const crop = ["cropLeft", "cropTop", "cropWidth", "cropHeight"].every(
+      (key) => typeof node.attrs[key] === "number",
+    );
+    const image = [
       "img",
       {
         "data-asset-id": node.attrs.assetId,
         alt: node.attrs.alt,
-        width: node.attrs.width,
+        ...(node.attrs.width ? { width: node.attrs.width } : {}),
+        ...(node.attrs.caption ? { "data-caption": node.attrs.caption } : {}),
       },
+    ] as const;
+    const figureAttrs = {
+      "data-thought-image": "true",
+      "data-align": node.attrs.align || "left",
+      ...(crop
+        ? {
+            "data-crop-left": node.attrs.cropLeft,
+            "data-crop-top": node.attrs.cropTop,
+            "data-crop-width": node.attrs.cropWidth,
+            "data-crop-height": node.attrs.cropHeight,
+          }
+        : {}),
+    };
+    if (!node.attrs.caption) return ["figure", figureAttrs, image];
+    return [
+      "figure",
+      figureAttrs,
+      image,
+      ["figcaption", {}, String(node.attrs.caption)],
     ];
   },
   addNodeView() {

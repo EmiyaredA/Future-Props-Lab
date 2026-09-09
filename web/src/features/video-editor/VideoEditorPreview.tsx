@@ -1,3 +1,4 @@
+import { useWorkspacePermission } from "@platform/auth/WorkspacePermissions";
 import {
   useEffect,
   useMemo,
@@ -194,6 +195,7 @@ export function VideoEditorPreview({
   onPreciseFrameChange: (value: boolean) => void;
   onFrameSaved?: () => void | Promise<unknown>;
 }) {
+  const canWrite = useWorkspacePermission("content.write");
   const [frameExport, setFrameExport] = useState<{
     revision: number;
     timeUs: number;
@@ -254,6 +256,7 @@ export function VideoEditorPreview({
             精确停帧
           </button>
           <button
+            disabled={!canWrite}
             aria-label="导出当前节目帧"
             title="导出当前节目帧"
             onClick={() => {

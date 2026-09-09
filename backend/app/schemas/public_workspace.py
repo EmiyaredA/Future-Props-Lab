@@ -16,6 +16,7 @@ class PublicAssetOut(BaseModel):
 
 class PublicVisualProjectOut(BaseModel):
     id: str
+    is_official: bool = False
     title: str
     kind: str
     status: str
@@ -25,6 +26,7 @@ class PublicVisualProjectOut(BaseModel):
 
 class PublicGalgameProjectOut(BaseModel):
     id: str
+    is_official: bool = False
     title: str
     status: str
     updated_at: datetime

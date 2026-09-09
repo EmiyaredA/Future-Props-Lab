@@ -4,7 +4,7 @@ from datetime import datetime
 
 from fastapi import APIRouter, HTTPException, Query, Response
 
-from app.deps import SessionDep, WorkspaceDep
+from app.deps import SessionDep, StudioAuth, WorkspaceDep
 from app.llm.call_logs import CallLogService, ReproductionUnavailableError
 from app.schemas.call_log import (
     BatchDeleteIn,
@@ -72,10 +72,22 @@ async def stats(session: SessionDep, workspace_id: WorkspaceDep) -> CallLogStats
 
 
 @router.get("/{log_id}", response_model=CallLogOut)
-async def detail(session: SessionDep, workspace_id: WorkspaceDep, log_id: str) -> CallLogOut:
+async def detail(
+    principal: StudioAuth, session: SessionDep, workspace_id: WorkspaceDep, log_id: str
+) -> CallLogOut:
     row = await _logs(session, workspace_id).get(log_id)
     if row is None:
         raise HTTPException(404, {"code": "not_found", "message": "调用日志不存在"})
+    if not principal.allows("diagnostics.model"):
+        row = row.model_copy(
+            update={
+                "request_payload": {},
+                "response_payload": {},
+                "error_message": None,
+                "reproduction_supported": False,
+                "reproduction_reason": "当前身份不能查看完整诊断",
+            }
+        )
     return row
 
 
@@ -85,8 +97,10 @@ async def detail(session: SessionDep, workspace_id: WorkspaceDep, log_id: str) -
     responses={200: {"content": {"application/zip": {}}}},
 )
 async def reproduction_bundle(
-    session: SessionDep, workspace_id: WorkspaceDep, log_id: str
+    principal: StudioAuth, session: SessionDep, workspace_id: WorkspaceDep, log_id: str
 ) -> Response:
+    if not principal.allows("diagnostics.model"):
+        raise HTTPException(403, {"code": "model_diagnostics_required"})
     try:
         bundle = await _logs(session, workspace_id).reproduction_bundle(log_id)
     except ReproductionUnavailableError as exc:

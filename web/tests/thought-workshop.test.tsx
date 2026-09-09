@@ -20,7 +20,7 @@ const note: api.Note = {
   favorite: false,
   pinned: false,
   knowledge_base_id: "kb",
-  folder_id: null,
+  parent_id: null,
   position: 0,
   is_home: false,
   deleted_at: null,
@@ -70,6 +70,48 @@ describe("思绪工坊富文本", () => {
     first.destroy();
     second.destroy();
   });
+  it("persists caption and crop attrs and exports caption into Markdown", () => {
+    const doc = {
+      type: "doc",
+      content: [
+        {
+          type: "image",
+          attrs: {
+            assetId: "image-id",
+            width: 320,
+            alt: "替代",
+            caption: "可见图注",
+            align: "center",
+            cropLeft: 10,
+            cropTop: 20,
+            cropWidth: 50,
+            cropHeight: 40,
+          },
+        },
+      ],
+    };
+    const editor = new Editor({ extensions: editorExtensions(), content: doc });
+    const json = editor.getJSON();
+    expect(json.content?.[0]?.attrs).toMatchObject({
+      caption: "可见图注",
+      align: "center",
+      cropLeft: 10,
+      cropTop: 20,
+      cropWidth: 50,
+      cropHeight: 40,
+    });
+    const warnings = markdownWarnings(json);
+    expect(warnings.some((item) => item.includes("裁剪"))).toBe(true);
+    expect(warnings.some((item) => item.includes("对齐"))).toBe(true);
+    expect(warnings.some((item) => item.includes("图注"))).toBe(true);
+    expect(editor.getHTML()).toContain('data-align="center"');
+    expect(editor.getHTML()).toContain('data-crop-left="10"');
+    const markdown = toMarkdown(json, { "image-id": "images/a.png" });
+    expect(markdown).toContain("![替代](");
+    expect(markdown).toContain("images/a.png");
+    expect(markdown).toContain("*可见图注*");
+    editor.destroy();
+  });
   it("converts Markdown lists, tables, formulas and editable diagrams", () => {
     const doc = parseMarkdown(
       "# 标题\n\n- [ ] 待办\n\n| A | B |\n| --- | --- |\n| 1 | 2 |\n\n$x^2$\n\n$$\na+b\n$$\n\n```mermaid\ngraph TD; A-->B\n```",
@@ -87,6 +129,54 @@ describe("思绪工坊富文本", () => {
 });
 
 describe("笔记保存队列", () => {
+  it("waits for composition before a manual save and persists the completed text", async () => {
+    const save = vi
+      .spyOn(api, "saveNote")
+      .mockResolvedValue({ ...note, title: "中文输入", revision: 1 });
+    const { result, unmount } = renderHook(() => useNoteDraft(note, () => {}));
+    act(() => {
+      result.current.setComposition(true);
+      result.current.change({ title: "中" });
+    });
+    let pending!: Promise<api.Note>;
+    act(() => {
+      pending = result.current.flush();
+    });
+    expect(save).not.toHaveBeenCalled();
+    await act(async () => {
+      result.current.change({ title: "中文输入" });
+      result.current.setComposition(false);
+      await pending;
+    });
+    expect(save).toHaveBeenCalledWith(
+      note.id,
+      expect.objectContaining({ title: "中文输入" }),
+      0,
+    );
+    expect(result.current.isDirty()).toBe(false);
+    unmount();
+    save.mockRestore();
+  });
+  it("retains dirty content after a failed request and successfully retries", async () => {
+    const save = vi
+      .spyOn(api, "saveNote")
+      .mockRejectedValueOnce(new Error("离线"))
+      .mockResolvedValueOnce({ ...note, title: "保留草稿", revision: 1 });
+    const { result, unmount } = renderHook(() => useNoteDraft(note, () => {}));
+    act(() => result.current.change({ title: "保留草稿" }));
+    await act(async () => {
+      await result.current.flush().catch(() => {});
+    });
+    expect(result.current.state).toBe("error");
+    expect(result.current.draft.title).toBe("保留草稿");
+    expect(result.current.isDirty()).toBe(true);
+    await act(async () => {
+      await result.current.flush();
+    });
+    expect(result.current.state).toBe("saved");
+    unmount();
+    save.mockRestore();
+  });
   it("serializes overlapping saves and preserves edits made while a request is in flight", async () => {
     let resolve!: (value: api.Note) => void;
     const save = vi

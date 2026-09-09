@@ -1,3 +1,4 @@
+import { ProjectCertification } from "@features/accounts";
 import { useState } from "react";
 import {
   Check,
@@ -133,6 +134,11 @@ export function GalgameWorkshopProjectsPage({
             <ProjectLibraryCard
               key={project.id}
               project={project}
+              metadata={
+                project.is_official ? (
+                  <span className="workshop-status completed">官方作品</span>
+                ) : undefined
+              }
               cover="galgame"
               coverTitle="故事工程"
               coverDescription="打开结构、试玩与检查"
@@ -145,6 +151,11 @@ export function GalgameWorkshopProjectsPage({
                 </button>
               </div>
               <div className="workshop-project-secondary-actions">
+                <ProjectCertification
+                  kind="galgame"
+                  project={project}
+                  queryKey={galgameQueryKeys.projects}
+                />
                 <ProjectSnapshotCardActions
                   title={project.title}
                   exporting={

@@ -63,10 +63,6 @@
   border-top: 1px solid var(--border);
   scrollbar-width: thin;
 }
-.knowledge-tree-row.active {
-  color: var(--accent);
-  background: var(--accent-soft);
-}
 .knowledge-search {
   display: flex;
   gap: 8px;
@@ -98,60 +94,6 @@
 .knowledge-directory-label .custom-select {
   min-width: 42px;
   width: 42px;
-}
-.knowledge-tree {
-  min-width: 0;
-  padding: 5px 0 40px;
-}
-.knowledge-tree-row {
-  display: flex;
-  min-width: 0;
-  align-items: center;
-  border-radius: 7px;
-  margin: 3px 0;
-}
-.knowledge-tree-row:hover {
-  background: color-mix(in srgb, var(--accent) 7%, transparent);
-}
-.knowledge-tree-name {
-  background: transparent;
-  border: 0;
-  color: inherit;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex: 1;
-  min-width: 0;
-  padding: 10px 4px;
-  text-align: left;
-  font-size: 13px;
-}
-.knowledge-tree-name svg {
-  flex-shrink: 0;
-}
-.knowledge-tree-name span {
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
-.knowledge-tree-row .custom-select {
-  flex: 0 0 35px;
-  width: 35px;
-  min-width: 0;
-}
-.knowledge-tree-row .custom-select-trigger {
-  padding: 4px;
-  min-height: 28px;
-  font-size: 12px;
-}
-.knowledge-tree-row .custom-select-trigger svg {
-  display: none;
-}
-.knowledge-empty-tree {
-  color: var(--muted);
-  font-size: 12px;
-  line-height: 1.9;
-  padding: 12px 6px;
 }
 .knowledge-main {
   flex: 1;

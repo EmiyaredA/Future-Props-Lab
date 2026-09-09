@@ -12,11 +12,13 @@ from app.models.thought_workshop import ThoughtKnowledgeBase, ThoughtNote
 from app.schemas.thought_document import empty_document
 from app.schemas.thought_knowledge import KnowledgeBaseIn, KnowledgeBaseOut, KnowledgeBasePut
 from app.thought_workshop.errors import ThoughtError
+from app.thought_workshop.history import History
 
 
 class KnowledgeBases:
-    def __init__(self, session: AsyncSession, workspace_id: str):
+    def __init__(self, session: AsyncSession, workspace_id: str, author_id: str | None = None):
         self.session, self.workspace_id = session, workspace_id
+        self.author_id = author_id
 
     async def get(self, project_id: str, *, include_deleted: bool = False) -> ThoughtKnowledgeBase:
         row = await self.session.scalar(
@@ -116,6 +118,7 @@ class KnowledgeBases:
         self.session.add(home)
         await self.session.flush()
         row.home_note_id = home.id
+        await History(self.session).append(home, self.author_id, "create")
         await self.session.commit()
         return await self.output(await self.get(row.id))
 

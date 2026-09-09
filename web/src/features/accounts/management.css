@@ -1,0 +1,402 @@
+@import "./management-dialogs.css";
+@import "./management-responsive.css";
+.management-shell {
+  display: grid;
+  grid-template-columns: 248px minmax(0, 1fr);
+  min-height: 100dvh;
+  background: var(--bg);
+  color: var(--text);
+}
+.management-sidebar {
+  position: sticky;
+  top: 0;
+  height: 100dvh;
+  padding: 28px 16px 18px;
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+  background: var(--surface);
+}
+.management-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 8px;
+}
+.management-brand strong {
+  font-size: 16px;
+}
+.management-brand small {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+  margin-top: 5px;
+  letter-spacing: 2px;
+}
+.management-sidebar nav {
+  display: grid;
+  gap: 10px;
+}
+.management-sidebar nav button {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 12px;
+  border: 1px solid transparent;
+  border-radius: 14px;
+  color: var(--muted);
+  background: transparent;
+  text-align: left;
+}
+.management-sidebar nav button:hover {
+  background: var(--surface-soft);
+}
+.management-sidebar nav button.active {
+  color: var(--text);
+  border-color: var(--accent-line);
+  background: var(--accent-soft);
+}
+.management-sidebar nav strong {
+  font-size: 14px;
+}
+.management-sidebar nav small {
+  display: block;
+  margin-top: 5px;
+  font-size: 11px;
+  color: var(--muted);
+}
+.management-nav-icon {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border-radius: 10px;
+  background: color-mix(in srgb, currentColor 8%, transparent);
+}
+.management-sidebar footer {
+  margin-top: auto;
+  display: grid;
+  gap: 12px;
+}
+.management-back {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: transparent;
+  color: var(--muted);
+}
+.management-back svg {
+  color: var(--accent);
+}
+.management-shell > main {
+  min-width: 0;
+}
+.management-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 72px;
+  padding: 12px 32px;
+  gap: 12px;
+}
+.management-breadcrumb {
+  display: flex;
+  gap: 12px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.management-breadcrumb span {
+  color: var(--border-strong);
+}
+.management-page {
+  padding: 16px 32px 40px;
+  min-width: 0;
+  max-width: 1720px;
+  margin: 0 auto;
+}
+.management-page-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 26px;
+}
+.management-page h1 {
+  margin: 0 0 10px;
+  font-size: 26px;
+  letter-spacing: -0.5px;
+}
+.management-page-head p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--muted);
+}
+.management-page-head > .btn {
+  flex-shrink: 0;
+  padding: 12px 20px;
+  border-radius: 11px;
+}
+.management-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.management-stat {
+  padding: 22px;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+.management-stat > div {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.management-stat svg {
+  color: var(--faint);
+}
+.management-stat > strong {
+  display: block;
+  font-size: 32px;
+  margin: 18px 0 10px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+.management-stat > small {
+  color: var(--muted);
+  font-size: 11px;
+}
+.management-stat small button {
+  border: 0;
+  background: none;
+  padding: 0;
+  color: var(--danger);
+}
+.management-stat.is-accent {
+  border-color: var(--accent-line);
+}
+.management-stat.is-accent svg {
+  color: var(--accent);
+}
+.management-list-panel {
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  min-width: 0;
+}
+.management-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 18px;
+  border-bottom: 1px solid var(--border);
+}
+.management-toolbar > input,
+.management-search {
+  flex: 1;
+  min-width: 160px;
+}
+.management-search {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 13px;
+  background: var(--surface-soft);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--muted);
+}
+.management-search:focus-within {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.management-page .management-search input,
+.account-dialog .management-search input {
+  border: 0;
+  outline: 0;
+  box-shadow: none;
+  background: transparent;
+  padding: 11px 0;
+  width: 100%;
+  min-width: 0;
+}
+.management-search svg {
+  flex-shrink: 0;
+}
+.management-toolbar .custom-select {
+  min-width: 150px;
+  max-width: 100%;
+}
+.management-page input {
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-soft);
+  color: var(--text);
+  min-width: 0;
+}
+.management-table-wrap {
+  overflow-x: auto;
+  border-radius: 0;
+  background: var(--surface);
+}
+.management-table-wrap table {
+  border-collapse: collapse;
+  width: 100%;
+  min-width: 680px;
+  text-align: left;
+}
+.management-table-wrap th {
+  padding: 14px 20px;
+  background: var(--surface-soft);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.management-table-wrap td {
+  padding: 20px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+  font-size: 13px;
+}
+.management-table-wrap tr:last-child td {
+  border-bottom: 0;
+}
+.management-table-wrap tbody tr:hover {
+  background: color-mix(in srgb, var(--surface-soft) 50%, transparent);
+}
+.management-table-wrap small {
+  display: block;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.5;
+  margin-top: 5px;
+  overflow-wrap: anywhere;
+}
+.management-table-wrap td:first-child {
+  max-width: 300px;
+  overflow-wrap: anywhere;
+}
+.management-account-cell {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+.management-account-cell > span:last-child {
+  min-width: 0;
+}
+.management-account-cell strong {
+  font-size: 14px;
+}
+.management-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 20px;
+  padding: 5px 9px;
+  white-space: nowrap;
+  font-size: 12px;
+}
+.management-status::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.management-status.is-active {
+  color: var(--ok);
+  background: var(--ok-soft);
+}
+.management-status.is-disabled {
+  color: var(--muted);
+  background: var(--surface-soft);
+}
+.management-protected {
+  font-size: 12px;
+  color: var(--muted);
+}
+.management-pagination {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: 18px 20px;
+  border-top: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 12px;
+}
+.management-pagination .button-row {
+  display: flex;
+  gap: 8px;
+}
+.management-list-panel > .empty-copy,
+.management-list-panel > [role="status"],
+.management-list-panel > [role="alert"] {
+  margin: 0;
+  padding: 30px 20px;
+  text-align: center;
+  color: var(--muted);
+}
+.management-list-panel > .btn {
+  margin: 0 20px 20px;
+}
+.management-advanced-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 0 18px 18px;
+  border-bottom: 1px solid var(--border);
+}
+.management-advanced-filters .custom-date-input {
+  width: 180px;
+}
+.management-audit-detail {
+  border-top: 1px solid var(--border);
+  padding: 20px;
+  background: var(--bg);
+}
+.management-audit-detail header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.management-audit-detail h3 {
+  margin: 0;
+  font-size: 15px;
+}
+.management-audit-detail dl {
+  font-size: 12px;
+}
+.management-audit-detail dt {
+  color: var(--muted);
+}
+.management-audit-detail dd {
+  margin: 4px 0 16px;
+  overflow-wrap: anywhere;
+}
+.management-page :focus-visible,
+.management-sidebar :focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+.management-page .button-row {
+  flex-wrap: wrap;
+}
+.management-mobile-menu,
+.management-mobile-close {
+  display: none;
+}

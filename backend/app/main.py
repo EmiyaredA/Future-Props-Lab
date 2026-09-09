@@ -10,7 +10,10 @@ from sqlalchemy import text
 from sqlalchemy.exc import OperationalError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
+from app.accounts.model_template_sync import ModelTemplateSyncRunner
 from app.accounts.profile import reconcile_profile_avatars
+from app.accounts.runtime_quotas import recover_admissions
+from app.accounts.service import AccountError
 from app.concurrency.polling_runner import RunnerSupervisor
 from app.concurrency.revisions import RevisionConflictError
 from app.core.config import get_settings
@@ -27,6 +30,7 @@ from app.llm.playground.generation_runner import ModelTestGenerationRunner
 from app.llm.playground.tool_stream import recover_interrupted_model_test_runs
 from app.llm.playground.transcription_runner import ModelTestTranscriptionRunner
 from app.problem_details import (
+    account_exception_handler,
     http_exception_handler,
     revision_conflict_handler,
     storage_operational_error_handler,
@@ -51,10 +55,12 @@ async def lifespan(lifespan_app: FastAPI) -> AsyncIterator[None]:
         await reconcile_project_trash(session, AssetStorage(settings))
         await reconcile_snapshot_imports(session, AssetStorage(settings))
         await seed_sayflow_text_catalog(session)
+    await recover_admissions()
     await recover_interrupted_visual_assistant_runs()
     await recover_interrupted_model_test_runs()
     supervisor = RunnerSupervisor(
         (
+            ModelTemplateSyncRunner(),
             VisualGenerationRunner(),
             ModelTestGenerationRunner(),
             ModelTestTranscriptionRunner(),
@@ -90,6 +96,8 @@ app.add_middleware(
     expose_headers=["Content-Disposition"],
 )
 app.include_router(api_router)
+
+app.add_exception_handler(AccountError, account_exception_handler)
 app.add_exception_handler(StarletteHTTPException, http_exception_handler)
 app.add_exception_handler(RequestValidationError, validation_exception_handler)
 app.add_exception_handler(RevisionConflictError, revision_conflict_handler)

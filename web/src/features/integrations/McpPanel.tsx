@@ -36,6 +36,7 @@ const EMPTY: McpInput = {
   clear_environment: false,
   tags: [],
   enabled: true,
+  sensitive_result: false,
 };
 
 function errorMessage(error: unknown) {
@@ -59,6 +60,7 @@ function toInput(item: McpServer): McpInput {
     clear_environment: false,
     tags: item.tags,
     enabled: item.enabled,
+    sensitive_result: item.sensitive_result,
   };
 }
 
@@ -246,6 +248,15 @@ function McpForm({
                 .filter(Boolean),
             });
           }}
+        />
+      </label>
+      <label className="integration-field full">
+        <span>敏感工具结果</span>
+        <ToggleButton
+          value={value.sensitive_result || false}
+          onChange={(sensitive_result) =>
+            setValue({ ...value, sensitive_result })
+          }
         />
       </label>
       <ToggleButton

@@ -107,7 +107,10 @@ beforeEach(() => {
     configurable: true,
     value: MouseEvent,
   });
-  vi.mocked(getVisualWorkshopProject).mockResolvedValue(project);
+  vi.mocked(getVisualWorkshopProject).mockResolvedValue({
+    ...project,
+    is_official: false,
+  });
   vi.mocked(getVisualCanvas).mockResolvedValue({
     project_id: "project-1",
     edges: [],

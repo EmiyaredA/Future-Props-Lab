@@ -1,3 +1,9 @@
+import { CrossWorkspaceLogs } from "@features/accounts";
+import { StudioGlobalHeader } from "@app/layout/StudioGlobalHeader";
+import { isWorkshopPage, hasReadOnlyRoute } from "./routes";
+import { ReadOnlyRoutes } from "./ReadOnlyRoutes";
+import { workspaceAllows } from "@features/accounts/permissions";
+import type { ManagementPage } from "@features/accounts/ManagementConsole";
 import {
   lazy,
   Suspense,
@@ -124,8 +130,10 @@ function PageBoundary({ children }: { children: ReactNode }) {
 }
 
 export default function App() {
-  const { me } = useStudioSession();
+  const session = useStudioSession();
+  const { me } = session;
   const [route, setRoute] = useState<AppRoute>(parseRoute);
+  const [catalogTestModel, setCatalogTestModel] = useState<string | null>(null);
   const navigationGuard = useRef<
     ((continueNavigation: () => void) => boolean) | null
   >(null);
@@ -186,8 +194,80 @@ export default function App() {
     navigate(next.page, next.projectId, next.documentId);
   };
 
+  useEffect(() => {
+    const handle = (event: Event) =>
+      navigatePath((event as CustomEvent<string>).detail);
+    const guard = (event: Event) => {
+      const e = event as CustomEvent<() => void>;
+      if (navigationGuard.current?.(e.detail)) e.preventDefault();
+    };
+    window.addEventListener("future-props:navigate", handle);
+    window.addEventListener("future-props:before-workspace-switch", guard);
+    return () => {
+      window.removeEventListener("future-props:navigate", handle);
+      window.removeEventListener("future-props:before-workspace-switch", guard);
+    };
+  });
+
+  if (page.startsWith("management-"))
+    return (
+      <PageBoundary>
+        <ManagementConsole
+          page={page as ManagementPage}
+          session={session}
+          navigate={navigate}
+          onBack={() => navigate("home")}
+        />
+      </PageBoundary>
+    );
+
   if (me.workspace.access_kind === "public_viewer") {
     return <PublicWorkspaceShowcase />;
+  }
+
+  if (
+    (!workspaceAllows(me.workspace, "content.write") &&
+      hasReadOnlyRoute(page)) ||
+    (!workspaceAllows(me.workspace, "configuration.manage") &&
+      ["model-service", "model-test-tools"].includes(page)) ||
+    (!workspaceAllows(me.workspace, "logs.read") && page === "model-call-logs")
+  ) {
+    return (
+      <div className="studio-shell">
+        <StudioSidebar
+          page={isWorkshopPage(page) ? "apps" : (page as StudioPage)}
+          navigate={navigate}
+        />
+        <main className="studio-main">
+          <StudioGlobalHeader />
+          <PageBoundary>
+            {page === "model-call-logs" ? (
+              <section className="readonly-page">
+                <h1>需要管理员权限</h1>
+                <p>完整模型调用日志与诊断包仅向工作区管理员开放。</p>
+              </section>
+            ) : page === "model-service" ? (
+              <ModelServicePage
+                key={me.workspace.id}
+                canWrite={false}
+                canTest={
+                  workspaceAllows(me.workspace, "content.write") &&
+                  workspaceAllows(me.workspace, "models.use")
+                }
+                onTestModel={(model) => {
+                  setCatalogTestModel(model.id);
+                  navigate("model-test");
+                }}
+              />
+            ) : page === "model-test-tools" ? (
+              <ReadOnlyConfiguration tools />
+            ) : (
+              <ReadOnlyRoutes route={route} navigate={navigate} />
+            )}
+          </PageBoundary>
+        </main>
+      </div>
+    );
   }
 
   if (isThoughtWorkshopPage(page)) {
@@ -377,6 +457,7 @@ export default function App() {
         navigate={(next: StudioPage) => navigate(next)}
       />
       <main className="studio-main">
+        <StudioGlobalHeader />
         <PageBoundary>
           {page === "home" ? (
             <HomePage onNavigate={navigatePath} />
@@ -391,9 +472,7 @@ export default function App() {
             <ToolNavigationPage onOpenInternal={navigatePath} />
           ) : page.startsWith("integrations-") ? (
             <IntegrationCenterPage
-              canManage={["owner", "platform_admin"].includes(
-                me.workspace.access_kind,
-              )}
+              canManage={workspaceAllows(me.workspace, "configuration.manage")}
               kind={
                 page === "integrations-mcp"
                   ? "mcp"
@@ -430,6 +509,8 @@ export default function App() {
             />
           ) : page === "model-test" ? (
             <ModelTestPage
+              initialModelId={catalogTestModel}
+              onInitialModelHandled={() => setCatalogTestModel(null)}
               onOpenAudioAnnotation={(projectId) =>
                 navigate("audio-annotation-editor", projectId)
               }
@@ -441,12 +522,38 @@ export default function App() {
               onBack={() => navigate("model-test-tools")}
             />
           ) : page === "model-service" ? (
-            <ModelServicePage />
+            <ModelServicePage
+              key={me.workspace.id}
+              canWrite={workspaceAllows(me.workspace, "configuration.manage")}
+              canTest={
+                workspaceAllows(me.workspace, "content.write") &&
+                workspaceAllows(me.workspace, "models.use")
+              }
+              onTestModel={(model) => {
+                setCatalogTestModel(model.id);
+                navigate("model-test");
+              }}
+            />
           ) : (
-            <ModelCallLogsPage />
+            <>
+              <CrossWorkspaceLogs />
+              <ModelCallLogsPage />
+            </>
           )}
         </PageBoundary>
       </main>
     </div>
   );
 }
+
+const ManagementConsole = lazy(() =>
+  import("@features/accounts/ManagementConsole").then((m) => ({
+    default: m.ManagementConsole,
+  })),
+);
+
+const ReadOnlyConfiguration = lazy(() =>
+  import("@features/models/ReadOnlyConfiguration").then((m) => ({
+    default: m.ReadOnlyConfiguration,
+  })),
+);

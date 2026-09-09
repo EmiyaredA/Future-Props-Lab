@@ -8,6 +8,7 @@ from app.concurrency.revisions import RevisionConflictError
 from app.core.credentials import encrypt_secret
 from app.core.secret_hints import encrypted_secret_hint
 from app.llm.catalog.metadata import categories_for_provider
+from app.llm.catalog.supplier_records import get_supplier, list_suppliers
 from app.models import (
     GalgameAssetTranscriptionTask,
     ModelCatalogState,
@@ -16,6 +17,7 @@ from app.models import (
     ModelTestGenerationTask,
     VisualGenerationTask,
 )
+from app.models.platform_governance import PlatformSetting
 from app.schemas.model_service import (
     ModelCatalogOut,
     ModelCategoryListOut,
@@ -83,6 +85,11 @@ def _model_out(row: ModelEntry) -> ModelEntryOut:
     return ModelEntryOut(
         id=row.id,
         provider_id=row.provider_id,
+        origin=row.origin,
+        template_key=row.template_key,
+        managed_fields=["slug", "label", "description", "capabilities", "categories"]
+        if row.origin == "role_template"
+        else [],
         slug=row.slug,
         label=row.label,
         description=row.description,
@@ -130,15 +137,25 @@ class ModelCatalogService:
         grouped: dict[str, list[ModelEntry]] = {}
         for entry in entries:
             grouped.setdefault(entry.provider_id, []).append(entry)
+
+        defaults = await self.session.get(PlatformSetting, f"workspace_defaults:{workspace_id}")
         return ModelCatalogOut(
             revision=revision,
+            default_model_ids=dict(defaults.payload) if defaults else {},
+            suppliers=await list_suppliers(self.session, workspace_id),
             providers=[self._provider_out(row, grouped.get(row.id, [])) for row in providers],
         )
 
     def _provider_out(self, row: ModelProvider, models: list[ModelEntry]) -> ProviderOut:
         return ProviderOut(
             id=row.id,
+            supplier_id=row.supplier_id,
             name=row.name,
+            origin=row.origin,
+            template_key=row.template_key,
+            managed_fields=["name", "kind", "base_url", "api_key", "supplier_id"]
+            if row.origin == "role_template"
+            else [],
             kind=row.kind,
             base_url=row.base_url,
             enabled=row.enabled,
@@ -179,9 +196,11 @@ class ModelCatalogService:
 
     async def create_provider(self, body: ProviderIn) -> tuple[int, ProviderOut]:
         revision = await self._bump(body.expected_catalog_revision)
+        await self._validate_supplier(body.supplier_id)
         count = int((await self.session.execute(select(func.count(ModelProvider.id)))).scalar_one())
         row = ModelProvider(
             name=body.name.strip(),
+            supplier_id=body.supplier_id,
             kind=body.kind,
             base_url=body.base_url,
             api_key_ciphertext=encrypt_secret(body.api_key) if body.api_key.strip() else "",
@@ -197,10 +216,22 @@ class ModelCatalogService:
     async def update_provider(self, provider_id: str, body: ProviderIn) -> tuple[int, ProviderOut]:
         revision = await self._bump(body.expected_catalog_revision)
         row = await self.get_provider(provider_id)
+        if "supplier_id" in body.model_fields_set:
+            if row.origin == "role_template" and body.supplier_id != row.supplier_id:
+                raise CatalogResourceBusyError("模板管理的连接归属只能在全局设置中修改")
+            await self._validate_supplier(body.supplier_id)
+            row.supplier_id = body.supplier_id
         if (not body.enabled or body.kind != row.kind) and await self._provider_has_active_tasks(
             provider_id
         ):
             raise CatalogResourceBusyError("供应商仍有进行中的生成任务")
+        if row.origin == "role_template" and (
+            body.name.strip() != row.name
+            or body.kind != row.kind
+            or body.base_url != row.base_url
+            or body.api_key.strip()
+        ):
+            raise CatalogResourceBusyError("模板管理的连接定义只能在全局设置中修改")
         row.name = body.name.strip()
         row.kind = body.kind
         row.base_url = body.base_url
@@ -222,6 +253,13 @@ class ModelCatalogService:
         await self.session.commit()
         return revision, result
 
+    async def _validate_supplier(self, supplier_id: str | None) -> None:
+        if (
+            supplier_id is not None
+            and await get_supplier(self.session, self._workspace_id(), supplier_id) is None
+        ):
+            raise ResourceNotFoundError("供应商分组不存在")
+
     async def set_provider_enabled(
         self, provider_id: str, enabled: bool, expected: int
     ) -> tuple[int, ProviderOut]:
@@ -242,12 +280,16 @@ class ModelCatalogService:
             raise CatalogResourceBusyError("供应商仍有进行中的任务")
         revision = await self._bump(expected)
         row = await self.get_provider(provider_id)
+        if row.origin == "role_template":
+            raise CatalogResourceBusyError("模板管理项不能在工作区删除")
         await self.session.delete(row)
         await self.session.commit()
         return revision
 
     async def add_model(self, provider_id: str, body: ModelEntryIn) -> tuple[int, ModelEntryOut]:
         provider = await self.get_provider(provider_id)
+        if provider.origin == "role_template":
+            raise CatalogResourceBusyError("请在全局模板添加模型，或创建自建连接")
         revision = await self._bump(body.expected_catalog_revision)
         count = int(
             (
@@ -281,6 +323,16 @@ class ModelCatalogService:
         row = await self.get_model(model_id)
         provider = await self.get_provider(row.provider_id)
         revision = await self._bump(body.expected_catalog_revision)
+        if row.origin == "role_template" and any(
+            [
+                body.slug.strip() != row.slug,
+                body.label != row.label,
+                body.description != row.description,
+                list(body.capabilities) != row.capabilities,
+                list(body.categories) != row.categories,
+            ]
+        ):
+            raise CatalogResourceBusyError("模板管理的模型定义只能在全局设置中修改")
         row.slug = body.slug.strip()
         row.label = body.label.strip()
         row.description = body.description.strip()

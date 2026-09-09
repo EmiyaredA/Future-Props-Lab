@@ -1,0 +1,201 @@
+.thought-image-crop-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: var(--overlay);
+  backdrop-filter: blur(3px);
+}
+.thought-image-crop-dialog {
+  display: flex;
+  flex-direction: column;
+  width: min(960px, calc(100vw - 32px));
+  max-height: min(880px, calc(100dvh - 32px));
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: 0 24px 80px rgb(0 0 0 / 24%);
+}
+.thought-image-crop-dialog h2 {
+  margin: 0 0 8px;
+  font-size: 1.1rem;
+}
+.thought-image-crop-dialog p {
+  margin: 0;
+  color: var(--muted);
+}
+.thought-image-crop-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 20px 22px 14px;
+}
+.thought-image-crop-scroll {
+  min-height: 0;
+  overflow: auto;
+  padding: 0 22px 18px;
+}
+.thought-image-crop-frame {
+  position: relative;
+  user-select: none;
+  touch-action: none;
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--surface-soft);
+  margin-bottom: 16px;
+}
+.thought-image-crop-frame img {
+  display: block;
+  width: 100%;
+  height: auto;
+  pointer-events: none;
+}
+.thought-image-crop-selection {
+  position: absolute;
+  box-sizing: border-box;
+  border: 2px solid var(--accent);
+  box-shadow: 0 0 0 9999px rgb(0 0 0 / 45%);
+  cursor: move;
+  outline: none;
+}
+.thought-image-crop-selection:focus-visible {
+  box-shadow:
+    0 0 0 9999px rgb(0 0 0 / 45%),
+    0 0 0 3px color-mix(in srgb, var(--accent) 35%, transparent);
+}
+.thought-image-crop-grid {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(
+      to right,
+      transparent 33.333%,
+      rgb(255 255 255 / 45%) 33.333%,
+      rgb(255 255 255 / 45%) calc(33.333% + 1px),
+      transparent calc(33.333% + 1px),
+      transparent 66.666%,
+      rgb(255 255 255 / 45%) 66.666%,
+      rgb(255 255 255 / 45%) calc(66.666% + 1px),
+      transparent calc(66.666% + 1px)
+    ),
+    linear-gradient(
+      to bottom,
+      transparent 33.333%,
+      rgb(255 255 255 / 45%) 33.333%,
+      rgb(255 255 255 / 45%) calc(33.333% + 1px),
+      transparent calc(33.333% + 1px),
+      transparent 66.666%,
+      rgb(255 255 255 / 45%) 66.666%,
+      rgb(255 255 255 / 45%) calc(66.666% + 1px),
+      transparent calc(66.666% + 1px)
+    );
+}
+.thought-image-crop-handle {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  padding: 0;
+  border: 2px solid var(--accent);
+  border-radius: 50%;
+  background: var(--surface);
+  transform: translate(-50%, -50%);
+}
+.crop-handle-nw {
+  left: 0;
+  top: 0;
+  cursor: nwse-resize;
+}
+.crop-handle-n {
+  left: 50%;
+  top: 0;
+  cursor: ns-resize;
+}
+.crop-handle-ne {
+  left: 100%;
+  top: 0;
+  cursor: nesw-resize;
+}
+.crop-handle-e {
+  left: 100%;
+  top: 50%;
+  cursor: ew-resize;
+}
+.crop-handle-se {
+  left: 100%;
+  top: 100%;
+  cursor: nwse-resize;
+}
+.crop-handle-s {
+  left: 50%;
+  top: 100%;
+  cursor: ns-resize;
+}
+.crop-handle-sw {
+  left: 0;
+  top: 100%;
+  cursor: nesw-resize;
+}
+.crop-handle-w {
+  left: 0;
+  top: 50%;
+  cursor: ew-resize;
+}
+.thought-image-crop-ratios {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.thought-image-crop-ratios button {
+  min-height: 36px;
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  background: var(--surface-soft);
+}
+.thought-image-crop-ratios button.active {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+.thought-image-crop-ratios .thought-image-crop-reset {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+}
+.thought-image-crop-reset svg {
+  width: 16px;
+  height: 16px;
+}
+.thought-image-crop-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  flex: 0 0 auto;
+  margin: 0;
+  padding: 16px 22px 20px;
+  border-top: 1px solid var(--border);
+}
+@media (max-width: 700px) {
+  .thought-image-crop-dialog {
+    width: calc(100vw - 16px);
+    max-height: calc(100dvh - 16px);
+  }
+  .thought-image-crop-header,
+  .thought-image-crop-scroll,
+  .thought-image-crop-actions {
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+  .thought-image-crop-ratios .thought-image-crop-reset {
+    margin-left: 0;
+  }
+}

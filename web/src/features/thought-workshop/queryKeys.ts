@@ -6,5 +6,8 @@ export const thoughtKeys = {
     [...thoughtKeys.all, "projects", query, trash] as const,
   directory: (id: string) => [...thoughtKeys.all, "directory", id] as const,
   note: (id: string) => [...thoughtKeys.all, "note", id] as const,
+  history: (id: string) => [...thoughtKeys.all, "history", id] as const,
+  historyDetail: (id: string, record: string) =>
+    [...thoughtKeys.all, "history-detail", id, record] as const,
   models: () => [...thoughtKeys.all, "models"] as const,
 };

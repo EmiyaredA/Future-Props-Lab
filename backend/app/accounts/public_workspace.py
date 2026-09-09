@@ -87,6 +87,7 @@ async def public_projection(session: AsyncSession, workspace_id: str) -> dict:
             {
                 "id": project.id,
                 "title": project.title,
+                "is_official": project.is_official,
                 "kind": project.kind,
                 "status": project.status,
                 "updated_at": project.updated_at,
@@ -121,6 +122,7 @@ async def public_projection(session: AsyncSession, workspace_id: str) -> dict:
             {
                 "id": project.id,
                 "title": project.title,
+                "is_official": project.is_official,
                 "status": project.status,
                 "updated_at": project.updated_at,
                 "assets": [asset_view(asset) for asset in assets],

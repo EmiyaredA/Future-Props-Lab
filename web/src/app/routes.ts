@@ -1,4 +1,11 @@
 export type StudioPage =
+  | "management-accounts"
+  | "management-workspaces"
+  | "management-audit"
+  | "management-invites"
+  | "management-settings"
+  | "management-services"
+  | "management-permissions"
   | "home"
   | "apps"
   | "files"
@@ -78,6 +85,20 @@ export function parsePage(pathname = window.location.pathname): AppPage {
 }
 
 export function parseRoute(pathname = window.location.pathname): AppRoute {
+  if (pathname.startsWith("/management/invites"))
+    return { page: "management-invites" };
+  if (pathname.startsWith("/management/settings"))
+    return { page: "management-settings" };
+  if (pathname.startsWith("/management/services"))
+    return { page: "management-services" };
+  if (pathname.startsWith("/management/permissions"))
+    return { page: "management-permissions" };
+  if (pathname.startsWith("/management/workspaces"))
+    return { page: "management-workspaces" };
+  if (pathname.startsWith("/management/audit"))
+    return { page: "management-audit" };
+  if (pathname.startsWith("/management"))
+    return { page: "management-accounts" };
   const application = matchApplicationPath(pathname);
   if (application) return application as AppRoute;
   if (pathname.startsWith("/apps")) return { page: "apps" };
@@ -123,6 +144,13 @@ export function pathFor(
     "thought-workshop-notes": "/apps/thought-workshop",
     "thought-workshop-editor": "/apps/thought-workshop",
     "thought-workshop-legacy": "/apps/thought-workshop",
+    "management-accounts": "/management/accounts",
+    "management-workspaces": "/management/workspaces",
+    "management-audit": "/management/audit",
+    "management-invites": "/management/invites",
+    "management-settings": "/management/settings",
+    "management-services": "/management/services",
+    "management-permissions": "/management/permissions",
     home: "/home",
     apps: "/apps",
     files: "/files",
@@ -162,4 +190,14 @@ export function isThoughtWorkshopPage(
   page: AppPage,
 ): page is Extract<WorkshopPage, `thought-workshop-${string}`> {
   return page.startsWith("thought-workshop-");
+}
+
+export function hasReadOnlyRoute(page: AppPage) {
+  return (
+    page === "files" ||
+    page === "model-test" ||
+    /^(visual-workshop|thought-workshop|galgame-workshop|video-editor|audio-annotation)-/.test(
+      page,
+    )
+  );
 }

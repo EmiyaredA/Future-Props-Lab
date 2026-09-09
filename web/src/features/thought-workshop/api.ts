@@ -66,7 +66,11 @@ export const saveNote = async (id: string, body: NoteInput, revision: number) =>
       body: { ...body, expected_revision: revision },
     }),
   );
-export const deleteNote = async (note: NoteSummary, permanent = false) => {
+export const deleteNote = async (
+  note: NoteSummary,
+  permanent = false,
+  cascadeChildren = false,
+) => {
   const project = await unwrap(
     await api.GET("/v1/thought-workshop/knowledge-bases/{project_id}", {
       params: { path: { project_id: note.knowledge_base_id } },
@@ -80,6 +84,7 @@ export const deleteNote = async (note: NoteSummary, permanent = false) => {
           expected_revision: note.revision,
           expected_knowledge_revision: project.revision,
           permanent,
+          cascade_children: cascadeChildren,
         },
       },
     }),
@@ -214,7 +219,7 @@ export function noteInput(note: Note): NoteInput {
   const {
     title,
     knowledge_base_id,
-    folder_id,
+    parent_id,
     schema_version,
     document,
     tags,
@@ -224,7 +229,7 @@ export function noteInput(note: Note): NoteInput {
   return {
     title,
     knowledge_base_id,
-    folder_id,
+    parent_id,
     schema_version,
     document,
     tags,

@@ -50,6 +50,13 @@ from db.migrations.versions import (
     r0045_thought_attachments,
     r0046_thought_knowledge_bases,
     r0047_skill_tags,
+    r0048_thought_document_tree,
+    r0049_thought_history,
+    r0050_workspace_governance,
+    r0051_platform_governance,
+    r0052_role_model_templates,
+    r0054_platform_runtime,
+    r0055_model_suppliers,
 )
 
 
@@ -222,6 +229,24 @@ MIGRATIONS = (
         foreign_keys_off=True,
     ),
     Migration(r0047_skill_tags.MIGRATION_ID, r0047_skill_tags.SQL),
+    Migration(
+        r0048_thought_document_tree.MIGRATION_ID,
+        r0048_thought_document_tree.SQL,
+        foreign_keys_off=True,
+    ),
 )
+
+MIGRATIONS += (Migration(r0049_thought_history.MIGRATION_ID, r0049_thought_history.SQL),)
+
+
+MIGRATIONS += (Migration(r0050_workspace_governance.MIGRATION_ID, r0050_workspace_governance.SQL),)
+
+MIGRATIONS += (Migration(r0051_platform_governance.MIGRATION_ID, r0051_platform_governance.SQL),)
+
+MIGRATIONS += (Migration(r0052_role_model_templates.MIGRATION_ID, r0052_role_model_templates.SQL),)
+
+MIGRATIONS += (Migration(r0054_platform_runtime.MIGRATION_ID, r0054_platform_runtime.SQL),)
+
+MIGRATIONS += (Migration(r0055_model_suppliers.MIGRATION_ID, r0055_model_suppliers.SQL),)
 
 LATEST_MIGRATION_ID = MIGRATIONS[-1].migration_id

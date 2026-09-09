@@ -17,7 +17,7 @@ apply_migrations(TEST_DATABASE_PATH)
 
 
 @pytest.fixture(autouse=True)
-def authenticated_business_routes(request: pytest.FixtureRequest):
+def authenticated_business_routes(request: pytest.FixtureRequest, monkeypatch):
     """Override auth only for test modules that explicitly imported the ASGI app.
 
     Pure unit and architecture tests must not import ``app.main`` as a side effect of
@@ -27,10 +27,12 @@ def authenticated_business_routes(request: pytest.FixtureRequest):
     if request.node.get_closest_marker("real_auth") or "app.main" not in sys.modules:
         yield
         return
+    from app.accounts.platform_policy import CAPABILITIES
     from app.accounts.principal import StudioPrincipal
     from app.core.tenant_context import bind_workspace
     from app.deps import SessionDep, require_studio_auth
     from app.main import app
+    from app.routes.model_capacity import model_capacity
 
     async def principal(session: SessionDep) -> StudioPrincipal:
         bind_workspace(session, "default")
@@ -41,17 +43,30 @@ def authenticated_business_routes(request: pytest.FixtureRequest):
             workspace_access="owner",
             member_role="owner",
             is_platform_admin=True,
+            platform_role="super_admin",
+            platform_permissions=frozenset(CAPABILITIES),
             must_change_password=False,
             auth_kind="session",
             scopes=frozenset({"studio:read", "studio:private_read", "studio:write"}),
             session_id="test-session",
         )
 
+    async def capacity():
+        yield
+
+    from app.routes.models import model_test_realtime
+
+    async def acquire_capacity(*_args, **_kwargs):
+        return None
+
+    monkeypatch.setattr(model_test_realtime, "acquire", acquire_capacity)
+    app.dependency_overrides[model_capacity] = capacity
     app.dependency_overrides[require_studio_auth] = principal
     try:
         yield
     finally:
         app.dependency_overrides.pop(require_studio_auth, None)
+        app.dependency_overrides.pop(model_capacity, None)
 
 
 def pytest_sessionfinish() -> None:

@@ -29,6 +29,7 @@ vi.mock("@features/integrations/api", async () => {
 });
 
 const toolApi = {
+  sensitive_result: false,
   id: "api-1",
   name: "订单查询",
   description: "读取订单状态",

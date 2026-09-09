@@ -2,6 +2,9 @@ from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException, Query, Request, Response, status
 
+from app.accounts.error_views import error_detail
+from app.accounts.member_roles import update_member_role
+from app.accounts.permissions import role_permissions
 from app.accounts.service import AccountError
 from app.accounts.workspaces import (
     act_on_invitation,
@@ -28,6 +31,7 @@ from app.schemas.accounts import (
     WorkspaceMemberListOut,
     WorkspaceMemberOut,
     WorkspaceMemberRemoveIn,
+    WorkspaceMemberRoleIn,
     WorkspaceOut,
     WorkspacePatchIn,
     WorkspaceSwitchIn,
@@ -45,13 +49,8 @@ async def _browser_auth(request: Request, session: SessionDep):
 
 
 def _raise(exc: AccountError) -> None:
-    if exc.code.endswith("not_found"):
-        status_code = 404
-    elif exc.code == "revision_conflict":
-        status_code = 409
-    else:
-        status_code = 422
-    raise HTTPException(status_code, detail={"code": exc.code}) from exc
+    status_code, detail = error_detail(exc)
+    raise HTTPException(status_code, detail=detail) from exc
 
 
 def _workspace_out(workspace, access: str, role: str | None) -> WorkspaceOut:
@@ -62,6 +61,7 @@ def _workspace_out(workspace, access: str, role: str | None) -> WorkspaceOut:
         revision=workspace.revision,
         access_kind=access,
         role=role,
+        permission_keys=sorted(role_permissions(access, role)),
     )
 
 
@@ -85,6 +85,7 @@ async def accessible_workspaces(
         items=[
             WorkspaceListItem(
                 **_workspace_out(item["workspace"], item["access_kind"], item["role"]).model_dump(),
+                member_count=item["member_count"],
                 owner_username=item["owner_username"],
                 owner_display_name=item["owner_display_name"],
             )
@@ -184,6 +185,7 @@ async def invite_member(request: Request, session: SessionDep, body: WorkspaceIn
             session,
             principal=principal,
             username=body.username,
+            role=body.role,
             client_ip=client_ip(request),
         )
         rows = await invitation_views(session, principal=principal, current_workspace_only=True)
@@ -263,3 +265,23 @@ async def decline_invitation(
     body: WorkspaceInvitationActionIn,
 ):
     return await _respond("declined", invitation_id, request, session, body)
+
+
+@router.patch("/current/members/{membership_id}", response_model=WorkspaceMemberOut)
+async def set_member_role(
+    membership_id: str, request: Request, session: SessionDep, body: WorkspaceMemberRoleIn
+):
+    principal = await _browser_auth(request, session)
+    try:
+        await update_member_role(
+            session,
+            principal,
+            membership_id=membership_id,
+            role=body.role,
+            expected_revision=body.expected_revision,
+            client_ip=client_ip(request),
+        )
+        rows = await list_members(session, principal)
+    except AccountError as exc:
+        _raise(exc)
+    return WorkspaceMemberOut(**next(row for row in rows if row["membership_id"] == membership_id))

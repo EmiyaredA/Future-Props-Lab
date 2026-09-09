@@ -20,6 +20,7 @@ from app.models.defaults import new_id, utc_now
 
 
 class GalgameWorkshopProject(Base):
+    is_official: Mapped[bool] = mapped_column(Boolean, default=False)
     __tablename__ = "galgame_workshop_projects"
     __table_args__ = (
         Index(

@@ -24,6 +24,7 @@ vi.mock("@features/galgame-workshop/api", async () => {
 });
 
 const project = {
+  is_official: false,
   id: "project-1",
   title: "空白工程",
   status: "draft" as const,

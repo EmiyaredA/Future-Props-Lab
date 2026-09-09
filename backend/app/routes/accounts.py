@@ -13,7 +13,6 @@ from app.accounts.profile import (
     stage_avatar,
     update_profile,
 )
-from app.accounts.provisioning import create_account
 from app.accounts.rate_limit import allow_attempt, clear_attempts
 from app.accounts.security import CSRF_COOKIE, SESSION_ABSOLUTE_DAYS, SESSION_COOKIE
 from app.accounts.service import (
@@ -23,13 +22,10 @@ from app.accounts.service import (
     complete_login,
     complete_logout,
     create_api_key,
-    list_accounts,
     list_active_sessions,
     list_api_keys,
     load_current_auth,
-    patch_account_status,
     reauthenticate,
-    reset_password,
     revoke_api_key,
     revoke_other_sessions,
     revoke_session,
@@ -41,11 +37,7 @@ from app.deps import (
 )
 from app.schemas.accounts import (
     AccountAvatarDeleteIn,
-    AccountCreatedOut,
-    AccountCreateIn,
-    AccountListOut,
     AccountOut,
-    AccountPatchIn,
     AccountProfilePatchIn,
     AccountSessionListOut,
     AccountSessionOut,
@@ -57,7 +49,6 @@ from app.schemas.accounts import (
     CurrentUserOut,
     LoginIn,
     ReauthIn,
-    ResetPasswordOut,
     RevokeApiKeyIn,
     SecurityAuditEventOut,
     SecurityAuditListOut,
@@ -74,7 +65,8 @@ def _user_out(user) -> CurrentUserOut:
         display_name=user.display_name,
         email=user.email,
         avatar_url=avatar_url(user),
-        is_platform_admin=user.is_platform_admin,
+        is_platform_admin=user.platform_role == "super_admin",
+        platform_role=user.platform_role,
         revision=user.revision,
     )
 
@@ -85,7 +77,9 @@ def _account_out(user) -> AccountOut:
         username=user.username,
         display_name=user.display_name,
         status=user.status,
-        is_platform_admin=user.is_platform_admin,
+        email=user.email,
+        is_platform_admin=user.platform_role == "super_admin",
+        platform_role=user.platform_role,
         must_change_password=user.must_change_password,
         revision=user.revision,
         last_login_at=user.last_login_at,
@@ -101,6 +95,7 @@ def _workspace_out(workspace, principal) -> WorkspaceOut:
         revision=workspace.revision,
         access_kind=principal.workspace_access,
         role=principal.member_role,
+        permission_keys=sorted(principal.permission_keys),
     )
 
 
@@ -193,16 +188,32 @@ async def login(request: Request, response: Response, session: SessionDep, body:
     user, workspace, auth_session, token, csrf = result
     clear_attempts(ip_key, user_key)
     _set_cookies(response, token, csrf)
+    return await _login_out(session, user, workspace, auth_session)
+
+
+async def _login_out(session, user, workspace, auth_session):
+    from app.accounts.platform_policy import apply_policy
+    from app.accounts.principal import StudioPrincipal
+
+    principal = await apply_policy(
+        session,
+        StudioPrincipal(
+            user_id=user.id,
+            workspace_id=workspace.id,
+            workspace_access="owner",
+            member_role="owner",
+            is_platform_admin=user.platform_role == "super_admin",
+            platform_role=user.platform_role,
+            must_change_password=user.must_change_password,
+            auth_kind="session",
+            scopes=frozenset({"studio:read", "studio:private_read", "studio:write"}),
+            session_id=auth_session.id,
+        ),
+    )
     return AuthMeOut(
         user=_user_out(user),
-        workspace=WorkspaceOut(
-            id=workspace.id,
-            name=workspace.name,
-            visibility=workspace.visibility,
-            revision=workspace.revision,
-            access_kind="owner",
-            role="owner",
-        ),
+        workspace=_workspace_out(workspace, principal),
+        policy_revision=principal.policy_revision,
         must_change_password=user.must_change_password,
         session_expires_at=auth_session.absolute_expires_at,
     )
@@ -213,6 +224,7 @@ async def me(request: Request, session: SessionDep):
     principal = await _browser_auth(request, session, forced=True)
     user, workspace, auth_session = await load_current_auth(session, principal)
     return AuthMeOut(
+        policy_revision=principal.policy_revision,
         user=_user_out(user),
         workspace=_workspace_out(workspace, principal),
         must_change_password=user.must_change_password,
@@ -434,7 +446,30 @@ def _audit_out(row, actor_username, target_username):
         workspace_id=row.workspace_id,
         client_ip=row.client_ip,
         user_agent=row.user_agent,
-        metadata=row.metadata_json,
+        metadata={
+            key: value
+            for key, value in row.metadata_json.items()
+            if key
+            in {
+                "role_from",
+                "role_to",
+                "status_from",
+                "status_to",
+                "platform_role_from",
+                "platform_role_to",
+                "revision",
+                "invite_id",
+                "platform_admin_from",
+                "platform_admin_to",
+                "platform_admin",
+                "visibility_from",
+                "visibility_to",
+                "access_kind",
+                "key_id",
+                "scopes",
+                "session_id",
+            }
+        },
         created_at=row.created_at,
     )
 
@@ -448,6 +483,7 @@ async def _audit_response(
     page_size: int,
     event_type: str,
     outcome: str,
+    **filters,
 ):
     rows, total = await audit_page(
         session,
@@ -457,6 +493,7 @@ async def _audit_response(
         page_size=page_size,
         event_type=event_type,
         outcome=outcome,
+        **filters,
     )
     return SecurityAuditListOut(
         items=[_audit_out(*row) for row in rows],
@@ -480,89 +517,6 @@ async def own_audit(
         session,
         principal,
         platform=False,
-        page=page,
-        page_size=page_size,
-        event_type=event_type,
-        outcome=outcome,
-    )
-
-
-@router.get("/platform/accounts", response_model=AccountListOut)
-async def platform_accounts(request: Request, session: SessionDep):
-    await _platform_auth(request, session)
-    rows = await list_accounts(session)
-    return AccountListOut(items=[_account_out(row) for row in rows], total=len(rows))
-
-
-@router.post("/platform/accounts", response_model=AccountCreatedOut, status_code=201)
-async def add_account(request: Request, session: SessionDep, body: AccountCreateIn):
-    principal = await _platform_auth(request, session)
-    try:
-        user, _workspace, temporary = await create_account(
-            session,
-            username=body.username,
-            display_name=body.display_name,
-            is_platform_admin=False,
-            actor_user_id=principal.user_id,
-            client_ip=client_ip(request),
-        )
-    except (AccountError, ValueError) as exc:
-        code = exc.code if isinstance(exc, AccountError) else "invalid_username"
-        raise HTTPException(
-            409 if code.endswith("conflict") else 422, detail={"code": code}
-        ) from exc
-    return AccountCreatedOut(account=_account_out(user), temporary_password=temporary)
-
-
-@router.patch("/platform/accounts/{user_id}", response_model=AccountOut)
-async def update_account(user_id: str, request: Request, session: SessionDep, body: AccountPatchIn):
-    principal = await _platform_auth(request, session)
-    try:
-        user = await patch_account_status(
-            session,
-            principal,
-            user_id=user_id,
-            status=body.status,
-            expected_revision=body.expected_revision,
-            client_ip=client_ip(request),
-        )
-    except AccountError as exc:
-        raise HTTPException(
-            409 if exc.code == "revision_conflict" else 422, detail={"code": exc.code}
-        ) from exc
-    return _account_out(user)
-
-
-@router.post("/platform/accounts/{user_id}/reset-password", response_model=ResetPasswordOut)
-async def reset_account_password(user_id: str, request: Request, session: SessionDep):
-    principal = await _platform_auth(request, session)
-    rows = await list_accounts(session)
-    user = next((item for item in rows if item.id == user_id), None)
-    if user is None:
-        raise HTTPException(404, detail={"code": "account_not_found"})
-    temporary = await reset_password(
-        session,
-        user=user,
-        actor_user_id=principal.user_id,
-        client_ip=client_ip(request),
-    )
-    return ResetPasswordOut(account=_account_out(user), temporary_password=temporary)
-
-
-@router.get("/platform/security-events", response_model=SecurityAuditListOut)
-async def platform_audit(
-    request: Request,
-    session: SessionDep,
-    page: int = Query(1, ge=1),
-    page_size: int = Query(50, ge=1, le=100),
-    event_type: str = Query("", max_length=64),
-    outcome: str = Query("", max_length=16),
-):
-    principal = await _platform_auth(request, session)
-    return await _audit_response(
-        session,
-        principal,
-        platform=True,
         page=page,
         page_size=page_size,
         event_type=event_type,

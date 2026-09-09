@@ -2,7 +2,17 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from sqlalchemy import JSON, DateTime, ForeignKey, Index, Integer, String, Text, UniqueConstraint
+from sqlalchemy import (
+    JSON,
+    Boolean,
+    DateTime,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+)
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.models.base import Base
@@ -10,6 +20,7 @@ from app.models.defaults import new_id, utc_now
 
 
 class VisualWorkshopProject(Base):
+    is_official: Mapped[bool] = mapped_column(Boolean, default=False)
     __tablename__ = "visual_workshop_projects"
     __table_args__ = (
         Index(

@@ -22,7 +22,7 @@ class IntegrationPermissionError(Exception):
 
 
 def require_integration_owner(principal: StudioPrincipal) -> None:
-    if principal.workspace_access not in {"owner", "platform_admin"}:
+    if not principal.allows("configuration.manage"):
         raise IntegrationPermissionError("只有 Workspace Owner 可以管理集成")
 
 

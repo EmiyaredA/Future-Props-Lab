@@ -43,7 +43,19 @@ ATTRS = {
     "tableCell": {"colspan", "rowspan", "colwidth", "align"},
     "tableHeader": {"colspan", "rowspan", "colwidth", "align"},
     "attachment": {"assetId", "filename", "mimeType", "byteSize"},
-    "image": {"assetId", "alt", "title", "width", "height"},
+    "image": {
+        "assetId",
+        "alt",
+        "title",
+        "width",
+        "height",
+        "caption",
+        "align",
+        "cropLeft",
+        "cropTop",
+        "cropWidth",
+        "cropHeight",
+    },
     "details": {"open"},
     "inlineMath": {"latex"},
     "blockMath": {"latex"},
@@ -121,11 +133,27 @@ def validate_document(document: dict) -> dict:
                 raise ValueError("字体无效")
             if key == "textAlign" and value not in {"left", "center", "right", "justify"}:
                 raise ValueError("对齐方式无效")
+            if (
+                kind == "image"
+                and key == "align"
+                and value
+                not in {
+                    "left",
+                    "center",
+                    "right",
+                }
+            ):
+                raise ValueError("图片对齐方式无效")
             if key in {"level", "colspan", "rowspan", "width", "height", "start"}:
                 if not isinstance(value, int) or isinstance(value, bool) or not 1 <= value <= 10000:
                     raise ValueError("尺寸或编号无效")
                 if key == "level" and value > 6:
                     raise ValueError("标题级别无效")
+            if key in {"cropLeft", "cropTop", "cropWidth", "cropHeight"}:
+                if not isinstance(value, int) or isinstance(value, bool) or not 0 <= value <= 100:
+                    raise ValueError("图片裁剪参数无效")
+                if key in {"cropWidth", "cropHeight"} and value < 1:
+                    raise ValueError("图片裁剪参数无效")
             if key == "colwidth" and (
                 not isinstance(value, list)
                 or len(value) > 100
@@ -139,6 +167,7 @@ def validate_document(document: dict) -> dict:
             if key in {
                 "alt",
                 "title",
+                "caption",
                 "assetId",
                 "filename",
                 "mimeType",
@@ -157,6 +186,15 @@ def validate_document(document: dict) -> dict:
                 raise ValueError("文件大小无效")
         if kind in {"image", "attachment"} and not values.get("assetId"):
             raise ValueError("图片必须引用已上传的文件")
+        if kind == "image":
+            crop_keys = ("cropLeft", "cropTop", "cropWidth", "cropHeight")
+            present = [key for key in crop_keys if values.get(key) is not None]
+            if present and len(present) != 4:
+                raise ValueError("图片裁剪参数必须完整")
+            if len(present) == 4:
+                left, top, width, height = (int(values[key]) for key in crop_keys)
+                if left + width > 100 or top + height > 100:
+                    raise ValueError("图片裁剪区域无效")
 
     def visit(node: dict, depth: int = 0) -> None:
         nonlocal count
@@ -244,6 +282,13 @@ def document_text(node: dict) -> str:
         value = node.get("attrs", {}).get("latex", "")
     if node.get("type") == "mermaid":
         value = node.get("attrs", {}).get("source", "")
+    if node.get("type") == "image":
+        attrs = node.get("attrs", {})
+        value = " ".join(
+            part
+            for part in (attrs.get("caption") or "", attrs.get("alt") or "")
+            if isinstance(part, str) and part
+        )
     parts = [document_text(child) for child in node.get("content", [])]
     separator = (
         "\n"

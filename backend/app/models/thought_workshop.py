@@ -2,7 +2,18 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from sqlalchemy import JSON, Boolean, DateTime, ForeignKey, Index, Integer, String, Text, text
+from sqlalchemy import (
+    JSON,
+    Boolean,
+    DateTime,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+    text,
+)
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.models.base import Base
@@ -27,29 +38,12 @@ class ThoughtKnowledgeBase(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)
 
 
-class ThoughtFolder(Base):
-    __tablename__ = "thought_folders"
-    __table_args__ = (Index("ix_thought_folders_knowledge_base", "knowledge_base_id"),)
-
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
-    knowledge_base_id: Mapped[str] = mapped_column(
-        ForeignKey("thought_knowledge_bases.id", ondelete="CASCADE")
-    )
-    parent_id: Mapped[str | None] = mapped_column(
-        ForeignKey("thought_folders.id", ondelete="CASCADE"), nullable=True
-    )
-    title: Mapped[str] = mapped_column(String(120))
-    position: Mapped[int] = mapped_column(Integer, default=0)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)
-    updated_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)
-
-
 class ThoughtNote(Base):
     __tablename__ = "thought_notes"
     __table_args__ = (
         Index("ix_thought_notes_workspace_updated", "workspace_id", "updated_at"),
         Index("ix_thought_notes_knowledge_base", "knowledge_base_id"),
-        Index("ix_thought_notes_folder", "folder_id"),
+        Index("ix_thought_notes_parent", "parent_id"),
         Index(
             "ix_thought_notes_home",
             "knowledge_base_id",
@@ -63,8 +57,8 @@ class ThoughtNote(Base):
     knowledge_base_id: Mapped[str] = mapped_column(
         ForeignKey("thought_knowledge_bases.id", ondelete="CASCADE")
     )
-    folder_id: Mapped[str | None] = mapped_column(
-        ForeignKey("thought_folders.id", ondelete="SET NULL"), nullable=True
+    parent_id: Mapped[str | None] = mapped_column(
+        ForeignKey("thought_notes.id", ondelete="SET NULL"), nullable=True
     )
     position: Mapped[int] = mapped_column(Integer, default=0)
     is_home: Mapped[bool] = mapped_column(Boolean, default=False)
@@ -87,6 +81,38 @@ class ThoughtNoteAsset(Base):
 
     note_id: Mapped[str] = mapped_column(
         ForeignKey("thought_notes.id", ondelete="CASCADE"), primary_key=True
+    )
+    asset_id: Mapped[str] = mapped_column(
+        ForeignKey("visual_assets.id", ondelete="RESTRICT"), primary_key=True
+    )
+
+
+class ThoughtNoteHistory(Base):
+    __tablename__ = "thought_note_history"
+    __table_args__ = (
+        UniqueConstraint("note_id", "revision"),
+        Index("ix_thought_history_note_revision", "note_id", "revision"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
+    note_id: Mapped[str] = mapped_column(ForeignKey("thought_notes.id", ondelete="CASCADE"))
+    revision: Mapped[int] = mapped_column(Integer)
+    title: Mapped[str] = mapped_column(String(240))
+    document: Mapped[dict] = mapped_column(JSON)
+    schema_version: Mapped[int] = mapped_column(Integer)
+    tags: Mapped[list[str]] = mapped_column(JSON)
+    author_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    author_name: Mapped[str] = mapped_column(String(120))
+    source: Mapped[str] = mapped_column(String(20))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)
+
+
+class ThoughtHistoryAsset(Base):
+    __tablename__ = "thought_history_assets"
+    __table_args__ = (Index("ix_thought_history_assets_asset", "asset_id"),)
+
+    history_id: Mapped[str] = mapped_column(
+        ForeignKey("thought_note_history.id", ondelete="CASCADE"), primary_key=True
     )
     asset_id: Mapped[str] = mapped_column(
         ForeignKey("visual_assets.id", ondelete="RESTRICT"), primary_key=True

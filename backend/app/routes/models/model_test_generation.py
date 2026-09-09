@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from fastapi import APIRouter, File, HTTPException, Query, UploadFile
+from fastapi import APIRouter, File, HTTPException, Query, Request, UploadFile
 from fastapi.responses import FileResponse
 
 from app.deps import SessionDep, WorkspaceDep
@@ -11,6 +11,7 @@ from app.llm.playground.generation_assets import (
     GenerationAssetError,
     ModelTestGenerationAssets,
 )
+from app.routes.model_capacity import task_admission
 from app.schemas.model_test import (
     ModelTestGenerationAssetBackfillOut,
     ModelTestGenerationAssetBackfillStatusOut,
@@ -100,12 +101,16 @@ async def generation_options(
 
 @router.post("/generation-tasks", response_model=ModelTestGenerationTaskOut)
 async def create_generation_task(
+    request: Request,
     session: SessionDep,
     workspace_id: WorkspaceDep,
     body: ModelTestGenerationCreateIn,
 ) -> ModelTestGenerationTaskOut:
     try:
-        return await _generation(session, workspace_id).create(body)
+        result = await _generation(session, workspace_id).create(
+            body, admission=task_admission(request, session, "model")
+        )
+        return result
     except ModelTestGenerationError as exc:
         raise _translate(exc) from None
 

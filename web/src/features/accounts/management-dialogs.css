@@ -1,0 +1,82 @@
+.management-dialog {
+  width: min(560px, calc(100vw - 32px));
+  max-height: calc(100dvh - 40px);
+  overflow-y: auto;
+  padding: 28px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 20px 80px rgb(0 0 0 / 20%);
+}
+.management-dialog header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding-bottom: 20px;
+  margin-bottom: 24px;
+  border-bottom: 1px solid var(--border);
+}
+.management-dialog h2 {
+  margin: 0;
+  font-size: 22px;
+}
+.management-dialog form,
+.management-dialog label {
+  display: grid;
+  gap: 9px;
+}
+.management-dialog form {
+  gap: 20px;
+}
+.management-dialog input {
+  padding: 11px 12px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  color: var(--text);
+  background: var(--surface);
+  min-width: 0;
+  width: 100%;
+}
+.management-dialog p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.7;
+  font-size: 13px;
+}
+.management-dialog form > .btn:last-child,
+.management-dialog > .btn:last-child {
+  margin-top: 10px;
+  justify-self: end;
+}
+.management-dialog > .btn:last-child {
+  display: flex;
+  margin-left: auto;
+}
+.management-owner-options {
+  display: grid;
+  gap: 8px;
+  max-height: 220px;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 8px;
+}
+.management-owner-options .btn {
+  justify-content: flex-start;
+  padding: 12px;
+  text-align: left;
+}
+.management-dialog .secret-once {
+  margin: 20px 0;
+  padding: 20px;
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-line);
+  border-radius: 12px;
+  overflow-wrap: anywhere;
+}
+.management-dialog :focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}

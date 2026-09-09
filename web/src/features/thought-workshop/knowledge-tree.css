@@ -1,0 +1,204 @@
+.knowledge-directory-add {
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 18px;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.knowledge-directory-add:hover {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+.knowledge-tree {
+  min-width: 0;
+  padding: 4px 2px 40px;
+}
+.knowledge-tree-row {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 2px;
+  border-radius: 8px;
+  margin: 1px 0;
+  min-height: 34px;
+}
+.knowledge-tree-row:hover {
+  background: var(--surface-hover);
+}
+.knowledge-tree-row.active {
+  color: var(--text);
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+.knowledge-tree-row.dragging {
+  opacity: 0.45;
+}
+.knowledge-tree-row.drop-before::before,
+.knowledge-tree-row.drop-after::after {
+  content: "";
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  height: 2px;
+  border-radius: 999px;
+  background: var(--accent);
+}
+.knowledge-tree-row.drop-before::before {
+  top: -1px;
+}
+.knowledge-tree-row.drop-after::after {
+  bottom: -1px;
+}
+.knowledge-tree-row.drop-into {
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  outline: 1px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  outline-offset: -1px;
+}
+.knowledge-tree-chevron,
+.knowledge-tree-chevron-spacer {
+  flex: 0 0 22px;
+  width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  padding: 0;
+}
+.knowledge-tree-chevron:hover {
+  background: color-mix(in srgb, var(--text) 8%, transparent);
+  color: var(--text);
+}
+.knowledge-tree-name {
+  background: transparent;
+  border: 0;
+  color: inherit;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex: 1;
+  min-width: 0;
+  padding: 7px 4px;
+  text-align: left;
+  font-size: 13px;
+  line-height: 1.35;
+}
+.knowledge-tree-name svg {
+  flex-shrink: 0;
+  opacity: 0.72;
+}
+.knowledge-tree-row.active .knowledge-tree-name svg {
+  opacity: 1;
+  color: var(--accent);
+}
+.knowledge-tree-name span {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.knowledge-tree-actions {
+  flex: 0 0 28px;
+  width: 28px;
+  min-width: 0;
+  opacity: 0;
+}
+.knowledge-tree-row:hover .knowledge-tree-actions,
+.knowledge-tree-row:focus-within .knowledge-tree-actions,
+.knowledge-tree-row.active .knowledge-tree-actions,
+.knowledge-tree-actions.is-open {
+  opacity: 1;
+}
+.knowledge-tree-action-trigger {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--muted);
+}
+.knowledge-tree-action-trigger:hover,
+.knowledge-tree-action-trigger[aria-expanded="true"] {
+  color: var(--text);
+  background: color-mix(in srgb, var(--text) 9%, transparent);
+}
+.knowledge-tree-action-trigger svg {
+  width: 16px;
+  height: 16px;
+}
+.knowledge-tree-action-menu {
+  position: fixed;
+  z-index: 120;
+  width: 216px;
+  max-width: calc(100vw - 24px);
+  max-height: calc(100dvh - 24px);
+  overflow-y: auto;
+  padding: 6px;
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+  color: var(--text);
+  background: var(--surface);
+  box-shadow: 0 14px 38px rgb(0 0 0 / 20%);
+}
+.knowledge-tree-action-menu button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 38px;
+  padding: 7px 10px;
+  border: 0;
+  border-radius: 7px;
+  color: var(--text);
+  background: transparent;
+  text-align: left;
+  white-space: nowrap;
+}
+.knowledge-tree-action-menu button:hover:not(:disabled),
+.knowledge-tree-action-menu button:focus-visible {
+  outline: 0;
+  background: var(--surface-hover);
+}
+.knowledge-tree-action-menu button:disabled {
+  opacity: 0.36;
+  cursor: default;
+}
+.knowledge-tree-action-menu button.is-danger {
+  color: var(--danger, #d9534f);
+}
+.knowledge-tree-action-menu svg {
+  flex: 0 0 auto;
+  width: 17px;
+  height: 17px;
+  color: var(--muted);
+}
+.knowledge-tree-action-menu button.is-danger svg {
+  color: currentColor;
+}
+.knowledge-tree-action-divider {
+  height: 1px;
+  margin: 5px 4px;
+  background: var(--border);
+}
+.knowledge-empty-tree {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.9;
+  padding: 12px 6px;
+}
+.knowledge-delete-dialog .knowledge-delete-actions {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}

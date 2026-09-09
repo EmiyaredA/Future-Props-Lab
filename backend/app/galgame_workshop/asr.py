@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.concurrency.polling_runner import PollingTaskRunner
 from app.concurrency.revisions import RevisionConflictError
+from app.concurrency.task_admission import TaskAdmission
 from app.core.config import Settings, get_settings
 from app.core.credentials import decrypt_secret
 from app.core.db import SessionLocal
@@ -159,7 +160,11 @@ class GalgameAsrService:
         return await self._settings_out(await self._settings(project_id))
 
     async def create_tasks(
-        self, project_id: str, body: GalgameTranscriptionCreateIn
+        self,
+        project_id: str,
+        body: GalgameTranscriptionCreateIn,
+        *,
+        admission: TaskAdmission | None = None,
     ) -> GalgameTranscriptionTaskListOut:
         settings = await self._settings(project_id)
         model = (
@@ -201,6 +206,9 @@ class GalgameAsrService:
             metadata.transcript_status = "queued"
             self.session.add(task)
             tasks.append(task)
+        await self.session.flush()
+        if admission:
+            await admission([task.id for task in tasks])
         await self.session.commit()
         for task in tasks:
             await self.session.refresh(task)

@@ -2,9 +2,10 @@ from __future__ import annotations
 
 from typing import Literal
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Request
 
 from app.deps import SessionDep
+from app.routes.model_capacity import task_admission
 from app.schemas.visual_generation import (
     GenerationBatchListOut,
     GenerationBatchOut,
@@ -36,12 +37,16 @@ async def generation_options(session: SessionDep) -> GenerationOptionsOut:
     response_model=GenerationTaskOut,
 )
 async def create_generation_task(
+    request: Request,
     session: SessionDep,
     project_id: str,
     body: GenerationTaskCreateIn,
 ) -> GenerationTaskOut:
     try:
-        return await VisualGeneration(session).create(project_id, body)
+        result = await VisualGeneration(session).create(
+            project_id, body, admission=task_admission(request, session, "visual")
+        )
+        return result
     except GenerationError as exc:
         raise _generation_error(exc) from None
 
@@ -51,12 +56,16 @@ async def create_generation_task(
     response_model=GenerationBatchOut,
 )
 async def create_generation_batch(
+    request: Request,
     session: SessionDep,
     project_id: str,
     body: ImageGenerationBatchCreateIn,
 ) -> GenerationBatchOut:
     try:
-        return await VisualGeneration(session).create_batch(project_id, body)
+        result = await VisualGeneration(session).create_batch(
+            project_id, body, admission=task_admission(request, session, "visual")
+        )
+        return result
     except GenerationError as exc:
         raise _generation_error(exc) from None
 

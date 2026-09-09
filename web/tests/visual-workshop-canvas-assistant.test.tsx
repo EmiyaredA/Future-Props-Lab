@@ -80,6 +80,7 @@ vi.mock("@platform/api/client", async () => {
 });
 
 const project = {
+  is_official: false,
   id: "project-1",
   title: "未命名项目",
   kind: "canvas" as const,

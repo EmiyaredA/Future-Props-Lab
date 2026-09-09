@@ -8,7 +8,10 @@ from fastapi import Depends, HTTPException, Request, WebSocket, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.accounts.permissions import role_scopes
+from app.accounts.platform_policy import apply_policy
 from app.accounts.principal import StudioPrincipal
+from app.accounts.route_permissions import route_permission
 from app.accounts.security import (
     CSRF_COOKIE,
     REAUTH_MINUTES,
@@ -122,11 +125,7 @@ async def authenticate_studio_request(
             auth_session.active_workspace_id = workspace.id
             access, membership = "owner", owner
             await session.commit()
-        scopes = (
-            frozenset({"studio:read"})
-            if access == "public_viewer"
-            else frozenset({"studio:read", "studio:private_read", "studio:write"})
-        )
+        scopes = role_scopes(access, membership.role if membership else None)
         if (now - auth_session.last_seen_at).total_seconds() >= SESSION_ACTIVITY_WRITE_SECONDS:
             auth_session.last_seen_at = now
             auth_session.idle_expires_at = min(
@@ -139,7 +138,8 @@ async def authenticate_studio_request(
             membership_id=membership.id if membership else None,
             workspace_access=access,
             member_role=membership.role if membership else None,
-            is_platform_admin=bool(user.is_platform_admin),
+            is_platform_admin=user.platform_role == "super_admin",
+            platform_role=user.platform_role,
             must_change_password=bool(user.must_change_password),
             auth_kind="session",
             scopes=scopes,
@@ -171,7 +171,7 @@ async def authenticate_studio_request(
             or user.must_change_password
             or api_key.revoked_at is not None
             or api_key.expires_at <= now
-            or (membership is None and not user.is_platform_admin)
+            or (membership is None and user.platform_role not in {"admin", "super_admin"})
         ):
             raise _unauthorized()
         raw_scopes = {str(value) for value in api_key.scopes}
@@ -184,7 +184,7 @@ async def authenticate_studio_request(
             "owner"
             if membership and membership.role == "owner"
             else "platform_admin"
-            if user.is_platform_admin
+            if user.platform_role in {"admin", "super_admin"}
             else "member"
         )
         principal = StudioPrincipal(
@@ -193,25 +193,38 @@ async def authenticate_studio_request(
             membership_id=membership.id if membership else None,
             workspace_access=access,
             member_role=membership.role if membership else None,
-            is_platform_admin=bool(user.is_platform_admin),
+            is_platform_admin=user.platform_role == "super_admin",
+            platform_role=user.platform_role,
             must_change_password=False,
             auth_kind="management_api_key",
-            scopes=frozenset(scopes),
+            scopes=frozenset(scopes) & role_scopes(access, membership.role if membership else None),
             api_key_id=api_key.id,
         )
         if api_key.last_used_at is None or (now - api_key.last_used_at).total_seconds() >= 300:
             api_key.last_used_at = now
             await session.commit()
+    principal = await apply_policy(session, principal)
     if not principal.permits(required_scope):
         raise _forbidden("insufficient_scope", f"缺少 {required_scope} 权限")
     request.state.studio_principal = principal
+    principal = await apply_policy(session, principal)
     bind_workspace(session, principal.workspace_id)
     return principal
 
 
 async def require_studio_auth(request: Request, session: SessionDep) -> StudioPrincipal:
-    required = "studio:private_read" if request.method == "GET" else "studio:write"
-    return await authenticate_studio_request(request, session, required_scope=required)
+    permission = route_permission(request.method, request.url.path)
+    if permission is None:
+        raise _forbidden("unmapped_workspace_operation", "此操作尚未登记权限")
+    required = (
+        "studio:private_read"
+        if permission in {"content.read", "logs.read", "diagnostics.model", "docs.developer"}
+        else "studio:write"
+    )
+    principal = await authenticate_studio_request(request, session, required_scope=required)
+    if not principal.allows(permission):
+        raise _forbidden("insufficient_permission", "当前工作区角色不允许此操作")
+    return principal
 
 
 async def require_public_studio_auth(request: Request, session: SessionDep) -> StudioPrincipal:
@@ -254,21 +267,24 @@ async def authenticate_studio_websocket(
         access, membership = await resolve_access(session, user=user, workspace=workspace)
     except Exception as exc:
         raise _forbidden("workspace_access_changed", "当前 Workspace 的访问权限已变化") from exc
-    if access == "public_viewer":
-        raise _forbidden("insufficient_scope", "缺少 studio:private_read 权限")
+    scopes = role_scopes(access, membership.role if membership else None)
+    if "studio:write" not in scopes:
+        raise _forbidden("insufficient_permission", "当前角色不能发起实时模型调用")
     principal = StudioPrincipal(
         user_id=user.id,
         workspace_id=workspace.id,
         membership_id=membership.id if membership else None,
         workspace_access=access,
         member_role=membership.role if membership else None,
-        is_platform_admin=bool(user.is_platform_admin),
+        is_platform_admin=user.platform_role == "super_admin",
+        platform_role=user.platform_role,
         must_change_password=False,
         auth_kind="session",
-        scopes=frozenset({"studio:read", "studio:private_read", "studio:write"}),
+        scopes=scopes,
         session_id=auth_session.id,
         reauthenticated_at=auth_session.reauthenticated_at,
     )
+    principal = await apply_policy(session, principal)
     bind_workspace(session, principal.workspace_id)
     return principal
 

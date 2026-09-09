@@ -48,8 +48,12 @@ export const switchWorkspace = async (workspaceId: string) =>
     }),
   );
 
-export const listWorkspaces = async () =>
-  unwrap(await api.GET("/v1/account/workspaces"));
+export const listWorkspaces = async (q = "", page = 1) =>
+  unwrap(
+    await api.GET("/v1/account/workspaces", {
+      params: { query: { q, page, page_size: 25 } },
+    }),
+  );
 
 export const listMyInvitations = async () =>
   unwrap(await api.GET("/v1/account/workspace-invitations"));
@@ -75,10 +79,13 @@ export const updateWorkspace = async (
     }),
   );
 
-export const inviteWorkspaceMember = async (username: string) =>
+export const inviteWorkspaceMember = async (
+  username: string,
+  role: "admin" | "member" | "viewer" = "member",
+) =>
   unwrap(
     await api.POST("/v1/account/workspaces/current/invitations", {
-      body: { username },
+      body: { username, role },
     }),
   );
 
@@ -203,7 +210,7 @@ export const createPlatformAccount = async (
 ) =>
   unwrap(
     await api.POST("/v1/platform/accounts", {
-      body: { username, display_name: displayName },
+      body: { username, display_name: displayName, is_platform_admin: false },
     }),
   );
 
@@ -218,9 +225,10 @@ export const updatePlatformAccount = async (
     }),
   );
 
-export const resetPlatformAccountPassword = async (userId: string) =>
+export const resetPlatformAccountPassword = async (account: ManagedAccount) =>
   unwrap(
     await api.POST("/v1/platform/accounts/{user_id}/reset-password", {
-      params: { path: { user_id: userId } },
+      params: { path: { user_id: account.id } },
+      body: { expected_revision: account.revision },
     }),
   );

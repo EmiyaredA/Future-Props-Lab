@@ -1,0 +1,136 @@
+@media (max-width: 1000px) {
+  .management-shell .management-stat-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 767px) {
+  .management-shell {
+    display: block !important;
+  }
+  .management-shell .management-sidebar {
+    display: none;
+  }
+  .management-shell .management-sidebar.is-open {
+    display: flex;
+    position: fixed;
+    inset: 0 auto 0 0;
+    width: min(300px, calc(100vw - 32px));
+    z-index: 1050;
+    padding-top: 52px;
+  }
+  .management-shell .management-mobile-close {
+    display: grid;
+    position: absolute;
+    top: 12px;
+    right: 12px;
+  }
+  .management-shell .management-mobile-menu {
+    display: inline-flex;
+  }
+  .management-nav-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 1049;
+    background: var(--overlay);
+    border: 0;
+  }
+  .management-shell .management-topbar {
+    padding: 10px 16px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+  }
+  .management-shell .management-breadcrumb {
+    display: none;
+  }
+  .management-shell .management-page {
+    padding: 24px 16px;
+  }
+  .management-shell .management-page-head {
+    gap: 12px;
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+  .management-shell .management-page h1 {
+    font-size: 24px;
+  }
+  .management-shell .management-page-head > .btn {
+    padding: 10px 15px;
+  }
+  .management-shell .management-stat-grid {
+    gap: 10px;
+  }
+  .management-shell .management-stat {
+    padding: 16px;
+    border-radius: 14px;
+  }
+  .management-shell .management-stat > strong {
+    margin: 12px 0 6px;
+    font-size: 28px;
+  }
+  .management-shell .management-toolbar {
+    padding: 14px;
+    gap: 10px;
+  }
+  .management-toolbar .management-search {
+    flex-basis: 100%;
+  }
+  .management-shell .management-toolbar > * {
+    max-width: 100%;
+  }
+  .management-shell .management-toolbar > .custom-select {
+    flex: 1;
+    min-width: 130px;
+  }
+  .management-shell .management-responsive-table {
+    overflow: visible;
+  }
+  .management-shell .management-responsive-table table {
+    display: block;
+    min-width: 0;
+  }
+  .management-responsive-table thead {
+    display: none;
+  }
+  .management-responsive-table tbody {
+    display: block;
+  }
+  .management-responsive-table tr {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    padding: 14px;
+    gap: 10px;
+    border-bottom: 1px solid var(--border);
+  }
+  .management-shell .management-responsive-table td {
+    display: block;
+    padding: 0;
+    border: 0;
+    max-width: none;
+    min-width: 0;
+  }
+  .management-responsive-table td:first-child {
+    grid-column: 1 / -1;
+    margin-bottom: 4px;
+  }
+  .management-responsive-table td:last-child {
+    justify-self: end;
+  }
+  .management-responsive-table td[data-label="最近登录"] {
+    color: var(--muted);
+    font-size: 11px;
+  }
+  .management-responsive-table td[data-label="最近登录"]::before {
+    content: "最近登录 ";
+  }
+  .management-shell .management-pagination {
+    gap: 10px;
+    padding: 16px 14px;
+    flex-wrap: wrap;
+  }
+  .management-shell .management-pagination .btn {
+    padding: 6px 10px;
+  }
+  .management-dialog {
+    padding: 22px;
+  }
+}

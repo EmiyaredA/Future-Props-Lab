@@ -44,6 +44,7 @@ class IntegrationOverviewOut(BaseModel):
 
 
 class ToolApiBaseIn(BaseModel):
+    sensitive_result: bool = False
     name: str = Field(min_length=1, max_length=120)
     description: str = Field(default="", max_length=500)
     method: Literal["GET", "POST", "PUT", "PATCH", "DELETE"] = "GET"
@@ -112,6 +113,7 @@ class ToolApiUpdateIn(ToolApiBaseIn):
 
 
 class ToolApiOut(BaseModel):
+    sensitive_result: bool = False
     id: str
     name: str
     description: str
@@ -150,6 +152,7 @@ class ToolApiValidationOut(BaseModel):
 
 
 class McpBaseIn(BaseModel):
+    sensitive_result: bool = False
     name: str = Field(min_length=1, max_length=120)
     description: str = Field(default="", max_length=500)
     transport: Literal["streamable_http", "stdio"] = "streamable_http"
@@ -209,6 +212,7 @@ class McpUpdateIn(McpBaseIn):
 
 
 class McpOut(BaseModel):
+    sensitive_result: bool = False
     id: str
     name: str
     description: str

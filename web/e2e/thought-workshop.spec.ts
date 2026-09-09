@@ -26,7 +26,11 @@ test("rich notes persist, AI suggestions insert, and archives import", async ({
   await prose.fill("记录今天的灵感。保留丰富格式。");
   await prose.press("End");
   await prose.press("Enter");
-  await page.getByRole("button", { name: "插入表格", exact: true }).click();
+  await prose.pressSequentially("/");
+  await page
+    .locator(".thought-insert-menu")
+    .getByRole("option", { name: /表格/ })
+    .click();
   await expect(prose.locator("table")).toBeVisible();
   await page.getByRole("button", { name: "保存", exact: true }).click();
   await expect(page.getByText("已保存", { exact: true })).toBeVisible();
@@ -166,9 +170,9 @@ test("Markdown image packages preserve formulas and diagrams in offline exports"
   await prose.press("ControlOrMeta+End");
   await prose.press("Enter");
   await prose.pressSequentially("撤销验证");
-  await page.getByRole("button", { name: "撤销", exact: true }).click();
+  await prose.press("ControlOrMeta+z");
   await expect(prose).not.toContainText("撤销验证");
-  await page.getByRole("button", { name: "重做", exact: true }).click();
+  await prose.press("ControlOrMeta+Shift+z");
   await expect(prose).toContainText("撤销验证");
   await page.getByRole("button", { name: "保存", exact: true }).click();
   await expect(page.getByText("已保存", { exact: true })).toBeVisible();

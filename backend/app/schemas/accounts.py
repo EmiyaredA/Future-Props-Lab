@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 
 class LoginIn(BaseModel):
@@ -21,12 +21,13 @@ class ChangePasswordIn(BaseModel):
 
 
 class WorkspaceOut(BaseModel):
+    permission_keys: list[str] = Field(default_factory=list)
     id: str
     name: str
     visibility: Literal["private", "public"]
     revision: int
     access_kind: Literal["owner", "member", "platform_admin", "public_viewer"]
-    role: Literal["owner", "member"] | None
+    role: Literal["owner", "admin", "member", "viewer"] | None
 
 
 class CurrentUserOut(BaseModel):
@@ -36,10 +37,12 @@ class CurrentUserOut(BaseModel):
     email: str | None
     avatar_url: str | None
     is_platform_admin: bool
+    platform_role: Literal["super_admin", "admin", "member"] = "member"
     revision: int
 
 
 class AuthMeOut(BaseModel):
+    policy_revision: int = 0
     user: CurrentUserOut
     workspace: WorkspaceOut
     must_change_password: bool
@@ -73,11 +76,13 @@ class AccountSessionListOut(BaseModel):
 
 
 class AccountOut(BaseModel):
+    email: str | None = None
     id: str
     username: str
     display_name: str
     status: Literal["active", "disabled"]
     is_platform_admin: bool
+    platform_role: Literal["super_admin", "admin", "member"] = "member"
     must_change_password: bool
     revision: int
     last_login_at: datetime | None
@@ -85,13 +90,18 @@ class AccountOut(BaseModel):
 
 
 class AccountListOut(BaseModel):
+    page: int = 1
+    page_size: int = 25
     items: list[AccountOut]
     total: int
 
 
 class AccountCreateIn(BaseModel):
-    username: str
-    display_name: str = ""
+    username: str = Field(min_length=1, max_length=64)
+    display_name: str = Field(default="", max_length=120)
+    email: str | None = Field(default=None, max_length=254)
+    is_platform_admin: bool = False
+    platform_role: Literal["super_admin", "admin", "member"] | None = None
 
 
 class AccountCreatedOut(BaseModel):
@@ -100,7 +110,21 @@ class AccountCreatedOut(BaseModel):
 
 
 class AccountPatchIn(BaseModel):
-    status: Literal["active", "disabled"]
+    status: Literal["active", "disabled"] | None = None
+    is_platform_admin: bool | None = None
+    platform_role: Literal["super_admin", "admin", "member"] | None = None
+    expected_revision: int = Field(ge=0)
+
+    @model_validator(mode="after")
+    def require_change(self):
+        if self.status is None and self.is_platform_admin is None and self.platform_role is None:
+            raise ValueError("请选择要修改的状态或平台身份")
+        if self.platform_role is not None and self.is_platform_admin is not None:
+            raise ValueError("不能同时提交新旧平台身份字段")
+        return self
+
+
+class AccountResetPasswordIn(BaseModel):
     expected_revision: int = Field(ge=0)
 
 
@@ -157,6 +181,7 @@ class SecurityAuditListOut(BaseModel):
 
 
 class WorkspaceListItem(WorkspaceOut):
+    member_count: int = 0
     owner_username: str
     owner_display_name: str
 
@@ -191,7 +216,7 @@ class WorkspaceMemberOut(BaseModel):
     user_id: str
     username: str
     display_name: str
-    role: Literal["owner", "member"]
+    role: Literal["owner", "admin", "member", "viewer"]
     revision: int
     joined_at: datetime
 
@@ -206,6 +231,7 @@ class WorkspaceMemberRemoveIn(BaseModel):
 
 
 class WorkspaceInvitationCreateIn(BaseModel):
+    role: Literal["admin", "member", "viewer"] = "member"
     username: str = Field(min_length=1, max_length=64)
 
 
@@ -214,6 +240,7 @@ class WorkspaceInvitationActionIn(BaseModel):
 
 
 class WorkspaceInvitationOut(BaseModel):
+    role: Literal["admin", "member", "viewer"] = "member"
     id: str
     workspace_id: str
     workspace_name: str
@@ -231,3 +258,21 @@ class WorkspaceInvitationOut(BaseModel):
 class WorkspaceInvitationListOut(BaseModel):
     items: list[WorkspaceInvitationOut]
     total: int
+
+
+class WorkspaceCreateIn(BaseModel):
+    name: str = Field(min_length=1, max_length=255)
+    owner_user_id: str = Field(min_length=1, max_length=36)
+    visibility: Literal["private", "public"] = "private"
+
+    @field_validator("name")
+    @classmethod
+    def nonempty_name(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError("工作区名称不能为空")
+        return value.strip()
+
+
+class WorkspaceMemberRoleIn(BaseModel):
+    role: Literal["admin", "member", "viewer"]
+    expected_revision: int = Field(ge=0)

@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { vi } from "vitest";
 import { parsePage, parseRoute, pathFor } from "@app/routes";
+import { StudioGlobalHeader } from "@app/layout/StudioGlobalHeader";
 import { StudioSidebar } from "@app/layout/StudioSidebar";
 import { WorkshopShell } from "@app/layout/WorkshopShell";
 import { GALGAME_WORKSHOP_MODULE } from "@features/galgame-workshop/module";
@@ -21,7 +22,12 @@ function openDocsSearch() {
 
 test("renders integrations after tools and before the base model group", () => {
   const navigate = vi.fn();
-  render(<StudioSidebar page="model-service" navigate={navigate} />);
+  render(
+    <>
+      <StudioSidebar page="model-service" navigate={navigate} />
+      <StudioGlobalHeader />
+    </>,
+  );
   expect(screen.getByText("未来道具研究所")).toBeInTheDocument();
   const navigationButtons = within(screen.getByRole("navigation")).getAllByRole(
     "button",
@@ -46,7 +52,7 @@ test("renders integrations after tools and before the base model group", () => {
     "aria-expanded",
     "true",
   );
-  expect(screen.getByRole("button", { name: "文档中心" })).toBeInTheDocument();
+  expect(screen.getByRole("link", { name: "文档中心" })).toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: /模型测试/ }));
   expect(navigate).toHaveBeenCalledWith("model-test");
   fireEvent.click(screen.getByRole("button", { name: /测试工具/ }));

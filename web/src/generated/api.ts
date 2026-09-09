@@ -73,6 +73,74 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/account/cross-workspace-call-logs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Cross Logs */
+        get: operations["cross_logs_v1_account_cross_workspace_call_logs_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/account/demo-services/{service_id}/install": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Install */
+        post: operations["install_v1_account_demo_services__service_id__install_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/account/developer-documents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Developer Docs */
+        get: operations["developer_docs_v1_account_developer_documents_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/account/log-workspaces": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Log Spaces */
+        get: operations["log_spaces_v1_account_log_workspaces_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/account/profile": {
         parameters: {
             query?: never;
@@ -108,6 +176,23 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/v1/account/project-certification/{kind}/{project_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Certification */
+        patch: operations["certification_v1_account_project_certification__kind___project_id__patch"];
         trace?: never;
     };
     "/v1/account/security-events": {
@@ -263,6 +348,23 @@ export interface paths {
         patch: operations["update_workspace_v1_account_workspaces_current_patch"];
         trace?: never;
     };
+    "/v1/account/workspaces/current/audit-events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Audit */
+        get: operations["audit_v1_account_workspaces_current_audit_events_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/account/workspaces/current/invitations": {
         parameters: {
             query?: never;
@@ -329,7 +431,8 @@ export interface paths {
         delete: operations["delete_member_v1_account_workspaces_current_members__membership_id__delete"];
         options?: never;
         head?: never;
-        patch?: never;
+        /** Set Member Role */
+        patch: operations["set_member_role_v1_account_workspaces_current_members__membership_id__patch"];
         trace?: never;
     };
     "/v1/account/workspaces/switch": {
@@ -552,6 +655,57 @@ export interface paths {
         put?: never;
         /** Reauth */
         post: operations["reauth_v1_auth_reauth_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/auth/register": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Registration */
+        post: operations["registration_v1_auth_register_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/demo-services/model/chat/completions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Mock Completion */
+        post: operations["mock_completion_v1_demo_services_model_chat_completions_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/demo-services/tools/{tool}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Example Tool */
+        get: operations["example_tool_v1_demo_services_tools__tool__get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1672,6 +1826,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/model-catalog/defaults": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Defaults */
+        put: operations["defaults_v1_model_catalog_defaults_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/model-categories": {
         parameters: {
             query?: never;
@@ -1792,6 +1963,41 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/v1/model-suppliers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create Supplier */
+        post: operations["create_supplier_v1_model_suppliers_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/model-suppliers/{supplier_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete Supplier */
+        delete: operations["delete_supplier_v1_model_suppliers__supplier_id__delete"];
+        options?: never;
+        head?: never;
+        /** Update Supplier */
+        patch: operations["update_supplier_v1_model_suppliers__supplier_id__patch"];
         trace?: never;
     };
     "/v1/model-test/conversations": {
@@ -2253,8 +2459,8 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Platform Accounts */
-        get: operations["platform_accounts_v1_platform_accounts_get"];
+        /** Accounts */
+        get: operations["accounts_v1_platform_accounts_get"];
         put?: never;
         /** Add Account */
         post: operations["add_account_v1_platform_accounts_post"];
@@ -2277,8 +2483,8 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        /** Update Account */
-        patch: operations["update_account_v1_platform_accounts__user_id__patch"];
+        /** Patch Account */
+        patch: operations["patch_account_v1_platform_accounts__user_id__patch"];
         trace?: never;
     };
     "/v1/platform/accounts/{user_id}/reset-password": {
@@ -2290,12 +2496,271 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Reset Account Password */
-        post: operations["reset_account_password_v1_platform_accounts__user_id__reset_password_post"];
+        /** Reset Password */
+        post: operations["reset_password_v1_platform_accounts__user_id__reset_password_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/v1/platform/demo-services": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Services */
+        get: operations["services_v1_platform_demo_services_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/platform/demo-services/{service_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Configuration */
+        put: operations["configuration_v1_platform_demo_services__service_id__put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/platform/demo-services/{service_id}/actions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Action */
+        post: operations["action_v1_platform_demo_services__service_id__actions_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/platform/model-service-templates/sync-jobs/{job_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Job */
+        get: operations["job_v1_platform_model_service_templates_sync_jobs__job_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/platform/model-service-templates/sync-jobs/{job_id}/start": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Start */
+        post: operations["start_v1_platform_model_service_templates_sync_jobs__job_id__start_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/platform/model-service-templates/{role}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Template */
+        get: operations["template_v1_platform_model_service_templates__role__get"];
+        /** Put Template */
+        put: operations["put_template_v1_platform_model_service_templates__role__put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/platform/model-service-templates/{role}/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Preview */
+        post: operations["preview_v1_platform_model_service_templates__role__preview_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/platform/model-service-templates/{role}/sync-jobs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** History */
+        get: operations["history_v1_platform_model_service_templates__role__sync_jobs_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/platform/permission-policy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Policy */
+        get: operations["get_policy_v1_platform_permission_policy_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Patch Policy */
+        patch: operations["patch_policy_v1_platform_permission_policy_patch"];
+        trace?: never;
+    };
+    "/v1/platform/registration-invite-codes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Invites */
+        get: operations["invites_v1_platform_registration_invite_codes_get"];
+        put?: never;
+        /** Add Invite */
+        post: operations["add_invite_v1_platform_registration_invite_codes_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/platform/registration-invite-codes/{invite_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Patch Invite */
+        patch: operations["patch_invite_v1_platform_registration_invite_codes__invite_id__patch"];
+        trace?: never;
+    };
+    "/v1/platform/registration-invite-codes/{invite_id}/actions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Invite Action */
+        post: operations["invite_action_v1_platform_registration_invite_codes__invite_id__actions_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/platform/registration-invite-codes/{invite_id}/redemptions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Redemptions */
+        get: operations["redemptions_v1_platform_registration_invite_codes__invite_id__redemptions_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/platform/registration-invite-codes/{invite_id}/secret": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Invite Secret */
+        post: operations["invite_secret_v1_platform_registration_invite_codes__invite_id__secret_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/platform/runtime-quotas": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Quotas */
+        get: operations["get_quotas_v1_platform_runtime_quotas_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Patch Quotas */
+        patch: operations["patch_quotas_v1_platform_runtime_quotas_patch"];
         trace?: never;
     };
     "/v1/platform/security-events": {
@@ -2305,10 +2770,28 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Platform Audit */
-        get: operations["platform_audit_v1_platform_security_events_get"];
+        /** Audit */
+        get: operations["audit_v1_platform_security_events_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/platform/workspaces": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Workspaces */
+        get: operations["workspaces_v1_platform_workspaces_get"];
+        put?: never;
+        /** Add Workspace */
+        post: operations["add_workspace_v1_platform_workspaces_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2505,41 +2988,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/thought-workshop/knowledge-bases/{project_id}/folders": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Create Folder */
-        post: operations["create_folder_v1_thought_workshop_knowledge_bases__project_id__folders_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/thought-workshop/knowledge-bases/{project_id}/folders/{folder_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        /** Rename Folder */
-        put: operations["rename_folder_v1_thought_workshop_knowledge_bases__project_id__folders__folder_id__put"];
-        post?: never;
-        /** Delete Folder */
-        delete: operations["delete_folder_v1_thought_workshop_knowledge_bases__project_id__folders__folder_id__delete"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/v1/thought-workshop/knowledge-bases/{project_id}/move": {
         parameters: {
             query?: never;
@@ -2639,6 +3087,57 @@ export interface paths {
         put?: never;
         /** Assistant */
         post: operations["assistant_v1_thought_workshop_notes__note_id__assistant_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/thought-workshop/notes/{note_id}/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Note History */
+        get: operations["note_history_v1_thought_workshop_notes__note_id__history_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/thought-workshop/notes/{note_id}/history/{history_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Note History Detail */
+        get: operations["note_history_detail_v1_thought_workshop_notes__note_id__history__history_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/thought-workshop/notes/{note_id}/history/{history_id}/restore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Restore Note History */
+        post: operations["restore_note_history_v1_thought_workshop_notes__note_id__history__history_id__restore_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3525,6 +4024,15 @@ export interface components {
              * @default
              */
             display_name: string;
+            /** Email */
+            email?: string | null;
+            /**
+             * Is Platform Admin
+             * @default false
+             */
+            is_platform_admin: boolean;
+            /** Platform Role */
+            platform_role?: ("super_admin" | "admin" | "member") | null;
             /** Username */
             username: string;
         };
@@ -3538,6 +4046,16 @@ export interface components {
         AccountListOut: {
             /** Items */
             items: components["schemas"]["AccountOut"][];
+            /**
+             * Page
+             * @default 1
+             */
+            page: number;
+            /**
+             * Page Size
+             * @default 25
+             */
+            page_size: number;
             /** Total */
             total: number;
         };
@@ -3550,6 +4068,8 @@ export interface components {
             created_at: string;
             /** Display Name */
             display_name: string;
+            /** Email */
+            email?: string | null;
             /** Id */
             id: string;
             /** Is Platform Admin */
@@ -3558,6 +4078,12 @@ export interface components {
             last_login_at: string | null;
             /** Must Change Password */
             must_change_password: boolean;
+            /**
+             * Platform Role
+             * @default member
+             * @enum {string}
+             */
+            platform_role: "super_admin" | "admin" | "member";
             /** Revision */
             revision: number;
             /**
@@ -3572,11 +4098,12 @@ export interface components {
         AccountPatchIn: {
             /** Expected Revision */
             expected_revision: number;
-            /**
-             * Status
-             * @enum {string}
-             */
-            status: "active" | "disabled";
+            /** Is Platform Admin */
+            is_platform_admin?: boolean | null;
+            /** Platform Role */
+            platform_role?: ("super_admin" | "admin" | "member") | null;
+            /** Status */
+            status?: ("active" | "disabled") | null;
         };
         /** AccountProfilePatchIn */
         AccountProfilePatchIn: {
@@ -3584,6 +4111,11 @@ export interface components {
             display_name?: string | null;
             /** Email */
             email?: string | null;
+            /** Expected Revision */
+            expected_revision: number;
+        };
+        /** AccountResetPasswordIn */
+        AccountResetPasswordIn: {
             /** Expected Revision */
             expected_revision: number;
         };
@@ -3982,6 +4514,11 @@ export interface components {
         AuthMeOut: {
             /** Must Change Password */
             must_change_password: boolean;
+            /**
+             * Policy Revision
+             * @default 0
+             */
+            policy_revision: number;
             /** Session Expires At */
             session_expires_at: string | null;
             user: components["schemas"]["CurrentUserOut"];
@@ -4220,6 +4757,22 @@ export interface components {
             /** Total Tokens Today */
             total_tokens_today: number;
         };
+        /** CertificationIn */
+        CertificationIn: {
+            /** Expected Revision */
+            expected_revision: number;
+            /** Is Official */
+            is_official: boolean;
+        };
+        /** CertificationOut */
+        CertificationOut: {
+            /** Id */
+            id: string;
+            /** Is Official */
+            is_official: boolean;
+            /** Revision */
+            revision: number;
+        };
         /** ChangePasswordIn */
         ChangePasswordIn: {
             /** Current Password */
@@ -4239,6 +4792,38 @@ export interface components {
              */
             type: "duplicateClip" | "removeClip" | "rippleDelete" | "unlinkClips";
         };
+        /** CrossWorkspaceLogOut */
+        CrossWorkspaceLogOut: {
+            /** Call Source */
+            call_source: string;
+            /** Created At */
+            created_at: string;
+            /** Id */
+            id: string;
+            /** Latency Ms */
+            latency_ms: number;
+            /** Model */
+            model: string;
+            /** Provider Kind */
+            provider_kind: string;
+            /** Status */
+            status: string;
+            /** Total Tokens */
+            total_tokens: number | null;
+            /** Workspace Id */
+            workspace_id: string;
+        };
+        /** CrossWorkspaceLogPage */
+        CrossWorkspaceLogPage: {
+            /** Items */
+            items: components["schemas"]["CrossWorkspaceLogOut"][];
+            /** Page */
+            page: number;
+            /** Page Size */
+            page_size: number;
+            /** Total */
+            total: number;
+        };
         /** CurrentUserOut */
         CurrentUserOut: {
             /** Avatar Url */
@@ -4251,6 +4836,12 @@ export interface components {
             id: string;
             /** Is Platform Admin */
             is_platform_admin: boolean;
+            /**
+             * Platform Role
+             * @default member
+             * @enum {string}
+             */
+            platform_role: "super_admin" | "admin" | "member";
             /** Revision */
             revision: number;
             /** Username */
@@ -4270,6 +4861,99 @@ export interface components {
              * @default true
              */
             deleted: boolean;
+        };
+        /** DemoActionIn */
+        DemoActionIn: {
+            /**
+             * Action
+             * @enum {string}
+             */
+            action: "start" | "stop" | "reinitialize";
+            /** Expected Revision */
+            expected_revision: number;
+        };
+        /** DemoConfig */
+        DemoConfig: {
+            /**
+             * Delay Ms
+             * @default 0
+             */
+            delay_ms: number;
+            /**
+             * Enabled
+             * @default false
+             */
+            enabled: boolean;
+            /**
+             * Failure
+             * @default false
+             */
+            failure: boolean;
+            /**
+             * Response Text
+             * @default 这是本地测试模型的确定性回复。
+             */
+            response_text: string;
+        };
+        /** DemoConfigIn */
+        DemoConfigIn: {
+            /** Expected Revision */
+            expected_revision: number;
+            value: components["schemas"]["DemoConfig"];
+        };
+        /** DemoInstallIn */
+        DemoInstallIn: {
+            /** Expected Catalog Revision */
+            expected_catalog_revision: number;
+        };
+        /** DemoInstallOut */
+        DemoInstallOut: {
+            /** Id */
+            id: string;
+            /** Message */
+            message: string;
+        };
+        /** DemoLog */
+        DemoLog: {
+            /** Message */
+            message: string;
+            /** Time */
+            time: string;
+        };
+        /** DemoServiceOut */
+        DemoServiceOut: {
+            /** Active Calls */
+            active_calls: number;
+            /**
+             * Id
+             * @enum {string}
+             */
+            id: "mock_model" | "example_tools";
+            /** Logs */
+            logs: components["schemas"]["DemoLog"][];
+            /** Ready */
+            ready: boolean;
+            /** Revision */
+            revision: number;
+            /** State */
+            state: string;
+            value: components["schemas"]["DemoConfig"];
+        };
+        /** DeveloperDocumentOut */
+        DeveloperDocumentOut: {
+            /** Group */
+            group: string;
+            /** Id */
+            id: string;
+            /** Markdown */
+            markdown: string;
+            /** Source */
+            source: string;
+        };
+        /** DeveloperDocumentsOut */
+        DeveloperDocumentsOut: {
+            /** Items */
+            items: components["schemas"]["DeveloperDocumentOut"][];
         };
         /** GalgameAnnotationImportIn */
         GalgameAnnotationImportIn: {
@@ -7574,6 +8258,11 @@ export interface components {
             created_at: string;
             /** Id */
             id: string;
+            /**
+             * Is Official
+             * @default false
+             */
+            is_official: boolean;
             /** Revision */
             revision: number;
             /**
@@ -7941,8 +8630,8 @@ export interface components {
         KnowledgeNoteCreate: {
             /** Expected Revision */
             expected_revision: number;
-            /** Folder Id */
-            folder_id?: string | null;
+            /** Parent Id */
+            parent_id?: string | null;
             /**
              * Title
              * @default 未命名文档
@@ -7960,6 +8649,13 @@ export interface components {
              * @enum {string}
              */
             type: "linkClips";
+        };
+        /** LogWorkspaceOut */
+        LogWorkspaceOut: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
         };
         /** LoginIn */
         LoginIn: {
@@ -8014,6 +8710,11 @@ export interface components {
             };
             /** Name */
             name: string;
+            /**
+             * Sensitive Result
+             * @default false
+             */
+            sensitive_result: boolean;
             /** Tags */
             tags?: string[];
             /**
@@ -8056,6 +8757,11 @@ export interface components {
             protocol_version: string;
             /** Revision */
             revision: number;
+            /**
+             * Sensitive Result
+             * @default false
+             */
+            sensitive_result: boolean;
             /** Server Name */
             server_name: string;
             /** Server Version */
@@ -8133,6 +8839,11 @@ export interface components {
             expected_revision: number;
             /** Name */
             name: string;
+            /**
+             * Sensitive Result
+             * @default false
+             */
+            sensitive_result: boolean;
             /** Tags */
             tags?: string[];
             /**
@@ -8154,12 +8865,43 @@ export interface components {
             /** Tools */
             tools: components["schemas"]["McpToolOut"][];
         };
+        /** MockCompletionIn */
+        MockCompletionIn: {
+            /** Messages */
+            messages?: {
+                [key: string]: unknown;
+            }[];
+            /**
+             * Model
+             * @default fpl-mock
+             */
+            model: string;
+            /**
+             * Stream
+             * @default false
+             */
+            stream: boolean;
+            /** Tool Choice */
+            tool_choice?: string | {
+                [key: string]: unknown;
+            } | null;
+            /** Tools */
+            tools?: {
+                [key: string]: unknown;
+            }[];
+        };
         /** ModelCatalogOut */
         ModelCatalogOut: {
+            /** Default Model Ids */
+            default_model_ids?: {
+                [key: string]: string;
+            };
             /** Providers */
             providers: components["schemas"]["ProviderOut"][];
             /** Revision */
             revision: number;
+            /** Suppliers */
+            suppliers?: components["schemas"]["ModelSupplierOut"][];
         };
         /** ModelCategoryListOut */
         ModelCategoryListOut: {
@@ -8182,6 +8924,15 @@ export interface components {
              * @enum {string}
              */
             type: "text" | "image" | "audio" | "video";
+        };
+        /** ModelDefaultsIn */
+        ModelDefaultsIn: {
+            /** Default Model Ids */
+            default_model_ids: {
+                [key: string]: string;
+            };
+            /** Expected Revision */
+            expected_revision: number;
         };
         /** ModelEntryIn */
         ModelEntryIn: {
@@ -8223,16 +8974,56 @@ export interface components {
             id: string;
             /** Label */
             label: string;
+            /** Managed Fields */
+            managed_fields?: string[];
+            /**
+             * Origin
+             * @default user
+             * @enum {string}
+             */
+            origin: "user" | "role_template";
             /** Provider Id */
             provider_id: string;
             /** Slug */
             slug: string;
+            /** Template Key */
+            template_key?: string | null;
         };
         /** ModelMutationOut */
         ModelMutationOut: {
             model: components["schemas"]["ModelEntryOut"];
             /** Revision */
             revision: number;
+        };
+        /** ModelSupplierIn */
+        ModelSupplierIn: {
+            /** Expected Catalog Revision */
+            expected_catalog_revision: number;
+            /** Name */
+            name: string;
+        };
+        /** ModelSupplierMutationOut */
+        ModelSupplierMutationOut: {
+            /** Revision */
+            revision: number;
+            supplier: components["schemas"]["ModelSupplierOut"];
+        };
+        /** ModelSupplierOut */
+        ModelSupplierOut: {
+            /** Id */
+            id: string;
+            /** Managed Fields */
+            managed_fields?: string[];
+            /** Name */
+            name: string;
+            /**
+             * Origin
+             * @default user
+             * @enum {string}
+             */
+            origin: "user" | "role_template";
+            /** Template Key */
+            template_key?: string | null;
         };
         /** ModelTestAttachmentListOut */
         ModelTestAttachmentListOut: {
@@ -9126,6 +9917,23 @@ export interface components {
              */
             type: "moveClip";
         };
+        /** PermissionPolicy */
+        PermissionPolicy: {
+            admin: components["schemas"]["RolePolicy"];
+            member: components["schemas"]["RolePolicy"];
+        };
+        /** PermissionPolicyIn */
+        PermissionPolicyIn: {
+            /** Expected Revision */
+            expected_revision: number;
+            value: components["schemas"]["PermissionPolicy"];
+        };
+        /** PermissionPolicyOut */
+        PermissionPolicyOut: {
+            /** Revision */
+            revision: number;
+            value: components["schemas"]["PermissionPolicy"];
+        };
         /** ProjectFolderOpenOut */
         ProjectFolderOpenOut: {
             /**
@@ -9180,6 +9988,8 @@ export interface components {
             kind: "openai" | "anthropic" | "senseaudio_image" | "senseaudio_video" | "senseaudio_asr" | "senseaudio_realtime" | "senseaudio_music" | "senseaudio_sfx";
             /** Name */
             name: string;
+            /** Supplier Id */
+            supplier_id?: string | null;
         };
         /** ProviderMutationOut */
         ProviderMutationOut: {
@@ -9204,10 +10014,22 @@ export interface components {
              * @enum {string}
              */
             kind: "openai" | "anthropic" | "senseaudio_image" | "senseaudio_video" | "senseaudio_asr" | "senseaudio_realtime" | "senseaudio_music" | "senseaudio_sfx";
+            /** Managed Fields */
+            managed_fields?: string[];
             /** Models */
             models: components["schemas"]["ModelEntryOut"][];
             /** Name */
             name: string;
+            /**
+             * Origin
+             * @default user
+             * @enum {string}
+             */
+            origin: "user" | "role_template";
+            /** Supplier Id */
+            supplier_id?: string | null;
+            /** Template Key */
+            template_key?: string | null;
         };
         /** PublicAssetOut */
         PublicAssetOut: {
@@ -9233,6 +10055,11 @@ export interface components {
             assets: components["schemas"]["PublicAssetOut"][];
             /** Id */
             id: string;
+            /**
+             * Is Official
+             * @default false
+             */
+            is_official: boolean;
             /** Status */
             status: string;
             /** Title */
@@ -9263,6 +10090,11 @@ export interface components {
             assets: components["schemas"]["PublicAssetOut"][];
             /** Id */
             id: string;
+            /**
+             * Is Official
+             * @default false
+             */
+            is_official: boolean;
             /** Kind */
             kind: string;
             /** Status */
@@ -9285,6 +10117,13 @@ export interface components {
             workspace_id: string;
             /** Workspace Name */
             workspace_name: string;
+        };
+        /** QuotaLimit */
+        QuotaLimit: {
+            /** Realtime Voice */
+            realtime_voice: number;
+            /** Total */
+            total: number;
         };
         /** RealtimeNumberParameterOut */
         RealtimeNumberParameterOut: {
@@ -9381,6 +10220,137 @@ export interface components {
             /** Password */
             password: string;
         };
+        /** RedemptionOut */
+        RedemptionOut: {
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Display Name */
+            display_name: string;
+            /** Id */
+            id: string;
+            /** Username */
+            username: string;
+        };
+        /** RedemptionPage */
+        RedemptionPage: {
+            /** Items */
+            items: components["schemas"]["RedemptionOut"][];
+            /** Page */
+            page: number;
+            /** Page Size */
+            page_size: number;
+            /** Total */
+            total: number;
+        };
+        /** RegistrationIn */
+        RegistrationIn: {
+            /**
+             * Display Name
+             * @default
+             */
+            display_name: string;
+            /** Email */
+            email?: string | null;
+            /** Invite Code */
+            invite_code: string;
+            /** Password */
+            password: string;
+            /** Username */
+            username: string;
+        };
+        /** RegistrationInviteAction */
+        RegistrationInviteAction: {
+            /**
+             * Action
+             * @enum {string}
+             */
+            action: "extend" | "reset_expiry" | "delete";
+            /**
+             * Days
+             * @default 7
+             */
+            days: number;
+            /** Expected Revision */
+            expected_revision: number;
+        };
+        /** RegistrationInviteCreated */
+        RegistrationInviteCreated: {
+            invite: components["schemas"]["RegistrationInviteOut"];
+            /** Secret */
+            secret: string;
+        };
+        /** RegistrationInviteIn */
+        RegistrationInviteIn: {
+            /**
+             * Max Uses
+             * @default 1
+             */
+            max_uses: number;
+            /** Name */
+            name: string;
+            /**
+             * Validity Days
+             * @default 7
+             */
+            validity_days: number;
+        };
+        /** RegistrationInviteOut */
+        RegistrationInviteOut: {
+            /** Code Hint */
+            code_hint: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Enabled */
+            enabled: boolean;
+            /**
+             * Expires At
+             * Format: date-time
+             */
+            expires_at: string;
+            /** Id */
+            id: string;
+            /** Max Uses */
+            max_uses: number;
+            /** Name */
+            name: string;
+            /** Revision */
+            revision: number;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "active" | "disabled" | "expired" | "exhausted" | "deleted";
+            /** Used Count */
+            used_count: number;
+            /** Validity Days */
+            validity_days: number;
+        };
+        /** RegistrationInvitePage */
+        RegistrationInvitePage: {
+            /** Items */
+            items: components["schemas"]["RegistrationInviteOut"][];
+            /** Page */
+            page: number;
+            /** Page Size */
+            page_size: number;
+            /** Total */
+            total: number;
+        };
+        /** RegistrationInvitePatch */
+        RegistrationInvitePatch: {
+            /** Enabled */
+            enabled?: boolean | null;
+            /** Expected Revision */
+            expected_revision: number;
+            /** Max Uses */
+            max_uses?: number | null;
+        };
         /** RemoveTrackOperation */
         RemoveTrackOperation: {
             /** Trackid */
@@ -9413,6 +10383,136 @@ export interface components {
         RevokeApiKeyIn: {
             /** Expected Revision */
             expected_revision: number;
+        };
+        /** RoleModelTemplate */
+        "RoleModelTemplate-Input": {
+            /** Defaults */
+            defaults?: {
+                [key: string]: string;
+            };
+            /** Providers */
+            providers?: components["schemas"]["TemplateProvider-Input"][];
+            /** Suppliers */
+            suppliers?: components["schemas"]["TemplateSupplier"][];
+        };
+        /** RoleModelTemplate */
+        "RoleModelTemplate-Output": {
+            /** Defaults */
+            defaults?: {
+                [key: string]: string;
+            };
+            /** Providers */
+            providers?: components["schemas"]["TemplateProvider-Output"][];
+            /** Suppliers */
+            suppliers?: components["schemas"]["TemplateSupplier"][];
+        };
+        /** RoleModelTemplateIn */
+        RoleModelTemplateIn: {
+            /** Expected Revision */
+            expected_revision: number;
+            value: components["schemas"]["RoleModelTemplate-Input"];
+        };
+        /** RoleModelTemplateOut */
+        RoleModelTemplateOut: {
+            /** Revision */
+            revision: number;
+            /**
+             * Role
+             * @enum {string}
+             */
+            role: "super_admin" | "admin" | "member";
+            value: components["schemas"]["RoleModelTemplate-Output"];
+        };
+        /** RolePolicy */
+        RolePolicy: {
+            /**
+             * Mark Workshop Official
+             * @default false
+             */
+            mark_workshop_official: boolean;
+            /**
+             * View Cross Workspace Logs
+             * @default false
+             */
+            view_cross_workspace_logs: boolean;
+            /**
+             * View Developer Docs
+             * @default false
+             */
+            view_developer_docs: boolean;
+            /**
+             * View Model Diagnostics
+             * @default false
+             */
+            view_model_diagnostics: boolean;
+            /**
+             * View Realtime Voice Diagnostics
+             * @default false
+             */
+            view_realtime_voice_diagnostics: boolean;
+            /**
+             * View Sensitive Tool Results
+             * @default false
+             */
+            view_sensitive_tool_results: boolean;
+        };
+        /** RuntimeQuotas */
+        RuntimeQuotas: {
+            /**
+             * @default {
+             *       "realtime_voice": 2,
+             *       "total": 4
+             *     }
+             */
+            admin: components["schemas"]["QuotaLimit"];
+            /**
+             * @default {
+             *       "realtime_voice": 8,
+             *       "total": 16
+             *     }
+             */
+            instance: components["schemas"]["QuotaLimit"];
+            /**
+             * @default {
+             *       "realtime_voice": 1,
+             *       "total": 2
+             *     }
+             */
+            member: components["schemas"]["QuotaLimit"];
+            /**
+             * Reserved For Admins
+             * @default 2
+             */
+            reserved_for_admins: number;
+            /**
+             * @default {
+             *       "realtime_voice": 4,
+             *       "total": 8
+             *     }
+             */
+            super_admin: components["schemas"]["QuotaLimit"];
+            /**
+             * Workspace Total
+             * @default 8
+             */
+            workspace_total: number;
+        };
+        /** RuntimeQuotasIn */
+        RuntimeQuotasIn: {
+            /** Expected Revision */
+            expected_revision: number;
+            value: components["schemas"]["RuntimeQuotas"];
+        };
+        /** RuntimeQuotasOut */
+        RuntimeQuotasOut: {
+            /** Revision */
+            revision: number;
+            value: components["schemas"]["RuntimeQuotas"];
+        };
+        /** SecretOut */
+        SecretOut: {
+            /** Secret */
+            secret: string;
         };
         /** SecurityAuditEventOut */
         SecurityAuditEventOut: {
@@ -9657,6 +10757,173 @@ export interface components {
              */
             target_version: 2;
         };
+        /** TemplateModel */
+        TemplateModel: {
+            /** Capabilities */
+            capabilities?: ("chat" | "vision" | "tools" | "image_generation" | "video_generation" | "speech_recognition" | "voice" | "audio_generation")[];
+            /** Categories */
+            categories?: ("text_generation" | "other_general" | "speech_synthesis" | "speech_recognition" | "music_generation" | "video_generation" | "image_generation" | "end_to_end_speech")[];
+            /**
+             * Description
+             * @default
+             */
+            description: string;
+            /**
+             * Enabled
+             * @default true
+             */
+            enabled: boolean;
+            /**
+             * Label
+             * @default
+             */
+            label: string;
+            /** Slug */
+            slug: string;
+            /** Template Key */
+            template_key: string;
+        };
+        /** TemplatePreviewIn */
+        TemplatePreviewIn: {
+            /** Expected Template Revision */
+            expected_template_revision: number;
+        };
+        /** TemplateProvider */
+        "TemplateProvider-Input": {
+            /**
+             * Api Key
+             * @default
+             */
+            api_key: string;
+            /**
+             * Api Key Hint
+             * @default
+             */
+            api_key_hint: string;
+            /**
+             * Base Url
+             * @default
+             */
+            base_url: string;
+            /**
+             * Clear Api Key
+             * @default false
+             */
+            clear_api_key: boolean;
+            /**
+             * Enabled
+             * @default true
+             */
+            enabled: boolean;
+            /**
+             * Has Api Key
+             * @default false
+             */
+            has_api_key: boolean;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "openai" | "anthropic" | "senseaudio_image" | "senseaudio_video" | "senseaudio_asr" | "senseaudio_realtime" | "senseaudio_music" | "senseaudio_sfx";
+            /** Models */
+            models?: components["schemas"]["TemplateModel"][];
+            /** Name */
+            name: string;
+            /** Supplier Key */
+            supplier_key?: string | null;
+            /** Template Key */
+            template_key: string;
+        };
+        /** TemplateProvider */
+        "TemplateProvider-Output": {
+            /**
+             * Api Key Hint
+             * @default
+             */
+            api_key_hint: string;
+            /**
+             * Base Url
+             * @default
+             */
+            base_url: string;
+            /**
+             * Enabled
+             * @default true
+             */
+            enabled: boolean;
+            /**
+             * Has Api Key
+             * @default false
+             */
+            has_api_key: boolean;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "openai" | "anthropic" | "senseaudio_image" | "senseaudio_video" | "senseaudio_asr" | "senseaudio_realtime" | "senseaudio_music" | "senseaudio_sfx";
+            /** Models */
+            models?: components["schemas"]["TemplateModel"][];
+            /** Name */
+            name: string;
+            /** Supplier Key */
+            supplier_key?: string | null;
+            /** Template Key */
+            template_key: string;
+        };
+        /** TemplateSupplier */
+        TemplateSupplier: {
+            /** Name */
+            name: string;
+            /** Template Key */
+            template_key: string;
+        };
+        /** TemplateSyncIn */
+        TemplateSyncIn: {
+            /** Expected Revision */
+            expected_revision: number;
+        };
+        /** TemplateSyncItemOut */
+        TemplateSyncItemOut: {
+            /** Catalog Revision */
+            catalog_revision: number;
+            /** Error Message */
+            error_message: string;
+            /** Id */
+            id: string;
+            /** Status */
+            status: string;
+            /** Summary */
+            summary: {
+                [key: string]: string[];
+            };
+            /** Workspace Id */
+            workspace_id: string;
+            /** Workspace Name */
+            workspace_name: string;
+        };
+        /** TemplateSyncJobOut */
+        TemplateSyncJobOut: {
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Id */
+            id: string;
+            /** Items */
+            items: components["schemas"]["TemplateSyncItemOut"][];
+            /** Revision */
+            revision: number;
+            /**
+             * Role
+             * @enum {string}
+             */
+            role: "super_admin" | "admin" | "member";
+            /** Status */
+            status: string;
+            /** Template Revision */
+            template_revision: number;
+        };
         /** TestModelOut */
         TestModelOut: {
             /** Latency Ms */
@@ -9705,21 +10972,63 @@ export interface components {
         ThoughtDirectoryOut: {
             /** Documents */
             documents: components["schemas"]["ThoughtNoteSummary"][];
-            /** Folders */
-            folders: components["schemas"]["ThoughtFolderOut"][];
             knowledge_base: components["schemas"]["KnowledgeBaseOut"];
         };
-        /** ThoughtFolderIn */
-        ThoughtFolderIn: {
-            /** Expected Revision */
-            expected_revision: number;
-            /** Parent Id */
-            parent_id?: string | null;
+        /** ThoughtHistoryDetail */
+        ThoughtHistoryDetail: {
+            current: components["schemas"]["ThoughtHistorySnapshot"];
+            previous: components["schemas"]["ThoughtHistorySnapshot"] | null;
+        };
+        /** ThoughtHistoryList */
+        ThoughtHistoryList: {
+            /** Items */
+            items: components["schemas"]["ThoughtHistorySummary"][];
+            /** Next Cursor */
+            next_cursor: string | null;
+        };
+        /** ThoughtHistorySnapshot */
+        ThoughtHistorySnapshot: {
+            /** Author Id */
+            author_id?: string | null;
+            /** Author Name */
+            author_name: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Document */
+            document: {
+                [key: string]: unknown;
+            };
+            /** Id */
+            id: string;
+            /** Note Id */
+            note_id: string;
+            /** Revision */
+            revision: number;
+            /**
+             * Schema Version
+             * @default 2
+             * @constant
+             */
+            schema_version: 2;
+            /**
+             * Source
+             * @enum {string}
+             */
+            source: "baseline" | "create" | "edit" | "restore" | "import";
+            /** Tags */
+            tags: string[];
             /** Title */
             title: string;
         };
-        /** ThoughtFolderOut */
-        ThoughtFolderOut: {
+        /** ThoughtHistorySummary */
+        ThoughtHistorySummary: {
+            /** Author Id */
+            author_id: string | null;
+            /** Author Name */
+            author_name: string;
             /**
              * Created At
              * Format: date-time
@@ -9727,19 +11036,12 @@ export interface components {
             created_at: string;
             /** Id */
             id: string;
-            /** Knowledge Base Id */
-            knowledge_base_id: string;
-            /** Parent Id */
-            parent_id: string | null;
-            /** Position */
-            position: number;
-            /** Title */
-            title: string;
-            /**
-             * Updated At
-             * Format: date-time
-             */
-            updated_at: string;
+            /** Revision */
+            revision: number;
+            /** Source */
+            source: string;
+            /** Summary */
+            summary: string;
         };
         /** ThoughtImageOut */
         ThoughtImageOut: {
@@ -9770,11 +11072,6 @@ export interface components {
             expected_revision: number;
             /** Item Id */
             item_id: string;
-            /**
-             * Kind
-             * @enum {string}
-             */
-            kind: "folder" | "document";
             /** Parent Id */
             parent_id?: string | null;
         };
@@ -9791,10 +11088,10 @@ export interface components {
              * @default false
              */
             favorite: boolean;
-            /** Folder Id */
-            folder_id?: string | null;
             /** Knowledge Base Id */
             knowledge_base_id: string;
+            /** Parent Id */
+            parent_id?: string | null;
             /**
              * Pinned
              * @default false
@@ -9840,14 +11137,14 @@ export interface components {
             excerpt: string;
             /** Favorite */
             favorite: boolean;
-            /** Folder Id */
-            folder_id: string | null;
             /** Id */
             id: string;
             /** Is Home */
             is_home: boolean;
             /** Knowledge Base Id */
             knowledge_base_id: string;
+            /** Parent Id */
+            parent_id: string | null;
             /** Pinned */
             pinned: boolean;
             /** Position */
@@ -9882,10 +11179,10 @@ export interface components {
              * @default false
              */
             favorite: boolean;
-            /** Folder Id */
-            folder_id?: string | null;
             /** Knowledge Base Id */
             knowledge_base_id: string;
+            /** Parent Id */
+            parent_id?: string | null;
             /**
              * Pinned
              * @default false
@@ -9918,14 +11215,14 @@ export interface components {
             excerpt: string;
             /** Favorite */
             favorite: boolean;
-            /** Folder Id */
-            folder_id: string | null;
             /** Id */
             id: string;
             /** Is Home */
             is_home: boolean;
             /** Knowledge Base Id */
             knowledge_base_id: string;
+            /** Parent Id */
+            parent_id: string | null;
             /** Pinned */
             pinned: boolean;
             /** Position */
@@ -10011,6 +11308,11 @@ export interface components {
              * @default
              */
             secret: string;
+            /**
+             * Sensitive Result
+             * @default false
+             */
+            sensitive_result: boolean;
             /** Tags */
             tags?: string[];
             /** Url */
@@ -10052,6 +11354,11 @@ export interface components {
             revision: number;
             /** Secret Hint */
             secret_hint: string;
+            /**
+             * Sensitive Result
+             * @default false
+             */
+            sensitive_result: boolean;
             /**
              * Status
              * @enum {string}
@@ -10119,6 +11426,11 @@ export interface components {
              * @default
              */
             secret: string;
+            /**
+             * Sensitive Result
+             * @default false
+             */
+            sensitive_result: boolean;
             /** Tags */
             tags?: string[];
             /** Url */
@@ -11476,6 +12788,11 @@ export interface components {
             /** Id */
             id: string;
             /**
+             * Is Official
+             * @default false
+             */
+            is_official: boolean;
+            /**
              * Kind
              * @enum {string}
              */
@@ -11503,6 +12820,19 @@ export interface components {
             /** Title */
             title?: string | null;
         };
+        /** WorkspaceCreateIn */
+        WorkspaceCreateIn: {
+            /** Name */
+            name: string;
+            /** Owner User Id */
+            owner_user_id: string;
+            /**
+             * Visibility
+             * @default private
+             * @enum {string}
+             */
+            visibility: "private" | "public";
+        };
         /** WorkspaceInvitationActionIn */
         WorkspaceInvitationActionIn: {
             /** Expected Revision */
@@ -11510,6 +12840,12 @@ export interface components {
         };
         /** WorkspaceInvitationCreateIn */
         WorkspaceInvitationCreateIn: {
+            /**
+             * Role
+             * @default member
+             * @enum {string}
+             */
+            role: "admin" | "member" | "viewer";
             /** Username */
             username: string;
         };
@@ -11547,6 +12883,12 @@ export interface components {
             /** Revision */
             revision: number;
             /**
+             * Role
+             * @default member
+             * @enum {string}
+             */
+            role: "admin" | "member" | "viewer";
+            /**
              * Status
              * @enum {string}
              */
@@ -11565,16 +12907,23 @@ export interface components {
             access_kind: "owner" | "member" | "platform_admin" | "public_viewer";
             /** Id */
             id: string;
+            /**
+             * Member Count
+             * @default 0
+             */
+            member_count: number;
             /** Name */
             name: string;
             /** Owner Display Name */
             owner_display_name: string;
             /** Owner Username */
             owner_username: string;
+            /** Permission Keys */
+            permission_keys?: string[];
             /** Revision */
             revision: number;
             /** Role */
-            role: ("owner" | "member") | null;
+            role: ("owner" | "admin" | "member" | "viewer") | null;
             /**
              * Visibility
              * @enum {string}
@@ -11616,7 +12965,7 @@ export interface components {
              * Role
              * @enum {string}
              */
-            role: "owner" | "member";
+            role: "owner" | "admin" | "member" | "viewer";
             /** User Id */
             user_id: string;
             /** Username */
@@ -11626,6 +12975,16 @@ export interface components {
         WorkspaceMemberRemoveIn: {
             /** Expected Revision */
             expected_revision: number;
+        };
+        /** WorkspaceMemberRoleIn */
+        WorkspaceMemberRoleIn: {
+            /** Expected Revision */
+            expected_revision: number;
+            /**
+             * Role
+             * @enum {string}
+             */
+            role: "admin" | "member" | "viewer";
         };
         /** WorkspaceOut */
         WorkspaceOut: {
@@ -11638,10 +12997,12 @@ export interface components {
             id: string;
             /** Name */
             name: string;
+            /** Permission Keys */
+            permission_keys?: string[];
             /** Revision */
             revision: number;
             /** Role */
-            role: ("owner" | "member") | null;
+            role: ("owner" | "admin" | "member" | "viewer") | null;
             /**
              * Visibility
              * @enum {string}
@@ -11806,6 +13167,115 @@ export interface operations {
             };
         };
     };
+    cross_logs_v1_account_cross_workspace_call_logs_get: {
+        parameters: {
+            query?: {
+                workspace_ids?: string[];
+                q?: string;
+                page?: number;
+                page_size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CrossWorkspaceLogPage"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    install_v1_account_demo_services__service_id__install_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                service_id: "mock_model" | "example_tools";
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DemoInstallIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DemoInstallOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    developer_docs_v1_account_developer_documents_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeveloperDocumentsOut"];
+                };
+            };
+        };
+    };
+    log_spaces_v1_account_log_workspaces_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LogWorkspaceOut"][];
+                };
+            };
+        };
+    };
     get_profile_v1_account_profile_get: {
         parameters: {
             query?: never;
@@ -11930,6 +13400,42 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CurrentUserOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    certification_v1_account_project_certification__kind___project_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                kind: "visual" | "galgame";
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CertificationIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CertificationOut"];
                 };
             };
             /** @description Validation Error */
@@ -12198,6 +13704,44 @@ export interface operations {
             };
         };
     };
+    audit_v1_account_workspaces_current_audit_events_get: {
+        parameters: {
+            query?: {
+                page?: number;
+                page_size?: number;
+                event_type?: string;
+                outcome?: string;
+                actor_query?: string;
+                target_query?: string;
+                from_date?: string | null;
+                to_date?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SecurityAuditListOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     workspace_invitations_v1_account_workspaces_current_invitations_get: {
         parameters: {
             query?: never;
@@ -12325,6 +13869,41 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_member_role_v1_account_workspaces_current_members__membership_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                membership_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WorkspaceMemberRoleIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkspaceMemberOut"];
+                };
             };
             /** @description Validation Error */
             422: {
@@ -12889,6 +14468,107 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    registration_v1_auth_register_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RegistrationIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthMeOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    mock_completion_v1_demo_services_model_chat_completions_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MockCompletionIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    example_tool_v1_demo_services_tools__tool__get: {
+        parameters: {
+            query?: {
+                q?: string;
+                id?: string;
+                order_id?: string;
+            };
+            header?: never;
+            path: {
+                tool: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
             };
             /** @description Validation Error */
             422: {
@@ -15806,6 +17486,39 @@ export interface operations {
             };
         };
     };
+    defaults_v1_model_catalog_defaults_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ModelDefaultsIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModelCatalogOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_model_categories_v1_model_categories_get: {
         parameters: {
             query?: never;
@@ -16103,6 +17816,107 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ModelMutationOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_supplier_v1_model_suppliers_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ModelSupplierIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModelSupplierMutationOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_supplier_v1_model_suppliers__supplier_id__delete: {
+        parameters: {
+            query: {
+                expected_catalog_revision: number;
+            };
+            header?: never;
+            path: {
+                supplier_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeleteMutationOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_supplier_v1_model_suppliers__supplier_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                supplier_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ModelSupplierIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModelSupplierMutationOut"];
                 };
             };
             /** @description Validation Error */
@@ -17217,9 +19031,16 @@ export interface operations {
             };
         };
     };
-    platform_accounts_v1_platform_accounts_get: {
+    accounts_v1_platform_accounts_get: {
         parameters: {
-            query?: never;
+            query?: {
+                q?: string;
+                status?: string;
+                is_platform_admin?: boolean | null;
+                platform_role?: string;
+                page?: number;
+                page_size?: number;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -17233,6 +19054,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AccountListOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -17270,7 +19100,7 @@ export interface operations {
             };
         };
     };
-    update_account_v1_platform_accounts__user_id__patch: {
+    patch_account_v1_platform_accounts__user_id__patch: {
         parameters: {
             query?: never;
             header?: never;
@@ -17305,7 +19135,7 @@ export interface operations {
             };
         };
     };
-    reset_account_password_v1_platform_accounts__user_id__reset_password_post: {
+    reset_password_v1_platform_accounts__user_id__reset_password_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -17314,7 +19144,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AccountResetPasswordIn"];
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {
@@ -17336,13 +19170,613 @@ export interface operations {
             };
         };
     };
-    platform_audit_v1_platform_security_events_get: {
+    services_v1_platform_demo_services_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DemoServiceOut"][];
+                };
+            };
+        };
+    };
+    configuration_v1_platform_demo_services__service_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                service_id: "mock_model" | "example_tools";
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DemoConfigIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DemoServiceOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    action_v1_platform_demo_services__service_id__actions_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                service_id: "mock_model" | "example_tools";
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DemoActionIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DemoServiceOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    job_v1_platform_model_service_templates_sync_jobs__job_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TemplateSyncJobOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    start_v1_platform_model_service_templates_sync_jobs__job_id__start_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                job_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TemplateSyncIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TemplateSyncJobOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    template_v1_platform_model_service_templates__role__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                role: "super_admin" | "admin" | "member";
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoleModelTemplateOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    put_template_v1_platform_model_service_templates__role__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                role: "super_admin" | "admin" | "member";
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RoleModelTemplateIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RoleModelTemplateOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    preview_v1_platform_model_service_templates__role__preview_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                role: "super_admin" | "admin" | "member";
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TemplatePreviewIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TemplateSyncJobOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    history_v1_platform_model_service_templates__role__sync_jobs_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                role: "super_admin" | "admin" | "member";
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TemplateSyncJobOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_policy_v1_platform_permission_policy_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PermissionPolicyOut"];
+                };
+            };
+        };
+    };
+    patch_policy_v1_platform_permission_policy_patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PermissionPolicyIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PermissionPolicyOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    invites_v1_platform_registration_invite_codes_get: {
+        parameters: {
+            query?: {
+                q?: string;
+                status?: string;
+                page?: number;
+                page_size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RegistrationInvitePage"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_invite_v1_platform_registration_invite_codes_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RegistrationInviteIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RegistrationInviteCreated"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    patch_invite_v1_platform_registration_invite_codes__invite_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                invite_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RegistrationInvitePatch"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RegistrationInviteOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    invite_action_v1_platform_registration_invite_codes__invite_id__actions_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                invite_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RegistrationInviteAction"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RegistrationInviteOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    redemptions_v1_platform_registration_invite_codes__invite_id__redemptions_get: {
+        parameters: {
+            query?: {
+                page?: number;
+                page_size?: number;
+            };
+            header?: never;
+            path: {
+                invite_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RedemptionPage"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    invite_secret_v1_platform_registration_invite_codes__invite_id__secret_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                invite_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SecretOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_quotas_v1_platform_runtime_quotas_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RuntimeQuotasOut"];
+                };
+            };
+        };
+    };
+    patch_quotas_v1_platform_runtime_quotas_patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RuntimeQuotasIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RuntimeQuotasOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    audit_v1_platform_security_events_get: {
         parameters: {
             query?: {
                 page?: number;
                 page_size?: number;
                 event_type?: string;
                 outcome?: string;
+                actor_query?: string;
+                target_query?: string;
+                from_date?: string | null;
+                to_date?: string | null;
             };
             header?: never;
             path?: never;
@@ -17357,6 +19791,73 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SecurityAuditListOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    workspaces_v1_platform_workspaces_get: {
+        parameters: {
+            query?: {
+                q?: string;
+                visibility?: string;
+                page?: number;
+                page_size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkspaceListOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_workspace_v1_platform_workspaces_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WorkspaceCreateIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkspaceOut"];
                 };
             };
             /** @description Validation Error */
@@ -17813,111 +20314,6 @@ export interface operations {
             };
         };
     };
-    create_folder_v1_thought_workshop_knowledge_bases__project_id__folders_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ThoughtFolderIn"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ThoughtDirectoryOut"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    rename_folder_v1_thought_workshop_knowledge_bases__project_id__folders__folder_id__put: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                project_id: string;
-                folder_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ThoughtFolderIn"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ThoughtDirectoryOut"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    delete_folder_v1_thought_workshop_knowledge_bases__project_id__folders__folder_id__delete: {
-        parameters: {
-            query: {
-                expected_revision: number;
-            };
-            header?: never;
-            path: {
-                project_id: string;
-                folder_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ThoughtDirectoryOut"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
     move_entry_v1_thought_workshop_knowledge_bases__project_id__move_post: {
         parameters: {
             query?: never;
@@ -18013,7 +20409,7 @@ export interface operations {
             query: {
                 knowledge_base_id: string;
                 query?: string;
-                folder_id?: string;
+                parent_id?: string;
                 tag?: string;
                 view?: "all" | "recent" | "favorites" | "pinned" | "trash";
                 sort?: "updated" | "title";
@@ -18151,6 +20547,7 @@ export interface operations {
                 expected_revision: number;
                 permanent?: boolean;
                 expected_knowledge_revision: number;
+                cascade_children?: boolean;
             };
             header?: never;
             path: {
@@ -18219,6 +20616,108 @@ export interface operations {
                          */
                         type: "delta" | "complete" | "error";
                     };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    note_history_v1_thought_workshop_notes__note_id__history_get: {
+        parameters: {
+            query?: {
+                cursor?: string | null;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                note_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ThoughtHistoryList"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    note_history_detail_v1_thought_workshop_notes__note_id__history__history_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                note_id: string;
+                history_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ThoughtHistoryDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    restore_note_history_v1_thought_workshop_notes__note_id__history__history_id__restore_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                note_id: string;
+                history_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ThoughtRevisionIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ThoughtNoteOut"];
                 };
             };
             /** @description Validation Error */

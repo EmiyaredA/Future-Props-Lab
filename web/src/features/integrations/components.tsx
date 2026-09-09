@@ -42,8 +42,13 @@ export function IntegrationModal({
       }
     };
     window.addEventListener("keydown", handleKeyDown);
-    requestAnimationFrame(() => closeButton.current?.focus());
+    const focusFrame = requestAnimationFrame(() => {
+      if (!dialog.current?.contains(document.activeElement)) {
+        closeButton.current?.focus();
+      }
+    });
     return () => {
+      cancelAnimationFrame(focusFrame);
       window.removeEventListener("keydown", handleKeyDown);
       document.body.style.overflow = previousOverflow;
       previous?.focus();

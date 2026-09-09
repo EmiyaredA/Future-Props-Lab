@@ -2,7 +2,6 @@ import { api, unwrap } from "@platform/api/client";
 import type { components } from "@generated/api";
 import { read, type KnowledgeBase } from "./api";
 export type Directory = components["schemas"]["ThoughtDirectoryOut"];
-export type Folder = components["schemas"]["ThoughtFolderOut"];
 export type Move = components["schemas"]["ThoughtMoveIn"];
 export const listKnowledge = async (
   query: string,
@@ -73,7 +72,7 @@ export const restoreKnowledge = async (project: KnowledgeBase) =>
   );
 export const createDocument = async (
   project: KnowledgeBase,
-  folder_id: string | null = null,
+  parent_id: string | null = null,
 ) =>
   unwrap(
     await api.POST(
@@ -82,52 +81,8 @@ export const createDocument = async (
         params: { path: { project_id: project.id } },
         body: {
           title: "未命名文档",
-          folder_id,
+          parent_id,
           expected_revision: project.revision,
-        },
-      },
-    ),
-  );
-export const createFolder = async (
-  project: KnowledgeBase,
-  title: string,
-  parent_id: string | null = null,
-) =>
-  unwrap(
-    await api.POST(
-      "/v1/thought-workshop/knowledge-bases/{project_id}/folders",
-      {
-        params: { path: { project_id: project.id } },
-        body: { title, parent_id, expected_revision: project.revision },
-      },
-    ),
-  );
-export const renameFolder = async (
-  project: KnowledgeBase,
-  folder: Folder,
-  title: string,
-) =>
-  unwrap(
-    await api.PUT(
-      "/v1/thought-workshop/knowledge-bases/{project_id}/folders/{folder_id}",
-      {
-        params: { path: { project_id: project.id, folder_id: folder.id } },
-        body: {
-          title,
-          parent_id: folder.parent_id,
-          expected_revision: project.revision,
-        },
-      },
-    ),
-  );
-export const removeFolder = async (project: KnowledgeBase, folder: Folder) =>
-  unwrap(
-    await api.DELETE(
-      "/v1/thought-workshop/knowledge-bases/{project_id}/folders/{folder_id}",
-      {
-        params: {
-          path: { project_id: project.id, folder_id: folder.id },
-          query: { expected_revision: project.revision },
         },
       },
     ),

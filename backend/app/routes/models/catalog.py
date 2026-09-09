@@ -1,7 +1,8 @@
 from fastapi import APIRouter, HTTPException, Query
 
-from app.deps import SessionDep
+from app.deps import SessionDep, WorkspaceDep
 from app.llm.catalog import ModelCatalogService
+from app.llm.catalog.defaults import update_defaults
 from app.llm.catalog.service import (
     CatalogResourceBusyError,
     DuplicateModelError,
@@ -12,6 +13,7 @@ from app.schemas.model_service import (
     DeleteMutationOut,
     ModelCatalogOut,
     ModelCategoryListOut,
+    ModelDefaultsIn,
     ModelEntryIn,
     ModelMutationOut,
     ProviderEnabledIn,
@@ -39,7 +41,10 @@ async def list_model_categories(session: SessionDep) -> ModelCategoryListOut:
 
 @router.post("/model-providers", response_model=ProviderMutationOut)
 async def create_provider(session: SessionDep, body: ProviderIn) -> ProviderMutationOut:
-    revision, provider = await ModelCatalogService(session).create_provider(body)
+    try:
+        revision, provider = await ModelCatalogService(session).create_provider(body)
+    except ResourceNotFoundError as exc:
+        raise _not_found(exc) from None
     return ProviderMutationOut(revision=revision, provider=provider)
 
 
@@ -96,6 +101,8 @@ async def add_model(session: SessionDep, provider_id: str, body: ModelEntryIn) -
         raise _not_found(exc) from None
     except DuplicateModelError as exc:
         raise HTTPException(409, {"code": "duplicate_model", "message": str(exc)}) from None
+    except CatalogResourceBusyError as exc:
+        raise HTTPException(409, {"code": "resource_busy", "message": str(exc)}) from None
     return ModelMutationOut(revision=revision, model=model)
 
 
@@ -107,6 +114,8 @@ async def update_model(session: SessionDep, model_id: str, body: ModelEntryIn) -
         raise _not_found(exc) from None
     except DuplicateModelError as exc:
         raise HTTPException(409, {"code": "duplicate_model", "message": str(exc)}) from None
+    except CatalogResourceBusyError as exc:
+        raise HTTPException(409, {"code": "resource_busy", "message": str(exc)}) from None
     return ModelMutationOut(revision=revision, model=model)
 
 
@@ -138,3 +147,11 @@ async def run_model_test(session: SessionDep, model_id: str) -> TestModelOut:
         if exc.log_id:
             detail["log_id"] = exc.log_id
         raise HTTPException(exc.status_code, detail) from None
+
+
+@router.put("/model-catalog/defaults", response_model=ModelCatalogOut)
+async def defaults(session: SessionDep, workspace_id: WorkspaceDep, body: ModelDefaultsIn):
+    try:
+        return await update_defaults(session, workspace_id, body)
+    except ValueError as exc:
+        raise HTTPException(422, {"code": "invalid_default_model", "message": str(exc)}) from None

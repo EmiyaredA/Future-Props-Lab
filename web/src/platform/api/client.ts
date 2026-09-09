@@ -59,6 +59,13 @@ export async function requestApi(
     const problem = await responseProblem(response);
     if (response.status === 409 && isWorkspaceChanged(problem))
       notifyWorkspaceChanged();
+    if (
+      response.status === 403 &&
+      ["insufficient_permission", "insufficient_scope"].includes(
+        String(problem.code),
+      )
+    )
+      window.dispatchEvent(new Event("future-props:permissions-changed"));
     throw new ApiError(problemDetailMessage(problem), problem, response.status);
   }
   return response;
@@ -120,6 +127,20 @@ api.use({
   },
   async onResponse({ response }) {
     if (response.status === 401) notifyAuthRequired();
+    if (response.status === 403) {
+      const problem = parseProblemDetail(
+        await response
+          .clone()
+          .json()
+          .catch(() => ({})),
+      );
+      if (
+        ["insufficient_permission", "insufficient_scope"].includes(
+          String(problem.code),
+        )
+      )
+        window.dispatchEvent(new Event("future-props:permissions-changed"));
+    }
     if (response.status === 409) {
       const clone = response.clone();
       const problem = parseProblemDetail(await clone.json().catch(() => ({})));
@@ -135,6 +156,8 @@ export async function unwrap<T>(result: {
   response: Response;
 }): Promise<T> {
   if (result.data !== undefined) return result.data;
+  if (result.response.status === 204 && result.response.ok)
+    return undefined as T;
   const problem = parseProblemDetail(result.error);
   throw new ApiError(
     problemDetailMessage(problem),

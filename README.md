@@ -7,6 +7,8 @@ FFmpeg/FFprobe；持续集成同时验证 Python 3.11
 最低支持版本和 Python 3.14。克隆后先运行 `git lfs install`；若检出时跳过了 LFS 对象，运行
 `git lfs pull` 后再执行安装。
 
+账号治理新增独立管理中台与四种固定工作区角色；升级前的普通成员保留协作能力，模型配置和完整日志改由空间管理员负责。详见[账号与工作区治理](docs/reference/account-governance.md)。
+
 ## 快速开始
 
 1. 安装依赖：`npm run setup`

@@ -5,6 +5,7 @@ from uuid import uuid4
 from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.concurrency.task_admission import TaskAdmission
 from app.core.config import Settings, get_settings
 from app.core.time import iso_utc, utc_now
 from app.files import download_filename
@@ -403,7 +404,13 @@ class VisualGeneration:
         await self.session.flush()
         return row
 
-    async def create(self, project_id: str, body: GenerationTaskCreateIn) -> GenerationTaskOut:
+    async def create(
+        self,
+        project_id: str,
+        body: GenerationTaskCreateIn,
+        *,
+        admission: TaskAdmission | None = None,
+    ) -> GenerationTaskOut:
         row = await self.prepare_create(project_id, body)
         if body.canvas_node_id is not None and body.expected_canvas_revision is not None:
             await self._attach_task_to_canvas_node(
@@ -413,12 +420,18 @@ class VisualGeneration:
                 task_id=row.id,
                 kind=body.kind,
             )
+        if admission:
+            await admission([row.id])
         await self.session.commit()
         await self.session.refresh(row)
         return generation_task_out(row)
 
     async def create_batch(
-        self, project_id: str, body: ImageGenerationBatchCreateIn
+        self,
+        project_id: str,
+        body: ImageGenerationBatchCreateIn,
+        *,
+        admission: TaskAdmission | None = None,
     ) -> GenerationBatchOut:
         await self._project(project_id)
         if body.grid_size not in (4, 9):
@@ -501,6 +514,8 @@ class VisualGeneration:
                 expected_revision=body.expected_canvas_revision or 0,
                 batch_id=batch_id,
             )
+        if admission:
+            await admission(task_ids)
         await self.session.commit()
         await self.session.refresh(batch)
         return generation_batch_out(batch)

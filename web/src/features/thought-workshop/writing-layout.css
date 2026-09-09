@@ -38,7 +38,9 @@
   min-height: 52px;
   padding: 8px 28px 12px;
   border-bottom: 1px solid var(--border);
-  position: relative;
+  position: sticky;
+  top: 0;
+  background: var(--bg);
   z-index: 6;
 }
 .thought-document-bar .custom-select {
@@ -159,6 +161,14 @@
 }
 .thought-document .thought-rich-editor {
   flex: 1;
+}
+.thought-document .thought-toolbar {
+  position: relative;
+}
+.thought-navigation-status {
+  padding: 0 28px;
+  font-size: 12px;
+  color: var(--muted);
 }
 .thought-assistant {
   margin-right: 16px;

@@ -1,5 +1,10 @@
+import { registerAccount } from "@features/accounts/platformApi";
+import { WorkspacePermissionsProvider } from "@platform/auth/WorkspacePermissions";
 import {
   type FormEvent,
+  Fragment,
+  useRef,
+  useCallback,
   type ReactNode,
   useEffect,
   useMemo,
@@ -29,8 +34,14 @@ type Status = "checking" | "signed-out" | "signed-in";
 
 export function StudioAuthGate({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
+  const identityRef = useRef<AuthMe | null>(null);
+  const identityRequest = useRef(0);
   const [status, setStatus] = useState<Status>("checking");
   const [me, setMe] = useState<AuthMe | null>(null);
+  identityRef.current = me;
+  const [registration, setRegistration] = useState(false);
+  const [inviteCode, setInviteCode] = useState("");
+  const [registrationEmail, setRegistrationEmail] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -38,25 +49,62 @@ export function StudioAuthGate({ children }: { children: ReactNode }) {
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
-  const refresh = async () => {
+  const refresh = useCallback(async () => {
+    const request = ++identityRequest.current;
     try {
       const current = await getMe();
+      if (request !== identityRequest.current) return;
+      const previous = identityRef.current;
+      if (
+        previous &&
+        (previous.user.id !== current.user.id ||
+          previous.workspace.id !== current.workspace.id ||
+          JSON.stringify(previous.workspace.permission_keys) !==
+            JSON.stringify(current.workspace.permission_keys))
+      ) {
+        clearRetainedRealtimeVoiceState();
+        await queryClient.cancelQueries();
+        queryClient.clear();
+      }
+      if (request !== identityRequest.current) return;
+      identityRef.current = current;
       setMe(current);
       setStatus("signed-in");
     } catch {
-      setMe(null);
-      setStatus("signed-out");
+      if (request !== identityRequest.current) return;
+      if (!identityRef.current) {
+        setMe(null);
+        setStatus("signed-out");
+      }
     }
-  };
+  }, [queryClient]);
 
   useEffect(() => {
     void refresh();
     const signedOut = () => {
+      identityRequest.current += 1;
       clearRetainedRealtimeVoiceState();
+      queryClient.clear();
+      identityRef.current = null;
       setMe(null);
       setStatus("signed-out");
     };
-    const workspaceChanged = () => window.location.reload();
+    const workspaceChanged = () => {
+      const event = new CustomEvent("future-props:before-workspace-switch", {
+        cancelable: true,
+        detail: () => window.location.reload(),
+      });
+      if (window.dispatchEvent(event)) window.location.reload();
+    };
+    const permissionsChanged = () => {
+      if (identityRef.current) void refresh();
+    };
+    const timer = window.setInterval(permissionsChanged, 30000);
+    window.addEventListener("focus", permissionsChanged);
+    window.addEventListener(
+      "future-props:permissions-changed",
+      permissionsChanged,
+    );
     window.addEventListener(AUTH_REQUIRED_EVENT, signedOut);
     window.addEventListener(WORKSPACE_CHANGED_EVENT, workspaceChanged);
     const channel =
@@ -65,18 +113,35 @@ export function StudioAuthGate({ children }: { children: ReactNode }) {
         : new BroadcastChannel("future-props-workspace");
     if (channel) channel.onmessage = workspaceChanged;
     return () => {
+      window.clearInterval(timer);
+      window.removeEventListener("focus", permissionsChanged);
+      window.removeEventListener(
+        "future-props:permissions-changed",
+        permissionsChanged,
+      );
       window.removeEventListener(AUTH_REQUIRED_EVENT, signedOut);
       window.removeEventListener(WORKSPACE_CHANGED_EVENT, workspaceChanged);
       channel?.close();
     };
-  }, []);
+  }, [queryClient, refresh]);
 
   const login = async (event: FormEvent) => {
     event.preventDefault();
     setBusy(true);
     setError("");
     try {
-      const current = await loginAccount(username, password);
+      const current = registration
+        ? await registerAccount({
+            display_name: username,
+            username,
+            password,
+            invite_code: inviteCode,
+            email: registrationEmail || null,
+          })
+        : await loginAccount(username, password);
+      setInviteCode("");
+      setRegistrationEmail("");
+      setRegistration(false);
       clearRetainedRealtimeVoiceState();
       setMe(current);
       setStatus("signed-in");
@@ -117,24 +182,41 @@ export function StudioAuthGate({ children }: { children: ReactNode }) {
       refresh,
       logout: async () => {
         await logoutAccount();
+        identityRequest.current += 1;
+        identityRef.current = null;
         clearRetainedRealtimeVoiceState();
         queryClient.clear();
         setMe(null);
         setStatus("signed-out");
       },
       switchWorkspace: async (workspaceId: string) => {
-        await switchAccountWorkspace(workspaceId);
-        clearRetainedRealtimeVoiceState();
-        queryClient.clear();
-        if (typeof BroadcastChannel !== "undefined") {
-          const channel = new BroadcastChannel("future-props-workspace");
-          channel.postMessage({ workspace_id: workspaceId });
-          channel.close();
-        }
-        window.location.assign("/home");
+        const perform = async () => {
+          await switchAccountWorkspace(workspaceId);
+          clearRetainedRealtimeVoiceState();
+          queryClient.clear();
+          if (typeof BroadcastChannel !== "undefined") {
+            const channel = new BroadcastChannel("future-props-workspace");
+            channel.postMessage({ workspace_id: workspaceId });
+            channel.close();
+          }
+          window.location.assign("/home");
+        };
+        const event = new CustomEvent("future-props:before-workspace-switch", {
+          cancelable: true,
+          detail: () => {
+            void perform().catch((reason: unknown) => {
+              setError(
+                reason instanceof Error
+                  ? reason.message
+                  : "工作区切换失败，请重试",
+              );
+            });
+          },
+        });
+        if (window.dispatchEvent(event)) await perform();
       },
     };
-  }, [me, queryClient]);
+  }, [me, queryClient, refresh]);
 
   if (status === "checking") {
     return <main className="auth-screen">正在连接 Future Props Lab…</main>;
@@ -146,8 +228,14 @@ export function StudioAuthGate({ children }: { children: ReactNode }) {
         <form className="auth-card" onSubmit={(event) => void login(event)}>
           <BrandMark size={52} />
           <div>
-            <h1>登录 Future Props Lab</h1>
-            <p>使用管理员为你创建的账号登录。</p>
+            <h1>
+              {registration ? "注册 Future Props Lab" : "登录 Future Props Lab"}
+            </h1>
+            <p>
+              {registration
+                ? "使用邀请码创建个人账号与工作区。"
+                : "使用已有账号登录，或通过邀请码注册。"}
+            </p>
           </div>
           <label>
             <span>用户名</span>
@@ -167,12 +255,48 @@ export function StudioAuthGate({ children }: { children: ReactNode }) {
               autoComplete="current-password"
             />
           </label>
+          {registration && (
+            <>
+              <label>
+                <span>邮箱（选填）</span>
+                <input
+                  type="email"
+                  value={registrationEmail}
+                  onChange={(e) => setRegistrationEmail(e.target.value)}
+                  autoComplete="email"
+                />
+              </label>
+              <label>
+                <span>邀请码</span>
+                <input
+                  required
+                  autoComplete="off"
+                  value={inviteCode}
+                  onChange={(e) => setInviteCode(e.target.value)}
+                />
+              </label>
+              <small>密码需为 10–128 位，避免使用常见密码。</small>
+            </>
+          )}
           {error ? <div className="inline-alert danger">{error}</div> : null}
           <button
             className="btn primary"
             disabled={busy || !username || !password}
           >
-            {busy ? "登录中…" : "登录"}
+            {busy ? "正在处理…" : registration ? "注册并登录" : "登录"}
+          </button>
+          <button
+            type="button"
+            className="btn"
+            disabled={busy}
+            onClick={() => {
+              setRegistration(!registration);
+              setPassword("");
+              setInviteCode("");
+              setError("");
+            }}
+          >
+            {registration ? "已有账号，返回登录" : "使用邀请码注册"}
           </button>
         </form>
       </main>
@@ -233,7 +357,23 @@ export function StudioAuthGate({ children }: { children: ReactNode }) {
 
   return (
     <SessionContext.Provider value={context}>
-      {children}
+      <WorkspacePermissionsProvider
+        permissions={me.workspace.permission_keys || []}
+      >
+        {error ? (
+          <div className="inline-alert danger" role="alert">
+            {error}
+            <button className="btn small" onClick={() => setError("")}>
+              关闭
+            </button>
+          </div>
+        ) : null}
+        <Fragment
+          key={`${me.user.id}:${me.workspace.id}:${me.user.is_platform_admin}:${me.workspace.permission_keys?.join(",")}`}
+        >
+          {children}
+        </Fragment>
+      </WorkspacePermissionsProvider>
     </SessionContext.Provider>
   );
 }

@@ -43,6 +43,7 @@ const EMPTY: ToolApiInput = {
   body_template: null,
   tags: [],
   enabled: true,
+  sensitive_result: false,
 };
 
 function message(error: unknown) {
@@ -67,6 +68,7 @@ function apiToInput(item: ToolApi): ToolApiInput {
     body_template: item.body_template,
     tags: item.tags,
     enabled: item.enabled,
+    sensitive_result: item.sensitive_result,
   };
 }
 
@@ -269,6 +271,15 @@ function ToolApiForm({
                 .filter(Boolean),
             });
           }}
+        />
+      </label>
+      <label className="integration-field full">
+        <span>敏感工具结果</span>
+        <ToggleButton
+          value={value.sensitive_result || false}
+          onChange={(sensitive_result) =>
+            setValue({ ...value, sensitive_result })
+          }
         />
       </label>
       <ToggleButton

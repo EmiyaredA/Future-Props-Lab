@@ -1,0 +1,109 @@
+.account-profile-form {
+  display: grid;
+  gap: 24px;
+  width: 100%;
+  margin: 0;
+}
+.account-profile-heading {
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--border);
+}
+.account-profile-heading h3 {
+  margin: 0;
+  font-size: 18px;
+  line-height: 1.5;
+}
+.account-profile-heading p {
+  margin: 7px 0 0;
+  font-size: 12px;
+  line-height: 1.7;
+  color: var(--muted);
+}
+.account-profile-row {
+  display: grid;
+  grid-template-columns: 84px minmax(0, 1fr);
+  align-items: start;
+  gap: 20px;
+  min-width: 0;
+}
+.account-profile-label {
+  padding-top: 12px;
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--muted);
+}
+.account-profile-field {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+.account-profile-field small,
+.account-profile-avatar-controls small {
+  font-size: 11px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+.account-profile-avatar-row {
+  padding: 0 0 24px;
+  border-bottom: 1px solid var(--border);
+}
+.account-profile-avatar-row > .account-profile-label {
+  align-self: center;
+  padding-top: 0;
+}
+.account-profile-avatar-editor {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-width: 0;
+}
+.account-dialog .account-profile-avatar-editor > img,
+.account-dialog .account-profile-avatar-editor > .account-identity-avatar {
+  width: 56px;
+  height: 56px;
+  flex: 0 0 56px;
+  border-radius: 16px;
+  object-fit: cover;
+  font-size: 21px;
+}
+.account-profile-avatar-controls {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+.account-profile-avatar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.account-profile-avatar-actions .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 34px;
+  margin: 0;
+}
+.account-profile-footer {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+}
+@media (max-width: 767px) {
+  .account-profile-form {
+    gap: 20px;
+  }
+  .account-profile-row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 9px;
+  }
+  .account-profile-label {
+    padding-top: 0;
+  }
+  .account-profile-avatar-row {
+    gap: 12px;
+    padding-bottom: 20px;
+  }
+}

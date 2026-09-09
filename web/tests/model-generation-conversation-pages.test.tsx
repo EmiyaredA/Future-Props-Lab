@@ -38,6 +38,7 @@ vi.mock("@features/models/api", async () => {
   return {
     ...actual,
     getCatalog: vi.fn().mockResolvedValue({
+      default_model_ids: {},
       revision: 2,
       providers: [
         {

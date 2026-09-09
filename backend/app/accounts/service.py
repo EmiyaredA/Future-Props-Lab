@@ -1,10 +1,12 @@
 from __future__ import annotations
 
-from datetime import timedelta
+from datetime import UTC, datetime, timedelta
 
 from sqlalchemy import func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.accounts.errors import AccountError
+from app.accounts.governance_transactions import begin_governance, cas, revoke_account_credentials
 from app.accounts.passwords import (
     generate_temporary_password,
     hash_password,
@@ -29,13 +31,6 @@ from app.models import (
     Workspace,
     WorkspaceMembership,
 )
-
-
-class AccountError(Exception):
-    def __init__(self, code: str, *, current: object | None = None) -> None:
-        super().__init__(code)
-        self.code = code
-        self.current = current
 
 
 def add_audit_event(
@@ -209,10 +204,6 @@ async def list_api_keys(
     )
 
 
-async def list_accounts(session: AsyncSession) -> list[User]:
-    return list((await session.execute(select(User).order_by(User.created_at))).scalars().all())
-
-
 async def change_password(
     session: AsyncSession,
     principal: StudioPrincipal,
@@ -351,9 +342,12 @@ async def create_api_key(
     expires_in_days: int,
     client_ip: str,
 ) -> tuple[ManagementApiKey, str]:
+    principal = await begin_governance(session, principal)
     allowed = {"studio:read", "studio:write"}
     normalized = set(scopes)
     if not normalized or not normalized <= allowed:
+        raise AccountError("invalid_api_key_scopes")
+    if principal.workspace_access == "public_viewer" or not normalized <= principal.scopes:
         raise AccountError("invalid_api_key_scopes")
     if "studio:write" in normalized:
         normalized.add("studio:read")
@@ -413,55 +407,6 @@ async def revoke_api_key(
     return key
 
 
-async def patch_account_status(
-    session: AsyncSession,
-    principal: StudioPrincipal,
-    *,
-    user_id: str,
-    status: str,
-    expected_revision: int,
-    client_ip: str,
-) -> User:
-    user = await session.get(User, user_id)
-    if user is None:
-        raise AccountError("account_not_found")
-    if user.revision != expected_revision:
-        raise AccountError("revision_conflict", current=user)
-    if user.id == principal.user_id and status == "disabled":
-        raise AccountError("cannot_disable_self")
-    if user.is_platform_admin and status == "disabled" and user.status == "active":
-        count = await session.scalar(
-            select(func.count(User.id)).where(
-                User.status == "active", User.is_platform_admin.is_(True)
-            )
-        )
-        if int(count or 0) <= 1:
-            raise AccountError("last_platform_admin")
-    user.status = status
-    user.revision += 1
-    if status == "disabled":
-        now = utc_now()
-        await session.execute(
-            update(AuthSession)
-            .where(AuthSession.user_id == user.id, AuthSession.revoked_at.is_(None))
-            .values(revoked_at=now)
-        )
-        await session.execute(
-            update(ManagementApiKey)
-            .where(ManagementApiKey.user_id == user.id, ManagementApiKey.revoked_at.is_(None))
-            .values(revoked_at=now, revision=ManagementApiKey.revision + 1)
-        )
-    add_audit_event(
-        session,
-        f"account.{status}",
-        actor_user_id=principal.user_id,
-        target_user_id=user.id,
-        client_ip=client_ip,
-    )
-    await session.commit()
-    return user
-
-
 async def reset_password(
     session: AsyncSession,
     *,
@@ -471,15 +416,15 @@ async def reset_password(
     event_type: str = "account.password_reset",
 ) -> str:
     temporary_password = generate_temporary_password()
-    user.password_hash = hash_password(temporary_password)
-    user.must_change_password = True
-    user.revision += 1
-    now = utc_now()
-    await session.execute(
-        update(AuthSession)
-        .where(AuthSession.user_id == user.id, AuthSession.revoked_at.is_(None))
-        .values(revoked_at=now)
+    user = await cas(
+        session,
+        User,
+        user.id,
+        user.revision,
+        password_hash=hash_password(temporary_password),
+        must_change_password=True,
     )
+    await revoke_account_credentials(session, user.id)
     add_audit_event(
         session,
         event_type,
@@ -500,16 +445,37 @@ async def audit_page(
     page_size: int,
     event_type: str,
     outcome: str,
+    workspace_only: bool = False,
+    actor_query: str = "",
+    target_query: str = "",
+    from_date: datetime | None = None,
+    to_date: datetime | None = None,
 ) -> tuple[list[tuple[SecurityAuditEvent, str | None, str | None]], int]:
     actor = User.__table__.alias("audit_actor")
     target = User.__table__.alias("audit_target")
     conditions = []
-    if not platform:
+    if workspace_only:
+        conditions.append(SecurityAuditEvent.workspace_id == principal.workspace_id)
+    elif not platform:
         conditions.append(
             or_(
                 SecurityAuditEvent.actor_user_id == principal.user_id,
                 SecurityAuditEvent.target_user_id == principal.user_id,
             )
+        )
+    if actor_query:
+        conditions.append(actor.c.username.ilike(f"%{actor_query.strip()}%"))
+    if target_query:
+        conditions.append(target.c.username.ilike(f"%{target_query.strip()}%"))
+    if from_date:
+        conditions.append(
+            SecurityAuditEvent.created_at
+            >= (from_date.astimezone(UTC).replace(tzinfo=None) if from_date.tzinfo else from_date)
+        )
+    if to_date:
+        conditions.append(
+            SecurityAuditEvent.created_at
+            <= (to_date.astimezone(UTC).replace(tzinfo=None) if to_date.tzinfo else to_date)
         )
     if event_type:
         conditions.append(SecurityAuditEvent.event_type == event_type)

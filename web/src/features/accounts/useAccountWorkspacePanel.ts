@@ -1,21 +1,21 @@
-import { type FormEvent, useEffect, useState } from "react";
+import { useDebouncedValue } from "./useDebouncedValue";
+import { ApiError } from "@platform/api/client";
+import { workspaceAllows } from "./permissions";
+import { type FormEvent, useEffect, useRef, useState } from "react";
 import {
   type AccountSessionContext,
   type AccountSession,
   type ApiKey,
-  type ManagedAccount,
   type SecurityEvent,
   type WorkspaceInvitation,
   type WorkspaceItem,
   type WorkspaceMember,
   changePassword as changeAccountPassword,
   createApiKey,
-  createPlatformAccount,
   inviteWorkspaceMember,
   listAccountSessions,
   listApiKeys,
   listMyInvitations,
-  listPlatformAccounts,
   listSecurityEvents,
   listWorkspaceInvitations,
   listWorkspaceMembers,
@@ -27,18 +27,35 @@ import {
 
 export function useAccountWorkspacePanel(session: AccountSessionContext) {
   const { me, refresh, logout, switchWorkspace } = session;
+  const requestEpoch = useRef(0);
   const [open, setOpen] = useState<"workspace" | "account" | null>(null);
+  const openRef = useRef(open);
+  openRef.current = open;
   const [tab, setTab] = useState("overview");
+  const tabRef = useRef(tab);
+  tabRef.current = tab;
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const [workspaceQuery, setWorkspaceQuery] = useState("");
+  const debouncedQuery = useDebouncedValue(workspaceQuery);
+  const [workspacePage, setWorkspacePage] = useState(1);
+  const [workspaceTotal, setWorkspaceTotal] = useState(0);
+  const [inviteRole, setInviteRole] = useState<"admin" | "member" | "viewer">(
+    "member",
+  );
   const [workspaces, setWorkspaces] = useState<WorkspaceItem[]>([]);
   const [members, setMembers] = useState<WorkspaceMember[]>([]);
   const [invitations, setInvitations] = useState<WorkspaceInvitation[]>([]);
+  const [sentInvitations, setSentInvitations] = useState<WorkspaceInvitation[]>(
+    [],
+  );
+  const [loading, setLoading] = useState(false);
+  const [busy, setBusy] = useState(false);
   const [sessions, setSessions] = useState<AccountSession[]>([]);
   const [keys, setKeys] = useState<ApiKey[]>([]);
-  const [accounts, setAccounts] = useState<ManagedAccount[]>([]);
   const [securityEvents, setSecurityEvents] = useState<SecurityEvent[]>([]);
   const [workspaceName, setWorkspaceName] = useState(me.workspace.name);
+  const [visibility, setVisibility] = useState(me.workspace.visibility);
   const [inviteUsername, setInviteUsername] = useState("");
   const [displayName, setDisplayName] = useState(me.user.display_name);
   const [email, setEmail] = useState(me.user.email || "");
@@ -46,40 +63,56 @@ export function useAccountWorkspacePanel(session: AccountSessionContext) {
   const [keyWrite, setKeyWrite] = useState(false);
   const [revealedKey, setRevealedKey] = useState("");
   const [revealedKeyCopied, setRevealedKeyCopied] = useState(false);
-  const [newUsername, setNewUsername] = useState("");
-  const [newDisplayName, setNewDisplayName] = useState("");
-  const [temporaryPassword, setTemporaryPassword] = useState("");
   const [currentPassword, setCurrentPassword] = useState("");
   const [changedPassword, setChangedPassword] = useState("");
   const [changedPasswordAgain, setChangedPasswordAgain] = useState("");
 
-  const report = async (work: () => Promise<void>) => {
+  const report = async (work: () => Promise<void>, mutation = true) => {
     setError("");
     setNotice("");
+    if (mutation) setBusy(true);
     try {
       await work();
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "操作失败");
+      if (reason instanceof ApiError && reason.status === 409) {
+        await refresh();
+        try {
+          if (openRef.current === "workspace") {
+            if (tab === "members") await loadGovernance();
+            else await loadWorkspaces();
+          } else if (openRef.current === "account") await loadSecurity();
+        } catch {
+          /* Keep the original conflict visible; never replay the write. */
+        }
+      }
+    } finally {
+      if (mutation) setBusy(false);
     }
   };
 
   const loadWorkspaces = async () => {
+    const epoch = ++requestEpoch.current;
     const [result, pending] = await Promise.all([
-      listWorkspaces(),
+      listWorkspaces(debouncedQuery, workspacePage),
       listMyInvitations(),
     ]);
+    if (epoch !== requestEpoch.current) return;
     setWorkspaces(result.items);
+    setWorkspaceTotal(result.total);
     setInvitations(pending.items);
   };
 
   const loadGovernance = async () => {
-    if (!["owner", "platform_admin"].includes(me.workspace.access_kind)) return;
+    if (!workspaceAllows(me.workspace, "workspace.manage")) return;
+    const epoch = ++requestEpoch.current;
     const [memberResult, invitationResult] = await Promise.all([
       listWorkspaceMembers(),
       listWorkspaceInvitations(),
     ]);
+    if (epoch !== requestEpoch.current) return;
     setMembers(memberResult.items);
-    setInvitations(invitationResult.items);
+    setSentInvitations(invitationResult.items);
   };
 
   const loadSecurity = async () => {
@@ -93,26 +126,27 @@ export function useAccountWorkspacePanel(session: AccountSessionContext) {
     setSecurityEvents(eventResult.items);
   };
 
-  const loadAccounts = async () => {
-    if (!me.user.is_platform_admin) return;
-    const result = await listPlatformAccounts();
-    setAccounts(result.items);
-  };
-
   useEffect(() => {
     if (!open) return;
+    let current = true;
+    setLoading(true);
     void report(async () => {
       if (open === "workspace") {
         await loadWorkspaces();
-        await loadGovernance();
-      } else {
+        if (tab === "members") await loadGovernance();
+      } else if (tab !== "profile") {
         await loadSecurity();
-        await loadAccounts();
       }
+    }, false).finally(() => {
+      if (current) setLoading(false);
     });
+    return () => {
+      current = false;
+      requestEpoch.current += 1;
+    };
     // The panel reloads from the current session snapshot whenever it opens.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open]);
+  }, [open, tab, debouncedQuery, workspacePage]);
 
   const saveProfile = async (event: FormEvent) => {
     event.preventDefault();
@@ -149,18 +183,18 @@ export function useAccountWorkspacePanel(session: AccountSessionContext) {
     });
   };
 
-  const saveWorkspace = async (visibility = me.workspace.visibility) => {
+  const saveWorkspace = async () => {
     await report(async () => {
       await updateWorkspace(workspaceName, visibility, me.workspace.revision);
       await refresh();
-      setNotice("Workspace 设置已保存。");
+      setNotice("工作区设置已保存。");
     });
   };
 
   const invite = async (event: FormEvent) => {
     event.preventDefault();
     await report(async () => {
-      await inviteWorkspaceMember(inviteUsername);
+      await inviteWorkspaceMember(inviteUsername, inviteRole);
       setInviteUsername("");
       await loadGovernance();
       setNotice("邀请已创建。");
@@ -172,9 +206,12 @@ export function useAccountWorkspacePanel(session: AccountSessionContext) {
     await report(async () => {
       const result = await createApiKey(
         keyName,
-        keyWrite ? ["studio:read", "studio:write"] : ["studio:read"],
+        keyWrite && workspaceAllows(me.workspace, "content.write")
+          ? ["studio:read", "studio:write"]
+          : ["studio:read"],
       );
       setKeyName("");
+      if (openRef.current !== "account" || tabRef.current !== "keys") return;
       setRevealedKey(result.secret);
       setRevealedKeyCopied(false);
       await loadSecurity();
@@ -190,27 +227,62 @@ export function useAccountWorkspacePanel(session: AccountSessionContext) {
     });
   };
 
-  const createAccount = async (event: FormEvent) => {
-    event.preventDefault();
-    await report(async () => {
-      const result = await createPlatformAccount(newUsername, newDisplayName);
-      setTemporaryPassword(result.temporary_password);
-      setNewUsername("");
-      setNewDisplayName("");
-      await loadAccounts();
-    });
-  };
-
   const close = () => {
+    openRef.current = null;
     setOpen(null);
     setError("");
     setNotice("");
     setRevealedKey("");
     setRevealedKeyCopied(false);
-    setTemporaryPassword("");
+    setCurrentPassword("");
+    setChangedPassword("");
+    setChangedPasswordAgain("");
+    setWorkspaceName(me.workspace.name);
+    setVisibility(me.workspace.visibility);
+    setDisplayName(me.user.display_name);
+    setEmail(me.user.email || "");
   };
 
+  useEffect(() => {
+    const showAccount = () => {
+      setTab("profile");
+      setOpen("account");
+    };
+    const show = () => {
+      setTab("overview");
+      setOpen("workspace");
+    };
+    window.addEventListener("future-props:open-workspace", show);
+    window.addEventListener("future-props:open-account", showAccount);
+    return () => {
+      window.removeEventListener("future-props:open-workspace", show);
+      window.removeEventListener("future-props:open-account", showAccount);
+    };
+  }, []);
   return {
+    loading,
+    reload: () =>
+      report(async () => {
+        if (open === "workspace") {
+          await loadWorkspaces();
+          if (tab === "members") await loadGovernance();
+        } else await loadSecurity();
+      }, false),
+    busy,
+    visibility,
+    setVisibility,
+    sentInvitations,
+    clearSecret: () => {
+      setRevealedKey("");
+      setRevealedKeyCopied(false);
+    },
+    workspaceQuery,
+    setWorkspaceQuery,
+    workspacePage,
+    setWorkspacePage,
+    workspaceTotal,
+    inviteRole,
+    setInviteRole,
     me,
     refresh,
     logout,
@@ -226,7 +298,6 @@ export function useAccountWorkspacePanel(session: AccountSessionContext) {
     invitations,
     sessions,
     keys,
-    accounts,
     securityEvents,
     workspaceName,
     setWorkspaceName,
@@ -242,12 +313,6 @@ export function useAccountWorkspacePanel(session: AccountSessionContext) {
     setKeyWrite,
     revealedKey,
     revealedKeyCopied,
-    newUsername,
-    setNewUsername,
-    newDisplayName,
-    setNewDisplayName,
-    temporaryPassword,
-    setTemporaryPassword,
     currentPassword,
     setCurrentPassword,
     changedPassword,
@@ -258,7 +323,6 @@ export function useAccountWorkspacePanel(session: AccountSessionContext) {
     loadWorkspaces,
     loadGovernance,
     loadSecurity,
-    loadAccounts,
     saveProfile,
     uploadAvatar,
     changePassword,
@@ -266,7 +330,6 @@ export function useAccountWorkspacePanel(session: AccountSessionContext) {
     invite,
     createKey,
     copyRevealedKey,
-    createAccount,
     close,
   };
 }

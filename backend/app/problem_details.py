@@ -5,6 +5,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from sqlalchemy.exc import OperationalError
 
+from app.accounts.error_views import error_detail
 from app.concurrency.revisions import RevisionConflictError
 
 
@@ -93,3 +94,8 @@ async def storage_operational_error_handler(
         code="storage_busy" if locked else "storage_unavailable",
         headers={"Retry-After": "1"},
     )
+
+
+async def account_exception_handler(request: Request, exc) -> JSONResponse:
+    status, detail = error_detail(exc)
+    return await http_exception_handler(request, HTTPException(status, detail))

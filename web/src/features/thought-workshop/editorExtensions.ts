@@ -1,4 +1,5 @@
 import { AttachmentNode } from "./AttachmentNode";
+import type { AnyExtension } from "@tiptap/core";
 import StarterKit from "@tiptap/starter-kit";
 import {
   TextStyle,
@@ -17,15 +18,20 @@ import {
 } from "@tiptap/extension-details";
 import Mathematics from "@tiptap/extension-mathematics";
 import Placeholder from "@tiptap/extension-placeholder";
+import NodeRange from "@tiptap/extension-node-range";
 import { ManagedImage, MermaidNode } from "./RichNodes";
+import { createSlashCommand } from "./SlashCommand";
+import type { InsertCallbacks } from "./blockCommands";
 
 export function editorExtensions(
   onMath?: (latex: string, position: number, inline: boolean) => void,
   readOnly = false,
+  insertCallbacks?: InsertCallbacks,
 ) {
-  return [
+  const extensions: AnyExtension[] = [
     StarterKit.configure({
       link: { openOnClick: readOnly, protocols: ["http", "https", "mailto"] },
+      dropcursor: { color: "#f08b62", width: 3 },
     }),
     TextStyle,
     Color,
@@ -53,4 +59,8 @@ export function editorExtensions(
     MermaidNode,
     Placeholder.configure({ placeholder: "从一个想法开始…" }),
   ];
+  if (!readOnly) extensions.push(NodeRange.configure({ key: "Mod" }));
+  if (!readOnly && insertCallbacks)
+    extensions.push(createSlashCommand(insertCallbacks));
+  return extensions;
 }

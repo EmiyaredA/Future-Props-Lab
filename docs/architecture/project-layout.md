@@ -59,12 +59,31 @@ Future-Props-Lab/
 
 ## 目录与依赖边界
 
+- `llm/catalog/` 拥有供应商分组、接入连接与模型目录。`supplier_records.py` 提供工作区限定的
+  分组读取及安全输出，`suppliers.py` 通过目录统一 CAS 执行分组写入；协议边界位于
+  `routes/models/suppliers.py`。供应商不持有密钥或启停状态，连接通过 `supplier_id` 显式归组。
+- `web/src/features/models/catalog/` 拥有受控 `ModelCatalogEditor`、目录分类、供应商树和三层表单；
+  `ModelServicePage` 适配工作区 API、缓存和冲突恢复，`WorkspaceDefaults` 负责默认用途选择与保存。
+  管理中台通过数据、动作和字段权限复用编辑器，
+  角色模板草稿、保存及同步由 `features/accounts/` 拥有；共用编辑器不直接请求 API 或持有 revision。
+  页面、连接布局和弹窗样式分别由 `model-catalog.css`、`catalog-connections.css`、
+  `catalog-dialogs.css` 维护。只读模型服务复用同一目录，隐藏写操作。
 - 后端采用功能模块优先结构。`main.py` 负责装配，`routes/` 只负责认证、请求校验、调用功能
   边界和响应映射，不直接导入 SQLAlchemy、ORM 模型或 migration。查询、写入和事务由
   `llm/catalog/`、`llm/playground/`、`llm/call_logs/` 等所属能力负责。
 - `accounts/provisioning.py` 是 HTTP 管理接口和离线账号命令共用的账号开通用例；账号、Workspace、
   Owner 成员关系、审计事件与新 Workspace 模型目录在同一事务内提交或回滚。`accounts/service.py`
   不依赖模型目录实现。
+- `accounts/permissions.py` 拥有固定角色与密钥范围交集，`route_permissions.py` 显式登记业务操作。
+  `governance_transactions.py` 在短写事务中重验操作者并执行 CAS；`management.py`、`member_roles.py`
+  分别拥有平台身份与成员授权，`errors.py` 和 `error_views.py` 定义领域错误与安全快照。
+  `routes/account_management.py` 只适配管理查询、创建和审计协议。
+- `web/src/features/accounts/` 拥有管理中台三个页面、账号中心和空间面板；查询键由 `queryKeys.ts`
+  统一维护。`AccountMenu` 与 `WorkspaceTrigger` 分别提供账号和空间入口，`AccountWorkspacePanel`
+  只装配弹窗；资料、安全表单与空间设置、成员授权分开维护。工作台顶栏及布局样式归属
+  `app/layout/StudioGlobalHeader`，中台外壳、统计与列表样式留在账号功能内。
+  `platform/auth/` 提供有效权限 Context，`app/ReadOnlyRoutes.tsx` 只装配各业务模块自有
+  的只读浏览入口，不挂载编辑控制器。共享预览和下载展示归属 `shared/ui/ReadOnlyMedia.tsx`。
 - `agents/harness/` 提供业务无关的 Agent Definition、消息/工具调用/Usage/适配器契约、上下文预算、
   Reactive 工具循环、Policy、Verifier、事件订阅、取消和内存审批；`phases.py` 原子化上下文编译、
   模型回合、工具提案、执行与审批阶段并保持事件顺序；不拥有项目数据，也不提供通用
@@ -238,10 +257,14 @@ Sayflow 的 PostgreSQL、多实例 worker、扩展、共享 runtime 包、知识
 
 ## 思绪工坊
 
+文档历史由 `thought_workshop/history.py` 拥有快照与分页，`history_archive.py` 拥有 v5 备份历史校验和重映射；`notes.py` 在正文 CAS 事务中记录与还原内容。迁移 `0049_thought_history` 为现有文档建立作者未知的历史起点，历史附件独立引用并参与公共文件删除保护。历史全部保留，文档永久删除时级联释放。
+
+Web 的 `NoteHistory` 复用现有只读 `RichEditor`；`historyDiff.ts` 负责有界块对齐与文字差异，`HistoryDecorations` 仅在预览中叠加标记，`history.css` 拥有列表和修改痕迹样式。历史模式不修改编辑草稿，唯一历史缓存键仍由 `queryKeys.ts` 维护。
+
 `backend/app/thought_workshop/` 拥有文档项目、目录、正文、回收站与文件备份。这里的「知识库」是文档项目容器的名称，不提供模型检索、文件内容解析或独立权限系统。
 
 - `knowledge.py`：知识库元数据、封面归属、首页创建、库级 revision/CAS、整库删除与恢复。
-- `directory.py`：库内多级文件夹、移动排序、循环校验和子项提升；移动正文归属时推进文档 revision。
+- `directory.py`：库内嵌套文档树、移动排序、循环校验；移动正文归属时推进文档 revision。
 - `notes.py`：显式知识库归属下的正文读写、自动保存冲突快照、文件引用投影。
 - `attachments.py`：附件上传；公共类型与签名校验由 `files/policy.py` 拥有。
 - `portability.py` / `archive_structure.py`：v3 备份的预检、磁盘暂存、短事务与失败补偿。
@@ -256,7 +279,6 @@ Sayflow 的 PostgreSQL、多实例 worker、扩展、共享 runtime 包、知识
 
 `thought_note_assets` 保护正文图片和附件，知识库封面通过外键与文件库用例保护，包括回收站。迁移 `0046_thought_knowledge_bases` 将每个有旧数据的 Workspace 转为「我的知识库」，旧笔记本成为顶层文件夹，移除旧表与字段，保留文档 ID 和所有内容。空空间不创建默认项目。迁移无运行时 app 依赖，并已在隔离数据库验证后登记。
 
-
 ## 前端屏幕适配
 
 `shared/ui/ResponsiveSidebar.tsx` 拥有主控制台与普通工坊的单实例抽屉外壳；品牌、业务导航和账号入口仍通过原组件提供。`ViewportBounds.tsx` 同步可见视口高度和偏移，供软键盘出现时的面板与菜单约束使用。`useDrawerFocus.ts` 统一抽屉/弹窗的键盘范围与焦点恢复；`CompactPanelTabs` 仅提供面板切换展示，不拥有编辑器实例、文档或播放状态。`QueryFeedback` 展示加载失败及重试。
@@ -264,3 +286,14 @@ Sayflow 的 PostgreSQL、多实例 worker、扩展、共享 runtime 包、知识
 视频、Galgame、录音标注与模型测试的布局状态和适配 CSS 留在各自功能目录。Galgame 的独立预演也保留舞台、台词队列和检查器，布局规则由 `editor/fast-preview-compact.css` 拥有。紧凑面板通过 CSS 控制可见性，切换屏幕尺寸不重建业务控制器。思绪工坊侧栏背景随整页延伸，内部导航固定在可用视口。全站不使用根级横向溢出隐藏代替宽度修正。
 
 `web/e2e/responsive-inventory.ts` 维护全部应用路由与独立入口的适配归属；`responsive-site`、`responsive-editors`、`responsive-panels`、`responsive-states` 分别负责入口、编辑工作区、账号/公开页/模型子面板及请求状态矩阵，`responsive-forms` 检查表单及嵌套菜单。`responsive-capture.ts` 检查页面宽度和可见弹层边界并保存实页截图。`web/tests/responsive-coverage.test.ts` 对路由联合类型与 HTML 构建入口执行遗漏检查；`viewport-bounds.test.tsx` 验证模拟可见视口收缩时的菜单定位及监听清理。验收记录见 `docs/reference/responsive-verification.md`。
+
+## 平台治理补充职责
+
+- `backend/app/accounts/platform_policy.py` 解析即时敏感策略；`platform_settings.py` 拥有平台配置 CAS；`registration.py` 拥有邀请码名额与注册事务。
+- `accounts/model_templates.py`、`model_template_sync.py` 拥有角色目录模板、预览与逐空间持久同步；`demo_services.py` 拥有固定测试服务治理与工作区接入。
+- `accounts/runtime_quotas.py` 拥有并发额度领取与恢复；`concurrency/task_admission.py` 只定义任务创建事务的归属回调类型；各功能用例在提交任务前调用它。
+- `accounts/developer_docs.py`、`cross_workspace_logs.py`、`project_certification.py` 分别拥有受保护文档、显式跨空间概况、官方认证。`ModelTemplateSyncItem` 和 `RuntimeAdmission` 属于平台治理记录，跨空间访问由这些正式用例显式校验，不使用业务自动租户过滤。
+- `backend/app/demo_runtime/runtime.py` 只实现应用进程内的固定 Mock 文本与演示工具运行时，不启动子进程；模型适配器和工具集成将明确的本地测试连接交给它。
+- `llm/catalog/defaults.py` 校验并保存当前工作区默认模型，与目录共用 CAS 版本。
+- `web/src/features/accounts/` 拥有七个管理页面、平台查询键、跨空间查询、邀请/模板/权限/服务表单与官方认证交互；应用壳仅负责路由装配。`features/models/catalog/WorkspaceDefaults.tsx` 拥有工作区默认用途弹窗。
+- `db/migrations/versions/r0051_platform_governance.py` 至 `r0055_model_suppliers.py` 按已登记顺序追加治理数据结构，迁移测试使用临时数据库。

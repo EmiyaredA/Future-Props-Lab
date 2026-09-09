@@ -27,7 +27,7 @@ def note_body(note):
         for key in (
             "title",
             "knowledge_base_id",
-            "folder_id",
+            "parent_id",
             "schema_version",
             "document",
             "tags",

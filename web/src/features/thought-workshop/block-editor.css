@@ -1,0 +1,506 @@
+.thought-rich-editor {
+  position: relative;
+}
+
+.thought-editor-canvas {
+  position: relative;
+  width: 100%;
+  min-height: 450px;
+}
+
+.thought-prose.ProseMirror-noderangeselection ::selection {
+  background: transparent;
+}
+
+.thought-prose .ProseMirror-selectednoderange {
+  position: relative;
+  border-radius: 5px;
+  background: color-mix(in srgb, #5d9cf4 18%, transparent);
+  box-shadow:
+    -10px 0 0 color-mix(in srgb, #5d9cf4 18%, transparent),
+    10px 0 0 color-mix(in srgb, #5d9cf4 18%, transparent);
+}
+
+.thought-prose li.ProseMirror-selectednoderange {
+  background: color-mix(in srgb, #5d9cf4 21%, transparent);
+}
+
+.thought-marquee {
+  position: absolute;
+  z-index: 5;
+  border: 1px solid color-mix(in srgb, #4d91ed 76%, white);
+  border-radius: 4px;
+  background: color-mix(in srgb, #5d9cf4 14%, transparent);
+  pointer-events: none;
+}
+
+.thought-drag-handle {
+  z-index: 20;
+  color: var(--muted);
+  touch-action: manipulation;
+}
+
+.thought-block-handle-inner {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  min-height: 28px;
+  padding-right: 5px;
+}
+
+.thought-add-block,
+.thought-grip {
+  min-width: 26px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 6px;
+  color: var(--muted);
+  background: transparent;
+}
+
+.thought-add-block:hover,
+.thought-grip:hover,
+.thought-grip[aria-expanded="true"] {
+  color: var(--text);
+  background: var(--surface-hover);
+}
+
+.thought-grip {
+  width: 26px;
+  padding: 0;
+  cursor: grab;
+}
+
+.thought-grip:active {
+  cursor: grabbing;
+}
+
+.thought-block-menu,
+.thought-insert-menu {
+  color: var(--text);
+  background: color-mix(in srgb, var(--surface) 96%, transparent);
+  border: 1px solid var(--border-strong);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+}
+
+.thought-block-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  width: min(216px, calc(100vw - 24px));
+  padding: 8px;
+  background: var(--surface);
+}
+
+.thought-block-menu-title {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 6px 8px 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+.thought-block-menu-title strong {
+  font-size: 13px;
+}
+
+.thought-block-menu-title span,
+.thought-insert-hint {
+  color: var(--faint);
+  font-size: 11px;
+}
+
+.thought-block-menu-controls {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 8px 12px;
+  padding: 10px 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.thought-block-field-label {
+  color: var(--muted);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.thought-block-menu .custom-select {
+  min-width: 0;
+  width: 100%;
+}
+
+.thought-block-menu .custom-select-trigger,
+.thought-text-menu .custom-select-trigger {
+  min-height: 32px;
+  padding: 0 8px;
+  font-size: 12px;
+}
+
+.thought-block-color-field {
+  display: flex;
+  grid-column: 1 / -1;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.thought-block-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 2px;
+  padding: 6px 0;
+}
+
+.thought-block-actions button {
+  width: 100%;
+  text-align: left;
+}
+
+.thought-block-menu button {
+  white-space: nowrap;
+}
+
+.thought-block-menu button > svg {
+  flex: 0 0 auto;
+}
+
+.thought-block-menu button:focus-visible,
+.thought-grip:focus-visible,
+.thought-add-block:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.thought-block-actions button,
+.thought-block-history button,
+.thought-table-menu button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 34px;
+  border: 0;
+  border-radius: 7px;
+  padding: 0 9px;
+  color: var(--text);
+  background: transparent;
+  font-size: 12px;
+}
+
+.thought-block-actions button:hover:not(:disabled),
+.thought-block-history button:hover:not(:disabled),
+.thought-table-menu button:hover:not(:disabled) {
+  background: var(--surface-hover);
+}
+
+.thought-block-actions .is-danger,
+.thought-table-menu .is-danger {
+  color: var(--danger, #d9534f);
+}
+
+.thought-block-history {
+  display: flex;
+  justify-content: space-between;
+  gap: 3px;
+  padding-top: 7px;
+  border-top: 1px solid var(--border);
+}
+
+.thought-block-menu button:disabled,
+.thought-text-menu button:disabled,
+.thought-table-menu button:disabled {
+  opacity: 0.38;
+}
+
+.thought-mobile-only {
+  display: none !important;
+}
+
+.thought-mobile-block-controls {
+  display: none;
+}
+
+.thought-range-menu {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  z-index: 32;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px;
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+  color: var(--text);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  transform: translateX(-50%);
+}
+
+.thought-range-menu > span {
+  padding: 0 8px;
+  color: var(--muted);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.thought-range-menu button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  border: 0;
+  border-radius: 6px;
+  padding: 0 9px;
+  color: var(--text);
+  background: transparent;
+}
+
+.thought-range-menu button:hover {
+  background: var(--surface-hover);
+}
+
+.thought-range-menu button.is-danger {
+  color: var(--danger, #d9534f);
+}
+
+.thought-insert-menu {
+  width: min(330px, calc(100vw - 28px));
+  padding: 7px;
+}
+
+.thought-block-handle-inner > .thought-insert-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+}
+
+.thought-slash-command {
+  z-index: 50;
+}
+
+.thought-insert-search {
+  display: block;
+  padding: 2px 2px 7px;
+}
+
+.thought-insert-search input {
+  width: 100%;
+  height: 34px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 0 10px;
+  outline: 0;
+  color: var(--text);
+  background: var(--bg);
+}
+
+.thought-insert-search input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.thought-insert-menu-list {
+  max-height: min(420px, calc(100vh - 160px));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.thought-insert-menu-list > button {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  min-height: 48px;
+  border: 0;
+  border-radius: 8px;
+  padding: 5px 8px;
+  text-align: left;
+  color: var(--text);
+  background: transparent;
+}
+
+.thought-insert-menu-list > button:hover,
+.thought-insert-menu-list > button.is-active {
+  background: var(--surface-hover);
+}
+
+.thought-insert-glyph {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  color: var(--muted);
+  background: var(--surface-soft);
+  font:
+    600 12px/1 ui-monospace,
+    monospace;
+}
+
+.thought-insert-menu-list strong,
+.thought-insert-menu-list small {
+  display: block;
+}
+
+.thought-insert-menu-list strong {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.thought-insert-menu-list small {
+  margin-top: 2px;
+  color: var(--faint);
+  font-size: 11px;
+}
+
+.thought-insert-empty {
+  margin: 0;
+  padding: 22px 10px;
+  color: var(--muted);
+  text-align: center;
+  font-size: 12px;
+}
+
+.thought-insert-hint {
+  margin: 6px 4px 1px;
+  padding-top: 7px;
+  border-top: 1px solid var(--border);
+}
+
+.thought-text-menu,
+.thought-table-menu {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  max-width: calc(100vw - 24px);
+  padding: 5px;
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+  color: var(--text);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.thought-text-menu {
+  overflow-x: auto;
+}
+
+.thought-text-menu > button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  min-width: 31px;
+  min-height: 31px;
+  border: 0;
+  border-radius: 6px;
+  padding: 0 7px;
+  color: var(--text);
+  background: transparent;
+}
+
+.thought-text-menu > button:hover,
+.thought-text-menu > button[aria-pressed="true"] {
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.thought-text-menu .thought-clear-format {
+  width: auto;
+  white-space: nowrap;
+  font-size: 12px;
+}
+
+.thought-context-divider {
+  flex: 0 0 1px;
+  width: 1px;
+  height: 22px;
+  margin: 0 2px;
+  background: var(--border);
+}
+
+.thought-table-menu {
+  flex-wrap: wrap;
+  max-width: min(620px, calc(100vw - 24px));
+}
+
+.thought-table-menu button {
+  white-space: nowrap;
+}
+
+@media (max-width: 700px) {
+  .thought-drag-handle {
+    display: none !important;
+  }
+
+  .thought-add-block {
+    display: none;
+  }
+
+  .thought-block-menu {
+    position: fixed;
+    top: auto;
+    right: 12px;
+    bottom: max(12px, env(safe-area-inset-bottom));
+    left: 12px;
+    width: auto;
+    max-height: calc(100vh - 24px);
+    overflow-y: auto;
+  }
+
+  .thought-mobile-only {
+    display: inline-flex !important;
+  }
+
+  .thought-block-handle-inner > .thought-insert-menu {
+    position: fixed;
+    top: auto;
+    right: 12px;
+    bottom: max(12px, env(safe-area-inset-bottom));
+    left: 12px;
+    width: auto;
+  }
+
+  .thought-mobile-block-controls {
+    position: absolute;
+    right: 5px;
+    z-index: 30;
+    display: block;
+  }
+
+  .thought-mobile-block-trigger {
+    display: grid;
+    width: 30px;
+    height: 30px;
+    place-items: center;
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    padding: 0;
+    color: var(--muted);
+    background: color-mix(in srgb, var(--surface) 94%, transparent);
+    box-shadow: 0 3px 12px rgb(0 0 0 / 8%);
+  }
+
+  .thought-mobile-block-controls > .thought-insert-menu {
+    position: fixed;
+    top: auto;
+    right: 12px;
+    bottom: max(12px, env(safe-area-inset-bottom));
+    left: 12px;
+    width: auto;
+  }
+
+  .thought-text-menu,
+  .thought-table-menu {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+  }
+}

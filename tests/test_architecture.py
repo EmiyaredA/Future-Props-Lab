@@ -107,8 +107,12 @@ def test_workspace_models_are_registered_for_tenant_scoping() -> None:
         WorkspaceInvitation,
         WorkspaceMembership,
     )
+    from app.models.model_templates import ModelTemplateSyncItem
+    from app.models.runtime_admission import RuntimeAdmission
 
     account_governance_models = {
+        ModelTemplateSyncItem,
+        RuntimeAdmission,
         ManagementApiKey,
         SecurityAuditEvent,
         WorkspaceInvitation,
@@ -659,7 +663,9 @@ def test_documentation_markdown_and_compatibility_sources_are_present() -> None:
     assert (docs_root / "legacyLinks.json").is_file()
     content = (docs_root / "content.ts").read_text(encoding="utf-8")
     assert "import.meta.glob" in content
-    assert "architecture,operations,reference" in content
+    assert "architecture,operations,reference" not in content
+    assert "../../../docs/reference/api.md" in content
+    assert "developer-documents" in (docs_root / "DocsApp.tsx").read_text(encoding="utf-8")
     assert not (docs_root / "videoEditorContent.ts").exists()
     assert (REPO_ROOT / "web/public/docs/sources.json").is_file()
 

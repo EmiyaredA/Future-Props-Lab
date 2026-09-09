@@ -1,11 +1,11 @@
+import { useWorkspacePermission } from "@platform/auth/WorkspacePermissions";
 import { ResponsiveSidebar } from "@shared/ui/ResponsiveSidebar";
 import { useState } from "react";
 import { BrandMark } from "@shared/ui/BrandMark";
 import { IntegrationIcon } from "@shared/ui/IntegrationIcon";
-import { ThemeToggle } from "@shared/ui/ThemeToggle";
 import type { StudioPage } from "@app/routes";
 import { useOptionalStudioSession } from "@app/StudioSession";
-import { AccountWorkspacePanel } from "@features/accounts";
+import { WorkspaceTrigger } from "@features/accounts/WorkspaceTrigger";
 
 function HomeIcon() {
   return (
@@ -109,6 +109,7 @@ export function StudioSidebar({
   page: StudioPage;
   navigate: (page: StudioPage) => void;
 }) {
+  const canReadLogs = useWorkspacePermission("logs.read");
   const [expanded, setExpanded] = useState(true);
   const session = useOptionalStudioSession();
   const toolsActive =
@@ -205,29 +206,21 @@ export function StudioSidebar({
                 <ServiceIcon />
                 <span>模型服务</span>
               </button>
-              <button
-                className={page === "model-call-logs" ? "active" : ""}
-                aria-current={page === "model-call-logs" ? "page" : undefined}
-                onClick={() => navigate("model-call-logs")}
-              >
-                <LogsIcon />
-                <span>模型调用日志</span>
-              </button>
+              {canReadLogs ? (
+                <button
+                  className={page === "model-call-logs" ? "active" : ""}
+                  aria-current={page === "model-call-logs" ? "page" : undefined}
+                  onClick={() => navigate("model-call-logs")}
+                >
+                  <LogsIcon />
+                  <span>模型调用日志</span>
+                </button>
+              ) : null}
             </div>
           ) : null}
         </nav>
         <footer className="sidebar-footer">
-          {session ? <AccountWorkspacePanel session={session} /> : null}
-          <div className="sidebar-rule" />
-          <button
-            className="docs-entry"
-            onClick={() =>
-              window.open("/docs.html", "_blank", "noopener,noreferrer")
-            }
-          >
-            文档中心
-          </button>
-          <ThemeToggle />
+          {session ? <WorkspaceTrigger session={session} /> : null}
         </footer>
       </aside>
     </ResponsiveSidebar>

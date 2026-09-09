@@ -37,6 +37,8 @@ from app.llm.realtime.catalog import RealtimeModelUnavailableError, resolve_real
 from app.llm.realtime.tool_calls import RealtimeToolExecutor, provider_tool_definitions
 from app.models import LlmCallLog
 
+PERMISSION_RECHECK_SECONDS = 5
+
 
 @dataclass(slots=True)
 class TurnMetrics:
@@ -234,7 +236,9 @@ def _client_configuration(payload: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-async def run_realtime_model_test(websocket: WebSocket, *, workspace_id: str) -> None:
+async def run_realtime_model_test(
+    websocket: WebSocket, *, workspace_id: str, check_access=None
+) -> None:
     trace_id = new_id()
     model: Any | None = None
     bridge: SenseAudioRealtimeBridge | None = None
@@ -256,6 +260,8 @@ async def run_realtime_model_test(websocket: WebSocket, *, workspace_id: str) ->
         if not isinstance(start, dict) or start.get("type") != "start":
             await websocket.send_json(_error("voice_start_required", "首条消息必须启动通话。"))
             return
+        if check_access is not None:
+            await check_access()
         model_id = str(start.get("model_id") or "").strip()
         instructions = str(start.get("instructions") or "").strip()
         if len(instructions) > VOICE_INSTRUCTIONS_MAX_CHARS:
@@ -365,6 +371,8 @@ async def run_realtime_model_test(websocket: WebSocket, *, workspace_id: str) ->
                         turns[active_turn_id].input_bytes += byte_count
                     bridge.append_audio(data)
                 elif kind == "commit_input":
+                    if check_access is not None:
+                        await check_access()
                     bridge.commit_input(str(payload.get("turn_id") or ""))
                 elif kind == "interrupt":
                     bridge.interrupt(str(payload.get("turn_id") or ""))
@@ -391,6 +399,8 @@ async def run_realtime_model_test(websocket: WebSocket, *, workspace_id: str) ->
                         turns.setdefault(turn_id, TurnMetrics(turn_id))
                         turn_rounds.setdefault(turn_id, len(turn_rounds))
                         active_turn_id = active_turn_id or turn_id
+                    if check_access is not None:
+                        await check_access()
                     tool_executor.start(
                         event,
                         round_index=turn_rounds.get(turn_id, len(turn_rounds)),
@@ -462,11 +472,24 @@ async def run_realtime_model_test(websocket: WebSocket, *, workspace_id: str) ->
                 if event_type == "error":
                     return
 
+        async def watch_access():
+            while True:
+                await asyncio.sleep(PERMISSION_RECHECK_SECONDS)
+                if check_access is not None:
+                    await check_access()
+
         client_task = asyncio.create_task(receive_client(), name="realtime-browser-inbound")
         provider_task = asyncio.create_task(send_provider(), name="realtime-browser-outbound")
-        done, pending = await asyncio.wait(
-            {client_task, provider_task}, return_when=asyncio.FIRST_COMPLETED
-        )
+        tasks = {client_task, provider_task}
+        if check_access is not None:
+            tasks.add(asyncio.create_task(watch_access(), name="realtime-permission-watch"))
+        try:
+            done, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
+        except BaseException:
+            for task in tasks:
+                task.cancel()
+            await asyncio.gather(*tasks, return_exceptions=True)
+            raise
         for task in pending:
             task.cancel()
         await asyncio.gather(*pending, return_exceptions=True)

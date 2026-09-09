@@ -17,6 +17,7 @@ from app.agents.harness.contracts import (
     Usage,
 )
 from app.core.outbound_urls import require_safe_provider_base_url
+from app.demo_runtime.runtime import mock_transport
 from app.llm.providers.streaming import _data_lines, _integer
 
 __all__ = [
@@ -44,7 +45,7 @@ class HttpAgentAdapter:
         self.kind = kind
         self.base_url = require_safe_provider_base_url(base_url)
         self.api_key = api_key
-        self.transport = transport
+        self.transport = mock_transport(base_url, transport)
 
     def _openai_messages(self, system: str, messages: list[AgentMessage]) -> list[dict[str, Any]]:
         out: list[dict[str, Any]] = []

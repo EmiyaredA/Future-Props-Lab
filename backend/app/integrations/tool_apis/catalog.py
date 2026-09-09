@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import re
 from time import monotonic
 from typing import Any
@@ -16,6 +17,7 @@ from app.core.credentials import decrypt_secret, encrypt_secret
 from app.core.outbound_urls import require_safe_integration_http_url
 from app.core.secret_hints import encrypted_secret_hint
 from app.core.time import iso_utc, utc_now
+from app.demo_runtime.runtime import TOOL_BASE_URL, tool_reply
 from app.integrations.checks import list_recent_checks, record_check
 from app.integrations.common import (
     DuplicateIntegrationError,
@@ -53,6 +55,7 @@ def _out(row: ToolApiIntegration) -> ToolApiOut:
         body_template=row.body_template,
         tags=list(row.tags or []),
         enabled=row.enabled,
+        sensitive_result=row.sensitive_result,
         status=row.status,
         status_message=row.status_message,
         last_checked_at=iso_utc(row.last_checked_at) if row.last_checked_at else None,
@@ -97,6 +100,9 @@ async def _invoke(
     inputs: dict[str, Any],
     transport: httpx.AsyncBaseTransport | None,
 ) -> tuple[int, str, str]:
+    if snapshot.url.startswith(TOOL_BASE_URL + "/"):
+        reply = await tool_reply(snapshot.url.rsplit("/", 1)[-1], inputs)
+        return 200, "application/json", json.dumps(reply, ensure_ascii=False)
     url = await require_safe_integration_http_url(snapshot.url)
     params = _render(snapshot.query_template, inputs)
     body = _render(snapshot.body_template, inputs) if snapshot.body_template is not None else None
@@ -191,6 +197,7 @@ class ToolApiCatalog:
             body_template=body.body_template,
             tags=body.tags,
             enabled=body.enabled,
+            sensitive_result=body.sensitive_result,
         )
         self.session.add(row)
         try:
@@ -231,6 +238,7 @@ class ToolApiCatalog:
                 body_template=body.body_template,
                 tags=body.tags,
                 enabled=body.enabled,
+                sensitive_result=body.sensitive_result,
                 status="unchecked",
                 status_message="",
                 last_checked_at=None,
@@ -307,6 +315,8 @@ class ToolApiCatalog:
             summary = redact_sensitive(str(exc), [secret])[:500] or type(exc).__name__
         except Exception as exc:
             summary = redact_sensitive(str(exc), [secret])[:500] or type(exc).__name__
+        if snapshot.sensitive_result:
+            summary = "敏感工具验证完成" if ok else "敏感工具验证失败，详情已隐藏"
         latency_ms = int((monotonic() - started) * 1000)
         latest = await self._get(integration_id)
         latest.status = "healthy" if ok else "failed"

@@ -9,7 +9,23 @@ for (const viewport of [
     page,
   }) => {
     await page.setViewportSize(viewport);
+    await page.addInitScript(
+      (theme) => localStorage.setItem("future_props_theme", theme),
+      viewport.width === 1440 ? "dark" : "light",
+    );
     await page.goto("/integrations/skills");
+    if (viewport.width === 1440) {
+      const upload = page.getByRole("button", {
+        name: "上传 Skill",
+        exact: true,
+      });
+      await expect(upload).toBeVisible();
+      const searchBounds = await page
+        .getByRole("textbox", { name: "搜索 Skill" })
+        .boundingBox();
+      const uploadBounds = await upload.boundingBox();
+      expect(Math.abs(searchBounds!.y - uploadBounds!.y)).toBeLessThan(15);
+    }
     const name = `skill-tags-${viewport.width}-${Date.now()}`;
     await page.getByRole("button", { name: "上传 Skill", exact: true }).click();
     let dialog = page.getByRole("dialog");
@@ -59,7 +75,15 @@ for (const viewport of [
     await page.getByRole("combobox", { name: "Skill 标签筛选" }).click();
     await page.getByRole("option", { name: "产品广告", exact: true }).click();
     await expect(card).toBeVisible();
+    await page.screenshot({
+      path: test.info().outputPath("skill-tags.png"),
+      fullPage: true,
+    });
     await edit.click();
+    await page.screenshot({
+      path: test.info().outputPath("skill-tags-dialog.png"),
+      fullPage: true,
+    });
     await page.keyboard.press("Escape");
     await expect(page.getByRole("dialog")).toHaveCount(0);
     await expect(edit).toBeFocused();
@@ -77,7 +101,7 @@ for (const viewport of [
     await expect(card).toBeVisible();
     await card.getByRole("button", { name: `删除 ${name}` }).click();
     await page
-      .getByRole("dialog")
+      .getByRole("alertdialog")
       .getByRole("button", { name: "删除", exact: true })
       .click();
     await expect(card).toHaveCount(0);

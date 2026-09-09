@@ -2,7 +2,7 @@ import { useId, useState } from "react";
 import { IntegrationModal } from "@features/integrations/components";
 import type { Skill } from "@features/integrations/api";
 
-import { parseSkillTags } from "@features/integrations/skillTags";
+import { parseSkillTags } from "@features/integrations/skillTagValues";
 
 export function SkillTagField({
   value,

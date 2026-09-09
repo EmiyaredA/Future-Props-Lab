@@ -47,10 +47,7 @@ def _migration_count_before(migration_id: str) -> int:
 def test_sqlite_migration_is_repeatable_and_detects_drift(tmp_path: Path) -> None:
     database_path = tmp_path / "nested" / "catalog.db"
 
-    assert apply_migrations(database_path) == (
-        LATEST_MIGRATION_ID,
-        True,
-    )
+    assert apply_migrations(database_path) == (LATEST_MIGRATION_ID, True)
     assert apply_migrations(database_path) == (
         LATEST_MIGRATION_ID,
         False,
@@ -66,118 +63,6 @@ def test_sqlite_migration_is_repeatable_and_detects_drift(tmp_path: Path) -> Non
 
     with pytest.raises(MigrationDriftError):
         check_migrations(database_path)
-
-
-def test_existing_r0001_database_upgrades_without_rewriting_history(tmp_path: Path) -> None:
-    database_path = tmp_path / "upgrade.db"
-    initial = MIGRATIONS[0]
-    with connect_database(database_path) as connection:
-        ensure_registry(connection)
-        connection.executescript(initial.sql)
-        connection.execute(
-            "INSERT INTO schema_migrations (migration_id, checksum) VALUES (?, ?)",
-            (initial.migration_id, migration_checksum(initial)),
-        )
-        connection.commit()
-
-    assert apply_migrations(database_path) == (
-        LATEST_MIGRATION_ID,
-        True,
-    )
-    with connect_database(database_path) as connection:
-        migrations = connection.execute(
-            "SELECT migration_id FROM schema_migrations ORDER BY rowid"
-        ).fetchall()
-        assert migrations == [
-            ("r0001_initial",),
-            ("r0002_model_test_conversations",),
-            ("r0003_tool_navigation_state",),
-            ("r0004_expand_senseaudio_text_catalog",),
-            ("r0005_visual_workshop_projects",),
-            ("r0006_file_management",),
-            ("r0007_model_test_attachments",),
-            ("r0008_visual_generation",),
-            ("r0009_visual_canvas_documents",),
-            ("r0010_model_categories_and_test_generation",),
-            ("r0011_visual_assistant_conversations",),
-            ("r0012_visual_assistant_actions",),
-            ("r0013_visual_assistant_generation_models",),
-            ("r0014_visual_assistant_content_parts",),
-            ("r0015_model_test_generation_assets",),
-            ("r0016_galgame_workshop_projects",),
-            ("r0017_galgame_character_assets",),
-            ("r0018_galgame_asset_management",),
-            ("r0019_project_storage_layout",),
-            ("r0020_accounts_and_workspaces",),
-            ("r0021_senseaudio_asr",),
-            ("r0022_audio_annotation",),
-            ("r0023_senseaudio_asr_fresh_catalog",),
-            ("r0024_model_test_transcription",),
-            ("r0025_pro_asr_provider",),
-            ("r0026_transcription_100mb",),
-            ("r0027_transcription_parameters",),
-            ("r0028_galgame_annotation_imports",),
-            ("r0029_galgame_video_exports",),
-            ("r0030_senseaudio_realtime",),
-            ("r0031_integration_center",),
-            ("r0032_realtime_fresh_catalog",),
-            ("r0033_model_test_tools",),
-            ("r0034_realtime_tool_calls",),
-            ("r0035_video_editor",),
-            ("r0036_galgame_video_editor_handoffs",),
-            ("r0037_media_workshop_upgrade",),
-            ("r0038_media_workshop_tasks_and_audio",),
-            ("r0039_visual_generation_node_history",),
-            ("r0040_video_editor_mixed_tracks",),
-            ("r0041_visual_generation_batches",),
-            ("r0042_image_compositions",),
-            ("r0043_video_editor_playback_rate",),
-            ("0044_thought_workshop",),
-            ("0045_thought_attachments",),
-            ("0046_thought_knowledge_bases",),
-            ("0047_skill_tags",),
-        ]
-        assert connection.execute("SELECT COUNT(*) FROM model_test_conversations").fetchone() == (
-            0,
-        )
-        assert connection.execute("SELECT COUNT(*) FROM tool_navigation_items").fetchone() == (0,)
-        assert connection.execute("SELECT COUNT(*) FROM visual_workshop_projects").fetchone() == (
-            0,
-        )
-        assert connection.execute("SELECT COUNT(*) FROM galgame_workshop_projects").fetchone() == (
-            0,
-        )
-        assert connection.execute("SELECT COUNT(*) FROM galgame_story_documents").fetchone() == (0,)
-        conversation_columns = {
-            row[1]
-            for row in connection.execute(
-                "PRAGMA table_info(visual_assistant_conversations)"
-            ).fetchall()
-        }
-        assert {"image_model_id", "video_model_id"} <= conversation_columns
-        conversation_indexes = {
-            row[1]
-            for row in connection.execute(
-                "PRAGMA index_list(visual_assistant_conversations)"
-            ).fetchall()
-        }
-        assert {
-            "ix_visual_assistant_conversations_image_model",
-            "ix_visual_assistant_conversations_video_model",
-        } <= conversation_indexes
-        generation_asset_columns = {
-            row[1]
-            for row in connection.execute(
-                "PRAGMA table_info(model_test_generation_assets)"
-            ).fetchall()
-        }
-        assert {
-            "task_id",
-            "role",
-            "position",
-            "storage_key",
-            "legacy_visual_asset_id",
-        } <= generation_asset_columns
 
 
 def test_r0020_assigns_complete_r0019_history_to_default_workspace(

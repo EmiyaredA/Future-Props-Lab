@@ -11,6 +11,7 @@ from app.models.defaults import new_id, utc_now
 
 
 class ToolApiIntegration(Base):
+    sensitive_result: Mapped[bool] = mapped_column(Boolean, default=False)
     __tablename__ = "integration_tool_apis"
     __table_args__ = (
         UniqueConstraint("workspace_id", "name", name="uq_integration_tool_apis_workspace_name"),
@@ -39,6 +40,7 @@ class ToolApiIntegration(Base):
 
 
 class McpIntegration(Base):
+    sensitive_result: Mapped[bool] = mapped_column(Boolean, default=False)
     __tablename__ = "integration_mcp_servers"
     __table_args__ = (
         UniqueConstraint("workspace_id", "name", name="uq_integration_mcp_workspace_name"),

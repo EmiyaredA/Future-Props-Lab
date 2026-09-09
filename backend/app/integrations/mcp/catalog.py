@@ -78,6 +78,7 @@ class McpCatalog:
             environment_keys=list(row.environment_keys or []),
             tags=list(row.tags or []),
             enabled=row.enabled,
+            sensitive_result=row.sensitive_result,
             status=row.status,
             status_message=row.status_message,
             server_name=row.server_name,
@@ -161,6 +162,7 @@ class McpCatalog:
             environment_keys=sorted(body.environment),
             tags=body.tags,
             enabled=body.enabled,
+            sensitive_result=body.sensitive_result,
         )
         self.session.add(row)
         try:
@@ -209,6 +211,7 @@ class McpCatalog:
                 environment_keys=environment_keys,
                 tags=body.tags,
                 enabled=body.enabled,
+                sensitive_result=body.sensitive_result,
                 status="unchecked",
                 status_message="",
                 server_name="",
@@ -304,6 +307,8 @@ class McpCatalog:
         latency_ms = int((monotonic() - started) * 1000)
         latest = await self._get(integration_id)
         latest.status = "healthy" if ok else "failed"
+        if latest.sensitive_result:
+            summary = "敏感 MCP 连接验证完成" if ok else "敏感 MCP 连接验证失败，详情已隐藏"
         latest.status_message = summary
         latest.last_checked_at = utc_now()
         if discovery is not None:

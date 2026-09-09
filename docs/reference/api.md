@@ -1,5 +1,17 @@
 # API 参考
 
+## 文档编辑历史
+
+以下接口位于 `/v1/thought-workshop`，鉴权沿用文档 Workspace 访问规则，跨空间的文档或历史 ID 返回 404：
+
+- `GET /notes/{note_id}/history?cursor=&limit=30`：按 revision 倒序返回摘要（ID、revision、作者、服务器时间、来源与修改字段），以及下一页 `next_cursor`；limit 为 1–100。cursor 为上一页最后一条历史 ID。
+- `GET /notes/{note_id}/history/{history_id}`：返回 `current` 和 `previous` 富文本快照；第一条记录的 previous 为 null。
+- `POST /notes/{note_id}/history/{history_id}/restore`：请求包含 `expected_revision`；恢复标题、正文和标签，保留目录、收藏、置顶，返回更新后的文档并追加还原记录。缺少 revision 返回 422，冲突返回 409 与当前快照。
+
+内容保存和历史写入在同一事务完成，重复内容、收藏和目录变更不会产生正文快照。创建、首页和导入同样记录历史。历史作者由认证 Principal 获取；迁移前的历史不可重建，基线作者显示未知。
+
+完整备份版本为 v5，新增 `history` 和历史引用的附件；导入兼容 v1–v4。导入的历史账号 ID 清空，仅保留作者名称和原时间，导入动作追加当前操作者记录。历史无自动过期，回收站仍保留；永久删除文档时级联释放历史引用。
+
 交互式 OpenAPI 位于后端 `/docs`。所有业务接口注册在 `/v1`。浏览器使用 Cookie Session；写请求
 同时校验 `fpl_csrf`/`X-CSRF-Token` 与精确 Origin。自动化可使用绑定单一 Workspace、以 `fpm_`
 开头的 Bearer Management API Key，scope 仅有 `studio:read` 和 `studio:write`。
@@ -12,9 +24,15 @@
 - `GET/DELETE /v1/account/sessions/{session_id}`、`POST /v1/account/sessions/revoke-others`
 - `GET/POST /v1/account/api-keys`、`POST /v1/account/api-keys/{key_id}/revoke`
 - `GET /v1/account/security-events`
-- `GET/POST /v1/platform/accounts`、账号状态更新、密码重置和全局安全审计
+- `GET/POST /v1/platform/accounts`：搜索、状态/平台身份筛选、服务端分页与创建（邮箱、管理员身份）。
+- `PATCH /v1/platform/accounts/{user_id}`：状态或平台身份变更，必填 `expected_revision`。
+- `POST /v1/platform/accounts/{user_id}/reset-password`：必填 `expected_revision`，临时密码只返回一次。
+- `GET/POST /v1/platform/workspaces`：分页查询或指定启用账号为拥有者创建额外空间。
+- `GET /v1/platform/security-events`、`GET /v1/account/workspaces/current/audit-events`：分页及事件、操作者、目标账号、时间范围筛选。
 - `GET /v1/account/workspaces`、`POST .../switch`、`PATCH .../current`
-- 当前 Workspace 的成员与邀请治理，以及本人邀请的接受/拒绝接口
+- `PATCH /v1/account/workspaces/current/members/{membership_id}`：角色和 `expected_revision`。
+- 当前 Workspace 的邀请创建支持 `role=admin|member|viewer`，默认 `member`；接受/拒绝/撤销必填版本。
+- 固定角色、有效权限、密钥降权与升级兼容细节见[账号与工作区治理](account-governance.md)。
 - `GET /v1/public-workspace`、公开 Galgame Story 与受项目可达性约束的 inline 素材预览
 
 业务请求不接受 `workspace_id`；当前空间只能来自已验证 Session 或 API Key。跨空间资源 ID 统一按
@@ -24,6 +42,8 @@
 ## 模型目录
 
 - `GET /v1/model-categories`：返回模型类别字典及对应的 `type/sub_type`。
+- `POST /v1/model-suppliers`：创建当前工作区的供应商分组。
+- `PATCH/DELETE /v1/model-suppliers/{supplier_id}`：重命名或删除空分组。
 - `GET/POST /v1/model-providers`
 - `PATCH/DELETE /v1/model-providers/{provider_id}`
 - `POST /v1/model-providers/{provider_id}/enabled`
@@ -32,6 +52,13 @@
 - `POST /v1/model-entries/{model_id}/test`
 
 目录写入必须携带最后读取的 `expected_catalog_revision`。冲突返回 `409 revision_conflict` 和服务器当前快照。
+目录响应包含 `suppliers` 和 `providers`；Provider 表示接入连接，`supplier_id` 为可空的分组归属，
+`kind` 表示接入协议/适配类型，不代表供应商身份。历史连接保留 ID、凭证与模型引用，初始归入
+界面的“未分组”。创建分组只接受名称，连接地址和密钥仍由连接独立维护。
+更新连接时省略 `supplier_id` 保留归属，显式 `null` 解除归属；启停接口同样保留归属。
+非空分组删除返回 `409 resource_busy`，不会级联删除连接或模型；跨工作区 ID 返回 404。
+分组输出 `origin`、`template_key`、`managed_fields`，平台模板管理的分组不允许在工作区重命名或删除。
+模板字段权限由服务端判断，客户端不能通过提交来源字段解锁。供应商写入与连接、模型共用目录 CAS。
 模型的 `capabilities` 描述实际输入和调用能力，`categories` 描述模型用途并允许多选；两者都只通过
 模型创建/更新 API 写入。类别字典参考 SiliconFlow 的 `type/sub_type` 语义，当前包含文本生成、
 其他通用模型、语音合成、语音识别、音乐生成、视频生成、图片生成和端到端语音模型。
@@ -57,7 +84,7 @@ HTTPS 或本机回环 HTTP 规则。
 - `GET /v1/llm-call-logs/{log_id}/reproduction-bundle`：下载不含密钥的 ZIP 复现包。
 - `POST /v1/llm-call-logs/batch-delete`
 
-调用源 `model_diagnostic` 表示模型服务行内的固定 `OK` 快速诊断，`model_playground` 表示模型测试
+调用源 `model_diagnostic` 表示诊断 API 的固定 `OK` 快速诊断，`model_playground` 表示模型测试
 工作台，`visual_workshop_assistant` 表示视觉工坊 Agent。详情按请求上下文、模型回复、Token 与
 耗时分区展示，并支持可读/JSON、Markdown/原文切换。新产生的流式文本日志记录首 Token 耗时、
 结束原因和模型轮次；旧日志没有对应观测值时返回原 payload 并显示为空。
@@ -735,22 +762,19 @@ Workspace 仅从认证主体派生。跨空间 ID 返回 404。
 | `GET/PUT /knowledge-bases/{id}` | 读取／带 expected_revision 修改名称、简介、cover_asset_id |
 | `DELETE /knowledge-bases/{id}` | 带 expected_revision 整库移入回收站 |
 | `POST /knowledge-bases/{id}/restore` | 带 expected_revision 恢复，保留原文档回收站状态 |
-| `GET /knowledge-bases/{id}/directory` | 库快照、全部多级文件夹与未删除普通文档 |
-| `POST /knowledge-bases/{id}/documents` | expected_revision、title、folder_id 创建空文档 |
-| `POST /knowledge-bases/{id}/folders` | expected_revision、title、parent_id 创建文件夹 |
-| `PUT /knowledge-bases/{id}/folders/{folder_id}` | expected_revision、title 重命名（归属仅由 move 修改） |
-| `DELETE /knowledge-bases/{id}/folders/{folder_id}` | expected_revision 删除，直接子项提升到上级 |
-| `POST /knowledge-bases/{id}/move` | expected_revision、kind(folder/document)、item_id、parent_id、before_id；库内移动与排序 |
-| `GET /notes` | 必填 knowledge_base_id；query、folder_id（unfiled 为根目录）、tag、view、sort、offset、limit；普通文档摘要不含正文和首页 |
-| `POST /notes` | knowledge_base_id、folder_id、expected_knowledge_revision 与 v2 正文，原子创建文档 |
+| `GET /knowledge-bases/{id}/directory` | 库快照与未删除普通文档（含 parent_id 嵌套树） |
+| `POST /knowledge-bases/{id}/documents` | expected_revision、title、parent_id 创建空文档 |
+| `POST /knowledge-bases/{id}/move` | expected_revision、item_id、parent_id、before_id；库内移动与排序 |
+| `GET /notes` | 必填 knowledge_base_id；query、parent_id（unfiled 为根目录）、tag、view、sort、offset、limit；普通文档摘要不含正文和首页 |
+| `POST /notes` | knowledge_base_id、parent_id、expected_knowledge_revision 与 v2 正文，原子创建文档 |
 | `GET/PUT /notes/{id}` | 读取／带 expected_revision 保存完整文档和元数据 |
-| `DELETE /notes/{id}` | 带 expected_revision 与 expected_knowledge_revision 移入回收站；permanent=true 永久删除回收站笔记 |
+| `DELETE /notes/{id}` | 带 expected_revision 与 expected_knowledge_revision 移入回收站；cascade_children=true 连同子树；permanent=true 永久删除回收站笔记 |
 | `POST /notes/{id}/restore` | 带 expected_revision 与 expected_knowledge_revision 恢复 |
 | `POST /images` | multipart upload 上传公共图片，返回 asset_id |
 | `POST /attachments` | multipart upload 上传公共附件，返回 asset_id、filename、mime_type、byte_size |
 | `GET /models` | 当前空间可用的写作模型 |
 | `POST /notes/{id}/assistant` | model_id、expected_revision、action、instruction、selection；返回 SSE |
-| `GET /backup` | v3 完整 ZIP；可用 knowledge_base_id 选择单库（包括回收站） |
+| `GET /backup` | v4 完整 ZIP；可用 knowledge_base_id 选择单库（包括回收站） |
 | `POST /imports` | multipart upload 创建副本，返回 knowledge_base_ids 和普通 note_ids；Markdown 包可指定 knowledge_base_id 与 expected_revision 导入当前库 |
 
 正文 `schema_version=2`（历史版本仅在备份导入转换层处理）、`document` 为允许列表校验的 Tiptap JSON；图片仅保存 assetId，
@@ -761,8 +785,8 @@ Workspace 仅从认证主体派生。跨空间 ID 返回 404。
 SSE 为 `data: {"type":"delta","text":"…"}`、`complete` 或 `error`（含 message），不暴露供应商
 原始事件。断开取消生成，调用日志记录脱敏元数据，来源为 thought_workshop_assistant。
 
-备份格式 thought-workshop-backup、version=3（导入转换层兼容 v1/v2），ZIP 中 manifest.json 包含 knowledge_bases、folders、notes 和
-assets；每个 asset 声明 id、path、filename、content_type。导入重映射 ID、校验全部文档与文件，
+备份格式 thought-workshop-backup、version=4（导入转换层兼容 v1/v2/v3），ZIP 中 manifest.json 包含 knowledge_bases、notes 和
+assets（folders 恒为空）；每个 asset 声明 id、path、filename、content_type。导入重映射 ID、校验全部文档与文件，
 成功才提交；失败回滚并清理暂存文件。复用项目快照的大小和文件数限制，manifest 上限 32 MiB。
 Markdown 转换在 Web 所属功能中完成，再经同一个导入 API 校验写入；HTML 和 Markdown 导出读取
 受鉴权的笔记、图片与附件，在浏览器内形成离线文件。完整备份上传不在浏览器展开；Markdown 内容包保留 128 MiB 解析限制。
@@ -773,6 +797,39 @@ Markdown 转换在 Web 所属功能中完成，再经同一个导入 API 校验�
 
 知识库名称最多 120 字，简介最多 2000 字；封面必须引用当前 Workspace 的公共图片。home_note_id 指向独立的空白首页文档，不能单独移动、删除或恢复。知识库回收站状态隐藏全部内容，恢复不会清除文档原有 deleted_at。
 
-知识库与目录修改使用库级 revision；文档保存使用文档 revision。移动文档推进文档修订号，正文 PUT 拒绝变更 knowledge_base_id/folder_id，目录移动只能通过 move。跨库目录引用及循环目录被拒绝。无 notebook_id 或旧笔记本接口，也没有隐式创建默认知识库的生产路径。
+知识库与目录修改使用库级 revision；文档保存使用文档 revision。移动文档推进文档修订号，正文 PUT 拒绝变更 knowledge_base_id/parent_id，目录移动只能通过 move。跨库父文档引用及循环嵌套被拒绝。无 notebook_id、文件夹实体或旧笔记本接口，也没有隐式创建默认知识库的生产路径。
 
 0046 迁移保留原文档 ID、正文、标签、收藏、回收站、修订号和附件引用；旧笔记本转成顶层文件夹后移除。首页是独立文档。v3 导入重新分配所有 ID，验证目录与唯一首页、文件归属，文件暂存完成后才进入写事务，失败清理文件与记录。旧 URL 兼容仅在 Web 跳转层。
+
+## 平台治理扩展
+
+仅超级管理员 Session 可调用 `/v1/platform/*`；运营管理员不能借助兼容管理员字段进入中台。账号创建/修改支持 `platform_role: super_admin | admin | member`。账号身份修改仍要求 `expected_revision` 并撤销目标会话与密钥。
+
+| 接口 | 用途 |
+| --- | --- |
+| `GET/POST /v1/platform/registration-invite-codes` | 搜索分页/创建邀请码；列表仅掩码 |
+| `PATCH /v1/platform/registration-invite-codes/{id}` | CAS 修改名额和启停 |
+| `POST .../{id}/actions` | CAS 延期、重设有效期、软删除 |
+| `POST .../{id}/secret` | 近期密码验证后读取明文并审计 |
+| `GET .../{id}/redemptions` | 分页兑换记录 |
+| `POST /v1/auth/register` | 邀请码、用户名、自选密码、可选邮箱注册登录 |
+| `GET/PUT /v1/platform/model-service-templates/{role}` | 角色模型模板，写入使用 expected_revision |
+| `POST .../{role}/preview` | 使用 expected_template_revision 创建同步预览 |
+| `GET .../{role}/sync-jobs` | 最近同步记录 |
+| `GET .../sync-jobs/{id}` | 任务状态与各空间明细 |
+| `POST .../sync-jobs/{id}/start` | 使用 expected_revision 确认同步 |
+| `GET /v1/platform/demo-services` | 两项固定服务的配置、就绪状态和脱敏记录 |
+| `PUT .../demo-services/{id}` | CAS 配置 |
+| `POST .../demo-services/{id}/actions` | start/stop/reinitialize |
+| `POST /v1/account/demo-services/{id}/install` | 当前空间接入，要求配置权限和 expected_catalog_revision |
+| `GET/PATCH /v1/platform/permission-policy` | 敏感权限矩阵，CAS 更新 |
+| `GET/PATCH /v1/platform/runtime-quotas` | 账号/空间/实例/语音/管理员预留额度，CAS 更新 |
+| `PUT /v1/model-catalog/defaults` | expected_revision + default_model_ids，校验当前空间可用模型 |
+| `GET /v1/account/developer-documents` | 按当前敏感权限返回开发文档目录与正文，禁止缓存 |
+| `GET /v1/account/log-workspaces` | Session 专用跨空间日志选择范围 |
+| `GET /v1/account/cross-workspace-call-logs` | 显式 workspace_ids、q、page、page_size 查询调用概况 |
+| `PATCH /v1/account/project-certification/{kind}/{id}` | visual/galgame 官方标记，is_official + expected_revision |
+
+`/v1/demo-services/model/chat/completions` 提供认证后的 OpenAI 兼容固定文本、SSE 与工具调用；`/v1/demo-services/tools/{orders|products|product}` 返回固定演示数据。服务默认关闭，关闭返回 503，额度不足返回 429。它们不提供匿名调用或进程控制。
+
+工具 API 与 MCP 配置增加 `sensitive_result`，默认 false。受限身份只收到安全的执行状态；原始结果仅供内部执行或已授权的诊断界面。平台策略每次请求重新计算，密钥不能使用跨空间日志权限。

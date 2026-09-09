@@ -6,6 +6,7 @@ from sqlalchemy import delete, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.concurrency.revisions import RevisionConflictError
+from app.concurrency.task_admission import TaskAdmission
 from app.core.config import Settings, get_settings
 from app.core.time import iso_utc, utc_now
 from app.llm.playground.generation_assets import (
@@ -123,7 +124,9 @@ class ModelTestGeneration:
             ]
         )
 
-    async def create(self, body: ModelTestGenerationCreateIn) -> ModelTestGenerationTaskOut:
+    async def create(
+        self, body: ModelTestGenerationCreateIn, *, admission: TaskAdmission | None = None
+    ) -> ModelTestGenerationTaskOut:
         model, provider = await self._model(body.model_id, body.kind)
         payload = body.model_dump(mode="json")
         if isinstance(body, ModelTestImageGenerationIn):
@@ -166,6 +169,8 @@ class ModelTestGeneration:
             except GenerationAssetError as exc:
                 await self.session.rollback()
                 raise ModelTestGenerationError(str(exc), code=exc.code, status=exc.status) from None
+        if admission:
+            await admission([row.id])
         await self.session.commit()
         await self.session.refresh(row)
         return generation_task_out(row)

@@ -6,6 +6,7 @@ from typing import Any
 import httpx
 
 from app.core.outbound_urls import require_safe_provider_base_url
+from app.demo_runtime.runtime import mock_transport
 
 PROMPT = "Reply with exactly OK."
 
@@ -32,6 +33,7 @@ async def invoke_diagnostic(
     transport: httpx.AsyncBaseTransport | None = None,
 ) -> DiagnosticResult:
     base_url = require_safe_provider_base_url(base_url)
+    transport = mock_transport(base_url, transport)
     timeout = httpx.Timeout(30.0)
     async with httpx.AsyncClient(timeout=timeout, transport=transport) as client:
         if kind == "openai":

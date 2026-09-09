@@ -30,6 +30,7 @@ vi.mock("@features/visual-workshop/api", async () => {
 });
 
 const project = {
+  is_official: false,
   id: "project-1",
   title: "产品主视觉",
   kind: "image" as const,

@@ -35,6 +35,7 @@ from app.models.integrations import (
     ToolApiIntegration,
 )
 from app.models.model_service import ModelCatalogState, ModelEntry, ModelProvider
+from app.models.model_supplier import ModelSupplier
 from app.models.model_test import (
     ModelTestAttachment,
     ModelTestConversation,
@@ -49,7 +50,6 @@ from app.models.model_test_tools import (
     ModelTestToolCall,
 )
 from app.models.thought_workshop import (
-    ThoughtFolder,
     ThoughtKnowledgeBase,
     ThoughtNote,
     ThoughtNoteAsset,
@@ -78,7 +78,6 @@ __all__ = [
     "ThoughtNote",
     "ThoughtNoteAsset",
     "ThoughtKnowledgeBase",
-    "ThoughtFolder",
     "Base",
     "AuthSession",
     "AudioAnnotationDocument",
@@ -102,6 +101,7 @@ __all__ = [
     "ModelCatalogState",
     "ModelEntry",
     "ModelProvider",
+    "ModelSupplier",
     "ModelTestConversation",
     "ModelTestGenerationTask",
     "ModelTestGenerationAsset",
@@ -137,3 +137,7 @@ __all__ = [
     "WorkspaceInvitation",
     "WorkspaceMembership",
 ]
+
+from app.models import model_templates as model_templates
+from app.models import platform_governance as platform_governance
+from app.models import runtime_admission as runtime_admission

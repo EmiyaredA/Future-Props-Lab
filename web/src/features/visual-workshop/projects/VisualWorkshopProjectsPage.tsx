@@ -1,3 +1,4 @@
+import { ProjectCertification } from "@features/accounts";
 import { useState } from "react";
 import {
   Check,
@@ -151,6 +152,11 @@ export function VisualWorkshopProjectsPage({
             <ProjectLibraryCard
               key={project.id}
               project={project}
+              metadata={
+                project.is_official ? (
+                  <span className="workshop-status completed">官方作品</span>
+                ) : undefined
+              }
               cover="canvas"
               coverTitle="创作画布"
               coverDescription="点击进入项目"
@@ -170,6 +176,11 @@ export function VisualWorkshopProjectsPage({
                 </button>
               </div>
               <div className="workshop-project-secondary-actions">
+                <ProjectCertification
+                  kind="visual"
+                  project={project}
+                  queryKey={visualWorkshopQueryKeys.projects}
+                />
                 <ProjectSnapshotCardActions
                   title={project.title}
                   exporting={

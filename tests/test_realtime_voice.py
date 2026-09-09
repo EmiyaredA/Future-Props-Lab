@@ -742,9 +742,12 @@ def test_realtime_websocket_accepts_authenticated_workspace(
     import app.routes.models.model_test_realtime as route
 
     async def authenticated(*_args):
-        return SimpleNamespace(workspace_id="workspace-a")
+        return SimpleNamespace(
+            workspace_id="workspace-a", session_id="session-a", allows=lambda _permission: True
+        )
 
-    async def run(websocket, *, workspace_id: str):
+    async def run(websocket, *, workspace_id: str, check_access):
+        await check_access()
         await websocket.send_json({"type": "workspace", "id": workspace_id})
         await websocket.close(code=1000)
 

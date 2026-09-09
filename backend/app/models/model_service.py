@@ -24,7 +24,12 @@ class ModelProvider(Base):
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
     workspace_id: Mapped[str] = mapped_column(String(36), index=True, default="default")
+    origin: Mapped[str] = mapped_column(String(20), default="user")
+    template_key: Mapped[str | None] = mapped_column(String(100), nullable=True)
     name: Mapped[str] = mapped_column(String(120))
+    supplier_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("model_suppliers.id", ondelete="RESTRICT"), nullable=True, index=True
+    )
     kind: Mapped[str] = mapped_column(String(24))
     base_url: Mapped[str] = mapped_column(String(512), default="")
     api_key_ciphertext: Mapped[str] = mapped_column(Text, default="")
@@ -46,6 +51,8 @@ class ModelEntry(Base):
     provider_id: Mapped[str] = mapped_column(
         String(36), ForeignKey("model_providers.id", ondelete="CASCADE"), index=True
     )
+    origin: Mapped[str] = mapped_column(String(20), default="user")
+    template_key: Mapped[str | None] = mapped_column(String(100), nullable=True)
     slug: Mapped[str] = mapped_column(String(160))
     label: Mapped[str] = mapped_column(String(160), default="")
     description: Mapped[str] = mapped_column(String(255), default="")

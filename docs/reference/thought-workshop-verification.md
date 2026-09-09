@@ -30,34 +30,34 @@
 
 入口已统一为知识库卡片 → 首页 → 多级目录与文档。首页默认阅读、整页富文本编辑，复用表格、图片、附件、链接、公式、图表、自动保存与 AI 写作。桌面侧栏 236px、正文最大 780px，手机目录使用抽屉；保留应用头像和明暗主题。
 
-知识库支持名称、简介、封面、搜索、整体回收站与恢复；目录支持嵌套、拖动排序、键盘菜单移动和排序。文件夹删除提升直接子项。文档创建、删除、恢复与目录修改使用库 revision/CAS，正文保留文档 revision；移动文档推进文档 revision，旧编辑页不能覆盖归属。封面与正文文件均保护回收站引用。
+知识库支持名称、简介、封面、搜索、整体回收站与恢复；目录支持文档嵌套、拖动排序（同级 / 挂为子文档）、键盘菜单移动和排序。删除带子文档时可选择仅删当前文档（子文档上移）或级联删除子树。文档创建、删除、恢复与目录修改使用库 revision/CAS，正文保留文档 revision；移动文档推进文档 revision，旧编辑页不能覆盖归属。封面与正文文件均保护回收站引用。
 
-迁移 `0046_thought_knowledge_bases` 已在隔离数据库验证后登记。保留旧文档 ID、内容、标签、收藏、回收站、修订号和附件引用；旧笔记本转成顶层文件夹，移除旧表和 notebook_id。无旧数据的空间保持空列表。历史迁移未改写，未通过临时脚本修改持久数据库。
+迁移 `0046_thought_knowledge_bases` 与 `0048_thought_document_tree` 已在隔离数据库验证后登记。保留旧文档 ID、内容、标签、收藏、回收站、修订号和附件引用；旧笔记本先转成顶层文件夹再转为空正文文档，`folder_id` 改为 `parent_id`，移除文件夹表。无旧数据的空间保持空列表。历史迁移未改写，未通过临时脚本修改持久数据库。
 
 生产旧笔记本模型、接口、分类控件、全局笔记列表、旧缓存键与失效样式已移除。兼容仅保留旧 URL 替换历史记录后跳转，以及 `legacy_import.py` 的 v1/v2 备份转换。OpenAPI 与 Web 生成契约不含 notebook_id 或旧笔记本接口。
 
 v3 备份包括知识库、封面、首页、多级目录和附件，支持单库及全部导出。导入重新分配 ID、验证唯一首页和目录归属、保留回收站、文件暂存后短事务写入，失败补偿。Markdown 内容包进入当前库或创建新库；完整备份创建副本，不把多库文档错误打开到其他知识库。
 
-| 检查 | 最终结果 |
-| --- | --- |
-| 思绪工坊后端 | 43 项通过；涵盖迁移、Workspace/鉴权、目录循环、移动/删除冲突、首页保护、整库恢复、封面与附件引用、v3 往返、v1/v2 导入、失败回滚与 AI 确定性流 |
-| 全量后端 | 422 项通过；4 项已有失败，见下表 |
-| 全量 Web | 102 个文件、559 项通过 |
-| 最终相关 Web / 共享项目卡片回归 | 7 个文件、24 项通过 |
-| Chromium 浏览器旅程 | 13 项全部通过；额外扩展知识库视觉矩阵旅程通过 |
-| 架构 | 依赖、租户、迁移、路由等检查通过；仅保留两项其他模块的文件超限失败 |
-| lint / format:check / contracts:check | 全部通过 |
-| 生产构建 | 通过资源检查、TypeScript、生产打包与产物预算检查 |
-| legacy 扫描 | 正常读写无旧笔记本符号；仅独立旧备份转换层保留旧字段 |
+| 检查                                  | 最终结果                                                                                                                                      |
+| ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| 思绪工坊后端                          | 43 项通过；涵盖迁移、Workspace/鉴权、目录循环、移动/删除冲突、首页保护、整库恢复、封面与附件引用、v3 往返、v1/v2 导入、失败回滚与 AI 确定性流 |
+| 全量后端                              | 422 项通过；4 项已有失败，见下表                                                                                                              |
+| 全量 Web                              | 102 个文件、559 项通过                                                                                                                        |
+| 最终相关 Web / 共享项目卡片回归       | 7 个文件、24 项通过                                                                                                                           |
+| Chromium 浏览器旅程                   | 13 项全部通过；额外扩展知识库视觉矩阵旅程通过                                                                                                 |
+| 架构                                  | 依赖、租户、迁移、路由等检查通过；仅保留两项其他模块的文件超限失败                                                                            |
+| lint / format:check / contracts:check | 全部通过                                                                                                                                      |
+| 生产构建                              | 通过资源检查、TypeScript、生产打包与产物预算检查                                                                                              |
+| legacy 扫描                           | 正常读写无旧笔记本符号；仅独立旧备份转换层保留旧字段                                                                                          |
 
 已知失败与本次改动无关，保持原有范围，不扩大豁免：
 
-| 已有失败 | 原因 |
-| --- | --- |
-| `test_source_modules_are_split_into_reviewable_files` | `web/src/features/visual-workshop/styles/project-library-foundation.css` 607 行，超过 600 行 |
-| `test_test_modules_are_split_into_reviewable_files` | `web/tests/visual-workshop-canvas.test.tsx` 1418 行，超过 1200 行 |
-| `test_segment_export_creation_is_idempotent_and_preserves_each_config` | 其他模块输出包含 `playbackRate: None`，旧断言未包含该字段 |
-| `test_snapshot_import_rejects_wrong_app_tampering_and_unsafe_members` | 其他模块输出包含 `grid_output: None` 与 `grid_size: None`，旧断言未包含这些字段 |
+| 已有失败                                                               | 原因                                                                                         |
+| ---------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| `test_source_modules_are_split_into_reviewable_files`                  | `web/src/features/visual-workshop/styles/project-library-foundation.css` 607 行，超过 600 行 |
+| `test_test_modules_are_split_into_reviewable_files`                    | `web/tests/visual-workshop-canvas.test.tsx` 1418 行，超过 1200 行                            |
+| `test_segment_export_creation_is_idempotent_and_preserves_each_config` | 其他模块输出包含 `playbackRate: None`，旧断言未包含该字段                                    |
+| `test_snapshot_import_rejects_wrong_app_tampering_and_unsafe_members`  | 其他模块输出包含 `grid_output: None` 与 `grid_size: None`，旧断言未包含这些字段              |
 
 真实截图位于 `output/thought-knowledge/`，由正式 API 和隔离数据库构建测试内容，没有向用户知识库写入示例。检查视口为 1600×1000、1280×800、390×844；分别覆盖明暗首页、空首页、卡片、长标题、多级目录抽屉，以及包含表格、图片、附件和链接的编辑正文。实际检查中文可读性、对齐、按钮对比度、弹层位置和页面横向溢出。截图关闭过渡动画，最近更新时间明确使用 UTC，避免本地时区偏差。检查日志保存在同目录的 `checks/`。
 
@@ -80,18 +80,18 @@ v3 备份包括知识库、封面、首页、多级目录和附件，支持单�
 
 ## 自动验证
 
-| 检查 | 结果 |
-| --- | --- |
-| 思绪工坊后端专用测试 | 14 通过，覆盖迁移重入、Workspace/权限、CAS、引用保护、备份往返、导入提交阶段失败回滚、恶意文档、AI 增量/失败/取消 |
-| 思绪工坊 Web 专用测试 | 4 通过，覆盖富文本 JSON 往返、Markdown、保存队列和冲突保留 |
-| Chromium 完整旅程 | 5 通过，覆盖应用入口、保存重开、AI 插入、备份导入、图片上传、公式/图表、HTML/Markdown 导出、撤销重做、窄屏抽屉、保存失败、真实 CAS 冲突、过期选区、冷启动弹窗样式/键盘焦点与加载超时后重试 |
-| 中文组合输入 | Chromium 中模拟 composition/input 事件，验证组合阶段不保存、结束后保存；未以真实系统输入法候选窗作为自动化替身 |
-| 架构检查 | 除下列两个已有文件尺寸超限检查外，34 项通过 |
-| 全量后端 | 393 通过，4 失败，详见下表 |
-| 全量 Web | 548 通过，1 失败，详见下表 |
-| Python/Web lint、格式检查、OpenAPI 契约检查 | 通过 |
-| 生产构建与分包预算 | 通过；富文本编辑器与图表按需加载 |
-| LFS 资产校验、指针校验及 fsck | 通过 |
+| 检查                                        | 结果                                                                                                                                                                                       |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 思绪工坊后端专用测试                        | 14 通过，覆盖迁移重入、Workspace/权限、CAS、引用保护、备份往返、导入提交阶段失败回滚、恶意文档、AI 增量/失败/取消                                                                          |
+| 思绪工坊 Web 专用测试                       | 4 通过，覆盖富文本 JSON 往返、Markdown、保存队列和冲突保留                                                                                                                                 |
+| Chromium 完整旅程                           | 5 通过，覆盖应用入口、保存重开、AI 插入、备份导入、图片上传、公式/图表、HTML/Markdown 导出、撤销重做、窄屏抽屉、保存失败、真实 CAS 冲突、过期选区、冷启动弹窗样式/键盘焦点与加载超时后重试 |
+| 中文组合输入                                | Chromium 中模拟 composition/input 事件，验证组合阶段不保存、结束后保存；未以真实系统输入法候选窗作为自动化替身                                                                             |
+| 架构检查                                    | 除下列两个已有文件尺寸超限检查外，34 项通过                                                                                                                                                |
+| 全量后端                                    | 393 通过，4 失败，详见下表                                                                                                                                                                 |
+| 全量 Web                                    | 548 通过，1 失败，详见下表                                                                                                                                                                 |
+| Python/Web lint、格式检查、OpenAPI 契约检查 | 通过                                                                                                                                                                                       |
+| 生产构建与分包预算                          | 通过；富文本编辑器与图表按需加载                                                                                                                                                           |
+| LFS 资产校验、指针校验及 fsck               | 通过                                                                                                                                                                                       |
 
 未调用真实模型供应商。AI 验收使用确定性替身。
 
@@ -99,13 +99,13 @@ v3 备份包括知识库、封面、首页、多级目录和附件，支持单�
 
 本次没有修改这些功能实现或放宽测试断言。
 
-| 检查 | 失败内容 |
-| --- | --- |
-| `tests/test_architecture.py::test_source_modules_are_split_into_reviewable_files` | `web/src/features/visual-workshop/styles/project-library-foundation.css` 为 607 行，超过 600 行限制 |
-| `tests/test_architecture.py::test_test_modules_are_split_into_reviewable_files` | `web/tests/visual-workshop-canvas.test.tsx` 为 1418 行，超过 1200 行限制 |
-| `tests/test_media_workshop_upgrade.py::test_segment_export_creation_is_idempotent_and_preserves_each_config` | 预期快照未包含实际返回的 `playbackRate: null` |
-| `tests/test_project_snapshots.py::test_snapshot_import_rejects_wrong_app_tampering_and_unsafe_members` | 预期快照未包含实际返回的 `grid_output: null` 与 `grid_size: null` |
-| `web/tests/galgame-workshop-editor-audio-stage.test.tsx` 的多角色舞台编辑用例 | 10 秒超时；单独复跑也超时 |
+| 检查                                                                                                         | 失败内容                                                                                            |
+| ------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------- |
+| `tests/test_architecture.py::test_source_modules_are_split_into_reviewable_files`                            | `web/src/features/visual-workshop/styles/project-library-foundation.css` 为 607 行，超过 600 行限制 |
+| `tests/test_architecture.py::test_test_modules_are_split_into_reviewable_files`                              | `web/tests/visual-workshop-canvas.test.tsx` 为 1418 行，超过 1200 行限制                            |
+| `tests/test_media_workshop_upgrade.py::test_segment_export_creation_is_idempotent_and_preserves_each_config` | 预期快照未包含实际返回的 `playbackRate: null`                                                       |
+| `tests/test_project_snapshots.py::test_snapshot_import_rejects_wrong_app_tampering_and_unsafe_members`       | 预期快照未包含实际返回的 `grid_output: null` 与 `grid_size: null`                                   |
+| `web/tests/galgame-workshop-editor-audio-stage.test.tsx` 的多角色舞台编辑用例                                | 10 秒超时；单独复跑也超时                                                                           |
 
 ## 迁移与浏览器复核
 
@@ -119,7 +119,6 @@ v3 备份包括知识库、封面、首页、多级目录和附件，支持单�
 恢复后端后，已在 Chrome 本机环境确认笔记列表和新建笔记本弹窗正常。笔记读取增加 15 秒超时与手动重试，
 开发启动命令增加 10 秒请求退出等待上限。针对本次修复的 Web 组件测试 8 项通过，lint、格式检查和构建通过。
 
-
 ## 专注写作界面改版验收（2026-09-08）
 
 本节记录后续 UI 改版的验证结果，上文首版结果保留为历史记录。
@@ -130,14 +129,14 @@ v3 备份包括知识库、封面、首页、多级目录和附件，支持单�
 - 修复待办清单样式仅匹配导出 HTML 属性、未匹配 Tiptap 实际编辑节点的问题；浏览器断言验证勾选框和正文首行的垂直对齐。
 - 保留现有应用头像，不新增网页宠物；没有修改后端、公开契约、迁移或用户笔记。
 
-| 检查 | 本轮结果 |
-| --- | --- |
-| 全量 Web 测试 | 100 个测试文件、552 项通过；包含 3 项新增标签编辑测试 |
-| Chromium 回归 | 原有 5 项旅程通过；新增 4 项布局与服务器标签同步旅程通过，布局修复后已定向复验 |
-| 明暗主题与布局 | 1600×1000、1280×800、390×844；空笔记、示例内容、长正文、菜单、目录、写作助手；无页面横向溢出 |
-| 静态、格式与契约 | `npm run lint`、`npm run format:check`、`npm run contracts:check` 通过 |
-| 生产构建 | `npm run build` 通过，包含资源校验、TypeScript、Vite 和分包预算 |
-| 架构检查 | 34 项通过；仍有上文记录的 visual-workshop CSS 607 行与 canvas 测试 1418 行两项历史超限，本轮未增长 |
+| 检查             | 本轮结果                                                                                           |
+| ---------------- | -------------------------------------------------------------------------------------------------- |
+| 全量 Web 测试    | 100 个测试文件、552 项通过；包含 3 项新增标签编辑测试                                              |
+| Chromium 回归    | 原有 5 项旅程通过；新增 4 项布局与服务器标签同步旅程通过，布局修复后已定向复验                     |
+| 明暗主题与布局   | 1600×1000、1280×800、390×844；空笔记、示例内容、长正文、菜单、目录、写作助手；无页面横向溢出       |
+| 静态、格式与契约 | `npm run lint`、`npm run format:check`、`npm run contracts:check` 通过                             |
+| 生产构建         | `npm run build` 通过，包含资源校验、TypeScript、Vite 和分包预算                                    |
+| 架构检查         | 34 项通过；仍有上文记录的 visual-workshop CSS 607 行与 canvas 测试 1418 行两项历史超限，本轮未增长 |
 
 浏览器使用独立端口与临时目录下的全新 SQLite/文件存储，测试数据通过正式 API 或页面创建。AI 使用确定性模拟响应，未调用真实模型供应商。检查完成后测试服务自动退出。
 
@@ -171,3 +170,25 @@ v3 备份包括知识库、封面、首页、多级目录和附件，支持单�
 4. `tests/test_project_snapshots.py::test_snapshot_import_rejects_wrong_app_tampering_and_unsafe_members`：已有序列化结果多出 `grid_output: None` 与 `grid_size: None`，与断言不同。
 
 未改动这些模块的生产行为或放宽尺寸基线。工作区原有未提交修改均保留，未执行提交或发布。
+
+## 文档自动保存与编辑历史（2026-09-09）
+
+基于已有文档树改动实施，保留真实编辑器的标题、正文及富文本样式。保存状态、手动保存与历史入口固定在正文顶部；排版工具栏不再覆盖保存栏。历史模式隐藏编辑及 AI 操作，桌面使用紧凑侧栏，窄屏使用带焦点保护的历史抽屉。
+
+- 自动保存、手动保存、快捷键及离开前保存复用串行队列，等待中文组合输入结束；离开失败保留草稿与错误提示，重试成功才导航。
+- 历史包含不可变内容、服务器时间和编辑者；无变化保存及收藏、置顶、移动不增加正文历史。还原采用 revision 并发校验，并生成新记录。
+- 正文通过只读富文本和临时装饰展示文字、格式及结构变化；关闭显示更改即查看干净快照，修改标记不进入保存或导出。
+- 新迁移 `0049_thought_history` 先在临时数据库验证后登记，已有文档建立未知作者的历史起点。历史附件受删除保护，永久删除文档后释放引用。
+- 完整备份升级为 v5，包含全部历史及历史附件；兼容旧格式，导入保留作者展示信息但解除原账号关联。接口、生成类型与使用文档同步更新。
+
+### 本轮验证
+
+- 后端全量：442 项通过、4 项非本功能失败，详见下方；历史、附件及知识库定向回归 32 项通过。覆盖分页、作者归属、跨空间隔离、无变化保存、还原冲突、历史附件往返与删除保护，以及故障注入验证正文和历史的事务原子性。
+- Web 全量：585 项通过、2 项失败。文档素材摘要校验失败；角色舞台预设测试在全量运行中超时，随后该文件单独复验 7 项全部通过。文档保存与历史专项最终复验 13 项通过，包含同次保存中文字与格式同时变化的展示。
+- Chromium：新历史旅程与原有文档旅程共 4 项通过。涵盖长文档滚动后保存按钮可访问、刷新落盘、中文输入、保存失败重试、冲突保护、历史只读、显示更改、还原、AI 选区保护及富文本备份。
+- 页面验收：1600、1280、390 像素宽度的明暗主题均无页面横向溢出，检查修改定位、抽屉打开与 Escape 关闭；截图使用隔离测试文档，保存在测试输出及本任务可视化目录，不作为产品素材发布。
+- `npm run lint`、`npm run contracts:check`、`npm run build` 通过。全仓格式检查仍报告既有文档树 `KnowledgeTree.tsx` 的格式问题，未覆盖该文件的未提交工作。
+
+全量后端剩余失败：Visual Workshop 的 CSS 为 607 行、canvas 测试为 1418 行；文档素材清单与本地资产不一致；Visual Workshop 备份测试断言缺少 `grid_output` 与 `grid_size`。未为通过门禁而放宽尺寸限制或改写无关快照、素材摘要。
+
+所有浏览器测试使用独立端口、临时 SQLite 与临时文件存储，通过正式 API 创建数据；未以用户文档作为测试数据，未调用真实模型供应商。

@@ -9,6 +9,7 @@ from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.concurrency.revisions import RevisionConflictError
+from app.concurrency.task_admission import TaskAdmission
 from app.core.config import Settings, get_settings
 from app.core.time import iso_utc
 from app.files.incoming import IncomingFile
@@ -218,6 +219,7 @@ class ModelTestTranscription:
         *,
         model_id: str,
         parameters: ModelTestTranscriptionParametersIn,
+        admission: TaskAdmission | None = None,
     ) -> ModelTestTranscriptionTaskOut:
         try:
             filename = Path(upload.filename or "").name
@@ -261,6 +263,7 @@ class ModelTestTranscription:
                 source_kind="upload",
                 source_asset_id=None,
                 final_path=final_path,
+                admission=admission,
             )
         except Exception:
             temp_path.unlink(missing_ok=True)
@@ -270,7 +273,7 @@ class ModelTestTranscription:
             await upload.close()
 
     async def create_from_library(
-        self, body: ModelTestTranscriptionCreateIn
+        self, body: ModelTestTranscriptionCreateIn, *, admission: TaskAdmission | None = None
     ) -> ModelTestTranscriptionTaskOut:
         model, provider = await self._model(body.model_id)
         try:
@@ -320,6 +323,7 @@ class ModelTestTranscription:
                 source_kind="library",
                 source_asset_id=source_asset_id,
                 final_path=final_path,
+                admission=admission,
             )
         except Exception:
             temp_path.unlink(missing_ok=True)
@@ -345,6 +349,7 @@ class ModelTestTranscription:
         source_kind: str,
         source_asset_id: str | None,
         final_path: Path,
+        admission: TaskAdmission | None = None,
     ) -> ModelTestTranscriptionTaskOut:
         model_id, model_slug, provider_id, provider_name, provider_kind = snapshots
         row = ModelTestTranscriptionTask(
@@ -364,6 +369,9 @@ class ModelTestTranscription:
         )
         try:
             self.session.add(row)
+            await self.session.flush()
+            if admission:
+                await admission([row.id])
             await self.session.commit()
             await self.session.refresh(row)
         except Exception:
