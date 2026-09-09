@@ -391,6 +391,12 @@ export function VideoEditorPreview({
                       crop={geometry.proxyCrop}
                     />
                   </div>
+                ) : clip.kind === "video" && asset && !asset.proxyUrl ? (
+                  <span className="ve-media-pending">
+                    {asset.processingStatus === "failed"
+                      ? "视频预览处理失败，请检查素材"
+                      : "视频预览准备中，可继续剪辑"}
+                  </span>
                 ) : clip.kind === "image" && asset ? (
                   <img src={`/v1/files/${asset.id}/content`} alt="" />
                 ) : clip.kind === "text" ? (

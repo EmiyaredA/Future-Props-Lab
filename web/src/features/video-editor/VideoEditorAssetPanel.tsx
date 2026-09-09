@@ -1,3 +1,8 @@
+import {
+  canEditAsset,
+  assetPreparationLabel,
+  assetUnavailableReason,
+} from "./assetReadiness";
 import { type DragEvent, type FormEvent, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiErrorMessage } from "@platform/api/errors";
@@ -88,6 +93,11 @@ export function VideoEditorAssetPanel({
   const [folderError, setFolderError] = useState("");
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set());
   const [assetMenuId, setAssetMenuId] = useState<string>();
+  const [uploadProgress, setUploadProgress] = useState({
+    completed: 0,
+    total: 0,
+    filename: "",
+  });
   const arranged = completeAssetOrganization(organization, assets);
   const assetsById = new Map(assets.map((asset) => [asset.id, asset]));
   const sources = useQuery({
@@ -100,8 +110,34 @@ export function VideoEditorAssetPanel({
       queryKey: videoEditorQueryKeys.assets(projectId),
     });
   const upload = useMutation({
-    mutationFn: (file: File) => uploadVideoEditorAsset(projectId, file),
-    onSuccess: refresh,
+    mutationFn: async (files: File[]) => {
+      const failures: { filename: string; message: string }[] = [];
+      let succeeded = 0;
+      for (const [index, file] of files.entries()) {
+        setUploadProgress({
+          completed: index,
+          total: files.length,
+          filename: file.name,
+        });
+        try {
+          await uploadVideoEditorAsset(projectId, file);
+          succeeded += 1;
+          refresh();
+        } catch (error) {
+          failures.push({
+            filename: file.name,
+            message: apiErrorMessage(error, "上传失败，请重试。"),
+          });
+        }
+        setUploadProgress({
+          completed: index + 1,
+          total: files.length,
+          filename: file.name,
+        });
+      }
+      return { succeeded, failures };
+    },
+    retry: false,
   });
   const importAssets = useMutation({
     mutationFn: () => importVideoEditorAssets(projectId, chosen),
@@ -201,7 +237,7 @@ export function VideoEditorAssetPanel({
     const asset = assetsById.get(assetId);
     if (!asset) return null;
     const Icon = iconFor(asset.mediaKind);
-    const ready = asset.processingStatus === "ready";
+    const ready = canEditAsset(asset);
     const processing = ["queued", "processing"].includes(
       asset.processingStatus,
     );
@@ -214,14 +250,13 @@ export function VideoEditorAssetPanel({
       <div
         key={asset.id}
         className="ve-asset-wrap"
+        title={ready ? undefined : assetUnavailableReason(asset)}
         draggable={!disabled}
         onDragStart={(event) => {
           event.dataTransfer.effectAllowed = "copyMove";
           event.dataTransfer.setData(ORGANIZE_ASSET_TYPE, asset.id);
-          if (ready) {
-            event.dataTransfer.setData(TIMELINE_ASSET_TYPE, asset.id);
-            onTimelineAssetDrag?.(asset);
-          }
+          event.dataTransfer.setData(TIMELINE_ASSET_TYPE, asset.id);
+          onTimelineAssetDrag?.(asset);
         }}
         onDragEnd={() => onTimelineAssetDrag?.()}
         onDragOver={allowAssetDrop}
@@ -231,7 +266,7 @@ export function VideoEditorAssetPanel({
           <button
             type="button"
             className="ve-asset-main"
-            disabled={!ready}
+            disabled={!ready || disabled}
             aria-label={`双击将“${asset.displayName}”添加到时间轴`}
             onDoubleClick={() => onAdd(asset)}
           >
@@ -244,15 +279,15 @@ export function VideoEditorAssetPanel({
             )}
             <span className="ve-asset-copy">
               <strong>{asset.displayName}</strong>
-              <small>{ready ? asset.mediaKind : asset.processingStatus}</small>
+              <small>{assetPreparationLabel(asset)}</small>
             </span>
           </button>
           <div className="ve-asset-controls">
             <button
               type="button"
-              disabled={!ready}
+              disabled={!ready || disabled}
               aria-label={`将“${asset.displayName}”添加到时间轴`}
-              title="添加到时间轴"
+              title={ready ? "添加到时间轴" : assetUnavailableReason(asset)}
               onClick={() => onAdd(asset)}
             >
               <FilePlus2 aria-hidden />
@@ -403,8 +438,15 @@ export function VideoEditorAssetPanel({
         </div>
       </header>
       <div className="ve-asset-actions">
-        <button onClick={() => input.current?.click()}>
-          <Upload aria-hidden /> 上传
+        <button
+          disabled={disabled || upload.isPending}
+          onClick={() => input.current?.click()}
+          title="选择一个或多个素材上传"
+        >
+          <Upload aria-hidden />{" "}
+          {upload.isPending
+            ? `上传中 ${uploadProgress.completed}/${uploadProgress.total}`
+            : "上传"}
         </button>
         <button onClick={() => setShowImport(true)}>
           <Library aria-hidden /> 导入快照
@@ -413,14 +455,42 @@ export function VideoEditorAssetPanel({
           ref={input}
           hidden
           type="file"
+          multiple
+          aria-label="上传素材（可多选）"
+          disabled={disabled || upload.isPending}
           accept="video/*,audio/*,image/*,.ttf,.otf,.woff,.woff2"
           onChange={(event) => {
-            const file = event.target.files?.[0];
-            if (file) upload.mutate(file);
+            const files = Array.from(event.target.files ?? []);
+            if (files.length && !disabled && !upload.isPending) {
+              setUploadProgress({
+                completed: 0,
+                total: files.length,
+                filename: files[0]!.name,
+              });
+              upload.mutate(files);
+            }
             event.target.value = "";
           }}
         />
       </div>
+      {upload.isPending || upload.data ? (
+        <div className="ve-upload-feedback">
+          <p role="status">
+            {upload.isPending
+              ? `正在上传 ${uploadProgress.completed}/${uploadProgress.total}：${uploadProgress.filename}`
+              : `上传完成：成功 ${upload.data!.succeeded} 个${upload.data!.failures.length ? `，失败 ${upload.data!.failures.length} 个` : ""}`}
+          </p>
+          {!upload.isPending && upload.data?.failures.length ? (
+            <ul role="alert">
+              {upload.data.failures.map((failure, index) => (
+                <li key={index}>
+                  {failure.filename}：{failure.message}
+                </li>
+              ))}
+            </ul>
+          ) : null}
+        </div>
+      ) : null}
       <div className="ve-generated-assets">
         <button onClick={() => onAddGenerated("text")}>
           <Type aria-hidden /> 文字卡

@@ -440,3 +440,14 @@
   background: #10141d;
   color: #aab1c3;
 }
+
+.ve-stage-layer .ve-media-pending {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  color: #dfe8ef;
+  background: #131821;
+  font-size: 14px;
+}

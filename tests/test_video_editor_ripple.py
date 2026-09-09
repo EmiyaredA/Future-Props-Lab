@@ -1,12 +1,20 @@
+import asyncio
+import io
+import threading
+import wave
 from copy import deepcopy
 from uuid import uuid4
 
 import httpx
 import pytest
+from sqlalchemy import select
 
+from app.core.db import SessionLocal
 from app.main import app
+from app.models import VideoEditorTask
 from app.schemas.video_editor import VideoEditorClip, VideoEditorTimelineBatchIn
 from app.video_editor.errors import VideoEditorValidationError
+from app.video_editor.runner import VideoEditorRunner
 from app.video_editor.timeline import apply_operations
 
 
@@ -28,8 +36,15 @@ def clip(clip_id, track="v", start=0, duration=4_000_003, group=None):
 
 def document(count=2):
     picture = clip("selected", group="selected-av")
-    picture["keyframes"] = [{"id": "key", "timeUs": 2_000_001, "property": "opacity",
-            "interpolation": "linear", "value": 0.5}]
+    picture["keyframes"] = [
+        {
+            "id": "key",
+            "timeUs": 2_000_001,
+            "property": "opacity",
+            "interpolation": "linear",
+            "value": 0.5,
+        }
+    ]
     picture["transitionOut"] = {"kind": "crossfade", "durationUs": 1_000_001}
     video = [picture]
     audio = [clip("selected-audio", "a", group="selected-av")]
@@ -158,9 +173,6 @@ async def test_ripple_api_conflicts_collisions_and_restore_validation():
             )
 
         # A deterministic WAV uploaded through the application API.
-        import io
-        import wave
-
         buffer = io.BytesIO()
         with wave.open(buffer, "wb") as output:
             output.setparams((1, 2, 8000, 0, "NONE", "not compressed"))
@@ -219,3 +231,75 @@ async def test_ripple_api_conflicts_collisions_and_restore_validation():
         failed = await submit([{"type": "restoreClipStates", "clips": [invalid]}])
         assert failed.status_code == 422
         assert (await client.get(base)).json() == state
+
+
+@pytest.mark.asyncio
+async def test_media_duration_is_published_before_preview_encoding(monkeypatch):
+    from app.video_editor import runner as runner_module
+
+    started, release = threading.Event(), threading.Event()
+    prepare = runner_module._prepare_media
+
+    def paused_prepare(source, asset, derived, probe=None):
+        assert probe["durationUs"] == 1_000_000
+        started.set()
+        assert release.wait(10), "test did not release preview encoding"
+        return prepare(source, asset, derived, probe)
+
+    monkeypatch.setattr(runner_module, "_prepare_media", paused_prepare)
+    buffer = io.BytesIO()
+    with wave.open(buffer, "wb") as output:
+        output.setparams((1, 2, 8000, 0, "NONE", "not compressed"))
+        output.writeframes(b"\0\0" * 8000)
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        project = (
+            await client.post("/v1/video-editor/projects", json={"title": "预览准备"})
+        ).json()
+        base = f"/v1/video-editor/projects/{project['id']}"
+        asset = (
+            await client.post(
+                f"{base}/assets", files={"upload": ("short.wav", buffer.getvalue(), "audio/wav")}
+            )
+        ).json()
+        # Read the task identity in the isolated test database; all test data
+        # and timeline edits are created through the formal API.
+        async with SessionLocal() as session:
+            task_id = await session.scalar(
+                select(VideoEditorTask.id).where(VideoEditorTask.project_id == project["id"])
+            )
+        running = asyncio.create_task(VideoEditorRunner()._process(task_id))
+        try:
+            assert await asyncio.to_thread(started.wait, 5)
+            current = (await client.get(f"{base}/assets")).json()["items"][0]
+            assert current["processingStatus"] == "processing"
+            assert current["probe"]["durationUs"] == 1_000_000
+            assert current["proxyUrl"] is None
+            item = clip("early", "a", duration=1_000_000)
+            item.update(trackId="audio-1", assetId=asset["id"])
+            response = await client.post(
+                f"{base}/timeline/operations",
+                json={
+                    "expectedRevision": 0,
+                    "requestId": str(uuid4()),
+                    "operations": [{"type": "addClip", "clip": item}],
+                },
+            )
+            assert response.status_code == 200, response.text
+            invalid = {**item, "id": "too-long", "durationUs": 2_000_000}
+            response = await client.post(
+                f"{base}/timeline/operations",
+                json={
+                    "expectedRevision": 1,
+                    "requestId": str(uuid4()),
+                    "operations": [{"type": "addClip", "clip": invalid}],
+                },
+            )
+            assert response.status_code == 422
+        finally:
+            release.set()
+            await running
+        current = (await client.get(f"{base}/assets")).json()["items"][0]
+        assert current["processingStatus"] == "ready"
+        assert current["proxyUrl"]

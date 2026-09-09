@@ -407,6 +407,7 @@ ID、消息数量、画布摘要和素材 ID；不保存图片 Base64、临时�
 - `POST /v1/video-editor/projects/{project_id}/assets/{asset_id}/proxy/retry`：重试 FFprobe、540p 代理、缩略图和波形生成。
 - `GET /v1/video-editor/projects/{project_id}/timeline`：读取微秒级 16:9 多轨时间轴。
 - `POST /v1/video-editor/projects/{project_id}/timeline/operations`：以 `expectedRevision`、`requestId` 原子提交视觉、音频和混合轨道、Clip、链接、`separateClip` 分离、转场、关键帧和 `setAssetOrganization` 素材文件夹编排操作；批次只增加一次 revision，同一 requestId 幂等。`assetOrganization` 保存一级文件夹、未分类素材及各自顺序，并随工程快照复制和重映射素材 ID。
+- 视频/音频素材后台处理会在预览转码前单独保存探测结果。`processingStatus=processing` 且 `probe.durationUs` 为有效正数时，Web 已允许拖入和剪辑；`proxyUrl` 仍为空时显示“预览准备中”，准备完成后自动使用预览文件。未读取到时长和失败素材不会被加入时间轴，拖放会提示原因。
 - 视频/音频 Clip 的 `playbackRate` 范围为 0.25～4，省略为 1。`setClipSpeed` 操作接收 `clipId`、`playbackRate` 和可选 `ripple`（默认 `false`，兼容旧客户端），同步修改同一链接组的媒体片段：保持起点、源起点及源范围，按旧速度/新速度调整时长（向下取整到微秒）、关键帧和转场。`ripple=true` 时，按变速前所选片段的结束时间，将同轨起点不早于该结束时间的后续片段及其链接组成员整体移动新旧时长差，每个片段只移动一次，保留间隔；变速媒体本身保持起点，其他无关联轨道不受影响。锁定轨道、负起点或非法重叠使整个批次失败。Web 默认开启“后续片段跟随”，允许关闭并按项目记住选择。`restoreClipStates` 接收非空且 ID 唯一的 `clips` 完整状态列表，在单个操作内恢复现有片段，用于一次撤销整个变速与跟随移动；不允许创建片段或改变所属轨道，仍执行 Workspace 权限、revision CAS、轨道锁定、素材归属和最终时间轴校验。撤销与重做不会因后续片段超过 200 个而拆成多个批次。源时间为 `sourceInUs + floor(localUs * playbackRate)`，分割、预览、精确帧、完整导出与分段导入遵循相同映射，音频变速保持音调。r0043 在现有时间轴 JSON 补齐默认速度；旧任务快照/导入文档仍按 1×读取，无需重写不可变快照。
 - `POST/GET /v1/video-editor/projects/{project_id}/segment-exports`：按不可变时间轴快照幂等创建或列出分段导入任务；每段单独保存名称、源范围、分辨率、帧率、质量和音频策略。
 - `GET /v1/video-editor/projects/{project_id}/segment-exports/{task_id}` 与 `POST .../{task_id}/cancel`：读取逐段进度、最终素材/节点映射或取消任务。

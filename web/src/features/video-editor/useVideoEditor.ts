@@ -296,7 +296,9 @@ export function useVideoEditor(projectId: string) {
       if (
         event.defaultPrevented ||
         (event.target instanceof HTMLElement &&
-          event.target.closest('[role="separator"], [aria-modal="true"]')) ||
+          event.target.closest(
+            '[role="separator"], [role="switch"], [role="checkbox"], [aria-modal="true"]',
+          )) ||
         event.target instanceof HTMLInputElement ||
         event.target instanceof HTMLTextAreaElement
       )

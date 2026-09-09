@@ -235,3 +235,20 @@
   color: #ff9ea6;
   font-size: 10px;
 }
+
+.ve-upload-feedback {
+  padding: 0 12px 8px;
+  color: #b8bfd1;
+  font-size: 11px;
+  overflow-wrap: anywhere;
+}
+.ve-upload-feedback p {
+  margin: 0;
+}
+.ve-upload-feedback ul {
+  max-height: 120px;
+  overflow-y: auto;
+  margin: 6px 0 0;
+  padding-left: 16px;
+  color: #ff9ea6;
+}

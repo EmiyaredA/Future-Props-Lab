@@ -1,5 +1,6 @@
 import { useEffect, useState, type DragEvent } from "react";
 import { operationsForAsset } from "./editorModel";
+import { canEditAsset, assetUnavailableReason } from "./assetReadiness";
 import { clipPlacementError, snapClipPosition } from "./timelineSnap";
 import type { VideoEditorAsset, VideoEditorTrack } from "./types";
 
@@ -65,31 +66,33 @@ export function useTimelineAssetDrop({
       position.startUs,
       trackId,
     );
-    const error =
-      asset.processingStatus !== "ready"
-        ? "素材尚未就绪，请稍后重试"
-        : !operations.length
-          ? "该素材不适用于目标轨道"
-          : operations
-              .map((operation) =>
-                operation.type === "addClip"
-                  ? clipPlacementError(
-                      operation.clip,
-                      position.startUs,
-                      operation.clip.trackId,
-                      tracks,
-                      new Set(),
-                    )
-                  : undefined,
-              )
-              .find(Boolean);
+    const error = !canEditAsset(asset)
+      ? assetUnavailableReason(asset)
+      : !operations.length
+        ? "该素材不适用于目标轨道"
+        : operations
+            .map((operation) =>
+              operation.type === "addClip"
+                ? clipPlacementError(
+                    operation.clip,
+                    position.startUs,
+                    operation.clip.trackId,
+                    tracks,
+                    new Set(),
+                  )
+                : undefined,
+            )
+            .find(Boolean);
     return { ...position, error };
   };
   const dragOver = (event: DragEvent, trackId: string) => {
     event.preventDefault();
     if (!draggingAsset) return;
     const position = placement(draggingAsset, trackId, event.clientX);
-    event.dataTransfer.dropEffect = position.error ? "none" : "copy";
+    // Keep the drop event available for an explanatory notice even while
+    // media metadata is still loading; invalid placements never commit.
+    event.dataTransfer.dropEffect =
+      position.error && canEditAsset(draggingAsset) ? "none" : "copy";
     setGuideUs(position.error ? undefined : position.guideUs);
   };
   const drop = (event: DragEvent, trackId: string) => {

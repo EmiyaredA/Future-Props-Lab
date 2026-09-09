@@ -9,6 +9,7 @@ import type {
 test("keeps speed changes and asset drops aligned with exact undo", async ({
   page,
 }, testInfo) => {
+  test.setTimeout(60_000);
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto("/apps/video-editor");
   const created = page.waitForResponse(
@@ -48,18 +49,20 @@ test("keeps speed changes and asset drops aligned with exact undo", async ({
       "-y",
       fixturePath,
     ]);
-    const uploaded = await page.request.post(`${base}/assets`, {
-      headers,
-      multipart: {
-        upload: {
-          name: "对齐测试.mp4",
-          mimeType: "video/mp4",
-          buffer: readFileSync(fixturePath),
-        },
-      },
-    });
-    expect(uploaded.ok()).toBeTruthy();
-    const asset = await uploaded.json();
+    await page.getByLabel("上传素材（可多选）").setInputFiles(
+      ["对齐测试.mp4", "第二段视频.mp4"].map((name) => ({
+        name,
+        mimeType: "video/mp4",
+        buffer: readFileSync(fixturePath),
+      })),
+    );
+    await expect(page.getByRole("status")).toHaveText("上传完成：成功 2 个");
+    const uploaded = (await (await page.request.get(`${base}/assets`)).json())
+      .items;
+    expect(uploaded).toHaveLength(2);
+    const asset = uploaded.find(
+      (item: { displayName: string }) => item.displayName === "对齐测试",
+    );
     await expect
       .poll(async () => {
         const response = await page.request.get(`${base}/assets`);
@@ -81,6 +84,13 @@ test("keeps speed changes and asset drops aligned with exact undo", async ({
       timelineStartUs: 0,
       durationUs: 4_000_003,
       playbackRate: 1,
+      fitMode: "cover",
+      flipX: false,
+      fontSize: 72,
+      sourceLoop: false,
+      sourceInUs: 0,
+      textColor: "#ffffff",
+      volume: 1,
     };
     const next: VideoEditorClip = {
       ...selected,
@@ -102,7 +112,20 @@ test("keeps speed changes and asset drops aligned with exact undo", async ({
     });
     expect(seeded.ok()).toBeTruthy();
     const original = getClips(await getTimeline());
+    // Simulate a long preview encode while preserving the real, probed
+    // duration. The backend's early metadata publication is covered by API tests.
+    await page.route(`**${base}/assets`, async (route) => {
+      const response = await route.fetch();
+      const body = await response.json();
+      body.items = body.items.map((item: { id: string }) =>
+        item.id === asset.id
+          ? { ...item, processingStatus: "processing", proxyUrl: null }
+          : item,
+      );
+      await route.fulfill({ response, json: body });
+    });
     await page.reload();
+    await expect(page.getByText("可剪辑 · 预览准备中")).toBeVisible();
     await page.locator('[data-clip-id="speed-first"]').click();
     const follow = page.getByRole("switch", { name: "后续片段跟随" });
     await expect(follow).toBeChecked();
@@ -127,6 +150,15 @@ test("keeps speed changes and asset drops aligned with exact undo", async ({
         .locator(".ve-speed-section")
         .screenshot({ path: testInfo.outputPath(`speed-${theme}.png`) });
     }
+    // Disabling follow must fail atomically when slowing creates an overlap.
+    await follow.click();
+    await page.getByLabel("播放速度倍率").fill("0.5");
+    await page.getByRole("button", { name: "应用", exact: true }).click();
+    await expect(
+      page.locator(".ve-speed-section").getByRole("alert"),
+    ).toContainText("重叠");
+    expect(getClips(await getTimeline())).toEqual(original);
+    await follow.click();
     await page.getByLabel("播放速度倍率").fill("2");
     await page.getByRole("button", { name: "应用", exact: true }).click();
     await expect
@@ -153,7 +185,7 @@ test("keeps speed changes and asset drops aligned with exact undo", async ({
     const row = page.locator(`.ve-track-row[data-track-id="${mixed.id}"]`);
     const source = page
       .locator(".ve-asset-wrap")
-      .filter({ hasText: "对齐测试.mp4" });
+      .filter({ hasText: "对齐测试" });
     const rowBounds = (await row.boundingBox())!;
     const nextBounds = (await page
       .locator('[data-clip-id="speed-next"]')
@@ -183,7 +215,7 @@ test("keeps speed changes and asset drops aligned with exact undo", async ({
         .timelineStartUs,
     ).toBe(seam);
 
-    // Existing clip right edge can also meet a non-frame-aligned seam.
+    // An existing clip also returns to the exact seam and supports cancellation.
     const addedClip = page.locator(`[data-clip-id="${added.id}"]`);
     const addedBounds = (await addedClip.boundingBox())!;
     await page.mouse.move(addedBounds.x + 30, addedBounds.y + 20);

@@ -6,6 +6,7 @@ import { VideoEditorAssetPanel } from "@features/video-editor/VideoEditorAssetPa
 import {
   deleteVideoEditorAsset,
   listVideoEditorImportSources,
+  uploadVideoEditorAsset,
 } from "@features/video-editor/api";
 import type { VideoEditorAsset } from "@features/video-editor/types";
 
@@ -76,6 +77,140 @@ beforeEach(() => {
 });
 
 describe("video editor asset panel", () => {
+  it("uploads multiple selected files in order and allows choosing the same file again", async () => {
+    const user = userEvent.setup();
+    vi.mocked(uploadVideoEditorAsset).mockResolvedValue(asset);
+    renderPanel();
+    const input = screen.getByLabelText(
+      "上传素材（可多选）",
+    ) as HTMLInputElement;
+    expect(input).toHaveAttribute("multiple");
+    const files = [
+      new File(["one"], "one.mp4", { type: "video/mp4" }),
+      new File(["two"], "two.mp4", { type: "video/mp4" }),
+    ];
+    await user.upload(input, files);
+    await waitFor(() =>
+      expect(screen.getByRole("status")).toHaveTextContent(
+        "上传完成：成功 2 个",
+      ),
+    );
+    expect(uploadVideoEditorAsset).toHaveBeenNthCalledWith(
+      1,
+      "project-1",
+      files[0],
+    );
+    expect(uploadVideoEditorAsset).toHaveBeenNthCalledWith(
+      2,
+      "project-1",
+      files[1],
+    );
+    expect(input.value).toBe("");
+    await user.upload(input, files[0]!);
+    await waitFor(() =>
+      expect(screen.getByRole("status")).toHaveTextContent(
+        "上传完成：成功 1 个",
+      ),
+    );
+    expect(uploadVideoEditorAsset).toHaveBeenCalledTimes(3);
+  });
+
+  it("continues after an individual failure and reports the failed filename", async () => {
+    const user = userEvent.setup();
+    vi.mocked(uploadVideoEditorAsset)
+      .mockResolvedValueOnce(asset)
+      .mockRejectedValueOnce(new Error("文件过大"))
+      .mockResolvedValueOnce(asset);
+    renderPanel();
+    const files = ["one.mp4", "failed.mp4", "last.mp4"].map(
+      (name) => new File([name], name, { type: "video/mp4" }),
+    );
+    await user.upload(screen.getByLabelText("上传素材（可多选）"), files);
+    await waitFor(() =>
+      expect(screen.getByRole("status")).toHaveTextContent(
+        "上传完成：成功 2 个，失败 1 个",
+      ),
+    );
+    expect(screen.getByRole("alert")).toHaveTextContent("failed.mp4：文件过大");
+    expect(uploadVideoEditorAsset).toHaveBeenNthCalledWith(
+      3,
+      "project-1",
+      files[2],
+    );
+  });
+
+  it("displays batch progress and prevents another selection while uploading", async () => {
+    const user = userEvent.setup();
+    let complete!: (value: unknown) => void;
+    vi.mocked(uploadVideoEditorAsset)
+      .mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            complete = resolve;
+          }),
+      )
+      .mockResolvedValueOnce(asset);
+    renderPanel();
+    const files = ["first.mp4", "second.mp4"].map(
+      (name) => new File([name], name, { type: "video/mp4" }),
+    );
+    await user.upload(screen.getByLabelText("上传素材（可多选）"), files);
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "正在上传 0/2：first.mp4",
+    );
+    expect(screen.getByRole("button", { name: "上传中 0/2" })).toBeDisabled();
+    expect(uploadVideoEditorAsset).toHaveBeenCalledTimes(1);
+    complete(asset);
+    await waitFor(() =>
+      expect(screen.getByRole("status")).toHaveTextContent(
+        "上传完成：成功 2 个",
+      ),
+    );
+    expect(screen.getByRole("button", { name: "上传" })).toBeEnabled();
+  });
+
+  it("does not upload when file selection is cancelled", () => {
+    renderPanel();
+    fireEvent.change(screen.getByLabelText("上传素材（可多选）"), {
+      target: { files: [] },
+    });
+    expect(uploadVideoEditorAsset).not.toHaveBeenCalled();
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+  });
+
+  it("allows editing after duration detection while preview media is still preparing", () => {
+    renderPanel({ assets: [{ ...asset, processingStatus: "processing" }] });
+    expect(screen.getByText("可剪辑 · 预览准备中")).toBeVisible();
+    expect(
+      screen.getByRole("button", {
+        name: `将“${asset.displayName}”添加到时间轴`,
+      }),
+    ).toBeEnabled();
+  });
+
+  it("explains missing duration and carries the asset identity for drop feedback", () => {
+    renderPanel({
+      assets: [{ ...asset, processingStatus: "processing", probe: {} }],
+    });
+    expect(screen.getByText("正在读取媒体信息")).toBeVisible();
+    const add = screen.getByRole("button", {
+      name: `将“${asset.displayName}”添加到时间轴`,
+    });
+    expect(add).toBeDisabled();
+    expect(add).toHaveAttribute(
+      "title",
+      expect.stringContaining("正在读取时长"),
+    );
+    const values = new Map<string, string>();
+    const row = add.closest(".ve-asset-wrap")!;
+    fireEvent.dragStart(row, {
+      dataTransfer: {
+        setData: (key: string, value: string) => values.set(key, value),
+      },
+    });
+    expect(values.get("application/x-video-editor-asset")).toBe(asset.id);
+  });
+
   it("confirms and deletes an uploaded asset", async () => {
     const user = userEvent.setup();
     vi.mocked(deleteVideoEditorAsset).mockResolvedValue({ deleted: true });

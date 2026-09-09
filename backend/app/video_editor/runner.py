@@ -51,7 +51,7 @@ def _fraction(value: object) -> float:
 
 
 def _prepare_media(
-    source: Path, asset: VisualAsset, derived: Path
+    source: Path, asset: VisualAsset, derived: Path, probe: dict | None = None
 ) -> tuple[dict, str | None, str | None, str | None, str]:
     fingerprint = sha256_file(source)
     proxy: str | None = None
@@ -59,7 +59,7 @@ def _prepare_media(
     waveform: str | None = None
     if asset.media_kind == "font":
         return {"mediaKind": "font"}, proxy, thumbnail, waveform, fingerprint
-    probe = probe_media(source)
+    probe = probe if probe is not None else probe_media(source)
     if asset.media_kind == "video":
         proxy = f"{asset.id}-proxy.mp4"
         thumbnail = f"{asset.id}-thumbnail.png"
@@ -302,6 +302,17 @@ class VideoEditorRunner(PollingTaskRunner):
             metadata.revision += 1
             await session.commit()
             source = self.storage.path_for(asset)
+            # Publish source metadata before the potentially long proxy encode.
+            # Timeline edits can then use the real duration while preview media
+            # continues preparing, without holding a write transaction open.
+            probe = (
+                {"mediaKind": "font"}
+                if asset.media_kind == "font"
+                else await asyncio.to_thread(probe_media, source)
+            )
+            metadata.probe = probe
+            metadata.revision += 1
+            await session.commit()
             derived = (
                 self.storage.project_root(
                     "video-editor", task.project_id, workspace_id=task.workspace_id
@@ -310,7 +321,7 @@ class VideoEditorRunner(PollingTaskRunner):
             )
             derived.mkdir(parents=True, exist_ok=True)
             probe, proxy, thumbnail, waveform, fingerprint = await asyncio.to_thread(
-                _prepare_media, source, asset, derived
+                _prepare_media, source, asset, derived, probe
             )
             metadata = await session.get(VideoEditorAssetMetadata, asset_id)
             assert metadata is not None

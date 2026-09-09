@@ -7,7 +7,6 @@ import { snapClipPosition } from "@features/video-editor/timelineSnap";
 import type {
   VideoEditorAsset,
   VideoEditorClip,
-  VideoEditorOperation,
   VideoEditorTrack,
 } from "@features/video-editor/types";
 
@@ -31,12 +30,21 @@ const clip: VideoEditorClip = {
   durationUs: 1_234_567,
   sourceInUs: 0,
   playbackRate: 1,
+  fitMode: "cover",
+  flipX: false,
+  fontSize: 72,
+  sourceLoop: false,
+  textColor: "#ffffff",
+  volume: 1,
 };
 const track: VideoEditorTrack = {
   id: "mixed",
   name: "混合",
   kind: "mixed",
   order: 0,
+  locked: false,
+  hidden: false,
+  muted: false,
   clips: [clip],
 };
 const asset: VideoEditorAsset = {
@@ -188,7 +196,12 @@ describe("exact seam feedback", () => {
         updatedAt: "now",
         document: {
           schemaVersion: "1.0" as const,
-          settings: { fps: fps as 30 | 60 },
+          settings: {
+            fps: fps as 30 | 60,
+            width: 1920 as const,
+            height: 1080 as const,
+            backgroundColor: "#000000",
+          },
           tracks: [{ ...track, locked, kind }],
         },
       },
@@ -201,7 +214,7 @@ describe("exact seam feedback", () => {
       onScrollLeftChange: vi.fn(),
       selectedClipIds: [],
       selectClip: vi.fn(),
-      commit: vi.fn(async (_redo: VideoEditorOperation[]) => undefined),
+      commit: vi.fn(async () => undefined),
       onDropAsset: drop,
       onNotice: notice,
       snapEnabled: enabled,
@@ -259,6 +272,82 @@ describe("exact seam feedback", () => {
       expect(view.notice).toHaveBeenCalledOnce();
     },
   );
+
+  it("aligns a new asset's right edge and places the guide at that seam", () => {
+    const view = setup();
+    const future = { ...clip, timelineStartUs: 4_000_003 };
+    view.rerender(
+      <VideoEditorTimeline
+        {...view.props}
+        timeline={{
+          ...view.props.timeline,
+          document: {
+            ...view.props.timeline.document,
+            tracks: [{ ...track, clips: [future] }],
+          },
+        }}
+      />,
+    );
+    const clientX = -200 + (3_500_002 / 1_000_000) * 80 + 2;
+    dragEvent("dragover", view.row, { clientX, dataTransfer: view.transfer });
+    expect(view.container.querySelector(".ve-snap-guide")).toHaveStyle({
+      left: `${(4_000_003 / 1_000_000) * 80}px`,
+    });
+    dragEvent("drop", view.row, { clientX, dataTransfer: view.transfer });
+    expect(view.drop).toHaveBeenCalledWith(asset, track.id, 3_500_002);
+  });
+
+  it("does not display seam feedback when snapping is disabled", () => {
+    const view = setup({ enabled: false });
+    dragEvent("dragover", view.row, {
+      clientX: view.clientX,
+      dataTransfer: view.transfer,
+    });
+    expect(view.container.querySelector(".ve-snap-guide")).toBeNull();
+    dragEvent("drop", view.row, {
+      clientX: view.clientX,
+      dataTransfer: view.transfer,
+    });
+    expect(view.drop).toHaveBeenCalledWith(asset, track.id, 1_266_654);
+  });
+
+  it("accepts preparing media with a duration and explains drops before duration is known", () => {
+    const view = setup();
+    const preparing = { ...asset, processingStatus: "processing" };
+    view.rerender(
+      <VideoEditorTimeline
+        {...view.props}
+        assets={[preparing]}
+        draggingAsset={preparing}
+      />,
+    );
+    dragEvent("drop", view.row, {
+      clientX: view.clientX,
+      dataTransfer: view.transfer,
+    });
+    expect(view.drop).toHaveBeenCalledWith(
+      preparing,
+      track.id,
+      clip.durationUs,
+    );
+    view.drop.mockClear();
+    const detecting = { ...preparing, probe: {} };
+    view.rerender(
+      <VideoEditorTimeline
+        {...view.props}
+        assets={[detecting]}
+        draggingAsset={detecting}
+      />,
+    );
+    dragEvent("drop", view.row, {
+      clientX: view.clientX,
+      dataTransfer: view.transfer,
+    });
+    expect(view.drop).not.toHaveBeenCalled();
+    expect(view.notice).toHaveBeenCalledWith(
+      expect.stringContaining("正在读取时长"),
+    );
+  });
 
   it("clears guides on leave/cancel and rejects overlapping drops", () => {
     const view = setup();
