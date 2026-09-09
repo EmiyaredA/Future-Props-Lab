@@ -79,6 +79,8 @@ async def invite_page(session, *, q="", status="", page=1, page_size=25):
 async def create_invite(session, principal, body, client_ip):
     principal = await begin_governance(session, principal)
     require_platform_admin(principal)
+    if not body.name.strip():
+        raise AccountError("invalid_invite_name")
     secret = "fpri_" + secrets.token_urlsafe(24)
     row = Invite(
         name=body.name.strip(),

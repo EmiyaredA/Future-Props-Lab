@@ -15,6 +15,7 @@ from app.integrations.common import (
     require_integration_owner,
 )
 from app.integrations.mcp import McpCatalog
+from app.integrations.projections import safe_validation_catalog
 from app.integrations.skills import SkillCatalog
 from app.integrations.tool_apis import ToolApiCatalog
 from app.schemas.integrations import (
@@ -63,7 +64,7 @@ def _raise_integration(exc: Exception) -> None:
 
 @router.get("/tool-apis", response_model=ToolApiCatalogOut)
 async def tool_apis(session: SessionDep) -> ToolApiCatalogOut:
-    return await ToolApiCatalog(session).catalog()
+    return safe_validation_catalog(await ToolApiCatalog(session).catalog())
 
 
 @router.post("/tool-apis", response_model=ToolApiOut, status_code=201)
@@ -142,7 +143,7 @@ async def validate_tool_api(
 
 @router.get("/mcp", response_model=McpCatalogOut)
 async def mcp_servers(session: SessionDep) -> McpCatalogOut:
-    return await McpCatalog(session).catalog()
+    return safe_validation_catalog(await McpCatalog(session).catalog())
 
 
 @router.post("/mcp", response_model=McpOut, status_code=201)

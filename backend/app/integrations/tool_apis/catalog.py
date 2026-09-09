@@ -57,7 +57,9 @@ def _out(row: ToolApiIntegration) -> ToolApiOut:
         enabled=row.enabled,
         sensitive_result=row.sensitive_result,
         status=row.status,
-        status_message=row.status_message,
+        status_message="敏感服务详情已隐藏"
+        if row.sensitive_result and row.status_message
+        else row.status_message,
         last_checked_at=iso_utc(row.last_checked_at) if row.last_checked_at else None,
         revision=row.revision,
         created_at=iso_utc(row.created_at),

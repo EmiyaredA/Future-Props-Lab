@@ -236,3 +236,36 @@ async def test_sensitive_diagnostics_and_official_mark_require_current_policy():
         assert (await member.get(f"/v1/visual-workshop/projects/{record['id']}")).json()[
             "is_official"
         ]
+
+
+@pytest.mark.asyncio
+async def test_demo_stop_drains_accepted_call_before_reinitialization(monkeypatch):
+    from app.demo_runtime import runtime
+
+    enabled = True
+
+    async def configuration(_service_id):
+        return {**runtime.DEFAULT_CONFIG, "enabled": enabled}
+
+    monkeypatch.setattr(runtime, "configuration", configuration)
+    monkeypatch.setattr(runtime, "_condition", asyncio.Condition())
+    entered, finish = asyncio.Event(), asyncio.Event()
+
+    async def accepted_call():
+        async with runtime.invocation("mock_model"):
+            entered.set()
+            await finish.wait()
+
+    accepted = asyncio.create_task(accepted_call())
+    await entered.wait()
+    enabled = False
+    with pytest.raises(RuntimeError):
+        async with runtime.invocation("mock_model"):
+            pass
+    restarting = asyncio.create_task(runtime.reinitialize("mock_model"))
+    await asyncio.sleep(0)
+    assert not restarting.done()
+    finish.set()
+    await accepted
+    await restarting
+    assert (await runtime.status("mock_model"))["active_calls"] == 0

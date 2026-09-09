@@ -3,15 +3,19 @@
 from fastapi import Depends, Request
 
 from app.accounts.route_permissions import route_permission
-from app.accounts.runtime_quotas import acquire, attach, release
+from app.accounts.runtime_quotas import acquire, admit_spawned_tasks, attach, release
 from app.deps import SessionDep, StudioAuth
 
 
 async def model_capacity(request: Request, principal: StudioAuth, session: SessionDep):
+    path = request.url.path
     diagnostic = request.method == "POST" and (
-        request.url.path.endswith("/test")
-        or request.url.path.endswith("/validate")
-        or request.url.path.endswith("/execute")
+        (path.startswith("/v1/model-entries/") and path.endswith("/test"))
+        or (
+            path.startswith(("/v1/integrations/tool-apis/", "/v1/integrations/mcp/"))
+            and path.endswith("/validate")
+        )
+        or (path.startswith("/v1/model-test/tools/") and path.endswith("/execute"))
     )
     if route_permission(request.method, request.url.path) != "models.use" and not diagnostic:
         yield
@@ -39,3 +43,10 @@ def task_admission(request: Request, session, kind: str):
 
 
 ModelCapacity = Depends(model_capacity)
+
+
+def spawned_task_admission(principal, kind):
+    async def admit(session, task_ids):
+        await admit_spawned_tasks(session, principal, kind, task_ids)
+
+    return admit

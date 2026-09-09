@@ -1,3 +1,4 @@
+import { useWorkspacePermission } from "@platform/auth/WorkspacePermissions";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Braces, ChevronDown, Copy, X } from "lucide-react";
@@ -303,6 +304,7 @@ export function LogDetail({
     queryFn: () => getLog(id),
   });
   const log = query.data;
+  const diagnostics = useWorkspacePermission("diagnostics.model");
   const [displayMode, setDisplayMode] = useState<DisplayMode>("readable");
   const [textMode, setTextMode] = useState<TextMode>("markdown");
   const messages = useMemo(
@@ -373,122 +375,132 @@ export function LogDetail({
                 </div>
               ))}
             </dl>
-            <div className="log-display-toolbar">
-              <span>内容展示</span>
-              <div className="log-segmented" aria-label="内容展示模式">
-                <button
-                  className={displayMode === "readable" ? "active" : ""}
-                  onClick={() => setDisplayMode("readable")}
-                >
-                  可读
-                </button>
-                <button
-                  className={displayMode === "json" ? "active" : ""}
-                  onClick={() => setDisplayMode("json")}
-                >
-                  JSON
-                </button>
-              </div>
-              <div
-                className="log-segmented text-mode"
-                aria-label="回复文本模式"
-              >
-                <button
-                  className={textMode === "markdown" ? "active" : ""}
-                  onClick={() => setTextMode("markdown")}
-                >
-                  MD
-                </button>
-                <button
-                  className={textMode === "raw" ? "active" : ""}
-                  onClick={() => setTextMode("raw")}
-                >
-                  原文
-                </button>
-              </div>
-            </div>
-            {log.error_message ? (
-              <div className="inline-alert danger">{log.error_message}</div>
-            ) : null}
-            <InspectorSection tone="request" title="请求上下文">
-              {displayMode === "json" ? (
-                <RawJson value={log.request_payload} />
-              ) : messages.length ? (
-                <div className="log-history-card">
-                  <header>
-                    <strong>对话历史 ({messages.length})</strong>
-                    <CopyButton
-                      label="复制请求上下文"
-                      value={JSON.stringify(log.request_payload, null, 2)}
-                    />
-                  </header>
-                  <MessageTrace messages={messages} />
-                </div>
-              ) : (
-                <div className="log-empty-block">
-                  该日志没有保存可读请求上下文。
-                </div>
-              )}
-            </InspectorSection>
-            <InspectorSection tone="response" title="模型回复">
-              {displayMode === "json" ? (
-                <RawJson value={log.response_payload} />
-              ) : (
-                <div className="log-response-stack">
-                  <div className="log-response-card">
-                    <header>
-                      <span>文本</span>
-                      <CopyButton
-                        label="复制模型回复"
-                        value={responseContent(log.response_payload)}
-                      />
-                    </header>
-                    <div className="log-response-content">
-                      {responseContent(log.response_payload) ? (
-                        textMode === "markdown" ? (
-                          <div className="markdown-body">
-                            <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                              {responseContent(log.response_payload)}
-                            </ReactMarkdown>
-                          </div>
-                        ) : (
-                          <pre>{responseContent(log.response_payload)}</pre>
-                        )
-                      ) : (
-                        <span>无文本回复</span>
-                      )}
-                    </div>
+            {diagnostics ? (
+              <>
+                <div className="log-display-toolbar">
+                  <span>内容展示</span>
+                  <div className="log-segmented" aria-label="内容展示模式">
+                    <button
+                      className={displayMode === "readable" ? "active" : ""}
+                      onClick={() => setDisplayMode("readable")}
+                    >
+                      可读
+                    </button>
+                    <button
+                      className={displayMode === "json" ? "active" : ""}
+                      onClick={() => setDisplayMode("json")}
+                    >
+                      JSON
+                    </button>
                   </div>
-                  <details
-                    className="log-response-meta"
-                    open={responseTools(log.response_payload).length > 0}
+                  <div
+                    className="log-segmented text-mode"
+                    aria-label="回复文本模式"
                   >
-                    <summary>
-                      <span>TOOL_CALLS</span>
-                      <small>
-                        {responseTools(log.response_payload).length || "—"}
-                      </small>
-                      <ChevronDown aria-hidden />
-                    </summary>
-                    <pre>
-                      {JSON.stringify(
-                        responseTools(log.response_payload),
-                        null,
-                        2,
-                      )}
-                    </pre>
-                  </details>
-                  <div className="log-response-meta static">
-                    <span>FINISH_REASON</span>
-                    <code>{responseFinishReason(log.response_payload)}</code>
-                    <CopyButton
-                      label="复制结束原因"
-                      value={responseFinishReason(log.response_payload)}
-                    />
+                    <button
+                      className={textMode === "markdown" ? "active" : ""}
+                      onClick={() => setTextMode("markdown")}
+                    >
+                      MD
+                    </button>
+                    <button
+                      className={textMode === "raw" ? "active" : ""}
+                      onClick={() => setTextMode("raw")}
+                    >
+                      原文
+                    </button>
                   </div>
                 </div>
-              )}
-            </InspectorSection>
+                {log.error_message ? (
+                  <div className="inline-alert danger">{log.error_message}</div>
+                ) : null}
+                <InspectorSection tone="request" title="请求上下文">
+                  {displayMode === "json" ? (
+                    <RawJson value={log.request_payload} />
+                  ) : messages.length ? (
+                    <div className="log-history-card">
+                      <header>
+                        <strong>对话历史 ({messages.length})</strong>
+                        <CopyButton
+                          label="复制请求上下文"
+                          value={JSON.stringify(log.request_payload, null, 2)}
+                        />
+                      </header>
+                      <MessageTrace messages={messages} />
+                    </div>
+                  ) : (
+                    <div className="log-empty-block">
+                      该日志没有保存可读请求上下文。
+                    </div>
+                  )}
+                </InspectorSection>
+                <InspectorSection tone="response" title="模型回复">
+                  {displayMode === "json" ? (
+                    <RawJson value={log.response_payload} />
+                  ) : (
+                    <div className="log-response-stack">
+                      <div className="log-response-card">
+                        <header>
+                          <span>文本</span>
+                          <CopyButton
+                            label="复制模型回复"
+                            value={responseContent(log.response_payload)}
+                          />
+                        </header>
+                        <div className="log-response-content">
+                          {responseContent(log.response_payload) ? (
+                            textMode === "markdown" ? (
+                              <div className="markdown-body">
+                                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                  {responseContent(log.response_payload)}
+                                </ReactMarkdown>
+                              </div>
+                            ) : (
+                              <pre>{responseContent(log.response_payload)}</pre>
+                            )
+                          ) : (
+                            <span>无文本回复</span>
+                          )}
+                        </div>
+                      </div>
+                      <details
+                        className="log-response-meta"
+                        open={responseTools(log.response_payload).length > 0}
+                      >
+                        <summary>
+                          <span>TOOL_CALLS</span>
+                          <small>
+                            {responseTools(log.response_payload).length || "—"}
+                          </small>
+                          <ChevronDown aria-hidden />
+                        </summary>
+                        <pre>
+                          {JSON.stringify(
+                            responseTools(log.response_payload),
+                            null,
+                            2,
+                          )}
+                        </pre>
+                      </details>
+                      <div className="log-response-meta static">
+                        <span>FINISH_REASON</span>
+                        <code>
+                          {responseFinishReason(log.response_payload)}
+                        </code>
+                        <CopyButton
+                          label="复制结束原因"
+                          value={responseFinishReason(log.response_payload)}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </InspectorSection>
+              </>
+            ) : (
+              <p className="log-detail-state">
+                当前身份可查看调用概况，完整请求与响应需要诊断权限。
+              </p>
+            )}
             <InspectorSection tone="metrics" title="Token 与耗时">
               <dl className="log-metrics-grid">
                 {[

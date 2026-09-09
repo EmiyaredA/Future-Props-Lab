@@ -156,6 +156,8 @@ async def _settle(
 
 async def assistant_events(
     prepared: PreparedAssistantGeneration,
+    *,
+    admission=None,
 ) -> AsyncIterator[bytes]:
     sequence = 0
     trace_id = str(uuid4())
@@ -170,6 +172,7 @@ async def assistant_events(
         image_model_slug=prepared.image_model_slug,
         video_model_id=prepared.video_model_id,
         video_model_slug=prepared.video_model_slug,
+        admission=admission,
     )
     adapter = build_model_adapter(prepared, key)
     harness = AgentHarness(

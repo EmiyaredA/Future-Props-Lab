@@ -80,7 +80,9 @@ class McpCatalog:
             enabled=row.enabled,
             sensitive_result=row.sensitive_result,
             status=row.status,
-            status_message=row.status_message,
+            status_message="敏感服务详情已隐藏"
+            if row.sensitive_result and row.status_message
+            else row.status_message,
             server_name=row.server_name,
             server_version=row.server_version,
             protocol_version=row.protocol_version,

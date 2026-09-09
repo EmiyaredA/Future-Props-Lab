@@ -233,7 +233,11 @@ async def apply_template(session, workspace_id, payload, expected_revision):
     for purpose, key in payload.get("defaults", {}).items():
         existing = available.get(selection.get(purpose))
         if existing is None or not existing.enabled or purpose not in existing.capabilities:
-            selection[purpose] = by_m[key].id
+            candidate = by_m[key]
+            if candidate.enabled and candidate.provider_id in enabled_providers:
+                selection[purpose] = candidate.id
+            else:
+                selection.pop(purpose, None)
     if defaults:
         defaults.payload = selection
         defaults.revision += 1

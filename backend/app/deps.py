@@ -207,7 +207,6 @@ async def authenticate_studio_request(
     if not principal.permits(required_scope):
         raise _forbidden("insufficient_scope", f"缺少 {required_scope} 权限")
     request.state.studio_principal = principal
-    principal = await apply_policy(session, principal)
     bind_workspace(session, principal.workspace_id)
     return principal
 

@@ -1,6 +1,6 @@
 # 账号与工作区治理
 
-管理界面为 `/management/accounts`、`/management/workspaces`、`/management/audit`，仅平台管理员可访问。个人资料、密码、会话和密钥仍位于账号中心。单进程、单 SQLite 和显式 Workspace 隔离保持不变。
+管理界面包含 `/management/accounts`、`/management/invites`、`/management/settings`、`/management/services`、`/management/permissions`、`/management/workspaces`、`/management/audit`，仅超级管理员可访问。个人资料、密码、会话和密钥仍位于账号中心。单进程、单 SQLite 和显式 Workspace 隔离保持不变。
 
 ## 固定角色
 
@@ -9,19 +9,19 @@
 | 内部内容、素材、已有结果的浏览与下载 | 是           | 是                 | 是            | 是              |
 | 内容写入、上传、删除、生成及模型调用 | 是           | 是                 | 是            | 否              |
 | 模型服务、默认模型、集成配置         | 是           | 是                 | 否            | 否              |
-| 完整调用日志、诊断、空间审计         | 是           | 是                 | 否            | 否              |
+| 调用概况、空间审计                   | 是           | 是                 | 否            | 否              |
 | 空间设置、协作者与只读成员治理       | 是           | 是                 | 否            | 否              |
 | 授予或撤销工作区管理员               | 是           | 否                 | 否            | 否              |
 
-平台管理员有全部空间的管理权限，显式切换空间不建立成员关系。任何人不能通过成员接口修改拥有者或自身角色；工作区管理员不能修改其他管理员。公开访客使用已有公开投影，不获得 `content.read` 内部权限。每个账号均保留个人资料、安全和本人邀请处理能力。
+超级管理员和运营管理员有全部空间的管理权限，显式切换空间不建立成员关系。完整调用诊断还要求平台策略授予 `diagnostics.model`，实时诊断要求 `diagnostics.realtime`；空间拥有者身份不会绕过平台策略。任何人不能通过成员接口修改拥有者或自身角色；工作区管理员不能修改其他管理员。公开访客使用已有公开投影，不获得 `content.read` 内部权限。每个账号均保留个人资料、安全和本人邀请处理能力。
 
 `WorkspaceOut.permission_keys` 返回有效权限。固定权限包括 `content.read`、`content.write`、`models.use`、`configuration.manage`、`logs.read`、`workspace.manage`、`members.manage`、`members.assign_admin`、`audit.read`。HTTP/SSE 使用显式路由策略；WebSocket 建立、新一轮调用前及连接期间每 5 秒重新校验。后台已提交任务继续按既有规则完成，不自动重提。
 
 ## 查询与写入契约
 
-账号查询参数为 `q`（用户名/展示名/邮箱）、`status`（active/disabled）、`is_platform_admin`、`page`（从 1 开始）、`page_size`（1–100，默认 25）。响应包含 `items/total/page/page_size`，账号包含邮箱。
+账号查询参数为 `q`（用户名/展示名/邮箱）、`status`（active/disabled）、`platform_role`、兼容字段 `is_platform_admin`、`page`（从 1 开始）、`page_size`（1–100，默认 25）。响应包含 `items/total/page/page_size`，账号包含邮箱。
 
-账号创建接受 `username/display_name/email/is_platform_admin`，返回账号及一次性临时密码，并自动创建个人空间。额外空间创建接受 `name/owner_user_id/visibility`（默认 private），拥有者必须启用；空间、拥有者关系、初始模型目录及审计在同一事务提交。空间查询支持 `q/visibility/page/page_size`，返回拥有者、有效访问身份和 `member_count`。
+账号创建接受 `username/display_name/email/platform_role`，兼容旧 `is_platform_admin`；返回账号及一次性临时密码，并自动创建个人空间。额外空间创建接受 `name/owner_user_id/visibility`（默认 private），拥有者必须启用；空间、拥有者关系、初始模型目录及审计在同一事务提交。空间查询支持 `q/visibility/page/page_size`，返回拥有者、有效访问身份和 `member_count`。
 
 平台身份或状态 PATCH、密码重置、当前空间 PATCH、成员角色 PATCH/DELETE 与邀请接受/拒绝/撤销均要求 `expected_revision`。缺少版本返回 422，版本冲突返回 409 和允许公开的 `current` 快照；客户端刷新供用户核对，不自动重试原写入。治理事务使用 SQLite 短写锁后重验操作者和当前角色，再执行数据库 CAS。禁止禁用或降级自身，不能移除最后一个启用的平台管理员。
 
@@ -39,7 +39,7 @@
 
 迁移先在临时数据库验证历史数据和约束，再登记应用。不得修改历史迁移或直接写持久数据库。运行期管理统一通过上述正式 API。
 
-## 本轮验证记录
+## 第一阶段验证记录（四种工作区角色）
 
 - 相关后端回归 50 项通过：固定角色与路由策略、历史迁移、账号和邀请并发、跨空间隔离、禁用恢复与重置、旧密钥撤销、实时通道新调用和定期复核。见 `tests/test_workspace_governance.py`、`test_workspace_governance_migration.py`、`test_realtime_governance.py`，并回归已有账号、实时语音和 SQLite 测试。
 - 账号与 API 客户端组件回归 16 项通过：分页搜索、临时密码关闭后清除缓存、版本冲突不重试、直接访问管理地址、权限变化清缓存和未保存编辑保护。
@@ -90,3 +90,24 @@
 新增配置更新要求 `expected_revision`，缺少版本为 422，冲突为 409。邀请码、临时密码与 API 密钥明文不进入浏览器持久存储。开发者文档经授权接口读取，公开构建仅包含使用指南和 API 参考。跨空间日志只允许浏览器 Session，专用接口显式指定空间，不能扩大工作区密钥的租户范围。
 
 迁移先在隔离 SQLite 完成验证；不要直接修改实际数据库或迁移记录。测试覆盖邀请码名额竞争、配额释放/恢复、三级身份、模板来源和稳定 ID、服务调用与默认选择。
+
+## Sayflow 管理能力融入验收（2026-09-09）
+
+已接入七个中台页面、三级身份、邀请码注册、角色模型模板及持久同步、进程内演示服务、敏感权限策略、受保护开发者文档、跨空间日志、作品认证和并发额度。模板与工作区复用供应商、连接、模型和默认用途编辑器。性能监控不在本轮范围。
+
+最终检查结果：
+
+| 检查 | 结果 |
+| --- | --- |
+| 相关后端回归 | 额度、任务授权与视觉助手最后复跑 12 项通过；身份、模板、供应商和实时治理相关组 14 项通过 |
+| 相关组件 | 账号和导航相关组 20 项通过；邀请码明文清除、焦点归还、策略冲突与作品认证的 3 项最后复跑通过 |
+| Chromium 旅程 | 9 项通过：七个地址、注册与账号治理、只读浏览、空间弹窗、冲突保留输入、明暗主题和手机布局 |
+| 全量后端 | 466 项通过，4 项既有失败 |
+| 全量 Web | 624 项通过，1 项既有失败；随后新增的 3 项组件测试单独通过 |
+| 静态检查、格式、契约、构建 | 全部通过 |
+
+全量失败仍是上文记录的视觉工坊两个文件尺寸超限、文档素材清单/截图校验值不一致，以及画布快照缺少 `grid_output/grid_size` 的预期；没有把这些失败计为通过，也没有改写素材校验值。测试使用隔离数据库和确定性替身，没有进行真实供应商调用。
+
+实际页面截图保存在 `output/platform-governance/`：七页各有 1440px/390px、浅色/深色，共 28 张。账号菜单与工作区弹窗截图在 `output/account-ui/`。截图属于本地验收产物，未替换文档素材。组件与浏览器用例分别在 `web/tests/platform-governance.test.tsx`、`web/e2e/platform-governance.spec.ts`，响应式入口同步登记在 `web/e2e/responsive-inventory.ts`。
+
+升级必须保留已登记迁移顺序 `r0051 → r0052 → r0054 → r0055`。旧平台管理员升级为超级管理员；普通用户即使拥有工作区，也默认不再获得原始模型与实时诊断、敏感工具详情或开发者文档权限。配置变更使用 CAS，权限调整对后续请求生效，不重放旧写入。

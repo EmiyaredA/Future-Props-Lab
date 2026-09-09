@@ -3,7 +3,6 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Server, FlaskConical, PlugZap } from "lucide-react";
 import { getCatalog } from "@features/models";
 import { accountQueryKeys } from "./queryKeys";
-import { modelQueryKeys } from "@features/models";
 import {
   actOnDemoService,
   fetchDemoServices,
@@ -273,9 +272,7 @@ export function DemoServicesPage() {
                       catalog.revision,
                     );
                     setNotice(result.message);
-                    await cache.invalidateQueries({
-                      queryKey: modelQueryKeys.catalog,
-                    });
+                    await cache.invalidateQueries();
                   } else
                     await actOnDemoService(confirm.service.id, {
                       expected_revision: confirm.service.revision,

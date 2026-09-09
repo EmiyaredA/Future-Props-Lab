@@ -8,7 +8,8 @@ from app.agents.harness.approval import (
     ApprovalNotFoundError,
     approval_broker,
 )
-from app.deps import SessionDep
+from app.deps import SessionDep, StudioAuth
+from app.routes.model_capacity import spawned_task_admission
 from app.schemas.visual_workshop import (
     VisualAssistantApprovalIn,
     VisualAssistantApprovalOut,
@@ -116,6 +117,7 @@ async def delete_conversation(
 
 @router.post("/{conversation_id}/messages/stream")
 async def stream_message(
+    principal: StudioAuth,
     session: SessionDep,
     project_id: str,
     conversation_id: str,
@@ -139,7 +141,7 @@ async def stream_message(
     ) as exc:
         raise _translate(exc) from None
     return StreamingResponse(
-        assistant_events(prepared),
+        assistant_events(prepared, admission=spawned_task_admission(principal, "visual")),
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )

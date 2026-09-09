@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { MoreHorizontal, Plus, Search } from "lucide-react";
 import { CustomSelect } from "@shared/ui/CustomSelect";
@@ -34,6 +34,7 @@ type Action = {
 };
 export function RegistrationInvitesPage() {
   const cache = useQueryClient();
+  const opener = useRef<HTMLElement | null>(null);
   const [filters, setFilters] = useState({
     q: "",
     status: "",
@@ -70,6 +71,9 @@ export function RegistrationInvitesPage() {
     setPassword("");
     setSecret("");
     setError(null);
+    queueMicrotask(() => {
+      if (opener.current?.isConnected) opener.current.focus();
+    });
   };
   const perform = async (work: () => Promise<void>) => {
     setBusy(true);
@@ -119,7 +123,8 @@ export function RegistrationInvitesPage() {
         </div>
         <button
           className="btn primary"
-          onClick={() => {
+          onClick={(event) => {
+            opener.current = event.currentTarget;
             setError(null);
             setCreating(true);
           }}
@@ -222,6 +227,16 @@ export function RegistrationInvitesPage() {
                               label,
                               danger: kind === "delete",
                               action: () => {
+                                opener.current =
+                                  Array.from(
+                                    document.querySelectorAll<HTMLButtonElement>(
+                                      "button",
+                                    ),
+                                  ).find(
+                                    (button) =>
+                                      button.getAttribute("aria-label") ===
+                                      `管理邀请码 ${row.name}`,
+                                  ) || null;
                                 setError(null);
                                 setAmount(kind === "quota" ? row.max_uses : 7);
                                 setAction({ row, kind });

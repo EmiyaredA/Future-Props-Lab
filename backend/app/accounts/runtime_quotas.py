@@ -7,10 +7,14 @@ from app.accounts.platform_policy import read_setting
 from app.core.db import SessionLocal
 from app.core.time import utc_now
 from app.models import (
+    AuthSession,
     GalgameAssetTranscriptionTask,
+    ManagementApiKey,
     ModelTestGenerationTask,
     ModelTestTranscriptionTask,
+    User,
     VisualGenerationTask,
+    WorkspaceMembership,
 )
 from app.models.runtime_admission import RuntimeAdmission as Admission
 from app.schemas.platform_governance import RuntimeQuotas
@@ -176,3 +180,60 @@ async def recover_admissions():
         )
         await _settle(session)
         await session.commit()
+
+
+async def admit_spawned_tasks(session, principal, kind, task_ids):
+    """A newly confirmed background task has its own lifetime after the parent stream."""
+    user = await session.get(User, principal.user_id, populate_existing=True)
+    credential_model = AuthSession if principal.auth_kind == "session" else ManagementApiKey
+    credential = await session.get(
+        credential_model, principal.session_id or principal.api_key_id, populate_existing=True
+    )
+    if (
+        user is None
+        or user.status != "active"
+        or user.must_change_password
+        or credential is None
+        or credential.revoked_at
+    ):
+        raise AccountError("studio_auth_required")
+    if principal.auth_kind == "management_api_key" and credential.expires_at <= utc_now():
+        raise AccountError("studio_auth_required")
+    if principal.auth_kind == "session" and (
+        credential.active_workspace_id != principal.workspace_id
+        or credential.idle_expires_at <= utc_now()
+        or credential.absolute_expires_at <= utc_now()
+    ):
+        raise AccountError("workspace_access_changed")
+    member = await session.scalar(
+        select(WorkspaceMembership).where(
+            WorkspaceMembership.user_id == user.id,
+            WorkspaceMembership.workspace_id == principal.workspace_id,
+            WorkspaceMembership.status == "active",
+        )
+    )
+    if user.platform_role not in {"super_admin", "admin"} and (
+        member is None or member.role == "viewer"
+    ):
+        raise AccountError("workspace_access_changed")
+    if "studio:write" not in principal.scopes:
+        raise AccountError("workspace_access_changed")
+    await check_capacity(
+        session,
+        user_id=user.id,
+        workspace_id=principal.workspace_id,
+        role=user.platform_role,
+        voice=False,
+        weight=len(task_ids),
+        submitted_ids=task_ids,
+    )
+    session.add(
+        Admission(
+            user_id=user.id,
+            workspace_id=principal.workspace_id,
+            platform_role=user.platform_role,
+            task_kind=kind,
+            task_ids=list(task_ids),
+            weight=len(task_ids),
+        )
+    )

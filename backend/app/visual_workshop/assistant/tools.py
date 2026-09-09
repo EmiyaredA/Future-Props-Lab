@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from functools import partial
 from typing import Any
 from uuid import uuid4
 
@@ -381,7 +382,7 @@ async def _apply_canvas_changes(
 
 
 async def _start_generation_on_canvas(
-    arguments: dict[str, Any], context: ToolExecutionContext
+    arguments: dict[str, Any], context: ToolExecutionContext, *, admission=None
 ) -> Observation:
     project_id = str(context.scope["project_id"])
     task_payload = dict(arguments.get("task") or {})
@@ -421,6 +422,8 @@ async def _start_generation_on_canvas(
                 edges=current.edges,
             )
             updated = await documents.replace(project_id, canvas_body)
+            if admission:
+                await admission(session, [task.id])
             await session.commit()
             await session.refresh(task)
         except GenerationError as exc:
@@ -493,7 +496,7 @@ def _tool(
 
 
 def visual_agent_tools(
-    *, image_model_id: str | None = None, video_model_id: str | None = None
+    *, image_model_id: str | None = None, video_model_id: str | None = None, admission=None
 ) -> tuple[ToolBinding, ...]:
     object_schema = {"type": "object", "additionalProperties": True}
     generation_model_ids = {"image": image_model_id, "video": video_model_id}
@@ -564,7 +567,7 @@ def visual_agent_tools(
                 "required": ["task", "node"],
             },
             "external",
-            _start_generation_on_canvas,
+            partial(_start_generation_on_canvas, admission=admission),
             generation_model_ids,
         ),
     )
@@ -580,6 +583,7 @@ def build_visual_agent_definition(
     image_model_slug: str = "",
     video_model_id: str | None = None,
     video_model_slug: str = "",
+    admission=None,
 ) -> AgentDefinition:
     instructions = (
         "你是 Future Props Lab 视觉工坊的项目 Agent。你要理解项目、画布、素材和生成任务，"
@@ -613,6 +617,7 @@ def build_visual_agent_definition(
             visual_agent_tools(
                 image_model_id=image_model_id,
                 video_model_id=video_model_id,
+                admission=admission,
             )
             if tools_enabled
             else ()
