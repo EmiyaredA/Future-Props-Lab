@@ -362,6 +362,23 @@ async def cancel_render(
         raise _error(exc) from None
 
 
+@router.delete("/projects/{project_id}/renders/{task_id}")
+async def delete_render(
+    session: SessionDep,
+    workspace_id: WorkspaceDep,
+    project_id: str,
+    task_id: str,
+    expected_revision: int = Query(ge=0),
+) -> dict[str, bool]:
+    try:
+        await VideoEditorRenders(session, workspace_id).delete(
+            project_id, task_id, expected_revision
+        )
+    except (VideoEditorNotFoundError, VideoEditorValidationError, AssetError) as exc:
+        raise _error(exc) from None
+    return {"deleted": True}
+
+
 @router.post("/projects/{project_id}/segment-exports", response_model=VideoEditorTaskOut)
 async def create_segment_export(
     session: SessionDep,

@@ -13,6 +13,7 @@ test("render task cards adapt to themes, filters and small screens", async ({
   };
   const task = {
     projectId: project.id,
+    revision: 1,
     kind: "render",
     createdAt: "2026-09-10T01:10:00Z",
     updatedAt: "2026-09-10T01:10:00Z",
@@ -134,4 +135,32 @@ test("render task cards adapt to themes, filters and small screens", async ({
   await expect(
     root.getByRole("button", { name: "刷新", exact: true }),
   ).toBeEnabled();
+  await page.route(
+    `**/v1/video-editor/projects/${project.id}/renders/ready?*`,
+    async (route) => {
+      expect(route.request().method()).toBe("DELETE");
+      expect(
+        new URL(route.request().url()).searchParams.get("expected_revision"),
+      ).toBe("1");
+      renders.splice(
+        renders.findIndex((item) => item.id === "ready"),
+        1,
+      );
+      await route.fulfill({ json: { deleted: true } });
+    },
+  );
+  await page.setViewportSize({ width: 390, height: 1100 });
+  await root
+    .getByRole("button", { name: "删除“米塔-石头门-完整版.mp4”" })
+    .click();
+  await expect(page.getByRole("alertdialog")).toBeVisible();
+  await page.getByRole("button", { name: "取消", exact: true }).click();
+  await expect(root.locator("article")).toHaveCount(5);
+  await root
+    .getByRole("button", { name: "删除“米塔-石头门-完整版.mp4”" })
+    .click();
+  await page.getByRole("button", { name: "确认删除", exact: true }).click();
+  await expect(page.getByRole("alertdialog")).not.toBeVisible();
+  await expect(root.locator("article")).toHaveCount(4);
+  await expect(root.getByRole("button", { name: /^已完成/ })).toHaveText(/1/);
 });

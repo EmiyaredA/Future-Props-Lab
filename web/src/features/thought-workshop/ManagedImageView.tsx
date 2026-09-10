@@ -4,18 +4,11 @@ import {
   useState,
   type PointerEvent as ReactPointerEvent,
 } from "react";
-import {
-  AlignCenter,
-  AlignLeft,
-  AlignRight,
-  Crop,
-  ImageIcon,
-  RotateCcw,
-} from "lucide-react";
 import { NodeViewWrapper, type NodeViewProps } from "@tiptap/react";
 import { NodeSelection, Selection } from "@tiptap/pm/state";
 import { useApiBlobUrl } from "@platform/api/useApiBlobUrl";
 import { ImageCropDialog, type CropRect } from "./ImageCropDialog";
+import { ImageToolbar } from "./ImageToolbar";
 
 type ImageAlign = "left" | "center" | "right";
 
@@ -100,14 +93,7 @@ export function ManagedImageView({
 
   useEffect(() => {
     if (!selected || !editor.isEditable || cropping) return;
-    const dismissFromOutside = (event: MouseEvent) => {
-      const target = event.target;
-      const root = rootRef.current;
-      if (!(target instanceof Element) || !root) return;
-      const interactiveImageArea = target.closest(
-        ".thought-image-figure, .thought-image-controls",
-      );
-      if (interactiveImageArea && root.contains(interactiveImageArea)) return;
+    const deselect = () => {
       const position = getPos();
       const selection = editor.state.selection;
       if (
@@ -126,13 +112,63 @@ export function ManagedImageView({
         ),
       );
     };
+    const dismissFromOutside = (event: MouseEvent) => {
+      const target = event.target;
+      const root = rootRef.current;
+      if (!(target instanceof Element) || !root) return;
+      // Closing the portal can re-enable this listener during the same click.
+      if (target.closest(".thought-image-crop-backdrop")) return;
+      const interactive = target.closest(
+        ".thought-image-figure, .thought-image-actions",
+      );
+      if (interactive && root.contains(interactive)) return;
+      deselect();
+    };
+    const onKey = (event: KeyboardEvent) => {
+      if (event.defaultPrevented || event.isComposing) return;
+      if (event.key === "Escape") {
+        if (rootRef.current?.querySelector(".thought-image-settings")) return;
+        event.preventDefault();
+        event.stopPropagation();
+        deselect();
+        editor.view.focus();
+      } else if (
+        event.key === "Tab" &&
+        !event.shiftKey &&
+        event.target === editor.view.dom
+      ) {
+        const first = rootRef.current?.querySelector<HTMLButtonElement>(
+          ".thought-image-toolbar:not([inert]) button",
+        );
+        if (first) {
+          event.preventDefault();
+          first.focus({ preventScroll: true });
+        }
+      }
+    };
     document.addEventListener("click", dismissFromOutside);
-    return () => document.removeEventListener("click", dismissFromOutside);
+    document.addEventListener("keydown", onKey, true);
+    return () => {
+      document.removeEventListener("click", dismissFromOutside);
+      document.removeEventListener("keydown", onKey, true);
+    };
   }, [cropping, editor, getPos, node.nodeSize, selected]);
+
+  const closeCrop = () => {
+    setCropping(false);
+    requestAnimationFrame(() =>
+      rootRef.current
+        ?.querySelector<HTMLButtonElement>(
+          '.thought-image-toolbar button[aria-label="裁剪"]',
+        )
+        ?.focus({ preventScroll: true }),
+    );
+  };
 
   const beginResize = (event: ReactPointerEvent, direction: 1 | -1) => {
     event.preventDefault();
     event.stopPropagation();
+    event.currentTarget.setPointerCapture?.(event.pointerId);
     resize.current = {
       startX: event.clientX,
       startWidth: frameRef.current?.offsetWidth || displayWidth,
@@ -155,53 +191,26 @@ export function ManagedImageView({
         className="thought-image-figure"
         style={{ width: displayWidth, maxWidth: "100%" }}
       >
-        {editor.isEditable && url ? (
-          <div
-            className="thought-image-toolbar"
-            contentEditable={false}
-            role="toolbar"
-            aria-label="图片操作"
-          >
-            {(
-              [
-                ["left", "图片左对齐", AlignLeft],
-                ["center", "图片居中", AlignCenter],
-                ["right", "图片右对齐", AlignRight],
-              ] as const
-            ).map(([value, label, Icon]) => (
-              <button
-                key={value}
-                type="button"
-                className="icon-btn"
-                aria-label={label}
-                aria-pressed={align === value}
-                onClick={() => updateAttributes({ align: value })}
-              >
-                <Icon aria-hidden />
-              </button>
-            ))}
-            <span className="thought-image-toolbar-divider" aria-hidden />
-            <button
-              type="button"
-              className="btn"
-              onClick={() => setCropping(true)}
-            >
-              <Crop aria-hidden />
-              裁剪
-            </button>
-            {crop ? (
-              <button
-                type="button"
-                className="btn"
-                onClick={() => updateAttributes(clearCrop)}
-              >
-                <RotateCcw aria-hidden />
-                重置裁剪
-              </button>
-            ) : null}
-          </div>
-        ) : null}
-        <div ref={frameRef} className="thought-image-frame">
+        <div
+          ref={frameRef}
+          className="thought-image-frame"
+          onClick={(event) => {
+            if (
+              !editor.isEditable ||
+              (event.target as Element).closest("button")
+            )
+              return;
+            const position = getPos();
+            if (typeof position !== "number") return;
+            event.stopPropagation();
+            editor.view.dispatch(
+              editor.state.tr.setSelection(
+                NodeSelection.create(editor.state.doc, position),
+              ),
+            );
+            editor.view.focus();
+          }}
+        >
           {url ? (
             crop && cropAspect ? (
               <div
@@ -251,65 +260,19 @@ export function ManagedImageView({
         </div>
         {caption ? <p className="thought-image-caption">{caption}</p> : null}
       </div>
-      {selected && editor.isEditable ? (
-        <div
-          className="thought-image-controls"
-          contentEditable={false}
-          role="group"
-          aria-label="图片设置"
-        >
-          <div className="thought-image-controls-heading">
-            <span className="thought-image-controls-icon" aria-hidden>
-              <ImageIcon />
-            </span>
-            <span>
-              <strong>图片设置</strong>
-              <small>调整显示尺寸和图片说明</small>
-            </span>
-          </div>
-          <div className="thought-image-fields">
-            <label className="thought-image-width-field">
-              <span>显示宽度</span>
-              <span className="thought-image-width-input">
-                <input
-                  aria-label="图片宽度"
-                  type="number"
-                  min={40}
-                  max={2000}
-                  value={displayWidth}
-                  onChange={(event) =>
-                    updateAttributes({
-                      width: clampWidth(Number(event.target.value)),
-                    })
-                  }
-                />
-                <span aria-hidden>px</span>
-              </span>
-            </label>
-            <label className="thought-image-alt-field">
-              <span>替代文字</span>
-              <input
-                aria-label="图片替代文字"
-                value={alt}
-                placeholder="简要描述图片内容"
-                onChange={(event) =>
-                  updateAttributes({ alt: event.target.value })
-                }
-              />
-            </label>
-            <label className="thought-image-caption-field">
-              <span>图注</span>
-              <input
-                aria-label="图片图注"
-                value={caption}
-                placeholder="添加图片说明（可选）"
-                onChange={(event) =>
-                  updateAttributes({ caption: event.target.value })
-                }
-              />
-            </label>
-          </div>
-        </div>
+      {selected && editor.isEditable && url ? (
+        <ImageToolbar
+          frame={frameRef}
+          suspended={cropping}
+          width={displayWidth}
+          alt={alt}
+          caption={caption}
+          align={align}
+          cropped={!!crop}
+          updateAttributes={updateAttributes}
+          onCrop={() => setCropping(true)}
+          onReset={() => updateAttributes(clearCrop)}
+        />
       ) : null}
       {cropping && url ? (
         <ImageCropDialog
@@ -317,10 +280,10 @@ export function ManagedImageView({
           alt={alt || "笔记图片"}
           initial={crop}
           naturalSize={natural}
-          onCancel={() => setCropping(false)}
+          onCancel={closeCrop}
           onConfirm={(next) => {
             updateAttributes(next ?? clearCrop);
-            setCropping(false);
+            closeCrop();
           }}
         />
       ) : null}

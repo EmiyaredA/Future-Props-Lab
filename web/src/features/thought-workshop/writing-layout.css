@@ -78,7 +78,7 @@
   width: calc(100% - 64px);
   max-width: 780px;
   margin: 0 auto;
-  padding: 32px 0 8px;
+  padding: 32px 0 4px;
 }
 .thought-note-meta {
   display: flex;

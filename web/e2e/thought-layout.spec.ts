@@ -24,6 +24,72 @@ async function noOverflow(page: Page) {
   ).toBe(true);
 }
 
+test("code and image blocks keep compact spacing when image controls appear", async ({
+  page,
+}, testInfo) => {
+  await page.goto("/apps/thought-workshop");
+  await newDocument(page);
+  const prose = page.getByRole("textbox", { name: "笔记正文", exact: true });
+  await page.locator('input[accept=".zip,.md,.markdown"]').setInputFiles({
+    name: "块间距.md",
+    mimeType: "text/markdown",
+    buffer: Buffer.from(
+      "```text\nClaude Code = 一个 agent loop\n  + 工具\n```",
+    ),
+  });
+  const code = prose.locator("pre");
+  await expect(code).toBeVisible();
+  await code.click();
+  await prose.press("ControlOrMeta+End");
+  await page
+    .locator('.thought-rich-editor input[accept^="image/"]')
+    .setInputFiles({
+      name: "spacing.png",
+      mimeType: "image/png",
+      buffer: Buffer.from(
+        "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAAAI0lEQVR4nGN8Wh3JQApgIkk1w6gG4gATkergYFQDMYDkUAIAeAUB2WkfhqEAAAAASUVORK5CYII=",
+        "base64",
+      ),
+    });
+  const image = prose.locator(".thought-image img");
+  await expect(image).toBeVisible();
+  for (const width of [1600, 390]) {
+    await page.setViewportSize({ width, height: 1100 });
+    for (const theme of ["light", "dark"]) {
+      await page.evaluate((value) => {
+        document.documentElement.dataset.theme = value;
+      }, theme);
+      await page.getByLabel("笔记标题", { exact: true }).click();
+      const codeBox = (await code.boundingBox())!;
+      const tagsBox = (await page.locator(".thought-note-tags").boundingBox())!;
+      const imageBox = (await image.boundingBox())!;
+      expect(codeBox.y - tagsBox.y - tagsBox.height).toBeLessThanOrEqual(16);
+      expect(imageBox.y - codeBox.y - codeBox.height).toBeGreaterThanOrEqual(0);
+      expect(imageBox.y - codeBox.y - codeBox.height).toBeLessThanOrEqual(16);
+      await image.hover();
+      const toolbar = page.getByRole("toolbar", { name: "图片操作" });
+      await expect(toolbar).toHaveCount(0);
+      await image.click();
+      await expect(toolbar).toBeVisible();
+      expect((await image.boundingBox())!.y).toBe(imageBox.y);
+      const toolbarBox = (await toolbar.boundingBox())!;
+      expect(toolbarBox.y + toolbarBox.height).toBeLessThanOrEqual(
+        imageBox.y - 8,
+      );
+      await toolbar.getByRole("button", { name: "裁剪", exact: true }).focus();
+      await expect(
+        toolbar.getByRole("button", { name: "裁剪", exact: true }),
+      ).toBeFocused();
+      await noOverflow(page);
+      await page.screenshot({
+        path: testInfo.outputPath(`spacing-${width}-${theme}.png`),
+      });
+    }
+  }
+  await page.keyboard.press("Enter");
+  await expect(page.getByRole("dialog", { name: "裁剪图片" })).toBeVisible();
+});
+
 for (const width of [1600, 1280, 390]) {
   test(`writing layout, menus and panels at ${width}px`, async ({
     page,

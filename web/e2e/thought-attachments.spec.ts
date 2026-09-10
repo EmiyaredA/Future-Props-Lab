@@ -17,8 +17,12 @@ test("visible insert controls, file cards, downloads and portable archives acros
   await newDocument(page);
   const prose = page.getByRole("textbox", { name: "笔记正文", exact: true });
   await expect(prose).toBeVisible();
-  for (const name of ["插入表格", "插入图片", "插入附件", "添加链接"])
-    await expect(page.getByRole("button", { name, exact: true })).toBeVisible();
+  await prose.pressSequentially("/");
+  for (const name of ["表格", "图片", "附件"])
+    await expect(
+      page.getByRole("option", { name: new RegExp(name) }),
+    ).toBeVisible();
+  await page.keyboard.press("Escape");
   await page
     .getByRole("textbox", { name: "笔记标题", exact: true })
     .fill("把资料，放进思路里");
@@ -27,7 +31,8 @@ test("visible insert controls, file cards, downloads and portable archives acros
   );
   await prose.press("ControlOrMeta+End");
   await prose.press("Enter");
-  await page.getByRole("button", { name: "插入表格", exact: true }).click();
+  await prose.pressSequentially("/");
+  await page.getByRole("option", { name: /表格/ }).click();
   await expect(prose.locator("table")).toBeVisible();
   const cells = prose.locator("th p, td p");
   for (const [i, text] of [
@@ -54,8 +59,13 @@ test("visible insert controls, file cards, downloads and portable archives acros
     });
   await expect(prose.locator(".thought-image img")).toHaveCount(1);
   await prose.locator(".thought-image img").click();
+  await page.getByRole("button", { name: "图片设置", exact: true }).click();
   await page.getByLabel("图片宽度", { exact: true }).fill("120");
   await page.getByLabel("图片图注", { exact: true }).fill("灵感色卡图注");
+  await expect(prose.locator(".thought-image-caption")).toHaveText(
+    "灵感色卡图注",
+  );
+  await page.keyboard.press("Escape");
   await page.getByRole("button", { name: "图片居中", exact: true }).click();
   await page.getByRole("button", { name: "裁剪", exact: true }).click();
   const cropDialog = page.getByRole("dialog", { name: "裁剪图片" });
@@ -76,10 +86,14 @@ test("visible insert controls, file cards, downloads and portable archives acros
   await cropDialog
     .getByRole("button", { name: "应用裁剪", exact: true })
     .click();
+  await expect(prose.locator(".thought-image-caption")).toHaveText(
+    "灵感色卡图注",
+  );
   await prose.press("ControlOrMeta+End");
   await prose.press("Enter");
   const chooser = page.waitForEvent("filechooser");
-  await page.getByRole("button", { name: "插入附件", exact: true }).click();
+  await prose.pressSequentially("/");
+  await page.getByRole("option", { name: /附件/ }).click();
   await (
     await chooser
   ).setFiles([
@@ -95,9 +109,12 @@ test("visible insert controls, file cards, downloads and portable archives acros
     },
   ]);
   await expect(prose.locator(".thought-attachment")).toHaveCount(2);
-  await page.getByRole("button", { name: "撤销", exact: true }).click();
+  await prose.press("ControlOrMeta+z");
   await expect(prose.locator(".thought-attachment")).toHaveCount(1);
-  await page.getByRole("button", { name: "重做", exact: true }).click();
+  await expect(prose.locator(".thought-image-caption")).toHaveText(
+    "灵感色卡图注",
+  );
+  await prose.press("ControlOrMeta+Shift+z");
   await expect(prose.locator(".thought-attachment")).toHaveCount(2);
   await prose.press("ControlOrMeta+End");
   await prose.press("Enter");
@@ -133,12 +150,12 @@ test("visible insert controls, file cards, downloads and portable archives acros
         ),
       ).toBe(true);
       await page.evaluate(() => window.scrollTo(0, 0));
-      for (const name of ["插入表格", "插入图片", "插入附件", "添加链接"]) {
-        const button = page.getByRole("button", { name, exact: true });
-        expect(
-          await button.evaluate((el) => el.scrollWidth <= el.clientWidth),
-        ).toBe(true);
-      }
+      await prose.locator(".thought-image img").click();
+      const imageToolbar = page.getByRole("toolbar", { name: "图片操作" });
+      await expect(imageToolbar).toBeVisible();
+      expect(
+        await imageToolbar.evaluate((el) => el.scrollWidth <= el.clientWidth),
+      ).toBe(true);
       await page.screenshot({
         path: testInfo.outputPath(`attachments-${width}-${theme}.png`),
         fullPage: true,

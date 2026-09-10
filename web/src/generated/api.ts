@@ -3449,7 +3449,8 @@ export interface paths {
         get: operations["get_render_v1_video_editor_projects__project_id__renders__task_id__get"];
         put?: never;
         post?: never;
-        delete?: never;
+        /** Delete Render */
+        delete: operations["delete_render_v1_video_editor_projects__project_id__renders__task_id__delete"];
         options?: never;
         head?: never;
         patch?: never;
@@ -21460,6 +21461,42 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["VideoEditorTaskOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_render_v1_video_editor_projects__project_id__renders__task_id__delete: {
+        parameters: {
+            query: {
+                expected_revision: number;
+            };
+            header?: never;
+            path: {
+                project_id: string;
+                task_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: boolean;
+                    };
                 };
             };
             /** @description Validation Error */

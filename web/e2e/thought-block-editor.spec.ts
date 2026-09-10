@@ -86,7 +86,9 @@ test("block menu layout keeps text controls separate and image actions relevant"
   const image = prose.locator(".thought-image img");
   await expect(image).toBeVisible();
   await image.click();
-  await expect(page.getByRole("group", { name: "图片设置" })).toBeVisible();
+  await expect(page.getByRole("dialog", { name: "图片设置" })).toHaveCount(0);
+  await page.getByRole("button", { name: "图片设置", exact: true }).click();
+  await expect(page.getByRole("dialog", { name: "图片设置" })).toBeVisible();
   const imageBox = await image.boundingBox();
   const proseBox = await prose.boundingBox();
   expect(imageBox && proseBox).toBeTruthy();
@@ -94,10 +96,10 @@ test("block menu layout keeps text controls separate and image actions relevant"
     proseBox!.x + proseBox!.width - 4,
     imageBox!.y + imageBox!.height / 2,
   );
-  await expect(page.getByRole("group", { name: "图片设置" })).toHaveCount(0);
+  await expect(page.getByRole("dialog", { name: "图片设置" })).toHaveCount(0);
   await image.click();
   await page.getByLabel("笔记标题", { exact: true }).click();
-  await expect(page.getByRole("group", { name: "图片设置" })).toHaveCount(0);
+  await expect(page.getByRole("dialog", { name: "图片设置" })).toHaveCount(0);
   for (const width of [1600, 1280, 390]) {
     await page.setViewportSize({ width, height: 1100 });
     for (const theme of ["light", "dark"]) {

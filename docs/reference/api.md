@@ -417,6 +417,7 @@ ID、消息数量、画布摘要和素材 ID；不保存图片 Base64、临时�
 - `POST /v1/video-editor/projects/{project_id}/renders/preflight`：检查素材就绪、范围和画面空档，并返回包含时间轴、素材指纹和输出规格的 fingerprint。
 - `POST/GET /v1/video-editor/projects/{project_id}/renders`：从不可变时间轴快照创建或列出后台 H.264/AAC MP4 渲染任务；正式渲染不会启动浏览器录屏。
 - `GET /v1/video-editor/projects/{project_id}/renders/{task_id}` 与 `POST .../{task_id}/cancel`：读取进度、失败原因、输出素材或取消完整 FFmpeg 进程树。
+- `DELETE /v1/video-editor/projects/{project_id}/renders/{task_id}?expected_revision=N`：删除已完成、失败或已取消的成片任务，并清理对应导出视频及代理、缩略图和波形；保留剪辑工程和源素材。需要 `content.write` 权限，跨 Workspace 或非成片任务返回 404，缺少 revision 返回 422，版本冲突和进行中的任务返回 409。成片仍被时间轴或进行中的任务引用时返回 422 `asset_in_use`，任务和文件均保留。
 
 三种快照共用版本化清单，只包含当前可编辑文档及其依赖素材；不包含对话、任务历史、代理、缩略图、波形、缓存或未被当前工程使用的历史输出。导入在隔离目录校验路径、声明文件、展开大小、文件数、实际大小和 SHA-256，然后重建项目、素材和引用 ID。共享文件会成为副本的私有素材；无法在目标 Workspace 匹配的模型绑定会清空并通过 `{code, field, message}` 警告返回。打开文件夹只允许具有写权限的浏览器 Session；Management API Key 始终返回 `403`，且请求不接受客户端路径。
 

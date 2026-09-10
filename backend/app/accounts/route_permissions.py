@@ -92,6 +92,7 @@ OPERATIONS: dict[str, tuple[tuple[str, str], ...]] = {
         ("POST", "/v1/video-editor/projects/{project_id}/renders"),
         ("POST", "/v1/video-editor/projects/{project_id}/renders/preflight"),
         ("POST", "/v1/video-editor/projects/{project_id}/renders/{task_id}/cancel"),
+        ("DELETE", "/v1/video-editor/projects/{project_id}/renders/{task_id}"),
         ("POST", "/v1/video-editor/projects/{project_id}/segment-exports"),
         ("POST", "/v1/video-editor/projects/{project_id}/segment-exports/{task_id}/cancel"),
         ("POST", "/v1/video-editor/projects/{project_id}/timeline/operations"),

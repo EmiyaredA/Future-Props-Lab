@@ -3,11 +3,12 @@ from __future__ import annotations
 import hashlib
 import json
 
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.concurrency.revisions import RevisionConflictError
+from app.concurrency.revisions import RevisionConflictError, require_revision_write
 from app.core.time import iso_utc, utc_now
+from app.files.library import AssetError
 from app.media_rendering.evaluator import timeline_duration_us, visual_gaps
 from app.media_rendering.presets import RENDER_PRESETS
 from app.models import VideoEditorAssetMetadata, VideoEditorTask, VideoEditorTimeline
@@ -21,6 +22,7 @@ from app.schemas.video_editor import (
     VideoEditorTimelineDocument,
 )
 from app.video_editor.errors import VideoEditorNotFoundError, VideoEditorValidationError
+from app.video_editor.media import VideoEditorMedia
 from app.video_editor.projects import VideoEditorProjects
 
 PRESETS = RENDER_PRESETS
@@ -251,3 +253,68 @@ class VideoEditorRenders:
             row.updated_at = utc_now()
             await self.session.commit()
         return task_out(row)
+
+    async def delete(self, project_id: str, task_id: str, expected_revision: int) -> None:
+        task = await self.get(project_id, task_id)
+        if task.kind != "render":
+            raise VideoEditorNotFoundError("成片导出任务不存在")
+        if task.status not in {"completed", "failed", "cancelled"}:
+            raise AssetError("进行中的导出任务不能删除", code="task_active", status=409)
+        # Take the SQLite write lock with a CAS before checking mutable references.
+        result = await self.session.execute(
+            delete(VideoEditorTask).where(
+                VideoEditorTask.id == task_id,
+                VideoEditorTask.project_id == project_id,
+                VideoEditorTask.workspace_id == self.workspace_id,
+                VideoEditorTask.kind == "render",
+                VideoEditorTask.status.in_({"completed", "failed", "cancelled"}),
+                VideoEditorTask.revision == expected_revision,
+            )
+        )
+        await require_revision_write(
+            self.session,
+            result,
+            expected=expected_revision,
+            load_current=lambda: self.get(project_id, task_id),
+        )
+        media = VideoEditorMedia(self.session, self.workspace_id)
+        derived_paths = []
+        try:
+            if task.output_asset_id:
+                active_tasks = await self.session.scalars(
+                    select(VideoEditorTask).where(
+                        VideoEditorTask.project_id == project_id,
+                        VideoEditorTask.workspace_id == self.workspace_id,
+                        VideoEditorTask.status.in_({"queued", "running"}),
+                    )
+                )
+                for active in active_tasks:
+                    if active.request_payload.get("assetId") == task.output_asset_id or any(
+                        clip.get(key) == task.output_asset_id
+                        for track in active.snapshot_document.get("tracks", [])
+                        for clip in track.get("clips", [])
+                        for key in ("assetId", "fontAssetId")
+                    ):
+                        raise VideoEditorValidationError(
+                            "成片仍被进行中的任务引用", code="asset_in_use"
+                        )
+                _asset, metadata = await media.asset(project_id, task.output_asset_id)
+                derived_paths = [
+                    media.derived_path(project_id, filename)
+                    for filename in (
+                        metadata.proxy_filename,
+                        metadata.thumbnail_filename,
+                        metadata.waveform_filename,
+                    )
+                    if filename
+                ]
+                # The media use case validates timeline references, updates asset
+                # organization and commits the asset and task removal together.
+                await media.delete(project_id, task.output_asset_id)
+            else:
+                await self.session.commit()
+        except Exception:
+            await self.session.rollback()
+            raise
+        for path in derived_paths:
+            path.unlink(missing_ok=True)

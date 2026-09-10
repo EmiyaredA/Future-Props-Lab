@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { QueryFeedback } from "@shared/ui/QueryFeedback";
-import { useQuery } from "@tanstack/react-query";
+import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
+import { useWorkspacePermission } from "@platform/auth/WorkspacePermissions";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowUpRight,
   Check,
@@ -12,9 +14,11 @@ import {
   LoaderCircle,
   RefreshCcw,
   Search,
+  Trash2,
   X,
 } from "lucide-react";
 import {
+  deleteVideoEditorRender,
   listVideoEditorProjects,
   listVideoEditorRenders,
   listVideoEditorSegmentExports,
@@ -68,6 +72,26 @@ export function VideoEditorTasksPage({
   const [filter, setFilter] = useState<(typeof filters)[number]["id"]>("all");
   const [search, setSearch] = useState("");
   const [refreshing, setRefreshing] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<VideoEditorTask | null>(
+    null,
+  );
+  const canWrite = useWorkspacePermission("content.write");
+  const queryClient = useQueryClient();
+  const remove = useMutation({
+    mutationFn: deleteVideoEditorRender,
+    onSuccess: async (_result, task) => {
+      setDeleteTarget(null);
+      await Promise.all(
+        [
+          videoEditorQueryKeys.allTasks,
+          videoEditorQueryKeys.renders(task.projectId),
+          videoEditorQueryKeys.assets(task.projectId),
+          videoEditorQueryKeys.timeline(task.projectId),
+          videoEditorQueryKeys.importSources,
+        ].map((queryKey) => queryClient.invalidateQueries({ queryKey })),
+      );
+    },
+  });
   const projects = useQuery({
     queryKey: videoEditorQueryKeys.projects,
     queryFn: listVideoEditorProjects,
@@ -270,6 +294,20 @@ export function VideoEditorTasksPage({
                     下载视频
                   </a>
                 ) : null}
+                {canWrite && task.kind === "render" && !active ? (
+                  <button
+                    className="ve-task-button danger"
+                    aria-label={`删除“${title}”`}
+                    disabled={remove.isPending}
+                    onClick={() => {
+                      remove.reset();
+                      setDeleteTarget(task);
+                    }}
+                  >
+                    <Trash2 aria-hidden />
+                    删除
+                  </button>
+                ) : null}
               </div>
             </article>
           );
@@ -297,6 +335,25 @@ export function VideoEditorTasksPage({
           </div>
         ) : null}
       </div>
+      <ConfirmDialog
+        open={Boolean(deleteTarget)}
+        title="删除导出视频？"
+        description={
+          <>
+            将删除“{deleteTarget ? taskTitle(deleteTarget) : ""}
+            ”的任务记录和导出文件，此操作不可恢复。剪辑工程和源素材会保留。
+            {remove.error ? (
+              <span role="alert">{remove.error.message}</span>
+            ) : null}
+          </>
+        }
+        confirmLabel="确认删除"
+        pending={remove.isPending}
+        onCancel={() => setDeleteTarget(null)}
+        onConfirm={() => {
+          if (deleteTarget && canWrite) remove.mutate(deleteTarget);
+        }}
+      />
     </section>
   );
 }

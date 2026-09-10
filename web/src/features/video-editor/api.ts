@@ -10,6 +10,7 @@ import type {
   VideoEditorPreset,
   VideoEditorProject,
   VideoEditorSegmentExportInput,
+  VideoEditorTask,
 } from "./types";
 
 export const listVideoEditorProjects = async () =>
@@ -177,6 +178,19 @@ export const cancelVideoEditorRender = async (
     await api.POST(
       "/v1/video-editor/projects/{project_id}/renders/{task_id}/cancel",
       { params: { path: { project_id: projectId, task_id: taskId } } },
+    ),
+  );
+
+export const deleteVideoEditorRender = async (task: VideoEditorTask) =>
+  unwrap(
+    await api.DELETE(
+      "/v1/video-editor/projects/{project_id}/renders/{task_id}",
+      {
+        params: {
+          path: { project_id: task.projectId, task_id: task.id },
+          query: { expected_revision: task.revision },
+        },
+      },
     ),
   );
 

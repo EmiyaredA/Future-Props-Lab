@@ -96,6 +96,13 @@
   background: transparent;
   color: var(--muted);
 }
+.ve-tasks-page .ve-task-button.danger {
+  color: var(--danger);
+}
+.ve-tasks-page .ve-task-button.danger:hover {
+  border-color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 10%, var(--surface));
+}
 .ve-tasks-page .ve-task-button.secondary:hover {
   color: var(--text-strong);
   background: var(--surface-soft);

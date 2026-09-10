@@ -6,6 +6,10 @@ import type { NodeViewProps } from "@tiptap/react";
 vi.mock("@platform/api/useApiBlobUrl", () => ({
   useApiBlobUrl: () => ({ url: "blob:image", loading: false, error: null }),
 }));
+// Geometry and native top-layer behavior are exercised in the browser suite.
+vi.mock("@features/thought-workshop/useImagePopover", () => ({
+  useImagePopover: () => {},
+}));
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -21,7 +25,10 @@ function renderImage(
     node: { attrs },
     selected,
     updateAttributes,
-    editor: { isEditable: editable },
+    editor: {
+      isEditable: editable,
+      view: { dom: document.createElement("div") },
+    },
     getPos: () => 0,
     deleteNode: () => {},
     extension: {},
@@ -51,9 +58,13 @@ it("shows a free-text caption and updates width, alt, caption, and alignment", (
     caption: "可见图注",
   });
   expect(screen.getByText("可见图注")).toBeInTheDocument();
+  expect(screen.queryByLabelText("图片宽度")).toBeNull();
+  fireEvent.click(screen.getByRole("button", { name: "图片设置" }));
   fireEvent.change(screen.getByLabelText("图片宽度"), {
     target: { value: "2400" },
   });
+  expect(updateAttributes).not.toHaveBeenCalled();
+  fireEvent.blur(screen.getByLabelText("图片宽度"));
   expect(updateAttributes).toHaveBeenCalledWith({ width: 2000 });
   fireEvent.change(screen.getByLabelText("图片替代文字"), {
     target: { value: "新替代" },
@@ -69,6 +80,37 @@ it("shows a free-text caption and updates width, alt, caption, and alignment", (
     "aria-pressed",
     "true",
   );
+});
+
+it("allows incomplete width input, commits on Enter, and closes settings with Escape", () => {
+  const { updateAttributes } = renderImage({ assetId: "image-id", width: 480 });
+  const trigger = screen.getByRole("button", { name: "图片设置" });
+  fireEvent.click(trigger);
+  const width = screen.getByLabelText("图片宽度");
+  fireEvent.change(width, { target: { value: "" } });
+  expect(width).toHaveValue("");
+  expect(updateAttributes).not.toHaveBeenCalled();
+  fireEvent.blur(width);
+  expect(width).toHaveValue("480");
+  fireEvent.change(width, { target: { value: "invalid" } });
+  fireEvent.blur(width);
+  expect(updateAttributes).not.toHaveBeenCalled();
+  fireEvent.change(width, { target: { value: "12" } });
+  fireEvent.keyDown(width, { key: "Enter" });
+  expect(updateAttributes).toHaveBeenCalledWith({ width: 40 });
+  fireEvent.keyDown(width, { key: "Escape" });
+  expect(screen.queryByRole("dialog", { name: "图片设置" })).toBeNull();
+  expect(trigger).toHaveFocus();
+  expect(trigger).toHaveAttribute("aria-expanded", "false");
+});
+
+it("does not show controls on an unselected image and disables resetting an uncropped image", () => {
+  const first = renderImage({ assetId: "image-id" }, { selected: false });
+  fireEvent.mouseOver(screen.getByRole("img"));
+  expect(screen.queryByRole("toolbar", { name: "图片操作" })).toBeNull();
+  first.unmount();
+  renderImage({ assetId: "image-id" });
+  expect(screen.getByRole("button", { name: "重置裁剪" })).toBeDisabled();
 });
 
 it("applies ratio crops and supports keyboard movement and handle resizing", () => {

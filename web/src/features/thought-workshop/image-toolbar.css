@@ -1,0 +1,138 @@
+.thought-image-toolbar,
+.thought-image-settings {
+  position: fixed;
+  inset: auto;
+  margin: 0;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 4px 16px rgb(0 0 0 / 14%);
+  font: 12px/1.5 var(--font-sans, sans-serif);
+}
+.thought-image-toolbar {
+  align-items: center;
+  gap: 2px;
+  width: max-content;
+  padding: 3px;
+  overflow: visible;
+}
+.thought-image-toolbar button {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 32px;
+  width: 32px;
+  height: 32px;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+.thought-image-toolbar button:hover:not(:disabled) {
+  color: var(--text);
+  background: var(--surface-hover);
+}
+.thought-image-toolbar button[aria-pressed="true"],
+.thought-image-toolbar button[aria-expanded="true"] {
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+.thought-image-toolbar button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.thought-image-toolbar button:focus-visible,
+.thought-image-settings input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.thought-image-toolbar svg {
+  width: 18px;
+  height: 18px;
+}
+.thought-image-toolbar-divider {
+  width: 1px;
+  height: 20px;
+  margin: 0 3px;
+  background: var(--border-strong);
+}
+.thought-image-toolbar button::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 4px 7px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 11px;
+  white-space: nowrap;
+  pointer-events: none;
+  visibility: hidden;
+}
+.thought-image-toolbar button:first-child::after {
+  left: 0;
+  transform: none;
+}
+.thought-image-toolbar button:last-child::after {
+  left: auto;
+  right: 0;
+  transform: none;
+}
+.thought-image-toolbar button:hover::after,
+.thought-image-toolbar button:focus-visible::after {
+  visibility: visible;
+}
+.thought-image-settings {
+  width: 280px;
+  padding: 12px;
+  gap: 10px;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+.thought-image-settings label {
+  display: grid;
+  gap: 4px;
+  color: var(--muted);
+}
+.thought-image-settings input {
+  width: 100%;
+  min-width: 0;
+  height: 32px;
+  padding: 0 8px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  color: var(--text);
+  background: var(--bg);
+  font: inherit;
+}
+.thought-image-settings input::placeholder {
+  color: var(--faint);
+}
+.thought-image-width-input {
+  position: relative;
+}
+.thought-image-width-input input {
+  padding-right: 28px;
+}
+.thought-image-width-input > span {
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+@media (max-width: 700px) {
+  .thought-image-toolbar button {
+    flex-basis: 40px;
+    width: 40px;
+    height: 40px;
+  }
+}
