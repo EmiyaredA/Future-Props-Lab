@@ -14,6 +14,7 @@ async function create(page: Page) {
   await dialog.getByRole("textbox").fill(`演示测试 ${Date.now()}`);
   await dialog.getByRole("button", { name: "确认", exact: true }).click();
   await expect(page.getByRole("group", { name: "幻灯片画布" })).toBeVisible();
+  await page.getByRole("button", { name: /演示者备注/ }).click();
 }
 async function save(page: Page) {
   await page.getByRole("button", { name: "保存文稿", exact: true }).click();
@@ -42,6 +43,7 @@ test("创建、编辑文字、备注和页面，保存重开及放映", async ({
   await expect(
     canvas.getByText("中文输入与 Native PPTX", { exact: true }),
   ).toBeVisible();
+  await page.getByRole("button", { name: /演示者备注/ }).click();
   await expect(page.getByRole("textbox", { name: "演示者备注" })).toHaveValue(
     "这段备注应保存并导出。",
   );
@@ -62,6 +64,7 @@ test("图形移动、缩放、旋转、锁定与撤销", async ({ page }) => {
   await page.setViewportSize({ width: 1600, height: 1000 });
   await create(page);
   await page.getByRole("button", { name: "插入图形", exact: true }).click();
+  await page.getByRole("menuitem", { name: "矩形", exact: true }).click();
   await page.getByLabel("X", { exact: true }).fill("300");
   await page.getByLabel("旋转角度", { exact: true }).fill("30");
   await page.getByRole("button", { name: "锁定元素", exact: true }).click();
@@ -168,6 +171,7 @@ test("缩放后的拖动、多选变换、复制粘贴与一次撤销", async ({
   await page.setViewportSize({ width: 1600, height: 1000 });
   await create(page);
   await page.getByRole("button", { name: "插入图形", exact: true }).click();
+  await page.getByRole("menuitem", { name: "矩形", exact: true }).click();
   const canvas = page.getByRole("group", { name: "幻灯片画布" });
   const shape = canvas.locator("[data-element-id]").last();
   const original = await page.getByLabel("X", { exact: true }).inputValue();

@@ -72,6 +72,9 @@ export function PresentationInspector({
       : selected.length
         ? "elements"
         : "page";
+  if (tabState.selectionKey !== selectionKey) {
+    setTabState({ selectionKey, tab });
+  }
   const tabId = useId();
   const colors = ["#132338", "#FFFFFF", "#E7EAEE", "#F5F1E8", "#F4DED5"];
   const disabled = readOnly || !!element?.locked;

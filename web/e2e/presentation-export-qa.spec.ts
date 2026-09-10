@@ -59,8 +59,9 @@ test("三页实际导出对照与百页负担记录", async ({ page }, testInfo)
     await page
       .getByRole("button", { name: `幻灯片 ${index + 1}`, exact: true })
       .click();
+    await page.getByRole("button", { name: "放映选项", exact: true }).click();
     await page
-      .getByRole("button", { name: "从当前页放映", exact: true })
+      .getByRole("menuitem", { name: "从当前页放映", exact: true })
       .click();
     const show = page.getByRole("dialog", { name: "幻灯片放映" });
     if (index === 1) {
@@ -129,6 +130,7 @@ test("三页实际导出对照与百页负担记录", async ({ page }, testInfo)
     "第 100 页备注",
   );
   metrics.switchPageMs = performance.now() - start;
+  await page.getByRole("button", { name: /演示者备注/ }).click();
   await page.getByLabel("演示者备注", { exact: true }).fill("百页保存测试");
   start = performance.now();
   await page.getByRole("button", { name: "保存文稿", exact: true }).click();

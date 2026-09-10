@@ -86,7 +86,10 @@ export function PresentationMenu({
           aria-label={label}
           className="presentation-action-menu"
           onBlur={(event) => {
-            if (!event.currentTarget.contains(event.relatedTarget))
+            if (
+              !event.currentTarget.contains(event.relatedTarget) &&
+              event.relatedTarget !== trigger.current
+            )
               close(false);
           }}
           onKeyDown={(event) => {

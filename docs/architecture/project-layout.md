@@ -318,7 +318,11 @@ Web 的 `NoteHistory` 复用现有只读 `RichEditor`；`historyDiff.ts` 负责�
 当前文本框 Tiptap 编辑、统一撤销、自动保存队列、元素变换、属性面板与放映。
 `queryKeys.ts` 维护该功能缓存键；`SlideSurface` 被画布、可见缩略图和放映复用。
 结构类型来自 OpenAPI，缩放不改变文稿坐标。样式分别由 `presentation-library.css`、
-`presentation-workshop.css` 与 `presentation-canvas.css` 维护，移动端只做浏览及轻编辑。
+`presentation-workshop.css`、`presentation-canvas.css` 与 `presentation-controls.css` 维护，
+分别对应首页、编辑器布局、画布渲染与交互控件；移动端只做浏览及轻编辑。
+`PresentationToolbar`、`PresentationMenu`、`PresentationNotes` 与 `PresentationStatusbar`
+拥有工具栏、键盘菜单、备注折叠和缩放操作，UI 状态不进入文稿数据。
+首页基础版式创建复用 `templates.ts`；画布报告实际缩放比例，缩略图按容器宽度等比适配。
 新增路由由响应式清单登记，浏览器流程位于 `presentation-workshop.spec.ts`。
 
 演示工坊的 `image_crop.py` / Web `imageCrop.ts` 分别拥有相同的原图区域到图片框的等比填充计算，
