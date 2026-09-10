@@ -196,6 +196,33 @@ test("空间草稿不会自动保存，放弃之前不执行切换", async () =>
   );
 });
 
+test("空间搜索保留分页并在关键词变化后回到第一页", async () => {
+  accountApi.listWorkspaces.mockResolvedValue({ items: [], total: 26 });
+  const user = userEvent.setup();
+  render(
+    <AccountWorkspacePanel
+      session={{
+        me,
+        refresh: vi.fn(),
+        logout: vi.fn(),
+        switchWorkspace: vi.fn(),
+      }}
+    />,
+  );
+  await user.click(screen.getByRole("button", { name: /切换工作空间/ }));
+  expect(await screen.findByText("没有匹配的工作空间。")).toBeInTheDocument();
+  await user.click(screen.getByRole("button", { name: "下一页" }));
+  await waitFor(() =>
+    expect(accountApi.listWorkspaces).toHaveBeenLastCalledWith("", 2),
+  );
+  await user.type(screen.getByLabelText("搜索可访问的空间"), "团队");
+  await waitFor(() =>
+    expect(accountApi.listWorkspaces).toHaveBeenLastCalledWith("团队", 1),
+  );
+  expect(screen.getByRole("button", { name: "上一页" })).toBeDisabled();
+  expect(screen.getByRole("button", { name: "保存更改" })).toBeDisabled();
+});
+
 test("空间设置统一提交且携带版本，冲突后保留输入", async () => {
   const { ApiError } = await import("@platform/api/client");
   accountApi.updateWorkspace.mockRejectedValue(
@@ -249,17 +276,27 @@ test("只读成员可看角色说明但没有空间治理入口", async () => {
     />,
   );
   await user.click(screen.getByRole("button", { name: /切换工作空间/ }));
-  const dialog = screen.getByRole("dialog", { name: "工作区" });
+  const dialog = screen.getByRole("dialog", { name: "工作空间" });
   expect(
-    within(dialog).queryByRole("button", { name: /成员与邀请/ }),
+    within(dialog).queryByRole("button", { name: "管理成员" }),
   ).not.toBeInTheDocument();
   expect(
     within(dialog).queryByRole("button", { name: "保存更改" }),
   ).not.toBeInTheDocument();
-  await user.click(within(dialog).getByRole("button", { name: /角色与权限/ }));
+  await user.click(within(dialog).getByRole("button", { name: "查看权限" }));
   expect(
-    within(dialog).getByRole("columnheader", { name: "只读成员" }),
+    within(dialog).getByRole("heading", { name: "只读成员" }),
   ).toBeInTheDocument();
+  expect(screen.getByRole("dialog", { name: "工作空间管理" })).toBe(dialog);
+  expect(
+    within(dialog).queryByRole("tab", { name: "成员与邀请" }),
+  ).not.toBeInTheDocument();
+  expect(
+    within(dialog).queryByRole("tab", { name: "审计记录" }),
+  ).not.toBeInTheDocument();
+  expect(
+    within(dialog).getByText("当前角色").closest("article"),
+  ).toHaveTextContent("只读成员");
 });
 
 test("收到的邀请与当前空间发出的邀请分开呈现", async () => {
@@ -297,9 +334,10 @@ test("收到的邀请与当前空间发出的邀请分开呈现", async () => {
     />,
   );
   await user.click(screen.getByRole("button", { name: /切换工作空间/ }));
-  await user.click(screen.getByRole("button", { name: /成员与邀请/ }));
+  await user.click(screen.getByRole("button", { name: "管理成员" }));
   expect(await screen.findByText("@new-colleague")).toBeInTheDocument();
   expect(screen.queryByText("其他团队")).not.toBeInTheDocument();
+  await user.click(screen.getByRole("button", { name: "返回工作空间" }));
   await user.click(screen.getByRole("button", { name: /我收到的邀请/ }));
   expect(await screen.findByText("其他团队")).toBeInTheDocument();
   expect(screen.queryByText("@new-colleague")).not.toBeInTheDocument();

@@ -25,13 +25,41 @@ import {
   updateWorkspace,
 } from "./api";
 
+export type WorkspaceView = "overview" | "management" | "invitations";
+export type WorkspaceManagementTab = "members" | "roles" | "audit";
+
 export function useAccountWorkspacePanel(session: AccountSessionContext) {
   const { me, refresh, logout, switchWorkspace } = session;
   const requestEpoch = useRef(0);
   const [open, setOpen] = useState<"workspace" | "account" | null>(null);
   const openRef = useRef(open);
   openRef.current = open;
-  const [tab, setTab] = useState("overview");
+  const [tab, setTab] = useState("profile");
+  const [workspaceView, setWorkspaceView] = useState<WorkspaceView>("overview");
+  const [managementTab, setManagementTab] =
+    useState<WorkspaceManagementTab>("roles");
+  const activeManagementTab =
+    (managementTab === "members" &&
+      !workspaceAllows(me.workspace, "workspace.manage")) ||
+    (managementTab === "audit" && !workspaceAllows(me.workspace, "audit.read"))
+      ? "roles"
+      : managementTab;
+  const loadTarget =
+    open === "account"
+      ? tab === "profile"
+        ? null
+        : "security"
+      : open === "workspace"
+        ? workspaceView === "overview"
+          ? "workspaces"
+          : workspaceView === "invitations"
+            ? "invitations"
+            : activeManagementTab === "members"
+              ? "members"
+              : null
+        : null;
+  const requestScope = useRef("");
+  requestScope.current = `${open}:${workspaceView}:${activeManagementTab}:${tab}`;
   const tabRef = useRef(tab);
   tabRef.current = tab;
   const [error, setError] = useState("");
@@ -68,18 +96,21 @@ export function useAccountWorkspacePanel(session: AccountSessionContext) {
   const [changedPasswordAgain, setChangedPasswordAgain] = useState("");
 
   const report = async (work: () => Promise<void>, mutation = true) => {
+    const scope = requestScope.current;
     setError("");
     setNotice("");
     if (mutation) setBusy(true);
     try {
       await work();
     } catch (reason) {
+      if (scope !== requestScope.current || !openRef.current) return;
       setError(reason instanceof Error ? reason.message : "操作失败");
       if (reason instanceof ApiError && reason.status === 409) {
         await refresh();
         try {
           if (openRef.current === "workspace") {
-            if (tab === "members") await loadGovernance();
+            if (loadTarget === "members") await loadGovernance();
+            else if (loadTarget === "invitations") await loadInvitations();
             else await loadWorkspaces();
           } else if (openRef.current === "account") await loadSecurity();
         } catch {
@@ -101,6 +132,12 @@ export function useAccountWorkspacePanel(session: AccountSessionContext) {
     setWorkspaces(result.items);
     setWorkspaceTotal(result.total);
     setInvitations(pending.items);
+  };
+
+  const loadInvitations = async () => {
+    const epoch = ++requestEpoch.current;
+    const result = await listMyInvitations();
+    if (epoch === requestEpoch.current) setInvitations(result.items);
   };
 
   const loadGovernance = async () => {
@@ -126,27 +163,29 @@ export function useAccountWorkspacePanel(session: AccountSessionContext) {
     setSecurityEvents(eventResult.items);
   };
 
+  const loadCurrent = async () => {
+    if (loadTarget === "workspaces") await loadWorkspaces();
+    if (loadTarget === "invitations") await loadInvitations();
+    if (loadTarget === "members") await loadGovernance();
+    if (loadTarget === "security") await loadSecurity();
+  };
+  const listQuery = loadTarget === "workspaces" ? debouncedQuery : "";
+  const listPage = loadTarget === "workspaces" ? workspacePage : 1;
+  const accountTab = open === "account" ? tab : "";
   useEffect(() => {
     if (!open) return;
     let current = true;
-    setLoading(true);
-    void report(async () => {
-      if (open === "workspace") {
-        await loadWorkspaces();
-        if (tab === "members") await loadGovernance();
-      } else if (tab !== "profile") {
-        await loadSecurity();
-      }
-    }, false).finally(() => {
+    setLoading(!!loadTarget);
+    void report(loadCurrent, false).finally(() => {
       if (current) setLoading(false);
     });
     return () => {
       current = false;
       requestEpoch.current += 1;
     };
-    // The panel reloads from the current session snapshot whenever it opens.
+    // Load only the visible view; list queries do not reload member or account data.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, tab, debouncedQuery, workspacePage]);
+  }, [open, loadTarget, listQuery, listPage, accountTab]);
 
   const saveProfile = async (event: FormEvent) => {
     event.preventDefault();
@@ -230,6 +269,10 @@ export function useAccountWorkspacePanel(session: AccountSessionContext) {
   const close = () => {
     openRef.current = null;
     setOpen(null);
+    setWorkspaceView("overview");
+    setInviteUsername("");
+    setInviteRole("member");
+    requestEpoch.current += 1;
     setError("");
     setNotice("");
     setRevealedKey("");
@@ -249,7 +292,7 @@ export function useAccountWorkspacePanel(session: AccountSessionContext) {
       setOpen("account");
     };
     const show = () => {
-      setTab("overview");
+      setWorkspaceView("overview");
       setOpen("workspace");
     };
     window.addEventListener("future-props:open-workspace", show);
@@ -261,13 +304,15 @@ export function useAccountWorkspacePanel(session: AccountSessionContext) {
   }, []);
   return {
     loading,
-    reload: () =>
-      report(async () => {
-        if (open === "workspace") {
-          await loadWorkspaces();
-          if (tab === "members") await loadGovernance();
-        } else await loadSecurity();
-      }, false),
+    reload: () => report(loadCurrent, false),
+    workspaceView,
+    setWorkspaceView,
+    managementTab: activeManagementTab,
+    setManagementTab,
+    clearMessages: () => {
+      setError("");
+      setNotice("");
+    },
     busy,
     visibility,
     setVisibility,
@@ -322,6 +367,7 @@ export function useAccountWorkspacePanel(session: AccountSessionContext) {
     report,
     loadWorkspaces,
     loadGovernance,
+    loadInvitations,
     loadSecurity,
     saveProfile,
     uploadAvatar,

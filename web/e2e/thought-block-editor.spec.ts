@@ -1,6 +1,95 @@
 import { expect, test, type Locator } from "@playwright/test";
 import { newDocument, saveNote } from "./thought-helpers";
 
+test("Backspace at the body start moves the caret to the title end", async ({
+  page,
+}) => {
+  await page.goto("/apps/thought-workshop");
+  await newDocument(page);
+  const title = page.getByRole("textbox", { name: "笔记标题", exact: true });
+  const prose = page.getByRole("textbox", { name: "笔记正文", exact: true });
+  await title.fill("文档标题");
+  await prose.click();
+  const emptyBody = await prose.innerHTML();
+  await prose.press("Backspace");
+  await expect(title).toBeFocused();
+  expect(await prose.innerHTML()).toBe(emptyBody);
+  await page.keyboard.type("末尾");
+  await expect(title).toHaveValue("文档标题末尾");
+
+  // The screenshot's empty first paragraph must keep the following content.
+  await prose.click();
+  await prose.press("Enter");
+  await page.keyboard.type("正文内容");
+  await focusBodyStart(prose);
+  const bodyWithBlankLine = await prose.innerHTML();
+  await prose.press("Backspace");
+  await expect(title).toBeFocused();
+  expect(await prose.innerHTML()).toBe(bodyWithBlankLine);
+
+  await focusBodyStart(prose);
+  await page.keyboard.type("首段");
+  await focusBodyStart(prose);
+  const populatedBody = await prose.innerHTML();
+  await prose.press("Backspace");
+  await expect(title).toBeFocused();
+  expect(await prose.innerHTML()).toBe(populatedBody);
+  expect(
+    await title.evaluate((input: HTMLInputElement) => [
+      input.selectionStart,
+      input.selectionEnd,
+    ]),
+  ).toEqual([6, 6]);
+});
+
+test("Backspace preserves body deletion, selection and list behavior", async ({
+  page,
+}) => {
+  await page.goto("/apps/thought-workshop");
+  await newDocument(page);
+  const prose = page.getByRole("textbox", { name: "笔记正文", exact: true });
+  await prose.click();
+  await page.keyboard.type("abc");
+  await prose.press("Backspace");
+  await expect(prose).toHaveText("ab");
+  await expect(prose).toBeFocused();
+  await prose.press("Enter");
+  await prose.press("Backspace");
+  await expect(prose.locator(":scope > p")).toHaveCount(1);
+  await expect(prose).toBeFocused();
+
+  await focusBodyStart(prose);
+  await prose.press("Shift+ArrowRight");
+  await prose.press("Backspace");
+  await expect(prose).toHaveText("b");
+  await expect(prose).toBeFocused();
+  await prose.dispatchEvent("keydown", {
+    key: "Backspace",
+    isComposing: true,
+  });
+  await expect(prose).toBeFocused();
+  await expect(prose).toHaveText("b");
+
+  await prose.press("ControlOrMeta+a");
+  await prose.press("Backspace");
+  await prose.pressSequentially("* ");
+  await page.keyboard.type("列表内容");
+  await expect(prose.locator("ul li")).toHaveCount(1);
+  await focusBodyStart(prose);
+  await prose.press("Backspace");
+  await expect(prose.locator("ul")).toHaveCount(0);
+  await expect(prose).toHaveText("列表内容");
+  await expect(prose).toBeFocused();
+});
+
+async function focusBodyStart(prose: Locator) {
+  await prose.evaluate((root) => {
+    (root as HTMLElement).focus();
+    const paragraph = root.querySelector("p")!;
+    window.getSelection()!.setPosition(paragraph.firstChild ?? paragraph, 0);
+  });
+}
+
 async function expectMenuFits(menu: Locator) {
   await expect(menu).toBeVisible();
   const issues = await menu.evaluate((root) => {

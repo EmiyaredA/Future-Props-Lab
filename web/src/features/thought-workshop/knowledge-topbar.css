@@ -1,23 +1,23 @@
-.knowledge-topbar.is-note .knowledge-top-actions > .btn,
-.knowledge-topbar.is-note .knowledge-note-action-trigger {
+.knowledge-topbar:is(.is-note, .is-project) .knowledge-top-actions > .btn,
+.knowledge-topbar-menu-trigger {
   height: 40px;
   min-height: 40px;
   border-radius: 8px;
 }
-.knowledge-note-actions {
+.knowledge-topbar-menu-wrap {
   position: relative;
   flex: 0 0 auto;
 }
-.knowledge-topbar.is-note .knowledge-note-action-trigger {
+.knowledge-topbar-menu-trigger {
   width: 40px;
   padding: 0;
   justify-content: center;
 }
-.knowledge-note-action-trigger svg {
+.knowledge-topbar-menu-trigger svg {
   width: 18px;
   height: 18px;
 }
-.knowledge-note-action-menu {
+.knowledge-topbar-menu {
   position: fixed;
   z-index: 120;
   width: 190px;
@@ -32,7 +32,7 @@
   background: var(--surface);
   box-shadow: 0 14px 38px rgb(0 0 0 / 20%);
 }
-.knowledge-note-action-menu button {
+.knowledge-topbar-menu button {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -46,22 +46,26 @@
   text-align: left;
   white-space: nowrap;
 }
-.knowledge-note-action-menu button:hover:not(:disabled),
-.knowledge-note-action-menu button:focus-visible {
+.knowledge-topbar-menu button:hover:not(:disabled),
+.knowledge-topbar-menu button:focus-visible {
   outline: 0;
   background: var(--surface-hover);
 }
-.knowledge-note-action-menu button:disabled {
+.knowledge-topbar-menu button:disabled {
   cursor: default;
   opacity: 0.36;
 }
-.knowledge-note-action-menu svg {
+.knowledge-topbar-menu svg {
   width: 17px;
   height: 17px;
   flex: 0 0 auto;
   color: var(--muted);
 }
-.knowledge-note-action-divider {
+.knowledge-topbar-menu button.is-danger,
+.knowledge-topbar-menu button.is-danger svg {
+  color: var(--danger);
+}
+.knowledge-topbar-menu-divider {
   height: 1px;
   margin: 5px 4px;
   background: var(--border);

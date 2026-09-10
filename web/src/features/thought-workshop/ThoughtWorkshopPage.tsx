@@ -13,7 +13,6 @@ import { CustomSelect } from "@shared/ui/CustomSelect";
 import { TextInputDialog } from "@shared/ui/TextInputDialog";
 import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
 import { KnowledgeSidebar } from "./KnowledgeSidebar";
-import { documentViews } from "./knowledgeViews";
 import { ProjectLibraryCard } from "@shared/ui/project-library/ProjectLibraryCard";
 import {
   deleteNote,
@@ -394,17 +393,12 @@ export function ThoughtWorkshopPage({
           noteMode={noteMode}
           busy={busy}
           projectTitle={project?.title}
-          currentLabel={
-            browsing
-              ? documentViews.find((item) => item.id === view)?.label || "文档"
-              : noteId
-                ? note.data?.title || "文档"
-                : "首页"
-          }
+          currentLabel={noteId ? note.data?.title || "文档" : "首页"}
+          currentId={currentId}
+          documents={directory.data?.documents || []}
           noteChrome={noteChrome}
-          projectOptions={projectOptions}
-          onOpenKnowledge={() => onNavigate()}
           onOpenProject={() => open()}
+          onOpenDocument={open}
           onOpenDirectory={() => setDrawer(true)}
           onImport={() => importInput.current?.click()}
           onCreateDocument={() => void create()}

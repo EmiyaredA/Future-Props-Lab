@@ -17,8 +17,8 @@ const chrome: NoteEditorChrome = {
 };
 
 const actions = {
-  onOpenKnowledge: vi.fn(),
   onOpenProject: vi.fn(),
+  onOpenDocument: vi.fn(),
   onOpenDirectory: vi.fn(),
   onImport: vi.fn(),
   onCreateDocument: vi.fn(),
@@ -34,13 +34,33 @@ function renderTopbar(onNoteAction = vi.fn()) {
       busy={false}
       projectTitle="Agent Harness"
       currentLabel="Harness：把模型能力组织成可靠的系统"
+      documents={[]}
       noteChrome={chrome}
-      projectOptions={[]}
       onNoteAction={onNoteAction}
       {...actions}
     />,
   );
   return onNoteAction;
+}
+
+function renderProjectTopbar(busy = false) {
+  const onImport = vi.fn();
+  const onProjectAction = vi.fn();
+  render(
+    <KnowledgeTopbar
+      noteMode={false}
+      busy={busy}
+      projectTitle="Agent Harness"
+      currentLabel="文档回收站"
+      documents={[]}
+      noteChrome={null}
+      onNoteAction={vi.fn()}
+      {...actions}
+      onImport={onImport}
+      onProjectAction={onProjectAction}
+    />,
+  );
+  return { onImport, onProjectAction };
 }
 
 describe("思绪工坊文档顶部栏", () => {
@@ -92,5 +112,55 @@ describe("思绪工坊文档顶部栏", () => {
     expect(
       screen.queryByRole("menu", { name: "笔记更多操作" }),
     ).not.toBeInTheDocument();
+  });
+});
+
+describe("思绪工坊知识库顶部栏", () => {
+  it("folds project actions into the compact menu", async () => {
+    const user = userEvent.setup();
+    const { onImport, onProjectAction } = renderProjectTopbar();
+    const trigger = screen.getByRole("button", { name: "知识库更多操作" });
+    expect(screen.queryByText("更多", { exact: true })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /^导入$/ }),
+    ).not.toBeInTheDocument();
+
+    await user.click(trigger);
+    expect(
+      screen.getAllByRole("menuitem").map((item) => item.textContent),
+    ).toEqual([
+      "导入",
+      "导出知识库",
+      "重命名",
+      "修改简介",
+      "更换封面",
+      "恢复默认封面",
+      "移入回收站",
+    ]);
+    expect(screen.getAllByRole("separator")).toHaveLength(2);
+    expect(screen.getByRole("menuitem", { name: "移入回收站" })).toHaveClass(
+      "is-danger",
+    );
+
+    await user.click(document.body);
+    expect(
+      screen.queryByRole("menu", { name: "知识库更多操作" }),
+    ).not.toBeInTheDocument();
+    await user.click(trigger);
+    await user.click(screen.getByRole("menuitem", { name: "导入" }));
+    expect(onImport).toHaveBeenCalledOnce();
+    expect(onProjectAction).not.toHaveBeenCalled();
+    expect(trigger).toHaveFocus();
+
+    await user.click(trigger);
+    await user.click(screen.getByRole("menuitem", { name: "导出知识库" }));
+    expect(onProjectAction).toHaveBeenCalledExactlyOnceWith("export");
+  });
+
+  it("keeps import disabled while another operation is running", async () => {
+    const user = userEvent.setup();
+    renderProjectTopbar(true);
+    await user.click(screen.getByRole("button", { name: "知识库更多操作" }));
+    expect(screen.getByRole("menuitem", { name: "导入" })).toBeDisabled();
   });
 });

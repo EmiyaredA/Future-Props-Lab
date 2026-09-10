@@ -113,6 +113,23 @@ test("knowledge cards, editable home, nested folders, moves, old links and respo
     });
     for (const theme of ["light", "dark"]) {
       await setThoughtTheme(page, theme);
+      const topbar = page.locator(".knowledge-topbar");
+      const projectMenuTrigger = topbar.getByRole("button", {
+        name: "知识库更多操作",
+        exact: true,
+      });
+      const createDocument = topbar.getByRole("button", {
+        name: "新建文档",
+        exact: true,
+      });
+      await expect(projectMenuTrigger).toBeVisible();
+      await expect(
+        topbar.getByRole("button", { name: "导入", exact: true }),
+      ).toHaveCount(0);
+      expect((await projectMenuTrigger.boundingBox())!.height).toBe(40);
+      expect((await createDocument.boundingBox())!.height).toBe(40);
+      if (width >= 1280)
+        expect((await topbar.boundingBox())!.height).toBeLessThanOrEqual(60);
       expect(
         await page.evaluate(
           () => document.documentElement.scrollWidth <= innerWidth + 2,
@@ -123,6 +140,27 @@ test("knowledge cards, editable home, nested folders, moves, old links and respo
         path: info.outputPath(`empty-home-${width}-${theme}.png`),
         fullPage: true,
       });
+      await projectMenuTrigger.click();
+      const projectMenu = page.getByRole("menu", {
+        name: "知识库更多操作",
+        exact: true,
+      });
+      await expect(projectMenu).toBeVisible();
+      await expect(
+        projectMenu.getByRole("menuitem", { name: /^更多$/ }),
+      ).toHaveCount(0);
+      await expect(projectMenu.getByRole("menuitem")).toHaveCount(7);
+      const menuBox = (await projectMenu.boundingBox())!;
+      expect(menuBox.x).toBeGreaterThanOrEqual(0);
+      expect(menuBox.x + menuBox.width).toBeLessThanOrEqual(width);
+      if (width === 1600 && theme === "light")
+        await page.screenshot({
+          animations: "disabled",
+          path: info.outputPath("project-topbar-menu-1600-light.png"),
+          fullPage: true,
+        });
+      await page.keyboard.press("Escape");
+      await expect(projectMenuTrigger).toBeFocused();
     }
   }
   await page.setViewportSize({ width: 1600, height: 1000 });
@@ -362,9 +400,9 @@ test("knowledge cards, editable home, nested folders, moves, old links and respo
     }
   }
   await page
-    .getByRole("combobox", { name: "知识库更多操作", exact: true })
+    .getByRole("button", { name: "知识库更多操作", exact: true })
     .click();
-  await page.getByRole("option", { name: "重命名", exact: true }).click();
+  await page.getByRole("menuitem", { name: "重命名", exact: true }).click();
   const longTitle = "长标题与边界检查".repeat(12);
   await page.getByRole("dialog").getByRole("textbox").fill(longTitle);
   await page.getByRole("button", { name: "确认", exact: true }).click();
@@ -382,9 +420,9 @@ test("knowledge cards, editable home, nested folders, moves, old links and respo
     fullPage: true,
   });
   await page
-    .getByRole("combobox", { name: "知识库更多操作", exact: true })
+    .getByRole("button", { name: "知识库更多操作", exact: true })
     .click();
-  await page.getByRole("option", { name: "重命名", exact: true }).click();
+  await page.getByRole("menuitem", { name: "重命名", exact: true }).click();
   await page
     .getByRole("dialog")
     .getByRole("textbox")

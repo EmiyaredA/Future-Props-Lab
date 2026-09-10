@@ -6,6 +6,7 @@ import {
   type JSONContent,
 } from "@tiptap/react";
 import { TextInputDialog } from "@shared/ui/TextInputDialog";
+import { TextSelection } from "@tiptap/pm/state";
 import { editorExtensions } from "./editorExtensions";
 import { useFileUploads } from "./useFileUploads";
 import { attachmentAccept } from "./AttachmentNode";
@@ -28,7 +29,9 @@ export function RichEditor({
   historyMarks,
   historyAuthor = "",
   onCompositionChange,
+  onBackspaceAtStart,
 }: {
+  onBackspaceAtStart?: () => boolean;
   historyMarks?: HistoryMark[];
   historyAuthor?: string;
   onCompositionChange?: (active: boolean) => void;
@@ -54,6 +57,8 @@ export function RichEditor({
   callback.current = onChange;
   const compositionCallback = useRef(onCompositionChange);
   compositionCallback.current = onCompositionChange;
+  const backspaceAtStart = useRef(onBackspaceAtStart);
+  backspaceAtStart.current = onBackspaceAtStart;
   const ready = useRef(onReady);
   ready.current = onReady;
   const uploadRef = useRef<(files: File[], position?: number) => void>(
@@ -92,6 +97,29 @@ export function RichEditor({
         "aria-label": "笔记正文",
         role: "textbox",
         "aria-multiline": "true",
+      },
+      handleKeyDown: (view, event) => {
+        if (
+          !view.editable ||
+          view.composing ||
+          event.isComposing ||
+          event.key !== "Backspace" ||
+          event.altKey ||
+          event.ctrlKey ||
+          event.metaKey ||
+          event.shiftKey
+        )
+          return false;
+        const selection = view.state.selection;
+        // Leave block unwrapping and selected-content deletion to the editor.
+        if (
+          !(selection instanceof TextSelection) ||
+          !selection.$cursor ||
+          selection.$cursor.pos !== 1 ||
+          selection.$cursor.parent.type.name !== "paragraph"
+        )
+          return false;
+        return backspaceAtStart.current?.() ?? false;
       },
       handlePaste: (_view, event) => {
         const files = Array.from(event.clipboardData?.files ?? []);

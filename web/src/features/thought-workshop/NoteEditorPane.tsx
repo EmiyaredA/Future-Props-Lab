@@ -37,6 +37,7 @@ export function NoteEditorPane({
 }) {
   const editing = useNoteDraft(note, onSaved);
   const [editor, setEditor] = useState<Editor | null>(null);
+  const titleInput = useRef<HTMLInputElement>(null);
   const [assistant, setAssistant] = useState(false);
   const [notice, setNotice] = useState("");
   const [serverPreview, setServerPreview] = useState(false);
@@ -234,6 +235,13 @@ export function NoteEditorPane({
         )}
         <Suspense fallback={<p>编辑器加载中…</p>}>
           <RichEditor
+            onBackspaceAtStart={() => {
+              const title = titleInput.current;
+              if (!title) return false;
+              title.focus();
+              title.setSelectionRange(title.value.length, title.value.length);
+              return true;
+            }}
             onCompositionChange={editing.setComposition}
             document={editing.draft.document as JSONContent}
             onChange={(document) => editing.change({ document })}
@@ -264,6 +272,7 @@ export function NoteEditorPane({
                   </button>
                 </div>
                 <input
+                  ref={titleInput}
                   className="thought-title-input"
                   aria-label="笔记标题"
                   maxLength={240}

@@ -78,7 +78,7 @@ Future-Props-Lab/
   `governance_transactions.py` 在短写事务中重验操作者并执行 CAS；`management.py`、`member_roles.py`
   分别拥有平台身份与成员授权，`errors.py` 和 `error_views.py` 定义领域错误与安全快照。
   `routes/account_management.py` 只适配管理查询、创建和审计协议。
-- `web/src/features/accounts/` 拥有管理中台三个页面、账号中心和空间面板；查询键由 `queryKeys.ts`
+- `web/src/features/accounts/` 拥有管理中台三个页面、账号中心和空间面板；空间概览与独立成员/角色/审计管理、收到的邀请弹窗由该模块协调，视图状态与账号设置标签分离；查询键由 `queryKeys.ts`
   统一维护。`AccountMenu` 与 `WorkspaceTrigger` 分别提供账号和空间入口，`AccountWorkspacePanel`
   只装配弹窗；资料、安全表单与空间设置、成员授权分开维护。工作台顶栏及布局样式归属
   `app/layout/StudioGlobalHeader`，中台外壳、统计与列表样式留在账号功能内。
