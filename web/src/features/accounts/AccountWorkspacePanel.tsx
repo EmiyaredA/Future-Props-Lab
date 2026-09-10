@@ -32,11 +32,23 @@ export function AccountWorkspacePanel({
   const { open, tab, setTab, busy, error, notice, me, close } = state;
   const workspaceEntry = useRef<HTMLButtonElement | null>(null);
   const headerControl = useRef<HTMLButtonElement | null>(null);
+  const overviewRef = useRef<HTMLDivElement | null>(null);
+  const overviewScroll = useRef(new Map<HTMLElement, number>());
   const confirmationOpener = useRef<HTMLElement | null>(null);
   const lastSurface = useRef("");
   const wasConfirming = useRef(false);
   const surface = open === "workspace" ? state.workspaceView : "account";
   const secondary = open === "workspace" && surface !== "overview";
+  const rememberOverviewScroll = () => {
+    overviewRef.current
+      ?.querySelectorAll<HTMLElement>(
+        ".workspace-dialog-switcher, .workspace-detail-scroll",
+      )
+      .forEach((element) => {
+        if (element.clientHeight)
+          overviewScroll.current.set(element, element.scrollTop);
+      });
+  };
   const backToWorkspace = () => {
     if (busy) return;
     state.clearMessages();
@@ -48,6 +60,7 @@ export function AccountWorkspacePanel({
   ) => {
     if (busy) return;
     workspaceEntry.current = opener;
+    rememberOverviewScroll();
     state.clearMessages();
     state.setManagementTab(next);
     state.setWorkspaceView("management");
@@ -55,6 +68,7 @@ export function AccountWorkspacePanel({
   const openInvitations = (opener: HTMLButtonElement) => {
     if (busy) return;
     workspaceEntry.current = opener;
+    rememberOverviewScroll();
     state.clearMessages();
     state.setWorkspaceView("invitations");
   };
@@ -109,6 +123,28 @@ export function AccountWorkspacePanel({
     lastSurface.current = surface;
     wasConfirming.current = confirming;
   }, [open, surface, confirming]);
+  useLayoutEffect(() => {
+    if (!open) {
+      overviewScroll.current.clear();
+      return;
+    }
+    if (surface !== "overview" || confirming || !overviewScroll.current.size)
+      return;
+    const pending = new Map(overviewScroll.current);
+    const restore = () => {
+      pending.forEach((top, element) => {
+        if (element.clientHeight) {
+          element.scrollTop = top;
+          pending.delete(element);
+        }
+      });
+    };
+    restore();
+    // A column hidden by the mobile tabs is restored once it becomes visible.
+    const observer = new ResizeObserver(restore);
+    pending.forEach((_, element) => observer.observe(element));
+    return () => observer.disconnect();
+  }, [open, surface, confirming]);
   const title = confirming
     ? "放弃未保存的更改"
     : open === "account"
@@ -123,7 +159,7 @@ export function AccountWorkspacePanel({
     : open === "account"
       ? "管理个人资料、登录安全与访问密钥"
       : surface === "management"
-        ? `${me.workspace.name} · 管理成员、角色与审计记录`
+        ? me.workspace.name
         : surface === "invitations"
           ? "查看邀请，加入新的工作空间"
           : "切换或管理你的工作空间";
@@ -225,6 +261,7 @@ export function AccountWorkspacePanel({
                       {error}{" "}
                       <button
                         className="btn small"
+                        disabled={busy || state.loading}
                         onClick={() => void state.reload()}
                       >
                         重新加载
@@ -239,6 +276,7 @@ export function AccountWorkspacePanel({
                   {open === "workspace" ? (
                     <>
                       <div
+                        ref={overviewRef}
                         className="workspace-overview-view"
                         hidden={surface !== "overview"}
                       >

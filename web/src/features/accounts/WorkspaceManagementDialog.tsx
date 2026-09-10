@@ -38,9 +38,17 @@ export function WorkspaceManagementDialog({
         aria-label="工作空间管理"
         onKeyDown={(event) => {
           if (state.busy) return;
-          const index = visibleTabs.findIndex(
-            (tab) => tab.key === state.managementTab,
+          const buttons =
+            tabsRef.current?.querySelectorAll<HTMLButtonElement>(
+              '[role="tab"]',
+            );
+          const focused = Array.from(buttons ?? []).indexOf(
+            document.activeElement as HTMLButtonElement,
           );
+          const index =
+            focused >= 0
+              ? focused
+              : visibleTabs.findIndex((tab) => tab.key === state.managementTab);
           const next =
             event.key === "ArrowRight"
               ? (index + 1) % visibleTabs.length
@@ -55,9 +63,7 @@ export function WorkspaceManagementDialog({
           event.preventDefault();
           state.clearMessages();
           state.setManagementTab(visibleTabs[next].key);
-          tabsRef.current
-            ?.querySelectorAll<HTMLButtonElement>('[role="tab"]')
-            [next]?.focus();
+          buttons?.item(next)?.focus();
         }}
       >
         {visibleTabs.map(({ key, label, Icon }) => (

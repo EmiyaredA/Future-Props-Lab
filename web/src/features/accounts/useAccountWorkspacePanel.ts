@@ -97,13 +97,21 @@ export function useAccountWorkspacePanel(session: AccountSessionContext) {
 
   const report = async (work: () => Promise<void>, mutation = true) => {
     const scope = requestScope.current;
+    let epoch = requestEpoch.current;
     setError("");
     setNotice("");
     if (mutation) setBusy(true);
     try {
-      await work();
+      const result = work();
+      epoch = requestEpoch.current;
+      await result;
     } catch (reason) {
-      if (scope !== requestScope.current || !openRef.current) return;
+      if (
+        scope !== requestScope.current ||
+        !openRef.current ||
+        (!mutation && epoch !== requestEpoch.current)
+      )
+        return;
       setError(reason instanceof Error ? reason.message : "操作失败");
       if (reason instanceof ApiError && reason.status === 409) {
         await refresh();
@@ -153,11 +161,13 @@ export function useAccountWorkspacePanel(session: AccountSessionContext) {
   };
 
   const loadSecurity = async () => {
+    const epoch = ++requestEpoch.current;
     const [sessionResult, keyResult, eventResult] = await Promise.all([
       listAccountSessions(),
       listApiKeys(),
       listSecurityEvents(),
     ]);
+    if (epoch !== requestEpoch.current) return;
     setSessions(sessionResult.items);
     setKeys(keyResult);
     setSecurityEvents(eventResult.items);
@@ -168,6 +178,12 @@ export function useAccountWorkspacePanel(session: AccountSessionContext) {
     if (loadTarget === "invitations") await loadInvitations();
     if (loadTarget === "members") await loadGovernance();
     if (loadTarget === "security") await loadSecurity();
+  };
+  const reload = async () => {
+    const scope = requestScope.current;
+    setLoading(true);
+    await report(loadCurrent, false);
+    if (scope === requestScope.current) setLoading(false);
   };
   const listQuery = loadTarget === "workspaces" ? debouncedQuery : "";
   const listPage = loadTarget === "workspaces" ? workspacePage : 1;
@@ -304,7 +320,7 @@ export function useAccountWorkspacePanel(session: AccountSessionContext) {
   }, []);
   return {
     loading,
-    reload: () => report(loadCurrent, false),
+    reload,
     workspaceView,
     setWorkspaceView,
     managementTab: activeManagementTab,

@@ -69,6 +69,85 @@ test("document action menu follows the directory row and stays within the viewpo
   });
 });
 
+test("project topbar uses a compact accessible action menu", async ({
+  page,
+}, info) => {
+  await page.setViewportSize({ width: 1600, height: 1000 });
+  await page.goto("/apps/thought-workshop");
+  await page.getByRole("button", { name: "创建知识库", exact: true }).click();
+  await page
+    .getByRole("dialog")
+    .getByRole("textbox")
+    .fill("产品与设计 · 灵感知识库");
+  await page.getByRole("button", { name: "确认", exact: true }).click();
+  await expect(
+    page.getByRole("button", { name: "编辑首页", exact: true }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "文档回收站", exact: true }).click();
+  await expect(
+    page.getByRole("heading", { name: "文档回收站", exact: true }),
+  ).toBeVisible();
+
+  for (const width of [1600, 1280, 390]) {
+    await page.setViewportSize({
+      width,
+      height: width === 1600 ? 1000 : width === 1280 ? 800 : 844,
+    });
+    await setThoughtTheme(page, "light");
+    const topbar = page.locator(".knowledge-topbar");
+    const trigger = topbar.getByRole("button", {
+      name: "知识库更多操作",
+      exact: true,
+    });
+    const createDocument = topbar.getByRole("button", {
+      name: "新建文档",
+      exact: true,
+    });
+    await expect(trigger).toBeVisible();
+    await expect(
+      topbar.getByRole("button", { name: "导入", exact: true }),
+    ).toHaveCount(0);
+    expect((await trigger.boundingBox())!.height).toBe(40);
+    expect((await createDocument.boundingBox())!.height).toBe(40);
+    if (width >= 1280)
+      expect((await topbar.boundingBox())!.height).toBeLessThanOrEqual(60);
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= innerWidth + 2,
+      ),
+    ).toBe(true);
+
+    await trigger.press("ArrowDown");
+    const menu = page.getByRole("menu", {
+      name: "知识库更多操作",
+      exact: true,
+    });
+    await expect(menu).toBeVisible();
+    await expect(menu.getByRole("menuitem")).toHaveCount(7);
+    await expect(menu.getByRole("separator")).toHaveCount(2);
+    await expect(menu.getByRole("menuitem", { name: "导入" })).toBeFocused();
+    await page.keyboard.press("End");
+    await expect(
+      menu.getByRole("menuitem", { name: "移入回收站" }),
+    ).toBeFocused();
+    const menuBox = (await menu.boundingBox())!;
+    expect(menuBox.x).toBeGreaterThanOrEqual(0);
+    expect(menuBox.x + menuBox.width).toBeLessThanOrEqual(width);
+    expect(menuBox.y).toBeGreaterThanOrEqual(0);
+    expect(menuBox.y + menuBox.height).toBeLessThanOrEqual(
+      (await page.viewportSize())!.height,
+    );
+    if (width === 1600)
+      await page.screenshot({
+        animations: "disabled",
+        path: info.outputPath("project-topbar-menu-1600-light.png"),
+        fullPage: true,
+      });
+    await page.keyboard.press("Escape");
+    await expect(trigger).toBeFocused();
+  }
+});
+
 test("knowledge cards, editable home, nested folders, moves, old links and responsive views", async ({
   page,
 }, info) => {
@@ -113,23 +192,6 @@ test("knowledge cards, editable home, nested folders, moves, old links and respo
     });
     for (const theme of ["light", "dark"]) {
       await setThoughtTheme(page, theme);
-      const topbar = page.locator(".knowledge-topbar");
-      const projectMenuTrigger = topbar.getByRole("button", {
-        name: "知识库更多操作",
-        exact: true,
-      });
-      const createDocument = topbar.getByRole("button", {
-        name: "新建文档",
-        exact: true,
-      });
-      await expect(projectMenuTrigger).toBeVisible();
-      await expect(
-        topbar.getByRole("button", { name: "导入", exact: true }),
-      ).toHaveCount(0);
-      expect((await projectMenuTrigger.boundingBox())!.height).toBe(40);
-      expect((await createDocument.boundingBox())!.height).toBe(40);
-      if (width >= 1280)
-        expect((await topbar.boundingBox())!.height).toBeLessThanOrEqual(60);
       expect(
         await page.evaluate(
           () => document.documentElement.scrollWidth <= innerWidth + 2,
@@ -140,27 +202,6 @@ test("knowledge cards, editable home, nested folders, moves, old links and respo
         path: info.outputPath(`empty-home-${width}-${theme}.png`),
         fullPage: true,
       });
-      await projectMenuTrigger.click();
-      const projectMenu = page.getByRole("menu", {
-        name: "知识库更多操作",
-        exact: true,
-      });
-      await expect(projectMenu).toBeVisible();
-      await expect(
-        projectMenu.getByRole("menuitem", { name: /^更多$/ }),
-      ).toHaveCount(0);
-      await expect(projectMenu.getByRole("menuitem")).toHaveCount(7);
-      const menuBox = (await projectMenu.boundingBox())!;
-      expect(menuBox.x).toBeGreaterThanOrEqual(0);
-      expect(menuBox.x + menuBox.width).toBeLessThanOrEqual(width);
-      if (width === 1600 && theme === "light")
-        await page.screenshot({
-          animations: "disabled",
-          path: info.outputPath("project-topbar-menu-1600-light.png"),
-          fullPage: true,
-        });
-      await page.keyboard.press("Escape");
-      await expect(projectMenuTrigger).toBeFocused();
     }
   }
   await page.setViewportSize({ width: 1600, height: 1000 });

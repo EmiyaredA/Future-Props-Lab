@@ -5,6 +5,7 @@ export function useSelectPopover(
   open: boolean,
   trigger: RefObject<HTMLButtonElement | null>,
   menu: RefObject<HTMLDivElement | null>,
+  heightLimit = 280,
 ) {
   useLayoutEffect(() => {
     const element = menu.current;
@@ -26,7 +27,7 @@ export function useSelectPopover(
         right: "auto",
         bottom: "auto",
         width: `${width}px`,
-        maxHeight: `${Math.max(40, Math.min(280, upwards ? above : below))}px`,
+        maxHeight: `${Math.max(40, Math.min(heightLimit, upwards ? above : below))}px`,
         left: `${Math.max(12, Math.min(rect.right - width, innerWidth - width - 12))}px`,
       });
       element.style.top = `${Math.max(visibleTop + 12, Math.min(visibleBottom - element.offsetHeight - 12, upwards ? rect.top - element.offsetHeight - 5 : rect.bottom + 5))}px`;
@@ -46,5 +47,5 @@ export function useSelectPopover(
       window.removeEventListener("scroll", scroll, true);
       if (element.isConnected) element.hidePopover?.();
     };
-  }, [open, trigger, menu]);
+  }, [heightLimit, menu, open, trigger]);
 }

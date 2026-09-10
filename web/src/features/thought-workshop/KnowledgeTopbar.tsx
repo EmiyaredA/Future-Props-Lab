@@ -55,7 +55,7 @@ function TopbarActionMenu({
   const menu = useRef<HTMLDivElement>(null);
   const focusLast = useRef(false);
   const menuId = useId();
-  useSelectPopover(open, trigger, menu);
+  useSelectPopover(open, trigger, menu, 360);
 
   const enabledItems = () =>
     Array.from(

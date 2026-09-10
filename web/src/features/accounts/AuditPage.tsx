@@ -1,4 +1,4 @@
-import { SlidersHorizontal, X } from "lucide-react";
+import { Search, SlidersHorizontal, X } from "lucide-react";
 import { useDebouncedValue } from "./useDebouncedValue";
 import { formatAccountDate } from "./formatAccountDate";
 import { useState } from "react";
@@ -9,6 +9,9 @@ import { accountQueryKeys } from "./queryKeys";
 import { fetchAudit } from "./managementApi";
 import { ManagementError, ManagementPagination } from "./ManagementUi";
 import { auditLabels, metadataLabels } from "./auditLabels";
+import { WorkspaceAuditRecords } from "./WorkspaceAuditRecords";
+import "./management.css";
+import "./workspace-audit.css";
 export function AuditPage({
   workspaceId = null,
 }: {
@@ -50,7 +53,7 @@ export function AuditPage({
     setPage(1);
   }
   return (
-    <section className="management-page">
+    <section className={`management-page${workspaceId ? " workspace-audit-page" : ""}`}>
       <header className="management-page-head">
         <div>
           <h1>{workspaceId ? "工作区审计" : "安全审计"}</h1>
@@ -62,6 +65,12 @@ export function AuditPage({
         </div>
       </header>
       <div className="management-list-panel">
+        {workspaceId ? (
+          <header className="workspace-audit-filter-heading">
+            <span aria-hidden="true"><Search size={18} /></span>
+            <div><h3>查找操作记录</h3><p>按事件、账号或时间追溯空间变更</p></div>
+          </header>
+        ) : null}
         <div className="management-toolbar">
           <CustomSelect
             ariaLabel="事件类型"
@@ -121,7 +130,9 @@ export function AuditPage({
             重试
           </button>
         ) : null}
-        <div className="management-table-wrap">
+        {workspaceId ? (
+          <WorkspaceAuditRecords items={query.data?.items ?? []} detailId={detailId} setDetailId={setDetailId} />
+        ) : <div className="management-table-wrap">
           <table>
             <thead>
               <tr>
@@ -157,8 +168,8 @@ export function AuditPage({
               ))}
             </tbody>
           </table>
-        </div>
-        {detail ? (
+        </div>}
+        {detail && !workspaceId ? (
           <section className="management-audit-detail" aria-label="审计详情">
             <header>
               <h3>{auditLabels[detail.event_type] || "安全事件"}</h3>
