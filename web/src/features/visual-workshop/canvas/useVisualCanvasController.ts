@@ -15,7 +15,6 @@ import {
 import { visualWorkshopQueryKeys } from "@features/visual-workshop/queryKeys";
 import {
   DEFAULT_VIEWPORT,
-  NODE_SIZE,
   clampZoom,
   cloneNode,
   nextNodeId,
@@ -40,6 +39,8 @@ import { fitCanvasViewport } from "@features/visual-workshop/canvas/canvasFit";
 import { useCanvasPersistence } from "@features/visual-workshop/canvas/useCanvasPersistence";
 import { useCanvasPointerInteractions } from "@features/visual-workshop/canvas/useCanvasPointerInteractions";
 import { useCanvasKeyboardShortcuts } from "@features/visual-workshop/canvas/useCanvasKeyboardShortcuts";
+
+import { derivedImageNode } from "./derivedImageNode";
 
 type ContextMenuState = {
   left: number;
@@ -525,27 +526,19 @@ export function useVisualCanvasController({
     (id: string) => removeNodes([id]),
     [removeNodes],
   );
-  const addCapturedFrameNode = useCallback(
+  const addDerivedImageNode = useCallback(
     async (sourceNodeId: string, asset: ManagedFile) => {
-      const source = nodesRef.current.find((node) => node.id === sourceNodeId);
-      if (!source || source.kind !== "video")
-        throw new Error("源视频节点已不存在，图片已保留在项目素材中。");
-      const node: VisualCanvasNode = {
-        id: nextNodeId("image"),
-        kind: "image",
-        title: asset.display_name,
-        position: {
-          x: source.position.x + NODE_SIZE.video.width + 48,
-          y: source.position.y,
-        },
-        asset_id: asset.id,
-      };
+      if (conflictRef.current)
+        throw new Error("画布存在保存冲突，请先选择要使用的版本");
+      const node = derivedImageNode(nodesRef.current, sourceNodeId, asset);
+      const exists = nodesRef.current.some((item) => item.id === node.id);
       if (autoSave.current) {
         clearTimeout(autoSave.current);
         autoSave.current = undefined;
       }
-      recordHistory({ nodes: nodesRef.current, edges: edgesRef.current });
-      const next = [...nodesRef.current, node];
+      if (!exists)
+        recordHistory({ nodes: nodesRef.current, edges: edgesRef.current });
+      const next = exists ? nodesRef.current : [...nodesRef.current, node];
       nodesRef.current = next;
       setNodes(next);
       setSelectedId(node.id);
@@ -558,6 +551,7 @@ export function useVisualCanvasController({
     [
       autoSave,
       client,
+      conflictRef,
       enqueueSave,
       edgesRef,
       nodesRef,
@@ -759,7 +753,8 @@ export function useVisualCanvasController({
     resetZoom,
     screenToWorld,
     createNode,
-    addCapturedFrameNode,
+    addDerivedImageNode,
+    addCapturedFrameNode: addDerivedImageNode,
     removeNode,
     copySelected,
     pasteNode,

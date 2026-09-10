@@ -2,6 +2,7 @@
 @import "./styles/canvas-shell.css";
 @import "./styles/canvas.css";
 @import "./styles/canvas-media-dialog.css";
+@import "./styles/image-crop.css";
 @import "./styles/generation.css";
 @import "./styles/responsive.css";
 @import "./styles/audio-generation.css";

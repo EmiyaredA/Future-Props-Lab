@@ -119,6 +119,7 @@ export function VisualWorkshopCanvasView({
     resetZoom,
     createNode,
     addCapturedFrameNode,
+    addDerivedImageNode,
     removeNode,
     removeEdge,
     canConnect,
@@ -665,6 +666,15 @@ export function VisualWorkshopCanvasView({
       />
       {previewNode ? (
         <CanvasMediaPreviewDialog
+          key={previewNode.id}
+          onAddCroppedImage={async (asset) => {
+            try {
+              await addDerivedImageNode(previewNode.id, asset);
+            } catch (error) {
+              if (conflictRef.current) setPreviewNodeId(undefined);
+              throw error;
+            }
+          }}
           projectId={projectId}
           node={previewNode}
           onClose={() => setPreviewNodeId(undefined)}

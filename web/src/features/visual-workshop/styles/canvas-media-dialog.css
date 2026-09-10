@@ -82,6 +82,7 @@
   min-height: 0;
   display: grid;
   grid-template-columns: minmax(0, 1fr) 350px;
+  grid-template-rows: minmax(0, 1fr);
 }
 
 .canvas-media-dialog-stage {
@@ -90,6 +91,8 @@
   min-height: 0;
   padding: 32px 58px;
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
   place-items: center;
   overflow: hidden;
   background: color-mix(in srgb, var(--bg) 84%, #050606);
@@ -474,7 +477,7 @@
   .canvas-media-dialog-layout {
     overflow-y: auto;
     grid-template-columns: 1fr;
-    grid-template-rows: minmax(340px, 58vh) auto;
+    grid-template-rows: min(100%, max(340px, 58vh)) auto;
   }
   .canvas-media-dialog-info {
     overflow: visible;

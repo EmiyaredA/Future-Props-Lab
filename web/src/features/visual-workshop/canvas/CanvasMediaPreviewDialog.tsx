@@ -14,6 +14,7 @@ import {
   ChevronRight,
   Clock3,
   Copy,
+  Crop,
   Download,
   Image,
   LoaderCircle,
@@ -36,6 +37,8 @@ import {
 } from "@features/visual-workshop/api";
 import { visualWorkshopQueryKeys } from "@features/visual-workshop/queryKeys";
 import { useApiBlobUrl } from "@platform/api/useApiBlobUrl";
+
+import { CanvasImageCrop } from "./CanvasImageCrop";
 
 type MediaNode = Exclude<VisualCanvasNode, { kind: "text" }>;
 type MediaMetrics = { duration?: number; width?: number; height?: number };
@@ -328,12 +331,20 @@ export function CanvasMediaPreviewDialog({
   node,
   onClose,
   onSetCurrent,
+  onAddCroppedImage,
 }: {
   projectId: string;
   node: MediaNode;
   onClose: () => void;
+  onAddCroppedImage?: (asset: ManagedFile) => Promise<void>;
   onSetCurrent: (assetId: string, taskId: string) => void;
 }) {
+  const [cropAsset, setCropAsset] = useState<{ id: string; title: string }>();
+  const cropButton = useRef<HTMLButtonElement>(null);
+  const cancelCrop = () => {
+    setCropAsset(undefined);
+    requestAnimationFrame(() => cropButton.current?.focus());
+  };
   const titleId = useId();
   const dialogRef = useRef<HTMLElement>(null);
   const initialized = useRef(false);
@@ -417,7 +428,9 @@ export function CanvasMediaPreviewDialog({
     const previousFocus = document.activeElement as HTMLElement | null;
     document.body.style.overflow = "hidden";
     const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.defaultPrevented) return;
       if (event.key === "Escape") {
+        if (cropAsset) return;
         event.preventDefault();
         onClose();
         return;
@@ -425,7 +438,7 @@ export function CanvasMediaPreviewDialog({
       if (event.key !== "Tab" || !dialogRef.current) return;
       const focusable = [
         ...dialogRef.current.querySelectorAll<HTMLElement>(
-          "button:not(:disabled), a[href], video[controls], audio[controls]",
+          "button:not(:disabled), a[href], video[controls], audio[controls], [tabindex='0'], input:not(:disabled)",
         ),
       ];
       if (!focusable.length) return;
@@ -450,7 +463,7 @@ export function CanvasMediaPreviewDialog({
       document.removeEventListener("keydown", handleKeyDown);
       previousFocus?.focus();
     };
-  }, [onClose]);
+  }, [onClose, cropAsset]);
 
   const moveSelection = (offset: number) => {
     const next = selectionKeys[selectedIndex + offset];
@@ -461,7 +474,7 @@ export function CanvasMediaPreviewDialog({
     <div
       className="canvas-media-dialog-backdrop"
       onMouseDown={(event) => {
-        if (event.target === event.currentTarget) onClose();
+        if (event.target === event.currentTarget && !cropAsset) onClose();
       }}
     >
       <section
@@ -482,236 +495,277 @@ export function CanvasMediaPreviewDialog({
             </span>
             <h2 id={titleId}>{node.title}</h2>
           </div>
-          <div>
-            {selectedAssetId ? (
-              <a
-                href={visualAssetDownloadPath(
-                  selectedAssetId,
-                  selectedDownloadName,
-                )}
-                title="下载当前预览素材"
-                aria-label="下载当前预览素材"
+          {!cropAsset ? (
+            <div>
+              {node.kind === "image" && selectedAssetId && onAddCroppedImage ? (
+                <button
+                  ref={cropButton}
+                  title="裁剪图片"
+                  aria-label="裁剪图片"
+                  onClick={() =>
+                    setCropAsset({
+                      id: selectedAssetId,
+                      title: selectedDownloadName || node.title,
+                    })
+                  }
+                >
+                  <Crop aria-hidden />
+                </button>
+              ) : null}
+              {selectedAssetId ? (
+                <a
+                  href={visualAssetDownloadPath(
+                    selectedAssetId,
+                    selectedDownloadName,
+                  )}
+                  title="下载当前预览素材"
+                  aria-label="下载当前预览素材"
+                >
+                  <Download aria-hidden />
+                </a>
+              ) : null}
+              <button
+                data-dialog-close
+                aria-label="关闭媒体预览"
+                onClick={onClose}
               >
-                <Download aria-hidden />
-              </a>
-            ) : null}
-            <button
-              data-dialog-close
-              aria-label="关闭媒体预览"
-              onClick={onClose}
-            >
-              <X aria-hidden />
-            </button>
-          </div>
+                <X aria-hidden />
+              </button>
+            </div>
+          ) : null}
         </header>
-        <div className="canvas-media-dialog-layout">
-          <main className={`canvas-media-dialog-stage is-${node.kind}`}>
-            <button
-              className="canvas-media-dialog-previous"
-              aria-label="上一个生成记录"
-              disabled={selectedIndex <= 0}
-              onClick={() => moveSelection(-1)}
-            >
-              <ChevronLeft aria-hidden />
-            </button>
-            <AssetPreview
-              assetId={selectedAssetId}
-              kind={node.kind}
-              name={node.title}
-              onMetrics={setMetrics}
-            />
-            <button
-              className="canvas-media-dialog-next"
-              aria-label="下一个生成记录"
-              disabled={selectedIndex >= selectionKeys.length - 1}
-              onClick={() => moveSelection(1)}
-            >
-              <ChevronRight aria-hidden />
-            </button>
-          </main>
-          <aside className="canvas-media-dialog-info">
-            {selectedTask ? (
-              <>
-                <div className="canvas-media-task-heading">
-                  <span
-                    className={`canvas-media-task-status ${selectedTask.status}`}
-                  >
-                    {STATUS_LABELS[selectedTask.status]}
-                  </span>
-                  {ACTIVE_STATUSES.has(selectedTask.status) ? (
-                    <strong>{selectedTask.progress}%</strong>
-                  ) : null}
-                </div>
-                {selectedTask.status === "failed" &&
-                selectedTask.error_message ? (
-                  <p className="canvas-media-task-error">
-                    {selectedTask.error_message}
-                  </p>
-                ) : null}
-                <InfoSection title="生成信息">
+        {cropAsset && onAddCroppedImage ? (
+          <CanvasImageCrop
+            projectId={projectId}
+            assetId={cropAsset.id}
+            title={cropAsset.title}
+            onCancel={cancelCrop}
+            onSaved={onClose}
+            onAdd={onAddCroppedImage}
+          />
+        ) : (
+          <>
+            <div className="canvas-media-dialog-layout">
+              <main className={`canvas-media-dialog-stage is-${node.kind}`}>
+                <button
+                  className="canvas-media-dialog-previous"
+                  aria-label="上一个生成记录"
+                  disabled={selectedIndex <= 0}
+                  onClick={() => moveSelection(-1)}
+                >
+                  <ChevronLeft aria-hidden />
+                </button>
+                <AssetPreview
+                  assetId={selectedAssetId}
+                  kind={node.kind}
+                  name={node.title}
+                  onMetrics={setMetrics}
+                />
+                <button
+                  className="canvas-media-dialog-next"
+                  aria-label="下一个生成记录"
+                  disabled={selectedIndex >= selectionKeys.length - 1}
+                  onClick={() => moveSelection(1)}
+                >
+                  <ChevronRight aria-hidden />
+                </button>
+              </main>
+              <aside className="canvas-media-dialog-info">
+                {selectedTask ? (
+                  <>
+                    <div className="canvas-media-task-heading">
+                      <span
+                        className={`canvas-media-task-status ${selectedTask.status}`}
+                      >
+                        {STATUS_LABELS[selectedTask.status]}
+                      </span>
+                      {ACTIVE_STATUSES.has(selectedTask.status) ? (
+                        <strong>{selectedTask.progress}%</strong>
+                      ) : null}
+                    </div>
+                    {selectedTask.status === "failed" &&
+                    selectedTask.error_message ? (
+                      <p className="canvas-media-task-error">
+                        {selectedTask.error_message}
+                      </p>
+                    ) : null}
+                    <InfoSection title="生成信息">
+                      <dl>
+                        <dt>模型</dt>
+                        <dd>{selectedTask.model_slug}</dd>
+                        <dt>服务商</dt>
+                        <dd>{selectedTask.provider_name}</dd>
+                        {parameters.map(([label, value]) => (
+                          <div key={label}>
+                            <dt>{label}</dt>
+                            <dd>{String(value)}</dd>
+                          </div>
+                        ))}
+                      </dl>
+                    </InfoSection>
+                    {references.length ? (
+                      <InfoSection
+                        title={`参考素材 (${references.reduce((total, group) => total + group.ids.length, 0)})`}
+                      >
+                        {references.map((group) => (
+                          <div
+                            className="canvas-media-reference-group"
+                            key={group.label}
+                          >
+                            <small>{group.label}</small>
+                            <div>
+                              {group.ids.map((assetId) => (
+                                <ReferencePreview
+                                  key={assetId}
+                                  assetId={assetId}
+                                  kind={group.kind}
+                                  name={
+                                    files.get(assetId)?.display_name ?? assetId
+                                  }
+                                />
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+                      </InfoSection>
+                    ) : null}
+                    {typeof prompt === "string" && prompt ? (
+                      <InfoSection title="提示词">
+                        <div className="canvas-media-prompt">
+                          <p>{prompt}</p>
+                          <button
+                            aria-label="复制提示词"
+                            onClick={() => {
+                              void navigator.clipboard.writeText(prompt);
+                              setCopied(true);
+                              window.setTimeout(() => setCopied(false), 1200);
+                            }}
+                          >
+                            {copied ? (
+                              <Check aria-hidden />
+                            ) : (
+                              <Copy aria-hidden />
+                            )}
+                          </button>
+                        </div>
+                      </InfoSection>
+                    ) : null}
+                  </>
+                ) : (
+                  <InfoSection title="素材来源">
+                    <div className="canvas-media-uploaded-badge">
+                      非 AI 生成素材
+                    </div>
+                    <p className="canvas-media-muted">
+                      该素材由上传或素材库绑定，不包含模型和提示词信息。
+                    </p>
+                  </InfoSection>
+                )}
+                <InfoSection title="文件信息">
                   <dl>
-                    <dt>模型</dt>
-                    <dd>{selectedTask.model_slug}</dd>
-                    <dt>服务商</dt>
-                    <dd>{selectedTask.provider_name}</dd>
-                    {parameters.map(([label, value]) => (
-                      <div key={label}>
-                        <dt>{label}</dt>
-                        <dd>{String(value)}</dd>
-                      </div>
-                    ))}
+                    <dt>文件名</dt>
+                    <dd>{selectedFile?.display_name ?? node.title}</dd>
+                    <dt>类型</dt>
+                    <dd>{selectedFile?.mime_type ?? node.kind}</dd>
+                    <dt>大小</dt>
+                    <dd>{formatBytes(selectedFile?.byte_size)}</dd>
+                    {metrics.width && metrics.height ? (
+                      <>
+                        <dt>尺寸</dt>
+                        <dd>
+                          {metrics.width} × {metrics.height}
+                        </dd>
+                      </>
+                    ) : null}
+                    {metrics.duration != null ? (
+                      <>
+                        <dt>时长</dt>
+                        <dd>{formatDuration(metrics.duration)}</dd>
+                      </>
+                    ) : null}
                   </dl>
                 </InfoSection>
-                {references.length ? (
-                  <InfoSection
-                    title={`参考素材 (${references.reduce((total, group) => total + group.ids.length, 0)})`}
+                {selectedTask ? (
+                  <InfoSection title="时间">
+                    <p className="canvas-media-time">
+                      <Clock3 aria-hidden />{" "}
+                      {new Date(selectedTask.created_at).toLocaleString(
+                        "zh-CN",
+                      )}
+                    </p>
+                  </InfoSection>
+                ) : null}
+                {selectedTask?.status === "completed" &&
+                selectedTask.result_asset_id &&
+                selectedTask.result_asset_id !== node.asset_id ? (
+                  <button
+                    className="canvas-media-set-current"
+                    onClick={() =>
+                      onSetCurrent(
+                        selectedTask.result_asset_id!,
+                        selectedTask.id,
+                      )
+                    }
                   >
-                    {references.map((group) => (
-                      <div
-                        className="canvas-media-reference-group"
-                        key={group.label}
-                      >
-                        <small>{group.label}</small>
-                        <div>
-                          {group.ids.map((assetId) => (
-                            <ReferencePreview
-                              key={assetId}
-                              assetId={assetId}
-                              kind={group.kind}
-                              name={files.get(assetId)?.display_name ?? assetId}
-                            />
-                          ))}
-                        </div>
-                      </div>
-                    ))}
-                  </InfoSection>
+                    设为当前素材
+                  </button>
                 ) : null}
-                {typeof prompt === "string" && prompt ? (
-                  <InfoSection title="提示词">
-                    <div className="canvas-media-prompt">
-                      <p>{prompt}</p>
-                      <button
-                        aria-label="复制提示词"
-                        onClick={() => {
-                          void navigator.clipboard.writeText(prompt);
-                          setCopied(true);
-                          window.setTimeout(() => setCopied(false), 1200);
-                        }}
-                      >
-                        {copied ? <Check aria-hidden /> : <Copy aria-hidden />}
-                      </button>
-                    </div>
-                  </InfoSection>
+              </aside>
+            </div>
+            <footer className="canvas-media-history">
+              <div>
+                <strong>生成历史</strong>
+                <span>{history.data?.pages[0]?.total ?? 0} 条</span>
+              </div>
+              <div className="canvas-media-history-track">
+                {manualCurrent ? (
+                  <button
+                    className={selectedKey === "current" ? "selected" : ""}
+                    aria-pressed={selectedKey === "current"}
+                    onClick={() => setSelectedKey("current")}
+                  >
+                    <span className="canvas-media-history-preview current">
+                      {node.kind === "image" ? (
+                        <Image aria-hidden />
+                      ) : node.kind === "video" ? (
+                        <Video aria-hidden />
+                      ) : (
+                        <Music aria-hidden />
+                      )}
+                    </span>
+                    <small>当前素材</small>
+                  </button>
                 ) : null}
-              </>
-            ) : (
-              <InfoSection title="素材来源">
-                <div className="canvas-media-uploaded-badge">
-                  非 AI 生成素材
-                </div>
-                <p className="canvas-media-muted">
-                  该素材由上传或素材库绑定，不包含模型和提示词信息。
-                </p>
-              </InfoSection>
-            )}
-            <InfoSection title="文件信息">
-              <dl>
-                <dt>文件名</dt>
-                <dd>{selectedFile?.display_name ?? node.title}</dd>
-                <dt>类型</dt>
-                <dd>{selectedFile?.mime_type ?? node.kind}</dd>
-                <dt>大小</dt>
-                <dd>{formatBytes(selectedFile?.byte_size)}</dd>
-                {metrics.width && metrics.height ? (
-                  <>
-                    <dt>尺寸</dt>
-                    <dd>
-                      {metrics.width} × {metrics.height}
-                    </dd>
-                  </>
+                {tasks.map((task, index) => (
+                  <button
+                    className={`${selectedKey === task.id ? "selected" : ""}${task.result_asset_id === node.asset_id ? " current" : ""}`}
+                    aria-pressed={selectedKey === task.id}
+                    key={task.id}
+                    onClick={() => setSelectedKey(task.id)}
+                  >
+                    <HistoryPreview task={task} />
+                    <small>{index + 1}</small>
+                  </button>
+                ))}
+                {history.isLoading ? (
+                  <span className="canvas-media-history-loading">
+                    <LoaderCircle className="spinning" aria-hidden />
+                    读取历史…
+                  </span>
                 ) : null}
-                {metrics.duration != null ? (
-                  <>
-                    <dt>时长</dt>
-                    <dd>{formatDuration(metrics.duration)}</dd>
-                  </>
+                {history.hasNextPage ? (
+                  <button
+                    className="canvas-media-history-more"
+                    disabled={history.isFetchingNextPage}
+                    onClick={() => void history.fetchNextPage()}
+                  >
+                    {history.isFetchingNextPage ? "加载中…" : "加载更多"}
+                  </button>
                 ) : null}
-              </dl>
-            </InfoSection>
-            {selectedTask ? (
-              <InfoSection title="时间">
-                <p className="canvas-media-time">
-                  <Clock3 aria-hidden />{" "}
-                  {new Date(selectedTask.created_at).toLocaleString("zh-CN")}
-                </p>
-              </InfoSection>
-            ) : null}
-            {selectedTask?.status === "completed" &&
-            selectedTask.result_asset_id &&
-            selectedTask.result_asset_id !== node.asset_id ? (
-              <button
-                className="canvas-media-set-current"
-                onClick={() =>
-                  onSetCurrent(selectedTask.result_asset_id!, selectedTask.id)
-                }
-              >
-                设为当前素材
-              </button>
-            ) : null}
-          </aside>
-        </div>
-        <footer className="canvas-media-history">
-          <div>
-            <strong>生成历史</strong>
-            <span>{history.data?.pages[0]?.total ?? 0} 条</span>
-          </div>
-          <div className="canvas-media-history-track">
-            {manualCurrent ? (
-              <button
-                className={selectedKey === "current" ? "selected" : ""}
-                aria-pressed={selectedKey === "current"}
-                onClick={() => setSelectedKey("current")}
-              >
-                <span className="canvas-media-history-preview current">
-                  {node.kind === "image" ? (
-                    <Image aria-hidden />
-                  ) : node.kind === "video" ? (
-                    <Video aria-hidden />
-                  ) : (
-                    <Music aria-hidden />
-                  )}
-                </span>
-                <small>当前素材</small>
-              </button>
-            ) : null}
-            {tasks.map((task, index) => (
-              <button
-                className={`${selectedKey === task.id ? "selected" : ""}${task.result_asset_id === node.asset_id ? " current" : ""}`}
-                aria-pressed={selectedKey === task.id}
-                key={task.id}
-                onClick={() => setSelectedKey(task.id)}
-              >
-                <HistoryPreview task={task} />
-                <small>{index + 1}</small>
-              </button>
-            ))}
-            {history.isLoading ? (
-              <span className="canvas-media-history-loading">
-                <LoaderCircle className="spinning" aria-hidden />
-                读取历史…
-              </span>
-            ) : null}
-            {history.hasNextPage ? (
-              <button
-                className="canvas-media-history-more"
-                disabled={history.isFetchingNextPage}
-                onClick={() => void history.fetchNextPage()}
-              >
-                {history.isFetchingNextPage ? "加载中…" : "加载更多"}
-              </button>
-            ) : null}
-          </div>
-        </footer>
+              </div>
+            </footer>
+          </>
+        )}
       </section>
     </div>,
     document.body,
