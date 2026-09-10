@@ -1,7 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import type { Editor } from "@tiptap/react";
-import { ArrowLeft, ChevronDown, Play, Download, Save, Presentation } from "lucide-react";
+import {
+  ArrowLeft,
+  ChevronDown,
+  Play,
+  Download,
+  Save,
+  Presentation,
+} from "lucide-react";
 import { PresentationMenu } from "./PresentationMenu";
 import { PresentationToolbar } from "./PresentationToolbar";
 import { PresentationStatusbar } from "./PresentationStatusbar";
@@ -419,7 +426,9 @@ export function PresentationEditor({
           <ArrowLeft size={20} />
         </button>
         <Presentation size={22} className="presentation-mark" />
-        <span className="presentation-editor-brand">演示工坊 <span>/</span></span>
+        <span className="presentation-editor-brand">
+          演示工坊 <span>/</span>
+        </span>
         <input
           aria-label="文稿名称"
           maxLength={120}
@@ -460,10 +469,25 @@ export function PresentationEditor({
             </button>
           ) : null}
           <div className="presentation-split-button presentation-show-button">
-            <button className="btn" aria-label="从头放映" onClick={() => startShow(0)}>
-              <Play size={16} /><span>放映</span>
+            <button
+              className="btn"
+              aria-label="从头放映"
+              onClick={() => startShow(0)}
+            >
+              <Play size={16} />
+              <span>放映</span>
             </button>
-            <PresentationMenu label="放映选项" actions={[{ label: "从当前页放映", onSelect: () => startShow(slideIndex) }]}><ChevronDown size={14} /></PresentationMenu>
+            <PresentationMenu
+              label="放映选项"
+              actions={[
+                {
+                  label: "从当前页放映",
+                  onSelect: () => startShow(slideIndex),
+                },
+              ]}
+            >
+              <ChevronDown size={14} />
+            </PresentationMenu>
           </div>
           <button
             className="btn primary"
@@ -523,12 +547,21 @@ export function PresentationEditor({
         </div>
       ) : null}
       <PresentationToolbar
-        readOnly={readOnly} canAdd={draft.draft.document.slides.length < 100}
-        canUndo={draft.canUndo} canRedo={draft.canRedo} busy={busy} hasSelection={!!selected.length}
-        onAdd={(layout) => addSlide(undefined, layout)} onUndo={draft.undo} onRedo={draft.redo}
-        onText={() => insert([newElement("text")])} onShape={(kind) => insert([newElement(kind)])}
-        onUpload={() => upload.current?.click()} onLibrary={() => setImages(true)}
-        onCopy={duplicateSelected} onDelete={deleteSelected}
+        readOnly={readOnly}
+        canAdd={draft.draft.document.slides.length < 100}
+        canUndo={draft.canUndo}
+        canRedo={draft.canRedo}
+        busy={busy}
+        hasSelection={!!selected.length}
+        onAdd={(layout) => addSlide(undefined, layout)}
+        onUndo={draft.undo}
+        onRedo={draft.redo}
+        onText={() => insert([newElement("text")])}
+        onShape={(kind) => insert([newElement(kind)])}
+        onUpload={() => upload.current?.click()}
+        onLibrary={() => setImages(true)}
+        onCopy={duplicateSelected}
+        onDelete={deleteSelected}
       />
       <div className="presentation-mobile-tabs">
         {["slides", "format", "notes"].map((id, i) => (
@@ -581,7 +614,13 @@ export function PresentationEditor({
             undo={draft.undo}
             redo={draft.redo}
           />
-          <PresentationNotes notes={slide.notes} readOnly={readOnly} onChange={(notes) => changeSlide((s) => ({ ...s, notes }), `notes:${slide.id}`)} />
+          <PresentationNotes
+            notes={slide.notes}
+            readOnly={readOnly}
+            onChange={(notes) =>
+              changeSlide((s) => ({ ...s, notes }), `notes:${slide.id}`)
+            }
+          />
         </main>
         <PresentationInspector
           slide={slide}
@@ -604,7 +643,13 @@ export function PresentationEditor({
           readOnly={readOnly}
         />
       </div>
-      <PresentationStatusbar page={slideIndex + 1} total={draft.draft.document.slides.length} scale={scale} zoom={zoom} onZoom={setZoom} />
+      <PresentationStatusbar
+        page={slideIndex + 1}
+        total={draft.draft.document.slides.length}
+        scale={scale}
+        zoom={zoom}
+        onZoom={setZoom}
+      />
       <input
         ref={upload}
         type="file"

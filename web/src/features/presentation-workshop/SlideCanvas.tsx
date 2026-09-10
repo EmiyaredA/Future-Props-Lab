@@ -80,7 +80,9 @@ export function SlideCanvas({
   }, []);
   const scale = zoom ?? fit,
     display = transient?.id === slide.id ? transient : slide;
-  useEffect(() => { onScaleChange?.(scale); }, [scale, onScaleChange]);
+  useEffect(() => {
+    onScaleChange?.(scale);
+  }, [scale, onScaleChange]);
   const chosen = display.elements.filter((e) => selected.includes(e.id));
   const movable = chosen.filter((e) => !e.locked);
   const box = movable.length ? bounds(movable) : null;
@@ -357,7 +359,6 @@ export function SlideCanvas({
           </SlideSurface>
         </div>
       </div>
-
     </div>
   );
 }

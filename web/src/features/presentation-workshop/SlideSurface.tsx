@@ -208,9 +208,15 @@ export function SlidePreview({
   const [visible, setVisible] = useState(false);
   const [measuredWidth, setMeasuredWidth] = useState(224);
   useEffect(() => {
-    if (width !== undefined || !host.current || typeof ResizeObserver === "undefined") return;
+    if (
+      width !== undefined ||
+      !host.current ||
+      typeof ResizeObserver === "undefined"
+    )
+      return;
     const observer = new ResizeObserver(([entry]) => {
-      if (entry.contentRect.width > 0) setMeasuredWidth(entry.contentRect.width);
+      if (entry.contentRect.width > 0)
+        setMeasuredWidth(entry.contentRect.width);
     });
     observer.observe(host.current);
     return () => observer.disconnect();

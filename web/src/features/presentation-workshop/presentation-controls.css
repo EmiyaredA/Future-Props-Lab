@@ -1,0 +1,370 @@
+.presentation-editor-brand {
+  font-size: 15px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.presentation-editor-brand > span {
+  color: var(--muted);
+  font-weight: 400;
+  margin-left: 14px;
+}
+.presentation-save-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.presentation-save-state::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.presentation-save-state.saved::before {
+  background: #58a477;
+}
+.presentation-split-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+}
+.presentation-menu > button,
+.presentation-toolbar .btn,
+.presentation-toolbar .icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 34px;
+  padding: 7px 10px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  color: var(--text);
+  font: inherit;
+  font-size: 12px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.presentation-menu > button:hover,
+.presentation-toolbar button:hover:not(:disabled) {
+  background: var(--bg);
+}
+.presentation-split-button > .btn {
+  border-radius: 6px 0 0 6px;
+}
+.presentation-split-button > .presentation-menu > button {
+  padding-inline: 5px;
+  border-radius: 0 6px 6px 0;
+}
+.presentation-show-button {
+  border: 1px solid var(--border);
+  border-radius: 7px;
+}
+.presentation-show-button > .btn {
+  border: 0;
+}
+.presentation-show-button > .presentation-menu > button {
+  border-left: 1px solid var(--border);
+  min-height: 32px;
+}
+.presentation-action-menu {
+  padding: 5px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 8px 30px #00000018;
+  overflow: auto;
+  z-index: 1050;
+}
+.presentation-action-menu button {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  font: inherit;
+  font-size: 13px;
+  padding: 9px 10px;
+  border-radius: 5px;
+  cursor: pointer;
+}
+.presentation-action-menu button span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.presentation-action-menu button svg {
+  flex-shrink: 0;
+}
+.presentation-action-menu button:hover,
+.presentation-action-menu button:focus-visible {
+  background: var(--bg);
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+.presentation-action-menu .danger {
+  color: var(--danger, #c75243);
+}
+.presentation-filmstrip-add {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+  margin: 8px 8px 0 23px;
+  width: calc(100% - 31px);
+  padding: 10px 5px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  color: var(--muted);
+  font-size: 11px;
+  cursor: pointer;
+}
+.presentation-slide-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 3px;
+  padding-top: 5px;
+}
+.presentation-slide-actions button {
+  display: grid;
+  place-items: center;
+  border: 0;
+  padding: 5px;
+  background: transparent;
+  color: var(--muted);
+  border-radius: 4px;
+  cursor: pointer;
+}
+.presentation-slide-actions button:hover {
+  background: var(--bg);
+  color: var(--text);
+}
+.presentation-notes {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+}
+.presentation-notes-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 18px;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  text-align: left;
+  font-size: 12px;
+  cursor: pointer;
+}
+.presentation-notes-toggle small {
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+}
+.presentation-notes.expanded .presentation-notes-toggle svg {
+  transform: rotate(180deg);
+}
+.presentation-notes textarea {
+  height: 76px;
+  min-height: 76px;
+  padding: 0 18px 12px;
+  resize: none;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.presentation-statusbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 40px;
+  padding: 4px 24px;
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 11px;
+  flex-shrink: 0;
+}
+.presentation-zoom-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.presentation-zoom-controls output {
+  min-width: 34px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.presentation-zoom-controls button {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+.presentation-zoom-controls button:hover {
+  background: var(--bg);
+  color: var(--text);
+}
+.presentation-zoom-controls .presentation-fit {
+  margin-left: 6px;
+  font-size: 11px;
+}
+.presentation-zoom-controls .presentation-fit[aria-pressed="true"] {
+  color: var(--accent);
+}
+.presentation-zoom-slider {
+  appearance: none;
+  width: 120px;
+  height: 24px;
+  background: transparent;
+  cursor: pointer;
+}
+.presentation-zoom-slider::-webkit-slider-runnable-track {
+  height: 3px;
+  border-radius: 2px;
+  background: var(--border);
+}
+.presentation-zoom-slider::-moz-range-track {
+  height: 3px;
+  border-radius: 2px;
+  background: var(--border);
+}
+.presentation-zoom-slider::-webkit-slider-thumb {
+  appearance: none;
+  height: 12px;
+  width: 12px;
+  margin-top: -4.5px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--accent);
+}
+.presentation-zoom-slider::-moz-range-thumb {
+  height: 12px;
+  width: 12px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--accent);
+}
+.presentation-zoom-slider:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+.presentation-inspector-tabs {
+  display: flex;
+  margin: 0 -16px 24px;
+  border-bottom: 1px solid var(--border);
+}
+.presentation-inspector-tabs button {
+  flex: 1;
+  padding: 17px 8px 14px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.presentation-inspector-tabs button[aria-selected="true"] {
+  border-bottom-color: var(--accent);
+  color: var(--text);
+  font-weight: 600;
+}
+.presentation-page-ratio {
+  min-width: 110px;
+  border: 1px solid var(--border);
+  padding: 10px 12px;
+  border-radius: 7px;
+  font-size: 12px;
+}
+.presentation-page-colors {
+  display: flex;
+  gap: 10px;
+  margin: 18px 0;
+}
+.presentation-page-colors button {
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  cursor: pointer;
+}
+.presentation-page-colors button[aria-pressed="true"] {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+.presentation-page-hint {
+  border-top: 1px solid var(--border);
+  margin-top: 26px;
+  padding-top: 16px;
+}
+@media (max-width: 1100px) {
+  .presentation-editor-brand {
+    display: none;
+  }
+  .presentation-inspector-tabs {
+    margin-inline: -12px;
+  }
+}
+@media (max-width: 767px) {
+  .presentation-statusbar {
+    padding: 4px 10px;
+    gap: 5px;
+  }
+  .presentation-statusbar > span {
+    white-space: nowrap;
+  }
+  .presentation-zoom-controls {
+    gap: 3px;
+  }
+  .presentation-zoom-slider {
+    width: 66px;
+  }
+  .presentation-fit span {
+    display: none;
+  }
+  .presentation-inspector-tabs {
+    margin-bottom: 14px;
+  }
+  .presentation-filmstrip-add {
+    width: 150px;
+    flex: 0 0 150px;
+    margin: 10px;
+    align-self: center;
+  }
+  .presentation-notes {
+    display: none;
+  }
+  .presentation-notes-toggle {
+    padding-inline: 12px;
+  }
+  .presentation-notes textarea {
+    padding-inline: 12px;
+  }
+  .presentation-topbar .presentation-save-state {
+    font-size: 10px;
+  }
+}

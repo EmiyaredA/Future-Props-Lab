@@ -7,6 +7,7 @@ import type { NavigationGuard } from "./types";
 import "./presentation-workshop.css";
 import "./presentation-library.css";
 import "./presentation-canvas.css";
+import "./presentation-controls.css";
 
 export function PresentationWorkshopPage({
   projectId,

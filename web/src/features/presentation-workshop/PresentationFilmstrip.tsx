@@ -92,7 +92,17 @@ export function PresentationFilmstrip({
           ) : null}
         </div>
       ))}
-      {!readOnly && <button className="presentation-filmstrip-add" aria-label="在当前页后新建幻灯片" disabled={deck.slides.length >= 100} onClick={onAdd}><Plus size={16} />新建幻灯片</button>}
+      {!readOnly && (
+        <button
+          className="presentation-filmstrip-add"
+          aria-label="在当前页后新建幻灯片"
+          disabled={deck.slides.length >= 100}
+          onClick={onAdd}
+        >
+          <Plus size={16} />
+          新建幻灯片
+        </button>
+      )}
     </aside>
   );
 }
