@@ -817,6 +817,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/files/svg/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Preview Svg */
+        post: operations["preview_svg_v1_files_svg_preview_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/files/{asset_id}": {
         parameters: {
             query?: never;
@@ -10043,28 +10060,75 @@ export interface components {
         PresentationElement: {
             /** Asset Id */
             asset_id: string | null;
+            /** Corner Radius */
+            corner_radius?: number | null;
             crop: components["schemas"]["PresentationCrop"];
+            /**
+             * End Arrow
+             * @default none
+             * @enum {string}
+             */
+            end_arrow: "none" | "triangle" | "open" | "circle";
             /** Fill */
             fill: string;
+            /**
+             * Fill Opacity
+             * @default 1
+             */
+            fill_opacity: number;
+            /**
+             * Flip X
+             * @default false
+             */
+            flip_x: boolean;
+            /**
+             * Flip Y
+             * @default false
+             */
+            flip_y: boolean;
             /** Height */
             height: number;
             /** Id */
             id: string;
             /**
+             * Image Border
+             * @default false
+             */
+            image_border: boolean;
+            /**
              * Kind
              * @enum {string}
              */
-            kind: "text" | "image" | "rect" | "roundRect" | "ellipse" | "triangle" | "diamond" | "arrow" | "line";
+            kind: "text" | "image" | "vector" | "rect" | "roundRect" | "ellipse" | "triangle" | "diamond" | "arrow" | "line" | "rightTriangle" | "pentagon" | "hexagon" | "star" | "parallelogram" | "trapezoid" | "leftArrow" | "upArrow" | "downArrow" | "doubleArrow" | "callout" | "roundCallout" | "ellipseCallout";
             /** Locked */
             locked: boolean;
+            /**
+             * Opacity
+             * @default 1
+             */
+            opacity: number;
             /** Paragraphs */
             paragraphs: components["schemas"]["PresentationParagraph"][];
             /** Rotation */
             rotation: number;
+            /**
+             * Start Arrow
+             * @default none
+             * @enum {string}
+             */
+            start_arrow: "none" | "triangle" | "open" | "circle";
             /** Stroke */
             stroke: string;
+            /**
+             * Stroke Dash
+             * @default solid
+             * @enum {string}
+             */
+            stroke_dash: "solid" | "dash" | "dot";
             /** Stroke Width */
             stroke_width: number;
+            /** Vector Color */
+            vector_color?: string | null;
             /** Width */
             width: number;
             /** X */
@@ -10159,7 +10223,7 @@ export interface components {
              * Font
              * @enum {string}
              */
-            font: "Microsoft YaHei" | "Arial";
+            font: "Microsoft YaHei" | "Arial" | "Consolas";
             /** Italic */
             italic: boolean;
             /** Size */
@@ -11017,6 +11081,22 @@ export interface components {
              * @constant
              */
             target_version: 2;
+        };
+        /** SvgPreviewIn */
+        SvgPreviewIn: {
+            /** Svg */
+            svg: string;
+        };
+        /** SvgPreviewOut */
+        SvgPreviewOut: {
+            /** Height */
+            height: number;
+            /** Monochrome */
+            monochrome: boolean;
+            /** Svg */
+            svg: string;
+            /** Width */
+            width: number;
         };
         /** TemplateModel */
         TemplateModel: {
@@ -15073,6 +15153,7 @@ export interface operations {
                 media_kind?: ("image" | "video" | "audio" | "font" | "document") | null;
                 sort?: "updated" | "name";
                 include_references?: boolean;
+                include_svg?: boolean;
             };
             header?: never;
             path?: never;
@@ -15120,6 +15201,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["VisualAssetOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    preview_svg_v1_files_svg_preview_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SvgPreviewIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SvgPreviewOut"];
                 };
             };
             /** @description Validation Error */

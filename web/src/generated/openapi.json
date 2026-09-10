@@ -15757,13 +15757,54 @@
             ],
             "title": "Asset Id"
           },
+          "corner_radius": {
+            "anyOf": [
+              {
+                "maximum": 5000.0,
+                "minimum": 0.0,
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Corner Radius"
+          },
           "crop": {
             "$ref": "#/components/schemas/PresentationCrop"
+          },
+          "end_arrow": {
+            "default": "none",
+            "enum": [
+              "none",
+              "triangle",
+              "open",
+              "circle"
+            ],
+            "title": "End Arrow",
+            "type": "string"
           },
           "fill": {
             "pattern": "^#[0-9a-fA-F]{6}$",
             "title": "Fill",
             "type": "string"
+          },
+          "fill_opacity": {
+            "default": 1,
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Fill Opacity",
+            "type": "number"
+          },
+          "flip_x": {
+            "default": false,
+            "title": "Flip X",
+            "type": "boolean"
+          },
+          "flip_y": {
+            "default": false,
+            "title": "Flip Y",
+            "type": "boolean"
           },
           "height": {
             "maximum": 10000.0,
@@ -15777,17 +15818,36 @@
             "title": "Id",
             "type": "string"
           },
+          "image_border": {
+            "default": false,
+            "title": "Image Border",
+            "type": "boolean"
+          },
           "kind": {
             "enum": [
               "text",
               "image",
+              "vector",
               "rect",
               "roundRect",
               "ellipse",
               "triangle",
               "diamond",
               "arrow",
-              "line"
+              "line",
+              "rightTriangle",
+              "pentagon",
+              "hexagon",
+              "star",
+              "parallelogram",
+              "trapezoid",
+              "leftArrow",
+              "upArrow",
+              "downArrow",
+              "doubleArrow",
+              "callout",
+              "roundCallout",
+              "ellipseCallout"
             ],
             "title": "Kind",
             "type": "string"
@@ -15795,6 +15855,13 @@
           "locked": {
             "title": "Locked",
             "type": "boolean"
+          },
+          "opacity": {
+            "default": 1,
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Opacity",
+            "type": "number"
           },
           "paragraphs": {
             "items": {
@@ -15810,9 +15877,30 @@
             "title": "Rotation",
             "type": "number"
           },
+          "start_arrow": {
+            "default": "none",
+            "enum": [
+              "none",
+              "triangle",
+              "open",
+              "circle"
+            ],
+            "title": "Start Arrow",
+            "type": "string"
+          },
           "stroke": {
             "pattern": "^#[0-9a-fA-F]{6}$",
             "title": "Stroke",
+            "type": "string"
+          },
+          "stroke_dash": {
+            "default": "solid",
+            "enum": [
+              "solid",
+              "dash",
+              "dot"
+            ],
+            "title": "Stroke Dash",
             "type": "string"
           },
           "stroke_width": {
@@ -15820,6 +15908,18 @@
             "minimum": 0.0,
             "title": "Stroke Width",
             "type": "number"
+          },
+          "vector_color": {
+            "anyOf": [
+              {
+                "pattern": "^#[0-9a-fA-F]{6}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vector Color"
           },
           "width": {
             "maximum": 10000.0,
@@ -16078,7 +16178,8 @@
           "font": {
             "enum": [
               "Microsoft YaHei",
-              "Arial"
+              "Arial",
+              "Consolas"
             ],
             "title": "Font",
             "type": "string"
@@ -16127,7 +16228,7 @@
             "items": {
               "$ref": "#/components/schemas/PresentationElement"
             },
-            "maxItems": 100,
+            "maxItems": 200,
             "title": "Elements",
             "type": "array"
           },
@@ -18152,6 +18253,48 @@
           "complete"
         ],
         "title": "StorageLayoutStatusOut",
+        "type": "object"
+      },
+      "SvgPreviewIn": {
+        "properties": {
+          "svg": {
+            "maxLength": 2097152,
+            "title": "Svg",
+            "type": "string"
+          }
+        },
+        "required": [
+          "svg"
+        ],
+        "title": "SvgPreviewIn",
+        "type": "object"
+      },
+      "SvgPreviewOut": {
+        "properties": {
+          "height": {
+            "title": "Height",
+            "type": "number"
+          },
+          "monochrome": {
+            "title": "Monochrome",
+            "type": "boolean"
+          },
+          "svg": {
+            "title": "Svg",
+            "type": "string"
+          },
+          "width": {
+            "title": "Width",
+            "type": "number"
+          }
+        },
+        "required": [
+          "svg",
+          "width",
+          "height",
+          "monochrome"
+        ],
+        "title": "SvgPreviewOut",
         "type": "object"
       },
       "TemplateModel": {
@@ -26879,6 +27022,16 @@
               "title": "Include References",
               "type": "boolean"
             }
+          },
+          {
+            "in": "query",
+            "name": "include_svg",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Include Svg",
+              "type": "boolean"
+            }
           }
         ],
         "responses": {
@@ -26943,6 +27096,47 @@
           }
         },
         "summary": "Upload File",
+        "tags": [
+          "file-management"
+        ]
+      }
+    },
+    "/v1/files/svg/preview": {
+      "post": {
+        "operationId": "preview_svg_v1_files_svg_preview_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SvgPreviewIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SvgPreviewOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Preview Svg",
         "tags": [
           "file-management"
         ]

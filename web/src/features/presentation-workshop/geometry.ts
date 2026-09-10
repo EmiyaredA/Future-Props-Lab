@@ -138,7 +138,7 @@ export function resizeRotatedElement(
     sin = Math.sin(radians);
   let width = Math.max(8, e.width + dx * cos + dy * sin);
   let height = Math.max(8, e.height - dx * sin + dy * cos);
-  if (proportional || e.kind === "image") {
+  if (proportional || e.kind === "image" || e.kind === "vector") {
     const ratio = Math.max(width / e.width, height / e.height);
     width = e.width * ratio;
     height = e.height * ratio;

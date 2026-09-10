@@ -5,13 +5,13 @@ import {
   ImagePlus,
   Plus,
   Redo2,
-  Shapes,
   Trash2,
   Type,
   Undo2,
 } from "lucide-react";
 import { PresentationMenu } from "./PresentationMenu";
-import { layouts, shapes } from "./templates";
+import { PresentationShapePicker } from "./PresentationShapePicker";
+import { layouts } from "./templates";
 import type { SlideElement } from "./types";
 
 export function PresentationToolbar({
@@ -26,6 +26,8 @@ export function PresentationToolbar({
   onRedo,
   onText,
   onShape,
+  onIcon,
+  onSvg,
   onUpload,
   onLibrary,
   onCopy,
@@ -41,7 +43,9 @@ export function PresentationToolbar({
   onUndo: () => void;
   onRedo: () => void;
   onText: () => void;
-  onShape: (kind: SlideElement["kind"]) => void;
+  onShape: (kind: SlideElement["kind"], patch?: Partial<SlideElement>) => void;
+  onIcon?: (svg: string, name: string) => void;
+  onSvg?: () => void;
   onUpload: () => void;
   onLibrary: () => void;
   onCopy: () => void;
@@ -99,17 +103,11 @@ export function PresentationToolbar({
           <Type size={19} />
           文本
         </button>
-        <PresentationMenu
-          label="插入图形"
-          actions={shapes.map(({ value, label }) => ({
-            label,
-            onSelect: () => onShape(value),
-          }))}
-        >
-          <Shapes size={18} />
-          <span>形状</span>
-          <ChevronDown size={14} />
-        </PresentationMenu>
+        <PresentationShapePicker
+          onShape={onShape}
+          onIcon={onIcon ?? (() => {})}
+          onSvg={onSvg ?? onUpload}
+        />
         <button
           className="btn"
           aria-label="上传图片"

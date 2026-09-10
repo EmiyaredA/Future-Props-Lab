@@ -23,6 +23,7 @@ OPERATIONS: dict[str, tuple[tuple[str, str], ...]] = {
         ("DELETE", "/v1/file-folders/{folder_id}"),
         ("PATCH", "/v1/file-folders/{folder_id}"),
         ("POST", "/v1/files"),
+        ("POST", "/v1/files/svg/preview"),
         ("DELETE", "/v1/files/{asset_id}"),
         ("PATCH", "/v1/files/{asset_id}"),
         ("POST", "/v1/galgame-workshop/projects"),

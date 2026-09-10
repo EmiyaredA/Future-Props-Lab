@@ -6,6 +6,7 @@ import zipfile
 from pathlib import Path
 
 ALLOWED_FILES: dict[str, tuple[str, set[str]]] = {
+    ".svg": ("image", {"image/svg+xml"}),
     ".jpg": ("image", {"image/jpeg"}),
     ".jpeg": ("image", {"image/jpeg"}),
     ".png": ("image", {"image/png"}),
@@ -95,6 +96,8 @@ VIDEO_EDITABLE_EXTENSIONS = {
 
 
 def looks_like(extension: str, head: bytes) -> bool:
+    if extension == ".svg":
+        return bool(head.strip())
     if extension in {".txt", ".md", ".json", ".csv"}:
         try:
             decoded = codecs.getincrementaldecoder("utf-8")().decode(head, final=False)
@@ -175,6 +178,16 @@ ATTACHMENT_EXTENSIONS = {
 
 def validate_file_structure(path: Path, extension: str) -> bool:
     """Validate complete text and archive structure without extracting file contents."""
+    if extension == ".svg":
+        from app.files.svg import MAX_SVG_BYTES, normalize_svg
+
+        if path.stat().st_size > MAX_SVG_BYTES:
+            return False
+        try:
+            normalize_svg(path.read_text(encoding="utf-8-sig"))
+            return True
+        except ValueError:
+            return False
     if extension == ".json":
         return validate_json_file(path)
     if extension in {".txt", ".md", ".csv"}:

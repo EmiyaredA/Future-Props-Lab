@@ -1,11 +1,27 @@
-import { useEffect, useRef, useState, type PointerEvent } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type PointerEvent,
+  type ReactNode,
+} from "react";
 import type { Editor } from "@tiptap/react";
-import { bounds, snapMove, resizeRotatedElement } from "./geometry";
+import { bounds, snapMove } from "./geometry";
 import { SlideSurface } from "./SlideSurface";
 import { SlideTextEditor } from "./SlideTextEditor";
 import type { Slide, SlideElement } from "./types";
 
+import { SelectionOverlay } from "./SelectionOverlay";
+import { SelectionHandles } from "./SelectionHandles";
+import {
+  resizeFromHandle,
+  rotatedBounds,
+  type ResizeHandle,
+} from "./selectionGeometry";
+
 type Gesture = {
+  handle: ResizeHandle;
   pointer: number;
   startX: number;
   startY: number;
@@ -25,6 +41,8 @@ export function SlideCanvas({
   readOnly,
   zoom,
   onScaleChange,
+  selectionToolbar,
+  cropOverlay,
   onReady,
   onComposition,
   undo,
@@ -36,10 +54,16 @@ export function SlideCanvas({
   editing: string | null;
   setEditing: (id: string | null) => void;
   replace: (slide: Slide) => void;
-  onText: (id: string, paragraphs: SlideElement["paragraphs"]) => void;
+  onText: (
+    id: string,
+    paragraphs: SlideElement["paragraphs"],
+    format?: boolean,
+  ) => void;
   readOnly: boolean;
   zoom: number | null;
   onScaleChange?: (scale: number) => void;
+  selectionToolbar?: ReactNode;
+  cropOverlay?: ReactNode;
   onReady: (editor: Editor | null) => void;
   onComposition: (active: boolean) => void;
   undo: () => void;
@@ -52,6 +76,7 @@ export function SlideCanvas({
   const lastHit = useRef<string | null>(null);
   const [transient, setTransient] = useState<Slide | null>(null),
     [fit, setFit] = useState(0.5);
+  const [gesturing, setGesturing] = useState(false);
   const [guides, setGuides] = useState<{ x: number | null; y: number | null }>({
     x: null,
     y: null,
@@ -80,12 +105,17 @@ export function SlideCanvas({
   }, []);
   const scale = zoom ?? fit,
     display = transient?.id === slide.id ? transient : slide;
-  useEffect(() => {
+  useLayoutEffect(() => {
     onScaleChange?.(scale);
   }, [scale, onScaleChange]);
   const chosen = display.elements.filter((e) => selected.includes(e.id));
   const movable = chosen.filter((e) => !e.locked);
-  const box = movable.length ? bounds(movable) : null;
+  const box =
+    movable.length > 1
+      ? rotatedBounds(movable)
+      : movable.length
+        ? bounds(movable)
+        : null;
   const point = (event: PointerEvent) => {
     const rect = canvas.current!.getBoundingClientRect();
     return {
@@ -131,7 +161,11 @@ export function SlideCanvas({
     event.preventDefault();
     event.currentTarget.focus();
     const p = point(event);
+    setGesturing(true);
     gesture.current = {
+      handle: ((event.target as HTMLElement).closest<HTMLElement>(
+        "[data-resize]",
+      )?.dataset.resize ?? "se") as ResizeHandle,
       pointer: event.pointerId,
       startX: p.x,
       startY: p.y,
@@ -139,7 +173,9 @@ export function SlideCanvas({
       ids: elements.map((e) => e.id),
       mode: mode ?? (element ? "move" : "marquee"),
       box: elements.length
-        ? bounds(elements)
+        ? elements.length > 1
+          ? rotatedBounds(elements)
+          : bounds(elements)
         : { x: p.x, y: p.y, width: 0, height: 0 },
     };
     event.currentTarget.setPointerCapture(event.pointerId);
@@ -183,14 +219,26 @@ export function SlideCanvas({
       dy = snap.dy;
       setGuides({ x: snap.x, y: snap.y });
     }
-    const width = Math.max(8, g.box.width + dx),
-      height = Math.max(8, g.box.height + dy);
-    const ratio = Math.max(width / g.box.width, height / g.box.height);
     const keepRatio =
       event.shiftKey ||
-      g.base.elements.some((e) => g.ids.includes(e.id) && e.kind === "image");
-    const sx = keepRatio ? ratio : width / g.box.width,
-      sy = keepRatio ? ratio : height / g.box.height;
+      g.base.elements.some(
+        (e) =>
+          g.ids.includes(e.id) && (e.kind === "image" || e.kind === "vector"),
+      );
+    const resized = resizeFromHandle(
+      {
+        ...g.base.elements.find((e) => g.ids.includes(e.id))!,
+        ...g.box,
+        rotation: 0,
+        kind: "rect",
+      },
+      dx,
+      dy,
+      g.handle,
+      keepRatio,
+    );
+    const sx = resized.width / g.box.width,
+      sy = resized.height / g.box.height;
     const cx = g.box.x + g.box.width / 2,
       cy = g.box.y + g.box.height / 2;
     let angle =
@@ -211,12 +259,12 @@ export function SlideCanvas({
             y: Math.max(-10000, Math.min(10000, e.y + dy)),
           };
         if (g.mode === "resize" && g.ids.length === 1)
-          return resizeRotatedElement(e, dx, dy, event.shiftKey);
+          return resizeFromHandle(e, dx, dy, g.handle, event.shiftKey);
         if (g.mode === "resize")
           return {
             ...e,
-            x: g.box.x + (e.x - g.box.x) * sx,
-            y: g.box.y + (e.y - g.box.y) * sy,
+            x: resized.x + (e.x - g.box.x) * sx,
+            y: resized.y + (e.y - g.box.y) * sy,
             width: Math.max(1, Math.min(10000, e.width * sx)),
             height: Math.max(1, Math.min(10000, e.height * sy)),
           };
@@ -237,6 +285,7 @@ export function SlideCanvas({
   const finish = (cancel = false) => {
     if (!cancel && preview.current) replace(preview.current);
     gesture.current = null;
+    setGesturing(false);
     preview.current = null;
     setTransient(null);
     setMarquee(null);
@@ -246,7 +295,7 @@ export function SlideCanvas({
     (e) => e.id === editing && e.kind === "text" && !e.locked,
   );
   return (
-    <div className="presentation-canvas-area" ref={host}>
+    <div className="presentation-canvas-area" data-popover-boundary ref={host}>
       <div
         className="presentation-canvas-viewport"
         style={{ width: 1280 * scale, height: 720 * scale }}
@@ -263,6 +312,12 @@ export function SlideCanvas({
           onPointerUp={() => finish()}
           onPointerCancel={() => finish(true)}
           onKeyDown={(e) => {
+            if (e.altKey && e.key === "F10") {
+              e.preventDefault();
+              host.current
+                ?.querySelector<HTMLButtonElement>('[role="toolbar"] button')
+                ?.focus();
+            }
             if (e.key === "Escape" && gesture.current) {
               e.stopPropagation();
               finish(true);
@@ -288,7 +343,7 @@ export function SlideCanvas({
               <SlideTextEditor
                 key={active.id}
                 element={active}
-                onChange={(p) => onText(active.id, p)}
+                onChange={(p, format) => onText(active.id, p, format)}
                 onComposition={onComposition}
                 onReady={onReady}
                 onExit={() => setEditing(null)}
@@ -297,41 +352,11 @@ export function SlideCanvas({
               />
             ) : null}
             {!editing && box && !readOnly ? (
-              <div
-                className="presentation-selection"
-                style={{
-                  left: box.x,
-                  top: box.y,
-                  width: box.width,
-                  height: box.height,
-                  borderWidth: 1.5 / scale,
-                  transform:
-                    movable.length === 1
-                      ? `rotate(${movable[0].rotation}deg)`
-                      : undefined,
-                }}
-              >
-                <span
-                  className="presentation-selection-label"
-                  style={{ transform: `scale(${1 / scale})` }}
-                >
-                  {movable.length > 1
-                    ? `${movable.length} 个元素`
-                    : "拖动移动 · Shift 保持比例"}
-                </span>
-                <button
-                  data-handle="rotate"
-                  className="presentation-rotate-handle"
-                  style={{ transform: `scale(${1 / scale})` }}
-                  aria-label="拖动旋转所选元素"
-                />
-                <button
-                  data-handle="resize"
-                  className="presentation-resize-handle"
-                  style={{ transform: `scale(${1 / scale})` }}
-                  aria-label="拖动缩放所选元素"
-                />
-              </div>
+              <SelectionHandles
+                box={box}
+                scale={scale}
+                rotation={movable.length === 1 ? movable[0].rotation : 0}
+              />
             ) : null}
             {guides.x !== null ? (
               <div
@@ -356,9 +381,20 @@ export function SlideCanvas({
                 }}
               />
             ) : null}
+            {cropOverlay}
           </SlideSurface>
         </div>
       </div>
+      {!readOnly && !gesturing && chosen.length > 0 && selectionToolbar ? (
+        <SelectionOverlay
+          area={host}
+          canvas={canvas}
+          elements={chosen}
+          scale={scale}
+        >
+          {selectionToolbar}
+        </SelectionOverlay>
+      ) : null}
     </div>
   );
 }

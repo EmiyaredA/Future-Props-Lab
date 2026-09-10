@@ -129,3 +129,10 @@ async def test_unrepresentable_crop_returns_explicit_api_error():
         assert response.status_code == 422
         assert response.json()["code"] == "export_crop_precision"
         assert (await client.get(endpoint)).json()["document"] == doc
+        assert (await client.delete(endpoint, params={"expected_revision": 0})).status_code == 200
+        assert (
+            await client.delete(
+                f"/v1/files/{uploaded.json()['id']}",
+                params={"expected_revision": uploaded.json()["revision"]},
+            )
+        ).status_code == 200

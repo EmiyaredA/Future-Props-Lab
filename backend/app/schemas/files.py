@@ -194,3 +194,14 @@ __all__ = [
     "StorageLayoutMigrationOut",
     "StorageLayoutStatusOut",
 ]
+
+
+class SvgPreviewIn(BaseModel):
+    svg: str = Field(max_length=2 * 1024 * 1024)
+
+
+class SvgPreviewOut(BaseModel):
+    svg: str
+    width: float
+    height: float
+    monochrome: bool

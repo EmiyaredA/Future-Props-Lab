@@ -1,43 +1,16 @@
 import { useId, useState } from "react";
+import { LockKeyhole, UnlockKeyhole, RotateCcw } from "lucide-react";
+import { useInspectorResize } from "./useInspectorResize";
+import { MediaAppearance } from "./MediaAppearance";
+import { InspectorArrange } from "./InspectorArrange";
+import "./presentation-inspector.css";
 import type { Editor } from "@tiptap/react";
 import { CustomColorPicker } from "@shared/ui/CustomColorPicker";
-import { CustomSelect } from "@shared/ui/CustomSelect";
-import type { Slide, SlideElement, TextRun } from "./types";
-import { defaultRun } from "./templates";
+import type { Slide, SlideElement } from "./types";
+import { NumberField } from "./PresentationNumberField";
+import { PresentationShapeSettings } from "./PresentationShapeSettings";
+import { useSelectionFormat } from "./useSelectionFormat";
 
-function NumberField({
-  label,
-  value,
-  min = -10000,
-  max = 10000,
-  step = 1,
-  onChange,
-}: {
-  label: string;
-  value: number;
-  min?: number;
-  max?: number;
-  step?: number;
-  onChange: (n: number) => void;
-}) {
-  return (
-    <label className="presentation-field">
-      <span>{label}</span>
-      <input
-        type="number"
-        aria-label={label}
-        min={min}
-        max={max}
-        step={step}
-        value={Math.round(value * 100) / 100}
-        onChange={(e) => {
-          if (e.target.value !== "" && Number.isFinite(Number(e.target.value)))
-            onChange(Math.max(min, Math.min(max, Number(e.target.value))));
-        }}
-      />
-    </label>
-  );
-}
 export function PresentationInspector({
   slide,
   selected,
@@ -59,6 +32,7 @@ export function PresentationInspector({
   editText: () => void;
   readOnly: boolean;
 }) {
+  const resize = useInspectorResize();
   const elements = slide.elements.filter((e) => selected.includes(e.id));
   const element = elements.length === 1 ? elements[0] : null;
   const selectionKey = `${slide.id}:${selected.join(",")}`;
@@ -78,80 +52,110 @@ export function PresentationInspector({
   const tabId = useId();
   const colors = ["#132338", "#FFFFFF", "#E7EAEE", "#F5F1E8", "#F4DED5"];
   const disabled = readOnly || !!element?.locked;
-  const run = element?.paragraphs[0]?.runs[0] ?? defaultRun();
-  const format = (values: Partial<TextRun>) => {
-    if (disabled || !element) return;
-    if (editor) {
-      const chain = editor.chain().focus();
-      if (values.font) chain.setFontFamily(values.font);
-      if (values.size) chain.setFontSize(`${values.size}px`);
-      if (values.color) chain.setColor(values.color);
-      if (values.bold !== undefined) chain.toggleBold();
-      if (values.italic !== undefined) chain.toggleItalic();
-      if (values.underline !== undefined) chain.toggleUnderline();
-      chain.run();
-    } else
-      patch({
-        paragraphs: element.paragraphs.map((p) => ({
-          ...p,
-          runs: p.runs.map((r) => ({ ...r, ...values })),
-        })),
-      });
-  };
+  const { lineHeight, bullet, paragraph } = useSelectionFormat(
+    element ?? undefined,
+    editor,
+    patch,
+  );
   return (
-    <aside className="presentation-inspector" aria-label="格式面板">
+    <aside
+      ref={resize.ref}
+      className={`presentation-inspector${resize.dragging ? " is-resizing" : ""}`}
+      style={{ width: resize.width }}
+      aria-label="格式面板"
+    >
       <div
-        className="presentation-inspector-tabs"
-        role="tablist"
-        aria-label="设置分类"
+        className="presentation-inspector-resize"
+        aria-controls={`${tabId}-panel`}
+        {...resize.separator}
       >
-        {["page", "elements"].map((value, index) => (
-          <button
-            key={value}
-            id={`${tabId}-${value}`}
-            role="tab"
-            aria-selected={tab === value}
-            aria-controls={`${tabId}-panel`}
-            tabIndex={tab === value ? 0 : -1}
-            onClick={() => setTabState({ selectionKey, tab: value })}
-            onKeyDown={(event) => {
-              if (
-                ["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)
-              ) {
-                event.preventDefault();
-                const next =
-                  event.key === "Home"
-                    ? "page"
-                    : event.key === "End"
-                      ? "elements"
-                      : value === "page"
+        <span />
+      </div>
+      <div className="presentation-inspector-header">
+        <div
+          className="presentation-inspector-tabs"
+          role="tablist"
+          aria-label="设置分类"
+        >
+          {["page", "elements"].map((value, index) => (
+            <button
+              key={value}
+              id={`${tabId}-${value}`}
+              role="tab"
+              aria-selected={tab === value}
+              aria-controls={`${tabId}-panel`}
+              tabIndex={tab === value ? 0 : -1}
+              onClick={() => setTabState({ selectionKey, tab: value })}
+              onKeyDown={(event) => {
+                if (
+                  ["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)
+                ) {
+                  event.preventDefault();
+                  const next =
+                    event.key === "Home"
+                      ? "page"
+                      : event.key === "End"
                         ? "elements"
-                        : "page";
-                setTabState({ selectionKey, tab: next });
-                document.getElementById(`${tabId}-${next}`)?.focus();
-              }
-            }}
-          >
-            {index === 0 ? "页面" : "元素"}
-          </button>
-        ))}
+                        : value === "page"
+                          ? "elements"
+                          : "page";
+                  setTabState({ selectionKey, tab: next });
+                  document.getElementById(`${tabId}-${next}`)?.focus();
+                }
+              }}
+            >
+              {index === 0 ? "页面" : "元素"}
+            </button>
+          ))}
+        </div>
+        <button
+          className="presentation-inspector-reset"
+          onClick={resize.reset}
+          title="恢复默认面板宽度"
+          aria-label="恢复默认面板宽度"
+        >
+          <RotateCcw size={14} />
+        </button>
       </div>
       <div
+        className="presentation-inspector-content"
         role="tabpanel"
         id={`${tabId}-panel`}
         aria-labelledby={`${tabId}-${tab}`}
       >
-        <h3>
-          {tab === "elements" && elements.length
-            ? elements.length > 1
-              ? `${elements.length} 个元素`
-              : element?.kind === "text"
-                ? "文本格式"
-                : "元素格式"
-            : tab === "page"
-              ? "页面设置"
-              : "元素设置"}
-        </h3>
+        <div className="presentation-inspector-heading">
+          <h3>
+            {tab === "elements" && elements.length
+              ? elements.length > 1
+                ? `${elements.length} 个元素`
+                : element?.kind === "text"
+                  ? "文本格式"
+                  : "元素格式"
+              : tab === "page"
+                ? "页面设置"
+                : "元素设置"}
+          </h3>
+          {tab === "elements" && elements.length > 0 && (
+            <button
+              className="presentation-lock-toggle presentation-desktop-control"
+              title={elements.every((e) => e.locked) ? "解锁元素" : "锁定元素"}
+              aria-label={
+                elements.every((e) => e.locked) ? "解锁元素" : "锁定元素"
+              }
+              aria-pressed={elements.every((e) => e.locked)}
+              disabled={readOnly}
+              onClick={() =>
+                patch({ locked: !elements.every((e) => e.locked) })
+              }
+            >
+              {elements.every((e) => e.locked) ? (
+                <LockKeyhole size={16} />
+              ) : (
+                <UnlockKeyhole size={16} />
+              )}
+            </button>
+          )}
+        </div>
         {tab === "page" ? (
           <>
             <div className="presentation-field">
@@ -189,17 +193,6 @@ export function PresentationInspector({
         )}
         {tab === "elements" && (
           <>
-            {elements.length > 0 ? (
-              <button
-                className="btn presentation-desktop-control"
-                disabled={readOnly}
-                onClick={() =>
-                  patch({ locked: !elements.every((e) => e.locked) })
-                }
-              >
-                {elements.every((e) => e.locked) ? "解锁元素" : "锁定元素"}
-              </button>
-            ) : null}
             {element ? (
               <>
                 <fieldset
@@ -224,7 +217,8 @@ export function PresentationInspector({
                     onChange={(width) =>
                       patch({
                         width,
-                        ...(element.kind === "image"
+                        ...(element.kind === "image" ||
+                        element.kind === "vector"
                           ? {
                               height: Math.min(
                                 10000,
@@ -242,7 +236,8 @@ export function PresentationInspector({
                     onChange={(height) =>
                       patch({
                         height,
-                        ...(element.kind === "image"
+                        ...(element.kind === "image" ||
+                        element.kind === "vector"
                           ? {
                               width: Math.min(
                                 10000,
@@ -270,261 +265,115 @@ export function PresentationInspector({
                     >
                       编辑文字
                     </button>
-                    <div className="presentation-desktop-control">
-                      <CustomSelect
-                        ariaLabel="字体"
-                        value={run.font}
-                        disabled={disabled}
-                        options={[
-                          { value: "Microsoft YaHei", label: "微软雅黑" },
-                          { value: "Arial", label: "Arial" },
-                        ]}
-                        onChange={(font) =>
-                          format({ font: font as TextRun["font"] })
-                        }
-                      />
-                      <NumberField
-                        label="字号"
-                        value={run.size}
-                        min={6}
-                        max={240}
-                        onChange={(size) => format({ size })}
-                      />
-                      <div
-                        className="presentation-format-buttons"
-                        onMouseDown={(e) => e.preventDefault()}
-                      >
-                        <button
-                          aria-label="粗体"
-                          aria-pressed={
-                            editor ? editor.isActive("bold") : run.bold
-                          }
-                          disabled={disabled}
-                          onClick={() => format({ bold: !run.bold })}
-                        >
-                          <b>B</b>
-                        </button>
-                        <button
-                          aria-label="斜体"
-                          aria-pressed={
-                            editor ? editor.isActive("italic") : run.italic
-                          }
-                          disabled={disabled}
-                          onClick={() => format({ italic: !run.italic })}
-                        >
-                          <i>I</i>
-                        </button>
-                        <button
-                          aria-label="下划线"
-                          aria-pressed={
-                            editor
-                              ? editor.isActive("underline")
-                              : run.underline
-                          }
-                          disabled={disabled}
-                          onClick={() => format({ underline: !run.underline })}
-                        >
-                          <u>U</u>
-                        </button>
-                      </div>
-                      <CustomColorPicker
-                        ariaLabel="文字颜色"
-                        value={run.color}
-                        disabled={disabled}
-                        onChange={(color) => format({ color })}
-                      />
-                      <CustomSelect
-                        ariaLabel="文字对齐"
-                        value={element.paragraphs[0]?.align ?? "left"}
-                        disabled={disabled}
-                        options={[
-                          { value: "left", label: "左对齐" },
-                          { value: "center", label: "居中" },
-                          { value: "right", label: "右对齐" },
-                        ]}
-                        onChange={(align) => {
-                          if (editor)
-                            editor.chain().focus().setTextAlign(align).run();
-                          else
-                            patch({
-                              paragraphs: element.paragraphs.map((p) => ({
-                                ...p,
-                                align: align as "left" | "center" | "right",
-                              })),
-                            });
-                        }}
-                      />
+                    <fieldset
+                      disabled={disabled}
+                      className="presentation-desktop-control"
+                    >
                       <NumberField
                         label="行距"
-                        value={element.paragraphs[0]?.line_height ?? 1.3}
+                        value={lineHeight ?? 1.3}
+                        mixed={lineHeight === undefined}
                         min={1}
                         max={3}
                         step={0.1}
-                        onChange={(line_height) => {
-                          if (editor)
-                            editor
-                              .chain()
-                              .focus()
-                              .updateAttributes("paragraph", {
-                                lineHeight: line_height,
-                              })
-                              .run();
-                          else
-                            patch({
-                              paragraphs: element.paragraphs.map((p) => ({
-                                ...p,
-                                line_height,
-                              })),
-                            });
-                        }}
+                        onChange={(line_height) => paragraph({ line_height })}
                       />
                       <button
                         className="btn"
                         disabled={disabled}
-                        aria-pressed={element.paragraphs[0]?.bullet}
-                        onClick={() => {
-                          const bullet = !element.paragraphs[0]?.bullet;
-                          if (editor)
-                            editor
-                              .chain()
-                              .focus()
-                              .updateAttributes("paragraph", { bullet })
-                              .run();
-                          else
-                            patch({
-                              paragraphs: element.paragraphs.map((p) => ({
-                                ...p,
-                                bullet,
-                              })),
-                            });
-                        }}
+                        aria-pressed={bullet === undefined ? "mixed" : bullet}
+                        onClick={() => paragraph({ bullet: bullet !== true })}
                       >
                         项目符号
                       </button>
-                    </div>
+                    </fieldset>
                   </>
                 ) : element.kind === "image" ? (
-                  <fieldset
-                    className="presentation-desktop-control"
-                    disabled={disabled}
-                  >
-                    <legend>矩形裁剪（%）</legend>
-                    <p className="muted">等比填充，超出图片框的部分隐藏。</p>
-                    {(["left", "top", "right", "bottom"] as const).map(
-                      (side, i) => (
-                        <NumberField
-                          key={side}
-                          label={
-                            ["裁剪左侧", "裁剪顶部", "裁剪右侧", "裁剪底部"][i]
-                          }
-                          min={0}
-                          max={Math.max(
-                            0,
-                            98 -
-                              element.crop[
-                                (
-                                  {
-                                    left: "right",
-                                    right: "left",
-                                    top: "bottom",
-                                    bottom: "top",
-                                  } as const
-                                )[side]
-                              ] *
-                                100,
-                          )}
-                          value={element.crop[side] * 100}
-                          onChange={(value) =>
-                            patch({
-                              crop: { ...element.crop, [side]: value / 100 },
-                            })
-                          }
-                        />
-                      ),
-                    )}
-                    <button
-                      className="btn"
-                      onClick={() =>
-                        patch({
-                          crop: { left: 0, right: 0, top: 0, bottom: 0 },
-                        })
-                      }
-                    >
-                      重置裁剪
-                    </button>
-                  </fieldset>
-                ) : (
-                  <div className="presentation-desktop-control">
-                    <label className="presentation-field">
-                      填充
-                      <CustomColorPicker
-                        ariaLabel="填充颜色"
-                        disabled={disabled}
-                        value={element.fill}
-                        onChange={(fill) => patch({ fill })}
-                      />
-                    </label>
-                    <label className="presentation-field">
-                      描边
-                      <CustomColorPicker
-                        ariaLabel="描边颜色"
-                        disabled={disabled}
-                        value={element.stroke}
-                        onChange={(stroke) => patch({ stroke })}
-                      />
-                    </label>
-                    <NumberField
-                      label="描边宽度"
-                      value={element.stroke_width}
-                      min={0}
-                      max={30}
-                      onChange={(stroke_width) => patch({ stroke_width })}
+                  <>
+                    <MediaAppearance
+                      element={element}
+                      patch={patch}
+                      disabled={disabled}
                     />
-                  </div>
+                    <fieldset className="presentation-crop" disabled={disabled}>
+                      <legend>矩形裁剪（%）</legend>
+                      <p className="muted">等比填充，调整各边的裁剪范围。</p>
+                      <div className="presentation-crop-grid">
+                        {(["left", "top", "right", "bottom"] as const).map(
+                          (side, i) => (
+                            <NumberField
+                              key={side}
+                              label={
+                                [
+                                  "裁剪左侧",
+                                  "裁剪顶部",
+                                  "裁剪右侧",
+                                  "裁剪底部",
+                                ][i]
+                              }
+                              min={0}
+                              max={Math.max(
+                                0,
+                                98 -
+                                  element.crop[
+                                    (
+                                      {
+                                        left: "right",
+                                        right: "left",
+                                        top: "bottom",
+                                        bottom: "top",
+                                      } as const
+                                    )[side]
+                                  ] *
+                                    100,
+                              )}
+                              value={element.crop[side] * 100}
+                              onChange={(value) =>
+                                patch({
+                                  crop: {
+                                    ...element.crop,
+                                    [side]: value / 100,
+                                  },
+                                })
+                              }
+                            />
+                          ),
+                        )}
+                      </div>
+                      <button
+                        className="btn presentation-crop-reset"
+                        onClick={() =>
+                          patch({
+                            crop: { left: 0, right: 0, top: 0, bottom: 0 },
+                          })
+                        }
+                      >
+                        <RotateCcw size={13} aria-hidden="true" /> 重置裁剪
+                      </button>
+                    </fieldset>
+                  </>
+                ) : element.kind === "vector" ? (
+                  <MediaAppearance
+                    element={element}
+                    patch={patch}
+                    disabled={disabled}
+                  />
+                ) : (
+                  <PresentationShapeSettings
+                    element={element}
+                    advancedOnly
+                    patch={patch}
+                    disabled={disabled}
+                  />
                 )}
               </>
             ) : null}
             {elements.length ? (
-              <fieldset
-                className="presentation-desktop-control"
-                disabled={readOnly}
-              >
-                <legend>排列</legend>
-                <div className="presentation-arrange-grid">
-                  {[
-                    "left",
-                    "center",
-                    "right",
-                    "top",
-                    "middle",
-                    "bottom",
-                    "horizontal",
-                    "vertical",
-                  ].map((mode, i) => (
-                    <button key={mode} onClick={() => arrange(mode)}>
-                      {
-                        [
-                          "左对齐",
-                          "水平居中",
-                          "右对齐",
-                          "顶部对齐",
-                          "垂直居中",
-                          "底部对齐",
-                          "水平分布",
-                          "垂直分布",
-                        ][i]
-                      }
-                    </button>
-                  ))}
-                </div>
-                <div className="presentation-arrange-grid">
-                  {["front", "forward", "backward", "back"].map((mode, i) => (
-                    <button key={mode} onClick={() => order(mode)}>
-                      {["置于顶层", "上移一层", "下移一层", "置于底层"][i]}
-                    </button>
-                  ))}
-                </div>
-              </fieldset>
+              <InspectorArrange
+                disabled={readOnly || elements.every((e) => e.locked)}
+                arrange={arrange}
+                order={order}
+              />
             ) : null}
           </>
         )}

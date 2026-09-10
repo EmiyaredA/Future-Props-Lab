@@ -82,7 +82,11 @@ class AssetLibrary:
             with temp_path.open("xb") as target:
                 while chunk := await upload.read(1024 * 1024):
                     size += len(chunk)
-                    if size > self.settings.fpl_visual_asset_max_bytes:
+                    if size > (
+                        min(self.settings.fpl_visual_asset_max_bytes, 2 * 1024 * 1024)
+                        if extension == ".svg"
+                        else self.settings.fpl_visual_asset_max_bytes
+                    ):
                         raise AssetError(
                             "文件超过上传大小限制",
                             code="file_too_large",
@@ -95,6 +99,15 @@ class AssetLibrary:
                 raise AssetError("文件内容与声明的类型不匹配", code="invalid_file_content")
             if not await asyncio.to_thread(validate_file_structure, temp_path, extension):
                 raise AssetError("文件内容或内部结构无效", code="invalid_file_content")
+            if extension == ".svg":
+                from app.files.svg import normalize_svg
+
+                try:
+                    normalized = normalize_svg(temp_path.read_text(encoding="utf-8-sig"))
+                except ValueError as exc:
+                    raise AssetError(str(exc), code="invalid_svg") from exc
+                temp_path.write_text(normalized["svg"], encoding="utf-8")
+                size = temp_path.stat().st_size
             os.replace(temp_path, final_path)
             row = VisualAsset(
                 workspace_id=workspace_id,

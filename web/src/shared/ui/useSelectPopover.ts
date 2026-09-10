@@ -6,6 +6,8 @@ export function useSelectPopover(
   trigger: RefObject<HTMLButtonElement | null>,
   menu: RefObject<HTMLDivElement | null>,
   heightLimit = 280,
+  widthLimit = 180,
+  align: "start" | "end" = "end",
 ) {
   useLayoutEffect(() => {
     const element = menu.current;
@@ -14,10 +16,31 @@ export function useSelectPopover(
     element.showPopover?.();
     const position = () => {
       const rect = anchor.getBoundingClientRect();
-      const width = Math.min(Math.max(rect.width, 180), innerWidth - 24);
-      const visibleTop = window.visualViewport?.offsetTop ?? 0;
-      const visibleBottom =
-        visibleTop + (window.visualViewport?.height ?? innerHeight);
+      const boundary = anchor
+        .closest("[data-popover-boundary]")
+        ?.getBoundingClientRect();
+      const visibleLeft = Math.max(
+        window.visualViewport?.offsetLeft ?? 0,
+        boundary?.left ?? 0,
+      );
+      const visibleRight = Math.min(
+        (window.visualViewport?.offsetLeft ?? 0) +
+          (window.visualViewport?.width ?? innerWidth),
+        boundary?.right ?? innerWidth,
+      );
+      const width = Math.min(
+        Math.max(rect.width, widthLimit),
+        visibleRight - visibleLeft - 24,
+      );
+      const visibleTop = Math.max(
+        window.visualViewport?.offsetTop ?? 0,
+        boundary?.top ?? 0,
+      );
+      const visibleBottom = Math.min(
+        (window.visualViewport?.offsetTop ?? 0) +
+          (window.visualViewport?.height ?? innerHeight),
+        boundary?.bottom ?? innerHeight,
+      );
       const below = visibleBottom - rect.bottom - 17;
       const above = rect.top - visibleTop - 17;
       const upwards = below < 180 && above > below;
@@ -28,7 +51,7 @@ export function useSelectPopover(
         bottom: "auto",
         width: `${width}px`,
         maxHeight: `${Math.max(40, Math.min(heightLimit, upwards ? above : below))}px`,
-        left: `${Math.max(12, Math.min(rect.right - width, innerWidth - width - 12))}px`,
+        left: `${Math.max(visibleLeft + 12, Math.min(align === "start" ? rect.left : rect.right - width, visibleRight - width - 12))}px`,
       });
       element.style.top = `${Math.max(visibleTop + 12, Math.min(visibleBottom - element.offsetHeight - 12, upwards ? rect.top - element.offsetHeight - 5 : rect.bottom + 5))}px`;
     };
@@ -47,5 +70,5 @@ export function useSelectPopover(
       window.removeEventListener("scroll", scroll, true);
       if (element.isConnected) element.hidePopover?.();
     };
-  }, [heightLimit, menu, open, trigger]);
+  }, [heightLimit, widthLimit, menu, open, trigger, align]);
 }

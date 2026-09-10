@@ -237,3 +237,7 @@
     padding: 20px 12px;
   }
 }
+
+.presentation-text-editor [style*="Consolas"] {
+  font-family: Consolas, "Courier New", monospace !important;
+}

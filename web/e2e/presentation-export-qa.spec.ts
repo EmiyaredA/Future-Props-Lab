@@ -24,6 +24,7 @@ test("三页实际导出对照与百页负担记录", async ({ page }, testInfo)
   await dialog.getByRole("button", { name: "确认", exact: true }).click();
   const canvas = page.getByRole("group", { name: "幻灯片画布" });
   await expect(canvas).toBeVisible();
+  await page.getByRole("button", { name: "上传图片", exact: true }).click();
   await page.locator('input[type="file"]').setInputFiles(imagePath!);
   await expect(canvas.getByAltText("幻灯片图片")).toBeVisible();
   await page.getByRole("button", { name: "保存文稿", exact: true }).click();

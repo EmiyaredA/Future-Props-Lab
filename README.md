@@ -59,7 +59,6 @@ Galgame 工坊使用 Story 1.4 管理角色表情/皮肤、真实多层场景、
 当前仓库交付声明为“仅限内部开发交接，未授予再分发许可”；素材的具体来源与限制以
 [素材清单](docs/assets/MANIFEST.md) 为准。本声明不替代后续由权利人确认的正式许可证。
 
-
 ### 思绪工坊
 
 在「AI应用 → 效率协作」打开思绪工坊，创建知识库卡片，以可编辑首页、多级文件夹和文档组织内容。
@@ -70,7 +69,9 @@ Mermaid 与 AI 写作；提供回收站、v3 完整或单库备份、Markdown �
 ### 演示工坊
 
 AI 应用中的演示工坊支持基础幻灯片编辑、自动保存、放映和原生可编辑 PPTX 导出。
+图片支持更换、画布裁剪、翻转和外观调整；图形面板提供分类形状、图标与经过预检的 SVG 导入。
 后端通过锁定的 `python-pptx`（含 lxml / XlsxWriter）在现有进程内导出；
+`defusedxml` 校验自包含 SVG，`resvg-py` 生成 PowerPoint 所需的 PNG 兼容图，两者随 `npm run setup` 安装。
 生产环境无需安装 Office 或 LibreOffice，后者仅用于交付时的外观核验。
 仍使用单进程 SQLite 与现有公共文件库，不新增环境变量或常驻服务。
 使用与限制见[演示工坊说明](web/src/docs/articles/presentation/presentation-workshop.md)。

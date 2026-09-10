@@ -280,6 +280,7 @@ class VisualAssets(VisualAssetContext):
         media_kind: str | None,
         sort: str,
         include_references: bool,
+        include_svg: bool = False,
     ) -> VisualAssetListOut:
         if project_id:
             await self._project(project_id)
@@ -298,6 +299,8 @@ class VisualAssets(VisualAssetContext):
             if folder_id is not None
             else VisualAsset.folder_id.is_(None)
         )
+        if not include_svg:
+            conditions.append(VisualAsset.mime_type != "image/svg+xml")
         if query:
             conditions.append(VisualAsset.display_name.ilike(f"%{query}%"))
         if media_kind:
@@ -328,6 +331,8 @@ class VisualAssets(VisualAssetContext):
                 )
             ).all()
             for ref, asset in refs:
+                if not include_svg and asset.mime_type == "image/svg+xml":
+                    continue
                 if query and query.lower() not in ref.display_name.lower():
                     continue
                 if media_kind and asset.media_kind != media_kind:

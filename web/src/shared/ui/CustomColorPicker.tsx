@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import "@shared/ui/custom-color-picker.css";
+import { useSelectPopover } from "./useSelectPopover";
 
 const DEFAULT_COLORS = [
   "#000000",
@@ -26,6 +27,7 @@ export function CustomColorPicker({
   ariaLabel,
   colors = DEFAULT_COLORS,
   compact = false,
+  mixed = false,
   disabled = false,
 }: {
   value: string;
@@ -33,10 +35,21 @@ export function CustomColorPicker({
   ariaLabel: string;
   colors?: string[];
   compact?: boolean;
+  mixed?: boolean;
   disabled?: boolean;
 }) {
   const root = useRef<HTMLDivElement>(null);
+  const trigger = useRef<HTMLButtonElement>(null);
+  const menu = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
+  useSelectPopover(open, trigger, menu, 280, 224);
+  const close = () => {
+    setOpen(false);
+    trigger.current?.focus();
+  };
+  useEffect(() => {
+    if (open) menu.current?.querySelector<HTMLButtonElement>("button")?.focus();
+  }, [open]);
   const [draft, setDraft] = useState(value.toUpperCase());
 
   useEffect(() => setDraft(value.toUpperCase()), [value]);
@@ -54,7 +67,9 @@ export function CustomColorPicker({
       className={`custom-color-picker${compact ? " compact" : ""}`}
     >
       <button
+        ref={trigger}
         type="button"
+        title={mixed ? `${ariaLabel}：混合` : ariaLabel}
         className="custom-color-picker-trigger"
         aria-label={ariaLabel}
         aria-haspopup="dialog"
@@ -62,12 +77,63 @@ export function CustomColorPicker({
         disabled={disabled}
         onClick={() => setOpen((current) => !current)}
       >
-        <span style={{ backgroundColor: value }} aria-hidden />
-        {compact ? null : <strong>{value.toUpperCase()}</strong>}
+        <span
+          style={{
+            background: mixed
+              ? "linear-gradient(135deg, #777 50%, #ddd 50%)"
+              : value,
+          }}
+          aria-hidden
+        />
+        {compact ? null : (
+          <strong>{mixed ? "混合" : value.toUpperCase()}</strong>
+        )}
       </button>
       {open ? (
         <div
+          ref={menu}
+          popover="manual"
           className="custom-color-picker-popover"
+          onKeyDown={(event) => {
+            event.stopPropagation();
+            if (event.key === "Escape") {
+              event.preventDefault();
+              close();
+            }
+            if (
+              !(event.target instanceof HTMLInputElement) &&
+              [
+                "ArrowLeft",
+                "ArrowRight",
+                "ArrowUp",
+                "ArrowDown",
+                "Home",
+                "End",
+              ].includes(event.key)
+            ) {
+              event.preventDefault();
+              const buttons = Array.from(
+                menu.current?.querySelectorAll<HTMLButtonElement>("button") ??
+                  [],
+              );
+              const index = buttons.indexOf(event.target as HTMLButtonElement);
+              const delta =
+                event.key === "ArrowLeft"
+                  ? -1
+                  : event.key === "ArrowUp"
+                    ? -5
+                    : event.key === "ArrowDown"
+                      ? 5
+                      : 1;
+              buttons[
+                event.key === "Home"
+                  ? 0
+                  : event.key === "End"
+                    ? buttons.length - 1
+                    : (index + delta + buttons.length) % buttons.length
+              ]?.focus();
+            }
+          }}
           role="dialog"
           aria-label={`${ariaLabel}选色器`}
         >
@@ -82,7 +148,7 @@ export function CustomColorPicker({
                 onClick={() => {
                   onChange(color.toUpperCase());
                   setDraft(color.toUpperCase());
-                  setOpen(false);
+                  close();
                 }}
               />
             ))}
@@ -102,9 +168,12 @@ export function CustomColorPicker({
                 if (normalized) onChange(normalized);
               }}
               onKeyDown={(event) => {
-                if (event.key === "Escape") setOpen(false);
-                if (event.key === "Enter" && normalizeColor(draft))
-                  setOpen(false);
+                if (event.key === "Escape") {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  close();
+                }
+                if (event.key === "Enter" && normalizeColor(draft)) close();
               }}
             />
           </label>

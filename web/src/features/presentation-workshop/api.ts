@@ -45,10 +45,17 @@ export const exportProject = async (id: string, revision: number) =>
       parseAs: "blob",
     }),
   );
-export const listImages = async (signal?: AbortSignal) =>
+export const listImages = async (signal?: AbortSignal, query = "") =>
   unwrap(
     await api.GET("/v1/files", {
-      params: { query: { media_kind: "image", include_references: false } },
+      params: {
+        query: {
+          media_kind: "image",
+          include_references: false,
+          query,
+          include_svg: true,
+        },
+      },
       signal,
     }),
   );
@@ -79,3 +86,6 @@ export const imageBlob = async (id: string) =>
       parseAs: "blob",
     }),
   );
+
+export const previewSvg = async (svg: string, signal?: AbortSignal) =>
+  unwrap(await api.POST("/v1/files/svg/preview", { body: { svg }, signal }));

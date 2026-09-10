@@ -10,7 +10,7 @@ import {
 } from "@tiptap/extension-text-style";
 import TextAlign from "@tiptap/extension-text-align";
 import { defaultRun } from "./templates";
-import { fromEditor, toEditor } from "./textAdapter";
+import { fontFamily, fromEditor, toEditor } from "./textAdapter";
 import type { SlideElement, Paragraph } from "./types";
 import { elementStyle } from "./geometry";
 
@@ -49,7 +49,7 @@ export function SlideTextEditor({
   redo,
 }: {
   element: SlideElement;
-  onChange: (paragraphs: Paragraph[]) => void;
+  onChange: (paragraphs: Paragraph[], format?: boolean) => void;
   onComposition: (active: boolean) => void;
   onReady: (editor: Editor | null) => void;
   onExit: () => void;
@@ -124,8 +124,11 @@ export function SlideTextEditor({
       },
       transformPastedHTML: () => "",
     },
-    onUpdate: ({ editor }) =>
-      callbacks.current.onChange(fromEditor(editor.getJSON(), fallback)),
+    onUpdate: ({ editor, transaction }) =>
+      callbacks.current.onChange(
+        fromEditor(editor.getJSON(), fallback),
+        !!transaction.getMeta("presentationFormat"),
+      ),
   });
   useEffect(() => {
     if (!editor) return;
@@ -153,7 +156,7 @@ export function SlideTextEditor({
         ...elementStyle(element),
         fontSize: fallback.size,
         color: fallback.color,
-        fontFamily: `"${fallback.font}", "PingFang SC", sans-serif`,
+        fontFamily: fontFamily(fallback.font),
       }}
       onPointerDown={(event) => event.stopPropagation()}
       onKeyDown={(event) => event.stopPropagation()}

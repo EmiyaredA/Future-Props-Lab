@@ -99,7 +99,7 @@ test("编辑器菜单、备注、背景、实际缩放与独立截图", async ({
   await page.getByRole("menuitem", { name: "结束页", exact: true }).click();
   await expect(canvas.getByText("感谢聆听", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "插入图形" }).click();
-  await page.getByRole("menuitem", { name: "椭圆", exact: true }).click();
+  await page.getByRole("button", { name: "椭圆", exact: true }).click();
   await expect(
     page.getByRole("tab", { name: "元素", exact: true }),
   ).toHaveAttribute("aria-selected", "true");
@@ -133,13 +133,18 @@ test("编辑器菜单、备注、背景、实际缩放与独立截图", async ({
       await page.setViewportSize({ width, height: 900 });
       await expect(canvas).toBeVisible();
       await noOverflow(page);
-      const box = (await canvas.boundingBox())!;
-      const actual = Number(
-        (await page.getByLabel("实际缩放比例").textContent())!.replace("%", ""),
-      );
-      expect(Math.abs(actual - (box.width / 1280) * 100)).toBeLessThanOrEqual(
-        1,
-      );
+      await expect
+        .poll(async () => {
+          const box = (await canvas.boundingBox())!;
+          const actual = Number(
+            (await page.getByLabel("实际缩放比例").textContent())!.replace(
+              "%",
+              "",
+            ),
+          );
+          return Math.abs(actual - (box.width / 1280) * 100);
+        })
+        .toBeLessThanOrEqual(1);
       if (width === 390 || width === 1600)
         await page.screenshot({
           path: info.outputPath(`editor-${width}-${theme}.png`),

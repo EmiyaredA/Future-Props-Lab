@@ -12,6 +12,8 @@ from app.files.layout_migration import LayoutMigrationBusyError, StorageLayoutMi
 from app.schemas.files import (
     StorageLayoutMigrationOut,
     StorageLayoutStatusOut,
+    SvgPreviewIn,
+    SvgPreviewOut,
     VisualAssetFolderCreateIn,
     VisualAssetFolderListOut,
     VisualAssetFolderOut,
@@ -115,6 +117,7 @@ async def list_files(
     media_kind: Literal["image", "video", "audio", "font", "document"] | None = None,
     sort: Literal["updated", "name"] = "updated",
     include_references: bool = True,
+    include_svg: bool = False,
 ) -> VisualAssetListOut:
     try:
         return await _assets(session, workspace_id).list_assets(
@@ -124,6 +127,7 @@ async def list_files(
             media_kind=media_kind,
             sort=sort,
             include_references=include_references,
+            include_svg=include_svg,
         )
     except AssetError as exc:
         raise asset_http_error(exc) from None
@@ -185,6 +189,18 @@ async def preview_file(
         media_type=row.mime_type,
         filename=row.original_filename,
         content_disposition_type="inline",
+        headers={
+            "X-Content-Type-Options": "nosniff",
+            **(
+                {
+                    "Content-Security-Policy": (
+                        "default-src 'none'; style-src 'unsafe-inline'; sandbox"
+                    )
+                }
+                if row.mime_type == "image/svg+xml"
+                else {}
+            ),
+        },
     )
 
 
@@ -204,3 +220,13 @@ async def download_file(
         media_type=row.mime_type,
         filename=download_filename(download_name or row.display_name, row.original_filename),
     )
+
+
+@router.post("/files/svg/preview", response_model=SvgPreviewOut)
+async def preview_svg(body: SvgPreviewIn, _workspace_id: WorkspaceDep) -> SvgPreviewOut:
+    from app.files.svg import normalize_svg
+
+    try:
+        return SvgPreviewOut(**normalize_svg(body.svg))
+    except ValueError as exc:
+        raise HTTPException(422, {"code": "invalid_svg", "message": str(exc)}) from None

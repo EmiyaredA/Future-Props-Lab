@@ -1,0 +1,237 @@
+.presentation-workspace > .presentation-inspector {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  overflow: visible;
+  box-sizing: border-box;
+}
+.presentation-inspector-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.presentation-inspector .presentation-inspector-tabs {
+  flex: 1;
+  margin: 0;
+  padding: 3px;
+  gap: 3px;
+  border: 0;
+  border-radius: 9px;
+  background: var(--bg);
+}
+.presentation-inspector .presentation-inspector-tabs button {
+  border: 0;
+  border-radius: 6px;
+  padding: 7px 8px;
+}
+.presentation-inspector
+  .presentation-inspector-tabs
+  button[aria-selected="true"] {
+  color: var(--accent);
+  background: var(--surface);
+  box-shadow: 0 1px 4px #0000000d;
+}
+.presentation-inspector-reset,
+.presentation-lock-toggle {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+.presentation-inspector-reset:hover,
+.presentation-lock-toggle:hover,
+.presentation-lock-toggle[aria-pressed="true"] {
+  background: color-mix(in srgb, var(--accent) 9%, var(--surface));
+  color: var(--accent);
+}
+.presentation-inspector-content {
+  overflow-y: auto;
+  min-height: 0;
+  padding: 14px 16px 20px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+  overscroll-behavior: contain;
+}
+.presentation-inspector-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 28px;
+  margin-bottom: 12px;
+}
+.presentation-inspector-heading h3 {
+  margin: 0;
+  font-size: 13px;
+}
+.presentation-inspector fieldset {
+  margin-top: 16px;
+  padding: 12px 0 0;
+}
+.presentation-inspector legend {
+  color: var(--text);
+  font-weight: 500;
+  font-size: 11px;
+  padding-right: 10px;
+}
+.presentation-inspector .presentation-field {
+  gap: 8px;
+}
+.presentation-inspector .presentation-field input {
+  box-sizing: border-box;
+  min-width: 0;
+  height: 34px;
+  border-radius: 7px;
+  padding: 6px 9px;
+  font-variant-numeric: tabular-nums;
+}
+.presentation-inspector .presentation-field input:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--accent) 25%, transparent);
+  border-color: var(--accent);
+}
+.presentation-inspector .presentation-geometry,
+.presentation-crop-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 10px 12px;
+}
+.presentation-geometry .presentation-field,
+.presentation-crop-grid .presentation-field {
+  display: flex;
+  align-items: stretch;
+  flex-direction: column;
+  gap: 5px;
+  margin: 0;
+  min-width: 0;
+}
+.presentation-geometry .presentation-field > span,
+.presentation-crop-grid .presentation-field > span {
+  color: var(--muted);
+  font-size: 11px;
+}
+.presentation-inspector .presentation-geometry input,
+.presentation-inspector .presentation-crop-grid input {
+  width: 100%;
+}
+.presentation-crop .muted {
+  font-size: 11px;
+  margin: 0 0 12px;
+}
+.presentation-inspector .btn {
+  min-height: 30px;
+  padding: 6px 10px;
+  font-size: 11px;
+  border-radius: 7px;
+}
+.presentation-crop-reset {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 12px;
+}
+.presentation-align-icons {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 5px;
+}
+.presentation-align-icons button,
+.presentation-layer-grid button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 32px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+}
+.presentation-layer-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  margin-top: 10px;
+}
+.presentation-layer-grid button {
+  font-size: 11px;
+  padding: 6px 3px;
+}
+.presentation-align-icons button:hover:not(:disabled),
+.presentation-layer-grid button:hover:not(:disabled) {
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 50%, var(--border));
+  background: color-mix(in srgb, var(--accent) 6%, var(--surface));
+}
+.presentation-inspector-resize {
+  position: absolute;
+  z-index: 5;
+  top: 0;
+  bottom: 0;
+  left: -5px;
+  width: 10px;
+  cursor: col-resize;
+  touch-action: none;
+  user-select: none;
+}
+.presentation-inspector-resize:focus-visible {
+  outline: none;
+}
+.presentation-inspector-resize::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 4px;
+  width: 2px;
+  background: transparent;
+  transition: background 120ms;
+}
+.presentation-inspector-resize span {
+  position: absolute;
+  top: 45%;
+  left: 3px;
+  width: 4px;
+  height: 32px;
+  border-radius: 4px;
+  background: var(--border);
+}
+.presentation-inspector-resize:hover::before,
+.presentation-inspector-resize:focus-visible::before,
+.presentation-inspector.is-resizing .presentation-inspector-resize::before,
+.presentation-inspector-resize:hover span,
+.presentation-inspector.is-resizing .presentation-inspector-resize span {
+  background: var(--accent);
+}
+.presentation-inspector.is-resizing {
+  user-select: none;
+}
+@media (max-width: 767px) {
+  .presentation-workspace > .presentation-inspector {
+    display: none;
+    width: 100% !important;
+  }
+  .mobile-panel-format .presentation-workspace > .presentation-inspector {
+    display: flex;
+  }
+  .presentation-inspector-resize,
+  .presentation-inspector-reset {
+    display: none;
+  }
+  .presentation-inspector-header {
+    padding: 8px 12px;
+  }
+  .presentation-inspector-content {
+    padding: 10px 14px;
+  }
+}

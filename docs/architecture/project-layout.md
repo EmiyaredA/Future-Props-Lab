@@ -299,7 +299,6 @@ Web 的 `NoteHistory` 复用现有只读 `RichEditor`；`historyDiff.ts` 负责�
 - `web/src/features/accounts/` 拥有七个管理页面、平台查询键、跨空间查询、邀请/模板/权限/服务表单与官方认证交互；应用壳仅负责路由装配。`features/models/catalog/WorkspaceDefaults.tsx` 拥有工作区默认用途弹窗。
 - `db/migrations/versions/r0051_platform_governance.py` 至 `r0055_model_suppliers.py` 按已登记顺序追加治理数据结构，迁移测试使用临时数据库。
 
-
 调用日志页面的工具栏、筛选抽屉和表格由 `web/src/features/models/logs/` 拥有；
 `features/accounts/useLogWorkspaceScope.ts` 对外提供授权工作区范围与只读概况查询，查询键归账号模块。
 `backend/app/accounts/cross_workspace_logs.py` 显式校验跨工作区范围；
@@ -309,8 +308,12 @@ Web 的 `NoteHistory` 复用现有只读 `RichEditor`；`historyDiff.ts` 负责�
 
 `backend/app/presentation_workshop/` 拥有文稿项目、图片归属校验、引用同步和请求内导出。
 `projects.py` 处理 Workspace 限定加载与整体 CAS；`exports.py` 负责只读版本快照、
-两路导出并发、私有临时文件和取消清理；`pptx_export.py` 是唯一的 python-pptx / DrawingML 适配边界。
+两路导出并发、私有临时文件和取消清理；`pptx_export.py` 组装 python-pptx 导出，`pptx_styles.py` 映射 DrawingML 样式，
+`pptx_media.py` 拥有 SVG 扩展嵌入、PNG 兼容图与图片外观，`native_shapes.py` 构造可编辑自由形状。
 文稿持久化于 `presentation_projects`，图片引用位于 `presentation_asset_references`。
+迁移 `0057_presentation_styles` 为文稿 JSON 补齐确定性样式缺省值，不改变 revision 或更新时间；
+`pptx_styles.py` 与 Web `PresentationShape.tsx` 分别拥有 DrawingML 和 SVG 样式映射。
+格式控件拆分到 `PresentationShapeSettings.tsx` 与 `PresentationNumberField.tsx`。
 迁移 `0056_presentation_workshop` 仅追加这两张表；图片沿用公共文件库并参与删除保护，
 不增加独立项目素材目录或持久导出任务。API 不接收 Workspace ID。
 
@@ -318,13 +321,26 @@ Web 的 `NoteHistory` 复用现有只读 `RichEditor`；`historyDiff.ts` 负责�
 当前文本框 Tiptap 编辑、统一撤销、自动保存队列、元素变换、属性面板与放映。
 `queryKeys.ts` 维护该功能缓存键；`SlideSurface` 被画布、可见缩略图和放映复用。
 结构类型来自 OpenAPI，缩放不改变文稿坐标。样式分别由 `presentation-library.css`、
-`presentation-workshop.css`、`presentation-canvas.css` 与 `presentation-controls.css` 维护，
-分别对应首页、编辑器布局、画布渲染与交互控件；移动端只做浏览及轻编辑。
+`presentation-workshop.css`、`presentation-canvas.css`、`presentation-controls.css` 与 `presentation-selection.css` 维护，
+分别对应首页、编辑器布局、画布渲染、交互控件与选区悬浮操作；移动端只做浏览及轻编辑。
+`presentation-inspector.css` 拥有格式面板的分区与控件样式，`InspectorArrange` 拥有对齐和层级控件，
+`useInspectorResize` 管理面板左边缘拖动、键盘调宽与工作区宽度约束，宽度仅作为界面状态。
 `PresentationToolbar`、`PresentationMenu`、`PresentationNotes` 与 `PresentationStatusbar`
 拥有工具栏、键盘菜单、备注折叠和缩放操作，UI 状态不进入文稿数据。
+`SelectionOverlay` 根据旋转后的屏幕选区定位悬浮栏，`SelectionToolbar` 按元素类型提供格式命令，
+`useSelectionFormat` 统一整框与 Tiptap 选区格式，`selectionGeometry` 和 `SelectionHandles` 拥有八方向缩放及选框。
 首页基础版式创建复用 `templates.ts`；画布报告实际缩放比例，缩略图按容器宽度等比适配。
 新增路由由响应式清单登记，浏览器流程位于 `presentation-workshop.spec.ts`。
 
 演示工坊的 `image_crop.py` / Web `imageCrop.ts` 分别拥有相同的原图区域到图片框的等比填充计算，
 使用 `tests/fixtures/presentation_crop_cases.json` 共用测试向量。图片尺寸仅在读取素材后取得，
 不进入文稿结构；浏览器缩略图和放映共用渲染器，PPTX 使用经 EXIF 校正后的素材尺寸。
+
+图片与矢量素材的校验、预检与规范化归属公共 `backend/app/files/svg.py`，只支持受限自包含 SVG；
+`/v1/files/svg/preview` 不持久化，上传继续走公共文件用例。文件列表默认排除 SVG，文件管理与演示工坊显式启用。
+迁移 `0058_presentation_media` 只补齐确定性媒体外观缺省值，不改变文稿版本、revision 或更新时间。
+演示工坊前端的 `usePresentationMedia` 统一插入和替换素材，`PresentationImages` 拥有文件搜索与分页，
+`SvgImport` 拥有隔离图片预览；`PresentationShapePicker`、`shapeCatalog`、`iconCatalog` 管理分类和静态 Lucide 图标。
+`SelectionMediaTools`、`MediaAppearance`、`MediaPreview` 管理媒体操作和精确外观。
+`useImageCrop`、`ImageCropOverlay`、`cropGeometry` 管理可取消的裁剪草稿、旋转局部坐标及一次撤销提交。
+`presentation-media.css` 维护媒体工具、选择器与裁剪覆盖层；覆盖层不进入缩略图、放映或导出。

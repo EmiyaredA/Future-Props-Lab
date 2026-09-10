@@ -7,7 +7,7 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 Color = Annotated[str, Field(pattern=r"^#[0-9a-fA-F]{6}$")]
 Identifier = Annotated[str, Field(min_length=1, max_length=64)]
-Font = Literal["Microsoft YaHei", "Arial"]
+Font = Literal["Microsoft YaHei", "Arial", "Consolas"]
 
 
 class SlideModel(BaseModel):
@@ -47,24 +47,58 @@ class PresentationCrop(SlideModel):
 class PresentationElement(SlideModel):
     id: Identifier
     kind: Literal[
-        "text", "image", "rect", "roundRect", "ellipse", "triangle", "diamond", "arrow", "line"
+        "text",
+        "image",
+        "vector",
+        "rect",
+        "roundRect",
+        "ellipse",
+        "triangle",
+        "diamond",
+        "arrow",
+        "line",
+        "rightTriangle",
+        "pentagon",
+        "hexagon",
+        "star",
+        "parallelogram",
+        "trapezoid",
+        "leftArrow",
+        "upArrow",
+        "downArrow",
+        "doubleArrow",
+        "callout",
+        "roundCallout",
+        "ellipseCallout",
     ]
     x: float = Field(ge=-10000, le=10000)
     y: float = Field(ge=-10000, le=10000)
     width: float = Field(ge=1, le=10000)
     height: float = Field(ge=1, le=10000)
     rotation: float = Field(ge=-360, le=360)
+    opacity: float = Field(default=1, ge=0, le=1)
+    flip_x: bool = False
+    flip_y: bool = False
+    vector_color: Color | None = None
+    image_border: bool = False
     locked: bool
     fill: Color
     stroke: Color
     stroke_width: float = Field(ge=0, le=30)
+    fill_opacity: float = Field(default=1, ge=0, le=1)
+    stroke_dash: Literal["solid", "dash", "dot"] = "solid"
+    start_arrow: Literal["none", "triangle", "open", "circle"] = "none"
+    end_arrow: Literal["none", "triangle", "open", "circle"] = "none"
+    corner_radius: float | None = Field(default=None, ge=0, le=5000)
     paragraphs: list[PresentationParagraph] = Field(max_length=200)
     asset_id: Identifier | None
     crop: PresentationCrop
 
     @model_validator(mode="after")
     def content_matches_kind(self):
-        if (self.kind == "image") != (self.asset_id is not None):
+        if self.kind != "vector" and self.vector_color is not None:
+            raise ValueError("只有矢量元素可以统一改色")
+        if (self.kind in {"image", "vector"}) != (self.asset_id is not None):
             raise ValueError("只有图片元素可以且必须引用图片")
         if self.kind != "text" and self.paragraphs:
             raise ValueError("只有文本元素可以包含文字")
@@ -77,7 +111,7 @@ class PresentationSlide(SlideModel):
     id: Identifier
     background: Color
     notes: str = Field(max_length=20000)
-    elements: list[PresentationElement] = Field(max_length=100)
+    elements: list[PresentationElement] = Field(max_length=200)
 
 
 class PresentationDocument(SlideModel):

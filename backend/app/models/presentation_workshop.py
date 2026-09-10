@@ -16,6 +16,7 @@ class PresentationProject(Base):
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
     workspace_id: Mapped[str] = mapped_column(ForeignKey("workspaces.id", ondelete="CASCADE"))
     title: Mapped[str] = mapped_column(String(120))
+    # Native v1 JSON includes compatible shape-style and media defaults (migrations 0057–0058).
     document: Mapped[dict] = mapped_column(JSON)
     revision: Mapped[int] = mapped_column(Integer, default=0)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now)

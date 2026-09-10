@@ -22,6 +22,8 @@ dependencies = [
   "uvicorn[standard]>=0.35.0",
   "websockets>=15.0",
   "python-pptx>=1.0.2,<2",
+  "resvg-py>=0.3,<1",
+  "defusedxml>=0.7,<1",
 ]
 
 [dependency-groups]

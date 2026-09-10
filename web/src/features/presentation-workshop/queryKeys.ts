@@ -3,5 +3,7 @@ export const presentationKeys = {
   projects: (query = "", offset = 0) =>
     ["presentation-workshop", "projects", query, offset] as const,
   project: (id: string) => ["presentation-workshop", "project", id] as const,
+  imageSearch: (query = "") =>
+    ["presentation-workshop", "images", query] as const,
   images: ["presentation-workshop", "images"] as const,
 };

@@ -79,6 +79,7 @@ export async function getFiles(options: {
           media_kind: options.mediaKind,
           sort: options.sort,
           include_references: options.includeReferences,
+          include_svg: true,
         },
       },
     }),

@@ -451,7 +451,6 @@ ID、消息数量、画布摘要和素材 ID；不保存图片 Base64、临时�
 
 任务列表同时呈现完整渲染与分段导出，支持关闭导出弹窗后的进度查询和文件下载。
 
-
 项目素材响应的 `transcriptSegments[]` 与转写任务的 `resultSegments[]` 使用统一的
 `{ speaker, startMs, endMs, text }` 形状。SenseAudio ASR Pro 请求启用说话人分离、自动标点和
 句级时间戳；音频按所选模型的 10 MB 或 100 MB 上限校验，超限时不会提交供应商。手工修正整段文本会清空旧分段，
@@ -759,32 +758,31 @@ Markdown、JSON、Word（doc/docx）、Excel（xls/xlsx）、PPT（ppt/pptx）�
 Runner 连续失败达到 3 次时返回 503。单轮 Runner 异常会被记录并按有上限指数退避重试，成功一轮后
 清零连续失败计数。
 
-
 ## 思绪工坊
 
 所有接口位于 `/v1/thought-workshop`，使用现有 Studio Cookie/CSRF 或 Management API Key，
 Workspace 仅从认证主体派生。跨空间 ID 返回 404。
 
-| 接口 | 行为 |
-| --- | --- |
-| `GET/POST /knowledge-bases` | 查询（query、trash）／创建知识库，自动创建空白首页 |
-| `GET/PUT /knowledge-bases/{id}` | 读取／带 expected_revision 修改名称、简介、cover_asset_id |
-| `DELETE /knowledge-bases/{id}` | 带 expected_revision 整库移入回收站 |
-| `POST /knowledge-bases/{id}/restore` | 带 expected_revision 恢复，保留原文档回收站状态 |
-| `GET /knowledge-bases/{id}/directory` | 库快照与未删除普通文档（含 parent_id 嵌套树） |
-| `POST /knowledge-bases/{id}/documents` | expected_revision、title、parent_id 创建空文档 |
-| `POST /knowledge-bases/{id}/move` | expected_revision、item_id、parent_id、before_id；库内移动与排序 |
-| `GET /notes` | 必填 knowledge_base_id；query、parent_id（unfiled 为根目录）、tag、view、sort、offset、limit；普通文档摘要不含正文和首页 |
-| `POST /notes` | knowledge_base_id、parent_id、expected_knowledge_revision 与 v2 正文，原子创建文档 |
-| `GET/PUT /notes/{id}` | 读取／带 expected_revision 保存完整文档和元数据 |
-| `DELETE /notes/{id}` | 带 expected_revision 与 expected_knowledge_revision 移入回收站；cascade_children=true 连同子树；permanent=true 永久删除回收站笔记 |
-| `POST /notes/{id}/restore` | 带 expected_revision 与 expected_knowledge_revision 恢复 |
-| `POST /images` | multipart upload 上传公共图片，返回 asset_id |
-| `POST /attachments` | multipart upload 上传公共附件，返回 asset_id、filename、mime_type、byte_size |
-| `GET /models` | 当前空间可用的写作模型 |
-| `POST /notes/{id}/assistant` | model_id、expected_revision、action、instruction、selection；返回 SSE |
-| `GET /backup` | v4 完整 ZIP；可用 knowledge_base_id 选择单库（包括回收站） |
-| `POST /imports` | multipart upload 创建副本，返回 knowledge_base_ids 和普通 note_ids；Markdown 包可指定 knowledge_base_id 与 expected_revision 导入当前库 |
+| 接口                                   | 行为                                                                                                                                    |
+| -------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET/POST /knowledge-bases`            | 查询（query、trash）／创建知识库，自动创建空白首页                                                                                      |
+| `GET/PUT /knowledge-bases/{id}`        | 读取／带 expected_revision 修改名称、简介、cover_asset_id                                                                               |
+| `DELETE /knowledge-bases/{id}`         | 带 expected_revision 整库移入回收站                                                                                                     |
+| `POST /knowledge-bases/{id}/restore`   | 带 expected_revision 恢复，保留原文档回收站状态                                                                                         |
+| `GET /knowledge-bases/{id}/directory`  | 库快照与未删除普通文档（含 parent_id 嵌套树）                                                                                           |
+| `POST /knowledge-bases/{id}/documents` | expected_revision、title、parent_id 创建空文档                                                                                          |
+| `POST /knowledge-bases/{id}/move`      | expected_revision、item_id、parent_id、before_id；库内移动与排序                                                                        |
+| `GET /notes`                           | 必填 knowledge_base_id；query、parent_id（unfiled 为根目录）、tag、view、sort、offset、limit；普通文档摘要不含正文和首页                |
+| `POST /notes`                          | knowledge_base_id、parent_id、expected_knowledge_revision 与 v2 正文，原子创建文档                                                      |
+| `GET/PUT /notes/{id}`                  | 读取／带 expected_revision 保存完整文档和元数据                                                                                         |
+| `DELETE /notes/{id}`                   | 带 expected_revision 与 expected_knowledge_revision 移入回收站；cascade_children=true 连同子树；permanent=true 永久删除回收站笔记       |
+| `POST /notes/{id}/restore`             | 带 expected_revision 与 expected_knowledge_revision 恢复                                                                                |
+| `POST /images`                         | multipart upload 上传公共图片，返回 asset_id                                                                                            |
+| `POST /attachments`                    | multipart upload 上传公共附件，返回 asset_id、filename、mime_type、byte_size                                                            |
+| `GET /models`                          | 当前空间可用的写作模型                                                                                                                  |
+| `POST /notes/{id}/assistant`           | model_id、expected_revision、action、instruction、selection；返回 SSE                                                                   |
+| `GET /backup`                          | v4 完整 ZIP；可用 knowledge_base_id 选择单库（包括回收站）                                                                              |
+| `POST /imports`                        | multipart upload 创建副本，返回 knowledge_base_ids 和普通 note_ids；Markdown 包可指定 knowledge_base_id 与 expected_revision 导入当前库 |
 
 正文 `schema_version=2`（历史版本仅在备份导入转换层处理）、`document` 为允许列表校验的 Tiptap JSON；图片仅保存 assetId，
 不保存临时 URL。标签最多 30 个、每个 40 字，标题最多 240 字，正文最多 2 MiB。
@@ -814,36 +812,35 @@ Markdown 转换在 Web 所属功能中完成，再经同一个导入 API 校验�
 
 仅超级管理员 Session 可调用 `/v1/platform/*`；运营管理员不能借助兼容管理员字段进入中台。账号创建/修改支持 `platform_role: super_admin | admin | member`。账号身份修改仍要求 `expected_revision` 并撤销目标会话与密钥。
 
-| 接口 | 用途 |
-| --- | --- |
-| `GET/POST /v1/platform/registration-invite-codes` | 搜索分页/创建邀请码；列表仅掩码 |
-| `PATCH /v1/platform/registration-invite-codes/{id}` | CAS 修改名额和启停 |
-| `POST .../{id}/actions` | CAS 延期、重设有效期、软删除 |
-| `POST .../{id}/secret` | 近期密码验证后读取明文并审计 |
-| `GET .../{id}/redemptions` | 分页兑换记录 |
-| `POST /v1/auth/register` | 邀请码、用户名、自选密码、可选邮箱注册登录 |
-| `GET/PUT /v1/platform/model-service-templates/{role}` | 角色模型模板，写入使用 expected_revision |
-| `POST .../{role}/preview` | 使用 expected_template_revision 创建同步预览 |
-| `GET .../{role}/sync-jobs` | 最近同步记录 |
-| `GET .../sync-jobs/{id}` | 任务状态与各空间明细 |
-| `POST .../sync-jobs/{id}/start` | 使用 expected_revision 确认同步 |
-| `GET /v1/platform/demo-services` | 两项固定服务的配置、就绪状态和脱敏记录 |
-| `PUT .../demo-services/{id}` | CAS 配置 |
-| `POST .../demo-services/{id}/actions` | start/stop/reinitialize |
-| `POST /v1/account/demo-services/{id}/install` | 当前空间接入，要求配置权限和 expected_catalog_revision |
-| `GET/PATCH /v1/platform/permission-policy` | 敏感权限矩阵，CAS 更新 |
-| `GET/PATCH /v1/platform/runtime-quotas` | 账号/空间/实例/语音/管理员预留额度，CAS 更新 |
-| `PUT /v1/model-catalog/defaults` | expected_revision + default_model_ids，校验当前空间可用模型 |
-| `GET /v1/account/developer-documents` | 按当前敏感权限返回开发文档目录与正文，禁止缓存 |
-| `GET /v1/account/log-workspaces` | Session 专用跨空间日志选择范围 |
-| `GET /v1/account/cross-workspace-call-logs` | 显式 workspace_ids 与完整列表筛选查询只读概况；追加 model_options |
-| `GET /v1/account/cross-workspace-call-logs/stats` | 显式 workspace_ids 汇总今日调用、Token、平均耗时与失败数（UTC） |
-| `PATCH /v1/account/project-certification/{kind}/{id}` | visual/galgame 官方标记，is_official + expected_revision |
+| 接口                                                  | 用途                                                              |
+| ----------------------------------------------------- | ----------------------------------------------------------------- |
+| `GET/POST /v1/platform/registration-invite-codes`     | 搜索分页/创建邀请码；列表仅掩码                                   |
+| `PATCH /v1/platform/registration-invite-codes/{id}`   | CAS 修改名额和启停                                                |
+| `POST .../{id}/actions`                               | CAS 延期、重设有效期、软删除                                      |
+| `POST .../{id}/secret`                                | 近期密码验证后读取明文并审计                                      |
+| `GET .../{id}/redemptions`                            | 分页兑换记录                                                      |
+| `POST /v1/auth/register`                              | 邀请码、用户名、自选密码、可选邮箱注册登录                        |
+| `GET/PUT /v1/platform/model-service-templates/{role}` | 角色模型模板，写入使用 expected_revision                          |
+| `POST .../{role}/preview`                             | 使用 expected_template_revision 创建同步预览                      |
+| `GET .../{role}/sync-jobs`                            | 最近同步记录                                                      |
+| `GET .../sync-jobs/{id}`                              | 任务状态与各空间明细                                              |
+| `POST .../sync-jobs/{id}/start`                       | 使用 expected_revision 确认同步                                   |
+| `GET /v1/platform/demo-services`                      | 两项固定服务的配置、就绪状态和脱敏记录                            |
+| `PUT .../demo-services/{id}`                          | CAS 配置                                                          |
+| `POST .../demo-services/{id}/actions`                 | start/stop/reinitialize                                           |
+| `POST /v1/account/demo-services/{id}/install`         | 当前空间接入，要求配置权限和 expected_catalog_revision            |
+| `GET/PATCH /v1/platform/permission-policy`            | 敏感权限矩阵，CAS 更新                                            |
+| `GET/PATCH /v1/platform/runtime-quotas`               | 账号/空间/实例/语音/管理员预留额度，CAS 更新                      |
+| `PUT /v1/model-catalog/defaults`                      | expected_revision + default_model_ids，校验当前空间可用模型       |
+| `GET /v1/account/developer-documents`                 | 按当前敏感权限返回开发文档目录与正文，禁止缓存                    |
+| `GET /v1/account/log-workspaces`                      | Session 专用跨空间日志选择范围                                    |
+| `GET /v1/account/cross-workspace-call-logs`           | 显式 workspace_ids 与完整列表筛选查询只读概况；追加 model_options |
+| `GET /v1/account/cross-workspace-call-logs/stats`     | 显式 workspace_ids 汇总今日调用、Token、平均耗时与失败数（UTC）   |
+| `PATCH /v1/account/project-certification/{kind}/{id}` | visual/galgame 官方标记，is_official + expected_revision          |
 
 `/v1/demo-services/model/chat/completions` 提供认证后的 OpenAI 兼容固定文本、SSE 与工具调用；`/v1/demo-services/tools/{orders|products|product}` 返回固定演示数据。服务默认关闭，关闭返回 503，额度不足返回 429。它们不提供匿名调用或进程控制。
 
 工具 API 与 MCP 配置增加 `sensitive_result`，默认 false。受限身份只收到安全的执行状态；原始结果仅供内部执行或已授权的诊断界面。平台策略每次请求重新计算，密钥不能使用跨空间日志权限。
-
 
 跨工作区日志的列表与统计均要求 Cookie Session 和 `logs.cross_workspace`，目标必须全部存在；
 遗漏 `workspace_ids` 时仍仅查询当前工作区。列表支持与普通日志相同的筛选和日期校验，`q` 额外保留
@@ -865,7 +862,12 @@ Principal 工作区隔离。统计独立于列表筛选，按所选工作区的 
 CAS 缺失返回 422，冲突返回 409 与当前快照。图片复用 `/v1/files` 上传、查询和鉴权读取，
 只接受当前空间公共图片，被引用文件删除返回 409。
 
-文稿版本 1 使用 1280×720 逻辑坐标。最多 100 页、每页 100 个元素，结构最大 8 MiB；
+元素样式支持 `fill_opacity`（0–1，默认 1）、`stroke_dash`（solid/dash/dot，默认 solid）、
+`start_arrow` / `end_arrow`（none/triangle/open/circle，默认 none）与 `corner_radius`（0–5000，默认 null 自动圆角）。
+箭头用于直线，圆角用于圆角矩形；保存、缩略图、放映与 PPTX 导出共享这些值。
+字体包括 Microsoft YaHei、Arial、Consolas；Consolas 在浏览器缺失时回退到等宽字体。
+
+文稿版本 1 使用 1280×720 逻辑坐标。最多 100 页、每页 200 个元素，结构最大 8 MiB；
 页面与元素 ID 全文唯一。元素保存位置、尺寸、旋转、锁定、样式、段落或图片 ID 及矩形裁剪。
 文字只允许微软雅黑 / Arial 与受控段落格式，不接受任意 HTML 或外部图片 URL。
 导出按预期版本拍摄只读快照；全进程同时执行两路导出，繁忙返回 429。
@@ -878,3 +880,25 @@ CAS 缺失返回 422，冲突返回 409 与当前快照。图片复用 `/v1/file
 实际 PPTX 裁剪值可能大于请求值。导出不会修改保存的文稿或 revision。PPTX 裁剪量化后造成超过
 0.1% 的横纵比例误差或可见区域消失时，返回 422、`export_crop_precision`，不输出变形或空白图片。
 文稿版本及接口字段不变。
+
+### SVG 与媒体外观
+
+- `POST /v1/files/svg/preview`：需要 `content.write`，JSON `{ "svg": "<svg>…</svg>" }`，
+  返回规范化 `svg`、固有 `width/height` 和 `monochrome`；不保存文件。非法内容返回 422 `invalid_svg`。
+- `POST /v1/files` 接受 `image/svg+xml`，重新校验并规范化后保存；预检结果不能跳过服务端校验。
+- `GET /v1/files` 默认 `include_svg=false`，支持 SVG 的消费者显式传 `true`。位图消费者保持原 MIME 限制。
+- `kind=vector` 必须通过 `asset_id` 引用当前 Workspace 的公共 SVG，`image` 只允许位图。
+  SVG 与位图共享鉴权内容读取、引用保护和跨空间 404 行为。
+
+媒体外观字段：`opacity`（0–1，默认 1）、`flip_x/flip_y`（默认 false）、
+`vector_color`（#RRGGBB 或 null 原色，默认 null）、`image_border`（默认 false）。
+图片 `corner_radius=null` 等同零，边框复用 `stroke/stroke_width/stroke_dash`；旧文稿外观不变。
+多色 SVG 不允许 `vector_color`。新增原生形状为 rightTriangle、pentagon、hexagon、star、
+parallelogram、trapezoid、leftArrow、upArrow、downArrow、doubleArrow、callout、roundCallout、ellipseCallout。
+
+SVG 最大 2 MiB、3000 节点、64 层、总路径 500000 字符，引用展开最多 10000 节点，固有宽高不超过 10000。
+支持路径、基本形状、分组变换、渐变、内部引用、裁剪和蒙版；拒绝脚本、事件、动画、外部资源、
+网页嵌入、滤镜、嵌入位图与文字（须转路径），不静默移除不支持内容。预览通过 Blob 图片隔离，不注入页面 DOM。
+PPTX 嵌入 Office `asvg:svgBlip` 并附带 resvg-py 渲染的 PNG 兼容图；原生形状仍可在 PowerPoint 编辑。
+
+单次导出的 SVG 兼容图最多 512 个、累计 6400 万渲染像素；单张兼容图最长边 4096 像素，超限返回 413。

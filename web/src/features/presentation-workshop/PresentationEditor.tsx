@@ -14,7 +14,7 @@ import { PresentationToolbar } from "./PresentationToolbar";
 import { PresentationStatusbar } from "./PresentationStatusbar";
 import { PresentationNotes } from "./PresentationNotes";
 import { usePresentationDraft } from "./usePresentationDraft";
-import { download, exportProject, uploadImage, imageBlob } from "./api";
+import { download, exportProject, imageBlob } from "./api";
 import { presentationKeys } from "./queryKeys";
 import {
   copySlide,
@@ -25,9 +25,13 @@ import {
 } from "./templates";
 import { alignElements, boundedElement } from "./geometry";
 import { SlideCanvas } from "./SlideCanvas";
+import { SelectionToolbar } from "./SelectionToolbar";
 import { PresentationInspector } from "./PresentationInspector";
 import { PresentationFilmstrip } from "./PresentationFilmstrip";
-import { PresentationImages } from "./PresentationImages";
+import { usePresentationMedia } from "./usePresentationMedia";
+import { useImageCrop } from "./useImageCrop";
+import { ImageCropOverlay, CropToolbar } from "./ImageCropOverlay";
+import { MediaPreview } from "./MediaPreview";
 import { PresentationShow } from "./PresentationShow";
 import type {
   Draft,
@@ -66,13 +70,12 @@ export function PresentationEditor({
     [scale, setScale] = useState(0.5);
   const [error, setError] = useState(""),
     [busy, setBusy] = useState(false),
-    [images, setImages] = useState(false),
+    [previewId, setPreviewId] = useState<string | null>(null),
     [show, setShow] = useState<number | null>(null);
   const [panel, setPanel] = useState("slides");
-  const upload = useRef<HTMLInputElement>(null),
-    clipboard = useRef<{ token: string; elements: SlideElement[] } | null>(
-      null,
-    );
+  const clipboard = useRef<{ token: string; elements: SlideElement[] } | null>(
+    null,
+  );
   const slide =
     draft.draft.document.slides.find((s) => s.id === active) ??
     draft.draft.document.slides[0];
@@ -128,7 +131,47 @@ export function PresentationEditor({
           : e,
       ),
     }));
-  const onText = (id: string, paragraphs: SlideElement["paragraphs"]) =>
+  const media = usePresentationMedia({
+    slideId: slide.id,
+    selected,
+    current: draft.current,
+    commit,
+    select,
+    readOnly,
+  });
+  const crop = useImageCrop(`${slide.id}:${selected.join(",")}:${readOnly}`);
+  const cropSession =
+    crop.session &&
+    selected.length === 1 &&
+    selected[0] === crop.session.base.id &&
+    slide.elements.some((e) => e.id === crop.session!.base.id && !e.locked)
+      ? crop.session
+      : null;
+  const displayedSlide = cropSession
+    ? {
+        ...slide,
+        elements: slide.elements.map((e) =>
+          e.id === cropSession.draft.id ? cropSession.draft : e,
+        ),
+      }
+    : slide;
+  const confirmCrop = () => {
+    if (cropSession) patch(cropSession.draft);
+    crop.cancel();
+  };
+  const downloadMedia = (id: string) =>
+    void report(async () => {
+      const blob = await imageBlob(id);
+      download(
+        blob,
+        `素材.${blob.type === "image/svg+xml" ? "svg" : blob.type.split("/")[1] || "png"}`,
+      );
+    });
+  const onText = (
+    id: string,
+    paragraphs: SlideElement["paragraphs"],
+    format = false,
+  ) =>
     changeSlide(
       (s) => ({
         ...s,
@@ -136,17 +179,18 @@ export function PresentationEditor({
           e.id === id && !e.locked ? { ...e, paragraphs } : e,
         ),
       }),
-      `text:${id}`,
+      format ? undefined : `text:${id}`,
     );
   const chooseSlide = (id: string) => {
     if (editor?.view.composing) return;
     setEditing(null);
     select([]);
+    crop.cancel();
     setActive(id);
   };
   const insert = (elements: SlideElement[]) => {
-    if (slide.elements.length + elements.length > 100) {
-      setError("每页最多 100 个元素");
+    if (slide.elements.length + elements.length > 200) {
+      setError("每页最多 200 个元素");
       return;
     }
     changeSlide((s) => ({ ...s, elements: [...s.elements, ...elements] }));
@@ -223,32 +267,6 @@ export function PresentationEditor({
     });
     chooseSlide(next.id);
   };
-  const addImage = async (id: string, file?: File) => {
-    const targetId = slide.id;
-    const bitmap = await createImageBitmap(file ?? (await imageBlob(id)));
-    const factor = Math.min(480 / bitmap.width, 600 / bitmap.height);
-    const element = newElement("image", {
-      asset_id: id,
-      width: Math.max(1, bitmap.width * factor),
-      height: Math.max(1, bitmap.height * factor),
-    });
-    bitmap.close();
-    const target = draft
-      .current()
-      .document.slides.find((s) => s.id === targetId);
-    if (!target) throw new Error("目标页面已删除，请重新选择图片");
-    if (target.elements.length >= 100) throw new Error("每页最多 100 个元素");
-    commit((d) => ({
-      ...d,
-      document: {
-        ...d.document,
-        slides: d.document.slides.map((s) =>
-          s.id === targetId ? { ...s, elements: [...s.elements, element] } : s,
-        ),
-      },
-    }));
-    setImages(false);
-  };
   const exportNow = () =>
     report(async () => {
       if (busy) return;
@@ -274,6 +292,18 @@ export function PresentationEditor({
   return (
     <div
       className={`presentation-editor mobile-panel-${panel}`}
+      onDragOver={(event) => {
+        if (!readOnly && Array.from(event.dataTransfer.types).includes("Files"))
+          event.preventDefault();
+      }}
+      onDrop={(event) => {
+        if (readOnly) return;
+        const file = event.dataTransfer.files[0];
+        if (file?.name.toLowerCase().endsWith(".svg")) {
+          event.preventDefault();
+          media.open("SVG", false, file);
+        }
+      }}
       onKeyDownCapture={(event) => {
         if (
           !readOnly &&
@@ -283,6 +313,7 @@ export function PresentationEditor({
         ) {
           event.preventDefault();
           event.stopPropagation();
+          if (cropSession) return;
           void report(async () => {
             await draft.flush();
           });
@@ -294,7 +325,9 @@ export function PresentationEditor({
           readOnly ||
           event.nativeEvent.isComposing ||
           editableTarget(event.target) ||
-          images ||
+          media.isOpen ||
+          previewId ||
+          cropSession ||
           show !== null
         )
           return;
@@ -458,6 +491,7 @@ export function PresentationEditor({
             <button
               className="btn"
               aria-label="保存文稿"
+              disabled={!!cropSession}
               onClick={() =>
                 void report(async () => {
                   await draft.flush();
@@ -472,6 +506,7 @@ export function PresentationEditor({
             <button
               className="btn"
               aria-label="从头放映"
+              disabled={!!cropSession}
               onClick={() => startShow(0)}
             >
               <Play size={16} />
@@ -479,6 +514,7 @@ export function PresentationEditor({
             </button>
             <PresentationMenu
               label="放映选项"
+              disabled={!!cropSession}
               actions={[
                 {
                   label: "从当前页放映",
@@ -491,7 +527,7 @@ export function PresentationEditor({
           </div>
           <button
             className="btn primary"
-            disabled={busy}
+            disabled={busy || !!cropSession}
             onClick={() => void exportNow()}
           >
             <Download size={16} />
@@ -547,7 +583,7 @@ export function PresentationEditor({
         </div>
       ) : null}
       <PresentationToolbar
-        readOnly={readOnly}
+        readOnly={readOnly || !!cropSession}
         canAdd={draft.draft.document.slides.length < 100}
         canUndo={draft.canUndo}
         canRedo={draft.canRedo}
@@ -557,9 +593,11 @@ export function PresentationEditor({
         onUndo={draft.undo}
         onRedo={draft.redo}
         onText={() => insert([newElement("text")])}
-        onShape={(kind) => insert([newElement(kind)])}
-        onUpload={() => upload.current?.click()}
-        onLibrary={() => setImages(true)}
+        onShape={(kind, values) => insert([newElement(kind, values)])}
+        onIcon={media.icon}
+        onSvg={() => media.open("SVG")}
+        onUpload={() => media.open("上传图片")}
+        onLibrary={() => media.open()}
         onCopy={duplicateSelected}
         onDelete={deleteSelected}
       />
@@ -598,17 +636,96 @@ export function PresentationEditor({
           readOnly={readOnly}
         />
         <main className="presentation-center">
+          {cropSession && (
+            <CropToolbar
+              onConfirm={confirmCrop}
+              onCancel={crop.cancel}
+              onPreset={crop.preset}
+              naturalRatio={
+                cropSession.natural.width / cropSession.natural.height
+              }
+            />
+          )}
           <SlideCanvas
-            slide={slide}
+            slide={displayedSlide}
+            cropOverlay={
+              cropSession ? (
+                <ImageCropOverlay
+                  session={cropSession}
+                  scale={scale}
+                  patch={crop.patch}
+                  onConfirm={confirmCrop}
+                  onCancel={crop.cancel}
+                />
+              ) : undefined
+            }
             selected={selected}
             select={select}
             editing={editing}
             setEditing={setEditing}
             replace={(s) => changeSlide(() => s)}
             onText={onText}
-            readOnly={readOnly}
+            readOnly={readOnly || !!cropSession}
             zoom={zoom}
             onScaleChange={setScale}
+            selectionToolbar={
+              <SelectionToolbar
+                elements={slide.elements.filter((e) => selected.includes(e.id))}
+                editor={editor}
+                actions={{
+                  patch,
+                  media: {
+                    replace: () => media.open("文件库", true),
+                    crop: () => {
+                      setPanel("format");
+                      const e = slide.elements.find(
+                        (e) => e.id === selected[0],
+                      );
+                      if (e) void report(() => crop.begin(e));
+                    },
+                    preview: () => {
+                      const e = slide.elements.find(
+                        (e) => e.id === selected[0],
+                      );
+                      if (e?.asset_id) setPreviewId(e.asset_id);
+                    },
+                    download: () => {
+                      const e = slide.elements.find(
+                        (e) => e.id === selected[0],
+                      );
+                      if (e?.asset_id) downloadMedia(e.asset_id);
+                    },
+                  },
+                  duplicate: duplicateSelected,
+                  remove: deleteSelected,
+                  order,
+                  arrange: (mode) =>
+                    changeSlide((s) => ({
+                      ...s,
+                      elements: alignElements(s.elements, selected, mode),
+                    })),
+                  inspect: () => {
+                    setPanel("format");
+                    requestAnimationFrame(() =>
+                      document
+                        .querySelector<HTMLElement>(
+                          '.presentation-inspector [role="tab"][id$="elements"]',
+                        )
+                        ?.click(),
+                    );
+                  },
+                }}
+                exit={() => {
+                  if (editing) setEditing(null);
+                  else select([]);
+                  requestAnimationFrame(() =>
+                    document
+                      .querySelector<HTMLElement>(".presentation-canvas")
+                      ?.focus(),
+                  );
+                }}
+              />
+            }
             onReady={setEditor}
             onComposition={draft.setComposition}
             undo={draft.undo}
@@ -623,9 +740,9 @@ export function PresentationEditor({
           />
         </main>
         <PresentationInspector
-          slide={slide}
+          slide={displayedSlide}
           selected={selected}
-          patch={patch}
+          patch={cropSession ? crop.patch : patch}
           background={(color) =>
             changeSlide((s) => ({ ...s, background: color }))
           }
@@ -650,35 +767,14 @@ export function PresentationEditor({
         zoom={zoom}
         onZoom={setZoom}
       />
-      <input
-        ref={upload}
-        type="file"
-        hidden
-        accept="image/png,image/jpeg,image/webp,image/gif,image/avif"
-        onChange={(e) => {
-          const file = e.target.files?.[0];
-          e.target.value = "";
-          if (!file) return;
-          void report(async () => {
-            setBusy(true);
-            try {
-              const asset = await uploadImage(file);
-              await addImage(asset.id, file);
-              await cache.invalidateQueries({
-                queryKey: presentationKeys.images,
-              });
-            } finally {
-              setBusy(false);
-            }
-          });
-        }}
-      />
-      {images ? (
-        <PresentationImages
-          onClose={() => setImages(false)}
-          onChoose={(id) => void report(() => addImage(id))}
+      {media.dialog}
+      {previewId && (
+        <MediaPreview
+          id={previewId}
+          onClose={() => setPreviewId(null)}
+          onDownload={() => downloadMedia(previewId)}
         />
-      ) : null}
+      )}
       {show !== null ? (
         <PresentationShow
           deck={draft.draft.document}

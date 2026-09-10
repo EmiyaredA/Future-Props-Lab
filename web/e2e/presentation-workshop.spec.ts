@@ -64,12 +64,15 @@ test("图形移动、缩放、旋转、锁定与撤销", async ({ page }) => {
   await page.setViewportSize({ width: 1600, height: 1000 });
   await create(page);
   await page.getByRole("button", { name: "插入图形", exact: true }).click();
-  await page.getByRole("menuitem", { name: "矩形", exact: true }).click();
+  await page.getByRole("button", { name: "矩形", exact: true }).click();
   await page.getByLabel("X", { exact: true }).fill("300");
   await page.getByLabel("旋转角度", { exact: true }).fill("30");
   await page.getByRole("button", { name: "锁定元素", exact: true }).click();
   await expect(page.getByLabel("X", { exact: true })).toBeDisabled();
-  await page.getByRole("button", { name: "解锁元素", exact: true }).click();
+  await page
+    .getByRole("toolbar", { name: "所选元素工具栏" })
+    .getByRole("button", { name: "解锁元素", exact: true })
+    .click();
   await page.getByRole("button", { name: "复制所选元素", exact: true }).click();
   await expect(
     page.locator(".presentation-canvas .presentation-element"),
@@ -171,7 +174,7 @@ test("缩放后的拖动、多选变换、复制粘贴与一次撤销", async ({
   await page.setViewportSize({ width: 1600, height: 1000 });
   await create(page);
   await page.getByRole("button", { name: "插入图形", exact: true }).click();
-  await page.getByRole("menuitem", { name: "矩形", exact: true }).click();
+  await page.getByRole("button", { name: "矩形", exact: true }).click();
   const canvas = page.getByRole("group", { name: "幻灯片画布" });
   const shape = canvas.locator("[data-element-id]").last();
   const original = await page.getByLabel("X", { exact: true }).inputValue();
@@ -201,7 +204,7 @@ test("缩放后的拖动、多选变换、复制粘贴与一次撤销", async ({
   await expect(
     page.getByRole("heading", { name: "2 个元素", exact: true }),
   ).toBeVisible();
-  const handle = canvas.locator('[data-handle="resize"]');
+  const handle = canvas.locator('[data-resize="se"]');
   const hb = (await handle.boundingBox())!;
   await page.mouse.move(hb.x + hb.width / 2, hb.y + hb.height / 2);
   await page.mouse.down();
@@ -291,6 +294,7 @@ test("图片上传失败保留原文稿，文件选择可以重试", async ({ pa
       });
     else await route.continue();
   });
+  await page.getByRole("button", { name: "上传图片", exact: true }).click();
   await page.locator('input[type="file"]').setInputFiles({
     name: "image.png",
     mimeType: "image/png",

@@ -1,0 +1,250 @@
+.presentation-selection-overlay {
+  position: fixed;
+  z-index: 40;
+  width: max-content;
+  color: var(--text);
+}
+.presentation-selection-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px;
+  min-height: 44px;
+  box-sizing: border-box;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  box-shadow:
+    0 5px 22px #00000018,
+    0 1px 3px #0000000a;
+}
+.presentation-selection-toolbar button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-width: 30px;
+  height: 32px;
+  padding: 4px 7px;
+  background: transparent;
+  border: 0;
+  border-radius: 5px;
+  color: var(--text);
+  font-size: 13px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.presentation-selection-toolbar button:hover,
+.presentation-selection-toolbar button[aria-pressed="true"],
+.presentation-selection-toolbar button[aria-expanded="true"] {
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+  color: var(--accent);
+}
+.presentation-selection-toolbar button[aria-pressed="mixed"] {
+  background: color-mix(in srgb, var(--text) 8%, var(--surface));
+}
+.presentation-selection-toolbar button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.presentation-selection-toolbar :is(button, input):focus-visible {
+  outline: 2px solid #6274e8;
+  outline-offset: 2px;
+}
+.presentation-selection-toolbar .custom-select {
+  width: auto;
+  min-width: 0;
+}
+.presentation-selection-toolbar .custom-select-trigger {
+  min-height: 32px;
+  width: auto;
+  min-width: 75px;
+}
+.presentation-selection-toolbar .custom-select-trigger-content {
+  gap: 4px;
+}
+.selection-decorations {
+  display: flex;
+  gap: 2px;
+}
+.selection-font-size,
+.selection-stroke {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+.presentation-selection-toolbar input {
+  width: 44px;
+  min-width: 0;
+  height: 30px;
+  padding: 3px;
+  box-sizing: border-box;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--surface);
+  color: var(--text);
+  text-align: center;
+  font-size: 13px;
+  appearance: textfield;
+}
+.presentation-selection-toolbar input::-webkit-inner-spin-button {
+  appearance: none;
+}
+.selection-stroke span,
+.selection-count {
+  font-size: 12px;
+  padding: 0 4px;
+  white-space: nowrap;
+}
+.presentation-selection-toolbar .custom-color-picker {
+  width: auto;
+}
+.presentation-selection-toolbar .custom-color-picker-trigger {
+  width: 32px;
+  min-height: 32px;
+  padding: 6px;
+}
+.presentation-selection-toolbar .custom-color-picker-trigger > span {
+  width: 18px;
+  height: 18px;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+}
+.presentation-selection-toolbar .custom-color-picker-popover input {
+  width: 100%;
+}
+.presentation-selection-toolbar .custom-color-picker-popover {
+  overflow: auto;
+}
+.presentation-selection-toolbar .custom-color-picker-popover button {
+  min-width: 0;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+}
+.presentation-selection-toolbar
+  :is(.custom-select-menu, .presentation-action-menu)
+  button {
+  justify-content: flex-start;
+  width: 100%;
+  height: auto;
+  min-height: 32px;
+}
+.presentation-selection-toolbar .selection-compact-only {
+  display: none;
+}
+.presentation-selection-overlay[data-compact="true"] .selection-secondary {
+  display: none;
+}
+.presentation-selection-overlay[data-compact="true"] .selection-compact-only {
+  display: block;
+}
+.presentation-selection-toolbar .presentation-action-menu {
+  overflow-y: auto;
+}
+.presentation-resize-handle.handle-nw {
+  left: 0;
+  top: 0;
+  cursor: nwse-resize;
+}
+.presentation-resize-handle.handle-n {
+  left: 50%;
+  top: 0;
+  cursor: ns-resize;
+}
+.presentation-resize-handle.handle-ne {
+  left: 100%;
+  top: 0;
+  cursor: nesw-resize;
+}
+.presentation-resize-handle.handle-e {
+  left: 100%;
+  top: 50%;
+  cursor: ew-resize;
+}
+.presentation-resize-handle.handle-se {
+  left: 100%;
+  top: 100%;
+  cursor: nwse-resize;
+}
+.presentation-resize-handle.handle-s {
+  left: 50%;
+  top: 100%;
+  cursor: ns-resize;
+}
+.presentation-resize-handle.handle-sw {
+  left: 0;
+  top: 100%;
+  cursor: nesw-resize;
+}
+.presentation-resize-handle.handle-w {
+  left: 0;
+  top: 50%;
+  cursor: ew-resize;
+}
+.presentation-selection .presentation-resize-handle {
+  right: auto;
+  bottom: auto;
+  transform-origin: center;
+  width: 8px;
+  height: 8px;
+}
+.presentation-selection .presentation-rotate-handle {
+  left: 50%;
+  width: 20px;
+  height: 20px;
+  transform-origin: top center;
+  display: grid;
+  place-items: center;
+}
+.presentation-rotate-handle::before {
+  content: "";
+  position: absolute;
+  height: 18px;
+  width: 1px;
+  background: #6274d2;
+  bottom: 100%;
+  left: 50%;
+  pointer-events: none;
+}
+@media (max-width: 767px) {
+  .presentation-selection .presentation-rotate-handle {
+    display: none;
+  }
+  .presentation-selection-toolbar {
+    gap: 1px;
+    padding: 4px;
+    min-height: 40px;
+  }
+  .presentation-selection-toolbar button {
+    min-width: 28px;
+    padding: 4px;
+  }
+  .presentation-selection-toolbar .custom-select-trigger {
+    min-width: 60px;
+  }
+  .presentation-selection-toolbar .select-chevron {
+    width: 10px;
+  }
+  .presentation-selection-toolbar .custom-select-trigger-content {
+    max-width: 80px;
+    overflow: hidden;
+  }
+}
+
+.presentation-canvas .presentation-element[data-transparent-shape="true"] {
+  pointer-events: none;
+}
+.presentation-canvas
+  .presentation-element[data-transparent-shape="true"]
+  svg
+  g {
+  pointer-events: stroke;
+}
+
+.presentation-shape-hit-edge {
+  pointer-events: none;
+}
+.presentation-canvas .presentation-shape-hit-edge {
+  pointer-events: stroke;
+}

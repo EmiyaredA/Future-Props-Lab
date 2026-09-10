@@ -85,7 +85,7 @@
 }
 .presentation-workspace {
   display: grid;
-  grid-template-columns: 200px minmax(0, 1fr) 260px;
+  grid-template-columns: 200px minmax(0, 1fr) auto;
   min-height: 0;
   flex: 1;
 }
@@ -309,7 +309,7 @@
 }
 @media (max-width: 1100px) and (min-width: 768px) {
   .presentation-workspace {
-    grid-template-columns: 170px minmax(0, 1fr) 220px;
+    grid-template-columns: 170px minmax(0, 1fr) auto;
   }
   .presentation-inspector {
     padding: 0 12px 14px;

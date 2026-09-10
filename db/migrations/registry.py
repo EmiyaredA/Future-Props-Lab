@@ -58,6 +58,8 @@ from db.migrations.versions import (
     r0054_platform_runtime,
     r0055_model_suppliers,
     r0056_presentation_workshop,
+    r0057_presentation_styles,
+    r0058_presentation_media,
 )
 
 
@@ -255,4 +257,8 @@ MIGRATIONS += (
     Migration(r0056_presentation_workshop.MIGRATION_ID, r0056_presentation_workshop.SQL),
 )
 
+MIGRATIONS += (Migration(r0057_presentation_styles.MIGRATION_ID, r0057_presentation_styles.SQL),)
+
 LATEST_MIGRATION_ID = MIGRATIONS[-1].migration_id
+
+MIGRATIONS += (Migration(r0058_presentation_media.MIGRATION_ID, r0058_presentation_media.SQL),)

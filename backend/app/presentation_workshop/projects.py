@@ -8,6 +8,9 @@ from app.concurrency.project_records import (
     load_workspace_project,
     patch_revisioned_project,
 )
+from app.core.config import get_settings
+from app.files import AssetStorage
+from app.files.svg import normalize_svg
 from app.models.defaults import utc_now
 from app.models.files import VisualAsset
 from app.models.presentation_workshop import PresentationAssetReference, PresentationProject
@@ -106,6 +109,21 @@ class Presentations:
         )
         if {row.id for row in rows} != ids:
             raise PresentationError("图片不存在或不属于当前空间的公共文件库", 404, "not_found")
+        for slide in document.slides:
+            for element in slide.elements:
+                if not element.asset_id:
+                    continue
+                row = next(r for r in rows if r.id == element.asset_id)
+                if (element.kind == "vector") != (row.mime_type == "image/svg+xml"):
+                    raise PresentationError(
+                        "素材类型与图片／矢量元素不匹配", 422, "invalid_asset_type"
+                    )
+                if element.vector_color:
+                    source = AssetStorage(get_settings()).path_for(row)
+                    if not normalize_svg(source.read_text())["monochrome"]:
+                        raise PresentationError(
+                            "多色 SVG 不支持统一改色", 422, "invalid_vector_color"
+                        )
         return rows
 
     async def references(self, project_id: str, document: PresentationDocument):

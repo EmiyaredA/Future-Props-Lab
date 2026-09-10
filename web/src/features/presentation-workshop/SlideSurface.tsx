@@ -1,5 +1,7 @@
 import { memo, useEffect, useRef, useState, type ReactNode } from "react";
 import { useApiBlobUrl } from "@platform/api/useApiBlobUrl";
+import { PresentationShape } from "./PresentationShape";
+import { fontFamily } from "./textAdapter";
 import { coverCrop } from "./imageCrop";
 import { elementStyle } from "./geometry";
 import type { Slide, SlideElement } from "./types";
@@ -35,7 +37,18 @@ export function ElementImage({
         )
       : { left: 0, right: 0, top: 0, bottom: 0 };
   return (
-    <div className="presentation-image-clip">
+    <div
+      className="presentation-image-clip"
+      style={{
+        opacity: element.opacity ?? 1,
+        borderRadius:
+          element.kind === "image" ? (element.corner_radius ?? 0) : 0,
+        outline: element.image_border
+          ? `${element.stroke_width}px ${element.stroke_dash === "dash" ? "dashed" : element.stroke_dash === "dot" ? "dotted" : "solid"} ${element.stroke}`
+          : undefined,
+        transform: `scale(${element.flip_x ? -1 : 1}, ${element.flip_y ? -1 : 1})`,
+      }}
+    >
       {url ? (
         <img
           key={url}
@@ -53,7 +66,8 @@ export function ElementImage({
           onError={() => setFailedUrl(url)}
           draggable={false}
           style={{
-            visibility: ready && !failed ? "visible" : "hidden",
+            visibility:
+              ready && !failed && !element.vector_color ? "visible" : "hidden",
             objectFit: contain ? "contain" : "fill",
             width: `${100 / (1 - left - right)}%`,
             height: `${100 / (1 - top - bottom)}%`,
@@ -62,6 +76,19 @@ export function ElementImage({
           }}
         />
       ) : null}
+      {ready && element.kind === "vector" && element.vector_color && (
+        <span
+          style={{
+            position: "absolute",
+            inset: 0,
+            background: element.vector_color,
+            maskImage: `url("${url}")`,
+            maskSize: "contain",
+            maskPosition: "center",
+            maskRepeat: "no-repeat",
+          }}
+        />
+      )}
       {!ready || failed ? (
         <span className="presentation-image-status" role="status">
           {failed ? "图片加载失败" : "加载图片…"}
@@ -75,7 +102,10 @@ export const ElementContent = memo(function ElementContent({
 }: {
   element: SlideElement;
 }) {
-  if (element.kind === "image") return <ElementImage element={element} />;
+  if (element.kind === "image" || element.kind === "vector")
+    return (
+      <ElementImage element={element} contain={element.kind === "vector"} />
+    );
   if (element.kind === "text")
     return (
       <div className="presentation-text">
@@ -85,7 +115,7 @@ export const ElementContent = memo(function ElementContent({
             style={{
               textAlign: p.align,
               fontSize: Math.max(0, ...p.runs.map((r) => r.size)) || 24,
-              fontFamily: `"${p.runs[0]?.font ?? "Arial"}", "PingFang SC", sans-serif`,
+              fontFamily: fontFamily(p.runs[0]?.font ?? "Arial"),
               color: p.runs[0]?.color,
               paddingLeft: p.bullet ? 24 : 0,
               lineHeight: `${(Math.max(0, ...p.runs.map((r) => r.size)) || 24) * p.line_height}px`,
@@ -96,7 +126,7 @@ export const ElementContent = memo(function ElementContent({
               <span
                 key={i}
                 style={{
-                  fontFamily: `"${run.font}", "PingFang SC", sans-serif`,
+                  fontFamily: fontFamily(run.font),
                   fontSize: run.size,
                   color: run.color,
                   fontWeight: run.bold ? 700 : 400,
@@ -112,58 +142,7 @@ export const ElementContent = memo(function ElementContent({
         ))}
       </div>
     );
-  const { width: w, height: h, stroke_width: s } = element;
-  const inset = s / 2;
-  return (
-    <svg
-      width="100%"
-      height="100%"
-      viewBox={`0 0 ${w} ${h}`}
-      style={{ overflow: "visible" }}
-      aria-hidden
-    >
-      <g
-        fill={element.fill}
-        stroke={element.stroke}
-        strokeWidth={s}
-        strokeLinejoin="round"
-      >
-        {element.kind === "rect" || element.kind === "roundRect" ? (
-          <rect
-            x={inset}
-            y={inset}
-            width={Math.max(1, w - s)}
-            height={Math.max(1, h - s)}
-            rx={element.kind === "roundRect" ? Math.min(w, h) * 0.166 : 0}
-          />
-        ) : null}
-        {element.kind === "ellipse" ? (
-          <ellipse
-            cx={w / 2}
-            cy={h / 2}
-            rx={Math.max(1, (w - s) / 2)}
-            ry={Math.max(1, (h - s) / 2)}
-          />
-        ) : null}
-        {element.kind === "triangle" ? (
-          <polygon points={`${w / 2},0 ${w},${h} 0,${h}`} />
-        ) : null}
-        {element.kind === "diamond" ? (
-          <polygon
-            points={`${w / 2},0 ${w},${h / 2} ${w / 2},${h} 0,${h / 2}`}
-          />
-        ) : null}
-        {element.kind === "arrow" ? (
-          <polygon
-            points={`0,${h / 4} ${w * 0.65},${h / 4} ${w * 0.65},0 ${w},${h / 2} ${w * 0.65},${h} ${w * 0.65},${h * 0.75} 0,${h * 0.75}`}
-          />
-        ) : null}
-        {element.kind === "line" ? (
-          <line x1={0} y1={0} x2={w} y2={h} fill="none" />
-        ) : null}
-      </g>
-    </svg>
-  );
+  return <PresentationShape element={element} />;
 });
 
 export const SlideSurface = memo(function SlideSurface({
@@ -184,6 +163,14 @@ export const SlideSurface = memo(function SlideSurface({
         <div
           key={element.id}
           data-element-id={element.id}
+          data-transparent-shape={
+            element.kind !== "text" &&
+            element.kind !== "image" &&
+            element.kind !== "vector" &&
+            element.fill_opacity === 0
+              ? "true"
+              : undefined
+          }
           className={`presentation-element${element.locked ? " locked" : ""}`}
           style={elementStyle(element)}
         >

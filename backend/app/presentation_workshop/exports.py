@@ -11,6 +11,8 @@ from PIL import Image, ImageOps, UnidentifiedImageError
 
 from app.concurrency.revisions import RevisionConflictError
 from app.files import AssetStorage
+from app.files.svg import normalize_svg
+from app.presentation_workshop.pptx_export import write_pptx
 from app.presentation_workshop.projects import PresentationError, Presentations
 from app.schemas.presentation_workshop import PresentationProjectOut
 
@@ -42,6 +44,12 @@ def build_export(snapshot: PresentationProjectOut, assets: dict[str, Path]) -> P
         snapshot.title.replace("/", "_").replace("\\", "_") + ".pptx",
     )
     try:
+        vectors = [e for s in snapshot.document.slides for e in s.elements if e.kind == "vector"]
+        pixels = sum(
+            e.width * e.height * min(2, 4096 / max(e.width, e.height)) ** 2 for e in vectors
+        )
+        if len(vectors) > 512 or pixels > 64_000_000:
+            raise PresentationError("导出矢量兼容图总量过大，请拆分文稿", 413, "export_too_large")
         total = normalized_total = 0
         images = {}
         for asset_id, source in assets.items():
@@ -56,25 +64,35 @@ def build_export(snapshot: PresentationProjectOut, assets: dict[str, Path]) -> P
                             "导出图片总量不能超过 100 MiB", 413, "export_too_large"
                         )
                     output.write(chunk)
-            with Image.open(private) as image:
-                if image.width * image.height > 25_000_000:
-                    raise PresentationError(
-                        "导出图片单张不能超过 2500 万像素", 413, "export_too_large"
-                    )
-                image.seek(0)
-                normalized = ImageOps.exif_transpose(image)
-                images[asset_id] = root / f"{asset_id}.png"
-                with normalized.convert("RGBA") as rgba:
-                    rgba.save(images[asset_id], "PNG")
-                normalized.close()
-                normalized_total += images[asset_id].stat().st_size
-                if normalized_total > MAX_EXPORT_BYTES:
-                    raise PresentationError(
-                        "转换后的图片总量不能超过 100 MiB", 413, "export_too_large"
-                    )
-        # Load the exporter only when an export is requested.
-        from app.presentation_workshop.pptx_export import write_pptx
+            if private.read_bytes()[:128].lstrip().startswith(b"<"):
+                import resvg_py
 
+                vector = normalize_svg(private.read_text())
+                images[asset_id] = root / f"{asset_id}.png"
+                images[asset_id].with_suffix(".svg").write_text(vector["svg"])
+                factor = min(1, 512 / max(vector["width"], vector["height"]))
+                images[asset_id].write_bytes(
+                    resvg_py.svg_to_bytes(
+                        svg_string=vector["svg"],
+                        width=max(1, round(vector["width"] * factor)),
+                        height=max(1, round(vector["height"] * factor)),
+                    )
+                )
+            else:
+                with Image.open(private) as image:
+                    if image.width * image.height > 25_000_000:
+                        raise PresentationError(
+                            "导出图片单张不能超过 2500 万像素", 413, "export_too_large"
+                        )
+                    image.seek(0)
+                    normalized = ImageOps.exif_transpose(image)
+                    images[asset_id] = root / f"{asset_id}.png"
+                    with normalized.convert("RGBA") as rgba:
+                        rgba.save(images[asset_id], "PNG")
+                    normalized.close()
+            normalized_total += images[asset_id].stat().st_size
+            if normalized_total > MAX_EXPORT_BYTES:
+                raise PresentationError("转换后的图片总量不能超过 100 MiB", 413, "export_too_large")
         write_pptx(snapshot.document, images, result.path)
         return result
     except PresentationError:

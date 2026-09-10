@@ -11,7 +11,20 @@ from db.migrations.runner import connect_database
 def test_presentation_migration_is_additive_and_references_cascade(tmp_path, monkeypatch):
     database = tmp_path / "presentation-migration.db"
     with monkeypatch.context() as before:
-        before.setattr(runner, "MIGRATIONS", runner.MIGRATIONS[:-1])
+        before.setattr(
+            runner,
+            "MIGRATIONS",
+            tuple(
+                m
+                for m in runner.MIGRATIONS
+                if m.migration_id
+                not in {
+                    "0056_presentation_workshop",
+                    "0057_presentation_styles",
+                    "0058_presentation_media",
+                }
+            ),
+        )
         apply_migrations(database)
     with connect_database(database) as connection:
         existing = connection.execute("SELECT id FROM workspaces ORDER BY id").fetchall()

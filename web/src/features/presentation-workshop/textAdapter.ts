@@ -55,11 +55,13 @@ export function fromEditor(
           ...fallback,
           text: node.type === "hardBreak" ? "\n" : (node.text ?? ""),
           font:
-            style?.fontFamily === "Arial"
-              ? "Arial"
-              : style?.fontFamily === "Microsoft YaHei"
-                ? "Microsoft YaHei"
-                : fallback.font,
+            style?.fontFamily === "Consolas"
+              ? "Consolas"
+              : style?.fontFamily === "Arial"
+                ? "Arial"
+                : style?.fontFamily === "Microsoft YaHei"
+                  ? "Microsoft YaHei"
+                  : fallback.font,
           size: Math.min(
             240,
             Math.max(6, parseFloat(style?.fontSize) || fallback.size),
@@ -72,4 +74,10 @@ export function fromEditor(
       },
     ),
   }));
+}
+
+export function fontFamily(font: TextRun["font"]): string {
+  return font === "Consolas"
+    ? '"Consolas", "Courier New", monospace'
+    : `"${font}", "PingFang SC", sans-serif`;
 }

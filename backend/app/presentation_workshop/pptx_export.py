@@ -11,6 +11,9 @@ from pptx.oxml.xmlchemy import OxmlElement
 from pptx.util import Emu, Pt
 
 from app.presentation_workshop.image_crop import pptx_crop
+from app.presentation_workshop.native_shapes import freeform, points_for
+from app.presentation_workshop.pptx_media import picture_style, vector_picture
+from app.presentation_workshop.pptx_styles import apply_shape_style
 from app.schemas.presentation_workshop import PresentationDocument, PresentationElement
 
 SHAPES = {
@@ -20,6 +23,19 @@ SHAPES = {
     "triangle": MSO_AUTO_SHAPE_TYPE.ISOSCELES_TRIANGLE,
     "diamond": MSO_AUTO_SHAPE_TYPE.DIAMOND,
     "arrow": MSO_AUTO_SHAPE_TYPE.RIGHT_ARROW,
+    "rightTriangle": MSO_AUTO_SHAPE_TYPE.RIGHT_TRIANGLE,
+    "pentagon": MSO_AUTO_SHAPE_TYPE.REGULAR_PENTAGON,
+    "hexagon": MSO_AUTO_SHAPE_TYPE.HEXAGON,
+    "star": MSO_AUTO_SHAPE_TYPE.STAR_5_POINT,
+    "parallelogram": MSO_AUTO_SHAPE_TYPE.PARALLELOGRAM,
+    "trapezoid": MSO_AUTO_SHAPE_TYPE.TRAPEZOID,
+    "leftArrow": MSO_AUTO_SHAPE_TYPE.LEFT_ARROW,
+    "upArrow": MSO_AUTO_SHAPE_TYPE.UP_ARROW,
+    "downArrow": MSO_AUTO_SHAPE_TYPE.DOWN_ARROW,
+    "doubleArrow": MSO_AUTO_SHAPE_TYPE.LEFT_RIGHT_ARROW,
+    "callout": MSO_AUTO_SHAPE_TYPE.RECTANGULAR_CALLOUT,
+    "roundCallout": MSO_AUTO_SHAPE_TYPE.ROUNDED_RECTANGULAR_CALLOUT,
+    "ellipseCallout": MSO_AUTO_SHAPE_TYPE.OVAL_CALLOUT,
 }
 
 
@@ -83,6 +99,8 @@ def write_pptx(document: PresentationDocument, images: dict[str, Path], target: 
             if item.kind == "text":
                 shape = slide.shapes.add_textbox(*bounds)
                 add_text(shape, item)
+            elif item.kind == "vector":
+                shape = vector_picture(slide, item, images[item.asset_id], bounds)
             elif item.kind == "image":
                 shape = slide.shapes.add_picture(str(images[item.asset_id]), *bounds)
                 crop = pptx_crop(*shape.image.size, item.width, item.height, item.crop.model_dump())
@@ -97,7 +115,12 @@ def write_pptx(document: PresentationDocument, images: dict[str, Path], target: 
                     px(item.y + item.height),
                 )
             else:
-                shape = slide.shapes.add_shape(SHAPES[item.kind], *bounds)
+                points = points_for(item.kind, item.width, item.height)
+                shape = (
+                    freeform(slide, item, points)
+                    if points
+                    else slide.shapes.add_shape(SHAPES[item.kind], *bounds)
+                )
                 shape.fill.solid()
                 shape.fill.fore_color.rgb = color(item.fill)
             # Suppress PowerPoint theme effects (the default shape style adds shadows).
@@ -109,10 +132,12 @@ def write_pptx(document: PresentationDocument, images: dict[str, Path], target: 
                 shape.adjustments[1] = 0.35 * item.width / min(item.width, item.height)
             shape.name = item.id
             shape.rotation = item.rotation % 360
-            if item.kind not in {"text", "image"}:
-                if item.stroke_width:
-                    shape.line.color.rgb = color(item.stroke)
-                    shape.line.width = px(item.stroke_width)
-                else:
-                    shape.line.fill.background()
+            if item.flip_x:
+                shape._element.spPr.get_or_add_xfrm().set("flipH", "1")
+            if item.flip_y:
+                shape._element.spPr.get_or_add_xfrm().set("flipV", "1")
+            if item.kind in {"image", "vector"}:
+                picture_style(shape, item)
+            if item.kind not in {"text", "image", "vector"}:
+                apply_shape_style(shape, item)
     deck.save(target)
