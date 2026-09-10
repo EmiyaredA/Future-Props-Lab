@@ -22,6 +22,8 @@ export type StudioPage =
   | "model-call-logs";
 
 export type WorkshopPage =
+  | "presentation-workshop-projects"
+  | "presentation-workshop-editor"
   | "thought-workshop-notes"
   | "thought-workshop-editor"
   | "thought-workshop-legacy"
@@ -57,6 +59,7 @@ export type AppRoute = {
 
 export function isWorkshopPage(page: AppPage): page is WorkshopPage {
   return (
+    page.startsWith("presentation-workshop-") ||
     page.startsWith("thought-workshop-") ||
     page.startsWith("visual-workshop-") ||
     page.startsWith("galgame-workshop-") ||
@@ -141,6 +144,8 @@ export function pathFor(
   if (page === "audio-annotation-editor" && projectId)
     return `/tools/audio-annotation/${encodeURIComponent(projectId)}`;
   const paths: Record<AppPage, string> = {
+    "presentation-workshop-projects": "/apps/presentation-workshop",
+    "presentation-workshop-editor": "/apps/presentation-workshop",
     "thought-workshop-notes": "/apps/thought-workshop",
     "thought-workshop-editor": "/apps/thought-workshop",
     "thought-workshop-legacy": "/apps/thought-workshop",

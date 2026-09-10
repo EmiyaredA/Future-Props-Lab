@@ -2815,6 +2815,60 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/presentation-workshop/projects": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Projects */
+        get: operations["list_projects_v1_presentation_workshop_projects_get"];
+        put?: never;
+        /** Create Project */
+        post: operations["create_project_v1_presentation_workshop_projects_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/presentation-workshop/projects/{project_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Project */
+        get: operations["get_project_v1_presentation_workshop_projects__project_id__get"];
+        /** Put Project */
+        put: operations["put_project_v1_presentation_workshop_projects__project_id__put"];
+        post?: never;
+        /** Delete Project */
+        delete: operations["delete_project_v1_presentation_workshop_projects__project_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/presentation-workshop/projects/{project_id}/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Export Pptx */
+        post: operations["export_pptx_v1_presentation_workshop_projects__project_id__export_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/public-workspace": {
         parameters: {
             query?: never;
@@ -9953,6 +10007,178 @@ export interface components {
             /** Revision */
             revision: number;
             value: components["schemas"]["PermissionPolicy"];
+        };
+        /** PresentationCrop */
+        PresentationCrop: {
+            /** Bottom */
+            bottom: number;
+            /** Left */
+            left: number;
+            /** Right */
+            right: number;
+            /** Top */
+            top: number;
+        };
+        /** PresentationDocument */
+        PresentationDocument: {
+            /**
+             * Height
+             * @constant
+             */
+            height: 720;
+            /** Slides */
+            slides: components["schemas"]["PresentationSlide"][];
+            /**
+             * Version
+             * @constant
+             */
+            version: 1;
+            /**
+             * Width
+             * @constant
+             */
+            width: 1280;
+        };
+        /** PresentationElement */
+        PresentationElement: {
+            /** Asset Id */
+            asset_id: string | null;
+            crop: components["schemas"]["PresentationCrop"];
+            /** Fill */
+            fill: string;
+            /** Height */
+            height: number;
+            /** Id */
+            id: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "text" | "image" | "rect" | "roundRect" | "ellipse" | "triangle" | "diamond" | "arrow" | "line";
+            /** Locked */
+            locked: boolean;
+            /** Paragraphs */
+            paragraphs: components["schemas"]["PresentationParagraph"][];
+            /** Rotation */
+            rotation: number;
+            /** Stroke */
+            stroke: string;
+            /** Stroke Width */
+            stroke_width: number;
+            /** Width */
+            width: number;
+            /** X */
+            x: number;
+            /** Y */
+            y: number;
+        };
+        /** PresentationExportIn */
+        PresentationExportIn: {
+            /** Expected Revision */
+            expected_revision: number;
+        };
+        /** PresentationParagraph */
+        PresentationParagraph: {
+            /**
+             * Align
+             * @enum {string}
+             */
+            align: "left" | "center" | "right";
+            /** Bullet */
+            bullet: boolean;
+            /** Line Height */
+            line_height: number;
+            /** Runs */
+            runs: components["schemas"]["PresentationRun"][];
+        };
+        /** PresentationProjectIn */
+        PresentationProjectIn: {
+            document: components["schemas"]["PresentationDocument"];
+            /** Title */
+            title: string;
+        };
+        /** PresentationProjectList */
+        PresentationProjectList: {
+            /** Items */
+            items: components["schemas"]["PresentationProjectSummary"][];
+            /** Total */
+            total: number;
+        };
+        /** PresentationProjectOut */
+        PresentationProjectOut: {
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            document: components["schemas"]["PresentationDocument"];
+            /** Id */
+            id: string;
+            /** Revision */
+            revision: number;
+            /** Title */
+            title: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /** PresentationProjectPut */
+        PresentationProjectPut: {
+            document: components["schemas"]["PresentationDocument"];
+            /** Expected Revision */
+            expected_revision: number;
+            /** Title */
+            title: string;
+        };
+        /** PresentationProjectSummary */
+        PresentationProjectSummary: {
+            first_slide: components["schemas"]["PresentationSlide"];
+            /** Id */
+            id: string;
+            /** Revision */
+            revision: number;
+            /** Slide Count */
+            slide_count: number;
+            /** Title */
+            title: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /** PresentationRun */
+        PresentationRun: {
+            /** Bold */
+            bold: boolean;
+            /** Color */
+            color: string;
+            /**
+             * Font
+             * @enum {string}
+             */
+            font: "Microsoft YaHei" | "Arial";
+            /** Italic */
+            italic: boolean;
+            /** Size */
+            size: number;
+            /** Text */
+            text: string;
+            /** Underline */
+            underline: boolean;
+        };
+        /** PresentationSlide */
+        PresentationSlide: {
+            /** Background */
+            background: string;
+            /** Elements */
+            elements: components["schemas"]["PresentationElement"][];
+            /** Id */
+            id: string;
+            /** Notes */
+            notes: string;
         };
         /** ProjectFolderOpenOut */
         ProjectFolderOpenOut: {
@@ -19930,6 +20156,208 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["WorkspaceOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_projects_v1_presentation_workshop_projects_get: {
+        parameters: {
+            query?: {
+                query?: string;
+                offset?: number;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PresentationProjectList"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_project_v1_presentation_workshop_projects_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PresentationProjectIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PresentationProjectOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_project_v1_presentation_workshop_projects__project_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PresentationProjectOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    put_project_v1_presentation_workshop_projects__project_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PresentationProjectPut"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PresentationProjectOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_project_v1_presentation_workshop_projects__project_id__delete: {
+        parameters: {
+            query: {
+                expected_revision: number;
+            };
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: boolean;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    export_pptx_v1_presentation_workshop_projects__project_id__export_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PresentationExportIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/vnd.openxmlformats-officedocument.presentationml.presentation": string;
                 };
             };
             /** @description Validation Error */

@@ -1,0 +1,8 @@
+[
+  {"name":"landscape","image":[400,200],"frame":[200,200],"crop":{"left":0,"right":0,"top":0,"bottom":0},"expected":{"left":0.25,"right":0.25,"top":0,"bottom":0}},
+  {"name":"portrait","image":[200,400],"frame":[200,200],"crop":{"left":0,"right":0,"top":0,"bottom":0},"expected":{"left":0,"right":0,"top":0.25,"bottom":0.25}},
+  {"name":"matching","image":[400,200],"frame":[800,400],"crop":{"left":0,"right":0,"top":0,"bottom":0},"expected":{"left":0,"right":0,"top":0,"bottom":0}},
+  {"name":"asymmetric","image":[1000,800],"frame":[400,300],"crop":{"left":0.1,"right":0.3,"top":0.2,"bottom":0.1},"expected":{"left":0.1,"right":0.3,"top":0.26875,"bottom":0.16875}},
+  {"name":"cropped-portrait","image":[300,600],"frame":[200,100],"crop":{"left":0.1,"right":0.1,"top":0.05,"bottom":0.15},"expected":{"left":0.1,"right":0.1,"top":0.35,"bottom":0.45}},
+  {"name":"reset-in-wide-frame","image":[400,300],"frame":[160,90],"crop":{"left":0,"right":0,"top":0,"bottom":0},"expected":{"left":0,"right":0,"top":0.125,"bottom":0.125}}
+]

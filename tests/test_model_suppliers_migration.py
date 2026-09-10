@@ -14,11 +14,13 @@ def test_supplier_migration_preserves_existing_catalog_and_restricts_deletion(
         historical.setattr(
             runner,
             "MIGRATIONS",
-            tuple(
-                migration
-                for migration in runner.MIGRATIONS
-                if migration.migration_id != "r0055_model_suppliers"
-            ),
+            runner.MIGRATIONS[
+                : next(
+                    index
+                    for index, migration in enumerate(runner.MIGRATIONS)
+                    if migration.migration_id == "r0055_model_suppliers"
+                )
+            ],
         )
         apply_migrations(database)
     with connect_database(database) as connection:

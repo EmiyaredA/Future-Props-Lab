@@ -66,3 +66,11 @@ Galgame 工坊使用 Story 1.4 管理角色表情/皮肤、真实多层场景、
 「知识库」仅表示文档项目容器，按 Workspace 共享并隔离。支持表格、图片、附件、链接、LaTeX、
 Mermaid 与 AI 写作；提供回收站、v3 完整或单库备份、Markdown 导入导出与 HTML 离线阅读。
 旧笔记本经 0046 迁移转为文件夹，文档 ID 与内容保留；旧备份仅在导入转换层兼容。编辑器依赖通过既有 `npm run setup` 安装，无额外服务或新环境变量。
+
+### 演示工坊
+
+AI 应用中的演示工坊支持基础幻灯片编辑、自动保存、放映和原生可编辑 PPTX 导出。
+后端通过锁定的 `python-pptx`（含 lxml / XlsxWriter）在现有进程内导出；
+生产环境无需安装 Office 或 LibreOffice，后者仅用于交付时的外观核验。
+仍使用单进程 SQLite 与现有公共文件库，不新增环境变量或常驻服务。
+使用与限制见[演示工坊说明](web/src/docs/articles/presentation/presentation-workshop.md)。

@@ -41,8 +41,10 @@ from app.models import (
     VisualProjectAssetReference,
     VisualWorkshopProject,
 )
+from app.models.presentation_workshop import PresentationProject
 
 TENANT_MODELS = (
+    PresentationProject,
     AudioAnnotationProject,
     ModelCatalogState,
     ModelProvider,

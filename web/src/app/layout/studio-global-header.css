@@ -2,12 +2,12 @@
   position: sticky;
   top: 0;
   z-index: 40;
-  min-height: 66px;
+  min-height: 56px;
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 16px;
-  padding: 8px 28px;
+  padding: 2px 28px;
   border-bottom: 1px solid var(--border);
   background: var(--surface);
 }
@@ -46,7 +46,7 @@
 }
 @media (max-width: 767px) {
   .studio-global-header {
-    padding: 8px 12px;
+    padding: 2px 12px;
     gap: 8px;
   }
   .studio-header-theme > span,

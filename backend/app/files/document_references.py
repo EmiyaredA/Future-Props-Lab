@@ -4,10 +4,17 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.files.library import AssetError
+from app.models.presentation_workshop import PresentationAssetReference
 from app.models.thought_workshop import ThoughtHistoryAsset, ThoughtKnowledgeBase, ThoughtNoteAsset
 
 
 async def protect_document_references(session: AsyncSession, asset_ids: list[str]) -> None:
+    if await session.scalar(
+        select(PresentationAssetReference.project_id)
+        .where(PresentationAssetReference.asset_id.in_(asset_ids))
+        .limit(1)
+    ):
+        raise AssetError("文件正在被演示文稿使用", code="asset_in_use", status=409)
     if await session.scalar(
         select(ThoughtHistoryAsset.history_id)
         .where(ThoughtHistoryAsset.asset_id.in_(asset_ids))

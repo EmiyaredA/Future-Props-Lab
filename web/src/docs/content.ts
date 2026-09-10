@@ -2,6 +2,13 @@ import type { DocHeading, DocsGroup, GuidePage } from "./types";
 import legacyLinks from "./legacyLinks.json";
 export type { GuidePage } from "./types";
 export const GROUPS: DocsGroup[] = [
+  {
+    id: "presentation",
+    title: "演示工坊",
+    section: "AI 应用",
+    context: "presentation",
+    parent: "apps-overview",
+  },
   { id: "start", title: "开始使用", section: "开始使用" },
   { id: "account", title: "工作空间与账号", section: "平台基础" },
   { id: "files", title: "文件管理", section: "平台基础" },

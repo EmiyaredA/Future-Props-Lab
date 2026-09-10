@@ -851,3 +851,30 @@ Markdown 转换在 Web 所属功能中完成，再经同一个导入 API 校验�
 响应仅含调用概况，不包含原始请求、响应、错误详情或复现包。前端“全部工作区”显式提交可选 ID，
 不切换当前工作区；其他空间及全部空间视图不显示详情和删除操作。原日志详情与删除接口仍按当前
 Principal 工作区隔离。统计独立于列表筛选，按所选工作区的 UTC 今日口径计算。
+
+## 演示工坊
+
+- `GET /v1/presentation-workshop/projects`：标题搜索 `query`、分页 `offset/limit`，返回首页结构预览与页数。
+- `POST /v1/presentation-workshop/projects`：创建文稿；`title` 与 `document` 必填，也用于创建副本。
+- `GET /v1/presentation-workshop/projects/{project_id}`：读取完整结构及 revision。
+- `PUT /v1/presentation-workshop/projects/{project_id}`：整体更新标题和结构，必填 `expected_revision`。
+- `DELETE /v1/presentation-workshop/projects/{project_id}`：必填查询参数 `expected_revision`，释放图片引用。
+- `POST /v1/presentation-workshop/projects/{project_id}/export`：请求体 `expected_revision`，返回原生可编辑 PPTX 附件。
+
+读取与导出需要 `content.read`，创建、更新和删除需要 `content.write`；跨 Workspace ID 一律 404。
+CAS 缺失返回 422，冲突返回 409 与当前快照。图片复用 `/v1/files` 上传、查询和鉴权读取，
+只接受当前空间公共图片，被引用文件删除返回 409。
+
+文稿版本 1 使用 1280×720 逻辑坐标。最多 100 页、每页 100 个元素，结构最大 8 MiB；
+页面与元素 ID 全文唯一。元素保存位置、尺寸、旋转、锁定、样式、段落或图片 ID 及矩形裁剪。
+文字只允许微软雅黑 / Arial 与受控段落格式，不接受任意 HTML 或外部图片 URL。
+导出按预期版本拍摄只读快照；全进程同时执行两路导出，繁忙返回 429。
+去重图片输入超过 100 MiB 返回 413，缺失或损坏图片返回 422，不静默遗漏对象。
+导出文件仅作请求临时附件，完成或失败后清理，不建立后台任务记录。
+
+导出时单张图片最多 2500 万像素，转换为 PNG 后的去重图片总量也限制在 100 MiB 内；超限返回明确错误。
+
+演示文稿图片的 `crop` 表示原图中允许显示的区域；渲染和导出均在该区域内居中等比填满元素框，
+实际 PPTX 裁剪值可能大于请求值。导出不会修改保存的文稿或 revision。PPTX 裁剪量化后造成超过
+0.1% 的横纵比例误差或可见区域消失时，返回 422、`export_crop_precision`，不输出变形或空白图片。
+文稿版本及接口字段不变。

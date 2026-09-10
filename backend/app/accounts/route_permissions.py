@@ -9,6 +9,9 @@ OPERATIONS: dict[str, tuple[tuple[str, str], ...]] = {
         ("GET", "/v1/account/cross-workspace-call-logs/stats"),
     ),
     "content.write": (
+        ("POST", "/v1/presentation-workshop/projects"),
+        ("PUT", "/v1/presentation-workshop/projects/{project_id}"),
+        ("DELETE", "/v1/presentation-workshop/projects/{project_id}"),
         ("POST", "/v1/audio-annotation/imports"),
         ("POST", "/v1/audio-annotation/projects"),
         ("DELETE", "/v1/audio-annotation/projects/{project_id}"),
@@ -123,6 +126,9 @@ OPERATIONS: dict[str, tuple[tuple[str, str], ...]] = {
         ("POST", "/v1/visual-workshop/projects/{project_id}/open-folder"),
     ),
     "content.read": (
+        ("GET", "/v1/presentation-workshop/projects"),
+        ("GET", "/v1/presentation-workshop/projects/{project_id}"),
+        ("POST", "/v1/presentation-workshop/projects/{project_id}/export"),
         ("GET", "/v1/audio-annotation/projects"),
         ("GET", "/v1/audio-annotation/projects/{project_id}"),
         ("GET", "/v1/audio-annotation/projects/{project_id}/document"),

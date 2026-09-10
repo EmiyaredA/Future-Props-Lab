@@ -1,0 +1,483 @@
+.presentation-library,
+.presentation-editor {
+  color: var(--text);
+  background: var(--bg);
+  min-width: 0;
+}
+.presentation-editor {
+  height: var(--viewport-height, 100dvh);
+  display: flex;
+  flex-direction: column;
+}
+.presentation-topbar {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 12px 18px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  flex: 0 0 auto;
+  min-width: 0;
+}
+.presentation-topbar > input {
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text);
+  border-radius: 5px;
+  width: min(28vw, 360px);
+  min-width: 80px;
+  font-size: 15px;
+  padding: 7px;
+}
+.presentation-topbar > input:focus {
+  border-color: var(--accent);
+  outline: none;
+}
+.presentation-topbar-actions {
+  margin-left: auto;
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.presentation-save-state {
+  font-size: 11px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.presentation-save-state.error,
+.presentation-save-state.conflict {
+  color: #d17b35;
+}
+.presentation-toolbar {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 10px 18px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  overflow-x: auto;
+  flex: 0 0 auto;
+}
+.presentation-toolbar-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 0 0 auto;
+}
+.presentation-toolbar-group + .presentation-toolbar-group {
+  padding-left: 12px;
+  border-left: 1px solid var(--border);
+}
+.presentation-toolbar .custom-select {
+  min-width: 100px;
+}
+.presentation-editor .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  white-space: nowrap;
+  font-size: 12px;
+}
+.presentation-editor .icon-btn {
+  display: inline-grid;
+  place-items: center;
+}
+.presentation-workspace {
+  display: grid;
+  grid-template-columns: 228px minmax(0, 1fr) 258px;
+  min-height: 0;
+  flex: 1;
+}
+.presentation-filmstrip {
+  padding: 14px 8px;
+  overflow-y: auto;
+  min-height: 0;
+  border-right: 1px solid var(--border);
+  background: var(--surface);
+}
+.presentation-filmstrip-heading {
+  display: flex;
+  justify-content: space-between;
+  padding: 0 12px 16px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.presentation-filmstrip-item {
+  position: relative;
+  padding: 0 0 0 23px;
+  margin-bottom: 18px;
+}
+.presentation-slide-number {
+  position: absolute;
+  top: 8px;
+  left: 1px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.presentation-slide-select {
+  display: block;
+  padding: 3px;
+  border: 2px solid transparent;
+  border-radius: 7px;
+  background: transparent;
+  cursor: pointer;
+}
+.presentation-slide-select .presentation-preview {
+  border-radius: 3px;
+  box-shadow: 0 0 0 1px #00000012;
+}
+.presentation-filmstrip-item.active .presentation-slide-select {
+  border-color: var(--accent);
+}
+.presentation-filmstrip-item.active .presentation-slide-number {
+  color: var(--accent);
+  font-weight: 600;
+}
+.presentation-slide-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 5px;
+  padding: 4px 8px 0;
+}
+.presentation-center {
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.presentation-notes {
+  display: flex;
+  flex-direction: column;
+  min-height: 110px;
+  height: 140px;
+  flex-shrink: 0;
+  margin: 0 16px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.presentation-notes > span {
+  padding: 12px 16px 5px;
+  font-size: 12px;
+  color: var(--muted);
+  display: flex;
+  justify-content: space-between;
+}
+.presentation-notes small {
+  font-size: 11px;
+}
+.presentation-notes textarea {
+  flex: 1;
+  min-height: 48px;
+  padding: 8px 16px;
+  resize: none;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.presentation-inspector {
+  padding: 18px 16px;
+  overflow-y: auto;
+  min-width: 0;
+  min-height: 0;
+  border-left: 1px solid var(--border);
+  background: var(--surface);
+}
+.presentation-inspector h3 {
+  font-size: 14px;
+  margin: 0 0 20px;
+}
+.presentation-inspector .muted {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.8;
+}
+.presentation-inspector fieldset {
+  border: 0;
+  border-top: 1px solid var(--border);
+  margin: 18px 0 0;
+  padding: 12px 0;
+  min-width: 0;
+}
+.presentation-inspector legend {
+  font-size: 11px;
+  color: var(--muted);
+  padding-right: 6px;
+}
+.presentation-field {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 12px;
+  margin: 10px 0;
+}
+.presentation-field input {
+  width: 92px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 7px;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 12px;
+}
+.presentation-field input::-webkit-inner-spin-button {
+  opacity: 0;
+}
+.presentation-field input {
+  appearance: textfield;
+}
+.presentation-inspector .custom-select {
+  margin: 10px 0;
+}
+.presentation-format-buttons {
+  display: flex;
+  gap: 8px;
+  margin: 12px 0;
+}
+.presentation-format-buttons button,
+.presentation-arrange-grid button {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+  padding: 8px 12px;
+}
+.presentation-format-buttons button[aria-pressed="true"] {
+  background: color-mix(in srgb, var(--accent) 15%, var(--surface));
+  border-color: var(--accent);
+}
+.presentation-arrange-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 7px;
+  margin-bottom: 14px;
+}
+.presentation-arrange-grid button {
+  font-size: 11px;
+  padding: 8px 3px;
+}
+.presentation-editor button:disabled,
+.presentation-library button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.presentation-editor button:focus-visible,
+.presentation-library button:focus-visible,
+.presentation-editor textarea:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.presentation-error,
+.presentation-conflict {
+  padding: 9px 18px;
+  color: #a45223;
+  background: color-mix(in srgb, #d88b3a 10%, var(--surface));
+  font-size: 12px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.presentation-mobile-tabs {
+  display: none;
+}
+.presentation-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: #0007;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+}
+.presentation-image-library {
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  width: min(840px, 100%);
+  max-height: 80dvh;
+  overflow: auto;
+  padding: 22px;
+}
+.presentation-image-library header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.presentation-image-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 16px;
+}
+.presentation-image-grid button {
+  border: 1px solid var(--border);
+  padding: 8px;
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text);
+  overflow: hidden;
+  cursor: pointer;
+}
+.presentation-image-grid button > div {
+  position: relative;
+  height: 100px;
+}
+.presentation-image-grid button > span {
+  display: block;
+  padding-top: 8px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+}
+@media (max-width: 1100px) and (min-width: 768px) {
+  .presentation-workspace {
+    grid-template-columns: 228px minmax(0, 1fr) 210px;
+  }
+  .presentation-inspector {
+    padding: 14px 10px;
+  }
+  .presentation-topbar {
+    gap: 8px;
+    padding: 10px;
+  }
+  .presentation-topbar-actions .btn > span {
+    font-size: 11px;
+  }
+  .presentation-save-state {
+    display: none;
+  }
+}
+@media (max-width: 767px) {
+  .presentation-library {
+    padding: 18px 16px 32px;
+  }
+  .presentation-library header {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .presentation-library header > .btn {
+    margin-left: 45px;
+  }
+  .presentation-library-intro {
+    padding-top: 30px;
+  }
+  .presentation-library-tools {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 2px;
+  }
+  .presentation-search input {
+    width: 100%;
+    min-width: 0;
+  }
+  .presentation-project-grid {
+    grid-template-columns: 1fr;
+  }
+  .presentation-topbar {
+    flex-wrap: wrap;
+    gap: 7px;
+    padding: 8px;
+  }
+  .presentation-topbar > input {
+    flex: 1;
+    width: auto;
+  }
+  .presentation-topbar-actions {
+    margin-left: auto;
+  }
+  .presentation-topbar-actions .btn {
+    padding: 7px;
+  }
+  .presentation-topbar-actions .btn > span {
+    font-size: 10px;
+  }
+  .presentation-mark {
+    display: none;
+  }
+  .presentation-toolbar {
+    padding: 8px;
+    gap: 8px;
+  }
+  .presentation-desktop-control {
+    display: none !important;
+  }
+  .presentation-mobile-tabs {
+    display: flex;
+    flex-shrink: 0;
+    gap: 8px;
+    padding: 8px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+  }
+  .presentation-mobile-tabs button {
+    flex: 1;
+    border: 0;
+    background: transparent;
+    padding: 8px;
+    color: var(--muted);
+    border-radius: 6px;
+  }
+  .presentation-mobile-tabs button[aria-pressed="true"] {
+    color: var(--accent);
+    background: var(--bg);
+  }
+  .presentation-workspace {
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+  }
+  .presentation-center {
+    display: contents;
+  }
+  .presentation-canvas-area {
+    order: 0;
+    min-height: 220px;
+    flex: 1 0 220px !important;
+  }
+  .presentation-filmstrip,
+  .presentation-inspector,
+  .presentation-notes {
+    display: none;
+    order: 1;
+    flex: 0 0 auto;
+  }
+  .mobile-panel-slides .presentation-filmstrip {
+    display: flex;
+    flex-direction: row;
+    overflow-x: auto;
+    border-right: 0;
+    border-top: 1px solid var(--border);
+    min-height: 180px;
+    max-height: 180px;
+  }
+  .presentation-filmstrip-heading {
+    display: none;
+  }
+  .presentation-filmstrip-item {
+    flex: 0 0 auto;
+    padding-right: 8px;
+  }
+  .mobile-panel-format .presentation-inspector {
+    display: block;
+    max-height: 230px;
+    min-height: 130px;
+    border-left: 0;
+    border-top: 1px solid var(--border);
+  }
+  .mobile-panel-notes .presentation-notes {
+    display: flex;
+    height: 170px;
+  }
+}

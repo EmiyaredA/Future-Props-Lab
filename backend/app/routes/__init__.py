@@ -22,6 +22,7 @@ from app.routes.models import (
     suppliers,
 )
 from app.routes.platform_governance import router as platform_governance_router
+from app.routes.presentation_workshop import router as presentation_workshop_router
 from app.routes.public_workspace import router as public_workspace_router
 from app.routes.thought_workshop import router as thought_workshop_router
 from app.routes.tool_navigation import router as tool_navigation_router
@@ -94,4 +95,8 @@ api_router.include_router(
 
 api_router.include_router(
     thought_workshop_router, dependencies=[Depends(require_studio_auth), ModelCapacity]
+)
+
+api_router.include_router(
+    presentation_workshop_router, dependencies=[Depends(require_studio_auth), ModelCapacity]
 )

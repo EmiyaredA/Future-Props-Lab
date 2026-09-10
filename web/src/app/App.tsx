@@ -19,6 +19,7 @@ import { useStudioSession } from "@app/StudioSession";
 import { galgameSpeakerImportSource } from "@app/integrations/galgameSpeakerImport";
 import {
   APPLICATION_DEFINITIONS,
+  PRESENTATION_WORKSHOP_MODULE,
   THOUGHT_WORKSHOP_MODULE,
   GALGAME_WORKSHOP_MODULE,
   VISUAL_WORKSHOP_MODULE,
@@ -36,6 +37,10 @@ import {
   type StudioPage,
   type WorkshopPage,
 } from "@app/routes";
+
+const PresentationWorkshopPage = lazy(
+  PRESENTATION_WORKSHOP_MODULE.pages.workspace,
+);
 
 const HomePage = lazy(() =>
   import("@features/home/HomePage").then((module) => ({
@@ -223,6 +228,26 @@ export default function App() {
   if (me.workspace.access_kind === "public_viewer") {
     return <PublicWorkspaceShowcase />;
   }
+
+  if (
+    page === "presentation-workshop-projects" ||
+    page === "presentation-workshop-editor"
+  )
+    return (
+      <PageBoundary>
+        <PresentationWorkshopPage
+          projectId={route.projectId}
+          readOnly={!workspaceAllows(me.workspace, "content.write")}
+          onOpen={(id) => navigate("presentation-workshop-editor", id)}
+          onBack={() =>
+            navigate(
+              route.projectId ? "presentation-workshop-projects" : "apps",
+            )
+          }
+          registerNavigationGuard={registerNavigationGuard}
+        />
+      </PageBoundary>
+    );
 
   if (
     (!workspaceAllows(me.workspace, "content.write") &&

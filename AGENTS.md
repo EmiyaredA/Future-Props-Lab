@@ -42,7 +42,7 @@
 - Web 的 `platform/` 与 `shared/` 不得依赖 `features/` 或 `app/`，`features/` 不得依赖
   `app/`；业务代码不得堆回 `web/src/` 根目录。生产请求通过 OpenAPI 生成类型访问后端，
   `generated/` 文件不得手工编辑。
-- Models、Visual Workshop、Thought Workshop 与 Audio Annotation 的 TanStack Query 键由各自 `queryKeys.ts` 唯一
+- Models、Visual Workshop、Thought Workshop、Presentation Workshop 与 Audio Annotation 的 TanStack Query 键由各自 `queryKeys.ts` 唯一
   维护；跨功能消费者导入 owner 的 key factory，不得复制同名缓存键。鉴权文件预览统一使用
   `platform/api/useApiBlobUrl.ts` 管理取消、竞态和 Object URL 回收；自有缓存或多音轨播放器除外。
 - Web 中面向用户可见的交互控件不得直接暴露浏览器默认外观或原生弹层。下拉菜单、颜色选择、

@@ -140,4 +140,5 @@ __all__ = [
 
 from app.models import model_templates as model_templates
 from app.models import platform_governance as platform_governance
+from app.models import presentation_workshop as presentation_workshop
 from app.models import runtime_admission as runtime_admission

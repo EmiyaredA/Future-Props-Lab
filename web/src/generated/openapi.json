@@ -15667,6 +15667,491 @@
         "title": "PermissionPolicyOut",
         "type": "object"
       },
+      "PresentationCrop": {
+        "additionalProperties": false,
+        "properties": {
+          "bottom": {
+            "exclusiveMaximum": 1.0,
+            "minimum": 0.0,
+            "title": "Bottom",
+            "type": "number"
+          },
+          "left": {
+            "exclusiveMaximum": 1.0,
+            "minimum": 0.0,
+            "title": "Left",
+            "type": "number"
+          },
+          "right": {
+            "exclusiveMaximum": 1.0,
+            "minimum": 0.0,
+            "title": "Right",
+            "type": "number"
+          },
+          "top": {
+            "exclusiveMaximum": 1.0,
+            "minimum": 0.0,
+            "title": "Top",
+            "type": "number"
+          }
+        },
+        "required": [
+          "left",
+          "top",
+          "right",
+          "bottom"
+        ],
+        "title": "PresentationCrop",
+        "type": "object"
+      },
+      "PresentationDocument": {
+        "additionalProperties": false,
+        "properties": {
+          "height": {
+            "const": 720,
+            "title": "Height",
+            "type": "integer"
+          },
+          "slides": {
+            "items": {
+              "$ref": "#/components/schemas/PresentationSlide"
+            },
+            "maxItems": 100,
+            "minItems": 1,
+            "title": "Slides",
+            "type": "array"
+          },
+          "version": {
+            "const": 1,
+            "title": "Version",
+            "type": "integer"
+          },
+          "width": {
+            "const": 1280,
+            "title": "Width",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "version",
+          "width",
+          "height",
+          "slides"
+        ],
+        "title": "PresentationDocument",
+        "type": "object"
+      },
+      "PresentationElement": {
+        "additionalProperties": false,
+        "properties": {
+          "asset_id": {
+            "anyOf": [
+              {
+                "maxLength": 64,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Asset Id"
+          },
+          "crop": {
+            "$ref": "#/components/schemas/PresentationCrop"
+          },
+          "fill": {
+            "pattern": "^#[0-9a-fA-F]{6}$",
+            "title": "Fill",
+            "type": "string"
+          },
+          "height": {
+            "maximum": 10000.0,
+            "minimum": 1.0,
+            "title": "Height",
+            "type": "number"
+          },
+          "id": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "text",
+              "image",
+              "rect",
+              "roundRect",
+              "ellipse",
+              "triangle",
+              "diamond",
+              "arrow",
+              "line"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "locked": {
+            "title": "Locked",
+            "type": "boolean"
+          },
+          "paragraphs": {
+            "items": {
+              "$ref": "#/components/schemas/PresentationParagraph"
+            },
+            "maxItems": 200,
+            "title": "Paragraphs",
+            "type": "array"
+          },
+          "rotation": {
+            "maximum": 360.0,
+            "minimum": -360.0,
+            "title": "Rotation",
+            "type": "number"
+          },
+          "stroke": {
+            "pattern": "^#[0-9a-fA-F]{6}$",
+            "title": "Stroke",
+            "type": "string"
+          },
+          "stroke_width": {
+            "maximum": 30.0,
+            "minimum": 0.0,
+            "title": "Stroke Width",
+            "type": "number"
+          },
+          "width": {
+            "maximum": 10000.0,
+            "minimum": 1.0,
+            "title": "Width",
+            "type": "number"
+          },
+          "x": {
+            "maximum": 10000.0,
+            "minimum": -10000.0,
+            "title": "X",
+            "type": "number"
+          },
+          "y": {
+            "maximum": 10000.0,
+            "minimum": -10000.0,
+            "title": "Y",
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "x",
+          "y",
+          "width",
+          "height",
+          "rotation",
+          "locked",
+          "fill",
+          "stroke",
+          "stroke_width",
+          "paragraphs",
+          "asset_id",
+          "crop"
+        ],
+        "title": "PresentationElement",
+        "type": "object"
+      },
+      "PresentationExportIn": {
+        "additionalProperties": false,
+        "properties": {
+          "expected_revision": {
+            "minimum": 0.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "expected_revision"
+        ],
+        "title": "PresentationExportIn",
+        "type": "object"
+      },
+      "PresentationParagraph": {
+        "additionalProperties": false,
+        "properties": {
+          "align": {
+            "enum": [
+              "left",
+              "center",
+              "right"
+            ],
+            "title": "Align",
+            "type": "string"
+          },
+          "bullet": {
+            "title": "Bullet",
+            "type": "boolean"
+          },
+          "line_height": {
+            "maximum": 3.0,
+            "minimum": 1.0,
+            "title": "Line Height",
+            "type": "number"
+          },
+          "runs": {
+            "items": {
+              "$ref": "#/components/schemas/PresentationRun"
+            },
+            "maxItems": 1000,
+            "title": "Runs",
+            "type": "array"
+          }
+        },
+        "required": [
+          "runs",
+          "align",
+          "line_height",
+          "bullet"
+        ],
+        "title": "PresentationParagraph",
+        "type": "object"
+      },
+      "PresentationProjectIn": {
+        "additionalProperties": false,
+        "properties": {
+          "document": {
+            "$ref": "#/components/schemas/PresentationDocument"
+          },
+          "title": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "title",
+          "document"
+        ],
+        "title": "PresentationProjectIn",
+        "type": "object"
+      },
+      "PresentationProjectList": {
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/PresentationProjectSummary"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total"
+        ],
+        "title": "PresentationProjectList",
+        "type": "object"
+      },
+      "PresentationProjectOut": {
+        "additionalProperties": false,
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "document": {
+            "$ref": "#/components/schemas/PresentationDocument"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          },
+          "title": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Title",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "title",
+          "document",
+          "id",
+          "revision",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "PresentationProjectOut",
+        "type": "object"
+      },
+      "PresentationProjectPut": {
+        "additionalProperties": false,
+        "properties": {
+          "document": {
+            "$ref": "#/components/schemas/PresentationDocument"
+          },
+          "expected_revision": {
+            "minimum": 0.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "title": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "title",
+          "document",
+          "expected_revision"
+        ],
+        "title": "PresentationProjectPut",
+        "type": "object"
+      },
+      "PresentationProjectSummary": {
+        "additionalProperties": false,
+        "properties": {
+          "first_slide": {
+            "$ref": "#/components/schemas/PresentationSlide"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          },
+          "slide_count": {
+            "title": "Slide Count",
+            "type": "integer"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "revision",
+          "updated_at",
+          "slide_count",
+          "first_slide"
+        ],
+        "title": "PresentationProjectSummary",
+        "type": "object"
+      },
+      "PresentationRun": {
+        "additionalProperties": false,
+        "properties": {
+          "bold": {
+            "title": "Bold",
+            "type": "boolean"
+          },
+          "color": {
+            "pattern": "^#[0-9a-fA-F]{6}$",
+            "title": "Color",
+            "type": "string"
+          },
+          "font": {
+            "enum": [
+              "Microsoft YaHei",
+              "Arial"
+            ],
+            "title": "Font",
+            "type": "string"
+          },
+          "italic": {
+            "title": "Italic",
+            "type": "boolean"
+          },
+          "size": {
+            "maximum": 240.0,
+            "minimum": 6.0,
+            "title": "Size",
+            "type": "number"
+          },
+          "text": {
+            "maxLength": 20000,
+            "title": "Text",
+            "type": "string"
+          },
+          "underline": {
+            "title": "Underline",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "text",
+          "font",
+          "size",
+          "color",
+          "bold",
+          "italic",
+          "underline"
+        ],
+        "title": "PresentationRun",
+        "type": "object"
+      },
+      "PresentationSlide": {
+        "additionalProperties": false,
+        "properties": {
+          "background": {
+            "pattern": "^#[0-9a-fA-F]{6}$",
+            "title": "Background",
+            "type": "string"
+          },
+          "elements": {
+            "items": {
+              "$ref": "#/components/schemas/PresentationElement"
+            },
+            "maxItems": 100,
+            "title": "Elements",
+            "type": "array"
+          },
+          "id": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Id",
+            "type": "string"
+          },
+          "notes": {
+            "maxLength": 20000,
+            "title": "Notes",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "background",
+          "notes",
+          "elements"
+        ],
+        "title": "PresentationSlide",
+        "type": "object"
+      },
       "ProjectFolderOpenOut": {
         "properties": {
           "opened": {
@@ -33869,6 +34354,311 @@
         "summary": "Add Workspace",
         "tags": [
           "account-management"
+        ]
+      }
+    },
+    "/v1/presentation-workshop/projects": {
+      "get": {
+        "operationId": "list_projects_v1_presentation_workshop_projects_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "query",
+            "required": false,
+            "schema": {
+              "default": "",
+              "maxLength": 120,
+              "title": "Query",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 30,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PresentationProjectList"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Projects",
+        "tags": [
+          "presentation-workshop"
+        ]
+      },
+      "post": {
+        "operationId": "create_project_v1_presentation_workshop_projects_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PresentationProjectIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PresentationProjectOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Project",
+        "tags": [
+          "presentation-workshop"
+        ]
+      }
+    },
+    "/v1/presentation-workshop/projects/{project_id}": {
+      "delete": {
+        "operationId": "delete_project_v1_presentation_workshop_projects__project_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "expected_revision",
+            "required": true,
+            "schema": {
+              "minimum": 0,
+              "title": "Expected Revision",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "boolean"
+                  },
+                  "title": "Response Delete Project V1 Presentation Workshop Projects  Project Id  Delete",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Project",
+        "tags": [
+          "presentation-workshop"
+        ]
+      },
+      "get": {
+        "operationId": "get_project_v1_presentation_workshop_projects__project_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PresentationProjectOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Project",
+        "tags": [
+          "presentation-workshop"
+        ]
+      },
+      "put": {
+        "operationId": "put_project_v1_presentation_workshop_projects__project_id__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PresentationProjectPut"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PresentationProjectOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Put Project",
+        "tags": [
+          "presentation-workshop"
+        ]
+      }
+    },
+    "/v1/presentation-workshop/projects/{project_id}/export": {
+      "post": {
+        "operationId": "export_pptx_v1_presentation_workshop_projects__project_id__export_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PresentationExportIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/vnd.openxmlformats-officedocument.presentationml.presentation": {
+                "schema": {
+                  "format": "binary",
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Export Pptx",
+        "tags": [
+          "presentation-workshop"
         ]
       }
     },

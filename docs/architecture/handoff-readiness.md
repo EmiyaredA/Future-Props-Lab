@@ -1,6 +1,6 @@
 # 开发交付说明
 
-最新登记迁移为 `r0055_model_suppliers`，在已发布的运行时治理迁移后追加供应商分组，并保留三级身份、注册邀请码、角色模板与同步记录、敏感工具标记、官方作品和任务额度归属。升级细节见[账号治理](../reference/account-governance.md)。
+最新登记迁移为 `0056_presentation_workshop`，追加演示文稿与图片引用表。上一版 `r0055_model_suppliers`，在已发布的运行时治理迁移后追加供应商分组，并保留三级身份、注册邀请码、角色模板与同步记录、敏感工具标记、官方作品和任务额度归属。升级细节见[账号治理](../reference/account-governance.md)。
 
 账号治理迁移为 `r0050_workspace_governance`，追加在思绪工坊历史迁移之后。扩展固定成员角色并保存邀请目标角色，保留旧数据；升级影响见[账号与工作区治理](../reference/account-governance.md)。
 

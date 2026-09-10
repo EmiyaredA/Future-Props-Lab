@@ -57,6 +57,7 @@ from db.migrations.versions import (
     r0052_role_model_templates,
     r0054_platform_runtime,
     r0055_model_suppliers,
+    r0056_presentation_workshop,
 )
 
 
@@ -248,5 +249,10 @@ MIGRATIONS += (Migration(r0052_role_model_templates.MIGRATION_ID, r0052_role_mod
 MIGRATIONS += (Migration(r0054_platform_runtime.MIGRATION_ID, r0054_platform_runtime.SQL),)
 
 MIGRATIONS += (Migration(r0055_model_suppliers.MIGRATION_ID, r0055_model_suppliers.SQL),)
+
+
+MIGRATIONS += (
+    Migration(r0056_presentation_workshop.MIGRATION_ID, r0056_presentation_workshop.SQL),
+)
 
 LATEST_MIGRATION_ID = MIGRATIONS[-1].migration_id

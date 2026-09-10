@@ -23,6 +23,7 @@ Future-Props-Lab/
 │   ├── audio_annotation/ # Workspace 录音标注任务、文档/波形 CAS 与导入校验
 │   ├── visual_workshop/ # 视觉工坊项目、画布、助手、生成任务与领域适配器
 │   ├── galgame_workshop/ # Galgame 工程、Story 1.4 CAS、Story→RenderPlan 编译、剪辑交接、素材/ASR 与线路分析
+│   ├── presentation_workshop/ # 文稿 CAS、公共图片引用与受限请求内原生 PPTX 导出
 │   ├── thought_workshop/ # Workspace 富文本笔记、图片引用、AI 写作与可移植备份
 │   ├── video_editor/ # API 驱动的多轨时间轴、代理/精确帧、片段交接与后台任务
 │   ├── models/        # SQLAlchemy 持久化形状及其自有 ID/时间默认工厂
@@ -303,3 +304,23 @@ Web 的 `NoteHistory` 复用现有只读 `RichEditor`；`historyDiff.ts` 负责�
 `features/accounts/useLogWorkspaceScope.ts` 对外提供授权工作区范围与只读概况查询，查询键归账号模块。
 `backend/app/accounts/cross_workspace_logs.py` 显式校验跨工作区范围；
 `llm/call_logs/query.py` 仅复用列表筛选谓词及 UTC 今日统计，不承担授权或跨空间事务。
+
+## 演示工坊
+
+`backend/app/presentation_workshop/` 拥有文稿项目、图片归属校验、引用同步和请求内导出。
+`projects.py` 处理 Workspace 限定加载与整体 CAS；`exports.py` 负责只读版本快照、
+两路导出并发、私有临时文件和取消清理；`pptx_export.py` 是唯一的 python-pptx / DrawingML 适配边界。
+文稿持久化于 `presentation_projects`，图片引用位于 `presentation_asset_references`。
+迁移 `0056_presentation_workshop` 仅追加这两张表；图片沿用公共文件库并参与删除保护，
+不增加独立项目素材目录或持久导出任务。API 不接收 Workspace ID。
+
+`web/src/features/presentation-workshop/` 拥有项目列表、五种版式、DOM/SVG 页面渲染、
+当前文本框 Tiptap 编辑、统一撤销、自动保存队列、元素变换、属性面板与放映。
+`queryKeys.ts` 维护该功能缓存键；`SlideSurface` 被画布、可见缩略图和放映复用。
+结构类型来自 OpenAPI，缩放不改变文稿坐标。样式分别由 `presentation-library.css`、
+`presentation-workshop.css` 与 `presentation-canvas.css` 维护，移动端只做浏览及轻编辑。
+新增路由由响应式清单登记，浏览器流程位于 `presentation-workshop.spec.ts`。
+
+演示工坊的 `image_crop.py` / Web `imageCrop.ts` 分别拥有相同的原图区域到图片框的等比填充计算，
+使用 `tests/fixtures/presentation_crop_cases.json` 共用测试向量。图片尺寸仅在读取素材后取得，
+不进入文稿结构；浏览器缩略图和放映共用渲染器，PPTX 使用经 EXIF 校正后的素材尺寸。

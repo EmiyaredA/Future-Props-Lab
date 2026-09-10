@@ -1,0 +1,239 @@
+.presentation-canvas-area {
+  position: relative;
+  display: flex;
+  flex: 1;
+  min-height: 120px;
+  overflow: auto;
+  padding: 24px;
+}
+.presentation-canvas-viewport {
+  margin: auto;
+  flex-shrink: 0;
+  position: relative;
+  box-shadow: 0 3px 18px #00000018;
+}
+.presentation-canvas {
+  transform-origin: top left;
+  outline: none;
+  touch-action: none;
+}
+.presentation-slide {
+  width: 1280px;
+  height: 720px;
+  position: relative;
+  overflow: hidden;
+  color: #24344b;
+}
+.presentation-element {
+  position: absolute;
+  transform-origin: center center;
+  cursor: move;
+}
+.presentation-element.locked {
+  cursor: default;
+}
+.presentation-text {
+  padding: 8px;
+  box-sizing: border-box;
+  height: 100%;
+  width: 100%;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  user-select: none;
+}
+.presentation-text p {
+  margin: 0;
+  padding: 0;
+  position: relative;
+}
+.presentation-bullet {
+  position: absolute;
+  left: 6px;
+  width: 18px;
+}
+.presentation-image-clip {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+.presentation-image-clip img {
+  position: absolute;
+  max-width: none;
+  object-fit: fill;
+  user-select: none;
+}
+.presentation-image-status {
+  display: grid;
+  place-items: center;
+  background: #e9edf3;
+  color: #6d7890;
+  width: 100%;
+  height: 100%;
+  font-size: 18px;
+}
+.presentation-preview {
+  position: relative;
+  overflow: hidden;
+  pointer-events: none;
+}
+.presentation-selection {
+  position: absolute;
+  border-style: solid;
+  border-color: #667af0;
+  pointer-events: none;
+  box-sizing: border-box;
+}
+.presentation-selection-label {
+  position: absolute;
+  top: -23px;
+  left: 0;
+  font: 10px sans-serif;
+  color: #6274d2;
+  transform-origin: bottom left;
+  white-space: nowrap;
+}
+.presentation-resize-handle,
+.presentation-rotate-handle {
+  position: absolute;
+  width: 11px;
+  height: 11px;
+  padding: 0;
+  border: 1px solid #6274d2;
+  background: white;
+  pointer-events: auto;
+  z-index: 5;
+}
+.presentation-resize-handle {
+  right: -5px;
+  bottom: -5px;
+  cursor: nwse-resize;
+  border-radius: 2px;
+}
+.presentation-rotate-handle {
+  left: calc(50% - 5px);
+  top: -24px;
+  cursor: grab;
+  border-radius: 50%;
+}
+.presentation-guide {
+  position: absolute;
+  pointer-events: none;
+  background: #eb5eac;
+  z-index: 8;
+}
+.presentation-guide.vertical {
+  top: 0;
+  bottom: 0;
+  width: 1px;
+}
+.presentation-guide.horizontal {
+  left: 0;
+  right: 0;
+  height: 1px;
+}
+.presentation-marquee {
+  position: absolute;
+  border: 1px solid #6274d2;
+  background: #6274d222;
+  pointer-events: none;
+}
+.presentation-canvas-scale {
+  position: sticky;
+  flex: 0 0 0;
+  align-self: flex-end;
+  right: 0;
+  bottom: 0;
+  color: var(--muted);
+  font-size: 10px;
+  white-space: nowrap;
+}
+.presentation-text-editor {
+  position: absolute;
+  z-index: 10;
+  box-sizing: border-box;
+  padding: 8px;
+  outline: 1px solid #6274d2;
+  background: transparent;
+  transform-origin: center center;
+  cursor: text;
+}
+.presentation-text-editor > div {
+  height: 100%;
+}
+.presentation-text-editor .tiptap {
+  outline: none;
+  height: 100%;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+}
+.presentation-text-editor .tiptap p {
+  margin: 0;
+  padding: 0;
+}
+.presentation-text-editor .tiptap p[data-bullet="true"]::before {
+  content: "•";
+  display: inline-block;
+  width: 24px;
+}
+.presentation-show {
+  position: fixed;
+  inset: 0;
+  background: #080c13;
+  color: white;
+  display: flex;
+  flex-direction: column;
+  z-index: 1100;
+}
+.presentation-show-viewport {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  align-items: center;
+  justify-content: center;
+}
+.presentation-show nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  height: 58px;
+  flex-shrink: 0;
+}
+.presentation-show nav button {
+  border: 0;
+  background: #ffffff14;
+  color: white;
+  border-radius: 6px;
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+.presentation-show nav button:disabled {
+  opacity: 0.3;
+}
+.presentation-show .presentation-element {
+  cursor: default;
+}
+.presentation-show nav span {
+  min-width: 60px;
+  text-align: center;
+  font-size: 13px;
+}
+@media (max-width: 767px) {
+  .presentation-selection-label,
+  .presentation-resize-handle,
+  .presentation-rotate-handle {
+    display: none;
+  }
+  .presentation-canvas {
+    touch-action: pan-x pan-y;
+  }
+  .presentation-canvas-area {
+    padding: 20px 12px;
+  }
+}
