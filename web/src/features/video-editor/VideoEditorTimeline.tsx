@@ -16,6 +16,7 @@ import {
   type VideoEditorSeparatorProps,
 } from "./VideoEditorSeparator";
 import { useTimelineAssetDrop } from "./useTimelineAssetDrop";
+import { useTimelineClipTrim } from "./useTimelineClipTrim";
 import { useTimelineClipDrag } from "./useTimelineClipDrag";
 import type {
   VideoEditorAsset,
@@ -238,7 +239,19 @@ export function VideoEditorTimeline({
     onDropAsset,
     onNotice,
   });
-  const guideUs = snapGuideUs ?? assetGuideUs;
+  const { trimStates, trimGuideUs, startTrim, keyTrim } = useTimelineClipTrim({
+    tracks,
+    assets,
+    rawPositionUs,
+    fps,
+    zoom,
+    seconds,
+    snapEnabled,
+    commit,
+    selectClip,
+    onNotice,
+  });
+  const guideUs = trimGuideUs ?? snapGuideUs ?? assetGuideUs;
   const deleteSelected = (ripple = false) => {
     if (!selected) return;
     void commit(
@@ -496,14 +509,13 @@ export function VideoEditorTimeline({
                     onDrop={(event) => drop(event, track.id)}
                   >
                     {(track.clips ?? []).map((clip: VideoEditorClip) => (
-                      <button
+                      <div
                         key={clip.id}
-                        type="button"
                         data-clip-id={clip.id}
                         className={`ve-clip ${clip.kind} ${track.kind} ${selectedClipIds.includes(clip.id) ? "selected" : ""}${dragPreview?.positions.has(clip.id) ? " dragging" : ""}${dragPreview?.positions.has(clip.id) && !dragPreview.valid ? " invalid" : ""}`}
                         style={{
-                          left: `${((dragPreview?.positions.get(clip.id)?.startUs ?? clip.timelineStartUs) / 1_000_000) * zoom}px`,
-                          width: `${Math.max(18, (clip.durationUs / 1_000_000) * zoom)}px`,
+                          left: `${((dragPreview?.positions.get(clip.id)?.startUs ?? trimStates?.find((item) => item.id === clip.id)?.timelineStartUs ?? clip.timelineStartUs) / 1_000_000) * zoom}px`,
+                          width: `${Math.max(18, ((trimStates?.find((item) => item.id === clip.id)?.durationUs ?? clip.durationUs) / 1_000_000) * zoom)}px`,
                           transform:
                             dragPreview?.positions.get(clip.id)?.trackId !==
                               undefined &&
@@ -537,20 +549,59 @@ export function VideoEditorTimeline({
                           });
                         }}
                       >
-                        <span>{clip.name}</span>
-                        <small>
-                          {(clip.durationUs / 1_000_000).toFixed(2)}s
-                        </small>
-                        {(clip.keyframes ?? []).map((keyframe) => (
-                          <i
-                            className="ve-key-marker"
-                            key={keyframe.id}
-                            style={{
-                              left: `${(keyframe.timeUs / clip.durationUs) * 100}%`,
-                            }}
+                        <button
+                          type="button"
+                          className="ve-clip-body"
+                          aria-label={`${clip.name} ${((trimStates?.find((item) => item.id === clip.id)?.durationUs ?? clip.durationUs) / 1_000_000).toFixed(2)}s`}
+                        >
+                          <span>{clip.name}</span>
+                          <small>
+                            {(
+                              (trimStates?.find((item) => item.id === clip.id)
+                                ?.durationUs ?? clip.durationUs) / 1_000_000
+                            ).toFixed(2)}
+                            s
+                          </small>
+                          {(clip.keyframes ?? []).map((keyframe) => (
+                            <i
+                              className="ve-key-marker"
+                              key={keyframe.id}
+                              style={{
+                                left: `${(keyframe.timeUs / clip.durationUs) * 100}%`,
+                              }}
+                            />
+                          ))}
+                        </button>
+                        {(["start", "end"] as const).map((edge) => (
+                          <button
+                            key={edge}
+                            type="button"
+                            className={`ve-trim-handle ${edge}`}
+                            role="slider"
+                            aria-orientation="horizontal"
+                            aria-valuemin={0}
+                            aria-valuenow={
+                              ((trimStates?.find((item) => item.id === clip.id)
+                                ?.timelineStartUs ?? clip.timelineStartUs) +
+                                (edge === "end"
+                                  ? (trimStates?.find(
+                                      (item) => item.id === clip.id,
+                                    )?.durationUs ?? clip.durationUs)
+                                  : 0)) /
+                              1_000_000
+                            }
+                            aria-valuetext={`${((trimStates?.find((item) => item.id === clip.id)?.durationUs ?? clip.durationUs) / 1_000_000).toFixed(2)} 秒片段`}
+                            aria-label={`${clip.name}：调整${edge === "start" ? "开始" : "结束"}边缘`}
+                            title="拖动调整时长；方向键微调一帧，Shift 加速"
+                            disabled={track.locked}
+                            onPointerDown={(event) =>
+                              startTrim(event, clip, edge)
+                            }
+                            onClick={(event) => event.stopPropagation()}
+                            onKeyDown={(event) => keyTrim(event, clip, edge)}
                           />
                         ))}
-                      </button>
+                      </div>
                     ))}
                   </div>
                 ))}

@@ -122,7 +122,9 @@ describe("video editor timeline", () => {
           onDropAsset={vi.fn()}
         />,
       );
-      const clip = screen.getByRole("button", { name: /视频/ });
+      const clip = screen
+        .getByRole("button", { name: /视频/ })
+        .closest<HTMLElement>(".ve-clip")!;
       fireEvent(
         clip,
         new MouseEvent("pointerdown", {
@@ -182,7 +184,9 @@ describe("video editor timeline", () => {
           onNotice={onNotice}
         />,
       );
-      const clip = screen.getByRole("button", { name: /下一段/ });
+      const clip = screen
+        .getByRole("button", { name: /下一段/ })
+        .closest<HTMLElement>(".ve-clip")!;
       fireEvent(
         clip,
         new MouseEvent("pointerdown", {
@@ -280,7 +284,9 @@ describe("video editor timeline", () => {
           bottom: 82 + index * 56,
         } as DOMRect),
       );
-      const clip = screen.getByRole("button", { name: /视频/ });
+      const clip = screen
+        .getByRole("button", { name: /视频/ })
+        .closest<HTMLElement>(".ve-clip")!;
       // The translated clip remains under the cursor and belongs to the
       // source row: this is what caused the old hit test to oscillate.
       const elementFromPoint = Object.getOwnPropertyDescriptor(
@@ -375,7 +381,9 @@ describe("video editor timeline", () => {
           onDropAsset={vi.fn()}
         />,
       );
-      const clip = screen.getByRole("button", { name: /视频/ });
+      const clip = screen
+        .getByRole("button", { name: /视频/ })
+        .closest<HTMLElement>(".ve-clip")!;
       fireEvent(
         clip,
         new MouseEvent("pointerdown", {

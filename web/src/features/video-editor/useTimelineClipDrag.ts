@@ -58,7 +58,7 @@ export function useTimelineClipDrag({
   useEffect(() => () => cleanupRef.current?.(), []);
 
   const startClipDrag = (
-    event: ReactPointerEvent<HTMLButtonElement>,
+    event: ReactPointerEvent<HTMLElement>,
     clip: VideoEditorClip,
   ) => {
     if (event.button != null && event.button !== 0) return;

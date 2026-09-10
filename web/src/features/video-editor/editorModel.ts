@@ -150,12 +150,19 @@ export function operationsForAsset(
   const mixed =
     (preferred?.kind === "mixed" ? preferred : undefined) ??
     (!preferred ? tracks.find((track) => track.kind === "mixed") : undefined);
-  if (asset.mediaKind === "video" && mixed) {
+  if (
+    mixed &&
+    (asset.mediaKind === "video" ||
+      (asset.mediaKind === "image" && preferred?.kind === "mixed"))
+  ) {
     if (preferred && preferred.kind !== "mixed") return [];
     return [
       {
         type: "addClip",
-        clip: { ...baseClip(asset, mixed.id, startUs), kind: "video" },
+        clip: {
+          ...baseClip(asset, mixed.id, startUs),
+          kind: asset.mediaKind as "video" | "image",
+        },
       },
     ];
   }

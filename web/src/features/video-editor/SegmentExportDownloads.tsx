@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Archive, ChevronDown, Download } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { fetchApiDownload } from "@platform/api/client";
 import { downloadProjectSnapshot } from "@shared/ui/project-library/downloadProjectSnapshot";
@@ -47,16 +48,18 @@ export function SegmentExportDownloads({ task }: { task: VideoEditorTask }) {
     <div className="ve-segment-downloads">
       <div>
         <button
+          className="ve-segment-download-all"
           disabled={download.isPending}
           onClick={() => download.mutate(undefined)}
         >
+          <Archive aria-hidden />
           {download.isPending ? "正在下载…" : "全部打包下载"}
         </button>
         <button
           aria-expanded={expanded}
           onClick={() => setExpanded((value) => !value)}
         >
-          逐段下载（{segments.length}）
+          逐段下载（{segments.length}）<ChevronDown aria-hidden />
         </button>
       </div>
       {expanded ? (
@@ -75,7 +78,7 @@ export function SegmentExportDownloads({ task }: { task: VideoEditorTask }) {
                 aria-label={`下载片段 ${index + 1}：${segment.name ?? "未命名"}`}
                 onClick={() => download.mutate(segment.assetId)}
               >
-                下载
+                <Download aria-hidden /> 下载
               </button>
             </li>
           ))}

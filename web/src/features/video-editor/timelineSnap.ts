@@ -132,11 +132,11 @@ export function clipPlacementError(
   if (
     source?.kind === "mixed" &&
     target.kind !== "mixed" &&
-    clip.kind !== "audio"
+    clip.kind === "video"
   )
     return `混合轨的视频不能直接移入${targetName}，请先右键片段选择「分离轨道」`;
-  if (target.kind === "mixed" && clip.kind !== "video")
-    return `${targetName}只接收视频片段，请将画面素材放入视觉轨、音频放入音频轨`;
+  if (target.kind === "mixed" && !["video", "image"].includes(clip.kind))
+    return `${targetName}只接收视频或图片片段，请将文字和色彩放入视觉轨、音频放入音频轨`;
   if (target.kind === "audio" && clip.kind !== "audio")
     return `${targetName}只接收音频片段，画面素材请放入视觉轨`;
   if (target.kind === "visual" && clip.kind === "audio")

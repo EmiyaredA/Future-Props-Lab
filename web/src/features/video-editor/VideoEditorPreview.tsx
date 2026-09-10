@@ -100,7 +100,12 @@ function buildPreviewAudioChains(
     .flatMap((track) => {
       const chains: PreviewAudioChain[] = [];
       const clips = [...(track.clips ?? [])]
-        .filter((clip) => Boolean(clip.assetId) && !clip.muted)
+        .filter(
+          (clip) =>
+            ["video", "audio"].includes(clip.kind) &&
+            Boolean(clip.assetId) &&
+            !clip.muted,
+        )
         .sort((left, right) => left.timelineStartUs - right.timelineStartUs);
       for (const clip of clips) {
         const chain = chains.at(-1);

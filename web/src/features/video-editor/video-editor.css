@@ -396,43 +396,6 @@
     padding: 15px 18px 18px;
   }
 }
-.ve-task-list {
-  display: grid;
-  gap: 10px;
-  margin-top: 24px;
-}
-.ve-task-list article {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 14px;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  background: var(--surface);
-}
-.ve-task-list article > svg {
-  width: 26px;
-  color: #7a6eed;
-}
-.ve-task-list article > div {
-  flex: 1;
-  display: grid;
-  gap: 5px;
-}
-.ve-task-list article small {
-  color: var(--text-muted);
-}
-.ve-task-list .ve-task-progress {
-  height: 4px;
-  overflow: hidden;
-  border-radius: 4px;
-  background: var(--border);
-}
-.ve-task-list article i {
-  display: block;
-  height: 100%;
-  background: #7264e8;
-}
 .ve-editor-state {
   height: 100vh;
   display: grid;

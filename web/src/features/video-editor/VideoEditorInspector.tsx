@@ -181,6 +181,7 @@ export function VideoEditorInspector({
             <input
               type="number"
               step="0.001"
+              key={`start-${clip.timelineStartUs}`}
               defaultValue={(clip.timelineStartUs / 1_000_000).toFixed(3)}
               onBlur={(event) => {
                 const next = Math.max(0, numberValue(event) * 1_000_000);
@@ -214,6 +215,7 @@ export function VideoEditorInspector({
               type="number"
               min="0.001"
               step="0.001"
+              key={`duration-${clip.durationUs}`}
               defaultValue={(clip.durationUs / 1_000_000).toFixed(3)}
               onBlur={(event) => {
                 const next = Math.max(1000, numberValue(event) * 1_000_000);
@@ -230,11 +232,8 @@ export function VideoEditorInspector({
                     ],
                     [
                       {
-                        type: "trimClip",
-                        clipId: clip.id,
-                        timelineStartUs: clip.timelineStartUs,
-                        durationUs: clip.durationUs,
-                        sourceInUs: clip.sourceInUs,
+                        type: "restoreClipStates",
+                        clips: [clip],
                       },
                     ],
                   );

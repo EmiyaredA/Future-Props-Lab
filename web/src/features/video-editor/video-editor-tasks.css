@@ -1,0 +1,505 @@
+.ve-tasks-page {
+  max-width: 1320px;
+  margin-inline: auto;
+}
+.ve-tasks-page .workshop-page-header {
+  align-items: center;
+  gap: 24px;
+  margin-bottom: 28px;
+}
+.ve-tasks-eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 10px;
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 650;
+  letter-spacing: 0.08em;
+}
+.ve-tasks-eyebrow svg {
+  width: 16px;
+  height: 16px;
+}
+.ve-tasks-page .workshop-page-header h1 {
+  margin-bottom: 8px;
+}
+.ve-tasks-page .workshop-page-header p {
+  margin: 0;
+}
+.ve-tasks-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex-shrink: 0;
+}
+.ve-tasks-live {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.ve-tasks-live i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+.ve-tasks-page .ve-task-button,
+.ve-tasks-page .ve-segment-downloads button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 38px;
+  padding: 8px 13px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 550;
+  line-height: 1.4;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background 150ms,
+    border-color 150ms,
+    box-shadow 150ms;
+}
+.ve-tasks-page .ve-task-button svg,
+.ve-tasks-page .ve-segment-downloads button svg {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+}
+.ve-tasks-page .ve-task-button:hover,
+.ve-tasks-page .ve-segment-downloads button:hover {
+  background: var(--surface-soft);
+  border-color: var(--accent-line);
+}
+.ve-tasks-page .ve-task-button.primary,
+.ve-tasks-page .ve-segment-downloads .ve-segment-download-all {
+  color: var(--accent);
+  background: var(--accent-soft);
+  border-color: var(--accent-line);
+}
+.ve-tasks-page .ve-task-button.primary:hover,
+.ve-tasks-page .ve-segment-downloads .ve-segment-download-all:hover {
+  background: color-mix(in srgb, var(--accent) 18%, var(--surface));
+}
+.ve-tasks-page .ve-task-button.secondary {
+  border-color: transparent;
+  background: transparent;
+  color: var(--muted);
+}
+.ve-tasks-page .ve-task-button.secondary:hover {
+  color: var(--text-strong);
+  background: var(--surface-soft);
+}
+.ve-tasks-page button:focus-visible,
+.ve-tasks-page a:focus-visible,
+.ve-tasks-search:focus-within {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+.ve-tasks-page button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.ve-tasks-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+.ve-tasks-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-soft);
+}
+.ve-tasks-filters button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 34px;
+  padding: 6px 12px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 12px;
+  color: var(--muted);
+  background: transparent;
+  cursor: pointer;
+}
+.ve-tasks-filters button:hover {
+  color: var(--text-strong);
+}
+.ve-tasks-filters button[aria-pressed="true"] {
+  color: var(--text-strong);
+  border-color: var(--border);
+  background: var(--surface);
+  box-shadow: 0 2px 4px rgb(0 0 0 / 5%);
+}
+.ve-tasks-filters span {
+  min-width: 18px;
+  padding: 1px 4px;
+  border-radius: 5px;
+  background: color-mix(in srgb, var(--muted) 10%, transparent);
+  color: var(--muted);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+}
+.ve-tasks-filters button[aria-pressed="true"] span {
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+.ve-tasks-search {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 250px;
+  min-width: 0;
+  max-width: 100%;
+  padding: 11px 13px;
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  background: var(--surface);
+}
+.ve-tasks-search svg {
+  width: 16px;
+  height: 16px;
+  color: var(--muted);
+  flex-shrink: 0;
+}
+.ve-tasks-search input {
+  width: 100%;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  font: inherit;
+  font-size: 12px;
+  color: var(--text);
+}
+.ve-tasks-search input::placeholder {
+  color: var(--muted);
+}
+.ve-tasks-page .ve-task-list {
+  display: grid;
+  gap: 12px;
+}
+.ve-tasks-page .ve-task-card {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 18px 20px;
+  min-width: 0;
+  padding: 22px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface);
+  transition: border-color 150ms;
+}
+.ve-tasks-page .ve-task-card:hover {
+  border-color: var(--border-strong);
+}
+.ve-tasks-page .ve-task-card.running {
+  border-color: var(--accent-line);
+  background: linear-gradient(110deg, var(--accent-soft), var(--surface) 45%);
+}
+.ve-task-main {
+  display: flex;
+  align-items: center;
+  flex: 1 1 420px;
+  gap: 14px;
+  min-width: 0;
+}
+.ve-task-icon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 48px;
+  flex-shrink: 0;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-soft);
+  color: var(--muted);
+}
+.running .ve-task-icon {
+  color: var(--accent);
+  border-color: var(--accent-line);
+  background: var(--accent-soft);
+}
+.ve-task-icon svg {
+  width: 22px;
+  height: 22px;
+}
+.ve-task-info {
+  min-width: 0;
+  flex: 1;
+}
+.ve-task-info h2 {
+  margin: 0 0 8px;
+  font-size: 14px;
+  line-height: 1.4;
+  font-weight: 650;
+  color: var(--text-strong);
+  overflow-wrap: anywhere;
+}
+.ve-task-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 5px 10px;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.5;
+}
+.ve-task-meta > span:first-child {
+  max-width: 240px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ve-task-meta > * + * {
+  border-left: 1px solid var(--border-strong);
+  padding-left: 10px;
+}
+.ve-task-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+  padding: 5px 8px;
+  border-radius: 7px;
+  font-size: 11px;
+  font-weight: 550;
+  color: var(--muted);
+  background: var(--surface-soft);
+}
+.ve-task-status svg {
+  width: 13px;
+  height: 13px;
+}
+.ve-task-status.running {
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+.ve-task-status.completed {
+  color: #287759;
+  background: #e5f3ec;
+}
+[data-theme="dark"] .ve-task-status.completed {
+  color: #9bdbb9;
+  background: #243c31;
+}
+.ve-task-status.failed {
+  color: var(--danger);
+  background: var(--danger-soft);
+}
+.ve-task-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+}
+.ve-task-progress-area {
+  order: 1;
+  flex-basis: 100%;
+  margin-left: 58px;
+}
+.ve-task-progress-area > div:first-child {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 9px;
+  font-size: 11px;
+  color: var(--muted);
+}
+.ve-task-progress-area strong {
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+.ve-task-progress {
+  height: 5px;
+  border-radius: 5px;
+  overflow: hidden;
+  background: var(--border);
+}
+.ve-task-progress i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--accent);
+  transition: width 300ms ease;
+}
+.ve-task-error {
+  order: 1;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  flex-basis: 100%;
+  margin: 0;
+  padding: 12px;
+  border-radius: 9px;
+  color: var(--danger);
+  background: var(--danger-soft);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+.ve-task-error svg {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+}
+.ve-tasks-page .ve-segment-downloads {
+  display: contents;
+}
+.ve-tasks-page .ve-segment-downloads > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.ve-tasks-page .ve-task-actions:has(.ve-segment-downloads ul) {
+  flex-basis: 100%;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+.ve-tasks-page .ve-segment-downloads ul {
+  flex-basis: 100%;
+  display: grid;
+  gap: 0;
+  padding: 0;
+  margin: 6px 0 0;
+  list-style: none;
+}
+.ve-tasks-page .ve-segment-downloads li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+.ve-tasks-page .ve-segment-downloads li:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+.ve-tasks-page .ve-segment-downloads li span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: 12px;
+  color: var(--text);
+}
+.ve-tasks-page .ve-segment-downloads li button {
+  flex-shrink: 0;
+}
+.ve-tasks-page .ve-segment-downloads button[aria-expanded="true"] > svg {
+  transform: rotate(180deg);
+}
+.ve-tasks-page .ve-segment-downloads p {
+  flex-basis: 100%;
+  color: var(--danger);
+  overflow-wrap: anywhere;
+}
+.ve-tasks-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 76px 24px;
+  border: 1px dashed var(--border-strong);
+  border-radius: 16px;
+  text-align: center;
+}
+.ve-tasks-empty > svg {
+  width: 32px;
+  height: 32px;
+  margin-bottom: 8px;
+  color: var(--muted);
+}
+.ve-tasks-empty h2 {
+  margin: 0;
+  color: var(--text-strong);
+  font-size: 16px;
+}
+.ve-tasks-empty p {
+  max-width: 360px;
+  margin: 0 0 8px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.7;
+}
+@media (max-width: 760px) {
+  .ve-tasks-page .workshop-page-header {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 12px;
+  }
+  .ve-tasks-header-actions {
+    gap: 8px;
+  }
+  .ve-tasks-live {
+    display: none;
+  }
+  .ve-tasks-search {
+    width: 100%;
+  }
+  .ve-tasks-page .ve-task-card {
+    padding: 16px;
+    gap: 16px;
+  }
+  .ve-task-main {
+    flex-basis: 100%;
+    gap: 10px;
+  }
+  .ve-task-actions {
+    order: 2;
+    width: 100%;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+  }
+  .ve-task-progress-area {
+    margin-left: 0;
+  }
+  .ve-task-meta > span:first-child {
+    max-width: 150px;
+  }
+  .ve-task-icon {
+    width: 36px;
+    height: 42px;
+  }
+  .ve-task-info h2 {
+    font-size: 13px;
+  }
+  .ve-task-status {
+    font-size: 10px;
+    padding: 5px 6px;
+  }
+  .ve-tasks-filters {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ve-tasks-page *,
+  .ve-tasks-page *::before {
+    animation: none !important;
+    transition: none !important;
+  }
+}

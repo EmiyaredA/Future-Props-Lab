@@ -85,7 +85,7 @@ def apply_operations(document: dict, body: VideoEditorTimelineBatchIn) -> dict:
                 raise VideoEditorValidationError("找不到目标轨道", code="track_not_found")
             clip_kind = data["clip"]["kind"]
             if (
-                (track["kind"] == "mixed" and clip_kind != "video")
+                (track["kind"] == "mixed" and clip_kind not in {"video", "image"})
                 or (track["kind"] == "audio" and clip_kind != "audio")
                 or (track["kind"] == "visual" and clip_kind == "audio")
             ):
@@ -119,9 +119,9 @@ def apply_operations(document: dict, body: VideoEditorTimelineBatchIn) -> dict:
                 (
                     old_track["kind"] == "mixed"
                     and target["kind"] != "mixed"
-                    and clip["kind"] != "audio"
+                    and clip["kind"] == "video"
                 )
-                or (target["kind"] == "mixed" and clip["kind"] != "video")
+                or (target["kind"] == "mixed" and clip["kind"] not in {"video", "image"})
                 or (target["kind"] == "audio" and clip["kind"] != "audio")
                 or (target["kind"] == "visual" and clip["kind"] == "audio")
             ):
@@ -130,7 +130,20 @@ def apply_operations(document: dict, body: VideoEditorTimelineBatchIn) -> dict:
             clip.update(trackId=data["trackId"], timelineStartUs=data["timelineStartUs"])
             target["clips"].append(clip)
         elif kind == "trimClip":
-            _track, clip = _find_clip(result, data["clipId"])
+            track, clip = _find_clip(result, data["clipId"])
+            if track.get("locked"):
+                raise VideoEditorValidationError(
+                    "轨道已锁定，无法调整片段时长", code="track_locked"
+                )
+            offset = data["timelineStartUs"] - clip["timelineStartUs"]
+            clip["keyframes"] = [
+                {**key, "timeUs": key["timeUs"] - offset}
+                for key in clip.get("keyframes", [])
+                if 0 <= key["timeUs"] - offset <= data["durationUs"]
+            ]
+            for edge in ("transitionIn", "transitionOut"):
+                if clip.get(edge):
+                    clip[edge]["durationUs"] = min(clip[edge]["durationUs"], data["durationUs"])
             clip.update(
                 timelineStartUs=data["timelineStartUs"],
                 durationUs=data["durationUs"],
@@ -367,8 +380,8 @@ async def validate_timeline(session: AsyncSession, project_id: str, document: di
                 raise VideoEditorValidationError("音频轨只能放置音频 Clip")
             if track["kind"] == "visual" and clip["kind"] == "audio":
                 raise VideoEditorValidationError("视觉轨不能放置音频 Clip")
-            if track["kind"] == "mixed" and clip["kind"] != "video":
-                raise VideoEditorValidationError("混合轨只能放置视频 Clip")
+            if track["kind"] == "mixed" and clip["kind"] not in {"video", "image"}:
+                raise VideoEditorValidationError("混合轨只能放置视频或图片 Clip")
             if track["kind"] in {"visual", "mixed"} and clip["timelineStartUs"] < previous_end:
                 raise VideoEditorValidationError(
                     "同一视觉轨上的 Clip 不能重叠", code="clip_overlap"

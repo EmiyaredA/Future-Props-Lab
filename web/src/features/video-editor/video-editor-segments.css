@@ -521,6 +521,10 @@
 }
 
 .ve-segment-downloads button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
   min-height: 36px;
   padding: 6px 12px;
   border: 1px solid var(--border-strong);
@@ -532,16 +536,6 @@
   opacity: 0.5;
   cursor: not-allowed;
 }
-.ve-task-list article {
-  flex-wrap: wrap;
-}
-.ve-task-list article > div {
-  min-width: 0;
-}
-.ve-task-list article > .ve-segment-downloads {
-  flex: 1 1 100%;
-}
-
 .ve-segment-dialog .custom-select {
   min-width: 0;
 }
@@ -550,4 +544,10 @@
   .ve-segment-batch > .apply {
     grid-column: 1 / -1;
   }
+}
+
+.ve-segment-downloads button svg {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
 }
