@@ -1,5 +1,5 @@
 import { expect, test, type Locator } from "@playwright/test";
-import { newDocument } from "./thought-helpers";
+import { newDocument, saveNote } from "./thought-helpers";
 
 async function expectMenuFits(menu: Locator) {
   await expect(menu).toBeVisible();
@@ -209,7 +209,7 @@ test("block selection, menus, deletion, persistence and mobile fallback", async 
     .getByRole("option", { name: /引用/ })
     .click();
   await expect(prose.locator("blockquote")).toBeVisible();
-  await page.getByRole("button", { name: "保存", exact: true }).click();
+  await saveNote(page);
   await expect(page.getByText("已保存", { exact: true })).toBeVisible();
   await page.reload();
   await expect(prose).toContainText("第一块");

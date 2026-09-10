@@ -103,6 +103,11 @@
 .thought-prose a {
   color: var(--accent);
   text-decoration: underline;
+  cursor: pointer;
+}
+.thought-prose a:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
 }
 .thought-prose blockquote {
   border-left: 3px solid var(--accent);

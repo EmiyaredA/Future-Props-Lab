@@ -100,13 +100,41 @@
   min-width: 0;
 }
 .knowledge-topbar {
-  min-height: 72px;
+  min-height: 56px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 20px;
-  padding: 16px 30px;
+  gap: 16px;
+  padding: 12px 30px;
   border-bottom: 1px solid var(--knowledge-line);
+}
+.knowledge-topbar-start {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  flex: 1;
+}
+.knowledge-topbar-divider {
+  width: 1px;
+  height: 18px;
+  flex-shrink: 0;
+  background: var(--knowledge-line);
+}
+.knowledge-topbar.is-note .thought-directory-toggle {
+  background: transparent;
+  border-color: transparent;
+  padding-left: 0;
+  flex-shrink: 0;
+}
+.knowledge-topbar.is-note .thought-save-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 11px;
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 .knowledge-breadcrumb {
   display: flex;
@@ -311,42 +339,14 @@
 .knowledge-shell .thought-document-bar {
   padding: 12px 30px;
 }
-.knowledge-results {
-  max-width: 1060px;
-  margin: auto;
-  padding: 30px 34px;
+.knowledge-shell .thought-edit-workspace .thought-document > .thought-error,
+.knowledge-shell
+  .thought-edit-workspace
+  .thought-document
+  > .thought-navigation-status,
+.knowledge-shell .thought-edit-workspace .thought-document > .thought-conflict {
+  margin: 12px 30px 0;
 }
-.knowledge-results h1 {
-  font-size: 28px;
-  margin: 0 0 24px;
-}
-.knowledge-results > p {
-  color: var(--muted);
-}
-.knowledge-filtered > div {
-  display: flex;
-  align-items: center;
-  border-bottom: 1px solid var(--border);
-  min-height: 64px;
-  gap: 8px;
-}
-.knowledge-filtered button {
-  padding: 12px;
-  background: transparent;
-  border: 0;
-  border-radius: 8px;
-  color: var(--text);
-  text-align: left;
-  overflow-wrap: anywhere;
-}
-.knowledge-filtered button:first-child {
-  flex: 1;
-  min-width: 0;
-}
-.knowledge-filtered button:hover {
-  background: var(--surface-hover);
-}
-.knowledge-filtered p,
 .knowledge-notice {
   font-size: 13px;
   color: var(--muted);
@@ -414,6 +414,11 @@
     padding: 12px 16px;
     gap: 12px;
   }
+  .knowledge-topbar-start {
+    flex: 1;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
   .knowledge-breadcrumb {
     flex: 1;
     gap: 7px;
@@ -421,13 +426,16 @@
   .knowledge-breadcrumb > * {
     max-width: 110px;
   }
+  .knowledge-topbar.is-note .thought-save-state {
+    flex: 1;
+    min-width: calc(100% - 112px);
+  }
   .knowledge-top-actions {
     width: 100%;
     justify-content: flex-end;
     flex-wrap: wrap;
   }
-  .knowledge-library,
-  .knowledge-results {
+  .knowledge-library {
     padding: 30px 16px;
   }
   .knowledge-library-heading {

@@ -31,6 +31,38 @@ const note: api.Note = {
 };
 
 describe("思绪工坊富文本", () => {
+  it("opens links in an editable document without changing its content", () => {
+    const open = vi.spyOn(window, "open").mockReturnValue(null);
+    const editor = new Editor({
+      extensions: editorExtensions(),
+      content:
+        '<p><a href="https://example.com/article"><strong>原文章</strong></a></p>',
+    });
+    try {
+      const before = editor.getJSON();
+      const anchor = editor.view.dom.querySelector("a")!;
+      const event = new MouseEvent("click", { button: 0, bubbles: true });
+      anchor.querySelector("strong")!.dispatchEvent(event);
+      const handled = editor.view.someProp("handleClick", (handler) =>
+        handler(editor.view, 1, event),
+      );
+      expect(handled).toBe(true);
+      expect(open).toHaveBeenCalledExactlyOnceWith(
+        "https://example.com/article",
+        "_blank",
+      );
+      expect(anchor.rel).toContain("noopener");
+      expect(editor.getJSON()).toEqual(before);
+      editor.commands.setTextSelection({ from: 1, to: 4 });
+      editor.commands.setLink({ href: "https://example.com/updated" });
+      expect(editor.getAttributes("link").href).toBe(
+        "https://example.com/updated",
+      );
+    } finally {
+      editor.destroy();
+      open.mockRestore();
+    }
+  });
   it("round-trips rich structures through editor JSON without losing marks", () => {
     const doc = {
       type: "doc",

@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { setThoughtTheme } from "./thought-helpers";
+import { openNoteHistory, saveNote, setThoughtTheme } from "./thought-helpers";
 
 test("document autosave, visible save controls, inline history and safe restore", async ({
   page,
@@ -65,14 +65,14 @@ test("document autosave, visible save controls, inline history and safe restore"
   const prose = page.getByRole("textbox", { name: "笔记正文", exact: true });
   await expect(title).toHaveValue("Claude Code · 使用笔记");
   await expect(
-    page.getByRole("button", { name: "保存", exact: true }),
+    page.getByRole("combobox", { name: "笔记更多操作", exact: true }),
   ).toBeVisible();
   await prose.locator("p").last().click();
   await page.keyboard.press("End");
   await page.keyboard.type(" Verification complete.");
   await expect(page.getByText(/^已保存 ·/)).toBeVisible();
   await expect(
-    page.getByRole("button", { name: "保存", exact: true }),
+    page.getByRole("combobox", { name: "笔记更多操作", exact: true }),
   ).toBeInViewport();
   await page.reload();
   await expect(prose).toContainText("Verification complete.");
@@ -82,9 +82,9 @@ test("document autosave, visible save controls, inline history and safe restore"
     .click();
   await page.keyboard.press("End");
   await page.keyboard.insertText("修改完成后，检查结果并记录原因。");
-  await page.getByRole("button", { name: "保存", exact: true }).click();
+  await saveNote(page);
   await expect(page.getByText(/^已保存 ·/)).toBeVisible();
-  await page.getByRole("button", { name: "历史记录", exact: true }).click();
+  await openNoteHistory(page);
   await expect(
     page.getByRole("region", { name: "历史文档预览" }),
   ).toBeVisible();

@@ -1,4 +1,9 @@
-import { newDocument, setThoughtTheme } from "./thought-helpers";
+import {
+  newDocument,
+  pickNoteMore,
+  saveNote,
+  setThoughtTheme,
+} from "./thought-helpers";
 import { expect, test } from "@playwright/test";
 import fs from "node:fs/promises";
 import { unzipSync, strFromU8 } from "fflate";
@@ -121,7 +126,7 @@ test("visible insert controls, file cards, downloads and portable archives acros
   await prose.pressSequentially("https://example.com");
   await prose.press("Space");
   await expect(prose.locator('a[href="https://example.com"]')).toBeVisible();
-  await page.getByRole("button", { name: "保存", exact: true }).click();
+  await saveNote(page);
   await expect(page.locator(".thought-save-state")).toContainText("已保存");
   await page.reload();
   await expect(prose.locator(".thought-attachment")).toHaveCount(2);
@@ -164,10 +169,7 @@ test("visible insert controls, file cards, downloads and portable archives acros
   }
   await page.setViewportSize({ width: 1600, height: 1000 });
   const htmlDownload = page.waitForEvent("download");
-  await page.getByRole("combobox", { name: "导出笔记", exact: true }).click();
-  await page
-    .getByRole("option", { name: "HTML 离线阅读", exact: true })
-    .click();
+  await pickNoteMore(page, "导出 HTML 离线阅读");
   const htmlArchive = await htmlDownload;
   expect(htmlArchive.suggestedFilename()).toMatch(/-html.zip$/);
   const htmlFiles = unzipSync(await fs.readFile((await htmlArchive.path())!));
@@ -182,8 +184,7 @@ test("visible insert controls, file cards, downloads and portable archives acros
   expect(exportedHtml).toContain("<figcaption>灵感色卡图注</figcaption>");
   expect(exportedHtml).toContain('data-align="center"');
   const mdDownload = page.waitForEvent("download");
-  await page.getByRole("combobox", { name: "导出笔记", exact: true }).click();
-  await page.getByRole("option", { name: "Markdown", exact: true }).click();
+  await pickNoteMore(page, "导出 Markdown");
   await page.getByRole("button", { name: "继续导出", exact: true }).click();
   const md = await fs.readFile((await (await mdDownload).path())!);
   const files = unzipSync(md);
@@ -212,8 +213,7 @@ test("visible insert controls, file cards, downloads and portable archives acros
     page.getByRole("button", { name: "下载 项目计划.txt", exact: true }),
   ).toBeVisible();
   const backupDownload = page.waitForEvent("download");
-  await page.getByRole("combobox", { name: "知识库更多操作" }).click();
-  await page.getByRole("option", { name: "导出知识库", exact: true }).click();
+  await pickNoteMore(page, "导出知识库");
   const backup = await fs.readFile((await (await backupDownload).path())!);
   expect(
     JSON.parse(strFromU8(unzipSync(backup)["manifest.json"])).version,

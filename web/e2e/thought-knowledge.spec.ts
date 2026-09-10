@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { newDocument, setThoughtTheme } from "./thought-helpers";
+import { newDocument, saveNote, setThoughtTheme } from "./thought-helpers";
 
 async function expectSingleNavigation(page: Page) {
   await expect(page.getByRole("complementary")).toHaveCount(1);
@@ -167,7 +167,7 @@ test("knowledge cards, editable home, nested folders, moves, old links and respo
     .getByLabel("笔记标题", { exact: true })
     .fill("一份有层次的设计笔记");
   await prose.fill("目录支持嵌套，正文可以专注写作。");
-  await page.getByRole("button", { name: "保存", exact: true }).click();
+  await saveNote(page);
   await expect(page.getByText("已保存", { exact: true })).toBeVisible();
   const documentId = page.url().split("/").pop()!;
   // Filter transitions must keep the editor's leave protection intact.
@@ -183,7 +183,7 @@ test("knowledge cards, editable home, nested folders, moves, old links and respo
   await expect(prose).toContainText("未保存的想法不能丢失");
   await page.unroute(`**/v1/thought-workshop/notes/${documentId}`);
   await page.getByRole("button", { name: "收藏", exact: true }).click();
-  await page.getByRole("button", { name: "保存", exact: true }).click();
+  await saveNote(page);
   await expect(page.getByText("已保存", { exact: true })).toBeVisible();
   const results = page.getByRole("region", { name: "文档筛选结果" });
   for (const name of ["全部文档", "最近编辑", "收藏文档"]) {

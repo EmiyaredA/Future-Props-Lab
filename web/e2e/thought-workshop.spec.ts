@@ -1,4 +1,4 @@
-import { newDocument } from "./thought-helpers";
+import { newDocument, pickNoteMore, saveNote } from "./thought-helpers";
 import { expect, test } from "@playwright/test";
 import fs from "node:fs/promises";
 
@@ -32,7 +32,7 @@ test("rich notes persist, AI suggestions insert, and archives import", async ({
     .getByRole("option", { name: /表格/ })
     .click();
   await expect(prose.locator("table")).toBeVisible();
-  await page.getByRole("button", { name: "保存", exact: true }).click();
+  await saveNote(page);
   await expect(page.getByText("已保存", { exact: true })).toBeVisible();
   await page.reload();
   await expect(page.getByLabel("笔记标题", { exact: true })).toHaveValue(title);
@@ -54,7 +54,7 @@ test("rich notes persist, AI suggestions insert, and archives import", async ({
   );
   await page.getByRole("button", { name: "追加到笔记", exact: true }).click();
   await expect(prose).toContainText("整理后的行动建议");
-  await page.getByRole("button", { name: "保存", exact: true }).click();
+  await saveNote(page);
   await expect(page.getByText("已保存", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "关闭写作助手" }).click();
   await page.screenshot({
@@ -69,8 +69,7 @@ test("rich notes persist, AI suggestions insert, and archives import", async ({
     fullPage: true,
   });
   const backupPromise = page.waitForEvent("download");
-  await page.getByRole("combobox", { name: "知识库更多操作" }).click();
-  await page.getByRole("option", { name: "导出知识库", exact: true }).click();
+  await pickNoteMore(page, "导出知识库");
   const backup = await backupPromise;
   const path = await backup.path();
   expect(path).toBeTruthy();
@@ -154,7 +153,7 @@ test("Markdown image packages preserve formulas and diagrams in offline exports"
   await page.getByRole("button", { name: "编辑图表", exact: true }).click();
   await page.getByLabel("Mermaid 源码").fill("invalid diagram source");
   await expect(page.getByText("图表语法有误，请编辑源码")).toBeVisible();
-  await page.getByRole("button", { name: "保存", exact: true }).click();
+  await saveNote(page);
   await expect(page.getByText("已保存", { exact: true })).toBeVisible();
   await page.getByLabel("Mermaid 源码").fill("graph TD; A-->B");
   await expect(prose.locator(".thought-mermaid-preview svg")).toBeVisible();
@@ -174,7 +173,7 @@ test("Markdown image packages preserve formulas and diagrams in offline exports"
   await expect(prose).not.toContainText("撤销验证");
   await prose.press("ControlOrMeta+Shift+z");
   await expect(prose).toContainText("撤销验证");
-  await page.getByRole("button", { name: "保存", exact: true }).click();
+  await saveNote(page);
   await expect(page.getByText("已保存", { exact: true })).toBeVisible();
   const saved = await (
     await page.request.get(`/v1/thought-workshop/notes/${id}`)
@@ -184,18 +183,14 @@ test("Markdown image packages preserve formulas and diagrams in offline exports"
   await expect(prose.locator(".thought-image img")).toHaveCount(2);
   await expect(prose.locator(".katex")).toHaveCount(2);
   const htmlDownload = page.waitForEvent("download");
-  await page.getByRole("combobox", { name: "导出笔记", exact: true }).click();
-  await page
-    .getByRole("option", { name: "HTML 离线阅读", exact: true })
-    .click();
+  await pickNoteMore(page, "导出 HTML 离线阅读");
   const html = await fs.readFile((await (await htmlDownload).path())!, "utf8");
   expect(html).toContain("data:image/png;base64,");
   expect(html).toContain("<math");
   expect(html).toContain("<svg");
   expect(html).not.toMatch(/<script|<iframe|onload=/i);
   const mdDownload = page.waitForEvent("download");
-  await page.getByRole("combobox", { name: "导出笔记", exact: true }).click();
-  await page.getByRole("option", { name: "Markdown", exact: true }).click();
+  await pickNoteMore(page, "导出 Markdown");
   await page.getByRole("button", { name: "继续导出", exact: true }).click();
   const files = unzipSync(
     await fs.readFile((await (await mdDownload).path())!),
@@ -235,7 +230,7 @@ test("composition, failed saves, real revision conflicts, and stale AI selection
   const prose = page.getByRole("textbox", { name: "笔记正文", exact: true });
   await expect(prose).toBeVisible();
   await prose.fill("原始正文");
-  await page.getByRole("button", { name: "保存", exact: true }).click();
+  await saveNote(page);
   await expect(page.getByText("已保存", { exact: true })).toBeVisible();
   const id = page.url().split("/").pop()!;
   let writes = 0;
@@ -273,7 +268,7 @@ test("composition, failed saves, real revision conflicts, and stale AI selection
     await route.fulfill({ status: 503, json: { detail: "模拟保存失败" } });
   });
   await prose.fill("失败后仍保留的本地正文");
-  await page.getByRole("button", { name: "保存", exact: true }).click();
+  await saveNote(page);
   await expect(page.getByText("保存失败", { exact: true })).toBeVisible();
   await expect(prose).toContainText("失败后仍保留的本地正文");
   await page.getByRole("button", { name: "所有知识库", exact: true }).click();
@@ -282,7 +277,7 @@ test("composition, failed saves, real revision conflicts, and stale AI selection
   ).toBeVisible();
   await page.getByRole("button", { name: "继续编辑", exact: true }).click();
   await page.unroute(`**/notes/${id}`);
-  await page.getByRole("button", { name: "保存", exact: true }).click();
+  await saveNote(page);
   await expect(page.getByText("已保存", { exact: true })).toBeVisible();
   const server = await (
     await page.request.get(`/v1/thought-workshop/notes/${id}`)
@@ -306,7 +301,7 @@ test("composition, failed saves, real revision conflicts, and stale AI selection
   });
   expect(updated.ok(), await updated.text()).toBe(true);
   await prose.fill("冲突时不能丢失的正文");
-  await page.getByRole("button", { name: "保存", exact: true }).click();
+  await saveNote(page);
   await expect(page.getByText("保存冲突", { exact: true })).toBeVisible();
   await page
     .getByRole("button", { name: "查看服务器版本", exact: true })

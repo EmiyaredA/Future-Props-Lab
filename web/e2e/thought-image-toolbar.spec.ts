@@ -1,5 +1,5 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
-import { newDocument } from "./thought-helpers";
+import { newDocument, saveNote } from "./thought-helpers";
 
 const png = Buffer.from(
   "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAAAI0lEQVR4nGN8Wh3JQApgIkk1w6gG4gATkergYFQDMYDkUAIAeAUB2WkfhqEAAAAASUVORK5CYII=",
@@ -160,7 +160,7 @@ test("image editing preserves selection, keyboard access, crops and persisted at
   await expectOutside(page, images.nth(1), toolbar);
   await page.keyboard.press("Escape");
   await expect(toolbar).toHaveCount(0);
-  await page.getByRole("button", { name: "保存", exact: true }).click();
+  await saveNote(page);
   await expect(page.getByText("已保存", { exact: true })).toBeVisible();
   await page.reload();
   await expect(prose.getByText("保存后的图注", { exact: true })).toBeVisible();

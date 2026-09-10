@@ -1,24 +1,14 @@
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
-import {
-  Check,
-  CircleAlert,
-  LoaderCircle,
-  ListTree,
-  Pin,
-  Star,
-  Sparkles,
-  History,
-} from "lucide-react";
+import { Pin, Star } from "lucide-react";
 import { NoteTags } from "./NoteTags";
 import type { Editor, JSONContent } from "@tiptap/react";
-import { CustomSelect } from "@shared/ui/CustomSelect";
 import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
 import { useNoteDraft } from "./useNoteDraft";
 import type { Note } from "./api";
 import { WritingAssistant } from "./WritingAssistant";
 import { exportHtml, exportMarkdown } from "./portability";
 import { markdownWarnings, toMarkdown } from "./markdown";
-import { historyTime } from "./historyApi";
+import type { NoteEditorChrome } from "./noteEditorChrome";
 
 const NoteHistory = lazy(() =>
   import("./NoteHistory").then((m) => ({ default: m.NoteHistory })),
@@ -36,14 +26,14 @@ export function NoteEditorPane({
   onOpen,
   onModels,
   registerNavigationGuard,
-  onDirectory,
+  onChromeChange,
 }: {
   note: Note;
   onSaved: (note: Note) => void;
   onOpen: (id: string) => void;
   onModels: () => void;
   registerNavigationGuard: NavigationGuard;
-  onDirectory: () => void;
+  onChromeChange?: (chrome: NoteEditorChrome | null) => void;
 }) {
   const editing = useNoteDraft(note, onSaved);
   const [editor, setEditor] = useState<Editor | null>(null);
@@ -55,10 +45,11 @@ export function NoteEditorPane({
   const [leaving, setLeaving] = useState(false);
   const [historyNote, setHistoryNote] = useState<Note | null>(null);
   const leaveFlight = useRef(false);
-  const historyButton = useRef<HTMLButtonElement>(null);
   const continuation = useRef<(() => void) | null>(null);
   const current = useRef(editing);
   current.current = editing;
+  const editorRef = useRef(editor);
+  editorRef.current = editor;
   const save = async () => {
     let latest = await current.current.flush();
     while (current.current.isDirty()) latest = await current.current.flush();
@@ -106,7 +97,8 @@ export function NoteEditorPane({
   const exportNote = async (format: string) => {
     try {
       const saved = await save();
-      if (format === "html" && editor) await exportHtml(saved, editor);
+      if (format === "html" && editorRef.current)
+        await exportHtml(saved, editorRef.current);
       if (format === "markdown") {
         const warnings = markdownWarnings(saved.document as JSONContent);
         if (warnings.length) setExportWarnings(warnings);
@@ -118,8 +110,48 @@ export function NoteEditorPane({
   };
   const closeHistory = () => {
     setHistoryNote(null);
-    requestAnimationFrame(() => historyButton.current?.focus());
+    requestAnimationFrame(() => {
+      document
+        .querySelector<HTMLElement>('[aria-label="笔记更多操作"]')
+        ?.focus();
+    });
   };
+  const openHistory = () => {
+    void save()
+      .then((next) => {
+        setAssistant(false);
+        setHistoryNote(next);
+      })
+      .catch(() => {});
+  };
+  const chromeActions = useRef({
+    save,
+    openHistory,
+    exportNote: (format: string) => void exportNote(format),
+  });
+  chromeActions.current = {
+    save,
+    openHistory,
+    exportNote: (format: string) => void exportNote(format),
+  };
+  useEffect(() => {
+    if (!onChromeChange) return;
+    onChromeChange({
+      state: editing.state,
+      savedAt: editing.savedAt,
+      save: () => chromeActions.current.save(),
+      openHistory: () => chromeActions.current.openHistory(),
+      exportNote: (format) => chromeActions.current.exportNote(format),
+      assistant,
+      setAssistant,
+      canSave: editing.state !== "saving" && editing.state !== "conflict",
+      canOpenHistory: !leaving && editing.state !== "conflict",
+    });
+  }, [onChromeChange, editing.state, editing.savedAt, assistant, leaving]);
+  useEffect(() => {
+    if (!onChromeChange) return;
+    return () => onChromeChange(null);
+  }, [onChromeChange]);
   if (historyNote)
     return (
       <Suspense fallback={<p>历史记录加载中…</p>}>
@@ -143,81 +175,6 @@ export function NoteEditorPane({
       className={`thought-edit-workspace ${assistant ? "has-assistant" : ""}`}
     >
       <section className="thought-document">
-        <header className="thought-document-bar">
-          <button
-            className="btn thought-directory-toggle"
-            onClick={onDirectory}
-          >
-            <ListTree size={17} aria-hidden="true" /> 笔记目录
-          </button>
-          <span
-            role="status"
-            className={`thought-save-state is-${editing.state}`}
-          >
-            {editing.state === "saved" ? (
-              <Check size={15} aria-hidden="true" />
-            ) : editing.state === "saving" ? (
-              <LoaderCircle size={15} aria-hidden="true" />
-            ) : (
-              <CircleAlert size={15} aria-hidden="true" />
-            )}
-            <span>
-              {
-                {
-                  saved: "已保存",
-                  dirty: "待保存",
-                  saving: "保存中…",
-                  error: "保存失败",
-                  conflict: "保存冲突",
-                }[editing.state]
-              }
-            </span>
-            {editing.state === "saved" && (
-              <> · {historyTime(editing.savedAt)}</>
-            )}
-          </span>
-          <button
-            className="btn"
-            onClick={() => void save().catch(() => {})}
-            disabled={
-              editing.state === "saving" || editing.state === "conflict"
-            }
-          >
-            保存
-          </button>
-          <button
-            className="btn"
-            ref={historyButton}
-            disabled={leaving || editing.state === "conflict"}
-            onClick={() =>
-              void save()
-                .then((next) => {
-                  setAssistant(false);
-                  setHistoryNote(next);
-                })
-                .catch(() => {})
-            }
-          >
-            <History size={16} aria-hidden="true" /> 历史记录
-          </button>
-          <CustomSelect
-            ariaLabel="导出笔记"
-            value=""
-            options={[
-              { value: "", label: "导出", disabled: true },
-              { value: "html", label: "HTML 离线阅读" },
-              { value: "markdown", label: "Markdown" },
-            ]}
-            onChange={(v) => void exportNote(v)}
-          />
-          <button
-            className="btn primary thought-ai-toggle"
-            aria-pressed={assistant}
-            onClick={() => setAssistant(!assistant)}
-          >
-            <Sparkles size={16} aria-hidden="true" /> AI 写作
-          </button>
-        </header>
         {(editing.error || notice) && (
           <p className="thought-error" role="alert">
             {editing.error || notice}

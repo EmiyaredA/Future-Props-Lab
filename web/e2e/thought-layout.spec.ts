@@ -1,4 +1,9 @@
-import { newDocument, setThoughtTheme } from "./thought-helpers";
+import {
+  newDocument,
+  pickNoteMore,
+  saveNote,
+  setThoughtTheme,
+} from "./thought-helpers";
 import { expect, test, type Page } from "@playwright/test";
 
 const markdown = `有些想法不必立刻完整，先把它们留下来。
@@ -113,20 +118,20 @@ for (const width of [1600, 1280, 390]) {
         fullPage: true,
       });
     }
-    const more = page.getByRole("combobox", { name: "知识库更多操作" });
+    const more = page.getByRole("combobox", { name: "笔记更多操作" });
     await more.focus();
     await page.keyboard.press("Enter");
     await expect(
-      page.getByRole("option", { name: "重命名", exact: true }),
+      page.getByRole("option", { name: "导入", exact: true }),
     ).toBeFocused();
     await page.keyboard.press("ArrowDown");
     await expect(
-      page.getByRole("option", { name: "修改简介", exact: true }),
+      page.getByRole("option", { name: "保存", exact: true }),
     ).toBeFocused();
     await page.keyboard.press("Escape");
     await expect(more).toBeFocused();
     const chooser = page.waitForEvent("filechooser");
-    await page.getByRole("button", { name: "导入", exact: true }).click();
+    await pickNoteMore(page, "导入");
     await (
       await chooser
     ).setFiles({
@@ -218,7 +223,7 @@ for (const width of [1600, 1280, 390]) {
     } else await page.getByRole("button", { name: "关闭写作助手" }).click();
     await prose.fill("长正文内容与边界检查。".repeat(300));
     await noOverflow(page);
-    await page.getByRole("button", { name: "保存", exact: true }).click();
+    await saveNote(page);
     await expect(page.getByText("已保存", { exact: true })).toBeVisible();
     expect(errors).toEqual([]);
   });
@@ -259,7 +264,7 @@ test("adopting a server version replaces displayed and editable tags", async ({
   await page
     .getByRole("textbox", { name: "笔记标签", exact: true })
     .fill("本地标签");
-  await page.getByRole("button", { name: "保存", exact: true }).click();
+  await saveNote(page);
   await expect(page.getByText("保存冲突", { exact: true })).toBeVisible();
   await expect(page.locator(".thought-tag")).toHaveText(["本地标签"]);
   await page

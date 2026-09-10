@@ -31,9 +31,11 @@ export function useImagePopover(
       const right = left + (viewport?.width ?? innerWidth) - 24;
       const visibleTop = (viewport?.offsetTop ?? 0) + 12;
       const bottom = visibleTop + (viewport?.height ?? innerHeight) - 24;
-      const bar = reference
-        .closest(".thought-document")
-        ?.querySelector(".thought-document-bar");
+      const bar =
+        reference
+          .closest(".thought-document")
+          ?.querySelector(".thought-document-bar") ||
+        document.querySelector(".knowledge-topbar");
       const top = Math.max(
         visibleTop,
         bar?.getBoundingClientRect().bottom ?? visibleTop,

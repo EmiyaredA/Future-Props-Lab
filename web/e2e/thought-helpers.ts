@@ -26,3 +26,24 @@ export async function setThoughtTheme(page: Page, theme: string) {
     .click();
   if (page.viewportSize()!.width <= 1200) await page.keyboard.press("Escape");
 }
+export async function openNoteMore(page: Page) {
+  const more = page.getByRole("combobox", {
+    name: "笔记更多操作",
+    exact: true,
+  });
+  await expect(more).toBeVisible();
+  await more.click();
+  return page.getByRole("listbox", { name: "笔记更多操作", exact: true });
+}
+export async function saveNote(page: Page) {
+  const menu = await openNoteMore(page);
+  await menu.getByRole("option", { name: "保存", exact: true }).click();
+}
+export async function openNoteHistory(page: Page) {
+  const menu = await openNoteMore(page);
+  await menu.getByRole("option", { name: "历史记录", exact: true }).click();
+}
+export async function pickNoteMore(page: Page, option: string) {
+  const menu = await openNoteMore(page);
+  await menu.getByRole("option", { name: option, exact: true }).click();
+}
