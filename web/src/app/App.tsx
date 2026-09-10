@@ -1,4 +1,3 @@
-import { CrossWorkspaceLogs } from "@features/accounts";
 import { StudioGlobalHeader } from "@app/layout/StudioGlobalHeader";
 import { isWorkshopPage, hasReadOnlyRoute } from "./routes";
 import { ReadOnlyRoutes } from "./ReadOnlyRoutes";
@@ -535,10 +534,10 @@ export default function App() {
               }}
             />
           ) : (
-            <>
-              <CrossWorkspaceLogs />
-              <ModelCallLogsPage />
-            </>
+            <ModelCallLogsPage
+              key={me.workspace.id}
+              currentWorkspace={me.workspace}
+            />
           )}
         </PageBoundary>
       </main>

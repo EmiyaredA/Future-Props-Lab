@@ -2284,6 +2284,13 @@
             "title": "Items",
             "type": "array"
           },
+          "model_options": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Model Options",
+            "type": "array"
+          },
           "page": {
             "title": "Page",
             "type": "integer"
@@ -23893,19 +23900,6 @@
         "parameters": [
           {
             "in": "query",
-            "name": "workspace_ids",
-            "required": false,
-            "schema": {
-              "default": [],
-              "items": {
-                "type": "string"
-              },
-              "title": "Workspace Ids",
-              "type": "array"
-            }
-          },
-          {
-            "in": "query",
             "name": "q",
             "required": false,
             "schema": {
@@ -23913,6 +23907,82 @@
               "maxLength": 200,
               "title": "Q",
               "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "call_source",
+            "required": false,
+            "schema": {
+              "default": "",
+              "pattern": "^(|model_diagnostic|model_playground|visual_workshop_assistant|visual_workshop_generation|thought_workshop_assistant|audio_annotation)$",
+              "title": "Call Source",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "provider_kind",
+            "required": false,
+            "schema": {
+              "default": "",
+              "pattern": "^(|openai|anthropic|senseaudio_asr|senseaudio_realtime)$",
+              "title": "Provider Kind",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "model",
+            "required": false,
+            "schema": {
+              "default": "",
+              "maxLength": 160,
+              "title": "Model",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "default": "",
+              "pattern": "^(|success|error)$",
+              "title": "Status",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "from",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "From"
+            }
+          },
+          {
+            "in": "query",
+            "name": "to",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "To"
             }
           },
           {
@@ -23936,6 +24006,18 @@
               "minimum": 1,
               "title": "Page Size",
               "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "workspace_ids",
+            "required": false,
+            "schema": {
+              "items": {
+                "type": "string"
+              },
+              "title": "Workspace Ids",
+              "type": "array"
             }
           }
         ],
@@ -23962,6 +24044,52 @@
           }
         },
         "summary": "Cross Logs",
+        "tags": [
+          "platform-governance"
+        ]
+      }
+    },
+    "/v1/account/cross-workspace-call-logs/stats": {
+      "get": {
+        "operationId": "cross_log_stats_v1_account_cross_workspace_call_logs_stats_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "workspace_ids",
+            "required": false,
+            "schema": {
+              "default": [],
+              "items": {
+                "type": "string"
+              },
+              "title": "Workspace Ids",
+              "type": "array"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CallLogStatsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Cross Log Stats",
         "tags": [
           "platform-governance"
         ]
@@ -29880,7 +30008,7 @@
             "required": false,
             "schema": {
               "default": "",
-              "pattern": "^(|model_diagnostic|model_playground|visual_workshop_assistant|visual_workshop_generation|audio_annotation)$",
+              "pattern": "^(|model_diagnostic|model_playground|visual_workshop_assistant|visual_workshop_generation|thought_workshop_assistant|audio_annotation)$",
               "title": "Call Source",
               "type": "string"
             }

@@ -8,16 +8,7 @@ import {
   useState,
 } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  BookOpen,
-  Check,
-  CircleAlert,
-  ListTree,
-  LoaderCircle,
-  Plus,
-  Search,
-  Sparkles,
-} from "lucide-react";
+import { BookOpen, Search } from "lucide-react";
 import { CustomSelect } from "@shared/ui/CustomSelect";
 import { TextInputDialog } from "@shared/ui/TextInputDialog";
 import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
@@ -48,12 +39,12 @@ import { KnowledgeTree } from "./KnowledgeTree";
 import { KnowledgeCover } from "./KnowledgeCover";
 import { KnowledgeDocumentResults } from "./KnowledgeDocumentResults";
 import { DeleteDocumentDialog } from "./DeleteDocumentDialog";
+import { KnowledgeTopbar } from "./KnowledgeTopbar";
 import { thoughtKeys } from "./queryKeys";
 import { download } from "./download";
 import { useDrawerFocus } from "@shared/ui/useDrawerFocus";
 import type { NavigationGuard } from "./NoteEditorPane";
 import type { NoteEditorChrome } from "./noteEditorChrome";
-import { historyTime } from "./historyApi";
 import type { NoteSummary } from "./api";
 import "./thought-workshop.css";
 import "./writing-layout.css";
@@ -329,43 +320,13 @@ export function ThoughtWorkshopPage({
     { value: "trash", label: "移入回收站" },
   ];
   const noteMode = (!!noteId || editHome) && !browsing;
-  const noteMoreOptions = [
-    { value: "", label: "更多", disabled: true },
-    { value: "import", label: "导入", disabled: busy },
-    {
-      value: "save",
-      label: "保存",
-      disabled: !noteChrome?.canSave,
-    },
-    {
-      value: "history",
-      label: "历史记录",
-      disabled: !noteChrome?.canOpenHistory,
-    },
-    { value: "export-html", label: "导出 HTML 离线阅读" },
-    { value: "export-markdown", label: "导出 Markdown" },
-    { value: "rename", label: "重命名" },
-    { value: "description", label: "修改简介" },
-    { value: "cover", label: "更换封面" },
-    { value: "clear-cover", label: "恢复默认封面" },
-    { value: "export", label: "导出知识库" },
-    { value: "trash", label: "移入回收站" },
-  ];
   const noteMoreAction = (value: string) => {
     if (value === "import") importInput.current?.click();
     if (value === "save") void noteChrome?.save().catch(() => {});
     if (value === "history") noteChrome?.openHistory();
     if (value === "export-html") noteChrome?.exportNote("html");
     if (value === "export-markdown") noteChrome?.exportNote("markdown");
-    if (
-      project &&
-      (value === "rename" ||
-        value === "description" ||
-        value === "cover" ||
-        value === "clear-cover" ||
-        value === "export" ||
-        value === "trash")
-    )
+    if (project && (value === "rename" || value === "description"))
       projectAction(value, project);
   };
   const errors =
@@ -429,152 +390,39 @@ export function ThoughtWorkshopPage({
         )}
       </KnowledgeSidebar>
       <main className="knowledge-main">
-        <header className={`knowledge-topbar${noteMode ? " is-note" : ""}`}>
-          <button
-            className="btn knowledge-mobile"
-            onClick={() => setDrawer(true)}
-          >
-            目录
-          </button>
-          <div className="knowledge-topbar-start">
-            <div className="knowledge-breadcrumb">
-              <button onClick={() => onNavigate()}>知识库</button>
-              {project && (
-                <>
-                  <span>/</span>
-                  <button onClick={() => open()}>{project.title}</button>
-                  <span>/</span>
-                  <span>
-                    {browsing
-                      ? documentViews.find((v) => v.id === view)?.label
-                      : noteId
-                        ? note.data?.title || "文档"
-                        : "首页"}
-                  </span>
-                </>
-              )}
-            </div>
-            {noteMode && (
-              <>
-                <span className="knowledge-topbar-divider" aria-hidden="true" />
-                <button
-                  className="btn thought-directory-toggle"
-                  onClick={() => setDrawer(true)}
-                >
-                  <ListTree size={17} aria-hidden="true" /> 笔记目录
-                </button>
-                {noteChrome && (
-                  <span
-                    role="status"
-                    className={`thought-save-state is-${noteChrome.state}`}
-                  >
-                    {noteChrome.state === "saved" ? (
-                      <Check size={15} aria-hidden="true" />
-                    ) : noteChrome.state === "saving" ? (
-                      <LoaderCircle size={15} aria-hidden="true" />
-                    ) : (
-                      <CircleAlert size={15} aria-hidden="true" />
-                    )}
-                    <span>
-                      {
-                        {
-                          saved: "已保存",
-                          dirty: "待保存",
-                          saving: "保存中…",
-                          error: "保存失败",
-                          conflict: "保存冲突",
-                        }[noteChrome.state]
-                      }
-                    </span>
-                    {noteChrome.state === "saved" && (
-                      <> · {historyTime(noteChrome.savedAt)}</>
-                    )}
-                  </span>
-                )}
-              </>
-            )}
-          </div>
-          <div className="knowledge-top-actions">
-            {noteMode ? (
-              <>
-                <CustomSelect
-                  ariaLabel="笔记更多操作"
-                  value=""
-                  options={noteMoreOptions}
-                  onChange={noteMoreAction}
-                />
-                <button
-                  className="btn"
-                  disabled={busy}
-                  onClick={() => void create()}
-                >
-                  <Plus size={16} />
-                  新建文档
-                </button>
-                <button
-                  className="btn primary thought-ai-toggle"
-                  aria-pressed={noteChrome?.assistant ?? false}
-                  disabled={!noteChrome}
-                  onClick={() =>
-                    noteChrome?.setAssistant(!noteChrome.assistant)
-                  }
-                >
-                  <Sparkles size={16} aria-hidden="true" /> AI 写作
-                </button>
-              </>
-            ) : (
-              <>
-                <button
-                  className="btn"
-                  disabled={busy}
-                  onClick={() => importInput.current?.click()}
-                >
-                  导入
-                </button>
-                {project ? (
-                  <>
-                    <CustomSelect
-                      ariaLabel="知识库更多操作"
-                      value=""
-                      options={projectOptions}
-                      onChange={(v) => projectAction(v, project)}
-                    />
-                    <button
-                      className="btn primary"
-                      disabled={busy}
-                      onClick={() => void create()}
-                    >
-                      <Plus size={16} />
-                      新建文档
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <button className="btn" onClick={() => void backup()}>
-                      完整备份
-                    </button>
-                    <button
-                      className="btn primary"
-                      disabled={busy}
-                      onClick={() =>
-                        setInput({
-                          title: "创建知识库",
-                          apply: async (title) => {
-                            const p = await createKnowledge(title);
-                            onNavigate(p.id);
-                          },
-                        })
-                      }
-                    >
-                      <Plus size={16} />
-                      创建知识库
-                    </button>
-                  </>
-                )}
-              </>
-            )}
-          </div>
-        </header>
+        <KnowledgeTopbar
+          noteMode={noteMode}
+          busy={busy}
+          projectTitle={project?.title}
+          currentLabel={
+            browsing
+              ? documentViews.find((item) => item.id === view)?.label || "文档"
+              : noteId
+                ? note.data?.title || "文档"
+                : "首页"
+          }
+          noteChrome={noteChrome}
+          projectOptions={projectOptions}
+          onOpenKnowledge={() => onNavigate()}
+          onOpenProject={() => open()}
+          onOpenDirectory={() => setDrawer(true)}
+          onImport={() => importInput.current?.click()}
+          onCreateDocument={() => void create()}
+          onBackup={() => void backup()}
+          onCreateKnowledge={() =>
+            setInput({
+              title: "创建知识库",
+              apply: async (title) => {
+                const created = await createKnowledge(title);
+                onNavigate(created.id);
+              },
+            })
+          }
+          onNoteAction={noteMoreAction}
+          onProjectAction={(value) =>
+            project ? projectAction(value, project) : undefined
+          }
+        />
         {errors && (
           <div role="alert" className="thought-error">
             {errors}
@@ -663,8 +511,7 @@ export function ThoughtWorkshopPage({
             onDeleteForever={(n) =>
               setConfirm({
                 title: "永久删除文档？",
-                description:
-                  "正文将永久删除。引用的文件仍由文件管理负责清理。",
+                description: "正文将永久删除。引用的文件仍由文件管理负责清理。",
                 apply: async () => {
                   await deleteNote(n, true);
                   if (noteId === n.id) open();

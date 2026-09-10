@@ -1,4 +1,9 @@
-import { newDocument, pickNoteMore, saveNote } from "./thought-helpers";
+import {
+  newDocument,
+  pickNoteMore,
+  pickProjectMore,
+  saveNote,
+} from "./thought-helpers";
 import { expect, test } from "@playwright/test";
 import fs from "node:fs/promises";
 
@@ -69,7 +74,7 @@ test("rich notes persist, AI suggestions insert, and archives import", async ({
     fullPage: true,
   });
   const backupPromise = page.waitForEvent("download");
-  await pickNoteMore(page, "导出知识库");
+  await pickProjectMore(page, "导出知识库");
   const backup = await backupPromise;
   const path = await backup.path();
   expect(path).toBeTruthy();

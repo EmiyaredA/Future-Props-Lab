@@ -1,7 +1,11 @@
 export const accountQueryKeys = {
   logWorkspaces: ["accounts", "log-workspaces"] as const,
-  crossLogs: (workspace: string, q: string, page: number) =>
-    ["accounts", "cross-logs", workspace, q, page] as const,
+  crossLogsRoot: ["accounts", "cross-logs"] as const,
+  crossLogStatsRoot: ["accounts", "cross-log-stats"] as const,
+  crossLogs: (workspaces: string[], filters: object) =>
+    ["accounts", "cross-logs", workspaces, filters] as const,
+  crossLogStats: (workspaces: string[]) =>
+    ["accounts", "cross-log-stats", workspaces] as const,
   syncHistory: (role: string) =>
     ["accounts", "platform", "sync-history", role] as const,
   invites: (filters: object) =>

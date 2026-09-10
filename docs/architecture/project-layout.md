@@ -297,3 +297,9 @@ Web 的 `NoteHistory` 复用现有只读 `RichEditor`；`historyDiff.ts` 负责�
 - `llm/catalog/defaults.py` 校验并保存当前工作区默认模型，与目录共用 CAS 版本。
 - `web/src/features/accounts/` 拥有七个管理页面、平台查询键、跨空间查询、邀请/模板/权限/服务表单与官方认证交互；应用壳仅负责路由装配。`features/models/catalog/WorkspaceDefaults.tsx` 拥有工作区默认用途弹窗。
 - `db/migrations/versions/r0051_platform_governance.py` 至 `r0055_model_suppliers.py` 按已登记顺序追加治理数据结构，迁移测试使用临时数据库。
+
+
+调用日志页面的工具栏、筛选抽屉和表格由 `web/src/features/models/logs/` 拥有；
+`features/accounts/useLogWorkspaceScope.ts` 对外提供授权工作区范围与只读概况查询，查询键归账号模块。
+`backend/app/accounts/cross_workspace_logs.py` 显式校验跨工作区范围；
+`llm/call_logs/query.py` 仅复用列表筛选谓词及 UTC 今日统计，不承担授权或跨空间事务。

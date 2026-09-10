@@ -147,14 +147,43 @@ export const installDemoService = async (
 
 export const fetchLogWorkspaces = async () =>
   unwrap(await api.GET("/v1/account/log-workspaces"));
+export type LogOverviewFilters = {
+  q: string;
+  callSource: string;
+  providerKind: string;
+  model: string;
+  status: string;
+  from: string;
+  to: string;
+  page: number;
+  pageSize: number;
+};
 export const fetchCrossWorkspaceLogs = async (
-  workspace: string,
-  q: string,
-  page: number,
+  workspaces: string[],
+  filters: LogOverviewFilters,
 ) =>
   unwrap(
     await api.GET("/v1/account/cross-workspace-call-logs", {
-      params: { query: { workspace_ids: [workspace], q, page, page_size: 25 } },
+      params: {
+        query: {
+          workspace_ids: workspaces,
+          q: filters.q,
+          call_source: filters.callSource,
+          provider_kind: filters.providerKind,
+          model: filters.model,
+          status: filters.status,
+          from: filters.from || undefined,
+          to: filters.to || undefined,
+          page: filters.page,
+          page_size: filters.pageSize,
+        },
+      },
+    }),
+  );
+export const fetchCrossWorkspaceLogStats = async (workspaces: string[]) =>
+  unwrap(
+    await api.GET("/v1/account/cross-workspace-call-logs/stats", {
+      params: { query: { workspace_ids: workspaces } },
     }),
   );
 export const fetchSyncHistory = async (role: PlatformRole) =>

@@ -1,3 +1,5 @@
+import type { LogFilters } from "@features/models/api";
+
 export type DeleteTarget =
   { kind: "single"; ids: [string] } | { kind: "batch"; ids: string[] } | null;
 
@@ -13,3 +15,15 @@ export const sourceLabels: Record<string, string> = {
 export function formatNumber(value: number | null | undefined): string {
   return value == null ? "—" : new Intl.NumberFormat("zh-CN").format(value);
 }
+
+export const emptyLogFilters: LogFilters = {
+  q: "",
+  callSource: "",
+  providerKind: "",
+  model: "",
+  status: "",
+  from: "",
+  to: "",
+  page: 1,
+  pageSize: 25,
+};

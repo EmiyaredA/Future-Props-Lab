@@ -12,12 +12,22 @@ export async function newDocument(page: Page) {
       page.getByRole("button", { name: "编辑首页", exact: true }),
     ).toBeVisible();
   }
-  await page.locator(".knowledge-directory-add").click();
+  await page
+    .getByRole("button", { name: "新建文档", exact: true })
+    .last()
+    .click();
   await expect(page.getByLabel("笔记标题", { exact: true })).toBeVisible();
 }
 export async function setThoughtTheme(page: Page, theme: string) {
-  if (page.viewportSize()!.width <= 1200)
-    await page.getByRole("button", { name: "目录", exact: true }).click();
+  if (page.viewportSize()!.width <= 1200) {
+    const noteDirectory = page.getByRole("button", {
+      name: "笔记目录",
+      exact: true,
+    });
+    if (await noteDirectory.isVisible().catch(() => false))
+      await noteDirectory.click();
+    else await page.getByRole("button", { name: "目录", exact: true }).click();
+  }
   await page
     .getByRole("button", {
       name: theme === "light" ? "浅色" : "深色",
@@ -27,23 +37,43 @@ export async function setThoughtTheme(page: Page, theme: string) {
   if (page.viewportSize()!.width <= 1200) await page.keyboard.press("Escape");
 }
 export async function openNoteMore(page: Page) {
-  const more = page.getByRole("combobox", {
+  const more = page.getByRole("button", {
     name: "笔记更多操作",
     exact: true,
   });
   await expect(more).toBeVisible();
   await more.click();
-  return page.getByRole("listbox", { name: "笔记更多操作", exact: true });
+  return page.getByRole("menu", { name: "笔记更多操作", exact: true });
 }
 export async function saveNote(page: Page) {
   const menu = await openNoteMore(page);
-  await menu.getByRole("option", { name: "保存", exact: true }).click();
+  await menu.getByRole("menuitem", { name: "保存", exact: true }).click();
 }
 export async function openNoteHistory(page: Page) {
   const menu = await openNoteMore(page);
-  await menu.getByRole("option", { name: "历史记录", exact: true }).click();
+  await menu.getByRole("menuitem", { name: "历史记录", exact: true }).click();
 }
 export async function pickNoteMore(page: Page, option: string) {
   const menu = await openNoteMore(page);
-  await menu.getByRole("option", { name: option, exact: true }).click();
+  await menu.getByRole("menuitem", { name: option, exact: true }).click();
+}
+export async function pickProjectMore(page: Page, option: string) {
+  let more = page.getByRole("combobox", {
+    name: "知识库更多操作",
+    exact: true,
+  });
+  if (!(await more.isVisible().catch(() => false))) {
+    await page
+      .locator(".knowledge-breadcrumb")
+      .getByRole("button")
+      .last()
+      .click();
+    more = page.getByRole("combobox", {
+      name: "知识库更多操作",
+      exact: true,
+    });
+  }
+  await expect(more).toBeVisible();
+  await more.click();
+  await page.getByRole("option", { name: option, exact: true }).click();
 }

@@ -299,6 +299,7 @@ export function LogDetail({
   onClose: () => void;
   onDelete: (id: string) => void;
 }) {
+  const canDelete = useWorkspacePermission("configuration.manage");
   const query = useQuery({
     queryKey: modelQueryKeys.log(id),
     queryFn: () => getLog(id),
@@ -551,9 +552,11 @@ export function LogDetail({
         )}
         <div className="drawer-footer">
           {log ? <LogReproductionButton log={log} /> : null}
-          <button className="btn danger" onClick={() => onDelete(id)}>
-            删除日志
-          </button>
+          {canDelete && (
+            <button className="btn danger" onClick={() => onDelete(id)}>
+              删除日志
+            </button>
+          )}
           <button className="btn primary" onClick={onClose}>
             完成
           </button>

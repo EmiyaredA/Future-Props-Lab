@@ -1,136 +1,192 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import "@features/models/models.css";
+import "./call-logs.css";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  useLogWorkspaceScope,
+  useCrossWorkspaceLogQueries,
+} from "@features/accounts";
+import { useWorkspacePermission } from "@platform/auth/WorkspacePermissions";
 import {
   batchDeleteLogs,
   deleteLog,
   getCatalog,
   getLogs,
   getLogStats,
-  type CallLogItem,
   type LogFilters,
 } from "@features/models/api";
 import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
-import { CustomDateInput } from "@shared/ui/CustomDateInput";
-import { CustomSelect } from "@shared/ui/CustomSelect";
-import {
-  logProviderKindOptions,
-  providerLabels,
-} from "@features/models/logs/logOptions";
+import { accountQueryKeys } from "@features/accounts";
 import { modelQueryKeys } from "@features/models/queryKeys";
-import { LogDetail } from "@features/models/logs/ModelCallLogDetail";
+import { LogDetail } from "./ModelCallLogDetail";
 import {
+  emptyLogFilters,
   formatNumber,
-  sourceLabels,
   type DeleteTarget,
-} from "@features/models/logs/modelCallLogPresentation";
+} from "./modelCallLogPresentation";
+import { LogToolbar, LogFilterDrawer } from "./LogFilters";
+import { LogTable, LogPagination } from "./LogTable";
 
-export function ModelCallLogsPage() {
+type Scope = ReturnType<typeof useLogWorkspaceScope>;
+export function ModelCallLogsPage({
+  currentWorkspace,
+}: {
+  currentWorkspace: { id: string; name: string };
+}) {
+  const scope = useLogWorkspaceScope(currentWorkspace);
+  const canDelete = useWorkspacePermission("configuration.manage");
+  const [filters, setFilters] = useState<LogFilters>(emptyLogFilters);
+  const [lastScope, setLastScope] = useState(scope.scope);
+  if (lastScope !== scope.scope) {
+    setLastScope(scope.scope);
+    setFilters((current) => ({ ...current, model: "", page: 1 }));
+  }
+  return (
+    <LogsContent
+      key={`${currentWorkspace.id}:${scope.scope}:${scope.ids.join(",")}:${canDelete}:${scope.allowed}`}
+      filters={filters}
+      setFilters={setFilters}
+      scope={scope}
+      currentWorkspaceId={currentWorkspace.id}
+      canDelete={canDelete && scope.local}
+    />
+  );
+}
+function LogError({ error, retry }: { error: unknown; retry: () => void }) {
+  return (
+    <div className="call-log-error" role="alert">
+      <span>{error instanceof Error ? error.message : "读取失败，请重试"}</span>
+      <button className="btn" onClick={retry}>
+        重试
+      </button>
+    </div>
+  );
+}
+function LogsContent({
+  scope,
+  filters,
+  setFilters,
+  currentWorkspaceId,
+  canDelete,
+}: {
+  scope: Scope;
+  filters: LogFilters;
+  setFilters: React.Dispatch<React.SetStateAction<LogFilters>>;
+  currentWorkspaceId: string;
+  canDelete: boolean;
+}) {
   const queryClient = useQueryClient();
-  const [draftSearch, setDraftSearch] = useState("");
-  const [filters, setFilters] = useState<LogFilters>({
-    q: "",
-    callSource: "",
-    providerKind: "",
-    model: "",
-    status: "",
-    from: "",
-    to: "",
-    page: 1,
-    pageSize: 25,
-  });
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [detailId, setDetailId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<DeleteTarget>(null);
-  const listQuery = useQuery({
-    queryKey: modelQueryKeys.logList(filters),
+  const [drawer, setDrawer] = useState(false);
+  const [resetVersion, setResetVersion] = useState(0);
+  const localList = useQuery({
+    queryKey: modelQueryKeys.logList({
+      workspace: currentWorkspaceId,
+      ...filters,
+    }),
     queryFn: () => getLogs(filters),
+    enabled: scope.local,
   });
-  const catalogQuery = useQuery({
+  const catalog = useQuery({
     queryKey: modelQueryKeys.catalog,
     queryFn: getCatalog,
+    enabled: scope.local,
   });
-  const statsQuery = useQuery({
-    queryKey: modelQueryKeys.logStats,
+  const localStats = useQuery({
+    queryKey: [...modelQueryKeys.logStats, currentWorkspaceId],
     queryFn: getLogStats,
+    enabled: scope.local,
   });
-  const models = useMemo(
-    () => [
-      ...new Set(
-        (catalogQuery.data?.providers ?? []).flatMap((provider) =>
-          provider.models.map((model) => model.slug),
-        ),
-      ),
-    ],
-    [catalogQuery.data],
+  const cross = useCrossWorkspaceLogQueries(
+    scope.ids,
+    filters,
+    !scope.local && !scope.spaces.isError && !scope.spaces.isPending,
   );
+  const list = scope.local ? localList : cross.list;
+  const stats = scope.local ? localStats : cross.stats;
+  const models = useMemo(
+    () =>
+      scope.local
+        ? [
+            ...new Set(
+              (catalog.data?.providers ?? []).flatMap((provider) =>
+                provider.models.map((model) => model.slug),
+              ),
+            ),
+          ].sort()
+        : (cross.list.data?.model_options ?? []),
+    [scope.local, catalog.data, cross.list.data],
+  );
+  const scopeError = !scope.local && scope.spaces.isError;
+  const total = scopeError ? 0 : (list.data?.total ?? 0);
+  const pages = Math.max(1, Math.ceil(total / filters.pageSize));
+  useEffect(() => {
+    if (list.isSuccess && filters.page > pages)
+      setFilters((current) => ({ ...current, page: pages }));
+  }, [list.isSuccess, filters.page, pages, setFilters]);
   const invalidate = async () => {
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: modelQueryKeys.logs }),
       queryClient.invalidateQueries({ queryKey: modelQueryKeys.logStats }),
+      queryClient.invalidateQueries({
+        queryKey: accountQueryKeys.crossLogsRoot,
+      }),
+      queryClient.invalidateQueries({
+        queryKey: accountQueryKeys.crossLogStatsRoot,
+      }),
     ]);
   };
-  const removeOne = useMutation({
-    mutationFn: deleteLog,
-    onSuccess: async (_, id) => {
-      setSelected((current) => {
-        const next = new Set(current);
-        next.delete(id);
-        return next;
-      });
-      setDetailId(null);
-      setDeleteTarget(null);
-      await invalidate();
-    },
-  });
+  const removed = async () => {
+    setSelected(new Set());
+    setDetailId(null);
+    setDeleteTarget(null);
+    await invalidate();
+  };
+  const removeOne = useMutation({ mutationFn: deleteLog, onSuccess: removed });
   const removeMany = useMutation({
     mutationFn: batchDeleteLogs,
-    onSuccess: async () => {
-      setSelected(new Set());
-      setDeleteTarget(null);
-      await invalidate();
-    },
+    onSuccess: removed,
   });
-  const setFilter = <K extends keyof LogFilters>(
-    key: K,
-    value: LogFilters[K],
-  ) =>
-    setFilters((current) => ({
-      ...current,
-      [key]: value,
-      page: key === "page" ? (value as number) : 1,
-    }));
-  const rows = listQuery.data?.items ?? [];
-  const pages = Math.max(
-    1,
-    Math.ceil((listQuery.data?.total ?? 0) / filters.pageSize),
-  );
-  const toggle = (id: string, on: boolean) =>
-    setSelected((current) => {
-      const next = new Set(current);
-      if (on) next.add(id);
-      else next.delete(id);
-      return next;
-    });
+  const pending = removeOne.isPending || removeMany.isPending;
+  const deletionError = removeOne.error || removeMany.error;
   const confirmOne = (id: string) => {
+    if (!canDelete) return;
+    removeOne.reset();
+    removeMany.reset();
     setDeleteTarget({ kind: "single", ids: [id] });
   };
-
+  const apply = (next: LogFilters) => {
+    setFilters(next);
+    setSelected(new Set());
+  };
+  const reset = () => {
+    setResetVersion((value) => value + 1);
+    apply({ ...emptyLogFilters, pageSize: filters.pageSize });
+    setDrawer(false);
+  };
+  const retry = () => {
+    void list.refetch();
+  };
   return (
-    <section className="page logs-page">
+    <section className="page logs-page call-logs-page">
       <header className="page-header">
         <div>
-          <span className="eyebrow">OBSERVABILITY</span>
           <h1>模型调用日志</h1>
-          <p>查看各类模型调用的消息链、Token 用量、耗时与原始数据。</p>
+          <p>查看模型调用的消息链、Token 用量、耗时与原始数据。</p>
         </div>
       </header>
-      <div className="stat-grid">
+      <div
+        className="stat-grid"
+        aria-label="所选工作区今日统计（UTC），不受列表筛选影响"
+        title="所选工作区今日数据，按 UTC 计算，不受列表筛选影响"
+      >
         {[
-          ["今日调用", statsQuery.data?.calls_today, "次"],
-          ["今日 Token", statsQuery.data?.total_tokens_today, ""],
-          ["平均耗时", statsQuery.data?.avg_latency_ms_today, "ms"],
-          ["今日失败", statsQuery.data?.errors_today, "次"],
+          ["今日调用", stats.data?.calls_today, "次"],
+          ["今日 Token", stats.data?.total_tokens_today, ""],
+          ["平均耗时", stats.data?.avg_latency_ms_today, "ms"],
+          ["今日失败", stats.data?.errors_today, "次"],
         ].map(([label, value, unit], index) => (
           <div
             className={`stat-card${index === 3 ? " danger-stat" : ""}`}
@@ -138,281 +194,149 @@ export function ModelCallLogsPage() {
           >
             <span>{label}</span>
             <strong>
-              {formatNumber(value as number | undefined)} <small>{unit}</small>
+              {stats.isError || scopeError
+                ? "—"
+                : stats.isPending
+                  ? "…"
+                  : formatNumber(value as number | undefined)}{" "}
+              <small>{unit}</small>
             </strong>
           </div>
         ))}
       </div>
-      <div className="logs-card card">
-        <div className="logs-toolbar">
-          <form
-            className="search-box"
-            onSubmit={(event) => {
-              event.preventDefault();
-              setFilter("q", draftSearch.trim());
+      <p className="call-log-stats-note">所选工作区 · 今日数据（UTC）</p>
+      {stats.isError && (
+        <LogError
+          error={stats.error}
+          retry={() => {
+            void stats.refetch();
+          }}
+        />
+      )}
+      <div className="call-log-card card">
+        <LogToolbar
+          resetVersion={resetVersion}
+          filters={filters}
+          models={models}
+          onChange={apply}
+          scope={scope.scope}
+          options={scope.options}
+          onScopeChange={scope.setScope}
+          showScope={scope.allowed}
+          onOpen={() => setDrawer(true)}
+        />
+        {scope.allowed && scope.spaces.isError && (
+          <LogError
+            error={scope.spaces.error}
+            retry={() => {
+              void scope.spaces.refetch();
             }}
-          >
-            <span>⌕</span>
-            <input
-              value={draftSearch}
-              onChange={(event) => setDraftSearch(event.target.value)}
-              placeholder="搜索模型、日志 ID 或 Trace ID"
-            />
-            <button className="btn" type="submit">
-              搜索
-            </button>
-          </form>
-          <div className="filter-row">
-            <CustomSelect
-              ariaLabel="调用源筛选"
-              value={filters.callSource}
-              onChange={(value) => setFilter("callSource", value)}
-              options={[
-                { value: "", label: "全部调用源" },
-                { value: "model_diagnostic", label: "快速诊断" },
-                { value: "model_playground", label: "模型测试" },
-                { value: "visual_workshop_assistant", label: "视觉助手" },
-                { value: "thought_workshop_assistant", label: "思绪工坊写作" },
-              ]}
-            />
-            <CustomSelect
-              ariaLabel="供应商筛选"
-              value={filters.providerKind}
-              onChange={(value) => setFilter("providerKind", value)}
-              options={logProviderKindOptions}
-            />
-            <CustomSelect
-              ariaLabel="模型筛选"
-              value={filters.model}
-              onChange={(value) => setFilter("model", value)}
-              options={[
-                { value: "", label: "全部模型" },
-                ...models.map((model) => ({ value: model, label: model })),
-              ]}
-            />
-            <CustomSelect
-              ariaLabel="状态筛选"
-              value={filters.status}
-              onChange={(value) => setFilter("status", value)}
-              options={[
-                { value: "", label: "全部状态" },
-                { value: "success", label: "成功" },
-                { value: "error", label: "失败" },
-              ]}
-            />
-            <label className="date-filter">
-              <span>从</span>
-              <CustomDateInput
-                ariaLabel="开始日期"
-                value={filters.from}
-                onChange={(value) => setFilter("from", value)}
-              />
-            </label>
-            <label className="date-filter">
-              <span>至</span>
-              <CustomDateInput
-                ariaLabel="结束日期"
-                value={filters.to}
-                onChange={(value) => setFilter("to", value)}
-              />
-            </label>
-            <button
-              className="text-btn"
-              onClick={() => {
-                setDraftSearch("");
-                setFilters({
-                  q: "",
-                  callSource: "",
-                  providerKind: "",
-                  model: "",
-                  status: "",
-                  from: "",
-                  to: "",
-                  page: 1,
-                  pageSize: 25,
-                });
-              }}
-            >
-              重置
-            </button>
-          </div>
-        </div>
+          />
+        )}
+        {scope.local && catalog.isError && (
+          <LogError
+            error={catalog.error}
+            retry={() => {
+              void catalog.refetch();
+            }}
+          />
+        )}
         <div className="table-meta">
           <p>
-            共 <strong>{listQuery.data?.total ?? 0}</strong> 条日志
+            共 <strong>{list.isError ? "—" : formatNumber(total)}</strong>{" "}
+            条调用日志
+            {!scope.local && (
+              <span className="call-log-readonly">只读概况</span>
+            )}
           </p>
-          <button
-            className="btn danger"
-            disabled={!selected.size || removeMany.isPending}
-            onClick={() =>
-              setDeleteTarget({ kind: "batch", ids: [...selected] })
+          {canDelete && (
+            <button
+              className="btn danger"
+              disabled={!selected.size || pending}
+              onClick={() => {
+                removeOne.reset();
+                removeMany.reset();
+                setDeleteTarget({ kind: "batch", ids: [...selected] });
+              }}
+            >
+              批量删除{selected.size > 0 ? `（${selected.size}）` : ""}
+            </button>
+          )}
+        </div>
+        {scopeError ? (
+          <div className="call-log-empty">
+            工作区范围暂不可用，请重试或重新选择。
+          </div>
+        ) : list.isError ? (
+          <LogError error={list.error} retry={retry} />
+        ) : list.isPending ? (
+          <div className="call-log-empty" role="status">
+            正在读取调用记录…
+          </div>
+        ) : !list.data?.items.length ? (
+          <div className="call-log-empty">
+            <strong>暂无调用日志</strong>
+            <p>调整筛选条件，或在模型测试及工坊中发起调用。</p>
+          </div>
+        ) : (
+          <LogTable
+            rows={list.data.items}
+            local={scope.local}
+            all={scope.all}
+            canDelete={canDelete}
+            workspaces={scope.spaces.data ?? []}
+            selected={selected}
+            onSelect={(ids, on) =>
+              setSelected((current) => {
+                const next = new Set(current);
+                ids.forEach((id) => {
+                  if (on) next.add(id);
+                  else next.delete(id);
+                });
+                return next;
+              })
             }
-          >
-            批量删除{selected.size ? ` (${selected.size})` : ""}
-          </button>
-        </div>
-        <div className="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>
-                  <input
-                    type="checkbox"
-                    aria-label="全选当前页"
-                    checked={
-                      rows.length > 0 &&
-                      rows.every((row) => selected.has(row.id))
-                    }
-                    onChange={(event) =>
-                      rows.forEach((row) =>
-                        toggle(row.id, event.target.checked),
-                      )
-                    }
-                  />
-                </th>
-                <th>时间</th>
-                <th>供应商</th>
-                <th>调用源</th>
-                <th>模型</th>
-                <th>Token</th>
-                <th>耗时</th>
-                <th>状态</th>
-                <th>操作</th>
-              </tr>
-            </thead>
-            <tbody>
-              {listQuery.isLoading ? (
-                <tr>
-                  <td colSpan={9} className="table-empty">
-                    加载中…
-                  </td>
-                </tr>
-              ) : rows.length ? (
-                rows.map((row: CallLogItem) => (
-                  <tr key={row.id}>
-                    <td>
-                      <input
-                        type="checkbox"
-                        checked={selected.has(row.id)}
-                        onChange={(event) =>
-                          toggle(row.id, event.target.checked)
-                        }
-                      />
-                    </td>
-                    <td>
-                      <time>
-                        {new Date(row.created_at).toLocaleString("zh-CN")}
-                      </time>
-                    </td>
-                    <td>
-                      {providerLabels[row.provider_kind] ?? row.provider_kind}
-                    </td>
-                    <td>
-                      <span className="source-badge">
-                        {sourceLabels[row.call_source] ?? row.call_source}
-                      </span>
-                    </td>
-                    <td>
-                      <strong>{row.model}</strong>
-                      <small className="row-sub">
-                        {row.trace_id.slice(0, 8)}…
-                      </small>
-                    </td>
-                    <td>{formatNumber(row.total_tokens)}</td>
-                    <td>{row.latency_ms} ms</td>
-                    <td>
-                      <span className={`status ${row.status}`}>
-                        {row.status === "success" ? "成功" : "失败"}
-                      </span>
-                    </td>
-                    <td>
-                      <div className="row-actions">
-                        <button
-                          className="text-btn"
-                          onClick={() => setDetailId(row.id)}
-                        >
-                          详情
-                        </button>
-                        <button
-                          className="text-btn danger-text"
-                          onClick={() => confirmOne(row.id)}
-                        >
-                          删除
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan={9} className="table-empty">
-                    <span>◇</span>
-                    <strong>暂无调用日志</strong>
-                    <small>
-                      快速诊断、模型测试与视觉助手产生的结果会显示在这里。
-                    </small>
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-        <div className="pagination">
-          <span>每页</span>
-          <CustomSelect
-            ariaLabel="每页条数"
-            className="page-size-select"
-            value={String(filters.pageSize)}
-            onChange={(value) => setFilter("pageSize", Number(value))}
-            options={[
-              { value: "25", label: "25" },
-              { value: "50", label: "50" },
-              { value: "100", label: "100" },
-            ]}
+            onView={setDetailId}
+            onDelete={confirmOne}
           />
-          <button
-            className="btn"
-            disabled={filters.page <= 1}
-            onClick={() => setFilter("page", filters.page - 1)}
-          >
-            上一页
-          </button>
-          <span>
-            {filters.page} / {pages}
-          </span>
-          <button
-            className="btn"
-            disabled={filters.page >= pages}
-            onClick={() => setFilter("page", filters.page + 1)}
-          >
-            下一页
-          </button>
-        </div>
+        )}
+        <LogPagination
+          total={total}
+          page={filters.page}
+          pageSize={filters.pageSize}
+          onPage={(page) => apply({ ...filters, page })}
+          onSize={(pageSize) => apply({ ...filters, pageSize, page: 1 })}
+        />
       </div>
-      {detailId ? (
+      {drawer && (
+        <LogFilterDrawer
+          filters={filters}
+          models={models}
+          onChange={apply}
+          onClose={() => setDrawer(false)}
+          onReset={reset}
+        />
+      )}
+      {scope.local && detailId && (
         <LogDetail
           id={detailId}
           onClose={() => setDetailId(null)}
           onDelete={confirmOne}
         />
-      ) : null}
+      )}
       <ConfirmDialog
-        open={Boolean(deleteTarget)}
+        open={!!deleteTarget && canDelete}
         title={deleteTarget?.kind === "batch" ? "批量删除日志" : "删除调用日志"}
         description={
-          deleteTarget?.kind === "batch"
-            ? `将永久删除选中的 ${deleteTarget.ids.length} 条调用日志，此操作无法撤销。`
-            : "将永久删除这条调用日志及其请求与响应详情，此操作无法撤销。"
+          deletionError
+            ? `删除失败：${deletionError.message}。可以重试。`
+            : `将永久删除 ${deleteTarget?.ids.length ?? 1} 条日志及其请求与响应详情，此操作无法撤销。`
         }
-        confirmLabel={
-          deleteTarget?.kind === "batch"
-            ? `删除 ${deleteTarget.ids.length} 条日志`
-            : "删除日志"
-        }
-        pending={removeOne.isPending || removeMany.isPending}
+        confirmLabel={deletionError ? "重试删除" : "删除日志"}
+        pending={pending}
         onCancel={() => setDeleteTarget(null)}
         onConfirm={() => {
-          if (!deleteTarget) return;
+          if (!deleteTarget || !canDelete) return;
           if (deleteTarget.kind === "batch")
             removeMany.mutate(deleteTarget.ids);
           else removeOne.mutate(deleteTarget.ids[0]);

@@ -1,22 +1,27 @@
 .workspace-trigger {
-  display: flex;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
-  gap: 12px;
+  gap: 8px;
   width: 100%;
   min-width: 0;
-  padding: 14px 10px;
+  min-height: 56px;
+  padding: 8px;
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 10px;
   background: var(--surface);
+  color: var(--text);
   text-align: left;
+  cursor: pointer;
 }
 .workspace-trigger:hover {
   background: var(--surface-soft);
   border-color: var(--accent-line);
 }
-.workspace-trigger > span:nth-child(2) {
-  flex: 1;
+.workspace-trigger-copy {
+  display: grid;
   min-width: 0;
+  gap: 2px;
 }
 .workspace-trigger strong,
 .workspace-trigger small {
@@ -25,16 +30,31 @@
   white-space: nowrap;
   text-overflow: ellipsis;
 }
+.workspace-trigger strong {
+  color: var(--text-strong);
+  font-size: 13px;
+  font-weight: 650;
+  line-height: 1.5;
+}
 .workspace-trigger small {
   color: var(--muted);
   font-size: 11px;
-  margin-top: 5px;
+  line-height: 1.5;
 }
 .workspace-mark {
   display: grid;
   place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: var(--accent-soft);
   color: var(--accent);
-  flex: 0 0 32px;
+  font-size: 14px;
+  font-weight: 750;
+}
+.sidebar-footer:has(.workspace-trigger) {
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
 }
 .account-menu .account-identity-avatar,
 .account-popover .account-identity-avatar,

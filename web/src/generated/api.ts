@@ -90,6 +90,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/account/cross-workspace-call-logs/stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Cross Log Stats */
+        get: operations["cross_log_stats_v1_account_cross_workspace_call_logs_stats_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/account/demo-services/{service_id}/install": {
         parameters: {
             query?: never;
@@ -4818,6 +4835,8 @@ export interface components {
         CrossWorkspaceLogPage: {
             /** Items */
             items: components["schemas"]["CrossWorkspaceLogOut"][];
+            /** Model Options */
+            model_options?: string[];
             /** Page */
             page: number;
             /** Page Size */
@@ -13186,10 +13205,16 @@ export interface operations {
     cross_logs_v1_account_cross_workspace_call_logs_get: {
         parameters: {
             query?: {
-                workspace_ids?: string[];
                 q?: string;
+                call_source?: string;
+                provider_kind?: string;
+                model?: string;
+                status?: string;
+                from?: string | null;
+                to?: string | null;
                 page?: number;
                 page_size?: number;
+                workspace_ids?: string[];
             };
             header?: never;
             path?: never;
@@ -13204,6 +13229,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CrossWorkspaceLogPage"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    cross_log_stats_v1_account_cross_workspace_call_logs_stats_get: {
+        parameters: {
+            query?: {
+                workspace_ids?: string[];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CallLogStatsOut"];
                 };
             };
             /** @description Validation Error */

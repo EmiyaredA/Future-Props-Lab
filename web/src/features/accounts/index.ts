@@ -3,4 +3,9 @@ export * from "./api";
 
 export { ProjectCertification } from "./ProjectCertification";
 
-export { CrossWorkspaceLogs } from "./CrossWorkspaceLogs";
+export {
+  useLogWorkspaceScope,
+  useCrossWorkspaceLogQueries,
+} from "./useLogWorkspaceScope";
+
+export { accountQueryKeys } from "./queryKeys";

@@ -181,7 +181,7 @@ test("空间草稿不会自动保存，放弃之前不执行切换", async () =>
       session={{ me, refresh: vi.fn(), logout: vi.fn(), switchWorkspace }}
     />,
   );
-  await user.click(screen.getByRole("button", { name: /切换工作区/ }));
+  await user.click(screen.getByRole("button", { name: /切换工作空间/ }));
   await screen.findByRole("button", { name: /协作空间/ });
   await user.type(screen.getByLabelText("空间名称"), "草稿");
   await user.click(screen.getByRole("button", { name: /协作空间/ }));
@@ -208,7 +208,7 @@ test("空间设置统一提交且携带版本，冲突后保留输入", async ()
       session={{ me, refresh, logout: vi.fn(), switchWorkspace: vi.fn() }}
     />,
   );
-  await user.click(screen.getByRole("button", { name: /切换工作区/ }));
+  await user.click(screen.getByRole("button", { name: /切换工作空间/ }));
   await waitFor(() =>
     expect(screen.getByRole("button", { name: /协作空间/ })).toBeEnabled(),
   );
@@ -248,7 +248,7 @@ test("只读成员可看角色说明但没有空间治理入口", async () => {
       }}
     />,
   );
-  await user.click(screen.getByRole("button", { name: /切换工作区/ }));
+  await user.click(screen.getByRole("button", { name: /切换工作空间/ }));
   const dialog = screen.getByRole("dialog", { name: "工作区" });
   expect(
     within(dialog).queryByRole("button", { name: /成员与邀请/ }),
@@ -296,7 +296,7 @@ test("收到的邀请与当前空间发出的邀请分开呈现", async () => {
       }}
     />,
   );
-  await user.click(screen.getByRole("button", { name: /切换工作区/ }));
+  await user.click(screen.getByRole("button", { name: /切换工作空间/ }));
   await user.click(screen.getByRole("button", { name: /成员与邀请/ }));
   expect(await screen.findByText("@new-colleague")).toBeInTheDocument();
   expect(screen.queryByText("其他团队")).not.toBeInTheDocument();

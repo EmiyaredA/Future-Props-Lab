@@ -3,6 +3,11 @@
 import re
 
 OPERATIONS: dict[str, tuple[tuple[str, str], ...]] = {
+    "logs.cross_workspace": (
+        ("GET", "/v1/account/log-workspaces"),
+        ("GET", "/v1/account/cross-workspace-call-logs"),
+        ("GET", "/v1/account/cross-workspace-call-logs/stats"),
+    ),
     "content.write": (
         ("POST", "/v1/audio-annotation/imports"),
         ("POST", "/v1/audio-annotation/projects"),

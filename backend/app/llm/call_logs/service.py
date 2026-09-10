@@ -1,11 +1,12 @@
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import datetime
 
-from sqlalchemy import and_, case, delete, func, or_, select
+from sqlalchemy import and_, delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.time import iso_utc
+from app.llm.call_logs.query import log_conditions, today_stats
 from app.llm.call_logs.reproduction import (
     ReproductionBundle,
     build_reproduction_bundle,
@@ -60,28 +61,15 @@ class CallLogService:
         page: int,
         page_size: int,
     ) -> CallLogListOut:
-        filters = []
-        if q:
-            pattern = f"%{q}%"
-            filters.append(
-                or_(
-                    LlmCallLog.id.ilike(pattern),
-                    LlmCallLog.trace_id.ilike(pattern),
-                    LlmCallLog.model.ilike(pattern),
-                )
-            )
-        if call_source:
-            filters.append(LlmCallLog.call_source == call_source)
-        if provider_kind:
-            filters.append(LlmCallLog.provider_kind == provider_kind)
-        if model:
-            filters.append(LlmCallLog.model == model)
-        if status:
-            filters.append(LlmCallLog.status == status)
-        if from_dt:
-            filters.append(LlmCallLog.created_at >= from_dt)
-        if to_dt:
-            filters.append(LlmCallLog.created_at <= to_dt)
+        filters = log_conditions(
+            q=q,
+            call_source=call_source,
+            provider_kind=provider_kind,
+            model=model,
+            status=status,
+            from_dt=from_dt,
+            to_dt=to_dt,
+        )
         predicate = and_(*filters) if filters else True
         total = int(
             (
@@ -93,7 +81,7 @@ class CallLogService:
                 await self.session.execute(
                     select(LlmCallLog)
                     .where(predicate)
-                    .order_by(LlmCallLog.created_at.desc())
+                    .order_by(LlmCallLog.created_at.desc(), LlmCallLog.id)
                     .offset((page - 1) * page_size)
                     .limit(page_size)
                 )
@@ -122,23 +110,7 @@ class CallLogService:
         )
 
     async def stats(self) -> CallLogStatsOut:
-        start = datetime.now(UTC).replace(hour=0, minute=0, second=0, microsecond=0, tzinfo=None)
-        row = (
-            await self.session.execute(
-                select(
-                    func.count(LlmCallLog.id),
-                    func.coalesce(func.sum(LlmCallLog.total_tokens), 0),
-                    func.coalesce(func.avg(LlmCallLog.latency_ms), 0),
-                    func.sum(case((LlmCallLog.status == "error", 1), else_=0)),
-                ).where(LlmCallLog.created_at >= start)
-            )
-        ).one()
-        return CallLogStatsOut(
-            calls_today=int(row[0] or 0),
-            total_tokens_today=int(row[1] or 0),
-            avg_latency_ms_today=int(row[2] or 0),
-            errors_today=int(row[3] or 0),
-        )
+        return await today_stats(self.session)
 
     async def get(self, log_id: str) -> CallLogOut | None:
         row = await self.session.get(LlmCallLog, log_id)

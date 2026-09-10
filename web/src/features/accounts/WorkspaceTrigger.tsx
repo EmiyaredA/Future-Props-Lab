@@ -1,6 +1,4 @@
-import { ChevronsUpDown, Layers } from "lucide-react";
 import type { AccountSessionContext } from "./api";
-import { roleLabels } from "./permissions";
 import "./account-navigation.css";
 export function WorkspaceTrigger({
   session,
@@ -12,25 +10,19 @@ export function WorkspaceTrigger({
     <button
       type="button"
       className="workspace-trigger"
+      aria-haspopup="dialog"
+      aria-label={`${workspace.name}，切换工作空间`}
       onClick={() =>
         window.dispatchEvent(new Event("future-props:open-workspace"))
       }
     >
-      <span className="workspace-mark">
-        <Layers size={21} />
+      <span className="workspace-mark" aria-hidden="true">
+        W
       </span>
-      <span>
-        <strong>{workspace.name}</strong>
-        <small>
-          {workspace.role
-            ? roleLabels[workspace.role]
-            : workspace.access_kind === "public_viewer"
-              ? "公开展台"
-              : "平台管理员"}{" "}
-          · 切换工作区
-        </small>
+      <span className="workspace-trigger-copy">
+        <strong title={workspace.name}>{workspace.name}</strong>
+        <small>切换工作空间</small>
       </span>
-      <ChevronsUpDown size={15} />
     </button>
   );
 }

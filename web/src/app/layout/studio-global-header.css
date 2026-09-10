@@ -1,4 +1,7 @@
 .studio-global-header {
+  position: sticky;
+  top: 0;
+  z-index: 40;
   min-height: 66px;
   display: flex;
   justify-content: space-between;

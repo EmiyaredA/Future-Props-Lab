@@ -234,3 +234,56 @@ test("tag dialog closes with Escape and restores focus", async () => {
   expect(screen.queryByRole("dialog")).toBeNull();
   expect(trigger).toHaveFocus();
 });
+
+for (const canManage of [true, false]) {
+  test(`shows complete Skill details and restores keyboard focus (manage=${canManage})`, async () => {
+    const skill = {
+      ...base,
+      name: "very-long-skill-name-".repeat(5),
+      description: "完整说明，包含所有制作步骤。".repeat(100),
+      tags: ["MiniMax H3", "视频生成", "纸艺风格", "科普"],
+    };
+    items = [skill];
+    const user = setup(canManage);
+    const trigger = await screen.findByRole("button", {
+      name: `查看 ${skill.name} 详情`,
+    });
+    const tags = within(screen.getByLabelText(`${skill.name} 标签`));
+    expect(tags.getByText("MiniMax H3")).toBeVisible();
+    expect(tags.getByText("视频生成")).toBeVisible();
+    expect(tags.getByLabelText("另有 2 个标签")).toHaveTextContent("+2");
+    expect(tags.queryByText("纸艺风格")).toBeNull();
+
+    trigger.focus();
+    await user.keyboard("{Enter}");
+    const dialog = within(screen.getByRole("dialog", { name: "Skill 详情" }));
+    expect(dialog.getByRole("heading", { name: skill.name })).toBeVisible();
+    expect(dialog.getByText(skill.description)).toBeVisible();
+    for (const tag of skill.tags) {
+      expect(
+        within(dialog.getByLabelText("全部标签")).getByText(tag),
+      ).toBeVisible();
+    }
+    const close = dialog.getByRole("button", { name: "关闭" });
+    await waitFor(() => expect(close).toHaveFocus());
+    await user.tab();
+    expect(close).toHaveFocus();
+    await user.keyboard("{Escape}");
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(trigger).toHaveFocus();
+    expect(updateSkill).not.toHaveBeenCalled();
+  });
+}
+
+test("shows empty Skill description and tags in details", async () => {
+  items = [{ ...base, description: "", tags: [] }];
+  const user = setup(false);
+  await user.click(
+    await screen.findByRole("button", { name: `查看 ${base.name} 详情` }),
+  );
+  const dialog = within(screen.getByRole("dialog"));
+  expect(dialog.getByText("暂无说明")).toBeVisible();
+  expect(dialog.getByText("无标签")).toBeVisible();
+  await user.click(dialog.getByRole("button", { name: "关闭" }));
+  expect(screen.queryByRole("dialog")).toBeNull();
+});

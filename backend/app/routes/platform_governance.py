@@ -1,10 +1,14 @@
 """Protocol boundary for platform policy and registration governance."""
 
-from typing import Literal
+from typing import Annotated, Literal
 
 from fastapi import APIRouter, HTTPException, Query, Request, Response
 
-from app.accounts.cross_workspace_logs import cross_workspace_logs, log_workspaces
+from app.accounts.cross_workspace_logs import (
+    cross_workspace_logs,
+    cross_workspace_stats,
+    log_workspaces,
+)
 from app.accounts.developer_docs import developer_documents
 from app.accounts.platform_policy import CAPABILITIES, default_policy, read_setting
 from app.accounts.platform_settings import write_setting
@@ -21,6 +25,7 @@ from app.accounts.registration import (
 from app.deps import SessionDep, client_ip, require_recent_reauthentication
 from app.routes.accounts import _browser_auth, _login_out, _platform_auth, _set_cookies
 from app.schemas.accounts import AuthMeOut
+from app.schemas.call_log import CallLogStatsOut, CrossWorkspaceLogQuery
 from app.schemas.platform_governance import (
     CertificationIn,
     CertificationOut,
@@ -206,14 +211,21 @@ async def log_spaces(request: Request, session: SessionDep):
     return await log_workspaces(session, principal)
 
 
+@router.get("/account/cross-workspace-call-logs/stats", response_model=CallLogStatsOut)
+async def cross_log_stats(
+    request: Request,
+    session: SessionDep,
+    workspace_ids: list[str] = Query(default=[]),
+):
+    principal = await _browser_auth(request, session)
+    return await cross_workspace_stats(principal, workspace_ids)
+
+
 @router.get("/account/cross-workspace-call-logs", response_model=CrossWorkspaceLogPage)
 async def cross_logs(
     request: Request,
     session: SessionDep,
-    workspace_ids: list[str] = Query(default=[]),
-    q: str = Query("", max_length=200),
-    page: int = Query(1, ge=1),
-    page_size: int = Query(25, ge=1, le=100),
+    filters: Annotated[CrossWorkspaceLogQuery, Query()],
 ):
     principal = await _browser_auth(request, session)
-    return await cross_workspace_logs(principal, workspace_ids, q, page, page_size)
+    return await cross_workspace_logs(principal, filters)

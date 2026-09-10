@@ -118,15 +118,15 @@ for (const width of [1600, 1280, 390]) {
         fullPage: true,
       });
     }
-    const more = page.getByRole("combobox", { name: "笔记更多操作" });
+    const more = page.getByRole("button", { name: "笔记更多操作" });
     await more.focus();
     await page.keyboard.press("Enter");
     await expect(
-      page.getByRole("option", { name: "导入", exact: true }),
+      page.getByRole("menuitem", { name: "保存", exact: true }),
     ).toBeFocused();
     await page.keyboard.press("ArrowDown");
     await expect(
-      page.getByRole("option", { name: "保存", exact: true }),
+      page.getByRole("menuitem", { name: "历史记录", exact: true }),
     ).toBeFocused();
     await page.keyboard.press("Escape");
     await expect(more).toBeFocused();
@@ -164,14 +164,22 @@ for (const width of [1600, 1280, 390]) {
     await expect(page.getByText("已保存", { exact: true })).toBeVisible();
     await page.reload();
     await expect(page.locator(".thought-tag")).toHaveText(["产品思考", "灵感"]);
-    const toolbar = page.getByRole("group", {
-      name: "排版工具栏",
-      exact: true,
-    });
+    const topbar = page.locator(".knowledge-topbar");
     const title = page.getByRole("textbox", { name: "笔记标题", exact: true });
-    expect((await toolbar.boundingBox())!.y).toBeLessThan(
+    const topbarBox = (await topbar.boundingBox())!;
+    expect(topbarBox.y + topbarBox.height).toBeLessThanOrEqual(
       (await title.boundingBox())!.y,
     );
+    const newDocumentButton = page
+      .getByRole("button", { name: "新建文档", exact: true })
+      .last();
+    const aiButton = page.getByRole("button", {
+      name: "AI 写作",
+      exact: true,
+    });
+    for (const action of [more, newDocumentButton, aiButton])
+      expect((await action.boundingBox())!.height).toBe(40);
+    if (width >= 1280) expect(topbarBox.height).toBeLessThanOrEqual(60);
     for (const theme of ["light", "dark"]) {
       await setThoughtTheme(page, theme);
       await noOverflow(page);
@@ -180,17 +188,15 @@ for (const width of [1600, 1280, 390]) {
         fullPage: true,
       });
     }
-    await page.getByRole("combobox", { name: "插入内容", exact: true }).click();
-    const menu = page.getByRole("listbox", { name: "插入内容", exact: true });
+    await more.click();
+    const menu = page.getByRole("menu", {
+      name: "笔记更多操作",
+      exact: true,
+    });
+    await expect(menu.getByRole("menuitem", { name: /^更多$/ })).toHaveCount(0);
     const box = (await menu.boundingBox())!;
     expect(box.x).toBeGreaterThanOrEqual(0);
     expect(box.x + box.width).toBeLessThanOrEqual(width);
-    await page.keyboard.press("Escape");
-    await page.getByRole("button", { name: "文字颜色", exact: true }).click();
-    const colors = page.locator(".custom-color-picker-popover");
-    const colorBox = (await colors.boundingBox())!;
-    expect(colorBox.x).toBeGreaterThanOrEqual(0);
-    expect(colorBox.x + colorBox.width).toBeLessThanOrEqual(width);
     await page.keyboard.press("Escape");
     await page.getByRole("button", { name: "笔记目录", exact: true }).click();
     await expect(page.locator(".knowledge-sidebar")).toBeVisible();

@@ -1,6 +1,7 @@
 import {
   newDocument,
   pickNoteMore,
+  pickProjectMore,
   saveNote,
   setThoughtTheme,
 } from "./thought-helpers";
@@ -213,7 +214,7 @@ test("visible insert controls, file cards, downloads and portable archives acros
     page.getByRole("button", { name: "下载 项目计划.txt", exact: true }),
   ).toBeVisible();
   const backupDownload = page.waitForEvent("download");
-  await pickNoteMore(page, "导出知识库");
+  await pickProjectMore(page, "导出知识库");
   const backup = await fs.readFile((await (await backupDownload).path())!);
   expect(
     JSON.parse(strFromU8(unzipSync(backup)["manifest.json"])).version,

@@ -188,6 +188,7 @@ class CrossWorkspaceLogOut(BaseModel):
 
 
 class CrossWorkspaceLogPage(BaseModel):
+    model_options: list[str] = Field(default_factory=list)
     items: list[CrossWorkspaceLogOut]
     total: int
     page: int

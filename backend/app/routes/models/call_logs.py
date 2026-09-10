@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime
+from typing import Annotated
 
 from fastapi import APIRouter, HTTPException, Query, Response
 
@@ -10,6 +10,7 @@ from app.schemas.call_log import (
     BatchDeleteIn,
     CallLogListOut,
     CallLogOut,
+    CallLogQuery,
     CallLogStatsOut,
 )
 
@@ -20,50 +21,13 @@ def _logs(session: SessionDep, workspace_id: str) -> CallLogService:
     return CallLogService(session, workspace_id)
 
 
-def _date(value: str | None, *, end: bool = False) -> datetime | None:
-    if not value:
-        return None
-    try:
-        if len(value) == 10:
-            return datetime.fromisoformat(value + ("T23:59:59.999999" if end else "T00:00:00"))
-        return datetime.fromisoformat(value.replace("Z", "+00:00")).replace(tzinfo=None)
-    except ValueError as exc:
-        raise HTTPException(400, {"code": "invalid_date", "message": "日期格式无效"}) from exc
-
-
 @router.get("", response_model=CallLogListOut)
 async def list_logs(
     session: SessionDep,
     workspace_id: WorkspaceDep,
-    q: str = Query("", max_length=200),
-    call_source: str = Query(
-        "",
-        pattern=(
-            "^(|model_diagnostic|model_playground|visual_workshop_assistant|"
-            "visual_workshop_generation|audio_annotation)$"
-        ),
-    ),
-    provider_kind: str = Query(
-        "", pattern="^(|openai|anthropic|senseaudio_asr|senseaudio_realtime)$"
-    ),
-    model: str = Query("", max_length=160),
-    status: str = Query("", pattern="^(|success|error)$"),
-    from_: str | None = Query(None, alias="from"),
-    to: str | None = Query(None),
-    page: int = Query(1, ge=1),
-    page_size: int = Query(25, ge=1, le=100),
+    filters: Annotated[CallLogQuery, Query()],
 ) -> CallLogListOut:
-    return await _logs(session, workspace_id).list(
-        q=q.strip(),
-        call_source=call_source,
-        provider_kind=provider_kind,
-        model=model.strip(),
-        status=status,
-        from_dt=_date(from_),
-        to_dt=_date(to, end=True),
-        page=page,
-        page_size=page_size,
-    )
+    return await _logs(session, workspace_id).list(**filters.service_filters())
 
 
 @router.get("/stats", response_model=CallLogStatsOut)

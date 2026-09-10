@@ -202,7 +202,14 @@ def test_every_business_operation_has_an_explicit_policy():
         if path not in {"/health", "/ready"}
         and not path.startswith(("/v1/account", "/v1/auth", "/v1/platform", "/v1/public-workspace"))
     }
-    assert actual == set(ROUTE_PERMISSIONS)
+    account_logs = {
+        ("GET", "/v1/account/log-workspaces"),
+        ("GET", "/v1/account/cross-workspace-call-logs"),
+        ("GET", "/v1/account/cross-workspace-call-logs/stats"),
+    }
+    assert actual | account_logs == set(ROUTE_PERMISSIONS)
+    assert all(ROUTE_PERMISSIONS[route] == "logs.cross_workspace" for route in account_logs)
+    assert all(path in paths for _, path in account_logs)
 
 
 def test_fixed_role_and_scope_matrix():

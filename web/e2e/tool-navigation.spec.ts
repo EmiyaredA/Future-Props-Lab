@@ -81,8 +81,10 @@ test("home is the default route and tools stay responsive", async ({
     "grid-template-columns",
     /\S+px/,
   );
-  await page.getByRole("button", { name: "打开主导航", exact: true }).click();
-  await page.getByRole("button", { name: "深色" }).click();
+  await page
+    .locator(".studio-global-header")
+    .getByRole("button", { name: "深色" })
+    .click();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
 });
 

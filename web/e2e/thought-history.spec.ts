@@ -65,14 +65,14 @@ test("document autosave, visible save controls, inline history and safe restore"
   const prose = page.getByRole("textbox", { name: "笔记正文", exact: true });
   await expect(title).toHaveValue("Claude Code · 使用笔记");
   await expect(
-    page.getByRole("combobox", { name: "笔记更多操作", exact: true }),
+    page.getByRole("button", { name: "笔记更多操作", exact: true }),
   ).toBeVisible();
   await prose.locator("p").last().click();
   await page.keyboard.press("End");
   await page.keyboard.type(" Verification complete.");
   await expect(page.getByText(/^已保存 ·/)).toBeVisible();
   await expect(
-    page.getByRole("combobox", { name: "笔记更多操作", exact: true }),
+    page.getByRole("button", { name: "笔记更多操作", exact: true }),
   ).toBeInViewport();
   await page.reload();
   await expect(prose).toContainText("Verification complete.");

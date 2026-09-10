@@ -141,6 +141,7 @@ export function SkillPanel({
   const [uploading, setUploading] = useState(false);
   const [addingTo, setAddingTo] = useState<Skill | null>(null);
   const [viewing, setViewing] = useState<Skill | null>(null);
+  const [details, setDetails] = useState<Skill | null>(null);
   const [versions, setVersions] = useState<SkillVersion[]>([]);
   const [selectedVersion, setSelectedVersion] = useState("");
   const [removing, setRemoving] = useState<Skill | null>(null);
@@ -358,7 +359,7 @@ export function SkillPanel({
             </PanelMessage>
           ) : (
             items.map((item) => (
-              <article className="integration-card" key={item.id}>
+              <article className="integration-card skill-card" key={item.id}>
                 <header>
                   <span className="integration-card-icon">
                     <FileArchive aria-hidden />
@@ -367,9 +368,32 @@ export function SkillPanel({
                 </header>
                 <h3>{item.name}</h3>
                 <p>{item.description}</p>
-                <div className="skill-tags" aria-label={`${item.name} 标签`}>
+                <button
+                  type="button"
+                  className="skill-details-trigger"
+                  aria-label={`查看 ${item.name} 详情`}
+                  onClick={() => setDetails(item)}
+                >
+                  查看详情
+                </button>
+                <div
+                  className="skill-tags skill-card-tags"
+                  aria-label={`${item.name} 标签`}
+                >
                   {item.tags.length ? (
-                    item.tags.map((tag) => <span key={tag}>{tag}</span>)
+                    <>
+                      {item.tags.slice(0, 2).map((tag) => (
+                        <span key={tag}>{tag}</span>
+                      ))}
+                      {item.tags.length > 2 ? (
+                        <span
+                          className="skill-tags-count"
+                          aria-label={`另有 ${item.tags.length - 2} 个标签`}
+                        >
+                          +{item.tags.length - 2}
+                        </span>
+                      ) : null}
+                    </>
                   ) : (
                     <small>无标签</small>
                   )}
@@ -437,6 +461,21 @@ export function SkillPanel({
           </div>
         </aside>
       </div>
+      {details ? (
+        <IntegrationModal title="Skill 详情" onClose={() => setDetails(null)}>
+          <div className="skill-details">
+            <h3>{details.name}</h3>
+            <p>{details.description || "暂无说明"}</p>
+            <div className="skill-tags" aria-label="全部标签">
+              {details.tags.length ? (
+                details.tags.map((tag) => <span key={tag}>{tag}</span>)
+              ) : (
+                <small>无标签</small>
+              )}
+            </div>
+          </div>
+        </IntegrationModal>
+      ) : null}
       {uploading ? (
         <UploadDialog
           title="上传 Skill ZIP"

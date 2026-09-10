@@ -79,10 +79,15 @@ HTTPS 或本机回环 HTTP 规则。
 ## 调用日志
 
 - `GET /v1/llm-call-logs`：支持搜索、调用源、供应商、模型、状态、日期和分页。
-- `GET /v1/llm-call-logs/stats`
+- `GET /v1/llm-call-logs/stats`：当前工作区今日统计（UTC），不受列表筛选影响。
 - `GET/DELETE /v1/llm-call-logs/{log_id}`
 - `GET /v1/llm-call-logs/{log_id}/reproduction-bundle`：下载不含密钥的 ZIP 复现包。
 - `POST /v1/llm-call-logs/batch-delete`
+
+列表参数 `q` 搜索模型、日志 ID 或 Trace ID；`call_source`、`provider_kind`、`model`、`status` 精确筛选，
+`from`/`to` 支持 ISO 日期或时间，日期包含当天起止、带偏移时间统一转换 UTC。非法日期、反向区间或
+非法筛选值返回 422。`page_size` 范围 1–100，默认 25。调用源还支持 `thought_workshop_assistant`、
+`visual_workshop_generation` 和 `audio_annotation`。
 
 调用源 `model_diagnostic` 表示诊断 API 的固定 `OK` 快速诊断，`model_playground` 表示模型测试
 工作台，`visual_workshop_assistant` 表示视觉工坊 Agent。详情按请求上下文、模型回复、Token 与
@@ -831,9 +836,18 @@ Markdown 转换在 Web 所属功能中完成，再经同一个导入 API 校验�
 | `PUT /v1/model-catalog/defaults` | expected_revision + default_model_ids，校验当前空间可用模型 |
 | `GET /v1/account/developer-documents` | 按当前敏感权限返回开发文档目录与正文，禁止缓存 |
 | `GET /v1/account/log-workspaces` | Session 专用跨空间日志选择范围 |
-| `GET /v1/account/cross-workspace-call-logs` | 显式 workspace_ids、q、page、page_size 查询调用概况 |
+| `GET /v1/account/cross-workspace-call-logs` | 显式 workspace_ids 与完整列表筛选查询只读概况；追加 model_options |
+| `GET /v1/account/cross-workspace-call-logs/stats` | 显式 workspace_ids 汇总今日调用、Token、平均耗时与失败数（UTC） |
 | `PATCH /v1/account/project-certification/{kind}/{id}` | visual/galgame 官方标记，is_official + expected_revision |
 
 `/v1/demo-services/model/chat/completions` 提供认证后的 OpenAI 兼容固定文本、SSE 与工具调用；`/v1/demo-services/tools/{orders|products|product}` 返回固定演示数据。服务默认关闭，关闭返回 503，额度不足返回 429。它们不提供匿名调用或进程控制。
 
 工具 API 与 MCP 配置增加 `sensitive_result`，默认 false。受限身份只收到安全的执行状态；原始结果仅供内部执行或已授权的诊断界面。平台策略每次请求重新计算，密钥不能使用跨空间日志权限。
+
+
+跨工作区日志的列表与统计均要求 Cookie Session 和 `logs.cross_workspace`，目标必须全部存在；
+遗漏 `workspace_ids` 时仍仅查询当前工作区。列表支持与普通日志相同的筛选和日期校验，`q` 额外保留
+调用源关键词搜索。`model_options` 从所选工作区全部日志去重生成，不受当前筛选和分页影响。
+响应仅含调用概况，不包含原始请求、响应、错误详情或复现包。前端“全部工作区”显式提交可选 ID，
+不切换当前工作区；其他空间及全部空间视图不显示详情和删除操作。原日志详情与删除接口仍按当前
+Principal 工作区隔离。统计独立于列表筛选，按所选工作区的 UTC 今日口径计算。
