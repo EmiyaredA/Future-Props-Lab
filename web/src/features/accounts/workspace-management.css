@@ -288,22 +288,6 @@
 .workspace-management-content .management-page-head {
   display: none;
 }
-.workspace-management-content .management-list-panel {
-  min-width: 0;
-  border-radius: 12px;
-  box-shadow: none;
-}
-.workspace-management-content .management-toolbar {
-  display: grid;
-  grid-template-columns: minmax(150px, 1fr) minmax(0, 1fr) minmax(0, 1fr) auto;
-  align-items: center;
-}
-.workspace-management-content .management-toolbar .custom-select-trigger {
-  min-height: 42px;
-}
-.workspace-management-content .management-table-wrap {
-  overflow-x: auto;
-}
 .workspace-received-invitations {
   display: flex;
   flex-direction: column;
@@ -363,8 +347,7 @@
     padding: 20px;
   }
   .workspace-invite-form,
-  .workspace-role-cards,
-  .workspace-management-content .management-toolbar {
+  .workspace-role-cards {
     grid-template-columns: 1fr;
   }
   .workspace-member-row {

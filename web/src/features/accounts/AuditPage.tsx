@@ -53,7 +53,9 @@ export function AuditPage({
     setPage(1);
   }
   return (
-    <section className={`management-page${workspaceId ? " workspace-audit-page" : ""}`}>
+    <section
+      className={`management-page${workspaceId ? " workspace-audit-page" : ""}`}
+    >
       <header className="management-page-head">
         <div>
           <h1>{workspaceId ? "工作区审计" : "安全审计"}</h1>
@@ -67,8 +69,13 @@ export function AuditPage({
       <div className="management-list-panel">
         {workspaceId ? (
           <header className="workspace-audit-filter-heading">
-            <span aria-hidden="true"><Search size={18} /></span>
-            <div><h3>查找操作记录</h3><p>按事件、账号或时间追溯空间变更</p></div>
+            <span aria-hidden="true">
+              <Search size={18} />
+            </span>
+            <div>
+              <h3>查找操作记录</h3>
+              <p>按事件、账号或时间追溯空间变更</p>
+            </div>
           </header>
         ) : null}
         <div className="management-toolbar">
@@ -131,44 +138,50 @@ export function AuditPage({
           </button>
         ) : null}
         {workspaceId ? (
-          <WorkspaceAuditRecords items={query.data?.items ?? []} detailId={detailId} setDetailId={setDetailId} />
-        ) : <div className="management-table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>事件</th>
-                <th>操作者</th>
-                <th>目标账号</th>
-                <th>时间</th>
-                <th>详情</th>
-              </tr>
-            </thead>
-            <tbody>
-              {query.data?.items.map((e) => (
-                <tr key={e.id}>
-                  <td>
-                    {auditLabels[e.event_type] || "安全事件"}
-                    <small>{e.outcome === "success" ? "成功" : "失败"}</small>
-                  </td>
-                  <td>{e.actor_username || "系统"}</td>
-                  <td>{e.target_username || "—"}</td>
-                  <td>{formatAccountDate(e.created_at)}</td>
-                  <td>
-                    <button
-                      className="btn small"
-                      aria-expanded={detailId === e.id}
-                      onClick={() =>
-                        setDetailId(detailId === e.id ? null : e.id)
-                      }
-                    >
-                      查看详情
-                    </button>
-                  </td>
+          <WorkspaceAuditRecords
+            items={query.data?.items ?? []}
+            detailId={detailId}
+            setDetailId={setDetailId}
+          />
+        ) : (
+          <div className="management-table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>事件</th>
+                  <th>操作者</th>
+                  <th>目标账号</th>
+                  <th>时间</th>
+                  <th>详情</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>}
+              </thead>
+              <tbody>
+                {query.data?.items.map((e) => (
+                  <tr key={e.id}>
+                    <td>
+                      {auditLabels[e.event_type] || "安全事件"}
+                      <small>{e.outcome === "success" ? "成功" : "失败"}</small>
+                    </td>
+                    <td>{e.actor_username || "系统"}</td>
+                    <td>{e.target_username || "—"}</td>
+                    <td>{formatAccountDate(e.created_at)}</td>
+                    <td>
+                      <button
+                        className="btn small"
+                        aria-expanded={detailId === e.id}
+                        onClick={() =>
+                          setDetailId(detailId === e.id ? null : e.id)
+                        }
+                      >
+                        查看详情
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
         {detail && !workspaceId ? (
           <section className="management-audit-detail" aria-label="审计详情">
             <header>

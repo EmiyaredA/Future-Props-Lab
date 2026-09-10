@@ -159,10 +159,23 @@ for (const theme of ["light", "dark"] as const) {
           await expect(management.locator(".workspace-role-card")).toHaveCount(
             4,
           );
-        if (tab === "审计记录")
+        if (tab === "审计记录") {
+          await expect(management.getByRole("table")).toHaveCount(0);
+          await expect(
+            management.locator(".workspace-audit-outcome"),
+          ).toHaveText("成功");
+          const record = management.locator(".workspace-audit-record");
+          await expect(record).toContainText("administrator");
+          await expect(record).toContainText("member-1");
+          await expect
+            .poll(() =>
+              record.evaluate((el) => el.scrollWidth <= el.clientWidth),
+            )
+            .toBe(true);
           await expect(
             management.getByRole("button", { name: "查看详情" }),
           ).toBeVisible();
+        }
         await page.screenshot({
           path: `/tmp/fpl-management-${theme}-${viewport.width}x${viewport.height}-${tab}.png`,
         });
@@ -179,6 +192,17 @@ for (const theme of ["light", "dark"] as const) {
     await expect(
       management.getByRole("region", { name: "审计详情" }),
     ).toContainText(longName);
+    await expect
+      .poll(() =>
+        management
+          .getByRole("tabpanel")
+          .evaluate((el) => el.scrollWidth <= el.clientWidth),
+      )
+      .toBe(true);
+    await management.getByRole("button", { name: "收起详情" }).click();
+    await expect(
+      management.getByRole("region", { name: "审计详情" }),
+    ).toHaveCount(0);
     const filtered = page.waitForRequest((request) => {
       const url = new URL(request.url());
       return (
