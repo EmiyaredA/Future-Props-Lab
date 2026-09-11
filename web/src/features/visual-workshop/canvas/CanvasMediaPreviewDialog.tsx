@@ -341,6 +341,10 @@ export function CanvasMediaPreviewDialog({
 }) {
   const [cropAsset, setCropAsset] = useState<{ id: string; title: string }>();
   const cropButton = useRef<HTMLButtonElement>(null);
+  const closeActions = useRef({ onClose, cropping: Boolean(cropAsset) });
+  useEffect(() => {
+    closeActions.current = { onClose, cropping: Boolean(cropAsset) };
+  }, [onClose, cropAsset]);
   const cancelCrop = () => {
     setCropAsset(undefined);
     requestAnimationFrame(() => cropButton.current?.focus());
@@ -430,9 +434,10 @@ export function CanvasMediaPreviewDialog({
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.defaultPrevented) return;
       if (event.key === "Escape") {
-        if (cropAsset) return;
         event.preventDefault();
-        onClose();
+        event.stopPropagation();
+        if (closeActions.current.cropping) return;
+        closeActions.current.onClose();
         return;
       }
       if (event.key !== "Tab" || !dialogRef.current) return;
@@ -441,7 +446,11 @@ export function CanvasMediaPreviewDialog({
           "button:not(:disabled), a[href], video[controls], audio[controls], [tabindex='0'], input:not(:disabled)",
         ),
       ];
-      if (!focusable.length) return;
+      if (!focusable.length) {
+        event.preventDefault();
+        dialogRef.current.focus();
+        return;
+      }
       const first = focusable[0];
       const last = focusable.at(-1)!;
       if (event.shiftKey && document.activeElement === first) {
@@ -453,17 +462,18 @@ export function CanvasMediaPreviewDialog({
       }
     };
     document.addEventListener("keydown", handleKeyDown);
-    requestAnimationFrame(() =>
+    const initialFocus = requestAnimationFrame(() =>
       dialogRef.current
         ?.querySelector<HTMLElement>("[data-dialog-close]")
         ?.focus(),
     );
     return () => {
+      cancelAnimationFrame(initialFocus);
       document.body.style.overflow = previousOverflow;
       document.removeEventListener("keydown", handleKeyDown);
       previousFocus?.focus();
     };
-  }, [onClose, cropAsset]);
+  }, []);
 
   const moveSelection = (offset: number) => {
     const next = selectionKeys[selectedIndex + offset];
@@ -479,6 +489,7 @@ export function CanvasMediaPreviewDialog({
     >
       <section
         ref={dialogRef}
+        tabIndex={-1}
         className="canvas-media-dialog"
         role="dialog"
         aria-modal="true"

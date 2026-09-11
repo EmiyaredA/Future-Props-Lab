@@ -344,3 +344,9 @@ Web 的 `NoteHistory` 复用现有只读 `RichEditor`；`historyDiff.ts` 负责�
 `SelectionMediaTools`、`MediaAppearance`、`MediaPreview` 管理媒体操作和精确外观。
 `useImageCrop`、`ImageCropOverlay`、`cropGeometry` 管理可取消的裁剪草稿、旋转局部坐标及一次撤销提交。
 `presentation-media.css` 维护媒体工具、选择器与裁剪覆盖层；覆盖层不进入缩略图、放映或导出。
+
+视频创作工坊的图片预览裁剪由 `CanvasImageCrop` / `ImageCropSurface` 拥有临时选区、比例选择、键盘与触摸操作；
+`imageCropGeometry.ts` 使用原图像素坐标，`imageCropExport.ts` 从同一已解码静态帧导出保留透明度的 PNG。
+保存复用公共文件上传与画布 CAS，`derivedImageNode.ts` 负责裁剪和视频截帧派生节点的稳定身份及避让位置。
+裁剪保存失败保留已上传素材并重试同一节点；冲突返回现有画布版本选择界面。裁剪不创建生成任务或修改原素材。
+样式归属 `styles/image-crop.css`，浏览器验收由 `canvas-image-crop.spec.ts` 覆盖。

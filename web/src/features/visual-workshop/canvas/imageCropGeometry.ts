@@ -106,10 +106,12 @@ export function drawCrop(
 ): CropRect {
   const x = clamp(start.x, 0, size.width - 1),
     y = clamp(start.y, 0, size.height - 1);
-  const west = end.x < x,
-    north = end.y < y;
-  let width = Math.max(1, Math.abs(end.x - x)),
-    height = Math.max(1, Math.abs(end.y - y));
+  const endX = clamp(end.x, 0, size.width),
+    endY = clamp(end.y, 0, size.height);
+  const west = endX < x,
+    north = endY < y;
+  let width = Math.max(1, Math.abs(endX - x)),
+    height = Math.max(1, Math.abs(endY - y));
   if (ratio) {
     width = Math.min(
       Math.max(width, height * ratio),
