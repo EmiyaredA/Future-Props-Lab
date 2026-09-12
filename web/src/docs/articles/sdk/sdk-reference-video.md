@@ -24,6 +24,7 @@
 | [get_segment_export](#get-segment-export) | `GET /v1/video-editor/projects/{project_id}/segment-exports/{task_id}` |
 | [download_segment_export](#download-segment-export) | `GET /v1/video-editor/projects/{project_id}/segment-exports/{task_id}/download` |
 | [export_project_snapshot](#export-project-snapshot) | `GET /v1/video-editor/projects/{project_id}/snapshot` |
+| [text_clip_layer](#text-clip-layer) | `GET /v1/video-editor/projects/{project_id}/text-clips/{clip_id}/layer` |
 | [get_timeline](#get-timeline) | `GET /v1/video-editor/projects/{project_id}/timeline` |
 | [patch_project](#patch-project) | `PATCH /v1/video-editor/projects/{project_id}` |
 | [create_project](#create-project) | `POST /v1/video-editor/projects` |
@@ -331,6 +332,27 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 **响应**：
 - `200` · `application/zip` · `object`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
+## text_clip_layer {#text-clip-layer}
+
+`client.video.text_clip_layer(...)`
+
+**接口**：`GET /v1/video-editor/projects/{project_id}/text-clips/{clip_id}/layer`。**鉴权**：Workspace API Key 或 Session。
+**权限**：`content.read`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `project_id` | path | string | 是 |
+| `clip_id` | path | string | 是 |
+| `revision` | query | integer | 是 |
+
+**响应**：
+- `200` · `image/png` · `string`
 
 上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
 

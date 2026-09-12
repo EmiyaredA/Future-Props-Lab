@@ -23,6 +23,8 @@ SHA-256，也可在跳过 LFS 下载的检出中使用指针 OID，避免把指�
 | `docs/*.png` | 9 | 功能界面和交付文档截图 | 本项目 Web UI 截图 | 未单独授权；仅作项目文档 | `4fda1e4b613ee9e2016b914858ee987b829cf885361140832ffa2d913028ec02` | 否 |
 | `web/public/docs/` | 31 | 文档中心真实操作截图，逐图场景见同目录 sources.json | 隔离数据库、正式 API 与本机确定性响应；自写文本与合成媒体 | 本项目 UI 截图，沿用仅限内部开发交接声明 | `8831c617ae168dad63b35d4d6503e01d6a5792368abbcfeaaee4481d995a9f04` | Web 文档中心 |
 
+| `docs/assets/video-editor-text-*.png` | 4 | 视频剪辑文字功能的四张交互设计图 | ImageGen，参考用户提供的现有界面截图；参见 [设计说明](video-editor-text.md) | 含原项目素材缩略图，仅限内部设计参考 | `25f488a9f3be63629f37b4d3e9c9c74820a7f351a3a689ef207205cc2f8b90d9` | 否 |
+
 ## 生产运行资产
 
 这些文件也由 Git LFS 管理，但会被对应 CI Job 选择性下载。`scripts/check_lfs_assets.py` 在安装和构建
@@ -30,8 +32,8 @@ SHA-256，也可在跳过 LFS 下载的检出中使用指针 OID，避免把指�
 
 | 文件 | 用途 | 来源与版本 | 许可证 | SHA-256 | 生产构建 |
 | --- | --- | --- | --- | --- | --- |
-| `backend/app/galgame_workshop/assets/NotoSansSC-Regular.ttf` | 确定性中文对白渲染 | Noto Sans SC 固定字体 | SIL OFL 1.1，见同目录 `OFL.txt` | `2c76254f6fc379fddfce0a7e84fb5385bb135d3e399294f6eeb6680d0365b74b` | 后端需要 |
-| `backend/app/galgame_workshop/assets/NotoSansSC-Medium.ttf` | 确定性中文标题渲染 | Noto Sans SC 固定字体 | SIL OFL 1.1，见同目录 `OFL.txt` | `ca094f6b0001fb048ca39ddd797a0cdb0179e1e55c6561e111c49c3e6a61d7b7` | 后端需要 |
+| `backend/app/media_rendering/assets/NotoSansSC-Regular.ttf` | 确定性中文对白及剪辑文字渲染 | Noto Sans SC 固定字体 | SIL OFL 1.1，见同目录 `OFL.txt` | `2c76254f6fc379fddfce0a7e84fb5385bb135d3e399294f6eeb6680d0365b74b` | 后端需要 |
+| `backend/app/media_rendering/assets/NotoSansSC-Medium.ttf` | 确定性中文标题渲染 | Noto Sans SC 固定字体 | SIL OFL 1.1，见同目录 `OFL.txt` | `ca094f6b0001fb048ca39ddd797a0cdb0179e1e55c6561e111c49c3e6a61d7b7` | 后端需要 |
 | `web/public/brand/thought-workshop-mark.png` | 思绪工坊应用卡片、侧栏及最近访问头像 | 内置 ImageGen 生成，菲莉丝角色与既有工坊徽章为参考；[来源与提示词](thought-workshop-avatar.md) | 原作角色无独立再分发授权，沿用内部开发交接范围 | `4706bb94b1d94898ea52f63dfa5167cbda9ad34fe55a25857a4ed9b1e49a12c9` | Web 需要 |
 | `web/public/brand/presentation-workshop-mark.png` | 演示工坊应用卡片、侧栏及最近访问头像 | 内置 ImageGen 生成，琉华子角色与既有工坊徽章为参考；[来源与提示词](presentation-workshop-avatar.md) | 原作角色无独立再分发授权，沿用内部开发交接范围 | `34895e659c9406789e9cadfe7aab0ea42f86ea3d55e868718d9714bec06357ec` | Web 需要 |
 | `web/public/voice-vad/silero_vad_v5.onnx` | 浏览器实时语音 VAD | `@ricky0123/vad-web@0.0.30` 随包模型 | npm 包声明 ISC；对外再分发前仍应核对模型上游条款 | `2623a2953f6ff3d2c1e61740c6cdb7168133479b267dfef114a4a3cc5bdd788f` | Web 需要 |

@@ -54,6 +54,7 @@ export function CompactVideoGenerationDrawer({
     setLastFrame,
     references,
     setReferences,
+    reorderImages,
     audioReferences,
     setAudioReferences,
     videoReferences,
@@ -216,6 +217,7 @@ export function CompactVideoGenerationDrawer({
                     <ProjectMediaPicker
                       projectId={projectId}
                       label="参考图片"
+                      onReorder={reorderImages}
                       minimal
                       value={references}
                       linkedValue={linkedAssetIds.image}

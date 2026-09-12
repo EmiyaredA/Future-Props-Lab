@@ -224,6 +224,7 @@ OPERATIONS: dict[str, tuple[tuple[str, str], ...]] = {
         ("GET", "/v1/video-editor/projects/{project_id}/assets"),
         ("GET", "/v1/video-editor/projects/{project_id}/assets/{asset_id}/{variant}"),
         ("GET", "/v1/video-editor/projects/{project_id}/preview/frame"),
+        ("GET", "/v1/video-editor/projects/{project_id}/text-clips/{clip_id}/layer"),
         ("GET", "/v1/video-editor/projects/{project_id}/renders"),
         ("GET", "/v1/video-editor/projects/{project_id}/renders/{task_id}"),
         ("GET", "/v1/video-editor/projects/{project_id}/segment-exports"),

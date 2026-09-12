@@ -306,6 +306,27 @@ async def exact_frame(
     )
 
 
+@router.get(
+    "/projects/{project_id}/text-clips/{clip_id}/layer",
+    response_class=Response,
+    responses={200: {"content": {"image/png": {"schema": {"type": "string", "format": "binary"}}}}},
+)
+async def text_clip_layer(
+    session: SessionDep,
+    workspace_id: WorkspaceDep,
+    project_id: str,
+    clip_id: str,
+    revision: int = Query(ge=0),
+) -> Response:
+    try:
+        png = await VideoEditorFrames(session, workspace_id).text_layer(
+            project_id, clip_id=clip_id, revision=revision
+        )
+    except (VideoEditorNotFoundError, VideoEditorValidationError) as exc:
+        raise _error(exc) from None
+    return Response(png, media_type="image/png", headers={"Cache-Control": "private, no-cache"})
+
+
 @router.post("/projects/{project_id}/renders/preflight", response_model=VideoEditorRenderPreviewOut)
 async def render_preflight(
     session: SessionDep,

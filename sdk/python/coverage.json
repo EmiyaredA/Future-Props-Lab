@@ -2051,6 +2051,13 @@
     "verification": "named-operation-contract"
   },
   {
+    "http": "GET /v1/video-editor/projects/{project_id}/text-clips/{clip_id}/layer",
+    "sdk": "client.video.text_clip_layer",
+    "document": "/docs.html?page=sdk-reference-video#text-clip-layer",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
     "http": "GET /v1/video-editor/projects/{project_id}/timeline",
     "sdk": "client.video.get_timeline",
     "document": "/docs.html?page=sdk-reference-video#get-timeline",

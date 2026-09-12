@@ -992,9 +992,9 @@ async def test_visual_video_generation_uses_scoped_media_asset_ids() -> None:
                     "model_id": model.id,
                     "prompt": "只使用直连节点主素材",
                     "mode": "reference",
-                    "reference_asset_ids": [image["id"], manual_image["id"]],
-                    "video_asset_ids": [video["id"]],
-                    "audio_asset_ids": [audio["id"]],
+                    "reference_asset_ids": [manual_image["id"], image["id"]],
+                    "video_asset_ids": [],
+                    "audio_asset_ids": [],
                     "canvas_node_id": "target-video",
                     "expected_canvas_revision": 1,
                 },
@@ -1003,8 +1003,8 @@ async def test_visual_video_generation_uses_scoped_media_asset_ids() -> None:
             linked_payload = linked_generation.json()["request_payload"]
             assert linked_payload["mode"] == "reference"
             assert linked_payload["reference_asset_ids"] == [
-                image["id"],
                 manual_image["id"],
+                image["id"],
             ]
             assert inherited_image["id"] not in linked_payload["reference_asset_ids"]
             assert linked_payload["video_asset_ids"] == [video["id"]]

@@ -4023,6 +4023,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/video-editor/projects/{project_id}/text-clips/{clip_id}/layer": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Text Clip Layer */
+        get: operations["text_clip_layer_v1_video_editor_projects__project_id__text_clips__clip_id__layer_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/video-editor/projects/{project_id}/timeline": {
         parameters: {
             query?: never;
@@ -12798,6 +12815,7 @@ export interface components {
             textColor: string;
             /** Textmaxwidth */
             textMaxWidth?: number | null;
+            textStyle?: components["schemas"]["VideoEditorTextStyle"] | null;
             /** Timelinestartus */
             timelineStartUs: number;
             /** Trackid */
@@ -13070,6 +13088,35 @@ export interface components {
             status: "queued" | "running" | "completed" | "failed" | "cancelled";
             /** Updatedat */
             updatedAt: string;
+        };
+        /** VideoEditorTextStyle */
+        VideoEditorTextStyle: {
+            /**
+             * Align
+             * @default center
+             * @enum {string}
+             */
+            align: "left" | "center" | "right";
+            /**
+             * Backgroundcolor
+             * @default #000000
+             */
+            backgroundColor: string;
+            /**
+             * Backgroundopacity
+             * @default 0
+             */
+            backgroundOpacity: number;
+            /**
+             * Strokecolor
+             * @default #000000
+             */
+            strokeColor: string;
+            /**
+             * Strokewidth
+             * @default 0
+             */
+            strokeWidth: number;
         };
         /** VideoEditorTimelineBatchIn */
         VideoEditorTimelineBatchIn: {
@@ -23963,6 +24010,40 @@ export interface operations {
                 };
                 content: {
                     "application/zip": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    text_clip_layer_v1_video_editor_projects__project_id__text_clips__clip_id__layer_get: {
+        parameters: {
+            query: {
+                revision: number;
+            };
+            header?: never;
+            path: {
+                project_id: string;
+                clip_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "image/png": string;
                 };
             };
             /** @description Validation Error */

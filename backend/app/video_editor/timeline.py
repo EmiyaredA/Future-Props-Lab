@@ -3,6 +3,7 @@ from __future__ import annotations
 from copy import deepcopy
 from math import floor
 
+from pydantic import ValidationError
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -48,6 +49,29 @@ def apply_operations(document: dict, body: VideoEditorTimelineBatchIn) -> dict:
     for operation in body.operations:
         data = operation.model_dump(mode="json", by_alias=True, exclude_none=True)
         kind = data.pop("type")
+        guarded_ids = set(data.get("clipIds", []))
+        if data.get("clipId"):
+            guarded_ids.add(data["clipId"])
+        if kind == "restoreClipStates":
+            guarded_ids.update(item["id"] for item in data["clips"])
+        linked_groups = {
+            clip.get("linkGroupId")
+            for track in result["tracks"]
+            for clip in track["clips"]
+            if clip["id"] in guarded_ids and clip.get("linkGroupId")
+        }
+        for track in result["tracks"]:
+            target_id = data.get("trackId") or (data.get("clip") or {}).get("trackId")
+            touches_locked = track["id"] == target_id and kind not in {
+                "updateTrack",
+                "reorderTrack",
+            }
+            touches_locked |= any(
+                clip["id"] in guarded_ids or clip.get("linkGroupId") in linked_groups
+                for clip in track["clips"]
+            )
+            if track.get("locked") and touches_locked:
+                raise VideoEditorValidationError("轨道已锁定", code="track_locked")
         if kind == "updateSettings":
             allowed = {"fps", "backgroundColor", "videoFitPolicyVersion"}
             result["settings"].update(
@@ -100,6 +124,8 @@ def apply_operations(document: dict, body: VideoEditorTimelineBatchIn) -> dict:
                 "fontAssetId",
                 "fontSize",
                 "textColor",
+                "textMaxWidth",
+                "textStyle",
                 "volume",
                 "muted",
                 "fitMode",
@@ -359,7 +385,11 @@ def apply_operations(document: dict, body: VideoEditorTimelineBatchIn) -> dict:
 
 
 async def validate_timeline(session: AsyncSession, project_id: str, document: dict) -> dict:
-    parsed = VideoEditorTimelineDocument.model_validate(document)
+    try:
+        parsed = VideoEditorTimelineDocument.model_validate(document)
+    except ValidationError as exc:
+        message = exc.errors(include_input=False)[0]["msg"]
+        raise VideoEditorValidationError(message, code="invalid_timeline") from exc
     dumped = parsed.model_dump(mode="json", by_alias=True, exclude_none=True)
     track_ids = [track["id"] for track in dumped["tracks"]]
     if len(track_ids) != len(set(track_ids)):
@@ -422,6 +452,11 @@ async def validate_timeline(session: AsyncSession, project_id: str, document: di
             )
         for track in dumped["tracks"]:
             for clip in track["clips"]:
+                font_id = clip.get("fontAssetId")
+                if font_id and assets[font_id][0].media_kind != "font":
+                    raise VideoEditorValidationError(
+                        "文字字体必须引用字体素材", code="invalid_asset_kind"
+                    )
                 asset_id = clip.get("assetId")
                 if not asset_id:
                     continue

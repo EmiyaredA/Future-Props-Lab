@@ -8,6 +8,8 @@ import {
 } from "@tanstack/react-query";
 import {
   Check,
+  ChevronLeft,
+  ChevronRight,
   Copy,
   FolderOpen,
   Image,
@@ -31,6 +33,10 @@ import { useApiBlobUrl } from "@platform/api/useApiBlobUrl";
 import { MEDIA_ACCEPT } from "@features/visual-workshop/generation/options";
 import { GenerationMediaPreview } from "@features/visual-workshop/generation/GenerationMediaPreview";
 import { ProjectMediaSourceDialog } from "@features/visual-workshop/generation/ProjectMediaSourceDialog";
+import {
+  moveReference,
+  orderedReferenceIds,
+} from "@features/visual-workshop/generation/referenceOrder";
 
 function uploadErrorMessage(error: unknown) {
   return apiErrorMessage(error, "上传失败，请稍后重试。");
@@ -134,6 +140,7 @@ export function ProjectMediaPicker({
   uploadLast = false,
   disabled = false,
   onChange,
+  onReorder,
   onFilesLoaded,
   onInvalidSelection,
 }: {
@@ -148,6 +155,7 @@ export function ProjectMediaPicker({
   uploadLast?: boolean;
   disabled?: boolean;
   onChange: (value: string[]) => void;
+  onReorder?: (value: string[]) => void;
   onFilesLoaded?: (files: ManagedFile[]) => void;
   onInvalidSelection?: () => void;
 }) {
@@ -163,13 +171,25 @@ export function ProjectMediaPicker({
   const [dialogMode, setDialogMode] = useState<"project" | "cross">();
   const [previewFile, setPreviewFile] = useState<ManagedFile>();
   const [optimisticFiles, setOptimisticFiles] = useState<ManagedFile[]>([]);
+  const draggedId = useRef<string | undefined>(undefined);
+  const [dropTarget, setDropTarget] = useState<string>();
+  const [orderNotice, setOrderNotice] = useState("");
   const linkedIds = useMemo(() => [...new Set(linkedValue)], [linkedValue]);
   const linkedSet = useMemo(() => new Set(linkedIds), [linkedIds]);
   const manualIds = useMemo(() => [...new Set(value)], [value]);
   const combinedValue = useMemo(
-    () => [...linkedIds, ...manualIds.filter((id) => !linkedSet.has(id))],
-    [linkedIds, linkedSet, manualIds],
+    () => orderedReferenceIds(manualIds, linkedIds),
+    [linkedIds, manualIds],
   );
+  const reorder = (from: string, to: string) => {
+    if (disabled || !onReorder) return;
+    const next = moveReference(combinedValue, from, to);
+    if (next === combinedValue) return;
+    onReorder(next);
+    setOrderNotice(
+      `图片已移至第 ${next.indexOf(from) + 1} 位，提示词图片编号已同步。`,
+    );
+  };
   const manualLimit = Math.max(0, max - linkedIds.length);
   const remaining = Math.max(0, max - combinedValue.length);
   const canReplaceManual = !multiple && linkedIds.length === 0;
@@ -441,18 +461,69 @@ export function ProjectMediaPicker({
           {minimal ? null : "正在读取项目素材…"}
         </span>
       ) : (
-        <div className="generation-image-options">
+        <div
+          className={`generation-image-options${onReorder ? " has-reference-order" : ""}`}
+        >
           {minimal || uploadLast ? null : uploadButton}
           {visibleFiles.map((file) => {
             const linked = linkedSet.has(file.id);
             const selected = combinedValue.includes(file.id);
+            const index = combinedValue.indexOf(file.id);
             if (minimal) {
               return (
                 <span
                   className={`generation-media-card${linked ? " is-linked" : ""}`}
                   key={file.id}
                   data-linked-reference={linked || undefined}
+                  data-reference-position={onReorder ? index + 1 : undefined}
+                  data-drop-target={dropTarget === file.id || undefined}
+                  draggable={Boolean(onReorder && !disabled)}
+                  onDragStart={
+                    onReorder
+                      ? (event) => {
+                          event.stopPropagation();
+                          draggedId.current = file.id;
+                          event.dataTransfer.effectAllowed = "move";
+                          event.dataTransfer.setData("text/plain", file.id);
+                        }
+                      : undefined
+                  }
+                  onDragOver={
+                    onReorder
+                      ? (event) => {
+                          if (disabled || !draggedId.current) return;
+                          event.preventDefault();
+                          event.stopPropagation();
+                          event.dataTransfer.dropEffect = "move";
+                          setDropTarget(file.id);
+                        }
+                      : undefined
+                  }
+                  onDrop={
+                    onReorder
+                      ? (event) => {
+                          if (!draggedId.current) return;
+                          event.preventDefault();
+                          event.stopPropagation();
+                          reorder(draggedId.current, file.id);
+                          draggedId.current = undefined;
+                          setDropTarget(undefined);
+                        }
+                      : undefined
+                  }
+                  onDragEnd={() => {
+                    draggedId.current = undefined;
+                    setDropTarget(undefined);
+                  }}
                 >
+                  {onReorder ? (
+                    <span
+                      className="reference-order-number"
+                      aria-label={`图片 ${index + 1}`}
+                    >
+                      {index + 1}
+                    </span>
+                  ) : null}
                   <button
                     type="button"
                     className="generation-media-open selected"
@@ -482,6 +553,34 @@ export function ProjectMediaPicker({
                       }
                     />
                   )}
+                  {onReorder ? (
+                    <span className="reference-order-actions">
+                      <button
+                        type="button"
+                        aria-label={`前移 ${file.display_name}`}
+                        title="前移（自动更新图片编号）"
+                        disabled={disabled || index === 0}
+                        onClick={() =>
+                          reorder(file.id, combinedValue[index - 1])
+                        }
+                      >
+                        <ChevronLeft aria-hidden />
+                      </button>
+                      <button
+                        type="button"
+                        aria-label={`后移 ${file.display_name}`}
+                        title="后移（自动更新图片编号）"
+                        disabled={
+                          disabled || index === combinedValue.length - 1
+                        }
+                        onClick={() =>
+                          reorder(file.id, combinedValue[index + 1])
+                        }
+                      >
+                        <ChevronRight aria-hidden />
+                      </button>
+                    </span>
+                  ) : null}
                 </span>
               );
             }
@@ -525,6 +624,11 @@ export function ProjectMediaPicker({
           已选 {combinedValue.length}/{max}
         </small>
       ) : null}
+      {onReorder ? (
+        <span className="sr-only" role="status">
+          {orderNotice}
+        </span>
+      ) : null}
       {upload.isError ? (
         <small className="generation-picker-error" role="alert">
           {uploadErrorMessage(upload.error)}
@@ -565,10 +669,14 @@ export function ProjectMediaPicker({
               }}
               onConfirm={(ids, selectedFiles) => {
                 if (dialogMode === "project") {
-                  onChange([
-                    ...manualIds.filter((id) => linkedSet.has(id)),
-                    ...ids,
-                  ]);
+                  onChange(
+                    orderedReferenceIds(
+                      combinedValue.filter(
+                        (id) => linkedSet.has(id) || ids.includes(id),
+                      ),
+                      ids,
+                    ),
+                  );
                 } else {
                   setOptimisticFiles((current) => [
                     ...current.filter(

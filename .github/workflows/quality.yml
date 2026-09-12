@@ -21,7 +21,7 @@ jobs:
         with:
           lfs: false
       - name: Pull backend runtime assets
-        run: git lfs pull --include="backend/app/galgame_workshop/assets/*.ttf" --exclude=""
+        run: git lfs pull --include="backend/app/media_rendering/assets/*.ttf" --exclude=""
       - uses: astral-sh/setup-uv@v6
         with:
           python-version: ${{ matrix.python-version }}
@@ -71,7 +71,7 @@ jobs:
         with:
           lfs: false
       - name: Pull E2E runtime assets
-        run: git lfs pull --include="backend/app/galgame_workshop/assets/*.ttf,web/public/voice-vad/*,web/public/brand/thought-workshop-mark.png,web/public/brand/presentation-workshop-mark.png" --exclude=""
+        run: git lfs pull --include="backend/app/media_rendering/assets/*.ttf,web/public/voice-vad/*,web/public/brand/thought-workshop-mark.png,web/public/brand/presentation-workshop-mark.png" --exclude=""
       - uses: actions/setup-node@v4
         with:
           node-version: 24

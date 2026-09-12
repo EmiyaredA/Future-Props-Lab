@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import io
 import os
 
 from sqlalchemy import select
@@ -11,6 +12,7 @@ from app.files.storage import AssetStorage
 from app.media_rendering.contracts import RenderCaptureFrame, RenderPlan
 from app.media_rendering.evaluator import timeline_duration_us
 from app.media_rendering.frame_renderer import render_plan_frame
+from app.media_rendering.text_layer import TEXT_RENDER_VERSION, render_text_layer
 from app.models import VideoEditorTimeline, VisualAsset
 from app.schemas.video_editor import VideoEditorTimelineDocument
 from app.video_editor.errors import VideoEditorNotFoundError, VideoEditorValidationError
@@ -47,7 +49,7 @@ class VideoEditorFrames:
         cache = (
             self.storage.project_root("video-editor", project_id, workspace_id=self.workspace_id)
             / "derived"
-            / f"frame-r{revision}-t{time_us}-w{width}.png"
+            / f"frame-v{TEXT_RENDER_VERSION}-r{revision}-t{time_us}-w{width}.png"
         )
         if cache.is_file():
             return cache.read_bytes()
@@ -93,3 +95,51 @@ class VideoEditorFrames:
         finally:
             temporary.unlink(missing_ok=True)
         return payload
+
+    async def text_layer(self, project_id: str, *, clip_id: str, revision: int) -> bytes:
+        await VideoEditorProjects(self.session, self.workspace_id).row(project_id)
+        timeline = await self.session.get(VideoEditorTimeline, project_id)
+        if timeline is None:
+            raise VideoEditorNotFoundError("时间轴不存在")
+        if timeline.revision != revision:
+            raise RevisionConflictError(
+                revision,
+                timeline.revision,
+                {
+                    "revision": timeline.revision,
+                    "document": timeline.document,
+                },
+            )
+        document = VideoEditorTimelineDocument.model_validate(timeline.document)
+        clip = next(
+            (
+                clip
+                for track in document.tracks
+                for clip in track.clips
+                if clip.id == clip_id and clip.kind == "text"
+            ),
+            None,
+        )
+        if clip is None:
+            raise VideoEditorNotFoundError("文字片段不存在")
+        font_path = None
+        if clip.font_asset_id:
+            asset = await self.session.scalar(
+                select(VisualAsset).where(
+                    VisualAsset.id == clip.font_asset_id,
+                    VisualAsset.video_editor_project_id == project_id,
+                    VisualAsset.media_kind == "font",
+                )
+            )
+            if asset is None:
+                raise VideoEditorNotFoundError("字体素材不存在")
+            font_path = self.storage.path_for(asset)
+        try:
+            layer = render_text_layer(clip, font_path)
+        except (ValueError, OSError) as exc:
+            raise VideoEditorValidationError(
+                "文字图层无法渲染，请检查字体与文字长度", code="invalid_text_layer"
+            ) from exc
+        output = io.BytesIO()
+        layer.save(output, format="PNG")
+        return output.getvalue()

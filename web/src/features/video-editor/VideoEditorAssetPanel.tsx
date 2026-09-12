@@ -1,3 +1,5 @@
+import { CustomSelect } from "@shared/ui/CustomSelect";
+import { textPresets, type TextPreset } from "./textModel";
 import {
   canEditAsset,
   assetPreparationLabel,
@@ -78,7 +80,7 @@ export function VideoEditorAssetPanel({
   organization?: VideoEditorAssetOrganization;
   disabled?: boolean;
   onAdd: (asset: VideoEditorAsset) => void;
-  onAddGenerated: (kind: "text" | "color") => void;
+  onAddGenerated: (kind: "text" | "color", preset?: TextPreset) => void;
   onOrganizationChange: (next: VideoEditorAssetOrganization) => void;
 }) {
   const input = useRef<HTMLInputElement>(null);
@@ -492,9 +494,17 @@ export function VideoEditorAssetPanel({
         </div>
       ) : null}
       <div className="ve-generated-assets">
-        <button onClick={() => onAddGenerated("text")}>
-          <Type aria-hidden /> 文字卡
-        </button>
+        <CustomSelect
+          value=""
+          ariaLabel="添加文字"
+          disabled={disabled}
+          options={[
+            { value: "", label: "添加文字", disabled: true },
+            ...textPresets,
+          ]}
+          leadingIcon={<Type aria-hidden />}
+          onChange={(value) => onAddGenerated("text", value as TextPreset)}
+        />
         <button onClick={() => onAddGenerated("color")}>
           <span className="ve-black-swatch" /> 纯色黑幕
         </button>

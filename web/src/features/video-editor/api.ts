@@ -1,3 +1,4 @@
+import type { paths } from "@generated/api";
 import type { components } from "@generated/api";
 import {
   api,
@@ -241,7 +242,7 @@ export const exactFramePath = (
   timeUs: number,
   width = 960,
 ) =>
-  `/v1/video-editor/projects/${encodeURIComponent(projectId)}/preview/frame?revision=${revision}&timeUs=${Math.max(0, Math.round(timeUs))}&width=${width}`;
+  `/v1/video-editor/projects/${encodeURIComponent(projectId)}/preview/frame?revision=${revision}&timeUs=${Math.max(0, Math.round(timeUs))}&width=${width}&renderVersion=2`;
 
 export const exactFrameUrl = (
   projectId: string,
@@ -258,3 +259,13 @@ export const downloadVideoEditorSegments = (
   fetchApiDownload(
     `/v1/video-editor/projects/${encodeURIComponent(projectId)}/segment-exports/${encodeURIComponent(taskId)}/download`,
   );
+
+export const textLayerPath = (
+  projectId: string,
+  clipId: string,
+  revision: number,
+) => {
+  const path =
+    "/v1/video-editor/projects/{project_id}/text-clips/{clip_id}/layer" satisfies keyof paths;
+  return `${path.replace("{project_id}", encodeURIComponent(projectId)).replace("{clip_id}", encodeURIComponent(clipId))}?revision=${revision}&renderVersion=2`;
+};

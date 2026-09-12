@@ -84,6 +84,16 @@ class VideoEditorTransition(BaseModel):
     duration_us: int = Field(alias="durationUs", ge=0, le=10_000_000)
 
 
+class VideoEditorTextStyle(BaseModel):
+    align: Literal["left", "center", "right"] = "center"
+    stroke_color: str = Field(default="#000000", alias="strokeColor", pattern=r"^#[0-9a-fA-F]{6}$")
+    stroke_width: int = Field(default=0, alias="strokeWidth", ge=0, le=20)
+    background_color: str = Field(
+        default="#000000", alias="backgroundColor", pattern=r"^#[0-9a-fA-F]{6}$"
+    )
+    background_opacity: float = Field(default=0, alias="backgroundOpacity", ge=0, le=1)
+
+
 class VideoEditorClip(BaseModel):
     id: str = Field(min_length=1, max_length=64)
     track_id: str = Field(alias="trackId", min_length=1, max_length=64)
@@ -101,6 +111,7 @@ class VideoEditorClip(BaseModel):
     font_size: int = Field(default=72, alias="fontSize", ge=8, le=400)
     text_color: str = Field(default="#ffffff", alias="textColor", pattern=r"^#[0-9a-fA-F]{6}$")
     text_max_width: int | None = Field(default=None, alias="textMaxWidth", ge=80, le=1920)
+    text_style: VideoEditorTextStyle | None = Field(default=None, alias="textStyle")
     fit_mode: Literal["native", "cover", "contain", "height"] = Field(
         default="cover", alias="fitMode"
     )
@@ -120,7 +131,7 @@ class VideoEditorClip(BaseModel):
             raise ValueError("只有视频和音频 Clip 可以变速")
         if self.kind in {"video", "image", "audio"} and not self.asset_id:
             raise ValueError("媒体 Clip 必须引用素材")
-        if self.kind == "text" and not self.text:
+        if self.kind == "text" and not (self.text or "").strip():
             raise ValueError("文字 Clip 不能为空")
         if self.kind == "color" and not self.color:
             raise ValueError("纯色 Clip 必须指定颜色")

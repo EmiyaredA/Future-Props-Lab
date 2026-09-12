@@ -26,6 +26,10 @@ import {
 import { visualWorkshopQueryKeys as visualKeys } from "@features/visual-workshop/queryKeys";
 import type { GenerationDrawerProps } from "@features/visual-workshop/generation/generationDrawerTypes";
 import {
+  orderedReferenceIds,
+  reorderPictureReferences,
+} from "@features/visual-workshop/generation/referenceOrder";
+import {
   promptAssetReferenceNameForBase,
   type PromptManagedFile,
 } from "@features/visual-workshop/generation/generationPromptModel";
@@ -157,10 +161,9 @@ export function useGenerationDrawerController({
       return uniqueAssetIds(linked, firstFrame, lastFrame);
     if (videoMode === "reference")
       return uniqueAssetIds(
-        linked,
-        references,
-        videoReferences,
-        audioReferences,
+        orderedReferenceIds(references, linkedAssetIds.image),
+        orderedReferenceIds(videoReferences, linkedAssetIds.video),
+        orderedReferenceIds(audioReferences, linkedAssetIds.audio),
       );
     return linked;
   }, [
@@ -266,9 +269,18 @@ export function useGenerationDrawerController({
           generate_audio: generateAudio,
           first_frame_asset_id: firstFrame[0] ?? null,
           last_frame_asset_id: lastFrame[0] ?? null,
-          reference_asset_ids: references,
-          audio_asset_ids: audioReferences,
-          video_asset_ids: videoReferences,
+          reference_asset_ids: orderedReferenceIds(
+            references,
+            linkedAssetIds.image,
+          ),
+          audio_asset_ids: orderedReferenceIds(
+            audioReferences,
+            linkedAssetIds.audio,
+          ),
+          video_asset_ids: orderedReferenceIds(
+            videoReferences,
+            linkedAssetIds.video,
+          ),
           prompt_reference_names: promptReferenceNames,
           ...changes,
         } as VisualCanvasVideoGenerationDraft,
@@ -285,6 +297,9 @@ export function useGenerationDrawerController({
       gridSize,
       imageReference,
       lastFrame,
+      linkedAssetIds.image,
+      linkedAssetIds.video,
+      linkedAssetIds.audio,
       lockedKind,
       modelId,
       onDraftChange,
@@ -300,6 +315,19 @@ export function useGenerationDrawerController({
       watermark,
     ],
   );
+  const reorderImages = (next: string[]) => {
+    const previous = orderedReferenceIds(references, linkedAssetIds.image);
+    if (
+      next.length !== previous.length ||
+      new Set(next).size !== previous.length ||
+      next.some((id) => !previous.includes(id))
+    )
+      return;
+    const nextPrompt = reorderPictureReferences(prompt, previous, next);
+    setReferences(next);
+    setPrompt(nextPrompt);
+    persistDraft({ reference_asset_ids: next, prompt: nextPrompt }, true);
+  };
   useEffect(() => {
     if (lockedKind === "image") {
       const next = imageDraft?.reference_asset_id
@@ -560,9 +588,18 @@ export function useGenerationDrawerController({
             : null,
         last_frame_asset_id:
           videoMode === "frames" ? (lastFrame[0] ?? null) : null,
-        reference_asset_ids: videoMode === "reference" ? references : [],
-        audio_asset_ids: videoMode === "reference" ? audioReferences : [],
-        video_asset_ids: videoMode === "reference" ? videoReferences : [],
+        reference_asset_ids:
+          videoMode === "reference"
+            ? orderedReferenceIds(references, linkedAssetIds.image)
+            : [],
+        audio_asset_ids:
+          videoMode === "reference"
+            ? orderedReferenceIds(audioReferences, linkedAssetIds.audio)
+            : [],
+        video_asset_ids:
+          videoMode === "reference"
+            ? orderedReferenceIds(videoReferences, linkedAssetIds.video)
+            : [],
       } satisfies GenerationTaskInput;
       createMutation.mutate({ body: { ...body, ...canvasLink } });
     } catch (error) {
@@ -613,6 +650,7 @@ export function useGenerationDrawerController({
     setLastFrame,
     references,
     setReferences,
+    reorderImages,
     audioReferences,
     setAudioReferences,
     videoReferences,

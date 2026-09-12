@@ -308,7 +308,7 @@ class VisualGeneration:
             if body.mode == "sfx":
                 raise GenerationError("音效生成不接收上游素材", code="canvas_kind_mismatch")
             payload["reference_asset_ids"] = list(
-                dict.fromkeys([*linked["audio"], *body.reference_asset_ids])
+                dict.fromkeys([*body.reference_asset_ids, *linked["audio"]])
             )
             return AudioGenerationTaskCreateIn.model_validate(payload), reference_titles
         payload.update(
@@ -317,10 +317,10 @@ class VisualGeneration:
                 "first_frame_asset_id": None,
                 "last_frame_asset_id": None,
                 "reference_asset_ids": list(
-                    dict.fromkeys([*linked["image"], *body.reference_asset_ids])
+                    dict.fromkeys([*body.reference_asset_ids, *linked["image"]])
                 ),
-                "video_asset_ids": list(dict.fromkeys([*linked["video"], *body.video_asset_ids])),
-                "audio_asset_ids": list(dict.fromkeys([*linked["audio"], *body.audio_asset_ids])),
+                "video_asset_ids": list(dict.fromkeys([*body.video_asset_ids, *linked["video"]])),
+                "audio_asset_ids": list(dict.fromkeys([*body.audio_asset_ids, *linked["audio"]])),
             }
         )
         return VideoGenerationTaskCreateIn.model_validate(payload), reference_titles

@@ -615,6 +615,10 @@
     "method": "export_project_snapshot",
     "resource": "video"
   },
+  "GET /v1/video-editor/projects/{project_id}/text-clips/{clip_id}/layer": {
+    "method": "text_clip_layer",
+    "resource": "video"
+  },
   "GET /v1/video-editor/projects/{project_id}/timeline": {
     "method": "get_timeline",
     "resource": "video"

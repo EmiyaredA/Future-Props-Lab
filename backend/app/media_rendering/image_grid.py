@@ -4,9 +4,7 @@ from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFont, ImageOps
 
-FONT_PATH = (
-    Path(__file__).resolve().parents[1] / "galgame_workshop" / "assets" / "NotoSansSC-Regular.ttf"
-)
+FONT_PATH = Path(__file__).resolve().parent / "assets" / "NotoSansSC-Regular.ttf"
 GAP = 12
 MAX_CELL_EDGE = 1536
 CAPTION_BG = (247, 247, 245)

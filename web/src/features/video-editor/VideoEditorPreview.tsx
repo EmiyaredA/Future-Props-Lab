@@ -1,3 +1,4 @@
+import { VideoEditorTextLayer } from "./VideoEditorTextLayer";
 import { useWorkspacePermission } from "@platform/auth/WorkspacePermissions";
 import {
   useEffect,
@@ -36,6 +37,7 @@ import type {
   VideoEditorAsset,
   VideoEditorClip,
   VideoEditorTimeline,
+  VideoEditorOperation,
 } from "./types";
 
 function ProxyVideo({
@@ -186,7 +188,16 @@ export function VideoEditorPreview({
   preciseFrame,
   onPreciseFrameChange,
   onFrameSaved,
+  onSelectClip,
+  commit,
+  saving = false,
 }: {
+  onSelectClip?: (clipId: string) => void;
+  commit?: (
+    redo: VideoEditorOperation[],
+    undo?: VideoEditorOperation[],
+  ) => Promise<void>;
+  saving?: boolean;
   projectId: string;
   projectTitle?: string;
   timeline: VideoEditorTimeline;
@@ -209,6 +220,7 @@ export function VideoEditorPreview({
     width: number;
     height: number;
   }>();
+  const [draggingText, setDraggingText] = useState(false);
   const [showCanvasGuides, setShowCanvasGuides] = useState(true);
   const stageRef = useRef<HTMLDivElement>(null);
   const assetMap = useMemo(
@@ -378,6 +390,34 @@ export function VideoEditorPreview({
                     : "center",
               transform: `${anchorTranslate} rotate(${rotation}deg) scale(${clip.flipX ? -scaleX : scaleX}, ${scaleY})`,
             };
+            if (clip.kind === "text")
+              return (
+                <VideoEditorTextLayer
+                  key={clip.id}
+                  projectId={projectId}
+                  revision={timeline.revision}
+                  clip={clip}
+                  style={style}
+                  canvasWidth={canvasWidth}
+                  canvasHeight={canvasHeight}
+                  stageRef={stageRef}
+                  playheadUs={playheadUs}
+                  selected={selectedClipId === clip.id}
+                  disabled={
+                    !canWrite ||
+                    saving ||
+                    Boolean(
+                      timeline.document.tracks?.find(
+                        (track) => track.id === clip.trackId,
+                      )?.locked,
+                    )
+                  }
+                  onSelect={onSelectClip}
+                  setPlaying={setPlaying}
+                  onDragging={setDraggingText}
+                  commit={commit}
+                />
+              );
             return (
               <div
                 key={clip.id}
@@ -404,22 +444,13 @@ export function VideoEditorPreview({
                   </span>
                 ) : clip.kind === "image" && asset ? (
                   <img src={`/v1/files/${asset.id}/content`} alt="" />
-                ) : clip.kind === "text" ? (
-                  <span
-                    style={{
-                      color: clip.textColor,
-                      fontSize: `${clip.fontSize / 19.2}vw`,
-                    }}
-                  >
-                    {clip.text}
-                  </span>
                 ) : clip.kind === "color" ? (
                   <i style={{ background: clip.color ?? "#000" }} />
                 ) : null}
               </div>
             );
           })}
-          {!playing ? (
+          {!playing && !draggingText ? (
             <img
               className="ve-precise-frame"
               key={preciseUrl}

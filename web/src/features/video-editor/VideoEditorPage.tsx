@@ -1,3 +1,4 @@
+import { textClipOperations, type TextPreset } from "./textModel";
 import { CompactPanelTabs } from "@shared/ui/CompactPanelTabs";
 import { useVideoEditorLayout } from "./useVideoEditorLayout";
 import { VideoEditorSeparator } from "./VideoEditorSeparator";
@@ -82,21 +83,41 @@ export function VideoEditorPage({
     );
     if (operations.length) void editor.commit(operations);
   };
-  const addGenerated = (kind: "text" | "color") => {
+  const addGenerated = (
+    kind: "text" | "color",
+    preset: TextPreset = "subtitle",
+  ) => {
+    if (kind === "text") {
+      const { clip, redo, undo } = textClipOperations(
+        tracks,
+        editor.playheadUs,
+        fps,
+        preset,
+      );
+      editor.setPlaying(false);
+      void editor
+        .commit(redo, undo)
+        .then(() => {
+          editor.selectClip(clip.id);
+          setMobilePanel("inspector");
+        })
+        .catch(() => undefined);
+      return;
+    }
     const track = tracks.find((item) => item.kind === "visual");
     if (!track) return;
     const clip: VideoEditorClip = {
       id: crypto.randomUUID(),
       trackId: track.id,
       kind,
-      name: kind === "text" ? "文字卡" : "黑幕",
+      name: "黑幕",
       timelineStartUs: snapUs(editor.playheadUs, fps),
       durationUs: snapUs(3_000_000, fps),
       sourceInUs: 0,
       playbackRate: 1,
       sourceLoop: false,
-      text: kind === "text" ? "双击属性编辑文字" : undefined,
-      color: kind === "color" ? "#000000" : undefined,
+
+      color: "#000000",
       fontSize: 72,
       textColor: "#ffffff",
       fitMode: "cover",
@@ -292,6 +313,9 @@ export function VideoEditorPage({
             preciseFrame={editor.preciseFrame}
             onPreciseFrameChange={editor.setPreciseFrame}
             onFrameSaved={() => editor.assets.refetch()}
+            onSelectClip={editor.selectClip}
+            commit={editor.commit}
+            saving={editor.saving}
           />
           <VideoEditorSeparator
             {...workspaceLayout.separator("inspectorWidth")}
@@ -300,6 +324,13 @@ export function VideoEditorPage({
             speedRippleEnabled={editor.speedRippleEnabled}
             setSpeedRippleEnabled={editor.setSpeedRippleEnabled}
             clip={editor.selected}
+            disabled={
+              editor.saving ||
+              Boolean(
+                tracks.find((track) => track.id === editor.selected?.trackId)
+                  ?.locked,
+              )
+            }
             clips={tracks.flatMap((track) => track.clips ?? [])}
             playheadUs={editor.playheadUs}
             commit={editor.commit}

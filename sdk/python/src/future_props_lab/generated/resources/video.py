@@ -119,6 +119,10 @@ class Video:
         'Export Project Snapshot. GET /v1/video-editor/projects/{project_id}/snapshot'
         return self._client._call('GET', '/v1/video-editor/projects/{project_id}/snapshot', parameters=[('project_id', 'path', project_id)], response_type=Any)
 
+    def text_clip_layer(self, *, project_id: str, clip_id: str, revision: int) -> Download:
+        'Text Clip Layer. GET /v1/video-editor/projects/{project_id}/text-clips/{clip_id}/layer'
+        return self._client._call('GET', '/v1/video-editor/projects/{project_id}/text-clips/{clip_id}/layer', parameters=[('project_id', 'path', project_id), ('clip_id', 'path', clip_id), ('revision', 'query', revision)], response_type=Any)
+
     def get_timeline(self, *, project_id: str) -> models.VideoEditorTimelineOut:
         'Get Timeline. GET /v1/video-editor/projects/{project_id}/timeline'
         return self._client._call('GET', '/v1/video-editor/projects/{project_id}/timeline', parameters=[('project_id', 'path', project_id)], response_type=models.VideoEditorTimelineOut)
@@ -238,6 +242,10 @@ class AsyncVideo:
     async def export_project_snapshot(self, *, project_id: str) -> AsyncDownload:
         'Export Project Snapshot. GET /v1/video-editor/projects/{project_id}/snapshot'
         return await self._client._call('GET', '/v1/video-editor/projects/{project_id}/snapshot', parameters=[('project_id', 'path', project_id)], response_type=Any)
+
+    async def text_clip_layer(self, *, project_id: str, clip_id: str, revision: int) -> AsyncDownload:
+        'Text Clip Layer. GET /v1/video-editor/projects/{project_id}/text-clips/{clip_id}/layer'
+        return await self._client._call('GET', '/v1/video-editor/projects/{project_id}/text-clips/{clip_id}/layer', parameters=[('project_id', 'path', project_id), ('clip_id', 'path', clip_id), ('revision', 'query', revision)], response_type=Any)
 
     async def get_timeline(self, *, project_id: str) -> models.VideoEditorTimelineOut:
         'Get Timeline. GET /v1/video-editor/projects/{project_id}/timeline'

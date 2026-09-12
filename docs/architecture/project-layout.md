@@ -122,7 +122,7 @@ Future-Props-Lab/
   角色/多层场景/音视频素材生命周期、虚拟打包路径、语音识别任务、立绘尺寸快照恢复、Fragment 线路分析与
   只读 Story 快照驱动的视频导出与分层剪辑交接任务，
   `video_editor/` 负责与 Story 解耦的微秒级多轨文档、类型化原子操作、项目素材快照、代理媒体、
-  后端精确停帧和剪辑任务；`media_rendering/` 统一拥有 RenderPlan 契约、确定性帧求值、固定帧网格的
+  后端精确停帧和剪辑任务；`media_rendering/` 统一拥有 RenderPlan 契约、文字排版与透明图层、共享 `assets/` 固定中文字体、确定性帧求值、固定帧网格的
   FFmpeg/Pillow 合成和取消控制。正式剪辑渲染只依赖不可变时间轴快照和原素材，
   不启动 Chromium、Playwright 或浏览器录屏；Pillow 只承担文字透明层和二维像素合成，音频 PTS
   与最终封装由 FFmpeg 统一处理。

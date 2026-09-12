@@ -3,13 +3,13 @@
 from __future__ import annotations
 
 import math
-import textwrap
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 
-from PIL import Image, ImageColor, ImageDraw, ImageFont
+from PIL import Image, ImageColor
 
+from app.media_rendering.text_layer import render_text_layer
 from app.schemas.video_editor import VideoEditorClip, VideoEditorTimelineDocument
 
 
@@ -138,43 +138,7 @@ class TimelineFrameRenderer:
         return self.source.image_for_clip(clip, local_us)
 
     def _text_layer(self, clip: VideoEditorClip) -> Image.Image:
-        font_path = self.source.font_for_clip(clip)
-        try:
-            font = (
-                ImageFont.truetype(str(font_path), clip.font_size)
-                if font_path
-                else ImageFont.load_default(clip.font_size)
-            )
-        except (OSError, TypeError):
-            font = ImageFont.load_default()
-        raw_lines = (clip.text or "").splitlines() or [""]
-        if clip.text_max_width:
-            approximate = max(1, round(clip.text_max_width / max(8, clip.font_size)))
-            lines = [
-                part for line in raw_lines for part in (textwrap.wrap(line, approximate) or [""])
-            ]
-        else:
-            lines = raw_lines
-        boxes = [font.getbbox(line or " ") for line in lines]
-        width = max(box[2] - box[0] for box in boxes) + 32
-        height = sum(box[3] - box[1] + 12 for box in boxes) + 20
-        layer = Image.new("RGBA", (max(1, width), max(1, height)), (0, 0, 0, 0))
-        draw = ImageDraw.Draw(layer)
-        y = 10
-        for line, box in zip(lines, boxes, strict=True):
-            # ``getbbox`` is relative to the font baseline. CJK glyphs commonly
-            # have a positive top bearing, so drawing directly at ``y`` makes
-            # their bottom extend past a layer sized from ``box[3] - box[1]``.
-            # Normalize both bearings to keep the full glyph inside the padded
-            # layer instead of clipping its bottom row.
-            draw.text(
-                (16 - box[0], y - box[1]),
-                line,
-                font=font,
-                fill=clip.text_color,
-            )
-            y += box[3] - box[1] + 12
-        return layer
+        return render_text_layer(clip, self.source.font_for_clip(clip))
 
     @staticmethod
     def _visible_alpha_bottom(layer: Image.Image) -> float:

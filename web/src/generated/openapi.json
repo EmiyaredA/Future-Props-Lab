@@ -21648,6 +21648,16 @@
             ],
             "title": "Textmaxwidth"
           },
+          "textStyle": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/VideoEditorTextStyle"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "timelineStartUs": {
             "minimum": 0.0,
             "title": "Timelinestartus",
@@ -22418,6 +22428,48 @@
           "updatedAt"
         ],
         "title": "VideoEditorTaskOut",
+        "type": "object"
+      },
+      "VideoEditorTextStyle": {
+        "properties": {
+          "align": {
+            "default": "center",
+            "enum": [
+              "left",
+              "center",
+              "right"
+            ],
+            "title": "Align",
+            "type": "string"
+          },
+          "backgroundColor": {
+            "default": "#000000",
+            "pattern": "^#[0-9a-fA-F]{6}$",
+            "title": "Backgroundcolor",
+            "type": "string"
+          },
+          "backgroundOpacity": {
+            "default": 0,
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Backgroundopacity",
+            "type": "number"
+          },
+          "strokeColor": {
+            "default": "#000000",
+            "pattern": "^#[0-9a-fA-F]{6}$",
+            "title": "Strokecolor",
+            "type": "string"
+          },
+          "strokeWidth": {
+            "default": 0,
+            "maximum": 20.0,
+            "minimum": 0.0,
+            "title": "Strokewidth",
+            "type": "integer"
+          }
+        },
+        "title": "VideoEditorTextStyle",
         "type": "object"
       },
       "VideoEditorTimelineBatchIn": {
@@ -40175,6 +40227,68 @@
           }
         },
         "summary": "Export Project Snapshot",
+        "tags": [
+          "video-editor"
+        ]
+      }
+    },
+    "/v1/video-editor/projects/{project_id}/text-clips/{clip_id}/layer": {
+      "get": {
+        "operationId": "text_clip_layer_v1_video_editor_projects__project_id__text_clips__clip_id__layer_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "clip_id",
+            "required": true,
+            "schema": {
+              "title": "Clip Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "revision",
+            "required": true,
+            "schema": {
+              "minimum": 0,
+              "title": "Revision",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "image/png": {
+                "schema": {
+                  "format": "binary",
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Text Clip Layer",
         "tags": [
           "video-editor"
         ]

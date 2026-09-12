@@ -9,7 +9,7 @@ from typing import Any
 
 from PIL import Image, ImageColor, ImageDraw, ImageFont
 
-ASSET_ROOT = Path(__file__).resolve().parent / "assets"
+ASSET_ROOT = Path(__file__).resolve().parents[1] / "media_rendering" / "assets"
 FONT_REGULAR = ASSET_ROOT / "NotoSansSC-Regular.ttf"
 FONT_MEDIUM = ASSET_ROOT / "NotoSansSC-Medium.ttf"
 

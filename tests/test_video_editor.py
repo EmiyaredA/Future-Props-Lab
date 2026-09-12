@@ -524,7 +524,7 @@ def test_video_editor_text_layer_keeps_large_chinese_glyph_bottom_padding() -> N
         }
     )
     font_path = (
-        Path(__file__).parents[1] / "backend/app/galgame_workshop/assets/NotoSansSC-Medium.ttf"
+        Path(__file__).parents[1] / "backend/app/media_rendering/assets/NotoSansSC-Medium.ttf"
     )
     renderer = TimelineFrameRenderer(
         document,
