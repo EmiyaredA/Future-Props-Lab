@@ -12,6 +12,13 @@
 SQLite、`schema_migrations` 或 migration checksum。Runner 退避与恢复流程见
 [后台 Runner 运维](background-runners.md)。
 
+若启动报 `migration checksum drift: 0060_model_inference`，核对迁移源码是否为首次执行的
+原始文本：索引 SQL 的一次换行曾导致校验漂移，修复版本已恢复原文。已执行校验值应为
+`9c7dcccf24f9fb18f500aba9ba87d97cf4d2f5d16e2e8e37fe61cc7ec6295974`。
+更新修复代码后重新启动即可，不需要重建数据库或修改迁移记录。若记录是其他校验值，应先核对
+其对应的历史源码，不能直接替换数据库中的校验值。迁移 SQL 的空白同样属于已登记文本，后续
+结构变化必须追加新迁移。
+
 若页面一直加载，且 `/health`、`/ready` 都不返回，但迁移检查已经是最新版本，优先检查开发服务
 是否停在重载退出阶段。旧进程等待长连接结束时，新进程尚未启动，监听端口存在也不代表服务可用。
 开发启动命令包含 `--timeout-graceful-shutdown 10`；旧版本启动的服务需要重新启动才会使用这个参数。

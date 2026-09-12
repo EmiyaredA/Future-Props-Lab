@@ -56,9 +56,11 @@ for (const group of Object.keys(entries)) {
         ...meta,
         id: name.slice(0, -3),
         source,
-        images: [...raw.matchAll(/!\[[^\]]+\]\(\/docs\/([^\s)]+)/g)].map(
-          (m) => m[1],
-        ),
+        images: [
+          ...raw.matchAll(
+            /(?:!\[[^\]]+\]\(|<Screenshot\s+src=")\/docs\/([^\s)"]+)/g,
+          ),
+        ].map((m) => m[1]),
       };
     })
     .sort((a, b) => a.order - b.order || a.id.localeCompare(b.id));

@@ -1,6 +1,7 @@
 """Workspace-owned standalone model invocations and immutable private inputs."""
 
 MIGRATION_ID = "0060_model_inference"
+# Preserve the SQL bytes, including the index line below: this migration is already applied.
 SQL = """
 CREATE TABLE model_inference_tasks (
  id VARCHAR(36) PRIMARY KEY NOT NULL,
@@ -19,8 +20,7 @@ CREATE TABLE model_inference_tasks (
  created_at DATETIME NOT NULL, updated_at DATETIME NOT NULL,
  UNIQUE(workspace_id, request_id)
 );
-CREATE INDEX ix_model_inference_tasks_workspace_status
- ON model_inference_tasks(workspace_id, status);
+CREATE INDEX ix_model_inference_tasks_workspace_status ON model_inference_tasks(workspace_id, status);
 CREATE TABLE model_inference_assets (
  id VARCHAR(36) PRIMARY KEY NOT NULL,
  workspace_id VARCHAR(36) NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,

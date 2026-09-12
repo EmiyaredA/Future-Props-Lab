@@ -136,6 +136,9 @@
   font-size: 13px;
 }
 .docs-prose .hljs-keyword,
+.docs-prose .hljs-attr,
+.docs-prose .hljs-number,
+.docs-prose .hljs-literal,
 .docs-examples .hljs-keyword {
   color: var(--accent);
 }

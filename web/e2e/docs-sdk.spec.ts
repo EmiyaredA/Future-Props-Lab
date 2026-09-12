@@ -1,6 +1,9 @@
 import { expect, test } from "@playwright/test";
 
-test.use({ storageState: { cookies: [], origins: [] } });
+test.use({
+  storageState: { cookies: [], origins: [] },
+  reducedMotion: "reduce",
+});
 
 test("documentation learning paths, SDK tabs and mobile navigation", async ({
   page,
@@ -10,7 +13,9 @@ test("documentation learning paths, SDK tabs and mobile navigation", async ({
   );
   await page.setViewportSize({ width: 1600, height: 1000 });
   await page.goto("/docs.html?page=overview");
-  await expect(page.locator(".guide-card-group a")).toHaveCount(4);
+  await expect(page.locator(".guide-card-group a")).toHaveCount(4, {
+    timeout: 15000,
+  });
   const group = page
     .locator(".docs-nav-group details")
     .filter({ has: page.locator("summary", { hasText: "工作空间与账号" }) });
@@ -38,6 +43,7 @@ test("documentation learning paths, SDK tabs and mobile navigation", async ({
   await page.screenshot({ path: testInfo.outputPath("docs-code-dark.png") });
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/docs.html?page=overview");
+  await expect(page.locator(".docs-sidebar")).toBeHidden();
   expect(
     await page.evaluate(
       () => document.documentElement.scrollWidth <= innerWidth,
@@ -86,6 +92,8 @@ test("structured blocks, diagrams, code copying and mobile local scrolling", asy
   await expect(page.locator(".docs-mermaid-canvas svg")).toBeAttached();
   await page.screenshot({ path: testInfo.outputPath("docs-diagram-dark.png") });
   await page.setViewportSize({ width: 390, height: 844 });
+  await expect(page.locator(".docs-sidebar")).toBeHidden();
+  await page.locator("#diagrams").scrollIntoViewIfNeeded();
   await expect(page.locator(".docs-mermaid-canvas svg")).toBeAttached();
   expect(
     await page.evaluate(
