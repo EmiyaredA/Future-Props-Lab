@@ -19,16 +19,22 @@
     "db:migrate:check": "uv run python -m db.migrations --check",
     "account": "uv run python scripts/account.py",
     "galgame:import-annotation": "uv run python scripts/galgame_annotation_import.py",
-    "contracts:generate": "uv run python scripts/export_openapi.py && npm run contracts:generate --workspace web",
-    "contracts:check": "uv run python scripts/export_openapi.py --check && npm run contracts:check --workspace web",
+    "contracts:generate": "uv run python scripts/export_openapi.py && npm run contracts:generate --workspace web && npm run sdk:generate",
+    "contracts:check": "uv run python scripts/export_openapi.py --check && npm run contracts:check --workspace web && npm run sdk:check",
     "test": "uv run pytest -q && npm run test --workspace web",
     "test:e2e": "npm run test:e2e --workspace web",
-    "lint": "uv run ruff check backend db scripts tests && npm run lint --workspace web",
-    "format": "uv run ruff format backend db scripts tests && npm run format --workspace web",
-    "format:check": "uv run ruff format --check backend db scripts tests && npm run format:check --workspace web",
+    "lint": "uv run ruff check backend db scripts tests sdk/python/src && npm run lint --workspace web",
+    "format": "uv run ruff format backend db scripts tests sdk/python/src && npm run format --workspace web",
+    "format:check": "uv run ruff format --check backend db scripts tests sdk/python/src && npm run format:check --workspace web",
     "build": "python3 scripts/check_lfs_assets.py --web && npm run build --workspace web",
     "lfs:check": "python3 scripts/check_lfs_assets.py --all",
-    "lfs:check:pointers": "python3 scripts/check_lfs_assets.py --pointers"
+    "lfs:check:pointers": "python3 scripts/check_lfs_assets.py --pointers",
+    "sdk:generate": "uv run python scripts/generate_sdk.py && uv run python scripts/generate_sdk_docs.py",
+    "sdk:check": "uv run python scripts/generate_sdk.py --check && uv run python scripts/generate_sdk_docs.py --check",
+    "sdk:build": "uv build sdk/python",
+    "docs:generate": "uv run python scripts/generate_sdk_docs.py",
+    "docs:check": "uv run python scripts/generate_sdk_docs.py --check && npm run test --workspace web -- tests/docs-rendering.test.tsx",
+    "test:sdk": "uv run pytest -q tests/test_python_sdk.py tests/test_workshop_operations.py tests/test_model_inference.py tests/test_automation_exports.py tests/test_sdk_workflows.py"
   },
   "devDependencies": {
     "concurrently": "^9.2.0"

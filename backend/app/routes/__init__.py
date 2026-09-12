@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends
 
 from app.deps import require_studio_auth
+from app.routes import annotation_exports, image_crop, thought_conversion, video_frames
 from app.routes.account_management import router as management_router
 from app.routes.accounts import router as accounts_router
 from app.routes.audio_annotation import router as audio_annotation_router
@@ -10,6 +11,7 @@ from app.routes.file_management import router as file_management_router
 from app.routes.galgame_workshop import router as galgame_workshop_router
 from app.routes.integrations import router as integrations_router
 from app.routes.model_capacity import ModelCapacity
+from app.routes.model_inference import router as model_inference_router
 from app.routes.model_templates import router as model_templates_router
 from app.routes.models import (
     call_logs,
@@ -30,6 +32,7 @@ from app.routes.video_editor import router as video_editor_router
 from app.routes.visual_assistant import router as visual_assistant_router
 from app.routes.visual_generation import router as visual_generation_router
 from app.routes.visual_workshop import router as visual_workshop_router
+from app.routes.workshop_operations import router as workshop_operations_router
 from app.routes.workspaces import invitation_router
 from app.routes.workspaces import router as workspaces_router
 
@@ -99,4 +102,28 @@ api_router.include_router(
 
 api_router.include_router(
     presentation_workshop_router, dependencies=[Depends(require_studio_auth), ModelCapacity]
+)
+
+api_router.include_router(
+    workshop_operations_router, dependencies=[Depends(require_studio_auth), ModelCapacity]
+)
+
+api_router.include_router(
+    model_inference_router, dependencies=[Depends(require_studio_auth), ModelCapacity]
+)
+
+api_router.include_router(
+    annotation_exports.router, dependencies=[Depends(require_studio_auth), ModelCapacity]
+)
+
+api_router.include_router(
+    thought_conversion.router, dependencies=[Depends(require_studio_auth), ModelCapacity]
+)
+
+api_router.include_router(
+    video_frames.router, dependencies=[Depends(require_studio_auth), ModelCapacity]
+)
+
+api_router.include_router(
+    image_crop.router, dependencies=[Depends(require_studio_auth), ModelCapacity]
 )

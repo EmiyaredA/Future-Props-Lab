@@ -1,0 +1,231 @@
+.docs-header {
+  grid-template-columns: minmax(190px, 250px) auto minmax(190px, 1fr) auto;
+  gap: 22px;
+}
+.docs-header-search {
+  display: flex;
+  justify-content: flex-start;
+  gap: 12px;
+  align-items: center;
+  width: 100%;
+  max-width: 560px;
+  height: 42px;
+  margin: 0 auto;
+  padding: 0 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--muted);
+  background: var(--surface);
+  text-align: left;
+}
+.docs-header-search kbd {
+  margin-left: auto;
+}
+.docs-primary-nav {
+  gap: 24px;
+}
+.docs-primary-nav a {
+  height: 100%;
+}
+.docs-primary-nav a[aria-current="page"] {
+  color: var(--text-strong);
+}
+.docs-primary-nav a[aria-current="page"]::after {
+  display: block;
+  height: 3px;
+}
+.docs-actions .docs-search-trigger {
+  display: none;
+}
+.docs-main {
+  padding: 44px 46px 76px;
+}
+.docs-prose {
+  font-size: 16px;
+  line-height: 1.95;
+}
+.docs-prose h1 {
+  font-size: clamp(32px, 3vw, 44px);
+  margin-bottom: 26px;
+}
+.docs-prose h1 + p {
+  font-size: 18px;
+  line-height: 1.9;
+  margin-bottom: 44px;
+}
+.docs-prose h2 {
+  font-size: 27px;
+  margin-top: 50px;
+}
+.docs-prose h3 {
+  font-size: 20px;
+}
+.docs-reading-progress {
+  margin-top: 32px;
+  padding: 0 12px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.docs-reading-progress > div:first-child {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.docs-reading-progress [role="progressbar"] {
+  height: 3px;
+  background: var(--border);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.docs-reading-progress [role="progressbar"] span {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+}
+.docs-examples {
+  min-width: 0;
+  margin: 30px 0;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--surface);
+}
+.docs-example-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px;
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+.docs-example-toolbar [role="tablist"] {
+  display: flex;
+  gap: 3px;
+  max-width: 100%;
+  overflow-x: auto;
+}
+.docs-example-toolbar button {
+  padding: 7px 10px;
+  color: var(--muted);
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.docs-example-toolbar button[aria-selected="true"] {
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+.docs-examples pre {
+  max-width: 100%;
+  overflow-x: auto;
+  margin: 0;
+  padding: 22px;
+  line-height: 1.8;
+  font-size: 13px;
+}
+.docs-example-response {
+  border-top: 1px solid var(--border);
+}
+.docs-example-response summary {
+  padding: 12px 16px;
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 13px;
+}
+.docs-prose .hljs-keyword,
+.docs-examples .hljs-keyword {
+  color: var(--accent);
+}
+.docs-prose .hljs-string,
+.docs-examples .hljs-string {
+  color: var(--text-strong);
+}
+.docs-prose .hljs-comment,
+.docs-examples .hljs-comment {
+  color: var(--muted);
+  font-style: italic;
+}
+.docs-prerequisites,
+.docs-related {
+  color: var(--muted);
+  font-size: 14px;
+  margin: 24px 0;
+}
+.docs-related a {
+  margin-right: 16px;
+  color: var(--accent);
+}
+.docs-shell :focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+@media (min-width: 1800px) {
+  :root {
+    --docs-sidebar-width: 310px;
+    --docs-toc-width: 280px;
+    --docs-content-width: 1120px;
+  }
+  .docs-main {
+    padding: 48px 58px 80px;
+  }
+  .docs-prose {
+    font-size: 18px;
+  }
+  .docs-prose h1 + p {
+    font-size: 21px;
+  }
+}
+@media (max-width: 1250px) {
+  .docs-header {
+    grid-template-columns: 220px 1fr auto;
+    gap: 14px;
+  }
+  .docs-header-search {
+    display: none;
+  }
+  .docs-actions .docs-search-trigger {
+    display: flex;
+  }
+  .docs-primary-nav {
+    gap: 17px;
+  }
+  .docs-main {
+    padding-right: 30px;
+    padding-left: 30px;
+  }
+}
+@media (max-width: 900px) {
+  .docs-header {
+    grid-template-columns: auto 1fr auto;
+    padding: 0 16px;
+  }
+  .docs-header .docs-primary-nav {
+    display: none;
+  }
+  .docs-main {
+    padding: 30px 22px 54px;
+  }
+  .docs-prose h1 + p {
+    font-size: 17px;
+  }
+}
+@media (max-width: 560px) {
+  .docs-main {
+    padding: 26px 18px 48px;
+  }
+  .docs-prose {
+    font-size: 15px;
+  }
+  .docs-prose h2 {
+    font-size: 23px;
+  }
+  .docs-prose h1 {
+    font-size: 31px;
+  }
+  .docs-examples pre {
+    padding: 16px;
+  }
+}

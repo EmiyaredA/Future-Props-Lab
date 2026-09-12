@@ -2,13 +2,11 @@ import type { DocHeading, DocsGroup, GuidePage } from "./types";
 import legacyLinks from "./legacyLinks.json";
 export type { GuidePage } from "./types";
 export const GROUPS: DocsGroup[] = [
-  {
-    id: "presentation",
-    title: "演示工坊",
-    section: "AI 应用",
-    context: "presentation",
-    parent: "apps-overview",
-  },
+  { id: "api-modules", title: "模块与操作", section: "API 参考" },
+  { id: "sdk-start", title: "开始自动化", section: "Python SDK" },
+  { id: "sdk-workshops", title: "工坊自动化", section: "Python SDK" },
+  { id: "sdk-runtime", title: "模型与运行", section: "Python SDK" },
+  { id: "sdk-reference", title: "模块参考", section: "Python SDK" },
   { id: "start", title: "开始使用", section: "开始使用" },
   { id: "account", title: "工作空间与账号", section: "平台基础" },
   { id: "files", title: "文件管理", section: "平台基础" },
@@ -17,6 +15,13 @@ export const GROUPS: DocsGroup[] = [
   { id: "testing", title: "模型测试", section: "模型能力" },
   { id: "logs", title: "调用日志", section: "模型能力" },
   { id: "apps", title: "应用与项目", section: "AI 应用" },
+  {
+    id: "presentation",
+    title: "演示工坊",
+    section: "AI 应用",
+    context: "presentation",
+    parent: "apps-overview",
+  },
   {
     id: "visual",
     title: "视觉创作工坊",
@@ -74,7 +79,7 @@ export function headingId(text: string) {
     .trim()
     .replace(/\s+/g, "-");
 }
-export function parseArticle(raw: string) {
+export function parseArticle(raw: string, componentSyntax = false) {
   const headings: DocHeading[] = [];
   const counts = new Map<string, number>();
   let fenced = false;
@@ -82,11 +87,34 @@ export function parseArticle(raw: string) {
     .replace(/^<!-- docs:.*-->\s*/, "")
     .replace(/^<!-- prerequisites -->\s*/gm, "")
     .split("\n")
-    .map((line) => {
+    .map((line, index, lines) => {
       if (/^\s*(```|~~~)/.test(line)) fenced = !fenced;
       if (fenced) return line;
       const match = /^(#{1,3}) (.+?)(?:\s+\{#([^}]+)\})?\s*$/.exec(line);
-      if (!match) return line;
+      if (!match) {
+        const component =
+          componentSyntax &&
+          /^[\t ]*<(Section|SectionGroup|Subsection|Steps|Purpose)\b((?:[^"'<>]|"[^"]*"|'[^']*')*)>/.exec(
+            lines.slice(index).join("\n"),
+          );
+        if (component) {
+          const attrs = Object.fromEntries(
+            [...component[2].matchAll(/(\w+)=(?:"([^"]*)"|'([^']*)')/g)].map(
+              (m) => [m[1], m[2] ?? m[3]],
+            ),
+          );
+          const defaults =
+            component[1] === "Steps"
+              ? ["how-to", "怎么使用"]
+              : ["purpose-title", "这个功能解决什么问题"];
+          headings.push({
+            id: attrs.id || defaults[0],
+            title: attrs.title || defaults[1],
+            level: component[1] === "Subsection" ? 3 : 2,
+          });
+        }
+        return line;
+      }
       const [, hashes, title, explicit] = match;
       const base = explicit || headingId(title);
       const count = counts.get(base) || 0;
@@ -120,10 +148,10 @@ export const GUIDE_PAGES: GuidePage[] = Object.entries(articles).map(
     return {
       ...meta,
       id: source.split("/").pop()!.replace(/\.md$/, ""),
-      category: "use",
+      category: meta.category || "use",
       context: group.context,
       source,
-      ...parseArticle(raw),
+      ...parseArticle(raw, meta.componentSyntax === true),
     };
   },
 );
@@ -169,6 +197,7 @@ export function resolveLocation(pageId: string, hash: string) {
 }
 export const CATEGORY_LABELS = {
   use: "使用文档",
+  sdk: "Python SDK",
   developer: "开发者文档",
   api: "API 参考",
 } as const;
@@ -192,13 +221,14 @@ export function searchHeading(page: GuidePage, term: string) {
   const matchAt = page.markdown.toLocaleLowerCase("zh-CN").indexOf(term);
   if (matchAt < 0) return undefined;
   const before = page.markdown.slice(0, matchAt);
-  const parsed = parseArticle(before);
+  const parsed = parseArticle(before, page.componentSyntax);
   const last = parsed.headings.at(-1);
   return last && last.level > 1
     ? page.headings.find((h) => h.id === last.id)
     : undefined;
 }
 export function resolveDocLink(page: GuidePage, href: string) {
+  if (href.startsWith("?")) return "/docs.html" + href;
   if (!href || /^(https?:|mailto:|#|\/)/.test(href)) return href;
   const clean = (source: string) =>
     source.startsWith("./articles/")

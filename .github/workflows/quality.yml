@@ -27,8 +27,11 @@ jobs:
           python-version: ${{ matrix.python-version }}
           enable-cache: true
       - run: uv sync --frozen --all-groups
-      - run: uv run ruff check backend db scripts tests
-      - run: uv run ruff format --check backend db scripts tests
+      - run: uv run ruff check backend db scripts tests sdk/python/src
+      - run: uv run ruff format --check backend db scripts tests sdk/python/src
+      - run: uv build sdk/python
+      - run: uv venv /tmp/fpl-sdk-check && uv pip install --python /tmp/fpl-sdk-check/bin/python sdk/python/dist/future_props_lab_sdk-*.whl
+      - run: cd /tmp && /tmp/fpl-sdk-check/bin/python "$GITHUB_WORKSPACE/scripts/check_sdk_install.py"
       - run: uv run pytest -q
         env:
           FPL_SECRETS_KEY: Q3kT62dvbHHXXulO5XPCR84_yXK6t-6LXz7BcIYONys=

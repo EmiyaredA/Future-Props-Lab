@@ -26,6 +26,7 @@ from app.galgame_workshop.asr import GalgameAsrRunner
 from app.galgame_workshop.video_export_runner import GalgameVideoExportRunner
 from app.galgame_workshop.video_handoff_runner import GalgameVideoEditorHandoffRunner
 from app.llm.catalog.seed import seed_sayflow_text_catalog
+from app.llm.inference.runner import InferenceRunner
 from app.llm.playground.generation_runner import ModelTestGenerationRunner
 from app.llm.playground.tool_stream import recover_interrupted_model_test_runs
 from app.llm.playground.transcription_runner import ModelTestTranscriptionRunner
@@ -63,6 +64,7 @@ async def lifespan(lifespan_app: FastAPI) -> AsyncIterator[None]:
             ModelTemplateSyncRunner(),
             VisualGenerationRunner(),
             ModelTestGenerationRunner(),
+            InferenceRunner(),
             ModelTestTranscriptionRunner(),
             GalgameAsrRunner(),
             GalgameAnnotationImportRunner(),

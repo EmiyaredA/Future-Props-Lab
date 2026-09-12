@@ -14,6 +14,8 @@ import {
   resolveLocation,
 } from "./content";
 import { DocsMarkdown, CopyButton } from "./DocsMarkdown";
+import { DocsExamples } from "./DocsExamples";
+import { DocsReadingProgress } from "./DocsReadingProgress";
 import { DocsNavigation } from "./DocsNavigation";
 function currentLocation() {
   return resolveLocation(
@@ -251,6 +253,15 @@ export function DocsApp() {
               </a>
             ))}
         </nav>
+        <button
+          className="docs-header-search"
+          onClick={openSearch}
+          aria-label="打开文档搜索"
+        >
+          <Search size={17} />
+          <span>搜索{CATEGORY_LABELS[page.category]}…</span>
+          <kbd>/</kbd>
+        </button>
         <div className="docs-actions">
           <button
             className="docs-search-trigger"
@@ -298,13 +309,23 @@ export function DocsApp() {
               </div>
               <CopyButton value={page.markdown} label="复制页面" />
             </div>
-            {page.id === "overview" && (
-              <button className="docs-home-search" onClick={openSearch}>
-                <Search size={18} />
-                搜索文档、指南和 API…<kbd>⌘ K</kbd>
-              </button>
+            {page.prerequisites && (
+              <p className="docs-prerequisites">开始前：{page.prerequisites}</p>
             )}
             <DocsMarkdown page={page} onImage={openImage} />
+            {page.examples && <DocsExamples examples={page.examples} />}
+            {page.related && (
+              <nav className="docs-related" aria-label="相关阅读">
+                {page.related.map((id) => {
+                  const related = GUIDE_PAGES.find((p) => p.id === id);
+                  return related ? (
+                    <a key={id} href={pageHref(id)}>
+                      {related.title}
+                    </a>
+                  ) : null;
+                })}
+              </nav>
+            )}
             <nav className="docs-page-nav" aria-label="上一篇和下一篇">
               {index > 0 ? (
                 <a href={pageHref(siblings[index - 1])}>
@@ -328,7 +349,7 @@ export function DocsApp() {
           </article>
         </main>
         <aside className="docs-toc" aria-label="本页目录">
-          <h2>在此页面</h2>
+          <h2>本页目录</h2>
           <nav>
             {page.headings
               .filter((h) => h.level > 1)
@@ -344,6 +365,7 @@ export function DocsApp() {
                 </a>
               ))}
           </nav>
+          <DocsReadingProgress pageId={page.id} />
         </aside>
       </div>
       <dialog

@@ -41,9 +41,14 @@ from app.models import (
     VisualProjectAssetReference,
     VisualWorkshopProject,
 )
+from app.models.model_inference import ModelInferenceAsset, ModelInferenceTask
 from app.models.presentation_workshop import PresentationProject
+from app.models.project_operations import ProjectOperationReceipt
 
 TENANT_MODELS = (
+    ModelInferenceAsset,
+    ModelInferenceTask,
+    ProjectOperationReceipt,
     PresentationProject,
     AudioAnnotationProject,
     ModelCatalogState,

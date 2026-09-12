@@ -1,3 +1,5 @@
+// 文档导航、SDK 示例切换、桌面三栏和手机抽屉由 docs-sdk.spec.ts 补充验证。
+// 调用日志页的独立模型任务区域使用局部滚动，操作权限由 inference-tasks.test.tsx 验证。
 // 账号公共入口、工作区全屏弹窗与管理抽屉由 account-ui.spec.ts 验证。
 // 独立成员/角色/审计管理与收到邀请弹窗由 workspace-management.spec.ts 验证。
 // 模型目录、供应商连接树与编辑弹窗由 model-catalog.spec.ts 补充明暗主题及手机检查。

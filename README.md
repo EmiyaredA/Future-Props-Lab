@@ -47,6 +47,7 @@ Galgame 工坊使用 Story 1.4 管理角色表情/皮肤、真实多层场景、
 已有说明。支持全文搜索（`/` 或 `⌘/Ctrl+K`）、应用/工具独立目录、图片放大和旧章节深链接。
 正文真源位于 `web/src/docs/articles/`，核验依据与截图见
 [文档覆盖清单](docs/architecture/documentation-coverage.md)。
+正文展示复用 Sayflow 的受控文档组件框架，沿用研究所配色与鉴权。步骤、卡片、字段表、输入输出、公式与流程图的示例见[阅读展示](web/src/docs/articles/help/docs-reading.md)，编写约定见[渲染框架](web/src/docs/rendering/README.md)；`npm run docs:check` 检查组件契约、正文编译及生成参考。
 
 备份时先停止应用，再同时复制 `.runtime/future-props.db`、`.runtime/library/assets/`、
 `.runtime/applications/`、
@@ -75,3 +76,13 @@ AI 应用中的演示工坊支持基础幻灯片编辑、自动保存、放映�
 生产环境无需安装 Office 或 LibreOffice，后者仅用于交付时的外观核验。
 仍使用单进程 SQLite 与现有公共文件库，不新增环境变量或常驻服务。
 使用与限制见[演示工坊说明](web/src/docs/articles/presentation/presentation-workshop.md)。
+
+
+### Python 自动化
+
+Python 3.11+ 的独立包位于 [`sdk/python`](sdk/python/README.md)，发行名 `future-props-lab-sdk`，导入名 `future_props_lab`。本地安装使用 `uv pip install ./sdk/python`；`npm run sdk:build` 构建 wheel 与源码包，本次不发布到公共仓库。
+
+文档中心的「Python SDK」提供安装、鉴权、工坊批次、独立模型调用、流式事件与错误处理。`npm run contracts:generate` 同步 Web、SDK 和参考文档；`npm run contracts:check` 检查漂移，`npm run test:sdk` 运行确定性自动化测试。调用日志页的「独立模型任务」可以查看代码创建的任务与结果。
+
+六个工坊的可执行完整样例位于 `future_props_lab.workshop_examples`，文档会从源码提取。
+[自动化覆盖与验收记录](docs/architecture/sdk-automation-coverage.md) 区分具名方法、业务流程证据和未完成验收项。

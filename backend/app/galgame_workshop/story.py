@@ -518,7 +518,7 @@ class GalgameStoryDocuments:
             )
 
     async def put(
-        self, project_id: str, body: GalgameStoryDocumentPutIn
+        self, project_id: str, body: GalgameStoryDocumentPutIn, *, commit: bool = True
     ) -> GalgameStoryDocumentOut:
         project = await self._project(project_id)
         await self._row(project_id)
@@ -549,5 +549,6 @@ class GalgameStoryDocuments:
             project.revision += 1
             project.updated_at = now
         await self._sync_asset_references(project_id, set(asset_rows))
-        await self.session.commit()
+        if commit:
+            await self.session.commit()
         return await self.get(project_id)

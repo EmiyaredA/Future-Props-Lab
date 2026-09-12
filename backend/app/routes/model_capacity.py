@@ -1,10 +1,14 @@
 """HTTP lifecycle adapter for a model operation's quota reservation."""
 
-from fastapi import Depends, Request
+from fastapi import Depends, HTTPException, Request
+from pydantic import ValidationError
 
 from app.accounts.route_permissions import route_permission
 from app.accounts.runtime_quotas import acquire, admit_spawned_tasks, attach, release
+from app.concurrency.operation_receipts import OperationError
 from app.deps import SessionDep, StudioAuth
+from app.llm.inference.tasks import InferenceTasks
+from app.schemas.model_inference import InferenceTaskIn
 
 
 async def model_capacity(request: Request, principal: StudioAuth, session: SessionDep):
@@ -20,6 +24,20 @@ async def model_capacity(request: Request, principal: StudioAuth, session: Sessi
     if route_permission(request.method, request.url.path) != "models.use" and not diagnostic:
         yield
         return
+    # A durable receipt does not submit another task or consume another quota slot.
+    if request.method == "POST" and path == "/v1/model-inference/tasks":
+        try:
+            body = InferenceTaskIn.model_validate(await request.json())
+        except (ValidationError, ValueError):
+            body = None  # The endpoint reports normal request validation errors.
+        if body is not None:
+            try:
+                prior = await InferenceTasks(session, principal.workspace_id).replay(body)
+            except OperationError as exc:
+                raise HTTPException(exc.status, {"code": exc.code, "message": str(exc)}) from None
+            if prior is not None:
+                yield
+                return
     # Settle the authentication read transaction before taking a separate writer lock.
     await session.commit()
     weight = 1

@@ -79,6 +79,12 @@
 - `scripts/demo/` 只保存内容专用演示维护工具；必须通过正式 API 操作，并要求调用者显式提供项目 ID、
   素材根目录和输入/输出路径，不得保存本机绝对路径或默认目标项目。
 
+## SDK 与文档契约
+
+- Python SDK 位于 `sdk/python/`，不依赖后端运行时。`generated/` 由 OpenAPI 和 `operations.json` 生成，不手工编辑。
+- 修改公共接口后运行 `npm run contracts:generate`，同时更新 SDK 与文档参考；`npm run sdk:check` 检查生成物。具名方法覆盖不等于业务闭环测试。
+- 独立模型任务归属 `llm/inference/`；备份 Workspace 时一并保留 `model-inference/inputs/`、`model-inference/outputs/`。提交中断禁止重新提交供应商。
+
 ## SQLite、迁移与并发
 
 - `.runtime/future-props.db` 是默认单机 SQLite 真源。FastAPI 启动时会自动应用已登记迁移，

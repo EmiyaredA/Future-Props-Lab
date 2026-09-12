@@ -60,6 +60,8 @@ from db.migrations.versions import (
     r0056_presentation_workshop,
     r0057_presentation_styles,
     r0058_presentation_media,
+    r0059_project_operations,
+    r0060_model_inference,
 )
 
 
@@ -259,6 +261,13 @@ MIGRATIONS += (
 
 MIGRATIONS += (Migration(r0057_presentation_styles.MIGRATION_ID, r0057_presentation_styles.SQL),)
 
-LATEST_MIGRATION_ID = MIGRATIONS[-1].migration_id
 
 MIGRATIONS += (Migration(r0058_presentation_media.MIGRATION_ID, r0058_presentation_media.SQL),)
+
+
+MIGRATIONS += (Migration(r0059_project_operations.MIGRATION_ID, r0059_project_operations.SQL),)
+
+
+MIGRATIONS += (Migration(r0060_model_inference.MIGRATION_ID, r0060_model_inference.SQL),)
+
+LATEST_MIGRATION_ID = MIGRATIONS[-1].migration_id

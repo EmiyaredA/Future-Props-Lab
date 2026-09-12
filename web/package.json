@@ -40,6 +40,7 @@
     "fflate": "^0.8.3",
     "katex": "^0.16.47",
     "lucide-react": "^1.28.0",
+    "mdast-util-to-hast": "^13.2.1",
     "mermaid": "11.12.2",
     "onnxruntime-web": "^1.27.0",
     "openapi-fetch": "^0.14.0",
@@ -48,6 +49,10 @@
     "react-markdown": "^10.1.0",
     "rehype-highlight": "^7.0.2",
     "remark-gfm": "^4.0.1",
+    "remark-math": "^6.0.0",
+    "remark-mdx": "^3.1.1",
+    "remark-parse": "^11.0.0",
+    "unified": "^11.0.5",
     "wavesurfer.js": "7.12.6"
   },
   "devDependencies": {

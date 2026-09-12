@@ -1,0 +1,50 @@
+.inference-tasks {
+  padding: 24px;
+  min-width: 0;
+}
+.inference-tasks header,
+.inference-tasks footer,
+.inference-task-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.inference-tasks header {
+  justify-content: space-between;
+}
+.inference-tasks ul {
+  list-style: none;
+  padding: 0;
+}
+.inference-tasks li {
+  padding: 20px 0;
+  border-bottom: 1px solid var(--border);
+}
+.inference-task-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.inference-task-summary code {
+  overflow-wrap: anywhere;
+}
+.inference-tasks pre {
+  max-height: 320px;
+  overflow: auto;
+  font-size: 12px;
+}
+.inference-tasks details {
+  margin: 12px 0;
+}
+.inference-tasks summary {
+  cursor: pointer;
+}
+.inference-tasks footer {
+  justify-content: flex-end;
+}
+@media (max-width: 640px) {
+  .inference-tasks {
+    padding: 16px;
+  }
+}

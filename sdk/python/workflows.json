@@ -1,0 +1,122 @@
+[
+  {
+    "workshop": "visual",
+    "example": "sdk/python/src/future_props_lab/workshop_examples.py::visual_workflow",
+    "sdk_methods": [
+      "client.visual.apply_canvas_operations",
+      "client.visual.create_project",
+      "client.visual.export_project_snapshot",
+      "client.visual.get_canvas"
+    ],
+    "http_operations": [
+      "POST /v1/visual-workshop/projects/{project_id}/canvas/operations",
+      "POST /v1/visual-workshop/projects",
+      "GET /v1/visual-workshop/projects/{project_id}/snapshot",
+      "GET /v1/visual-workshop/projects/{project_id}/canvas"
+    ],
+    "document": "/docs.html?page=sdk-workflow-examples",
+    "test": "tests/test_sdk_workflows.py::test_sdk_workshop_create_edit_read_export",
+    "evidence": "create-edit-read-export; same HTTP reads as Web"
+  },
+  {
+    "workshop": "galgame",
+    "example": "sdk/python/src/future_props_lab/workshop_examples.py::galgame_workflow",
+    "sdk_methods": [
+      "client.galgame.apply_story_operations",
+      "client.galgame.create_project",
+      "client.galgame.export_project_snapshot",
+      "client.galgame.get_story",
+      "client.galgame.put_story"
+    ],
+    "http_operations": [
+      "POST /v1/galgame-workshop/projects/{project_id}/story/operations",
+      "POST /v1/galgame-workshop/projects",
+      "GET /v1/galgame-workshop/projects/{project_id}/snapshot",
+      "GET /v1/galgame-workshop/projects/{project_id}/story",
+      "PUT /v1/galgame-workshop/projects/{project_id}/story"
+    ],
+    "document": "/docs.html?page=sdk-workflow-examples",
+    "test": "tests/test_sdk_workflows.py::test_sdk_workshop_create_edit_read_export",
+    "evidence": "create-edit-read-export; same HTTP reads as Web"
+  },
+  {
+    "workshop": "video",
+    "example": "sdk/python/src/future_props_lab/workshop_examples.py::video_workflow",
+    "sdk_methods": [
+      "client.video.apply_timeline_operations",
+      "client.video.create_project",
+      "client.video.export_project_snapshot",
+      "client.video.get_timeline"
+    ],
+    "http_operations": [
+      "POST /v1/video-editor/projects/{project_id}/timeline/operations",
+      "POST /v1/video-editor/projects",
+      "GET /v1/video-editor/projects/{project_id}/snapshot",
+      "GET /v1/video-editor/projects/{project_id}/timeline"
+    ],
+    "document": "/docs.html?page=sdk-workflow-examples",
+    "test": "tests/test_sdk_workflows.py::test_sdk_workshop_create_edit_read_export",
+    "evidence": "create-edit-read-export; same HTTP reads as Web"
+  },
+  {
+    "workshop": "thought",
+    "example": "sdk/python/src/future_props_lab/workshop_examples.py::thought_workflow",
+    "sdk_methods": [
+      "client.thought.apply_note_operations",
+      "client.thought.create_knowledge_base",
+      "client.thought.create_note",
+      "client.thought.export_note_content",
+      "client.thought.get_note"
+    ],
+    "http_operations": [
+      "POST /v1/thought-workshop/notes/{note_id}/operations",
+      "POST /v1/thought-workshop/knowledge-bases",
+      "POST /v1/thought-workshop/notes",
+      "GET /v1/thought-workshop/notes/{note_id}/export",
+      "GET /v1/thought-workshop/notes/{note_id}"
+    ],
+    "document": "/docs.html?page=sdk-workflow-examples",
+    "test": "tests/test_sdk_workflows.py::test_sdk_workshop_create_edit_read_export",
+    "evidence": "create-edit-read-export; same HTTP reads as Web"
+  },
+  {
+    "workshop": "presentation",
+    "example": "sdk/python/src/future_props_lab/workshop_examples.py::presentation_workflow",
+    "sdk_methods": [
+      "client.presentation.apply_presentation_operations",
+      "client.presentation.create_project",
+      "client.presentation.export_pptx",
+      "client.presentation.get_project"
+    ],
+    "http_operations": [
+      "POST /v1/presentation-workshop/projects/{project_id}/operations",
+      "POST /v1/presentation-workshop/projects",
+      "POST /v1/presentation-workshop/projects/{project_id}/export",
+      "GET /v1/presentation-workshop/projects/{project_id}"
+    ],
+    "document": "/docs.html?page=sdk-workflow-examples",
+    "test": "tests/test_sdk_workflows.py::test_sdk_workshop_create_edit_read_export",
+    "evidence": "create-edit-read-export; same HTTP reads as Web"
+  },
+  {
+    "workshop": "annotation",
+    "example": "sdk/python/src/future_props_lab/workshop_examples.py::annotation_workflow",
+    "sdk_methods": [
+      "client.annotation.apply_annotation_operations",
+      "client.annotation.create_project",
+      "client.annotation.export_annotation",
+      "client.annotation.get_document",
+      "client.files.upload_file"
+    ],
+    "http_operations": [
+      "POST /v1/audio-annotation/projects/{project_id}/document/operations",
+      "POST /v1/audio-annotation/projects",
+      "GET /v1/audio-annotation/projects/{project_id}/export",
+      "GET /v1/audio-annotation/projects/{project_id}/document",
+      "POST /v1/files"
+    ],
+    "document": "/docs.html?page=sdk-workflow-examples",
+    "test": "tests/test_sdk_workflows.py::test_sdk_workshop_create_edit_read_export",
+    "evidence": "create-edit-read-export; same HTTP reads as Web"
+  }
+]

@@ -26,6 +26,13 @@ export default defineConfig({
       },
       output: {
         manualChunks(id) {
+          if (id.includes("/docs/articles/sdk/sdk-reference-")) {
+            return id
+              .split("/")
+              .pop()!
+              .split(".md")[0]
+              .replace("sdk-", "docs-");
+          }
           if (id.includes("node_modules/prosemirror-"))
             return "notes-prosemirror";
           if (id.includes("node_modules/@tiptap/")) return "notes-tiptap";

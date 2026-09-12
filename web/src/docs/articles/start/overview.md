@@ -1,4 +1,4 @@
-<!-- docs: {"group":"start","order":0,"title":"文档首页与阅读路径","lead":"从配置第一个模型到完成一份创作，按你的目标开始阅读。","evidence":["web/src/app","web/src/features/accounts","web/src/features/models"]} -->
+<!-- docs: {"componentSyntax":true,"group":"start","order":0,"title":"文档首页与阅读路径","lead":"从配置第一个模型到完成一份创作，按你的目标开始阅读。","evidence":["web/src/app","web/src/features/accounts","web/src/features/models"]} -->
 
 # 欢迎使用未来道具研究所
 
@@ -6,11 +6,20 @@
 
 ## 选择文档
 
-| 我想了解                     | 阅读入口                                                          |
-| ---------------------------- | ----------------------------------------------------------------- |
-| 配置模型、管理文件和完成创作 | [使用文档：快速上手](/docs.html?page=quickstart)                  |
-| 部署、配置与维护本项目       | [开发者文档：生产部署](/docs.html?page=dev-production-deployment) |
-| 通过接口访问现有能力         | [API 参考](/docs.html?page=api-reference)                         |
+<CardGroup>
+<Card title="使用平台" href="/docs.html?page=quickstart" icon="knowledge">
+从第一个模型开始，管理素材、组织项目，完成你的创作。
+</Card>
+<Card title="编写自动化" href="/docs.html?page=sdk-quickstart" icon="tools">
+用 Python 调用模型，精确编辑工坊内容，把操作组合成可重复的流程。
+</Card>
+<Card title="查询 API" href="/docs.html?page=api-reference" icon="key">
+按业务模块查询接口、参数、权限和错误，找到与你的操作对应的调用方法。
+</Card>
+<Card title="开发与运维" href="/docs.html?page=dev-production-deployment" icon="deploy">
+了解部署方式、项目架构和维护流程。内部开发资料按账号权限开放。
+</Card>
+</CardGroup>
 
 ## 常用模块
 

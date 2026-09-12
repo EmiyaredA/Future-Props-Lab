@@ -1,5 +1,7 @@
 import {
-  BookOpen,
+  FileText,
+  ChevronDown,
+  ChevronRight,
   Boxes,
   Compass,
   Layers,
@@ -9,7 +11,7 @@ import {
 } from "lucide-react";
 import { GROUPS, GUIDE_PAGES, pageHref } from "./content";
 import type { GuidePage } from "./types";
-const icons = [BookOpen, Layers, Boxes, Monitor, Compass, LifeBuoy];
+const icons = [FileText, Layers, Boxes, Monitor, Compass, LifeBuoy];
 export function DocsNavigation({ page }: { page: GuidePage }) {
   const groups = GROUPS.filter((g) =>
     page.context
@@ -41,7 +43,7 @@ export function DocsNavigation({ page }: { page: GuidePage }) {
         return (
           <section className="docs-nav-group" key={section}>
             <h2>
-              <Icon size={17} />
+              <Icon size={16} aria-hidden="true" />
               {page.context ? "文档目录" : section}
             </h2>
             {groups
@@ -64,14 +66,25 @@ export function DocsNavigation({ page }: { page: GuidePage }) {
                   return (
                     <a key={g.id} href={pageHref(pages[0])}>
                       {g.title}
-                      <span aria-hidden>›</span>
+                      <ChevronRight
+                        className="docs-nav-chevron"
+                        size={14}
+                        aria-hidden="true"
+                      />
                     </a>
                   );
                 if (page.context || g.id === "start" || pages.length === 1)
                   return <div key={g.id}>{pages.map(link)}</div>;
                 return (
                   <details key={g.id} open={g.id === page.group || undefined}>
-                    <summary>{g.title}</summary>
+                    <summary>
+                      {g.title}
+                      <ChevronDown
+                        className="docs-nav-chevron"
+                        size={14}
+                        aria-hidden="true"
+                      />
+                    </summary>
                     <div className="docs-nav-children">{pages.map(link)}</div>
                   </details>
                 );

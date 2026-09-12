@@ -3,6 +3,7 @@ from __future__ import annotations
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.concurrency.operation_receipts import forget
 from app.concurrency.project_records import (
     delete_revisioned_project,
     load_workspace_project,
@@ -159,4 +160,7 @@ class GalgameWorkshopProjects:
                 self.workspace_id,
                 expected_revision=expected_revision,
                 load_current=lambda: self.get(project_id),
+            )
+            await forget(
+                self.session, workspace_id=self.workspace_id, kind="galgame", resource_id=project_id
             )

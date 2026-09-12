@@ -182,6 +182,9 @@ Future-Props-Lab/
   主题与移动端抽屉。配套截图及逐图来源只存于 `web/public/docs/`，不作为产品状态或测试数据源。
   `web/scripts/documentation-coverage.mjs` 从正文与来源清单生成文章覆盖表；文档结构回归在
   `web/tests/docs-content.test.ts`，浏览器阅读旅程在 `web/e2e/docs.spec.ts`。
+  `rendering/` 移植 Sayflow 的静态文档树、受控组件与阅读样式，支持步骤、卡片、参数、输入输出、
+  高亮代码、公式和 Mermaid；通过研究所主题、URL 与 API 操作适配器集成，不执行文章中的 JavaScript。
+  组件契约、所有公开正文编译和渲染回归在 `web/tests/docs-rendering.test.tsx`，纳入 `npm run docs:check`。
 - `scripts/demo/galgame_runaway/performance_upgrade.py` 只保留兼容入口、CLI 和流程编排；稳定演出规格、素材上传、
   Story 变换/演出块、审计报告与 API/CAS 辅助分别归属同目录 `performance_assets.py`、
   `performance_spec.py`、`performance_transform.py`/`performance_story.py`、`performance_audit.py` 和
@@ -350,3 +353,21 @@ Web 的 `NoteHistory` 复用现有只读 `RichEditor`；`historyDiff.ts` 负责�
 保存复用公共文件上传与画布 CAS，`derivedImageNode.ts` 负责裁剪和视频截帧派生节点的稳定身份及避让位置。
 裁剪保存失败保留已上传素材并重试同一节点；冲突返回现有画布版本选择界面。裁剪不创建生成任务或修改原素材。
 样式归属 `styles/image-crop.css`，浏览器验收由 `canvas-image-crop.spec.ts` 覆盖。
+
+
+## Python SDK 与自动化
+
+- `sdk/python/`：可独立构建安装的 `future-props-lab-sdk`；`src/future_props_lab/generated/` 只保存生成模型和具名资源方法，其他模块拥有 HTTPX 通信、流、鉴权、实时语音和本地文档构建器。
+- `sdk/python/operations.json`：受版本控制的 HTTP 操作到稳定 Python 方法名映射；`coverage.json` 记录契约与文档证据，不能替代业务闭环验收。
+- `scripts/generate_sdk.py`、`scripts/generate_sdk_docs.py`：从 OpenAPI 与方法映射生成 SDK 和公开模块参考；纳入 `contracts:generate` 与 `contracts:check`。
+- `backend/app/llm/inference/`：独立模型能力查询、输入素材、文本调用、任务与结果管理；`routes/model_inference.py` 只处理协议。
+- 工坊各自的 `operations.py` 拥有细粒度编辑校验与一次事务；`concurrency/operation_receipts.py` 仅提供持久化回执原语，`entity_edits.py` 仅提供纯列表编辑。
+- `backend/app/models/model_inference.py` 与 `project_operations.py` 对应追加迁移 `0059_project_operations`、`0060_model_inference`。
+- `web/src/features/models/inference/`：调用日志页中的独立任务查询、下载、转存与结果落盘重试入口；缓存键归属 models/queryKeys.ts。
+- `web/src/docs/articles/sdk/`：公开 SDK 教程及生成方法参考；开发文档仍经已授权接口加载。
+- `backend/app/thought_workshop/markdown_conversion.py` 与 `content_exports.py`：受控 Markdown 转换、静态 HTML 和含素材导出；`schemas/thought_conversion.py` 描述正式契约。
+- `backend/app/audio_annotation/exports.py`：项目 JSON、SRT、已保存片段裁切与识别用例。
+- `backend/app/files/video_frames.py`：工作区文件的逐帧提取；确定性音频裁切与视频取帧实现归属 `media_rendering/audio_clip.py`、`video_frames.py`。
+- `web/src/docs/DocsExamples.tsx`、`DocsReadingProgress.tsx`：受控代码切换与阅读进度；目标阅读入口使用 `rendering/` 的 CardGroup；模块参考按业务模块分包，保留完整搜索内容。
+- `sdk/python/src/future_props_lab/workshop_examples.py` 与 `sdk/python/workflows.json`：六个工坊可执行流程及业务证据，公开文档从样例源码生成；验收边界见 `docs/architecture/sdk-automation-coverage.md`。
+- `backend/app/files/image_crop.py` 与 `schemas/image_crop.py`：公共文件的像素裁剪、边界与透明度规则，返回 PNG 后由调用者显式转存。

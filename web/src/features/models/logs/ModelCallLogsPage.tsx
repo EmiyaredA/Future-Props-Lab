@@ -27,6 +27,8 @@ import {
 import { LogToolbar, LogFilterDrawer } from "./LogFilters";
 import { LogTable, LogPagination } from "./LogTable";
 
+import { InferenceTasks } from "../inference/InferenceTasks";
+
 type Scope = ReturnType<typeof useLogWorkspaceScope>;
 export function ModelCallLogsPage({
   currentWorkspace,
@@ -76,6 +78,8 @@ function LogsContent({
   canDelete: boolean;
 }) {
   const queryClient = useQueryClient();
+  const canReadContent = useWorkspacePermission("content.read");
+  const [showTasks, setShowTasks] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [detailId, setDetailId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<DeleteTarget>(null);
@@ -175,8 +179,23 @@ function LogsContent({
         <div>
           <h1>模型调用日志</h1>
           <p>查看模型调用的消息链、Token 用量、耗时与原始数据。</p>
+          {scope.local && canReadContent && (
+            <button
+              className="btn"
+              aria-expanded={showTasks}
+              onClick={() => setShowTasks(!showTasks)}
+            >
+              独立模型任务
+            </button>
+          )}
         </div>
       </header>
+      {showTasks && scope.local && canReadContent && (
+        <InferenceTasks
+          key={currentWorkspaceId}
+          workspaceId={currentWorkspaceId}
+        />
+      )}
       <div
         className="stat-grid"
         aria-label="所选工作区今日统计（UTC），不受列表筛选影响"

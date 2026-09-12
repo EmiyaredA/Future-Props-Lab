@@ -5,6 +5,7 @@ from pathlib import Path
 from sqlalchemy import Text, delete, func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.concurrency.operation_receipts import forget
 from app.concurrency.revisions import RevisionConflictError
 from app.files.policy import ATTACHMENT_EXTENSIONS
 from app.models.defaults import utc_now
@@ -214,7 +215,7 @@ class Notes:
         return row
 
     async def put(
-        self, note_id: str, body: ThoughtNotePut, *, restoring: bool = False
+        self, note_id: str, body: ThoughtNotePut, *, restoring: bool = False, commit: bool = True
     ) -> ThoughtNoteOut:
         current = await self.get(note_id)
         if current.deleted_at:
@@ -256,7 +257,8 @@ class Notes:
             .where(ThoughtKnowledgeBase.id == current.knowledge_base_id)
             .values(updated_at=utc_now())
         )
-        await self.session.commit()
+        if commit:
+            await self.session.commit()
         return note_out(await self.get(note_id))
 
     async def history_list(self, note_id: str, cursor: str | None, limit: int):
@@ -337,6 +339,9 @@ class Notes:
             result = await self.session.execute(delete(ThoughtNote).where(*predicate))
             if result.rowcount != 1:
                 await self.conflict(note_id, expected)
+            await forget(
+                self.session, workspace_id=self.workspace_id, kind="thought", resource_id=note_id
+            )
             await self.session.commit()
             return snapshot
         if action == "restore":

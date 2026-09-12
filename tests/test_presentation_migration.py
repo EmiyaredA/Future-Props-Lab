@@ -22,6 +22,8 @@ def test_presentation_migration_is_additive_and_references_cascade(tmp_path, mon
                     "0056_presentation_workshop",
                     "0057_presentation_styles",
                     "0058_presentation_media",
+                    "0059_project_operations",
+                    "0060_model_inference",
                 }
             ),
         )

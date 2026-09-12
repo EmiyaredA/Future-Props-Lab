@@ -1,0 +1,1370 @@
+{
+  "DELETE /v1/account/profile/avatar": {
+    "method": "remove_avatar",
+    "resource": "accounts"
+  },
+  "DELETE /v1/account/sessions/{session_id}": {
+    "method": "delete_session",
+    "resource": "accounts"
+  },
+  "DELETE /v1/account/workspaces/current/invitations/{invitation_id}": {
+    "method": "revoke_invitation",
+    "resource": "workspaces"
+  },
+  "DELETE /v1/account/workspaces/current/members/{membership_id}": {
+    "method": "delete_member",
+    "resource": "workspaces"
+  },
+  "DELETE /v1/audio-annotation/projects/{project_id}": {
+    "method": "delete_project",
+    "resource": "annotation"
+  },
+  "DELETE /v1/file-folders/{folder_id}": {
+    "method": "delete_file_folder",
+    "resource": "files"
+  },
+  "DELETE /v1/files/{asset_id}": {
+    "method": "delete_file",
+    "resource": "files"
+  },
+  "DELETE /v1/galgame-workshop/projects/{project_id}": {
+    "method": "delete_project",
+    "resource": "galgame"
+  },
+  "DELETE /v1/galgame-workshop/projects/{project_id}/assets/{asset_id}": {
+    "method": "delete_project_asset",
+    "resource": "galgame"
+  },
+  "DELETE /v1/integrations/mcp/{integration_id}": {
+    "method": "delete_mcp",
+    "resource": "integrations"
+  },
+  "DELETE /v1/integrations/skills/{skill_id}": {
+    "method": "delete_skill",
+    "resource": "integrations"
+  },
+  "DELETE /v1/integrations/tool-apis/{integration_id}": {
+    "method": "delete_tool_api",
+    "resource": "integrations"
+  },
+  "DELETE /v1/llm-call-logs/{log_id}": {
+    "method": "delete_one",
+    "resource": "logs"
+  },
+  "DELETE /v1/model-entries/{model_id}": {
+    "method": "delete_model",
+    "resource": "models"
+  },
+  "DELETE /v1/model-inference/assets/{asset_id}": {
+    "method": "delete_asset",
+    "resource": "inference"
+  },
+  "DELETE /v1/model-inference/tasks/{task_id}": {
+    "method": "delete_task",
+    "resource": "inference"
+  },
+  "DELETE /v1/model-providers/{provider_id}": {
+    "method": "delete_provider",
+    "resource": "models"
+  },
+  "DELETE /v1/model-suppliers/{supplier_id}": {
+    "method": "delete_supplier",
+    "resource": "models"
+  },
+  "DELETE /v1/model-test/conversations/{conversation_id}": {
+    "method": "delete_conversation",
+    "resource": "testing"
+  },
+  "DELETE /v1/model-test/conversations/{conversation_id}/attachments/{attachment_id}": {
+    "method": "delete_attachment",
+    "resource": "testing"
+  },
+  "DELETE /v1/model-test/generation-assets/{asset_id}": {
+    "method": "delete_generation_asset",
+    "resource": "testing"
+  },
+  "DELETE /v1/model-test/generation-tasks/{task_id}": {
+    "method": "delete_generation_task",
+    "resource": "testing"
+  },
+  "DELETE /v1/model-test/tools/{tool_id}": {
+    "method": "delete_tool",
+    "resource": "test_tools"
+  },
+  "DELETE /v1/model-test/transcription-tasks/{task_id}": {
+    "method": "delete_transcription_task",
+    "resource": "testing"
+  },
+  "DELETE /v1/presentation-workshop/projects/{project_id}": {
+    "method": "delete_project",
+    "resource": "presentation"
+  },
+  "DELETE /v1/thought-workshop/knowledge-bases/{project_id}": {
+    "method": "trash_knowledge_base",
+    "resource": "thought"
+  },
+  "DELETE /v1/thought-workshop/notes/{note_id}": {
+    "method": "delete_note",
+    "resource": "thought"
+  },
+  "DELETE /v1/video-editor/projects/{project_id}": {
+    "method": "delete_project",
+    "resource": "video"
+  },
+  "DELETE /v1/video-editor/projects/{project_id}/assets/{asset_id}": {
+    "method": "delete_asset",
+    "resource": "video"
+  },
+  "DELETE /v1/video-editor/projects/{project_id}/renders/{task_id}": {
+    "method": "delete_render",
+    "resource": "video"
+  },
+  "DELETE /v1/visual-workshop/projects/{project_id}": {
+    "method": "delete_project",
+    "resource": "visual"
+  },
+  "DELETE /v1/visual-workshop/projects/{project_id}/asset-references/{reference_id}": {
+    "method": "delete_asset_reference",
+    "resource": "visual"
+  },
+  "DELETE /v1/visual-workshop/projects/{project_id}/conversations/{conversation_id}": {
+    "method": "delete_conversation",
+    "resource": "visual_assistant"
+  },
+  "GET /health": {
+    "method": "health",
+    "resource": "system"
+  },
+  "GET /ready": {
+    "method": "ready",
+    "resource": "system"
+  },
+  "GET /v1/account/api-keys": {
+    "method": "api_keys",
+    "resource": "accounts"
+  },
+  "GET /v1/account/cross-workspace-call-logs": {
+    "method": "cross_logs",
+    "resource": "governance"
+  },
+  "GET /v1/account/cross-workspace-call-logs/stats": {
+    "method": "cross_log_stats",
+    "resource": "governance"
+  },
+  "GET /v1/account/developer-documents": {
+    "method": "developer_docs",
+    "resource": "governance"
+  },
+  "GET /v1/account/log-workspaces": {
+    "method": "log_spaces",
+    "resource": "governance"
+  },
+  "GET /v1/account/profile": {
+    "method": "get_profile",
+    "resource": "accounts"
+  },
+  "GET /v1/account/profile/avatar": {
+    "method": "get_avatar",
+    "resource": "accounts"
+  },
+  "GET /v1/account/security-events": {
+    "method": "own_audit",
+    "resource": "accounts"
+  },
+  "GET /v1/account/sessions": {
+    "method": "sessions",
+    "resource": "accounts"
+  },
+  "GET /v1/account/workspace-invitations": {
+    "method": "my_invitations",
+    "resource": "workspaces"
+  },
+  "GET /v1/account/workspaces": {
+    "method": "accessible_workspaces",
+    "resource": "workspaces"
+  },
+  "GET /v1/account/workspaces/current/audit-events": {
+    "method": "audit",
+    "resource": "admin"
+  },
+  "GET /v1/account/workspaces/current/invitations": {
+    "method": "workspace_invitations",
+    "resource": "workspaces"
+  },
+  "GET /v1/account/workspaces/current/members": {
+    "method": "members",
+    "resource": "workspaces"
+  },
+  "GET /v1/audio-annotation/projects": {
+    "method": "list_projects",
+    "resource": "annotation"
+  },
+  "GET /v1/audio-annotation/projects/{project_id}": {
+    "method": "get_project",
+    "resource": "annotation"
+  },
+  "GET /v1/audio-annotation/projects/{project_id}/document": {
+    "method": "get_document",
+    "resource": "annotation"
+  },
+  "GET /v1/audio-annotation/projects/{project_id}/export": {
+    "method": "export_annotation",
+    "resource": "annotation"
+  },
+  "GET /v1/audio-annotation/projects/{project_id}/segments/{segment_id}/audio": {
+    "method": "download_segment_audio",
+    "resource": "annotation"
+  },
+  "GET /v1/audio-annotation/projects/{project_id}/waveform": {
+    "method": "get_waveform",
+    "resource": "annotation"
+  },
+  "GET /v1/auth/me": {
+    "method": "me",
+    "resource": "accounts"
+  },
+  "GET /v1/demo-services/tools/{tool}": {
+    "method": "example_tool",
+    "resource": "demo_calls"
+  },
+  "GET /v1/file-folders": {
+    "method": "list_file_folders",
+    "resource": "files"
+  },
+  "GET /v1/file-storage/layout": {
+    "method": "storage_layout_status",
+    "resource": "files"
+  },
+  "GET /v1/files": {
+    "method": "list_files",
+    "resource": "files"
+  },
+  "GET /v1/files/{asset_id}/content": {
+    "method": "preview_file",
+    "resource": "files"
+  },
+  "GET /v1/files/{asset_id}/download": {
+    "method": "download_file",
+    "resource": "files"
+  },
+  "GET /v1/galgame-workshop/projects": {
+    "method": "list_projects",
+    "resource": "galgame"
+  },
+  "GET /v1/galgame-workshop/projects/{project_id}": {
+    "method": "get_project",
+    "resource": "galgame"
+  },
+  "GET /v1/galgame-workshop/projects/{project_id}/annotation-imports/{import_id}": {
+    "method": "get_annotation_import",
+    "resource": "galgame"
+  },
+  "GET /v1/galgame-workshop/projects/{project_id}/assets": {
+    "method": "list_project_assets",
+    "resource": "galgame"
+  },
+  "GET /v1/galgame-workshop/projects/{project_id}/assets/asr/settings": {
+    "method": "get_asr_settings",
+    "resource": "galgame"
+  },
+  "GET /v1/galgame-workshop/projects/{project_id}/assets/asr/transcriptions": {
+    "method": "list_transcriptions",
+    "resource": "galgame"
+  },
+  "GET /v1/galgame-workshop/projects/{project_id}/assets/overview": {
+    "method": "get_project_asset_overview",
+    "resource": "galgame"
+  },
+  "GET /v1/galgame-workshop/projects/{project_id}/assets/package-manifest": {
+    "method": "get_project_package_manifest",
+    "resource": "galgame"
+  },
+  "GET /v1/galgame-workshop/projects/{project_id}/snapshot": {
+    "method": "export_project_snapshot",
+    "resource": "galgame"
+  },
+  "GET /v1/galgame-workshop/projects/{project_id}/story": {
+    "method": "get_story",
+    "resource": "galgame"
+  },
+  "GET /v1/galgame-workshop/projects/{project_id}/story/portrait-upgrade": {
+    "method": "preview_portrait_upgrade",
+    "resource": "galgame"
+  },
+  "GET /v1/galgame-workshop/projects/{project_id}/story/report": {
+    "method": "get_story_report",
+    "resource": "galgame"
+  },
+  "GET /v1/galgame-workshop/projects/{project_id}/story/snapshots": {
+    "method": "list_story_snapshots",
+    "resource": "galgame"
+  },
+  "GET /v1/galgame-workshop/projects/{project_id}/video-editor-handoffs": {
+    "method": "list_handoffs",
+    "resource": "galgame"
+  },
+  "GET /v1/galgame-workshop/projects/{project_id}/video-editor-handoffs/{task_id}": {
+    "method": "get_handoff",
+    "resource": "galgame"
+  },
+  "GET /v1/galgame-workshop/projects/{project_id}/video-exports": {
+    "method": "list_video_exports",
+    "resource": "galgame"
+  },
+  "GET /v1/galgame-workshop/projects/{project_id}/video-exports/{export_id}": {
+    "method": "get_video_export",
+    "resource": "galgame"
+  },
+  "GET /v1/galgame-workshop/projects/{project_id}/video-exports/{export_id}/download": {
+    "method": "download_video_export",
+    "resource": "galgame"
+  },
+  "GET /v1/galgame-workshop/story-migrations/status": {
+    "method": "get_story_migration_status",
+    "resource": "galgame"
+  },
+  "GET /v1/integrations/mcp": {
+    "method": "mcp_servers",
+    "resource": "integrations"
+  },
+  "GET /v1/integrations/mcp/{integration_id}": {
+    "method": "mcp_server",
+    "resource": "integrations"
+  },
+  "GET /v1/integrations/mcp/{integration_id}/tools": {
+    "method": "mcp_tools",
+    "resource": "integrations"
+  },
+  "GET /v1/integrations/skills": {
+    "method": "skills",
+    "resource": "integrations"
+  },
+  "GET /v1/integrations/skills/{skill_id}": {
+    "method": "skill",
+    "resource": "integrations"
+  },
+  "GET /v1/integrations/skills/{skill_id}/versions": {
+    "method": "skill_versions",
+    "resource": "integrations"
+  },
+  "GET /v1/integrations/skills/{skill_id}/versions/{version}/content": {
+    "method": "skill_version_content",
+    "resource": "integrations"
+  },
+  "GET /v1/integrations/tool-apis": {
+    "method": "tool_apis",
+    "resource": "integrations"
+  },
+  "GET /v1/integrations/tool-apis/{integration_id}": {
+    "method": "tool_api",
+    "resource": "integrations"
+  },
+  "GET /v1/llm-call-logs": {
+    "method": "list_logs",
+    "resource": "logs"
+  },
+  "GET /v1/llm-call-logs/stats": {
+    "method": "stats",
+    "resource": "logs"
+  },
+  "GET /v1/llm-call-logs/{log_id}": {
+    "method": "detail",
+    "resource": "logs"
+  },
+  "GET /v1/llm-call-logs/{log_id}/reproduction-bundle": {
+    "method": "reproduction_bundle",
+    "resource": "logs"
+  },
+  "GET /v1/model-categories": {
+    "method": "list_model_categories",
+    "resource": "models"
+  },
+  "GET /v1/model-inference/options": {
+    "method": "model_options",
+    "resource": "inference"
+  },
+  "GET /v1/model-inference/tasks": {
+    "method": "list_tasks",
+    "resource": "inference"
+  },
+  "GET /v1/model-inference/tasks/{task_id}": {
+    "method": "get_task",
+    "resource": "inference"
+  },
+  "GET /v1/model-inference/tasks/{task_id}/content": {
+    "method": "download_result",
+    "resource": "inference"
+  },
+  "GET /v1/model-providers": {
+    "method": "list_providers",
+    "resource": "models"
+  },
+  "GET /v1/model-test/conversations": {
+    "method": "list_conversations",
+    "resource": "testing"
+  },
+  "GET /v1/model-test/conversations/{conversation_id}": {
+    "method": "get_conversation",
+    "resource": "testing"
+  },
+  "GET /v1/model-test/conversations/{conversation_id}/attachments/{attachment_id}/content": {
+    "method": "attachment_content",
+    "resource": "testing"
+  },
+  "GET /v1/model-test/generation-assets/backfill-status": {
+    "method": "generation_asset_backfill_status",
+    "resource": "testing"
+  },
+  "GET /v1/model-test/generation-options": {
+    "method": "generation_options",
+    "resource": "testing"
+  },
+  "GET /v1/model-test/generation-tasks": {
+    "method": "list_generation_tasks",
+    "resource": "testing"
+  },
+  "GET /v1/model-test/generation-tasks/{task_id}": {
+    "method": "get_generation_task",
+    "resource": "testing"
+  },
+  "GET /v1/model-test/generation-tasks/{task_id}/content": {
+    "method": "generation_content",
+    "resource": "testing"
+  },
+  "GET /v1/model-test/realtime-options": {
+    "method": "realtime_options",
+    "resource": "testing"
+  },
+  "GET /v1/model-test/tools": {
+    "method": "list_tools",
+    "resource": "test_tools"
+  },
+  "GET /v1/model-test/tools/{tool_id}": {
+    "method": "get_tool",
+    "resource": "test_tools"
+  },
+  "GET /v1/model-test/transcription-options": {
+    "method": "transcription_options",
+    "resource": "testing"
+  },
+  "GET /v1/model-test/transcription-tasks": {
+    "method": "list_transcription_tasks",
+    "resource": "testing"
+  },
+  "GET /v1/model-test/transcription-tasks/{task_id}": {
+    "method": "get_transcription_task",
+    "resource": "testing"
+  },
+  "GET /v1/model-test/transcription-tasks/{task_id}/input-content": {
+    "method": "transcription_input_content",
+    "resource": "testing"
+  },
+  "GET /v1/platform/accounts": {
+    "method": "accounts",
+    "resource": "admin"
+  },
+  "GET /v1/platform/demo-services": {
+    "method": "services",
+    "resource": "demo"
+  },
+  "GET /v1/platform/model-service-templates/sync-jobs/{job_id}": {
+    "method": "job",
+    "resource": "templates"
+  },
+  "GET /v1/platform/model-service-templates/{role}": {
+    "method": "template",
+    "resource": "templates"
+  },
+  "GET /v1/platform/model-service-templates/{role}/sync-jobs": {
+    "method": "history",
+    "resource": "templates"
+  },
+  "GET /v1/platform/permission-policy": {
+    "method": "get_policy",
+    "resource": "governance"
+  },
+  "GET /v1/platform/registration-invite-codes": {
+    "method": "invites",
+    "resource": "governance"
+  },
+  "GET /v1/platform/registration-invite-codes/{invite_id}/redemptions": {
+    "method": "redemptions",
+    "resource": "governance"
+  },
+  "GET /v1/platform/runtime-quotas": {
+    "method": "get_quotas",
+    "resource": "governance"
+  },
+  "GET /v1/platform/security-events": {
+    "method": "audit_v1_platform_security_events",
+    "resource": "admin"
+  },
+  "GET /v1/platform/workspaces": {
+    "method": "workspaces",
+    "resource": "admin"
+  },
+  "GET /v1/presentation-workshop/projects": {
+    "method": "list_projects",
+    "resource": "presentation"
+  },
+  "GET /v1/presentation-workshop/projects/{project_id}": {
+    "method": "get_project",
+    "resource": "presentation"
+  },
+  "GET /v1/public-workspace": {
+    "method": "projection",
+    "resource": "public"
+  },
+  "GET /v1/public-workspace/assets/{asset_id}/content": {
+    "method": "asset_content",
+    "resource": "public"
+  },
+  "GET /v1/public-workspace/galgame-projects/{project_id}/story": {
+    "method": "story",
+    "resource": "public"
+  },
+  "GET /v1/thought-workshop/backup": {
+    "method": "backup",
+    "resource": "thought"
+  },
+  "GET /v1/thought-workshop/knowledge-bases": {
+    "method": "knowledge_bases",
+    "resource": "thought"
+  },
+  "GET /v1/thought-workshop/knowledge-bases/{project_id}": {
+    "method": "knowledge_base",
+    "resource": "thought"
+  },
+  "GET /v1/thought-workshop/knowledge-bases/{project_id}/directory": {
+    "method": "directory",
+    "resource": "thought"
+  },
+  "GET /v1/thought-workshop/models": {
+    "method": "writing_models",
+    "resource": "thought"
+  },
+  "GET /v1/thought-workshop/notes": {
+    "method": "list_notes",
+    "resource": "thought"
+  },
+  "GET /v1/thought-workshop/notes/{note_id}": {
+    "method": "get_note",
+    "resource": "thought"
+  },
+  "GET /v1/thought-workshop/notes/{note_id}/export": {
+    "method": "export_note_content",
+    "resource": "thought"
+  },
+  "GET /v1/thought-workshop/notes/{note_id}/history": {
+    "method": "note_history",
+    "resource": "thought"
+  },
+  "GET /v1/thought-workshop/notes/{note_id}/history/{history_id}": {
+    "method": "note_history_detail",
+    "resource": "thought"
+  },
+  "GET /v1/tool-navigation/state": {
+    "method": "get_state",
+    "resource": "tools"
+  },
+  "GET /v1/video-editor/import-sources": {
+    "method": "import_sources",
+    "resource": "video"
+  },
+  "GET /v1/video-editor/projects": {
+    "method": "list_projects",
+    "resource": "video"
+  },
+  "GET /v1/video-editor/projects/{project_id}": {
+    "method": "get_project",
+    "resource": "video"
+  },
+  "GET /v1/video-editor/projects/{project_id}/assets": {
+    "method": "list_assets",
+    "resource": "video"
+  },
+  "GET /v1/video-editor/projects/{project_id}/assets/{asset_id}/{variant}": {
+    "method": "asset_variant",
+    "resource": "video"
+  },
+  "GET /v1/video-editor/projects/{project_id}/preview/frame": {
+    "method": "exact_frame",
+    "resource": "video"
+  },
+  "GET /v1/video-editor/projects/{project_id}/renders": {
+    "method": "list_renders",
+    "resource": "video"
+  },
+  "GET /v1/video-editor/projects/{project_id}/renders/{task_id}": {
+    "method": "get_render",
+    "resource": "video"
+  },
+  "GET /v1/video-editor/projects/{project_id}/segment-exports": {
+    "method": "list_segment_exports",
+    "resource": "video"
+  },
+  "GET /v1/video-editor/projects/{project_id}/segment-exports/{task_id}": {
+    "method": "get_segment_export",
+    "resource": "video"
+  },
+  "GET /v1/video-editor/projects/{project_id}/segment-exports/{task_id}/download": {
+    "method": "download_segment_export",
+    "resource": "video"
+  },
+  "GET /v1/video-editor/projects/{project_id}/snapshot": {
+    "method": "export_project_snapshot",
+    "resource": "video"
+  },
+  "GET /v1/video-editor/projects/{project_id}/timeline": {
+    "method": "get_timeline",
+    "resource": "video"
+  },
+  "GET /v1/visual-workshop/generation-batches": {
+    "method": "list_generation_batches",
+    "resource": "generation"
+  },
+  "GET /v1/visual-workshop/generation-batches/{batch_id}": {
+    "method": "get_generation_batch",
+    "resource": "generation"
+  },
+  "GET /v1/visual-workshop/generation-options": {
+    "method": "generation_options",
+    "resource": "generation"
+  },
+  "GET /v1/visual-workshop/generation-tasks": {
+    "method": "list_generation_tasks",
+    "resource": "generation"
+  },
+  "GET /v1/visual-workshop/generation-tasks/{task_id}": {
+    "method": "get_generation_task",
+    "resource": "generation"
+  },
+  "GET /v1/visual-workshop/projects": {
+    "method": "list_projects",
+    "resource": "visual"
+  },
+  "GET /v1/visual-workshop/projects/{project_id}": {
+    "method": "get_project",
+    "resource": "visual"
+  },
+  "GET /v1/visual-workshop/projects/{project_id}/canvas": {
+    "method": "get_canvas",
+    "resource": "visual"
+  },
+  "GET /v1/visual-workshop/projects/{project_id}/conversations": {
+    "method": "list_conversations",
+    "resource": "visual_assistant"
+  },
+  "GET /v1/visual-workshop/projects/{project_id}/conversations/models": {
+    "method": "list_models",
+    "resource": "visual_assistant"
+  },
+  "GET /v1/visual-workshop/projects/{project_id}/conversations/{conversation_id}": {
+    "method": "get_conversation",
+    "resource": "visual_assistant"
+  },
+  "GET /v1/visual-workshop/projects/{project_id}/snapshot": {
+    "method": "export_project_snapshot",
+    "resource": "visual"
+  },
+  "PATCH /v1/account/profile": {
+    "method": "patch_profile",
+    "resource": "accounts"
+  },
+  "PATCH /v1/account/project-certification/{kind}/{project_id}": {
+    "method": "certification",
+    "resource": "governance"
+  },
+  "PATCH /v1/account/workspaces/current": {
+    "method": "update_workspace",
+    "resource": "workspaces"
+  },
+  "PATCH /v1/account/workspaces/current/members/{membership_id}": {
+    "method": "set_member_role",
+    "resource": "workspaces"
+  },
+  "PATCH /v1/audio-annotation/projects/{project_id}": {
+    "method": "patch_project",
+    "resource": "annotation"
+  },
+  "PATCH /v1/file-folders/{folder_id}": {
+    "method": "patch_file_folder",
+    "resource": "files"
+  },
+  "PATCH /v1/files/{asset_id}": {
+    "method": "patch_file",
+    "resource": "files"
+  },
+  "PATCH /v1/galgame-workshop/projects/{project_id}": {
+    "method": "patch_project",
+    "resource": "galgame"
+  },
+  "PATCH /v1/galgame-workshop/projects/{project_id}/assets/asr/settings": {
+    "method": "patch_asr_settings",
+    "resource": "galgame"
+  },
+  "PATCH /v1/galgame-workshop/projects/{project_id}/assets/{asset_id}": {
+    "method": "patch_project_asset",
+    "resource": "galgame"
+  },
+  "PATCH /v1/galgame-workshop/projects/{project_id}/assets/{asset_id}/transcript": {
+    "method": "patch_asset_transcript",
+    "resource": "galgame"
+  },
+  "PATCH /v1/galgame-workshop/projects/{project_id}/story/dialogue": {
+    "method": "patch_story_dialogue",
+    "resource": "galgame"
+  },
+  "PATCH /v1/galgame-workshop/projects/{project_id}/story/edits": {
+    "method": "patch_story_edits",
+    "resource": "galgame"
+  },
+  "PATCH /v1/galgame-workshop/projects/{project_id}/story/stage-expression": {
+    "method": "patch_story_stage_expression",
+    "resource": "galgame"
+  },
+  "PATCH /v1/integrations/mcp/{integration_id}": {
+    "method": "update_mcp",
+    "resource": "integrations"
+  },
+  "PATCH /v1/integrations/skills/{skill_id}": {
+    "method": "update_skill",
+    "resource": "integrations"
+  },
+  "PATCH /v1/integrations/tool-apis/{integration_id}": {
+    "method": "update_tool_api",
+    "resource": "integrations"
+  },
+  "PATCH /v1/model-entries/{model_id}": {
+    "method": "update_model",
+    "resource": "models"
+  },
+  "PATCH /v1/model-providers/{provider_id}": {
+    "method": "update_provider",
+    "resource": "models"
+  },
+  "PATCH /v1/model-suppliers/{supplier_id}": {
+    "method": "update_supplier",
+    "resource": "models"
+  },
+  "PATCH /v1/model-test/conversations/{conversation_id}": {
+    "method": "patch_conversation",
+    "resource": "testing"
+  },
+  "PATCH /v1/model-test/tools/{tool_id}": {
+    "method": "update_tool",
+    "resource": "test_tools"
+  },
+  "PATCH /v1/platform/accounts/{user_id}": {
+    "method": "patch_account",
+    "resource": "admin"
+  },
+  "PATCH /v1/platform/permission-policy": {
+    "method": "patch_policy",
+    "resource": "governance"
+  },
+  "PATCH /v1/platform/registration-invite-codes/{invite_id}": {
+    "method": "patch_invite",
+    "resource": "governance"
+  },
+  "PATCH /v1/platform/runtime-quotas": {
+    "method": "patch_quotas",
+    "resource": "governance"
+  },
+  "PATCH /v1/tool-navigation/tools/{tool_id}": {
+    "method": "set_favorite",
+    "resource": "tools"
+  },
+  "PATCH /v1/video-editor/projects/{project_id}": {
+    "method": "patch_project",
+    "resource": "video"
+  },
+  "PATCH /v1/visual-workshop/projects/{project_id}": {
+    "method": "patch_project",
+    "resource": "visual"
+  },
+  "PATCH /v1/visual-workshop/projects/{project_id}/asset-references/{reference_id}": {
+    "method": "patch_asset_reference",
+    "resource": "visual"
+  },
+  "PATCH /v1/visual-workshop/projects/{project_id}/conversations/{conversation_id}": {
+    "method": "patch_conversation",
+    "resource": "visual_assistant"
+  },
+  "POST /v1/account/api-keys": {
+    "method": "add_api_key",
+    "resource": "accounts"
+  },
+  "POST /v1/account/api-keys/{key_id}/revoke": {
+    "method": "remove_api_key",
+    "resource": "accounts"
+  },
+  "POST /v1/account/demo-services/{service_id}/install": {
+    "method": "install",
+    "resource": "demo"
+  },
+  "POST /v1/account/sessions/revoke-others": {
+    "method": "delete_other_sessions",
+    "resource": "accounts"
+  },
+  "POST /v1/account/workspace-invitations/{invitation_id}/accept": {
+    "method": "accept_invitation",
+    "resource": "workspaces"
+  },
+  "POST /v1/account/workspace-invitations/{invitation_id}/decline": {
+    "method": "decline_invitation",
+    "resource": "workspaces"
+  },
+  "POST /v1/account/workspaces/current/invitations": {
+    "method": "invite_member",
+    "resource": "workspaces"
+  },
+  "POST /v1/account/workspaces/switch": {
+    "method": "set_active_workspace",
+    "resource": "workspaces"
+  },
+  "POST /v1/audio-annotation/imports": {
+    "method": "import_project",
+    "resource": "annotation"
+  },
+  "POST /v1/audio-annotation/projects": {
+    "method": "create_project",
+    "resource": "annotation"
+  },
+  "POST /v1/audio-annotation/projects/{project_id}/document/operations": {
+    "method": "apply_annotation_operations",
+    "resource": "annotation"
+  },
+  "POST /v1/audio-annotation/projects/{project_id}/segment-transcriptions": {
+    "method": "transcribe_segment",
+    "resource": "annotation"
+  },
+  "POST /v1/audio-annotation/projects/{project_id}/segments/{segment_id}/transcribe-saved": {
+    "method": "transcribe_saved_segment",
+    "resource": "annotation"
+  },
+  "POST /v1/audio-annotation/transcription-imports": {
+    "method": "import_transcription",
+    "resource": "annotation"
+  },
+  "POST /v1/auth/change-password": {
+    "method": "change_current_password",
+    "resource": "accounts"
+  },
+  "POST /v1/auth/login": {
+    "method": "login",
+    "resource": "accounts"
+  },
+  "POST /v1/auth/logout": {
+    "method": "logout",
+    "resource": "accounts"
+  },
+  "POST /v1/auth/reauth": {
+    "method": "reauth",
+    "resource": "accounts"
+  },
+  "POST /v1/auth/register": {
+    "method": "registration",
+    "resource": "governance"
+  },
+  "POST /v1/demo-services/model/chat/completions": {
+    "method": "mock_completion",
+    "resource": "demo_calls"
+  },
+  "POST /v1/file-folders": {
+    "method": "create_file_folder",
+    "resource": "files"
+  },
+  "POST /v1/file-storage/layout/migrate": {
+    "method": "migrate_storage_layout",
+    "resource": "files"
+  },
+  "POST /v1/files": {
+    "method": "upload_file",
+    "resource": "files"
+  },
+  "POST /v1/files/svg/preview": {
+    "method": "preview_svg",
+    "resource": "files"
+  },
+  "POST /v1/files/{asset_id}/crop": {
+    "method": "crop_file_image",
+    "resource": "files"
+  },
+  "POST /v1/files/{asset_id}/frames": {
+    "method": "extract_video_frames",
+    "resource": "files"
+  },
+  "POST /v1/galgame-workshop/projects": {
+    "method": "create_project",
+    "resource": "galgame"
+  },
+  "POST /v1/galgame-workshop/projects/snapshot-imports": {
+    "method": "import_project_snapshot",
+    "resource": "galgame"
+  },
+  "POST /v1/galgame-workshop/projects/{project_id}/annotation-imports": {
+    "method": "create_annotation_import",
+    "resource": "galgame"
+  },
+  "POST /v1/galgame-workshop/projects/{project_id}/annotation-imports/preview": {
+    "method": "preview_annotation_import",
+    "resource": "galgame"
+  },
+  "POST /v1/galgame-workshop/projects/{project_id}/assets": {
+    "method": "upload_project_asset",
+    "resource": "galgame"
+  },
+  "POST /v1/galgame-workshop/projects/{project_id}/assets/asr/match-dialogue": {
+    "method": "match_voice_to_dialogue",
+    "resource": "galgame"
+  },
+  "POST /v1/galgame-workshop/projects/{project_id}/assets/asr/transcriptions": {
+    "method": "create_transcriptions",
+    "resource": "galgame"
+  },
+  "POST /v1/galgame-workshop/projects/{project_id}/assets/batch": {
+    "method": "batch_upload_project_assets",
+    "resource": "galgame"
+  },
+  "POST /v1/galgame-workshop/projects/{project_id}/assets/import-preview": {
+    "method": "preview_project_asset_import",
+    "resource": "galgame"
+  },
+  "POST /v1/galgame-workshop/projects/{project_id}/assets/metadata-scan": {
+    "method": "scan_project_asset_metadata",
+    "resource": "galgame"
+  },
+  "POST /v1/galgame-workshop/projects/{project_id}/assets/repair": {
+    "method": "repair_project_asset",
+    "resource": "galgame"
+  },
+  "POST /v1/galgame-workshop/projects/{project_id}/open-folder": {
+    "method": "reveal_project_folder",
+    "resource": "galgame"
+  },
+  "POST /v1/galgame-workshop/projects/{project_id}/story/import": {
+    "method": "import_legacy_story",
+    "resource": "galgame"
+  },
+  "POST /v1/galgame-workshop/projects/{project_id}/story/operations": {
+    "method": "apply_story_operations",
+    "resource": "galgame"
+  },
+  "POST /v1/galgame-workshop/projects/{project_id}/story/portrait-upgrade": {
+    "method": "apply_portrait_upgrade",
+    "resource": "galgame"
+  },
+  "POST /v1/galgame-workshop/projects/{project_id}/story/snapshots/{snapshot_id}/restore": {
+    "method": "restore_story_snapshot",
+    "resource": "galgame"
+  },
+  "POST /v1/galgame-workshop/projects/{project_id}/video-editor-handoffs": {
+    "method": "create_handoff",
+    "resource": "galgame"
+  },
+  "POST /v1/galgame-workshop/projects/{project_id}/video-editor-handoffs/{task_id}/cancel": {
+    "method": "cancel_handoff",
+    "resource": "galgame"
+  },
+  "POST /v1/galgame-workshop/projects/{project_id}/video-exports": {
+    "method": "create_video_export",
+    "resource": "galgame"
+  },
+  "POST /v1/galgame-workshop/projects/{project_id}/video-exports/frame": {
+    "method": "exact_video_export_frame",
+    "resource": "galgame"
+  },
+  "POST /v1/galgame-workshop/projects/{project_id}/video-exports/preview": {
+    "method": "preview_video_export",
+    "resource": "galgame"
+  },
+  "POST /v1/galgame-workshop/projects/{project_id}/video-exports/{export_id}/cancel": {
+    "method": "cancel_video_export",
+    "resource": "galgame"
+  },
+  "POST /v1/galgame-workshop/story-migrations/run": {
+    "method": "run_story_migrations",
+    "resource": "galgame"
+  },
+  "POST /v1/integrations/mcp": {
+    "method": "create_mcp",
+    "resource": "integrations"
+  },
+  "POST /v1/integrations/mcp/{integration_id}/validate": {
+    "method": "validate_mcp",
+    "resource": "integrations"
+  },
+  "POST /v1/integrations/skills": {
+    "method": "create_skill",
+    "resource": "integrations"
+  },
+  "POST /v1/integrations/skills/{skill_id}/versions": {
+    "method": "add_skill_version",
+    "resource": "integrations"
+  },
+  "POST /v1/integrations/tool-apis": {
+    "method": "create_tool_api",
+    "resource": "integrations"
+  },
+  "POST /v1/integrations/tool-apis/{integration_id}/validate": {
+    "method": "validate_tool_api",
+    "resource": "integrations"
+  },
+  "POST /v1/llm-call-logs/batch-delete": {
+    "method": "batch_delete",
+    "resource": "logs"
+  },
+  "POST /v1/model-entries/{model_id}/test": {
+    "method": "run_model_test",
+    "resource": "models"
+  },
+  "POST /v1/model-inference/assets": {
+    "method": "upload_asset",
+    "resource": "inference"
+  },
+  "POST /v1/model-inference/assets/import": {
+    "method": "import_asset",
+    "resource": "inference"
+  },
+  "POST /v1/model-inference/tasks": {
+    "method": "create_task",
+    "resource": "inference"
+  },
+  "POST /v1/model-inference/tasks/{task_id}/retry-materialization": {
+    "method": "retry_materialization",
+    "resource": "inference"
+  },
+  "POST /v1/model-inference/tasks/{task_id}/save-to-library": {
+    "method": "save_result",
+    "resource": "inference"
+  },
+  "POST /v1/model-inference/text": {
+    "method": "generate_text",
+    "resource": "inference"
+  },
+  "POST /v1/model-inference/text/stream": {
+    "method": "stream_text",
+    "resource": "inference"
+  },
+  "POST /v1/model-providers": {
+    "method": "create_provider",
+    "resource": "models"
+  },
+  "POST /v1/model-providers/{provider_id}/enabled": {
+    "method": "set_provider_enabled",
+    "resource": "models"
+  },
+  "POST /v1/model-providers/{provider_id}/models": {
+    "method": "add_model",
+    "resource": "models"
+  },
+  "POST /v1/model-suppliers": {
+    "method": "create_supplier",
+    "resource": "models"
+  },
+  "POST /v1/model-test/conversations": {
+    "method": "create_conversation",
+    "resource": "testing"
+  },
+  "POST /v1/model-test/conversations/{conversation_id}/attachments": {
+    "method": "upload_attachments",
+    "resource": "testing"
+  },
+  "POST /v1/model-test/conversations/{conversation_id}/messages/stream": {
+    "method": "stream_message",
+    "resource": "testing"
+  },
+  "POST /v1/model-test/conversations/{conversation_id}/regenerate/stream": {
+    "method": "regenerate_message",
+    "resource": "testing"
+  },
+  "POST /v1/model-test/generation-assets": {
+    "method": "upload_generation_assets",
+    "resource": "testing"
+  },
+  "POST /v1/model-test/generation-assets/backfill": {
+    "method": "backfill_generation_assets",
+    "resource": "testing"
+  },
+  "POST /v1/model-test/generation-assets/cleanup": {
+    "method": "cleanup_generation_assets",
+    "resource": "testing"
+  },
+  "POST /v1/model-test/generation-tasks": {
+    "method": "create_generation_task",
+    "resource": "testing"
+  },
+  "POST /v1/model-test/generation-tasks/{task_id}/retry-materialization": {
+    "method": "retry_materialization",
+    "resource": "testing"
+  },
+  "POST /v1/model-test/tools": {
+    "method": "create_tool",
+    "resource": "test_tools"
+  },
+  "POST /v1/model-test/tools/{tool_id}/execute": {
+    "method": "execute_tool",
+    "resource": "test_tools"
+  },
+  "POST /v1/model-test/transcription-tasks": {
+    "method": "create_transcription_task",
+    "resource": "testing"
+  },
+  "POST /v1/model-test/transcription-tasks/upload": {
+    "method": "upload_transcription_task",
+    "resource": "testing"
+  },
+  "POST /v1/platform/accounts": {
+    "method": "add_account",
+    "resource": "admin"
+  },
+  "POST /v1/platform/accounts/{user_id}/reset-password": {
+    "method": "reset_password",
+    "resource": "admin"
+  },
+  "POST /v1/platform/demo-services/{service_id}/actions": {
+    "method": "action",
+    "resource": "demo"
+  },
+  "POST /v1/platform/model-service-templates/sync-jobs/{job_id}/start": {
+    "method": "start",
+    "resource": "templates"
+  },
+  "POST /v1/platform/model-service-templates/{role}/preview": {
+    "method": "preview",
+    "resource": "templates"
+  },
+  "POST /v1/platform/registration-invite-codes": {
+    "method": "add_invite",
+    "resource": "governance"
+  },
+  "POST /v1/platform/registration-invite-codes/{invite_id}/actions": {
+    "method": "invite_action",
+    "resource": "governance"
+  },
+  "POST /v1/platform/registration-invite-codes/{invite_id}/secret": {
+    "method": "invite_secret",
+    "resource": "governance"
+  },
+  "POST /v1/platform/workspaces": {
+    "method": "add_workspace",
+    "resource": "admin"
+  },
+  "POST /v1/presentation-workshop/projects": {
+    "method": "create_project",
+    "resource": "presentation"
+  },
+  "POST /v1/presentation-workshop/projects/{project_id}/export": {
+    "method": "export_pptx",
+    "resource": "presentation"
+  },
+  "POST /v1/presentation-workshop/projects/{project_id}/operations": {
+    "method": "apply_presentation_operations",
+    "resource": "presentation"
+  },
+  "POST /v1/thought-workshop/attachments": {
+    "method": "attachments",
+    "resource": "thought"
+  },
+  "POST /v1/thought-workshop/images": {
+    "method": "upload_image",
+    "resource": "thought"
+  },
+  "POST /v1/thought-workshop/imports": {
+    "method": "imports",
+    "resource": "thought"
+  },
+  "POST /v1/thought-workshop/knowledge-bases": {
+    "method": "create_knowledge_base",
+    "resource": "thought"
+  },
+  "POST /v1/thought-workshop/knowledge-bases/{project_id}/documents": {
+    "method": "create_document",
+    "resource": "thought"
+  },
+  "POST /v1/thought-workshop/knowledge-bases/{project_id}/move": {
+    "method": "move_entry",
+    "resource": "thought"
+  },
+  "POST /v1/thought-workshop/knowledge-bases/{project_id}/restore": {
+    "method": "restore_knowledge_base",
+    "resource": "thought"
+  },
+  "POST /v1/thought-workshop/markdown/convert": {
+    "method": "convert_markdown",
+    "resource": "thought"
+  },
+  "POST /v1/thought-workshop/notes": {
+    "method": "create_note",
+    "resource": "thought"
+  },
+  "POST /v1/thought-workshop/notes/{note_id}/assistant": {
+    "method": "assistant",
+    "resource": "thought"
+  },
+  "POST /v1/thought-workshop/notes/{note_id}/history/{history_id}/restore": {
+    "method": "restore_note_history",
+    "resource": "thought"
+  },
+  "POST /v1/thought-workshop/notes/{note_id}/operations": {
+    "method": "apply_note_operations",
+    "resource": "thought"
+  },
+  "POST /v1/thought-workshop/notes/{note_id}/restore": {
+    "method": "restore_note",
+    "resource": "thought"
+  },
+  "POST /v1/tool-navigation/tools/{tool_id}/use": {
+    "method": "record_use",
+    "resource": "tools"
+  },
+  "POST /v1/video-editor/projects": {
+    "method": "create_project",
+    "resource": "video"
+  },
+  "POST /v1/video-editor/projects/snapshot-imports": {
+    "method": "import_project_snapshot",
+    "resource": "video"
+  },
+  "POST /v1/video-editor/projects/{project_id}/assets": {
+    "method": "upload_asset",
+    "resource": "video"
+  },
+  "POST /v1/video-editor/projects/{project_id}/assets/import": {
+    "method": "import_assets",
+    "resource": "video"
+  },
+  "POST /v1/video-editor/projects/{project_id}/assets/{asset_id}/proxy/retry": {
+    "method": "retry_proxy",
+    "resource": "video"
+  },
+  "POST /v1/video-editor/projects/{project_id}/open-folder": {
+    "method": "reveal_project_folder",
+    "resource": "video"
+  },
+  "POST /v1/video-editor/projects/{project_id}/renders": {
+    "method": "create_render",
+    "resource": "video"
+  },
+  "POST /v1/video-editor/projects/{project_id}/renders/preflight": {
+    "method": "render_preflight",
+    "resource": "video"
+  },
+  "POST /v1/video-editor/projects/{project_id}/renders/{task_id}/cancel": {
+    "method": "cancel_render",
+    "resource": "video"
+  },
+  "POST /v1/video-editor/projects/{project_id}/segment-exports": {
+    "method": "create_segment_export",
+    "resource": "video"
+  },
+  "POST /v1/video-editor/projects/{project_id}/segment-exports/{task_id}/cancel": {
+    "method": "cancel_segment_export",
+    "resource": "video"
+  },
+  "POST /v1/video-editor/projects/{project_id}/timeline/operations": {
+    "method": "apply_timeline_operations",
+    "resource": "video"
+  },
+  "POST /v1/visual-workshop/generation-batches/{batch_id}/retry-composition": {
+    "method": "retry_image_composition",
+    "resource": "generation"
+  },
+  "POST /v1/visual-workshop/generation-tasks/{task_id}/retry-materialization": {
+    "method": "retry_materialization",
+    "resource": "generation"
+  },
+  "POST /v1/visual-workshop/projects": {
+    "method": "create_project",
+    "resource": "visual"
+  },
+  "POST /v1/visual-workshop/projects/snapshot-imports": {
+    "method": "import_project_snapshot",
+    "resource": "visual"
+  },
+  "POST /v1/visual-workshop/projects/{project_id}/asset-imports": {
+    "method": "import_assets",
+    "resource": "visual"
+  },
+  "POST /v1/visual-workshop/projects/{project_id}/asset-references": {
+    "method": "create_asset_reference",
+    "resource": "visual"
+  },
+  "POST /v1/visual-workshop/projects/{project_id}/canvas/operations": {
+    "method": "apply_canvas_operations",
+    "resource": "visual"
+  },
+  "POST /v1/visual-workshop/projects/{project_id}/conversations": {
+    "method": "create_conversation",
+    "resource": "visual_assistant"
+  },
+  "POST /v1/visual-workshop/projects/{project_id}/conversations/{conversation_id}/messages/stream": {
+    "method": "stream_message",
+    "resource": "visual_assistant"
+  },
+  "POST /v1/visual-workshop/projects/{project_id}/conversations/{conversation_id}/runs/{run_id}/approvals/{approval_id}": {
+    "method": "resolve_approval",
+    "resource": "visual_assistant"
+  },
+  "POST /v1/visual-workshop/projects/{project_id}/generation-batches": {
+    "method": "create_generation_batch",
+    "resource": "generation"
+  },
+  "POST /v1/visual-workshop/projects/{project_id}/generation-tasks": {
+    "method": "create_generation_task",
+    "resource": "generation"
+  },
+  "POST /v1/visual-workshop/projects/{project_id}/image-compositions": {
+    "method": "create_image_composition",
+    "resource": "generation"
+  },
+  "POST /v1/visual-workshop/projects/{project_id}/open-folder": {
+    "method": "reveal_project_folder",
+    "resource": "visual"
+  },
+  "PUT /v1/account/profile/avatar": {
+    "method": "put_avatar",
+    "resource": "accounts"
+  },
+  "PUT /v1/audio-annotation/projects/{project_id}/document": {
+    "method": "put_document",
+    "resource": "annotation"
+  },
+  "PUT /v1/audio-annotation/projects/{project_id}/waveform": {
+    "method": "put_waveform",
+    "resource": "annotation"
+  },
+  "PUT /v1/galgame-workshop/projects/{project_id}/story": {
+    "method": "put_story",
+    "resource": "galgame"
+  },
+  "PUT /v1/model-catalog/defaults": {
+    "method": "defaults",
+    "resource": "models"
+  },
+  "PUT /v1/platform/demo-services/{service_id}": {
+    "method": "configuration",
+    "resource": "demo"
+  },
+  "PUT /v1/platform/model-service-templates/{role}": {
+    "method": "put_template",
+    "resource": "templates"
+  },
+  "PUT /v1/presentation-workshop/projects/{project_id}": {
+    "method": "put_project",
+    "resource": "presentation"
+  },
+  "PUT /v1/thought-workshop/knowledge-bases/{project_id}": {
+    "method": "update_knowledge_base",
+    "resource": "thought"
+  },
+  "PUT /v1/thought-workshop/notes/{note_id}": {
+    "method": "put_note",
+    "resource": "thought"
+  },
+  "PUT /v1/visual-workshop/projects/{project_id}/canvas": {
+    "method": "put_canvas",
+    "resource": "visual"
+  }
+}

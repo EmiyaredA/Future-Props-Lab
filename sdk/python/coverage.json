@@ -1,0 +1,2396 @@
+[
+  {
+    "http": "DELETE /v1/account/profile/avatar",
+    "sdk": "client.accounts.remove_avatar",
+    "document": "/docs.html?page=sdk-reference-accounts#remove-avatar",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "DELETE /v1/account/sessions/{session_id}",
+    "sdk": "client.accounts.delete_session",
+    "document": "/docs.html?page=sdk-reference-accounts#delete-session",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/account/api-keys",
+    "sdk": "client.accounts.api_keys",
+    "document": "/docs.html?page=sdk-reference-accounts#api-keys",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/account/profile",
+    "sdk": "client.accounts.get_profile",
+    "document": "/docs.html?page=sdk-reference-accounts#get-profile",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/account/profile/avatar",
+    "sdk": "client.accounts.get_avatar",
+    "document": "/docs.html?page=sdk-reference-accounts#get-avatar",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/account/security-events",
+    "sdk": "client.accounts.own_audit",
+    "document": "/docs.html?page=sdk-reference-accounts#own-audit",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/account/sessions",
+    "sdk": "client.accounts.sessions",
+    "document": "/docs.html?page=sdk-reference-accounts#sessions",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/auth/me",
+    "sdk": "client.accounts.me",
+    "document": "/docs.html?page=sdk-reference-accounts#me",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "PATCH /v1/account/profile",
+    "sdk": "client.accounts.patch_profile",
+    "document": "/docs.html?page=sdk-reference-accounts#patch-profile",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/account/api-keys",
+    "sdk": "client.accounts.add_api_key",
+    "document": "/docs.html?page=sdk-reference-accounts#add-api-key",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/account/api-keys/{key_id}/revoke",
+    "sdk": "client.accounts.remove_api_key",
+    "document": "/docs.html?page=sdk-reference-accounts#remove-api-key",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/account/sessions/revoke-others",
+    "sdk": "client.accounts.delete_other_sessions",
+    "document": "/docs.html?page=sdk-reference-accounts#delete-other-sessions",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/auth/change-password",
+    "sdk": "client.accounts.change_current_password",
+    "document": "/docs.html?page=sdk-reference-accounts#change-current-password",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/auth/login",
+    "sdk": "client.accounts.login",
+    "document": "/docs.html?page=sdk-reference-accounts#login",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/auth/logout",
+    "sdk": "client.accounts.logout",
+    "document": "/docs.html?page=sdk-reference-accounts#logout",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/auth/reauth",
+    "sdk": "client.accounts.reauth",
+    "document": "/docs.html?page=sdk-reference-accounts#reauth",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "PUT /v1/account/profile/avatar",
+    "sdk": "client.accounts.put_avatar",
+    "document": "/docs.html?page=sdk-reference-accounts#put-avatar",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/account/workspaces/current/audit-events",
+    "sdk": "client.admin.audit",
+    "document": "/docs.html?page=sdk-reference-admin#audit",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/platform/accounts",
+    "sdk": "client.admin.accounts",
+    "document": "/docs.html?page=sdk-reference-admin#accounts",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/platform/security-events",
+    "sdk": "client.admin.audit_v1_platform_security_events",
+    "document": "/docs.html?page=sdk-reference-admin#audit-v1-platform-security-events",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/platform/workspaces",
+    "sdk": "client.admin.workspaces",
+    "document": "/docs.html?page=sdk-reference-admin#workspaces",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "PATCH /v1/platform/accounts/{user_id}",
+    "sdk": "client.admin.patch_account",
+    "document": "/docs.html?page=sdk-reference-admin#patch-account",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/platform/accounts",
+    "sdk": "client.admin.add_account",
+    "document": "/docs.html?page=sdk-reference-admin#add-account",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/platform/accounts/{user_id}/reset-password",
+    "sdk": "client.admin.reset_password",
+    "document": "/docs.html?page=sdk-reference-admin#reset-password",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/platform/workspaces",
+    "sdk": "client.admin.add_workspace",
+    "document": "/docs.html?page=sdk-reference-admin#add-workspace",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "DELETE /v1/audio-annotation/projects/{project_id}",
+    "sdk": "client.annotation.delete_project",
+    "document": "/docs.html?page=sdk-reference-annotation#delete-project",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/audio-annotation/projects",
+    "sdk": "client.annotation.list_projects",
+    "document": "/docs.html?page=sdk-reference-annotation#list-projects",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/audio-annotation/projects/{project_id}",
+    "sdk": "client.annotation.get_project",
+    "document": "/docs.html?page=sdk-reference-annotation#get-project",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/audio-annotation/projects/{project_id}/document",
+    "sdk": "client.annotation.get_document",
+    "document": "/docs.html?page=sdk-reference-annotation#get-document",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/audio-annotation/projects/{project_id}/export",
+    "sdk": "client.annotation.export_annotation",
+    "document": "/docs.html?page=sdk-reference-annotation#export-annotation",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/audio-annotation/projects/{project_id}/segments/{segment_id}/audio",
+    "sdk": "client.annotation.download_segment_audio",
+    "document": "/docs.html?page=sdk-reference-annotation#download-segment-audio",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/audio-annotation/projects/{project_id}/waveform",
+    "sdk": "client.annotation.get_waveform",
+    "document": "/docs.html?page=sdk-reference-annotation#get-waveform",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "PATCH /v1/audio-annotation/projects/{project_id}",
+    "sdk": "client.annotation.patch_project",
+    "document": "/docs.html?page=sdk-reference-annotation#patch-project",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/audio-annotation/imports",
+    "sdk": "client.annotation.import_project",
+    "document": "/docs.html?page=sdk-reference-annotation#import-project",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/audio-annotation/projects",
+    "sdk": "client.annotation.create_project",
+    "document": "/docs.html?page=sdk-reference-annotation#create-project",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/audio-annotation/projects/{project_id}/document/operations",
+    "sdk": "client.annotation.apply_annotation_operations",
+    "document": "/docs.html?page=sdk-reference-annotation#apply-annotation-operations",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/audio-annotation/projects/{project_id}/segment-transcriptions",
+    "sdk": "client.annotation.transcribe_segment",
+    "document": "/docs.html?page=sdk-reference-annotation#transcribe-segment",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/audio-annotation/projects/{project_id}/segments/{segment_id}/transcribe-saved",
+    "sdk": "client.annotation.transcribe_saved_segment",
+    "document": "/docs.html?page=sdk-reference-annotation#transcribe-saved-segment",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/audio-annotation/transcription-imports",
+    "sdk": "client.annotation.import_transcription",
+    "document": "/docs.html?page=sdk-reference-annotation#import-transcription",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "PUT /v1/audio-annotation/projects/{project_id}/document",
+    "sdk": "client.annotation.put_document",
+    "document": "/docs.html?page=sdk-reference-annotation#put-document",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "PUT /v1/audio-annotation/projects/{project_id}/waveform",
+    "sdk": "client.annotation.put_waveform",
+    "document": "/docs.html?page=sdk-reference-annotation#put-waveform",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/platform/demo-services",
+    "sdk": "client.demo.services",
+    "document": "/docs.html?page=sdk-reference-demo#services",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/account/demo-services/{service_id}/install",
+    "sdk": "client.demo.install",
+    "document": "/docs.html?page=sdk-reference-demo#install",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/platform/demo-services/{service_id}/actions",
+    "sdk": "client.demo.action",
+    "document": "/docs.html?page=sdk-reference-demo#action",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "PUT /v1/platform/demo-services/{service_id}",
+    "sdk": "client.demo.configuration",
+    "document": "/docs.html?page=sdk-reference-demo#configuration",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/demo-services/tools/{tool}",
+    "sdk": "client.demo_calls.example_tool",
+    "document": "/docs.html?page=sdk-reference-demo-calls#example-tool",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/demo-services/model/chat/completions",
+    "sdk": "client.demo_calls.mock_completion",
+    "document": "/docs.html?page=sdk-reference-demo-calls#mock-completion",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "DELETE /v1/file-folders/{folder_id}",
+    "sdk": "client.files.delete_file_folder",
+    "document": "/docs.html?page=sdk-reference-files#delete-file-folder",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "DELETE /v1/files/{asset_id}",
+    "sdk": "client.files.delete_file",
+    "document": "/docs.html?page=sdk-reference-files#delete-file",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/file-folders",
+    "sdk": "client.files.list_file_folders",
+    "document": "/docs.html?page=sdk-reference-files#list-file-folders",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/file-storage/layout",
+    "sdk": "client.files.storage_layout_status",
+    "document": "/docs.html?page=sdk-reference-files#storage-layout-status",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/files",
+    "sdk": "client.files.list_files",
+    "document": "/docs.html?page=sdk-reference-files#list-files",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/files/{asset_id}/content",
+    "sdk": "client.files.preview_file",
+    "document": "/docs.html?page=sdk-reference-files#preview-file",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/files/{asset_id}/download",
+    "sdk": "client.files.download_file",
+    "document": "/docs.html?page=sdk-reference-files#download-file",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "PATCH /v1/file-folders/{folder_id}",
+    "sdk": "client.files.patch_file_folder",
+    "document": "/docs.html?page=sdk-reference-files#patch-file-folder",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "PATCH /v1/files/{asset_id}",
+    "sdk": "client.files.patch_file",
+    "document": "/docs.html?page=sdk-reference-files#patch-file",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/file-folders",
+    "sdk": "client.files.create_file_folder",
+    "document": "/docs.html?page=sdk-reference-files#create-file-folder",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/file-storage/layout/migrate",
+    "sdk": "client.files.migrate_storage_layout",
+    "document": "/docs.html?page=sdk-reference-files#migrate-storage-layout",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/files",
+    "sdk": "client.files.upload_file",
+    "document": "/docs.html?page=sdk-reference-files#upload-file",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/files/svg/preview",
+    "sdk": "client.files.preview_svg",
+    "document": "/docs.html?page=sdk-reference-files#preview-svg",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/files/{asset_id}/crop",
+    "sdk": "client.files.crop_file_image",
+    "document": "/docs.html?page=sdk-reference-files#crop-file-image",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/files/{asset_id}/frames",
+    "sdk": "client.files.extract_video_frames",
+    "document": "/docs.html?page=sdk-reference-files#extract-video-frames",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "DELETE /v1/galgame-workshop/projects/{project_id}",
+    "sdk": "client.galgame.delete_project",
+    "document": "/docs.html?page=sdk-reference-galgame#delete-project",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "DELETE /v1/galgame-workshop/projects/{project_id}/assets/{asset_id}",
+    "sdk": "client.galgame.delete_project_asset",
+    "document": "/docs.html?page=sdk-reference-galgame#delete-project-asset",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/galgame-workshop/projects",
+    "sdk": "client.galgame.list_projects",
+    "document": "/docs.html?page=sdk-reference-galgame#list-projects",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/galgame-workshop/projects/{project_id}",
+    "sdk": "client.galgame.get_project",
+    "document": "/docs.html?page=sdk-reference-galgame#get-project",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/galgame-workshop/projects/{project_id}/annotation-imports/{import_id}",
+    "sdk": "client.galgame.get_annotation_import",
+    "document": "/docs.html?page=sdk-reference-galgame#get-annotation-import",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/galgame-workshop/projects/{project_id}/assets",
+    "sdk": "client.galgame.list_project_assets",
+    "document": "/docs.html?page=sdk-reference-galgame#list-project-assets",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/galgame-workshop/projects/{project_id}/assets/asr/settings",
+    "sdk": "client.galgame.get_asr_settings",
+    "document": "/docs.html?page=sdk-reference-galgame#get-asr-settings",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/galgame-workshop/projects/{project_id}/assets/asr/transcriptions",
+    "sdk": "client.galgame.list_transcriptions",
+    "document": "/docs.html?page=sdk-reference-galgame#list-transcriptions",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/galgame-workshop/projects/{project_id}/assets/overview",
+    "sdk": "client.galgame.get_project_asset_overview",
+    "document": "/docs.html?page=sdk-reference-galgame#get-project-asset-overview",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/galgame-workshop/projects/{project_id}/assets/package-manifest",
+    "sdk": "client.galgame.get_project_package_manifest",
+    "document": "/docs.html?page=sdk-reference-galgame#get-project-package-manifest",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/galgame-workshop/projects/{project_id}/snapshot",
+    "sdk": "client.galgame.export_project_snapshot",
+    "document": "/docs.html?page=sdk-reference-galgame#export-project-snapshot",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/galgame-workshop/projects/{project_id}/story",
+    "sdk": "client.galgame.get_story",
+    "document": "/docs.html?page=sdk-reference-galgame#get-story",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/galgame-workshop/projects/{project_id}/story/portrait-upgrade",
+    "sdk": "client.galgame.preview_portrait_upgrade",
+    "document": "/docs.html?page=sdk-reference-galgame#preview-portrait-upgrade",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/galgame-workshop/projects/{project_id}/story/report",
+    "sdk": "client.galgame.get_story_report",
+    "document": "/docs.html?page=sdk-reference-galgame#get-story-report",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/galgame-workshop/projects/{project_id}/story/snapshots",
+    "sdk": "client.galgame.list_story_snapshots",
+    "document": "/docs.html?page=sdk-reference-galgame#list-story-snapshots",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/galgame-workshop/projects/{project_id}/video-editor-handoffs",
+    "sdk": "client.galgame.list_handoffs",
+    "document": "/docs.html?page=sdk-reference-galgame#list-handoffs",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/galgame-workshop/projects/{project_id}/video-editor-handoffs/{task_id}",
+    "sdk": "client.galgame.get_handoff",
+    "document": "/docs.html?page=sdk-reference-galgame#get-handoff",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/galgame-workshop/projects/{project_id}/video-exports",
+    "sdk": "client.galgame.list_video_exports",
+    "document": "/docs.html?page=sdk-reference-galgame#list-video-exports",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/galgame-workshop/projects/{project_id}/video-exports/{export_id}",
+    "sdk": "client.galgame.get_video_export",
+    "document": "/docs.html?page=sdk-reference-galgame#get-video-export",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/galgame-workshop/projects/{project_id}/video-exports/{export_id}/download",
+    "sdk": "client.galgame.download_video_export",
+    "document": "/docs.html?page=sdk-reference-galgame#download-video-export",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/galgame-workshop/story-migrations/status",
+    "sdk": "client.galgame.get_story_migration_status",
+    "document": "/docs.html?page=sdk-reference-galgame#get-story-migration-status",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "PATCH /v1/galgame-workshop/projects/{project_id}",
+    "sdk": "client.galgame.patch_project",
+    "document": "/docs.html?page=sdk-reference-galgame#patch-project",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "PATCH /v1/galgame-workshop/projects/{project_id}/assets/asr/settings",
+    "sdk": "client.galgame.patch_asr_settings",
+    "document": "/docs.html?page=sdk-reference-galgame#patch-asr-settings",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "PATCH /v1/galgame-workshop/projects/{project_id}/assets/{asset_id}",
+    "sdk": "client.galgame.patch_project_asset",
+    "document": "/docs.html?page=sdk-reference-galgame#patch-project-asset",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "PATCH /v1/galgame-workshop/projects/{project_id}/assets/{asset_id}/transcript",
+    "sdk": "client.galgame.patch_asset_transcript",
+    "document": "/docs.html?page=sdk-reference-galgame#patch-asset-transcript",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "PATCH /v1/galgame-workshop/projects/{project_id}/story/dialogue",
+    "sdk": "client.galgame.patch_story_dialogue",
+    "document": "/docs.html?page=sdk-reference-galgame#patch-story-dialogue",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "PATCH /v1/galgame-workshop/projects/{project_id}/story/edits",
+    "sdk": "client.galgame.patch_story_edits",
+    "document": "/docs.html?page=sdk-reference-galgame#patch-story-edits",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "PATCH /v1/galgame-workshop/projects/{project_id}/story/stage-expression",
+    "sdk": "client.galgame.patch_story_stage_expression",
+    "document": "/docs.html?page=sdk-reference-galgame#patch-story-stage-expression",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/galgame-workshop/projects",
+    "sdk": "client.galgame.create_project",
+    "document": "/docs.html?page=sdk-reference-galgame#create-project",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/galgame-workshop/projects/snapshot-imports",
+    "sdk": "client.galgame.import_project_snapshot",
+    "document": "/docs.html?page=sdk-reference-galgame#import-project-snapshot",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/galgame-workshop/projects/{project_id}/annotation-imports",
+    "sdk": "client.galgame.create_annotation_import",
+    "document": "/docs.html?page=sdk-reference-galgame#create-annotation-import",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/galgame-workshop/projects/{project_id}/annotation-imports/preview",
+    "sdk": "client.galgame.preview_annotation_import",
+    "document": "/docs.html?page=sdk-reference-galgame#preview-annotation-import",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/galgame-workshop/projects/{project_id}/assets",
+    "sdk": "client.galgame.upload_project_asset",
+    "document": "/docs.html?page=sdk-reference-galgame#upload-project-asset",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/galgame-workshop/projects/{project_id}/assets/asr/match-dialogue",
+    "sdk": "client.galgame.match_voice_to_dialogue",
+    "document": "/docs.html?page=sdk-reference-galgame#match-voice-to-dialogue",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/galgame-workshop/projects/{project_id}/assets/asr/transcriptions",
+    "sdk": "client.galgame.create_transcriptions",
+    "document": "/docs.html?page=sdk-reference-galgame#create-transcriptions",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/galgame-workshop/projects/{project_id}/assets/batch",
+    "sdk": "client.galgame.batch_upload_project_assets",
+    "document": "/docs.html?page=sdk-reference-galgame#batch-upload-project-assets",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/galgame-workshop/projects/{project_id}/assets/import-preview",
+    "sdk": "client.galgame.preview_project_asset_import",
+    "document": "/docs.html?page=sdk-reference-galgame#preview-project-asset-import",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/galgame-workshop/projects/{project_id}/assets/metadata-scan",
+    "sdk": "client.galgame.scan_project_asset_metadata",
+    "document": "/docs.html?page=sdk-reference-galgame#scan-project-asset-metadata",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/galgame-workshop/projects/{project_id}/assets/repair",
+    "sdk": "client.galgame.repair_project_asset",
+    "document": "/docs.html?page=sdk-reference-galgame#repair-project-asset",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/galgame-workshop/projects/{project_id}/open-folder",
+    "sdk": "client.galgame.reveal_project_folder",
+    "document": "/docs.html?page=sdk-reference-galgame#reveal-project-folder",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/galgame-workshop/projects/{project_id}/story/import",
+    "sdk": "client.galgame.import_legacy_story",
+    "document": "/docs.html?page=sdk-reference-galgame#import-legacy-story",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/galgame-workshop/projects/{project_id}/story/operations",
+    "sdk": "client.galgame.apply_story_operations",
+    "document": "/docs.html?page=sdk-reference-galgame#apply-story-operations",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/galgame-workshop/projects/{project_id}/story/portrait-upgrade",
+    "sdk": "client.galgame.apply_portrait_upgrade",
+    "document": "/docs.html?page=sdk-reference-galgame#apply-portrait-upgrade",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/galgame-workshop/projects/{project_id}/story/snapshots/{snapshot_id}/restore",
+    "sdk": "client.galgame.restore_story_snapshot",
+    "document": "/docs.html?page=sdk-reference-galgame#restore-story-snapshot",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/galgame-workshop/projects/{project_id}/video-editor-handoffs",
+    "sdk": "client.galgame.create_handoff",
+    "document": "/docs.html?page=sdk-reference-galgame#create-handoff",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/galgame-workshop/projects/{project_id}/video-editor-handoffs/{task_id}/cancel",
+    "sdk": "client.galgame.cancel_handoff",
+    "document": "/docs.html?page=sdk-reference-galgame#cancel-handoff",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/galgame-workshop/projects/{project_id}/video-exports",
+    "sdk": "client.galgame.create_video_export",
+    "document": "/docs.html?page=sdk-reference-galgame#create-video-export",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/galgame-workshop/projects/{project_id}/video-exports/frame",
+    "sdk": "client.galgame.exact_video_export_frame",
+    "document": "/docs.html?page=sdk-reference-galgame#exact-video-export-frame",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/galgame-workshop/projects/{project_id}/video-exports/preview",
+    "sdk": "client.galgame.preview_video_export",
+    "document": "/docs.html?page=sdk-reference-galgame#preview-video-export",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/galgame-workshop/projects/{project_id}/video-exports/{export_id}/cancel",
+    "sdk": "client.galgame.cancel_video_export",
+    "document": "/docs.html?page=sdk-reference-galgame#cancel-video-export",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/galgame-workshop/story-migrations/run",
+    "sdk": "client.galgame.run_story_migrations",
+    "document": "/docs.html?page=sdk-reference-galgame#run-story-migrations",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "PUT /v1/galgame-workshop/projects/{project_id}/story",
+    "sdk": "client.galgame.put_story",
+    "document": "/docs.html?page=sdk-reference-galgame#put-story",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/visual-workshop/generation-batches",
+    "sdk": "client.generation.list_generation_batches",
+    "document": "/docs.html?page=sdk-reference-generation#list-generation-batches",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/visual-workshop/generation-batches/{batch_id}",
+    "sdk": "client.generation.get_generation_batch",
+    "document": "/docs.html?page=sdk-reference-generation#get-generation-batch",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/visual-workshop/generation-options",
+    "sdk": "client.generation.generation_options",
+    "document": "/docs.html?page=sdk-reference-generation#generation-options",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/visual-workshop/generation-tasks",
+    "sdk": "client.generation.list_generation_tasks",
+    "document": "/docs.html?page=sdk-reference-generation#list-generation-tasks",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/visual-workshop/generation-tasks/{task_id}",
+    "sdk": "client.generation.get_generation_task",
+    "document": "/docs.html?page=sdk-reference-generation#get-generation-task",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/visual-workshop/generation-batches/{batch_id}/retry-composition",
+    "sdk": "client.generation.retry_image_composition",
+    "document": "/docs.html?page=sdk-reference-generation#retry-image-composition",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/visual-workshop/generation-tasks/{task_id}/retry-materialization",
+    "sdk": "client.generation.retry_materialization",
+    "document": "/docs.html?page=sdk-reference-generation#retry-materialization",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/visual-workshop/projects/{project_id}/generation-batches",
+    "sdk": "client.generation.create_generation_batch",
+    "document": "/docs.html?page=sdk-reference-generation#create-generation-batch",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/visual-workshop/projects/{project_id}/generation-tasks",
+    "sdk": "client.generation.create_generation_task",
+    "document": "/docs.html?page=sdk-reference-generation#create-generation-task",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/visual-workshop/projects/{project_id}/image-compositions",
+    "sdk": "client.generation.create_image_composition",
+    "document": "/docs.html?page=sdk-reference-generation#create-image-composition",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/account/cross-workspace-call-logs",
+    "sdk": "client.governance.cross_logs",
+    "document": "/docs.html?page=sdk-reference-governance#cross-logs",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/account/cross-workspace-call-logs/stats",
+    "sdk": "client.governance.cross_log_stats",
+    "document": "/docs.html?page=sdk-reference-governance#cross-log-stats",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/account/developer-documents",
+    "sdk": "client.governance.developer_docs",
+    "document": "/docs.html?page=sdk-reference-governance#developer-docs",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/account/log-workspaces",
+    "sdk": "client.governance.log_spaces",
+    "document": "/docs.html?page=sdk-reference-governance#log-spaces",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/platform/permission-policy",
+    "sdk": "client.governance.get_policy",
+    "document": "/docs.html?page=sdk-reference-governance#get-policy",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/platform/registration-invite-codes",
+    "sdk": "client.governance.invites",
+    "document": "/docs.html?page=sdk-reference-governance#invites",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/platform/registration-invite-codes/{invite_id}/redemptions",
+    "sdk": "client.governance.redemptions",
+    "document": "/docs.html?page=sdk-reference-governance#redemptions",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/platform/runtime-quotas",
+    "sdk": "client.governance.get_quotas",
+    "document": "/docs.html?page=sdk-reference-governance#get-quotas",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "PATCH /v1/account/project-certification/{kind}/{project_id}",
+    "sdk": "client.governance.certification",
+    "document": "/docs.html?page=sdk-reference-governance#certification",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "PATCH /v1/platform/permission-policy",
+    "sdk": "client.governance.patch_policy",
+    "document": "/docs.html?page=sdk-reference-governance#patch-policy",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "PATCH /v1/platform/registration-invite-codes/{invite_id}",
+    "sdk": "client.governance.patch_invite",
+    "document": "/docs.html?page=sdk-reference-governance#patch-invite",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "PATCH /v1/platform/runtime-quotas",
+    "sdk": "client.governance.patch_quotas",
+    "document": "/docs.html?page=sdk-reference-governance#patch-quotas",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/auth/register",
+    "sdk": "client.governance.registration",
+    "document": "/docs.html?page=sdk-reference-governance#registration",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/platform/registration-invite-codes",
+    "sdk": "client.governance.add_invite",
+    "document": "/docs.html?page=sdk-reference-governance#add-invite",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/platform/registration-invite-codes/{invite_id}/actions",
+    "sdk": "client.governance.invite_action",
+    "document": "/docs.html?page=sdk-reference-governance#invite-action",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/platform/registration-invite-codes/{invite_id}/secret",
+    "sdk": "client.governance.invite_secret",
+    "document": "/docs.html?page=sdk-reference-governance#invite-secret",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "DELETE /v1/model-inference/assets/{asset_id}",
+    "sdk": "client.inference.delete_asset",
+    "document": "/docs.html?page=sdk-reference-inference#delete-asset",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "DELETE /v1/model-inference/tasks/{task_id}",
+    "sdk": "client.inference.delete_task",
+    "document": "/docs.html?page=sdk-reference-inference#delete-task",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/model-inference/options",
+    "sdk": "client.inference.model_options",
+    "document": "/docs.html?page=sdk-reference-inference#model-options",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/model-inference/tasks",
+    "sdk": "client.inference.list_tasks",
+    "document": "/docs.html?page=sdk-reference-inference#list-tasks",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/model-inference/tasks/{task_id}",
+    "sdk": "client.inference.get_task",
+    "document": "/docs.html?page=sdk-reference-inference#get-task",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/model-inference/tasks/{task_id}/content",
+    "sdk": "client.inference.download_result",
+    "document": "/docs.html?page=sdk-reference-inference#download-result",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/model-inference/assets",
+    "sdk": "client.inference.upload_asset",
+    "document": "/docs.html?page=sdk-reference-inference#upload-asset",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/model-inference/assets/import",
+    "sdk": "client.inference.import_asset",
+    "document": "/docs.html?page=sdk-reference-inference#import-asset",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/model-inference/tasks",
+    "sdk": "client.inference.create_task",
+    "document": "/docs.html?page=sdk-reference-inference#create-task",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/model-inference/tasks/{task_id}/retry-materialization",
+    "sdk": "client.inference.retry_materialization",
+    "document": "/docs.html?page=sdk-reference-inference#retry-materialization",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/model-inference/tasks/{task_id}/save-to-library",
+    "sdk": "client.inference.save_result",
+    "document": "/docs.html?page=sdk-reference-inference#save-result",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/model-inference/text",
+    "sdk": "client.inference.generate_text",
+    "document": "/docs.html?page=sdk-reference-inference#generate-text",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/model-inference/text/stream",
+    "sdk": "client.inference.stream_text",
+    "document": "/docs.html?page=sdk-reference-inference#stream-text",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "DELETE /v1/integrations/mcp/{integration_id}",
+    "sdk": "client.integrations.delete_mcp",
+    "document": "/docs.html?page=sdk-reference-integrations#delete-mcp",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "DELETE /v1/integrations/skills/{skill_id}",
+    "sdk": "client.integrations.delete_skill",
+    "document": "/docs.html?page=sdk-reference-integrations#delete-skill",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "DELETE /v1/integrations/tool-apis/{integration_id}",
+    "sdk": "client.integrations.delete_tool_api",
+    "document": "/docs.html?page=sdk-reference-integrations#delete-tool-api",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/integrations/mcp",
+    "sdk": "client.integrations.mcp_servers",
+    "document": "/docs.html?page=sdk-reference-integrations#mcp-servers",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/integrations/mcp/{integration_id}",
+    "sdk": "client.integrations.mcp_server",
+    "document": "/docs.html?page=sdk-reference-integrations#mcp-server",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/integrations/mcp/{integration_id}/tools",
+    "sdk": "client.integrations.mcp_tools",
+    "document": "/docs.html?page=sdk-reference-integrations#mcp-tools",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/integrations/skills",
+    "sdk": "client.integrations.skills",
+    "document": "/docs.html?page=sdk-reference-integrations#skills",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/integrations/skills/{skill_id}",
+    "sdk": "client.integrations.skill",
+    "document": "/docs.html?page=sdk-reference-integrations#skill",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/integrations/skills/{skill_id}/versions",
+    "sdk": "client.integrations.skill_versions",
+    "document": "/docs.html?page=sdk-reference-integrations#skill-versions",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/integrations/skills/{skill_id}/versions/{version}/content",
+    "sdk": "client.integrations.skill_version_content",
+    "document": "/docs.html?page=sdk-reference-integrations#skill-version-content",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/integrations/tool-apis",
+    "sdk": "client.integrations.tool_apis",
+    "document": "/docs.html?page=sdk-reference-integrations#tool-apis",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/integrations/tool-apis/{integration_id}",
+    "sdk": "client.integrations.tool_api",
+    "document": "/docs.html?page=sdk-reference-integrations#tool-api",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "PATCH /v1/integrations/mcp/{integration_id}",
+    "sdk": "client.integrations.update_mcp",
+    "document": "/docs.html?page=sdk-reference-integrations#update-mcp",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "PATCH /v1/integrations/skills/{skill_id}",
+    "sdk": "client.integrations.update_skill",
+    "document": "/docs.html?page=sdk-reference-integrations#update-skill",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "PATCH /v1/integrations/tool-apis/{integration_id}",
+    "sdk": "client.integrations.update_tool_api",
+    "document": "/docs.html?page=sdk-reference-integrations#update-tool-api",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/integrations/mcp",
+    "sdk": "client.integrations.create_mcp",
+    "document": "/docs.html?page=sdk-reference-integrations#create-mcp",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/integrations/mcp/{integration_id}/validate",
+    "sdk": "client.integrations.validate_mcp",
+    "document": "/docs.html?page=sdk-reference-integrations#validate-mcp",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/integrations/skills",
+    "sdk": "client.integrations.create_skill",
+    "document": "/docs.html?page=sdk-reference-integrations#create-skill",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/integrations/skills/{skill_id}/versions",
+    "sdk": "client.integrations.add_skill_version",
+    "document": "/docs.html?page=sdk-reference-integrations#add-skill-version",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/integrations/tool-apis",
+    "sdk": "client.integrations.create_tool_api",
+    "document": "/docs.html?page=sdk-reference-integrations#create-tool-api",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/integrations/tool-apis/{integration_id}/validate",
+    "sdk": "client.integrations.validate_tool_api",
+    "document": "/docs.html?page=sdk-reference-integrations#validate-tool-api",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "DELETE /v1/llm-call-logs/{log_id}",
+    "sdk": "client.logs.delete_one",
+    "document": "/docs.html?page=sdk-reference-logs#delete-one",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/llm-call-logs",
+    "sdk": "client.logs.list_logs",
+    "document": "/docs.html?page=sdk-reference-logs#list-logs",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/llm-call-logs/stats",
+    "sdk": "client.logs.stats",
+    "document": "/docs.html?page=sdk-reference-logs#stats",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/llm-call-logs/{log_id}",
+    "sdk": "client.logs.detail",
+    "document": "/docs.html?page=sdk-reference-logs#detail",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/llm-call-logs/{log_id}/reproduction-bundle",
+    "sdk": "client.logs.reproduction_bundle",
+    "document": "/docs.html?page=sdk-reference-logs#reproduction-bundle",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/llm-call-logs/batch-delete",
+    "sdk": "client.logs.batch_delete",
+    "document": "/docs.html?page=sdk-reference-logs#batch-delete",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "DELETE /v1/model-entries/{model_id}",
+    "sdk": "client.models.delete_model",
+    "document": "/docs.html?page=sdk-reference-models#delete-model",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "DELETE /v1/model-providers/{provider_id}",
+    "sdk": "client.models.delete_provider",
+    "document": "/docs.html?page=sdk-reference-models#delete-provider",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "DELETE /v1/model-suppliers/{supplier_id}",
+    "sdk": "client.models.delete_supplier",
+    "document": "/docs.html?page=sdk-reference-models#delete-supplier",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/model-categories",
+    "sdk": "client.models.list_model_categories",
+    "document": "/docs.html?page=sdk-reference-models#list-model-categories",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/model-providers",
+    "sdk": "client.models.list_providers",
+    "document": "/docs.html?page=sdk-reference-models#list-providers",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "PATCH /v1/model-entries/{model_id}",
+    "sdk": "client.models.update_model",
+    "document": "/docs.html?page=sdk-reference-models#update-model",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "PATCH /v1/model-providers/{provider_id}",
+    "sdk": "client.models.update_provider",
+    "document": "/docs.html?page=sdk-reference-models#update-provider",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "PATCH /v1/model-suppliers/{supplier_id}",
+    "sdk": "client.models.update_supplier",
+    "document": "/docs.html?page=sdk-reference-models#update-supplier",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/model-entries/{model_id}/test",
+    "sdk": "client.models.run_model_test",
+    "document": "/docs.html?page=sdk-reference-models#run-model-test",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/model-providers",
+    "sdk": "client.models.create_provider",
+    "document": "/docs.html?page=sdk-reference-models#create-provider",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/model-providers/{provider_id}/enabled",
+    "sdk": "client.models.set_provider_enabled",
+    "document": "/docs.html?page=sdk-reference-models#set-provider-enabled",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/model-providers/{provider_id}/models",
+    "sdk": "client.models.add_model",
+    "document": "/docs.html?page=sdk-reference-models#add-model",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/model-suppliers",
+    "sdk": "client.models.create_supplier",
+    "document": "/docs.html?page=sdk-reference-models#create-supplier",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "PUT /v1/model-catalog/defaults",
+    "sdk": "client.models.defaults",
+    "document": "/docs.html?page=sdk-reference-models#defaults",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "DELETE /v1/presentation-workshop/projects/{project_id}",
+    "sdk": "client.presentation.delete_project",
+    "document": "/docs.html?page=sdk-reference-presentation#delete-project",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/presentation-workshop/projects",
+    "sdk": "client.presentation.list_projects",
+    "document": "/docs.html?page=sdk-reference-presentation#list-projects",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/presentation-workshop/projects/{project_id}",
+    "sdk": "client.presentation.get_project",
+    "document": "/docs.html?page=sdk-reference-presentation#get-project",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/presentation-workshop/projects",
+    "sdk": "client.presentation.create_project",
+    "document": "/docs.html?page=sdk-reference-presentation#create-project",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/presentation-workshop/projects/{project_id}/export",
+    "sdk": "client.presentation.export_pptx",
+    "document": "/docs.html?page=sdk-reference-presentation#export-pptx",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/presentation-workshop/projects/{project_id}/operations",
+    "sdk": "client.presentation.apply_presentation_operations",
+    "document": "/docs.html?page=sdk-reference-presentation#apply-presentation-operations",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "PUT /v1/presentation-workshop/projects/{project_id}",
+    "sdk": "client.presentation.put_project",
+    "document": "/docs.html?page=sdk-reference-presentation#put-project",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/public-workspace",
+    "sdk": "client.public.projection",
+    "document": "/docs.html?page=sdk-reference-public#projection",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/public-workspace/assets/{asset_id}/content",
+    "sdk": "client.public.asset_content",
+    "document": "/docs.html?page=sdk-reference-public#asset-content",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/public-workspace/galgame-projects/{project_id}/story",
+    "sdk": "client.public.story",
+    "document": "/docs.html?page=sdk-reference-public#story",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /health",
+    "sdk": "client.system.health",
+    "document": "/docs.html?page=sdk-reference-system#health",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /ready",
+    "sdk": "client.system.ready",
+    "document": "/docs.html?page=sdk-reference-system#ready",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/platform/model-service-templates/sync-jobs/{job_id}",
+    "sdk": "client.templates.job",
+    "document": "/docs.html?page=sdk-reference-templates#job",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/platform/model-service-templates/{role}",
+    "sdk": "client.templates.template",
+    "document": "/docs.html?page=sdk-reference-templates#template",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/platform/model-service-templates/{role}/sync-jobs",
+    "sdk": "client.templates.history",
+    "document": "/docs.html?page=sdk-reference-templates#history",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/platform/model-service-templates/sync-jobs/{job_id}/start",
+    "sdk": "client.templates.start",
+    "document": "/docs.html?page=sdk-reference-templates#start",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/platform/model-service-templates/{role}/preview",
+    "sdk": "client.templates.preview",
+    "document": "/docs.html?page=sdk-reference-templates#preview",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "PUT /v1/platform/model-service-templates/{role}",
+    "sdk": "client.templates.put_template",
+    "document": "/docs.html?page=sdk-reference-templates#put-template",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "DELETE /v1/model-test/tools/{tool_id}",
+    "sdk": "client.test_tools.delete_tool",
+    "document": "/docs.html?page=sdk-reference-test-tools#delete-tool",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/model-test/tools",
+    "sdk": "client.test_tools.list_tools",
+    "document": "/docs.html?page=sdk-reference-test-tools#list-tools",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/model-test/tools/{tool_id}",
+    "sdk": "client.test_tools.get_tool",
+    "document": "/docs.html?page=sdk-reference-test-tools#get-tool",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "PATCH /v1/model-test/tools/{tool_id}",
+    "sdk": "client.test_tools.update_tool",
+    "document": "/docs.html?page=sdk-reference-test-tools#update-tool",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/model-test/tools",
+    "sdk": "client.test_tools.create_tool",
+    "document": "/docs.html?page=sdk-reference-test-tools#create-tool",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/model-test/tools/{tool_id}/execute",
+    "sdk": "client.test_tools.execute_tool",
+    "document": "/docs.html?page=sdk-reference-test-tools#execute-tool",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "DELETE /v1/model-test/conversations/{conversation_id}",
+    "sdk": "client.testing.delete_conversation",
+    "document": "/docs.html?page=sdk-reference-testing#delete-conversation",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "DELETE /v1/model-test/conversations/{conversation_id}/attachments/{attachment_id}",
+    "sdk": "client.testing.delete_attachment",
+    "document": "/docs.html?page=sdk-reference-testing#delete-attachment",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "DELETE /v1/model-test/generation-assets/{asset_id}",
+    "sdk": "client.testing.delete_generation_asset",
+    "document": "/docs.html?page=sdk-reference-testing#delete-generation-asset",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "DELETE /v1/model-test/generation-tasks/{task_id}",
+    "sdk": "client.testing.delete_generation_task",
+    "document": "/docs.html?page=sdk-reference-testing#delete-generation-task",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "DELETE /v1/model-test/transcription-tasks/{task_id}",
+    "sdk": "client.testing.delete_transcription_task",
+    "document": "/docs.html?page=sdk-reference-testing#delete-transcription-task",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/model-test/conversations",
+    "sdk": "client.testing.list_conversations",
+    "document": "/docs.html?page=sdk-reference-testing#list-conversations",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/model-test/conversations/{conversation_id}",
+    "sdk": "client.testing.get_conversation",
+    "document": "/docs.html?page=sdk-reference-testing#get-conversation",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/model-test/conversations/{conversation_id}/attachments/{attachment_id}/content",
+    "sdk": "client.testing.attachment_content",
+    "document": "/docs.html?page=sdk-reference-testing#attachment-content",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/model-test/generation-assets/backfill-status",
+    "sdk": "client.testing.generation_asset_backfill_status",
+    "document": "/docs.html?page=sdk-reference-testing#generation-asset-backfill-status",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/model-test/generation-options",
+    "sdk": "client.testing.generation_options",
+    "document": "/docs.html?page=sdk-reference-testing#generation-options",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/model-test/generation-tasks",
+    "sdk": "client.testing.list_generation_tasks",
+    "document": "/docs.html?page=sdk-reference-testing#list-generation-tasks",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/model-test/generation-tasks/{task_id}",
+    "sdk": "client.testing.get_generation_task",
+    "document": "/docs.html?page=sdk-reference-testing#get-generation-task",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/model-test/generation-tasks/{task_id}/content",
+    "sdk": "client.testing.generation_content",
+    "document": "/docs.html?page=sdk-reference-testing#generation-content",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/model-test/realtime-options",
+    "sdk": "client.testing.realtime_options",
+    "document": "/docs.html?page=sdk-reference-testing#realtime-options",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/model-test/transcription-options",
+    "sdk": "client.testing.transcription_options",
+    "document": "/docs.html?page=sdk-reference-testing#transcription-options",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/model-test/transcription-tasks",
+    "sdk": "client.testing.list_transcription_tasks",
+    "document": "/docs.html?page=sdk-reference-testing#list-transcription-tasks",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/model-test/transcription-tasks/{task_id}",
+    "sdk": "client.testing.get_transcription_task",
+    "document": "/docs.html?page=sdk-reference-testing#get-transcription-task",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/model-test/transcription-tasks/{task_id}/input-content",
+    "sdk": "client.testing.transcription_input_content",
+    "document": "/docs.html?page=sdk-reference-testing#transcription-input-content",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "PATCH /v1/model-test/conversations/{conversation_id}",
+    "sdk": "client.testing.patch_conversation",
+    "document": "/docs.html?page=sdk-reference-testing#patch-conversation",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/model-test/conversations",
+    "sdk": "client.testing.create_conversation",
+    "document": "/docs.html?page=sdk-reference-testing#create-conversation",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/model-test/conversations/{conversation_id}/attachments",
+    "sdk": "client.testing.upload_attachments",
+    "document": "/docs.html?page=sdk-reference-testing#upload-attachments",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/model-test/conversations/{conversation_id}/messages/stream",
+    "sdk": "client.testing.stream_message",
+    "document": "/docs.html?page=sdk-reference-testing#stream-message",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/model-test/conversations/{conversation_id}/regenerate/stream",
+    "sdk": "client.testing.regenerate_message",
+    "document": "/docs.html?page=sdk-reference-testing#regenerate-message",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/model-test/generation-assets",
+    "sdk": "client.testing.upload_generation_assets",
+    "document": "/docs.html?page=sdk-reference-testing#upload-generation-assets",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/model-test/generation-assets/backfill",
+    "sdk": "client.testing.backfill_generation_assets",
+    "document": "/docs.html?page=sdk-reference-testing#backfill-generation-assets",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/model-test/generation-assets/cleanup",
+    "sdk": "client.testing.cleanup_generation_assets",
+    "document": "/docs.html?page=sdk-reference-testing#cleanup-generation-assets",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/model-test/generation-tasks",
+    "sdk": "client.testing.create_generation_task",
+    "document": "/docs.html?page=sdk-reference-testing#create-generation-task",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/model-test/generation-tasks/{task_id}/retry-materialization",
+    "sdk": "client.testing.retry_materialization",
+    "document": "/docs.html?page=sdk-reference-testing#retry-materialization",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/model-test/transcription-tasks",
+    "sdk": "client.testing.create_transcription_task",
+    "document": "/docs.html?page=sdk-reference-testing#create-transcription-task",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/model-test/transcription-tasks/upload",
+    "sdk": "client.testing.upload_transcription_task",
+    "document": "/docs.html?page=sdk-reference-testing#upload-transcription-task",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "DELETE /v1/thought-workshop/knowledge-bases/{project_id}",
+    "sdk": "client.thought.trash_knowledge_base",
+    "document": "/docs.html?page=sdk-reference-thought#trash-knowledge-base",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "DELETE /v1/thought-workshop/notes/{note_id}",
+    "sdk": "client.thought.delete_note",
+    "document": "/docs.html?page=sdk-reference-thought#delete-note",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/thought-workshop/backup",
+    "sdk": "client.thought.backup",
+    "document": "/docs.html?page=sdk-reference-thought#backup",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/thought-workshop/knowledge-bases",
+    "sdk": "client.thought.knowledge_bases",
+    "document": "/docs.html?page=sdk-reference-thought#knowledge-bases",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/thought-workshop/knowledge-bases/{project_id}",
+    "sdk": "client.thought.knowledge_base",
+    "document": "/docs.html?page=sdk-reference-thought#knowledge-base",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/thought-workshop/knowledge-bases/{project_id}/directory",
+    "sdk": "client.thought.directory",
+    "document": "/docs.html?page=sdk-reference-thought#directory",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/thought-workshop/models",
+    "sdk": "client.thought.writing_models",
+    "document": "/docs.html?page=sdk-reference-thought#writing-models",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/thought-workshop/notes",
+    "sdk": "client.thought.list_notes",
+    "document": "/docs.html?page=sdk-reference-thought#list-notes",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/thought-workshop/notes/{note_id}",
+    "sdk": "client.thought.get_note",
+    "document": "/docs.html?page=sdk-reference-thought#get-note",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/thought-workshop/notes/{note_id}/export",
+    "sdk": "client.thought.export_note_content",
+    "document": "/docs.html?page=sdk-reference-thought#export-note-content",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/thought-workshop/notes/{note_id}/history",
+    "sdk": "client.thought.note_history",
+    "document": "/docs.html?page=sdk-reference-thought#note-history",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/thought-workshop/notes/{note_id}/history/{history_id}",
+    "sdk": "client.thought.note_history_detail",
+    "document": "/docs.html?page=sdk-reference-thought#note-history-detail",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/thought-workshop/attachments",
+    "sdk": "client.thought.attachments",
+    "document": "/docs.html?page=sdk-reference-thought#attachments",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/thought-workshop/images",
+    "sdk": "client.thought.upload_image",
+    "document": "/docs.html?page=sdk-reference-thought#upload-image",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/thought-workshop/imports",
+    "sdk": "client.thought.imports",
+    "document": "/docs.html?page=sdk-reference-thought#imports",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/thought-workshop/knowledge-bases",
+    "sdk": "client.thought.create_knowledge_base",
+    "document": "/docs.html?page=sdk-reference-thought#create-knowledge-base",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/thought-workshop/knowledge-bases/{project_id}/documents",
+    "sdk": "client.thought.create_document",
+    "document": "/docs.html?page=sdk-reference-thought#create-document",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/thought-workshop/knowledge-bases/{project_id}/move",
+    "sdk": "client.thought.move_entry",
+    "document": "/docs.html?page=sdk-reference-thought#move-entry",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/thought-workshop/knowledge-bases/{project_id}/restore",
+    "sdk": "client.thought.restore_knowledge_base",
+    "document": "/docs.html?page=sdk-reference-thought#restore-knowledge-base",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/thought-workshop/markdown/convert",
+    "sdk": "client.thought.convert_markdown",
+    "document": "/docs.html?page=sdk-reference-thought#convert-markdown",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/thought-workshop/notes",
+    "sdk": "client.thought.create_note",
+    "document": "/docs.html?page=sdk-reference-thought#create-note",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/thought-workshop/notes/{note_id}/assistant",
+    "sdk": "client.thought.assistant",
+    "document": "/docs.html?page=sdk-reference-thought#assistant",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/thought-workshop/notes/{note_id}/history/{history_id}/restore",
+    "sdk": "client.thought.restore_note_history",
+    "document": "/docs.html?page=sdk-reference-thought#restore-note-history",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/thought-workshop/notes/{note_id}/operations",
+    "sdk": "client.thought.apply_note_operations",
+    "document": "/docs.html?page=sdk-reference-thought#apply-note-operations",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/thought-workshop/notes/{note_id}/restore",
+    "sdk": "client.thought.restore_note",
+    "document": "/docs.html?page=sdk-reference-thought#restore-note",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "PUT /v1/thought-workshop/knowledge-bases/{project_id}",
+    "sdk": "client.thought.update_knowledge_base",
+    "document": "/docs.html?page=sdk-reference-thought#update-knowledge-base",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "PUT /v1/thought-workshop/notes/{note_id}",
+    "sdk": "client.thought.put_note",
+    "document": "/docs.html?page=sdk-reference-thought#put-note",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/tool-navigation/state",
+    "sdk": "client.tools.get_state",
+    "document": "/docs.html?page=sdk-reference-tools#get-state",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "PATCH /v1/tool-navigation/tools/{tool_id}",
+    "sdk": "client.tools.set_favorite",
+    "document": "/docs.html?page=sdk-reference-tools#set-favorite",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/tool-navigation/tools/{tool_id}/use",
+    "sdk": "client.tools.record_use",
+    "document": "/docs.html?page=sdk-reference-tools#record-use",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "DELETE /v1/video-editor/projects/{project_id}",
+    "sdk": "client.video.delete_project",
+    "document": "/docs.html?page=sdk-reference-video#delete-project",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "DELETE /v1/video-editor/projects/{project_id}/assets/{asset_id}",
+    "sdk": "client.video.delete_asset",
+    "document": "/docs.html?page=sdk-reference-video#delete-asset",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "DELETE /v1/video-editor/projects/{project_id}/renders/{task_id}",
+    "sdk": "client.video.delete_render",
+    "document": "/docs.html?page=sdk-reference-video#delete-render",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/video-editor/import-sources",
+    "sdk": "client.video.import_sources",
+    "document": "/docs.html?page=sdk-reference-video#import-sources",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/video-editor/projects",
+    "sdk": "client.video.list_projects",
+    "document": "/docs.html?page=sdk-reference-video#list-projects",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/video-editor/projects/{project_id}",
+    "sdk": "client.video.get_project",
+    "document": "/docs.html?page=sdk-reference-video#get-project",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/video-editor/projects/{project_id}/assets",
+    "sdk": "client.video.list_assets",
+    "document": "/docs.html?page=sdk-reference-video#list-assets",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/video-editor/projects/{project_id}/assets/{asset_id}/{variant}",
+    "sdk": "client.video.asset_variant",
+    "document": "/docs.html?page=sdk-reference-video#asset-variant",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/video-editor/projects/{project_id}/preview/frame",
+    "sdk": "client.video.exact_frame",
+    "document": "/docs.html?page=sdk-reference-video#exact-frame",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/video-editor/projects/{project_id}/renders",
+    "sdk": "client.video.list_renders",
+    "document": "/docs.html?page=sdk-reference-video#list-renders",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/video-editor/projects/{project_id}/renders/{task_id}",
+    "sdk": "client.video.get_render",
+    "document": "/docs.html?page=sdk-reference-video#get-render",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/video-editor/projects/{project_id}/segment-exports",
+    "sdk": "client.video.list_segment_exports",
+    "document": "/docs.html?page=sdk-reference-video#list-segment-exports",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/video-editor/projects/{project_id}/segment-exports/{task_id}",
+    "sdk": "client.video.get_segment_export",
+    "document": "/docs.html?page=sdk-reference-video#get-segment-export",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/video-editor/projects/{project_id}/segment-exports/{task_id}/download",
+    "sdk": "client.video.download_segment_export",
+    "document": "/docs.html?page=sdk-reference-video#download-segment-export",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/video-editor/projects/{project_id}/snapshot",
+    "sdk": "client.video.export_project_snapshot",
+    "document": "/docs.html?page=sdk-reference-video#export-project-snapshot",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/video-editor/projects/{project_id}/timeline",
+    "sdk": "client.video.get_timeline",
+    "document": "/docs.html?page=sdk-reference-video#get-timeline",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "PATCH /v1/video-editor/projects/{project_id}",
+    "sdk": "client.video.patch_project",
+    "document": "/docs.html?page=sdk-reference-video#patch-project",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/video-editor/projects",
+    "sdk": "client.video.create_project",
+    "document": "/docs.html?page=sdk-reference-video#create-project",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/video-editor/projects/snapshot-imports",
+    "sdk": "client.video.import_project_snapshot",
+    "document": "/docs.html?page=sdk-reference-video#import-project-snapshot",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/video-editor/projects/{project_id}/assets",
+    "sdk": "client.video.upload_asset",
+    "document": "/docs.html?page=sdk-reference-video#upload-asset",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/video-editor/projects/{project_id}/assets/import",
+    "sdk": "client.video.import_assets",
+    "document": "/docs.html?page=sdk-reference-video#import-assets",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/video-editor/projects/{project_id}/assets/{asset_id}/proxy/retry",
+    "sdk": "client.video.retry_proxy",
+    "document": "/docs.html?page=sdk-reference-video#retry-proxy",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/video-editor/projects/{project_id}/open-folder",
+    "sdk": "client.video.reveal_project_folder",
+    "document": "/docs.html?page=sdk-reference-video#reveal-project-folder",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/video-editor/projects/{project_id}/renders",
+    "sdk": "client.video.create_render",
+    "document": "/docs.html?page=sdk-reference-video#create-render",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/video-editor/projects/{project_id}/renders/preflight",
+    "sdk": "client.video.render_preflight",
+    "document": "/docs.html?page=sdk-reference-video#render-preflight",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/video-editor/projects/{project_id}/renders/{task_id}/cancel",
+    "sdk": "client.video.cancel_render",
+    "document": "/docs.html?page=sdk-reference-video#cancel-render",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/video-editor/projects/{project_id}/segment-exports",
+    "sdk": "client.video.create_segment_export",
+    "document": "/docs.html?page=sdk-reference-video#create-segment-export",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/video-editor/projects/{project_id}/segment-exports/{task_id}/cancel",
+    "sdk": "client.video.cancel_segment_export",
+    "document": "/docs.html?page=sdk-reference-video#cancel-segment-export",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/video-editor/projects/{project_id}/timeline/operations",
+    "sdk": "client.video.apply_timeline_operations",
+    "document": "/docs.html?page=sdk-reference-video#apply-timeline-operations",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "DELETE /v1/visual-workshop/projects/{project_id}",
+    "sdk": "client.visual.delete_project",
+    "document": "/docs.html?page=sdk-reference-visual#delete-project",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "DELETE /v1/visual-workshop/projects/{project_id}/asset-references/{reference_id}",
+    "sdk": "client.visual.delete_asset_reference",
+    "document": "/docs.html?page=sdk-reference-visual#delete-asset-reference",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/visual-workshop/projects",
+    "sdk": "client.visual.list_projects",
+    "document": "/docs.html?page=sdk-reference-visual#list-projects",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/visual-workshop/projects/{project_id}",
+    "sdk": "client.visual.get_project",
+    "document": "/docs.html?page=sdk-reference-visual#get-project",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/visual-workshop/projects/{project_id}/canvas",
+    "sdk": "client.visual.get_canvas",
+    "document": "/docs.html?page=sdk-reference-visual#get-canvas",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/visual-workshop/projects/{project_id}/snapshot",
+    "sdk": "client.visual.export_project_snapshot",
+    "document": "/docs.html?page=sdk-reference-visual#export-project-snapshot",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "PATCH /v1/visual-workshop/projects/{project_id}",
+    "sdk": "client.visual.patch_project",
+    "document": "/docs.html?page=sdk-reference-visual#patch-project",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "PATCH /v1/visual-workshop/projects/{project_id}/asset-references/{reference_id}",
+    "sdk": "client.visual.patch_asset_reference",
+    "document": "/docs.html?page=sdk-reference-visual#patch-asset-reference",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/visual-workshop/projects",
+    "sdk": "client.visual.create_project",
+    "document": "/docs.html?page=sdk-reference-visual#create-project",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/visual-workshop/projects/snapshot-imports",
+    "sdk": "client.visual.import_project_snapshot",
+    "document": "/docs.html?page=sdk-reference-visual#import-project-snapshot",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/visual-workshop/projects/{project_id}/asset-imports",
+    "sdk": "client.visual.import_assets",
+    "document": "/docs.html?page=sdk-reference-visual#import-assets",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/visual-workshop/projects/{project_id}/asset-references",
+    "sdk": "client.visual.create_asset_reference",
+    "document": "/docs.html?page=sdk-reference-visual#create-asset-reference",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/visual-workshop/projects/{project_id}/canvas/operations",
+    "sdk": "client.visual.apply_canvas_operations",
+    "document": "/docs.html?page=sdk-reference-visual#apply-canvas-operations",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/visual-workshop/projects/{project_id}/open-folder",
+    "sdk": "client.visual.reveal_project_folder",
+    "document": "/docs.html?page=sdk-reference-visual#reveal-project-folder",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "PUT /v1/visual-workshop/projects/{project_id}/canvas",
+    "sdk": "client.visual.put_canvas",
+    "document": "/docs.html?page=sdk-reference-visual#put-canvas",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "DELETE /v1/visual-workshop/projects/{project_id}/conversations/{conversation_id}",
+    "sdk": "client.visual_assistant.delete_conversation",
+    "document": "/docs.html?page=sdk-reference-visual-assistant#delete-conversation",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/visual-workshop/projects/{project_id}/conversations",
+    "sdk": "client.visual_assistant.list_conversations",
+    "document": "/docs.html?page=sdk-reference-visual-assistant#list-conversations",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/visual-workshop/projects/{project_id}/conversations/models",
+    "sdk": "client.visual_assistant.list_models",
+    "document": "/docs.html?page=sdk-reference-visual-assistant#list-models",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/visual-workshop/projects/{project_id}/conversations/{conversation_id}",
+    "sdk": "client.visual_assistant.get_conversation",
+    "document": "/docs.html?page=sdk-reference-visual-assistant#get-conversation",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "PATCH /v1/visual-workshop/projects/{project_id}/conversations/{conversation_id}",
+    "sdk": "client.visual_assistant.patch_conversation",
+    "document": "/docs.html?page=sdk-reference-visual-assistant#patch-conversation",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/visual-workshop/projects/{project_id}/conversations",
+    "sdk": "client.visual_assistant.create_conversation",
+    "document": "/docs.html?page=sdk-reference-visual-assistant#create-conversation",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/visual-workshop/projects/{project_id}/conversations/{conversation_id}/messages/stream",
+    "sdk": "client.visual_assistant.stream_message",
+    "document": "/docs.html?page=sdk-reference-visual-assistant#stream-message",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/visual-workshop/projects/{project_id}/conversations/{conversation_id}/runs/{run_id}/approvals/{approval_id}",
+    "sdk": "client.visual_assistant.resolve_approval",
+    "document": "/docs.html?page=sdk-reference-visual-assistant#resolve-approval",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "DELETE /v1/account/workspaces/current/invitations/{invitation_id}",
+    "sdk": "client.workspaces.revoke_invitation",
+    "document": "/docs.html?page=sdk-reference-workspaces#revoke-invitation",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "DELETE /v1/account/workspaces/current/members/{membership_id}",
+    "sdk": "client.workspaces.delete_member",
+    "document": "/docs.html?page=sdk-reference-workspaces#delete-member",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/account/workspace-invitations",
+    "sdk": "client.workspaces.my_invitations",
+    "document": "/docs.html?page=sdk-reference-workspaces#my-invitations",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/account/workspaces",
+    "sdk": "client.workspaces.accessible_workspaces",
+    "document": "/docs.html?page=sdk-reference-workspaces#accessible-workspaces",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/account/workspaces/current/invitations",
+    "sdk": "client.workspaces.workspace_invitations",
+    "document": "/docs.html?page=sdk-reference-workspaces#workspace-invitations",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/account/workspaces/current/members",
+    "sdk": "client.workspaces.members",
+    "document": "/docs.html?page=sdk-reference-workspaces#members",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "PATCH /v1/account/workspaces/current",
+    "sdk": "client.workspaces.update_workspace",
+    "document": "/docs.html?page=sdk-reference-workspaces#update-workspace",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "PATCH /v1/account/workspaces/current/members/{membership_id}",
+    "sdk": "client.workspaces.set_member_role",
+    "document": "/docs.html?page=sdk-reference-workspaces#set-member-role",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/account/workspace-invitations/{invitation_id}/accept",
+    "sdk": "client.workspaces.accept_invitation",
+    "document": "/docs.html?page=sdk-reference-workspaces#accept-invitation",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/account/workspace-invitations/{invitation_id}/decline",
+    "sdk": "client.workspaces.decline_invitation",
+    "document": "/docs.html?page=sdk-reference-workspaces#decline-invitation",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/account/workspaces/current/invitations",
+    "sdk": "client.workspaces.invite_member",
+    "document": "/docs.html?page=sdk-reference-workspaces#invite-member",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/account/workspaces/switch",
+    "sdk": "client.workspaces.set_active_workspace",
+    "document": "/docs.html?page=sdk-reference-workspaces#set-active-workspace",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  }
+]

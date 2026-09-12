@@ -44,56 +44,86 @@
 }
 .docs-sidebar {
   background: var(--bg);
-  padding: 32px 24px 40px;
+  padding: 32px 16px 48px;
+  border-right: 0;
+  scrollbar-width: thin;
+  scrollbar-gutter: stable;
 }
 .docs-nav-group {
-  margin-bottom: 32px;
+  margin: 0 0 32px;
 }
 .docs-nav-group h2 {
   display: flex;
   align-items: center;
   gap: 10px;
+  margin: 0 0 10px;
+  padding: 0 8px;
+  color: var(--text-strong);
   font-size: 14px;
-  margin: 0 0 12px;
+  font-weight: 650;
+  line-height: 22px;
 }
-.docs-nav-group a {
-  position: relative;
-  padding: 7px 0 7px 16px;
+.docs-nav-group h2 svg {
+  flex: 0 0 16px;
+}
+.docs-nav-group a,
+.docs-nav-group summary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 34px;
   margin: 1px 0;
-  border-radius: 0;
+  padding: 6px 8px;
+  border-radius: 6px;
+  color: var(--muted);
   font-size: 14px;
-  line-height: 1.6;
+  font-weight: 400;
+  line-height: 22px;
+  text-decoration: none;
+  overflow-wrap: anywhere;
 }
-.docs-nav-group a span {
-  float: right;
-  margin-right: 8px;
+.docs-nav-group a:hover,
+.docs-nav-group a:focus-visible,
+.docs-nav-group summary:hover,
+.docs-nav-group summary:focus-visible {
+  background: var(--surface-hover);
+  color: var(--text-strong);
 }
 .docs-nav-group a.active {
-  background: transparent;
+  background: var(--accent-soft);
   color: var(--accent);
-}
-.docs-nav-group a.active::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  top: 9px;
-  bottom: 9px;
-  width: 2px;
-  background: var(--accent);
+  font-weight: 550;
 }
 .docs-nav-group summary {
-  padding: 7px 0 7px 16px;
-  color: var(--muted);
+  list-style: none;
   cursor: pointer;
-  font-size: 14px;
 }
-.docs-nav-group summary::marker {
-  color: var(--faint);
-  font-size: 11px;
+.docs-nav-group summary::-webkit-details-marker {
+  display: none;
+}
+.docs-nav-group details[open] > summary {
+  color: var(--text-strong);
+}
+.docs-nav-chevron {
+  flex: 0 0 14px;
+  margin-left: auto;
+  margin-right: 3px;
+  stroke-width: 1.5;
+}
+summary > .docs-nav-chevron {
+  transform: rotate(-90deg);
+  transition: transform 160ms ease;
+}
+.docs-nav-group details[open] > summary > .docs-nav-chevron {
+  transform: rotate(0);
 }
 .docs-nav-children {
-  border-left: 1px solid var(--border);
-  margin: 4px 0 14px 16px;
+  margin-left: 16px;
+}
+@media (prefers-reduced-motion: reduce) {
+  summary > .docs-nav-chevron {
+    transition: none;
+  }
 }
 .docs-context {
   margin-bottom: 32px;

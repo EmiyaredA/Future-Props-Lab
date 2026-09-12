@@ -6,6 +6,7 @@ export type DeleteTarget =
 export const sourceLabels: Record<string, string> = {
   model_diagnostic: "快速诊断",
   model_playground: "模型测试",
+  model_inference: "独立模型调用",
   audio_annotation: "录音标注",
   thought_workshop_assistant: "思绪工坊写作",
   visual_workshop_assistant: "视觉助手",

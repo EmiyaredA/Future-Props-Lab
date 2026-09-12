@@ -1,3 +1,10 @@
 dist/
 src/generated/
 e2e/.auth-state.json
+
+# SDK reference tables are generated deterministically by generate_sdk_docs.py.
+src/docs/articles/sdk/sdk-reference-*.md
+src/docs/articles/sdk/sdk-first-call.md
+
+# Executable workflow examples extracted verbatim from Python
+src/docs/articles/sdk/sdk-workflow-examples.md

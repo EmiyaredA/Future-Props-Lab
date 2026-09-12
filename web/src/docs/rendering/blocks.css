@@ -1,0 +1,492 @@
+.docs-center-header [data-developer-docs-link][hidden],
+.docs-document .developer-guide-link[hidden] {
+  display: none;
+}
+
+.docs-document pre {
+  max-width: 100%;
+  overflow-x: auto;
+  padding: 16px 20px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-soft);
+  line-height: 1.75;
+}
+
+.docs-document .steps--structured {
+  padding: 0;
+  margin: 24px 0 0;
+  list-style: none;
+}
+
+.docs-document .steps--structured > .guide-step {
+  position: relative;
+  margin: 0;
+  padding: 0 0 28px 46px;
+  min-height: 30px;
+}
+
+.docs-document .guide-step:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  left: 14px;
+  top: 30px;
+  bottom: 0;
+  width: 1px;
+  background: var(--border);
+}
+
+.docs-document .guide-step-number {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: grid;
+  place-items: center;
+  width: 29px;
+  height: 29px;
+  border-radius: 50%;
+  background: var(--surface-hover);
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.docs-document .guide-step:last-child {
+  padding-bottom: 0;
+}
+
+.docs-document .guide-step > :last-child {
+  margin-bottom: 0;
+}
+
+.docs-document .guide-step-title {
+  margin: 0 0 12px;
+  color: var(--text-strong);
+  font-size: 18px;
+  line-height: 29px;
+  font-weight: 600;
+}
+
+.docs-document .guide-step > p,
+.docs-document .guide-step > ul,
+.docs-document .guide-step > ol {
+  margin-block: 12px;
+  line-height: 1.85;
+  color: var(--text);
+}
+
+.docs-document .steps > li > ul,
+.docs-document .steps > li > ol {
+  padding-left: 24px;
+}
+
+.docs-document .guide-step .shot {
+  margin-block: 20px;
+}
+
+.docs-document .guide-step .shot-title {
+  font-size: 15px;
+}
+
+.docs-document .guide-callout {
+  position: relative;
+  padding: 16px 18px 16px 48px;
+  border: 1px solid var(--border);
+  background: transparent;
+}
+
+.docs-document .guide-callout-icon {
+  position: absolute;
+  left: 16px;
+  top: 19px;
+  width: 20px;
+  height: 20px;
+  color: var(--text);
+}
+
+.docs-document .guide-callout--warning {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+  background: color-mix(in srgb, var(--accent) 5%, var(--bg));
+}
+
+.docs-document .guide-callout-label {
+  font-weight: 750;
+}
+
+.docs-document :is(p, li, td, th) {
+  overflow-wrap: anywhere;
+}
+
+.docs-document .parameter-table-wrap {
+  max-width: 100%;
+}
+
+.docs-document :is(p, li, td, th) a:not(.shot-link, .guide-card) {
+  color: var(--accent);
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--accent) 45%, transparent);
+  text-underline-offset: 3px;
+}
+
+.docs-document :is(p, li, td, th) a:not(.shot-link, .guide-card):hover {
+  text-decoration-color: currentColor;
+}
+
+.docs-document :is(p, li, td, th) a:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.docs-document .article-section > h2 {
+  margin-bottom: 20px;
+}
+
+@media (max-width: 640px) {
+  .docs-document .steps--structured > .guide-step {
+    padding-left: 42px;
+  }
+}
+
+/* Reading primitives share a rhythm; the document-center shell keeps its own theme. */
+.docs-document {
+  --guide-gap: 24px;
+  --guide-radius: 10px;
+  font-size: 16px;
+  line-height: 1.85;
+}
+
+.docs-document :is(p, ul, ol, blockquote, dl) {
+  margin-block: 16px;
+}
+
+.docs-document .article-lead {
+  color: var(--text);
+  font-size: 18px;
+  line-height: 1.85;
+}
+
+.docs-document :is(h2, h3, h4) {
+  color: var(--text-strong);
+  line-height: 1.45;
+}
+
+.docs-document h2 {
+  font-size: 24px;
+  font-weight: 650;
+}
+
+.docs-document :is(h3, h4) {
+  margin-block: 28px 12px;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.docs-document li + li {
+  margin-top: 6px;
+}
+
+.docs-document blockquote {
+  margin-inline: 0;
+  padding: 2px 20px;
+  border-left: 3px solid var(--border);
+  color: var(--text);
+}
+
+.docs-document :not(pre) > code {
+  padding: 2px 5px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--surface-soft);
+  color: var(--text-strong);
+  font-size: 0.88em;
+  overflow-wrap: anywhere;
+}
+
+.docs-document :is(.guide-callout, .guide-example, .guide-code) {
+  margin-block: var(--guide-gap);
+  border-radius: var(--guide-radius);
+}
+
+.docs-document .guide-callout {
+  color: var(--text);
+  font-size: 15px;
+}
+
+.docs-document .guide-callout > strong {
+  color: var(--text-strong);
+  font-size: 15px;
+}
+
+.docs-document .guide-callout > p {
+  margin-block: 8px;
+}
+
+.docs-document .guide-callout--tip .guide-callout-icon {
+  color: var(--accent);
+}
+
+.docs-document .guide-callout--warning .guide-callout-icon {
+  color: var(--text-strong);
+}
+
+.docs-document .guide-callout > :last-child {
+  margin-bottom: 0;
+}
+
+.docs-document .guide-card-group {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  padding: 0;
+  margin-block: var(--guide-gap);
+  list-style: none;
+}
+
+.docs-document .guide-card-group > .guide-card-item {
+  min-width: 0;
+  margin: 0;
+}
+
+.docs-document .guide-card-group a.guide-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  height: 100%;
+  box-sizing: border-box;
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-radius: var(--guide-radius);
+  background: var(--surface);
+  color: var(--text-strong);
+  text-decoration: none;
+}
+
+.docs-document a.guide-card:hover {
+  border-color: var(--accent);
+  background: var(--surface-soft);
+}
+
+.docs-document .guide-card-title {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+.docs-document .guide-card-title > span {
+  color: var(--muted);
+}
+
+.docs-document .guide-card-description {
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.8;
+}
+
+.docs-document .guide-card-description > :first-child {
+  margin-top: 0;
+}
+
+.docs-document .guide-card-description > :last-child {
+  margin-bottom: 0;
+}
+
+.docs-document :is(.guide-example, .chunk-example) {
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-radius: var(--guide-radius);
+  background: var(--surface-soft);
+}
+
+.docs-document .guide-example-title {
+  display: block;
+  margin-bottom: 16px;
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+.docs-document :is(.guide-example-panels, .chunk-example-grid) {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.docs-document .guide-example-panel:only-child {
+  grid-column: 1 / -1;
+}
+
+.docs-document :is(.guide-example-panel, .chunk-example-column) {
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  font-size: 15px;
+}
+
+.docs-document .chunk-example-column:first-child {
+  grid-column: 1 / -1;
+}
+
+.docs-document .guide-example-panel-title {
+  display: block;
+  color: var(--text-strong);
+  font-size: 14px;
+}
+
+.docs-document .guide-example-panel > :last-child {
+  margin-bottom: 0;
+}
+
+.docs-document .guide-fields {
+  margin-block: var(--guide-gap);
+}
+
+.docs-document .guide-field {
+  padding-block: 20px;
+  border-top: 1px solid var(--border);
+}
+
+.docs-document .guide-field:last-child {
+  border-bottom: 1px solid var(--border);
+}
+
+.docs-document .guide-field dt {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px 12px;
+  color: var(--text-strong);
+}
+
+.docs-document .guide-field dd {
+  margin: 10px 0 0;
+  color: var(--text);
+}
+
+.docs-document .guide-field dd > :first-child {
+  margin-top: 0;
+}
+
+.docs-document .guide-field dd > :last-child {
+  margin-bottom: 0;
+}
+
+.docs-document :is(.guide-field-meta, .guide-field-default) {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.docs-document .guide-field-required {
+  color: var(--text-strong);
+  padding: 1px 6px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+.docs-document .shot figcaption {
+  padding: 12px 2px 0;
+  border-top: 0;
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.8;
+}
+
+.docs-document .shot .shot-title {
+  margin: 0 0 6px;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.docs-document .shot figcaption p {
+  margin-block: 8px;
+}
+
+.docs-document .guide-code {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  background: var(--surface-soft);
+}
+
+.docs-document .guide-code-label {
+  padding: 7px 16px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.docs-document .guide-code pre {
+  margin: 0;
+  padding: 14px 16px;
+  border: 0;
+  border-radius: 0;
+  font-size: 13px;
+  white-space: pre;
+  overflow-wrap: normal;
+}
+
+.docs-document .parameter-table-wrap {
+  min-width: 0;
+  overflow-x: auto;
+  margin-block: var(--guide-gap);
+  border-radius: var(--guide-radius);
+}
+
+.docs-document .parameter-table :is(th, td) {
+  padding: 12px 16px;
+  min-width: 100px;
+  vertical-align: top;
+  font-size: 14px;
+  line-height: 1.8;
+}
+
+.docs-document .parameter-table thead th {
+  background: var(--surface-soft);
+  font-weight: 600;
+}
+
+.docs-document :is(a, [tabindex="0"]):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.docs-document .guide-code pre:focus-visible {
+  outline-offset: -3px;
+}
+
+.docs-document .guide-step .guide-step-title {
+  margin: 0 0 12px;
+  line-height: 29px;
+}
+
+.docs-document .steps--structured > .guide-step {
+  margin: 0;
+}
+
+@media (max-width: 640px) {
+  .docs-document {
+    --guide-gap: 20px;
+  }
+
+  .docs-document
+    :is(.guide-card-group, .guide-example-panels, .chunk-example-grid) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .docs-document :is(.guide-example, .chunk-example) {
+    padding: 12px;
+  }
+
+  .docs-document .shot-link::after {
+    opacity: 1;
+    right: 8px;
+    bottom: 8px;
+    padding: 4px 8px;
+    font-size: 12px;
+  }
+}

@@ -3,6 +3,7 @@ from __future__ import annotations
 from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.concurrency.operation_receipts import forget
 from app.concurrency.project_records import (
     delete_revisioned_project,
     load_workspace_project,
@@ -148,7 +149,9 @@ class Presentations:
         await self.session.commit()
         return await self.get(row.id)
 
-    async def put(self, project_id: str, body: PresentationProjectPut) -> PresentationProjectOut:
+    async def put(
+        self, project_id: str, body: PresentationProjectPut, *, commit: bool = True
+    ) -> PresentationProjectOut:
         await self.row(project_id)
         await patch_revisioned_project(
             self.session,
@@ -166,7 +169,8 @@ class Presentations:
         )
         try:
             await self.references(project_id, body.document)
-            await self.session.commit()
+            if commit:
+                await self.session.commit()
         except Exception:
             await self.session.rollback()
             raise
@@ -181,5 +185,11 @@ class Presentations:
             self.workspace_id,
             expected_revision=revision,
             load_current=lambda: self.get(project_id),
+        )
+        await forget(
+            self.session,
+            workspace_id=self.workspace_id,
+            kind="presentation",
+            resource_id=project_id,
         )
         await self.session.commit()

@@ -422,6 +422,184 @@
         "title": "AddTrackOperation",
         "type": "object"
       },
+      "AnnotationEntityOperation": {
+        "additionalProperties": false,
+        "properties": {
+          "action": {
+            "enum": [
+              "insert",
+              "update",
+              "remove",
+              "move",
+              "duplicate"
+            ],
+            "title": "Action",
+            "type": "string"
+          },
+          "entity": {
+            "enum": [
+              "speaker",
+              "segment"
+            ],
+            "title": "Entity",
+            "type": "string"
+          },
+          "id": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Id",
+            "type": "string"
+          },
+          "index": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Index"
+          },
+          "parent_id": {
+            "anyOf": [
+              {
+                "maxLength": 64,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Id"
+          },
+          "value": {
+            "additionalProperties": true,
+            "title": "Value",
+            "type": "object"
+          }
+        },
+        "required": [
+          "action",
+          "id",
+          "entity"
+        ],
+        "title": "AnnotationEntityOperation",
+        "type": "object"
+      },
+      "AnnotationMergeOperation": {
+        "additionalProperties": false,
+        "properties": {
+          "action": {
+            "const": "merge_next",
+            "title": "Action",
+            "type": "string"
+          },
+          "id": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "action",
+          "id"
+        ],
+        "title": "AnnotationMergeOperation",
+        "type": "object"
+      },
+      "AnnotationOperationsIn": {
+        "additionalProperties": false,
+        "properties": {
+          "expected_revision": {
+            "minimum": 0.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "operations": {
+            "items": {
+              "discriminator": {
+                "mapping": {
+                  "duplicate": "#/components/schemas/AnnotationEntityOperation",
+                  "insert": "#/components/schemas/AnnotationEntityOperation",
+                  "merge_next": "#/components/schemas/AnnotationMergeOperation",
+                  "move": "#/components/schemas/AnnotationEntityOperation",
+                  "remove": "#/components/schemas/AnnotationEntityOperation",
+                  "split": "#/components/schemas/AnnotationSplitOperation",
+                  "update": "#/components/schemas/AnnotationEntityOperation"
+                },
+                "propertyName": "action"
+              },
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/AnnotationEntityOperation"
+                },
+                {
+                  "$ref": "#/components/schemas/AnnotationSplitOperation"
+                },
+                {
+                  "$ref": "#/components/schemas/AnnotationMergeOperation"
+                }
+              ]
+            },
+            "maxItems": 1000,
+            "minItems": 1,
+            "title": "Operations",
+            "type": "array"
+          },
+          "request_id": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Request Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "expected_revision",
+          "request_id",
+          "operations"
+        ],
+        "title": "AnnotationOperationsIn",
+        "type": "object"
+      },
+      "AnnotationSplitOperation": {
+        "additionalProperties": false,
+        "properties": {
+          "action": {
+            "const": "split",
+            "title": "Action",
+            "type": "string"
+          },
+          "at_ms": {
+            "minimum": 100.0,
+            "title": "At Ms",
+            "type": "integer"
+          },
+          "id": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Id",
+            "type": "string"
+          },
+          "new_id": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "New Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "action",
+          "id",
+          "new_id",
+          "at_ms"
+        ],
+        "title": "AnnotationSplitOperation",
+        "type": "object"
+      },
       "ApiKeyCreateIn": {
         "properties": {
           "expires_in_days": {
@@ -1626,6 +1804,20 @@
           "end_ms"
         ],
         "title": "Body_transcribe_segment_v1_audio_annotation_projects__project_id__segment_transcriptions_post",
+        "type": "object"
+      },
+      "Body_upload_asset_v1_model_inference_assets_post": {
+        "properties": {
+          "upload": {
+            "contentMediaType": "application/octet-stream",
+            "title": "Upload",
+            "type": "string"
+          }
+        },
+        "required": [
+          "upload"
+        ],
+        "title": "Body_upload_asset_v1_model_inference_assets_post",
         "type": "object"
       },
       "Body_upload_asset_v1_video_editor_projects__project_id__assets_post": {
@@ -3660,6 +3852,90 @@
         "title": "GalgameAssetReferenceLocation",
         "type": "object"
       },
+      "GalgameEntityOperation": {
+        "additionalProperties": false,
+        "properties": {
+          "action": {
+            "enum": [
+              "insert",
+              "update",
+              "remove",
+              "move",
+              "duplicate"
+            ],
+            "title": "Action",
+            "type": "string"
+          },
+          "chapter_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Chapter Id"
+          },
+          "entity": {
+            "enum": [
+              "character",
+              "scene",
+              "cg",
+              "variable",
+              "asset",
+              "chapter",
+              "fragment",
+              "block"
+            ],
+            "title": "Entity",
+            "type": "string"
+          },
+          "id": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Id",
+            "type": "string"
+          },
+          "index": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Index"
+          },
+          "parent_id": {
+            "anyOf": [
+              {
+                "maxLength": 64,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Id"
+          },
+          "value": {
+            "additionalProperties": true,
+            "title": "Value",
+            "type": "object"
+          }
+        },
+        "required": [
+          "action",
+          "id",
+          "entity"
+        ],
+        "title": "GalgameEntityOperation",
+        "type": "object"
+      },
       "GalgameMissingAssetOverviewItem": {
         "properties": {
           "file_id": {
@@ -3722,6 +3998,43 @@
           "replacementFileId"
         ],
         "title": "GalgameMissingAssetRepairIn",
+        "type": "object"
+      },
+      "GalgameOperationsIn": {
+        "additionalProperties": false,
+        "properties": {
+          "expected_revision": {
+            "minimum": 0.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "operations": {
+            "items": {
+              "$ref": "#/components/schemas/GalgameEntityOperation"
+            },
+            "maxItems": 1000,
+            "minItems": 1,
+            "title": "Operations",
+            "type": "array"
+          },
+          "request_id": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Request Id",
+            "type": "string"
+          },
+          "settings": {
+            "additionalProperties": true,
+            "title": "Settings",
+            "type": "object"
+          }
+        },
+        "required": [
+          "expected_revision",
+          "request_id",
+          "operations"
+        ],
+        "title": "GalgameOperationsIn",
         "type": "object"
       },
       "GalgamePackageManifestIssue": {
@@ -11775,6 +12088,43 @@
         "title": "ImageCompositionItemIn",
         "type": "object"
       },
+      "ImageCropIn": {
+        "additionalProperties": false,
+        "properties": {
+          "height": {
+            "maximum": 32768.0,
+            "minimum": 1.0,
+            "title": "Height",
+            "type": "integer"
+          },
+          "width": {
+            "maximum": 32768.0,
+            "minimum": 1.0,
+            "title": "Width",
+            "type": "integer"
+          },
+          "x": {
+            "maximum": 32768.0,
+            "minimum": 0.0,
+            "title": "X",
+            "type": "integer"
+          },
+          "y": {
+            "maximum": 32768.0,
+            "minimum": 0.0,
+            "title": "Y",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "x",
+          "y",
+          "width",
+          "height"
+        ],
+        "title": "ImageCropIn",
+        "type": "object"
+      },
       "ImageGenerationBatchCreateIn": {
         "properties": {
           "canvas_node_id": {
@@ -11945,6 +12295,458 @@
           "prompt"
         ],
         "title": "ImageGenerationTaskCreateIn",
+        "type": "object"
+      },
+      "InferenceAssetImportIn": {
+        "properties": {
+          "asset_id": {
+            "title": "Asset Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "asset_id"
+        ],
+        "title": "InferenceAssetImportIn",
+        "type": "object"
+      },
+      "InferenceAssetOut": {
+        "properties": {
+          "byte_size": {
+            "title": "Byte Size",
+            "type": "integer"
+          },
+          "filename": {
+            "title": "Filename",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "media_kind": {
+            "title": "Media Kind",
+            "type": "string"
+          },
+          "mime_type": {
+            "title": "Mime Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "filename",
+          "mime_type",
+          "media_kind",
+          "byte_size"
+        ],
+        "title": "InferenceAssetOut",
+        "type": "object"
+      },
+      "InferenceMessage": {
+        "additionalProperties": false,
+        "properties": {
+          "asset_ids": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 5,
+            "title": "Asset Ids",
+            "type": "array"
+          },
+          "role": {
+            "enum": [
+              "user",
+              "assistant"
+            ],
+            "title": "Role",
+            "type": "string"
+          },
+          "text": {
+            "maxLength": 100000,
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "role",
+          "text"
+        ],
+        "title": "InferenceMessage",
+        "type": "object"
+      },
+      "InferenceModelOut": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "modalities": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Modalities",
+            "type": "array"
+          },
+          "parameters": {
+            "additionalProperties": true,
+            "title": "Parameters",
+            "type": "object"
+          }
+        },
+        "required": [
+          "id",
+          "label",
+          "modalities",
+          "parameters"
+        ],
+        "title": "InferenceModelOut",
+        "type": "object"
+      },
+      "InferenceOptionsOut": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/InferenceModelOut"
+            },
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "title": "InferenceOptionsOut",
+        "type": "object"
+      },
+      "InferenceRevisionIn": {
+        "properties": {
+          "expected_revision": {
+            "minimum": 0.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "expected_revision"
+        ],
+        "title": "InferenceRevisionIn",
+        "type": "object"
+      },
+      "InferenceTaskIn": {
+        "additionalProperties": false,
+        "properties": {
+          "asset_ids": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 15,
+            "title": "Asset Ids",
+            "type": "array"
+          },
+          "kind": {
+            "enum": [
+              "image",
+              "video",
+              "music",
+              "sound_effect",
+              "transcription"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "model_id": {
+            "title": "Model Id",
+            "type": "string"
+          },
+          "parameters": {
+            "additionalProperties": true,
+            "title": "Parameters",
+            "type": "object"
+          },
+          "request_id": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Request Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "request_id",
+          "model_id",
+          "kind"
+        ],
+        "title": "InferenceTaskIn",
+        "type": "object"
+      },
+      "InferenceTaskOut": {
+        "properties": {
+          "can_retry_materialization": {
+            "title": "Can Retry Materialization",
+            "type": "boolean"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "error_message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Message"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "image",
+              "video",
+              "music",
+              "sound_effect",
+              "transcription"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "log_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Log Id"
+          },
+          "model_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Id"
+          },
+          "model_slug": {
+            "title": "Model Slug",
+            "type": "string"
+          },
+          "progress": {
+            "title": "Progress",
+            "type": "integer"
+          },
+          "request_payload": {
+            "additionalProperties": true,
+            "title": "Request Payload",
+            "type": "object"
+          },
+          "result": {
+            "additionalProperties": true,
+            "title": "Result",
+            "type": "object"
+          },
+          "result_available": {
+            "title": "Result Available",
+            "type": "boolean"
+          },
+          "result_byte_size": {
+            "title": "Result Byte Size",
+            "type": "integer"
+          },
+          "result_filename": {
+            "title": "Result Filename",
+            "type": "string"
+          },
+          "result_mime_type": {
+            "title": "Result Mime Type",
+            "type": "string"
+          },
+          "revision": {
+            "title": "Revision",
+            "type": "integer"
+          },
+          "status": {
+            "enum": [
+              "queued",
+              "submitting",
+              "pending",
+              "processing",
+              "running",
+              "completed",
+              "failed"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "model_id",
+          "model_slug",
+          "kind",
+          "status",
+          "progress",
+          "request_payload",
+          "result",
+          "result_filename",
+          "result_mime_type",
+          "result_byte_size",
+          "result_available",
+          "can_retry_materialization",
+          "error_message",
+          "log_id",
+          "revision",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "InferenceTaskOut",
+        "type": "object"
+      },
+      "InferenceTasksOut": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/InferenceTaskOut"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total"
+        ],
+        "title": "InferenceTasksOut",
+        "type": "object"
+      },
+      "InferenceTextIn": {
+        "additionalProperties": false,
+        "properties": {
+          "max_tokens": {
+            "default": 1024,
+            "maximum": 128000.0,
+            "minimum": 1.0,
+            "title": "Max Tokens",
+            "type": "integer"
+          },
+          "messages": {
+            "items": {
+              "$ref": "#/components/schemas/InferenceMessage"
+            },
+            "maxItems": 100,
+            "minItems": 1,
+            "title": "Messages",
+            "type": "array"
+          },
+          "model_id": {
+            "title": "Model Id",
+            "type": "string"
+          },
+          "system_prompt": {
+            "default": "",
+            "maxLength": 100000,
+            "title": "System Prompt",
+            "type": "string"
+          },
+          "temperature": {
+            "default": 0.7,
+            "maximum": 2.0,
+            "minimum": 0.0,
+            "title": "Temperature",
+            "type": "number"
+          }
+        },
+        "required": [
+          "model_id",
+          "messages"
+        ],
+        "title": "InferenceTextIn",
+        "type": "object"
+      },
+      "InferenceTextOut": {
+        "properties": {
+          "completion_tokens": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completion Tokens"
+          },
+          "finish_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finish Reason"
+          },
+          "log_id": {
+            "title": "Log Id",
+            "type": "string"
+          },
+          "prompt_tokens": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Prompt Tokens"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          },
+          "total_tokens": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Total Tokens"
+          }
+        },
+        "required": [
+          "text",
+          "log_id"
+        ],
+        "title": "InferenceTextOut",
         "type": "object"
       },
       "IntegrationCheckOut": {
@@ -15959,6 +16761,73 @@
         "title": "PresentationElement",
         "type": "object"
       },
+      "PresentationEntityOperation": {
+        "additionalProperties": false,
+        "properties": {
+          "action": {
+            "enum": [
+              "insert",
+              "update",
+              "remove",
+              "move",
+              "duplicate"
+            ],
+            "title": "Action",
+            "type": "string"
+          },
+          "entity": {
+            "enum": [
+              "slide",
+              "element"
+            ],
+            "title": "Entity",
+            "type": "string"
+          },
+          "id": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Id",
+            "type": "string"
+          },
+          "index": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Index"
+          },
+          "parent_id": {
+            "anyOf": [
+              {
+                "maxLength": 64,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Id"
+          },
+          "value": {
+            "additionalProperties": true,
+            "title": "Value",
+            "type": "object"
+          }
+        },
+        "required": [
+          "action",
+          "id",
+          "entity"
+        ],
+        "title": "PresentationEntityOperation",
+        "type": "object"
+      },
       "PresentationExportIn": {
         "additionalProperties": false,
         "properties": {
@@ -15972,6 +16841,38 @@
           "expected_revision"
         ],
         "title": "PresentationExportIn",
+        "type": "object"
+      },
+      "PresentationOperationsIn": {
+        "additionalProperties": false,
+        "properties": {
+          "expected_revision": {
+            "minimum": 0.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "operations": {
+            "items": {
+              "$ref": "#/components/schemas/PresentationEntityOperation"
+            },
+            "maxItems": 1000,
+            "minItems": 1,
+            "title": "Operations",
+            "type": "array"
+          },
+          "request_id": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Request Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "expected_revision",
+          "request_id",
+          "operations"
+        ],
+        "title": "PresentationOperationsIn",
         "type": "object"
       },
       "PresentationParagraph": {
@@ -17624,6 +18525,48 @@
         "title": "RuntimeQuotasOut",
         "type": "object"
       },
+      "SavedSegmentTranscriptionIn": {
+        "additionalProperties": false,
+        "properties": {
+          "expected_revision": {
+            "minimum": 0.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "language": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Language"
+          },
+          "model_id": {
+            "title": "Model Id",
+            "type": "string"
+          },
+          "target_language": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Language"
+          }
+        },
+        "required": [
+          "expected_revision",
+          "model_id"
+        ],
+        "title": "SavedSegmentTranscriptionIn",
+        "type": "object"
+      },
       "SecretOut": {
         "properties": {
           "secret": {
@@ -18784,6 +19727,88 @@
         "title": "ThoughtAttachmentOut",
         "type": "object"
       },
+      "ThoughtContentOperation": {
+        "additionalProperties": false,
+        "properties": {
+          "action": {
+            "enum": [
+              "insert",
+              "replace",
+              "remove",
+              "move",
+              "replace_text",
+              "set_marks",
+              "set_attrs"
+            ],
+            "title": "Action",
+            "type": "string"
+          },
+          "end": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "End"
+          },
+          "marks": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Marks",
+            "type": "array"
+          },
+          "path": {
+            "items": {
+              "type": "integer"
+            },
+            "maxItems": 32,
+            "minItems": 1,
+            "title": "Path",
+            "type": "array"
+          },
+          "start": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Start",
+            "type": "integer"
+          },
+          "target_index": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target Index"
+          },
+          "text": {
+            "default": "",
+            "maxLength": 20000,
+            "title": "Text",
+            "type": "string"
+          },
+          "value": {
+            "additionalProperties": true,
+            "title": "Value",
+            "type": "object"
+          }
+        },
+        "required": [
+          "action",
+          "path"
+        ],
+        "title": "ThoughtContentOperation",
+        "type": "object"
+      },
       "ThoughtDirectoryOut": {
         "properties": {
           "documents": {
@@ -19034,6 +20059,51 @@
           "note_ids"
         ],
         "title": "ThoughtImportOut",
+        "type": "object"
+      },
+      "ThoughtMarkdownIn": {
+        "additionalProperties": false,
+        "properties": {
+          "assets": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "maxProperties": 500,
+            "title": "Assets",
+            "type": "object"
+          },
+          "markdown": {
+            "maxLength": 200000,
+            "title": "Markdown",
+            "type": "string"
+          }
+        },
+        "required": [
+          "markdown"
+        ],
+        "title": "ThoughtMarkdownIn",
+        "type": "object"
+      },
+      "ThoughtMarkdownOut": {
+        "properties": {
+          "document": {
+            "additionalProperties": true,
+            "title": "Document",
+            "type": "object"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Warnings",
+            "type": "array"
+          }
+        },
+        "required": [
+          "document",
+          "warnings"
+        ],
+        "title": "ThoughtMarkdownOut",
         "type": "object"
       },
       "ThoughtModelOut": {
@@ -19486,6 +20556,38 @@
           "expected_knowledge_revision"
         ],
         "title": "ThoughtNoteTransitionIn",
+        "type": "object"
+      },
+      "ThoughtOperationsIn": {
+        "additionalProperties": false,
+        "properties": {
+          "expected_revision": {
+            "minimum": 0.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "operations": {
+            "items": {
+              "$ref": "#/components/schemas/ThoughtContentOperation"
+            },
+            "maxItems": 1000,
+            "minItems": 1,
+            "title": "Operations",
+            "type": "array"
+          },
+          "request_id": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Request Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "expected_revision",
+          "request_id",
+          "operations"
+        ],
+        "title": "ThoughtOperationsIn",
         "type": "object"
       },
       "ThoughtRevisionIn": {
@@ -21632,6 +22734,43 @@
         "title": "VideoEditorTransition",
         "type": "object"
       },
+      "VideoFramesIn": {
+        "additionalProperties": false,
+        "properties": {
+          "max_width": {
+            "default": 1280,
+            "maximum": 1920.0,
+            "minimum": 64.0,
+            "title": "Max Width",
+            "type": "integer"
+          },
+          "output": {
+            "default": "zip",
+            "enum": [
+              "zip",
+              "grid"
+            ],
+            "title": "Output",
+            "type": "string"
+          },
+          "positions_ms": {
+            "items": {
+              "maximum": 86400000.0,
+              "minimum": 0.0,
+              "type": "integer"
+            },
+            "maxItems": 25,
+            "minItems": 1,
+            "title": "Positions Ms",
+            "type": "array"
+          }
+        },
+        "required": [
+          "positions_ms"
+        ],
+        "title": "VideoFramesIn",
+        "type": "object"
+      },
       "VideoGenerationTaskCreateIn": {
         "properties": {
           "audio_asset_ids": {
@@ -23647,6 +24786,105 @@
           "kind"
         ],
         "title": "VisualCanvasVideoNode",
+        "type": "object"
+      },
+      "VisualEntityOperation": {
+        "additionalProperties": false,
+        "properties": {
+          "action": {
+            "enum": [
+              "insert",
+              "update",
+              "remove",
+              "move",
+              "duplicate"
+            ],
+            "title": "Action",
+            "type": "string"
+          },
+          "entity": {
+            "enum": [
+              "node",
+              "edge"
+            ],
+            "title": "Entity",
+            "type": "string"
+          },
+          "id": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Id",
+            "type": "string"
+          },
+          "index": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Index"
+          },
+          "parent_id": {
+            "anyOf": [
+              {
+                "maxLength": 64,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Id"
+          },
+          "value": {
+            "additionalProperties": true,
+            "title": "Value",
+            "type": "object"
+          }
+        },
+        "required": [
+          "action",
+          "id",
+          "entity"
+        ],
+        "title": "VisualEntityOperation",
+        "type": "object"
+      },
+      "VisualOperationsIn": {
+        "additionalProperties": false,
+        "properties": {
+          "expected_revision": {
+            "minimum": 0.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "operations": {
+            "items": {
+              "$ref": "#/components/schemas/VisualEntityOperation"
+            },
+            "maxItems": 1000,
+            "minItems": 1,
+            "title": "Operations",
+            "type": "array"
+          },
+          "request_id": {
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Request Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "expected_revision",
+          "request_id",
+          "operations"
+        ],
+        "title": "VisualOperationsIn",
         "type": "object"
       },
       "VisualProjectSnapshotImportOut": {
@@ -26172,6 +27410,125 @@
         ]
       }
     },
+    "/v1/audio-annotation/projects/{project_id}/document/operations": {
+      "post": {
+        "operationId": "apply_annotation_operations_v1_audio_annotation_projects__project_id__document_operations_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AnnotationOperationsIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AudioAnnotationDocumentOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Apply Annotation Operations",
+        "tags": [
+          "audio-annotation"
+        ]
+      }
+    },
+    "/v1/audio-annotation/projects/{project_id}/export": {
+      "get": {
+        "operationId": "export_annotation_v1_audio_annotation_projects__project_id__export_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "expected_revision",
+            "required": true,
+            "schema": {
+              "minimum": 0,
+              "title": "Expected Revision",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "format",
+            "required": false,
+            "schema": {
+              "default": "json",
+              "enum": [
+                "json",
+                "srt"
+              ],
+              "title": "Format",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "format": "binary",
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Export Annotation",
+        "tags": [
+          "audio-annotation"
+        ]
+      }
+    },
     "/v1/audio-annotation/projects/{project_id}/segment-transcriptions": {
       "post": {
         "operationId": "transcribe_segment_v1_audio_annotation_projects__project_id__segment_transcriptions_post",
@@ -26219,6 +27576,129 @@
           }
         },
         "summary": "Transcribe Segment",
+        "tags": [
+          "audio-annotation"
+        ]
+      }
+    },
+    "/v1/audio-annotation/projects/{project_id}/segments/{segment_id}/audio": {
+      "get": {
+        "operationId": "download_segment_audio_v1_audio_annotation_projects__project_id__segments__segment_id__audio_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "segment_id",
+            "required": true,
+            "schema": {
+              "title": "Segment Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "expected_revision",
+            "required": true,
+            "schema": {
+              "minimum": 0,
+              "title": "Expected Revision",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "format": "binary",
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Download Segment Audio",
+        "tags": [
+          "audio-annotation"
+        ]
+      }
+    },
+    "/v1/audio-annotation/projects/{project_id}/segments/{segment_id}/transcribe-saved": {
+      "post": {
+        "operationId": "transcribe_saved_segment_v1_audio_annotation_projects__project_id__segments__segment_id__transcribe_saved_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "segment_id",
+            "required": true,
+            "schema": {
+              "title": "Segment Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SavedSegmentTranscriptionIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AudioAnnotationSegmentTranscriptionOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Transcribe Saved Segment",
         "tags": [
           "audio-annotation"
         ]
@@ -27288,6 +28768,59 @@
         ]
       }
     },
+    "/v1/files/{asset_id}/crop": {
+      "post": {
+        "operationId": "crop_file_image_v1_files__asset_id__crop_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "asset_id",
+            "required": true,
+            "schema": {
+              "title": "Asset Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ImageCropIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "image/png": {
+                "schema": {
+                  "format": "binary",
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Crop File Image",
+        "tags": [
+          "file-management"
+        ]
+      }
+    },
     "/v1/files/{asset_id}/download": {
       "get": {
         "operationId": "download_file_v1_files__asset_id__download_get",
@@ -27340,6 +28873,59 @@
           }
         },
         "summary": "Download File",
+        "tags": [
+          "file-management"
+        ]
+      }
+    },
+    "/v1/files/{asset_id}/frames": {
+      "post": {
+        "operationId": "extract_video_frames_v1_files__asset_id__frames_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "asset_id",
+            "required": true,
+            "schema": {
+              "title": "Asset Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VideoFramesIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "format": "binary",
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Extract Video Frames",
         "tags": [
           "file-management"
         ]
@@ -28876,6 +30462,58 @@
           }
         },
         "summary": "Import Legacy Story",
+        "tags": [
+          "galgame-workshop"
+        ]
+      }
+    },
+    "/v1/galgame-workshop/projects/{project_id}/story/operations": {
+      "post": {
+        "operationId": "apply_story_operations_v1_galgame_workshop_projects__project_id__story_operations_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GalgameOperationsIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GalgameStoryDocumentOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Apply Story Operations",
         "tags": [
           "galgame-workshop"
         ]
@@ -31202,6 +32840,663 @@
         "summary": "Run Model Test",
         "tags": [
           "models"
+        ]
+      }
+    },
+    "/v1/model-inference/assets": {
+      "post": {
+        "operationId": "upload_asset_v1_model_inference_assets_post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_upload_asset_v1_model_inference_assets_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InferenceAssetOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Upload Asset",
+        "tags": [
+          "model-inference"
+        ]
+      }
+    },
+    "/v1/model-inference/assets/import": {
+      "post": {
+        "operationId": "import_asset_v1_model_inference_assets_import_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InferenceAssetImportIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InferenceAssetOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Import Asset",
+        "tags": [
+          "model-inference"
+        ]
+      }
+    },
+    "/v1/model-inference/assets/{asset_id}": {
+      "delete": {
+        "operationId": "delete_asset_v1_model_inference_assets__asset_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "asset_id",
+            "required": true,
+            "schema": {
+              "title": "Asset Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Asset",
+        "tags": [
+          "model-inference"
+        ]
+      }
+    },
+    "/v1/model-inference/options": {
+      "get": {
+        "operationId": "model_options_v1_model_inference_options_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InferenceOptionsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Model Options",
+        "tags": [
+          "model-inference"
+        ]
+      }
+    },
+    "/v1/model-inference/tasks": {
+      "get": {
+        "operationId": "list_tasks_v1_model_inference_tasks_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 30,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InferenceTasksOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Tasks",
+        "tags": [
+          "model-inference"
+        ]
+      },
+      "post": {
+        "operationId": "create_task_v1_model_inference_tasks_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InferenceTaskIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InferenceTaskOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Task",
+        "tags": [
+          "model-inference"
+        ]
+      }
+    },
+    "/v1/model-inference/tasks/{task_id}": {
+      "delete": {
+        "operationId": "delete_task_v1_model_inference_tasks__task_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "task_id",
+            "required": true,
+            "schema": {
+              "title": "Task Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "expected_revision",
+            "required": true,
+            "schema": {
+              "minimum": 0,
+              "title": "Expected Revision",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Task",
+        "tags": [
+          "model-inference"
+        ]
+      },
+      "get": {
+        "operationId": "get_task_v1_model_inference_tasks__task_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "task_id",
+            "required": true,
+            "schema": {
+              "title": "Task Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InferenceTaskOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Task",
+        "tags": [
+          "model-inference"
+        ]
+      }
+    },
+    "/v1/model-inference/tasks/{task_id}/content": {
+      "get": {
+        "operationId": "download_result_v1_model_inference_tasks__task_id__content_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "task_id",
+            "required": true,
+            "schema": {
+              "title": "Task Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "format": "binary",
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Download Result",
+        "tags": [
+          "model-inference"
+        ]
+      }
+    },
+    "/v1/model-inference/tasks/{task_id}/retry-materialization": {
+      "post": {
+        "operationId": "retry_materialization_v1_model_inference_tasks__task_id__retry_materialization_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "task_id",
+            "required": true,
+            "schema": {
+              "title": "Task Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InferenceRevisionIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InferenceTaskOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Retry Materialization",
+        "tags": [
+          "model-inference"
+        ]
+      }
+    },
+    "/v1/model-inference/tasks/{task_id}/save-to-library": {
+      "post": {
+        "operationId": "save_result_v1_model_inference_tasks__task_id__save_to_library_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "task_id",
+            "required": true,
+            "schema": {
+              "title": "Task Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VisualAssetOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Save Result",
+        "tags": [
+          "model-inference"
+        ]
+      }
+    },
+    "/v1/model-inference/text": {
+      "post": {
+        "operationId": "generate_text_v1_model_inference_text_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InferenceTextIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InferenceTextOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Generate Text",
+        "tags": [
+          "model-inference"
+        ]
+      }
+    },
+    "/v1/model-inference/text/stream": {
+      "post": {
+        "operationId": "stream_text_v1_model_inference_text_stream_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InferenceTextIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              },
+              "text/event-stream": {
+                "schema": {
+                  "$defs": {
+                    "InferenceTextOut": {
+                      "properties": {
+                        "completion_tokens": {
+                          "anyOf": [
+                            {
+                              "type": "integer"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "title": "Completion Tokens"
+                        },
+                        "finish_reason": {
+                          "anyOf": [
+                            {
+                              "type": "string"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "title": "Finish Reason"
+                        },
+                        "log_id": {
+                          "title": "Log Id",
+                          "type": "string"
+                        },
+                        "prompt_tokens": {
+                          "anyOf": [
+                            {
+                              "type": "integer"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "title": "Prompt Tokens"
+                        },
+                        "text": {
+                          "title": "Text",
+                          "type": "string"
+                        },
+                        "total_tokens": {
+                          "anyOf": [
+                            {
+                              "type": "integer"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ],
+                          "title": "Total Tokens"
+                        }
+                      },
+                      "required": [
+                        "text",
+                        "log_id"
+                      ],
+                      "title": "InferenceTextOut",
+                      "type": "object"
+                    }
+                  },
+                  "properties": {
+                    "log_id": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "title": "Log Id"
+                    },
+                    "message": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ],
+                      "title": "Message"
+                    },
+                    "result": {
+                      "anyOf": [
+                        {
+                          "$ref": "#/components/schemas/InferenceTextOut"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "text": {
+                      "default": "",
+                      "title": "Text",
+                      "type": "string"
+                    },
+                    "type": {
+                      "enum": [
+                        "start",
+                        "delta",
+                        "done",
+                        "error"
+                      ],
+                      "title": "Type",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "type"
+                  ],
+                  "title": "InferenceTextEvent",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Stream Text",
+        "tags": [
+          "model-inference"
         ]
       }
     },
@@ -34856,6 +37151,58 @@
         ]
       }
     },
+    "/v1/presentation-workshop/projects/{project_id}/operations": {
+      "post": {
+        "operationId": "apply_presentation_operations_v1_presentation_workshop_projects__project_id__operations_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PresentationOperationsIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PresentationProjectOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Apply Presentation Operations",
+        "tags": [
+          "presentation-workshop"
+        ]
+      }
+    },
     "/v1/public-workspace": {
       "get": {
         "operationId": "projection_v1_public_workspace_get",
@@ -35596,6 +37943,47 @@
         ]
       }
     },
+    "/v1/thought-workshop/markdown/convert": {
+      "post": {
+        "operationId": "convert_markdown_v1_thought_workshop_markdown_convert_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ThoughtMarkdownIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ThoughtMarkdownOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Convert Markdown",
+        "tags": [
+          "thought-workshop"
+        ]
+      }
+    },
     "/v1/thought-workshop/models": {
       "get": {
         "operationId": "writing_models_v1_thought_workshop_models_get",
@@ -36039,6 +38427,73 @@
         ]
       }
     },
+    "/v1/thought-workshop/notes/{note_id}/export": {
+      "get": {
+        "operationId": "export_note_content_v1_thought_workshop_notes__note_id__export_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "note_id",
+            "required": true,
+            "schema": {
+              "title": "Note Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "expected_revision",
+            "required": true,
+            "schema": {
+              "minimum": 0,
+              "title": "Expected Revision",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "format",
+            "required": false,
+            "schema": {
+              "default": "md",
+              "enum": [
+                "md",
+                "html"
+              ],
+              "title": "Format",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "format": "binary",
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Export Note Content",
+        "tags": [
+          "thought-workshop"
+        ]
+      }
+    },
     "/v1/thought-workshop/notes/{note_id}/history": {
       "get": {
         "operationId": "note_history_v1_thought_workshop_notes__note_id__history_get",
@@ -36217,6 +38672,58 @@
           }
         },
         "summary": "Restore Note History",
+        "tags": [
+          "thought-workshop"
+        ]
+      }
+    },
+    "/v1/thought-workshop/notes/{note_id}/operations": {
+      "post": {
+        "operationId": "apply_note_operations_v1_thought_workshop_notes__note_id__operations_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "note_id",
+            "required": true,
+            "schema": {
+              "title": "Note Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ThoughtOperationsIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ThoughtNoteOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Apply Note Operations",
         "tags": [
           "thought-workshop"
         ]
@@ -38725,6 +41232,58 @@
           }
         },
         "summary": "Put Canvas",
+        "tags": [
+          "visual-workshop"
+        ]
+      }
+    },
+    "/v1/visual-workshop/projects/{project_id}/canvas/operations": {
+      "post": {
+        "operationId": "apply_canvas_operations_v1_visual_workshop_projects__project_id__canvas_operations_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VisualOperationsIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VisualCanvasDocumentOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Apply Canvas Operations",
         "tags": [
           "visual-workshop"
         ]

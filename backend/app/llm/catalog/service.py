@@ -17,6 +17,7 @@ from app.models import (
     ModelTestGenerationTask,
     VisualGenerationTask,
 )
+from app.models.model_inference import ModelInferenceTask
 from app.models.platform_governance import PlatformSetting
 from app.schemas.model_service import (
     ModelCatalogOut,
@@ -322,6 +323,13 @@ class ModelCatalogService:
     async def update_model(self, model_id: str, body: ModelEntryIn) -> tuple[int, ModelEntryOut]:
         row = await self.get_model(model_id)
         provider = await self.get_provider(row.provider_id)
+        if not body.enabled and await self.session.scalar(
+            select(func.count(ModelInferenceTask.id)).where(
+                ModelInferenceTask.model_id == model_id,
+                ModelInferenceTask.status.in_((*ACTIVE_GENERATION_STATUSES, "running")),
+            )
+        ):
+            raise CatalogResourceBusyError("独立模型任务尚未完成，暂不能停用模型")
         revision = await self._bump(body.expected_catalog_revision)
         if row.origin == "role_template" and any(
             [
@@ -370,7 +378,13 @@ class ModelCatalogService:
                 GalgameAssetTranscriptionTask.status.in_(("queued", "running")),
             )
         )
-        if active or test_active or asr_active:
+        inference_active = await self.session.scalar(
+            select(func.count(ModelInferenceTask.id)).where(
+                ModelInferenceTask.model_id == model_id,
+                ModelInferenceTask.status.in_((*ACTIVE_GENERATION_STATUSES, "running")),
+            )
+        )
+        if active or test_active or asr_active or inference_active:
             raise CatalogResourceBusyError("模型仍有进行中的任务")
         revision = await self._bump(expected)
         await self.session.execute(delete(ModelEntry).where(ModelEntry.id == model_id))
@@ -396,4 +410,10 @@ class ModelCatalogService:
                 GalgameAssetTranscriptionTask.status.in_(("queued", "running")),
             )
         )
-        return bool(count or test_count or asr_count)
+        inference_count = await self.session.scalar(
+            select(func.count(ModelInferenceTask.id)).where(
+                ModelInferenceTask.provider_id == provider_id,
+                ModelInferenceTask.status.in_((*ACTIVE_GENERATION_STATUSES, "running")),
+            )
+        )
+        return bool(count or test_count or asr_count or inference_count)

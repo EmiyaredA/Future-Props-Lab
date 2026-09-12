@@ -7,6 +7,7 @@ from sqlalchemy import delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from tinytag import TinyTag
 
+from app.concurrency.operation_receipts import forget
 from app.concurrency.revisions import RevisionConflictError
 from app.core.config import get_settings
 from app.core.ids import new_id
@@ -457,7 +458,8 @@ class AudioAnnotationProjects:
         return await self.get(project_id)
 
     async def delete(self, project_id: str, expected_revision: int) -> None:
-        await self._project(project_id)
+        project = await self._project(project_id)
+        workspace_id = project.workspace_id
         result = await self.session.execute(
             delete(AudioAnnotationProject).where(
                 AudioAnnotationProject.id == project_id,
@@ -470,6 +472,9 @@ class AudioAnnotationProjects:
             raise RevisionConflictError(
                 expected_revision, current.revision, current.model_dump(mode="json")
             )
+        await forget(
+            self.session, workspace_id=workspace_id, kind="annotation", resource_id=project_id
+        )
         await self.session.commit()
 
     async def get_document(self, project_id: str) -> AudioAnnotationDocumentOut:
@@ -480,7 +485,7 @@ class AudioAnnotationProjects:
         return self._document_out(row)
 
     async def put_document(
-        self, project_id: str, body: AudioAnnotationDocumentPutIn
+        self, project_id: str, body: AudioAnnotationDocumentPutIn, *, commit: bool = True
     ) -> AudioAnnotationDocumentOut:
         project = await self._project(project_id)
         self._validate_document(project.duration_ms, body)
@@ -505,7 +510,8 @@ class AudioAnnotationProjects:
                 body.expected_revision, current.revision, current.model_dump(mode="json")
             )
         project.updated_at = utc_now()
-        await self.session.commit()
+        if commit:
+            await self.session.commit()
         return await self.get_document(project_id)
 
     async def get_waveform(self, project_id: str) -> AudioAnnotationWaveformOut:

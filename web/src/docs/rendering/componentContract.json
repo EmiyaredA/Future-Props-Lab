@@ -1,0 +1,128 @@
+{
+  "Lead": {
+    "attributes": []
+  },
+  "Purpose": {
+    "attributes": ["title"]
+  },
+  "PurposeItem": {
+    "attributes": ["title", "icon"],
+    "enums": {
+      "icon": [
+        "bot",
+        "knowledge",
+        "tools",
+        "key",
+        "deploy",
+        "chat",
+        "assistant",
+        "handoff",
+        "ops",
+        "check"
+      ]
+    },
+    "parent": "Purpose"
+  },
+  "Steps": {
+    "attributes": ["id", "title"]
+  },
+  "Step": {
+    "attributes": ["title"],
+    "required": ["title"],
+    "parent": "Steps"
+  },
+  "Section": {
+    "attributes": ["id", "title"],
+    "required": ["id", "title"]
+  },
+  "SectionGroup": {
+    "attributes": ["id", "title"],
+    "required": ["id", "title"]
+  },
+  "Subsection": {
+    "attributes": ["id", "title"],
+    "required": ["id", "title"]
+  },
+  "Screenshot": {
+    "attributes": ["src", "title"],
+    "required": ["src", "title"]
+  },
+  "ChunkExample": {
+    "attributes": ["title"]
+  },
+  "ChunkInput": {
+    "attributes": ["label"],
+    "parent": "ChunkExample"
+  },
+  "ChunkOutput": {
+    "attributes": ["label", "description"],
+    "parent": "ChunkExample"
+  },
+  "Callout": {
+    "attributes": ["type", "title"],
+    "enums": {
+      "type": ["info", "tip", "warning"]
+    }
+  },
+  "Formula": {
+    "attributes": ["source", "label"],
+    "required": ["source"]
+  },
+  "CardGroup": {
+    "attributes": [],
+    "child": "Card"
+  },
+  "Card": {
+    "attributes": ["title", "href", "icon"],
+    "required": ["title", "href"],
+    "enums": {
+      "icon": [
+        "bot",
+        "knowledge",
+        "tools",
+        "key",
+        "deploy",
+        "chat",
+        "assistant",
+        "handoff",
+        "ops",
+        "check"
+      ]
+    },
+    "parent": "CardGroup"
+  },
+  "Example": {
+    "attributes": ["title"],
+    "required": ["title"],
+    "child": "ExamplePanel"
+  },
+  "ExamplePanel": {
+    "attributes": ["title"],
+    "required": ["title"],
+    "parent": "Example"
+  },
+  "FieldGroup": {
+    "attributes": [],
+    "child": "Field"
+  },
+  "Field": {
+    "attributes": ["name", "type", "required", "defaultValue"],
+    "required": ["name"],
+    "enums": {
+      "required": ["true", "false"]
+    },
+    "parent": "FieldGroup"
+  },
+  "DataTable": {
+    "attributes": ["source"],
+    "required": ["source"]
+  },
+  "DataCode": {
+    "attributes": ["source", "language"],
+    "required": ["source"]
+  },
+  "ApiOperations": {
+    "attributes": ["ids"],
+    "required": ["ids"]
+  }
+}

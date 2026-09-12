@@ -1,4 +1,7 @@
 export const modelQueryKeys = {
+  inference: ["model-inference-tasks"] as const,
+  inferenceTasks: (workspaceId: string, offset: number) =>
+    ["model-inference-tasks", workspaceId, offset] as const,
   catalog: ["model-catalog"] as const,
   catalogFor: (consumer: string) => ["model-catalog", consumer] as const,
   categories: ["model-categories"] as const,

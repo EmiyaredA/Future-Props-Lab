@@ -16,10 +16,12 @@ from app.models import (
     VisualGenerationTask,
     WorkspaceMembership,
 )
+from app.models.model_inference import ModelInferenceTask
 from app.models.runtime_admission import RuntimeAdmission as Admission
 from app.schemas.platform_governance import RuntimeQuotas
 
 TASK_MODELS = {
+    "inference": ModelInferenceTask,
     "visual": VisualGenerationTask,
     "model": ModelTestGenerationTask,
     "transcription": ModelTestTranscriptionTask,

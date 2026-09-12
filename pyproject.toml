@@ -24,6 +24,7 @@ dependencies = [
   "python-pptx>=1.0.2,<2",
   "resvg-py>=0.3,<1",
   "defusedxml>=0.7,<1",
+  "mistune>=3.1,<4",
 ]
 
 [dependency-groups]
@@ -40,6 +41,7 @@ pythonpath = ["backend", "."]
 testpaths = ["tests", "backend/tests"]
 
 [tool.ruff]
+extend-exclude = ["sdk/python/src/future_props_lab/generated"]
 target-version = "py311"
 line-length = 100
 src = ["backend", "db", "scripts", "tests"]

@@ -541,6 +541,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/audio-annotation/projects/{project_id}/document/operations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Apply Annotation Operations */
+        post: operations["apply_annotation_operations_v1_audio_annotation_projects__project_id__document_operations_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/audio-annotation/projects/{project_id}/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Export Annotation */
+        get: operations["export_annotation_v1_audio_annotation_projects__project_id__export_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/audio-annotation/projects/{project_id}/segment-transcriptions": {
         parameters: {
             query?: never;
@@ -552,6 +586,40 @@ export interface paths {
         put?: never;
         /** Transcribe Segment */
         post: operations["transcribe_segment_v1_audio_annotation_projects__project_id__segment_transcriptions_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/audio-annotation/projects/{project_id}/segments/{segment_id}/audio": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Download Segment Audio */
+        get: operations["download_segment_audio_v1_audio_annotation_projects__project_id__segments__segment_id__audio_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/audio-annotation/projects/{project_id}/segments/{segment_id}/transcribe-saved": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Transcribe Saved Segment */
+        post: operations["transcribe_saved_segment_v1_audio_annotation_projects__project_id__segments__segment_id__transcribe_saved_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -869,6 +937,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/files/{asset_id}/crop": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Crop File Image */
+        post: operations["crop_file_image_v1_files__asset_id__crop_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/files/{asset_id}/download": {
         parameters: {
             query?: never;
@@ -880,6 +965,23 @@ export interface paths {
         get: operations["download_file_v1_files__asset_id__download_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/files/{asset_id}/frames": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Extract Video Frames */
+        post: operations["extract_video_frames_v1_files__asset_id__frames_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1296,6 +1398,23 @@ export interface paths {
         put?: never;
         /** Import Legacy Story */
         post: operations["import_legacy_story_v1_galgame_workshop_projects__project_id__story_import_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/galgame-workshop/projects/{project_id}/story/operations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Apply Story Operations */
+        post: operations["apply_story_operations_v1_galgame_workshop_projects__project_id__story_operations_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1923,6 +2042,195 @@ export interface paths {
         put?: never;
         /** Run Model Test */
         post: operations["run_model_test_v1_model_entries__model_id__test_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/model-inference/assets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Upload Asset */
+        post: operations["upload_asset_v1_model_inference_assets_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/model-inference/assets/import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Import Asset */
+        post: operations["import_asset_v1_model_inference_assets_import_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/model-inference/assets/{asset_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete Asset */
+        delete: operations["delete_asset_v1_model_inference_assets__asset_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/model-inference/options": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Model Options */
+        get: operations["model_options_v1_model_inference_options_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/model-inference/tasks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Tasks */
+        get: operations["list_tasks_v1_model_inference_tasks_get"];
+        put?: never;
+        /** Create Task */
+        post: operations["create_task_v1_model_inference_tasks_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/model-inference/tasks/{task_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Task */
+        get: operations["get_task_v1_model_inference_tasks__task_id__get"];
+        put?: never;
+        post?: never;
+        /** Delete Task */
+        delete: operations["delete_task_v1_model_inference_tasks__task_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/model-inference/tasks/{task_id}/content": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Download Result */
+        get: operations["download_result_v1_model_inference_tasks__task_id__content_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/model-inference/tasks/{task_id}/retry-materialization": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Retry Materialization */
+        post: operations["retry_materialization_v1_model_inference_tasks__task_id__retry_materialization_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/model-inference/tasks/{task_id}/save-to-library": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Save Result */
+        post: operations["save_result_v1_model_inference_tasks__task_id__save_to_library_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/model-inference/text": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Generate Text */
+        post: operations["generate_text_v1_model_inference_text_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/model-inference/text/stream": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Stream Text */
+        post: operations["stream_text_v1_model_inference_text_stream_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2886,6 +3194,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/presentation-workshop/projects/{project_id}/operations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Apply Presentation Operations */
+        post: operations["apply_presentation_operations_v1_presentation_workshop_projects__project_id__operations_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/public-workspace": {
         parameters: {
             query?: never;
@@ -3110,6 +3435,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/thought-workshop/markdown/convert": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Convert Markdown */
+        post: operations["convert_markdown_v1_thought_workshop_markdown_convert_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/thought-workshop/models": {
         parameters: {
             query?: never;
@@ -3181,6 +3523,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/thought-workshop/notes/{note_id}/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Export Note Content */
+        get: operations["export_note_content_v1_thought_workshop_notes__note_id__export_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/thought-workshop/notes/{note_id}/history": {
         parameters: {
             query?: never;
@@ -3226,6 +3585,23 @@ export interface paths {
         put?: never;
         /** Restore Note History */
         post: operations["restore_note_history_v1_thought_workshop_notes__note_id__history__history_id__restore_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/thought-workshop/notes/{note_id}/operations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Apply Note Operations */
+        post: operations["apply_note_operations_v1_thought_workshop_notes__note_id__operations_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3924,6 +4300,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/visual-workshop/projects/{project_id}/canvas/operations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Apply Canvas Operations */
+        post: operations["apply_canvas_operations_v1_visual_workshop_projects__project_id__canvas_operations_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/visual-workshop/projects/{project_id}/conversations": {
         parameters: {
             query?: never;
@@ -4263,6 +4656,62 @@ export interface components {
              * @enum {string}
              */
             type: "addTrack";
+        };
+        /** AnnotationEntityOperation */
+        AnnotationEntityOperation: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            action: "duplicate" | "insert" | "move" | "remove" | "update";
+            /**
+             * Entity
+             * @enum {string}
+             */
+            entity: "speaker" | "segment";
+            /** Id */
+            id: string;
+            /** Index */
+            index?: number | null;
+            /** Parent Id */
+            parent_id?: string | null;
+            /** Value */
+            value?: {
+                [key: string]: unknown;
+            };
+        };
+        /** AnnotationMergeOperation */
+        AnnotationMergeOperation: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            action: "merge_next";
+            /** Id */
+            id: string;
+        };
+        /** AnnotationOperationsIn */
+        AnnotationOperationsIn: {
+            /** Expected Revision */
+            expected_revision: number;
+            /** Operations */
+            operations: (components["schemas"]["AnnotationEntityOperation"] | components["schemas"]["AnnotationSplitOperation"] | components["schemas"]["AnnotationMergeOperation"])[];
+            /** Request Id */
+            request_id: string;
+        };
+        /** AnnotationSplitOperation */
+        AnnotationSplitOperation: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            action: "split";
+            /** At Ms */
+            at_ms: number;
+            /** Id */
+            id: string;
+            /** New Id */
+            new_id: string;
         };
         /** ApiKeyCreateIn */
         ApiKeyCreateIn: {
@@ -4700,6 +5149,11 @@ export interface components {
             start_ms: number;
             /** Target Language Tag */
             target_language_tag?: string | null;
+            /** Upload */
+            upload: string;
+        };
+        /** Body_upload_asset_v1_model_inference_assets_post */
+        Body_upload_asset_v1_model_inference_assets_post: {
             /** Upload */
             upload: string;
         };
@@ -5413,6 +5867,31 @@ export interface components {
             /** Sceneid */
             sceneId?: string | null;
         };
+        /** GalgameEntityOperation */
+        GalgameEntityOperation: {
+            /**
+             * Action
+             * @enum {string}
+             */
+            action: "insert" | "update" | "remove" | "move" | "duplicate";
+            /** Chapter Id */
+            chapter_id?: string | null;
+            /**
+             * Entity
+             * @enum {string}
+             */
+            entity: "character" | "scene" | "cg" | "variable" | "asset" | "chapter" | "fragment" | "block";
+            /** Id */
+            id: string;
+            /** Index */
+            index?: number | null;
+            /** Parent Id */
+            parent_id?: string | null;
+            /** Value */
+            value?: {
+                [key: string]: unknown;
+            };
+        };
         /** GalgameMissingAssetOverviewItem */
         GalgameMissingAssetOverviewItem: {
             /** File Id */
@@ -5438,6 +5917,19 @@ export interface components {
             replacementFileId: string;
             /** Storyassetid */
             storyAssetId: string;
+        };
+        /** GalgameOperationsIn */
+        GalgameOperationsIn: {
+            /** Expected Revision */
+            expected_revision: number;
+            /** Operations */
+            operations: components["schemas"]["GalgameEntityOperation"][];
+            /** Request Id */
+            request_id: string;
+            /** Settings */
+            settings?: {
+                [key: string]: unknown;
+            };
         };
         /** GalgamePackageManifestIssue */
         GalgamePackageManifestIssue: {
@@ -8552,6 +9044,17 @@ export interface components {
             /** Node Id */
             node_id: string;
         };
+        /** ImageCropIn */
+        ImageCropIn: {
+            /** Height */
+            height: number;
+            /** Width */
+            width: number;
+            /** X */
+            x: number;
+            /** Y */
+            y: number;
+        };
         /** ImageGenerationBatchCreateIn */
         ImageGenerationBatchCreateIn: {
             /** Canvas Node Id */
@@ -8607,6 +9110,176 @@ export interface components {
              * @default 1024x1024
              */
             size: string;
+        };
+        /** InferenceAssetImportIn */
+        InferenceAssetImportIn: {
+            /** Asset Id */
+            asset_id: string;
+        };
+        /** InferenceAssetOut */
+        InferenceAssetOut: {
+            /** Byte Size */
+            byte_size: number;
+            /** Filename */
+            filename: string;
+            /** Id */
+            id: string;
+            /** Media Kind */
+            media_kind: string;
+            /** Mime Type */
+            mime_type: string;
+        };
+        /** InferenceMessage */
+        InferenceMessage: {
+            /** Asset Ids */
+            asset_ids?: string[];
+            /**
+             * Role
+             * @enum {string}
+             */
+            role: "user" | "assistant";
+            /** Text */
+            text: string;
+        };
+        /** InferenceModelOut */
+        InferenceModelOut: {
+            /** Id */
+            id: string;
+            /** Label */
+            label: string;
+            /** Modalities */
+            modalities: string[];
+            /** Parameters */
+            parameters: {
+                [key: string]: unknown;
+            };
+        };
+        /** InferenceOptionsOut */
+        InferenceOptionsOut: {
+            /** Items */
+            items: components["schemas"]["InferenceModelOut"][];
+        };
+        /** InferenceRevisionIn */
+        InferenceRevisionIn: {
+            /** Expected Revision */
+            expected_revision: number;
+        };
+        /** InferenceTaskIn */
+        InferenceTaskIn: {
+            /** Asset Ids */
+            asset_ids?: string[];
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "image" | "video" | "music" | "sound_effect" | "transcription";
+            /** Model Id */
+            model_id: string;
+            /** Parameters */
+            parameters?: {
+                [key: string]: unknown;
+            };
+            /** Request Id */
+            request_id: string;
+        };
+        /** InferenceTaskOut */
+        InferenceTaskOut: {
+            /** Can Retry Materialization */
+            can_retry_materialization: boolean;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Error Message */
+            error_message: string | null;
+            /** Id */
+            id: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "image" | "video" | "music" | "sound_effect" | "transcription";
+            /** Log Id */
+            log_id: string | null;
+            /** Model Id */
+            model_id: string | null;
+            /** Model Slug */
+            model_slug: string;
+            /** Progress */
+            progress: number;
+            /** Request Payload */
+            request_payload: {
+                [key: string]: unknown;
+            };
+            /** Result */
+            result: {
+                [key: string]: unknown;
+            };
+            /** Result Available */
+            result_available: boolean;
+            /** Result Byte Size */
+            result_byte_size: number;
+            /** Result Filename */
+            result_filename: string;
+            /** Result Mime Type */
+            result_mime_type: string;
+            /** Revision */
+            revision: number;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "queued" | "submitting" | "pending" | "processing" | "running" | "completed" | "failed";
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /** InferenceTasksOut */
+        InferenceTasksOut: {
+            /** Items */
+            items: components["schemas"]["InferenceTaskOut"][];
+            /** Total */
+            total: number;
+        };
+        /** InferenceTextIn */
+        InferenceTextIn: {
+            /**
+             * Max Tokens
+             * @default 1024
+             */
+            max_tokens: number;
+            /** Messages */
+            messages: components["schemas"]["InferenceMessage"][];
+            /** Model Id */
+            model_id: string;
+            /**
+             * System Prompt
+             * @default
+             */
+            system_prompt: string;
+            /**
+             * Temperature
+             * @default 0.7
+             */
+            temperature: number;
+        };
+        /** InferenceTextOut */
+        InferenceTextOut: {
+            /** Completion Tokens */
+            completion_tokens?: number | null;
+            /** Finish Reason */
+            finish_reason?: string | null;
+            /** Log Id */
+            log_id: string;
+            /** Prompt Tokens */
+            prompt_tokens?: number | null;
+            /** Text */
+            text: string;
+            /** Total Tokens */
+            total_tokens?: number | null;
         };
         /** IntegrationCheckOut */
         IntegrationCheckOut: {
@@ -10136,10 +10809,42 @@ export interface components {
             /** Y */
             y: number;
         };
+        /** PresentationEntityOperation */
+        PresentationEntityOperation: {
+            /**
+             * Action
+             * @enum {string}
+             */
+            action: "insert" | "update" | "remove" | "move" | "duplicate";
+            /**
+             * Entity
+             * @enum {string}
+             */
+            entity: "slide" | "element";
+            /** Id */
+            id: string;
+            /** Index */
+            index?: number | null;
+            /** Parent Id */
+            parent_id?: string | null;
+            /** Value */
+            value?: {
+                [key: string]: unknown;
+            };
+        };
         /** PresentationExportIn */
         PresentationExportIn: {
             /** Expected Revision */
             expected_revision: number;
+        };
+        /** PresentationOperationsIn */
+        PresentationOperationsIn: {
+            /** Expected Revision */
+            expected_revision: number;
+            /** Operations */
+            operations: components["schemas"]["PresentationEntityOperation"][];
+            /** Request Id */
+            request_id: string;
         };
         /** PresentationParagraph */
         PresentationParagraph: {
@@ -10829,6 +11534,17 @@ export interface components {
             revision: number;
             value: components["schemas"]["RuntimeQuotas"];
         };
+        /** SavedSegmentTranscriptionIn */
+        SavedSegmentTranscriptionIn: {
+            /** Expected Revision */
+            expected_revision: number;
+            /** Language */
+            language?: string | null;
+            /** Model Id */
+            model_id: string;
+            /** Target Language */
+            target_language?: string | null;
+        };
         /** SecretOut */
         SecretOut: {
             /** Secret */
@@ -11309,6 +12025,38 @@ export interface components {
             /** Mime Type */
             mime_type: string;
         };
+        /** ThoughtContentOperation */
+        ThoughtContentOperation: {
+            /**
+             * Action
+             * @enum {string}
+             */
+            action: "insert" | "replace" | "remove" | "move" | "replace_text" | "set_marks" | "set_attrs";
+            /** End */
+            end?: number | null;
+            /** Marks */
+            marks?: {
+                [key: string]: unknown;
+            }[];
+            /** Path */
+            path: number[];
+            /**
+             * Start
+             * @default 0
+             */
+            start: number;
+            /** Target Index */
+            target_index?: number | null;
+            /**
+             * Text
+             * @default
+             */
+            text: string;
+            /** Value */
+            value?: {
+                [key: string]: unknown;
+            };
+        };
         /** ThoughtDirectoryOut */
         ThoughtDirectoryOut: {
             /** Documents */
@@ -11397,6 +12145,24 @@ export interface components {
             note_ids: string[];
             /** Warnings */
             warnings?: string[];
+        };
+        /** ThoughtMarkdownIn */
+        ThoughtMarkdownIn: {
+            /** Assets */
+            assets?: {
+                [key: string]: string;
+            };
+            /** Markdown */
+            markdown: string;
+        };
+        /** ThoughtMarkdownOut */
+        ThoughtMarkdownOut: {
+            /** Document */
+            document: {
+                [key: string]: unknown;
+            };
+            /** Warnings */
+            warnings: string[];
         };
         /** ThoughtModelOut */
         ThoughtModelOut: {
@@ -11586,6 +12352,15 @@ export interface components {
             expected_knowledge_revision: number;
             /** Expected Revision */
             expected_revision: number;
+        };
+        /** ThoughtOperationsIn */
+        ThoughtOperationsIn: {
+            /** Expected Revision */
+            expected_revision: number;
+            /** Operations */
+            operations: components["schemas"]["ThoughtContentOperation"][];
+            /** Request Id */
+            request_id: string;
         };
         /** ThoughtRevisionIn */
         ThoughtRevisionIn: {
@@ -12413,6 +13188,22 @@ export interface components {
              */
             kind: "cut" | "crossfade" | "fade-black" | "fade-white" | "audio-crossfade";
         };
+        /** VideoFramesIn */
+        VideoFramesIn: {
+            /**
+             * Max Width
+             * @default 1280
+             */
+            max_width: number;
+            /**
+             * Output
+             * @default zip
+             * @enum {string}
+             */
+            output: "zip" | "grid";
+            /** Positions Ms */
+            positions_ms: number[];
+        };
         /** VideoGenerationTaskCreateIn */
         VideoGenerationTaskCreateIn: {
             /** Audio Asset Ids */
@@ -13100,6 +13891,38 @@ export interface components {
             position: components["schemas"]["VisualCanvasPosition"];
             /** Title */
             title: string;
+        };
+        /** VisualEntityOperation */
+        VisualEntityOperation: {
+            /**
+             * Action
+             * @enum {string}
+             */
+            action: "insert" | "update" | "remove" | "move" | "duplicate";
+            /**
+             * Entity
+             * @enum {string}
+             */
+            entity: "node" | "edge";
+            /** Id */
+            id: string;
+            /** Index */
+            index?: number | null;
+            /** Parent Id */
+            parent_id?: string | null;
+            /** Value */
+            value?: {
+                [key: string]: unknown;
+            };
+        };
+        /** VisualOperationsIn */
+        VisualOperationsIn: {
+            /** Expected Revision */
+            expected_revision: number;
+            /** Operations */
+            operations: components["schemas"]["VisualEntityOperation"][];
+            /** Request Id */
+            request_id: string;
         };
         /** VisualProjectSnapshotImportOut */
         VisualProjectSnapshotImportOut: {
@@ -14591,6 +15414,75 @@ export interface operations {
             };
         };
     };
+    apply_annotation_operations_v1_audio_annotation_projects__project_id__document_operations_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AnnotationOperationsIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AudioAnnotationDocumentOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    export_annotation_v1_audio_annotation_projects__project_id__export_get: {
+        parameters: {
+            query: {
+                expected_revision: number;
+                format?: "json" | "srt";
+            };
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/octet-stream": string;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     transcribe_segment_v1_audio_annotation_projects__project_id__segment_transcriptions_post: {
         parameters: {
             query?: never;
@@ -14603,6 +15495,76 @@ export interface operations {
         requestBody: {
             content: {
                 "multipart/form-data": components["schemas"]["Body_transcribe_segment_v1_audio_annotation_projects__project_id__segment_transcriptions_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AudioAnnotationSegmentTranscriptionOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    download_segment_audio_v1_audio_annotation_projects__project_id__segments__segment_id__audio_get: {
+        parameters: {
+            query: {
+                expected_revision: number;
+            };
+            header?: never;
+            path: {
+                project_id: string;
+                segment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/octet-stream": string;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    transcribe_saved_segment_v1_audio_annotation_projects__project_id__segments__segment_id__transcribe_saved_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+                segment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SavedSegmentTranscriptionIn"];
             };
         };
         responses: {
@@ -15348,6 +16310,41 @@ export interface operations {
             };
         };
     };
+    crop_file_image_v1_files__asset_id__crop_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                asset_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ImageCropIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "image/png": string;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     download_file_v1_files__asset_id__download_get: {
         parameters: {
             query?: {
@@ -15368,6 +16365,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    extract_video_frames_v1_files__asset_id__frames_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                asset_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VideoFramesIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/octet-stream": string;
                 };
             };
             /** @description Validation Error */
@@ -16421,6 +17453,41 @@ export interface operations {
         requestBody: {
             content: {
                 "multipart/form-data": components["schemas"]["Body_import_legacy_story_v1_galgame_workshop_projects__project_id__story_import_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GalgameStoryDocumentOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    apply_story_operations_v1_galgame_workshop_projects__project_id__story_operations_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GalgameOperationsIn"];
             };
         };
         responses: {
@@ -18037,6 +19104,445 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TestModelOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    upload_asset_v1_model_inference_assets_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_upload_asset_v1_model_inference_assets_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InferenceAssetOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    import_asset_v1_model_inference_assets_import_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InferenceAssetImportIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InferenceAssetOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_asset_v1_model_inference_assets__asset_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                asset_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    model_options_v1_model_inference_options_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InferenceOptionsOut"];
+                };
+            };
+        };
+    };
+    list_tasks_v1_model_inference_tasks_get: {
+        parameters: {
+            query?: {
+                offset?: number;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InferenceTasksOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_task_v1_model_inference_tasks_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InferenceTaskIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InferenceTaskOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_task_v1_model_inference_tasks__task_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                task_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InferenceTaskOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_task_v1_model_inference_tasks__task_id__delete: {
+        parameters: {
+            query: {
+                expected_revision: number;
+            };
+            header?: never;
+            path: {
+                task_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    download_result_v1_model_inference_tasks__task_id__content_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                task_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/octet-stream": string;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    retry_materialization_v1_model_inference_tasks__task_id__retry_materialization_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                task_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InferenceRevisionIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InferenceTaskOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    save_result_v1_model_inference_tasks__task_id__save_to_library_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                task_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VisualAssetOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    generate_text_v1_model_inference_text_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InferenceTextIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InferenceTextOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    stream_text_v1_model_inference_text_stream_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InferenceTextIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                    "text/event-stream": {
+                        /** Log Id */
+                        log_id?: string | null;
+                        /** Message */
+                        message?: string | null;
+                        result?: components["schemas"]["InferenceTextOut"] | null;
+                        /**
+                         * Text
+                         * @default
+                         */
+                        text: string;
+                        /**
+                         * Type
+                         * @enum {string}
+                         */
+                        type: "start" | "delta" | "done" | "error";
+                        $defs: {
+                            /** InferenceTextOut */
+                            InferenceTextOut: {
+                                /** Completion Tokens */
+                                completion_tokens?: number | null;
+                                /** Finish Reason */
+                                finish_reason?: string | null;
+                                /** Log Id */
+                                log_id: string;
+                                /** Prompt Tokens */
+                                prompt_tokens?: number | null;
+                                /** Text */
+                                text: string;
+                                /** Total Tokens */
+                                total_tokens?: number | null;
+                            };
+                        };
+                    };
                 };
             };
             /** @description Validation Error */
@@ -20485,6 +21991,41 @@ export interface operations {
             };
         };
     };
+    apply_presentation_operations_v1_presentation_workshop_projects__project_id__operations_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PresentationOperationsIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PresentationProjectOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     projection_v1_public_workspace_get: {
         parameters: {
             query?: never;
@@ -20998,6 +22539,39 @@ export interface operations {
             };
         };
     };
+    convert_markdown_v1_thought_workshop_markdown_convert_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ThoughtMarkdownIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ThoughtMarkdownOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     writing_models_v1_thought_workshop_models_get: {
         parameters: {
             query?: never;
@@ -21243,6 +22817,40 @@ export interface operations {
             };
         };
     };
+    export_note_content_v1_thought_workshop_notes__note_id__export_get: {
+        parameters: {
+            query: {
+                expected_revision: number;
+                format?: "md" | "html";
+            };
+            header?: never;
+            path: {
+                note_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/octet-stream": string;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     note_history_v1_thought_workshop_notes__note_id__history_get: {
         parameters: {
             query?: {
@@ -21322,6 +22930,41 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["ThoughtRevisionIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ThoughtNoteOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    apply_note_operations_v1_thought_workshop_notes__note_id__operations_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                note_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ThoughtOperationsIn"];
             };
         };
         responses: {
@@ -22984,6 +24627,41 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["VisualCanvasDocumentPutIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VisualCanvasDocumentOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    apply_canvas_operations_v1_visual_workshop_projects__project_id__canvas_operations_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VisualOperationsIn"];
             };
         };
         responses: {

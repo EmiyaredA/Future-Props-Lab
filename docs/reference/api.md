@@ -902,3 +902,33 @@ SVG 最大 2 MiB、3000 节点、64 层、总路径 500000 字符，引用展开
 PPTX 嵌入 Office `asvg:svgBlip` 并附带 resvg-py 渲染的 PNG 兼容图；原生形状仍可在 PowerPoint 编辑。
 
 单次导出的 SVG 兼容图最多 512 个、累计 6400 万渲染像素；单张兼容图最长边 4096 像素，超限返回 413。
+
+## Python SDK 与工坊批次
+
+Python 3.11+ 独立包位于 `sdk/python/`，使用 `from future_props_lab import Client, AsyncClient`。文档中心的 Python SDK 教程与 API 模块参考来自版本控制中的方法映射与 OpenAPI；生成入口为 `npm run contracts:generate`。
+
+新增批次接口为视觉 `canvas/operations`、Galgame `story/operations`、录音标注 `document/operations`、演示项目 `operations` 与思绪笔记 `operations`。均使用所属资源的 `expected_revision`、调用者生成的 `request_id` 和 `operations` 列表；一批只更新一个资源，任一操作或最终文档校验失败均不保存。成功只推进一次 revision。相同请求 ID 和相同内容返回已保存回执；请求 ID 相同而内容不同返回 `409 idempotency_conflict`。整体文档保存接口继续可用，网页与 SDK 共享版本和素材引用校验。
+
+ID 集合使用 `insert/update/remove/move/duplicate`，`value` 字段采用对应文档的 JSON 字段名。Galgame Block 在 Fragment ID 跨章节重复时同时提供 `chapter_id` 和 `parent_id`；复制章节或 Fragment 使用显式重新映射稳定 ID 的插入文档。录音标注增加 `split`（`at_ms/new_id`）和 `merge_next`。思绪内容路径是已保存文档 `content` 数组的逐层索引；文本范围使用 Unicode 码点索引，始终强制 revision。
+
+新增内容 API：
+
+- `POST /v1/thought-workshop/markdown/convert`：把 Markdown 转为经过校验的思绪文档，返回格式转换提示；图片与附件 URL 必须通过 `assets` 映射到当前工作区文件 ID，不抓取远程文件。再调用笔记创建或保存接口完成导入。
+- `GET /v1/thought-workshop/notes/{note_id}/export`：携带 revision，输出 Markdown 或静态 HTML，有素材时返回包含附件的 ZIP；完整无损备份仍使用已有 backup 接口。
+- `GET /v1/audio-annotation/projects/{project_id}/export`：携带文档 revision，导出项目 JSON 或 SRT；不完整标注不能导出 SRT。
+- `GET /v1/audio-annotation/projects/{project_id}/segments/{segment_id}/audio`：提取已保存片段的 PCM WAV；`POST` 到同层 `transcribe-saved` 使用已有识别能力，返回识别结果，后续通过版本化编辑保存。
+- `POST /v1/files/{asset_id}/frames`：从已上传视频按毫秒位置提取最多 25 帧，返回 PNG 文件 ZIP；4 或 9 帧可输出宫格图。仅使用当前身份可读的文件。
+
+## 独立模型调用
+
+`/v1/model-inference` 不要求模型测试会话或工坊项目。`GET options` 仅列出已启用且实际适配的模型模态和参数；文本使用 `POST text` 或 `POST text/stream`，SSE 事件为 `start/delta/done/error`。日志来源为 `model_inference`。
+
+图片、视频、音乐、音效和语音识别使用 `POST tasks`。请求包含 `request_id`、`model_id`、`kind`、`parameters` 与 `asset_ids`；输入先上传到 `POST assets`，或经 `POST assets/import` 从公共库复制。任务创建后独占输入快照；跨空间 ID 按不存在处理。任务查询、分页列表和结果下载为 GET；结果不会自动进入公共文件库，可显式调用 `save-to-library`。
+
+生成任务复用 GenerationTaskDriver，额度登记与任务同事务。提交中断保持失败，禁止自动重提供应商。若供应商已完成但结果落盘失败，可携带 revision 调用 `retry-materialization`；这不会重新生成。SDK 等待超时只停止客户端等待，保留 ID 供继续查询；断开 SSE 不会重新提交请求。实时语音仍只用于模型测试，沿用 Session WebSocket；SDK 静音暂停发送 PCM，不绑定本机采集设备。
+
+### 图片像素裁剪
+
+`POST /v1/files/{asset_id}/crop` 接受整数 `x`、`y`、`width`、`height`，坐标以 EXIF 方向修正后的原图为准。
+需要 `content.read`；跨工作区 ID 返回 404，越界返回 422。响应为保留透明度的 PNG，不修改源素材。
+SVG 先通过已有预览转换；动画图片读取第一帧。需要公共文件副本时显式上传返回内容。
