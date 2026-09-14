@@ -18,6 +18,11 @@
 
 ## 账号与 Workspace
 
+桌面首用接口：`GET /v1/desktop/setup` 查询 `setup_required`；`POST /v1/desktop/setup`
+接收 `username`、`display_name`、`password` 创建首个管理员并认领默认 Workspace。
+它们仅在桌面每次启动的私有凭据边界内开放，写入要求同源 Origin；重复/并发初始化返回 409，
+普通 Web 部署返回 404。创建完成后调用原登录 API，不替代 Session 或业务权限。
+
 - `POST /v1/auth/login`、`GET /v1/auth/me`、`POST /v1/auth/reauth`
 - `POST /v1/auth/change-password`、`POST /v1/auth/logout`
 - `PATCH /v1/account/profile` 与头像 GET/PUT/DELETE

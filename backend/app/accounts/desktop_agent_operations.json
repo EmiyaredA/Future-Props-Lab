@@ -1,0 +1,761 @@
+{
+  "version": 1,
+  "operations": {
+    "DELETE /v1/audio-annotation/projects/{project_id}": {
+      "method": "delete_project",
+      "resource": "annotation"
+    },
+    "DELETE /v1/file-folders/{folder_id}": {
+      "method": "delete_file_folder",
+      "resource": "files"
+    },
+    "DELETE /v1/files/{asset_id}": {
+      "method": "delete_file",
+      "resource": "files"
+    },
+    "DELETE /v1/galgame-workshop/projects/{project_id}": {
+      "method": "delete_project",
+      "resource": "galgame"
+    },
+    "DELETE /v1/galgame-workshop/projects/{project_id}/assets/{asset_id}": {
+      "method": "delete_project_asset",
+      "resource": "galgame"
+    },
+    "DELETE /v1/model-inference/assets/{asset_id}": {
+      "method": "delete_asset",
+      "resource": "inference"
+    },
+    "DELETE /v1/model-inference/tasks/{task_id}": {
+      "method": "delete_task",
+      "resource": "inference"
+    },
+    "DELETE /v1/presentation-workshop/projects/{project_id}": {
+      "method": "delete_project",
+      "resource": "presentation"
+    },
+    "DELETE /v1/thought-workshop/knowledge-bases/{project_id}": {
+      "method": "trash_knowledge_base",
+      "resource": "thought"
+    },
+    "DELETE /v1/thought-workshop/notes/{note_id}": {
+      "method": "delete_note",
+      "resource": "thought"
+    },
+    "DELETE /v1/video-editor/projects/{project_id}": {
+      "method": "delete_project",
+      "resource": "video"
+    },
+    "DELETE /v1/video-editor/projects/{project_id}/assets/{asset_id}": {
+      "method": "delete_asset",
+      "resource": "video"
+    },
+    "DELETE /v1/video-editor/projects/{project_id}/renders/{task_id}": {
+      "method": "delete_render",
+      "resource": "video"
+    },
+    "DELETE /v1/visual-workshop/projects/{project_id}": {
+      "method": "delete_project",
+      "resource": "visual"
+    },
+    "DELETE /v1/visual-workshop/projects/{project_id}/asset-references/{reference_id}": {
+      "method": "delete_asset_reference",
+      "resource": "visual"
+    },
+    "GET /v1/audio-annotation/projects": {
+      "method": "list_projects",
+      "resource": "annotation"
+    },
+    "GET /v1/audio-annotation/projects/{project_id}": {
+      "method": "get_project",
+      "resource": "annotation"
+    },
+    "GET /v1/audio-annotation/projects/{project_id}/document": {
+      "method": "get_document",
+      "resource": "annotation"
+    },
+    "GET /v1/audio-annotation/projects/{project_id}/export": {
+      "method": "export_annotation",
+      "resource": "annotation"
+    },
+    "GET /v1/audio-annotation/projects/{project_id}/segments/{segment_id}/audio": {
+      "method": "download_segment_audio",
+      "resource": "annotation"
+    },
+    "GET /v1/audio-annotation/projects/{project_id}/waveform": {
+      "method": "get_waveform",
+      "resource": "annotation"
+    },
+    "GET /v1/file-folders": {
+      "method": "list_file_folders",
+      "resource": "files"
+    },
+    "GET /v1/file-storage/layout": {
+      "method": "storage_layout_status",
+      "resource": "files"
+    },
+    "GET /v1/files": {
+      "method": "list_files",
+      "resource": "files"
+    },
+    "GET /v1/files/{asset_id}/content": {
+      "method": "preview_file",
+      "resource": "files"
+    },
+    "GET /v1/files/{asset_id}/download": {
+      "method": "download_file",
+      "resource": "files"
+    },
+    "GET /v1/galgame-workshop/projects": {
+      "method": "list_projects",
+      "resource": "galgame"
+    },
+    "GET /v1/galgame-workshop/projects/{project_id}": {
+      "method": "get_project",
+      "resource": "galgame"
+    },
+    "GET /v1/galgame-workshop/projects/{project_id}/annotation-imports/{import_id}": {
+      "method": "get_annotation_import",
+      "resource": "galgame"
+    },
+    "GET /v1/galgame-workshop/projects/{project_id}/assets": {
+      "method": "list_project_assets",
+      "resource": "galgame"
+    },
+    "GET /v1/galgame-workshop/projects/{project_id}/assets/asr/settings": {
+      "method": "get_asr_settings",
+      "resource": "galgame"
+    },
+    "GET /v1/galgame-workshop/projects/{project_id}/assets/asr/transcriptions": {
+      "method": "list_transcriptions",
+      "resource": "galgame"
+    },
+    "GET /v1/galgame-workshop/projects/{project_id}/assets/overview": {
+      "method": "get_project_asset_overview",
+      "resource": "galgame"
+    },
+    "GET /v1/galgame-workshop/projects/{project_id}/assets/package-manifest": {
+      "method": "get_project_package_manifest",
+      "resource": "galgame"
+    },
+    "GET /v1/galgame-workshop/projects/{project_id}/snapshot": {
+      "method": "export_project_snapshot",
+      "resource": "galgame"
+    },
+    "GET /v1/galgame-workshop/projects/{project_id}/story": {
+      "method": "get_story",
+      "resource": "galgame"
+    },
+    "GET /v1/galgame-workshop/projects/{project_id}/story/portrait-upgrade": {
+      "method": "preview_portrait_upgrade",
+      "resource": "galgame"
+    },
+    "GET /v1/galgame-workshop/projects/{project_id}/story/report": {
+      "method": "get_story_report",
+      "resource": "galgame"
+    },
+    "GET /v1/galgame-workshop/projects/{project_id}/story/snapshots": {
+      "method": "list_story_snapshots",
+      "resource": "galgame"
+    },
+    "GET /v1/galgame-workshop/projects/{project_id}/video-editor-handoffs": {
+      "method": "list_handoffs",
+      "resource": "galgame"
+    },
+    "GET /v1/galgame-workshop/projects/{project_id}/video-editor-handoffs/{task_id}": {
+      "method": "get_handoff",
+      "resource": "galgame"
+    },
+    "GET /v1/galgame-workshop/projects/{project_id}/video-exports": {
+      "method": "list_video_exports",
+      "resource": "galgame"
+    },
+    "GET /v1/galgame-workshop/projects/{project_id}/video-exports/{export_id}": {
+      "method": "get_video_export",
+      "resource": "galgame"
+    },
+    "GET /v1/galgame-workshop/projects/{project_id}/video-exports/{export_id}/download": {
+      "method": "download_video_export",
+      "resource": "galgame"
+    },
+    "GET /v1/galgame-workshop/story-migrations/status": {
+      "method": "get_story_migration_status",
+      "resource": "galgame"
+    },
+    "GET /v1/llm-call-logs": {
+      "method": "list_logs",
+      "resource": "logs"
+    },
+    "GET /v1/llm-call-logs/stats": {
+      "method": "stats",
+      "resource": "logs"
+    },
+    "GET /v1/llm-call-logs/{log_id}": {
+      "method": "detail",
+      "resource": "logs"
+    },
+    "GET /v1/llm-call-logs/{log_id}/reproduction-bundle": {
+      "method": "reproduction_bundle",
+      "resource": "logs"
+    },
+    "GET /v1/model-inference/options": {
+      "method": "model_options",
+      "resource": "inference"
+    },
+    "GET /v1/model-inference/tasks": {
+      "method": "list_tasks",
+      "resource": "inference"
+    },
+    "GET /v1/model-inference/tasks/{task_id}": {
+      "method": "get_task",
+      "resource": "inference"
+    },
+    "GET /v1/model-inference/tasks/{task_id}/content": {
+      "method": "download_result",
+      "resource": "inference"
+    },
+    "GET /v1/presentation-workshop/projects": {
+      "method": "list_projects",
+      "resource": "presentation"
+    },
+    "GET /v1/presentation-workshop/projects/{project_id}": {
+      "method": "get_project",
+      "resource": "presentation"
+    },
+    "GET /v1/thought-workshop/backup": {
+      "method": "backup",
+      "resource": "thought"
+    },
+    "GET /v1/thought-workshop/knowledge-bases": {
+      "method": "knowledge_bases",
+      "resource": "thought"
+    },
+    "GET /v1/thought-workshop/knowledge-bases/{project_id}": {
+      "method": "knowledge_base",
+      "resource": "thought"
+    },
+    "GET /v1/thought-workshop/knowledge-bases/{project_id}/directory": {
+      "method": "directory",
+      "resource": "thought"
+    },
+    "GET /v1/thought-workshop/models": {
+      "method": "writing_models",
+      "resource": "thought"
+    },
+    "GET /v1/thought-workshop/notes": {
+      "method": "list_notes",
+      "resource": "thought"
+    },
+    "GET /v1/thought-workshop/notes/{note_id}": {
+      "method": "get_note",
+      "resource": "thought"
+    },
+    "GET /v1/thought-workshop/notes/{note_id}/export": {
+      "method": "export_note_content",
+      "resource": "thought"
+    },
+    "GET /v1/thought-workshop/notes/{note_id}/history": {
+      "method": "note_history",
+      "resource": "thought"
+    },
+    "GET /v1/thought-workshop/notes/{note_id}/history/{history_id}": {
+      "method": "note_history_detail",
+      "resource": "thought"
+    },
+    "GET /v1/video-editor/import-sources": {
+      "method": "import_sources",
+      "resource": "video"
+    },
+    "GET /v1/video-editor/projects": {
+      "method": "list_projects",
+      "resource": "video"
+    },
+    "GET /v1/video-editor/projects/{project_id}": {
+      "method": "get_project",
+      "resource": "video"
+    },
+    "GET /v1/video-editor/projects/{project_id}/assets": {
+      "method": "list_assets",
+      "resource": "video"
+    },
+    "GET /v1/video-editor/projects/{project_id}/assets/{asset_id}/{variant}": {
+      "method": "asset_variant",
+      "resource": "video"
+    },
+    "GET /v1/video-editor/projects/{project_id}/preview/frame": {
+      "method": "exact_frame",
+      "resource": "video"
+    },
+    "GET /v1/video-editor/projects/{project_id}/renders": {
+      "method": "list_renders",
+      "resource": "video"
+    },
+    "GET /v1/video-editor/projects/{project_id}/renders/{task_id}": {
+      "method": "get_render",
+      "resource": "video"
+    },
+    "GET /v1/video-editor/projects/{project_id}/segment-exports": {
+      "method": "list_segment_exports",
+      "resource": "video"
+    },
+    "GET /v1/video-editor/projects/{project_id}/segment-exports/{task_id}": {
+      "method": "get_segment_export",
+      "resource": "video"
+    },
+    "GET /v1/video-editor/projects/{project_id}/segment-exports/{task_id}/download": {
+      "method": "download_segment_export",
+      "resource": "video"
+    },
+    "GET /v1/video-editor/projects/{project_id}/snapshot": {
+      "method": "export_project_snapshot",
+      "resource": "video"
+    },
+    "GET /v1/video-editor/projects/{project_id}/text-clips/{clip_id}/layer": {
+      "method": "text_clip_layer",
+      "resource": "video"
+    },
+    "GET /v1/video-editor/projects/{project_id}/timeline": {
+      "method": "get_timeline",
+      "resource": "video"
+    },
+    "GET /v1/visual-workshop/generation-batches": {
+      "method": "list_generation_batches",
+      "resource": "generation"
+    },
+    "GET /v1/visual-workshop/generation-batches/{batch_id}": {
+      "method": "get_generation_batch",
+      "resource": "generation"
+    },
+    "GET /v1/visual-workshop/generation-options": {
+      "method": "generation_options",
+      "resource": "generation"
+    },
+    "GET /v1/visual-workshop/generation-tasks": {
+      "method": "list_generation_tasks",
+      "resource": "generation"
+    },
+    "GET /v1/visual-workshop/generation-tasks/{task_id}": {
+      "method": "get_generation_task",
+      "resource": "generation"
+    },
+    "GET /v1/visual-workshop/projects": {
+      "method": "list_projects",
+      "resource": "visual"
+    },
+    "GET /v1/visual-workshop/projects/{project_id}": {
+      "method": "get_project",
+      "resource": "visual"
+    },
+    "GET /v1/visual-workshop/projects/{project_id}/canvas": {
+      "method": "get_canvas",
+      "resource": "visual"
+    },
+    "GET /v1/visual-workshop/projects/{project_id}/snapshot": {
+      "method": "export_project_snapshot",
+      "resource": "visual"
+    },
+    "PATCH /v1/audio-annotation/projects/{project_id}": {
+      "method": "patch_project",
+      "resource": "annotation"
+    },
+    "PATCH /v1/file-folders/{folder_id}": {
+      "method": "patch_file_folder",
+      "resource": "files"
+    },
+    "PATCH /v1/files/{asset_id}": {
+      "method": "patch_file",
+      "resource": "files"
+    },
+    "PATCH /v1/galgame-workshop/projects/{project_id}": {
+      "method": "patch_project",
+      "resource": "galgame"
+    },
+    "PATCH /v1/galgame-workshop/projects/{project_id}/assets/asr/settings": {
+      "method": "patch_asr_settings",
+      "resource": "galgame"
+    },
+    "PATCH /v1/galgame-workshop/projects/{project_id}/assets/{asset_id}": {
+      "method": "patch_project_asset",
+      "resource": "galgame"
+    },
+    "PATCH /v1/galgame-workshop/projects/{project_id}/assets/{asset_id}/transcript": {
+      "method": "patch_asset_transcript",
+      "resource": "galgame"
+    },
+    "PATCH /v1/galgame-workshop/projects/{project_id}/story/dialogue": {
+      "method": "patch_story_dialogue",
+      "resource": "galgame"
+    },
+    "PATCH /v1/galgame-workshop/projects/{project_id}/story/edits": {
+      "method": "patch_story_edits",
+      "resource": "galgame"
+    },
+    "PATCH /v1/galgame-workshop/projects/{project_id}/story/stage-expression": {
+      "method": "patch_story_stage_expression",
+      "resource": "galgame"
+    },
+    "PATCH /v1/video-editor/projects/{project_id}": {
+      "method": "patch_project",
+      "resource": "video"
+    },
+    "PATCH /v1/visual-workshop/projects/{project_id}": {
+      "method": "patch_project",
+      "resource": "visual"
+    },
+    "PATCH /v1/visual-workshop/projects/{project_id}/asset-references/{reference_id}": {
+      "method": "patch_asset_reference",
+      "resource": "visual"
+    },
+    "POST /v1/audio-annotation/imports": {
+      "method": "import_project",
+      "resource": "annotation"
+    },
+    "POST /v1/audio-annotation/projects": {
+      "method": "create_project",
+      "resource": "annotation"
+    },
+    "POST /v1/audio-annotation/projects/{project_id}/document/operations": {
+      "method": "apply_annotation_operations",
+      "resource": "annotation"
+    },
+    "POST /v1/audio-annotation/projects/{project_id}/segment-transcriptions": {
+      "method": "transcribe_segment",
+      "resource": "annotation"
+    },
+    "POST /v1/audio-annotation/projects/{project_id}/segments/{segment_id}/transcribe-saved": {
+      "method": "transcribe_saved_segment",
+      "resource": "annotation"
+    },
+    "POST /v1/audio-annotation/transcription-imports": {
+      "method": "import_transcription",
+      "resource": "annotation"
+    },
+    "POST /v1/file-folders": {
+      "method": "create_file_folder",
+      "resource": "files"
+    },
+    "POST /v1/file-storage/layout/migrate": {
+      "method": "migrate_storage_layout",
+      "resource": "files"
+    },
+    "POST /v1/files": {
+      "method": "upload_file",
+      "resource": "files"
+    },
+    "POST /v1/files/svg/preview": {
+      "method": "preview_svg",
+      "resource": "files"
+    },
+    "POST /v1/files/{asset_id}/crop": {
+      "method": "crop_file_image",
+      "resource": "files"
+    },
+    "POST /v1/files/{asset_id}/frames": {
+      "method": "extract_video_frames",
+      "resource": "files"
+    },
+    "POST /v1/galgame-workshop/projects": {
+      "method": "create_project",
+      "resource": "galgame"
+    },
+    "POST /v1/galgame-workshop/projects/snapshot-imports": {
+      "method": "import_project_snapshot",
+      "resource": "galgame"
+    },
+    "POST /v1/galgame-workshop/projects/{project_id}/annotation-imports": {
+      "method": "create_annotation_import",
+      "resource": "galgame"
+    },
+    "POST /v1/galgame-workshop/projects/{project_id}/annotation-imports/preview": {
+      "method": "preview_annotation_import",
+      "resource": "galgame"
+    },
+    "POST /v1/galgame-workshop/projects/{project_id}/assets": {
+      "method": "upload_project_asset",
+      "resource": "galgame"
+    },
+    "POST /v1/galgame-workshop/projects/{project_id}/assets/asr/match-dialogue": {
+      "method": "match_voice_to_dialogue",
+      "resource": "galgame"
+    },
+    "POST /v1/galgame-workshop/projects/{project_id}/assets/asr/transcriptions": {
+      "method": "create_transcriptions",
+      "resource": "galgame"
+    },
+    "POST /v1/galgame-workshop/projects/{project_id}/assets/batch": {
+      "method": "batch_upload_project_assets",
+      "resource": "galgame"
+    },
+    "POST /v1/galgame-workshop/projects/{project_id}/assets/import-preview": {
+      "method": "preview_project_asset_import",
+      "resource": "galgame"
+    },
+    "POST /v1/galgame-workshop/projects/{project_id}/assets/metadata-scan": {
+      "method": "scan_project_asset_metadata",
+      "resource": "galgame"
+    },
+    "POST /v1/galgame-workshop/projects/{project_id}/assets/repair": {
+      "method": "repair_project_asset",
+      "resource": "galgame"
+    },
+    "POST /v1/galgame-workshop/projects/{project_id}/open-folder": {
+      "method": "reveal_project_folder",
+      "resource": "galgame"
+    },
+    "POST /v1/galgame-workshop/projects/{project_id}/story/import": {
+      "method": "import_legacy_story",
+      "resource": "galgame"
+    },
+    "POST /v1/galgame-workshop/projects/{project_id}/story/operations": {
+      "method": "apply_story_operations",
+      "resource": "galgame"
+    },
+    "POST /v1/galgame-workshop/projects/{project_id}/story/portrait-upgrade": {
+      "method": "apply_portrait_upgrade",
+      "resource": "galgame"
+    },
+    "POST /v1/galgame-workshop/projects/{project_id}/story/snapshots/{snapshot_id}/restore": {
+      "method": "restore_story_snapshot",
+      "resource": "galgame"
+    },
+    "POST /v1/galgame-workshop/projects/{project_id}/video-editor-handoffs": {
+      "method": "create_handoff",
+      "resource": "galgame"
+    },
+    "POST /v1/galgame-workshop/projects/{project_id}/video-editor-handoffs/{task_id}/cancel": {
+      "method": "cancel_handoff",
+      "resource": "galgame"
+    },
+    "POST /v1/galgame-workshop/projects/{project_id}/video-exports": {
+      "method": "create_video_export",
+      "resource": "galgame"
+    },
+    "POST /v1/galgame-workshop/projects/{project_id}/video-exports/frame": {
+      "method": "exact_video_export_frame",
+      "resource": "galgame"
+    },
+    "POST /v1/galgame-workshop/projects/{project_id}/video-exports/preview": {
+      "method": "preview_video_export",
+      "resource": "galgame"
+    },
+    "POST /v1/galgame-workshop/projects/{project_id}/video-exports/{export_id}/cancel": {
+      "method": "cancel_video_export",
+      "resource": "galgame"
+    },
+    "POST /v1/galgame-workshop/story-migrations/run": {
+      "method": "run_story_migrations",
+      "resource": "galgame"
+    },
+    "POST /v1/model-inference/assets": {
+      "method": "upload_asset",
+      "resource": "inference"
+    },
+    "POST /v1/model-inference/assets/import": {
+      "method": "import_asset",
+      "resource": "inference"
+    },
+    "POST /v1/model-inference/tasks": {
+      "method": "create_task",
+      "resource": "inference"
+    },
+    "POST /v1/model-inference/tasks/{task_id}/retry-materialization": {
+      "method": "retry_materialization",
+      "resource": "inference"
+    },
+    "POST /v1/model-inference/tasks/{task_id}/save-to-library": {
+      "method": "save_result",
+      "resource": "inference"
+    },
+    "POST /v1/model-inference/text": {
+      "method": "generate_text",
+      "resource": "inference"
+    },
+    "POST /v1/model-inference/text/stream": {
+      "method": "stream_text",
+      "resource": "inference"
+    },
+    "POST /v1/presentation-workshop/projects": {
+      "method": "create_project",
+      "resource": "presentation"
+    },
+    "POST /v1/presentation-workshop/projects/{project_id}/export": {
+      "method": "export_pptx",
+      "resource": "presentation"
+    },
+    "POST /v1/presentation-workshop/projects/{project_id}/operations": {
+      "method": "apply_presentation_operations",
+      "resource": "presentation"
+    },
+    "POST /v1/thought-workshop/attachments": {
+      "method": "attachments",
+      "resource": "thought"
+    },
+    "POST /v1/thought-workshop/images": {
+      "method": "upload_image",
+      "resource": "thought"
+    },
+    "POST /v1/thought-workshop/imports": {
+      "method": "imports",
+      "resource": "thought"
+    },
+    "POST /v1/thought-workshop/knowledge-bases": {
+      "method": "create_knowledge_base",
+      "resource": "thought"
+    },
+    "POST /v1/thought-workshop/knowledge-bases/{project_id}/documents": {
+      "method": "create_document",
+      "resource": "thought"
+    },
+    "POST /v1/thought-workshop/knowledge-bases/{project_id}/move": {
+      "method": "move_entry",
+      "resource": "thought"
+    },
+    "POST /v1/thought-workshop/knowledge-bases/{project_id}/restore": {
+      "method": "restore_knowledge_base",
+      "resource": "thought"
+    },
+    "POST /v1/thought-workshop/markdown/convert": {
+      "method": "convert_markdown",
+      "resource": "thought"
+    },
+    "POST /v1/thought-workshop/notes": {
+      "method": "create_note",
+      "resource": "thought"
+    },
+    "POST /v1/thought-workshop/notes/{note_id}/assistant": {
+      "method": "assistant",
+      "resource": "thought"
+    },
+    "POST /v1/thought-workshop/notes/{note_id}/history/{history_id}/restore": {
+      "method": "restore_note_history",
+      "resource": "thought"
+    },
+    "POST /v1/thought-workshop/notes/{note_id}/operations": {
+      "method": "apply_note_operations",
+      "resource": "thought"
+    },
+    "POST /v1/thought-workshop/notes/{note_id}/restore": {
+      "method": "restore_note",
+      "resource": "thought"
+    },
+    "POST /v1/video-editor/projects": {
+      "method": "create_project",
+      "resource": "video"
+    },
+    "POST /v1/video-editor/projects/snapshot-imports": {
+      "method": "import_project_snapshot",
+      "resource": "video"
+    },
+    "POST /v1/video-editor/projects/{project_id}/assets": {
+      "method": "upload_asset",
+      "resource": "video"
+    },
+    "POST /v1/video-editor/projects/{project_id}/assets/import": {
+      "method": "import_assets",
+      "resource": "video"
+    },
+    "POST /v1/video-editor/projects/{project_id}/assets/{asset_id}/proxy/retry": {
+      "method": "retry_proxy",
+      "resource": "video"
+    },
+    "POST /v1/video-editor/projects/{project_id}/open-folder": {
+      "method": "reveal_project_folder",
+      "resource": "video"
+    },
+    "POST /v1/video-editor/projects/{project_id}/renders": {
+      "method": "create_render",
+      "resource": "video"
+    },
+    "POST /v1/video-editor/projects/{project_id}/renders/preflight": {
+      "method": "render_preflight",
+      "resource": "video"
+    },
+    "POST /v1/video-editor/projects/{project_id}/renders/{task_id}/cancel": {
+      "method": "cancel_render",
+      "resource": "video"
+    },
+    "POST /v1/video-editor/projects/{project_id}/segment-exports": {
+      "method": "create_segment_export",
+      "resource": "video"
+    },
+    "POST /v1/video-editor/projects/{project_id}/segment-exports/{task_id}/cancel": {
+      "method": "cancel_segment_export",
+      "resource": "video"
+    },
+    "POST /v1/video-editor/projects/{project_id}/timeline/operations": {
+      "method": "apply_timeline_operations",
+      "resource": "video"
+    },
+    "POST /v1/visual-workshop/generation-batches/{batch_id}/retry-composition": {
+      "method": "retry_image_composition",
+      "resource": "generation"
+    },
+    "POST /v1/visual-workshop/generation-tasks/{task_id}/retry-materialization": {
+      "method": "retry_materialization",
+      "resource": "generation"
+    },
+    "POST /v1/visual-workshop/projects": {
+      "method": "create_project",
+      "resource": "visual"
+    },
+    "POST /v1/visual-workshop/projects/snapshot-imports": {
+      "method": "import_project_snapshot",
+      "resource": "visual"
+    },
+    "POST /v1/visual-workshop/projects/{project_id}/asset-imports": {
+      "method": "import_assets",
+      "resource": "visual"
+    },
+    "POST /v1/visual-workshop/projects/{project_id}/asset-references": {
+      "method": "create_asset_reference",
+      "resource": "visual"
+    },
+    "POST /v1/visual-workshop/projects/{project_id}/canvas/operations": {
+      "method": "apply_canvas_operations",
+      "resource": "visual"
+    },
+    "POST /v1/visual-workshop/projects/{project_id}/generation-batches": {
+      "method": "create_generation_batch",
+      "resource": "generation"
+    },
+    "POST /v1/visual-workshop/projects/{project_id}/generation-tasks": {
+      "method": "create_generation_task",
+      "resource": "generation"
+    },
+    "POST /v1/visual-workshop/projects/{project_id}/image-compositions": {
+      "method": "create_image_composition",
+      "resource": "generation"
+    },
+    "POST /v1/visual-workshop/projects/{project_id}/open-folder": {
+      "method": "reveal_project_folder",
+      "resource": "visual"
+    },
+    "PUT /v1/audio-annotation/projects/{project_id}/document": {
+      "method": "put_document",
+      "resource": "annotation"
+    },
+    "PUT /v1/audio-annotation/projects/{project_id}/waveform": {
+      "method": "put_waveform",
+      "resource": "annotation"
+    },
+    "PUT /v1/galgame-workshop/projects/{project_id}/story": {
+      "method": "put_story",
+      "resource": "galgame"
+    },
+    "PUT /v1/presentation-workshop/projects/{project_id}": {
+      "method": "put_project",
+      "resource": "presentation"
+    },
+    "PUT /v1/thought-workshop/knowledge-bases/{project_id}": {
+      "method": "update_knowledge_base",
+      "resource": "thought"
+    },
+    "PUT /v1/thought-workshop/notes/{note_id}": {
+      "method": "put_note",
+      "resource": "thought"
+    },
+    "PUT /v1/visual-workshop/projects/{project_id}/canvas": {
+      "method": "put_canvas",
+      "resource": "visual"
+    }
+  }
+}

@@ -33,6 +33,13 @@ Future-Props-Lab/
 │   ├── versions/      # 只追加、不可改写的 SQLite migration
 │   ├── registry.py    # 有序 migration 注册表与最新版本
 │   └── runner.py      # checksum、连续前缀检查和事务应用
+├── desktop/
+│   ├── assets/       # 从项目品牌原图确定性生成的 macOS 主图标与 ICNS
+│   ├── src/          # Electron 主进程、受限 preload、私有后端启动与生命周期
+│   ├── ui/           # 本地启动/故障恢复窗口，不加载业务或用户数据
+│   ├── backend/      # PyInstaller 入口：独立配置、数据锁、管道与 loopback 监听
+│   ├── scripts/      # 白名单打包、arm64/动态库/许可校验及真实 Electron 烟测
+│   └── tests/        # 桌面来源与固定能力边界的确定性测试
 ├── web/src/
 │   ├── app/           # Studio 入口、Session Context、路由、配置驱动工坊壳与应用注册表
 │   ├── docs/          # Markdown 使用正文、分类与上下文目录、搜索、阅读器及旧链接映射
@@ -59,6 +66,11 @@ Future-Props-Lab/
 ```
 
 ## 目录与依赖边界
+
+- `desktop/` 是现有应用的 macOS 壳，不拥有业务 API 或数据库 schema。
+  `accounts/desktop_setup.py` 复用账号开通用例；`core/desktop.py` 只负责桌面凭据和静态托管。
+  `web/src/features/accounts/DesktopSetupGate.tsx` 拥有首用表单，`platform/desktop.ts` 只定义固定桥接。
+  桌面版配置和数据规则见 [macOS 桌面构建](../operations/desktop-macos.md)。
 
 - `llm/catalog/` 拥有供应商分组、接入连接与模型目录。`supplier_records.py` 提供工作区限定的
   分组读取及安全输出，`suppliers.py` 通过目录统一 CAS 执行分组写入；协议边界位于
@@ -353,7 +365,6 @@ Web 的 `NoteHistory` 复用现有只读 `RichEditor`；`historyDiff.ts` 负责�
 保存复用公共文件上传与画布 CAS，`derivedImageNode.ts` 负责裁剪和视频截帧派生节点的稳定身份及避让位置。
 裁剪保存失败保留已上传素材并重试同一节点；冲突返回现有画布版本选择界面。裁剪不创建生成任务或修改原素材。
 样式归属 `styles/image-crop.css`，浏览器验收由 `canvas-image-crop.spec.ts` 覆盖。
-
 
 ## Python SDK 与自动化
 

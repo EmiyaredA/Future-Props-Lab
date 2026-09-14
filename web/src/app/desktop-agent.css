@@ -1,0 +1,20 @@
+.desktop-agent-notice {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 1300;
+  width: min(440px, calc(100vw - 40px));
+  max-height: min(70vh, 620px);
+  overflow: auto;
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: var(--panel, #fff);
+  color: var(--text, #202020);
+  box-shadow: 0 12px 40px #0003;
+}
+.desktop-agent-notice section + section { margin-top: 18px; }
+.desktop-agent-notice h3 { margin: 0 0 12px; font-size: 16px; }
+.desktop-agent-notice p { font-size: 13px; line-height: 1.65; overflow-wrap: anywhere; }
+.desktop-agent-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.desktop-agent-code { font-variant-numeric: tabular-nums; letter-spacing: 2px; }

@@ -162,6 +162,8 @@ node_modules/
 web/dist/
 web/test-results/
 web/playwright-report/
+desktop/out/
+desktop/dist-tests/
 *.tsbuildinfo
 
 # Local runtime state

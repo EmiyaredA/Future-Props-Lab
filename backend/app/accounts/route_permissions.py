@@ -3,6 +3,19 @@
 import re
 
 OPERATIONS: dict[str, tuple[tuple[str, str], ...]] = {
+    "desktop.bootstrap": (
+        ("POST", "/v1/desktop/agent/pairings"),
+        ("POST", "/v1/desktop/agent/pairings/{pair_id}/claim"),
+        ("GET", "/v1/desktop/agent/pairings"),
+        ("POST", "/v1/desktop/agent/pairings/{pair_id}/decision"),
+        ("GET", "/v1/desktop/agent/capabilities"),
+        ("POST", "/v1/desktop/ui/open"),
+        ("GET", "/v1/desktop/ui/inbox"),
+        ("GET", "/v1/desktop/ui/requests/{request_id}"),
+        ("POST", "/v1/desktop/ui/requests/{request_id}/ack"),
+        ("GET", "/v1/desktop/setup"),
+        ("POST", "/v1/desktop/setup"),
+    ),
     "logs.cross_workspace": (
         ("GET", "/v1/account/log-workspaces"),
         ("GET", "/v1/account/cross-workspace-call-logs"),

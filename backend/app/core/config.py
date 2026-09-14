@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import sys
 from functools import lru_cache
 from pathlib import Path
 from urllib.parse import urlsplit
@@ -10,7 +11,8 @@ from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 ENV_FILE = Path(__file__).resolve().parents[2] / ".env"
-REPO_ROOT = Path(__file__).resolve().parents[3]
+REPO_ROOT = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parents[3]))
+_desktop_settings: Settings | None = None
 
 
 class Settings(BaseSettings):
@@ -168,4 +170,11 @@ class Settings(BaseSettings):
 
 @lru_cache
 def get_settings() -> Settings:
-    return Settings()
+    return _desktop_settings or Settings()
+
+
+def configure_desktop(settings: Settings) -> None:
+    """Install explicit launch settings before importing database/application modules."""
+    global _desktop_settings
+    _desktop_settings = settings
+    get_settings.cache_clear()

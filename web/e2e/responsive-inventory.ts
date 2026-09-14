@@ -5,6 +5,12 @@
 // 模型目录、供应商连接树与编辑弹窗由 model-catalog.spec.ts 补充明暗主题及手机检查。
 import type { AppPage } from "../src/app/routes";
 
+// Electron-only HTML and first-run form: actual window sizing is tested by this owner.
+export const desktopSurfaces = {
+  "desktop/ui/startup.html": "desktop/scripts/smoke.cjs",
+  "desktop-setup": "desktop/scripts/smoke.cjs",
+} as const;
+
 // Every application route must name its responsive scenario owner.
 export const responsiveOwners = {
   "management-accounts": "shell",

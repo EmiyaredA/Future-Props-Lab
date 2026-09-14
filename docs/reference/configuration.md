@@ -2,6 +2,11 @@
 
 后端只读取 `backend/.env`，可从 `backend/.env.example` 创建。
 
+macOS 桌面版例外：配置在 `~/Library/Application Support/Future Props Lab/backend/.env`，
+数据库与素材在同级 `runtime/`。开发版使用 `Future Props Lab Development/`。
+桌面入口首次生成独立密钥；已有数据库缺少密钥时拒绝启动。桌面构建忽略 Web `.env` 与
+`VITE_API_BASE`，固定使用本地同源服务。详见 [桌面构建与配置](../operations/desktop-macos.md)。
+
 项目快照只新增容量和文件数安全上限。Workspace 由登录 Session 或 Management API Key 派生，后台任务从
 自身持久记录恢复归属，均不提供 `workspace_id` 环境变量或 `default` 回退。生成任务状态机也不需要
 独立 Worker 配置，仍由单进程应用生命周期管理。

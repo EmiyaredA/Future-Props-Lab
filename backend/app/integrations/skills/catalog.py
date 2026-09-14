@@ -325,9 +325,10 @@ class SkillCatalog:
         ).scalar_one_or_none()
         if row is None:
             raise IntegrationNotFoundError("Skill 版本不存在")
-        root = Path(row.storage_path).resolve()
-        expected_root = self.storage.final_path(skill_id, version)
-        if root != expected_root or not root.is_dir():
+        # Runtime roots can move with an offline desktop backup. Resolve from
+        # the authorized owner/version instead of the legacy absolute DB path.
+        root = self.storage.final_path(skill_id, version)
+        if not root.is_relative_to(self.storage.root.resolve()) or not root.is_dir():
             raise IntegrationNotFoundError("Skill 版本内容不存在")
         buffer = io.BytesIO()
         with zipfile.ZipFile(buffer, "w", compression=zipfile.ZIP_DEFLATED) as archive:

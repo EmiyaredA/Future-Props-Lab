@@ -467,6 +467,14 @@ class DemoServiceOut(WireModel):
     state: str = Field(default=..., alias='state')
     value: DemoConfig = Field(default=..., alias='value')
 
+class DesktopSetupIn(WireModel):
+    display_name: str = Field(default='', alias='display_name', max_length=128)
+    password: str = Field(default=..., alias='password', repr=False, min_length=10, max_length=128)
+    username: str = Field(default=..., alias='username', min_length=3, max_length=64)
+
+class DesktopSetupOut(WireModel):
+    setup_required: bool = Field(default=..., alias='setup_required')
+
 class DeveloperDocumentOut(WireModel):
     group: str = Field(default=..., alias='group')
     id: str = Field(default=..., alias='id')
@@ -4081,6 +4089,8 @@ DemoInstallIn.model_rebuild()
 DemoInstallOut.model_rebuild()
 DemoLog.model_rebuild()
 DemoServiceOut.model_rebuild()
+DesktopSetupIn.model_rebuild()
+DesktopSetupOut.model_rebuild()
 DeveloperDocumentOut.model_rebuild()
 DeveloperDocumentsOut.model_rebuild()
 GalgameAnnotationImportIn.model_rebuild()

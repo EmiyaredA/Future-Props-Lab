@@ -1,0 +1,45 @@
+name: macOS desktop (local signed)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  desktop:
+    runs-on: macos-15
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: false
+      - run: test "$(uname -m)" = arm64
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.15.0
+          cache: npm
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.11"
+          enable-cache: true
+      - run: brew install ffmpeg
+      - run: uv sync --frozen --all-groups
+      - run: npm ci
+      - run: uv run python desktop/scripts/build_backend.py --check-assets
+      - run: npm run contracts:check
+        env:
+          FPL_SECRETS_KEY: Q3kT62dvbHHXXulO5XPCR84_yXK6t-6LXz7BcIYONys=
+      - run: npm run test:desktop
+      - run: npm run package:desktop
+      - run: FPL_TEST_DESKTOP_BINARY="$GITHUB_WORKSPACE/desktop/build/backend/fpl-server/fpl-server" uv run pytest -q tests/test_desktop.py
+      - run: node desktop/scripts/smoke.cjs
+      - run: node desktop/scripts/verify-dmg.cjs "desktop/out/make/Future Props Lab.dmg"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: future-props-lab-macos-arm64-local-signed
+          path: |
+            desktop/out/make/
+            desktop/build/backend/fpl-server/resources-manifest.json
+            desktop/build/backend/fpl-server/_internal/third-party/
+            desktop/out/validation/

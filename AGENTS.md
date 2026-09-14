@@ -36,6 +36,11 @@
 - 不新增 `services/`、`domain/`、`platform/`、`product/` 等通用后端抽象层目录。需要拆分时，
   在所属能力内按具体职责命名文件或子包，例如 `llm/catalog/`、`llm/playground/`。
 - 业务 API 统一注册在 `/v1`；只有 `/health` 与 `/ready` 作为根级探针。
+- `desktop/` 只拥有 Electron 壳、私有启动协议和打包。桌面数据根为
+  `~/Library/Application Support/Future Props Lab/`，开发版为 `Future Props Lab Development/`；
+  `runtime/` 保存数据库与素材，`backend/.env` 保存配置与加密密钥，禁止复制仓库运行数据。
+  桌面配置必须在数据库模块导入前初始化。仅桌面入口托管 Web 静态页，HTML 回退仅用于页面导航，
+  未知 `/v1` API 与缺失资源仍为 404；首次账号接口仅在桌面私有凭据边界内启用。
 - Web 保持 `app/ + features/ + shared/ + platform/ + generated/`：`app/` 负责入口、壳与路由，
   `features/` 拥有业务页面和用例，`shared/` 放无业务归属的复用 UI，`platform/` 放 API 与认证
   基础设施，`generated/` 只保存生成契约。

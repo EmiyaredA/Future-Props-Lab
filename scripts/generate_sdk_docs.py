@@ -8,6 +8,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 LABELS = {
+    "desktop": "桌面首次初始化",
     "accounts": "登录与个人账号",
     "workspaces": "工作区与邀请",
     "admin": "账号管理",
@@ -47,6 +48,8 @@ def type_label(schema):
 
 
 def auth_for(path):
+    if path.startswith("/v1/desktop/"):
+        return "仅桌面模式；私有启动凭据；创建账号须同源且尚未初始化"
     if path in {"/health", "/ready"}:
         return "无需登录"
     if path == "/v1/auth/login":

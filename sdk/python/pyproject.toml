@@ -6,6 +6,9 @@ requires-python = ">=3.11"
 dependencies = ["httpx>=0.28,<1", "pydantic>=2.10,<3", "websockets>=15,<16"]
 readme = "README.md"
 
+[project.scripts]
+fpl = "future_props_lab.cli:main"
+
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"

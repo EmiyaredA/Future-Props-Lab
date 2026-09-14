@@ -231,6 +231,10 @@
     "method": "example_tool",
     "resource": "demo_calls"
   },
+  "GET /v1/desktop/setup": {
+    "method": "get_setup",
+    "resource": "desktop"
+  },
   "GET /v1/file-folders": {
     "method": "list_file_folders",
     "resource": "files"
@@ -882,6 +886,10 @@
   "POST /v1/demo-services/model/chat/completions": {
     "method": "mock_completion",
     "resource": "demo_calls"
+  },
+  "POST /v1/desktop/setup": {
+    "method": "create_first_account",
+    "resource": "desktop"
   },
   "POST /v1/file-folders": {
     "method": "create_file_folder",

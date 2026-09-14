@@ -2785,6 +2785,47 @@
         "title": "DemoServiceOut",
         "type": "object"
       },
+      "DesktopSetupIn": {
+        "properties": {
+          "display_name": {
+            "default": "",
+            "maxLength": 128,
+            "title": "Display Name",
+            "type": "string"
+          },
+          "password": {
+            "maxLength": 128,
+            "minLength": 10,
+            "title": "Password",
+            "type": "string"
+          },
+          "username": {
+            "maxLength": 64,
+            "minLength": 3,
+            "title": "Username",
+            "type": "string"
+          }
+        },
+        "required": [
+          "username",
+          "password"
+        ],
+        "title": "DesktopSetupIn",
+        "type": "object"
+      },
+      "DesktopSetupOut": {
+        "properties": {
+          "setup_required": {
+            "title": "Setup Required",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "setup_required"
+        ],
+        "title": "DesktopSetupOut",
+        "type": "object"
+      },
       "DeveloperDocumentOut": {
         "properties": {
           "group": {
@@ -28330,6 +28371,66 @@
         "summary": "Example Tool",
         "tags": [
           "demo-calls"
+        ]
+      }
+    },
+    "/v1/desktop/setup": {
+      "get": {
+        "operationId": "get_setup_v1_desktop_setup_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DesktopSetupOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Get Setup",
+        "tags": [
+          "desktop"
+        ]
+      },
+      "post": {
+        "operationId": "create_first_account_v1_desktop_setup_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DesktopSetupIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DesktopSetupOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create First Account",
+        "tags": [
+          "desktop"
         ]
       }
     },

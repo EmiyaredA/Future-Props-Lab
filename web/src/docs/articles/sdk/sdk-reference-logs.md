@@ -1,4 +1,4 @@
-<!-- docs: {"group": "api-modules", "category": "api", "order": 11, "title": "调用日志方法参考", "lead": "client.logs 的具名方法与 HTTP 接口。", "evidence": ["sdk/python/operations.json"], "related": ["sdk-auth", "sdk-errors"]} -->
+<!-- docs: {"group": "api-modules", "category": "api", "order": 12, "title": "调用日志方法参考", "lead": "client.logs 的具名方法与 HTTP 接口。", "evidence": ["sdk/python/operations.json"], "related": ["sdk-auth", "sdk-errors"]} -->
 
 # 调用日志方法参考
 

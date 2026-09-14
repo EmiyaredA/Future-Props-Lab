@@ -5,6 +5,7 @@ import { auditLabels } from "./auditLabels";
 import { useRef } from "react";
 import { Upload } from "lucide-react";
 import { ApiKeysSettings } from "./ApiKeysSettings";
+import { DesktopAgentSettings } from "./DesktopAgentSettings";
 import "./account-profile.css";
 export function AccountSettingsContent({
   state,
@@ -222,7 +223,7 @@ export function AccountSettingsContent({
           </section>
         </>
       ) : null}
-      {tab === "keys" ? <ApiKeysSettings state={state} /> : null}
+      {tab === "keys" ? <><DesktopAgentSettings /><ApiKeysSettings state={state} /></> : null}
       {tab === "events" ? (
         <section className="settings-section">
           <h3>本人安全事件</h3>

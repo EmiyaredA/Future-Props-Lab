@@ -11,6 +11,11 @@ FFmpeg/FFprobe；持续集成同时验证 Python 3.11
 
 ## 快速开始
 
+macOS Apple Silicon 桌面版可通过 `npm run build:desktop` 构建 `.app`，
+`npm run package:desktop` 制作 `.dmg`。安装后不需要 Python、Node.js、uv 或 FFmpeg，
+首次启动在应用内创建管理员，数据独立于仓库。构建机要求与验证方法见
+[macOS 桌面构建](docs/operations/desktop-macos.md)。首期仅本地 ad-hoc 签名，未公证，不作为公开发行版。
+
 1. 安装依赖：`npm run setup`
 2. 创建配置：`cp backend/.env.example backend/.env`，并替换 `FPL_SECRETS_KEY`
 3. 创建首个管理员：`npm run account -- create-admin --username admin`

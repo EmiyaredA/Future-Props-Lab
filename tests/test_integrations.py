@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import io
+import shutil
 import stat
 import zipfile
 from pathlib import Path
@@ -24,6 +25,7 @@ from app.integrations.mcp.client import (
     OfficialMcpDiscoveryClient,
 )
 from app.integrations.skills.archive import SkillArchiveStorage
+from app.integrations.skills.catalog import SkillCatalog
 from app.integrations.tool_apis import ToolApiCatalog
 from app.main import app
 from app.models import (
@@ -74,6 +76,33 @@ def _skill_zip(
             entry.external_attr = (stat.S_IFLNK | 0o777) << 16
             archive.writestr(entry, "SKILL.md")
     return buffer.getvalue()
+
+
+@pytest.mark.asyncio
+async def test_skill_download_after_runtime_directory_move(tmp_path, monkeypatch) -> None:
+    await _clear_integrations()
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app), base_url="http://test"
+    ) as client:
+        response = await client.post(
+            "/v1/integrations/skills",
+            files={"file": ("skill.zip", _skill_zip(), "application/zip")},
+        )
+        assert response.status_code == 201
+        skill_id = response.json()["id"]
+    settings = get_settings()
+    moved = settings.model_copy(
+        update={"fpl_database_path": str(tmp_path / "moved/future-props.db")}
+    )
+    old_root = SkillArchiveStorage(settings, "default").final_path(skill_id, "v1")
+    new_root = SkillArchiveStorage(moved, "default").final_path(skill_id, "v1")
+    shutil.copytree(old_root, new_root)
+    old_root.rename(old_root.with_name("offline-v1"))
+    monkeypatch.setattr("app.integrations.skills.catalog.get_settings", lambda: moved)
+    async with SessionLocal() as session:
+        _, payload = await SkillCatalog(session, "default").version_zip(skill_id, "v1")
+    with zipfile.ZipFile(io.BytesIO(payload)) as archive:
+        assert "name: demo-skill" in archive.read("SKILL.md").decode()
 
 
 @pytest.mark.asyncio

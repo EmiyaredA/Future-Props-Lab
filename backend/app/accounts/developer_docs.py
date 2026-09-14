@@ -1,10 +1,9 @@
 """Serve an allowlisted documentation projection only after principal authorization."""
 
-from pathlib import Path
-
 from app.accounts.errors import AccountError
+from app.core.config import REPO_ROOT
 
-ROOT = Path(__file__).resolve().parents[3]
+ROOT = REPO_ROOT
 
 
 def developer_documents(principal):

@@ -831,6 +831,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/desktop/setup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Setup */
+        get: operations["get_setup_v1_desktop_setup_get"];
+        put?: never;
+        /** Create First Account */
+        post: operations["create_first_account_v1_desktop_setup_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/file-folders": {
         parameters: {
             query?: never;
@@ -5539,6 +5557,23 @@ export interface components {
             /** State */
             state: string;
             value: components["schemas"]["DemoConfig"];
+        };
+        /** DesktopSetupIn */
+        DesktopSetupIn: {
+            /**
+             * Display Name
+             * @default
+             */
+            display_name: string;
+            /** Password */
+            password: string;
+            /** Username */
+            username: string;
+        };
+        /** DesktopSetupOut */
+        DesktopSetupOut: {
+            /** Setup Required */
+            setup_required: boolean;
         };
         /** DeveloperDocumentOut */
         DeveloperDocumentOut: {
@@ -16072,6 +16107,59 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_setup_v1_desktop_setup_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DesktopSetupOut"];
+                };
+            };
+        };
+    };
+    create_first_account_v1_desktop_setup_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DesktopSetupIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DesktopSetupOut"];
                 };
             };
             /** @description Validation Error */

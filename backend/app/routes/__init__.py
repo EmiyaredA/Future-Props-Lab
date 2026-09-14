@@ -7,6 +7,8 @@ from app.routes.accounts import router as accounts_router
 from app.routes.audio_annotation import router as audio_annotation_router
 from app.routes.demo_runtime import call_router as demo_call_router
 from app.routes.demo_runtime import router as demo_runtime_router
+from app.routes.desktop import router as desktop_router
+from app.routes.desktop_agent import router as desktop_agent_router
 from app.routes.file_management import router as file_management_router
 from app.routes.galgame_workshop import router as galgame_workshop_router
 from app.routes.integrations import router as integrations_router
@@ -37,6 +39,8 @@ from app.routes.workspaces import invitation_router
 from app.routes.workspaces import router as workspaces_router
 
 api_router = APIRouter(prefix="/v1")
+api_router.include_router(desktop_router)
+api_router.include_router(desktop_agent_router)
 api_router.include_router(accounts_router)
 api_router.include_router(demo_runtime_router)
 api_router.include_router(demo_call_router)

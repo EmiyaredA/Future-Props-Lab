@@ -4,6 +4,7 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "@app/App";
 import { StudioAuthGate } from "@app/StudioAuthGate";
+import { DesktopSetupGate } from "@features/accounts/DesktopSetupGate";
 import "@shared/ui/theme.css";
 import "@app/styles.css";
 
@@ -15,9 +16,11 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <ViewportBounds />
     <QueryClientProvider client={queryClient}>
-      <StudioAuthGate>
-        <App />
-      </StudioAuthGate>
+      <DesktopSetupGate>
+        <StudioAuthGate>
+          <App />
+        </StudioAuthGate>
+      </DesktopSetupGate>
     </QueryClientProvider>
   </React.StrictMode>,
 );

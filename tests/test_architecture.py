@@ -725,7 +725,14 @@ def test_source_modules_are_split_into_reviewable_files() -> None:
         ".css": 600,
     }
     oversized: list[str] = []
-    for root in (BACKEND_APP, WEB_SRC):
+    for root in (
+        BACKEND_APP,
+        WEB_SRC,
+        REPO_ROOT / "desktop/src",
+        REPO_ROOT / "desktop/backend",
+        REPO_ROOT / "desktop/scripts",
+        REPO_ROOT / "desktop/ui",
+    ):
         for path in sorted(root.rglob("*")):
             if not path.is_file() or path.suffix not in limits or _is_within(path, generated_root):
                 continue

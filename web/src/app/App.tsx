@@ -206,9 +206,21 @@ export default function App() {
       if (navigationGuard.current?.(e.detail)) e.preventDefault();
     };
     window.addEventListener("future-props:navigate", handle);
+    const agentOpen = (event: Event) => {
+      const request = (event as CustomEvent<{ path: string; active: () => boolean; opened: () => void }>).detail;
+      const next = parseRoute(request.path);
+      const commit = () => {
+        if (!request.active()) return;
+        commitNavigation(next.page, next.projectId, next.documentId);
+        request.opened();
+      };
+      if (!navigationGuard.current?.(commit)) commit();
+    };
+    window.addEventListener("future-props:agent-open", agentOpen);
     window.addEventListener("future-props:before-workspace-switch", guard);
     return () => {
       window.removeEventListener("future-props:navigate", handle);
+      window.removeEventListener("future-props:agent-open", agentOpen);
       window.removeEventListener("future-props:before-workspace-switch", guard);
     };
   });

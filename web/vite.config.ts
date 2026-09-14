@@ -6,7 +6,12 @@ const apiPort = process.env.FPL_E2E_API_PORT || "9000";
 const webPort = Number(process.env.FPL_E2E_WEB_PORT || "3000");
 const apiTarget = `http://127.0.0.1:${apiPort}`;
 
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
+  envDir: mode === "desktop" ? false : undefined,
+  define:
+    mode === "desktop"
+      ? { "import.meta.env.VITE_API_BASE": JSON.stringify("") }
+      : undefined,
   plugins: [react()],
   resolve: {
     alias: {
@@ -18,7 +23,7 @@ export default defineConfig({
     },
   },
   build: {
-    sourcemap: true,
+    sourcemap: mode !== "desktop",
     rollupOptions: {
       input: {
         studio: resolve(__dirname, "index.html"),
@@ -63,4 +68,4 @@ export default defineConfig({
       "/ready": apiTarget,
     },
   },
-});
+}));

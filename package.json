@@ -7,9 +7,14 @@
     "npm": ">=11"
   },
   "workspaces": [
-    "web"
+    "web",
+    "desktop"
   ],
   "scripts": {
+    "dev:desktop": "uv run python desktop/scripts/build_backend.py --check-assets && npm run build:desktop --workspace web && npm run dev --workspace desktop",
+    "build:desktop": "uv run python desktop/scripts/build_backend.py --check-assets && npm run build:desktop --workspace web && uv run python desktop/scripts/build_backend.py && npm run build --workspace desktop",
+    "package:desktop": "uv run python desktop/scripts/build_backend.py --check-assets && npm run build:desktop --workspace web && uv run python desktop/scripts/build_backend.py && npm run package --workspace desktop",
+    "test:desktop": "uv run pytest -q tests/test_desktop.py && npm run test --workspace desktop",
     "setup": "python3 scripts/check_lfs_assets.py --tool && uv sync --all-groups && npm install && npm run voice-vad:sync --workspace web && python3 scripts/check_lfs_assets.py --all",
     "dev": "concurrently -k -n api,web -c blue,magenta \"npm run dev:backend\" \"npm run dev:web\"",
     "dev:backend": "uv run uvicorn app.main:app --app-dir backend --reload --host 127.0.0.1 --port 9000 --timeout-graceful-shutdown 10",
@@ -23,9 +28,9 @@
     "contracts:check": "uv run python scripts/export_openapi.py --check && npm run contracts:check --workspace web && npm run sdk:check",
     "test": "uv run pytest -q && npm run test --workspace web",
     "test:e2e": "npm run test:e2e --workspace web",
-    "lint": "uv run ruff check backend db scripts tests sdk/python/src && npm run lint --workspace web",
-    "format": "uv run ruff format backend db scripts tests sdk/python/src && npm run format --workspace web",
-    "format:check": "uv run ruff format --check backend db scripts tests sdk/python/src && npm run format:check --workspace web",
+    "lint": "uv run ruff check backend db scripts tests sdk/python/src desktop/backend desktop/scripts && npm run lint --workspace web && npm run lint --workspace desktop",
+    "format": "uv run ruff format backend db scripts tests sdk/python/src desktop/backend desktop/scripts && npm run format --workspace web && npm run format --workspace desktop",
+    "format:check": "uv run ruff format --check backend db scripts tests sdk/python/src desktop/backend desktop/scripts && npm run format:check --workspace web && npm run format:check --workspace desktop",
     "build": "python3 scripts/check_lfs_assets.py --web && npm run build --workspace web",
     "lfs:check": "python3 scripts/check_lfs_assets.py --all",
     "lfs:check:pointers": "python3 scripts/check_lfs_assets.py --pointers",
