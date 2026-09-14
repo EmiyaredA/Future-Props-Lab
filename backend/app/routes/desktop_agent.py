@@ -134,6 +134,8 @@ async def inbox(request: Request, session: SessionDep):
             if row["audience"] == audience and row["status"] == "pending"
         ],
         change_revision=state.changes.get(audience, 0),
+        integration_revisions=state.integration_changes.get(audience, {}),
+        content_change_revision=state.content_changes.get(audience, 0),
     )
 
 

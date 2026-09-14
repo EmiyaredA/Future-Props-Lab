@@ -1,6 +1,6 @@
 # 本地 Agent 接入：CLI / Python SDK
 
-此功能操作本机正在运行的 App，不是云同步，也不是远程桌面。首期不包含 MCP、免登录或实时语音
+此功能操作本机正在运行的 App，不是云同步，也不是远程桌面。不提供 MCP 接入服务器、免登录或实时语音
 WebSocket 接入。现有账号、工作区和文件保持原位，不新增 schema。
 
 ## 首次连接
@@ -15,7 +15,7 @@ WebSocket 接入。现有账号、工作区和文件保持原位，不新增 sch
 "/Applications/Future Props Lab.app/Contents/Resources/fpl/fpl" operations
 ```
 
-不传 `--write` 只申请读取权限。读写权限包括删除、外部模型调用与可能产生的费用，不会逐次弹窗。
+不传 `--write` 只申请读取权限。读写权限包括删除、集成管理、校验请求、外部模型调用与可能产生的费用，不会逐次弹窗。
 任何 Agent 自身仍需遵守用户给它的授权，不应把技术上允许的操作等同于用户请求。
 
 可以自行给完整命令设置 `fpl` 别名；安装程序不修改 PATH 或系统目录。以下示例假定已经设置别名。
@@ -30,6 +30,11 @@ fpl call files.upload_file --input upload-parameters.json --file upload=/absolut
 fpl call visual.export_project_snapshot --input project-parameters.json --output project.zip
 fpl wait inference.get_task --input task-parameters.json --timeout 300
 fpl open visual PROJECT_ID
+fpl open skill
+fpl open skill --view upload
+fpl open skill SKILL_ID --view versions
+fpl open tool-api TOOL_ID --view edit
+fpl open mcp MCP_ID --view tools
 ```
 
 输入文件是 SDK 关键字参数对象，例如创建视觉项目使用
@@ -37,14 +42,48 @@ fpl open visual PROJECT_ID
 上传参数为 `{"body":{}}`；空查询参数为 `{}`。也可以使用 `--input -` 从标准输入读取 JSON。
 `fpl operations resource.method` 给出当前 App 方法、SDK 参数与 schema；不支持的方法默认拒绝。
 
-开放六个工坊、笔记/知识库、素材、生成与独立推理任务，以及模型目录和日志查询。
-不开放账号治理、供应商凭据设置、集成管理、文件存储迁移或任意系统命令。
+开放六个工坊、笔记/知识库、素材、生成与独立推理任务，以及模型目录、日志查询和集成中心的已有管理操作。
+不开放账号治理、供应商凭据设置、平台密钥管理、文件存储迁移或任意系统命令。
 下载必须显式指定 `--output`，已有文件默认拒绝覆盖；只有显式 `--overwrite` 才覆盖。
 SSE 每个事件输出一行 JSON；结果在 stdout，进度与错误在 stderr，不把密钥写入输出。
 
 退出码：0 成功；2 输入/本地配置错误；3 未授权或权限不足；4 API 错误（包括 revision 冲突）；
 5 任务失败/取消；6 等待超时或打开未完成；7 连接中断；130 用户中断。
 等待超时不会取消后台任务。断线不会自动重放请求，尤其不会重新提交付费模型任务；先查询再决定。
+
+## 集成中心与页面定位
+
+Skill 支持 ZIP 导入、追加不可变版本、下载、标签、启停、默认版本与删除；工具 API 和 MCP
+支持配置管理、标签、启停、校验，MCP 还可读取发现的工具。读取沿用工作区读取权限，管理和
+校验同时要求 `studio:write` 与 `configuration.manage`，已有满足条件的授权无需重新配对。
+凭据只写不读；留空保留原凭据，明确清除才删除。校验会发出真实外部请求或启动白名单 stdio
+服务，可能有副作用。请求成功不代表校验成功，须检查返回的 `check.ok`；网络失败和超时也有
+结构化校验结果。敏感结果权限、外连限制、可执行文件白名单仍生效，不提供安装或系统命令入口。
+
+`fpl open KIND [ID] --view VIEW` 只接受登记目标，不接受 URL：
+
+| 目标 | 视图 | ID 要求 |
+| --- | --- | --- |
+| `skill` | `list`、`upload` | 不传 ID |
+| `skill` | `details`、`versions`、`tags` | 必须传 ID |
+| `tool-api` | `list` | 不传 ID |
+| `tool-api` | `edit` | 可不传 ID 以打开新建表单 |
+| `tool-api` | `validate` | 必须传 ID |
+| `mcp` | `list` | 不传 ID |
+| `mcp` | `edit` | 可不传 ID 以打开新建表单 |
+| `mcp` | `tools` | 必须传 ID |
+
+不传视图时，无 ID 打开列表；带 ID 的 Skill 打开详情，工具 API 与 MCP 打开配置。
+打开填写页面不会提交或执行校验。服务端先核验归属和视图权限，界面经过未保存保护，完成加载
+和定位后才回执 `opened`。取消为 `cancelled`，页面不可用、工作区不匹配或过期为
+`unavailable`（已过期请求也可能返回 404）；CLI 超时退出码为 6。旧作品打开参数继续兼容。
+
+修改要求最新 `expected_revision`；409 时保留输入，用户处理冲突后重新提交，SDK 不自动重放。
+集成更新按类型局部刷新目录、概览、详情、版本和工具列表并保留筛选。若当前存在草稿或待上传
+文件，会保留内容并提示外部更新；处理完编辑后再查看更新。
+
+Skill 的目录启用不会执行内容，也不会安装依赖。上传包只应包含 Skill 说明和资源，不含账号
+凭据、授权文件或系统钥匙串数据。
 
 ## Python SDK
 

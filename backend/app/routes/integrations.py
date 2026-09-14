@@ -63,25 +63,27 @@ def _raise_integration(exc: Exception) -> None:
 
 
 @router.get("/tool-apis", response_model=ToolApiCatalogOut)
-async def tool_apis(session: SessionDep) -> ToolApiCatalogOut:
-    return safe_validation_catalog(await ToolApiCatalog(session).catalog())
+async def tool_apis(session: SessionDep, workspace_id: WorkspaceDep) -> ToolApiCatalogOut:
+    return safe_validation_catalog(await ToolApiCatalog(session, workspace_id).catalog())
 
 
 @router.post("/tool-apis", response_model=ToolApiOut, status_code=201)
 async def create_tool_api(
-    principal: StudioAuth, session: SessionDep, body: ToolApiCreateIn
+    principal: StudioAuth, session: SessionDep, workspace_id: WorkspaceDep, body: ToolApiCreateIn
 ) -> ToolApiOut:
     _owner(principal)
     try:
-        return await ToolApiCatalog(session).create(body)
+        return await ToolApiCatalog(session, workspace_id).create(body)
     except DuplicateIntegrationError as exc:
         _raise_integration(exc)
 
 
 @router.get("/tool-apis/{integration_id}", response_model=ToolApiOut)
-async def tool_api(session: SessionDep, integration_id: str) -> ToolApiOut:
+async def tool_api(
+    session: SessionDep, workspace_id: WorkspaceDep, integration_id: str
+) -> ToolApiOut:
     try:
-        return await ToolApiCatalog(session).get(integration_id)
+        return await ToolApiCatalog(session, workspace_id).get(integration_id)
     except IntegrationNotFoundError as exc:
         _raise_integration(exc)
 
@@ -90,19 +92,20 @@ async def tool_api(session: SessionDep, integration_id: str) -> ToolApiOut:
 async def update_tool_api(
     principal: StudioAuth,
     session: SessionDep,
+    workspace_id: WorkspaceDep,
     integration_id: str,
     body: ToolApiUpdateIn,
 ) -> ToolApiOut:
     _owner(principal)
     try:
-        existing = await ToolApiCatalog(session).get(integration_id)
+        existing = await ToolApiCatalog(session, workspace_id).get(integration_id)
         if (
             existing.sensitive_result
             and not body.sensitive_result
             and not principal.allows("tools.sensitive")
         ):
             raise HTTPException(403, {"code": "sensitive_tool_permission_required"})
-        return await ToolApiCatalog(session).update(integration_id, body)
+        return await ToolApiCatalog(session, workspace_id).update(integration_id, body)
     except (IntegrationNotFoundError, DuplicateIntegrationError) as exc:
         _raise_integration(exc)
 
@@ -111,12 +114,13 @@ async def update_tool_api(
 async def delete_tool_api(
     principal: StudioAuth,
     session: SessionDep,
+    workspace_id: WorkspaceDep,
     integration_id: str,
     expected_revision: int = Query(ge=0),
 ) -> DeleteOut:
     _owner(principal)
     try:
-        await ToolApiCatalog(session).delete(integration_id, expected_revision)
+        await ToolApiCatalog(session, workspace_id).delete(integration_id, expected_revision)
     except IntegrationNotFoundError as exc:
         _raise_integration(exc)
     return DeleteOut()
@@ -126,12 +130,13 @@ async def delete_tool_api(
 async def validate_tool_api(
     principal: StudioAuth,
     session: SessionDep,
+    workspace_id: WorkspaceDep,
     integration_id: str,
     body: ToolApiValidateIn,
 ) -> ToolApiValidationOut:
     _owner(principal)
     try:
-        catalog = ToolApiCatalog(session)
+        catalog = ToolApiCatalog(session, workspace_id)
         resource = await catalog.get(integration_id)
         result = await catalog.validate(integration_id, body.input)
         if resource.sensitive_result and not principal.allows("tools.sensitive"):
@@ -142,23 +147,27 @@ async def validate_tool_api(
 
 
 @router.get("/mcp", response_model=McpCatalogOut)
-async def mcp_servers(session: SessionDep) -> McpCatalogOut:
-    return safe_validation_catalog(await McpCatalog(session).catalog())
+async def mcp_servers(session: SessionDep, workspace_id: WorkspaceDep) -> McpCatalogOut:
+    return safe_validation_catalog(await McpCatalog(session, workspace_id).catalog())
 
 
 @router.post("/mcp", response_model=McpOut, status_code=201)
-async def create_mcp(principal: StudioAuth, session: SessionDep, body: McpCreateIn) -> McpOut:
+async def create_mcp(
+    principal: StudioAuth, session: SessionDep, workspace_id: WorkspaceDep, body: McpCreateIn
+) -> McpOut:
     _owner(principal)
     try:
-        return await McpCatalog(session).create(body)
+        return await McpCatalog(session, workspace_id).create(body)
     except DuplicateIntegrationError as exc:
         _raise_integration(exc)
 
 
 @router.get("/mcp/{integration_id}", response_model=McpOut)
-async def mcp_server(session: SessionDep, integration_id: str) -> McpOut:
+async def mcp_server(
+    session: SessionDep, workspace_id: WorkspaceDep, integration_id: str
+) -> McpOut:
     try:
-        return await McpCatalog(session).get(integration_id)
+        return await McpCatalog(session, workspace_id).get(integration_id)
     except IntegrationNotFoundError as exc:
         _raise_integration(exc)
 
@@ -167,19 +176,20 @@ async def mcp_server(session: SessionDep, integration_id: str) -> McpOut:
 async def update_mcp(
     principal: StudioAuth,
     session: SessionDep,
+    workspace_id: WorkspaceDep,
     integration_id: str,
     body: McpUpdateIn,
 ) -> McpOut:
     _owner(principal)
     try:
-        existing = await McpCatalog(session).get(integration_id)
+        existing = await McpCatalog(session, workspace_id).get(integration_id)
         if (
             existing.sensitive_result
             and not body.sensitive_result
             and not principal.allows("tools.sensitive")
         ):
             raise HTTPException(403, {"code": "sensitive_tool_permission_required"})
-        return await McpCatalog(session).update(integration_id, body)
+        return await McpCatalog(session, workspace_id).update(integration_id, body)
     except (IntegrationNotFoundError, DuplicateIntegrationError) as exc:
         _raise_integration(exc)
 
@@ -188,32 +198,35 @@ async def update_mcp(
 async def delete_mcp(
     principal: StudioAuth,
     session: SessionDep,
+    workspace_id: WorkspaceDep,
     integration_id: str,
     expected_revision: int = Query(ge=0),
 ) -> DeleteOut:
     _owner(principal)
     try:
-        await McpCatalog(session).delete(integration_id, expected_revision)
+        await McpCatalog(session, workspace_id).delete(integration_id, expected_revision)
     except IntegrationNotFoundError as exc:
         _raise_integration(exc)
     return DeleteOut()
 
 
 @router.get("/mcp/{integration_id}/tools", response_model=list[McpToolOut])
-async def mcp_tools(session: SessionDep, integration_id: str) -> list[McpToolOut]:
+async def mcp_tools(
+    session: SessionDep, workspace_id: WorkspaceDep, integration_id: str
+) -> list[McpToolOut]:
     try:
-        return await McpCatalog(session).tools(integration_id)
+        return await McpCatalog(session, workspace_id).tools(integration_id)
     except IntegrationNotFoundError as exc:
         _raise_integration(exc)
 
 
 @router.post("/mcp/{integration_id}/validate", response_model=McpValidationOut)
 async def validate_mcp(
-    principal: StudioAuth, session: SessionDep, integration_id: str
+    principal: StudioAuth, session: SessionDep, workspace_id: WorkspaceDep, integration_id: str
 ) -> McpValidationOut:
     _owner(principal)
     try:
-        return await McpCatalog(session).validate(integration_id)
+        return await McpCatalog(session, workspace_id).validate(integration_id)
     except IntegrationNotFoundError as exc:
         _raise_integration(exc)
 

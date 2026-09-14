@@ -8,6 +8,7 @@ import { credentialHeader } from "./security";
 export class Backend {
   readonly token = randomBytes(32).toString("hex");
   origin = "";
+  configDigest = "";
   private child?: ChildProcessWithoutNullStreams;
   private stopping = false;
   constructor(
@@ -15,6 +16,7 @@ export class Backend {
     private packaged: boolean,
     private resources: string,
     private onCrash: () => void,
+    private developmentLease?: number,
   ) {}
 
   async start(): Promise<void> {
@@ -35,6 +37,8 @@ export class Backend {
         ? path.join(this.resources, "dist")
         : path.join(root, "web/dist"),
     );
+    if (!this.packaged && this.developmentLease !== undefined)
+      args.push("--development-lock-fd", "3");
     const env = { ...process.env };
     for (const key of Object.keys(env)) {
       if (
@@ -48,9 +52,12 @@ export class Backend {
     this.child = spawn(executable, args, {
       cwd: this.dataDir,
       env,
-      stdio: "pipe",
+      stdio:
+        this.developmentLease === undefined
+          ? "pipe"
+          : ["pipe", "pipe", "pipe", this.developmentLease],
       detached: true,
-    });
+    }) as ChildProcessWithoutNullStreams;
     const child = this.child;
     child.stdin.on("error", () => undefined);
     child.stderr.on("data", (chunk: Buffer) => {
@@ -82,7 +89,10 @@ export class Backend {
         }
         if (!received.includes("\n")) return;
         try {
-          const value = JSON.parse(received.split("\n")[0]) as { port: number };
+          const value = JSON.parse(received.split("\n")[0]) as {
+            port: number;
+            config_digest?: string;
+          };
           if (
             !Number.isInteger(value.port) ||
             value.port < 1 ||
@@ -90,6 +100,11 @@ export class Backend {
           )
             throw new Error();
           finish();
+          if (
+            typeof value.config_digest === "string" &&
+            /^[a-f0-9]{64}$/.test(value.config_digest)
+          )
+            this.configDigest = value.config_digest;
           resolve(value.port);
         } catch {
           finish();

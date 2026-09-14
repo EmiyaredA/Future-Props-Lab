@@ -22,7 +22,7 @@ Session 切换工作区必须显式执行；并发跨工作区使用不同客户
 | 模型、供应商、默认配置与调用日志 | `models`、`logs`、`templates`；现有目录与日志 API | 对应模块参考；既有模型、目录、治理测试 |
 | 文件上传、目录、引用、下载、预览 | `files` 与各项目的素材方法；`/v1/files` | `sdk-files`；`test_python_sdk.py`；既有公共文件与素材引用测试 |
 | 图片裁剪、视频帧与宫格导出 | `files.crop_file_image`、`files.extract_video_frames`；`/v1/files/{asset_id}/crop`、`frames` | `sdk-files`；`test_automation_exports.py`，验证像素、透明度、范围、原图保留、ZIP 与宫格 |
-| 集成配置、校验与工具执行 | `integrations`、`test_tools`；现有集成 API | 对应模块参考；既有集成和模型工具测试 |
+| 集成配置、校验与工具执行 | `integrations`、`test_tools`；现有集成 API | 对应模块参考；既有集成和模型工具测试；桌面临时 Socket 覆盖 ZIP 往返、版本、权限、校验和 UI 定位（`test_desktop_integrations.py`） |
 | 视觉节点增删改、位置、顺序、连线和生成草稿 | `visual.apply_canvas_operations`；`/canvas/operations` | `sdk-editing`、`sdk-workflow-examples`；`test_workshop_operations.py`、`test_sdk_workflows.py` |
 | 视觉素材、生成与结果挂载 | `visual` 素材方法、`generation` 任务方法；复用已有生成入口和保存规则 | `sdk-reference-generation`；既有 visual generation、canvas、素材引用测试 |
 | Galgame 角色、场景、Fragment、剧情块、对白、本地化、分支与表情时间 | `galgame.apply_story_operations`、既有局部编辑方法；`/story/operations` | `sdk-workshops`；`test_workshop_operations.py` 验证对白编辑、重复请求、角色引用保护；既有 Story 总校验与局部编辑测试 |

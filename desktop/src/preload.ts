@@ -12,6 +12,23 @@ contextBridge.exposeInMainWorld(
     agentStatus: () => ipcRenderer.invoke("desktop:agent-status"),
     enableAgent: () => ipcRenderer.invoke("desktop:agent-enable"),
     disableAgent: () => ipcRenderer.invoke("desktop:agent-disable"),
+    ...(process.argv.includes("--fpl-development-bridge")
+      ? {
+          developmentStatus: () =>
+            ipcRenderer.invoke("desktop:development-status").catch(() => null),
+          applyDevelopmentUpdate: () =>
+            ipcRenderer.invoke("desktop:development-apply"),
+          checkDevelopmentUpdate: () =>
+            ipcRenderer.invoke("desktop:development-check"),
+          onDevelopmentState: (callback: (state: unknown) => void) => {
+            const listener = (_event: unknown, state: unknown) =>
+              callback(state);
+            ipcRenderer.on("desktop:development-state", listener);
+            return () =>
+              ipcRenderer.removeListener("desktop:development-state", listener);
+          },
+        }
+      : {}),
     onQuitRequested: (callback: (approve: () => void) => void) => {
       const listener = () =>
         callback(() => ipcRenderer.send("desktop:quit-approved"));

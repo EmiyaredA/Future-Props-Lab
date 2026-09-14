@@ -20,6 +20,9 @@
 - 安装后端与 Web 依赖：`npm run setup`。
 - 一键启动后端与 Web：`npm run dev`；单独启动使用 `npm run dev:backend`、
   `npm run dev:web`。
+- 桌面热加载：`npm run dev:desktop` 使用独立开发目录；用户明确授权后可用
+  `npm run dev:desktop:live` 使用正式 App 数据。源码检查后手动应用后端/Electron 更新；
+  热加载烟测使用 `npm run test:desktop:dev`，始终在临时目录运行。
 - 数据库迁移：`npm run db:migrate`；只检查迁移状态：`npm run db:migrate:check`。
 - OpenAPI 生成与 stale-check：`npm run contracts:generate`、`npm run contracts:check`。
 - 测试：`npm test`；浏览器端到端测试：`npm run test:e2e`。
@@ -43,6 +46,13 @@
   `runtime/` 保存数据库与素材，`backend/config.toml` 保存配置与加密密钥，禁止复制仓库运行数据。
   桌面配置必须在数据库模块导入前初始化。仅桌面入口托管 Web 静态页，HTML 回退仅用于页面导航，
   未知 `/v1` API 与缺失资源仍为 404；首次账号接口仅在桌面私有凭据边界内启用。
+- 显式 live 开发是使用正式数据的受控例外，不复制或合并仓库数据。启动器持有数据锁，覆盖
+  后端/Electron 更新交接；首次 live 运行停机备份完整 `runtime/` 与配置并核验 SHA256 和 SQLite
+  完整性。备份在同级 `Future Props Lab Development Backup …/`，最近成功配置在
+  `development/last-success-config.toml`（0600）。配置变更前保留停机快照；新增/漂移迁移阻止启动和
+  应用更新，不在热加载流程内执行正式迁移。更新不得绕过未保存保护或自动重试写入/模型提交。
+  开发网关在同一窗口生命周期内保持来源稳定，只向固定 Vite/后端转发并校验私有凭据；Vite 不代理
+  业务 API。正式打包不启用开发桥或开发网关，自动测试不得使用 live 数据。
 - 桌面 CLI/SDK 接入默认关闭。`agent/` 保存无密钥的连接描述和 `0600` 客户端凭据，目录为
   `0700`；短路径 Unix Socket 由 Electron 持有，私有启动 token 不得交给 SDK。Agent 通道只开放
   `accounts/desktop_agent_operations.json` 明确登记的业务操作，新 API 默认拒绝。配对与界面请求
@@ -54,7 +64,7 @@
 - Web 的 `platform/` 与 `shared/` 不得依赖 `features/` 或 `app/`，`features/` 不得依赖
   `app/`；业务代码不得堆回 `web/src/` 根目录。生产请求通过 OpenAPI 生成类型访问后端，
   `generated/` 文件不得手工编辑。
-- Models、Visual Workshop、Thought Workshop、Presentation Workshop 与 Audio Annotation 的 TanStack Query 键由各自 `queryKeys.ts` 唯一
+- Models、Visual Workshop、Thought Workshop、Presentation Workshop、Audio Annotation 与 Integration Center 的 TanStack Query 键由各自 `queryKeys.ts` 唯一
   维护；跨功能消费者导入 owner 的 key factory，不得复制同名缓存键。鉴权文件预览统一使用
   `platform/api/useApiBlobUrl.ts` 管理取消、竞态和 Object URL 回收；自有缓存或多音轨播放器除外。
 - Web 中面向用户可见的交互控件不得直接暴露浏览器默认外观或原生弹层。下拉菜单、颜色选择、

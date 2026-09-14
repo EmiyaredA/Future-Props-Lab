@@ -5787,6 +5787,15 @@ export interface components {
         DesktopInbox: {
             /** Change Revision */
             change_revision: number;
+            /**
+             * Content Change Revision
+             * @default 0
+             */
+            content_change_revision: number;
+            /** Integration Revisions */
+            integration_revisions?: {
+                [key: string]: number;
+            };
             /** Requests */
             requests: components["schemas"]["DesktopOpenOut"][];
         };
@@ -5804,9 +5813,11 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "visual" | "galgame" | "video" | "presentation" | "annotation" | "note" | "knowledge";
+            kind: "visual" | "galgame" | "video" | "presentation" | "annotation" | "note" | "knowledge" | "skill" | "tool-api" | "mcp";
             /** Resource Id */
-            resource_id: string;
+            resource_id?: string | null;
+            /** View */
+            view?: ("list" | "details" | "upload" | "versions" | "tags" | "edit" | "validate" | "tools") | null;
         };
         /** DesktopOpenOut */
         DesktopOpenOut: {
@@ -5816,14 +5827,16 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "visual" | "galgame" | "video" | "presentation" | "annotation" | "note" | "knowledge";
+            kind: "visual" | "galgame" | "video" | "presentation" | "annotation" | "note" | "knowledge" | "skill" | "tool-api" | "mcp";
             /** Resource Id */
-            resource_id: string;
+            resource_id?: string | null;
             /**
              * Status
              * @enum {string}
              */
             status: "pending" | "waiting_confirmation" | "opened" | "cancelled" | "unavailable";
+            /** View */
+            view?: ("list" | "details" | "upload" | "versions" | "tags" | "edit" | "validate" | "tools") | null;
         };
         /** DesktopSetupIn */
         DesktopSetupIn: {

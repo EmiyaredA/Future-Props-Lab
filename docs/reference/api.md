@@ -239,6 +239,14 @@ SenseAudio 结果包含全文、说话人和句级起止时间；ASR API 的嵌�
 
 ## 集成中心
 
+现有集成端点也通过桌面 CLI/SDK 精确登记开放；读取要求工作区读取权限，管理和校验要求
+`studio:write` 与 `configuration.manage`。根资源、工具子记录及校验记录均限定已鉴权 Workspace，
+跨空间 ID 返回 404。外部校验结束时再次进行 revision 比较，配置已改变则返回 409。
+`POST /v1/desktop/ui/open` 新增 `skill`、`tool-api`、`mcp`，`resource_id` 对列表与新建表单可省略，
+`view` 的组合与回执见 [App 接入说明](../operations/desktop-agent.md)。只打开页面，不自动提交。
+`GET /v1/desktop/ui/inbox` 保留 `change_revision`，新增按 `skills`、`tool-apis`、`mcp` 分组的
+`integration_revisions` 和非集成业务的 `content_change_revision`，只在成功的 Agent 写入后更新。
+
 - 工具 API：`GET/POST /v1/integrations/tool-apis`、`GET/PATCH/DELETE
 /v1/integrations/tool-apis/{id}`、`POST .../{id}/validate`。
 - MCP：`GET/POST /v1/integrations/mcp`、`GET/PATCH/DELETE /v1/integrations/mcp/{id}`、

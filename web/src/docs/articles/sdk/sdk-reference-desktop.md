@@ -212,8 +212,9 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 | 参数 | 位置 | 类型 | 必填 |
 | --- | --- | --- | --- |
 | `body` | application/json | DesktopOpenIn | 是 |
-| `body.kind` | 请求体 | visual / galgame / video / presentation / annotation / note / knowledge | 是 |
-| `body.resource_id` | 请求体 | string | 是 |
+| `body.kind` | 请求体 | visual / galgame / video / presentation / annotation / note / knowledge / skill / tool-api / mcp | 是 |
+| `body.resource_id` | 请求体 | string / null | 否 |
+| `body.view` | 请求体 | list / details / upload / versions / tags / edit / validate / tools / null | 否 |
 
 **响应**：
 - `202` · `application/json` · `DesktopOpenOut`

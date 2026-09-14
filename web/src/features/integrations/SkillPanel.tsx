@@ -1,4 +1,6 @@
-import { useMemo, useRef, useState } from "react";
+import { integrationKeys } from "./queryKeys";
+import { useIntegrationInteraction, useIntegrationOpen } from "./interaction";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Download,
@@ -18,7 +20,6 @@ import {
   getSkillVersions,
   updateSkill,
   type Skill,
-  type SkillVersion,
 } from "@features/integrations/api";
 import {
   IntegrationModal,
@@ -37,11 +38,11 @@ import {
 import "@features/integrations/skill-tags.css";
 import { parseSkillTags } from "@features/integrations/skillTagValues";
 
-const KEY = ["integrations", "skills"] as const;
+const KEY = integrationKeys.catalog("skills");
 
 function errorMessage(error: unknown) {
   if (error instanceof ApiError && error.problem.code === "revision_conflict") {
-    return "Skill 已被其他操作更新，列表已刷新，请重试。";
+    return "Skill 已被其他操作更新，当前输入已保留，请关闭后重新打开最新版本再合并修改。";
   }
   return error instanceof Error ? error.message : "操作失败，请稍后重试。";
 }
@@ -61,12 +62,14 @@ function UploadDialog({
   onClose,
   onUpload,
   showEnabled,
+  error,
 }: {
   title: string;
   pending: boolean;
   onClose: () => void;
   onUpload: (file: File, enabled: boolean, tags: string[]) => void;
   showEnabled: boolean;
+  error?: string;
 }) {
   const input = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
@@ -74,8 +77,9 @@ function UploadDialog({
   const [tagsText, setTagsText] = useState("");
   const tags = parseSkillTags(tagsText);
   return (
-    <IntegrationModal title={title} onClose={onClose}>
+    <IntegrationModal title={title} onClose={onClose} protect pending={pending}>
       <div className="integration-form">
+        {error && <p role="alert">{error}</p>}
         <div className="skill-drop">
           <FileArchive aria-hidden />
           <strong>{file?.name ?? "选择 Skill ZIP 包"}</strong>
@@ -137,12 +141,18 @@ export function SkillPanel({
   onStatusChange: (value: string) => void;
 }) {
   const client = useQueryClient();
+  const { blocked } = useIntegrationInteraction();
   const query = useQuery({ queryKey: KEY, queryFn: getSkills });
   const [uploading, setUploading] = useState(false);
   const [addingTo, setAddingTo] = useState<Skill | null>(null);
   const [viewing, setViewing] = useState<Skill | null>(null);
   const [details, setDetails] = useState<Skill | null>(null);
-  const [versions, setVersions] = useState<SkillVersion[]>([]);
+  const versionsQuery = useQuery({
+    queryKey: integrationKeys.versions(viewing?.id ?? ""),
+    queryFn: () => getSkillVersions(viewing!),
+    enabled: Boolean(viewing),
+  });
+  const versions = versionsQuery.data ?? [];
   const [selectedVersion, setSelectedVersion] = useState("");
   const [removing, setRemoving] = useState<Skill | null>(null);
   const [notice, setNotice] = useState("");
@@ -170,8 +180,6 @@ export function SkillPanel({
         error instanceof ApiError &&
         error.problem.code === "revision_conflict"
       ) {
-        setAddingTo(null);
-        setViewing(null);
         void refresh();
       }
     },
@@ -191,8 +199,6 @@ export function SkillPanel({
         error instanceof ApiError &&
         error.problem.code === "revision_conflict"
       ) {
-        setAddingTo(null);
-        setViewing(null);
         void refresh();
       }
     },
@@ -219,7 +225,6 @@ export function SkillPanel({
         error instanceof ApiError &&
         error.problem.code === "revision_conflict"
       ) {
-        setViewing(null);
         void refresh();
       }
     },
@@ -237,7 +242,6 @@ export function SkillPanel({
         error instanceof ApiError &&
         error.problem.code === "revision_conflict"
       ) {
-        setEditingTags(null);
         setNotice(errorMessage(error));
         void refresh();
       }
@@ -282,11 +286,60 @@ export function SkillPanel({
       ),
     [query.data, search, status, activeTagFilter],
   );
+  useEffect(() => {
+    if (!query.data || blocked()) return;
+    setDetails((current) =>
+      current
+        ? (query.data.items.find((item) => item.id === current.id) ?? null)
+        : null,
+    );
+    setViewing((current) =>
+      current
+        ? (query.data.items.find((item) => item.id === current.id) ?? null)
+        : null,
+    );
+  }, [query.data, blocked]);
+  useIntegrationOpen("skill", !query.isPending, async (request, active) => {
+    const catalog = await client.fetchQuery({
+      queryKey: integrationKeys.catalog("skills"),
+      queryFn: getSkills,
+      staleTime: 0,
+    });
+    if (!active()) return;
+    setDetails(null);
+    setViewing(null);
+    setEditingTags(null);
+    setUploading(false);
+    if (request.view === "list") return;
+    if (request.view === "upload") {
+      if (!canManage) throw new Error("权限不足");
+      setUploading(true);
+      return;
+    }
+    const item = catalog.items.find((item) => item.id === request.resource_id);
+    if (!item) throw new Error("Skill 不存在");
+    if (request.view === "details") setDetails(item);
+    else if (request.view === "versions") {
+      await client.fetchQuery({
+        queryKey: integrationKeys.versions(item.id),
+        queryFn: () => getSkillVersions(item),
+      });
+      if (!active()) return;
+      setViewing(item);
+      setSelectedVersion(item.default_version);
+    } else if (request.view === "tags") {
+      if (!canManage) throw new Error("权限不足");
+      setEditingTags(item);
+    }
+  });
   const openVersions = async (skill: Skill) => {
     setViewing(skill);
     setSelectedVersion(skill.default_version);
     try {
-      setVersions(await getSkillVersions(skill));
+      await client.fetchQuery({
+        queryKey: integrationKeys.versions(skill.id),
+        queryFn: () => getSkillVersions(skill),
+      });
     } catch (error) {
       setNotice(errorMessage(error));
     }
@@ -479,6 +532,7 @@ export function SkillPanel({
       {uploading ? (
         <UploadDialog
           title="上传 Skill ZIP"
+          error={create.isError ? errorMessage(create.error) : undefined}
           pending={create.isPending}
           onClose={() => setUploading(false)}
           showEnabled
@@ -490,6 +544,7 @@ export function SkillPanel({
       {addingTo ? (
         <UploadDialog
           title={`为 ${addingTo.name} 添加新版本`}
+          error={add.isError ? errorMessage(add.error) : undefined}
           pending={add.isPending}
           onClose={() => setAddingTo(null)}
           showEnabled={false}
@@ -499,9 +554,13 @@ export function SkillPanel({
       {viewing ? (
         <IntegrationModal
           title={`${viewing.name} · 版本`}
+          resetKey={update.data?.revision}
+          protect
+          pending={update.isPending}
           onClose={() => setViewing(null)}
           wide
         >
+          {update.isError && <p role="alert">{errorMessage(update.error)}</p>}
           <div className="skill-version-controls">
             <div>
               <strong>默认版本</strong>

@@ -21,6 +21,18 @@
       "method": "delete_project_asset",
       "resource": "galgame"
     },
+    "DELETE /v1/integrations/mcp/{integration_id}": {
+      "method": "delete_mcp",
+      "resource": "integrations"
+    },
+    "DELETE /v1/integrations/skills/{skill_id}": {
+      "method": "delete_skill",
+      "resource": "integrations"
+    },
+    "DELETE /v1/integrations/tool-apis/{integration_id}": {
+      "method": "delete_tool_api",
+      "resource": "integrations"
+    },
     "DELETE /v1/model-inference/assets/{asset_id}": {
       "method": "delete_asset",
       "resource": "inference"
@@ -180,6 +192,42 @@
     "GET /v1/galgame-workshop/story-migrations/status": {
       "method": "get_story_migration_status",
       "resource": "galgame"
+    },
+    "GET /v1/integrations/mcp": {
+      "method": "mcp_servers",
+      "resource": "integrations"
+    },
+    "GET /v1/integrations/mcp/{integration_id}": {
+      "method": "mcp_server",
+      "resource": "integrations"
+    },
+    "GET /v1/integrations/mcp/{integration_id}/tools": {
+      "method": "mcp_tools",
+      "resource": "integrations"
+    },
+    "GET /v1/integrations/skills": {
+      "method": "skills",
+      "resource": "integrations"
+    },
+    "GET /v1/integrations/skills/{skill_id}": {
+      "method": "skill",
+      "resource": "integrations"
+    },
+    "GET /v1/integrations/skills/{skill_id}/versions": {
+      "method": "skill_versions",
+      "resource": "integrations"
+    },
+    "GET /v1/integrations/skills/{skill_id}/versions/{version}/content": {
+      "method": "skill_version_content",
+      "resource": "integrations"
+    },
+    "GET /v1/integrations/tool-apis": {
+      "method": "tool_apis",
+      "resource": "integrations"
+    },
+    "GET /v1/integrations/tool-apis/{integration_id}": {
+      "method": "tool_api",
+      "resource": "integrations"
     },
     "GET /v1/llm-call-logs": {
       "method": "list_logs",
@@ -393,6 +441,18 @@
       "method": "patch_story_stage_expression",
       "resource": "galgame"
     },
+    "PATCH /v1/integrations/mcp/{integration_id}": {
+      "method": "update_mcp",
+      "resource": "integrations"
+    },
+    "PATCH /v1/integrations/skills/{skill_id}": {
+      "method": "update_skill",
+      "resource": "integrations"
+    },
+    "PATCH /v1/integrations/tool-apis/{integration_id}": {
+      "method": "update_tool_api",
+      "resource": "integrations"
+    },
     "PATCH /v1/video-editor/projects/{project_id}": {
       "method": "patch_project",
       "resource": "video"
@@ -540,6 +600,30 @@
     "POST /v1/galgame-workshop/story-migrations/run": {
       "method": "run_story_migrations",
       "resource": "galgame"
+    },
+    "POST /v1/integrations/mcp": {
+      "method": "create_mcp",
+      "resource": "integrations"
+    },
+    "POST /v1/integrations/mcp/{integration_id}/validate": {
+      "method": "validate_mcp",
+      "resource": "integrations"
+    },
+    "POST /v1/integrations/skills": {
+      "method": "create_skill",
+      "resource": "integrations"
+    },
+    "POST /v1/integrations/skills/{skill_id}/versions": {
+      "method": "add_skill_version",
+      "resource": "integrations"
+    },
+    "POST /v1/integrations/tool-apis": {
+      "method": "create_tool_api",
+      "resource": "integrations"
+    },
+    "POST /v1/integrations/tool-apis/{integration_id}/validate": {
+      "method": "validate_tool_api",
+      "resource": "integrations"
     },
     "POST /v1/model-inference/assets": {
       "method": "upload_asset",

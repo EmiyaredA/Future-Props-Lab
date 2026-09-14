@@ -1,4 +1,6 @@
-import { useMemo, useState, type FormEvent } from "react";
+import { integrationKeys } from "./queryKeys";
+import { useIntegrationInteraction, useIntegrationOpen } from "./interaction";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Braces,
@@ -28,7 +30,7 @@ import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
 import { CustomSelect } from "@shared/ui/CustomSelect";
 import { ApiError } from "@platform/api/client";
 
-const KEY = ["integrations", "tool-apis"] as const;
+const KEY = integrationKeys.catalog("tool-apis");
 const EMPTY: ToolApiInput = {
   name: "",
   description: "",
@@ -48,7 +50,7 @@ const EMPTY: ToolApiInput = {
 
 function message(error: unknown) {
   if (error instanceof ApiError && error.problem.code === "revision_conflict") {
-    return "配置已被其他操作更新，列表已刷新，请重新编辑。";
+    return "配置已被其他操作更新，当前输入已保留。请关闭后重新打开最新配置再合并修改。";
   }
   return error instanceof Error ? error.message : "操作失败，请稍后重试。";
 }
@@ -312,6 +314,7 @@ export function ToolApiPanel({
   onStatusChange: (value: string) => void;
 }) {
   const client = useQueryClient();
+  const { blocked } = useIntegrationInteraction();
   const query = useQuery({ queryKey: KEY, queryFn: getToolApis });
   const [editing, setEditing] = useState<ToolApi | null | undefined>();
   const [testing, setTesting] = useState<ToolApi | null>(null);
@@ -337,7 +340,6 @@ export function ToolApiPanel({
         error instanceof ApiError &&
         error.problem.code === "revision_conflict"
       ) {
-        setEditing(undefined);
         void refresh();
       }
     },
@@ -368,6 +370,39 @@ export function ToolApiPanel({
       )
         void refresh();
     },
+  });
+  useEffect(() => {
+    if (!query.data || blocked()) return;
+    setEditing((current) =>
+      current
+        ? query.data.items.find((item) => item.id === current.id)
+        : current,
+    );
+    setTesting((current) =>
+      current
+        ? (query.data.items.find((item) => item.id === current.id) ?? null)
+        : null,
+    );
+  }, [query.data, blocked]);
+  useIntegrationOpen("tool-api", !query.isPending, async (request, active) => {
+    const catalog = await client.fetchQuery({
+      queryKey: integrationKeys.catalog("tool-apis"),
+      queryFn: getToolApis,
+      staleTime: 0,
+    });
+    if (!active()) return;
+    setEditing(undefined);
+    setTesting(null);
+    if (request.view === "list") return;
+    if (!canManage) throw new Error("权限不足");
+    const item = catalog.items.find((item) => item.id === request.resource_id);
+    if (request.resource_id && !item) throw new Error("工具 API 不存在");
+    if (request.view === "edit") setEditing(item ?? null);
+    else if (item) {
+      setTesting(item);
+      setTestInput("{}");
+      setResult(null);
+    }
   });
   const items = useMemo(
     () =>
@@ -518,11 +553,15 @@ export function ToolApiPanel({
       </div>
       {editing !== undefined ? (
         <IntegrationModal
+          protect
+          pending={save.isPending}
           title={editing ? "编辑工具 API" : "新建工具 API"}
           onClose={() => setEditing(undefined)}
           wide
         >
+          {notice && <p role="alert">{notice}</p>}
           <ToolApiForm
+            key={editing ? `${editing.id}:${editing.revision}` : "new"}
             current={editing}
             pending={save.isPending}
             onCancel={() => setEditing(undefined)}
@@ -533,6 +572,8 @@ export function ToolApiPanel({
       {testing ? (
         <IntegrationModal
           title={`验证 ${testing.name}`}
+          protect
+          pending={validate.isPending}
           onClose={() => setTesting(null)}
         >
           <div className="integration-form">

@@ -46,6 +46,8 @@ class DesktopAgent:
         self.ui_requests = {}
         self.viewers = {}
         self.changes = {}
+        self.integration_changes = {}
+        self.content_changes = {}
 
     def prune(self):
         now = time.monotonic()

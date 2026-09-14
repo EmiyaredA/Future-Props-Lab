@@ -7,8 +7,11 @@ from app.accounts.desktop_agent import AgentError
 from app.models import (
     AudioAnnotationProject,
     GalgameWorkshopProject,
+    McpIntegration,
+    SkillIntegration,
     ThoughtKnowledgeBase,
     ThoughtNote,
+    ToolApiIntegration,
     VideoEditorProject,
     VisualWorkshopProject,
 )
@@ -22,13 +25,20 @@ ROOTS = {
     "annotation": AudioAnnotationProject,
     "note": ThoughtNote,
     "knowledge": ThoughtKnowledgeBase,
+    "skill": SkillIntegration,
+    "mcp": McpIntegration,
+    "tool-api": ToolApiIntegration,
 }
 
 
 async def open_resource(runtime, session, principal, body):
     runtime.prune()
-    row = await session.get(ROOTS[body.kind], body.resource_id)
-    if (
+    if body.view in {"upload", "tags", "edit", "validate"} and not principal.allows(
+        "configuration.manage"
+    ):
+        raise AgentError(403, "insufficient_permission")
+    row = await session.get(ROOTS[body.kind], body.resource_id) if body.resource_id else None
+    if body.resource_id and (
         row is None
         or row.workspace_id != principal.workspace_id
         or getattr(row, "deleted_at", None)

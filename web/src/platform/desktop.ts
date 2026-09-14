@@ -1,3 +1,11 @@
+export type DesktopDevelopmentState = {
+  live: boolean;
+  pending: string[];
+  phase: "ready" | "checking" | "applying" | "error";
+  message: string;
+  generation: number;
+};
+
 export type DesktopBridge = {
   version: number;
   status: () => Promise<{ phase: string; message: string }>;
@@ -9,6 +17,12 @@ export type DesktopBridge = {
   enableAgent: () => Promise<{ enabled: boolean; connected: boolean }>;
   disableAgent: () => Promise<{ enabled: boolean; connected: boolean }>;
   onQuitRequested: (callback: (approve: () => void) => void) => () => void;
+  developmentStatus?: () => Promise<DesktopDevelopmentState | null>;
+  applyDevelopmentUpdate?: () => Promise<void>;
+  checkDevelopmentUpdate?: () => Promise<void>;
+  onDevelopmentState?: (
+    callback: (state: DesktopDevelopmentState) => void,
+  ) => () => void;
 };
 
 declare global {

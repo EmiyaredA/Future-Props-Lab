@@ -122,7 +122,7 @@ async def test_tool_api_crud_secret_redaction_cas_and_mock_validation() -> None:
 
     async with SessionLocal() as session:
         bind_workspace(session, "default")
-        catalog = ToolApiCatalog(session, transport=httpx.MockTransport(handler))
+        catalog = ToolApiCatalog(session, "default", transport=httpx.MockTransport(handler))
         created = await catalog.create(
             ToolApiCreateIn(
                 name="Local echo",
@@ -193,7 +193,7 @@ async def test_tool_api_validation_does_not_follow_redirects_and_limits_response
 
     async with SessionLocal() as session:
         bind_workspace(session, "default")
-        catalog = ToolApiCatalog(session, transport=httpx.MockTransport(handler))
+        catalog = ToolApiCatalog(session, "default", transport=httpx.MockTransport(handler))
         for name, path, expected in (
             ("Redirect fixture", "redirect", "HTTP 302"),
             ("Large fixture", "large", "超过 1 MiB"),
@@ -212,12 +212,11 @@ async def test_catalog_queries_are_workspace_scoped() -> None:
     await _clear_integrations()
     async with SessionLocal() as session:
         bind_workspace(session, "default")
-        await ToolApiCatalog(session).create(
+        await ToolApiCatalog(session, "default").create(
             ToolApiCreateIn(name="Default only", url="https://example.com/tool")
         )
     async with SessionLocal() as session:
-        bind_workspace(session, "another-workspace")
-        catalog = await ToolApiCatalog(session).catalog()
+        catalog = await ToolApiCatalog(session, "another-workspace").catalog()
         assert catalog.items == []
         assert catalog.overview.primary_count == 0
         assert catalog.overview.recent == []
@@ -300,7 +299,7 @@ async def test_mcp_validation_replaces_discovery_snapshot() -> None:
     await _clear_integrations()
     async with SessionLocal() as session:
         bind_workspace(session, "default")
-        catalog = McpCatalog(session, client=_FakeMcpClient())
+        catalog = McpCatalog(session, "default", client=_FakeMcpClient())
         created = await catalog.create(
             McpCreateIn(
                 name="Fixture MCP",
@@ -323,7 +322,7 @@ async def test_mcp_failure_summaries_and_responses_do_not_leak_secrets() -> None
     await _clear_integrations()
     async with SessionLocal() as session:
         bind_workspace(session, "default")
-        catalog = McpCatalog(session, client=_FailingMcpClient())
+        catalog = McpCatalog(session, "default", client=_FailingMcpClient())
         created = await catalog.create(
             McpCreateIn(
                 name="Failing MCP",

@@ -171,7 +171,7 @@ def test_gateway_rejects_cookie_origin_credentials_and_unknown_routes(connected)
             {"x-fpl-desktop-token": "bad"},
         ]:
             assert client.get("/v1/files", headers=header).status_code == 403
-        for path in ["/v1/auth/me", "/v1/account/api-keys", "/v1/integrations/mcp", "/v1/unknown"]:
+        for path in ["/v1/auth/me", "/v1/account/api-keys", "/v1/unknown"]:
             assert client.get(path).status_code == 403
         assert client.get("/v1/files").status_code == 401
         pair = client.post("/v1/desktop/agent/pairings", json={"name": "concurrent"}).json()
@@ -198,7 +198,7 @@ def test_expiry_rate_limit_and_manifest_default_deny():
     assert allows_agent("GET", "/v1/visual-workshop/projects/a-123")
     assert not allows_agent("POST", "/v1/visual-workshop/new-dangerous-action")
     for operation in MANIFEST["operations"]:
-        assert not any(x in operation for x in ("/account/", "/integrations/", "/model-providers"))
+        assert not any(x in operation for x in ("/account/", "/model-providers"))
 
 
 def test_pair_claim_once_and_decision_csrf(connected):
@@ -345,3 +345,17 @@ def test_key_does_not_follow_browser_workspace_switch(connected):
                 media_type="application/json",
             )
         assert denied.value.status == 404
+
+
+def test_integration_manifest_registers_exact_existing_operations():
+    specification = json.loads((ROOT / "web/src/generated/openapi.json").read_text())
+    expected = {
+        f"{method.upper()} {path}"
+        for path, methods in specification["paths"].items()
+        if path.startswith("/v1/integrations/")
+        for method in methods
+        if method in {"get", "post", "patch", "delete", "put"}
+    }
+    registered = {item for item in MANIFEST["operations"] if "/v1/integrations/" in item}
+    assert registered == expected
+    assert not allows_agent("POST", "/v1/integrations/install-command")

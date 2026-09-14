@@ -511,20 +511,24 @@ class DemoServiceOut(WireModel):
 
 class DesktopInbox(WireModel):
     change_revision: int = Field(default=..., alias='change_revision')
+    content_change_revision: int = Field(default=0, alias='content_change_revision')
+    integration_revisions: dict[str, int] | None = Field(default=None, alias='integration_revisions')
     requests: list[DesktopOpenOut] = Field(default=..., alias='requests')
 
 class DesktopOpenAck(WireModel):
     status: Literal['waiting_confirmation', 'opened', 'cancelled', 'unavailable'] = Field(default=..., alias='status')
 
 class DesktopOpenIn(WireModel):
-    kind: Literal['visual', 'galgame', 'video', 'presentation', 'annotation', 'note', 'knowledge'] = Field(default=..., alias='kind')
-    resource_id: str = Field(default=..., alias='resource_id', min_length=1, max_length=128)
+    kind: Literal['visual', 'galgame', 'video', 'presentation', 'annotation', 'note', 'knowledge', 'skill', 'tool-api', 'mcp'] = Field(default=..., alias='kind')
+    resource_id: str | None = Field(default=None, alias='resource_id')
+    view: Literal['list', 'details', 'upload', 'versions', 'tags', 'edit', 'validate', 'tools'] | None = Field(default=None, alias='view')
 
 class DesktopOpenOut(WireModel):
     id: str = Field(default=..., alias='id')
-    kind: Literal['visual', 'galgame', 'video', 'presentation', 'annotation', 'note', 'knowledge'] = Field(default=..., alias='kind')
-    resource_id: str = Field(default=..., alias='resource_id', min_length=1, max_length=128)
+    kind: Literal['visual', 'galgame', 'video', 'presentation', 'annotation', 'note', 'knowledge', 'skill', 'tool-api', 'mcp'] = Field(default=..., alias='kind')
+    resource_id: str | None = Field(default=None, alias='resource_id')
     status: Literal['pending', 'waiting_confirmation', 'opened', 'cancelled', 'unavailable'] = Field(default=..., alias='status')
+    view: Literal['list', 'details', 'upload', 'versions', 'tags', 'edit', 'validate', 'tools'] | None = Field(default=None, alias='view')
 
 class DesktopSetupIn(WireModel):
     display_name: str = Field(default='', alias='display_name', max_length=128)

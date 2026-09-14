@@ -1,3 +1,6 @@
+import { useQueryClient } from "@tanstack/react-query";
+import { integrationKeys } from "@features/integrations/queryKeys";
+import type { OpenDetail } from "@features/integrations/interaction";
 import { useEffect, useRef, useState } from "react";
 import type { components } from "@generated/api";
 import { api, unwrap } from "@platform/api/client";
@@ -16,10 +19,14 @@ const pages: Record<OpenRequest["kind"], AppPage> = {
   annotation: "audio-annotation-editor",
   note: "thought-workshop-legacy",
   knowledge: "thought-workshop-editor",
+  skill: "integrations-skills",
+  "tool-api": "integrations-tool-apis",
+  mcp: "integrations-mcp",
 };
 
 export function DesktopAgentHost() {
   const { me } = useStudioSession();
+  const queryClient = useQueryClient();
   const [pairs, setPairs] = useState<Pairing[]>([]);
   const [opening, setOpening] = useState<OpenRequest | null>(null);
   const [changed, setChanged] = useState(false);
@@ -41,9 +48,11 @@ export function DesktopAgentHost() {
     setOpening(null);
     setPairs([]);
     setChanged(false);
+    let destination: OpenDetail | null = null;
+    let integrationRevisions: Record<string, number> | null = null;
     const ack = async (
       item: OpenRequest,
-      status: "waiting_confirmation" | "opened" | "cancelled",
+      status: "waiting_confirmation" | "opened" | "cancelled" | "unavailable",
     ) => {
       if (!active || cancelled.current.has(item.id)) return;
       await unwrap(
@@ -52,7 +61,8 @@ export function DesktopAgentHost() {
           body: { status },
         }),
       );
-      if (active && status === "opened") {
+      if (active && (status === "opened" || status === "unavailable")) {
+        destination = null;
         activeOpen.current = null;
         setOpening(null);
       }
@@ -69,10 +79,39 @@ export function DesktopAgentHost() {
           setPairs(pairings);
           if (
             revision.current !== null &&
-            revision.current !== messages.change_revision
+            revision.current !==
+              (messages.content_change_revision ?? messages.change_revision)
           )
             setChanged(true);
-          revision.current = messages.change_revision;
+          revision.current =
+            messages.content_change_revision ?? messages.change_revision;
+          const nextRevisions = messages.integration_revisions ?? {};
+          const changedKinds = Object.keys(nextRevisions).filter(
+            (kind) =>
+              integrationRevisions !== null &&
+              nextRevisions[kind] !== (integrationRevisions[kind] ?? 0),
+          );
+          integrationRevisions = nextRevisions;
+          if (changedKinds.length) {
+            if (window.location.pathname.startsWith("/integrations"))
+              window.dispatchEvent(
+                new CustomEvent("future-props:integration-change", {
+                  detail: changedKinds,
+                }),
+              );
+            else
+              changedKinds.forEach((kind) => {
+                void queryClient.invalidateQueries({
+                  queryKey: integrationKeys.catalog(kind),
+                });
+              });
+          }
+          if (destination?.active())
+            window.dispatchEvent(
+              new CustomEvent("future-props:integration-open", {
+                detail: destination,
+              }),
+            );
           if (activeOpen.current) {
             const id = activeOpen.current;
             const result = await api.GET(
@@ -99,17 +138,38 @@ export function DesktopAgentHost() {
             setOpening(item);
             const target =
               item.kind === "note"
-                ? pathFor(pages.note, undefined, item.resource_id)
-                : pathFor(pages[item.kind], item.resource_id);
+                ? pathFor(pages.note, undefined, item.resource_id ?? undefined)
+                : pathFor(pages[item.kind], item.resource_id ?? undefined);
             window.dispatchEvent(
               new CustomEvent("future-props:agent-open", {
                 detail: {
                   path: target,
                   active: () => active && !cancelled.current.has(item.id),
                   opened: () => {
-                    void ack(item, "opened").catch(() =>
-                      setError("无法确认界面打开结果"),
-                    );
+                    if (["skill", "tool-api", "mcp"].includes(item.kind)) {
+                      destination = {
+                        request: item,
+                        active: () =>
+                          active &&
+                          activeOpen.current === item.id &&
+                          !cancelled.current.has(item.id),
+                        complete: (ok) => {
+                          void ack(item, ok ? "opened" : "unavailable").catch(
+                            () => setError("无法确认界面打开结果"),
+                          );
+                          if (!ok)
+                            setError("集成目标已不存在、权限不足或加载失败");
+                        },
+                      };
+                      window.dispatchEvent(
+                        new CustomEvent("future-props:integration-open", {
+                          detail: destination,
+                        }),
+                      );
+                    } else
+                      void ack(item, "opened").catch(() =>
+                        setError("无法确认界面打开结果"),
+                      );
                   },
                 },
               }),
@@ -130,7 +190,7 @@ export function DesktopAgentHost() {
       active = false;
       clearTimeout(timer);
     };
-  }, [me.user.id, me.workspace.id]);
+  }, [me.user.id, me.workspace.id, queryClient]);
 
   if (!pairs.length && !opening && !changed && !error) return null;
   const pair = pairs[0];
@@ -149,7 +209,7 @@ export function DesktopAgentHost() {
           </p>
           <p>
             {pair.scope === "studio:write"
-              ? "此授权允许修改和删除作品，并可调用模型产生费用。不会逐次询问。"
+              ? "此授权允许修改和删除作品、管理集成，并可调用模型产生费用。集成校验可能发出真实请求或启动白名单服务。不会逐次询问。"
               : "此授权只能读取当前工作区的作品和素材。"}{" "}
             有效期 90 天，可在 API 密钥页撤销。
           </p>
@@ -192,7 +252,7 @@ export function DesktopAgentHost() {
       )}
       {opening && (
         <section>
-          <p>Agent 请求打开作品。如有未保存内容，请先处理编辑器中的提示。</p>
+          <p>Agent 请求打开页面。如有未保存内容，请先处理编辑器中的提示。</p>
           <button
             className="btn"
             onClick={() => {

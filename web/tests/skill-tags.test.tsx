@@ -216,12 +216,10 @@ test("refreshes on revision conflict and never retries an overwrite", async () =
     await screen.findByRole("button", { name: "编辑 h3-prompt-writing 标签" }),
   );
   await user.click(screen.getByRole("button", { name: "保存标签" }));
-  expect(
-    await screen.findByText("Skill 已被其他操作更新，列表已刷新，请重试。"),
-  ).toBeVisible();
+  expect(await screen.findByRole("alert")).toBeVisible();
   await waitFor(() => expect(getSkills).toHaveBeenCalledTimes(2));
   expect(updateSkill).toHaveBeenCalledTimes(1);
-  expect(screen.queryByRole("dialog")).toBeNull();
+  expect(screen.getByRole("dialog")).toBeVisible();
 });
 
 test("tag dialog closes with Escape and restores focus", async () => {

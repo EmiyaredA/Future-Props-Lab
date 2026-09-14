@@ -1,0 +1,31 @@
+.desktop-development-bar {
+  position: fixed;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1250;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px 14px;
+  width: max-content;
+  max-width: calc(100vw - 32px);
+  padding: 10px 16px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 4px 24px #0002;
+  font-size: 12px;
+}
+.desktop-development-mode {
+  font-weight: 650;
+}
+.desktop-development-hint {
+  color: var(--text-muted);
+}
+.desktop-development-bar button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}

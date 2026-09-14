@@ -1,4 +1,6 @@
-import { useMemo, useState, type FormEvent } from "react";
+import { integrationKeys } from "./queryKeys";
+import { useIntegrationInteraction, useIntegrationOpen } from "./interaction";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Cable, Eye, Pencil, Plus, Search, Trash2, Zap } from "lucide-react";
 import {
@@ -10,7 +12,6 @@ import {
   validateMcpServer,
   type McpInput,
   type McpServer,
-  type McpTool,
 } from "@features/integrations/api";
 import {
   IntegrationModal,
@@ -22,7 +23,7 @@ import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
 import { CustomSelect } from "@shared/ui/CustomSelect";
 import { ApiError } from "@platform/api/client";
 
-const KEY = ["integrations", "mcp"] as const;
+const KEY = integrationKeys.catalog("mcp");
 const EMPTY: McpInput = {
   name: "",
   description: "",
@@ -41,7 +42,7 @@ const EMPTY: McpInput = {
 
 function errorMessage(error: unknown) {
   if (error instanceof ApiError && error.problem.code === "revision_conflict") {
-    return "配置已被其他操作更新，列表已刷新，请重新编辑。";
+    return "配置已被其他操作更新，当前输入已保留。请关闭后重新打开最新配置再合并修改。";
   }
   return error instanceof Error ? error.message : "操作失败，请稍后重试。";
 }
@@ -293,11 +294,17 @@ export function McpPanel({
   onTransportChange: (value: string) => void;
 }) {
   const client = useQueryClient();
+  const { blocked } = useIntegrationInteraction();
   const query = useQuery({ queryKey: KEY, queryFn: getMcpServers });
   const [editing, setEditing] = useState<McpServer | null | undefined>();
   const [removing, setRemoving] = useState<McpServer | null>(null);
   const [viewing, setViewing] = useState<McpServer | null>(null);
-  const [tools, setTools] = useState<McpTool[]>([]);
+  const toolsQuery = useQuery({
+    queryKey: integrationKeys.tools(viewing?.id ?? ""),
+    queryFn: () => getMcpTools(viewing!),
+    enabled: Boolean(viewing),
+  });
+  const tools = toolsQuery.data ?? [];
   const [notice, setNotice] = useState("");
   const refresh = () => client.invalidateQueries({ queryKey: KEY });
   const save = useMutation({
@@ -314,7 +321,6 @@ export function McpPanel({
         error instanceof ApiError &&
         error.problem.code === "revision_conflict"
       ) {
-        setEditing(undefined);
         void refresh();
       }
     },
@@ -324,7 +330,7 @@ export function McpPanel({
     onSuccess: (data) => {
       setNotice(data.check.summary);
       setViewing(data.server);
-      setTools(data.tools);
+      client.setQueryData(integrationKeys.tools(data.server.id), data.tools);
       void refresh();
     },
     onError: (error) => {
@@ -362,10 +368,50 @@ export function McpPanel({
       ),
     [query.data, search, transport],
   );
+  useEffect(() => {
+    if (!query.data || blocked()) return;
+    setEditing((current) =>
+      current
+        ? query.data.items.find((item) => item.id === current.id)
+        : current,
+    );
+    setViewing((current) =>
+      current
+        ? (query.data.items.find((item) => item.id === current.id) ?? null)
+        : null,
+    );
+  }, [query.data, blocked]);
+  useIntegrationOpen("mcp", !query.isPending, async (request, active) => {
+    const catalog = await client.fetchQuery({
+      queryKey: integrationKeys.catalog("mcp"),
+      queryFn: getMcpServers,
+      staleTime: 0,
+    });
+    if (!active()) return;
+    setEditing(undefined);
+    setViewing(null);
+    if (request.view === "list") return;
+    const item = catalog.items.find((item) => item.id === request.resource_id);
+    if (request.resource_id && !item) throw new Error("MCP 不存在");
+    if (request.view === "edit") {
+      if (!canManage) throw new Error("权限不足");
+      setEditing(item ?? null);
+    } else if (item) {
+      await client.fetchQuery({
+        queryKey: integrationKeys.tools(item.id),
+        queryFn: () => getMcpTools(item),
+      });
+      if (!active()) return;
+      setViewing(item);
+    }
+  });
   const openTools = async (item: McpServer) => {
     setViewing(item);
     try {
-      setTools(await getMcpTools(item));
+      await client.fetchQuery({
+        queryKey: integrationKeys.tools(item.id),
+        queryFn: () => getMcpTools(item),
+      });
     } catch (error) {
       setNotice(errorMessage(error));
     }
@@ -504,11 +550,15 @@ export function McpPanel({
       </div>
       {editing !== undefined ? (
         <IntegrationModal
+          protect
+          pending={save.isPending}
           title={editing ? "编辑 MCP" : "添加 MCP"}
           onClose={() => setEditing(undefined)}
           wide
         >
+          {notice && <p role="alert">{notice}</p>}
           <McpForm
+            key={editing ? `${editing.id}:${editing.revision}` : "new"}
             current={editing}
             pending={save.isPending}
             onCancel={() => setEditing(undefined)}

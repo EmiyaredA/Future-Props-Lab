@@ -154,6 +154,8 @@ backend/config.toml
 **/backend/config.toml.backup-*
 .config-*.tmp
 .config-migration.lock
+desktop/.dev-pending/
+desktop/.dev-run-*/
 .envrc
 .venv
 env/

@@ -63,6 +63,15 @@ class DesktopTransport:
                     changes = scope["app"].state.desktop_agent.changes
                     audience = (principal.user_id, principal.workspace_id)
                     changes[audience] = changes.get(audience, 0) + 1
+                    runtime = scope["app"].state.desktop_agent
+                    parts = scope["path"].split("/")
+                    if parts[1:3] == ["v1", "integrations"] and len(parts) > 3:
+                        revisions = runtime.integration_changes.setdefault(audience, {})
+                        revisions[parts[3]] = revisions.get(parts[3], 0) + 1
+                    else:
+                        runtime.content_changes[audience] = (
+                            runtime.content_changes.get(audience, 0) + 1
+                        )
             await send(message)
 
         await self.app(scope, receive, observe)
@@ -88,11 +97,12 @@ class DesktopStaticFiles(StaticFiles):
             raise
 
 
-def attach_desktop(app, *, token: str, web_root: Path, agent_policy=None) -> None:
+def attach_desktop(app, *, token: str, web_root: Path | None, agent_policy=None) -> None:
     if len(token) < 32:
         raise ValueError("桌面启动凭据无效")
-    if not (web_root / "index.html").is_file():
+    if web_root is not None and not (web_root / "index.html").is_file():
         raise ValueError("应用页面资源缺失，请重新安装")
     app.state.desktop_enabled = True
     app.add_middleware(DesktopTransport, token=token, agent_policy=agent_policy)
-    app.mount("/", DesktopStaticFiles(directory=web_root, html=True), name="desktop-web")
+    if web_root is not None:
+        app.mount("/", DesktopStaticFiles(directory=web_root, html=True), name="desktop-web")

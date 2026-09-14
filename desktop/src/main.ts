@@ -4,18 +4,30 @@ import path from "node:path";
 import { Backend } from "./backend";
 import { AgentGateway } from "./agent";
 import { credentialHeader, externalUrl, isServiceUrl } from "./security";
+import { DevelopmentGateway } from "./development-gateway";
+import { DevelopmentSession } from "./development";
+
+const isDevelopment =
+  !app.isPackaged &&
+  process.env.FPL_DEV_SESSION === "1" &&
+  Boolean(process.send);
+const liveDevelopment = isDevelopment && process.env.FPL_DEV_LIVE === "1";
 
 const defaultDataDir = path.join(
   app.getPath("appData"),
-  app.isPackaged ? "Future Props Lab" : "Future Props Lab Development",
+  app.isPackaged || liveDevelopment
+    ? "Future Props Lab"
+    : "Future Props Lab Development",
 );
 const testDataDir = process.env.FPL_DESKTOP_TEST_DATA_DIR;
 const dataDir =
-  process.env.FPL_DESKTOP_TEST_MODE === "1" &&
-  testDataDir &&
-  path.isAbsolute(testDataDir)
-    ? path.resolve(testDataDir)
-    : defaultDataDir;
+  isDevelopment && !liveDevelopment && process.env.FPL_DEV_DATA_DIR
+    ? path.resolve(process.env.FPL_DEV_DATA_DIR)
+    : process.env.FPL_DESKTOP_TEST_MODE === "1" &&
+        testDataDir &&
+        path.isAbsolute(testDataDir)
+      ? path.resolve(testDataDir)
+      : defaultDataDir;
 app.setPath("userData", dataDir);
 app.setName("Future Props Lab");
 let mainWindow: BrowserWindow | undefined;
@@ -25,13 +37,18 @@ let starting = false;
 let quitting = false;
 let shutdownComplete = false;
 let state = { phase: "starting", message: "正在启动本地研究所…" };
+let gateway: DevelopmentGateway | undefined;
+const development = isDevelopment
+  ? new DevelopmentSession(liveDevelopment, () => BrowserWindow.getAllWindows())
+  : undefined;
+const pageOrigin = () => gateway?.origin || backend?.origin || "";
 const recovery = path.join(__dirname, "../ui/startup.html");
 const preload = path.join(__dirname, "preload.js");
 
 function trusted(url: string): boolean {
   return (
     url === new URL(`file://${recovery}`).href ||
-    Boolean(backend?.origin && isServiceUrl(url, backend.origin))
+    Boolean(pageOrigin() && isServiceUrl(url, pageOrigin()))
   );
 }
 
@@ -43,7 +60,9 @@ function makeWindow(document = false): BrowserWindow {
     minHeight: 560,
     show: false,
     backgroundColor: "#141820",
-    title: "Future Props Lab",
+    title: development
+      ? `开发模式 · ${liveDevelopment ? "正式数据" : "开发数据"} — Future Props Lab`
+      : "Future Props Lab",
     webPreferences: {
       preload,
       sandbox: true,
@@ -52,9 +71,12 @@ function makeWindow(document = false): BrowserWindow {
       webSecurity: true,
       partition: "persist:studio",
       backgroundThrottling: false,
+      additionalArguments: development ? ["--fpl-development-bridge"] : [],
     },
   });
   win.once("ready-to-show", () => win.show());
+  if (development)
+    win.on("page-title-updated", (event) => event.preventDefault());
   win.webContents.on("will-navigate", (event, url) => {
     if (trusted(url)) return;
     event.preventDefault();
@@ -69,13 +91,13 @@ function makeWindow(document = false): BrowserWindow {
   });
   win.webContents.setWindowOpenHandler(({ url }) => {
     if (
-      backend?.origin &&
-      isServiceUrl(url, backend.origin) &&
+      pageOrigin() &&
+      isServiceUrl(url, pageOrigin()) &&
       new URL(url).pathname === "/docs.html"
     ) {
       const docs = makeWindow(true);
       void docs.loadURL(url);
-    } else if (externalUrl(url) && !isServiceUrl(url, backend?.origin || ""))
+    } else if (externalUrl(url) && !isServiceUrl(url, pageOrigin()))
       void shell.openExternal(url);
     return { action: "deny" };
   });
@@ -104,8 +126,8 @@ function makeWindow(document = false): BrowserWindow {
   return win;
 }
 
-async function start(): Promise<void> {
-  if (starting || quitting) return;
+async function start(navigate = true): Promise<boolean> {
+  if (starting || quitting) return false;
   starting = true;
   state = { phase: "starting", message: "正在启动本地研究所…" };
   try {
@@ -122,20 +144,38 @@ async function start(): Promise<void> {
           phase: "failed",
           message: "本地服务已停止。未自动重启，请查看日志后重试。",
         };
-        void mainWindow?.loadFile(recovery);
+        if (development) {
+          development.update({
+            ...development.state,
+            phase: "error",
+            message: "后端已停止，请应用更新或重试",
+          });
+          development.send("backend-crashed");
+        } else void mainWindow?.loadFile(recovery);
       },
+      development ? 4 : undefined,
     );
     await backend.start();
     await agent?.start();
     state = { phase: "ready", message: "本地服务已就绪" };
-    await mainWindow?.loadURL(backend.origin);
+    if (navigate) {
+      const restored =
+        development &&
+        process.env.FPL_DEV_RESTORE_PATH?.startsWith("/") &&
+        !process.env.FPL_DEV_RESTORE_PATH.startsWith("//")
+          ? process.env.FPL_DEV_RESTORE_PATH
+          : "/";
+      await mainWindow?.loadURL(pageOrigin() + restored);
+    }
+    return true;
   } catch (error) {
     await backend?.stop();
     state = {
       phase: "failed",
       message: error instanceof Error ? error.message : "启动失败，请查看日志",
     };
-    await mainWindow?.loadFile(recovery);
+    if (navigate) await mainWindow?.loadFile(recovery);
+    return false;
   } finally {
     starting = false;
   }
@@ -144,6 +184,7 @@ async function start(): Promise<void> {
 async function shutdown(): Promise<void> {
   await agent?.stop();
   await backend?.stop();
+  await gateway?.stop();
   shutdownComplete = true;
   app.quit();
 }
@@ -179,6 +220,58 @@ else {
     if (!app.isPackaged)
       app.dock?.setIcon(path.join(__dirname, "../assets/app-icon.png"));
     mkdirSync(path.join(dataDir, "logs"), { recursive: true, mode: 0o700 });
+    if (development) {
+      gateway = new DevelopmentGateway(process.env.FPL_DEV_VITE_URL!, () =>
+        state.phase === "ready" ? backend : undefined,
+      );
+      await gateway.start();
+      process.on(
+        "message",
+        async (value: {
+          type: string;
+          state?: typeof development.state;
+          restartBackend?: boolean;
+          reloadPage?: boolean;
+        }) => {
+          if (value.type === "state" && value.state)
+            development.update(value.state);
+          if (value.type === "stop-backend") {
+            state = { phase: "updating", message: "正在更新本地服务" };
+            await agent?.stop();
+            await backend?.stop();
+            backend = undefined;
+            development.send("backend-stopped");
+          }
+          if (value.type === "update") {
+            const success = !value.restartBackend || (await start(false));
+            if (success && value.reloadPage) {
+              for (const win of BrowserWindow.getAllWindows())
+                if (trusted(win.webContents.getURL())) win.webContents.reload();
+            }
+            development.send("updated", {
+              success,
+              configDigest: backend?.configDigest,
+            });
+          }
+          if (value.type === "restart") {
+            const current = mainWindow?.webContents.getURL();
+            if (current && isServiceUrl(current, pageOrigin())) {
+              const url = new URL(current);
+              development.send("location", {
+                path: url.pathname + url.search + url.hash,
+              });
+            }
+            quitting = true;
+            void shutdown();
+          }
+          if (value.type === "quit") app.quit();
+        },
+      );
+      process.on("disconnect", () => {
+        quitting = true;
+        void shutdown();
+      });
+    }
     const studio = session.fromPartition("persist:studio");
     studio.webRequest.onBeforeSendHeaders((details, callback) => {
       const headers = details.requestHeaders;
@@ -192,18 +285,18 @@ else {
         ([key]) => key.toLowerCase() === "origin",
       )?.[1];
       if (
-        backend?.origin &&
-        isServiceUrl(details.url, backend.origin) &&
-        (!origin || origin === backend.origin)
+        pageOrigin() &&
+        isServiceUrl(details.url, pageOrigin()) &&
+        (!origin || origin === pageOrigin())
       )
-        headers[credentialHeader] = backend.token;
+        headers[credentialHeader] = gateway?.token || backend!.token;
       callback({ requestHeaders: headers });
     });
     studio.setPermissionCheckHandler((contents, permission, origin, details) =>
       Boolean(
         contents &&
-        backend?.origin &&
-        origin === backend.origin &&
+        pageOrigin() &&
+        origin === pageOrigin() &&
         permission === "media" &&
         details.mediaType === "audio",
       ),
@@ -212,10 +305,10 @@ else {
       (contents, permission, callback, details) =>
         callback(
           Boolean(
-            backend?.origin &&
-            isServiceUrl(contents.getURL(), backend.origin) &&
+            pageOrigin() &&
+            isServiceUrl(contents.getURL(), pageOrigin()) &&
             details.requestingUrl &&
-            isServiceUrl(details.requestingUrl, backend.origin) &&
+            isServiceUrl(details.requestingUrl, pageOrigin()) &&
             permission === "media" &&
             "mediaTypes" in details &&
             details.mediaTypes?.length &&
@@ -244,6 +337,12 @@ else {
       "agent-enable": () => agent?.setEnabled(true),
       "agent-disable": () => agent?.setEnabled(false),
     };
+    if (development)
+      Object.assign(actions, {
+        "development-status": () => development.state,
+        "development-apply": () => development.apply(),
+        "development-check": () => development.send("check"),
+      });
     for (const [name, action] of Object.entries(actions))
       ipcMain.handle(`desktop:${name}`, (event) => {
         if (
@@ -298,5 +397,9 @@ else {
     );
     await mainWindow.loadFile(recovery);
     await start();
+    development?.send("ready", {
+      success: state.phase === "ready",
+      configDigest: backend?.configDigest,
+    });
   });
 }

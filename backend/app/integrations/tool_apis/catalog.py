@@ -16,6 +16,7 @@ from app.concurrency.revisions import RevisionConflictError
 from app.core.credentials import decrypt_secret, encrypt_secret
 from app.core.outbound_urls import require_safe_integration_http_url
 from app.core.secret_hints import encrypted_secret_hint
+from app.core.tenant_context import require_workspace_id
 from app.core.time import iso_utc, utc_now
 from app.demo_runtime.runtime import TOOL_BASE_URL, tool_reply
 from app.integrations.checks import list_recent_checks, record_check
@@ -138,14 +139,19 @@ async def _invoke(
 
 class ToolApiCatalog:
     def __init__(
-        self, session: AsyncSession, *, transport: httpx.AsyncBaseTransport | None = None
+        self,
+        session: AsyncSession,
+        workspace_id: str,
+        *,
+        transport: httpx.AsyncBaseTransport | None = None,
     ) -> None:
         self.session = session
+        self.workspace_id = require_workspace_id(workspace_id, subject="integration catalog")
         self.transport = transport
 
     async def _get(self, integration_id: str) -> ToolApiIntegration:
         row = await self.session.get(ToolApiIntegration, integration_id)
-        if row is None:
+        if row is None or row.workspace_id != self.workspace_id:
             raise IntegrationNotFoundError("工具 API 不存在")
         return row
 
@@ -156,9 +162,9 @@ class ToolApiCatalog:
         rows = (
             (
                 await self.session.execute(
-                    select(ToolApiIntegration).order_by(
-                        ToolApiIntegration.updated_at.desc(), ToolApiIntegration.name
-                    )
+                    select(ToolApiIntegration)
+                    .where(ToolApiIntegration.workspace_id == self.workspace_id)
+                    .order_by(ToolApiIntegration.updated_at.desc(), ToolApiIntegration.name)
                 )
             )
             .scalars()
@@ -169,6 +175,7 @@ class ToolApiCatalog:
             (
                 await self.session.execute(
                     select(func.count(IntegrationCheck.id)).where(
+                        IntegrationCheck.workspace_id == self.workspace_id,
                         IntegrationCheck.resource_kind == "tool_api",
                         IntegrationCheck.created_at >= today,
                     )
@@ -181,12 +188,13 @@ class ToolApiCatalog:
                 primary_count=sum(row.enabled for row in rows),
                 failed_count=sum(row.status == "failed" for row in rows),
                 tertiary_count=checks_today,
-                recent=await list_recent_checks(self.session, "tool_api"),
+                recent=await list_recent_checks(self.session, self.workspace_id, "tool_api"),
             ),
         )
 
     async def create(self, body: ToolApiCreateIn) -> ToolApiOut:
         row = ToolApiIntegration(
+            workspace_id=self.workspace_id,
             name=body.name,
             description=body.description,
             method=body.method,
@@ -224,6 +232,7 @@ class ToolApiCatalog:
         result = await self.session.execute(
             update(ToolApiIntegration)
             .where(
+                ToolApiIntegration.workspace_id == self.workspace_id,
                 ToolApiIntegration.id == integration_id,
                 ToolApiIntegration.revision == body.expected_revision,
             )
@@ -269,12 +278,14 @@ class ToolApiCatalog:
             )
         await self.session.execute(
             delete(IntegrationCheck).where(
+                IntegrationCheck.workspace_id == self.workspace_id,
                 IntegrationCheck.resource_kind == "tool_api",
                 IntegrationCheck.resource_id == integration_id,
             )
         )
         result = await self.session.execute(
             delete(ToolApiIntegration).where(
+                ToolApiIntegration.workspace_id == self.workspace_id,
                 ToolApiIntegration.id == integration_id,
                 ToolApiIntegration.revision == expected_revision,
             )
@@ -321,11 +332,33 @@ class ToolApiCatalog:
             summary = "敏感工具验证完成" if ok else "敏感工具验证失败，详情已隐藏"
         latency_ms = int((monotonic() - started) * 1000)
         latest = await self._get(integration_id)
-        latest.status = "healthy" if ok else "failed"
-        latest.status_message = summary
-        latest.last_checked_at = utc_now()
+        if latest.revision != snapshot.revision:
+            current = await self.get(integration_id)
+            raise RevisionConflictError(
+                snapshot.revision, latest.revision, current.model_dump(mode="json")
+            )
+        result = await self.session.execute(
+            update(ToolApiIntegration)
+            .where(
+                ToolApiIntegration.workspace_id == self.workspace_id,
+                ToolApiIntegration.id == integration_id,
+                ToolApiIntegration.revision == snapshot.revision,
+            )
+            .values(
+                status="healthy" if ok else "failed",
+                status_message=summary,
+                last_checked_at=utc_now(),
+            )
+        )
+        if result.rowcount != 1:
+            await self.session.rollback()
+            current = await self.get(integration_id)
+            raise RevisionConflictError(
+                snapshot.revision, current.revision, current.model_dump(mode="json")
+            )
         check = await record_check(
             self.session,
+            workspace_id=self.workspace_id,
             kind="tool_api",
             resource_id=integration_id,
             resource_name=latest.name,

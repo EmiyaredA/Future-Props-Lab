@@ -21,6 +21,11 @@ macOS Apple Silicon 桌面版可通过 `npm run build:desktop` 构建 `.app`，
 首次启动在应用内创建管理员，数据独立于仓库。构建机要求与验证方法见
 [macOS 桌面构建](docs/operations/desktop-macos.md)。首期仅本地 ad-hoc 签名，未公证，不作为公开发行版。
 
+桌面日常开发无需重新打包：`npm run dev:desktop` 使用独立开发数据；显式运行
+`npm run dev:desktop:live` 使用已安装 App 的正式账号、配置与作品。CSS/兼容 React 修改即时生效，
+后端和 Electron 修改检查通过后点击窗口底部“应用更新”。正式数据首次启用前自动停机备份，
+有待执行迁移时阻止启动/更新。详见 [桌面热加载开发](docs/operations/desktop-development.md)。
+
 1. 安装依赖：`npm run setup`
 2. 新安装创建配置：`cp backend/config.example.toml backend/config.toml`，填写 `[security].secrets_key`
    （生成方法见[配置文档](docs/reference/configuration.md)）。已有 `.env` 请先执行

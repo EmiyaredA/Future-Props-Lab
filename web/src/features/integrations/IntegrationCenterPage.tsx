@@ -1,3 +1,5 @@
+import { IntegrationInteractions } from "./IntegrationInteractions";
+import type { NavigationGuard } from "./interaction";
 import { useState } from "react";
 import { IntegrationIcon } from "@shared/ui/IntegrationIcon";
 import { McpPanel } from "@features/integrations/McpPanel";
@@ -17,10 +19,12 @@ export function IntegrationCenterPage({
   kind,
   onKindChange,
   canManage,
+  registerNavigationGuard,
 }: {
   kind: IntegrationKind;
   onKindChange: (kind: IntegrationKind) => void;
   canManage: boolean;
+  registerNavigationGuard?: (guard: NavigationGuard | null) => void;
 }) {
   const [toolSearch, setToolSearch] = useState("");
   const [toolStatus, setToolStatus] = useState("all");
@@ -29,93 +33,96 @@ export function IntegrationCenterPage({
   const [skillSearch, setSkillSearch] = useState("");
   const [skillStatus, setSkillStatus] = useState("all");
   return (
-    <section className="page integrations-page">
-      <header className="integrations-header">
-        <span className="integrations-kicker">
-          <IntegrationIcon /> Workspace 能力目录
-        </span>
-        <h1>集成中心</h1>
-        <p>统一管理工具 API、MCP 服务与 Skill</p>
-      </header>
-      <div className="integration-tabs" role="tablist" aria-label="集成类型">
-        {INTEGRATION_TABS.map(([value, label], index) => (
-          <button
-            key={value}
-            type="button"
-            role="tab"
-            aria-selected={kind === value}
-            aria-controls={`integration-panel-${value}`}
-            className={kind === value ? "active" : ""}
-            onClick={() => onKindChange(value)}
-            onKeyDown={(event) => {
-              let next = index;
-              if (event.key === "ArrowRight")
-                next = (index + 1) % INTEGRATION_TABS.length;
-              else if (event.key === "ArrowLeft")
-                next =
-                  (index - 1 + INTEGRATION_TABS.length) %
-                  INTEGRATION_TABS.length;
-              else if (event.key === "Home") next = 0;
-              else if (event.key === "End") next = INTEGRATION_TABS.length - 1;
-              else return;
-              event.preventDefault();
-              const tab = INTEGRATION_TABS[next][0];
-              onKindChange(tab);
-              const buttons =
-                event.currentTarget.parentElement?.querySelectorAll("button");
-              buttons?.[next]?.focus();
-            }}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
-      {!canManage ? (
-        <div className="integration-readonly" role="status">
-          当前为只读模式，拥有者与工作区管理员可以管理和验证集成。
+    <IntegrationInteractions registerNavigationGuard={registerNavigationGuard}>
+      <section className="page integrations-page">
+        <header className="integrations-header">
+          <span className="integrations-kicker">
+            <IntegrationIcon /> Workspace 能力目录
+          </span>
+          <h1>集成中心</h1>
+          <p>统一管理工具 API、MCP 服务与 Skill</p>
+        </header>
+        <div className="integration-tabs" role="tablist" aria-label="集成类型">
+          {INTEGRATION_TABS.map(([value, label], index) => (
+            <button
+              key={value}
+              type="button"
+              role="tab"
+              aria-selected={kind === value}
+              aria-controls={`integration-panel-${value}`}
+              className={kind === value ? "active" : ""}
+              onClick={() => onKindChange(value)}
+              onKeyDown={(event) => {
+                let next = index;
+                if (event.key === "ArrowRight")
+                  next = (index + 1) % INTEGRATION_TABS.length;
+                else if (event.key === "ArrowLeft")
+                  next =
+                    (index - 1 + INTEGRATION_TABS.length) %
+                    INTEGRATION_TABS.length;
+                else if (event.key === "Home") next = 0;
+                else if (event.key === "End")
+                  next = INTEGRATION_TABS.length - 1;
+                else return;
+                event.preventDefault();
+                const tab = INTEGRATION_TABS[next][0];
+                onKindChange(tab);
+                const buttons =
+                  event.currentTarget.parentElement?.querySelectorAll("button");
+                buttons?.[next]?.focus();
+              }}
+            >
+              {label}
+            </button>
+          ))}
         </div>
-      ) : null}
-      <div
-        id="integration-panel-tool-apis"
-        role="tabpanel"
-        hidden={kind !== "tool-apis"}
-      >
-        {kind === "tool-apis" ? (
-          <ToolApiPanel
-            canManage={canManage}
-            search={toolSearch}
-            status={toolStatus}
-            onSearchChange={setToolSearch}
-            onStatusChange={setToolStatus}
-          />
+        {!canManage ? (
+          <div className="integration-readonly" role="status">
+            当前为只读模式，拥有者与工作区管理员可以管理和验证集成。
+          </div>
         ) : null}
-      </div>
-      <div id="integration-panel-mcp" role="tabpanel" hidden={kind !== "mcp"}>
-        {kind === "mcp" ? (
-          <McpPanel
-            canManage={canManage}
-            search={mcpSearch}
-            transport={mcpTransport}
-            onSearchChange={setMcpSearch}
-            onTransportChange={setMcpTransport}
-          />
-        ) : null}
-      </div>
-      <div
-        id="integration-panel-skills"
-        role="tabpanel"
-        hidden={kind !== "skills"}
-      >
-        {kind === "skills" ? (
-          <SkillPanel
-            canManage={canManage}
-            search={skillSearch}
-            status={skillStatus}
-            onSearchChange={setSkillSearch}
-            onStatusChange={setSkillStatus}
-          />
-        ) : null}
-      </div>
-    </section>
+        <div
+          id="integration-panel-tool-apis"
+          role="tabpanel"
+          hidden={kind !== "tool-apis"}
+        >
+          {kind === "tool-apis" ? (
+            <ToolApiPanel
+              canManage={canManage}
+              search={toolSearch}
+              status={toolStatus}
+              onSearchChange={setToolSearch}
+              onStatusChange={setToolStatus}
+            />
+          ) : null}
+        </div>
+        <div id="integration-panel-mcp" role="tabpanel" hidden={kind !== "mcp"}>
+          {kind === "mcp" ? (
+            <McpPanel
+              canManage={canManage}
+              search={mcpSearch}
+              transport={mcpTransport}
+              onSearchChange={setMcpSearch}
+              onTransportChange={setMcpTransport}
+            />
+          ) : null}
+        </div>
+        <div
+          id="integration-panel-skills"
+          role="tabpanel"
+          hidden={kind !== "skills"}
+        >
+          {kind === "skills" ? (
+            <SkillPanel
+              canManage={canManage}
+              search={skillSearch}
+              status={skillStatus}
+              onSearchChange={setSkillSearch}
+              onStatusChange={setSkillStatus}
+            />
+          ) : null}
+        </div>
+      </section>
+    </IntegrationInteractions>
   );
 }

@@ -12,6 +12,7 @@ from app.concurrency.revisions import RevisionConflictError
 from app.core.config import get_settings
 from app.core.credentials import decrypt_secret, encrypt_secret
 from app.core.secret_hints import encrypted_secret_hint
+from app.core.tenant_context import require_workspace_id
 from app.core.time import iso_utc, utc_now
 from app.integrations.checks import list_recent_checks, record_check
 from app.integrations.common import (
@@ -43,13 +44,16 @@ def _tool_out(row: McpDiscoveredTool) -> McpToolOut:
 
 
 class McpCatalog:
-    def __init__(self, session: AsyncSession, *, client: McpDiscoveryClient | None = None) -> None:
+    def __init__(
+        self, session: AsyncSession, workspace_id: str, *, client: McpDiscoveryClient | None = None
+    ) -> None:
         self.session = session
+        self.workspace_id = require_workspace_id(workspace_id, subject="integration catalog")
         self.client = client or OfficialMcpDiscoveryClient(get_settings())
 
     async def _get(self, integration_id: str) -> McpIntegration:
         row = await self.session.get(McpIntegration, integration_id)
-        if row is None:
+        if row is None or row.workspace_id != self.workspace_id:
             raise IntegrationNotFoundError("MCP 服务不存在")
         return row
 
@@ -115,9 +119,9 @@ class McpCatalog:
         rows = (
             (
                 await self.session.execute(
-                    select(McpIntegration).order_by(
-                        McpIntegration.updated_at.desc(), McpIntegration.name
-                    )
+                    select(McpIntegration)
+                    .where(McpIntegration.workspace_id == self.workspace_id)
+                    .order_by(McpIntegration.updated_at.desc(), McpIntegration.name)
                 )
             )
             .scalars()
@@ -143,7 +147,7 @@ class McpCatalog:
                 primary_count=sum(row.status == "healthy" for row in rows),
                 failed_count=sum(row.status == "failed" for row in rows),
                 tertiary_count=total_tools,
-                recent=await list_recent_checks(self.session, "mcp"),
+                recent=await list_recent_checks(self.session, self.workspace_id, "mcp"),
             ),
         )
 
@@ -153,6 +157,7 @@ class McpCatalog:
 
     async def create(self, body: McpCreateIn) -> McpOut:
         row = McpIntegration(
+            workspace_id=self.workspace_id,
             name=body.name,
             description=body.description,
             transport=body.transport,
@@ -198,6 +203,7 @@ class McpCatalog:
         result = await self.session.execute(
             update(McpIntegration)
             .where(
+                McpIntegration.workspace_id == self.workspace_id,
                 McpIntegration.id == integration_id,
                 McpIntegration.revision == body.expected_revision,
             )
@@ -250,12 +256,14 @@ class McpCatalog:
             )
         await self.session.execute(
             delete(IntegrationCheck).where(
+                IntegrationCheck.workspace_id == self.workspace_id,
                 IntegrationCheck.resource_kind == "mcp",
                 IntegrationCheck.resource_id == integration_id,
             )
         )
         result = await self.session.execute(
             delete(McpIntegration).where(
+                McpIntegration.workspace_id == self.workspace_id,
                 McpIntegration.id == integration_id,
                 McpIntegration.revision == expected_revision,
             )
@@ -308,16 +316,39 @@ class McpCatalog:
             )
         latency_ms = int((monotonic() - started) * 1000)
         latest = await self._get(integration_id)
-        latest.status = "healthy" if ok else "failed"
+        if latest.revision != snapshot.revision:
+            current = await self.get(integration_id)
+            raise RevisionConflictError(
+                snapshot.revision, latest.revision, current.model_dump(mode="json")
+            )
         if latest.sensitive_result:
             summary = "敏感 MCP 连接验证完成" if ok else "敏感 MCP 连接验证失败，详情已隐藏"
-        latest.status_message = summary
-        latest.last_checked_at = utc_now()
+        secrets = [bearer, *environment.values()]
+        values = dict(
+            status="healthy" if ok else "failed", status_message=summary, last_checked_at=utc_now()
+        )
         if discovery is not None:
-            secrets = [bearer, *environment.values()]
-            latest.server_name = redact_sensitive(discovery.server_name, secrets)
-            latest.server_version = redact_sensitive(discovery.server_version, secrets)
-            latest.protocol_version = redact_sensitive(discovery.protocol_version, secrets)
+            values.update(
+                server_name=redact_sensitive(discovery.server_name, secrets),
+                server_version=redact_sensitive(discovery.server_version, secrets),
+                protocol_version=redact_sensitive(discovery.protocol_version, secrets),
+            )
+        result = await self.session.execute(
+            update(McpIntegration)
+            .where(
+                McpIntegration.workspace_id == self.workspace_id,
+                McpIntegration.id == integration_id,
+                McpIntegration.revision == snapshot.revision,
+            )
+            .values(**values)
+        )
+        if result.rowcount != 1:
+            await self.session.rollback()
+            current = await self.get(integration_id)
+            raise RevisionConflictError(
+                snapshot.revision, current.revision, current.model_dump(mode="json")
+            )
+        if discovery is not None:
             await self.session.execute(
                 delete(McpDiscoveredTool).where(McpDiscoveredTool.server_id == integration_id)
             )
@@ -334,6 +365,7 @@ class McpCatalog:
             )
         check = await record_check(
             self.session,
+            workspace_id=self.workspace_id,
             kind="mcp",
             resource_id=integration_id,
             resource_name=latest.name,

@@ -70,9 +70,20 @@ export function ManagementConsole({
       if (typeof action === "function") setPendingNavigation(() => action);
     };
     window.addEventListener("future-props:management-draft", changed);
+    const deferRefresh = (event: Event) => {
+      if (dirty.current.size) event.preventDefault();
+    };
+    window.addEventListener(
+      "future-props:development-query-refresh",
+      deferRefresh,
+    );
     window.addEventListener("future-props:before-workspace-switch", switching);
     return () => {
       window.removeEventListener("future-props:management-draft", changed);
+      window.removeEventListener(
+        "future-props:development-query-refresh",
+        deferRefresh,
+      );
       window.removeEventListener(
         "future-props:before-workspace-switch",
         switching,

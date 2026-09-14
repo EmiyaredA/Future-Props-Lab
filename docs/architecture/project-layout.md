@@ -37,10 +37,10 @@ Future-Props-Lab/
 │   └── runner.py      # checksum、连续前缀检查和事务应用
 ├── desktop/
 │   ├── assets/       # 从项目品牌原图确定性生成的 macOS 主图标与 ICNS
-│   ├── src/          # Electron 主进程、受限 preload、私有后端启动与生命周期
+│   ├── src/          # Electron 主进程、受限 preload、私有后端启动、稳定开发网关与生命周期
 │   ├── ui/           # 本地启动/故障恢复窗口，不加载业务或用户数据
-│   ├── backend/      # PyInstaller 入口：独立配置、数据锁、管道与 loopback 监听
-│   ├── scripts/      # 白名单打包、arm64/动态库/许可校验及真实 Electron 烟测
+│   ├── backend/      # PyInstaller 入口；开发只读迁移检查、离线备份与继承数据锁
+│   ├── scripts/      # 热加载监督器、源码检查、白名单打包、arm64/许可校验及 Electron 烟测
 │   └── tests/        # 桌面来源与固定能力边界的确定性测试
 ├── web/src/
 │   ├── app/           # Studio 入口、Session Context、路由、配置驱动工坊壳与应用注册表
@@ -74,6 +74,10 @@ Future-Props-Lab/
   `scripts/migrate_config.py` 仅转换配置，不访问数据库；桌面入口在数据锁内执行旧配置一次性转换。
 
 - `desktop/` 是现有应用的 macOS 壳，不拥有业务 API 或数据库 schema。
+  `scripts/dev.py` 持有跨进程更新的数据租约，`scripts/dev.cjs` 监督 Vite、源码检查与 Electron；
+  `src/development-gateway.ts` 维护带凭据校验的固定开发入口，`src/development.ts` 只广播开发更新状态。
+  `backend/development_data.py` 只做配置/迁移预检、停机快照与清单核验，不执行业务数据或 schema 写入。
+  `app/DesktopDevelopmentBar.tsx` 拥有更新提示，并通过应用壳保护编辑草稿和导航。
   `src/agent.ts` 拥有本地 Unix Socket 转发及连接描述，`backend/cli_entry.py` 仅启动独立 SDK CLI。
   `accounts/desktop_agent.py` 拥有短期配对，`desktop_ui.py` 校验打开资源的归属，Agent 操作白名单
   在 `accounts/desktop_agent_operations.json`；`routes/desktop_agent.py` 只承担 `/v1/desktop` 协议边界。
@@ -240,6 +244,11 @@ Future-Props-Lab/
 素材及语音识别输入的任务私有副本保存在 `model-test/references/`，生成结果保存在 `model-test/generated/`。
 Skill 的可编辑标签保存在 `integration_skills.tags`，与目录配置共用 revision/CAS，
 不属于内容版本；文件存储显式使用已鉴权 Workspace。
+集成中心前端的 `features/integrations/queryKeys.ts` 统一管理目录、详情、版本与工具列表缓存；
+`IntegrationInteractions.tsx` 和 `interaction.ts` 拥有草稿保护、外部更新与页面定位回执。
+桌面操作登记表逐项开放现有集成 API；目标校验归属 `accounts/desktop_ui.py`，不开放任意 URL
+或系统命令。工具 API、MCP 和校验记录用例显式接收已鉴权 Workspace。
+
 Skill 不可变版本保存在 `workspaces/<workspace-id>/integrations/skills/<skill-id>/<version>/`。
 本地临时分镜、场景图与未定稿草稿放在仓库根目录 `.scratch/`，与 `.runtime/`
 一样被 git 忽略，不进入文档资产或产品素材真源。FastAPI 启动时自动创建

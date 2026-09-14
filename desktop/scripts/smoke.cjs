@@ -36,6 +36,8 @@ async function main() {
     PATH: "/usr/bin:/bin",
     FPL_DESKTOP_TEST_MODE: "1",
     FPL_DESKTOP_TEST_DATA_DIR: directory,
+    FPL_DEV_SESSION: "1", // Packaged Apps must ignore inherited development flags.
+    FPL_DEV_LIVE: "1",
   };
   delete env.ELECTRON_RUN_AS_NODE;
   let application;
@@ -55,6 +57,12 @@ async function main() {
     const page = await application.firstWindow();
     page.on("pageerror", (error) => console.error("PAGE ERROR", error.message));
     await page.waitForURL(/^http:\/\/127\.0\.0\.1:\d+\//, { timeout: 90_000 });
+    assert.equal(
+      await page.evaluate(
+        () => typeof window.futurePropsDesktop.developmentStatus,
+      ),
+      "undefined",
+    );
     origin = new URL(page.url()).origin;
     return page;
   }

@@ -3029,6 +3029,18 @@
             "title": "Change Revision",
             "type": "integer"
           },
+          "content_change_revision": {
+            "default": 0,
+            "title": "Content Change Revision",
+            "type": "integer"
+          },
+          "integration_revisions": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "title": "Integration Revisions",
+            "type": "object"
+          },
           "requests": {
             "items": {
               "$ref": "#/components/schemas/DesktopOpenOut"
@@ -3073,22 +3085,52 @@
               "presentation",
               "annotation",
               "note",
-              "knowledge"
+              "knowledge",
+              "skill",
+              "tool-api",
+              "mcp"
             ],
             "title": "Kind",
             "type": "string"
           },
           "resource_id": {
-            "maxLength": 128,
-            "minLength": 1,
-            "pattern": "^[a-zA-Z0-9_-]+$",
-            "title": "Resource Id",
-            "type": "string"
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "minLength": 1,
+                "pattern": "^[a-zA-Z0-9_-]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resource Id"
+          },
+          "view": {
+            "anyOf": [
+              {
+                "enum": [
+                  "list",
+                  "details",
+                  "upload",
+                  "versions",
+                  "tags",
+                  "edit",
+                  "validate",
+                  "tools"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "View"
           }
         },
         "required": [
-          "kind",
-          "resource_id"
+          "kind"
         ],
         "title": "DesktopOpenIn",
         "type": "object"
@@ -3107,17 +3149,27 @@
               "presentation",
               "annotation",
               "note",
-              "knowledge"
+              "knowledge",
+              "skill",
+              "tool-api",
+              "mcp"
             ],
             "title": "Kind",
             "type": "string"
           },
           "resource_id": {
-            "maxLength": 128,
-            "minLength": 1,
-            "pattern": "^[a-zA-Z0-9_-]+$",
-            "title": "Resource Id",
-            "type": "string"
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "minLength": 1,
+                "pattern": "^[a-zA-Z0-9_-]+$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resource Id"
           },
           "status": {
             "enum": [
@@ -3129,11 +3181,31 @@
             ],
             "title": "Status",
             "type": "string"
+          },
+          "view": {
+            "anyOf": [
+              {
+                "enum": [
+                  "list",
+                  "details",
+                  "upload",
+                  "versions",
+                  "tags",
+                  "edit",
+                  "validate",
+                  "tools"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "View"
           }
         },
         "required": [
           "kind",
-          "resource_id",
           "id",
           "status"
         ],

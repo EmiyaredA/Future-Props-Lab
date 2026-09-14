@@ -48,7 +48,12 @@ export function SkillTagDialog({
   const [text, setText] = useState(skill.tags.join(", "));
   const tags = parseSkillTags(text);
   return (
-    <IntegrationModal title={`编辑 ${skill.name} 标签`} onClose={onClose}>
+    <IntegrationModal
+      title={`编辑 ${skill.name} 标签`}
+      onClose={onClose}
+      protect
+      pending={pending}
+    >
       <form
         className="integration-form"
         onSubmit={(event) => {

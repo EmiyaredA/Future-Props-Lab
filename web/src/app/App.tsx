@@ -224,10 +224,21 @@ export default function App() {
     };
     window.addEventListener("future-props:agent-open", agentOpen);
     window.addEventListener("future-props:before-workspace-switch", guard);
+    const deferRefresh = (event: Event) => {
+      if (navigationGuard.current) event.preventDefault();
+    };
+    window.addEventListener(
+      "future-props:development-query-refresh",
+      deferRefresh,
+    );
     return () => {
       window.removeEventListener("future-props:navigate", handle);
       window.removeEventListener("future-props:agent-open", agentOpen);
       window.removeEventListener("future-props:before-workspace-switch", guard);
+      window.removeEventListener(
+        "future-props:development-query-refresh",
+        deferRefresh,
+      );
     };
   });
 
@@ -514,6 +525,7 @@ export default function App() {
             <ToolNavigationPage onOpenInternal={navigatePath} />
           ) : page.startsWith("integrations-") ? (
             <IntegrationCenterPage
+              registerNavigationGuard={registerNavigationGuard}
               canManage={workspaceAllows(me.workspace, "configuration.manage")}
               kind={
                 page === "integrations-mcp"

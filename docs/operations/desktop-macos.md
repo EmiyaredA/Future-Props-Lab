@@ -26,7 +26,9 @@ npm run package:desktop
 保留人物与齿轮原图，只增加符合 macOS 展示的圆角底板、留白和阴影。构建命令会先刷新
 `desktop/assets/app-icon.png` 与 `.icns`，并用于 App、Dock 和 DMG 安装界面。
 
-`dev:desktop` 构建 Web 并使用仓库 `.venv` 启动桌面开发版；修改 Web 后重新启动即可更新页面。
+`dev:desktop` 使用源码 Vite 和仓库 `.venv` 启动热加载开发版；`dev:desktop:live` 显式使用正式 App
+数据，首次停机备份后启动。前端兼容更新即时生效，后端/Electron 更新由用户点击应用，日常不需要
+重新制作安装包。行为、安全限制和恢复步骤见 [桌面热加载开发](desktop-development.md)。
 普通 `dev`、`start:backend` 与 Web 构建入口保持原部署行为。
 
 ## 数据与配置

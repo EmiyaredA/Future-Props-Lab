@@ -36,7 +36,9 @@ def parser():
     commands = cli.add_subparsers(dest="command", required=True)
     connect = commands.add_parser("connect", help="在 App 中批准一次授权")
     connect.add_argument("--name", required=True)
-    connect.add_argument("--write", action="store_true", help="申请含删除和付费模型调用的读写权限")
+    connect.add_argument(
+        "--write", action="store_true", help="申请含集成管理、校验、删除和付费模型调用的读写权限"
+    )
     commands.add_parser("disconnect", help="清除本机凭据；撤销授权请在 App 内操作")
     commands.add_parser("status")
     operations = commands.add_parser("operations", help="列出操作，或查看操作参数和 schema")
@@ -55,9 +57,25 @@ def parser():
     opening = commands.add_parser("open", help="在 App 中打开资源，保留未保存保护")
     opening.add_argument(
         "kind",
-        choices=["visual", "galgame", "video", "presentation", "annotation", "note", "knowledge"],
+        choices=[
+            "visual",
+            "galgame",
+            "video",
+            "presentation",
+            "annotation",
+            "note",
+            "knowledge",
+            "skill",
+            "tool-api",
+            "mcp",
+        ],
     )
-    opening.add_argument("resource_id")
+    opening.add_argument("resource_id", nargs="?", help="资源 ID；集成列表和新建表单可省略")
+    opening.add_argument(
+        "--view",
+        choices=["list", "details", "upload", "versions", "tags", "edit", "validate", "tools"],
+        help="集成视图；只定位页面，不自动提交或校验",
+    )
     opening.add_argument("--timeout", type=float, default=30)
     return cli
 
@@ -219,7 +237,7 @@ def main(argv=None):
                 result = client._call(
                     "POST",
                     "/v1/desktop/ui/open",
-                    body={"kind": args.kind, "resource_id": args.resource_id},
+                    body={"kind": args.kind, "resource_id": args.resource_id, "view": args.view},
                     media_type="application/json",
                 )
                 deadline = time.monotonic() + args.timeout

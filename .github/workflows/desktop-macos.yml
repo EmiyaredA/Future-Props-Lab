@@ -31,6 +31,7 @@ jobs:
         env:
           FPL_SECRETS_KEY: Q3kT62dvbHHXXulO5XPCR84_yXK6t-6LXz7BcIYONys=
       - run: npm run test:desktop
+      - run: npm run test:desktop:dev
       - run: npm run package:desktop
       - run: npm run sdk:build
       - run: uv run pytest -q tests/test_desktop.py tests/test_desktop_agent.py

@@ -114,6 +114,29 @@ test("manages and validates an integration across deep-link tabs", async ({
     .last()
     .click();
 
+  const edit = page.getByRole("button", { name: "编辑 E2E 查询" });
+  await edit.click();
+  await page.getByLabel("名称", { exact: true }).fill("未提交草稿");
+  await page.evaluate(() =>
+    window.dispatchEvent(
+      new CustomEvent("future-props:integration-change", {
+        detail: ["tool-apis"],
+      }),
+    ),
+  );
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("alertdialog")).toBeVisible();
+  await page.getByRole("button", { name: "继续编辑" }).click();
+  await expect(page.getByLabel("名称", { exact: true })).toHaveValue(
+    "未提交草稿",
+  );
+  await expect(page.getByLabel("名称", { exact: true })).toBeFocused();
+  await page.keyboard.press("Escape");
+  await page.getByRole("button", { name: "放弃修改" }).click();
+  await expect(edit).toBeFocused();
+  await page.getByRole("button", { name: "处理完当前编辑后查看更新" }).click();
+  expect(toolApis).toHaveLength(1);
+
   await page.getByRole("tab", { name: "MCP" }).click();
   await expect(page).toHaveURL(/\/integrations\/mcp$/);
   await expect(page.getByText("还没有 MCP 服务。")).toBeVisible();

@@ -62,10 +62,13 @@ export default defineConfig(({ mode }) => ({
   },
   server: {
     port: webPort,
-    proxy: {
-      "/v1": { target: apiTarget, ws: true },
-      "/health": apiTarget,
-      "/ready": apiTarget,
-    },
+    proxy:
+      mode === "desktop"
+        ? undefined
+        : {
+            "/v1": { target: apiTarget, ws: true },
+            "/health": apiTarget,
+            "/ready": apiTarget,
+          },
   },
 }));
