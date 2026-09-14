@@ -69,7 +69,9 @@ export class Backend {
       });
       child.once("exit", () => {
         finish();
-        reject(new Error("本地服务启动失败；请检查日志及 backend/.env 密钥"));
+        reject(
+          new Error("本地服务启动失败；请检查日志及 backend/config.toml 密钥"),
+        );
       });
       child.stdout.on("data", (chunk: Buffer) => {
         received += chunk.toString();

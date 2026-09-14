@@ -11,6 +11,26 @@ class Desktop:
     def __init__(self, client):
         self._client = client
 
+    def capabilities(self) -> models.AgentCapabilities:
+        'Capabilities. GET /v1/desktop/agent/capabilities'
+        return self._client._call('GET', '/v1/desktop/agent/capabilities', parameters=[], response_type=models.AgentCapabilities)
+
+    def pending_pairings(self) -> list[models.AgentPairOut]:
+        'Pending Pairings. GET /v1/desktop/agent/pairings'
+        return self._client._call('GET', '/v1/desktop/agent/pairings', parameters=[], response_type=list[models.AgentPairOut])
+
+    def begin_pairing(self, *, body: models.AgentPairIn | dict) -> models.AgentPairStarted:
+        'Begin Pairing. POST /v1/desktop/agent/pairings'
+        return self._client._call('POST', '/v1/desktop/agent/pairings', parameters=[], body=body, media_type='application/json', response_type=models.AgentPairStarted)
+
+    def claim_pairing(self, *, pair_id: str, body: models.AgentClaimIn | dict) -> models.AgentClaimOut:
+        'Claim Pairing. POST /v1/desktop/agent/pairings/{pair_id}/claim'
+        return self._client._call('POST', '/v1/desktop/agent/pairings/{pair_id}/claim', parameters=[('pair_id', 'path', pair_id)], body=body, media_type='application/json', response_type=models.AgentClaimOut)
+
+    def decide_pairing(self, *, pair_id: str, body: models.AgentDecisionIn | dict) -> models.AgentPairOut:
+        'Decide Pairing. POST /v1/desktop/agent/pairings/{pair_id}/decision'
+        return self._client._call('POST', '/v1/desktop/agent/pairings/{pair_id}/decision', parameters=[('pair_id', 'path', pair_id)], body=body, media_type='application/json', response_type=models.AgentPairOut)
+
     def get_setup(self) -> models.DesktopSetupOut:
         'Get Setup. GET /v1/desktop/setup'
         return self._client._call('GET', '/v1/desktop/setup', parameters=[], response_type=models.DesktopSetupOut)
@@ -19,9 +39,45 @@ class Desktop:
         'Create First Account. POST /v1/desktop/setup'
         return self._client._call('POST', '/v1/desktop/setup', parameters=[], body=body, media_type='application/json', response_type=models.DesktopSetupOut)
 
+    def inbox(self) -> models.DesktopInbox:
+        'Inbox. GET /v1/desktop/ui/inbox'
+        return self._client._call('GET', '/v1/desktop/ui/inbox', parameters=[], response_type=models.DesktopInbox)
+
+    def open_in_app(self, *, body: models.DesktopOpenIn | dict) -> models.DesktopOpenOut:
+        'Open In App. POST /v1/desktop/ui/open'
+        return self._client._call('POST', '/v1/desktop/ui/open', parameters=[], body=body, media_type='application/json', response_type=models.DesktopOpenOut)
+
+    def open_status(self, *, request_id: str) -> models.DesktopOpenOut:
+        'Open Status. GET /v1/desktop/ui/requests/{request_id}'
+        return self._client._call('GET', '/v1/desktop/ui/requests/{request_id}', parameters=[('request_id', 'path', request_id)], response_type=models.DesktopOpenOut)
+
+    def acknowledge(self, *, request_id: str, body: models.DesktopOpenAck | dict) -> models.DesktopOpenOut:
+        'Acknowledge. POST /v1/desktop/ui/requests/{request_id}/ack'
+        return self._client._call('POST', '/v1/desktop/ui/requests/{request_id}/ack', parameters=[('request_id', 'path', request_id)], body=body, media_type='application/json', response_type=models.DesktopOpenOut)
+
 class AsyncDesktop:
     def __init__(self, client):
         self._client = client
+
+    async def capabilities(self) -> models.AgentCapabilities:
+        'Capabilities. GET /v1/desktop/agent/capabilities'
+        return await self._client._call('GET', '/v1/desktop/agent/capabilities', parameters=[], response_type=models.AgentCapabilities)
+
+    async def pending_pairings(self) -> list[models.AgentPairOut]:
+        'Pending Pairings. GET /v1/desktop/agent/pairings'
+        return await self._client._call('GET', '/v1/desktop/agent/pairings', parameters=[], response_type=list[models.AgentPairOut])
+
+    async def begin_pairing(self, *, body: models.AgentPairIn | dict) -> models.AgentPairStarted:
+        'Begin Pairing. POST /v1/desktop/agent/pairings'
+        return await self._client._call('POST', '/v1/desktop/agent/pairings', parameters=[], body=body, media_type='application/json', response_type=models.AgentPairStarted)
+
+    async def claim_pairing(self, *, pair_id: str, body: models.AgentClaimIn | dict) -> models.AgentClaimOut:
+        'Claim Pairing. POST /v1/desktop/agent/pairings/{pair_id}/claim'
+        return await self._client._call('POST', '/v1/desktop/agent/pairings/{pair_id}/claim', parameters=[('pair_id', 'path', pair_id)], body=body, media_type='application/json', response_type=models.AgentClaimOut)
+
+    async def decide_pairing(self, *, pair_id: str, body: models.AgentDecisionIn | dict) -> models.AgentPairOut:
+        'Decide Pairing. POST /v1/desktop/agent/pairings/{pair_id}/decision'
+        return await self._client._call('POST', '/v1/desktop/agent/pairings/{pair_id}/decision', parameters=[('pair_id', 'path', pair_id)], body=body, media_type='application/json', response_type=models.AgentPairOut)
 
     async def get_setup(self) -> models.DesktopSetupOut:
         'Get Setup. GET /v1/desktop/setup'
@@ -30,4 +86,20 @@ class AsyncDesktop:
     async def create_first_account(self, *, body: models.DesktopSetupIn | dict) -> models.DesktopSetupOut:
         'Create First Account. POST /v1/desktop/setup'
         return await self._client._call('POST', '/v1/desktop/setup', parameters=[], body=body, media_type='application/json', response_type=models.DesktopSetupOut)
+
+    async def inbox(self) -> models.DesktopInbox:
+        'Inbox. GET /v1/desktop/ui/inbox'
+        return await self._client._call('GET', '/v1/desktop/ui/inbox', parameters=[], response_type=models.DesktopInbox)
+
+    async def open_in_app(self, *, body: models.DesktopOpenIn | dict) -> models.DesktopOpenOut:
+        'Open In App. POST /v1/desktop/ui/open'
+        return await self._client._call('POST', '/v1/desktop/ui/open', parameters=[], body=body, media_type='application/json', response_type=models.DesktopOpenOut)
+
+    async def open_status(self, *, request_id: str) -> models.DesktopOpenOut:
+        'Open Status. GET /v1/desktop/ui/requests/{request_id}'
+        return await self._client._call('GET', '/v1/desktop/ui/requests/{request_id}', parameters=[('request_id', 'path', request_id)], response_type=models.DesktopOpenOut)
+
+    async def acknowledge(self, *, request_id: str, body: models.DesktopOpenAck | dict) -> models.DesktopOpenOut:
+        'Acknowledge. POST /v1/desktop/ui/requests/{request_id}/ack'
+        return await self._client._call('POST', '/v1/desktop/ui/requests/{request_id}/ack', parameters=[('request_id', 'path', request_id)], body=body, media_type='application/json', response_type=models.DesktopOpenOut)
 

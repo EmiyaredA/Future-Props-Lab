@@ -4,7 +4,9 @@ const { mkdtemp, mkdir, writeFile, readFile } = require("node:fs/promises");
 const os = require("node:os");
 const path = require("node:path");
 const assert = require("node:assert/strict");
+const { randomBytes } = require("node:crypto");
 const { spawn, execFileSync } = require("node:child_process");
+const { verifyAgent } = require("./agent-smoke.cjs");
 
 const root = path.resolve(__dirname, "../..");
 const executablePath =
@@ -19,6 +21,15 @@ const evidence =
 
 async function main() {
   const directory = await mkdtemp(path.join(os.tmpdir(), "fpl-desktop-smoke-"));
+  // Simulate an older installation's private configuration without any real data.
+  const legacyKey = randomBytes(32).toString("base64url") + "=";
+  const configDir = path.join(directory, "backend");
+  await mkdir(configDir, { mode: 0o700 });
+  await writeFile(
+    path.join(configDir, ".env"),
+    `FPL_SECRETS_KEY=${legacyKey}\n`,
+    { mode: 0o600 },
+  );
   await mkdir(evidence, { recursive: true });
   const env = {
     ...process.env,
@@ -55,6 +66,14 @@ async function main() {
   }
   try {
     let page = await launch();
+    const convertedConfig = await readFile(
+      path.join(configDir, "config.toml"),
+      "utf8",
+    );
+    assert.ok(convertedConfig.includes(`secrets_key = "${legacyKey}"`));
+    passed(
+      "legacy configuration upgraded to TOML without changing the encryption key",
+    );
     await expect(
       page.getByRole("heading", { name: "欢迎来到本地研究所" }),
     ).toBeVisible();
@@ -128,6 +147,14 @@ async function main() {
     assert.equal(result.username, "smoke-admin");
     assert.equal(result.status, 200);
     passed("first admin, existing login and project API");
+    const checkAgentRestart = await verifyAgent(
+      application,
+      page,
+      executablePath,
+      directory,
+      evidence,
+      passed,
+    );
     const second = spawn(executablePath, [], {
       env,
       cwd: os.tmpdir(),
@@ -220,6 +247,7 @@ async function main() {
     );
     assert.equal(status, 200);
     passed("relaunch restores session and saved project");
+    await checkAgentRestart();
     if (process.env.FPL_TEST_REPLACE_APP_FROM)
       passed(
         "replacing the installed App preserves independent account and project data",

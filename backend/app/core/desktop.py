@@ -10,15 +10,14 @@ from starlette.exceptions import HTTPException
 from starlette.responses import PlainTextResponse
 from starlette.staticfiles import StaticFiles
 
-from app.accounts.desktop_agent import AgentError, DesktopAgent, allows_agent
-
 DESKTOP_HEADER = "x-fpl-desktop-token"
 
 
 class DesktopTransport:
-    def __init__(self, app, *, token: str):
+    def __init__(self, app, *, token: str, agent_policy=None):
         self.app = app
         self.token = token
+        self.agent_policy = agent_policy
 
     async def __call__(self, scope, receive, send):
         if scope["type"] in {"http", "websocket"}:
@@ -35,7 +34,8 @@ class DesktopTransport:
             invalid_agent = is_agent and (
                 scope["type"] != "http"
                 or bool(headers.get("cookie"))
-                or not allows_agent(scope.get("method", ""), scope["path"])
+                or self.agent_policy is None
+                or not self.agent_policy(scope.get("method", ""), scope["path"])
             )
             if (
                 not secrets.compare_digest(supplied.encode(), self.token.encode())
@@ -48,12 +48,16 @@ class DesktopTransport:
                 else:
                     await PlainTextResponse("Forbidden", status_code=403)(scope, receive, send)
                 return
+
         async def observe(message):
-            if (scope["type"] == "http" and message["type"] == "http.response.start"
+            if (
+                scope["type"] == "http"
+                and message["type"] == "http.response.start"
                 and 200 <= message["status"] < 300
                 and Headers(scope=scope).get("x-fpl-agent-channel") == "1"
                 and scope["method"] not in {"GET", "HEAD"}
-                and not scope["path"].startswith("/v1/desktop/")):
+                and not scope["path"].startswith("/v1/desktop/")
+            ):
                 principal = scope.get("state", {}).get("studio_principal")
                 if principal:
                     changes = scope["app"].state.desktop_agent.changes
@@ -84,19 +88,11 @@ class DesktopStaticFiles(StaticFiles):
             raise
 
 
-def attach_desktop(app, *, token: str, web_root: Path) -> None:
+def attach_desktop(app, *, token: str, web_root: Path, agent_policy=None) -> None:
     if len(token) < 32:
         raise ValueError("桌面启动凭据无效")
     if not (web_root / "index.html").is_file():
         raise ValueError("应用页面资源缺失，请重新安装")
     app.state.desktop_enabled = True
-    app.state.desktop_agent = DesktopAgent()
-
-    async def agent_error(_request, exc):
-        from starlette.responses import JSONResponse
-
-        return JSONResponse({"code": exc.code, "message": exc.code}, status_code=exc.status)
-
-    app.add_exception_handler(AgentError, agent_error)
-    app.add_middleware(DesktopTransport, token=token)
+    app.add_middleware(DesktopTransport, token=token, agent_policy=agent_policy)
     app.mount("/", DesktopStaticFiles(directory=web_root, html=True), name="desktop-web")

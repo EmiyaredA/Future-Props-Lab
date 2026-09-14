@@ -11,13 +11,20 @@ FFmpeg/FFprobe；持续集成同时验证 Python 3.11
 
 ## 快速开始
 
+macOS App 支持本地 CLI / Python SDK 接入：在「账号设置 → API 密钥」开启接入，运行 App 内的
+`Contents/Resources/fpl/fpl connect --name "My Agent" --write`，然后在 App 核对并批准。
+不需要为内置 CLI 安装 Python；默认不开放接入，不改变现有登录和数据。详见
+[本地 Agent 接入](docs/operations/desktop-agent.md)。
+
 macOS Apple Silicon 桌面版可通过 `npm run build:desktop` 构建 `.app`，
 `npm run package:desktop` 制作 `.dmg`。安装后不需要 Python、Node.js、uv 或 FFmpeg，
 首次启动在应用内创建管理员，数据独立于仓库。构建机要求与验证方法见
 [macOS 桌面构建](docs/operations/desktop-macos.md)。首期仅本地 ad-hoc 签名，未公证，不作为公开发行版。
 
 1. 安装依赖：`npm run setup`
-2. 创建配置：`cp backend/.env.example backend/.env`，并替换 `FPL_SECRETS_KEY`
+2. 新安装创建配置：`cp backend/config.example.toml backend/config.toml`，填写 `[security].secrets_key`
+   （生成方法见[配置文档](docs/reference/configuration.md)）。已有 `.env` 请先执行
+   `npm run config:migrate -- --check`，再执行 `npm run config:migrate -- --apply`，不要生成替代密钥。
 3. 创建首个管理员：`npm run account -- create-admin --username admin`
 4. 启动前后端：`npm run dev`，使用命令输出的一次性临时密码登录并立即改密
 

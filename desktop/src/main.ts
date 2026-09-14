@@ -51,6 +51,7 @@ function makeWindow(document = false): BrowserWindow {
       nodeIntegration: false,
       webSecurity: true,
       partition: "persist:studio",
+      backgroundThrottling: false,
     },
   });
   win.once("ready-to-show", () => win.show());
@@ -182,7 +183,10 @@ else {
     studio.webRequest.onBeforeSendHeaders((details, callback) => {
       const headers = details.requestHeaders;
       for (const key of Object.keys(headers))
-        if (key.toLowerCase() === credentialHeader.toLowerCase() || key.toLowerCase() === "x-fpl-agent-channel")
+        if (
+          key.toLowerCase() === credentialHeader.toLowerCase() ||
+          key.toLowerCase() === "x-fpl-agent-channel"
+        )
           delete headers[key];
       const origin = Object.entries(headers).find(
         ([key]) => key.toLowerCase() === "origin",
@@ -284,10 +288,14 @@ else {
       ]),
     );
     mainWindow = makeWindow();
-    agent = new AgentGateway(dataDir, () => backend, () => {
-      mainWindow?.show();
-      mainWindow?.focus();
-    });
+    agent = new AgentGateway(
+      dataDir,
+      () => backend,
+      () => {
+        mainWindow?.show();
+        mainWindow?.focus();
+      },
+    );
     await mainWindow.loadFile(recovery);
     await start();
   });

@@ -433,10 +433,6 @@
       "method": "create_file_folder",
       "resource": "files"
     },
-    "POST /v1/file-storage/layout/migrate": {
-      "method": "migrate_storage_layout",
-      "resource": "files"
-    },
     "POST /v1/files": {
       "method": "upload_file",
       "resource": "files"

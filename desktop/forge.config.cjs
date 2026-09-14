@@ -23,6 +23,7 @@ module.exports = {
       Boolean(file) && !/^\/(package\.json|dist(?:\/|$)|ui(?:\/|$))/.test(file),
     extraResource: [
       path.join(__dirname, "build/backend/fpl-server"),
+      path.join(__dirname, "build/cli/fpl"),
       path.join(__dirname, "../web/dist"),
     ],
     osxSign: {

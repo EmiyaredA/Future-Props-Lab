@@ -422,6 +422,244 @@
         "title": "AddTrackOperation",
         "type": "object"
       },
+      "AgentCapabilities": {
+        "properties": {
+          "operations": {
+            "additionalProperties": true,
+            "title": "Operations",
+            "type": "object"
+          },
+          "schemas": {
+            "additionalProperties": true,
+            "title": "Schemas",
+            "type": "object"
+          },
+          "scopes": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Scopes",
+            "type": "array"
+          },
+          "user_id": {
+            "title": "User Id",
+            "type": "string"
+          },
+          "version": {
+            "default": 1,
+            "title": "Version",
+            "type": "integer"
+          },
+          "workspace_id": {
+            "title": "Workspace Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "user_id",
+          "workspace_id",
+          "scopes",
+          "operations",
+          "schemas"
+        ],
+        "title": "AgentCapabilities",
+        "type": "object"
+      },
+      "AgentClaimIn": {
+        "properties": {
+          "claim_token": {
+            "maxLength": 128,
+            "minLength": 32,
+            "title": "Claim Token",
+            "type": "string"
+          }
+        },
+        "required": [
+          "claim_token"
+        ],
+        "title": "AgentClaimIn",
+        "type": "object"
+      },
+      "AgentClaimOut": {
+        "properties": {
+          "api_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Api Key"
+          },
+          "key_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Key Id"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "user_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Id"
+          },
+          "workspace_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Workspace Id"
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "title": "AgentClaimOut",
+        "type": "object"
+      },
+      "AgentDecisionIn": {
+        "properties": {
+          "approve": {
+            "title": "Approve",
+            "type": "boolean"
+          },
+          "code": {
+            "maxLength": 6,
+            "minLength": 6,
+            "title": "Code",
+            "type": "string"
+          },
+          "expected_workspace_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Expected Workspace Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "approve",
+          "code",
+          "expected_workspace_id"
+        ],
+        "title": "AgentDecisionIn",
+        "type": "object"
+      },
+      "AgentPairIn": {
+        "properties": {
+          "name": {
+            "maxLength": 80,
+            "minLength": 1,
+            "pattern": "^[^\\x00-\\x1f\\x7f]+$",
+            "title": "Name",
+            "type": "string"
+          },
+          "scope": {
+            "default": "studio:read",
+            "enum": [
+              "studio:read",
+              "studio:write"
+            ],
+            "title": "Scope",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "AgentPairIn",
+        "type": "object"
+      },
+      "AgentPairOut": {
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "scope": {
+            "title": "Scope",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "name",
+          "scope",
+          "status"
+        ],
+        "title": "AgentPairOut",
+        "type": "object"
+      },
+      "AgentPairStarted": {
+        "properties": {
+          "claim_token": {
+            "title": "Claim Token",
+            "type": "string"
+          },
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "scope": {
+            "title": "Scope",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "name",
+          "scope",
+          "status",
+          "claim_token"
+        ],
+        "title": "AgentPairStarted",
+        "type": "object"
+      },
       "AnnotationEntityOperation": {
         "additionalProperties": false,
         "properties": {
@@ -2783,6 +3021,123 @@
           "value"
         ],
         "title": "DemoServiceOut",
+        "type": "object"
+      },
+      "DesktopInbox": {
+        "properties": {
+          "change_revision": {
+            "title": "Change Revision",
+            "type": "integer"
+          },
+          "requests": {
+            "items": {
+              "$ref": "#/components/schemas/DesktopOpenOut"
+            },
+            "title": "Requests",
+            "type": "array"
+          }
+        },
+        "required": [
+          "requests",
+          "change_revision"
+        ],
+        "title": "DesktopInbox",
+        "type": "object"
+      },
+      "DesktopOpenAck": {
+        "properties": {
+          "status": {
+            "enum": [
+              "waiting_confirmation",
+              "opened",
+              "cancelled",
+              "unavailable"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "title": "DesktopOpenAck",
+        "type": "object"
+      },
+      "DesktopOpenIn": {
+        "properties": {
+          "kind": {
+            "enum": [
+              "visual",
+              "galgame",
+              "video",
+              "presentation",
+              "annotation",
+              "note",
+              "knowledge"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "resource_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[a-zA-Z0-9_-]+$",
+            "title": "Resource Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "resource_id"
+        ],
+        "title": "DesktopOpenIn",
+        "type": "object"
+      },
+      "DesktopOpenOut": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "visual",
+              "galgame",
+              "video",
+              "presentation",
+              "annotation",
+              "note",
+              "knowledge"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "resource_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[a-zA-Z0-9_-]+$",
+            "title": "Resource Id",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "pending",
+              "waiting_confirmation",
+              "opened",
+              "cancelled",
+              "unavailable"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "resource_id",
+          "id",
+          "status"
+        ],
+        "title": "DesktopOpenOut",
         "type": "object"
       },
       "DesktopSetupIn": {
@@ -28374,6 +28729,195 @@
         ]
       }
     },
+    "/v1/desktop/agent/capabilities": {
+      "get": {
+        "operationId": "capabilities_v1_desktop_agent_capabilities_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentCapabilities"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Capabilities",
+        "tags": [
+          "desktop"
+        ]
+      }
+    },
+    "/v1/desktop/agent/pairings": {
+      "get": {
+        "operationId": "pending_pairings_v1_desktop_agent_pairings_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/AgentPairOut"
+                  },
+                  "title": "Response Pending Pairings V1 Desktop Agent Pairings Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Pending Pairings",
+        "tags": [
+          "desktop"
+        ]
+      },
+      "post": {
+        "operationId": "begin_pairing_v1_desktop_agent_pairings_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgentPairIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentPairStarted"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Begin Pairing",
+        "tags": [
+          "desktop"
+        ]
+      }
+    },
+    "/v1/desktop/agent/pairings/{pair_id}/claim": {
+      "post": {
+        "operationId": "claim_pairing_v1_desktop_agent_pairings__pair_id__claim_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "pair_id",
+            "required": true,
+            "schema": {
+              "title": "Pair Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgentClaimIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentClaimOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Claim Pairing",
+        "tags": [
+          "desktop"
+        ]
+      }
+    },
+    "/v1/desktop/agent/pairings/{pair_id}/decision": {
+      "post": {
+        "operationId": "decide_pairing_v1_desktop_agent_pairings__pair_id__decision_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "pair_id",
+            "required": true,
+            "schema": {
+              "title": "Pair Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgentDecisionIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentPairOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Decide Pairing",
+        "tags": [
+          "desktop"
+        ]
+      }
+    },
     "/v1/desktop/setup": {
       "get": {
         "operationId": "get_setup_v1_desktop_setup_get",
@@ -28429,6 +28973,162 @@
           }
         },
         "summary": "Create First Account",
+        "tags": [
+          "desktop"
+        ]
+      }
+    },
+    "/v1/desktop/ui/inbox": {
+      "get": {
+        "operationId": "inbox_v1_desktop_ui_inbox_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DesktopInbox"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Inbox",
+        "tags": [
+          "desktop"
+        ]
+      }
+    },
+    "/v1/desktop/ui/open": {
+      "post": {
+        "operationId": "open_in_app_v1_desktop_ui_open_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DesktopOpenIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DesktopOpenOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Open In App",
+        "tags": [
+          "desktop"
+        ]
+      }
+    },
+    "/v1/desktop/ui/requests/{request_id}": {
+      "get": {
+        "operationId": "open_status_v1_desktop_ui_requests__request_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "request_id",
+            "required": true,
+            "schema": {
+              "title": "Request Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DesktopOpenOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Open Status",
+        "tags": [
+          "desktop"
+        ]
+      }
+    },
+    "/v1/desktop/ui/requests/{request_id}/ack": {
+      "post": {
+        "operationId": "acknowledge_v1_desktop_ui_requests__request_id__ack_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "request_id",
+            "required": true,
+            "schema": {
+              "title": "Request Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DesktopOpenAck"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DesktopOpenOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Acknowledge",
         "tags": [
           "desktop"
         ]

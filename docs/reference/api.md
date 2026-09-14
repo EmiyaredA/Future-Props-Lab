@@ -1,5 +1,21 @@
 # API 参考
 
+## 桌面 Agent 接入
+
+仅桌面部署提供 `/v1/desktop/agent/` 和 `/v1/desktop/ui/`。普通 Web 返回 404。
+配对申请 `POST /agent/pairings` 返回 5 分钟有效的领取凭据和核对码；浏览器通过
+`GET /agent/pairings` 查询待批准项、`POST /agent/pairings/{pair_id}/decision` 批准或拒绝。
+批准要求 Session、CSRF、当前 Workspace 权限；批准请求中的 `expected_workspace_id` 必须与认证
+Principal 相符，防止切换工作区时授权到错误空间。`POST /agent/pairings/{pair_id}/claim` 只允许
+持有领取凭据的客户端领取一次密钥。已领取或重复决定返回 409，过期返回 410，限流返回 429。
+
+`GET /agent/capabilities` 返回协议版本、当前身份/权限、明确开放的方法和 OpenAPI 参数定义。
+`POST /ui/open` 只接受资源类型和 ID，校验工作区归属后返回 202；
+`GET /ui/requests/{request_id}` 查询真实导航处理结果。浏览器通过 `GET /ui/inbox` 获取请求和
+外部变更序号，并以 `POST /ui/requests/{request_id}/ack` 回报结果。
+后台未收到相同账号/工作区的界面心跳时返回 unavailable，不自动切换工作区。
+接口详情由 SDK/OpenAPI 生成，使用步骤见 [本地 Agent 接入](../operations/desktop-agent.md)。
+
 ## 文档编辑历史
 
 以下接口位于 `/v1/thought-workshop`，鉴权沿用文档 Workspace 访问规则，跨空间的文档或历史 ID 返回 404：

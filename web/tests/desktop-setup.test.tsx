@@ -20,6 +20,11 @@ beforeEach(() => {
   calls.login.mockResolvedValue({});
   window.futurePropsDesktop = {
     version: 1,
+    agentStatus: vi
+      .fn()
+      .mockResolvedValue({ enabled: false, connected: false }),
+    enableAgent: vi.fn(),
+    disableAgent: vi.fn(),
     status: vi.fn(),
     retry: vi.fn(),
     openLogs: vi.fn(),

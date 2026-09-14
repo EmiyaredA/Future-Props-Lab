@@ -285,6 +285,10 @@ def main():
     schema = json.loads(SCHEMA.read_text())
     existing = json.loads(MAPPING.read_text()) if MAPPING.exists() else {}
     mapping = inventory(schema, existing)
+    agent = json.loads((ROOT / "backend/app/accounts/desktop_agent_operations.json").read_text())
+    for key, operation in agent["operations"].items():
+        if mapping.get(key) != operation:
+            raise SystemExit(f"Desktop agent allowlist is stale: {key}")
     files = generate(schema, mapping)
     stale = []
     for path, content in files.items():

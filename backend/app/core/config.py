@@ -10,15 +10,44 @@ from cryptography.fernet import Fernet
 from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-ENV_FILE = Path(__file__).resolve().parents[2] / ".env"
+from fpl_config import CONFIG_FILE, ConfigurationError, read_config
+
 REPO_ROOT = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parents[3]))
 _desktop_settings: Settings | None = None
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(
-        env_file=str(ENV_FILE), env_file_encoding="utf-8", extra="ignore"
-    )
+    model_config = SettingsConfigDict(extra="ignore", hide_input_in_errors=True)
+
+    def __init__(
+        self, *, _config_file: Path | None = CONFIG_FILE, _read_environment: bool = True, **values
+    ):
+        from pydantic_settings import EnvSettingsSource
+
+        configured = read_config(_config_file)
+        if _read_environment:
+            configured.update(EnvSettingsSource(type(self))())
+        configured.update(
+            {
+                name.lower() if name.lower() in type(self).model_fields else name: value
+                for name, value in values.items()
+            }
+        )
+        super().__init__(**configured)
+
+    @classmethod
+    def settings_customise_sources(cls, _settings_cls, init_settings, **_unused):
+        # Sources are assembled once above, allowing desktop to opt out of ALL shell state.
+        return (init_settings,)
+
+    @classmethod
+    def validate_file_values(cls, values: dict) -> Settings:
+        from pydantic import ValidationError
+
+        try:
+            return cls(_config_file=None, _read_environment=False, **values)
+        except ValidationError:
+            raise ConfigurationError("配置校验失败，请检查加密密钥、地址和容量限制") from None
 
     fpl_database_path: str = ".runtime/future-props.db"
     cors_origins: str = "http://127.0.0.1:3000,http://localhost:3000"

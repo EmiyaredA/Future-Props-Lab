@@ -7,6 +7,8 @@
 Future-Props-Lab/
 ├── .github/workflows/ # 冻结依赖的 Python/Web 质量检查与 Chromium E2E
 ├── .gitattributes     # 文档图片、固定字体与 VAD 资产的 Git LFS 边界
+├── backend/fpl_config/ # 独立 TOML 格式、字段映射与一次性 .env 转换；不导入 app 或数据库
+├── backend/config.example.toml # 无真实密钥的配置示例；私有 config.toml 不提交、不打包
 ├── backend/app/
 │   ├── main.py        # FastAPI 装配、生命周期与健康探针
 │   ├── deps.py        # HTTP/WebSocket 会话、Studio 鉴权与 WorkspaceDep
@@ -53,7 +55,7 @@ Future-Props-Lab/
 ├── web/e2e/           # Playwright 浏览器旅程
 │   └── fixtures/      # 人物旅程的确定性 API mock 与测试数据；真实烟测不使用
 ├── tests/             # 后端单元、API、存储与架构测试；大型 Story 契约/API 用例按行为拆分
-├── scripts/           # OpenAPI/LFS 检查、API 导入客户端、离线账号命令与 E2E 账号引导
+├── scripts/           # OpenAPI/LFS 检查、配置转换、API 导入客户端、离线账号命令与 E2E 账号引导
 │   └── demo/galgame_runaway/ # 内容专用演示维护工具；目标项目与素材路径必须显式传入
 ├── docs/assets/       # LFS 管理的文档/演示图片、来源许可证状态与内容集校验清单
 ├── docs/operations/   # 故障排查、备份与恢复说明
@@ -67,7 +69,16 @@ Future-Props-Lab/
 
 ## 目录与依赖边界
 
+- `fpl_config/` 只拥有配置格式与文件转换。`core/config.py` 将 TOML 和进程环境映射到 Settings；
+  `db/migrations/runner.py` 使用同一格式解析数据库路径，不依赖运行时 `app`。
+  `scripts/migrate_config.py` 仅转换配置，不访问数据库；桌面入口在数据锁内执行旧配置一次性转换。
+
 - `desktop/` 是现有应用的 macOS 壳，不拥有业务 API 或数据库 schema。
+  `src/agent.ts` 拥有本地 Unix Socket 转发及连接描述，`backend/cli_entry.py` 仅启动独立 SDK CLI。
+  `accounts/desktop_agent.py` 拥有短期配对，`desktop_ui.py` 校验打开资源的归属，Agent 操作白名单
+  在 `accounts/desktop_agent_operations.json`；`routes/desktop_agent.py` 只承担 `/v1/desktop` 协议边界。
+  `sdk/python/src/future_props_lab/desktop.py` 负责发现和配对，`cli.py` 提供 `fpl` 命令。
+  `app/DesktopAgentHost.tsx` 负责授权通知、外部更新提示及受保护导航，账号设置拥有接入开关。
   `accounts/desktop_setup.py` 复用账号开通用例；`core/desktop.py` 只负责桌面凭据和静态托管。
   `web/src/features/accounts/DesktopSetupGate.tsx` 拥有首用表单，`platform/desktop.ts` 只定义固定桥接。
   桌面版配置和数据规则见 [macOS 桌面构建](../operations/desktop-macos.md)。

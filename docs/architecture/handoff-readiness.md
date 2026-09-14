@@ -22,8 +22,9 @@ Workspace 隔离，但不提供多实例部署、外置数据库、Bot、知识�
    [`CONTRIBUTING.md`](../../CONTRIBUTING.md) 和项目结构文档。
 2. 准备 Node.js 24、npm 11+、Python 3.11+、FFmpeg 与 FFprobe。Playwright Chromium 仅为 E2E
    和开发验证依赖，不参与正式视频导出。
-3. 运行 `npm run setup`；复制 `backend/.env.example` 为 `backend/.env`，生成新的
-   `FPL_SECRETS_KEY`，按需填写供应商凭证。真实密钥不得提交或写入日志、快照和文档。
+3. 运行 `npm run setup`；复制 `backend/config.example.toml` 为 `backend/config.toml`，生成新的
+   `security.secrets_key`；旧安装使用配置转换命令保留原密钥。供应商凭证仍在 App 中配置，
+   真实密钥不得提交或写入日志、快照和文档。
 4. 运行 `npm run db:migrate:check`，确认本机数据库迁移状态；首次启动会自动应用已登记迁移。
 5. 运行 `npm run dev`，检查 `/health`、`/ready`、登录和目标 Workspace。
 6. 修改契约时同步更新后端 schema、OpenAPI 生成物、Web 消费端、API 参考和契约测试；修改目录职责时
@@ -42,7 +43,7 @@ Workspace 隔离，但不提供多实例部署、外置数据库、Bot、知识�
 | Git LFS          | 3.7.1+；克隆后执行 `git lfs install`                    | 管理文档图片、固定字体和 VAD 资产                         |
 | 模型供应商       | 网络和有效凭证按功能选配                                | 确定性测试不调用真实供应商；交付方需另做凭证与配额验收    |
 
-后端只读取 `backend/.env`。变量说明、文件上限与备份范围见
+后端只读取 `backend/config.toml`。变量说明、文件上限与备份范围见
 [`配置参考`](../reference/configuration.md)，部署步骤见
 [`生产部署`](../operations/production-deployment.md)。
 

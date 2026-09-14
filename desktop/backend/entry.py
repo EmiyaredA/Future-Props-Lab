@@ -13,47 +13,32 @@ import threading
 from pathlib import Path
 
 from cryptography.fernet import Fernet
-from dotenv import dotenv_values
 
 
 def prepare_configuration(data_root: Path):
     from app.core.config import Settings
+    from fpl_config import read_config
+    from fpl_config.migration import convert_legacy, encode, publish
 
     root = data_root.resolve()
     root.mkdir(parents=True, exist_ok=True, mode=0o700)
     config_dir = root / "backend"
     config_dir.mkdir(exist_ok=True, mode=0o700)
-    config_path = config_dir / ".env"
+    config_path = config_dir / "config.toml"
     database = root / "runtime" / "future-props.db"
-    existing = dotenv_values(config_path) if config_path.exists() else {}
-    if not existing.get("FPL_SECRETS_KEY"):
-        if database.exists() or config_path.exists():
-            raise ValueError("本地密钥缺失，请恢复 backend/.env；不会重建已有数据")
+    if not config_path.exists() and (config_dir / ".env").exists():
+        convert_legacy(config_path, Settings.validate_file_values, apply=True)
+    if not config_path.exists():
+        if database.exists() or list(config_dir.glob(".env.backup-*")):
+            raise ValueError("本地密钥缺失，请恢复 backend/config.toml；不会重建已有数据")
         key = Fernet.generate_key().decode("ascii")
-        with config_path.open("x", encoding="utf-8") as stream:
-            os.chmod(config_path, 0o600)
-            stream.write(f"FPL_SECRETS_KEY={key}\n")
-    values = dotenv_values(config_path)
-    return Settings(
-        _env_file=None,
-        fpl_database_path=str(database),
-        fpl_secrets_key=str(values["FPL_SECRETS_KEY"]),
-        cors_origins="",
-        fpl_auth_cookie_secure=False,
-        **{
-            name.lower(): value
-            for name, value in values.items()
-            if name.lower() in Settings.model_fields
-            and name.lower()
-            not in {
-                "fpl_database_path",
-                "fpl_secrets_key",
-                "cors_origins",
-                "fpl_auth_cookie_secure",
-            }
-            and value is not None
-        },
-    )
+        publish(config_path, encode({"security": {"secrets_key": key}}))
+    os.chmod(config_path, 0o600)
+    values = read_config(config_path)
+    if not values.get("fpl_secrets_key"):
+        raise ValueError("本地密钥缺失，请恢复 backend/config.toml；不会重建已有数据")
+    values.update(fpl_database_path=str(database), cors_origins="", fpl_auth_cookie_secure=False)
+    return Settings.validate_file_values(values)
 
 
 def launch() -> None:
@@ -79,8 +64,11 @@ def launch() -> None:
 
     from app.core.desktop import attach_desktop
     from app.main import app
+    from app.routes.desktop_agent import configure_agent
 
-    attach_desktop(app, token=token, web_root=args.web_dir.resolve())
+    attach_desktop(
+        app, token=token, web_root=args.web_dir.resolve(), agent_policy=configure_agent(app)
+    )
     if getattr(sys, "frozen", False):
         binaries = Path(sys._MEIPASS) / "bin"
         os.environ["PATH"] = str(binaries) + os.pathsep + "/usr/bin:/bin:/usr/sbin:/sbin"

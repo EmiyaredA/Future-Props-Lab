@@ -4,8 +4,8 @@
 
 先确认 Node.js 24、npm 11+、Python 3.11+ 和 Git LFS，再运行 `npm run setup`。若提示字体、ONNX
 或 WASM 仍是 LFS 指针，按错误中的 `git lfs pull --include=...` 命令拉取对象，再运行
-`npm run lfs:check`。后端只读取 `backend/.env`；`FPL_SECRETS_KEY` 必须是有效 Fernet key。端口被
-占用时先停止占用 3000 或 9000 的本机进程，标准 `.env` 不支持 `APP_HOST`、`APP_PORT`。
+`npm run lfs:check`。后端只读取 `backend/config.toml`；`security.secrets_key` 必须是有效 Fernet key。端口被
+占用时先停止占用 3000 或 9000 的本机进程，TOML 不支持 `APP_HOST`、`APP_PORT`。
 
 `/health` 只表示进程可响应，`/ready` 还会检查数据库和全部后台 Runner。若 `/ready` 失败，先查看
 应用日志中的 Runner 名称和异常类型，再运行 `npm run db:migrate:check` 检查迁移状态；不要直接修改

@@ -11,7 +11,9 @@
 - Python 命令与临时诊断优先通过 `uv run` 执行。
 - 仓库二进制资产使用 Git LFS；缺少对象时先按路径选择性 `git lfs pull`，不得把 LFS 指针当作字体、
   模型或图片内容处理。
-- 后端环境变量只放在 `backend/.env`，不得提交真实密钥或把密钥写入日志、测试快照与文档。
+- 后端持久配置只放在 `backend/config.toml`，按分组使用 TOML 原生类型；进程环境变量可供测试与部署覆盖。
+  `.env` 仅用于一次性转换，成功后归档为 0600 备份，不再读取。不得提交真实配置或备份，不得输出密钥。
+  `backend/fpl_config/` 是不依赖运行时 `app` 或数据库的共享配置格式和转换模块。
 
 ## 常用命令
 
@@ -38,9 +40,14 @@
 - 业务 API 统一注册在 `/v1`；只有 `/health` 与 `/ready` 作为根级探针。
 - `desktop/` 只拥有 Electron 壳、私有启动协议和打包。桌面数据根为
   `~/Library/Application Support/Future Props Lab/`，开发版为 `Future Props Lab Development/`；
-  `runtime/` 保存数据库与素材，`backend/.env` 保存配置与加密密钥，禁止复制仓库运行数据。
+  `runtime/` 保存数据库与素材，`backend/config.toml` 保存配置与加密密钥，禁止复制仓库运行数据。
   桌面配置必须在数据库模块导入前初始化。仅桌面入口托管 Web 静态页，HTML 回退仅用于页面导航，
   未知 `/v1` API 与缺失资源仍为 404；首次账号接口仅在桌面私有凭据边界内启用。
+- 桌面 CLI/SDK 接入默认关闭。`agent/` 保存无密钥的连接描述和 `0600` 客户端凭据，目录为
+  `0700`；短路径 Unix Socket 由 Electron 持有，私有启动 token 不得交给 SDK。Agent 通道只开放
+  `accounts/desktop_agent_operations.json` 明确登记的业务操作，新 API 默认拒绝。配对与界面请求
+  只保存在内存，授权复用 Management API Key；不得通过 Agent 通道开放账号治理、密钥管理或系统命令。
+  `fpl` 随 App 打包，独立 Python SDK 不依赖后端；自动化验收必须使用临时数据目录。
 - Web 保持 `app/ + features/ + shared/ + platform/ + generated/`：`app/` 负责入口、壳与路由，
   `features/` 拥有业务页面和用例，`shared/` 放无业务归属的复用 UI，`platform/` 放 API 与认证
   基础设施，`generated/` 只保存生成契约。

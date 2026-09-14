@@ -77,6 +77,48 @@ class AddTrackOperation(WireModel):
     track: VideoEditorTrack = Field(default=..., alias='track')
     type: Literal['addTrack'] = Field(default=..., alias='type')
 
+class AgentCapabilities(WireModel):
+    operations: dict[str, Any] = Field(default=..., alias='operations')
+    schemas: dict[str, Any] = Field(default=..., alias='schemas')
+    scopes: list[str] = Field(default=..., alias='scopes')
+    user_id: str = Field(default=..., alias='user_id')
+    version: int = Field(default=1, alias='version')
+    workspace_id: str = Field(default=..., alias='workspace_id')
+
+class AgentClaimIn(WireModel):
+    claim_token: str = Field(default=..., alias='claim_token', repr=False, min_length=32, max_length=128)
+
+class AgentClaimOut(WireModel):
+    api_key: str | None = Field(default=None, alias='api_key', repr=False)
+    key_id: str | None = Field(default=None, alias='key_id')
+    status: str = Field(default=..., alias='status')
+    user_id: str | None = Field(default=None, alias='user_id')
+    workspace_id: str | None = Field(default=None, alias='workspace_id')
+
+class AgentDecisionIn(WireModel):
+    approve: bool = Field(default=..., alias='approve')
+    code: str = Field(default=..., alias='code', min_length=6, max_length=6)
+    expected_workspace_id: str = Field(default=..., alias='expected_workspace_id', min_length=1, max_length=128)
+
+class AgentPairIn(WireModel):
+    name: str = Field(default=..., alias='name', min_length=1, max_length=80)
+    scope: Literal['studio:read', 'studio:write'] = Field(default='studio:read', alias='scope')
+
+class AgentPairOut(WireModel):
+    code: str = Field(default=..., alias='code')
+    id: str = Field(default=..., alias='id')
+    name: str = Field(default=..., alias='name')
+    scope: str = Field(default=..., alias='scope')
+    status: str = Field(default=..., alias='status')
+
+class AgentPairStarted(WireModel):
+    claim_token: str = Field(default=..., alias='claim_token', repr=False)
+    code: str = Field(default=..., alias='code')
+    id: str = Field(default=..., alias='id')
+    name: str = Field(default=..., alias='name')
+    scope: str = Field(default=..., alias='scope')
+    status: str = Field(default=..., alias='status')
+
 class AnnotationEntityOperation(WireModel):
     action: Literal['insert', 'update', 'remove', 'move', 'duplicate'] = Field(default=..., alias='action')
     entity: Literal['speaker', 'segment'] = Field(default=..., alias='entity')
@@ -466,6 +508,23 @@ class DemoServiceOut(WireModel):
     revision: int = Field(default=..., alias='revision')
     state: str = Field(default=..., alias='state')
     value: DemoConfig = Field(default=..., alias='value')
+
+class DesktopInbox(WireModel):
+    change_revision: int = Field(default=..., alias='change_revision')
+    requests: list[DesktopOpenOut] = Field(default=..., alias='requests')
+
+class DesktopOpenAck(WireModel):
+    status: Literal['waiting_confirmation', 'opened', 'cancelled', 'unavailable'] = Field(default=..., alias='status')
+
+class DesktopOpenIn(WireModel):
+    kind: Literal['visual', 'galgame', 'video', 'presentation', 'annotation', 'note', 'knowledge'] = Field(default=..., alias='kind')
+    resource_id: str = Field(default=..., alias='resource_id', min_length=1, max_length=128)
+
+class DesktopOpenOut(WireModel):
+    id: str = Field(default=..., alias='id')
+    kind: Literal['visual', 'galgame', 'video', 'presentation', 'annotation', 'note', 'knowledge'] = Field(default=..., alias='kind')
+    resource_id: str = Field(default=..., alias='resource_id', min_length=1, max_length=128)
+    status: Literal['pending', 'waiting_confirmation', 'opened', 'cancelled', 'unavailable'] = Field(default=..., alias='status')
 
 class DesktopSetupIn(WireModel):
     display_name: str = Field(default='', alias='display_name', max_length=128)
@@ -4023,6 +4082,13 @@ AccountSessionListOut.model_rebuild()
 AccountSessionOut.model_rebuild()
 AddClipOperation.model_rebuild()
 AddTrackOperation.model_rebuild()
+AgentCapabilities.model_rebuild()
+AgentClaimIn.model_rebuild()
+AgentClaimOut.model_rebuild()
+AgentDecisionIn.model_rebuild()
+AgentPairIn.model_rebuild()
+AgentPairOut.model_rebuild()
+AgentPairStarted.model_rebuild()
 AnnotationEntityOperation.model_rebuild()
 AnnotationMergeOperation.model_rebuild()
 AnnotationOperationsIn.model_rebuild()
@@ -4089,6 +4155,10 @@ DemoInstallIn.model_rebuild()
 DemoInstallOut.model_rebuild()
 DemoLog.model_rebuild()
 DemoServiceOut.model_rebuild()
+DesktopInbox.model_rebuild()
+DesktopOpenAck.model_rebuild()
+DesktopOpenIn.model_rebuild()
+DesktopOpenOut.model_rebuild()
 DesktopSetupIn.model_rebuild()
 DesktopSetupOut.model_rebuild()
 DeveloperDocumentOut.model_rebuild()

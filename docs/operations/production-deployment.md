@@ -8,7 +8,8 @@ Future Props Lab 的受支持生产形态是单台主机、单个后端进程和
 1. 安装 Node.js 24、npm 11、Python 3.11 或更高版本、Git LFS，以及系统级 FFmpeg/FFprobe。
 2. 运行 `git lfs install` 和 `git lfs pull`，再执行 `npm ci`、`uv sync --frozen --all-groups` 与
    `npm run lfs:check`。生产字体或 VAD 对象缺失/损坏时不得继续构建。
-3. 从 `backend/.env.example` 创建 `backend/.env`，生成并离线备份 `FPL_SECRETS_KEY`。
+3. 新安装从 `backend/config.example.toml` 创建 `backend/config.toml`，生成并离线备份 `security.secrets_key`。
+   旧安装运行 `npm run config:migrate -- --check` / `--apply`，保留原密钥。
 4. 执行 `npm run db:migrate:check`，确认迁移状态有效。
 5. 根据反向代理路径设置 Web 构建变量 `VITE_API_BASE`，然后运行 `npm run build`。同源部署应留空，
    跨源部署应填写 API 的 HTTPS 根地址。它不是后端 `.env` 变量。
@@ -31,7 +32,7 @@ Future Props Lab 的受支持生产形态是单台主机、单个后端进程和
 - `workspaces/`、`profiles/`、`library/assets/`、`applications/`
 - `model-test/attachments/`、`model-test/references/`、`model-test/generated/`
 
-默认位置是 `.runtime/`。同时安全备份 `backend/.env` 中的 `FPL_SECRETS_KEY`，但不要把它放入代码
+默认位置是 `.runtime/`。同时安全备份 `backend/config.toml` 中的 `security.secrets_key`，但不要把它放入代码
 仓库或普通构建产物。仅复制 SQLite 主文件而遗漏素材目录不构成可恢复备份。
 
 ## 升级与回滚
@@ -47,4 +48,4 @@ Future Props Lab 的受支持生产形态是单台主机、单个后端进程和
 
 `FPL_MANAGEMENT_API_KEY` 是管理员在产品内创建、只展示一次的短期调用凭证。需要运行正式 API
 客户端脚本时，通过该进程的环境变量临时传入，完成后立即清除或吊销。它不是后端启动配置，严禁
-写入 `backend/.env`、Shell 历史、日志或文档示例。
+写入 `backend/config.toml`、Shell 历史、日志或文档示例。

@@ -10,10 +10,12 @@ import selectors
 import subprocess
 import sys
 import time
+import tomllib
 from pathlib import Path
 
 import httpx
 import pytest
+from cryptography.fernet import Fernet
 from fastapi.testclient import TestClient
 from PIL import Image
 
@@ -22,6 +24,22 @@ from app.core.desktop import DESKTOP_HEADER, DesktopTransport
 ROOT = Path(__file__).resolve().parents[1]
 TOKEN = "desktop-test-credential-" * 3
 pytestmark = pytest.mark.real_auth
+
+
+def test_legacy_configuration_upgrades_in_backend_process(tmp_path):
+    config_dir = tmp_path / "data/backend"
+    config_dir.mkdir(parents=True)
+    key = Fernet.generate_key().decode()
+    (config_dir / ".env").write_text(f"FPL_SECRETS_KEY={key}\n")
+    server = DesktopServer(tmp_path)
+    try:
+        assert server.client.get("/ready").status_code == 200
+        document = tomllib.loads((config_dir / "config.toml").read_text())
+        assert document["security"]["secrets_key"] == key
+        assert not (config_dir / ".env").exists()
+        assert len(list(config_dir.glob(".env.backup-*"))) == 1
+    finally:
+        server.close()
 
 
 class DesktopServer:
@@ -147,12 +165,12 @@ def test_setup_concurrency_session_and_restart(desktop):
         files={"file": ("project.zip", exported.content, "application/zip")},
     )
     assert imported.status_code == 200, imported.text
-    key = (desktop.directory / "data/backend/.env").read_bytes()
+    key = (desktop.directory / "data/backend/config.toml").read_bytes()
     cookies = dict(desktop.client.cookies)
     desktop.close()
     restarted = DesktopServer(desktop.directory)
     try:
-        assert (desktop.directory / "data/backend/.env").read_bytes() == key
+        assert (desktop.directory / "data/backend/config.toml").read_bytes() == key
         assert restarted.client.get("/v1/desktop/setup").json() == {"setup_required": False}
         restarted.client.cookies.update(cookies)
         assert restarted.client.get("/v1/auth/me").status_code == 200
@@ -195,7 +213,7 @@ def test_transport_routing_and_csrf(desktop):
 def test_missing_key_fails_without_replacing_data(desktop):
     assert initialize(desktop).status_code == 200
     desktop.close()
-    key = desktop.directory / "data/backend/.env"
+    key = desktop.directory / "data/backend/config.toml"
     key.unlink()  # Only this test's isolated configuration.
     with pytest.raises(AssertionError, match="密钥缺失"):
         DesktopServer(desktop.directory)

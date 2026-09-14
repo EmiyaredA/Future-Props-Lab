@@ -4,7 +4,9 @@
 
 项目要求 Node.js 24、npm 11 或更高版本、Python 3.11 或更高版本，以及 Git LFS。克隆仓库后先
 运行 `git lfs install`；使用跳过 LFS 的检出方式时，再运行 `git lfs pull`。随后执行
-`npm run setup`，复制 `backend/.env.example` 为 `backend/.env`，并生成新的 `FPL_SECRETS_KEY`。
+`npm run setup`，新安装复制 `backend/config.example.toml` 为 `backend/config.toml`，并填写新的
+`security.secrets_key`。已有 `.env` 使用 `npm run config:migrate -- --check` / `--apply` 一次性转换，
+保留原密钥；真实配置和备份不能提交。
 不要提交 `.env`、真实供应商凭证或运行期素材。
 
 使用 `npm run dev` 启动完整 Studio。后端固定监听 `127.0.0.1:9000`，Web 开发服务默认使用 3000 端口。首次启动会创建本机 SQLite 并自动执行已登记迁移。

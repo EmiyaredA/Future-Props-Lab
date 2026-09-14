@@ -32,15 +32,17 @@ npm run package:desktop
 ## 数据与配置
 
 默认根目录是 `~/Library/Application Support/Future Props Lab/`；开发版使用同级
-`Future Props Lab Development/`，两者不会读取仓库 `.runtime` 或 `backend/.env`。
+`Future Props Lab Development/`，两者不会读取仓库 `.runtime` 或 `backend/config.toml`。
 
 - `runtime/future-props.db` 及 `runtime/` 下素材是本机数据真源。
-- `backend/.env` 首次以 0600 权限创建独立 `FPL_SECRETS_KEY`，可保存已有后端配置项。
+- `backend/config.toml` 首次以 0600 权限创建独立 `security.secrets_key`，可保存分组的后端配置项。
+  旧版只有 `.env` 时，升级自动校验并转换，保留原密钥和 0600 `.env.backup-*` 备份。
+  已有 TOML 时不读取或合并 `.env`；损坏配置不会触发重新生成密钥。
   数据库路径、同源 CORS 和 HTTP Cookie 模式由桌面入口固定，不接受配置覆盖。
 - `logs/backend.log` 保存后端诊断；故障页提供打开日志目录和手动重试。
 - `backend.lock` 和 Electron 单实例锁防止同一数据目录启动两个后端。
 
-已有数据库但缺失密钥，或已有配置未填写密钥时停止启动。恢复原 `backend/.env`，不要生成新密钥
+已有数据库但缺失密钥，或已有配置未填写密钥时停止启动。恢复原 `backend/config.toml`，不要生成新密钥
 覆盖已有配置。替换 `.app` 不替换数据；备份前退出 App，将整个数据根目录一并复制并妥善保护密钥。
 不要直接操作持久数据库修复状态，管理、导入与导出继续通过正式 API。
 
@@ -79,7 +81,7 @@ macOS 关闭主窗口只是隐藏，Dock 可重开。退出先沿用应用内未
 
 打包白名单包含应用 Python 模块、已登记迁移、原生库、中文字体、允许读取的 Markdown、Web
 构建资源和 FFmpeg/FFprobe。构建前检测 LFS 指针并按精确路径拉取，缺失或摘要不符则失败。
-不收集真实 `.env`、`.runtime`、测试资产或开发缓存。
+不收集真实 `.env`、`config.toml`、配置备份、`.runtime`、测试资产或开发缓存。
 
 PyInstaller 收集并重定位动态库；构建验证每个 Mach-O 的 arm64 架构与链接，不允许依赖
 `/opt/homebrew` 或 `/usr/local`。在无开发工具 PATH 下启动 FFmpeg/FFprobe。

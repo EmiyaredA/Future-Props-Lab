@@ -831,6 +831,75 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/desktop/agent/capabilities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Capabilities */
+        get: operations["capabilities_v1_desktop_agent_capabilities_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/desktop/agent/pairings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Pending Pairings */
+        get: operations["pending_pairings_v1_desktop_agent_pairings_get"];
+        put?: never;
+        /** Begin Pairing */
+        post: operations["begin_pairing_v1_desktop_agent_pairings_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/desktop/agent/pairings/{pair_id}/claim": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Claim Pairing */
+        post: operations["claim_pairing_v1_desktop_agent_pairings__pair_id__claim_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/desktop/agent/pairings/{pair_id}/decision": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Decide Pairing */
+        post: operations["decide_pairing_v1_desktop_agent_pairings__pair_id__decision_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/desktop/setup": {
         parameters: {
             query?: never;
@@ -843,6 +912,74 @@ export interface paths {
         put?: never;
         /** Create First Account */
         post: operations["create_first_account_v1_desktop_setup_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/desktop/ui/inbox": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Inbox */
+        get: operations["inbox_v1_desktop_ui_inbox_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/desktop/ui/open": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Open In App */
+        post: operations["open_in_app_v1_desktop_ui_open_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/desktop/ui/requests/{request_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Open Status */
+        get: operations["open_status_v1_desktop_ui_requests__request_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/desktop/ui/requests/{request_id}/ack": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Acknowledge */
+        post: operations["acknowledge_v1_desktop_ui_requests__request_id__ack_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -4726,6 +4863,94 @@ export interface components {
              */
             type: "addTrack";
         };
+        /** AgentCapabilities */
+        AgentCapabilities: {
+            /** Operations */
+            operations: {
+                [key: string]: unknown;
+            };
+            /** Schemas */
+            schemas: {
+                [key: string]: unknown;
+            };
+            /** Scopes */
+            scopes: string[];
+            /** User Id */
+            user_id: string;
+            /**
+             * Version
+             * @default 1
+             */
+            version: number;
+            /** Workspace Id */
+            workspace_id: string;
+        };
+        /** AgentClaimIn */
+        AgentClaimIn: {
+            /** Claim Token */
+            claim_token: string;
+        };
+        /** AgentClaimOut */
+        AgentClaimOut: {
+            /** Api Key */
+            api_key?: string | null;
+            /** Key Id */
+            key_id?: string | null;
+            /** Status */
+            status: string;
+            /** User Id */
+            user_id?: string | null;
+            /** Workspace Id */
+            workspace_id?: string | null;
+        };
+        /** AgentDecisionIn */
+        AgentDecisionIn: {
+            /** Approve */
+            approve: boolean;
+            /** Code */
+            code: string;
+            /** Expected Workspace Id */
+            expected_workspace_id: string;
+        };
+        /** AgentPairIn */
+        AgentPairIn: {
+            /** Name */
+            name: string;
+            /**
+             * Scope
+             * @default studio:read
+             * @enum {string}
+             */
+            scope: "studio:read" | "studio:write";
+        };
+        /** AgentPairOut */
+        AgentPairOut: {
+            /** Code */
+            code: string;
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** Scope */
+            scope: string;
+            /** Status */
+            status: string;
+        };
+        /** AgentPairStarted */
+        AgentPairStarted: {
+            /** Claim Token */
+            claim_token: string;
+            /** Code */
+            code: string;
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** Scope */
+            scope: string;
+            /** Status */
+            status: string;
+        };
         /** AnnotationEntityOperation */
         AnnotationEntityOperation: {
             /**
@@ -5557,6 +5782,48 @@ export interface components {
             /** State */
             state: string;
             value: components["schemas"]["DemoConfig"];
+        };
+        /** DesktopInbox */
+        DesktopInbox: {
+            /** Change Revision */
+            change_revision: number;
+            /** Requests */
+            requests: components["schemas"]["DesktopOpenOut"][];
+        };
+        /** DesktopOpenAck */
+        DesktopOpenAck: {
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "waiting_confirmation" | "opened" | "cancelled" | "unavailable";
+        };
+        /** DesktopOpenIn */
+        DesktopOpenIn: {
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "visual" | "galgame" | "video" | "presentation" | "annotation" | "note" | "knowledge";
+            /** Resource Id */
+            resource_id: string;
+        };
+        /** DesktopOpenOut */
+        DesktopOpenOut: {
+            /** Id */
+            id: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "visual" | "galgame" | "video" | "presentation" | "annotation" | "note" | "knowledge";
+            /** Resource Id */
+            resource_id: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "pending" | "waiting_confirmation" | "opened" | "cancelled" | "unavailable";
         };
         /** DesktopSetupIn */
         DesktopSetupIn: {
@@ -16120,6 +16387,149 @@ export interface operations {
             };
         };
     };
+    capabilities_v1_desktop_agent_capabilities_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentCapabilities"];
+                };
+            };
+        };
+    };
+    pending_pairings_v1_desktop_agent_pairings_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentPairOut"][];
+                };
+            };
+        };
+    };
+    begin_pairing_v1_desktop_agent_pairings_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AgentPairIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentPairStarted"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    claim_pairing_v1_desktop_agent_pairings__pair_id__claim_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                pair_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AgentClaimIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentClaimOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    decide_pairing_v1_desktop_agent_pairings__pair_id__decision_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                pair_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AgentDecisionIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentPairOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_setup_v1_desktop_setup_get: {
         parameters: {
             query?: never;
@@ -16160,6 +16570,125 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DesktopSetupOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    inbox_v1_desktop_ui_inbox_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DesktopInbox"];
+                };
+            };
+        };
+    };
+    open_in_app_v1_desktop_ui_open_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DesktopOpenIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DesktopOpenOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    open_status_v1_desktop_ui_requests__request_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                request_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DesktopOpenOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    acknowledge_v1_desktop_ui_requests__request_id__ack_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                request_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DesktopOpenAck"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DesktopOpenOut"];
                 };
             };
             /** @description Validation Error */

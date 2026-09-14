@@ -7,12 +7,10 @@ from collections.abc import Iterator
 from contextlib import contextmanager
 from pathlib import Path
 
-from dotenv import dotenv_values
-
 from db.migrations.registry import LATEST_MIGRATION_ID, MIGRATIONS, Migration
+from fpl_config import CONFIG_FILE, read_config
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-ENV_FILE = REPO_ROOT / "backend" / ".env"
 DEFAULT_DATABASE_PATH = REPO_ROOT / ".runtime" / "future-props.db"
 
 
@@ -28,8 +26,8 @@ def resolve_database_path(path: str | Path | None = None) -> Path:
     if path is not None:
         configured = Path(path).expanduser()
     else:
-        env = dotenv_values(ENV_FILE)
-        raw = os.environ.get("FPL_DATABASE_PATH") or env.get("FPL_DATABASE_PATH")
+        configured_values = read_config(CONFIG_FILE)
+        raw = os.environ.get("FPL_DATABASE_PATH", configured_values.get("fpl_database_path"))
         configured = Path(str(raw)) if raw else DEFAULT_DATABASE_PATH
         configured = configured.expanduser()
     resolved = configured if configured.is_absolute() else REPO_ROOT / configured

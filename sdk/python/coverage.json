@@ -343,6 +343,20 @@
     "verification": "named-operation-contract"
   },
   {
+    "http": "GET /v1/desktop/agent/capabilities",
+    "sdk": "client.desktop.capabilities",
+    "document": "/docs.html?page=sdk-reference-desktop#capabilities",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/desktop/agent/pairings",
+    "sdk": "client.desktop.pending_pairings",
+    "document": "/docs.html?page=sdk-reference-desktop#pending-pairings",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
     "http": "GET /v1/desktop/setup",
     "sdk": "client.desktop.get_setup",
     "document": "/docs.html?page=sdk-reference-desktop#get-setup",
@@ -350,9 +364,58 @@
     "verification": "named-operation-contract"
   },
   {
+    "http": "GET /v1/desktop/ui/inbox",
+    "sdk": "client.desktop.inbox",
+    "document": "/docs.html?page=sdk-reference-desktop#inbox",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "GET /v1/desktop/ui/requests/{request_id}",
+    "sdk": "client.desktop.open_status",
+    "document": "/docs.html?page=sdk-reference-desktop#open-status",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/desktop/agent/pairings",
+    "sdk": "client.desktop.begin_pairing",
+    "document": "/docs.html?page=sdk-reference-desktop#begin-pairing",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/desktop/agent/pairings/{pair_id}/claim",
+    "sdk": "client.desktop.claim_pairing",
+    "document": "/docs.html?page=sdk-reference-desktop#claim-pairing",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/desktop/agent/pairings/{pair_id}/decision",
+    "sdk": "client.desktop.decide_pairing",
+    "document": "/docs.html?page=sdk-reference-desktop#decide-pairing",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
     "http": "POST /v1/desktop/setup",
     "sdk": "client.desktop.create_first_account",
     "document": "/docs.html?page=sdk-reference-desktop#create-first-account",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/desktop/ui/open",
+    "sdk": "client.desktop.open_in_app",
+    "document": "/docs.html?page=sdk-reference-desktop#open-in-app",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/desktop/ui/requests/{request_id}/ack",
+    "sdk": "client.desktop.acknowledge",
+    "document": "/docs.html?page=sdk-reference-desktop#acknowledge",
     "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
     "verification": "named-operation-contract"
   },

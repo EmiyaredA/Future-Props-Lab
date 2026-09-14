@@ -207,7 +207,13 @@ export default function App() {
     };
     window.addEventListener("future-props:navigate", handle);
     const agentOpen = (event: Event) => {
-      const request = (event as CustomEvent<{ path: string; active: () => boolean; opened: () => void }>).detail;
+      const request = (
+        event as CustomEvent<{
+          path: string;
+          active: () => boolean;
+          opened: () => void;
+        }>
+      ).detail;
       const next = parseRoute(request.path);
       const commit = () => {
         if (!request.active()) return;

@@ -21,8 +21,12 @@ class DesktopConnectionError(Exception):
 
 
 def agent_directory(data_dir=None, *, development=False):
-    root = Path(data_dir) if data_dir else Path.home() / "Library/Application Support" / (
-        "Future Props Lab Development" if development else "Future Props Lab"
+    root = (
+        Path(data_dir)
+        if data_dir
+        else Path.home()
+        / "Library/Application Support"
+        / ("Future Props Lab Development" if development else "Future Props Lab")
     )
     return root / "agent"
 
@@ -50,7 +54,9 @@ def discover(data_dir=None, *, development=False):
         _private(socket, socket=True)
         return str(socket)
     except (OSError, ValueError, KeyError) as exc:
-        raise DesktopConnectionError("App 未启动或未开启接入，请在账号设置的 API 密钥页开启") from exc
+        raise DesktopConnectionError(
+            "App 未启动或未开启接入，请在账号设置的 API 密钥页开启"
+        ) from exc
 
 
 def credential_path(data_dir=None, *, development=False, profile="default"):
@@ -87,15 +93,23 @@ def _save_credentials(data, **options):
 def desktop_client(*, data_dir=None, development=False, profile="default", timeout=120):
     socket = discover(data_dir, development=development)
     key = _read_credentials(data_dir=data_dir, development=development, profile=profile)
-    return Client(base_url=BASE_URL, api_key=key, timeout=timeout,
-                  transport=httpx.HTTPTransport(uds=socket, retries=0))
+    return Client(
+        base_url=BASE_URL,
+        api_key=key,
+        timeout=timeout,
+        transport=httpx.HTTPTransport(uds=socket, retries=0),
+    )
 
 
 def async_desktop_client(*, data_dir=None, development=False, profile="default", timeout=120):
     socket = discover(data_dir, development=development)
     key = _read_credentials(data_dir=data_dir, development=development, profile=profile)
-    return AsyncClient(base_url=BASE_URL, api_key=key, timeout=timeout,
-                       transport=httpx.AsyncHTTPTransport(uds=socket, retries=0))
+    return AsyncClient(
+        base_url=BASE_URL,
+        api_key=key,
+        timeout=timeout,
+        transport=httpx.AsyncHTTPTransport(uds=socket, retries=0),
+    )
 
 
 def _json(response):
@@ -104,22 +118,42 @@ def _json(response):
     return response.json()
 
 
-def pair_desktop(*, name, write=False, data_dir=None, development=False, profile="default",
-                 timeout=300, on_pending=None):
+def pair_desktop(
+    *,
+    name,
+    write=False,
+    data_dir=None,
+    development=False,
+    profile="default",
+    timeout=300,
+    on_pending=None,
+):
     options = dict(data_dir=data_dir, development=development, profile=profile)
     socket = discover(data_dir, development=development)
     if credential_path(**options).exists():
         raise DesktopConnectionError("此 profile 已保存授权；请使用其他 profile 或先 disconnect")
-    with httpx.Client(base_url=BASE_URL, transport=httpx.HTTPTransport(uds=socket), timeout=15) as http:
-        request = _json(http.post("/v1/desktop/agent/pairings", json={
-            "name": name, "scope": "studio:write" if write else "studio:read",
-        }))
+    with httpx.Client(
+        base_url=BASE_URL, transport=httpx.HTTPTransport(uds=socket), timeout=15
+    ) as http:
+        request = _json(
+            http.post(
+                "/v1/desktop/agent/pairings",
+                json={
+                    "name": name,
+                    "scope": "studio:write" if write else "studio:read",
+                },
+            )
+        )
         if on_pending:
             on_pending({key: request[key] for key in ("id", "code", "name", "scope")})
         deadline = time.monotonic() + min(timeout, 300)
         while time.monotonic() < deadline:
-            result = _json(http.post(f"/v1/desktop/agent/pairings/{request['id']}/claim",
-                                     json={"claim_token": request["claim_token"]}))
+            result = _json(
+                http.post(
+                    f"/v1/desktop/agent/pairings/{request['id']}/claim",
+                    json={"claim_token": request["claim_token"]},
+                )
+            )
             if result["status"] == "approved":
                 _save_credentials(result, **options)
                 return {key: value for key, value in result.items() if key != "api_key"}

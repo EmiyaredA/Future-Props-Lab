@@ -61,9 +61,15 @@ class DesktopAgent:
             raise AgentError(429, "pairing_rate_limited")
         self.attempts.append(now)
         token = secrets.token_urlsafe(32)
-        row = dict(id=secrets.token_hex(16), code=f"{secrets.randbelow(1000000):06d}",
-                   name=name.strip(), scope=scope, status="pending", expires=now + 300,
-                   claim_hash=hashlib.sha256(token.encode()).digest())
+        row = dict(
+            id=secrets.token_hex(16),
+            code=f"{secrets.randbelow(1000000):06d}",
+            name=name.strip(),
+            scope=scope,
+            status="pending",
+            expires=now + 300,
+            claim_hash=hashlib.sha256(token.encode()).digest(),
+        )
         self.pairings[row["id"]] = row
         return {**row, "claim_token": token}
 
@@ -86,26 +92,41 @@ class DesktopAgent:
                 return row
             try:
                 key, secret = await create_api_key(
-                    session, principal, name=f"Agent: {row['name']}",
-                    scopes=[row["scope"]], expires_in_days=90, client_ip=ip,
+                    session,
+                    principal,
+                    name=f"Agent: {row['name']}",
+                    scopes=[row["scope"]],
+                    expires_in_days=90,
+                    client_ip=ip,
                 )
             except AccountError:
                 await session.rollback()
                 raise
-            row.update(status="approved", secret=secret, key_id=key.id,
-                       user_id=principal.user_id, workspace_id=principal.workspace_id)
+            row.update(
+                status="approved",
+                secret=secret,
+                key_id=key.id,
+                user_id=principal.user_id,
+                workspace_id=principal.workspace_id,
+            )
             return row
 
     async def claim(self, pair_id, token):
         async with self.lock:
             row = self.get_pair(pair_id)
-            if not secrets.compare_digest(row["claim_hash"], hashlib.sha256(token.encode()).digest()):
+            if not secrets.compare_digest(
+                row["claim_hash"], hashlib.sha256(token.encode()).digest()
+            ):
                 raise AgentError(403, "invalid_claim_token")
             if row["status"] == "claimed":
                 raise AgentError(409, "pairing_already_claimed")
             result = {"status": row["status"]}
             if row["status"] == "approved":
-                result.update(api_key=row.pop("secret"), key_id=row["key_id"],
-                              user_id=row["user_id"], workspace_id=row["workspace_id"])
+                result.update(
+                    api_key=row.pop("secret"),
+                    key_id=row["key_id"],
+                    user_id=row["user_id"],
+                    workspace_id=row["workspace_id"],
+                )
                 row["status"] = "claimed"
             return result

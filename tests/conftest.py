@@ -10,6 +10,7 @@ os.environ.setdefault("FPL_SECRETS_KEY", "Q3kT62dvbHHXXulO5XPCR84_yXK6t-6LXz7BcI
 TEST_RUNTIME_DIR = Path(tempfile.mkdtemp(prefix="future-props-tests-"))
 TEST_DATABASE_PATH = TEST_RUNTIME_DIR / "future-props-test.db"
 os.environ["FPL_DATABASE_PATH"] = str(TEST_DATABASE_PATH)
+os.environ["FPL_CONFIG_FILE"] = str(TEST_RUNTIME_DIR / "config.toml")
 
 from db.migrations import apply_migrations  # noqa: E402
 

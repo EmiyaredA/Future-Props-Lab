@@ -4,16 +4,37 @@ import time
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 
-from app.accounts.desktop_agent import MANIFEST, AgentError
+from app.accounts.desktop_agent import MANIFEST, AgentError, DesktopAgent, allows_agent
 from app.accounts.desktop_ui import open_resource, ui_request
 from app.deps import SessionDep, authenticate_studio_request, client_ip
 from app.routes.desktop import require_desktop
 from app.schemas.desktop_agent import (
-    AgentCapabilities, AgentClaimIn, AgentClaimOut, AgentDecisionIn, AgentPairIn,
-    AgentPairOut, AgentPairStarted, DesktopInbox, DesktopOpenAck, DesktopOpenIn, DesktopOpenOut,
+    AgentCapabilities,
+    AgentClaimIn,
+    AgentClaimOut,
+    AgentDecisionIn,
+    AgentPairIn,
+    AgentPairOut,
+    AgentPairStarted,
+    DesktopInbox,
+    DesktopOpenAck,
+    DesktopOpenIn,
+    DesktopOpenOut,
 )
 
 router = APIRouter(prefix="/desktop", tags=["desktop"], dependencies=[Depends(require_desktop)])
+
+
+def configure_agent(app):
+    from starlette.responses import JSONResponse
+
+    app.state.desktop_agent = DesktopAgent()
+
+    async def agent_error(_request, exc):
+        return JSONResponse({"code": exc.code, "message": exc.code}, status_code=exc.status)
+
+    app.add_exception_handler(AgentError, agent_error)
+    return allows_agent
 
 
 def runtime(request):
@@ -21,7 +42,9 @@ def runtime(request):
 
 
 async def identity(request, session, *, browser=False):
-    principal = await authenticate_studio_request(request, session, required_scope="studio:private_read")
+    principal = await authenticate_studio_request(
+        request, session, required_scope="studio:private_read"
+    )
     if browser and principal.auth_kind != "session":
         raise HTTPException(403, detail="browser_session_required")
     return principal
@@ -53,8 +76,12 @@ async def pending_pairings(request: Request, session: SessionDep):
 
 
 @router.post("/agent/pairings/{pair_id}/decision", response_model=AgentPairOut)
-async def decide_pairing(request: Request, pair_id: str, body: AgentDecisionIn, session: SessionDep):
+async def decide_pairing(
+    request: Request, pair_id: str, body: AgentDecisionIn, session: SessionDep
+):
     principal = await identity(request, session, browser=True)
+    if body.expected_workspace_id != principal.workspace_id:
+        raise AgentError(409, "workspace_access_changed")
     return await runtime(request).decide(pair_id, body, session, principal, client_ip(request))
 
 
@@ -66,12 +93,18 @@ async def capabilities(request: Request, session: SessionDep):
     for key, operation in MANIFEST["operations"].items():
         method, path = key.split(" ", 1)
         operations[f"{operation['resource']}.{operation['method']}"] = {
-            "method": method, "path": path,
+            "method": method,
+            "path": path,
             **schema["paths"][path][method.lower()],
         }
-    return dict(version=MANIFEST["version"], user_id=principal.user_id,
-                workspace_id=principal.workspace_id, scopes=sorted(principal.scopes),
-                operations=operations, schemas=schema["components"]["schemas"])
+    return dict(
+        version=MANIFEST["version"],
+        user_id=principal.user_id,
+        workspace_id=principal.workspace_id,
+        scopes=sorted(principal.scopes),
+        operations=operations,
+        schemas=schema["components"]["schemas"],
+    )
 
 
 @router.post("/ui/open", response_model=DesktopOpenOut, status_code=202)
@@ -94,9 +127,14 @@ async def inbox(request: Request, session: SessionDep):
     state.prune()
     audience = (principal.user_id, principal.workspace_id)
     state.viewers[audience] = time.monotonic()
-    return dict(requests=[row for row in state.ui_requests.values()
-                          if row["audience"] == audience and row["status"] == "pending"],
-                change_revision=state.changes.get(audience, 0))
+    return dict(
+        requests=[
+            row
+            for row in state.ui_requests.values()
+            if row["audience"] == audience and row["status"] == "pending"
+        ],
+        change_revision=state.changes.get(audience, 0),
+    )
 
 
 @router.post("/ui/requests/{request_id}/ack", response_model=DesktopOpenOut)

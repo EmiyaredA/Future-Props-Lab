@@ -49,7 +49,13 @@ function verifyApp(appPath, outputDir) {
       }
       const relative = path.relative(appPath, file);
       if (
-        [".env", "future-props.db"].includes(entry) ||
+        [
+          ".env",
+          "config.toml",
+          ".config-migration.lock",
+          "future-props.db",
+        ].includes(entry) ||
+        /^(\.env\.backup-|config\.toml\.backup-|\.config-)/.test(entry) ||
         relative.split(path.sep).includes(".runtime")
       )
         throw new Error(`Forbidden resource: ${relative}`);
@@ -84,6 +90,17 @@ function verifyApp(appPath, outputDir) {
     }),
   );
   mkdirSync(outputDir, { recursive: true });
+  const cli = execFileSync(
+    path.join(appPath, "Contents/Resources/fpl/fpl"),
+    ["--help"],
+    {
+      cwd: "/tmp",
+      env: { PATH: "/usr/bin:/bin" },
+      encoding: "utf8",
+    },
+  );
+  if (!cli.includes("connect") || !cli.includes("operations"))
+    throw new Error("Packaged CLI smoke check failed");
   writeFileSync(
     path.join(outputDir, "app-manifest.json"),
     JSON.stringify(
@@ -92,6 +109,7 @@ function verifyApp(appPath, outputDir) {
         signing: "ad-hoc, not notarized",
         icon: path.relative(appPath, iconFile),
         native,
+        cli: "standalone fpl --help passed with system-only PATH",
         inventory,
       },
       null,

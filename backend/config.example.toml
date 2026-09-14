@@ -1,0 +1,30 @@
+# 复制为 backend/config.toml；真实配置和备份不能提交或分享。
+# 旧安装使用 npm run config:migrate -- --check / --apply 转换，勿生成替代密钥。
+
+[storage]
+# 相对路径以仓库根目录为准；桌面版由启动入口固定，忽略此项。
+database_path = ".runtime/future-props.db"
+
+[security]
+# 仅新安装生成 Fernet 密钥；已有数据必须保留原始密钥。
+secrets_key = "replace-with-a-valid-fernet-key"
+
+[http]
+cors_origins = ["http://127.0.0.1:3000", "http://localhost:3000"]
+# HTTPS 部署必须为 true；桌面版固定使用本机同源 HTTP。
+auth_cookie_secure = false
+
+[limits]
+visual_asset_max_bytes = 209715200
+galgame_export_max_bytes = 8589934592
+project_snapshot_max_bytes = 8589934592
+project_snapshot_max_files = 10000
+skill_archive_max_bytes = 10485760
+skill_expanded_max_bytes = 52428800
+skill_max_files = 500
+
+[integrations]
+# 留空不外传参考媒体；配置时只接受无凭证 HTTPS URL。
+temp_media_upload_url = ""
+# 绝对可执行文件路径数组；默认禁用 stdio。
+mcp_stdio_allowed_commands = []

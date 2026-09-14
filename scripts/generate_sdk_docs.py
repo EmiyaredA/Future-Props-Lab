@@ -8,7 +8,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 LABELS = {
-    "desktop": "桌面首次初始化",
+    "desktop": "桌面初始化与本地 Agent 接入",
     "accounts": "登录与个人账号",
     "workspaces": "工作区与邀请",
     "admin": "账号管理",

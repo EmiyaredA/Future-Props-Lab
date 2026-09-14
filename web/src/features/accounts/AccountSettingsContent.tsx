@@ -223,7 +223,12 @@ export function AccountSettingsContent({
           </section>
         </>
       ) : null}
-      {tab === "keys" ? <><DesktopAgentSettings /><ApiKeysSettings state={state} /></> : null}
+      {tab === "keys" ? (
+        <>
+          <DesktopAgentSettings />
+          <ApiKeysSettings state={state} />
+        </>
+      ) : null}
       {tab === "events" ? (
         <section className="settings-section">
           <h3>本人安全事件</h3>

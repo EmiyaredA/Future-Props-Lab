@@ -1,8 +1,35 @@
-# 环境变量
+# TOML 配置与环境变量
 
-后端只读取 `backend/.env`，可从 `backend/.env.example` 创建。
+后端只读取 `backend/config.toml`，可从 `backend/config.example.toml` 创建。
 
-macOS 桌面版例外：配置在 `~/Library/Application Support/Future Props Lab/backend/.env`，
+配置按 `[storage]`、`[security]`、`[http]`、`[limits]`、`[integrations]` 分组：
+
+| TOML 字段 | 兼容的进程环境变量 |
+| --- | --- |
+| `storage.database_path` | `FPL_DATABASE_PATH` |
+| `security.secrets_key` | `FPL_SECRETS_KEY` |
+| `http.cors_origins`（字符串数组） | `CORS_ORIGINS`（逗号分隔） |
+| `http.auth_cookie_secure`（布尔值） | `FPL_AUTH_COOKIE_SECURE` |
+| `limits.<名称>`（正整数） | 下文各容量/文件数变量去掉 `FPL_` 并小写 |
+| `integrations.temp_media_upload_url` | `FPL_TEMP_MEDIA_UPLOAD_URL` |
+| `integrations.mcp_stdio_allowed_commands`（字符串数组） | `FPL_MCP_STDIO_ALLOWED_COMMANDS`（系统路径分隔符） |
+
+优先级：显式程序参数 > 进程环境变量 > TOML > 默认值。`FPL_CONFIG_FILE` 可为测试或部署指定独立
+配置路径（建议绝对路径），默认仍为仓库 `backend/config.toml`；它不用于桌面版。
+格式错误、未知字段、类型错误会停止启动，不回退 `.env`。TOML 不支持 `${...}` 环境变量插值。
+
+旧项目升级：先运行 `npm run config:migrate -- --check`，确认后运行
+`npm run config:migrate -- --apply`。可通过 `--config /absolute/backend/config.toml` 指定目标。
+转换只在 TOML 不存在时执行；新文件与 `.env.backup-时间戳-随机标识` 均为 0600，保留原密钥。
+已有 TOML 时不覆盖、不合并，残留 `.env` 不再读取。`APP_HOST`、`APP_PORT`、
+`FPL_MANAGEMENT_API_KEY`、空的旧认证变量及未知项只留在备份；非空旧认证变量阻止转换。
+转换失败保留原文件及已生成的备份。若在发布 TOML 后中断，两份文件可同时存在，TOML 仍优先。
+
+只有全新安装才生成密钥：`uv run python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"`。
+将结果填入 `security.secrets_key`，并设文件权限为 `0600`。已有数据不能生成替代密钥。
+TOML 是文本格式，不会加密配置本身；真实配置和备份都不能提交、分享或打包。
+
+macOS 桌面版例外：配置在 `~/Library/Application Support/Future Props Lab/backend/config.toml`，
 数据库与素材在同级 `runtime/`。开发版使用 `Future Props Lab Development/`。
 桌面入口首次生成独立密钥；已有数据库缺少密钥时拒绝启动。桌面构建忽略 Web `.env` 与
 `VITE_API_BASE`，固定使用本地同源服务。详见 [桌面构建与配置](../operations/desktop-macos.md)。
@@ -11,7 +38,7 @@ macOS 桌面版例外：配置在 `~/Library/Application Support/Future Props La
 自身持久记录恢复归属，均不提供 `workspace_id` 环境变量或 `default` 回退。生成任务状态机也不需要
 独立 Worker 配置，仍由单进程应用生命周期管理。
 
-Web 的 `VITE_API_BASE` 是执行 `npm run build` 时读取的构建变量，不写入 `backend/.env`。同源反向
+Web 的 `VITE_API_BASE` 是执行 `npm run build` 时读取的构建变量，不写入 `backend/config.toml`。同源反向
 代理部署保持为空；跨源部署填写 API 的 HTTPS 根地址。完整步骤见生产部署指南。
 
 - `FPL_DATABASE_PATH`：可选 SQLite 文件路径，默认 `.runtime/future-props.db`；相对路径以仓库根目录为准。
@@ -29,10 +56,10 @@ Web 的 `VITE_API_BASE` 是执行 `npm run build` 时读取的构建变量，不
 - `FPL_AUTH_COOKIE_SECURE`：Session/CSRF Cookie 的 Secure 标志；本机 HTTP 开发默认 `false`，HTTPS 环境必须设为 `true`。
 - `CORS_ORIGINS`：允许访问 API 的 Studio 来源，逗号分隔。
 
-标准启动命令固定将后端监听在 `127.0.0.1:9000`，Web 开发服务监听在 `0.0.0.0:3000`。监听地址和端口不是受支持的 `.env` 配置项；临时诊断需要改端口时，应直接向对应开发命令传参，并同步配置 Web API 地址。
+标准启动命令固定将后端监听在 `127.0.0.1:9000`，Web 开发服务监听在 `0.0.0.0:3000`。监听地址和端口不是受支持的 TOML 配置项；临时诊断需要改端口时，应直接向对应开发命令传参，并同步配置 Web API 地址。
 
 模型 API Key、工具 API 密钥、MCP Bearer Token 与 stdio 环境变量只以密文落库，列表接口仅返回
-已配置标志、尾部提示或环境变量名称。生产部署必须自行备份 `FPL_SECRETS_KEY`，且不得把 `.env`
+已配置标志、尾部提示或环境变量名称。生产部署必须自行备份 `security.secrets_key`，且不得把真实配置或备份
 提交到版本库。
 
 `FPL_STUDIO_TOKEN` 已被删除；变量仍存在时应用会明确拒绝启动。浏览器使用 HttpOnly
@@ -41,7 +68,7 @@ HTTPS 反向代理部署必须同时开启 `FPL_AUTH_COOKIE_SECURE`。账号只�
 `npm run account -- create-admin|create-user|reset-password` 创建和恢复，不开放注册或邮件找回。
 
 `FPL_MANAGEMENT_API_KEY` 不是后端配置项。它只能作为调用管理 API 脚本时的短期进程环境变量，
-不得保存到 `backend/.env`；使用完成后应清除环境变量并吊销不再需要的 Key。
+不得保存到 `backend/config.toml`；使用完成后应清除环境变量并吊销不再需要的 Key。
 
 视频生成时，用户上传的音频和视频先保存在本机素材库。只有管理员显式配置
 `FPL_TEMP_MEDIA_UPLOAD_URL` 后，后端才会在数据库事务外把供应商要求公网可达的参考媒体流式上传，

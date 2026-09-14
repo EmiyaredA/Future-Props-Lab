@@ -149,6 +149,11 @@ activemq-data/
 
 # Environments
 .env
+.env.backup-*
+backend/config.toml
+**/backend/config.toml.backup-*
+.config-*.tmp
+.config-migration.lock
 .envrc
 .venv
 env/

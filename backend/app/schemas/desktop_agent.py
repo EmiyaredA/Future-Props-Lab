@@ -37,6 +37,7 @@ class AgentClaimOut(BaseModel):
 class AgentDecisionIn(BaseModel):
     approve: bool
     code: str = Field(min_length=6, max_length=6)
+    expected_workspace_id: str = Field(min_length=1, max_length=128)
 
 
 class AgentCapabilities(BaseModel):

@@ -120,7 +120,11 @@ def verify_bundle(directory: Path) -> None:
         if not file.is_file() or file.is_symlink():
             continue
         relative = file.relative_to(directory)
-        if file.name == ".env" or ".runtime" in relative.parts:
+        if (
+            file.name in {".env", "config.toml", ".config-migration.lock"}
+            or file.name.startswith((".env.backup-", "config.toml.backup-", ".config-"))
+            or ".runtime" in relative.parts
+        ):
             raise SystemExit(f"Forbidden packaged resource: {relative}")
         description = run("file", "-b", str(file))
         if "Mach-O" in description:
@@ -189,20 +193,52 @@ def main() -> None:
         f"{notices}:third-party",
         "--add-data",
         f"{ROOT / 'backend/app/media_rendering/assets'}:app/media_rendering/assets",
+        "--add-data",
+        f"{ROOT / 'backend/app/accounts/desktop_agent_operations.json'}:app/accounts",
     ]
     docs = [ROOT / "README.md", ROOT / "CONTRIBUTING.md", ROOT / "docs/assets/MANIFEST.md"]
     for folder in ("architecture", "operations", "reference"):
         docs.extend(sorted((ROOT / "docs" / folder).glob("*.md")))
     for document in docs:
         args.extend(["--add-data", f"{document}:{document.relative_to(ROOT).parent}"])
-    # Avoid loading the source checkout's .env during module discovery.
+    # Use isolated values and an absent config during module discovery.
     from cryptography.fernet import Fernet
 
     env = {key: value for key, value in os.environ.items() if not key.startswith("FPL_")}
     env["FPL_SECRETS_KEY"] = Fernet.generate_key().decode()
     env["FPL_DATABASE_PATH"] = str(BUILD / "analysis-only.db")
+    env["FPL_CONFIG_FILE"] = str(BUILD / "analysis-only-config.toml")
     subprocess.run([*args, str(ROOT / "desktop/backend/entry.py")], cwd=ROOT, env=env, check=True)
     verify_bundle(BUILD / "backend/fpl-server")
+    subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "PyInstaller",
+            "--noconfirm",
+            "--clean",
+            "--onedir",
+            "--name",
+            "fpl",
+            "--target-arch",
+            "arm64",
+            "--distpath",
+            str(BUILD / "cli"),
+            "--workpath",
+            str(BUILD / "cli-pyinstaller"),
+            "--specpath",
+            str(BUILD),
+            "--paths",
+            str(ROOT / "sdk/python/src"),
+            "--collect-submodules",
+            "future_props_lab",
+            str(ROOT / "desktop/backend/cli_entry.py"),
+        ],
+        cwd=ROOT,
+        env=env,
+        check=True,
+    )
+    print(run(str(BUILD / "cli/fpl/fpl"), "--help", env={"PATH": "/usr/bin:/bin"}))
 
 
 if __name__ == "__main__":

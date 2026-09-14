@@ -4,7 +4,9 @@ import argparse
 import inspect
 import json
 import mimetypes
+import os
 import sys
+import tempfile
 import time
 from contextlib import ExitStack
 from pathlib import Path
@@ -22,6 +24,7 @@ def emit(value, *, stream=sys.stdout):
         if isinstance(item, BaseModel):
             return item.model_dump(mode="json")
         raise TypeError(type(item).__name__)
+
     print(json.dumps(value, ensure_ascii=False, default=encode), file=stream, flush=True)
 
 
@@ -50,7 +53,10 @@ def parser():
             invoke.add_argument("--timeout", type=float, default=300)
             invoke.add_argument("--interval", type=float, default=2)
     opening = commands.add_parser("open", help="在 App 中打开资源，保留未保存保护")
-    opening.add_argument("kind", choices=["visual", "galgame", "video", "presentation", "annotation", "note", "knowledge"])
+    opening.add_argument(
+        "kind",
+        choices=["visual", "galgame", "video", "presentation", "annotation", "note", "knowledge"],
+    )
     opening.add_argument("resource_id")
     opening.add_argument("--timeout", type=float, default=30)
     return cli
@@ -63,7 +69,7 @@ def inputs(value):
         raw = Path(value).read_text()
     result = json.loads(raw or "{}")
     if not isinstance(result, dict):
-        raise ValueError("输入必须为 SDK 关键字参数对象，例如 {\"body\": {...}}")
+        raise ValueError('输入必须为 SDK 关键字参数对象，例如 {"body": {...}}')
     return result
 
 
@@ -99,11 +105,14 @@ def invoke(client, args, capabilities):
                 raise ValueError("wait 需要返回 status 的任务查询操作")
             status = data["status"]
             if status == "completed":
-                emit(result); return
+                emit(result)
+                return
             if status in {"failed", "cancelled"}:
-                emit({"error": "task_failed", "task": result}); return 5
+                emit({"error": "task_failed", "task": result})
+                return 5
             if time.monotonic() >= deadline:
-                emit({"error": "task_timeout", "task": result}); return 6
+                emit({"error": "task_timeout", "task": result})
+                return 6
             emit({"status": status}, stream=sys.stderr)
             time.sleep(args.interval)
     with ExitStack() as stack:
@@ -114,13 +123,28 @@ def invoke(client, args, capabilities):
                 if not separator or not field:
                     raise ValueError("文件参数应为 FIELD=PATH")
                 file = Path(filename)
-                files.append((field, (file.name, stack.enter_context(file.open("rb")),
-                                       mimetypes.guess_type(file.name)[0] or "application/octet-stream")))
+                files.append(
+                    (
+                        field,
+                        (
+                            file.name,
+                            stack.enter_context(file.open("rb")),
+                            mimetypes.guess_type(file.name)[0] or "application/octet-stream",
+                        ),
+                    )
+                )
             kwargs["files"] = files
         inspect.signature(function).bind(**kwargs)
         output = None
+        temporary = None
         if args.output:
-            output = stack.enter_context(args.output.open("wb" if args.overwrite else "xb"))
+            if args.output.exists() and not args.overwrite:
+                raise FileExistsError("输出文件已存在；请指定其他路径或显式使用 --overwrite")
+            descriptor, temporary = tempfile.mkstemp(
+                prefix=".fpl-download-", dir=args.output.parent
+            )
+            stack.callback(lambda: os.unlink(temporary) if os.path.exists(temporary) else None)
+            output = stack.enter_context(os.fdopen(descriptor, "wb"))
         result = function(**kwargs)
         if isinstance(result, Download):
             with result:
@@ -128,12 +152,20 @@ def invoke(client, args, capabilities):
                     raise ValueError("下载操作必须指定 --output PATH")
                 for chunk in result.iter_bytes():
                     output.write(chunk)
+                output.flush()
+                os.fsync(output.fileno())
+            if args.overwrite:
+                os.replace(temporary, args.output)
+            else:
+                os.link(temporary, args.output)
             emit({"saved": str(args.output.resolve())})
         elif isinstance(result, EventStream):
             with result:
                 for event in result:
                     emit(event)
         else:
+            if output is not None:
+                raise ValueError("此操作返回 JSON，不接受 --output；结果从标准输出读取")
             emit(result)
 
 
@@ -142,28 +174,59 @@ def main(argv=None):
     options = dict(data_dir=args.data_dir, development=args.development, profile=args.profile)
     try:
         if args.command == "connect":
-            emit(pair_desktop(name=args.name, write=args.write, **options,
-                              on_pending=lambda value: emit({"approve_in_app": value}, stream=sys.stderr)))
+            emit(
+                pair_desktop(
+                    name=args.name,
+                    write=args.write,
+                    **options,
+                    on_pending=lambda value: emit({"approve_in_app": value}, stream=sys.stderr),
+                )
+            )
             return 0
         if args.command == "disconnect":
             disconnect_desktop(**options)
-            emit({"disconnected": True, "note": "已清除本机凭据；服务端授权可在 App API 密钥页撤销"})
+            emit(
+                {"disconnected": True, "note": "已清除本机凭据；服务端授权可在 App API 密钥页撤销"}
+            )
             return 0
         with desktop_client(**options) as client:
             capabilities = capability(client)
             if args.command == "status":
-                emit({key: capabilities[key] for key in ("version", "user_id", "workspace_id", "scopes")})
+                emit(
+                    {
+                        key: capabilities[key]
+                        for key in ("version", "user_id", "workspace_id", "scopes")
+                    }
+                )
             elif args.command == "operations":
                 if args.operation:
                     function = operation(client, args.operation, capabilities)
-                    emit({"operation": capabilities["operations"][args.operation],
-                          "sdk_parameters": str(inspect.signature(function)), "schemas": capabilities["schemas"]})
+                    emit(
+                        {
+                            "operation": capabilities["operations"][args.operation],
+                            "sdk_parameters": str(inspect.signature(function)),
+                            "schemas": capabilities["schemas"],
+                        }
+                    )
                 else:
-                    emit({"version": capabilities["version"], "operations": sorted(capabilities["operations"])})
+                    emit(
+                        {
+                            "version": capabilities["version"],
+                            "operations": sorted(capabilities["operations"]),
+                        }
+                    )
             elif args.command == "open":
-                result = client._call("POST", "/v1/desktop/ui/open", body={"kind": args.kind, "resource_id": args.resource_id}, media_type="application/json")
+                result = client._call(
+                    "POST",
+                    "/v1/desktop/ui/open",
+                    body={"kind": args.kind, "resource_id": args.resource_id},
+                    media_type="application/json",
+                )
                 deadline = time.monotonic() + args.timeout
-                while result["status"] in {"pending", "waiting_confirmation"} and time.monotonic() < deadline:
+                while (
+                    result["status"] in {"pending", "waiting_confirmation"}
+                    and time.monotonic() < deadline
+                ):
                     time.sleep(1)
                     result = client._call("GET", f"/v1/desktop/ui/requests/{result['id']}")
                 emit(result)
@@ -176,9 +239,13 @@ def main(argv=None):
         emit({"error": exc.code, "status": exc.status}, stream=sys.stderr)
         return 3 if exc.status in {401, 403} else 4
     except (TaskFailed, TaskTimeout):
-        emit({"error": "task_incomplete"}, stream=sys.stderr); return 5
+        emit({"error": "task_incomplete"}, stream=sys.stderr)
+        return 5
     except httpx.TransportError:
-        emit({"error": "connection_lost", "message": "App 连接中断；写操作未自动重试，请查询结果"}, stream=sys.stderr)
+        emit(
+            {"error": "connection_lost", "message": "App 连接中断；写操作未自动重试，请查询结果"},
+            stream=sys.stderr,
+        )
         return 7
     except (OSError, ValueError, TypeError, DesktopConnectionError) as exc:
         emit({"error": "invalid_input_or_connection", "message": str(exc)}, stream=sys.stderr)

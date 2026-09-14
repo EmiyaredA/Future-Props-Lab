@@ -7,7 +7,7 @@
 
 - 从仓库根目录使用模块方式运行：`uv run python -m scripts.demo.galgame_runaway.<模块>`。
 - 先在产品内创建短期 Management API Key，并仅为当前进程设置 `FPL_MANAGEMENT_API_KEY`；不要写入
-  `backend/.env`、脚本、Shell 历史或文档。
+  `backend/config.toml`、脚本、Shell 历史或文档。
 - 项目 ID、素材根目录、标注文件和输出文件都必须显式传入。脚本不提供本机路径或项目 ID 默认值。
 - `performance_upgrade` 同时需要 SG0 素材根目录和原作素材根目录；`--annotation` 必须指向经人工
   确认、校验值符合脚本审计约束的标注 JSON。
