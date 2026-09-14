@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
 
-from sqlalchemy import func, or_, select, update
+from sqlalchemy import delete, func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.accounts.errors import AccountError
@@ -382,6 +382,7 @@ async def revoke_api_key(
     expected_revision: int,
     client_ip: str,
 ) -> ManagementApiKey:
+    principal = await begin_governance(session, principal)
     key = await session.scalar(
         select(ManagementApiKey).where(
             ManagementApiKey.id == key_id,
@@ -393,8 +394,13 @@ async def revoke_api_key(
         raise AccountError("api_key_not_found")
     if key.revision != expected_revision:
         raise AccountError("revision_conflict", current=key)
-    key.revoked_at = utc_now()
-    key.revision += 1
+    key = await cas(
+        session,
+        ManagementApiKey,
+        key.id,
+        expected_revision,
+        revoked_at=utc_now(),
+    )
     add_audit_event(
         session,
         "management_api_key.revoked",
@@ -405,6 +411,100 @@ async def revoke_api_key(
     )
     await session.commit()
     return key
+
+
+async def renew_api_key(
+    session: AsyncSession,
+    principal: StudioPrincipal,
+    *,
+    key_id: str,
+    expected_revision: int,
+    expires_in_days: int,
+    client_ip: str,
+) -> ManagementApiKey:
+    principal = await begin_governance(session, principal)
+    key = await session.scalar(
+        select(ManagementApiKey).where(
+            ManagementApiKey.id == key_id,
+            ManagementApiKey.user_id == principal.user_id,
+            ManagementApiKey.workspace_id == principal.workspace_id,
+        )
+    )
+    if key is None:
+        raise AccountError("api_key_not_found")
+    if key.revision != expected_revision:
+        raise AccountError("revision_conflict", current=key)
+    if key.revoked_at is not None:
+        raise AccountError("api_key_revoked")
+    if principal.workspace_access == "public_viewer" or not set(key.scopes) <= principal.scopes:
+        raise AccountError("invalid_api_key_scopes")
+    previous_expires_at = key.expires_at
+    base = max(previous_expires_at, utc_now())
+    key = await cas(
+        session,
+        ManagementApiKey,
+        key.id,
+        expected_revision,
+        expires_at=base + timedelta(days=expires_in_days),
+    )
+    add_audit_event(
+        session,
+        "management_api_key.renewed",
+        actor_user_id=principal.user_id,
+        workspace_id=principal.workspace_id,
+        client_ip=client_ip,
+        metadata={
+            "key_id": key.id,
+            "expires_at_from": previous_expires_at.isoformat(),
+            "expires_at_to": key.expires_at.isoformat(),
+        },
+    )
+    await session.commit()
+    return key
+
+
+async def delete_api_key(
+    session: AsyncSession,
+    principal: StudioPrincipal,
+    *,
+    key_id: str,
+    expected_revision: int,
+    client_ip: str,
+) -> None:
+    principal = await begin_governance(session, principal)
+    key = await session.scalar(
+        select(ManagementApiKey).where(
+            ManagementApiKey.id == key_id,
+            ManagementApiKey.user_id == principal.user_id,
+            ManagementApiKey.workspace_id == principal.workspace_id,
+        )
+    )
+    if key is None:
+        raise AccountError("api_key_not_found")
+    if key.revision != expected_revision:
+        raise AccountError("revision_conflict", current=key)
+    result = await session.execute(
+        delete(ManagementApiKey).where(
+            ManagementApiKey.id == key.id,
+            ManagementApiKey.user_id == principal.user_id,
+            ManagementApiKey.workspace_id == principal.workspace_id,
+            ManagementApiKey.revision == expected_revision,
+        )
+    )
+    if result.rowcount != 1:
+        current = await session.get(ManagementApiKey, key.id, populate_existing=True)
+        if current is None:
+            raise AccountError("api_key_not_found")
+        raise AccountError("revision_conflict", current=current)
+    add_audit_event(
+        session,
+        "management_api_key.deleted",
+        actor_user_id=principal.user_id,
+        workspace_id=principal.workspace_id,
+        client_ip=client_ip,
+        metadata={"key_id": key.id},
+    )
+    await session.commit()
 
 
 async def reset_password(

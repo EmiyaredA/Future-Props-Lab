@@ -22,7 +22,7 @@
 - `POST /v1/auth/change-password`、`POST /v1/auth/logout`
 - `PATCH /v1/account/profile` 与头像 GET/PUT/DELETE
 - `GET/DELETE /v1/account/sessions/{session_id}`、`POST /v1/account/sessions/revoke-others`
-- `GET/POST /v1/account/api-keys`、`POST /v1/account/api-keys/{key_id}/revoke`
+- `GET/POST /v1/account/api-keys`、`POST /v1/account/api-keys/{key_id}/renew|revoke`、`DELETE /v1/account/api-keys/{key_id}`。续期与删除必填 `expected_revision`；续期保持原密钥，从原到期时间或服务器当前时间中较晚者继续延长。
 - `GET /v1/account/security-events`
 - `GET/POST /v1/platform/accounts`：搜索、状态/平台身份筛选、服务端分页与创建（邮箱、管理员身份）。
 - `PATCH /v1/platform/accounts/{user_id}`：状态或平台身份变更，必填 `expected_revision`。

@@ -1,5 +1,12 @@
 [
   {
+    "http": "DELETE /v1/account/api-keys/{key_id}",
+    "sdk": "client.accounts.delete_api_key",
+    "document": "/docs.html?page=sdk-reference-accounts#delete-api-key",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
     "http": "DELETE /v1/account/profile/avatar",
     "sdk": "client.accounts.remove_avatar",
     "document": "/docs.html?page=sdk-reference-accounts#remove-avatar",
@@ -66,6 +73,13 @@
     "http": "POST /v1/account/api-keys",
     "sdk": "client.accounts.add_api_key",
     "document": "/docs.html?page=sdk-reference-accounts#add-api-key",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/account/api-keys/{key_id}/renew",
+    "sdk": "client.accounts.renew_api_key",
+    "document": "/docs.html?page=sdk-reference-accounts#renew-api-key",
     "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
     "verification": "named-operation-contract"
   },

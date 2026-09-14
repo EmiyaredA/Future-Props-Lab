@@ -313,6 +313,12 @@
 .account-dialog-settings {
   width: min(880px, 100%);
 }
+.account-dialog-settings-keys {
+  width: min(1280px, 100%);
+}
+.account-dialog-settings-keys .account-settings-body {
+  height: min(690px, calc(100dvh - 170px));
+}
 .account-settings-body {
   display: grid;
   grid-template-columns: 210px minmax(0, 1fr);

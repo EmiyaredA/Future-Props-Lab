@@ -1,4 +1,8 @@
 {
+  "DELETE /v1/account/api-keys/{key_id}": {
+    "method": "delete_api_key",
+    "resource": "accounts"
+  },
   "DELETE /v1/account/profile/avatar": {
     "method": "remove_avatar",
     "resource": "accounts"
@@ -797,6 +801,10 @@
   },
   "POST /v1/account/api-keys": {
     "method": "add_api_key",
+    "resource": "accounts"
+  },
+  "POST /v1/account/api-keys/{key_id}/renew": {
+    "method": "renew_api_key",
     "resource": "accounts"
   },
   "POST /v1/account/api-keys/{key_id}/revoke": {

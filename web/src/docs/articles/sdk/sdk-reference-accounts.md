@@ -9,6 +9,7 @@
 
 | SDK 方法 | HTTP 操作 |
 | --- | --- |
+| [delete_api_key](#delete-api-key) | `DELETE /v1/account/api-keys/{key_id}` |
 | [remove_avatar](#remove-avatar) | `DELETE /v1/account/profile/avatar` |
 | [delete_session](#delete-session) | `DELETE /v1/account/sessions/{session_id}` |
 | [api_keys](#api-keys) | `GET /v1/account/api-keys` |
@@ -19,6 +20,7 @@
 | [me](#me) | `GET /v1/auth/me` |
 | [patch_profile](#patch-profile) | `PATCH /v1/account/profile` |
 | [add_api_key](#add-api-key) | `POST /v1/account/api-keys` |
+| [renew_api_key](#renew-api-key) | `POST /v1/account/api-keys/{key_id}/renew` |
 | [remove_api_key](#remove-api-key) | `POST /v1/account/api-keys/{key_id}/revoke` |
 | [delete_other_sessions](#delete-other-sessions) | `POST /v1/account/sessions/revoke-others` |
 | [change_current_password](#change-current-password) | `POST /v1/auth/change-password` |
@@ -26,6 +28,27 @@
 | [logout](#logout) | `POST /v1/auth/logout` |
 | [reauth](#reauth) | `POST /v1/auth/reauth` |
 | [put_avatar](#put-avatar) | `PUT /v1/account/profile/avatar` |
+
+## delete_api_key {#delete-api-key}
+
+`client.accounts.delete_api_key(...)`
+
+**接口**：`DELETE /v1/account/api-keys/{key_id}`。**鉴权**：Session；敏感操作需要二次验证。
+**权限**：`账号治理或公开接口的专用鉴权`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `key_id` | path | string | 是 |
+| `body` | application/json | DeleteApiKeyIn | 是 |
+| `body.expected_revision` | 请求体 | integer | 是 |
+
+**响应**：
+- `204` · 无内容或由接口声明的文件响应。
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
 
 ## remove_avatar {#remove-avatar}
 
@@ -219,6 +242,28 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 **响应**：
 - `201` · `application/json` · `ApiKeyCreatedOut`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
+## renew_api_key {#renew-api-key}
+
+`client.accounts.renew_api_key(...)`
+
+**接口**：`POST /v1/account/api-keys/{key_id}/renew`。**鉴权**：Session；敏感操作需要二次验证。
+**权限**：`账号治理或公开接口的专用鉴权`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `key_id` | path | string | 是 |
+| `body` | application/json | RenewApiKeyIn | 是 |
+| `body.expected_revision` | 请求体 | integer | 是 |
+| `body.expires_in_days` | 请求体 | integer | 否 |
+
+**响应**：
+- `200` · `application/json` · `ApiKeyOut`
 
 上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
 

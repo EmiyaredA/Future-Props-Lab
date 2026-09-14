@@ -196,6 +196,28 @@ def test_backend_routes_do_not_own_persistence() -> None:
     assert not violations, "路由层不得直接依赖持久化实现：\n" + "\n".join(violations)
 
 
+def test_management_api_key_mutations_require_browser_session_auth() -> None:
+    path = BACKEND_APP / "routes" / "accounts.py"
+    tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+    handlers = {
+        node.name: node
+        for node in tree.body
+        if isinstance(node, (ast.AsyncFunctionDef, ast.FunctionDef))
+    }
+    for name in (
+        "add_api_key",
+        "remove_api_key",
+        "renew_api_key_expiration",
+        "delete_api_key_record",
+    ):
+        calls = {
+            node.func.id
+            for node in ast.walk(handlers[name])
+            if isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
+        }
+        assert "_browser_auth" in calls, f"{name} 必须显式要求浏览器 Session 与 CSRF 治理"
+
+
 def test_business_modules_do_not_depend_on_fastapi_upload_file() -> None:
     violations: list[str] = []
     route_root = BACKEND_APP / "routes"

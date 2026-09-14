@@ -423,6 +423,9 @@ class CurrentUserOut(WireModel):
     revision: int = Field(default=..., alias='revision')
     username: str = Field(default=..., alias='username')
 
+class DeleteApiKeyIn(WireModel):
+    expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
+
 class DeleteMutationOut(WireModel):
     deleted: bool = Field(default=..., alias='deleted')
     revision: int = Field(default=..., alias='revision')
@@ -2833,6 +2836,10 @@ class RemoveTrackOperation(WireModel):
     track_id: str = Field(default=..., alias='trackId')
     type: Literal['removeTrack'] = Field(default=..., alias='type')
 
+class RenewApiKeyIn(WireModel):
+    expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
+    expires_in_days: int = Field(default=90, alias='expires_in_days', ge=1.0, le=365.0)
+
 class ReorderTrackOperation(WireModel):
     order: int = Field(default=..., alias='order', ge=0.0)
     track_id: str = Field(default=..., alias='trackId')
@@ -4064,6 +4071,7 @@ ClipIdOperation.model_rebuild()
 CrossWorkspaceLogOut.model_rebuild()
 CrossWorkspaceLogPage.model_rebuild()
 CurrentUserOut.model_rebuild()
+DeleteApiKeyIn.model_rebuild()
 DeleteMutationOut.model_rebuild()
 DeleteOut.model_rebuild()
 DemoActionIn.model_rebuild()
@@ -4390,6 +4398,7 @@ RegistrationInviteOut.model_rebuild()
 RegistrationInvitePage.model_rebuild()
 RegistrationInvitePatch.model_rebuild()
 RemoveTrackOperation.model_rebuild()
+RenewApiKeyIn.model_rebuild()
 ReorderTrackOperation.model_rebuild()
 ResetPasswordOut.model_rebuild()
 RestoreClipStatesOperation.model_rebuild()

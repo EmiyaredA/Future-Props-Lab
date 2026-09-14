@@ -25,6 +25,8 @@ MESSAGES = {
     "username_conflict": "用户名已被使用",
     "account_conflict": "用户名或邮箱已被使用",
     "invalid_email": "请输入有效邮箱",
+    "invalid_api_key_scopes": "当前工作区权限不允许使用这些密钥权限",
+    "api_key_revoked": "已撤销的密钥不能续期",
 }
 
 SAFE_FIELDS = (

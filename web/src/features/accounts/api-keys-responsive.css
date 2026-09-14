@@ -1,0 +1,108 @@
+@media (max-width: 1120px) {
+  .api-key-create-grid {
+    grid-template-columns: minmax(190px, 1fr) minmax(240px, 1fr);
+  }
+  .api-key-create-button {
+    justify-self: end;
+  }
+}
+
+@media (max-width: 767px) {
+  .api-keys-settings {
+    gap: 20px;
+  }
+  .api-key-secret {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+  .api-key-secret .btn {
+    grid-column: 2;
+    justify-self: start;
+  }
+  .api-key-create-card {
+    padding: 16px;
+  }
+  .api-key-create-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .api-key-create-button {
+    width: 100%;
+  }
+  .api-key-list-heading,
+  .api-key-list-tools {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .api-key-search {
+    width: 100%;
+  }
+  .api-key-table-wrap {
+    overflow: visible;
+    border: 0;
+    background: transparent;
+  }
+  .api-key-table {
+    min-width: 0;
+  }
+  .api-key-table thead {
+    display: none;
+  }
+  .api-key-table tbody,
+  .api-key-table tr,
+  .api-key-table td {
+    display: block;
+    width: 100%;
+  }
+  .api-key-table tr {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 13px 18px;
+    margin-bottom: 12px;
+    padding: 16px;
+    border: 1px solid var(--border);
+    border-radius: 13px;
+    background: var(--surface);
+  }
+  .api-key-table td,
+  .api-key-table tbody tr:last-child td {
+    padding: 0;
+    border: 0;
+    white-space: normal;
+  }
+  .api-key-table td::before {
+    display: block;
+    margin-bottom: 5px;
+    color: var(--muted);
+    content: attr(data-label);
+    font-size: 10px;
+  }
+  .api-key-table td:first-child,
+  .api-key-table td:nth-child(3),
+  .api-key-table td:last-child {
+    grid-column: 1 / -1;
+  }
+  .api-key-actions {
+    justify-content: flex-start;
+  }
+  .api-key-scope-list {
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 420px) {
+  .api-keys-heading-icon {
+    display: none;
+  }
+  .api-key-permissions > div {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .api-key-table tr {
+    grid-template-columns: 1fr;
+  }
+  .api-key-table td {
+    grid-column: 1 / -1;
+  }
+  .api-key-actions {
+    flex-wrap: wrap;
+  }
+}

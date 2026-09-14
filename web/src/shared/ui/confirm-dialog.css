@@ -1,7 +1,7 @@
-.confirm-dialog-backdrop {
+.modal-backdrop.confirm-dialog-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 90;
+  z-index: 1200;
   display: grid;
   place-items: center;
   padding: 24px;
@@ -9,7 +9,7 @@
   backdrop-filter: blur(3px);
 }
 
-.confirm-dialog {
+.modal-card.confirm-dialog {
   position: relative;
   width: min(440px, 100%);
   max-height: calc(100vh - 48px);
@@ -48,6 +48,11 @@
   width: 22px;
   height: 22px;
 }
+.confirm-dialog-icon.primary {
+  border-color: var(--accent-line);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
 
 .confirm-dialog-copy {
   padding-right: 20px;
@@ -59,7 +64,7 @@
   font-size: 21px;
 }
 
-.confirm-dialog-copy p {
+.confirm-dialog-description {
   margin: 0;
   color: var(--muted);
   line-height: 1.7;
@@ -77,11 +82,11 @@
 }
 
 @media (max-width: 520px) {
-  .confirm-dialog-backdrop {
+  .modal-backdrop.confirm-dialog-backdrop {
     padding: 16px;
   }
 
-  .confirm-dialog {
+  .modal-card.confirm-dialog {
     max-height: calc(100vh - 32px);
     padding: 24px;
   }

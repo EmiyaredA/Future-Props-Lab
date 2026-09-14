@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import datetime, timedelta
 from uuid import uuid4
 
 import httpx
@@ -13,6 +13,7 @@ from app.core.time import utc_now
 from app.main import app
 from app.models import (
     AuthSession,
+    ManagementApiKey,
     ModelProvider,
     SecurityAuditEvent,
     User,
@@ -223,3 +224,185 @@ async def test_management_key_creation_does_not_require_password_reauthenticatio
         )
         assert created.status_code == 201, created.text
         assert created.json()["secret"].startswith("fpm_")
+
+
+@pytest.mark.asyncio
+@pytest.mark.real_auth
+async def test_management_key_renew_delete_conflicts_and_isolation() -> None:
+    first_username, first_temporary = await create_test_account()
+    second_username, second_temporary = await create_test_account()
+    transport = httpx.ASGITransport(app=app)
+    async with (
+        httpx.AsyncClient(transport=transport, base_url="http://test") as first,
+        httpx.AsyncClient(transport=transport, base_url="http://test") as second,
+    ):
+        await login_and_change_password(first, first_username, first_temporary)
+        await login_and_change_password(second, second_username, second_temporary)
+
+        created = await first.post(
+            "/v1/account/api-keys",
+            headers=unsafe_headers(first),
+            json={"name": "renewable", "scopes": ["studio:read"], "expires_in_days": 30},
+        )
+        assert created.status_code == 201, created.text
+        key = created.json()["api_key"]
+        secret = created.json()["secret"]
+
+        for invalid_days in (0, 366):
+            invalid_duration = await first.post(
+                f"/v1/account/api-keys/{key['id']}/renew",
+                headers=unsafe_headers(first),
+                json={
+                    "expected_revision": key["revision"],
+                    "expires_in_days": invalid_days,
+                },
+            )
+            assert invalid_duration.status_code == 422
+
+        assert (
+            await first.post(
+                f"/v1/account/api-keys/{key['id']}/renew",
+                json={"expected_revision": key["revision"], "expires_in_days": 30},
+            )
+        ).status_code == 403
+        for client in (second,):
+            renewed_elsewhere = await client.post(
+                f"/v1/account/api-keys/{key['id']}/renew",
+                headers=unsafe_headers(client),
+                json={"expected_revision": key["revision"], "expires_in_days": 30},
+            )
+            assert renewed_elsewhere.status_code == 404
+            deleted_elsewhere = await client.request(
+                "DELETE",
+                f"/v1/account/api-keys/{key['id']}",
+                headers=unsafe_headers(client),
+                json={"expected_revision": key["revision"]},
+            )
+            assert deleted_elsewhere.status_code == 404
+
+        renewed = await first.post(
+            f"/v1/account/api-keys/{key['id']}/renew",
+            headers=unsafe_headers(first),
+            json={"expected_revision": key["revision"], "expires_in_days": 30},
+        )
+        assert renewed.status_code == 200, renewed.text
+        renewed_key = renewed.json()
+        assert renewed_key["revision"] == key["revision"] + 1
+        assert datetime.fromisoformat(renewed_key["expires_at"]) == datetime.fromisoformat(
+            key["expires_at"]
+        ) + timedelta(days=30)
+        async with httpx.AsyncClient(
+            transport=transport,
+            base_url="http://test",
+            headers={"Authorization": f"Bearer {secret}"},
+        ) as renewed_client:
+            assert (await renewed_client.get("/v1/visual-workshop/projects")).status_code == 200
+
+        stale_renewal = await first.post(
+            f"/v1/account/api-keys/{key['id']}/renew",
+            headers=unsafe_headers(first),
+            json={"expected_revision": key["revision"], "expires_in_days": 30},
+        )
+        assert stale_renewal.status_code == 409
+        stale_revoke = await first.post(
+            f"/v1/account/api-keys/{key['id']}/revoke",
+            headers=unsafe_headers(first),
+            json={"expected_revision": key["revision"]},
+        )
+        assert stale_revoke.status_code == 409
+        conflict = await first.request(
+            "DELETE",
+            f"/v1/account/api-keys/{key['id']}",
+            headers=unsafe_headers(first),
+            json={"expected_revision": key["revision"]},
+        )
+        assert conflict.status_code == 409
+        assert conflict.json()["current"]["revision"] == renewed_key["revision"]
+        assert "secret" not in conflict.text
+        assert "key_hash" not in conflict.text
+
+        revoked = await first.post(
+            f"/v1/account/api-keys/{key['id']}/revoke",
+            headers=unsafe_headers(first),
+            json={"expected_revision": renewed_key["revision"]},
+        )
+        assert revoked.status_code == 200, revoked.text
+        revoked_key = revoked.json()
+        rejected = await first.post(
+            f"/v1/account/api-keys/{key['id']}/renew",
+            headers=unsafe_headers(first),
+            json={"expected_revision": revoked_key["revision"], "expires_in_days": 90},
+        )
+        assert rejected.status_code == 422
+        assert rejected.json()["code"] == "api_key_revoked"
+
+        deleted = await first.request(
+            "DELETE",
+            f"/v1/account/api-keys/{key['id']}",
+            headers=unsafe_headers(first),
+            json={"expected_revision": revoked_key["revision"]},
+        )
+        assert deleted.status_code == 204, deleted.text
+
+        expired_created = await first.post(
+            "/v1/account/api-keys",
+            headers=unsafe_headers(first),
+            json={"name": "expired", "scopes": ["studio:read"], "expires_in_days": 1},
+        )
+        expired_key = expired_created.json()["api_key"]
+        async with SessionLocal() as session:
+            row = await session.get(ManagementApiKey, expired_key["id"])
+            assert row is not None
+            row.expires_at = utc_now() - timedelta(days=1)
+            await session.commit()
+
+        renewed_expired = await first.post(
+            f"/v1/account/api-keys/{expired_key['id']}/renew",
+            headers=unsafe_headers(first),
+            json={"expected_revision": expired_key["revision"], "expires_in_days": 30},
+        )
+        assert renewed_expired.status_code == 200, renewed_expired.text
+        renewed_expiry = datetime.fromisoformat(renewed_expired.json()["expires_at"])
+        assert utc_now() + timedelta(days=29) < renewed_expiry < utc_now() + timedelta(days=31)
+        assert (
+            await first.request(
+                "DELETE",
+                f"/v1/account/api-keys/{expired_key['id']}",
+                headers=unsafe_headers(first),
+                json={"expected_revision": renewed_expired.json()["revision"]},
+            )
+        ).status_code == 204
+
+        expired_delete = await first.post(
+            "/v1/account/api-keys",
+            headers=unsafe_headers(first),
+            json={"name": "expired-delete", "scopes": ["studio:read"], "expires_in_days": 1},
+        )
+        expired_delete_key = expired_delete.json()["api_key"]
+        async with SessionLocal() as session:
+            row = await session.get(ManagementApiKey, expired_delete_key["id"])
+            assert row is not None
+            row.expires_at = utc_now() - timedelta(days=1)
+            await session.commit()
+        assert (
+            await first.request(
+                "DELETE",
+                f"/v1/account/api-keys/{expired_delete_key['id']}",
+                headers=unsafe_headers(first),
+                json={"expected_revision": expired_delete_key["revision"]},
+            )
+        ).status_code == 204
+
+        assert (await first.get("/v1/account/api-keys")).json() == []
+        events = (await first.get("/v1/account/security-events")).json()["items"]
+        event_types = {event["event_type"] for event in events}
+        assert "management_api_key.renewed" in event_types
+        assert "management_api_key.deleted" in event_types
+        assert all("secret" not in str(event["metadata"]) for event in events)
+
+    async with httpx.AsyncClient(
+        transport=transport,
+        base_url="http://test",
+        headers={"Authorization": f"Bearer {secret}"},
+    ) as keyed:
+        assert (await keyed.get("/v1/visual-workshop/projects")).status_code == 401

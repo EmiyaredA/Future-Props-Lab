@@ -19,6 +19,14 @@ class Accounts:
         'Add Api Key. POST /v1/account/api-keys'
         return self._client._call('POST', '/v1/account/api-keys', parameters=[], body=body, media_type='application/json', response_type=models.ApiKeyCreatedOut)
 
+    def delete_api_key(self, *, key_id: str, body: models.DeleteApiKeyIn | dict) -> Any:
+        'Delete Api Key Record. DELETE /v1/account/api-keys/{key_id}'
+        return self._client._call('DELETE', '/v1/account/api-keys/{key_id}', parameters=[('key_id', 'path', key_id)], body=body, media_type='application/json', response_type=Any)
+
+    def renew_api_key(self, *, key_id: str, body: models.RenewApiKeyIn | dict) -> models.ApiKeyOut:
+        'Renew Api Key Expiration. POST /v1/account/api-keys/{key_id}/renew'
+        return self._client._call('POST', '/v1/account/api-keys/{key_id}/renew', parameters=[('key_id', 'path', key_id)], body=body, media_type='application/json', response_type=models.ApiKeyOut)
+
     def remove_api_key(self, *, key_id: str, body: models.RevokeApiKeyIn | dict) -> models.ApiKeyOut:
         'Remove Api Key. POST /v1/account/api-keys/{key_id}/revoke'
         return self._client._call('POST', '/v1/account/api-keys/{key_id}/revoke', parameters=[('key_id', 'path', key_id)], body=body, media_type='application/json', response_type=models.ApiKeyOut)
@@ -90,6 +98,14 @@ class AsyncAccounts:
     async def add_api_key(self, *, body: models.ApiKeyCreateIn | dict) -> models.ApiKeyCreatedOut:
         'Add Api Key. POST /v1/account/api-keys'
         return await self._client._call('POST', '/v1/account/api-keys', parameters=[], body=body, media_type='application/json', response_type=models.ApiKeyCreatedOut)
+
+    async def delete_api_key(self, *, key_id: str, body: models.DeleteApiKeyIn | dict) -> Any:
+        'Delete Api Key Record. DELETE /v1/account/api-keys/{key_id}'
+        return await self._client._call('DELETE', '/v1/account/api-keys/{key_id}', parameters=[('key_id', 'path', key_id)], body=body, media_type='application/json', response_type=Any)
+
+    async def renew_api_key(self, *, key_id: str, body: models.RenewApiKeyIn | dict) -> models.ApiKeyOut:
+        'Renew Api Key Expiration. POST /v1/account/api-keys/{key_id}/renew'
+        return await self._client._call('POST', '/v1/account/api-keys/{key_id}/renew', parameters=[('key_id', 'path', key_id)], body=body, media_type='application/json', response_type=models.ApiKeyOut)
 
     async def remove_api_key(self, *, key_id: str, body: models.RevokeApiKeyIn | dict) -> models.ApiKeyOut:
         'Remove Api Key. POST /v1/account/api-keys/{key_id}/revoke'

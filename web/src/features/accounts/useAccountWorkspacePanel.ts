@@ -89,6 +89,7 @@ export function useAccountWorkspacePanel(session: AccountSessionContext) {
   const [email, setEmail] = useState(me.user.email || "");
   const [keyName, setKeyName] = useState("");
   const [keyWrite, setKeyWrite] = useState(false);
+  const [keyDuration, setKeyDuration] = useState("90");
   const [revealedKey, setRevealedKey] = useState("");
   const [revealedKeyCopied, setRevealedKeyCopied] = useState(false);
   const [currentPassword, setCurrentPassword] = useState("");
@@ -264,6 +265,7 @@ export function useAccountWorkspacePanel(session: AccountSessionContext) {
         keyWrite && workspaceAllows(me.workspace, "content.write")
           ? ["studio:read", "studio:write"]
           : ["studio:read"],
+        Number(keyDuration),
       );
       setKeyName("");
       if (openRef.current !== "account" || tabRef.current !== "keys") return;
@@ -372,6 +374,8 @@ export function useAccountWorkspacePanel(session: AccountSessionContext) {
     setKeyName,
     keyWrite,
     setKeyWrite,
+    keyDuration,
+    setKeyDuration,
     revealedKey,
     revealedKeyCopied,
     currentPassword,

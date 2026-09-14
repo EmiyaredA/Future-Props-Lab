@@ -22,10 +22,12 @@ from app.accounts.service import (
     complete_login,
     complete_logout,
     create_api_key,
+    delete_api_key,
     list_active_sessions,
     list_api_keys,
     load_current_auth,
     reauthenticate,
+    renew_api_key,
     revoke_api_key,
     revoke_other_sessions,
     revoke_session,
@@ -47,8 +49,10 @@ from app.schemas.accounts import (
     AuthMeOut,
     ChangePasswordIn,
     CurrentUserOut,
+    DeleteApiKeyIn,
     LoginIn,
     ReauthIn,
+    RenewApiKeyIn,
     RevokeApiKeyIn,
     SecurityAuditEventOut,
     SecurityAuditListOut,
@@ -436,6 +440,42 @@ async def remove_api_key(key_id: str, request: Request, session: SessionDep, bod
     return _key_out(key)
 
 
+@router.post("/account/api-keys/{key_id}/renew", response_model=ApiKeyOut)
+async def renew_api_key_expiration(
+    key_id: str,
+    request: Request,
+    session: SessionDep,
+    body: RenewApiKeyIn,
+):
+    principal = await _browser_auth(request, session)
+    key = await renew_api_key(
+        session,
+        principal,
+        key_id=key_id,
+        expected_revision=body.expected_revision,
+        expires_in_days=body.expires_in_days,
+        client_ip=client_ip(request),
+    )
+    return _key_out(key)
+
+
+@router.delete("/account/api-keys/{key_id}", status_code=204)
+async def delete_api_key_record(
+    key_id: str,
+    request: Request,
+    session: SessionDep,
+    body: DeleteApiKeyIn,
+):
+    principal = await _browser_auth(request, session)
+    await delete_api_key(
+        session,
+        principal,
+        key_id=key_id,
+        expected_revision=body.expected_revision,
+        client_ip=client_ip(request),
+    )
+
+
 def _audit_out(row, actor_username, target_username):
     return SecurityAuditEventOut(
         id=row.id,
@@ -467,6 +507,8 @@ def _audit_out(row, actor_username, target_username):
                 "access_kind",
                 "key_id",
                 "scopes",
+                "expires_at_from",
+                "expires_at_to",
                 "session_id",
             }
         },

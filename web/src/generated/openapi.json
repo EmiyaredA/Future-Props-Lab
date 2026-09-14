@@ -2572,6 +2572,20 @@
         "title": "CurrentUserOut",
         "type": "object"
       },
+      "DeleteApiKeyIn": {
+        "properties": {
+          "expected_revision": {
+            "minimum": 0.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "expected_revision"
+        ],
+        "title": "DeleteApiKeyIn",
+        "type": "object"
+      },
       "DeleteMutationOut": {
         "properties": {
           "deleted": {
@@ -18204,6 +18218,27 @@
         "title": "RemoveTrackOperation",
         "type": "object"
       },
+      "RenewApiKeyIn": {
+        "properties": {
+          "expected_revision": {
+            "minimum": 0.0,
+            "title": "Expected Revision",
+            "type": "integer"
+          },
+          "expires_in_days": {
+            "default": 90,
+            "maximum": 365.0,
+            "minimum": 1.0,
+            "title": "Expires In Days",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "expected_revision"
+        ],
+        "title": "RenewApiKeyIn",
+        "type": "object"
+      },
       "ReorderTrackOperation": {
         "properties": {
           "order": {
@@ -25755,6 +25790,103 @@
           }
         },
         "summary": "Add Api Key",
+        "tags": [
+          "accounts"
+        ]
+      }
+    },
+    "/v1/account/api-keys/{key_id}": {
+      "delete": {
+        "operationId": "delete_api_key_record_v1_account_api_keys__key_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "key_id",
+            "required": true,
+            "schema": {
+              "title": "Key Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeleteApiKeyIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Api Key Record",
+        "tags": [
+          "accounts"
+        ]
+      }
+    },
+    "/v1/account/api-keys/{key_id}/renew": {
+      "post": {
+        "operationId": "renew_api_key_expiration_v1_account_api_keys__key_id__renew_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "key_id",
+            "required": true,
+            "schema": {
+              "title": "Key Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RenewApiKeyIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiKeyOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Renew Api Key Expiration",
         "tags": [
           "accounts"
         ]

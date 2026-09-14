@@ -1,15 +1,10 @@
-import {
-  deleteAccountSession,
-  deleteAvatar,
-  revokeApiKey,
-  revokeOtherSessions,
-} from "./api";
-import { workspaceAllows } from "./permissions";
+import { deleteAccountSession, deleteAvatar, revokeOtherSessions } from "./api";
 import { formatAccountDate as shortDate } from "./formatAccountDate";
 import type { useAccountWorkspacePanel } from "./useAccountWorkspacePanel";
 import { auditLabels } from "./auditLabels";
 import { useRef } from "react";
 import { Upload } from "lucide-react";
+import { ApiKeysSettings } from "./ApiKeysSettings";
 import "./account-profile.css";
 export function AccountSettingsContent({
   state,
@@ -37,16 +32,7 @@ export function AccountSettingsContent({
     changedPasswordAgain,
     setChangedPasswordAgain,
     sessions,
-    keys,
     securityEvents,
-    createKey,
-    keyName,
-    setKeyName,
-    keyWrite,
-    setKeyWrite,
-    revealedKey,
-    revealedKeyCopied,
-    copyRevealedKey,
   } = state;
   return (
     <>
@@ -236,77 +222,7 @@ export function AccountSettingsContent({
           </section>
         </>
       ) : null}
-      {tab === "keys" ? (
-        <form
-          className="settings-section"
-          onSubmit={(event) => void createKey(event)}
-        >
-          <h3>Management API Key</h3>
-          {revealedKey ? (
-            <div className="secret-once">
-              <strong>请立即复制，只显示这一次</strong>
-              <code>{revealedKey}</code>
-              <div className="button-row">
-                <button
-                  type="button"
-                  className="btn small"
-                  onClick={() => void copyRevealedKey()}
-                >
-                  {revealedKeyCopied ? "已复制" : "复制密钥"}
-                </button>
-              </div>
-            </div>
-          ) : null}
-          <label>
-            <span>密钥名称</span>
-            <input
-              value={keyName}
-              onChange={(event) => setKeyName(event.target.value)}
-            />
-          </label>
-          <label className="check-row">
-            <input
-              type="checkbox"
-              disabled={!workspaceAllows(me.workspace, "content.write")}
-              checked={
-                keyWrite && workspaceAllows(me.workspace, "content.write")
-              }
-              onChange={(event) => setKeyWrite(event.target.checked)}
-            />
-            <span>允许写入当前工作区</span>
-          </label>
-          <button className="btn primary" disabled={state.busy || !keyName}>
-            创建 90 天密钥
-          </button>
-          {keys.map((key) => (
-            <div className="settings-row" key={key.id}>
-              <span>
-                <strong>{key.name}</strong>
-                <small>
-                  {key.key_prefix}… · {key.scopes.join(", ")} ·{" "}
-                  {key.revoked_at
-                    ? "已撤销"
-                    : `到期 ${shortDate(key.expires_at)}`}
-                </small>
-              </span>
-              {!key.revoked_at ? (
-                <button
-                  type="button"
-                  className="btn small danger"
-                  onClick={() =>
-                    void report(async () => {
-                      await revokeApiKey(key);
-                      await loadSecurity();
-                    })
-                  }
-                >
-                  撤销
-                </button>
-              ) : null}
-            </div>
-          ))}
-        </form>
-      ) : null}
+      {tab === "keys" ? <ApiKeysSettings state={state} /> : null}
       {tab === "events" ? (
         <section className="settings-section">
           <h3>本人安全事件</h3>

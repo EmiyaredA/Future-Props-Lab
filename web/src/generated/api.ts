@@ -56,6 +56,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/account/api-keys/{key_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete Api Key Record */
+        delete: operations["delete_api_key_record_v1_account_api_keys__key_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/account/api-keys/{key_id}/renew": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Renew Api Key Expiration */
+        post: operations["renew_api_key_expiration_v1_account_api_keys__key_id__renew_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/account/api-keys/{key_id}/revoke": {
         parameters: {
             query?: never;
@@ -5408,6 +5442,11 @@ export interface components {
             revision: number;
             /** Username */
             username: string;
+        };
+        /** DeleteApiKeyIn */
+        DeleteApiKeyIn: {
+            /** Expected Revision */
+            expected_revision: number;
         };
         /** DeleteMutationOut */
         DeleteMutationOut: {
@@ -11393,6 +11432,16 @@ export interface components {
              */
             type: "removeTrack";
         };
+        /** RenewApiKeyIn */
+        RenewApiKeyIn: {
+            /** Expected Revision */
+            expected_revision: number;
+            /**
+             * Expires In Days
+             * @default 90
+             */
+            expires_in_days: number;
+        };
         /** ReorderTrackOperation */
         ReorderTrackOperation: {
             /** Order */
@@ -14330,6 +14379,74 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ApiKeyCreatedOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_api_key_record_v1_account_api_keys__key_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DeleteApiKeyIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    renew_api_key_expiration_v1_account_api_keys__key_id__renew_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RenewApiKeyIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiKeyOut"];
                 };
             };
             /** @description Validation Error */

@@ -195,7 +195,7 @@ export function AccountWorkspacePanel({
             >
               <section
                 ref={focus}
-                className={`account-dialog ${open === "account" ? "account-dialog-settings" : surface === "management" ? "workspace-management-dialog" : surface === "invitations" ? "workspace-invitations-dialog" : "account-dialog-workspace"}${confirming ? " is-confirming" : ""}`}
+                className={`account-dialog ${open === "account" ? "account-dialog-settings" : surface === "management" ? "workspace-management-dialog" : surface === "invitations" ? "workspace-invitations-dialog" : "account-dialog-workspace"}${open === "account" && tab === "keys" ? " account-dialog-settings-keys" : ""}${confirming ? " is-confirming" : ""}`}
                 role="dialog"
                 aria-modal="true"
                 aria-label={title}

@@ -180,6 +180,71 @@ for (const theme of ["light", "dark"] as const) {
     await page.setViewportSize({ width: 1440, height: 1000 });
     await account.getByRole("button", { name: "API 密钥" }).click();
     await expect(account.getByLabel("密钥名称")).toBeVisible();
+    const keyName = `e2e-key-${theme}`;
+    await account.getByLabel("密钥名称").fill(keyName);
+    await account.getByRole("button", { name: "创建密钥" }).click();
+    await expect(
+      account.getByText("请立即保存，这段密钥只显示一次"),
+    ).toBeVisible();
+    await account.getByRole("button", { name: "安全记录" }).click();
+    await account.getByRole("button", { name: "API 密钥" }).click();
+    const keyRow = account.getByRole("row", { name: new RegExp(keyName) });
+    await expect(keyRow).toBeVisible();
+    const revokedKeyName = `e2e-revoked-${theme}`;
+    await account.getByLabel("密钥名称").fill(revokedKeyName);
+    await account.getByRole("button", { name: "创建密钥" }).click();
+    await account.getByRole("button", { name: "安全记录" }).click();
+    await account.getByRole("button", { name: "API 密钥" }).click();
+    const revokedKeyRow = account.getByRole("row", {
+      name: new RegExp(revokedKeyName),
+    });
+    await revokedKeyRow
+      .getByRole("button", { name: `${revokedKeyName}更多操作` })
+      .click();
+    await revokedKeyRow.getByRole("menuitem", { name: "撤销密钥" }).click();
+    await page.getByRole("button", { name: "确认撤销" }).click();
+    await expect(
+      revokedKeyRow.getByText("已撤销", { exact: true }),
+    ).toBeVisible();
+    const activeRenewBox = await keyRow
+      .getByRole("button", { name: "续期" })
+      .boundingBox();
+    const revokedRenewBox = await revokedKeyRow
+      .getByRole("button", { name: "续期" })
+      .boundingBox();
+    const activeDeleteBox = await keyRow
+      .getByRole("button", { name: "删除" })
+      .boundingBox();
+    const revokedDeleteBox = await revokedKeyRow
+      .getByRole("button", { name: "删除" })
+      .boundingBox();
+    expect(Math.abs(activeRenewBox!.x - revokedRenewBox!.x)).toBeLessThan(1);
+    expect(Math.abs(activeDeleteBox!.x - revokedDeleteBox!.x)).toBeLessThan(1);
+    expect(activeRenewBox!.height).toBe(activeDeleteBox!.height);
+    expect((await account.boundingBox())!.width).toBeLessThanOrEqual(1280);
+    await keyRow.getByRole("button", { name: "续期" }).click();
+    const renew = page.getByRole("alertdialog", {
+      name: new RegExp(`续期“${keyName}”`),
+    });
+    await expect(renew.getByText("无需修改调用方配置")).toBeVisible();
+    await renew.getByRole("button", { name: "取消" }).click();
+    await page.screenshot({ path: `/tmp/fpl-api-keys-${theme}.png` });
+    await page.setViewportSize({ width: 390, height: 844 });
+    await keyRow.scrollIntoViewIfNeeded();
+    await expect(keyRow.getByRole("button", { name: "删除" })).toBeInViewport();
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= innerWidth + 1,
+      ),
+    ).toBe(true);
+    await page.screenshot({ path: `/tmp/fpl-api-keys-${theme}-mobile.png` });
+    await page.setViewportSize({ width: 1440, height: 1000 });
+    await keyRow.getByRole("button", { name: "删除" }).click();
+    await page.getByRole("button", { name: "确认删除" }).click();
+    await expect(keyRow).toBeHidden();
+    await revokedKeyRow.getByRole("button", { name: "删除" }).click();
+    await page.getByRole("button", { name: "确认删除" }).click();
+    await expect(revokedKeyRow).toBeHidden();
     await page.keyboard.press("Escape");
     await page.goto("/management/accounts");
     await expect(

@@ -1,5 +1,5 @@
 import { useEffect, useId, useRef, type ReactNode } from "react";
-import { TriangleAlert, X } from "lucide-react";
+import { RefreshCw, TriangleAlert, X } from "lucide-react";
 import { createPortal } from "react-dom";
 import "@shared/ui/confirm-dialog.css";
 
@@ -9,6 +9,7 @@ export function ConfirmDialog({
   description,
   confirmLabel = "确认",
   cancelLabel = "取消",
+  tone = "danger",
   pending = false,
   onCancel,
   onConfirm,
@@ -18,6 +19,7 @@ export function ConfirmDialog({
   description: ReactNode;
   confirmLabel?: string;
   cancelLabel?: string;
+  tone?: "danger" | "primary";
   pending?: boolean;
   onCancel: () => void;
   onConfirm: () => void | Promise<void>;
@@ -25,6 +27,7 @@ export function ConfirmDialog({
   const titleId = useId();
   const descriptionId = useId();
   const confirmButton = useRef<HTMLButtonElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
   const cancelRef = useRef(onCancel);
   const pendingRef = useRef(pending);
   cancelRef.current = onCancel;
@@ -37,14 +40,45 @@ export function ConfirmDialog({
     const ownsScrollLock = previousOverflow !== "hidden";
     if (ownsScrollLock) document.body.style.overflow = "hidden";
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape" && !pendingRef.current) cancelRef.current();
+      if (event.defaultPrevented || event.isComposing) return;
+      if (event.key === "Escape") {
+        event.preventDefault();
+        if (!pendingRef.current) cancelRef.current();
+      }
+      if (event.key === "Tab") {
+        const controls = Array.from(
+          dialogRef.current?.querySelectorAll<HTMLElement>(
+            'button:not(:disabled),a[href],input:not(:disabled),textarea:not(:disabled),[tabindex="0"]',
+          ) || [],
+        ).filter(
+          (node) =>
+            node.getClientRects().length &&
+            getComputedStyle(node).visibility !== "hidden",
+        );
+        const first = controls[0];
+        const last = controls.at(-1);
+        if (!dialogRef.current?.contains(document.activeElement)) {
+          event.preventDefault();
+          (event.shiftKey ? last : first)?.focus();
+        } else if (event.shiftKey && document.activeElement === first) {
+          event.preventDefault();
+          last?.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+          event.preventDefault();
+          first?.focus();
+        }
+      }
     };
     window.addEventListener("keydown", handleKeyDown);
-    requestAnimationFrame(() => confirmButton.current?.focus());
+    const frame = requestAnimationFrame(() =>
+      confirmButton.current?.focus({ preventScroll: true }),
+    );
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
+      cancelAnimationFrame(frame);
       if (ownsScrollLock) document.body.style.overflow = previousOverflow;
-      previouslyFocused?.focus();
+      if (previouslyFocused?.isConnected)
+        previouslyFocused.focus({ preventScroll: true });
     };
   }, [open]);
 
@@ -59,6 +93,7 @@ export function ConfirmDialog({
       }}
     >
       <div
+        ref={dialogRef}
         className="modal-card confirm-dialog"
         role="alertdialog"
         aria-modal="true"
@@ -74,13 +109,19 @@ export function ConfirmDialog({
         >
           <X aria-hidden />
         </button>
-        <span className="confirm-dialog-icon">
-          <TriangleAlert aria-hidden />
+        <span className={`confirm-dialog-icon ${tone}`}>
+          {tone === "primary" ? (
+            <RefreshCw aria-hidden />
+          ) : (
+            <TriangleAlert aria-hidden />
+          )}
         </span>
         <div className="confirm-dialog-copy">
           <span className="eyebrow">请确认操作</span>
           <h2 id={titleId}>{title}</h2>
-          <p id={descriptionId}>{description}</p>
+          <div className="confirm-dialog-description" id={descriptionId}>
+            {description}
+          </div>
         </div>
         <div className="modal-actions">
           <button
@@ -94,7 +135,7 @@ export function ConfirmDialog({
           <button
             ref={confirmButton}
             type="button"
-            className="btn danger"
+            className={`btn ${tone}`}
             disabled={pending}
             onClick={() => void onConfirm()}
           >

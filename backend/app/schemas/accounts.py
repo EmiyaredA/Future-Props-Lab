@@ -160,6 +160,15 @@ class RevokeApiKeyIn(BaseModel):
     expected_revision: int = Field(ge=0)
 
 
+class RenewApiKeyIn(BaseModel):
+    expected_revision: int = Field(ge=0)
+    expires_in_days: int = Field(default=90, ge=1, le=365)
+
+
+class DeleteApiKeyIn(BaseModel):
+    expected_revision: int = Field(ge=0)
+
+
 class SecurityAuditEventOut(BaseModel):
     id: str
     event_type: str

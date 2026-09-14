@@ -183,16 +183,36 @@ export const listApiKeys = async () =>
 export const createApiKey = async (
   name: string,
   scopes: ("studio:read" | "studio:write")[],
+  expiresInDays: number,
 ) =>
   unwrap(
     await api.POST("/v1/account/api-keys", {
-      body: { name, scopes, expires_in_days: 90 },
+      body: { name, scopes, expires_in_days: expiresInDays },
     }),
   );
 
 export const revokeApiKey = async (key: ApiKey) =>
   unwrap(
     await api.POST("/v1/account/api-keys/{key_id}/revoke", {
+      params: { path: { key_id: key.id } },
+      body: { expected_revision: key.revision },
+    }),
+  );
+
+export const renewApiKey = async (key: ApiKey, expiresInDays: number) =>
+  unwrap(
+    await api.POST("/v1/account/api-keys/{key_id}/renew", {
+      params: { path: { key_id: key.id } },
+      body: {
+        expected_revision: key.revision,
+        expires_in_days: expiresInDays,
+      },
+    }),
+  );
+
+export const deleteApiKey = async (key: ApiKey) =>
+  unwrap(
+    await api.DELETE("/v1/account/api-keys/{key_id}", {
       params: { path: { key_id: key.id } },
       body: { expected_revision: key.revision },
     }),
