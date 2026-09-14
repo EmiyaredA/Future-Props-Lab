@@ -15,6 +15,7 @@
 | [knowledge_bases](#knowledge-bases) | `GET /v1/thought-workshop/knowledge-bases` |
 | [knowledge_base](#knowledge-base) | `GET /v1/thought-workshop/knowledge-bases/{project_id}` |
 | [directory](#directory) | `GET /v1/thought-workshop/knowledge-bases/{project_id}/directory` |
+| [link_preview](#link-preview) | `GET /v1/thought-workshop/link-preview` |
 | [writing_models](#writing-models) | `GET /v1/thought-workshop/models` |
 | [list_notes](#list-notes) | `GET /v1/thought-workshop/notes` |
 | [get_note](#get-note) | `GET /v1/thought-workshop/notes/{note_id}` |
@@ -154,6 +155,25 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 **响应**：
 - `200` · `application/json` · `ThoughtDirectoryOut`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
+## link_preview {#link-preview}
+
+`client.thought.link_preview(...)`
+
+**接口**：`GET /v1/thought-workshop/link-preview`。**鉴权**：Workspace API Key 或 Session。
+**权限**：`content.read`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+| `url` | query | string | 是 |
+
+**响应**：
+- `200` · `application/json` · `ThoughtLinkPreview`
 
 上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
 

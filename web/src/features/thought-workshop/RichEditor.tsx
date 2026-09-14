@@ -12,6 +12,8 @@ import { useFileUploads } from "./useFileUploads";
 import { attachmentAccept } from "./AttachmentNode";
 import { BlockEditorChrome } from "./BlockEditorChrome";
 import { EditorContextMenus } from "./EditorContextMenus";
+import { LinkPreviewCard } from "./LinkPreviewCard";
+import { DocumentOutline } from "./DocumentOutline.tsx";
 import type { InsertCallbacks } from "./blockCommands";
 import "./attachments.css";
 import "katex/dist/katex.min.css";
@@ -25,6 +27,7 @@ export function RichEditor({
   onChange,
   onReady,
   beforeContent,
+  outlineTitle,
   readOnly = false,
   historyMarks,
   historyAuthor = "",
@@ -36,6 +39,7 @@ export function RichEditor({
   historyAuthor?: string;
   onCompositionChange?: (active: boolean) => void;
   beforeContent?: ReactNode;
+  outlineTitle?: string;
   readOnly?: boolean;
   document: JSONContent;
   onChange: (document: JSONContent) => void;
@@ -264,9 +268,13 @@ export function RichEditor({
           {error}
         </p>
       )}
+      {outlineTitle !== undefined && (
+        <DocumentOutline editor={editor} title={outlineTitle} />
+      )}
       {beforeContent}
       <div ref={canvas} className="thought-editor-canvas">
         <EditorContent editor={editor} />
+        <LinkPreviewCard editor={editor} />
         <BlockEditorChrome
           editor={editor}
           canvas={canvas}

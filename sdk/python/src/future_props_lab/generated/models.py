@@ -3233,6 +3233,14 @@ class ThoughtImportOut(WireModel):
     note_ids: list[str] = Field(default=..., alias='note_ids')
     warnings: list[str] | None = Field(default=None, alias='warnings')
 
+class ThoughtLinkPreview(WireModel):
+    available: bool = Field(default=False, alias='available')
+    description: str | None = Field(default=None, alias='description')
+    domain: str = Field(default=..., alias='domain')
+    final_url: str = Field(default=..., alias='final_url')
+    title: str | None = Field(default=None, alias='title')
+    url: str = Field(default=..., alias='url')
+
 class ThoughtMarkdownIn(WireModel):
     assets: dict[str, str] | None = Field(default=None, alias='assets')
     markdown: str = Field(default=..., alias='markdown', max_length=200000)
@@ -4532,6 +4540,7 @@ ThoughtHistorySnapshot.model_rebuild()
 ThoughtHistorySummary.model_rebuild()
 ThoughtImageOut.model_rebuild()
 ThoughtImportOut.model_rebuild()
+ThoughtLinkPreview.model_rebuild()
 ThoughtMarkdownIn.model_rebuild()
 ThoughtMarkdownOut.model_rebuild()
 ThoughtModelOut.model_rebuild()

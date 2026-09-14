@@ -1,0 +1,109 @@
+.thought-outline {
+  position: fixed;
+  z-index: 5;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+.thought-outline-panel,
+.thought-outline-popover {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.thought-outline header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0 4px 10px 10px;
+  font-size: 12px;
+  color: var(--faint);
+}
+.thought-outline button {
+  font: inherit;
+  color: inherit;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  border-radius: 5px;
+}
+.thought-outline header button {
+  display: inline-flex;
+  padding: 5px;
+}
+.thought-outline nav {
+  overflow-y: auto;
+  min-height: 0;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  padding: 3px;
+}
+.thought-outline nav button {
+  position: relative;
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 7px 10px;
+  line-height: 1.65;
+}
+.thought-outline nav button > span:first-child {
+  display: block;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.thought-outline button:hover {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+.thought-outline button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+.thought-outline nav button[aria-current="location"] {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+}
+.thought-outline .thought-outline-title {
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+.thought-outline nav button:hover > span:first-child,
+.thought-outline nav button:focus-visible > span:first-child {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.thought-outline-launcher-space {
+  height: 44px;
+}
+.thought-outline-trigger {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 9px;
+  box-shadow: 0 1px 4px rgb(0 0 0 / 8%);
+}
+.thought-outline .thought-outline-trigger {
+  background: var(--bg);
+}
+.thought-outline-popover {
+  position: fixed;
+  inset: auto;
+  margin: 0;
+  padding: 12px;
+  box-sizing: border-box;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--muted);
+  box-shadow: 0 12px 32px rgb(0 0 0 / 14%);
+  max-width: calc(100vw - 24px);
+  overflow: hidden;
+}
+.thought-outline-empty {
+  margin: 4px 8px 12px;
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--muted);
+}

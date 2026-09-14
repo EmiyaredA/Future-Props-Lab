@@ -1869,6 +1869,13 @@
     "verification": "named-operation-contract"
   },
   {
+    "http": "GET /v1/thought-workshop/link-preview",
+    "sdk": "client.thought.link_preview",
+    "document": "/docs.html?page=sdk-reference-thought#link-preview",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
     "http": "GET /v1/thought-workshop/models",
     "sdk": "client.thought.writing_models",
     "document": "/docs.html?page=sdk-reference-thought#writing-models",

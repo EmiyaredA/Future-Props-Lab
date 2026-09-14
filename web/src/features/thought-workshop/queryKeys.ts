@@ -1,5 +1,7 @@
 export const thoughtKeys = {
   all: ["thought-workshop"] as const,
+  linkPreview: (workspaceId: string, url: string) =>
+    [...thoughtKeys.all, "link-preview", workspaceId, url] as const,
   notes: (query: object) => [...thoughtKeys.all, "notes", query] as const,
   projectLists: () => [...thoughtKeys.all, "projects"] as const,
   projects: (query = "", trash = false) =>

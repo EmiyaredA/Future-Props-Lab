@@ -563,6 +563,10 @@
     "method": "directory",
     "resource": "thought"
   },
+  "GET /v1/thought-workshop/link-preview": {
+    "method": "link_preview",
+    "resource": "thought"
+  },
   "GET /v1/thought-workshop/models": {
     "method": "writing_models",
     "resource": "thought"

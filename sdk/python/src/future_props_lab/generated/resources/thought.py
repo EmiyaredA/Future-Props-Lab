@@ -63,6 +63,10 @@ class Thought:
         'Restore Knowledge Base. POST /v1/thought-workshop/knowledge-bases/{project_id}/restore'
         return self._client._call('POST', '/v1/thought-workshop/knowledge-bases/{project_id}/restore', parameters=[('project_id', 'path', project_id)], body=body, media_type='application/json', response_type=models.KnowledgeBaseOut)
 
+    def link_preview(self, *, url: str) -> models.ThoughtLinkPreview:
+        'Link Preview. GET /v1/thought-workshop/link-preview'
+        return self._client._call('GET', '/v1/thought-workshop/link-preview', parameters=[('url', 'query', url)], response_type=models.ThoughtLinkPreview)
+
     def convert_markdown(self, *, body: models.ThoughtMarkdownIn | dict) -> models.ThoughtMarkdownOut:
         'Convert Markdown. POST /v1/thought-workshop/markdown/convert'
         return self._client._call('POST', '/v1/thought-workshop/markdown/convert', parameters=[], body=body, media_type='application/json', response_type=models.ThoughtMarkdownOut)
@@ -174,6 +178,10 @@ class AsyncThought:
     async def restore_knowledge_base(self, *, project_id: str, body: models.ThoughtRevisionIn | dict) -> models.KnowledgeBaseOut:
         'Restore Knowledge Base. POST /v1/thought-workshop/knowledge-bases/{project_id}/restore'
         return await self._client._call('POST', '/v1/thought-workshop/knowledge-bases/{project_id}/restore', parameters=[('project_id', 'path', project_id)], body=body, media_type='application/json', response_type=models.KnowledgeBaseOut)
+
+    async def link_preview(self, *, url: str) -> models.ThoughtLinkPreview:
+        'Link Preview. GET /v1/thought-workshop/link-preview'
+        return await self._client._call('GET', '/v1/thought-workshop/link-preview', parameters=[('url', 'query', url)], response_type=models.ThoughtLinkPreview)
 
     async def convert_markdown(self, *, body: models.ThoughtMarkdownIn | dict) -> models.ThoughtMarkdownOut:
         'Convert Markdown. POST /v1/thought-workshop/markdown/convert'

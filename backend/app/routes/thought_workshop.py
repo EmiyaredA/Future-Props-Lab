@@ -17,6 +17,7 @@ from app.schemas.thought_knowledge import (
     ThoughtDirectoryOut,
     ThoughtMoveIn,
 )
+from app.schemas.thought_link_preview import ThoughtLinkPreview
 from app.schemas.thought_workshop import (
     ThoughtAssistantEvent,
     ThoughtAssistantIn,
@@ -35,10 +36,18 @@ from app.thought_workshop.assistant import models, prepare, writing_events
 from app.thought_workshop.attachments import upload_attachment
 from app.thought_workshop.directory import Directory
 from app.thought_workshop.knowledge import KnowledgeBases
+from app.thought_workshop.link_preview import preview_link
 from app.thought_workshop.notes import Notes, ThoughtError, note_out
 from app.thought_workshop.portability import export_backup, import_backup
 
 router = APIRouter(prefix="/thought-workshop", tags=["thought-workshop"])
+
+
+@router.get("/link-preview", response_model=ThoughtLinkPreview)
+async def link_preview(
+    _workspace_id: WorkspaceDep, url: str = Query(min_length=1, max_length=8192)
+):
+    return await preview_link(url)
 
 
 async def call(operation):

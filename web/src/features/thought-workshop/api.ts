@@ -2,6 +2,34 @@ import type { components, paths } from "@generated/api";
 import { api, unwrap, requestApi, fetchApiBlob } from "@platform/api/client";
 
 export type Note = components["schemas"]["ThoughtNoteOut"];
+export type LinkPreview = components["schemas"]["ThoughtLinkPreview"];
+export async function getLinkPreview(
+  url: string,
+  signal: AbortSignal,
+): Promise<LinkPreview> {
+  try {
+    return await read(
+      async (requestSignal) =>
+        unwrap(
+          await api.GET("/v1/thought-workshop/link-preview", {
+            params: { query: { url } },
+            signal: requestSignal,
+          }),
+        ),
+      signal,
+    );
+  } catch (error) {
+    if (signal.aborted) throw error;
+    return {
+      url,
+      final_url: url,
+      domain: new URL(url).hostname,
+      title: null,
+      description: null,
+      available: false,
+    };
+  }
+}
 export type NoteSummary = components["schemas"]["ThoughtNoteSummary"];
 export type NoteInput = Omit<
   components["schemas"]["ThoughtNotePut"],

@@ -3624,6 +3624,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/thought-workshop/link-preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Link Preview */
+        get: operations["link_preview_v1_thought_workshop_link_preview_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/thought-workshop/markdown/convert": {
         parameters: {
             query?: never;
@@ -12526,6 +12543,24 @@ export interface components {
             note_ids: string[];
             /** Warnings */
             warnings?: string[];
+        };
+        /** ThoughtLinkPreview */
+        ThoughtLinkPreview: {
+            /**
+             * Available
+             * @default false
+             */
+            available: boolean;
+            /** Description */
+            description?: string | null;
+            /** Domain */
+            domain: string;
+            /** Final Url */
+            final_url: string;
+            /** Title */
+            title?: string | null;
+            /** Url */
+            url: string;
         };
         /** ThoughtMarkdownIn */
         ThoughtMarkdownIn: {
@@ -23320,6 +23355,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["KnowledgeBaseOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    link_preview_v1_thought_workshop_link_preview_get: {
+        parameters: {
+            query: {
+                url: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ThoughtLinkPreview"];
                 };
             };
             /** @description Validation Error */

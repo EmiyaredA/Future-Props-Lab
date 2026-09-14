@@ -293,6 +293,14 @@ Sayflow 的 PostgreSQL、多实例 worker、扩展、共享 runtime 包、知识
 
 ## 思绪工坊
 
+`DocumentOutline`、`outlineHeadings.ts` 与 `useDocumentOutline` 负责从当前编辑器提取章节、
+左侧留白布局和滚动定位；`document-outline.css` 拥有常驻目录及窄屏浮层样式。
+目录及临时展开折叠内容只属于界面状态，不写入正文或修改 revision。
+
+`thought_workshop/link_preview.py` 拥有匿名公网网页元数据读取及连接地址校验；
+`LinkPreviewCard`、`useLinkPreview` 与 `useLinkPreviewPosition` 在编辑和只读正文共用悬浮交互，
+样式归 `link-preview.css`。预览不进入正文或数据库，缓存键由 `queryKeys.ts` 按 Workspace 和 URL 管理。
+
 文档历史由 `thought_workshop/history.py` 拥有快照与分页，`history_archive.py` 拥有 v5 备份历史校验和重映射；`notes.py` 在正文 CAS 事务中记录与还原内容。迁移 `0049_thought_history` 为现有文档建立作者未知的历史起点，历史附件独立引用并参与公共文件删除保护。历史全部保留，文档永久删除时级联释放。
 
 Web 的 `NoteHistory` 复用现有只读 `RichEditor`；`historyDiff.ts` 负责有界块对齐与文字差异，`HistoryDecorations` 仅在预览中叠加标记，`history.css` 拥有列表和修改痕迹样式。历史模式不修改编辑草稿，唯一历史缓存键仍由 `queryKeys.ts` 维护。

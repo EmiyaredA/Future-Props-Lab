@@ -20564,6 +20564,56 @@
         "title": "ThoughtImportOut",
         "type": "object"
       },
+      "ThoughtLinkPreview": {
+        "properties": {
+          "available": {
+            "default": false,
+            "title": "Available",
+            "type": "boolean"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "domain": {
+            "title": "Domain",
+            "type": "string"
+          },
+          "final_url": {
+            "title": "Final Url",
+            "type": "string"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "url": {
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "url",
+          "final_url",
+          "domain"
+        ],
+        "title": "ThoughtLinkPreview",
+        "type": "object"
+      },
       "ThoughtMarkdownIn": {
         "additionalProperties": false,
         "properties": {
@@ -38995,6 +39045,50 @@
           }
         },
         "summary": "Restore Knowledge Base",
+        "tags": [
+          "thought-workshop"
+        ]
+      }
+    },
+    "/v1/thought-workshop/link-preview": {
+      "get": {
+        "operationId": "link_preview_v1_thought_workshop_link_preview_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "url",
+            "required": true,
+            "schema": {
+              "maxLength": 8192,
+              "minLength": 1,
+              "title": "Url",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ThoughtLinkPreview"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Link Preview",
         "tags": [
           "thought-workshop"
         ]

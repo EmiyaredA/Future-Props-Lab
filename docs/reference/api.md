@@ -792,6 +792,13 @@ Runner 连续失败达到 3 次时返回 503。单轮 Runner 异常会被记录�
 所有接口位于 `/v1/thought-workshop`，使用现有 Studio Cookie/CSRF 或 Management API Key，
 Workspace 仅从认证主体派生。跨空间 ID 返回 404。
 
+`GET /link-preview?url=…` 要求 `content.read`，返回 `url`、`final_url`、`domain`、
+可空的 `title` / `description` 和 `available`。仅匿名获取公网 HTTP(S) 静态 HTML 元数据，
+不执行脚本、不携带 Cookie、不写入正文或数据库。总时限 5 秒，最多 3 次跳转，压缩前后
+各上限 1 MiB，最多 8 个并发读取；每次连接固定至已验证的公网 IP，并保持原 Host 和 TLS 验证。
+无法读取时返回 `available: false`；URL 参数缺失、空值或超过 8192 字符返回 422。
+前端按 Workspace 与 URL 缓存成功结果 10 分钟、失败结果 1 分钟，显示域名和打开原文入口作为降级。
+
 | 接口                                   | 行为                                                                                                                                    |
 | -------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
 | `GET/POST /knowledge-bases`            | 查询（query、trash）／创建知识库，自动创建空白首页                                                                                      |

@@ -150,6 +150,7 @@ OPERATIONS: dict[str, tuple[tuple[str, str], ...]] = {
         ("POST", "/v1/visual-workshop/projects/{project_id}/open-folder"),
     ),
     "content.read": (
+        ("GET", "/v1/thought-workshop/link-preview"),
         ("POST", "/v1/files/{asset_id}/crop"),
         ("POST", "/v1/files/{asset_id}/frames"),
         ("POST", "/v1/thought-workshop/markdown/convert"),

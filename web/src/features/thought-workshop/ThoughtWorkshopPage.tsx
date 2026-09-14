@@ -549,6 +549,7 @@ export function ThoughtWorkshopPage({
                   ) : note.data.is_home && !editHome ? (
                     <div className="knowledge-home-reading">
                       <RichEditor
+                        outlineTitle={project?.title || note.data.title}
                         key={note.data.id}
                         document={note.data.document}
                         readOnly

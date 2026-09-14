@@ -30,7 +30,11 @@ export function editorExtensions(
 ) {
   const extensions: AnyExtension[] = [
     StarterKit.configure({
-      link: { openOnClick: true, protocols: ["http", "https", "mailto"] },
+      link: {
+        openOnClick: true,
+        protocols: ["http", "https", "mailto"],
+        HTMLAttributes: { tabindex: "0" },
+      },
       dropcursor: { color: "#f08b62", width: 3 },
     }),
     TextStyle,

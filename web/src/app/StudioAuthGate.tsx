@@ -358,6 +358,7 @@ export function StudioAuthGate({ children }: { children: ReactNode }) {
   return (
     <SessionContext.Provider value={context}>
       <WorkspacePermissionsProvider
+        workspaceId={me.workspace.id}
         permissions={me.workspace.permission_keys || []}
       >
         {error ? (

@@ -235,6 +235,7 @@ export function NoteEditorPane({
         )}
         <Suspense fallback={<p>编辑器加载中…</p>}>
           <RichEditor
+            outlineTitle={editing.draft.title}
             onBackspaceAtStart={() => {
               const title = titleInput.current;
               if (!title) return false;

@@ -49,6 +49,8 @@ export function ThoughtReadOnlyPage({
         <>
           <p>{note.data.tags.join(" · ")}</p>
           <RichEditor
+            key={note.data.id}
+            outlineTitle={note.data.title}
             document={note.data.document}
             readOnly
             onChange={() => {}}
