@@ -105,7 +105,7 @@ test("model directory and supplier connections work in both themes and small scr
   await expect(
     page.getByRole("tab", { name: "模型目录", exact: true }),
   ).toHaveAttribute("aria-selected", "true");
-  const output = resolve("../output/model-service");
+  const output = resolve("../.local/output/model-service");
   await mkdir(output, { recursive: true });
   for (const theme of ["dark", "light"]) {
     for (const width of [1600, 390]) {

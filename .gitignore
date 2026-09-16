@@ -177,7 +177,9 @@ desktop/dist-tests/
 .runtime/
 web/e2e/.auth-state.json
 
-# Local scratch media and working drafts (not product assets)
+# Unified local workspace (not product assets)
+.local/
+# Legacy local roots kept ignored so accidental recreation is not committed
 .scratch/
 /output/
 /tmp/

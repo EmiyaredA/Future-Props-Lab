@@ -63,7 +63,7 @@
 - 中台采用独立导航、全平台统计、统一筛选列表与分页、行操作菜单、手机抽屉和账号/空间卡片。审计高级时间筛选与详情可展开。
 - 账号与导航组件测试 27 项通过。Chromium 6 个相关浏览器用例通过；最终头像、搜索框和明暗主题截图另复查 2 个 UI 用例通过。浏览器使用测试配置自动创建的临时数据库，无真实供应商调用。
 - 全量后端测试：454 通过、4 个既有失败（两个视觉工坊文件尺寸上限、文档资产清单、画布快照 `grid_output/grid_size` 预期）。全量 Web 测试：609 通过、1 个既有文档截图 checksum 失败。应用壳样式边界与迁移架构约束通过；本轮新增文件未超过尺寸上限。
-- lint、格式检查、契约一致性、TypeScript 和构建通过。截图保存在忽略目录 `output/account-ui/`，包含账号菜单、空间弹窗、账号列表的桌面/手机明暗主题实际画面；未替换文档图片资产。
+- lint、格式检查、契约一致性、TypeScript 和构建通过。截图保存在忽略目录 `.local/output/account-ui/`，包含账号菜单、空间弹窗、账号列表的桌面/手机明暗主题实际画面；未替换文档图片资产。
 
 ## 三级平台身份与升级
 
@@ -108,6 +108,6 @@
 
 全量失败仍是上文记录的视觉工坊两个文件尺寸超限、文档素材清单/截图校验值不一致，以及画布快照缺少 `grid_output/grid_size` 的预期；没有把这些失败计为通过，也没有改写素材校验值。测试使用隔离数据库和确定性替身，没有进行真实供应商调用。
 
-实际页面截图保存在 `output/platform-governance/`：七页各有 1440px/390px、浅色/深色，共 28 张。账号菜单与工作区弹窗截图在 `output/account-ui/`。截图属于本地验收产物，未替换文档素材。组件与浏览器用例分别在 `web/tests/platform-governance.test.tsx`、`web/e2e/platform-governance.spec.ts`，响应式入口同步登记在 `web/e2e/responsive-inventory.ts`。
+实际页面截图保存在 `.local/output/platform-governance/`：七页各有 1440px/390px、浅色/深色，共 28 张。账号菜单与工作区弹窗截图在 `.local/output/account-ui/`。截图属于本地验收产物，未替换文档素材。组件与浏览器用例分别在 `web/tests/platform-governance.test.tsx`、`web/e2e/platform-governance.spec.ts`，响应式入口同步登记在 `web/e2e/responsive-inventory.ts`。
 
 升级必须保留已登记迁移顺序 `r0051 → r0052 → r0054 → r0055`。旧平台管理员升级为超级管理员；普通用户即使拥有工作区，也默认不再获得原始模型与实时诊断、敏感工具详情或开发者文档权限。配置变更使用 CAS，权限调整对后续请求生效，不重放旧写入。

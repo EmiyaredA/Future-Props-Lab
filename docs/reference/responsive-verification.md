@@ -53,7 +53,7 @@
 
 Chromium 最终完整矩阵 25 项通过，包含 1,750 张截图（浅色、深色各 875 张）；八种视口均有覆盖。WebKit 与 Firefox 的核心检查经过修复后通过，包括表单键盘打开、菜单、导航焦点、账号、文档中心、五类模型测试及各编辑工作区。跨浏览器矩阵使用 360×640 与 1280×800，不计作八尺寸全矩阵。
 
-截图按页面、尺寸、主题命名，基准矩阵保存在 `output/responsive/delivery/`，最新编辑器复测保存在 `output/responsive/geometry-final/`，属于本地验收输出，不作为产品资产发布。可打开 [截图筛选索引](../../output/responsive/index.html) 搜索页面并查看原图；[完整图片清单](../../output/responsive/manifest.json) 可用于核对覆盖。索引按页面、尺寸、主题和面板去重，使用最终 Chromium 成功运行的截图，修复前的失败截图不混入交付索引。思绪工坊原验收目录中的长首页截图也已替换。
+截图按页面、尺寸、主题命名，基准矩阵保存在 `.local/output/responsive/delivery/`，最新编辑器复测保存在 `.local/output/responsive/geometry-final/`，属于本地验收输出，不作为产品资产发布。可打开 [截图筛选索引](../../.local/output/responsive/index.html) 搜索页面并查看原图；[完整图片清单](../../.local/output/responsive/manifest.json) 可用于核对覆盖。索引按页面、尺寸、主题和面板去重，使用最终 Chromium 成功运行的截图，修复前的失败截图不混入交付索引。思绪工坊原验收目录中的长首页截图也已替换。
 
 截图复核包含各页面模板的手机缩略总览，以及桌面、横屏、明暗主题下的关键工作区、长首页与弹窗原图；没有声称人工逐张审阅全部 1,750 张图片。自动化检查页面溢出和可见弹层边界，交互用例检查导航入口、焦点恢复、面板切换与局部操作；不以截图数量代替交互验证。
 
@@ -65,13 +65,13 @@ Chromium 最终完整矩阵 25 项通过，包含 1,750 张截图（浅色、深
 
 | 检查 | 结果 | 记录 |
 | --- | --- | --- |
-| 全量 Web 测试 | 105 个文件、565 项通过 | [全量日志](../../output/responsive/checks/web.log) |
-| 收尾组件回归 | 4 个文件、26 项通过，包含 Galgame 编辑、创作、角色预设和可见视口测试 | [组件日志](../../output/responsive/checks/focused-web.log) |
-| Chromium 完整矩阵 | 25 项通过；最后的编辑器几何修正另行通过八尺寸明暗复测 | [全站矩阵](../../output/responsive/checks/matrix.log)、[编辑器复测](../../output/responsive/checks/geometry-final.log) |
-| WebKit / Firefox | 核心回归及修复后的针对性复测通过 | [WebKit 收尾](../../output/responsive/checks/final-webkit.log)、[Firefox 收尾](../../output/responsive/checks/final-firefox.log) |
-| 原有业务旅程 | 思绪工坊、模型、工具、文档、视频、画布和 Galgame 相关用例经过针对性修正后通过 | [核心旅程](../../output/responsive/checks/core.log)、[思绪工坊等旅程](../../output/responsive/checks/confirmed.log)、[分支与文档收尾](../../output/responsive/checks/final-journey.log) |
-| lint / 格式 / 契约检查 | 通过 | [lint](../../output/responsive/checks/lint.log)、[格式](../../output/responsive/checks/format.log)、[契约](../../output/responsive/checks/contracts.log) |
-| 架构检查 | 34 项通过；上述两项已有文件超限失败 | [架构日志](../../output/responsive/checks/architecture.log) |
-| 生产构建 | 通过，包括资源校验、类型检查、打包和产物大小检查 | [构建日志](../../output/responsive/checks/build.log) |
+| 全量 Web 测试 | 105 个文件、565 项通过 | [全量日志](../../.local/output/responsive/checks/web.log) |
+| 收尾组件回归 | 4 个文件、26 项通过，包含 Galgame 编辑、创作、角色预设和可见视口测试 | [组件日志](../../.local/output/responsive/checks/focused-web.log) |
+| Chromium 完整矩阵 | 25 项通过；最后的编辑器几何修正另行通过八尺寸明暗复测 | [全站矩阵](../../.local/output/responsive/checks/matrix.log)、[编辑器复测](../../.local/output/responsive/checks/geometry-final.log) |
+| WebKit / Firefox | 核心回归及修复后的针对性复测通过 | [WebKit 收尾](../../.local/output/responsive/checks/final-webkit.log)、[Firefox 收尾](../../.local/output/responsive/checks/final-firefox.log) |
+| 原有业务旅程 | 思绪工坊、模型、工具、文档、视频、画布和 Galgame 相关用例经过针对性修正后通过 | [核心旅程](../../.local/output/responsive/checks/core.log)、[思绪工坊等旅程](../../.local/output/responsive/checks/confirmed.log)、[分支与文档收尾](../../.local/output/responsive/checks/final-journey.log) |
+| lint / 格式 / 契约检查 | 通过 | [lint](../../.local/output/responsive/checks/lint.log)、[格式](../../.local/output/responsive/checks/format.log)、[契约](../../.local/output/responsive/checks/contracts.log) |
+| 架构检查 | 34 项通过；上述两项已有文件超限失败 | [架构日志](../../.local/output/responsive/checks/architecture.log) |
+| 生产构建 | 通过，包括资源校验、类型检查、打包和产物大小检查 | [构建日志](../../.local/output/responsive/checks/build.log) |
 
 全量 Web 运行后，收尾修改采用受影响组件和浏览器旅程复测。日志分别保留，不将多次针对性运行描述为一次全量运行；不修改产物预算或增加文件尺寸豁免来通过检查。

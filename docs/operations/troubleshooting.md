@@ -69,4 +69,4 @@ MCP stdio 默认禁用。需要启用时，把经过审核的绝对可执行文�
 
 ## 交付前复核
 
-按 `CONTRIBUTING.md` 的验证矩阵运行全部质量命令，并在全新检出目录用锁文件安装验证。确认 Git 状态不包含 `.env`、`.runtime/`、`output/`、`tmp/`、下载视频、`.DS_Store` 或真实凭证。
+按 `CONTRIBUTING.md` 的验证矩阵运行全部质量命令，并在全新检出目录用锁文件安装验证。确认 Git 状态不包含 `.env`、`.runtime/`、`.local/`、下载视频、`.DS_Store` 或真实凭证。

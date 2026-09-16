@@ -33,7 +33,7 @@
 
 截图为本地验收产物，未作为产品素材或文档公开图片提交：
 
-- [桌面浅色](../../output/link-preview/desktop-light.png)
-- [桌面深色](../../output/link-preview/desktop-dark.png)
-- [390px 窄屏](../../output/link-preview/mobile-390.png)
-- [320px 窄屏](../../output/link-preview/mobile-320.png)
+- [桌面浅色](../../.local/output/link-preview/desktop-light.png)
+- [桌面深色](../../.local/output/link-preview/desktop-dark.png)
+- [390px 窄屏](../../.local/output/link-preview/mobile-390.png)
+- [320px 窄屏](../../.local/output/link-preview/mobile-320.png)

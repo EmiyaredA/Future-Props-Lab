@@ -62,9 +62,12 @@ Future-Props-Lab/
 ├── CONTRIBUTING.md    # 开发流程、边界、测试矩阵与交付检查表
 ├── CHANGELOG.md       # 交付批次的用户可见变化与工程治理记录
 ├── .runtime/          # 本机 SQLite 与运行期素材（已忽略，不提交）
-├── .scratch/          # 本地临时分镜、场景图与工作草稿（已忽略，不提交）
-├── output/            # 本地导出结果（已忽略，不提交）
-└── tmp/               # 本地临时处理目录（已忽略，不提交）
+└── .local/            # 统一本地工作区（已忽略，不提交）
+    ├── scratch/       # 未定稿分镜、场景图与实验草稿
+    ├── output/        # 本地导出与验收截图/视频/日志
+    ├── tmp/           # 中间处理产物
+    ├── downloads/     # 外源下载素材
+    └── research/      # 与产品无关的调研草稿
 ```
 
 ## 目录与依赖边界
@@ -250,7 +253,8 @@ Skill 的可编辑标签保存在 `integration_skills.tags`，与目录配置共
 或系统命令。工具 API、MCP 和校验记录用例显式接收已鉴权 Workspace。
 
 Skill 不可变版本保存在 `workspaces/<workspace-id>/integrations/skills/<skill-id>/<version>/`。
-本地临时分镜、场景图与未定稿草稿放在仓库根目录 `.scratch/`，与 `.runtime/`
+本地临时分镜、场景图、导出结果、下载与研究草稿统一放在仓库根目录 `.local/`
+（`scratch/`、`output/`、`tmp/`、`downloads/`、`research/`），与 `.runtime/`
 一样被 git 忽略，不进入文档资产或产品素材真源。FastAPI 启动时自动创建
 目录并执行 `registry.py` 中已登记、带 checksum 的 migration；每个连接启用外键约束、WAL
 与忙等待。迁移历史只追加且不导入运行时 `app`，schema 变化必须同时更新 ORM、注册表、测试

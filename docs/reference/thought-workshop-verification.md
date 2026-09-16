@@ -18,13 +18,13 @@
 - lint、format:check、contracts:check 和生产构建通过。
 - 架构：34 项通过，仅两项其他模块已有文件超限失败（visual-workshop CSS 607 行、canvas 测试 1418 行）；未扩大基线。本轮没有后端变更，未重复全量后端测试。
 
-截图与日志位于 `output/thought-sidebar/`：
+截图与日志位于 `.local/output/thought-sidebar/`：
 
-- [知识库卡片与旧版侧栏](../../output/thought-sidebar/cards-1600-dark.png)
-- [知识库内部深色首页](../../output/thought-sidebar/home-1600-dark.png)
-- [浅色首页](../../output/thought-sidebar/home-1280-light.png)
-- [手机目录](../../output/thought-sidebar/directory-390-dark.png)
-- [手机目录菜单](../../output/thought-sidebar/directory-menu-390-dark.png)
+- [知识库卡片与旧版侧栏](../../.local/output/thought-sidebar/cards-1600-dark.png)
+- [知识库内部深色首页](../../.local/output/thought-sidebar/home-1600-dark.png)
+- [浅色首页](../../.local/output/thought-sidebar/home-1280-light.png)
+- [手机目录](../../.local/output/thought-sidebar/directory-390-dark.png)
+- [手机目录菜单](../../.local/output/thought-sidebar/directory-menu-390-dark.png)
 
 ## 知识库项目化验收（当前版本，2026-09-08）
 
@@ -59,13 +59,13 @@ v3 备份包括知识库、封面、首页、多级目录和附件，支持单�
 | `test_segment_export_creation_is_idempotent_and_preserves_each_config` | 其他模块输出包含 `playbackRate: None`，旧断言未包含该字段                                    |
 | `test_snapshot_import_rejects_wrong_app_tampering_and_unsafe_members`  | 其他模块输出包含 `grid_output: None` 与 `grid_size: None`，旧断言未包含这些字段              |
 
-真实截图位于 `output/thought-knowledge/`，由正式 API 和隔离数据库构建测试内容，没有向用户知识库写入示例。检查视口为 1600×1000、1280×800、390×844；分别覆盖明暗首页、空首页、卡片、长标题、多级目录抽屉，以及包含表格、图片、附件和链接的编辑正文。实际检查中文可读性、对齐、按钮对比度、弹层位置和页面横向溢出。截图关闭过渡动画，最近更新时间明确使用 UTC，避免本地时区偏差。检查日志保存在同目录的 `checks/`。
+真实截图位于 `.local/output/thought-knowledge/`，由正式 API 和隔离数据库构建测试内容，没有向用户知识库写入示例。检查视口为 1600×1000、1280×800、390×844；分别覆盖明暗首页、空首页、卡片、长标题、多级目录抽屉，以及包含表格、图片、附件和链接的编辑正文。实际检查中文可读性、对齐、按钮对比度、弹层位置和页面横向溢出。截图关闭过渡动画，最近更新时间明确使用 UTC，避免本地时区偏差。检查日志保存在同目录的 `checks/`。
 
-- [深色知识库首页](../../output/thought-knowledge/home-1600-dark.png)
-- [浅色知识库首页](../../output/thought-knowledge/home-1600-light.png)
-- [手机卡片列表](../../output/thought-knowledge/cards-390-light.png)
-- [手机目录抽屉](../../output/thought-knowledge/directory-390-dark.png)
-- [普通文档与附件](../../output/thought-knowledge/attachments-1600-dark.png)
+- [深色知识库首页](../../.local/output/thought-knowledge/home-1600-dark.png)
+- [浅色知识库首页](../../.local/output/thought-knowledge/home-1600-light.png)
+- [手机卡片列表](../../.local/output/thought-knowledge/cards-390-light.png)
+- [手机目录抽屉](../../.local/output/thought-knowledge/directory-390-dark.png)
+- [普通文档与附件](../../.local/output/thought-knowledge/attachments-1600-dark.png)
 
 以下为此前笔记版与附件版的历史验收记录，接口和页面以本节为准。
 
@@ -140,7 +140,7 @@ v3 备份包括知识库、封面、首页、多级目录和附件，支持单�
 
 浏览器使用独立端口与临时目录下的全新 SQLite/文件存储，测试数据通过正式 API 或页面创建。AI 使用确定性模拟响应，未调用真实模型供应商。检查完成后测试服务自动退出。
 
-实际截图保存在本机忽略目录 `output/thought-ui/`，包括 desktop/laptop/mobile 的 light、dark、empty、directory 和 assistant 状态；这些是验收产物，不作为产品资源发布。
+实际截图保存在本机忽略目录 `.local/output/thought-ui/`，包括 desktop/laptop/mobile 的 light、dark、empty、directory 和 assistant 状态；这些是验收产物，不作为产品资源发布。
 
 ## 附件与常用插入入口（2026-09-08）
 
@@ -160,7 +160,7 @@ v3 备份包括知识库、封面、首页、多级目录和附件，支持单�
 - Web 全量最终复验：101 个文件、556 项测试全部通过（单 worker）。此前与其他门禁并行的运行出现 6 项 Galgame 超时，受影响模块单独复测 41 项通过后，再完整复验通过；未放宽超时阈值或修改这些模块的实现。
 - 浏览器：12 条旅程通过。覆盖四个入口、多文件、拖入、重试、下载字节一致、撤销重做、笔记切换隔离、Markdown／HTML／完整备份，及已有中文输入、保存失败、版本冲突、刷新恢复、确定性 AI 插入和抽屉焦点恢复。
 - 1600×1000、1280×800、390×844 下检查明暗主题与无页面横向溢出，逐项验证插入按钮文字不溢出；保留空笔记、长正文、目录和助手展开回归。
-- 截图人工检查修复了旧工具栏固定宽度导致的文字折行，确认卡片文件名、下载按钮及中文对比度可读。真实截图保存在忽略目录 `output/thought-attachments/`：六张 `{1600,1280,390}-{light,dark}.png`；使用临时数据库测试笔记，未写入用户笔记。
+- 截图人工检查修复了旧工具栏固定宽度导致的文字折行，确认卡片文件名、下载按钮及中文对比度可读。真实截图保存在忽略目录 `.local/output/thought-attachments/`：六张 `{1600,1280,390}-{light,dark}.png`；使用临时数据库测试笔记，未写入用户笔记。
 
 ### 与本次改动无关的后端失败
 

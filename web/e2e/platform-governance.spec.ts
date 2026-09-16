@@ -12,7 +12,7 @@ const pages = [
 
 test("七个中台页面在桌面手机明暗主题下可访问且无横向溢出", async ({ page }) => {
   test.setTimeout(120000);
-  await mkdir("../output/platform-governance", { recursive: true });
+  await mkdir("../.local/output/platform-governance", { recursive: true });
   for (const viewport of [
     { width: 1440, height: 960 },
     { width: 390, height: 844 },
@@ -41,7 +41,7 @@ test("七个中台页面在桌面手机明暗主题下可访问且无横向溢�
           `${path} ${viewport.width} ${theme}`,
         ).toBeTruthy();
         await page.screenshot({
-          path: `../output/platform-governance/${path}-${viewport.width}-${theme}.png`,
+          path: `../.local/output/platform-governance/${path}-${viewport.width}-${theme}.png`,
           fullPage: true,
         });
       }
