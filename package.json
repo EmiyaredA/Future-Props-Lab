@@ -12,8 +12,9 @@
   ],
   "scripts": {
     "config:migrate": "uv run python scripts/migrate_config.py",
-    "dev:desktop": "uv run python desktop/scripts/dev.py",
+    "dev:desktop": "uv run python desktop/scripts/dev.py --live",
     "dev:desktop:live": "uv run python desktop/scripts/dev.py --live",
+    "dev:desktop:isolated": "uv run python desktop/scripts/dev.py",
     "build:desktop": "uv run python desktop/scripts/build_backend.py --check-assets && npm run build:desktop --workspace web && uv run python desktop/scripts/build_backend.py && npm run build --workspace desktop",
     "package:desktop": "uv run python desktop/scripts/build_backend.py --check-assets && npm run build:desktop --workspace web && uv run python desktop/scripts/build_backend.py && npm run package --workspace desktop",
     "test:desktop": "npm run compile --workspace desktop && uv run pytest -q tests/test_configuration.py tests/test_desktop.py tests/test_desktop_agent.py tests/test_desktop_development.py && npm run test --workspace desktop",

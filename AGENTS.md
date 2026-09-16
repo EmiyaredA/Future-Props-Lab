@@ -23,8 +23,9 @@
 - 安装后端与 Web 依赖：`npm run setup`。
 - 一键启动后端与 Web：`npm run dev`；单独启动使用 `npm run dev:backend`、
   `npm run dev:web`。
-- 桌面热加载：`npm run dev:desktop` 使用独立开发目录；用户明确授权后可用
-  `npm run dev:desktop:live` 使用正式 App 数据。源码检查后手动应用后端/Electron 更新；
+- 桌面热加载：`npm run dev:desktop` 使用正式 App 数据；需要隔离时使用
+  `npm run dev:desktop:isolated`，`npm run dev:desktop:live` 保留为同一正式数据入口的兼容别名。
+  源码检查后手动应用后端/Electron 更新；
   热加载烟测使用 `npm run test:desktop:dev`，始终在临时目录运行。
 - 数据库迁移：`npm run db:migrate`；只检查迁移状态：`npm run db:migrate:check`。
 - OpenAPI 生成与 stale-check：`npm run contracts:generate`、`npm run contracts:check`。
@@ -46,12 +47,13 @@
   在所属能力内按具体职责命名文件或子包，例如 `llm/catalog/`、`llm/playground/`。
 - 业务 API 统一注册在 `/v1`；只有 `/health` 与 `/ready` 作为根级探针。
 - `desktop/` 只拥有 Electron 壳、私有启动协议和打包。桌面数据根为
-  `~/Library/Application Support/Future Props Lab/`，开发版为 `Future Props Lab Development/`；
+  `~/Library/Application Support/Future Props Lab/`，隔离开发版为 `Future Props Lab Development/`；
   `runtime/` 保存数据库与素材，`backend/config.toml` 保存配置与加密密钥，禁止复制仓库运行数据。
   桌面配置必须在数据库模块导入前初始化。仅桌面入口托管 Web 静态页，HTML 回退仅用于页面导航，
   未知 `/v1` API 与缺失资源仍为 404；首次账号接口仅在桌面私有凭据边界内启用。
-- 显式 live 开发是使用正式数据的受控例外，不复制或合并仓库数据。启动器持有数据锁，覆盖
-  后端/Electron 更新交接；首次 live 运行停机备份完整 `runtime/` 与配置并核验 SHA256 和 SQLite
+- 默认桌面开发使用正式数据是受控流程，不复制或合并仓库数据；隔离开发仍通过
+  `dev:desktop:isolated` 使用独立目录。启动器持有数据锁，覆盖
+  后端/Electron 更新交接；首次正式数据入口运行停机备份完整 `runtime/` 与配置并核验 SHA256 和 SQLite
   完整性。备份在同级 `Future Props Lab Development Backup …/`，最近成功配置在
   `development/last-success-config.toml`（0600）。配置变更前保留停机快照；新增/漂移迁移阻止启动和
   应用更新，不在热加载流程内执行正式迁移。更新不得绕过未保存保护或自动重试写入/模型提交。

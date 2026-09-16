@@ -1,6 +1,7 @@
 # Agent Note: 桌面 live 开发使用受控正式数据租约
 
 Status: implemented
+Archived: 2026-09-16
 
 ## Problem
 

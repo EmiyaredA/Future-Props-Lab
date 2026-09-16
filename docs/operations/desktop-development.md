@@ -3,11 +3,12 @@
 日常修改不用重新制作 DMG。先安装开发依赖（`npm run setup`），在仓库根目录运行：
 
 ```sh
-npm run dev:desktop       # 独立开发数据
-npm run dev:desktop:live  # 正式 App 的账号、作品、素材与配置
+npm run dev:desktop              # 正式 App 的账号、作品、素材与配置
+npm run dev:desktop:isolated     # 独立开发数据
+npm run dev:desktop:live         # 正式数据入口的兼容别名
 ```
 
-两条命令都使用源码、Vite、本机 Node.js 和 `.venv`；不是独立安装包。只有需要交付/替换安装包时
+这些命令都使用源码、Vite、本机 Node.js 和 `.venv`；不是独立安装包。只有需要交付/替换安装包时
 才运行原有 `npm run build:desktop` / `npm run package:desktop`。
 普通 Web `npm run dev` 的行为不变。
 
@@ -36,9 +37,9 @@ npm run dev:desktop:live  # 正式 App 的账号、作品、素材与配置
 
 ## 正式数据边界与备份
 
-live 固定使用 `~/Library/Application Support/Future Props Lab/`，普通开发固定使用同级
-`Future Props Lab Development/`；两者不读取仓库数据/配置，也不会复制或合并数据库。
-正式 App 正在运行时，live 启动器通过已授权的 AppleScript 方式请求正常退出；取消或超时就停止切换，
+默认桌面开发和 live 入口都使用 `~/Library/Application Support/Future Props Lab/`；需要隔离时，
+`dev:desktop:isolated` 使用同级的 `Future Props Lab Development/`。两者都不读取仓库数据/配置，
+也不会复制或合并数据库。正式 App 正在运行时，共用正式目录的启动器通过已授权的 AppleScript 方式请求正常退出；取消或超时就停止切换，
 不强退。启动器先拿开发实例锁再拿后端数据锁；重复开发启动不会再请求退出已运行实例。
 同一数据目录在后端与 Electron 重启交接期间始终持锁。
 
@@ -62,7 +63,7 @@ Future Props Lab Development Backup YYYYMMDD-HHMMSS-随机后缀/
 
 每次启动和应用更新都只读核对已登记迁移 ID、顺序和 checksum。存在新增迁移、缺失迁移、未知版本或
 漂移时停止操作，不通过热加载自动修改正式 schema。先在隔离数据库完成项目规定的 migration 验证，
-经正常备份及正式迁移流程处理，再重新启动 live。全新独立开发目录允许正常首启建库。
+经正常备份及正式迁移流程处理，再重新启动 live。全新独立开发目录允许正常首启建库；正式数据目录仍必须通过完整备份和迁移检查。
 
 ### 明确恢复步骤
 

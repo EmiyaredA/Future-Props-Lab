@@ -30,7 +30,7 @@
 TOML 是文本格式，不会加密配置本身；真实配置和备份都不能提交、分享或打包。
 
 macOS 桌面版例外：配置在 `~/Library/Application Support/Future Props Lab/backend/config.toml`，
-数据库与素材在同级 `runtime/`。开发版使用 `Future Props Lab Development/`。
+数据库与素材在同级 `runtime/`。隔离开发版使用 `Future Props Lab Development/`；默认桌面开发复用正式 App 数据目录。
 桌面入口首次生成独立密钥；已有数据库缺少密钥时拒绝启动。桌面构建忽略 Web `.env` 与
 `VITE_API_BASE`，固定使用本地同源服务。详见 [桌面构建与配置](../operations/desktop-macos.md)。
 
