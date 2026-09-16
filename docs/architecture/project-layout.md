@@ -5,6 +5,8 @@
 
 ```text
 Future-Props-Lab/
+├── .agents/notes/     # 工程决策 Note；按 lifecycle/class 分类，不承载产品文档中心正文
+├── .agents/agent-note-templates/ # proposed/implemented/rejected Note 模板
 ├── .github/workflows/ # 冻结依赖的 Python/Web 质量检查与 Chromium E2E
 ├── .gitattributes     # 文档图片、固定字体与 VAD 资产的 Git LFS 边界
 ├── backend/fpl_config/ # 独立 TOML 格式、字段映射与一次性 .env 转换；不导入 app 或数据库
@@ -55,7 +57,7 @@ Future-Props-Lab/
 ├── web/e2e/           # Playwright 浏览器旅程
 │   └── fixtures/      # 人物旅程的确定性 API mock 与测试数据；真实烟测不使用
 ├── tests/             # 后端单元、API、存储与架构测试；大型 Story 契约/API 用例按行为拆分
-├── scripts/           # OpenAPI/LFS 检查、配置转换、API 导入客户端、离线账号命令与 E2E 账号引导
+├── scripts/           # OpenAPI/LFS 检查、Agent Note 校验、配置转换、API 导入客户端、离线账号命令与 E2E 账号引导
 │   └── demo/galgame_runaway/ # 内容专用演示维护工具；目标项目与素材路径必须显式传入
 ├── docs/assets/       # LFS 管理的文档/演示图片、来源许可证状态与内容集校验清单
 ├── docs/operations/   # 故障排查、备份与恢复说明
@@ -225,6 +227,9 @@ Future-Props-Lab/
 - `.github/workflows/` 使用锁文件安装依赖：后端验证 Python 3.11 与 3.14，Web 使用 Node.js 24，
   Chromium E2E 使用隔离临时数据库和确定性 fixture，不携带真实供应商凭证。CI 检出默认不下载
   文档演示图，只为后端、Web 和 E2E Job 选择性拉取各自运行资产，并独立检查 LFS 指针完整性。
+- `.agents/notes/` 只保存工程决策的 why/alternatives/consequences/verification；产品文档中心正文仍由
+  `web/src/docs/` 拥有，文档中心配图仍由 `web/public/docs/` 拥有，SDK/API 文档生成入口为
+  `scripts/generate_sdk_docs.py`，这些内容不能通过 Note 整理迁移或改写。
 - 根 `/health`、`/ready` 是无版本探针，其他业务路由由统一的 `/v1` router 注册。
 - `accounts/` 负责账号与 Workspace 用例；请求通过 Cookie Session 或绑定单一 Workspace 的
   Management API Key 生成 `StudioPrincipal`，`deps.WorkspaceDep` 只从该 Principal 派生租户 ID。

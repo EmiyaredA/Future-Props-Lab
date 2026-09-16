@@ -14,6 +14,9 @@
 - 后端持久配置只放在 `backend/config.toml`，按分组使用 TOML 原生类型；进程环境变量可供测试与部署覆盖。
   `.env` 仅用于一次性转换，成功后归档为 0600 备份，不再读取。不得提交真实配置或备份，不得输出密钥。
   `backend/fpl_config/` 是不依赖运行时 `app` 或数据库的共享配置格式和转换模块。
+- 非机械性的行为、架构、跨文件契约、流程工具链、测试策略或落盘/网络/配置格式改动，按
+  `docs/operations/agent-notes.md` 在 `.agents/notes/` 创建或更新 Agent Note；纯格式化、样式、无歧义重命名和局部机械修复免写。
+- `web/src/docs/`、`web/public/docs/`、文档中心覆盖清单和 `scripts/generate_sdk_docs.py` 是产品文档中心的受保护内容。工程决策整理不得迁移、删除、重写或重新生成这些路径。
 
 ## 常用命令
 
@@ -29,6 +32,7 @@
 - 质量检查：`npm run lint`、`npm run format:check`、`npm run build`；需要自动格式化时使用
   `npm run format`。
 - Git LFS：`npm run lfs:check:pointers` 检查指针，`npm run lfs:check` 检查生产运行资产。
+- Agent Note：`npm run verify-notes` 检查树结构、格式和归档封印；`npm run check-docs-center-protected` 检查文档中心保护路径。
 
 ## 应用与目录边界
 

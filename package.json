@@ -42,9 +42,17 @@
     "sdk:build": "uv build sdk/python",
     "docs:generate": "uv run python scripts/generate_sdk_docs.py",
     "docs:check": "uv run python scripts/generate_sdk_docs.py --check && npm run test --workspace web -- tests/docs-rendering.test.tsx",
+    "verify-agent-note-tree": "npx tsx scripts/verify-agent-note-tree.ts",
+    "verify-agent-note-format": "npx tsx scripts/verify-agent-note-format.ts",
+    "verify-archived": "npx tsx scripts/verify-archived-agent-notes.ts",
+    "verify-notes": "npm run verify-agent-note-tree && npm run verify-agent-note-format && npm run verify-archived",
+    "archive-agent-note": "npx tsx scripts/archive-agent-note.ts",
+    "check-anchors": "npx tsx scripts/check-note-anchors.ts",
+    "check-docs-center-protected": "node scripts/check-docs-center-protected.mjs",
     "test:sdk": "uv run pytest -q tests/test_python_sdk.py tests/test_workshop_operations.py tests/test_model_inference.py tests/test_automation_exports.py tests/test_sdk_workflows.py"
   },
   "devDependencies": {
-    "concurrently": "^9.2.0"
+    "concurrently": "^9.2.0",
+    "tsx": "^4.19.4"
   }
 }

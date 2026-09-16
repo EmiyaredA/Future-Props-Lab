@@ -43,6 +43,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           lfs: false
+          fetch-depth: 0
       - name: Pull Web runtime assets
         run: git lfs pull --include="web/public/voice-vad/*,web/public/brand/thought-workshop-mark.png,web/public/brand/presentation-workshop-mark.png" --exclude=""
       - uses: actions/setup-node@v4
@@ -55,6 +56,10 @@ jobs:
           enable-cache: true
       - run: uv sync --frozen --all-groups
       - run: npm ci
+      - run: npm run verify-notes
+      - run: npm run check-docs-center-protected
+        env:
+          DOCS_CENTER_BASE_REF: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
       - run: npm run contracts:check
         env:
           FPL_SECRETS_KEY: Q3kT62dvbHHXXulO5XPCR84_yXK6t-6LXz7BcIYONys=

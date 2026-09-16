@@ -15,6 +15,8 @@
 
 新增代码前先阅读 `AGENTS.md` 和 `docs/architecture/project-layout.md`。后端按功能能力组织，路由只处理 HTTP/SSE 协议，不直接查询 ORM；不要增加通用 `services/`、`domain/`、`platform/` 或 `product/` 层。Web 保持 `app → features → shared/platform/generated` 的单向依赖，生成的 OpenAPI 文件不得手工编辑。
 
+非机械性改动还要按 [`Agent Note 维护规则`](docs/operations/agent-notes.md) 记录决定、备选方案、后果和验证方式。Note 只记录工程维护决策，不替代产品文档中心的正文；`web/src/docs/`、`web/public/docs/` 和文档中心覆盖清单不得因 Note 整理而修改。提交前运行 `npm run verify-notes`。
+
 新增目录或改变职责时，必须同步更新项目结构文档与架构测试。生产 Python 单文件最多 700 行、
 TS/TSX 最多 800 行、CSS 最多 600 行，测试文件最多 1,200 行；生成契约排除。历史超限文件记录在
 `tests/architecture_size_baseline.json`，当前 production/tests 均为空且不得重新增加豁免。拆分必须按
@@ -36,6 +38,8 @@ HTTP 或 SSE 形状改变时，同时更新后端 schema/路由、Web 消费端�
 - `npm run test:e2e`：Chromium 端到端旅程，使用隔离数据库和确定性测试数据。
 - `npm run lfs:check:pointers`：确认应由 LFS 管理的路径没有误提交完整二进制。
 - `npm run lfs:check`：确认生产所需字体和 VAD 对象已下载且校验值正确。
+- `npm run verify-notes`：确认 Agent Note 树、格式、内部链接和归档封印正确。
+- `npm run check-docs-center-protected`：确认文档中心正文、配图和覆盖清单未被工程整理修改。
 
 涉及供应商的行为应使用确定性适配器测试；没有真实凭证时不得用付费调用代替自动化验证。
 
