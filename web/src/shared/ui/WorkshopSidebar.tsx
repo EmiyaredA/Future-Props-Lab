@@ -87,6 +87,7 @@ export function WorkshopNavigation({
           type="button"
           className={item.active ? "active" : ""}
           aria-current={item.active ? "page" : undefined}
+          aria-label={item.label}
           onClick={item.onSelect}
         >
           {item.icon}

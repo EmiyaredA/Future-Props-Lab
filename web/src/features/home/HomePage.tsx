@@ -7,6 +7,8 @@ import {
   Server,
   Sparkles,
 } from "lucide-react";
+import { Badge } from "@shared/ui/badge";
+import { Button } from "@shared/ui/button";
 import "@features/home/home.css";
 
 const destinations = [
@@ -62,21 +64,33 @@ export function HomePage({
   return (
     <section className="page home-page">
       <header className="home-header">
-        <span className="home-kicker">
-          <Sparkles aria-hidden />
-          工作台
-        </span>
-        <h1>今天想从哪里开始？</h1>
-        <p>选择一个功能区域，快速进入你的工作流程。</p>
+        <div className="home-header-copy">
+          <div className="home-kicker-row">
+            <span className="home-kicker">
+              <Sparkles aria-hidden />
+              工作台
+            </span>
+            <Badge variant="brand">FUTURE PROPS / WORKSPACE</Badge>
+          </div>
+          <h1>今天想从哪里开始？</h1>
+          <p>把灵感、模型和工具，收拢到一个顺手的工作空间。</p>
+        </div>
+        <div className="home-orbit" aria-hidden="true">
+          <span className="home-orbit-ring home-orbit-ring--one" />
+          <span className="home-orbit-ring home-orbit-ring--two" />
+          <span className="home-orbit-core" />
+        </div>
       </header>
 
       <div className="home-destinations" aria-label="功能导航">
         {destinations.map((item) => {
           const Icon = item.icon;
           return (
-            <button
+            <Button
               key={item.path}
-              type="button"
+              variant="default"
+              size="lg"
+              className="home-destination-card"
               onClick={() => onNavigate(item.path)}
             >
               <span className="home-destination-icon">
@@ -90,7 +104,7 @@ export function HomePage({
                   <ArrowRight aria-hidden />
                 </span>
               </span>
-            </button>
+            </Button>
           );
         })}
       </div>

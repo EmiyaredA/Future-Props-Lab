@@ -28,7 +28,12 @@ export function WorkshopShell({
         .filter(Boolean)
         .join(" ")}
     >
-      <ResponsiveSidebar label={`${definition.name}导航`} routeKey={page}>
+      <ResponsiveSidebar
+        label={`${definition.name}导航`}
+        routeKey={page}
+        collapsible
+        storageKey={`future-props-sidebar-${definition.id}-collapsed`}
+      >
         <WorkshopSidebar
           name={definition.name}
           subtitle={shellConfig.subtitle}

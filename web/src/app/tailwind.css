@@ -1,0 +1,16 @@
+@import "tailwindcss/theme.css";
+@import "tailwindcss/utilities.css";
+
+@theme inline {
+  --font-sans: Inter, "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  --color-brand: var(--accent);
+  --color-brand-strong: var(--accent-hover);
+  --color-brand-soft: var(--accent-soft);
+  --color-ink: var(--text-strong);
+  --color-muted: var(--muted);
+  --color-panel: var(--surface);
+  --color-panel-soft: var(--surface-soft);
+  --color-line: var(--border);
+}
+
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));

@@ -1,8 +1,80 @@
 .responsive-sidebar-track {
+  position: relative;
   min-width: 0;
   align-self: stretch;
   background: var(--surface);
   box-shadow: inset -1px 0 var(--border);
+}
+.responsive-desktop-toggle {
+  position: absolute;
+  z-index: 3;
+  top: 18px;
+  right: 12px;
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--surface) 86%, transparent);
+  color: var(--muted);
+  box-shadow: 0 5px 14px color-mix(in srgb, var(--text) 8%, transparent);
+}
+.responsive-desktop-toggle:hover {
+  border-color: var(--accent-line);
+  color: var(--accent);
+}
+.responsive-sidebar-track.is-collapsed .studio-shell,
+.responsive-sidebar-track.is-collapsed .workshop-shell {
+  grid-template-columns: 76px minmax(0, 1fr);
+}
+.studio-shell:has(> .responsive-sidebar-track.is-collapsed),
+.workshop-shell:has(> .responsive-sidebar-track.is-collapsed) {
+  grid-template-columns: 76px minmax(0, 1fr);
+}
+.responsive-sidebar-track.is-collapsed .studio-sidebar,
+.responsive-sidebar-track.is-collapsed .workshop-sidebar {
+  padding-right: 10px;
+  padding-left: 10px;
+}
+.responsive-sidebar-track.is-collapsed .sidebar-brand,
+.responsive-sidebar-track.is-collapsed .workshop-brand {
+  justify-content: center;
+  padding-right: 0;
+  padding-left: 0;
+}
+.responsive-sidebar-track.is-collapsed .sidebar-brand > div,
+.responsive-sidebar-track.is-collapsed .workshop-brand > div,
+.responsive-sidebar-track.is-collapsed .nav-section-label,
+.responsive-sidebar-track.is-collapsed .nav-chevron,
+.responsive-sidebar-track.is-collapsed .workspace-trigger-copy,
+.responsive-sidebar-track.is-collapsed .workshop-back-copy,
+.responsive-sidebar-track.is-collapsed .workshop-navigation button > span {
+  display: none;
+}
+.responsive-sidebar-track.is-collapsed .nav-primary,
+.responsive-sidebar-track.is-collapsed .nav-group,
+.responsive-sidebar-track.is-collapsed .nav-sub button,
+.responsive-sidebar-track.is-collapsed .workshop-navigation button {
+  justify-content: center;
+  padding-right: 0;
+  padding-left: 0;
+}
+.responsive-sidebar-track.is-collapsed .nav-sub {
+  padding-left: 0;
+  border-left: 0;
+}
+.responsive-sidebar-track.is-collapsed .workspace-trigger,
+.responsive-sidebar-track.is-collapsed .workshop-back {
+  justify-content: center;
+  padding-right: 0;
+  padding-left: 0;
+}
+.responsive-sidebar-track.is-collapsed .workshop-back {
+  min-height: 44px;
+}
+.responsive-sidebar-track.is-collapsed .workshop-sidebar footer {
+  display: none;
 }
 .responsive-sidebar-panel {
   position: sticky;
@@ -37,6 +109,9 @@
   .responsive-sidebar-panel {
     display: none;
   }
+  .responsive-desktop-toggle {
+    display: none;
+  }
   .responsive-sidebar-panel.is-open {
     display: block;
     position: fixed;
@@ -59,12 +134,15 @@
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    min-height: 36px;
-    padding: 6px 12px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 8px;
+    min-height: 40px;
+    padding: 6px 13px;
+    background: color-mix(in srgb, var(--surface) 92%, transparent);
+    border: 1px solid var(--border-strong);
+    border-radius: 12px;
     color: var(--text);
+    box-shadow: 0 8px 22px color-mix(in srgb, var(--text) 10%, transparent);
+    font-size: 12px;
+    font-weight: 750;
   }
   .responsive-nav-close {
     position: absolute;
@@ -72,11 +150,12 @@
     right: 10px;
     display: grid;
     place-items: center;
-    width: 36px;
-    height: 36px;
+    width: 40px;
+    height: 40px;
     background: transparent;
     border: 0;
     color: var(--text);
+    border-radius: 12px;
   }
   .responsive-nav-backdrop {
     position: fixed;

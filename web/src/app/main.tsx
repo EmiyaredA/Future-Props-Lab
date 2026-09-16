@@ -8,6 +8,7 @@ import { DesktopDevelopmentBar } from "@app/DesktopDevelopmentBar";
 import { StudioAuthGate } from "@app/StudioAuthGate";
 import { DesktopSetupGate } from "@features/accounts/DesktopSetupGate";
 import "@shared/ui/theme.css";
+import "@app/tailwind.css";
 import "@app/styles.css";
 
 const queryClient = new QueryClient({

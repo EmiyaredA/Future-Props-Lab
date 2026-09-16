@@ -52,6 +52,10 @@ test("renders integrations after tools and before the base model group", () => {
     "aria-expanded",
     "true",
   );
+  expect(screen.getByRole("button", { name: "首页" })).toHaveAttribute(
+    "aria-label",
+    "首页",
+  );
   expect(screen.getByRole("link", { name: "文档中心" })).toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: /模型测试/ }));
   expect(navigate).toHaveBeenCalledWith("model-test");

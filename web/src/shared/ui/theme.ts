@@ -3,33 +3,73 @@ import { useEffect, useState } from "react";
 export type ThemeMode = "light" | "dark";
 export const THEME_KEY = "future_props_theme";
 
-export function loadTheme(): ThemeMode {
-  try {
-    return localStorage.getItem(THEME_KEY) === "dark" ? "dark" : "light";
-  } catch {
-    return "light";
-  }
+function systemTheme(): ThemeMode {
+  return typeof window !== "undefined" &&
+    window.matchMedia?.("(prefers-color-scheme: dark)").matches
+    ? "dark"
+    : "light";
 }
 
-export function applyTheme(theme: ThemeMode): void {
-  document.documentElement.dataset.theme = theme;
+export function loadTheme(): ThemeMode {
   try {
-    localStorage.setItem(THEME_KEY, theme);
+    const stored = localStorage.getItem(THEME_KEY);
+    if (stored === "dark" || stored === "light") return stored;
   } catch {
     // Storage can be unavailable in privacy modes.
+  }
+  return systemTheme();
+}
+
+export function applyTheme(theme: ThemeMode, persist = true): void {
+  document.documentElement.dataset.theme = theme;
+  if (persist) {
+    try {
+      localStorage.setItem(THEME_KEY, theme);
+    } catch {
+      // Storage can be unavailable in privacy modes.
+    }
   }
 }
 
 export function useTheme(): [ThemeMode, (theme: ThemeMode) => void] {
   const [theme, setTheme] = useState<ThemeMode>(loadTheme);
-  useEffect(() => applyTheme(theme), [theme]);
+  const [hasPreference, setHasPreference] = useState(() => {
+    try {
+      return localStorage.getItem(THEME_KEY) !== null;
+    } catch {
+      return false;
+    }
+  });
+  useEffect(() => applyTheme(theme, hasPreference), [theme, hasPreference]);
   useEffect(() => {
     const sync = (event: StorageEvent) => {
-      if (event.key === THEME_KEY)
-        setTheme(event.newValue === "dark" ? "dark" : "light");
+      if (event.key === THEME_KEY) {
+        if (event.newValue === "dark" || event.newValue === "light") {
+          setTheme(event.newValue);
+          setHasPreference(true);
+        } else {
+          setTheme(systemTheme());
+          setHasPreference(false);
+        }
+      }
     };
     window.addEventListener("storage", sync);
     return () => window.removeEventListener("storage", sync);
   }, []);
-  return [theme, setTheme];
+  useEffect(() => {
+    if (hasPreference) return;
+    const media = window.matchMedia?.("(prefers-color-scheme: dark)");
+    if (!media) return;
+    const syncSystemTheme = (event: MediaQueryListEvent) =>
+      setTheme(event.matches ? "dark" : "light");
+    media.addEventListener?.("change", syncSystemTheme);
+    return () => media.removeEventListener?.("change", syncSystemTheme);
+  }, [hasPreference]);
+  return [
+    theme,
+    (nextTheme) => {
+      setHasPreference(true);
+      setTheme(nextTheme);
+    },
+  ];
 }

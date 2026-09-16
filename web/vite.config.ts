@@ -1,4 +1,5 @@
 import react from "@vitejs/plugin-react";
+import tailwindcss from "@tailwindcss/vite";
 import { resolve } from "node:path";
 import { defineConfig } from "vite";
 
@@ -12,7 +13,7 @@ export default defineConfig(({ mode }) => ({
     mode === "desktop"
       ? { "import.meta.env.VITE_API_BASE": JSON.stringify("") }
       : undefined,
-  plugins: [react()],
+  plugins: [react(), tailwindcss()],
   resolve: {
     alias: {
       "@app": resolve(__dirname, "src/app"),

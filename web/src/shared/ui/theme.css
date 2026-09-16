@@ -1,56 +1,64 @@
 :root {
   color-scheme: light;
-  --bg: #f8f7f4;
-  --surface: #ffffff;
-  --surface-soft: #f4f1ec;
-  --surface-hover: #f1eee8;
-  --text: #1f201e;
-  --text-strong: #11120f;
-  --muted: #777970;
-  --faint: #a2a49d;
-  --border: #e4e0d9;
-  --border-strong: #d5d0c7;
-  --accent: #cf6545;
-  --accent-hover: #b95437;
-  --accent-soft: #faeae3;
-  --accent-line: #edc3b5;
+  --bg: #f7f4ef;
+  --surface: #fffdfa;
+  --surface-soft: #f1ece4;
+  --surface-hover: #ece5db;
+  --surface-raised: #fbf8f3;
+  --text: #39342e;
+  --text-strong: #17130f;
+  --muted: #7d766c;
+  --faint: #a29a8e;
+  --border: #e6ddd2;
+  --border-strong: #d6c8b8;
+  --accent: #d96342;
+  --accent-hover: #b84b2f;
+  --accent-soft: #fde9df;
+  --accent-line: #efc1af;
+  --accent-glow: rgb(217 99 66 / 20%);
   --ok: #238653;
   --ok-soft: #e5f6ed;
   --danger: #b94d46;
   --danger-soft: #fbeae8;
   --warning: #a86616;
   --warning-soft: #fff2da;
-  --blue: #3267b2;
-  --blue-soft: #edf3ff;
-  --shadow: 0 1px 2px rgb(33 30 24 / 6%), 0 8px 24px rgb(33 30 24 / 4%);
+  --blue: #4f56a4;
+  --blue-soft: #eef0ff;
+  --olive: #6f7f55;
+  --olive-soft: #eff3e8;
+  --shadow: 0 1px 2px rgb(33 30 24 / 5%), 0 12px 28px rgb(33 30 24 / 5%);
   --overlay: rgb(28 26 22 / 34%);
 }
 
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --bg: #151614;
-  --surface: #1d1f1c;
-  --surface-soft: #242621;
-  --surface-hover: #2b2d28;
-  --text: #e9e8e3;
-  --text-strong: #faf9f6;
-  --muted: #aaa9a2;
-  --faint: #7e8079;
-  --border: #32342f;
-  --border-strong: #454741;
-  --accent: #e57b59;
-  --accent-hover: #f18a66;
-  --accent-soft: #3b2821;
-  --accent-line: #684132;
+  --bg: #121413;
+  --surface: #1a1d1b;
+  --surface-soft: #222723;
+  --surface-hover: #2a302b;
+  --surface-raised: #1e2320;
+  --text: #ebe5db;
+  --text-strong: #fff8f0;
+  --muted: #afa79a;
+  --faint: #7e807a;
+  --border: #343b35;
+  --border-strong: #485049;
+  --accent: #ee805a;
+  --accent-hover: #ff9870;
+  --accent-soft: #42271f;
+  --accent-line: #744535;
+  --accent-glow: rgb(238 128 90 / 23%);
   --ok: #57c786;
   --ok-soft: #1e392a;
   --danger: #ee8179;
   --danger-soft: #402624;
   --warning: #e4ad55;
   --warning-soft: #3c3020;
-  --blue: #78aaf1;
-  --blue-soft: #202f46;
-  --shadow: 0 1px 2px rgb(0 0 0 / 20%), 0 12px 32px rgb(0 0 0 / 18%);
+  --blue: #a6adff;
+  --blue-soft: #242743;
+  --olive: #b4c77f;
+  --olive-soft: #2a3222;
+  --shadow: 0 1px 2px rgb(0 0 0 / 24%), 0 16px 36px rgb(0 0 0 / 20%);
   --overlay: rgb(0 0 0 / 62%);
 }
 
@@ -64,7 +72,13 @@ body,
   margin: 0;
 }
 body {
-  background: var(--bg);
+  background:
+    radial-gradient(
+      circle at 94% -8%,
+      color-mix(in srgb, var(--accent-soft) 72%, transparent),
+      transparent 30rem
+    ),
+    var(--bg);
   color: var(--text);
   font-family:
     Inter,
@@ -75,6 +89,18 @@ body {
     sans-serif;
   font-size: 14px;
   -webkit-font-smoothing: antialiased;
+}
+::selection {
+  background: var(--accent-soft);
+  color: var(--text-strong);
+}
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
 }
 button,
 input,
@@ -101,27 +127,28 @@ a {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 4px;
-  padding: 5px;
-  border: 1px solid var(--border);
+  padding: 4px;
+  border: 1px solid color-mix(in srgb, var(--border-strong) 68%, transparent);
   border-radius: 999px;
-  background: var(--surface-soft);
+  background: color-mix(in srgb, var(--surface-soft) 84%, transparent);
+  box-shadow: inset 0 1px rgb(255 255 255 / 30%);
 }
 .theme-toggle button {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  min-height: 36px;
+  min-height: 34px;
   border: 0;
   border-radius: 999px;
   background: transparent;
-  color: var(--muted);
+  color: var(--faint);
   font-weight: 600;
 }
 .theme-toggle button.active {
   background: var(--surface);
-  color: var(--text-strong);
-  box-shadow: var(--shadow);
+  color: var(--text);
+  box-shadow: 0 2px 8px rgb(33 30 24 / 10%);
 }
 .theme-toggle svg {
   width: 18px;

@@ -119,7 +119,12 @@ export function StudioSidebar({
     page === "audio-annotation-editor";
   const integrationsActive = page.startsWith("integrations-");
   return (
-    <ResponsiveSidebar label="主导航" routeKey={page}>
+    <ResponsiveSidebar
+      label="主导航"
+      routeKey={page}
+      collapsible
+      storageKey="future-props-sidebar-studio-collapsed"
+    >
       <aside className="studio-sidebar">
         <div className="sidebar-brand">
           <BrandMark size={36} />
@@ -130,9 +135,11 @@ export function StudioSidebar({
         </div>
         <div className="sidebar-rule" />
         <nav aria-label="主导航">
+          <div className="nav-section-label">工作台</div>
           <button
             className={`nav-primary${page === "home" ? " active" : ""}`}
             aria-current={page === "home" ? "page" : undefined}
+            aria-label="首页"
             onClick={() => navigate("home")}
           >
             <HomeIcon />
@@ -141,6 +148,7 @@ export function StudioSidebar({
           <button
             className={`nav-primary${page === "apps" ? " active" : ""}`}
             aria-current={page === "apps" ? "page" : undefined}
+            aria-label="AI应用"
             onClick={() => navigate("apps")}
           >
             <AppsIcon />
@@ -149,6 +157,7 @@ export function StudioSidebar({
           <button
             className={`nav-primary${page === "files" ? " active" : ""}`}
             aria-current={page === "files" ? "page" : undefined}
+            aria-label="文件管理"
             onClick={() => navigate("files")}
           >
             <FilesIcon />
@@ -157,6 +166,7 @@ export function StudioSidebar({
           <button
             className={`nav-primary${toolsActive ? " active" : ""}`}
             aria-current={toolsActive ? "page" : undefined}
+            aria-label="工具导航"
             onClick={() => navigate("tools")}
           >
             <CompassIcon />
@@ -165,11 +175,15 @@ export function StudioSidebar({
           <button
             className={`nav-primary${integrationsActive ? " active" : ""}`}
             aria-current={integrationsActive ? "page" : undefined}
+            aria-label="集成中心"
             onClick={() => navigate("integrations-tool-apis")}
           >
             <IntegrationIcon />
             <span>集成中心</span>
           </button>
+          <div className="nav-section-label nav-section-label--spaced">
+            基础设施
+          </div>
           <button
             className="nav-group"
             aria-label="基模型"
