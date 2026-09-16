@@ -272,6 +272,11 @@
   min-width: 0;
 }
 .workspace-settings-entry .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 92px;
   white-space: nowrap;
 }
 .workspace-settings-entries strong,
