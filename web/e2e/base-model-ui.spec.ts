@@ -7,7 +7,7 @@ test("sidebar chevron points inward when collapsed and custom select chevrons st
   await expect(
     page.getByRole("heading", { name: "模型调用日志" }),
   ).toBeVisible();
-  await expect(page.locator(".studio-sidebar")).toHaveCSS("width", "220px");
+  await expect(page.locator(".studio-sidebar")).toHaveCSS("width", "272px");
   await expect(page.locator("select")).toHaveCount(0);
 
   const offsets = await page.locator(".select-chevron").evaluateAll((nodes) =>

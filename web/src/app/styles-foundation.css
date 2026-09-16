@@ -17,7 +17,7 @@
   height: 100vh;
   display: flex;
   flex-direction: column;
-  padding: 18px 14px 16px;
+  padding: 12px 12px 14px;
   border-right: 1px solid var(--border);
   background:
     linear-gradient(
@@ -32,7 +32,7 @@
   display: flex;
   align-items: center;
   gap: 11px;
-  padding: 0 6px 16px;
+  padding: 0 6px 12px;
 }
 
 .sidebar-brand .brand-mark {
@@ -62,12 +62,12 @@
 
 .sidebar-rule {
   height: 1px;
-  margin: 0 6px 15px;
+  margin: 0 6px 11px;
   background: color-mix(in srgb, var(--border) 80%, transparent);
 }
 
 .nav-section-label {
-  padding: 0 10px 7px;
+  padding: 0 10px 5px;
   color: var(--faint);
   font-size: 10px;
   font-weight: 800;
@@ -76,7 +76,7 @@
 }
 
 .nav-section-label--spaced {
-  margin-top: 13px;
+  margin-top: 9px;
 }
 
 .studio-sidebar nav {
@@ -99,17 +99,17 @@
 }
 
 .nav-group {
-  min-height: 42px;
-  padding: 10px 12px;
+  min-height: 38px;
+  padding: 8px 10px;
   color: var(--text);
   font-size: 13.5px;
   font-weight: 600;
 }
 
 .nav-primary {
-  min-height: 42px;
+  min-height: 38px;
   margin-bottom: 3px;
-  padding: 10px 12px;
+  padding: 8px 10px;
   color: var(--text);
   font-size: 13.5px;
   font-weight: 600;
@@ -170,15 +170,15 @@
 .nav-sub {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 2px;
   margin: 0;
-  padding: 4px 0 2px 14px;
+  padding: 3px 0 2px 12px;
   border-left: 1px solid color-mix(in srgb, var(--accent-line) 55%, transparent);
 }
 
 .nav-sub button {
-  min-height: 38px;
-  padding: 8px 12px;
+  min-height: 36px;
+  padding: 6px 10px;
   font-size: 13px;
 }
 
@@ -209,7 +209,7 @@
 .sidebar-session-card {
   width: 100%;
   min-width: 0;
-  padding: 9px 10px;
+  padding: 8px 9px;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -314,28 +314,28 @@
   width: min(1500px, 100%);
   min-height: 100vh;
   margin: auto;
-  padding: 32px clamp(22px, 3.6vw, 58px) 56px;
+  padding: 24px clamp(18px, 2.2vw, 32px) 40px;
 }
 
 .page-header {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 24px;
-  margin-bottom: 28px;
+  gap: 16px;
+  margin-bottom: 18px;
 }
 
 .page-header h1 {
   margin: 5px 0 7px;
   color: var(--text-strong);
-  font-size: clamp(24px, 2.1vw, 32px);
+  font-size: clamp(22px, 2vw, 28px);
   letter-spacing: -0.035em;
 }
 
 .page-header p {
   margin: 0;
   color: var(--muted);
-  font-size: 14px;
+  font-size: 13px;
 }
 
 .eyebrow {
@@ -347,16 +347,16 @@
 
 .card {
   border: 1px solid var(--border);
-  border-radius: 16px;
+  border-radius: 13px;
   background: var(--surface);
   box-shadow: var(--shadow);
 }
 
 .btn {
-  min-height: 38px;
-  padding: 0 15px;
+  min-height: 36px;
+  padding: 0 13px;
   border: 1px solid var(--border-strong);
-  border-radius: 11px;
+  border-radius: 9px;
   background: var(--surface);
   color: var(--text);
   font-weight: 600;
@@ -423,9 +423,9 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  margin: 0 0 18px;
-  padding: 12px 16px;
+  gap: 12px;
+  margin: 0 0 12px;
+  padding: 9px 12px;
   border: 1px solid;
   border-radius: 10px;
 }
@@ -474,12 +474,12 @@
 
 .auth-card {
   width: min(420px, 100%);
-  padding: 32px;
+  padding: 24px;
   display: flex;
   flex-direction: column;
-  gap: 15px;
+  gap: 12px;
   border: 1px solid var(--border);
-  border-radius: 18px;
+  border-radius: 14px;
   background: var(--surface);
   box-shadow: var(--shadow);
 }
@@ -498,7 +498,7 @@
 .auth-card label,
 .settings-section label {
   display: grid;
-  gap: 6px;
+  gap: 5px;
   color: var(--muted);
   font-size: 12px;
 }
@@ -506,10 +506,10 @@
 .auth-card input,
 .settings-section input {
   width: 100%;
-  min-height: 40px;
-  padding: 0 11px;
+  min-height: 36px;
+  padding: 0 10px;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: 9px;
   outline: 0;
   background: var(--surface-raised, var(--bg));
   color: var(--text);
@@ -519,4 +519,15 @@
 .settings-section input:focus {
   border-color: var(--accent);
   box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

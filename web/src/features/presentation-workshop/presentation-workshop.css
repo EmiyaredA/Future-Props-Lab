@@ -13,7 +13,7 @@
   display: flex;
   gap: 12px;
   align-items: center;
-  padding: 12px 24px;
+  padding: 7px 16px;
   background: var(--surface);
   border-bottom: 1px solid var(--border);
   flex: 0 0 auto;
@@ -50,9 +50,9 @@
 }
 .presentation-toolbar {
   display: flex;
-  gap: 16px;
+  gap: 10px;
   align-items: center;
-  padding: 7px 24px;
+  padding: 5px 16px;
   border-bottom: 1px solid var(--border);
   background: var(--surface);
   overflow-x: auto;
@@ -90,7 +90,7 @@
   flex: 1;
 }
 .presentation-filmstrip {
-  padding: 14px 8px;
+  padding: 10px 6px;
   overflow-y: auto;
   min-height: 0;
   border-right: 1px solid var(--border);
@@ -99,14 +99,14 @@
 .presentation-filmstrip-heading {
   display: flex;
   justify-content: space-between;
-  padding: 0 12px 16px;
+  padding: 0 10px 10px;
   font-size: 12px;
   color: var(--muted);
 }
 .presentation-filmstrip-item {
   position: relative;
   padding: 0 0 0 23px;
-  margin-bottom: 18px;
+  margin-bottom: 12px;
 }
 .presentation-slide-number {
   position: absolute;

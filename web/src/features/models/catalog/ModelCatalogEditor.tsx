@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
-import { Plus, Search } from "lucide-react";
+import { CheckCircle2, Plus, Search, Server } from "lucide-react";
 import { CustomSelect } from "@shared/ui/CustomSelect";
+import { ProviderIcon } from "@shared/ui/ProviderIcon";
 import { capabilityLabel, modelCapabilities } from "./catalogOptions";
 import { CatalogModelTable } from "./CatalogModelTable";
 import { CatalogConnections } from "./CatalogConnections";
@@ -178,6 +179,52 @@ export function ModelCatalogEditor(props: ModelCatalogEditorProps) {
       )}
       {view === "directory" ? (
         <>
+          <div className="mc-provider-strip" aria-label="供应商概览">
+            {value.providers.slice(0, 6).map((provider) => (
+              <button
+                type="button"
+                className="mc-provider-card"
+                key={provider.id}
+                onClick={() => {
+                  setSelectedId(provider.id);
+                  setView("connections");
+                }}
+              >
+                <span className="mc-provider-card-icon">
+                  <ProviderIcon kind={provider.kind} size={20} />
+                </span>
+                <span className="mc-provider-card-copy">
+                  <strong>{provider.name} · 连接</strong>
+                  <small>模型数 {provider.models.length}</small>
+                </span>
+                <span
+                  className={`mc-provider-health${provider.enabled ? " is-healthy" : ""}`}
+                >
+                  {provider.enabled ? (
+                    <CheckCircle2 size={13} />
+                  ) : (
+                    <Server size={13} />
+                  )}
+                  {provider.enabled ? "正常" : "停用"}
+                </span>
+              </button>
+            ))}
+            {permissions.canWrite && (
+              <button
+                type="button"
+                className="mc-provider-card is-add"
+                onClick={() => setModal({ kind: "provider", initial: null })}
+              >
+                <span className="mc-provider-card-icon">
+                  <Plus size={19} />
+                </span>
+                <span className="mc-provider-card-copy">
+                  <strong>添加供应商</strong>
+                  <small>接入新的模型服务</small>
+                </span>
+              </button>
+            )}
+          </div>
           <div
             className="mc-category-tabs"
             role="tablist"

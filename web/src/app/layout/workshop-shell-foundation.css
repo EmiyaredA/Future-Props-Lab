@@ -393,6 +393,6 @@
 .workshop-shell {
   min-height: 100vh;
   display: grid;
-  grid-template-columns: 260px minmax(0, 1fr);
+  grid-template-columns: 248px minmax(0, 1fr);
   background: var(--bg);
 }

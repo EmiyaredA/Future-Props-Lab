@@ -63,6 +63,7 @@ export function ResponsiveSidebar({
     >
       <button
         className="responsive-nav-trigger"
+        type="button"
         aria-label={`打开${label}`}
         aria-expanded={open}
         onClick={(event) => {
@@ -76,6 +77,7 @@ export function ResponsiveSidebar({
       {open && (
         <button
           className="responsive-nav-backdrop"
+          type="button"
           aria-label={`关闭${label}遮罩`}
           onClick={() => setOpen(false)}
         />
@@ -89,7 +91,11 @@ export function ResponsiveSidebar({
           aria-pressed={collapsed}
           onClick={() => updateCollapsed(!collapsed)}
         >
-          {collapsed ? <PanelLeftOpen size={16} /> : <PanelLeftClose size={16} />}
+          {collapsed ? (
+            <PanelLeftOpen size={16} />
+          ) : (
+            <PanelLeftClose size={16} />
+          )}
         </button>
       ) : null}
       <div
@@ -101,6 +107,7 @@ export function ResponsiveSidebar({
       >
         <button
           className="responsive-nav-close"
+          type="button"
           aria-label={`关闭${label}`}
           onClick={() => setOpen(false)}
         >

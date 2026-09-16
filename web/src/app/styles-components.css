@@ -387,7 +387,7 @@
     grid-template-columns: 220px minmax(0, 1fr);
   }
   .page {
-    padding: 30px 24px;
+    padding: 22px 20px;
   }
 }
 

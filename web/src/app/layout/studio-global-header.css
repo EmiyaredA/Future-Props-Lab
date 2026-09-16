@@ -2,12 +2,12 @@
   position: sticky;
   top: 0;
   z-index: 40;
-  min-height: 64px;
+  min-height: 56px;
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 16px;
-  padding: 4px clamp(22px, 3.6vw, 58px);
+  padding: 2px clamp(18px, 2.2vw, 32px);
   border-bottom: 1px solid var(--border);
   background: color-mix(in srgb, var(--surface) 90%, transparent);
   backdrop-filter: blur(18px);

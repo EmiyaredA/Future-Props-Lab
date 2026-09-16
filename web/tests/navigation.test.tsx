@@ -137,6 +137,31 @@ test("keeps tool navigation active on the video frame exporter", () => {
   );
 });
 
+test("remembers the desktop sidebar collapse preference", () => {
+  localStorage.removeItem("future-props-sidebar-studio-collapsed");
+  const { unmount } = render(<StudioSidebar page="home" navigate={vi.fn()} />);
+
+  expect(screen.getByRole("button", { name: "收起主导航" })).toHaveAttribute(
+    "aria-pressed",
+    "false",
+  );
+  fireEvent.click(screen.getByRole("button", { name: "收起主导航" }));
+  expect(localStorage.getItem("future-props-sidebar-studio-collapsed")).toBe(
+    "true",
+  );
+  expect(screen.getByRole("button", { name: "展开主导航" })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
+
+  unmount();
+  render(<StudioSidebar page="home" navigate={vi.fn()} />);
+  expect(
+    screen.getByRole("button", { name: "展开主导航" }),
+  ).toBeInTheDocument();
+  localStorage.removeItem("future-props-sidebar-studio-collapsed");
+});
+
 test("renders the visual workshop brand and return card", () => {
   const navigate = vi.fn();
   const onBack = vi.fn();

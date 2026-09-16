@@ -26,7 +26,7 @@
 .stat-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  margin-bottom: 18px;
+  margin-bottom: 12px;
   overflow: hidden;
   border: 1px solid var(--border);
   border-radius: 14px;
@@ -35,8 +35,8 @@
 }
 
 .stat-card {
-  min-height: 104px;
-  padding: 20px;
+  min-height: 84px;
+  padding: 13px 14px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -72,7 +72,7 @@
 }
 
 .logs-toolbar {
-  padding: 18px;
+  padding: 12px;
   border-bottom: 1px solid var(--border);
 }
 
@@ -80,7 +80,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 12px;
+  margin-bottom: 9px;
 }
 
 .search-box > span {
@@ -112,8 +112,8 @@
 }
 
 .table-meta {
-  min-height: 58px;
-  padding: 0 18px;
+  min-height: 44px;
+  padding: 0 12px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -136,8 +136,8 @@ table {
 }
 
 th {
-  height: 47px;
-  padding: 0 12px;
+  height: 38px;
+  padding: 0 10px;
   background: var(--surface-soft);
   color: var(--faint);
   font-size: 11px;
@@ -145,8 +145,8 @@ th {
 }
 
 td {
-  height: 66px;
-  padding: 9px 12px;
+  height: 44px;
+  padding: 6px 10px;
   border-top: 1px solid var(--border);
   color: var(--muted);
   font-size: 12px;
@@ -206,8 +206,8 @@ th input {
 }
 
 .pagination {
-  min-height: 64px;
-  padding: 0 18px;
+  min-height: 48px;
+  padding: 0 12px;
   display: flex;
   align-items: center;
   justify-content: flex-end;

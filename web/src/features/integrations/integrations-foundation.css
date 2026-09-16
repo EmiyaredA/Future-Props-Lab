@@ -3,7 +3,7 @@
 }
 
 .integrations-header {
-  margin-bottom: 20px;
+  margin-bottom: 14px;
 }
 
 .integrations-kicker {
@@ -36,7 +36,7 @@
 }
 
 .integration-tabs {
-  margin-bottom: 18px;
+  margin-bottom: 12px;
   display: flex;
   gap: 7px;
   padding-bottom: 1px;
@@ -45,7 +45,7 @@
 
 .integration-tabs button {
   min-width: 112px;
-  min-height: 42px;
+  min-height: 36px;
   margin-bottom: -2px;
   border: 0;
   border-bottom: 2px solid transparent;
@@ -75,14 +75,14 @@
 }
 
 .integration-toolbar {
-  margin-bottom: 18px;
+  margin-bottom: 12px;
   display: grid;
   grid-template-columns: minmax(260px, 1fr) 190px auto;
   gap: 10px;
 }
 
 .integration-search {
-  min-height: 44px;
+  min-height: 36px;
   padding: 0 13px;
   display: flex;
   align-items: center;
@@ -114,14 +114,14 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr) var(--integration-side-width);
   align-items: start;
-  gap: 18px;
+  gap: 14px;
 }
 
 .integration-grid {
   min-width: 0;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 13px;
+  gap: 12px;
 }
 
 .integration-grid > .integration-message {
@@ -144,8 +144,8 @@
 
 .integration-card {
   min-width: 0;
-  min-height: 214px;
-  padding: 16px;
+  min-height: 184px;
+  padding: 13px;
   display: flex;
   flex-direction: column;
   transition:

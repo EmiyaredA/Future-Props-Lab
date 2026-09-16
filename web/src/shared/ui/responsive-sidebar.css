@@ -47,6 +47,9 @@
 .responsive-sidebar-track.is-collapsed .workshop-brand > div,
 .responsive-sidebar-track.is-collapsed .nav-section-label,
 .responsive-sidebar-track.is-collapsed .nav-chevron,
+.responsive-sidebar-track.is-collapsed .nav-primary > span,
+.responsive-sidebar-track.is-collapsed .nav-group > span,
+.responsive-sidebar-track.is-collapsed .nav-sub button > span,
 .responsive-sidebar-track.is-collapsed .workspace-trigger-copy,
 .responsive-sidebar-track.is-collapsed .workshop-back-copy,
 .responsive-sidebar-track.is-collapsed .workshop-navigation button > span {
@@ -98,6 +101,9 @@
   flex-shrink: 0;
 }
 @media (max-width: 1200px) {
+  .studio-global-header {
+    z-index: 1002;
+  }
   .studio-shell:has(> .responsive-sidebar-track),
   .workshop-shell:has(> .responsive-sidebar-track) {
     display: block;
@@ -134,7 +140,7 @@
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    min-height: 40px;
+    min-height: 44px;
     padding: 6px 13px;
     background: color-mix(in srgb, var(--surface) 92%, transparent);
     border: 1px solid var(--border-strong);

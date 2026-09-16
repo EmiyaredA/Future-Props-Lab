@@ -13,8 +13,8 @@
   position: sticky;
   z-index: 4;
   top: 0;
-  height: 58px;
-  padding: 0 16px;
+  height: 48px;
+  padding: 0 12px;
   border-bottom-color: rgb(53 59 76 / 85%);
   background: rgb(17 21 31 / 88%);
   box-shadow: 0 8px 24px rgb(0 0 0 / 14%);
@@ -66,8 +66,8 @@
 
 .ve-inspector .ve-inspector-section {
   position: relative;
-  margin: 10px 10px 0;
-  padding: 14px;
+  margin: 8px 8px 0;
+  padding: 11px;
   border: 1px solid #292f3e;
   border-radius: 12px;
   background: linear-gradient(145deg, rgb(27 32 45 / 94%), rgb(20 25 36 / 94%));
@@ -75,7 +75,7 @@
 }
 
 .ve-inspector .ve-inspector-section:last-child {
-  margin-bottom: 12px;
+  margin-bottom: 8px;
 }
 
 .ve-inspector .ve-clip-section {
@@ -90,7 +90,7 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 10px;
-  margin-bottom: 13px;
+  margin-bottom: 9px;
 }
 
 .ve-section-heading > div {

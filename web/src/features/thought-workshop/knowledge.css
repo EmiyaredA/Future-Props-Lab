@@ -103,12 +103,12 @@
   position: sticky;
   top: 0;
   z-index: 70;
-  min-height: 56px;
+  min-height: 48px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  padding: 8px 30px;
+  gap: 10px;
+  padding: 5px 18px;
   border-bottom: 1px solid var(--knowledge-line);
   background: var(--bg);
 }
@@ -198,14 +198,14 @@
 .knowledge-library {
   max-width: 1360px;
   margin: 0 auto;
-  padding: 30px 34px 48px;
+  padding: 22px 24px 32px;
 }
 .knowledge-library-heading {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 24px;
-  margin-bottom: 22px;
+  gap: 16px;
+  margin-bottom: 14px;
 }
 .knowledge-library-heading span {
   font-size: 10px;
@@ -223,7 +223,7 @@
 .knowledge-cards {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
-  gap: 24px;
+  gap: 12px;
 }
 .knowledge-cards .workshop-project-card {
   border: 1px solid var(--knowledge-line);
@@ -244,7 +244,7 @@
   display: none;
 }
 .knowledge-cards .workshop-project-copy {
-  padding: 22px;
+  padding: 14px;
 }
 .knowledge-cards .workshop-project-meta {
   display: flex;
@@ -254,7 +254,7 @@
 }
 .knowledge-cards h2 {
   font-size: 20px;
-  margin: 16px 0 10px;
+  margin: 10px 0 6px;
   overflow-wrap: anywhere;
 }
 .knowledge-cards p {
@@ -269,7 +269,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  margin-top: 20px;
+  margin-top: 12px;
 }
 .knowledge-cover {
   height: 230px;
