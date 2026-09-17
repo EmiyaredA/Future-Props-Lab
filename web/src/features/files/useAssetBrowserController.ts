@@ -13,11 +13,15 @@ import {
   createFolder,
   deleteFolder,
   deleteManagedFile,
+  exportLibraryFolderArchive,
   getFiles,
   getFolders,
+  importLibraryFolderArchive,
+  importLibraryFolderEntries,
   patchFolder,
   patchManagedFile,
   uploadManagedFile,
+  type LibraryFolderImportResult,
   type ManagedFile,
   type MediaKind,
 } from "@features/files/api";
@@ -49,6 +53,8 @@ export function useAssetBrowserController({
 }) {
   const client = useQueryClient();
   const fileInput = useRef<HTMLInputElement>(null);
+  const zipInput = useRef<HTMLInputElement>(null);
+  const folderInput = useRef<HTMLInputElement>(null);
   const compactActions = useRef<HTMLDivElement>(null);
   const dialogTitleId = useId();
   const [folderId, setFolderId] = useState<string>();
@@ -68,6 +74,7 @@ export function useAssetBrowserController({
   const [editor, setEditor] = useState<FileEditor>(null);
   const [editorError, setEditorError] = useState("");
   const sourceProjectId = importMode ? undefined : projectId;
+  const libraryMode = !projectId && !importMode;
   const foldersQuery = useQuery({
     queryKey: fileQueryKeys.folders(sourceProjectId),
     queryFn: () => getFolders(sourceProjectId),
@@ -338,6 +345,65 @@ export function useAssetBrowserController({
       setNotice(error instanceof Error ? error.message : "下载失败");
     }
   };
+  const summarizeImport = (result: LibraryFolderImportResult) => {
+    const skipped = result.skipped.length;
+    const base = `已导入 ${result.created_folders} 个文件夹、${result.created_files} 个文件`;
+    return skipped ? `${base}，跳过 ${skipped} 项` : base;
+  };
+  const archiveTransfer = useMutation({
+    mutationFn: async (
+      operation: () => Promise<LibraryFolderImportResult | void>,
+    ) => operation(),
+    onSuccess: () => {
+      refresh();
+    },
+    onError: (error) => {
+      setNotice(error instanceof Error ? error.message : "导入导出失败");
+    },
+  });
+  const exportFolderArchive = (targetFolderId?: string) => {
+    if (!libraryMode || archiveTransfer.isPending) return;
+    setNotice("");
+    setOpenMenu(undefined);
+    archiveTransfer.mutate(async () => {
+      const downloaded = await exportLibraryFolderArchive(targetFolderId);
+      const url = URL.createObjectURL(downloaded.blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = downloaded.filename || "library-folder.zip";
+      anchor.click();
+      URL.revokeObjectURL(url);
+      setNotice("已导出文件夹归档");
+    });
+  };
+  const importZipArchive = (selected: FileList | null) => {
+    const archive = selected?.[0];
+    if (!archive || !libraryMode || archiveTransfer.isPending) return;
+    setNotice("");
+    archiveTransfer.mutate(async () => {
+      const result = await importLibraryFolderArchive(archive, folderId);
+      setNotice(summarizeImport(result));
+      return result;
+    });
+  };
+  const importFolderEntries = (selected: FileList | null) => {
+    if (!selected?.length || !libraryMode || archiveTransfer.isPending) return;
+    const entries = Array.from(selected)
+      .map((file) => {
+        const relativePath =
+          (file as File & { webkitRelativePath?: string }).webkitRelativePath ||
+          file.name;
+        return { file, relativePath };
+      })
+      .filter((entry) => entry.relativePath.trim());
+    if (!entries.length) return;
+    setNotice("");
+    archiveTransfer.mutate(async () => {
+      const result = await importLibraryFolderEntries(entries, folderId);
+      setNotice(summarizeImport(result));
+      return result;
+    });
+  };
   const hasItems = childFolders.length > 0 || files.length > 0;
   const showContent = hasItems || (!compact && !importMode);
   const noMatches = !hasItems && Boolean(query.trim() || kind !== "all");
@@ -390,8 +456,11 @@ export function useAssetBrowserController({
   return {
     client,
     fileInput,
+    zipInput,
+    folderInput,
     compactActions,
     dialogTitleId,
+    folderId,
     setFolderId,
     query,
     setQuery,
@@ -418,6 +487,8 @@ export function useAssetBrowserController({
     filesQuery,
     act,
     upload,
+    archiveTransfer,
+    libraryMode,
     files,
     childFolders,
     path,
@@ -431,6 +502,9 @@ export function useAssetBrowserController({
     submitEditor,
     uploadFiles,
     downloadFile,
+    exportFolderArchive,
+    importZipArchive,
+    importFolderEntries,
     showContent,
     noMatches,
     editorTitle,

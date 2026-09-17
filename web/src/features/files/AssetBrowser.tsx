@@ -8,6 +8,7 @@ import {
   Download,
   Filter,
   Folder,
+  FolderInput,
   FolderOpen,
   FolderPlus,
   Grid2X2,
@@ -60,8 +61,11 @@ export function AssetBrowser({
   const {
     client,
     fileInput,
+    zipInput,
+    folderInput,
     compactActions,
     dialogTitleId,
+    folderId,
     setFolderId,
     query,
     setQuery,
@@ -88,6 +92,8 @@ export function AssetBrowser({
     filesQuery,
     act,
     upload,
+    archiveTransfer,
+    libraryMode,
     files,
     childFolders,
     path,
@@ -101,6 +107,9 @@ export function AssetBrowser({
     submitEditor,
     uploadFiles,
     downloadFile,
+    exportFolderArchive,
+    importZipArchive,
+    importFolderEntries,
     showContent,
     noMatches,
     editorTitle,
@@ -288,6 +297,36 @@ export function AssetBrowser({
               </div>
               {!importMode ? (
                 <div className="file-primary-actions">
+                  {libraryMode ? (
+                    <>
+                      <button
+                        type="button"
+                        disabled={archiveTransfer.isPending}
+                        onClick={() => exportFolderArchive(folderId)}
+                      >
+                        {archiveTransfer.isPending ? (
+                          <LoaderCircle className="spin" aria-hidden />
+                        ) : (
+                          <Download aria-hidden />
+                        )}
+                        导出当前目录
+                      </button>
+                      <button
+                        type="button"
+                        disabled={archiveTransfer.isPending}
+                        onClick={() => zipInput.current?.click()}
+                      >
+                        <Upload aria-hidden /> 导入 ZIP
+                      </button>
+                      <button
+                        type="button"
+                        disabled={archiveTransfer.isPending}
+                        onClick={() => folderInput.current?.click()}
+                      >
+                        <FolderInput aria-hidden /> 导入文件夹
+                      </button>
+                    </>
+                  ) : null}
                   <button
                     type="button"
                     onClick={() =>
@@ -365,6 +404,36 @@ export function AssetBrowser({
             event.target.value = "";
           }}
         />
+      ) : null}
+      {libraryMode ? (
+        <>
+          <input
+            ref={zipInput}
+            hidden
+            type="file"
+            accept=".zip,application/zip"
+            aria-label="选择要导入的 ZIP 归档"
+            disabled={archiveTransfer.isPending}
+            onChange={(event) => {
+              importZipArchive(event.target.files);
+              event.target.value = "";
+            }}
+          />
+          <input
+            ref={folderInput}
+            hidden
+            multiple
+            type="file"
+            // @ts-expect-error webkitdirectory is widely supported for folder import
+            webkitdirectory=""
+            aria-label="选择要导入的本地文件夹"
+            disabled={archiveTransfer.isPending}
+            onChange={(event) => {
+              importFolderEntries(event.target.files);
+              event.target.value = "";
+            }}
+          />
+        </>
       ) : null}
       {notice ? (
         <div className="file-notice" role="status">
@@ -504,6 +573,11 @@ export function AssetBrowser({
                       )
                     }
                     onClose={() => setOpenMenu(undefined)}
+                    onExport={
+                      libraryMode
+                        ? () => exportFolderArchive(folder.id)
+                        : undefined
+                    }
                     onRename={() =>
                       openEditor({
                         kind: "rename-folder",
