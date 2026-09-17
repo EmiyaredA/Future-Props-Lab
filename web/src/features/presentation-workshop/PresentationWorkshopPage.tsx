@@ -28,13 +28,7 @@ export function PresentationWorkshopPage({
     enabled: !!projectId,
   });
   if (!projectId)
-    return (
-      <PresentationLibrary
-        onOpen={onOpen}
-        onBack={onBack}
-        readOnly={readOnly}
-      />
-    );
+    return <PresentationLibrary onOpen={onOpen} readOnly={readOnly} />;
   if (project.isPending)
     return (
       <div className="presentation-loading" role="status">

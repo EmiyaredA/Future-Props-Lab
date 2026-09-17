@@ -2,6 +2,8 @@
 
 Status: implemented
 
+Superseded by: [新建窗口与开发更新入口在 App 顶栏](2026-09-17-desktop-chrome-in-app-header.md)
+
 ## Problem
 
 桌面热加载在页面底部插入「开发模式」条，空闲时常驻，有更新时也覆盖内容区，使开发窗口
@@ -23,3 +25,4 @@ Status: implemented
 
 - **收益**：开发中的 Web 布局与正式打包一致；热加载操作走原生菜单/标题。
 - **代价**：需从菜单或快捷键应用更新；自动化烟测通过页面事件触发同一守卫路径，不再点页面按钮。
+- **后续**：入口发现成本过高，已由 superseding note 改为 App 顶栏（仍禁止底栏）。

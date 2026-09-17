@@ -30,6 +30,7 @@ beforeEach(() => {
     openLogs: vi.fn(),
     minimize: vi.fn(),
     close: vi.fn(),
+    openNewWindow: vi.fn(),
     onQuitRequested: vi.fn(() => vi.fn()),
   };
 });

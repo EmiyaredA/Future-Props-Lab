@@ -1,4 +1,5 @@
 import { Box, Image, ListChecks, Palette } from "lucide-react";
+import { WorkshopAppChrome } from "@shared/ui/WorkshopAppChrome";
 import "@features/visual-workshop/visual-workshop.css";
 
 const pages = {
@@ -39,13 +40,11 @@ export function VisualWorkshopEmptyPage({
   const Icon = content.icon;
   return (
     <section className="workshop-page">
-      <header className="workshop-page-header">
-        <div>
-          <span>{content.eyebrow}</span>
-          <h1>{content.title}</h1>
-          <p>{content.description}</p>
-        </div>
-      </header>
+      <WorkshopAppChrome
+        eyebrow={content.eyebrow}
+        title={content.title}
+        description={content.description}
+      />
       <div className="workshop-state workshop-empty workshop-feature-empty">
         <span className="workshop-empty-icon">
           <Icon aria-hidden />

@@ -45,6 +45,7 @@ beforeEach(() => {
     openLogs: vi.fn(),
     minimize: vi.fn(),
     close: vi.fn(),
+    openNewWindow: vi.fn(),
     onQuitRequested: vi.fn(),
     agentStatus: vi.fn().mockResolvedValue({ enabled: true, connected: true }),
     enableAgent: vi.fn().mockResolvedValue({ enabled: true, connected: true }),

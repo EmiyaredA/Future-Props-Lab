@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import type { DesktopDevelopmentState } from "@platform/desktop";
 
-/** Headless host: development apply/check stay in Electron chrome, not App layout. */
+/** Headless host: apply/check UI lives in App header; this keeps guards and query refresh. */
 export function DesktopDevelopmentHost() {
   const [state, setState] = useState<DesktopDevelopmentState | null>(null);
   const generation = useRef<number | null>(null);

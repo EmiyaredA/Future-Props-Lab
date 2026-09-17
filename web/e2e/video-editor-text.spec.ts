@@ -15,7 +15,7 @@ test("edits Chinese subtitles, positions and trims them, reloads and exports", a
       response.request().method() === "POST",
   );
   await page
-    .locator(".workshop-page-header")
+    .locator(".workshop-app-chrome")
     .getByRole("button", { name: "新建剪辑" })
     .click();
   const project = await (await created).json();

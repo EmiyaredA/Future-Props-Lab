@@ -22,6 +22,7 @@ beforeEach(() => {
     openLogs: vi.fn(),
     minimize: vi.fn(),
     close: vi.fn(),
+    openNewWindow: vi.fn(),
     agentStatus: vi.fn(),
     enableAgent: vi.fn(),
     disableAgent: vi.fn(),

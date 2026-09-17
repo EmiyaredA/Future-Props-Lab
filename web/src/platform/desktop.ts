@@ -13,6 +13,7 @@ export type DesktopBridge = {
   openLogs: () => Promise<void>;
   minimize: () => Promise<void>;
   close: () => Promise<void>;
+  openNewWindow: () => Promise<void>;
   agentStatus: () => Promise<{ enabled: boolean; connected: boolean }>;
   enableAgent: () => Promise<{ enabled: boolean; connected: boolean }>;
   disableAgent: () => Promise<{ enabled: boolean; connected: boolean }>;

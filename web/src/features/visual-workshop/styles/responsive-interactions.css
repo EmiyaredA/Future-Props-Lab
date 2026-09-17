@@ -93,7 +93,7 @@
   .workshop-project-grid {
     grid-template-columns: 1fr;
   }
-  .workshop-page-header {
+  .workshop-app-chrome {
     align-items: flex-start;
     flex-direction: column;
   }

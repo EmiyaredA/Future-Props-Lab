@@ -1,9 +1,7 @@
 import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  ArrowLeft,
   Plus,
-  Presentation,
   Search,
   Copy,
   Pencil,
@@ -12,6 +10,7 @@ import {
 } from "lucide-react";
 import { TextInputDialog } from "@shared/ui/TextInputDialog";
 import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
+import { WorkshopAppChrome } from "@shared/ui/WorkshopAppChrome";
 import {
   createProject,
   deleteProject,
@@ -27,11 +26,9 @@ import type { ProjectSummary } from "./types";
 
 export function PresentationLibrary({
   onOpen,
-  onBack,
   readOnly,
 }: {
   onOpen: (id: string) => void;
-  onBack: () => void;
   readOnly: boolean;
 }) {
   const [search, setSearch] = useState(""),
@@ -73,30 +70,24 @@ export function PresentationLibrary({
     }
   };
   return (
-    <div className="presentation-library">
-      <header>
-        <button className="icon-btn" aria-label="返回全部应用" onClick={onBack}>
-          <ArrowLeft size={20} />
-        </button>
-        <div className="presentation-library-brand">
-          <Presentation size={25} />
-          <div>
-            <h1>演示工坊</h1>
-            <p>把想法整理成清晰的表达</p>
-          </div>
-        </div>
-        {!readOnly ? (
-          <button
-            className="btn primary"
-            disabled={busy}
-            onClick={() => startNew()}
-          >
-            <Plus size={17} />
-            新建演示文稿
-          </button>
-        ) : null}
-      </header>
-      <main className="presentation-library-content">
+    <div className="presentation-library workshop-page workshop-projects-page">
+      <WorkshopAppChrome
+        title="我的演示文稿"
+        description="把想法整理成清晰的表达。"
+        actions={
+          !readOnly ? (
+            <button
+              className="workshop-primary"
+              disabled={busy}
+              onClick={() => startNew()}
+            >
+              <Plus aria-hidden />
+              新建演示文稿
+            </button>
+          ) : null
+        }
+      />
+      <div className="presentation-library-content">
         <div className="presentation-library-intro">
           <h2>让想法，成为精彩的演示</h2>
           <p>从一个清晰的想法开始，构建你的下一次表达。</p>
@@ -257,7 +248,7 @@ export function PresentationLibrary({
             </button>
           </nav>
         ) : null}
-      </main>
+      </div>
       <TextInputDialog
         open={rename !== null}
         title={rename === "new" ? "新建演示文稿" : "重命名文稿"}

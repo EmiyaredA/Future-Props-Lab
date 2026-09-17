@@ -65,11 +65,7 @@ function library(readOnly = false) {
         new QueryClient({ defaultOptions: { queries: { retry: false } } })
       }
     >
-      <PresentationLibrary
-        readOnly={readOnly}
-        onOpen={onOpen}
-        onBack={vi.fn()}
-      />
+      <PresentationLibrary readOnly={readOnly} onOpen={onOpen} />
     </QueryClientProvider>,
   );
   return onOpen;

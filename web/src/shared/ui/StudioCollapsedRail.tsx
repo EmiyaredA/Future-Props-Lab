@@ -365,19 +365,27 @@ export function StudioCollapsedRail({
           ) : (
             <div key={entry.id}>
               {preferFlyout
-                ? tipButton(`${entry.label}，点击展开菜单`, entryContent(entry), {
-                    active: entry.active,
-                    expanded: openGroupId === entry.id,
-                    controls: `studio-rail-flyout-${entry.id}`,
-                    hasPopup: true,
-                    onClick: (event) =>
-                      showGroup(entry, event.currentTarget, event.detail === 0),
-                    onKeyDown: (event) => {
-                      if (event.key !== "ArrowRight") return;
-                      event.preventDefault();
-                      showGroup(entry, event.currentTarget, true);
+                ? tipButton(
+                    `${entry.label}，点击展开菜单`,
+                    entryContent(entry),
+                    {
+                      active: entry.active,
+                      expanded: openGroupId === entry.id,
+                      controls: `studio-rail-flyout-${entry.id}`,
+                      hasPopup: true,
+                      onClick: (event) =>
+                        showGroup(
+                          entry,
+                          event.currentTarget,
+                          event.detail === 0,
+                        ),
+                      onKeyDown: (event) => {
+                        if (event.key !== "ArrowRight") return;
+                        event.preventDefault();
+                        showGroup(entry, event.currentTarget, true);
+                      },
                     },
-                  })
+                  )
                 : tipButton(entry.label, entryContent(entry), {
                     active: entry.active,
                     onClick: () => entry.onSelect?.(),

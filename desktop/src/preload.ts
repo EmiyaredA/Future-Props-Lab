@@ -9,6 +9,7 @@ contextBridge.exposeInMainWorld(
     openLogs: () => ipcRenderer.invoke("desktop:logs"),
     minimize: () => ipcRenderer.invoke("desktop:minimize"),
     close: () => ipcRenderer.invoke("desktop:close"),
+    openNewWindow: () => ipcRenderer.invoke("desktop:open-new-window"),
     agentStatus: () => ipcRenderer.invoke("desktop:agent-status"),
     enableAgent: () => ipcRenderer.invoke("desktop:agent-enable"),
     disableAgent: () => ipcRenderer.invoke("desktop:agent-disable"),

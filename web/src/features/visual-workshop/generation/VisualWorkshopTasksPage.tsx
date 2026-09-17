@@ -21,6 +21,7 @@ import {
 import { useApiBlobUrl } from "@platform/api/useApiBlobUrl";
 import { visualWorkshopQueryKeys } from "@features/visual-workshop/queryKeys";
 import { CustomSelect } from "@shared/ui/CustomSelect";
+import { WorkshopAppChrome } from "@shared/ui/WorkshopAppChrome";
 import "@features/visual-workshop/visual-workshop.css";
 
 const ACTIVE_STATUSES = new Set<GenerationTaskStatus>([
@@ -123,19 +124,19 @@ export function VisualWorkshopTasksPage({
 
   return (
     <section className="workshop-page generation-tasks-page">
-      <header className="workshop-page-header">
-        <div>
-          <span>GENERATION QUEUE</span>
-          <h1>生成任务</h1>
-          <p>跟踪图片和视频生成进度，完成的结果会自动保存到对应项目素材库。</p>
-        </div>
-        <button
-          className="workshop-secondary"
-          onClick={() => void tasks.refetch()}
-        >
-          <RefreshCcw aria-hidden /> 刷新
-        </button>
-      </header>
+      <WorkshopAppChrome
+        eyebrow="GENERATION QUEUE"
+        title="生成任务"
+        description="跟踪图片和视频生成进度，完成的结果会自动保存到对应项目素材库。"
+        actions={
+          <button
+            className="workshop-secondary"
+            onClick={() => void tasks.refetch()}
+          >
+            <RefreshCcw aria-hidden /> 刷新
+          </button>
+        }
+      />
       <div className="generation-task-filters">
         <CustomSelect
           ariaLabel="按项目筛选"

@@ -1,8 +1,8 @@
 .workshop-sidebar {
   position: sticky;
   top: 0;
-  height: 100vh;
-  padding: 14px 12px 14px;
+  height: 100dvh;
+  padding: 16px 12px 14px;
   display: flex;
   flex-direction: column;
   border-right: 1px solid var(--border);
@@ -16,7 +16,7 @@
 }
 
 .workshop-brand {
-  padding: 0 5px 12px;
+  padding: 2px 5px 12px;
   display: flex;
   align-items: center;
   gap: 10px;

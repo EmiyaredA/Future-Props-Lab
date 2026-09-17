@@ -4,6 +4,8 @@ import { ThemeToggle } from "@shared/ui/ThemeToggle";
 import { useOptionalStudioSession } from "@app/StudioSession";
 import { AccountMenu } from "@features/accounts/AccountMenu";
 import { AccountWorkspacePanel } from "@features/accounts";
+import { DesktopAppChrome } from "@app/layout/DesktopAppChrome";
+
 export function StudioGlobalHeader() {
   const session = useOptionalStudioSession();
   return (
@@ -15,6 +17,7 @@ export function StudioGlobalHeader() {
         </div>
       </div>
       <div className="studio-header-actions">
+        <DesktopAppChrome />
         <a
           className="studio-docs-link"
           href="/docs.html"

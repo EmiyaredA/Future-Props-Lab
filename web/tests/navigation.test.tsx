@@ -3,6 +3,7 @@ import { vi } from "vitest";
 import { parsePage, parseRoute, pathFor } from "@app/routes";
 import { StudioShell, StudioSidebar } from "@app/layout/StudioSidebar";
 import { WorkshopShell } from "@app/layout/WorkshopShell";
+import { WorkshopAppChrome } from "@shared/ui/WorkshopAppChrome";
 import { GALGAME_WORKSHOP_MODULE } from "@features/galgame-workshop/module";
 import { VIDEO_EDITOR_MODULE } from "@features/video-editor/module";
 import { VISUAL_WORKSHOP_MODULE } from "@features/visual-workshop/module";
@@ -80,9 +81,13 @@ test("keeps floating chrome panels as three shell blocks", () => {
     </StudioShell>,
   );
   expect(container.querySelector(".studio-shell")).not.toBeNull();
-  expect(container.querySelector(".studio-sidebar.studio-panel")).not.toBeNull();
   expect(
-    container.querySelector(".studio-stage > .studio-global-header.studio-panel"),
+    container.querySelector(".studio-sidebar.studio-panel"),
+  ).not.toBeNull();
+  expect(
+    container.querySelector(
+      ".studio-stage > .studio-global-header.studio-panel",
+    ),
   ).not.toBeNull();
   expect(
     container.querySelector(".studio-stage > .studio-main.studio-panel"),
@@ -169,11 +174,15 @@ test("remembers the desktop secondary sidebar collapse preference", () => {
   expect(
     localStorage.getItem("future-props-sidebar-studio-secondary-collapsed"),
   ).toBe("true");
-  expect(screen.getByRole("button", { name: "展开二级导航" })).toBeInTheDocument();
+  expect(
+    screen.getByRole("button", { name: "展开二级导航" }),
+  ).toBeInTheDocument();
 
   unmount();
   render(<StudioSidebar page="model-service" navigate={vi.fn()} />);
-  expect(screen.getByRole("button", { name: "展开二级导航" })).toBeInTheDocument();
+  expect(
+    screen.getByRole("button", { name: "展开二级导航" }),
+  ).toBeInTheDocument();
   localStorage.removeItem("future-props-sidebar-studio-secondary-collapsed");
 });
 
@@ -212,8 +221,9 @@ test("hides secondary toggle when the viewport forces the icon rail", () => {
   const { container } = render(
     <StudioSidebar page="model-service" navigate={vi.fn()} />,
   );
-  expect(container.querySelector(".studio-collapsed-rail__brand .brand-mark"))
-    .not.toBeNull();
+  expect(
+    container.querySelector(".studio-collapsed-rail__brand .brand-mark"),
+  ).not.toBeNull();
   expect(
     screen.queryByRole("button", { name: "收起二级导航" }),
   ).not.toBeInTheDocument();
@@ -264,9 +274,7 @@ test("opens base-model flyout from the primary rail when secondary is hidden", (
 
 test("treats integration center as a leaf without secondary navigation", () => {
   const navigate = vi.fn();
-  render(
-    <StudioSidebar page="integrations-mcp" navigate={navigate} />,
-  );
+  render(<StudioSidebar page="integrations-mcp" navigate={navigate} />);
   expect(
     screen.queryByRole("navigation", { name: "集成中心子菜单" }),
   ).not.toBeInTheDocument();
@@ -288,7 +296,7 @@ test("renders the visual workshop brand and return card", () => {
       navigate={navigate}
       onBack={onBack}
     >
-      <div>项目内容</div>
+      <WorkshopAppChrome title="项目内容" />
     </WorkshopShell>,
   );
   expect(container.querySelector(".workshop-brand img")).toHaveAttribute(
@@ -303,6 +311,7 @@ test("renders the visual workshop brand and return card", () => {
     "aria-current",
     "page",
   );
+  expect(screen.getByRole("heading", { name: "项目内容" })).toBeInTheDocument();
   expect(screen.getByRole("group", { name: "外观模式" })).toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: "生成任务" }));
   expect(navigate).toHaveBeenCalledWith("visual-workshop-tasks");

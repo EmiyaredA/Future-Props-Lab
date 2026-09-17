@@ -129,55 +129,41 @@ async function openStudioWindow(pathname = "/"): Promise<BrowserWindow> {
   return win;
 }
 
+function notifyDevelopmentShortcut(action: "apply" | "check"): void {
+  for (const win of liveStudioWindows()) {
+    if (win.webContents.isCrashed()) continue;
+    win.webContents.send("desktop:development-menu-action", action);
+  }
+}
+
 function installApplicationMenu() {
-  const developmentMenu = development
-    ? [
-        {
-          label: "开发",
-          submenu: [
-            {
-              label: development.state.live
-                ? "当前：正式数据"
-                : "当前：开发数据",
-              enabled: false,
+  // Visible File/Development menus live in App chrome; keep accelerators only.
+  const acceleratorItems = [
+    {
+      label: "新建窗口",
+      accelerator: "CmdOrCtrl+N",
+      visible: false,
+      click: () => {
+        if (state.phase !== "ready" || quitting) return;
+        void openStudioWindow(studioPathForNewWindow(activeStudio()));
+      },
+    },
+    ...(development
+      ? [
+          {
+            label: "应用开发更新",
+            accelerator: "CmdOrCtrl+Shift+U",
+            visible: false,
+            click: () => {
+              if (!development) return;
+              notifyDevelopmentShortcut(
+                development.state.phase === "error" ? "check" : "apply",
+              );
             },
-            {
-              label: development.state.message,
-              enabled: false,
-            },
-            { type: "separator" as const },
-            {
-              label:
-                development.state.phase === "error"
-                  ? "重新检查"
-                  : development.state.phase === "applying"
-                    ? "正在应用…"
-                    : development.state.phase === "checking"
-                      ? "正在检查…"
-                      : "应用更新",
-              accelerator: "CmdOrCtrl+Shift+U",
-              enabled:
-                development.state.phase === "error" ||
-                (development.state.pending.length > 0 &&
-                  development.state.phase === "ready"),
-              click: () => {
-                const targets = liveStudioWindows().filter(
-                  (win) => !win.webContents.isCrashed(),
-                );
-                if (!targets.length) return;
-                const action =
-                  development.state.phase === "error" ? "check" : "apply";
-                for (const win of targets)
-                  win.webContents.send(
-                    "desktop:development-menu-action",
-                    action,
-                  );
-              },
-            },
-          ],
-        },
-      ]
-    : [];
+          },
+        ]
+      : []),
+  ];
   Menu.setApplicationMenu(
     Menu.buildFromTemplate([
       {
@@ -189,6 +175,8 @@ function installApplicationMenu() {
           { role: "hideOthers" },
           { role: "unhide" },
           { type: "separator" },
+          ...acceleratorItems,
+          { type: "separator" },
           {
             label: "退出研究所",
             accelerator: "Cmd+Q",
@@ -196,22 +184,8 @@ function installApplicationMenu() {
           },
         ],
       },
-      {
-        label: "文件",
-        submenu: [
-          {
-            label: "新建窗口",
-            accelerator: "CmdOrCtrl+N",
-            click: () => {
-              if (state.phase !== "ready" || quitting) return;
-              void openStudioWindow(studioPathForNewWindow(activeStudio()));
-            },
-          },
-        ],
-      },
       { role: "editMenu" },
       { role: "viewMenu" },
-      ...developmentMenu,
       { role: "windowMenu" },
     ]),
   );
@@ -221,7 +195,6 @@ function syncDevelopmentChrome() {
   if (!development) return;
   const title = developmentWindowTitle(development);
   for (const win of BrowserWindow.getAllWindows()) win.setTitle(title);
-  installApplicationMenu();
 }
 
 function trusted(url: string): boolean {
@@ -549,6 +522,10 @@ else {
       logs: () => shell.openPath(path.join(dataDir, "logs")),
       minimize: (win) => win.minimize(),
       close: (win) => win.close(),
+      "open-new-window": (win) => {
+        if (state.phase !== "ready" || quitting) return;
+        return openStudioWindow(studioPathForNewWindow(win));
+      },
       "agent-status": () => agent?.status(),
       "agent-enable": () => agent?.setEnabled(true),
       "agent-disable": () => agent?.setEnabled(false),

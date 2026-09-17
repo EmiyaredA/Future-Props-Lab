@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { QueryFeedback } from "@shared/ui/QueryFeedback";
 import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
+import { WorkshopAppChrome } from "@shared/ui/WorkshopAppChrome";
 import { useWorkspacePermission } from "@platform/auth/WorkspacePermissions";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -149,33 +150,35 @@ export function VideoEditorTasksPage({
   };
   return (
     <section className="workshop-page ve-tasks-page">
-      <header className="workshop-page-header">
-        <div>
+      <WorkshopAppChrome
+        eyebrow={
           <div className="ve-tasks-eyebrow">
             <Film aria-hidden /> 导出中心
           </div>
-          <h1>渲染任务</h1>
-          <p>跟进成片与分段导出，完成后即可下载。</p>
-        </div>
-        <div className="ve-tasks-header-actions">
-          {!error && !pending ? (
-            <span className="ve-tasks-live">
-              <i aria-hidden /> 进度自动更新
-            </span>
-          ) : null}
-          <button
-            className="ve-task-button"
-            disabled={refreshing}
-            onClick={() => void refresh()}
-          >
-            <RefreshCcw
-              className={refreshing ? "spinning" : undefined}
-              aria-hidden
-            />{" "}
-            {refreshing ? "刷新中…" : "刷新"}
-          </button>
-        </div>
-      </header>
+        }
+        title="渲染任务"
+        description="跟进成片与分段导出，完成后即可下载。"
+        actions={
+          <div className="ve-tasks-header-actions">
+            {!error && !pending ? (
+              <span className="ve-tasks-live">
+                <i aria-hidden /> 进度自动更新
+              </span>
+            ) : null}
+            <button
+              className="ve-task-button"
+              disabled={refreshing}
+              onClick={() => void refresh()}
+            >
+              <RefreshCcw
+                className={refreshing ? "spinning" : undefined}
+                aria-hidden
+              />{" "}
+              {refreshing ? "刷新中…" : "刷新"}
+            </button>
+          </div>
+        }
+      />
       <div className="ve-tasks-toolbar">
         <div
           className="ve-tasks-filters"

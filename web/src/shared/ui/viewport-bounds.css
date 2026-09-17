@@ -63,18 +63,18 @@
   .workshop-shell .workshop-page {
     padding: 24px 16px;
   }
-  .workshop-shell .workshop-page-header {
+  .workshop-shell .workshop-app-chrome {
     flex-direction: column;
     align-items: stretch;
     gap: 16px;
   }
-  .workshop-shell .workshop-page-header > div {
+  .workshop-shell .workshop-app-chrome__copy {
     min-width: 0;
   }
-  .workshop-shell .workshop-page-header-actions {
+  .workshop-shell .workshop-app-chrome__actions {
     flex-wrap: wrap;
   }
-  .workshop-page-header-actions button {
+  .workshop-app-chrome__actions button {
     white-space: nowrap;
     flex-shrink: 0;
   }

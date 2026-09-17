@@ -76,6 +76,20 @@
   padding-right: 0;
   padding-left: 0;
 }
+
+.responsive-sidebar-track.is-collapsed .workshop-navigation button {
+  width: 44px;
+  min-height: 44px;
+  margin-inline: auto;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 12px;
+}
+
+.responsive-sidebar-track.is-collapsed .workshop-navigation button.active {
+  border-color: var(--accent-line);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 35%, transparent);
+}
 .responsive-sidebar-track.is-collapsed .nav-sub {
   display: none;
 }
@@ -130,12 +144,19 @@
     display: block;
   }
   .responsive-sidebar-panel > aside,
-  .studio-sidebar,
-  .workshop-sidebar {
+  .studio-sidebar {
     position: sticky;
     top: 0;
     width: auto;
     height: 100dvh;
     padding-top: 0;
+  }
+
+  /* App sidebars keep top padding so brand marks never flush to the viewport. */
+  .workshop-sidebar {
+    position: sticky;
+    top: 0;
+    width: auto;
+    height: 100dvh;
   }
 }

@@ -18,6 +18,7 @@ import {
   ProjectSnapshotImportButton,
   useProjectLibraryController,
 } from "@shared/ui/project-library";
+import { WorkshopAppChrome } from "@shared/ui/WorkshopAppChrome";
 import {
   createGalgameWorkshopProject,
   deleteGalgameWorkshopProject,
@@ -79,26 +80,26 @@ export function GalgameWorkshopProjectsPage({
 
   return (
     <section className="workshop-page workshop-projects-page galgame-library-page">
-      <header className="workshop-page-header">
-        <div>
-          <h1>我的 Galgame 工程</h1>
-          <p>管理故事工程，从剧本结构进入分支试玩与线路检查。</p>
-        </div>
-        <div className="workshop-page-header-actions">
-          <ProjectSnapshotImportButton
-            pending={importMutation.isPending}
-            onImport={(file) => importMutation.mutate(file)}
-          />
-          <button
-            className="workshop-primary"
-            disabled={createMutation.isPending}
-            onClick={() => createMutation.mutate()}
-          >
-            <Plus aria-hidden />
-            {createMutation.isPending ? "正在创建…" : "新建工程"}
-          </button>
-        </div>
-      </header>
+      <WorkshopAppChrome
+        title="我的 Galgame 工程"
+        description="管理故事工程，从剧本结构进入分支试玩与线路检查。"
+        actions={
+          <>
+            <ProjectSnapshotImportButton
+              pending={importMutation.isPending}
+              onImport={(file) => importMutation.mutate(file)}
+            />
+            <button
+              className="workshop-primary"
+              disabled={createMutation.isPending}
+              onClick={() => createMutation.mutate()}
+            >
+              <Plus aria-hidden />
+              {createMutation.isPending ? "正在创建…" : "新建工程"}
+            </button>
+          </>
+        }
+      />
       <div className="workshop-toolbar workshop-toolbar-simple">
         <label>
           <Search aria-hidden />

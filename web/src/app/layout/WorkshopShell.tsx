@@ -2,7 +2,6 @@ import {
   ResponsiveSidebarPanel,
   ResponsiveSidebarProvider,
 } from "@shared/ui/ResponsiveSidebar";
-import { ThemeToggle } from "@shared/ui/ThemeToggle";
 import type { ReactNode } from "react";
 import type { ApplicationModule } from "@features/applications";
 import {
@@ -70,15 +69,7 @@ export function WorkshopShell({
             />
           </WorkshopSidebar>
         </ResponsiveSidebarPanel>
-        <main className="workshop-main">
-          <div className="workshop-main-chrome">
-            <div className="workshop-main-theme">
-              <span>外观</span>
-              <ThemeToggle />
-            </div>
-          </div>
-          {children}
-        </main>
+        <main className="workshop-main">{children}</main>
       </div>
     </ResponsiveSidebarProvider>
   );

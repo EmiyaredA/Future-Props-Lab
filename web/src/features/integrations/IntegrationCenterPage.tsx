@@ -1,7 +1,6 @@
 import { IntegrationInteractions } from "./IntegrationInteractions";
 import type { NavigationGuard } from "./interaction";
 import { useState } from "react";
-import { IntegrationIcon } from "@shared/ui/IntegrationIcon";
 import { McpPanel } from "@features/integrations/McpPanel";
 import { SkillPanel } from "@features/integrations/SkillPanel";
 import { ToolApiPanel } from "@features/integrations/ToolApiPanel";
@@ -36,9 +35,6 @@ export function IntegrationCenterPage({
     <IntegrationInteractions registerNavigationGuard={registerNavigationGuard}>
       <section className="page integrations-page">
         <header className="integrations-header">
-          <span className="integrations-kicker">
-            <IntegrationIcon /> Workspace 能力目录
-          </span>
           <h1>集成中心</h1>
           <p>统一管理工具 API、MCP 服务与 Skill</p>
         </header>

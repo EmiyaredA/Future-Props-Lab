@@ -2,7 +2,7 @@
   max-width: 1320px;
   margin-inline: auto;
 }
-.ve-tasks-page .workshop-page-header {
+.ve-tasks-page .workshop-app-chrome {
   align-items: center;
   gap: 24px;
   margin-bottom: 28px;
@@ -11,7 +11,7 @@
   display: flex;
   align-items: center;
   gap: 7px;
-  margin-bottom: 10px;
+  margin-bottom: 0;
   color: var(--accent);
   font-size: 12px;
   font-weight: 650;
@@ -21,10 +21,10 @@
   width: 16px;
   height: 16px;
 }
-.ve-tasks-page .workshop-page-header h1 {
+.ve-tasks-page .workshop-app-chrome h1 {
   margin-bottom: 8px;
 }
-.ve-tasks-page .workshop-page-header p {
+.ve-tasks-page .workshop-app-chrome p {
   margin: 0;
 }
 .ve-tasks-header-actions {
@@ -451,7 +451,7 @@
   line-height: 1.7;
 }
 @media (max-width: 760px) {
-  .ve-tasks-page .workshop-page-header {
+  .ve-tasks-page .workshop-app-chrome {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;

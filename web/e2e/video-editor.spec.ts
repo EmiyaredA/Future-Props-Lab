@@ -15,7 +15,7 @@ test("keeps vertical clip dragging stable across tracks and saves the drop", asy
       response.request().method() === "POST",
   );
   await page
-    .locator(".workshop-page-header")
+    .locator(".workshop-app-chrome")
     .getByRole("button", { name: "新建剪辑" })
     .click();
   await expect(page.getByText("视频剪辑工坊 · revision")).toBeVisible();
@@ -158,7 +158,7 @@ test("builds a deterministic image, black-card, and title edit", async ({
 }) => {
   await page.goto("/apps/video-editor");
   await page
-    .locator(".workshop-page-header")
+    .locator(".workshop-app-chrome")
     .getByRole("button", { name: "新建剪辑" })
     .click();
   await expect(page.getByText("视频剪辑工坊 · revision")).toBeVisible();

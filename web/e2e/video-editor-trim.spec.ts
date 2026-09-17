@@ -16,7 +16,7 @@ test("drags images into mixed tracks and resizes edges with exact undo", async (
       response.request().method() === "POST",
   );
   await page
-    .locator(".workshop-page-header")
+    .locator(".workshop-app-chrome")
     .getByRole("button", { name: "新建剪辑" })
     .click();
   const project = await (await created).json();

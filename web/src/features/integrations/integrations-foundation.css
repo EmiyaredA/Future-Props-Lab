@@ -6,23 +6,6 @@
   margin-bottom: 14px;
 }
 
-.integrations-kicker {
-  margin-bottom: 8px;
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  color: var(--accent);
-  font-size: 12px;
-  font-weight: 750;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.integrations-kicker svg {
-  width: 15px;
-  height: 15px;
-}
-
 .integrations-header h1 {
   margin: 0 0 7px;
   color: var(--text-strong);

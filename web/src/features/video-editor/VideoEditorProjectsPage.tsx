@@ -16,6 +16,7 @@ import {
   ProjectSnapshotImportButton,
   useProjectLibraryController,
 } from "@shared/ui/project-library";
+import { WorkshopAppChrome } from "@shared/ui/WorkshopAppChrome";
 import {
   createVideoEditorProject,
   deleteVideoEditorProject,
@@ -74,25 +75,25 @@ export function VideoEditorProjectsPage({
   );
   return (
     <section className="workshop-page workshop-projects-page ve-projects">
-      <header className="workshop-page-header">
-        <div>
-          <h1>我的视频剪辑工程</h1>
-          <p>管理剪辑工程，从素材组织进入时间轴、分段与成片导出。</p>
-        </div>
-        <div className="workshop-page-header-actions">
-          <ProjectSnapshotImportButton
-            pending={importSnapshot.isPending}
-            onImport={(file) => importSnapshot.mutate(file)}
-          />
-          <button
-            className="workshop-primary"
-            disabled={create.isPending}
-            onClick={() => create.mutate()}
-          >
-            <Plus aria-hidden /> {create.isPending ? "正在创建…" : "新建剪辑"}
-          </button>
-        </div>
-      </header>
+      <WorkshopAppChrome
+        title="我的视频剪辑工程"
+        description="管理剪辑工程，从素材组织进入时间轴、分段与成片导出。"
+        actions={
+          <>
+            <ProjectSnapshotImportButton
+              pending={importSnapshot.isPending}
+              onImport={(file) => importSnapshot.mutate(file)}
+            />
+            <button
+              className="workshop-primary"
+              disabled={create.isPending}
+              onClick={() => create.mutate()}
+            >
+              <Plus aria-hidden /> {create.isPending ? "正在创建…" : "新建剪辑"}
+            </button>
+          </>
+        }
+      />
       <div className="workshop-toolbar workshop-toolbar-simple">
         <label>
           <Search aria-hidden />

@@ -150,7 +150,9 @@
   border-radius: 12px;
 }
 
-.studio-collapsed-rail.is-labeled .studio-collapsed-rail__top .studio-rail-button {
+.studio-collapsed-rail.is-labeled
+  .studio-collapsed-rail__top
+  .studio-rail-button {
   width: 44px;
   height: 44px;
   min-height: 44px;
@@ -312,7 +314,9 @@
   border-radius: 10px;
 }
 
-.studio-collapsed-rail.is-labeled .studio-collapsed-rail__footer .workspace-trigger {
+.studio-collapsed-rail.is-labeled
+  .studio-collapsed-rail__footer
+  .workspace-trigger {
   width: 52px;
   min-height: 52px;
   border-radius: 12px;

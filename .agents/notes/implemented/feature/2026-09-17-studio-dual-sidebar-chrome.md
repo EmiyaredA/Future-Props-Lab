@@ -27,7 +27,7 @@ Studio 全局壳改为常驻一级图标轨（图标 + 下方短标签）加可�
 ## Consequences
 
 - **收益**：Studio 一级/二级导航分层清晰，基模型子页可从二级栏直达；集成中心改由页内 Tab 切换，避免与侧栏二级重复；顶栏不再以胶囊岛打断主内容；Workshop 折叠行为未被牵动。
-- **代价与已知上限**：Studio 不再使用 `future-props-sidebar-studio-collapsed` 全文展开态；旧键失效。若日后要统一工坊壳，需另开决策并评估模块导航数据模型。
+- **代价与已知上限**：Studio 不再使用 `future-props-sidebar-studio-collapsed` 全文展开态；旧键失效。工坊列表壳的粘性顶栏与侧栏规范见 [AI 应用壳粘性顶栏与统一侧栏](./2026-09-17-workshop-app-shell-chrome.md)。
 
 ## Verification
 

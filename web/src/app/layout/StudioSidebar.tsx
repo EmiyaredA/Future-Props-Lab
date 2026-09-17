@@ -12,8 +12,7 @@ import { useOptionalStudioSession } from "@app/StudioSession";
 import { WorkspaceTrigger } from "@features/accounts/WorkspaceTrigger";
 import { StudioGlobalHeader } from "@app/layout/StudioGlobalHeader";
 
-const SECONDARY_STORAGE_KEY =
-  "future-props-sidebar-studio-secondary-collapsed";
+const SECONDARY_STORAGE_KEY = "future-props-sidebar-studio-secondary-collapsed";
 const NARROW_QUERY = "(max-width: 1200px)";
 
 function loadSecondaryCollapsed(): boolean {
@@ -354,10 +353,7 @@ function StudioChrome({
       active: section.active,
       onSelect: () => {
         if (!section.page) return;
-        if (
-          section.id === "integrations" &&
-          page.startsWith("integrations-")
-        ) {
+        if (section.id === "integrations" && page.startsWith("integrations-")) {
           return;
         }
         navigate(section.page);
@@ -382,9 +378,7 @@ function StudioChrome({
             canToggleSecondary
               ? {
                   collapsed: secondaryCollapsed,
-                  label: secondaryCollapsed
-                    ? "展开二级导航"
-                    : "收起二级导航",
+                  label: secondaryCollapsed ? "展开二级导航" : "收起二级导航",
                   onToggle: toggleSecondary,
                 }
               : undefined

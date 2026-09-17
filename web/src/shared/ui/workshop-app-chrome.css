@@ -1,0 +1,78 @@
+.workshop-app-chrome {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  margin: 0 calc(-1 * clamp(16px, 2vw, 34px));
+  padding: 14px clamp(16px, 2vw, 34px) 12px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 20px;
+  border-bottom: 1px solid var(--border);
+  background: color-mix(in srgb, var(--bg) 92%, transparent);
+  backdrop-filter: blur(10px);
+}
+
+.workshop-app-chrome__copy {
+  min-width: 0;
+}
+
+.workshop-app-chrome__eyebrow {
+  color: var(--accent);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+
+.workshop-app-chrome h1 {
+  margin: 4px 0 5px;
+  color: var(--text-strong);
+  font-size: 24px;
+  letter-spacing: -0.04em;
+}
+
+.workshop-app-chrome p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.workshop-app-chrome__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.workshop-app-chrome__theme {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.workshop-app-chrome__theme > span {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.workshop-projects-page .workshop-app-chrome {
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.workshop-projects-page .workshop-app-chrome h1 {
+  margin: 0 0 5px;
+}
+
+@media (max-width: 900px) {
+  .workshop-app-chrome {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .workshop-app-chrome__actions {
+    justify-content: flex-start;
+  }
+}

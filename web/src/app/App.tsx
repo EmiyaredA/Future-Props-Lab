@@ -257,21 +257,33 @@ export default function App() {
     return <PublicWorkspaceShowcase />;
   }
 
-  if (
-    page === "presentation-workshop-projects" ||
-    page === "presentation-workshop-editor"
-  )
+  if (page === "presentation-workshop-projects")
+    return (
+      <WorkshopShell
+        module={PRESENTATION_WORKSHOP_MODULE}
+        page={page}
+        navigate={(next) => navigate(next as WorkshopPage)}
+        onBack={() => navigate("apps")}
+      >
+        <PageBoundary>
+          <PresentationWorkshopPage
+            readOnly={!workspaceAllows(me.workspace, "content.write")}
+            onOpen={(id) => navigate("presentation-workshop-editor", id)}
+            onBack={() => navigate("apps")}
+            registerNavigationGuard={registerNavigationGuard}
+          />
+        </PageBoundary>
+      </WorkshopShell>
+    );
+
+  if (page === "presentation-workshop-editor")
     return (
       <PageBoundary>
         <PresentationWorkshopPage
           projectId={route.projectId}
           readOnly={!workspaceAllows(me.workspace, "content.write")}
           onOpen={(id) => navigate("presentation-workshop-editor", id)}
-          onBack={() =>
-            navigate(
-              route.projectId ? "presentation-workshop-projects" : "apps",
-            )
-          }
+          onBack={() => navigate("presentation-workshop-projects")}
           registerNavigationGuard={registerNavigationGuard}
         />
       </PageBoundary>

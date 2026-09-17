@@ -115,7 +115,9 @@
   width: 228px;
   height: 228px;
   transform: translateY(-50%);
-  filter: drop-shadow(0 22px 34px color-mix(in srgb, var(--accent) 28%, transparent));
+  filter: drop-shadow(
+    0 22px 34px color-mix(in srgb, var(--accent) 28%, transparent)
+  );
 }
 
 .home-orbit-ring,
@@ -216,13 +218,12 @@
   overflow: hidden;
   border: 1px solid color-mix(in srgb, var(--border) 78%, transparent);
   border-radius: 22px;
-  background:
-    linear-gradient(
-      165deg,
-      color-mix(in srgb, var(--surface-raised) 92%, transparent),
-      var(--surface) 48%,
-      color-mix(in srgb, var(--surface-soft) 35%, var(--surface))
-    );
+  background: linear-gradient(
+    165deg,
+    color-mix(in srgb, var(--surface-raised) 92%, transparent),
+    var(--surface) 48%,
+    color-mix(in srgb, var(--surface-soft) 35%, var(--surface))
+  );
   box-shadow:
     inset 0 1px 0 color-mix(in srgb, var(--surface-raised) 90%, transparent),
     var(--shadow-lift);
@@ -281,8 +282,12 @@
   place-items: center;
   border: 1px solid color-mix(in srgb, var(--accent-line) 80%, transparent);
   border-radius: 16px;
-  background:
-    linear-gradient(155deg, #fff8f3, var(--accent-soft) 55%, var(--surface));
+  background: linear-gradient(
+    155deg,
+    #fff8f3,
+    var(--accent-soft) 55%,
+    var(--surface)
+  );
   color: var(--accent);
   box-shadow:
     inset 0 1px 0 color-mix(in srgb, #fff 70%, transparent),
@@ -378,12 +383,11 @@
   gap: 12px;
   border: 1px solid color-mix(in srgb, var(--border) 78%, transparent);
   border-radius: 16px;
-  background:
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--surface-raised) 90%, transparent),
-      color-mix(in srgb, var(--surface) 94%, var(--surface-soft))
-    );
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--surface-raised) 90%, transparent),
+    color-mix(in srgb, var(--surface) 94%, var(--surface-soft))
+  );
   box-shadow:
     inset 0 1px 0 color-mix(in srgb, var(--surface-raised) 80%, transparent),
     var(--shadow);

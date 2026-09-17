@@ -19,6 +19,7 @@ import {
   ProjectSnapshotImportButton,
   useProjectLibraryController,
 } from "@shared/ui/project-library";
+import { WorkshopAppChrome } from "@shared/ui/WorkshopAppChrome";
 import {
   createVisualWorkshopProject,
   deleteVisualWorkshopProject,
@@ -86,26 +87,26 @@ export function VisualWorkshopProjectsPage({
 
   return (
     <section className="workshop-page workshop-projects-page">
-      <header className="workshop-page-header">
-        <div>
-          <h1>我的创作项目</h1>
-          <p>所有项目统一使用沉浸式创作画布。</p>
-        </div>
-        <div className="workshop-page-header-actions">
-          <ProjectSnapshotImportButton
-            pending={importMutation.isPending}
-            onImport={(file) => importMutation.mutate(file)}
-          />
-          <button
-            className="workshop-primary"
-            disabled={createMutation.isPending}
-            onClick={() => createMutation.mutate()}
-          >
-            <Plus aria-hidden />
-            {createMutation.isPending ? "正在创建…" : "新建项目"}
-          </button>
-        </div>
-      </header>
+      <WorkshopAppChrome
+        title="我的创作项目"
+        description="所有项目统一使用沉浸式创作画布。"
+        actions={
+          <>
+            <ProjectSnapshotImportButton
+              pending={importMutation.isPending}
+              onImport={(file) => importMutation.mutate(file)}
+            />
+            <button
+              className="workshop-primary"
+              disabled={createMutation.isPending}
+              onClick={() => createMutation.mutate()}
+            >
+              <Plus aria-hidden />
+              {createMutation.isPending ? "正在创建…" : "新建项目"}
+            </button>
+          </>
+        }
+      />
       <div className="workshop-toolbar workshop-toolbar-simple">
         <label>
           <Search aria-hidden />
