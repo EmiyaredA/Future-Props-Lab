@@ -497,6 +497,13 @@
     "verification": "named-operation-contract"
   },
   {
+    "http": "POST /v1/file-storage/open-folder",
+    "sdk": "client.files.reveal_library_folder",
+    "document": "/docs.html?page=sdk-reference-files#reveal-library-folder",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
     "http": "POST /v1/files",
     "sdk": "client.files.upload_file",
     "document": "/docs.html?page=sdk-reference-files#upload-file",

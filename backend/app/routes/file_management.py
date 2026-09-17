@@ -6,8 +6,15 @@ from fastapi import APIRouter, File, Form, HTTPException, Query, UploadFile
 from fastapi.responses import FileResponse
 
 from app.core.config import get_settings
-from app.deps import SessionDep, WorkspaceDep
-from app.files import AssetError, VisualAssets, download_filename
+from app.deps import SessionDep, StudioAuth, WorkspaceDep
+from app.files import (
+    AssetError,
+    AssetStorage,
+    ProjectFolderError,
+    VisualAssets,
+    download_filename,
+    open_library_folder,
+)
 from app.files.layout_migration import LayoutMigrationBusyError, StorageLayoutMigration
 from app.schemas.files import (
     StorageLayoutMigrationOut,
@@ -22,6 +29,7 @@ from app.schemas.files import (
     VisualAssetOut,
     VisualAssetPatchIn,
 )
+from app.schemas.project_snapshots import ProjectFolderOpenOut
 
 router = APIRouter(tags=["file-management"])
 
@@ -54,6 +62,23 @@ async def migrate_storage_layout(
         return await StorageLayoutMigration(session, get_settings(), workspace_id).migrate(limit)
     except LayoutMigrationBusyError as exc:
         raise HTTPException(409, {"code": "storage_migration_busy", "message": str(exc)}) from None
+
+
+@router.post("/file-storage/open-folder", response_model=ProjectFolderOpenOut)
+async def reveal_library_folder(
+    principal: StudioAuth,
+    workspace_id: WorkspaceDep,
+) -> ProjectFolderOpenOut:
+    if principal.auth_kind != "session":
+        raise HTTPException(
+            403,
+            {"code": "browser_session_required", "message": "打开文件夹必须使用浏览器 Session"},
+        )
+    try:
+        await open_library_folder(AssetStorage(get_settings()), workspace_id=workspace_id)
+    except ProjectFolderError as exc:
+        raise HTTPException(exc.status, {"code": exc.code, "message": str(exc)}) from None
+    return ProjectFolderOpenOut()
 
 
 @router.get("/file-folders", response_model=VisualAssetFolderListOut)

@@ -29516,6 +29516,27 @@
         ]
       }
     },
+    "/v1/file-storage/open-folder": {
+      "post": {
+        "operationId": "reveal_library_folder_v1_file_storage_open_folder_post",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectFolderOpenOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Reveal Library Folder",
+        "tags": [
+          "file-management"
+        ]
+      }
+    },
     "/v1/files": {
       "get": {
         "operationId": "list_files_v1_files_get",

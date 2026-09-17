@@ -124,6 +124,10 @@ beforeEach(() => {
 test("switches deep-link tabs through the app callback", async () => {
   const user = userEvent.setup();
   const { onKindChange } = renderPage("tool-apis");
+  expect(
+    await screen.findByRole("heading", { name: "集成中心" }),
+  ).toBeInTheDocument();
+  expect(screen.queryByText(/Workspace 能力目录/)).not.toBeInTheDocument();
   await screen.findByText("订单查询");
   await user.click(screen.getByRole("tab", { name: "MCP" }));
   expect(onKindChange).toHaveBeenCalledWith("mcp");

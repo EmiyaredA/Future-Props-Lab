@@ -1056,6 +1056,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/file-storage/open-folder": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reveal Library Folder */
+        post: operations["reveal_library_folder_v1_file_storage_open_folder_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/files": {
         parameters: {
             query?: never;
@@ -16931,6 +16948,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reveal_library_folder_v1_file_storage_open_folder_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectFolderOpenOut"];
                 };
             };
         };

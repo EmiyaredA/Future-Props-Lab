@@ -6,6 +6,7 @@ import { FileManagementPage } from "@features/files/FileManagementPage";
 import {
   getStorageLayoutStatus,
   migrateStorageLayout,
+  openLibraryFolder,
 } from "@features/files/api";
 
 vi.mock("@features/files/AssetBrowser", () => ({
@@ -20,6 +21,7 @@ vi.mock("@features/files/api", async () => {
     ...actual,
     getStorageLayoutStatus: vi.fn(),
     migrateStorageLayout: vi.fn(),
+    openLibraryFolder: vi.fn(),
   };
 });
 
@@ -64,6 +66,24 @@ function renderPage() {
 beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(getStorageLayoutStatus).mockResolvedValue(pendingStatus);
+  vi.mocked(openLibraryFolder).mockResolvedValue({ opened: true });
+});
+
+test("shows open-library control without workspace eyebrow", async () => {
+  const user = userEvent.setup();
+  vi.mocked(getStorageLayoutStatus).mockResolvedValue({
+    ...pendingStatus,
+    pending_projects: 0,
+    pending_assets: 0,
+    complete: true,
+  });
+  renderPage();
+  expect(
+    await screen.findByRole("heading", { name: "文件管理" }),
+  ).toBeInTheDocument();
+  expect(screen.queryByText("工作空间")).not.toBeInTheDocument();
+  await user.click(screen.getByRole("button", { name: "打开本地文件夹" }));
+  await waitFor(() => expect(openLibraryFolder).toHaveBeenCalledTimes(1));
 });
 
 test("migrates storage in ordered batches and hides the prompt when complete", async () => {

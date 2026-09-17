@@ -35,6 +35,10 @@ class Files:
         'Migrate Storage Layout. POST /v1/file-storage/layout/migrate'
         return self._client._call('POST', '/v1/file-storage/layout/migrate', parameters=[('limit', 'query', limit)], response_type=models.StorageLayoutMigrationOut)
 
+    def reveal_library_folder(self) -> models.ProjectFolderOpenOut:
+        'Reveal Library Folder. POST /v1/file-storage/open-folder'
+        return self._client._call('POST', '/v1/file-storage/open-folder', parameters=[], response_type=models.ProjectFolderOpenOut)
+
     def list_files(self, *, project_id: str | None | Unset = UNSET, folder_id: str | None | Unset = UNSET, query: str | Unset = UNSET, media_kind: Literal['image', 'video', 'audio', 'font', 'document'] | None | Unset = UNSET, sort: Literal['updated', 'name'] | Unset = UNSET, include_references: bool | Unset = UNSET, include_svg: bool | Unset = UNSET) -> models.VisualAssetListOut:
         'List Files. GET /v1/files'
         return self._client._call('GET', '/v1/files', parameters=[('project_id', 'query', project_id), ('folder_id', 'query', folder_id), ('query', 'query', query), ('media_kind', 'query', media_kind), ('sort', 'query', sort), ('include_references', 'query', include_references), ('include_svg', 'query', include_svg)], response_type=models.VisualAssetListOut)
@@ -98,6 +102,10 @@ class AsyncFiles:
     async def migrate_storage_layout(self, *, limit: int | Unset = UNSET) -> models.StorageLayoutMigrationOut:
         'Migrate Storage Layout. POST /v1/file-storage/layout/migrate'
         return await self._client._call('POST', '/v1/file-storage/layout/migrate', parameters=[('limit', 'query', limit)], response_type=models.StorageLayoutMigrationOut)
+
+    async def reveal_library_folder(self) -> models.ProjectFolderOpenOut:
+        'Reveal Library Folder. POST /v1/file-storage/open-folder'
+        return await self._client._call('POST', '/v1/file-storage/open-folder', parameters=[], response_type=models.ProjectFolderOpenOut)
 
     async def list_files(self, *, project_id: str | None | Unset = UNSET, folder_id: str | None | Unset = UNSET, query: str | Unset = UNSET, media_kind: Literal['image', 'video', 'audio', 'font', 'document'] | None | Unset = UNSET, sort: Literal['updated', 'name'] | Unset = UNSET, include_references: bool | Unset = UNSET, include_svg: bool | Unset = UNSET) -> models.VisualAssetListOut:
         'List Files. GET /v1/files'

@@ -220,3 +220,7 @@ export async function migrateStorageLayout(limit = 50) {
     }),
   );
 }
+
+export async function openLibraryFolder() {
+  return unwrap(await api.POST("/v1/file-storage/open-folder"));
+}

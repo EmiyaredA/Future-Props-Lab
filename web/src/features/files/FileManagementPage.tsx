@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AlertTriangle,
   CheckCircle2,
+  FolderOpen,
   FolderSync,
   LoaderCircle,
 } from "lucide-react";
@@ -10,6 +11,7 @@ import { AssetBrowser } from "@features/files/AssetBrowser";
 import {
   getStorageLayoutStatus,
   migrateStorageLayout,
+  openLibraryFolder,
   type StorageLayoutMigration,
 } from "@features/files/api";
 import { fileQueryKeys } from "@features/files/queryKeys";
@@ -49,6 +51,9 @@ export function FileManagementPage() {
       await client.invalidateQueries({ queryKey: fileQueryKeys.allFiles });
     },
   });
+  const openFolder = useMutation({
+    mutationFn: openLibraryFolder,
+  });
   const status = layout.data;
   const issues = progress?.issues ?? [];
   return (
@@ -57,6 +62,16 @@ export function FileManagementPage() {
         <div>
           <h1>文件管理</h1>
           <p>统一管理可供各个项目引用的图片、视频、音频和文档。</p>
+        </div>
+        <div className="file-management-page__actions">
+          <button
+            type="button"
+            disabled={openFolder.isPending}
+            onClick={() => openFolder.mutate()}
+          >
+            <FolderOpen aria-hidden />
+            {openFolder.isPending ? "正在打开…" : "打开本地文件夹"}
+          </button>
         </div>
       </header>
       {status && !status.complete ? (

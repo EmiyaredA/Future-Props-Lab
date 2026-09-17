@@ -60,3 +60,19 @@ async def open_project_folder(
             status=409,
         )
     await asyncio.to_thread(_open_folder, path)
+
+
+async def open_library_folder(storage: AssetStorage, *, workspace_id: str) -> None:
+    path = storage.target_root(
+        visual_project_id=None,
+        galgame_project_id=None,
+        video_editor_project_id=None,
+        workspace_id=workspace_id,
+    )
+    if not path.is_dir():
+        raise ProjectFolderError(
+            "文件库文件夹不存在",
+            code="library_folder_missing",
+            status=409,
+        )
+    await asyncio.to_thread(_open_folder, path)

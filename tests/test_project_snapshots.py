@@ -503,6 +503,66 @@ async def test_open_folder_platform_command_mapping(monkeypatch: pytest.MonkeyPa
 
 
 @pytest.mark.asyncio
+async def test_open_library_folder_uses_library_root_and_requires_browser_session(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls: list[list[str]] = []
+    monkeypatch.setattr(folder_module.platform, "system", lambda: "Darwin")
+    monkeypatch.setattr(
+        folder_module.subprocess,
+        "Popen",
+        lambda command, **_kwargs: calls.append(command),
+    )
+    storage = AssetStorage(get_settings())
+    library_root = storage.target_root(
+        visual_project_id=None,
+        galgame_project_id=None,
+        video_editor_project_id=None,
+        workspace_id="default",
+    )
+    library_root.mkdir(parents=True, exist_ok=True)
+    missing = Path(get_settings().runtime_path) / "missing-library-assets"
+
+    transport = httpx.ASGITransport(app=app)
+    async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+        opened = await client.post("/v1/file-storage/open-folder")
+        assert opened.status_code == 200, opened.text
+        assert opened.json() == {"opened": True}
+        assert calls[-1] == ["open", str(library_root)]
+
+        monkeypatch.setattr(
+            AssetStorage,
+            "target_root",
+            lambda self, **_kwargs: missing,
+        )
+        absent = await client.post("/v1/file-storage/open-folder")
+        assert absent.status_code == 409
+        assert absent.json()["code"] == "library_folder_missing"
+
+        async def api_key_principal(session: SessionDep) -> StudioPrincipal:
+            bind_workspace(session, "default")
+            return StudioPrincipal(
+                user_id="api-key",
+                workspace_id="default",
+                membership_id=None,
+                workspace_access="owner",
+                member_role="owner",
+                is_platform_admin=True,
+                must_change_password=False,
+                auth_kind="management_api_key",
+                scopes=frozenset({"studio:read", "studio:write"}),
+            )
+
+        app.dependency_overrides[require_studio_auth] = api_key_principal
+        try:
+            denied = await client.post("/v1/file-storage/open-folder")
+            assert denied.status_code == 403
+            assert denied.json()["code"] == "browser_session_required"
+        finally:
+            app.dependency_overrides.pop(require_studio_auth, None)
+
+
+@pytest.mark.asyncio
 async def test_snapshot_endpoints_treat_other_workspace_projects_as_missing() -> None:
     await _reset_projects()
     transport = httpx.ASGITransport(app=app)

@@ -2,7 +2,7 @@ from app.files.assets import VisualAssets, asset_out, folder_out
 from app.files.incoming import IncomingFile
 from app.files.library import AssetError, AssetLibrary
 from app.files.policy import download_filename
-from app.files.project_folders import ProjectFolderError, open_project_folder
+from app.files.project_folders import ProjectFolderError, open_library_folder, open_project_folder
 from app.files.project_snapshots import (
     ExportedProjectSnapshot,
     ProjectSnapshotError,
@@ -32,6 +32,7 @@ __all__ = [
     "cleanup_snapshot_staging",
     "export_project_snapshot",
     "move_staged_asset",
+    "open_library_folder",
     "open_project_folder",
     "stage_project_snapshot",
 ]

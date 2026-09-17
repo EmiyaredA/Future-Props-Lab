@@ -40,6 +40,7 @@
   flex-wrap: wrap;
   gap: 10px;
   margin: 0 0 20px;
+  padding-bottom: 14px;
 }
 .mc-category-tabs button {
   padding: 9px 22px;

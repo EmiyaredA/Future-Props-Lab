@@ -9,6 +9,7 @@
   justify-content: space-between;
   align-items: flex-start;
   gap: 16px;
+  flex-wrap: wrap;
 }
 
 .file-management-page > header h1 {
@@ -21,6 +22,44 @@
   margin: 0;
   color: var(--muted);
   font-size: 13px;
+}
+
+.file-management-page__actions {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.file-management-page__actions button {
+  min-height: 36px;
+  padding: 0 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.file-management-page__actions button:hover:not(:disabled) {
+  border-color: var(--accent-line);
+  color: var(--accent);
+}
+
+.file-management-page__actions button:disabled {
+  opacity: 0.65;
+}
+
+.file-management-page__actions svg {
+  width: 15px;
+  height: 15px;
+  display: block;
+  flex: none;
 }
 
 .file-browser {

@@ -20,6 +20,7 @@
 | [patch_file](#patch-file) | `PATCH /v1/files/{asset_id}` |
 | [create_file_folder](#create-file-folder) | `POST /v1/file-folders` |
 | [migrate_storage_layout](#migrate-storage-layout) | `POST /v1/file-storage/layout/migrate` |
+| [reveal_library_folder](#reveal-library-folder) | `POST /v1/file-storage/open-folder` |
 | [upload_file](#upload-file) | `POST /v1/files` |
 | [preview_svg](#preview-svg) | `POST /v1/files/svg/preview` |
 | [crop_file_image](#crop-file-image) | `POST /v1/files/{asset_id}/crop` |
@@ -253,6 +254,24 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 
 **响应**：
 - `200` · `application/json` · `StorageLayoutMigrationOut`
+
+上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
+
+## reveal_library_folder {#reveal-library-folder}
+
+`client.files.reveal_library_folder(...)`
+
+**接口**：`POST /v1/file-storage/open-folder`。**鉴权**：Workspace API Key 或 Session。
+**权限**：`content.write`。
+
+写入仅在当前身份有相应业务权限时执行。需要 revision 的参数必须来自最近一次读取；409 冲突不会自动覆盖。
+SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按服务端去重规则重放。
+
+| 参数 | 位置 | 类型 | 必填 |
+| --- | --- | --- | --- |
+
+**响应**：
+- `200` · `application/json` · `ProjectFolderOpenOut`
 
 上传下载和流式事件需要关闭响应上下文；错误保留 status、code、errors 与 current。
 

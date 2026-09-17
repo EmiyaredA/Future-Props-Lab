@@ -939,6 +939,10 @@
     "method": "migrate_storage_layout",
     "resource": "files"
   },
+  "POST /v1/file-storage/open-folder": {
+    "method": "reveal_library_folder",
+    "resource": "files"
+  },
   "POST /v1/files": {
     "method": "upload_file",
     "resource": "files"

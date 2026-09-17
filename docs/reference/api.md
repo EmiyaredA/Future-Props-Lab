@@ -391,8 +391,9 @@ ID、消息数量、画布摘要和素材 ID；不保存图片 Base64、临时�
 
 - `GET /v1/file-storage/layout`：返回目标版本、待迁移项目/素材、待迁移字节数、缺失或冲突文件计数与完成状态。
 - `POST /v1/file-storage/layout/migrate?limit=50`：顺序迁移 1–100 个旧版素材；逐文件复制、校验大小与 SHA-256、原子落盘并以 `storage_version` CAS 结算。问题码固定为 `source_missing`、`target_conflict`、`copy_failed`，失败素材保持原状态，可重复调用继续迁移。
+- `POST /v1/file-storage/open-folder`：在运行 Studio 的电脑上打开当前工作空间的文件库根目录（`library/assets`）；仅浏览器 Session 可用。
 
-两个接口使用 Studio 鉴权；旧布局在完成前保持可读，新上传文件始终写入版本 2 项目目录。
+布局接口使用 Studio 鉴权；旧布局在完成前保持可读，新上传文件始终写入版本 2 项目目录。
 
 ## Galgame 工坊
 
