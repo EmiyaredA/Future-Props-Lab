@@ -283,6 +283,7 @@ export function ItemActionMenu({
   onToggle,
   onClose,
   onDownload,
+  onExport,
   onRename,
   onMove,
   onDelete,
@@ -294,6 +295,7 @@ export function ItemActionMenu({
   onToggle: () => void;
   onClose: () => void;
   onDownload?: () => void;
+  onExport?: () => void;
   onRename: () => void;
   onMove: () => void;
   onDelete: () => void;
@@ -334,6 +336,11 @@ export function ItemActionMenu({
           {onDownload ? (
             <button type="button" role="menuitem" onClick={onDownload}>
               <Download aria-hidden /> 下载
+            </button>
+          ) : null}
+          {onExport ? (
+            <button type="button" role="menuitem" onClick={onExport}>
+              <Download aria-hidden /> 导出
             </button>
           ) : null}
           <button type="button" role="menuitem" onClick={onRename}>
