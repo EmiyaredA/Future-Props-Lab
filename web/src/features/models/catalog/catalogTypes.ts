@@ -30,11 +30,14 @@ export type ModelCatalogValue = {
   >;
 };
 type Result = void | Promise<void>;
+export type CreatedProviderRef = { id: string };
 export type ModelCatalogActions = {
   createSupplier: (input: { name: string }) => Result;
   updateSupplier: (id: string, input: { name: string }) => Result;
   deleteSupplier: (id: string) => Result;
-  createProvider: (input: CatalogProviderInput) => Result;
+  createProvider: (
+    input: CatalogProviderInput,
+  ) => CreatedProviderRef | void | Promise<CreatedProviderRef | void>;
   updateProvider: (id: string, input: CatalogProviderInput) => Result;
   deleteProvider: (id: string) => Result;
   setProviderEnabled: (id: string, enabled: boolean) => Result;

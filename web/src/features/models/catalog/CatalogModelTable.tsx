@@ -39,104 +39,110 @@ export function CatalogModelTable({
       </div>
     );
   return (
-    <table
-      className={
-        hideSource ? "mc-model-table mc-model-table--embedded" : "mc-model-table"
-      }
-    >
-      <thead>
-        <tr>
-          <th>模型</th>
-          <th>支持能力</th>
-          {!hideSource && <th>接入来源</th>}
-          <th>状态</th>
-          <th>操作</th>
-        </tr>
-      </thead>
-      <tbody>
-        {rows.map((row) => {
-          const { model, provider, protocolLabel } = row;
-          const name = model.label || model.slug;
-          const supported = modelTestMode(model, provider);
-          const available = model.enabled && provider.enabled;
-          const menu: CatalogMenuItem[] = [];
-          if (permissions.canWrite) {
-            menu.push({ label: "编辑", onClick: () => onEdit(row) });
-            if (canEditField(permissions, model, "enabled"))
-              menu.push({
-                label: model.enabled ? "停用" : "启用",
-                onClick: () => onToggle(model),
-              });
-            menu.push({ label: "复制", onClick: () => onCopy(model) });
-            if (canDeleteEntity(permissions, model))
-              menu.push({
-                label: "删除",
-                danger: true,
-                onClick: () => onDelete(model),
-              });
-          }
-          return (
-            <tr key={model.id} className={available ? "" : "mc-disabled-row"}>
-              <td data-label="模型">
-                <div className="mc-model-name">
-                  <span className="mc-provider-icon">
-                    <ProviderIcon kind={provider.kind} size={23} />
-                  </span>
-                  <div>
-                    <strong>{name}</strong>
-                    <code>{model.slug}</code>
-                    {model.origin === "role_template" && (
-                      <span className="mc-origin">平台模板</span>
-                    )}
-                  </div>
-                </div>
-              </td>
-              <td data-label="支持能力">
-                <div className="mc-badges">
-                  {model.capabilities.map((capability) => (
-                    <span key={capability}>
-                      {capabilityLabel[capability]}
+    <div className="mc-model-table-wrap">
+      <table
+        className={
+          hideSource
+            ? "mc-model-table mc-model-table--embedded"
+            : "mc-model-table"
+        }
+      >
+        <thead>
+          <tr>
+            <th>模型</th>
+            <th>支持能力</th>
+            {!hideSource && <th>接入来源</th>}
+            <th>状态</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row) => {
+            const { model, provider, protocolLabel } = row;
+            const name = model.label || model.slug;
+            const supported = modelTestMode(model, provider);
+            const available = model.enabled && provider.enabled;
+            const menu: CatalogMenuItem[] = [];
+            if (permissions.canWrite) {
+              menu.push({ label: "编辑", onClick: () => onEdit(row) });
+              if (canEditField(permissions, model, "enabled"))
+                menu.push({
+                  label: model.enabled ? "停用" : "启用",
+                  onClick: () => onToggle(model),
+                });
+              menu.push({ label: "复制", onClick: () => onCopy(model) });
+              if (canDeleteEntity(permissions, model))
+                menu.push({
+                  label: "删除",
+                  danger: true,
+                  onClick: () => onDelete(model),
+                });
+            }
+            return (
+              <tr key={model.id} className={available ? "" : "mc-disabled-row"}>
+                <td data-label="模型">
+                  <div className="mc-model-name">
+                    <span className="mc-provider-icon">
+                      <ProviderIcon kind={provider.kind} size={23} />
                     </span>
-                  ))}
-                </div>
-              </td>
-              {!hideSource && (
-                <td data-label="接入来源">
-                  <strong className="mc-source">{provider.name}</strong>
-                  <small>{protocolLabel}</small>
+                    <div>
+                      <strong>{name}</strong>
+                      <code>{model.slug}</code>
+                      {model.origin === "role_template" && (
+                        <span className="mc-origin">平台模板</span>
+                      )}
+                    </div>
+                  </div>
                 </td>
-              )}
-              <td data-label="状态">
-                <span className={`mc-status ${available ? "is-enabled" : ""}`}>
-                  <i />
-                  {catalogModelStatus(model, provider)}
-                </span>
-              </td>
-              <td data-label="操作">
-                <div className="mc-row-actions">
-                  {permissions.canTest &&
-                    onTestModel &&
-                    (supported ? (
-                      <button
-                        type="button"
-                        className="btn mc-test"
-                        disabled={!available}
-                        onClick={() => onTestModel(model, provider)}
-                        aria-label={`测试 ${name}`}
-                      >
-                        <Play size={15} />
-                        去测试
-                      </button>
-                    ) : (
-                      <span className="mc-help">暂不支持测试</span>
+                <td data-label="支持能力">
+                  <div className="mc-badges">
+                    {model.capabilities.map((capability) => (
+                      <span key={capability}>
+                        {capabilityLabel[capability]}
+                      </span>
                     ))}
-                  <CatalogMenu label={`${name} 操作`} items={menu} />
-                </div>
-              </td>
-            </tr>
-          );
-        })}
-      </tbody>
-    </table>
+                  </div>
+                </td>
+                {!hideSource && (
+                  <td data-label="接入来源">
+                    <strong className="mc-source">{provider.name}</strong>
+                    <small>{protocolLabel}</small>
+                  </td>
+                )}
+                <td data-label="状态">
+                  <span
+                    className={`mc-status ${available ? "is-enabled" : ""}`}
+                  >
+                    <i />
+                    {catalogModelStatus(model, provider)}
+                  </span>
+                </td>
+                <td data-label="操作">
+                  <div className="mc-row-actions">
+                    {permissions.canTest &&
+                      onTestModel &&
+                      (supported ? (
+                        <button
+                          type="button"
+                          className="btn mc-test"
+                          disabled={!available}
+                          onClick={() => onTestModel(model, provider)}
+                          aria-label={`测试 ${name}`}
+                        >
+                          <Play size={15} />
+                          去测试
+                        </button>
+                      ) : (
+                        <span className="mc-help">暂不支持测试</span>
+                      ))}
+                    <CatalogMenu label={`${name} 操作`} items={menu} />
+                  </div>
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
   );
 }

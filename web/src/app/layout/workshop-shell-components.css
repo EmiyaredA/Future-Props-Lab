@@ -1,5 +1,26 @@
 .workshop-main {
   min-width: 0;
+  max-width: 100%;
+}
+
+.workshop-main-chrome {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  min-height: 48px;
+  padding: 6px clamp(16px, 2vw, 34px) 0;
+}
+
+.workshop-main-theme {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.workshop-main-theme > span {
+  color: var(--muted);
+  font-size: 12px;
 }
 
 .workshop-page {

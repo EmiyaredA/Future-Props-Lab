@@ -383,7 +383,7 @@
 }
 
 @media (max-width: 1050px) {
-  .studio-shell {
+  .studio-shell:not(:has(> .responsive-sidebar-track)) {
     grid-template-columns: 220px minmax(0, 1fr);
   }
   .page {
@@ -392,10 +392,10 @@
 }
 
 @media (max-width: 760px) {
-  .studio-shell {
+  .studio-shell:not(:has(> .responsive-sidebar-track)) {
     display: block;
   }
-  .studio-sidebar {
+  .studio-shell:not(:has(> .responsive-sidebar-track)) .studio-sidebar {
     position: static;
     width: 100%;
     height: auto;

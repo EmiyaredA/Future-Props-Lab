@@ -28,8 +28,13 @@ export function ProviderForm({
   permissions,
   onClose,
   onRefresh,
+  onCreated,
   unavailable,
-}: Shared & { initial: CatalogProvider | null; copy?: CatalogProvider }) {
+}: Shared & {
+  initial: CatalogProvider | null;
+  copy?: CatalogProvider;
+  onCreated?: (id: string) => void;
+}) {
   const source = initial ?? copy;
   const [name, setName] = useState(
     copy ? `${copy.name} 副本` : (initial?.name ?? ""),
@@ -40,7 +45,7 @@ export function ProviderForm({
   const [baseUrl, setBaseUrl] = useState(source?.base_url ?? "");
   const [apiKey, setApiKey] = useState("");
   const editable = (field: string) => canEditField(permissions, initial, field);
-  const save = () => {
+  const save = async () => {
     const input: CatalogProviderInput = {
       name: name.trim(),
       kind,
@@ -49,9 +54,12 @@ export function ProviderForm({
       supplier_id: initial?.supplier_id ?? null,
       enabled: initial?.enabled ?? true,
     };
-    return initial
-      ? actions.updateProvider(initial.id, input)
-      : actions.createProvider(input);
+    if (initial) {
+      await actions.updateProvider(initial.id, input);
+      return;
+    }
+    const created = await actions.createProvider(input);
+    if (created?.id) onCreated?.(created.id);
   };
   return (
     <CatalogDialog
@@ -87,7 +95,10 @@ export function ProviderForm({
       <label>
         <span>服务地址</span>
         <input
-          type="url"
+          type="text"
+          inputMode="url"
+          autoComplete="off"
+          spellCheck={false}
           aria-label="服务地址"
           maxLength={512}
           value={baseUrl}

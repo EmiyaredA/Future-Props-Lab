@@ -8,9 +8,11 @@ export function StudioGlobalHeader() {
   const session = useOptionalStudioSession();
   return (
     <header className="studio-global-header">
-      <div className="studio-header-theme">
-        <span>外观</span>
-        <ThemeToggle />
+      <div className="studio-header-start">
+        <div className="studio-header-theme">
+          <span>外观</span>
+          <ThemeToggle />
+        </div>
       </div>
       <div className="studio-header-actions">
         <a

@@ -4,6 +4,7 @@ import {
   WorkshopSidebar,
   WorkshopNavigation,
 } from "@shared/ui/WorkshopSidebar";
+import { ThemeToggle } from "@shared/ui/ThemeToggle";
 import { CustomSelect } from "@shared/ui/CustomSelect";
 import type { KnowledgeBase } from "./api";
 import { documentViews } from "./knowledgeViews";
@@ -74,6 +75,7 @@ export function KnowledgeSidebar({
             <X size={18} />
           </button>
         }
+        footer={<ThemeToggle />}
       >
         {inside ? (
           <>

@@ -134,12 +134,8 @@ test("model test workspace keeps panels readable on desktop and narrow screens",
   await page.goto("/model-service");
   await expect(page.locator(".mc-model-table thead")).toBeVisible();
   await page.getByRole("button", { name: "Demo Chat 操作" }).click();
-  await expect(
-    page.getByRole("menuitem", { name: "编辑" }),
-  ).toBeVisible();
-  await expect(
-    page.getByRole("menuitem", { name: "删除" }),
-  ).toBeVisible();
+  await expect(page.getByRole("menuitem", { name: "编辑" })).toBeVisible();
+  await expect(page.getByRole("menuitem", { name: "删除" })).toBeVisible();
   await page.goto("/model-test");
 
   await page.setViewportSize({ width: 900, height: 760 });
@@ -156,7 +152,6 @@ test("model test workspace keeps panels readable on desktop and narrow screens",
   await page.getByRole("button", { name: "参数", exact: true }).click();
   await expect(page.locator(".settings-panel")).toHaveClass(/mobile-open/);
   await page.keyboard.press("Escape");
-  await page.getByRole("button", { name: "打开主导航", exact: true }).click();
   await page.getByRole("button", { name: "深色" }).click();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
 });

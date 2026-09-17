@@ -42,15 +42,20 @@
   line-height: 1.5;
 }
 .workspace-mark {
-  display: grid;
-  place-items: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  box-sizing: border-box;
   width: 28px;
   height: 28px;
   border-radius: 8px;
   background: var(--accent-soft);
   color: var(--accent);
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 750;
+  line-height: 1;
+  text-align: center;
 }
 .sidebar-footer:has(.workspace-trigger) {
   padding-top: 8px;

@@ -129,13 +129,14 @@
   border-bottom: 1px solid var(--border);
 }
 
-table {
+/* Keep legacy table mins local so model-catalog tables are not forced to 900px. */
+.table-wrap table {
   width: 100%;
   min-width: 900px;
   border-collapse: collapse;
 }
 
-th {
+.table-wrap th {
   height: 38px;
   padding: 0 10px;
   background: var(--surface-soft);
@@ -144,7 +145,7 @@ th {
   text-align: left;
 }
 
-td {
+.table-wrap td {
   height: 44px;
   padding: 6px 10px;
   border-top: 1px solid var(--border);
@@ -152,16 +153,16 @@ td {
   font-size: 12px;
 }
 
-td strong {
+.table-wrap td strong {
   color: var(--text);
 }
 
-td time {
+.table-wrap td time {
   white-space: nowrap;
 }
 
-td input,
-th input {
+.table-wrap td input,
+.table-wrap th input {
   min-height: 0;
 }
 

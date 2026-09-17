@@ -345,6 +345,10 @@ export function ModelCatalogEditor(props: ModelCatalogEditorProps) {
             modal.initial
           }
           copy={modal.copy}
+          onCreated={(id) => {
+            setSelectedId(id);
+            setView("connections");
+          }}
           unavailable={
             !!modal.initial &&
             !value.providers.some((p) => p.id === modal.initial?.id)

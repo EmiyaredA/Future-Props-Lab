@@ -1,6 +1,7 @@
 import { useState, type FormEvent, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
+import { apiErrorMessage } from "@platform/api/errors";
 import { useDrawerFocus } from "@shared/ui/useDrawerFocus";
 
 export function CatalogDialog({
@@ -37,7 +38,7 @@ export function CatalogDialog({
       await onSave();
       onClose();
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : String(cause));
+      setError(apiErrorMessage(cause, "保存失败，请稍后重试"));
     } finally {
       setBusy(false);
     }

@@ -12,7 +12,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { StudioSidebar } from "@app/layout/StudioSidebar";
+import { StudioShell } from "@app/layout/StudioSidebar";
 import { WorkshopShell } from "@app/layout/WorkshopShell";
 import { PublicWorkspaceShowcase } from "@app/PublicWorkspaceShowcase";
 import { useStudioSession } from "@app/StudioSession";
@@ -286,40 +286,37 @@ export default function App() {
     (!workspaceAllows(me.workspace, "logs.read") && page === "model-call-logs")
   ) {
     return (
-      <div className="studio-shell">
-        <StudioSidebar
-          page={isWorkshopPage(page) ? "apps" : (page as StudioPage)}
-          navigate={navigate}
-        />
-        <main className="studio-main">
-          <StudioGlobalHeader />
-          <PageBoundary>
-            {page === "model-call-logs" ? (
-              <section className="readonly-page">
-                <h1>需要管理员权限</h1>
-                <p>完整模型调用日志与诊断包仅向工作区管理员开放。</p>
-              </section>
-            ) : page === "model-service" ? (
-              <ModelServicePage
-                key={me.workspace.id}
-                canWrite={false}
-                canTest={
-                  workspaceAllows(me.workspace, "content.write") &&
-                  workspaceAllows(me.workspace, "models.use")
-                }
-                onTestModel={(model) => {
-                  setCatalogTestModel(model.id);
-                  navigate("model-test");
-                }}
-              />
-            ) : page === "model-test-tools" ? (
-              <ReadOnlyConfiguration tools />
-            ) : (
-              <ReadOnlyRoutes route={route} navigate={navigate} />
-            )}
-          </PageBoundary>
-        </main>
-      </div>
+      <StudioShell
+        page={isWorkshopPage(page) ? "apps" : (page as StudioPage)}
+        navigate={navigate}
+      >
+        <StudioGlobalHeader />
+        <PageBoundary>
+          {page === "model-call-logs" ? (
+            <section className="readonly-page">
+              <h1>需要管理员权限</h1>
+              <p>完整模型调用日志与诊断包仅向工作区管理员开放。</p>
+            </section>
+          ) : page === "model-service" ? (
+            <ModelServicePage
+              key={me.workspace.id}
+              canWrite={false}
+              canTest={
+                workspaceAllows(me.workspace, "content.write") &&
+                workspaceAllows(me.workspace, "models.use")
+              }
+              onTestModel={(model) => {
+                setCatalogTestModel(model.id);
+                navigate("model-test");
+              }}
+            />
+          ) : page === "model-test-tools" ? (
+            <ReadOnlyConfiguration tools />
+          ) : (
+            <ReadOnlyRoutes route={route} navigate={navigate} />
+          )}
+        </PageBoundary>
+      </StudioShell>
     );
   }
 
@@ -504,99 +501,93 @@ export default function App() {
   }
 
   return (
-    <div className="studio-shell">
-      <StudioSidebar
-        page={page}
-        navigate={(next: StudioPage) => navigate(next)}
-      />
-      <main className="studio-main">
-        <StudioGlobalHeader />
-        <PageBoundary>
-          {page === "home" ? (
-            <HomePage onNavigate={navigatePath} />
-          ) : page === "apps" ? (
-            <ApplicationCenterPage
-              applications={APPLICATION_DEFINITIONS}
-              onOpen={navigatePath}
-            />
-          ) : page === "files" ? (
-            <FileManagementPage />
-          ) : page === "tools" ? (
-            <ToolNavigationPage onOpenInternal={navigatePath} />
-          ) : page.startsWith("integrations-") ? (
-            <IntegrationCenterPage
-              registerNavigationGuard={registerNavigationGuard}
-              canManage={workspaceAllows(me.workspace, "configuration.manage")}
-              kind={
-                page === "integrations-mcp"
-                  ? "mcp"
-                  : page === "integrations-skills"
-                    ? "skills"
-                    : "tool-apis"
-              }
-              onKindChange={(kind) =>
-                navigate(
-                  kind === "mcp"
-                    ? "integrations-mcp"
-                    : kind === "skills"
-                      ? "integrations-skills"
-                      : "integrations-tool-apis",
-                )
-              }
-            />
-          ) : page === "video-frame-exporter" ? (
-            <VideoFrameExporterPage onBack={() => navigate("tools")} />
-          ) : page === "audio-annotation-projects" ? (
-            <AudioAnnotationProjectsPage
-              onBack={() => navigate("tools")}
-              onOpen={(projectId) =>
-                navigate("audio-annotation-editor", projectId)
-              }
-            />
-          ) : page === "audio-annotation-editor" && route.projectId ? (
-            <AudioAnnotationEditorPage
-              projectId={route.projectId}
-              workspaceId={me.workspace.id}
-              onBack={() => navigate("audio-annotation-projects")}
-              registerNavigationGuard={registerNavigationGuard}
-              speakerImportSource={galgameSpeakerImportSource}
-            />
-          ) : page === "model-test" ? (
-            <ModelTestPage
-              initialModelId={catalogTestModel}
-              onInitialModelHandled={() => setCatalogTestModel(null)}
-              onOpenAudioAnnotation={(projectId) =>
-                navigate("audio-annotation-editor", projectId)
-              }
-            />
-          ) : page === "model-test-tools" ? (
-            <ModelTestToolsPage
-              toolId={route.projectId}
-              onOpenTool={(toolId) => navigate("model-test-tools", toolId)}
-              onBack={() => navigate("model-test-tools")}
-            />
-          ) : page === "model-service" ? (
-            <ModelServicePage
-              key={me.workspace.id}
-              canWrite={workspaceAllows(me.workspace, "configuration.manage")}
-              canTest={
-                workspaceAllows(me.workspace, "content.write") &&
-                workspaceAllows(me.workspace, "models.use")
-              }
-              onTestModel={(model) => {
-                setCatalogTestModel(model.id);
-                navigate("model-test");
-              }}
-            />
-          ) : (
-            <ModelCallLogsPage
-              key={me.workspace.id}
-              currentWorkspace={me.workspace}
-            />
-          )}
-        </PageBoundary>
-      </main>
-    </div>
+    <StudioShell page={page} navigate={(next: StudioPage) => navigate(next)}>
+      <StudioGlobalHeader />
+      <PageBoundary>
+        {page === "home" ? (
+          <HomePage onNavigate={navigatePath} />
+        ) : page === "apps" ? (
+          <ApplicationCenterPage
+            applications={APPLICATION_DEFINITIONS}
+            onOpen={navigatePath}
+          />
+        ) : page === "files" ? (
+          <FileManagementPage />
+        ) : page === "tools" ? (
+          <ToolNavigationPage onOpenInternal={navigatePath} />
+        ) : page.startsWith("integrations-") ? (
+          <IntegrationCenterPage
+            registerNavigationGuard={registerNavigationGuard}
+            canManage={workspaceAllows(me.workspace, "configuration.manage")}
+            kind={
+              page === "integrations-mcp"
+                ? "mcp"
+                : page === "integrations-skills"
+                  ? "skills"
+                  : "tool-apis"
+            }
+            onKindChange={(kind) =>
+              navigate(
+                kind === "mcp"
+                  ? "integrations-mcp"
+                  : kind === "skills"
+                    ? "integrations-skills"
+                    : "integrations-tool-apis",
+              )
+            }
+          />
+        ) : page === "video-frame-exporter" ? (
+          <VideoFrameExporterPage onBack={() => navigate("tools")} />
+        ) : page === "audio-annotation-projects" ? (
+          <AudioAnnotationProjectsPage
+            onBack={() => navigate("tools")}
+            onOpen={(projectId) =>
+              navigate("audio-annotation-editor", projectId)
+            }
+          />
+        ) : page === "audio-annotation-editor" && route.projectId ? (
+          <AudioAnnotationEditorPage
+            projectId={route.projectId}
+            workspaceId={me.workspace.id}
+            onBack={() => navigate("audio-annotation-projects")}
+            registerNavigationGuard={registerNavigationGuard}
+            speakerImportSource={galgameSpeakerImportSource}
+          />
+        ) : page === "model-test" ? (
+          <ModelTestPage
+            initialModelId={catalogTestModel}
+            onInitialModelHandled={() => setCatalogTestModel(null)}
+            onOpenAudioAnnotation={(projectId) =>
+              navigate("audio-annotation-editor", projectId)
+            }
+          />
+        ) : page === "model-test-tools" ? (
+          <ModelTestToolsPage
+            toolId={route.projectId}
+            onOpenTool={(toolId) => navigate("model-test-tools", toolId)}
+            onBack={() => navigate("model-test-tools")}
+          />
+        ) : page === "model-service" ? (
+          <ModelServicePage
+            key={me.workspace.id}
+            canWrite={workspaceAllows(me.workspace, "configuration.manage")}
+            canTest={
+              workspaceAllows(me.workspace, "content.write") &&
+              workspaceAllows(me.workspace, "models.use")
+            }
+            onTestModel={(model) => {
+              setCatalogTestModel(model.id);
+              navigate("model-test");
+            }}
+          />
+        ) : (
+          <ModelCallLogsPage
+            key={me.workspace.id}
+            currentWorkspace={me.workspace}
+          />
+        )}
+      </PageBoundary>
+    </StudioShell>
   );
 }
 

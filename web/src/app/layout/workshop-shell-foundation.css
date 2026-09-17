@@ -392,6 +392,8 @@
 
 .workshop-shell {
   min-height: 100vh;
+  width: 100%;
+  max-width: 100%;
   display: grid;
   grid-template-columns: 260px minmax(0, 1fr);
   background: var(--bg);

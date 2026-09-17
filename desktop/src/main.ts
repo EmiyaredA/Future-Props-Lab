@@ -39,8 +39,10 @@ let shutdownComplete = false;
 let state = { phase: "starting", message: "正在启动本地研究所…" };
 let gateway: DevelopmentGateway | undefined;
 const development = isDevelopment
-  ? new DevelopmentSession(liveDevelopment, () => BrowserWindow.getAllWindows(), () =>
-      syncDevelopmentChrome(),
+  ? new DevelopmentSession(
+      liveDevelopment,
+      () => BrowserWindow.getAllWindows(),
+      () => syncDevelopmentChrome(),
     )
   : undefined;
 const pageOrigin = () => gateway?.origin || backend?.origin || "";
@@ -71,7 +73,9 @@ function installApplicationMenu() {
           label: "开发",
           submenu: [
             {
-              label: development.state.live ? "当前：正式数据" : "当前：开发数据",
+              label: development.state.live
+                ? "当前：正式数据"
+                : "当前：开发数据",
               enabled: false,
             },
             {

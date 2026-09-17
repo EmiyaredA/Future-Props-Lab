@@ -1,11 +1,20 @@
+import {
+  ResponsiveSidebarPanel,
+  ResponsiveSidebarProvider,
+  SidebarCollapseToggle,
+} from "@shared/ui/ResponsiveSidebar";
+import {
+  StudioCollapsedRail,
+  type StudioRailEntry,
+} from "@shared/ui/StudioCollapsedRail";
 import { useWorkspacePermission } from "@platform/auth/WorkspacePermissions";
-import { ResponsiveSidebar } from "@shared/ui/ResponsiveSidebar";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { BrandMark } from "@shared/ui/BrandMark";
 import { IntegrationIcon } from "@shared/ui/IntegrationIcon";
 import type { StudioPage } from "@app/routes";
 import { useOptionalStudioSession } from "@app/StudioSession";
 import { WorkspaceTrigger } from "@features/accounts/WorkspaceTrigger";
+import { useSidebarLayout } from "@shared/ui/sidebarLayoutContext";
 
 function HomeIcon() {
   return (
@@ -102,7 +111,7 @@ function LogsIcon() {
   );
 }
 
-export function StudioSidebar({
+function StudioSidebarPanel({
   page,
   navigate,
 }: {
@@ -112,131 +121,259 @@ export function StudioSidebar({
   const canReadLogs = useWorkspacePermission("logs.read");
   const [expanded, setExpanded] = useState(true);
   const session = useOptionalStudioSession();
+  const layout = useSidebarLayout();
   const toolsActive =
     page === "tools" ||
     page === "video-frame-exporter" ||
     page === "audio-annotation-projects" ||
     page === "audio-annotation-editor";
   const integrationsActive = page.startsWith("integrations-");
+  const infrastructurePages: StudioPage[] = [
+    "model-test",
+    "model-test-tools",
+    "model-service",
+    "model-call-logs",
+  ];
+  const infrastructureActive = infrastructurePages.includes(page);
+  const compact = Boolean(layout?.railCompact);
+  const showInfrastructureSub = expanded && !compact;
+  const modelItems = [
+    {
+      id: "model-test",
+      label: "模型测试",
+      icon: <TestIcon />,
+      active: page === "model-test",
+      onSelect: () => navigate("model-test"),
+    },
+    {
+      id: "model-test-tools",
+      label: "测试工具",
+      icon: <TestToolIcon />,
+      active: page === "model-test-tools",
+      onSelect: () => navigate("model-test-tools"),
+    },
+    {
+      id: "model-service",
+      label: "模型服务",
+      icon: <ServiceIcon />,
+      active: page === "model-service",
+      onSelect: () => navigate("model-service"),
+    },
+    ...(canReadLogs
+      ? [
+          {
+            id: "model-call-logs",
+            label: "模型调用日志",
+            icon: <LogsIcon />,
+            active: page === "model-call-logs",
+            onSelect: () => navigate("model-call-logs"),
+          },
+        ]
+      : []),
+  ];
+  const railEntries: StudioRailEntry[] = [
+    {
+      kind: "leaf",
+      id: "home",
+      label: "首页",
+      icon: <HomeIcon />,
+      active: page === "home",
+      onSelect: () => navigate("home"),
+    },
+    {
+      kind: "leaf",
+      id: "apps",
+      label: "AI应用",
+      icon: <AppsIcon />,
+      active: page === "apps",
+      onSelect: () => navigate("apps"),
+    },
+    {
+      kind: "leaf",
+      id: "files",
+      label: "文件管理",
+      icon: <FilesIcon />,
+      active: page === "files",
+      onSelect: () => navigate("files"),
+    },
+    {
+      kind: "leaf",
+      id: "tools",
+      label: "工具导航",
+      icon: <CompassIcon />,
+      active: toolsActive,
+      onSelect: () => navigate("tools"),
+    },
+    {
+      kind: "leaf",
+      id: "integrations",
+      label: "集成中心",
+      icon: <IntegrationIcon />,
+      active: integrationsActive,
+      onSelect: () => navigate("integrations-tool-apis"),
+    },
+    {
+      kind: "group",
+      id: "base-models",
+      label: "基模型",
+      icon: <CubeIcon />,
+      active: infrastructureActive,
+      items: modelItems,
+    },
+  ];
+
+  if (compact) {
+    return (
+      <aside className="studio-sidebar is-rail">
+        <StudioCollapsedRail
+          brand={<BrandMark size={32} />}
+          entries={railEntries}
+          routeKey={page}
+          onExpand={() => layout?.expand()}
+          expandDisabled={Boolean(layout?.narrow)}
+          footer={session ? <WorkspaceTrigger session={session} /> : null}
+        />
+      </aside>
+    );
+  }
+
   return (
-    <ResponsiveSidebar
+    <aside className="studio-sidebar">
+      <div className="sidebar-brand">
+        <BrandMark size={36} />
+        <div>
+          <strong>未来道具研究所</strong>
+          <span>Future Props Lab</span>
+        </div>
+        <SidebarCollapseToggle />
+      </div>
+      <div className="sidebar-rule" />
+      <nav aria-label="主导航">
+        <div className="nav-section-label">工作台</div>
+        <button
+          className={`nav-primary${page === "home" ? " active" : ""}`}
+          aria-current={page === "home" ? "page" : undefined}
+          aria-label="首页"
+          onClick={() => navigate("home")}
+        >
+          <HomeIcon />
+          <span>首页</span>
+        </button>
+        <button
+          className={`nav-primary${page === "apps" ? " active" : ""}`}
+          aria-current={page === "apps" ? "page" : undefined}
+          aria-label="AI应用"
+          onClick={() => navigate("apps")}
+        >
+          <AppsIcon />
+          <span>AI应用</span>
+        </button>
+        <button
+          className={`nav-primary${page === "files" ? " active" : ""}`}
+          aria-current={page === "files" ? "page" : undefined}
+          aria-label="文件管理"
+          onClick={() => navigate("files")}
+        >
+          <FilesIcon />
+          <span>文件管理</span>
+        </button>
+        <button
+          className={`nav-primary${toolsActive ? " active" : ""}`}
+          aria-current={toolsActive ? "page" : undefined}
+          aria-label="工具导航"
+          onClick={() => navigate("tools")}
+        >
+          <CompassIcon />
+          <span>工具导航</span>
+        </button>
+        <button
+          className={`nav-primary${integrationsActive ? " active" : ""}`}
+          aria-current={integrationsActive ? "page" : undefined}
+          aria-label="集成中心"
+          onClick={() => navigate("integrations-tool-apis")}
+        >
+          <IntegrationIcon />
+          <span>集成中心</span>
+        </button>
+        <div className="nav-section-label nav-section-label--spaced">
+          基础设施
+        </div>
+        <button
+          className={`nav-group${infrastructureActive ? " active" : ""}`}
+          aria-label="基模型"
+          aria-expanded={showInfrastructureSub}
+          onClick={() => setExpanded((value) => !value)}
+        >
+          <CubeIcon />
+          <span>基模型</span>
+          <Chevron open={showInfrastructureSub} />
+        </button>
+        {showInfrastructureSub ? (
+          <div className="nav-sub" role="group" aria-label="基模型子菜单">
+            {modelItems.map((item) => (
+              <button
+                key={item.id}
+                className={item.active ? "active" : ""}
+                aria-current={item.active ? "page" : undefined}
+                onClick={item.onSelect}
+              >
+                {item.icon}
+                <span>{item.label}</span>
+              </button>
+            ))}
+          </div>
+        ) : null}
+      </nav>
+      <footer className="sidebar-footer">
+        {session ? <WorkspaceTrigger session={session} /> : null}
+      </footer>
+    </aside>
+  );
+}
+
+export function StudioShell({
+  page,
+  navigate,
+  children,
+}: {
+  page: StudioPage;
+  navigate: (page: StudioPage) => void;
+  children: ReactNode;
+}) {
+  return (
+    <ResponsiveSidebarProvider
       label="主导航"
       routeKey={page}
       collapsible
       storageKey="future-props-sidebar-studio-collapsed"
     >
-      <aside className="studio-sidebar">
-        <div className="sidebar-brand">
-          <BrandMark size={36} />
-          <div>
-            <strong>未来道具研究所</strong>
-            <span>Future Props Lab</span>
-          </div>
-        </div>
-        <div className="sidebar-rule" />
-        <nav aria-label="主导航">
-          <div className="nav-section-label">工作台</div>
-          <button
-            className={`nav-primary${page === "home" ? " active" : ""}`}
-            aria-current={page === "home" ? "page" : undefined}
-            aria-label="首页"
-            onClick={() => navigate("home")}
-          >
-            <HomeIcon />
-            <span>首页</span>
-          </button>
-          <button
-            className={`nav-primary${page === "apps" ? " active" : ""}`}
-            aria-current={page === "apps" ? "page" : undefined}
-            aria-label="AI应用"
-            onClick={() => navigate("apps")}
-          >
-            <AppsIcon />
-            <span>AI应用</span>
-          </button>
-          <button
-            className={`nav-primary${page === "files" ? " active" : ""}`}
-            aria-current={page === "files" ? "page" : undefined}
-            aria-label="文件管理"
-            onClick={() => navigate("files")}
-          >
-            <FilesIcon />
-            <span>文件管理</span>
-          </button>
-          <button
-            className={`nav-primary${toolsActive ? " active" : ""}`}
-            aria-current={toolsActive ? "page" : undefined}
-            aria-label="工具导航"
-            onClick={() => navigate("tools")}
-          >
-            <CompassIcon />
-            <span>工具导航</span>
-          </button>
-          <button
-            className={`nav-primary${integrationsActive ? " active" : ""}`}
-            aria-current={integrationsActive ? "page" : undefined}
-            aria-label="集成中心"
-            onClick={() => navigate("integrations-tool-apis")}
-          >
-            <IntegrationIcon />
-            <span>集成中心</span>
-          </button>
-          <div className="nav-section-label nav-section-label--spaced">
-            基础设施
-          </div>
-          <button
-            className="nav-group"
-            aria-label="基模型"
-            aria-expanded={expanded}
-            onClick={() => setExpanded((value) => !value)}
-          >
-            <CubeIcon />
-            <span>基模型</span>
-            <Chevron open={expanded} />
-          </button>
-          {expanded ? (
-            <div className="nav-sub" role="group" aria-label="基模型子菜单">
-              <button
-                className={page === "model-test" ? "active" : ""}
-                aria-current={page === "model-test" ? "page" : undefined}
-                onClick={() => navigate("model-test")}
-              >
-                <TestIcon />
-                <span>模型测试</span>
-              </button>
-              <button
-                className={page === "model-test-tools" ? "active" : ""}
-                aria-current={page === "model-test-tools" ? "page" : undefined}
-                onClick={() => navigate("model-test-tools")}
-              >
-                <TestToolIcon />
-                <span>测试工具</span>
-              </button>
-              <button
-                className={page === "model-service" ? "active" : ""}
-                aria-current={page === "model-service" ? "page" : undefined}
-                onClick={() => navigate("model-service")}
-              >
-                <ServiceIcon />
-                <span>模型服务</span>
-              </button>
-              {canReadLogs ? (
-                <button
-                  className={page === "model-call-logs" ? "active" : ""}
-                  aria-current={page === "model-call-logs" ? "page" : undefined}
-                  onClick={() => navigate("model-call-logs")}
-                >
-                  <LogsIcon />
-                  <span>模型调用日志</span>
-                </button>
-              ) : null}
-            </div>
-          ) : null}
-        </nav>
-        <footer className="sidebar-footer">
-          {session ? <WorkspaceTrigger session={session} /> : null}
-        </footer>
-      </aside>
-    </ResponsiveSidebar>
+      <div className="studio-shell">
+        <ResponsiveSidebarPanel>
+          <StudioSidebarPanel page={page} navigate={navigate} />
+        </ResponsiveSidebarPanel>
+        <main className="studio-main">{children}</main>
+      </div>
+    </ResponsiveSidebarProvider>
+  );
+}
+
+export function StudioSidebar({
+  page,
+  navigate,
+}: {
+  page: StudioPage;
+  navigate: (page: StudioPage) => void;
+}) {
+  return (
+    <ResponsiveSidebarProvider
+      label="主导航"
+      routeKey={page}
+      collapsible
+      storageKey="future-props-sidebar-studio-collapsed"
+    >
+      <ResponsiveSidebarPanel>
+        <StudioSidebarPanel page={page} navigate={navigate} />
+      </ResponsiveSidebarPanel>
+    </ResponsiveSidebarProvider>
   );
 }

@@ -61,9 +61,9 @@ test("preserves split legacy anchors and resets tool navigation after refresh", 
   await page.goto("/docs.html?page=annotation-json");
   const nav = page.getByRole("complementary", { name: "功能目录" });
   await expect(nav.getByRole("link", { name: "返回工具导航" })).toBeVisible();
-  await expect(nav.getByRole("link", { name: "协议类型与认证配置" })).toHaveCount(
-    0,
-  );
+  await expect(
+    nav.getByRole("link", { name: "协议类型与认证配置" }),
+  ).toHaveCount(0);
   await nav.getByRole("link", { name: "返回工具导航" }).click();
   await expect(page).toHaveURL(/page=tools-overview$/);
   await page.goBack();

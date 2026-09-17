@@ -31,8 +31,7 @@ def gradient(size: int) -> Image.Image:
         position = y / (size - 1)
         eased = position * position * (3 - 2 * position)
         row = tuple(
-            round(start + (end - start) * eased)
-            for start, end in zip(top, bottom, strict=True)
+            round(start + (end - start) * eased) for start, end in zip(top, bottom, strict=True)
         )
         for x in range(size):
             distance = ((x - size * 0.46) ** 2 + (y - size * 0.31) ** 2) ** 0.5 / size

@@ -44,7 +44,9 @@ export function DesktopDevelopmentHost() {
       const current = stateRef.current;
       if (!current) return;
       const commit = () => void bridge?.applyDevelopmentUpdate?.();
-      if (current.pending.some((kind) => kind === "desktop" || kind === "page")) {
+      if (
+        current.pending.some((kind) => kind === "desktop" || kind === "page")
+      ) {
         const event = new CustomEvent("future-props:before-workspace-switch", {
           cancelable: true,
           detail: commit,

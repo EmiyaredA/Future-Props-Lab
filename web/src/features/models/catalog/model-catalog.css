@@ -56,11 +56,17 @@
 .mc-filters {
   display: grid;
   grid-template-columns:
-    minmax(200px, 1.6fr) minmax(140px, 1fr) minmax(140px, 1fr)
+    minmax(0, 1.6fr) minmax(0, 1fr) minmax(0, 1fr)
     auto;
   align-items: center;
   gap: 12px;
   margin-bottom: 20px;
+  min-width: 0;
+  max-width: 100%;
+}
+.mc-filters > .custom-select {
+  min-width: 0;
+  max-width: 100%;
 }
 .mc-search {
   display: flex;
@@ -92,10 +98,17 @@
   white-space: nowrap;
   padding-left: 8px;
 }
+.mc-model-table-wrap {
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: auto;
+}
+
 .mc-model-table {
   border-collapse: separate;
   border-spacing: 0;
   width: 100%;
+  min-width: 0;
   border: 1px solid var(--border);
   border-radius: 12px;
   background: var(--surface);
@@ -132,6 +145,59 @@
   vertical-align: middle;
   font-size: 13px;
   overflow-wrap: anywhere;
+}
+.mc-connection-detail .mc-model-table.mc-model-table--embedded {
+  width: auto;
+  max-width: 100%;
+  table-layout: auto;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+.mc-connection-detail .mc-model-table.mc-model-table--embedded th,
+.mc-connection-detail .mc-model-table.mc-model-table--embedded td {
+  width: 1%;
+  white-space: nowrap;
+  padding: 8px 10px;
+}
+.mc-connection-detail .mc-model-table.mc-model-table--embedded th:first-child,
+.mc-connection-detail .mc-model-table.mc-model-table--embedded td:first-child {
+  padding-left: 12px;
+  padding-right: 16px;
+}
+.mc-connection-detail .mc-model-table.mc-model-table--embedded th:last-child,
+.mc-connection-detail .mc-model-table.mc-model-table--embedded td:last-child {
+  padding-right: 12px;
+  border-radius: 0;
+}
+.mc-connection-detail .mc-model-table.mc-model-table--embedded th:first-child {
+  border-radius: 0;
+}
+.mc-connection-detail .mc-model-table.mc-model-table--embedded .mc-model-name {
+  max-width: 13rem;
+  white-space: normal;
+}
+.mc-connection-detail
+  .mc-model-table.mc-model-table--embedded
+  .mc-model-name
+  strong,
+.mc-connection-detail
+  .mc-model-table.mc-model-table--embedded
+  .mc-model-name
+  code {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.mc-connection-detail .mc-model-table.mc-model-table--embedded .mc-badges {
+  white-space: normal;
+  max-width: 15rem;
+}
+.mc-connection-detail .mc-model-table.mc-model-table--embedded .mc-row-actions {
+  justify-content: flex-start;
+  flex-wrap: nowrap;
+  gap: 6px;
 }
 .mc-model-table tbody tr:hover {
   background: var(--surface-soft);
@@ -322,10 +388,7 @@
 }
 @media (max-width: 1150px) {
   .mc-filters {
-    grid-template-columns: minmax(160px, 1fr) minmax(120px, 1fr) minmax(
-        120px,
-        1fr
-      );
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr);
   }
   .mc-count {
     grid-column: 1 / -1;
@@ -358,7 +421,7 @@
   }
   .mc-mobile-back {
     display: inline-flex;
-    margin-bottom: 20px;
+    margin-bottom: 12px;
   }
 }
 @media (max-width: 700px) {
@@ -429,7 +492,11 @@
     display: grid;
   }
   .mc-connection-detail {
-    padding: 16px;
+    padding: 14px 14px 0;
+  }
+  .mc-detail-toolbar {
+    margin: 0 -14px;
+    padding: 0 14px;
   }
   .mc-connection-detail .mc-model-table td {
     padding: 8px 0;

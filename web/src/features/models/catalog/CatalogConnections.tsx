@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { ProviderIcon } from "@shared/ui/ProviderIcon";
 import { providerKindLabel, providerKindOptions } from "./catalogOptions";
+import { CatalogMenu, type CatalogMenuItem } from "./CatalogMenu";
 import { navigateCatalogTabs } from "./catalogKeyboard";
 import {
   canDeleteEntity,
@@ -111,46 +112,74 @@ export function CatalogConnections({
                 </div>
                 {expanded && (
                   <div className="mc-connection-list">
-                    {connections.map((provider) => (
-                      <button
-                        type="button"
-                        className="mc-connection-item"
-                        key={provider.id}
-                        aria-current={
-                          provider.id === selected?.id ? "true" : undefined
+                    {connections.map((provider) => {
+                      const menu: CatalogMenuItem[] = [];
+                      if (permissions.canWrite) {
+                        menu.push({
+                          label: "编辑连接",
+                          onClick: () => onEditProvider(provider),
+                        });
+                        if (canEditField(permissions, provider, "enabled")) {
+                          menu.push({
+                            label: provider.enabled ? "停用连接" : "启用连接",
+                            onClick: () => onToggleProvider(provider),
+                          });
                         }
-                        onClick={() => {
-                          onSelect(provider.id);
-                          setDetail(true);
-                          setTab("models");
-                        }}
-                      >
-                        <span className="mc-provider-card-icon">
-                          <ProviderIcon kind={provider.kind} size={18} />
-                        </span>
-                        <span className="mc-connection-item-copy">
-                          <strong>{provider.name}</strong>
-                          <small>
-                            模型数 {provider.models.length}
-                            {provider.origin === "role_template"
-                              ? " · 平台模板"
-                              : ""}
-                          </small>
-                        </span>
-                        <span
-                          className={`mc-provider-health${
-                            provider.enabled ? " is-healthy" : ""
-                          }`}
-                        >
-                          {provider.enabled ? (
-                            <CheckCircle2 size={13} />
-                          ) : (
-                            <Server size={13} />
-                          )}
-                          {provider.enabled ? "正常" : "停用"}
-                        </span>
-                      </button>
-                    ))}
+                        menu.push({
+                          label: "复制为自建连接",
+                          onClick: () => onCopyProvider(provider),
+                        });
+                        if (canDeleteEntity(permissions, provider)) {
+                          menu.push({
+                            label: "删除连接",
+                            danger: true,
+                            onClick: () => onDeleteProvider(provider),
+                          });
+                        }
+                      }
+                      return (
+                        <div className="mc-connection-item" key={provider.id}>
+                          <button
+                            type="button"
+                            className="mc-connection-item-main"
+                            aria-current={
+                              provider.id === selected?.id ? "true" : undefined
+                            }
+                            onClick={() => {
+                              onSelect(provider.id);
+                              setDetail(true);
+                              setTab("models");
+                            }}
+                          >
+                            <span className="mc-connection-item-copy">
+                              <strong>{provider.name}</strong>
+                              <small>
+                                模型数 {provider.models.length}
+                                {provider.origin === "role_template"
+                                  ? " · 平台模板"
+                                  : ""}
+                              </small>
+                            </span>
+                            <span
+                              className={`mc-provider-health${
+                                provider.enabled ? " is-healthy" : ""
+                              }`}
+                            >
+                              {provider.enabled ? (
+                                <CheckCircle2 size={13} />
+                              ) : (
+                                <Server size={13} />
+                              )}
+                              {provider.enabled ? "正常" : "停用"}
+                            </span>
+                          </button>
+                          <CatalogMenu
+                            label={`${provider.name} 操作`}
+                            items={menu}
+                          />
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </section>
@@ -184,9 +213,6 @@ export function CatalogConnections({
         </button>
         {selected ? (
           <>
-            <p className="mc-breadcrumb">
-              {providerKindLabel[selected.kind]} / {selected.name}
-            </p>
             <div className="mc-detail-heading">
               <span className="mc-provider-icon">
                 <ProviderIcon kind={selected.kind} size={30} />
@@ -194,7 +220,6 @@ export function CatalogConnections({
               <div>
                 <h2>{selected.name}</h2>
                 <div className="mc-detail-meta">
-                  <span>{providerKindLabel[selected.kind]}</span>
                   <span
                     className={`mc-provider-health${
                       selected.enabled ? " is-healthy" : ""
@@ -213,48 +238,43 @@ export function CatalogConnections({
                 </div>
               </div>
             </div>
-            <div
-              className="mc-tabs"
-              role="tablist"
-              aria-label="连接详情"
-              onKeyDown={navigateCatalogTabs}
-            >
-              {(
-                [
-                  ["models", "已接入模型"],
-                  ["config", "连接配置"],
-                ] as const
-              ).map(([id, label]) => (
+            <div className="mc-detail-toolbar">
+              <div
+                className="mc-tabs"
+                role="tablist"
+                aria-label="连接详情"
+                onKeyDown={navigateCatalogTabs}
+              >
+                {(
+                  [
+                    ["models", `已接入模型 · ${selected.models.length}`],
+                    ["config", "连接配置"],
+                  ] as const
+                ).map(([id, label]) => (
+                  <button
+                    key={id}
+                    type="button"
+                    role="tab"
+                    aria-selected={tab === id}
+                    onClick={() => setTab(id)}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+              {canAdd && tab === "models" && (
                 <button
-                  key={id}
                   type="button"
-                  role="tab"
-                  aria-selected={tab === id}
-                  onClick={() => setTab(id)}
+                  className="btn"
+                  onClick={() => onAddModel(selected.id)}
                 >
-                  {label}
+                  <Plus size={16} />
+                  添加模型
                 </button>
-              ))}
+              )}
             </div>
             {tab === "models" ? (
-              <>
-                <div className="mc-list-heading">
-                  <h3>
-                    已接入模型 <small>{selected.models.length}</small>
-                  </h3>
-                  {canAdd && (
-                    <button
-                      type="button"
-                      className="btn"
-                      onClick={() => onAddModel(selected.id)}
-                    >
-                      <Plus size={16} />
-                      添加模型
-                    </button>
-                  )}
-                </div>
-                {children}
-              </>
+              children
             ) : (
               <div className="mc-config">
                 <dl>

@@ -108,7 +108,7 @@ test("model directory and supplier connections work in both themes and small scr
   const output = resolve("../.local/output/model-service");
   await mkdir(output, { recursive: true });
   for (const theme of ["dark", "light"]) {
-    for (const width of [1600, 390]) {
+    for (const width of [1600, 1100, 390]) {
       await page.setViewportSize({ width, height: width === 390 ? 844 : 1000 });
       await page
         .getByRole("button", {
@@ -129,9 +129,9 @@ test("model directory and supplier connections work in both themes and small scr
       });
       await page.getByRole("tab", { name: "接入管理", exact: true }).click();
       await page
-        .getByRole("button", { name: /通用模型网关/ })
+        .locator(".mc-connection-item-main", { hasText: "通用模型网关" })
         .click();
-      await expect(page.getByRole("tab", { name: "已接入模型" })).toBeVisible();
+      await expect(page.getByRole("tab", { name: /已接入模型/ })).toBeVisible();
       await page.screenshot({
         path: resolve(output, `connections-${theme}-${width}.png`),
       });
@@ -234,7 +234,7 @@ test("connection and model changes persist through the workspace API", async ({
   await page.getByRole("button", { name: "保存", exact: true }).click();
   await expect(page.getByRole("dialog")).toHaveCount(0);
   await page
-    .getByRole("button", { name: new RegExp(`${name}-连接`) })
+    .locator(".mc-connection-item-main", { hasText: `${name}-连接` })
     .click();
   await page.getByRole("button", { name: "添加模型", exact: true }).click();
   await expect(page.getByRole("combobox", { name: "接入连接" })).toContainText(

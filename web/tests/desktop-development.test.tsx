@@ -68,7 +68,9 @@ test("backend update does not navigate or discard drafts", async () => {
   try {
     show();
     await waitFor(() =>
-      expect(window.futurePropsDesktop!.onDevelopmentMenuAction).toHaveBeenCalled(),
+      expect(
+        window.futurePropsDesktop!.onDevelopmentMenuAction,
+      ).toHaveBeenCalled(),
     );
     act(() => menuAction("apply"));
     expect(
@@ -85,7 +87,9 @@ test.each(["desktop", "page"])(
   async (kind) => {
     show();
     await waitFor(() =>
-      expect(window.futurePropsDesktop!.onDevelopmentMenuAction).toHaveBeenCalled(),
+      expect(
+        window.futurePropsDesktop!.onDevelopmentMenuAction,
+      ).toHaveBeenCalled(),
     );
     act(() => publish({ ...state, pending: [kind] }));
     const guard = (event: Event) => event.preventDefault();
@@ -105,7 +109,9 @@ test.each(["desktop", "page"])(
 test("compile failure offers recheck, not an unsafe apply", async () => {
   show();
   await waitFor(() =>
-    expect(window.futurePropsDesktop!.onDevelopmentMenuAction).toHaveBeenCalled(),
+    expect(
+      window.futurePropsDesktop!.onDevelopmentMenuAction,
+    ).toHaveBeenCalled(),
   );
   act(() => publish({ ...state, phase: "error" }));
   act(() => menuAction("check"));

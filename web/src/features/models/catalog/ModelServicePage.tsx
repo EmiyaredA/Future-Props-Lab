@@ -77,14 +77,19 @@ export function ModelServicePage({
     updateSupplier: (id, input) =>
       run((revision) => updateSupplier(id, input, revision)),
     deleteSupplier: (id) => run((revision) => deleteSupplier(id, revision)),
-    createProvider: (input) =>
-      run((revision) => createProvider(input, revision)),
+    createProvider: async (input) => {
+      const result = await mutate((revision) =>
+        createProvider(input, revision),
+      );
+      return { id: result.provider.id };
+    },
     updateProvider: (id, input) =>
       run((revision) => updateProvider(id, input, revision)),
     deleteProvider: (id) => run((revision) => deleteProvider(id, revision)),
     setProviderEnabled: (id, enabled) =>
       run((revision) => setProviderEnabled(id, enabled, revision)),
-    createModel: (id, input) => run((revision) => addModel(id, input, revision)),
+    createModel: (id, input) =>
+      run((revision) => addModel(id, input, revision)),
     updateModel: (id, input) =>
       run((revision) => updateModel(id, input, revision)),
     deleteModel: (id) => run((revision) => deleteModel(id, revision)),

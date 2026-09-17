@@ -1,36 +1,41 @@
 import { expect, test } from "@playwright/test";
 import { captureResponsive as capture } from "./responsive-capture";
 
-test("single navigation drawer, account tabs, and focus restoration", async ({
+test("icon rail keeps base-model flyout reachable on narrow screens", async ({
   page,
 }, info) => {
   test.setTimeout(180000);
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto("/home");
-  const trigger = page.getByRole("button", { name: "打开主导航", exact: true });
-  await trigger.click();
-  const nav = page.getByRole("dialog", { name: "主导航", exact: true });
-  await expect(nav).toBeVisible();
-  await page.keyboard.press("Escape");
-  await expect(trigger).toBeFocused();
-  await trigger.click();
-  await nav.locator(".sidebar-session-card.account").click();
-  const account = page.getByRole("dialog", { name: "账号中心" });
+  const rail = page.getByRole("navigation", { name: "栏目导航", exact: true });
+  await expect(rail).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "打开主导航", exact: true }),
+  ).toHaveCount(0);
+  await rail.getByRole("button", { name: "基模型，点击展开菜单" }).click();
+  const menu = page.getByRole("menu", { name: "基模型", exact: true });
+  await expect(menu).toBeVisible();
+  await capture(page, info, "base-model-flyout");
+  await menu.getByRole("menuitem", { name: "模型服务" }).click();
+  await expect(page).toHaveURL(/\/model-service$/);
+  await expect(menu).toBeHidden();
+  await page.getByRole("button", { name: "账号菜单", exact: true }).click();
+  await page.getByRole("menuitem", { name: "账号设置", exact: true }).click();
+  const account = page.getByRole("dialog", { name: "账号设置", exact: true });
   await expect(account).toBeVisible();
-  for (const label of ["资料", "安全与密钥", "账号治理"]) {
+  for (const label of ["个人资料", "密码与会话", "API 密钥"]) {
     await account.getByRole("tab", { name: label, exact: true }).click();
     await capture(page, info, `account-${label}`);
   }
-  await page.setViewportSize({ width: 390, height: 844 });
   await page.keyboard.press("Escape");
   await expect(account).toBeHidden();
-  await trigger.click();
-  await nav.locator(".sidebar-session-card").first().click();
-  const workspace = page.getByRole("dialog", { name: "Workspace 管理" });
-  for (const label of ["空间", "成员与邀请"]) {
-    await workspace.getByRole("tab", { name: label, exact: true }).click();
-    await capture(page, info, `workspace-${label}`);
-  }
+  await page
+    .getByRole("button", { name: /切换工作空间/ })
+    .first()
+    .click();
+  const workspace = page.getByRole("dialog", { name: "工作空间", exact: true });
+  await expect(workspace).toBeVisible();
+  await capture(page, info, "workspace-overview");
 });
 
 test("login and public showcase tolerate long content", async ({

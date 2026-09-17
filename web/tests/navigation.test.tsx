@@ -149,16 +149,78 @@ test("remembers the desktop sidebar collapse preference", () => {
   expect(localStorage.getItem("future-props-sidebar-studio-collapsed")).toBe(
     "true",
   );
-  expect(screen.getByRole("button", { name: "展开主导航" })).toHaveAttribute(
-    "aria-pressed",
-    "true",
-  );
+  expect(screen.getByRole("button", { name: "展开侧栏" })).toBeInTheDocument();
 
   unmount();
   render(<StudioSidebar page="home" navigate={vi.fn()} />);
+  expect(screen.getByRole("button", { name: "展开侧栏" })).toBeInTheDocument();
+  localStorage.removeItem("future-props-sidebar-studio-collapsed");
+});
+
+test("keeps brand mark above the expand control in the collapsed rail", () => {
+  localStorage.setItem("future-props-sidebar-studio-collapsed", "true");
+  const { container } = render(
+    <StudioSidebar page="home" navigate={vi.fn()} />,
+  );
+  const top = container.querySelector(".studio-collapsed-rail__top");
+  expect(top).not.toBeNull();
+  expect(top?.querySelector(".brand-mark")).toHaveAttribute(
+    "src",
+    "/brand/brand-mark.png",
+  );
   expect(
-    screen.getByRole("button", { name: "展开主导航" }),
-  ).toBeInTheDocument();
+    top?.querySelector(".studio-collapsed-rail__brand")?.nextElementSibling,
+  ).toHaveAttribute("data-tip", "展开侧栏");
+  expect(screen.getByRole("button", { name: "展开侧栏" })).toBeEnabled();
+  localStorage.removeItem("future-props-sidebar-studio-collapsed");
+});
+
+test("keeps brand and expand control when the viewport forces the icon rail", () => {
+  const originalMatchMedia = window.matchMedia;
+  window.matchMedia = ((query: string) => ({
+    matches: query.includes("max-width: 1200px"),
+    media: query,
+    onchange: null,
+    addListener() {},
+    removeListener() {},
+    addEventListener() {},
+    removeEventListener() {},
+    dispatchEvent() {
+      return true;
+    },
+  })) as typeof window.matchMedia;
+
+  const { container } = render(
+    <StudioSidebar page="home" navigate={vi.fn()} />,
+  );
+  expect(container.querySelector(".studio-collapsed-rail__brand .brand-mark"))
+    .not.toBeNull();
+  expect(
+    screen.getByRole("button", { name: "窄屏下保持图标栏" }),
+  ).toBeDisabled();
+
+  window.matchMedia = originalMatchMedia;
+});
+
+test("opens base-model flyout from the collapsed rail", () => {
+  localStorage.setItem("future-props-sidebar-studio-collapsed", "true");
+  const navigate = vi.fn();
+  render(<StudioSidebar page="home" navigate={navigate} />);
+
+  fireEvent.click(screen.getByRole("button", { name: "基模型，点击展开菜单" }));
+  const menu = screen.getByRole("menu", { name: "基模型" });
+  expect(menu).toBeInTheDocument();
+  fireEvent.click(within(menu).getByRole("menuitem", { name: "模型服务" }));
+  expect(navigate).toHaveBeenCalledWith("model-service");
+  expect(
+    screen.queryByRole("menu", { name: "基模型" }),
+  ).not.toBeInTheDocument();
+
+  fireEvent.click(screen.getByRole("button", { name: "基模型，点击展开菜单" }));
+  fireEvent.keyDown(document, { key: "Escape" });
+  expect(
+    screen.queryByRole("menu", { name: "基模型" }),
+  ).not.toBeInTheDocument();
   localStorage.removeItem("future-props-sidebar-studio-collapsed");
 });
 

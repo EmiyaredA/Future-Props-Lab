@@ -1,6 +1,6 @@
 import { ArrowLeft } from "lucide-react";
 import type { ReactNode, Ref } from "react";
-import { ThemeToggle } from "./ThemeToggle";
+import { SidebarCollapseToggle } from "./ResponsiveSidebar";
 import "./workshop-sidebar.css";
 
 export function WorkshopSidebar({
@@ -15,6 +15,7 @@ export function WorkshopSidebar({
   sidebarRef,
   label,
   brandAction,
+  footer,
 }: {
   name: string;
   subtitle: string;
@@ -27,6 +28,7 @@ export function WorkshopSidebar({
   sidebarRef?: Ref<HTMLElement>;
   label?: string;
   brandAction?: ReactNode;
+  footer?: ReactNode;
 }) {
   return (
     <aside
@@ -43,6 +45,7 @@ export function WorkshopSidebar({
           <small>{subtitle}</small>
         </div>
         {brandAction}
+        <SidebarCollapseToggle />
       </div>
       <button
         className="workshop-back"
@@ -59,9 +62,7 @@ export function WorkshopSidebar({
         </span>
       </button>
       {children}
-      <footer>
-        <ThemeToggle />
-      </footer>
+      {footer ? <footer>{footer}</footer> : null}
     </aside>
   );
 }

@@ -223,7 +223,8 @@ function TemplateEditor({
         suppliers: (old.suppliers || []).filter((s) => s.template_key !== id),
       }));
     },
-    createProvider: (input) =>
+    createProvider: (input) => {
+      const templateKey = crypto.randomUUID();
       setDraft((old) => ({
         ...old,
         providers: [
@@ -234,11 +235,13 @@ function TemplateEditor({
             api_key_hint: "",
             clear_api_key: false,
             supplier_key: input.supplier_id || null,
-            template_key: crypto.randomUUID(),
+            template_key: templateKey,
             models: [],
           },
         ],
-      })),
+      }));
+      return { id: templateKey };
+    },
     updateProvider: (id, input) =>
       updateProvider(id, {
         ...input,

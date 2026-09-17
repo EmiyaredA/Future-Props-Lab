@@ -664,9 +664,6 @@ test("enters the visual workshop, persists projects, and supports deep navigatio
   await page.goto("/apps/visual-workshop/tasks");
   await expect(page.getByText("E2E 未来城市海报")).toBeVisible();
   await expect(page.getByText("42%")).toBeVisible();
-  await page
-    .getByRole("button", { name: "打开视觉创作工坊导航", exact: true })
-    .click();
   await page.getByRole("button", { name: "深色" }).click();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
 });

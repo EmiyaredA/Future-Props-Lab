@@ -192,9 +192,10 @@ describe("model directory", () => {
       screen.queryByRole("button", { name: "视觉对话 操作" }),
     ).not.toBeInTheDocument();
     await user.click(screen.getByRole("tab", { name: "接入管理" }));
-    expect(
-      screen.getByRole("button", { name: /OpenAI 兼容/ }),
-    ).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByRole("button", { name: /OpenAI 兼容/ })).toHaveAttribute(
+      "aria-expanded",
+      "true",
+    );
     expect(
       screen.queryByRole("button", { name: "添加协议类型" }),
     ).not.toBeInTheDocument();
@@ -207,16 +208,48 @@ describe("model directory", () => {
     const user = userEvent.setup();
     renderEditor();
     await user.click(screen.getByRole("tab", { name: "接入管理" }));
-    expect(
-      screen.getByRole("button", { name: /OpenAI 兼容/ }),
-    ).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByRole("button", { name: /OpenAI 兼容/ })).toHaveAttribute(
+      "aria-expanded",
+      "true",
+    );
     expect(
       screen.getByRole("button", { name: /SenseAudio 图片/ }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: /SenseAudio 音乐/ }),
     ).toBeInTheDocument();
-    expect(screen.getByText("OpenAI 兼容 / 通用网关")).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "通用网关", level: 2 }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: /已接入模型/ })).toBeInTheDocument();
+  });
+
+  test("connection list menu supports edit and delete", async () => {
+    const user = userEvent.setup();
+    const { callbacks } = renderEditor();
+    await user.click(screen.getByRole("tab", { name: "接入管理" }));
+    await user.click(screen.getByRole("button", { name: "通用网关 操作" }));
+    await user.click(screen.getByRole("menuitem", { name: "编辑连接" }));
+    expect(
+      screen.getByRole("dialog", { name: "编辑接入连接" }),
+    ).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "取消" }));
+    await user.click(screen.getByRole("button", { name: "通用网关 操作" }));
+    await user.click(screen.getByRole("menuitem", { name: "删除连接" }));
+    expect(
+      screen.getByRole("dialog", { name: "删除连接" }),
+    ).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "确认删除" }));
+    expect(callbacks.deleteProvider).toHaveBeenCalledWith("p1");
+  });
+
+  test("connection list menu hides write actions without permission", async () => {
+    const user = userEvent.setup();
+    renderEditor(value(), actions(), false);
+    await user.click(screen.getByRole("tab", { name: "接入管理" }));
+    expect(
+      screen.queryByRole("button", { name: "通用网关 操作" }),
+    ).not.toBeInTheDocument();
   });
 
   test("shows source fields only in connection configuration", async () => {
@@ -245,7 +278,42 @@ describe("model directory", () => {
 
   test("new connections save with null supplier_id", async () => {
     const user = userEvent.setup();
-    const { callbacks } = renderEditor();
+    const data = value();
+    const callbacks = actions();
+    vi.mocked(callbacks.createProvider).mockImplementation(async (input) => {
+      const id = "p-new";
+      data.providers.push({
+        id,
+        supplier_id: input.supplier_id ?? null,
+        name: input.name,
+        kind: input.kind,
+        base_url: input.base_url,
+        enabled: true,
+        has_api_key: Boolean(input.api_key),
+        api_key_hint: "",
+        models: [],
+      });
+      return { id };
+    });
+    function Harness() {
+      const [catalog, setCatalog] = useState(data);
+      return (
+        <ModelCatalogEditor
+          value={catalog}
+          categories={categories}
+          actions={{
+            ...callbacks,
+            createProvider: async (input) => {
+              const created = await callbacks.createProvider(input);
+              setCatalog({ ...data, providers: [...data.providers] });
+              return created;
+            },
+          }}
+          permissions={{ canWrite: true, canTest: true }}
+        />
+      );
+    }
+    render(<Harness />);
     await user.click(screen.getByRole("tab", { name: "接入管理" }));
     await user.click(screen.getAllByRole("button", { name: "添加连接" })[0]);
     const dialog = screen.getByRole("dialog", { name: "添加接入连接" });
@@ -262,6 +330,12 @@ describe("model directory", () => {
         }),
       ),
     );
+    await waitFor(() =>
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),
+    );
+    expect(
+      screen.getByRole("button", { name: /^新网关/, current: true }),
+    ).toBeInTheDocument();
   });
 
   test("save failures retain input and the same editor supports a template draft without workspace requests", async () => {

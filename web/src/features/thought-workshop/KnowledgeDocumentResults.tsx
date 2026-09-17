@@ -72,13 +72,13 @@ export function KnowledgeDocumentResults({
                     <span className="knowledge-doc-title">{note.title}</span>
                     <span className="knowledge-doc-flags" aria-hidden>
                       {note.pinned && <Pin size={14} />}
-                      {note.favorite && (
-                        <Star size={14} fill="currentColor" />
-                      )}
+                      {note.favorite && <Star size={14} fill="currentColor" />}
                     </span>
                   </span>
                   {note.excerpt && (
-                    <span className="knowledge-doc-excerpt">{note.excerpt}</span>
+                    <span className="knowledge-doc-excerpt">
+                      {note.excerpt}
+                    </span>
                   )}
                   <span className="knowledge-doc-meta">
                     {note.tags.slice(0, 3).map((tag) => (
