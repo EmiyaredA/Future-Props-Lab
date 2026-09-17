@@ -61,7 +61,7 @@ MODEL_CATEGORIES = (
         id="video_generation", label="视频生成", type="video", sub_type="text-to-video"
     ),
     ModelCategoryOut(
-        id="image_generation", label="图片生成", type="image", sub_type="text-to-image"
+        id="image_generation", label="图像生成", type="image", sub_type="text-to-image"
     ),
     ModelCategoryOut(
         id="end_to_end_speech", label="端到端语音模型", type="audio", sub_type="speech-to-speech"

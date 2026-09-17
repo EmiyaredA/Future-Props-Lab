@@ -147,7 +147,7 @@ vi.mock("@features/models/api", async () => {
         },
         {
           id: "image_generation",
-          label: "图片生成",
+          label: "图像生成",
           type: "image",
           sub_type: "text-to-image",
         },
@@ -606,7 +606,7 @@ test("filters generation history and releases result object URLs", async () => {
   const user = userEvent.setup();
   const view = renderWithQuery(<ModelTestPage />);
   await screen.findByText("测试对话");
-  await user.click(screen.getByRole("tab", { name: "图片生成" }));
+  await user.click(screen.getByRole("tab", { name: "图像生成" }));
   expect(
     await screen.findByRole("button", { name: /日落海岸/ }),
   ).toBeInTheDocument();

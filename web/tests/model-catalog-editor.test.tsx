@@ -16,7 +16,7 @@ import type { ModelCategory } from "@features/models/api";
 
 const categories: ModelCategory[] = [
   { id: "text_generation", label: "文本生成", type: "text" },
-  { id: "image_generation", label: "图片生成", type: "image" },
+  { id: "image_generation", label: "图像生成", type: "image" },
   { id: "music_generation", label: "音乐生成", type: "audio" },
 ];
 function value(): ModelCatalogValue {
@@ -166,7 +166,7 @@ describe("model directory", () => {
     expect(screen.getByText("模型已停用")).toBeInTheDocument();
     expect(screen.getByText("暂不支持测试")).toBeInTheDocument();
     expect(screen.queryByText("API Key")).not.toBeInTheDocument();
-    await user.click(screen.getByRole("tab", { name: "图片" }));
+    await user.click(screen.getByRole("tab", { name: "图像生成" }));
     expect(screen.queryByText("视觉对话")).not.toBeInTheDocument();
     expect(screen.getAllByText("多用途")).toHaveLength(2);
     await user.click(screen.getByRole("combobox", { name: "筛选供应商" }));
@@ -227,7 +227,7 @@ describe("model directory", () => {
     );
     renderEditor(value(), callbacks);
     await user.click(screen.getByRole("button", { name: "视觉对话 操作" }));
-    await user.click(screen.getByRole("menuitem", { name: "编辑 视觉对话" }));
+    await user.click(screen.getByRole("menuitem", { name: "编辑" }));
     await user.clear(screen.getByRole("textbox", { name: "显示名称" }));
     await user.type(
       screen.getByRole("textbox", { name: "显示名称" }),
@@ -347,9 +347,9 @@ test("keyboard navigation switches tabs and restores row focus after Escape", as
   await user.keyboard("{Home}");
   const trigger = screen.getByRole("button", { name: "视觉对话 操作" });
   await user.click(trigger);
-  expect(screen.getByRole("menuitem", { name: "编辑 视觉对话" })).toHaveFocus();
+  expect(screen.getByRole("menuitem", { name: "编辑" })).toHaveFocus();
   await user.keyboard("{End}");
-  expect(screen.getByRole("menuitem", { name: "删除 视觉对话" })).toHaveFocus();
+  expect(screen.getByRole("menuitem", { name: "删除" })).toHaveFocus();
   await user.keyboard("{Escape}");
   expect(trigger).toHaveFocus();
   expect(screen.queryByRole("menu")).not.toBeInTheDocument();
@@ -372,7 +372,7 @@ test("refresh preserves failed drafts and deleted models cannot be saved", async
   };
   const { rerender } = render(<ModelCatalogEditor {...props} />);
   await user.click(screen.getByRole("button", { name: "视觉对话 操作" }));
-  await user.click(screen.getByRole("menuitem", { name: "编辑 视觉对话" }));
+  await user.click(screen.getByRole("menuitem", { name: "编辑" }));
   const field = screen.getByRole("textbox", { name: "显示名称" });
   await user.clear(field);
   await user.type(field, "我的草稿");
@@ -396,7 +396,7 @@ test("permission changes disable an open form without discarding its input", asy
   const callbacks = actions();
   const { rerender } = renderEditor(data, callbacks);
   await user.click(screen.getByRole("button", { name: "视觉对话 操作" }));
-  await user.click(screen.getByRole("menuitem", { name: "编辑 视觉对话" }));
+  await user.click(screen.getByRole("menuitem", { name: "编辑" }));
   await user.type(screen.getByRole("textbox", { name: "显示名称" }), " 草稿");
   rerender(
     <ModelCatalogEditor

@@ -37,7 +37,7 @@ type Capability =
   components["schemas"]["ModelEntryOut"]["capabilities"][number];
 const purposes: { value: Capability; label: string }[] = [
   { value: "chat", label: "对话" },
-  { value: "image_generation", label: "图片生成" },
+  { value: "image_generation", label: "图像生成" },
   { value: "video_generation", label: "视频生成" },
   { value: "voice", label: "实时语音" },
   { value: "speech_recognition", label: "语音识别" },

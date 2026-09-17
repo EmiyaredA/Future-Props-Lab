@@ -23,6 +23,9 @@ export type DesktopBridge = {
   onDevelopmentState?: (
     callback: (state: DesktopDevelopmentState) => void,
   ) => () => void;
+  onDevelopmentMenuAction?: (
+    callback: (action: "apply" | "check") => void,
+  ) => () => void;
 };
 
 declare global {

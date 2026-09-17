@@ -88,11 +88,12 @@ export function ModelCatalogEditor(props: ModelCatalogEditorProps) {
       id: model.id,
       name: model.label || model.slug,
     });
-  const table = (items: typeof rows) => (
+  const table = (items: typeof rows, hideSource = false) => (
     <CatalogModelTable
       rows={items}
       permissions={activePermissions}
       onTestModel={onTestModel}
+      hideSource={hideSource}
       onEdit={({ model, provider }) =>
         setModal({ kind: "model", initial: model, providerId: provider.id })
       }
@@ -194,7 +195,7 @@ export function ModelCatalogEditor(props: ModelCatalogEditorProps) {
                   <ProviderIcon kind={provider.kind} size={20} />
                 </span>
                 <span className="mc-provider-card-copy">
-                  <strong>{provider.name} · 连接</strong>
+                  <strong>{provider.name}</strong>
                   <small>模型数 {provider.models.length}</small>
                 </span>
                 <span
@@ -271,7 +272,7 @@ export function ModelCatalogEditor(props: ModelCatalogEditorProps) {
                 { value: "", label: "全部能力" },
                 ...modelCapabilities.map((c) => ({
                   value: c,
-                  label: c === "vision" ? "图片理解" : capabilityLabel[c],
+                  label: capabilityLabel[c],
                 })),
               ]}
             />
@@ -335,7 +336,10 @@ export function ModelCatalogEditor(props: ModelCatalogEditorProps) {
             setModal({ kind: "model", initial: null, providerId })
           }
         >
-          {table(rows.filter((row) => row.provider.id === selected?.id))}
+          {table(
+            rows.filter((row) => row.provider.id === selected?.id),
+            true,
+          )}
         </CatalogConnections>
       )}
       {modal?.kind === "supplier" && (

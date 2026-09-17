@@ -7,10 +7,10 @@ import type {
 
 export const catalogTabs = [
   { id: "all", label: "全部" },
-  { id: "text", label: "对话" },
-  { id: "image", label: "图片" },
-  { id: "video", label: "视频" },
-  { id: "audio", label: "音频" },
+  { id: "text", label: "文本生成" },
+  { id: "image", label: "图像生成" },
+  { id: "video", label: "视频生成" },
+  { id: "audio", label: "音频生成" },
 ] as const;
 export type CatalogTab = (typeof catalogTabs)[number]["id"];
 export type CatalogRow = {

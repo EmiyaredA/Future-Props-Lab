@@ -73,7 +73,9 @@ async function main() {
         ?.pages()
         .find((p) => p.url().startsWith("http:")),
     );
-    await page.getByLabel("开发更新", { exact: true }).waitFor();
+    await page.waitForFunction(() =>
+      Boolean(window.futurePropsDesktop?.developmentStatus),
+    );
   };
   const state = () =>
     page.evaluate(() => window.futurePropsDesktop.developmentStatus());
@@ -84,7 +86,9 @@ async function main() {
     });
   const apply = async () => {
     const before = (await state()).generation;
-    await page.getByRole("button", { name: "应用更新", exact: true }).click();
+    await page.evaluate(() =>
+      window.dispatchEvent(new Event("future-props:development-apply")),
+    );
     await until(async () => (await state()).generation > before);
   };
   try {
@@ -173,7 +177,9 @@ if (!document.getElementById("fpl-probe-container")) { const div=document.create
         window.__cancelReload,
       );
     });
-    await page.getByRole("button", { name: "应用更新", exact: true }).click();
+    await page.evaluate(() =>
+      window.dispatchEvent(new Event("future-props:development-apply")),
+    );
     assert.equal(
       await page.evaluate(() => window.__hotDraft),
       "unsaved-fixture",
@@ -231,7 +237,9 @@ if (!document.getElementById("fpl-probe-container")) { const div=document.create
     });
     writeFileSync(files[1], "export const fixture = 1;\n");
     await pending("desktop");
-    await page.getByRole("button", { name: "应用更新", exact: true }).click();
+    await page.evaluate(() =>
+      window.dispatchEvent(new Event("future-props:development-apply")),
+    );
     await pause(600);
     assert.equal(
       await page.evaluate(() => window.__hotDraft),
@@ -245,7 +253,9 @@ if (!document.getElementById("fpl-probe-container")) { const div=document.create
       ),
     );
     const closed = page.waitForEvent("close");
-    await page.getByRole("button", { name: "应用更新", exact: true }).click();
+    await page.evaluate(() =>
+      window.dispatchEvent(new Event("future-props:development-apply")),
+    );
     await closed;
     await connect();
     await page.waitForURL("**/home");

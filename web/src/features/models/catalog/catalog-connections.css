@@ -3,6 +3,9 @@
   grid-template-columns: 255px minmax(0, 1fr);
   gap: 18px;
   align-items: start;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
 }
 .mc-supplier-tree {
   border: 1px solid var(--border);
@@ -90,6 +93,8 @@
 }
 .mc-connection-detail {
   min-width: 0;
+  max-width: 100%;
+  overflow-x: auto;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 12px;
@@ -137,21 +142,29 @@
   font-weight: 400;
   color: var(--muted);
 }
-.mc-connection-detail .mc-model-table th:first-child {
-  width: 29%;
+.mc-model-table.mc-model-table--embedded th:first-child {
+  width: 34%;
 }
-.mc-connection-detail .mc-model-table th:nth-child(3),
-.mc-connection-detail .mc-model-table td:nth-child(3) {
-  display: none;
+.mc-model-table.mc-model-table--embedded th:nth-child(2) {
+  width: 28%;
 }
-.mc-connection-detail .mc-model-table th:nth-child(4) {
-  width: 18%;
+.mc-model-table.mc-model-table--embedded th:nth-child(3) {
+  width: 14%;
 }
-.mc-connection-detail .mc-model-table th:last-child {
+.mc-model-table.mc-model-table--embedded th:last-child {
   width: 24%;
+}
+.mc-connection-detail .mc-model-table {
+  width: 100%;
+  max-width: 100%;
 }
 .mc-connection-detail .mc-model-table td {
   padding: 17px 10px;
+}
+.mc-connection-detail .mc-row-actions {
+  justify-content: flex-start;
+  min-width: 0;
+  max-width: 100%;
 }
 .mc-connection-detail .mc-model-name .mc-provider-icon {
   display: none;

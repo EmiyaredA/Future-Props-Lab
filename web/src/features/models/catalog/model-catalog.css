@@ -2,6 +2,7 @@
 
 .mc-editor {
   min-width: 0;
+  max-width: 100%;
   color: var(--text);
 }
 .mc-view-toolbar {
@@ -263,14 +264,12 @@
 .mc-menu {
   position: relative;
   display: inline-flex;
+  flex: none;
 }
 .mc-menu-panel {
-  position: absolute;
-  z-index: 20;
-  right: 0;
-  top: calc(100% + 5px);
+  z-index: 1300;
   min-width: 160px;
-  max-width: 240px;
+  max-width: min(240px, calc(100vw - 24px));
   background: var(--surface);
   padding: 5px;
   border: 1px solid var(--border);

@@ -22,12 +22,14 @@ export function CatalogModelTable({
   onCopy,
   onDelete,
   onToggle,
+  hideSource = false,
 }: Pick<ModelCatalogEditorProps, "permissions" | "onTestModel"> & {
   rows: CatalogRow[];
   onEdit: (row: CatalogRow) => void;
   onCopy: (model: CatalogModel) => void;
   onDelete: (model: CatalogModel) => void;
   onToggle: (model: CatalogModel) => void;
+  hideSource?: boolean;
 }) {
   if (!rows.length)
     return (
@@ -37,12 +39,16 @@ export function CatalogModelTable({
       </div>
     );
   return (
-    <table className="mc-model-table">
+    <table
+      className={
+        hideSource ? "mc-model-table mc-model-table--embedded" : "mc-model-table"
+      }
+    >
       <thead>
         <tr>
           <th>模型</th>
           <th>支持能力</th>
-          <th>接入来源</th>
+          {!hideSource && <th>接入来源</th>}
           <th>状态</th>
           <th>操作</th>
         </tr>
@@ -55,16 +61,16 @@ export function CatalogModelTable({
           const available = model.enabled && provider.enabled;
           const menu: CatalogMenuItem[] = [];
           if (permissions.canWrite) {
-            menu.push({ label: `编辑 ${name}`, onClick: () => onEdit(row) });
+            menu.push({ label: "编辑", onClick: () => onEdit(row) });
             if (canEditField(permissions, model, "enabled"))
               menu.push({
-                label: `${model.enabled ? "停用" : "启用"} ${name}`,
+                label: model.enabled ? "停用" : "启用",
                 onClick: () => onToggle(model),
               });
-            menu.push({ label: `复制 ${name}`, onClick: () => onCopy(model) });
+            menu.push({ label: "复制", onClick: () => onCopy(model) });
             if (canDeleteEntity(permissions, model))
               menu.push({
-                label: `删除 ${name}`,
+                label: "删除",
                 danger: true,
                 onClick: () => onDelete(model),
               });
@@ -89,19 +95,19 @@ export function CatalogModelTable({
                 <div className="mc-badges">
                   {model.capabilities.map((capability) => (
                     <span key={capability}>
-                      {capability === "vision"
-                        ? "图片理解"
-                        : capabilityLabel[capability]}
+                      {capabilityLabel[capability]}
                     </span>
                   ))}
                 </div>
               </td>
-              <td data-label="接入来源">
-                <strong className="mc-source">{provider.name}</strong>
-                <small>
-                  {supplierName} · {providerKindLabel[provider.kind]}
-                </small>
-              </td>
+              {!hideSource && (
+                <td data-label="接入来源">
+                  <strong className="mc-source">{provider.name}</strong>
+                  <small>
+                    {supplierName} · {providerKindLabel[provider.kind]}
+                  </small>
+                </td>
+              )}
               <td data-label="状态">
                 <span className={`mc-status ${available ? "is-enabled" : ""}`}>
                   <i />

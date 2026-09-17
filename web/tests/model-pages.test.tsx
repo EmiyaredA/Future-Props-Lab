@@ -145,7 +145,7 @@ vi.mock("@features/models/api", async () => {
         },
         {
           id: "image_generation",
-          label: "图片生成",
+          label: "图像生成",
           type: "image",
           sub_type: "text-to-image",
         },
@@ -471,7 +471,7 @@ test("shows provider catalog categories without the redundant diagnostics entry"
   expect(await screen.findByText("Model X")).toBeInTheDocument();
   expect(container.querySelector(".model-glyph")).toBeNull();
   expect(screen.getByText("支持能力")).toBeInTheDocument();
-  expect(screen.getByRole("tab", { name: "对话" })).toBeInTheDocument();
+  expect(screen.getByRole("tab", { name: "文本生成" })).toBeInTheDocument();
   expect(screen.getByText("状态")).toBeInTheDocument();
   expect(screen.getAllByText("已启用")).toHaveLength(5);
   expect(screen.queryByRole("button", { name: "测试调用" })).toBeNull();
@@ -481,8 +481,8 @@ test("shows provider catalog categories without the redundant diagnostics entry"
 test("does not repeat a capability that is already shown as a category", async () => {
   const user = userEvent.setup();
   renderWithQuery(<ModelServicePage />);
-  await user.click(await screen.findByRole("tab", { name: "图片" }));
-  expect(screen.getAllByText("图片生成")).toHaveLength(1);
+  await user.click(await screen.findByRole("tab", { name: "图像生成" }));
+  expect(screen.getAllByText("图像生成")).toHaveLength(2);
 });
 
 test("offers the SenseAudio speaker recognition provider and ASR capability", async () => {
@@ -637,9 +637,9 @@ test("switches the shared model selector to an image generation test", async () 
   const user = userEvent.setup();
   const { container } = renderWithQuery(<ModelTestPage />);
   await screen.findByText("测试对话");
-  await user.click(screen.getByRole("tab", { name: "图片生成" }));
+  await user.click(screen.getByRole("tab", { name: "图像生成" }));
   expect(await screen.findByText("最近任务")).toBeInTheDocument();
-  expect(screen.getByRole("tab", { name: "图片生成" })).toHaveAttribute(
+  expect(screen.getByRole("tab", { name: "图像生成" })).toHaveAttribute(
     "aria-selected",
     "true",
   );

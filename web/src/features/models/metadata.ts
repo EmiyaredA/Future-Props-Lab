@@ -36,9 +36,9 @@ export type ProviderKind = keyof typeof providerMetadata;
 
 export const capabilityMetadata = {
   chat: { label: "对话" },
-  vision: { label: "视觉" },
+  vision: { label: "图像理解" },
   tools: { label: "工具" },
-  image_generation: { label: "图片生成" },
+  image_generation: { label: "图像生成" },
   video_generation: { label: "视频生成" },
   audio_generation: { label: "音频生成" },
   speech_recognition: { label: "语音识别" },

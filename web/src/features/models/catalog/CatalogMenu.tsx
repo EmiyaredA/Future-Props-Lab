@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { MoreHorizontal } from "lucide-react";
 
 export type CatalogMenuItem = {
@@ -14,92 +15,133 @@ export function CatalogMenu({
   label: string;
   items: CatalogMenuItem[];
 }) {
-  const [open, setOpen] = useState(false);
-  const root = useRef<HTMLDivElement>(null);
+  const [position, setPosition] = useState<{
+    top: number;
+    right: number;
+  } | null>(null);
   const trigger = useRef<HTMLButtonElement>(null);
+  const menu = useRef<HTMLDivElement>(null);
+  const id = useId();
+  const close = (restore = false) => {
+    setPosition(null);
+    if (restore) trigger.current?.focus();
+  };
   useEffect(() => {
-    if (!open) return;
-    root.current
+    if (!position) return;
+    menu.current
       ?.querySelector<HTMLButtonElement>('[role="menuitem"]:not(:disabled)')
       ?.focus();
-    const close = (event: PointerEvent) => {
-      if (!root.current?.contains(event.target as Node)) setOpen(false);
+    const outside = (event: PointerEvent) => {
+      if (
+        !menu.current?.contains(event.target as Node) &&
+        !trigger.current?.contains(event.target as Node)
+      )
+        setPosition(null);
     };
-    document.addEventListener("pointerdown", close);
-    return () => document.removeEventListener("pointerdown", close);
-  }, [open]);
+    const reposition = () => setPosition(null);
+    document.addEventListener("pointerdown", outside);
+    window.addEventListener("resize", reposition);
+    window.addEventListener("scroll", reposition, true);
+    return () => {
+      document.removeEventListener("pointerdown", outside);
+      window.removeEventListener("resize", reposition);
+      window.removeEventListener("scroll", reposition, true);
+    };
+  }, [position]);
   if (!items.length) return null;
   return (
-    <div
-      className="mc-menu"
-      ref={root}
-      onBlur={(event) => {
-        if (!event.currentTarget.contains(event.relatedTarget)) setOpen(false);
-      }}
-      onKeyDown={(event) => {
-        if (event.key === "Escape") {
-          event.preventDefault();
-          event.stopPropagation();
-          setOpen(false);
-          trigger.current?.focus();
-        }
-        if (
-          open &&
-          ["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)
-        ) {
-          event.preventDefault();
-          const buttons = Array.from(
-            root.current?.querySelectorAll<HTMLButtonElement>(
-              '[role="menuitem"]:not(:disabled)',
-            ) ?? [],
-          );
-          const current = buttons.indexOf(
-            document.activeElement as HTMLButtonElement,
-          );
-          const index =
-            event.key === "Home"
-              ? 0
-              : event.key === "End"
-                ? buttons.length - 1
-                : (current +
-                    (event.key === "ArrowDown" ? 1 : -1) +
-                    buttons.length) %
-                  buttons.length;
-          buttons[index]?.focus();
-        }
-      }}
-    >
+    <div className="mc-menu">
       <button
         type="button"
         className="mc-icon"
         ref={trigger}
         aria-label={label}
         aria-haspopup="menu"
-        aria-expanded={open}
-        onClick={() => setOpen(!open)}
+        aria-expanded={!!position}
+        aria-controls={position ? id : undefined}
+        onClick={() => {
+          const rect = trigger.current!.getBoundingClientRect();
+          if (position) close();
+          else
+            setPosition({
+              top: Math.min(rect.bottom + 5, window.innerHeight - 12),
+              right: Math.max(12, window.innerWidth - rect.right),
+            });
+        }}
       >
         <MoreHorizontal size={19} />
       </button>
-      {open && (
-        <div className="mc-menu-panel" role="menu" aria-label={label}>
-          {items.map((item) => (
-            <button
-              key={item.label}
-              type="button"
-              role="menuitem"
-              disabled={item.disabled}
-              className={item.danger ? "mc-danger" : ""}
-              onClick={() => {
-                setOpen(false);
-                trigger.current?.focus();
-                item.onClick();
+      {position
+        ? createPortal(
+            <div
+              ref={menu}
+              id={id}
+              className="mc-menu-panel"
+              role="menu"
+              aria-label={label}
+              style={{
+                position: "fixed",
+                top: Math.max(12, position.top),
+                right: position.right,
+                left: "auto",
+              }}
+              onBlur={(event) => {
+                if (
+                  event.relatedTarget &&
+                  !event.currentTarget.contains(event.relatedTarget)
+                )
+                  close();
+              }}
+              onKeyDown={(event) => {
+                if (event.key === "Escape") {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  close(true);
+                }
+                if (
+                  !["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)
+                )
+                  return;
+                event.preventDefault();
+                const buttons = Array.from(
+                  event.currentTarget.querySelectorAll<HTMLButtonElement>(
+                    '[role="menuitem"]:not(:disabled)',
+                  ),
+                );
+                const current = buttons.indexOf(
+                  document.activeElement as HTMLButtonElement,
+                );
+                const index =
+                  event.key === "Home"
+                    ? 0
+                    : event.key === "End"
+                      ? buttons.length - 1
+                      : (current +
+                          (event.key === "ArrowDown" ? 1 : -1) +
+                          buttons.length) %
+                        buttons.length;
+                buttons[index]?.focus();
               }}
             >
-              {item.label}
-            </button>
-          ))}
-        </div>
-      )}
+              {items.map((item) => (
+                <button
+                  key={item.label}
+                  type="button"
+                  role="menuitem"
+                  disabled={item.disabled}
+                  className={item.danger ? "mc-danger" : ""}
+                  onClick={() => {
+                    close(true);
+                    item.onClick();
+                  }}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>,
+            document.body,
+          )
+        : null}
     </div>
   );
 }

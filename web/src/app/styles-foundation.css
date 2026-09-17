@@ -17,7 +17,7 @@
   height: 100vh;
   display: flex;
   flex-direction: column;
-  padding: 12px 12px 14px;
+  padding: 18px 14px 16px;
   border-right: 1px solid var(--border);
   background:
     linear-gradient(
@@ -32,7 +32,7 @@
   display: flex;
   align-items: center;
   gap: 11px;
-  padding: 0 6px 12px;
+  padding: 0 6px 16px;
 }
 
 .sidebar-brand .brand-mark {
@@ -62,12 +62,12 @@
 
 .sidebar-rule {
   height: 1px;
-  margin: 0 6px 11px;
+  margin: 0 6px 15px;
   background: color-mix(in srgb, var(--border) 80%, transparent);
 }
 
 .nav-section-label {
-  padding: 0 10px 5px;
+  padding: 0 10px 7px;
   color: var(--faint);
   font-size: 10px;
   font-weight: 800;
@@ -76,7 +76,7 @@
 }
 
 .nav-section-label--spaced {
-  margin-top: 9px;
+  margin-top: 13px;
 }
 
 .studio-sidebar nav {
@@ -99,17 +99,17 @@
 }
 
 .nav-group {
-  min-height: 38px;
-  padding: 8px 10px;
+  min-height: 42px;
+  padding: 10px 12px;
   color: var(--text);
   font-size: 13.5px;
   font-weight: 600;
 }
 
 .nav-primary {
-  min-height: 38px;
+  min-height: 42px;
   margin-bottom: 3px;
-  padding: 8px 10px;
+  padding: 10px 12px;
   color: var(--text);
   font-size: 13.5px;
   font-weight: 600;
@@ -170,15 +170,15 @@
 .nav-sub {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 3px;
   margin: 0;
-  padding: 3px 0 2px 12px;
+  padding: 4px 0 2px 14px;
   border-left: 1px solid color-mix(in srgb, var(--accent-line) 55%, transparent);
 }
 
 .nav-sub button {
-  min-height: 36px;
-  padding: 6px 10px;
+  min-height: 38px;
+  padding: 8px 12px;
   font-size: 13px;
 }
 
@@ -209,7 +209,7 @@
 .sidebar-session-card {
   width: 100%;
   min-width: 0;
-  padding: 8px 9px;
+  padding: 9px 10px;
   display: flex;
   flex-direction: column;
   align-items: flex-start;

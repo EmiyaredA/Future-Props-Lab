@@ -1,10 +1,10 @@
-import { act, render, screen, waitFor } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
+import { act, render, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { DesktopDevelopmentBar } from "../src/app/DesktopDevelopmentBar";
+import { DesktopDevelopmentHost } from "../src/app/DesktopDevelopmentHost";
 import type { DesktopDevelopmentState } from "@platform/desktop";
 
 let publish: (state: DesktopDevelopmentState) => void;
+let menuAction: (action: "apply" | "check") => void;
 const state: DesktopDevelopmentState = {
   live: true,
   pending: ["backend"],
@@ -33,6 +33,10 @@ beforeEach(() => {
       publish = fn;
       return vi.fn();
     }),
+    onDevelopmentMenuAction: vi.fn((fn) => {
+      menuAction = fn;
+      return vi.fn();
+    }),
   };
 });
 afterEach(() => {
@@ -40,26 +44,37 @@ afterEach(() => {
   client.clear();
 });
 function show() {
-  render(
+  const view = render(
     <QueryClientProvider client={client}>
-      <DesktopDevelopmentBar />
+      <DesktopDevelopmentHost />
     </QueryClientProvider>,
   );
+  return view;
 }
+
+test("development host never injects App chrome", async () => {
+  const { container } = show();
+  await waitFor(() =>
+    expect(window.futurePropsDesktop!.developmentStatus).toHaveBeenCalled(),
+  );
+  expect(container).toBeEmptyDOMElement();
+  act(() => publish({ ...state, pending: ["backend"], message: "有更新" }));
+  expect(container).toBeEmptyDOMElement();
+});
 
 test("backend update does not navigate or discard drafts", async () => {
   const guard = vi.fn((event: Event) => event.preventDefault());
   window.addEventListener("future-props:before-workspace-switch", guard);
   try {
     show();
-    await userEvent.click(
-      await screen.findByRole("button", { name: "应用更新" }),
+    await waitFor(() =>
+      expect(window.futurePropsDesktop!.onDevelopmentMenuAction).toHaveBeenCalled(),
     );
+    act(() => menuAction("apply"));
     expect(
       window.futurePropsDesktop!.applyDevelopmentUpdate,
     ).toHaveBeenCalledOnce();
     expect(guard).not.toHaveBeenCalled();
-    expect(screen.getByText("开发模式 · 正式数据")).toBeVisible();
   } finally {
     window.removeEventListener("future-props:before-workspace-switch", guard);
   }
@@ -69,16 +84,18 @@ test.each(["desktop", "page"])(
   "%s update stays pending when unsaved guard cancels",
   async (kind) => {
     show();
-    await screen.findByRole("button", { name: "应用更新" });
+    await waitFor(() =>
+      expect(window.futurePropsDesktop!.onDevelopmentMenuAction).toHaveBeenCalled(),
+    );
     act(() => publish({ ...state, pending: [kind] }));
     const guard = (event: Event) => event.preventDefault();
     window.addEventListener("future-props:before-workspace-switch", guard);
-    await userEvent.click(screen.getByRole("button", { name: "应用更新" }));
+    act(() => menuAction("apply"));
     expect(
       window.futurePropsDesktop!.applyDevelopmentUpdate,
     ).not.toHaveBeenCalled();
     window.removeEventListener("future-props:before-workspace-switch", guard);
-    await userEvent.click(screen.getByRole("button", { name: "应用更新" }));
+    act(() => menuAction("apply"));
     expect(
       window.futurePropsDesktop!.applyDevelopmentUpdate,
     ).toHaveBeenCalledOnce();
@@ -87,9 +104,11 @@ test.each(["desktop", "page"])(
 
 test("compile failure offers recheck, not an unsafe apply", async () => {
   show();
-  await screen.findByRole("button", { name: "应用更新" });
+  await waitFor(() =>
+    expect(window.futurePropsDesktop!.onDevelopmentMenuAction).toHaveBeenCalled(),
+  );
   act(() => publish({ ...state, phase: "error" }));
-  await userEvent.click(screen.getByRole("button", { name: "重新检查" }));
+  act(() => menuAction("check"));
   expect(
     window.futurePropsDesktop!.checkDevelopmentUpdate,
   ).toHaveBeenCalledOnce();
@@ -101,7 +120,9 @@ test("compile failure offers recheck, not an unsafe apply", async () => {
 test("restored service refreshes queries but defers active editors", async () => {
   const invalidate = vi.spyOn(client, "invalidateQueries");
   show();
-  await screen.findByRole("button", { name: "应用更新" });
+  await waitFor(() =>
+    expect(window.futurePropsDesktop!.developmentStatus).toHaveBeenCalled(),
+  );
   act(() => publish({ ...state, generation: 1 }));
   await waitFor(() =>
     expect(invalidate).toHaveBeenCalledWith({ refetchType: "active" }),
@@ -113,14 +134,34 @@ test("restored service refreshes queries but defers active editors", async () =>
     await waitFor(() =>
       expect(invalidate).toHaveBeenCalledWith({ refetchType: "none" }),
     );
-    expect(screen.getByText(/编辑内容已保留/)).toBeVisible();
   } finally {
     window.removeEventListener("future-props:development-query-refresh", guard);
   }
 });
 
-test("packaged / ordinary web never displays the development toolbar", async () => {
+test("packaged / ordinary web never attaches development bridge handlers", async () => {
   delete window.futurePropsDesktop;
+  const { container } = show();
+  expect(container).toBeEmptyDOMElement();
+});
+
+test("window apply event uses the same unsaved guard path", async () => {
   show();
-  expect(screen.queryByLabelText("开发更新")).not.toBeInTheDocument();
+  await waitFor(() =>
+    expect(window.futurePropsDesktop!.developmentStatus).toHaveBeenCalled(),
+  );
+  act(() => publish({ ...state, pending: ["page"] }));
+  const guard = vi.fn((event: Event) => event.preventDefault());
+  window.addEventListener("future-props:before-workspace-switch", guard);
+  try {
+    act(() =>
+      window.dispatchEvent(new Event("future-props:development-apply")),
+    );
+    expect(guard).toHaveBeenCalledOnce();
+    expect(
+      window.futurePropsDesktop!.applyDevelopmentUpdate,
+    ).not.toHaveBeenCalled();
+  } finally {
+    window.removeEventListener("future-props:before-workspace-switch", guard);
+  }
 });

@@ -27,6 +27,18 @@ contextBridge.exposeInMainWorld(
             return () =>
               ipcRenderer.removeListener("desktop:development-state", listener);
           },
+          onDevelopmentMenuAction: (
+            callback: (action: "apply" | "check") => void,
+          ) => {
+            const listener = (_event: unknown, action: "apply" | "check") =>
+              callback(action);
+            ipcRenderer.on("desktop:development-menu-action", listener);
+            return () =>
+              ipcRenderer.removeListener(
+                "desktop:development-menu-action",
+                listener,
+              );
+          },
         }
       : {}),
     onQuitRequested: (callback: (approve: () => void) => void) => {

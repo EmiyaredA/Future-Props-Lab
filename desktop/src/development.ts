@@ -13,6 +13,7 @@ export class DevelopmentSession {
   constructor(
     live: boolean,
     private windows: () => BrowserWindow[],
+    private onChange?: () => void,
   ) {
     this.state = {
       live,
@@ -26,6 +27,7 @@ export class DevelopmentSession {
     this.state = value;
     for (const window of this.windows())
       window.webContents.send("desktop:development-state", value);
+    this.onChange?.();
   }
   send(type: string, values: Record<string, unknown> = {}) {
     if (process.connected) process.send?.({ type, ...values });

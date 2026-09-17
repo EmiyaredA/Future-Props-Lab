@@ -356,7 +356,7 @@ export function ModelForm({
               )
             }
           >
-            {capability === "vision" ? "图片理解" : capabilityLabel[capability]}
+            {capabilityLabel[capability]}
           </button>
         ))}
       </fieldset>

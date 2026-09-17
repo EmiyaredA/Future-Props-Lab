@@ -82,7 +82,8 @@ Future-Props-Lab/
   `scripts/dev.py` 持有跨进程更新的数据租约，`scripts/dev.cjs` 监督 Vite、源码检查与 Electron；
   `src/development-gateway.ts` 维护带凭据校验的固定开发入口，`src/development.ts` 只广播开发更新状态。
   `backend/development_data.py` 只做配置/迁移预检、停机快照与清单核验，不执行业务数据或 schema 写入。
-  `app/DesktopDevelopmentBar.tsx` 拥有更新提示，并通过应用壳保护编辑草稿和导航。
+  `app/DesktopDevelopmentHost.tsx` 只处理热加载查询刷新与未保存保护；应用更新入口在 Electron
+  菜单与窗口标题，不进入 Web 布局。
   `src/agent.ts` 拥有本地 Unix Socket 转发及连接描述，`backend/cli_entry.py` 仅启动独立 SDK CLI。
   `accounts/desktop_agent.py` 拥有短期配对，`desktop_ui.py` 校验打开资源的归属，Agent 操作白名单
   在 `accounts/desktop_agent_operations.json`；`routes/desktop_agent.py` 只承担 `/v1/desktop` 协议边界。

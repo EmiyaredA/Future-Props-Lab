@@ -39,11 +39,104 @@ let shutdownComplete = false;
 let state = { phase: "starting", message: "正在启动本地研究所…" };
 let gateway: DevelopmentGateway | undefined;
 const development = isDevelopment
-  ? new DevelopmentSession(liveDevelopment, () => BrowserWindow.getAllWindows())
+  ? new DevelopmentSession(liveDevelopment, () => BrowserWindow.getAllWindows(), () =>
+      syncDevelopmentChrome(),
+    )
   : undefined;
 const pageOrigin = () => gateway?.origin || backend?.origin || "";
 const recovery = path.join(__dirname, "../ui/startup.html");
 const preload = path.join(__dirname, "preload.js");
+
+function developmentWindowTitle(session: DevelopmentSession): string {
+  const mode = `开发模式 · ${session.state.live ? "正式数据" : "开发数据"}`;
+  const detail =
+    session.state.phase === "error"
+      ? "检查失败"
+      : session.state.phase === "checking"
+        ? "正在检查…"
+        : session.state.phase === "applying"
+          ? "正在应用…"
+          : session.state.pending.length
+            ? "有更新待应用"
+            : null;
+  return detail
+    ? `${mode} · ${detail} — Future Props Lab`
+    : `${mode} — Future Props Lab`;
+}
+
+function installApplicationMenu() {
+  const developmentMenu = development
+    ? [
+        {
+          label: "开发",
+          submenu: [
+            {
+              label: development.state.live ? "当前：正式数据" : "当前：开发数据",
+              enabled: false,
+            },
+            {
+              label: development.state.message,
+              enabled: false,
+            },
+            { type: "separator" as const },
+            {
+              label:
+                development.state.phase === "error"
+                  ? "重新检查"
+                  : development.state.phase === "applying"
+                    ? "正在应用…"
+                    : development.state.phase === "checking"
+                      ? "正在检查…"
+                      : "应用更新",
+              accelerator: "CmdOrCtrl+Shift+U",
+              enabled:
+                development.state.phase === "error" ||
+                (development.state.pending.length > 0 &&
+                  development.state.phase === "ready"),
+              click: () => {
+                if (!mainWindow || mainWindow.webContents.isCrashed()) return;
+                mainWindow.webContents.send(
+                  "desktop:development-menu-action",
+                  development.state.phase === "error" ? "check" : "apply",
+                );
+              },
+            },
+          ],
+        },
+      ]
+    : [];
+  Menu.setApplicationMenu(
+    Menu.buildFromTemplate([
+      {
+        label: app.name,
+        submenu: [
+          { role: "about" },
+          { type: "separator" },
+          { role: "hide" },
+          { role: "hideOthers" },
+          { role: "unhide" },
+          { type: "separator" },
+          {
+            label: "退出研究所",
+            accelerator: "Cmd+Q",
+            click: () => app.quit(),
+          },
+        ],
+      },
+      { role: "editMenu" },
+      { role: "viewMenu" },
+      ...developmentMenu,
+      { role: "windowMenu" },
+    ]),
+  );
+}
+
+function syncDevelopmentChrome() {
+  if (!development) return;
+  const title = developmentWindowTitle(development);
+  for (const win of BrowserWindow.getAllWindows()) win.setTitle(title);
+  installApplicationMenu();
+}
 
 function trusted(url: string): boolean {
   return (
@@ -61,7 +154,7 @@ function makeWindow(document = false): BrowserWindow {
     show: false,
     backgroundColor: "#141820",
     title: development
-      ? `开发模式 · ${liveDevelopment ? "正式数据" : "开发数据"} — Future Props Lab`
+      ? developmentWindowTitle(development)
       : "Future Props Lab",
     webPreferences: {
       preload,
@@ -363,29 +456,7 @@ else {
       quitting = true;
       mainWindow.close();
     });
-    Menu.setApplicationMenu(
-      Menu.buildFromTemplate([
-        {
-          label: app.name,
-          submenu: [
-            { role: "about" },
-            { type: "separator" },
-            { role: "hide" },
-            { role: "hideOthers" },
-            { role: "unhide" },
-            { type: "separator" },
-            {
-              label: "退出研究所",
-              accelerator: "Cmd+Q",
-              click: () => app.quit(),
-            },
-          ],
-        },
-        { role: "editMenu" },
-        { role: "viewMenu" },
-        { role: "windowMenu" },
-      ]),
-    );
+    installApplicationMenu();
     mainWindow = makeWindow();
     agent = new AgentGateway(
       dataDir,

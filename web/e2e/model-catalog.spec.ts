@@ -117,7 +117,7 @@ test("model directory and supplier connections work in both themes and small scr
         })
         .click();
       await page.getByRole("tab", { name: "模型目录", exact: true }).click();
-      await page.getByRole("tab", { name: "对话", exact: true }).click();
+      await page.getByRole("tab", { name: "文本生成", exact: true }).click();
       await expect(page.getByText("4 个模型")).toBeVisible();
       expect(
         await page.evaluate(

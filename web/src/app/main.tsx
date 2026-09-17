@@ -4,7 +4,7 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "@app/App";
 import { DesktopAgentHost } from "@app/DesktopAgentHost";
-import { DesktopDevelopmentBar } from "@app/DesktopDevelopmentBar";
+import { DesktopDevelopmentHost } from "@app/DesktopDevelopmentHost";
 import { StudioAuthGate } from "@app/StudioAuthGate";
 import { DesktopSetupGate } from "@features/accounts/DesktopSetupGate";
 import "@shared/ui/theme.css";
@@ -19,7 +19,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <ViewportBounds />
     <QueryClientProvider client={queryClient}>
-      <DesktopDevelopmentBar />
+      <DesktopDevelopmentHost />
       <DesktopSetupGate>
         <StudioAuthGate>
           <App />

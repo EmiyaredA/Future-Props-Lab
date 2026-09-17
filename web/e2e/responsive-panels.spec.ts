@@ -111,7 +111,7 @@ test("model capabilities keep controls reachable at compact sizes", async ({
   await expect(page.getByRole("tab", { name: "文本对话" })).toBeVisible();
   for (const label of [
     "文本对话",
-    "图片生成",
+    "图像生成",
     "视频生成",
     "语音识别",
     "实时语音",

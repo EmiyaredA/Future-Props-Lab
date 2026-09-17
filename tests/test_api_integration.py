@@ -73,7 +73,7 @@ async def test_model_catalog_diagnostic_and_logs(monkeypatch: pytest.MonkeyPatch
         }
         assert next(item for item in categories if item["id"] == "image_generation") == {
             "id": "image_generation",
-            "label": "图片生成",
+            "label": "图像生成",
             "type": "image",
             "sub_type": "text-to-image",
         }

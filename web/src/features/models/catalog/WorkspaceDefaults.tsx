@@ -8,7 +8,7 @@ import { CatalogDialog } from "./CatalogDialog";
 
 const purposes = [
   ["chat", "对话"],
-  ["image_generation", "图片生成"],
+  ["image_generation", "图像生成"],
   ["video_generation", "视频生成"],
   ["voice", "实时语音"],
   ["speech_recognition", "语音识别"],

@@ -135,10 +135,10 @@ test("model test workspace keeps panels readable on desktop and narrow screens",
   await expect(page.locator(".mc-model-table thead")).toBeVisible();
   await page.getByRole("button", { name: "Demo Chat 操作" }).click();
   await expect(
-    page.getByRole("menuitem", { name: "编辑 Demo Chat" }),
+    page.getByRole("menuitem", { name: "编辑" }),
   ).toBeVisible();
   await expect(
-    page.getByRole("menuitem", { name: "删除 Demo Chat" }),
+    page.getByRole("menuitem", { name: "删除" }),
   ).toBeVisible();
   await page.goto("/model-test");
 

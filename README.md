@@ -23,7 +23,7 @@ macOS Apple Silicon 桌面版可通过 `npm run build:desktop` 构建 `.app`，
 
 桌面日常开发无需重新打包：`npm run dev:desktop` 使用已安装 App 的正式账号、配置与作品；需要隔离时运行
 `npm run dev:desktop:isolated`，`npm run dev:desktop:live` 保留为正式数据入口的兼容别名。CSS/兼容 React 修改即时生效，
-后端和 Electron 修改检查通过后点击窗口底部“应用更新”。正式数据首次启用前自动停机备份，
+后端和 Electron 修改检查通过后通过菜单栏「开发 → 应用更新」或 `Cmd/Ctrl+Shift+U` 应用。正式数据首次启用前自动停机备份，
 有待执行迁移时阻止启动/更新。详见 [桌面热加载开发](docs/operations/desktop-development.md)。
 
 1. 安装依赖：`npm run setup`

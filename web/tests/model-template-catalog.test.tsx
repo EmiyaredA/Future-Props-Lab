@@ -83,7 +83,7 @@ test("the management adapter edits a template draft with the shared catalog and 
   await user.click(
     await screen.findByRole("button", { name: "共享模型 操作" }),
   );
-  await user.click(screen.getByRole("menuitem", { name: "编辑 共享模型" }));
+  await user.click(screen.getByRole("menuitem", { name: "编辑" }));
   await user.clear(screen.getByRole("textbox", { name: "显示名称" }));
   await user.type(
     screen.getByRole("textbox", { name: "显示名称" }),

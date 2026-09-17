@@ -17,7 +17,7 @@ const modes: Array<{
   icon: typeof MessageSquareText;
 }> = [
   { id: "chat", label: "文本对话", icon: MessageSquareText },
-  { id: "image", label: "图片生成", icon: Image },
+  { id: "image", label: "图像生成", icon: Image },
   { id: "video", label: "视频生成", icon: Video },
   { id: "speech", label: "语音识别", icon: Mic2 },
   { id: "realtime_voice", label: "实时语音", icon: AudioLines },
@@ -47,7 +47,7 @@ export function ModelTestWorkspaceHeader({
       <div className="model-test-workspace-title">
         <span className="model-test-kicker">基模型 / PLAYGROUND</span>
         <h1>模型测试</h1>
-        <p>统一验证对话、图片、视频、识别与实时语音能力。</p>
+        <p>统一验证对话、图像、视频、识别与实时语音能力。</p>
       </div>
       <div
         className="model-test-mode-tabs"
