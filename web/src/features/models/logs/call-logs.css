@@ -147,8 +147,10 @@
   right: 0;
   z-index: 1;
   background: var(--surface);
-  min-width: 94px;
+  min-width: 108px;
   width: 1%;
+  padding-inline: 12px;
+  white-space: nowrap;
   box-shadow: -10px 0 12px -12px
     color-mix(in srgb, var(--text) 28%, transparent);
 }
@@ -156,13 +158,16 @@
   z-index: 2;
 }
 .call-log-actions > div {
-  display: flex;
+  display: inline-flex;
+  flex-wrap: nowrap;
   align-items: center;
   justify-content: flex-end;
-  gap: 8px;
+  gap: 4px;
+  white-space: nowrap;
 }
 .call-log-actions .mc-menu {
   position: relative;
+  flex: none;
 }
 .call-log-actions .mc-icon {
   background: none;
@@ -372,6 +377,8 @@
 
 .call-log-actions .text-btn {
   color: var(--accent);
+  flex: none;
+  white-space: nowrap;
 }
 .call-log-check input[type="checkbox"] {
   appearance: none;
