@@ -17,11 +17,25 @@ export function formatNumber(value: number | null | undefined): string {
   return value == null ? "—" : new Intl.NumberFormat("zh-CN").format(value);
 }
 
+export function formatCredential(row: {
+  auth_kind?: string | null;
+  api_key_name?: string | null;
+  api_key_prefix?: string | null;
+}): string {
+  if (row.auth_kind === "session") return "网页会话";
+  if (row.auth_kind === "management_api_key") {
+    const name = row.api_key_name?.trim() || "API 密钥";
+    return row.api_key_prefix ? `${name} · ${row.api_key_prefix}…` : name;
+  }
+  return "—";
+}
+
 export const emptyLogFilters: LogFilters = {
   q: "",
   callSource: "",
   providerKind: "",
   model: "",
+  apiKeyId: "",
   status: "",
   from: "",
   to: "",

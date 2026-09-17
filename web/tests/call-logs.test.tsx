@@ -28,12 +28,24 @@ vi.mock("@features/accounts/platformApi", async (importOriginal) => ({
   fetchCrossWorkspaceLogs: vi.fn(),
   fetchCrossWorkspaceLogStats: vi.fn(),
 }));
+vi.mock("@features/accounts/api", async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import("@features/accounts/api")>();
+  return {
+    ...actual,
+    listApiKeys: vi.fn().mockResolvedValue([]),
+  };
+});
 const row = {
   id: "local-log",
   model: "local-model",
   trace_id: "hidden-trace",
   call_source: "model_playground",
   provider_kind: "openai",
+  auth_kind: "session",
+  api_key_id: null,
+  api_key_name: null,
+  api_key_prefix: null,
   total_tokens: 100,
   latency_ms: 300,
   status: "success",

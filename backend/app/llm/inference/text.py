@@ -7,6 +7,7 @@ from app.agents.harness.contracts import ImageInput
 from app.concurrency.operation_receipts import OperationError
 from app.core.credentials import decrypt_secret
 from app.core.db import SessionLocal
+from app.llm.call_logs.credentials import CredentialSnapshot
 from app.llm.inference.assets import InferenceAssets, root
 from app.llm.inference.catalog import get_model
 from app.llm.providers.streaming import ChatMessageInput, stream_text_completion
@@ -52,10 +53,13 @@ async def prepare(session, workspace_id, body):
     return args
 
 
-async def events(workspace_id, body, args, *, transport=None):
+async def events(
+    workspace_id, body, args, *, transport=None, credential: CredentialSnapshot | None = None
+):
     started, log_id = monotonic(), str(uuid4())
     text, usage, finish_reason, error = "", {}, None, None
     success = False
+    snap = credential or CredentialSnapshot()
     try:
         yield InferenceTextEvent(type="start", log_id=log_id)
         async for delta in stream_text_completion(**args, transport=transport):
@@ -90,6 +94,7 @@ async def events(workspace_id, body, args, *, transport=None):
                         latency_ms=int((monotonic() - started) * 1000),
                         status="success" if success else "error",
                         error_message=error,
+                        **snap.as_kwargs(),
                     )
                 )
                 await session.commit()

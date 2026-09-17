@@ -9,6 +9,7 @@ import { providerLabels } from "@features/models/logs/logOptions";
 import { LogReproductionButton } from "@features/models/logs/LogReproductionButton";
 import { modelQueryKeys } from "@features/models/queryKeys";
 import {
+  formatCredential,
   formatNumber,
   sourceLabels,
 } from "@features/models/logs/modelCallLogPresentation";
@@ -362,6 +363,7 @@ export function LogDetail({
               {[
                 ["时间", new Date(log.created_at).toLocaleString("zh-CN")],
                 ["调用源", sourceLabels[log.call_source] ?? log.call_source],
+                ["调用凭据", formatCredential(log)],
                 ["模型", log.model],
                 [
                   "Provider",

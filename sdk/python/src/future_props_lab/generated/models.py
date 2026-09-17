@@ -388,6 +388,10 @@ class Body_upload_transcription_task_v1_model_test_transcription_tasks_upload_po
     upload: str = Field(default=..., alias='upload')
 
 class CallLogListItem(WireModel):
+    api_key_id: str | None = Field(default=None, alias='api_key_id', repr=False)
+    api_key_name: str | None = Field(default=None, alias='api_key_name', repr=False)
+    api_key_prefix: str | None = Field(default=None, alias='api_key_prefix', repr=False)
+    auth_kind: str | None = Field(default=None, alias='auth_kind')
     call_source: str = Field(default=..., alias='call_source')
     created_at: str = Field(default=..., alias='created_at')
     id: str = Field(default=..., alias='id')
@@ -405,6 +409,10 @@ class CallLogListOut(WireModel):
     total: int = Field(default=..., alias='total')
 
 class CallLogOut(WireModel):
+    api_key_id: str | None = Field(default=None, alias='api_key_id', repr=False)
+    api_key_name: str | None = Field(default=None, alias='api_key_name', repr=False)
+    api_key_prefix: str | None = Field(default=None, alias='api_key_prefix', repr=False)
+    auth_kind: str | None = Field(default=None, alias='auth_kind')
     call_source: str = Field(default=..., alias='call_source')
     completion_tokens: int | None = Field(default=..., alias='completion_tokens', repr=False)
     created_at: str = Field(default=..., alias='created_at')
@@ -447,6 +455,10 @@ class ClipIdOperation(WireModel):
     type: Literal['removeClip', 'duplicateClip', 'rippleDelete', 'unlinkClips'] = Field(default=..., alias='type')
 
 class CrossWorkspaceLogOut(WireModel):
+    api_key_id: str | None = Field(default=None, alias='api_key_id', repr=False)
+    api_key_name: str | None = Field(default=None, alias='api_key_name', repr=False)
+    api_key_prefix: str | None = Field(default=None, alias='api_key_prefix', repr=False)
+    auth_kind: str | None = Field(default=None, alias='auth_kind')
     call_source: str = Field(default=..., alias='call_source')
     created_at: str = Field(default=..., alias='created_at')
     id: str = Field(default=..., alias='id')

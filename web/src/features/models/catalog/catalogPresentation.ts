@@ -73,7 +73,9 @@ export function modelTestMode(model: CatalogModel, provider: CatalogProvider) {
   if (provider.kind === "senseaudio_image") return "image";
   if (provider.kind === "senseaudio_video") return "video";
   if (
-    ["openai", "senseaudio_asr", "senseaudio_asr_pro"].includes(provider.kind) &&
+    ["openai", "senseaudio_asr", "senseaudio_asr_pro"].includes(
+      provider.kind,
+    ) &&
     model.capabilities.includes("speech_recognition")
   )
     return "speech";

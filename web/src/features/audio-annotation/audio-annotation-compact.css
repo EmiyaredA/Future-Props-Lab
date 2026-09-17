@@ -2,18 +2,40 @@
   .annotation-project-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+  .annotation-editor-page {
+    height: auto;
+    max-height: none;
+    overflow: visible;
+  }
   .annotation-editor-page .annotation-editor-grid {
     display: block;
+    flex: none;
+    min-height: 0;
   }
   .annotation-editor-page[data-mobile-panel="waveform"] .annotation-inspector,
   .annotation-editor-page[data-mobile-panel="inspector"]
     .annotation-editor-main {
     display: none;
   }
+  .annotation-editor-page .annotation-editor-main {
+    min-height: 0;
+  }
+  .annotation-editor-page .annotation-waveform-shell {
+    max-height: none;
+  }
+  .annotation-editor-page .annotation-segment-table-card {
+    flex: none;
+    min-height: min(52vh, 420px);
+  }
+  .annotation-editor-page .annotation-segment-table {
+    min-height: 200px;
+  }
   .annotation-editor-page .annotation-inspector {
     position: static;
     width: 100%;
+    height: auto;
     max-height: none;
+    overflow: visible;
   }
   .annotation-editor-page .annotation-editor-header {
     flex-wrap: wrap;
@@ -27,9 +49,6 @@
   }
   .annotation-editor-page .annotation-waveform-tools {
     flex-wrap: wrap;
-  }
-  .annotation-editor-page .annotation-segment-table-card {
-    overflow-x: auto;
   }
 }
 

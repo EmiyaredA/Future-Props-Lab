@@ -6,7 +6,8 @@ from fastapi import APIRouter, File, HTTPException, Query, UploadFile
 from fastapi.responses import FileResponse, StreamingResponse
 
 from app.core.config import get_settings
-from app.deps import SessionDep, WorkspaceDep
+from app.deps import SessionDep, StudioAuth, WorkspaceDep
+from app.llm.call_logs.credentials import snapshot_from_principal
 from app.llm.catalog.service import ResourceNotFoundError
 from app.llm.playground.attachments import AttachmentError, ModelTestAttachments
 from app.llm.playground.service import (
@@ -160,13 +161,16 @@ async def stream_message(
     workspace_id: WorkspaceDep,
     conversation_id: str,
     body: ModelTestSendIn,
+    principal: StudioAuth,
 ) -> StreamingResponse:
     try:
+        credential = await snapshot_from_principal(session, principal)
         prepared = await _service(session, workspace_id).prepare_send(
             conversation_id,
             body.expected_revision,
             body.content,
             body.attachment_ids,
+            credential=credential,
         )
     except (
         ResourceNotFoundError,
@@ -188,10 +192,12 @@ async def regenerate_message(
     workspace_id: WorkspaceDep,
     conversation_id: str,
     body: ModelTestRegenerateIn,
+    principal: StudioAuth,
 ) -> StreamingResponse:
     try:
+        credential = await snapshot_from_principal(session, principal)
         prepared = await _service(session, workspace_id).prepare_regenerate(
-            conversation_id, body.expected_revision
+            conversation_id, body.expected_revision, credential=credential
         )
     except (
         ResourceNotFoundError,

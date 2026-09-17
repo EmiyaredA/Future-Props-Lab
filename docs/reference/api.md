@@ -101,19 +101,21 @@ HTTPS 或本机回环 HTTP 规则。
 
 ## 调用日志
 
-- `GET /v1/llm-call-logs`：支持搜索、调用源、供应商、模型、状态、日期和分页。
+- `GET /v1/llm-call-logs`：支持搜索、调用源、调用凭据、供应商、模型、状态、日期和分页。
 - `GET /v1/llm-call-logs/stats`：当前工作区今日统计（UTC），不受列表筛选影响。
 - `GET/DELETE /v1/llm-call-logs/{log_id}`
 - `GET /v1/llm-call-logs/{log_id}/reproduction-bundle`：下载不含密钥的 ZIP 复现包。
 - `POST /v1/llm-call-logs/batch-delete`
 
-列表参数 `q` 搜索模型、日志 ID 或 Trace ID；`call_source`、`provider_kind`、`model`、`status` 精确筛选，
+列表参数 `q` 搜索模型、日志 ID 或 Trace ID；`call_source`、`provider_kind`、`model`、`api_key_id`、`status` 精确筛选，
 `from`/`to` 支持 ISO 日期或时间，日期包含当天起止、带偏移时间统一转换 UTC。非法日期、反向区间或
-非法筛选值返回 422。`page_size` 范围 1–100，默认 25。调用源还支持 `thought_workshop_assistant`、
-`visual_workshop_generation` 和 `audio_annotation`。
+非法筛选值返回 422。`page_size` 范围 1–100，默认 25。调用源还支持 `model_inference`、
+`thought_workshop_assistant`、`visual_workshop_generation` 和 `audio_annotation`。
+`api_key_id=session` 只看网页会话；传密钥 ID 只看该 Management API Key。列表与详情返回
+`auth_kind` / `api_key_name` / `api_key_prefix` 快照，历史日志可为空。
 
 调用源 `model_diagnostic` 表示诊断 API 的固定 `OK` 快速诊断，`model_playground` 表示模型测试
-工作台，`visual_workshop_assistant` 表示视觉工坊 Agent。详情按请求上下文、模型回复、Token 与
+工作台，`model_inference` 表示独立模型调用，`visual_workshop_assistant` 表示视觉工坊 Agent。详情按请求上下文、模型回复、Token 与
 耗时分区展示，并支持可读/JSON、Markdown/原文切换。新产生的流式文本日志记录首 Token 耗时、
 结束原因和模型轮次；旧日志没有对应观测值时返回原 payload 并显示为空。
 

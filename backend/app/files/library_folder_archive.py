@@ -45,9 +45,7 @@ class _ImportAccumulator:
     skipped: list[LibraryFolderImportSkippedOut] = field(default_factory=list)
 
     def skip(self, path: str, code: str, message: str) -> None:
-        self.skipped.append(
-            LibraryFolderImportSkippedOut(path=path, code=code, message=message)
-        )
+        self.skipped.append(LibraryFolderImportSkippedOut(path=path, code=code, message=message))
 
     def to_out(self) -> LibraryFolderImportOut:
         return LibraryFolderImportOut(
@@ -140,11 +138,7 @@ class LibraryFolderArchive:
 
     async def _library_folder(self, folder_id: str) -> VisualAssetFolder:
         row = await self.session.get(VisualAssetFolder, folder_id)
-        if (
-            row is None
-            or row.workspace_id != self.workspace_id
-            or row.project_id is not None
-        ):
+        if row is None or row.workspace_id != self.workspace_id or row.project_id is not None:
             raise LibraryFolderArchiveError("文件夹不存在", code="not_found", status=404)
         return row
 
@@ -217,9 +211,7 @@ class LibraryFolderArchive:
         assets = await self._load_library_assets(folder_ids)
         folder_by_id = {folder.id: folder for folder in folders}
 
-        member_count = len(assets) + sum(
-            1 for folder_key in folder_ids if folder_key is not None
-        )
+        member_count = len(assets) + sum(1 for folder_key in folder_ids if folder_key is not None)
         if member_count > self.settings.fpl_project_snapshot_max_files:
             raise LibraryFolderArchiveError(
                 "文件夹归档文件数量超过限制",
@@ -267,7 +259,9 @@ class LibraryFolderArchive:
                         continue
                     archive.writestr(f"{relative}/", b"")
                 for asset, path in asset_paths:
-                    relative_dir = self._export_asset_dir(folder_by_id, asset.folder_id, root_folder)
+                    relative_dir = self._export_asset_dir(
+                        folder_by_id, asset.folder_id, root_folder
+                    )
                     if relative_dir is None and asset.folder_id not in folder_ids:
                         continue
                     directory_key = relative_dir or ""
@@ -425,9 +419,7 @@ class LibraryFolderArchive:
         try:
             archive = zipfile.ZipFile(archive_path)
         except (zipfile.BadZipFile, OSError) as exc:
-            raise LibraryFolderArchiveError(
-                "无法读取 ZIP 归档", code="invalid_archive"
-            ) from exc
+            raise LibraryFolderArchiveError("无法读取 ZIP 归档", code="invalid_archive") from exc
         with archive:
             infos = archive.infolist()
             if len(infos) > self.settings.fpl_project_snapshot_max_files:

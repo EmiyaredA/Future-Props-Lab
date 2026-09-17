@@ -10,6 +10,7 @@ from app.core.time import utc_now
 from app.files.assets import VisualAssets
 from app.llm.inference.assets import InferenceAssets, LocalInput, root
 from app.llm.inference.catalog import get_model, normalize_parameters
+from app.llm.call_logs.credentials import CredentialSnapshot
 from app.llm.transcription import max_transcription_input_bytes
 from app.models.model_inference import ModelInferenceAsset, ModelInferenceTask
 from app.schemas.model_inference import InferenceTaskOut, InferenceTasksOut
@@ -74,7 +75,7 @@ class InferenceTasks:
             raise OperationError("request_id 已用于其他调用", "idempotency_conflict", 409)
         return task_out(row) if row else None
 
-    async def create(self, body, admission=None):
+    async def create(self, body, admission=None, credential: CredentialSnapshot | None = None):
         prior = await self.replay(body)
         if prior:
             return prior
@@ -96,6 +97,7 @@ class InferenceTasks:
                 raise OperationError("音频超过当前模型的上传上限", "file_too_large", 413)
         payload = normalize_parameters(body, model, provider, assets)
         payload["asset_ids"] = body.asset_ids
+        snap = credential or CredentialSnapshot()
         row = ModelInferenceTask(
             workspace_id=self.workspace_id,
             request_id=body.request_id,
@@ -107,6 +109,7 @@ class InferenceTasks:
             model_slug=model.slug,
             kind=body.kind,
             request_payload=payload,
+            **snap.as_kwargs(),
         )
         self.session.add(row)
         try:

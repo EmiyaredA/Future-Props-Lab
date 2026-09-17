@@ -5,7 +5,8 @@ from typing import Annotated
 from fastapi import APIRouter, File, Form, HTTPException, Query, Request, UploadFile
 from fastapi.responses import FileResponse
 
-from app.deps import SessionDep, WorkspaceDep
+from app.deps import SessionDep, StudioAuth, WorkspaceDep
+from app.llm.call_logs.credentials import snapshot_from_principal
 from app.llm.playground.transcription import (
     ModelTestTranscription,
     ModelTestTranscriptionError,
@@ -42,6 +43,7 @@ async def upload_transcription_task(
     request: Request,
     session: SessionDep,
     workspace_id: WorkspaceDep,
+    principal: StudioAuth,
     upload: Annotated[UploadFile, File()],
     model_id: Annotated[str, Form()],
     language: Annotated[str | None, Form()] = None,
@@ -55,10 +57,12 @@ async def upload_transcription_task(
     abbreviations: Annotated[bool | None, Form()] = None,
 ) -> ModelTestTranscriptionTaskOut:
     try:
+        credential = await snapshot_from_principal(session, principal)
         result = await _transcription(session, workspace_id).create_upload(
             upload,
             model_id=model_id,
             admission=task_admission(request, session, "transcription"),
+            credential=credential,
             parameters=ModelTestTranscriptionParametersIn(
                 language=language,
                 target_language=target_language,
@@ -82,10 +86,14 @@ async def create_transcription_task(
     session: SessionDep,
     workspace_id: WorkspaceDep,
     body: ModelTestTranscriptionCreateIn,
+    principal: StudioAuth,
 ) -> ModelTestTranscriptionTaskOut:
     try:
+        credential = await snapshot_from_principal(session, principal)
         result = await _transcription(session, workspace_id).create_from_library(
-            body, admission=task_admission(request, session, "transcription")
+            body,
+            admission=task_admission(request, session, "transcription"),
+            credential=credential,
         )
         return result
     except ModelTestTranscriptionError as exc:

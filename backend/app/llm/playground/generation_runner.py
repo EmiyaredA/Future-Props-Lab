@@ -13,6 +13,7 @@ from app.core.config import Settings, get_settings
 from app.core.db import SessionLocal
 from app.core.time import utc_now
 from app.files.storage import AssetStorage
+from app.llm.call_logs.credentials import snapshot_from_row
 from app.llm.generation_runtime import (
     GenerationMaterializationError,
     GenerationTaskContext,
@@ -214,6 +215,7 @@ class ModelTestGenerationRunner(PollingTaskRunner):
             latency_ms=latency_ms,
             status="success" if row.status == "completed" else "error",
             error_message=row.error_message,
+            **snapshot_from_row(row).as_kwargs(),
         )
         session.add(log)
         row.log_id = log_id

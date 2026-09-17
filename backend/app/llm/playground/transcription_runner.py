@@ -14,6 +14,7 @@ from app.core.credentials import decrypt_secret
 from app.core.db import SessionLocal
 from app.core.tenant_context import bind_workspace, require_workspace_id
 from app.core.time import utc_now
+from app.llm.call_logs.credentials import snapshot_from_row
 from app.llm.providers.transcription import transcribe_model_audio
 from app.llm.transcription import (
     model_supports_transcription,
@@ -265,6 +266,7 @@ class ModelTestTranscriptionRunner(PollingTaskRunner):
                 latency_ms=max(0, round((finished_at - started_at).total_seconds() * 1000)),
                 status="success" if row.status == "completed" else "error",
                 error_message=row.error_message,
+                **snapshot_from_row(row).as_kwargs(),
             )
         )
         row.log_id = log_id

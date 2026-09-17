@@ -146,6 +146,10 @@ async def _settle(
             latency_ms=latency_ms,
             status="success" if status == "completed" else "error",
             error_message=error_message,
+            auth_kind=prepared.auth_kind,
+            api_key_id=prepared.api_key_id,
+            api_key_name=prepared.api_key_name,
+            api_key_prefix=prepared.api_key_prefix,
         )
         session.add(log)
         await session.commit()

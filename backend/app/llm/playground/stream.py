@@ -71,6 +71,10 @@ async def _settle(
             call_source="model_playground",
             provider_kind=prepared.provider_kind,
             model=prepared.model_slug,
+            auth_kind=prepared.auth_kind,
+            api_key_id=prepared.api_key_id,
+            api_key_name=prepared.api_key_name,
+            api_key_prefix=prepared.api_key_prefix,
             trace_id=trace_id,
             request_payload={
                 "model": prepared.model_slug,

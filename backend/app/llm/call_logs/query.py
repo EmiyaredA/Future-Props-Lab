@@ -4,12 +4,22 @@ from datetime import UTC, datetime
 
 from sqlalchemy import case, func, or_, select
 
+from app.llm.call_logs.credentials import SESSION_AUTH, SESSION_FILTER
 from app.models import LlmCallLog
 from app.schemas.call_log import CallLogStatsOut
 
 
 def log_conditions(
-    *, q, call_source, provider_kind, model, status, from_dt, to_dt, include_source_search=False
+    *,
+    q,
+    call_source,
+    provider_kind,
+    model,
+    status,
+    from_dt,
+    to_dt,
+    api_key_id="",
+    include_source_search=False,
 ):
     conditions = []
     if q:
@@ -25,6 +35,10 @@ def log_conditions(
     ):
         if value:
             conditions.append(column == value)
+    if api_key_id == SESSION_FILTER:
+        conditions.append(LlmCallLog.auth_kind == SESSION_AUTH)
+    elif api_key_id:
+        conditions.append(LlmCallLog.api_key_id == api_key_id)
     if from_dt:
         conditions.append(LlmCallLog.created_at >= from_dt)
     if to_dt:

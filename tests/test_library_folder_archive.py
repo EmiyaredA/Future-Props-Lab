@@ -139,9 +139,7 @@ async def test_library_folder_entry_imports_preserve_relative_paths() -> None:
         props = next(folder for folder in folders if folder["name"] == "道具")
         texture = next(folder for folder in folders if folder["name"] == "贴图")
         assert texture["parent_id"] == props["id"]
-        files = (
-            await client.get("/v1/files", params={"folder_id": texture["id"]})
-        ).json()["items"]
+        files = (await client.get("/v1/files", params={"folder_id": texture["id"]})).json()["items"]
         assert len(files) == 1
         assert files[0]["display_name"] == "icon"
 
@@ -183,7 +181,5 @@ async def test_library_folder_routes_are_registered_for_content_permissions() ->
     from app.accounts.route_permissions import route_permission
 
     assert route_permission("GET", "/v1/file-library/folder-exports") == "content.read"
-    assert (
-        route_permission("POST", "/v1/file-library/folder-archive-imports") == "content.write"
-    )
+    assert route_permission("POST", "/v1/file-library/folder-archive-imports") == "content.write"
     assert route_permission("POST", "/v1/file-library/folder-entry-imports") == "content.write"

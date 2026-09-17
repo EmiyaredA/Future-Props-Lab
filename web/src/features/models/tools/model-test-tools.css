@@ -1,27 +1,40 @@
 .test-tools-page {
   min-height: 100%;
-  padding: 42px 44px 64px;
+  padding: 14px 30px 40px;
   color: var(--text);
 }
 
 .test-tools-heading,
 .test-tool-detail-head {
   display: flex;
-  align-items: flex-start;
   gap: 18px;
   justify-content: space-between;
 }
 
 .test-tools-heading {
-  padding-bottom: 28px;
-  border-bottom: 1px solid var(--border);
+  align-items: center;
+  margin-bottom: 14px;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.test-tool-detail-head {
+  align-items: flex-start;
 }
 
 .test-tools-heading h1,
 .test-tool-detail-head h1 {
-  margin: 7px 0 6px;
   color: var(--text-strong);
-  font-size: 30px;
+  font-size: 24px;
+  letter-spacing: -0.035em;
+}
+
+.test-tools-heading h1 {
+  margin: 0 0 4px;
+}
+
+.test-tool-detail-head h1 {
+  margin: 7px 0 0;
 }
 
 .test-tools-heading p,
@@ -29,6 +42,10 @@
 .test-tool-muted {
   margin: 0;
   color: var(--muted);
+}
+
+.test-tools-heading p {
+  font-size: 12px;
 }
 
 .test-tool-button,
@@ -278,12 +295,17 @@
 .test-tool-loading {
   display: grid;
   place-items: center;
-  min-height: 320px;
-  padding: 30px;
+  gap: 12px;
+  min-height: 240px;
+  padding: 24px;
   border: 1px dashed var(--border-strong);
   border-radius: 15px;
   color: var(--muted);
   text-align: center;
+}
+
+.test-tool-empty > h2 {
+  margin: 0;
 }
 
 .test-tool-empty > svg {
@@ -554,7 +576,7 @@
 
 @media (max-width: 760px) {
   .test-tools-page {
-    padding: 24px 18px 44px;
+    padding: 12px 14px 28px;
   }
 
   .test-tools-heading,

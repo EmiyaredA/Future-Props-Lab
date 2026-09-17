@@ -1,13 +1,13 @@
 .api-keys-settings {
   display: grid;
-  gap: 24px;
+  gap: 16px;
   min-width: 0;
 }
 
 .api-keys-heading {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 12px;
 }
 
 .api-keys-heading-icon,
@@ -15,10 +15,10 @@
   display: grid;
   flex: none;
   place-items: center;
-  width: 42px;
-  height: 42px;
+  width: 36px;
+  height: 36px;
   border: 1px solid var(--accent-line);
-  border-radius: 12px;
+  border-radius: 10px;
   color: var(--accent);
   background: var(--accent-soft);
 }
@@ -37,25 +37,25 @@
 }
 
 .api-keys-heading h3 {
-  font-size: 21px;
+  font-size: 18px;
 }
 
 .api-keys-heading p,
 .api-key-create-card p {
-  margin: 5px 0 0;
+  margin: 4px 0 0;
   color: var(--muted);
   font-size: 13px;
-  line-height: 1.6;
+  line-height: 1.5;
 }
 
 .api-key-secret {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  gap: 14px;
-  padding: 16px;
+  gap: 12px;
+  padding: 12px 14px;
   border: 1px solid var(--accent-line);
-  border-radius: 13px;
+  border-radius: 12px;
   background: color-mix(in srgb, var(--accent-soft) 58%, var(--surface));
 }
 
@@ -73,12 +73,11 @@
 
 .api-key-create-card {
   display: grid;
-  gap: 18px;
-  padding: 20px;
+  gap: 12px;
+  padding: 14px;
   border: 1px solid var(--border);
-  border-radius: 15px;
+  border-radius: 12px;
   background: color-mix(in srgb, var(--surface-soft) 46%, var(--surface));
-  box-shadow: 0 12px 30px rgb(0 0 0 / 5%);
 }
 
 .api-key-card-title {
@@ -103,7 +102,7 @@
   display: grid;
   grid-template-columns: minmax(190px, 1.5fr) minmax(250px, 1.5fr) 128px auto;
   align-items: end;
-  gap: 14px;
+  gap: 12px;
 }
 
 .api-key-create-grid label,
@@ -124,7 +123,7 @@
 
 .account-dialog .api-key-create-grid input {
   min-width: 0;
-  height: 42px;
+  height: 36px;
   margin: 0;
 }
 
@@ -138,7 +137,7 @@
   align-items: center;
   justify-content: center;
   gap: 6px;
-  min-height: 42px;
+  min-height: 36px;
   padding: 0 11px;
   border: 1px solid var(--border-strong);
   border-radius: 9px;
@@ -178,7 +177,7 @@ button.api-key-permission {
 
 .api-key-duration-field .custom-select-trigger,
 .api-key-create-button {
-  min-height: 42px;
+  min-height: 36px;
 }
 
 .api-key-create-button {
@@ -273,7 +272,7 @@ button.api-key-permission {
 
 .api-key-table th,
 .api-key-table td {
-  padding: 13px 12px;
+  padding: 9px 12px;
   border-bottom: 1px solid var(--border);
   text-align: left;
   vertical-align: middle;
@@ -469,7 +468,7 @@ button.api-key-permission {
   display: grid;
   justify-items: center;
   gap: 7px;
-  padding: 42px 20px;
+  padding: 24px 20px;
   color: var(--muted);
   text-align: center;
 }

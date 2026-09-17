@@ -80,15 +80,25 @@
   min-height: 42px;
 }
 
+.temperature-field .parameter-label {
+  gap: 10px;
+}
+
 .temperature-value {
-  min-width: 38px;
-  padding: 3px 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 46px;
+  min-height: 24px;
+  padding: 4px 11px;
   border: 1px solid var(--accent-line);
   border-radius: 99px;
   background: var(--accent-soft);
   color: var(--accent);
-  font-size: 10.5px;
+  font-size: 12px;
   font-weight: 750;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
   text-align: center;
 }
 

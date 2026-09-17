@@ -68,6 +68,10 @@ class PreparedGeneration:
     request_payload: dict
     tool_snapshots: tuple[dict, ...] = ()
     replaced_message_id: str | None = None
+    auth_kind: str | None = None
+    api_key_id: str | None = None
+    api_key_name: str | None = None
+    api_key_prefix: str | None = None
 
 
 def message_out(
@@ -504,6 +508,7 @@ class ModelTestService:
         expected_revision: int,
         content: str,
         attachment_ids: list[str] | None = None,
+        credential=None,
     ) -> PreparedGeneration:
         row = await self._row(conversation_id)
         if await self._has_pending(conversation_id):
@@ -574,10 +579,11 @@ class ModelTestService:
                 "tools": list(tool_snapshots),
             },
             tool_snapshots=tool_snapshots,
+            **(credential.as_kwargs() if credential is not None else {}),
         )
 
     async def prepare_regenerate(
-        self, conversation_id: str, expected_revision: int
+        self, conversation_id: str, expected_revision: int, credential=None
     ) -> PreparedGeneration:
         row = await self._row(conversation_id)
         if await self._has_pending(conversation_id):
@@ -674,4 +680,5 @@ class ModelTestService:
             },
             tool_snapshots=tool_snapshots,
             replaced_message_id=old.id,
+            **(credential.as_kwargs() if credential is not None else {}),
         )

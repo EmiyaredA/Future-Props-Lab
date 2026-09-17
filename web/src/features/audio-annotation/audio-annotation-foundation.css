@@ -11,7 +11,11 @@
   --accent: var(--annotation-purple);
   --accent-hover: #8548bb;
   --accent-soft: color-mix(in srgb, var(--annotation-purple) 14%, transparent);
-  --accent-line: color-mix(in srgb, var(--annotation-purple) 42%, var(--border));
+  --accent-line: color-mix(
+    in srgb,
+    var(--annotation-purple) 42%,
+    var(--border)
+  );
 }
 
 .annotation-editor-header {
@@ -469,12 +473,40 @@
   width: min(460px, 100%);
 }
 
+.studio-main:has(.annotation-editor-page) {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
 .annotation-editor-page {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  box-sizing: border-box;
+  width: min(1680px, 100%);
   max-width: 1680px;
+  height: 100%;
+  max-height: 100%;
+  min-height: 0;
   margin: 0 auto;
+  padding-block: 16px 18px;
+  overflow: hidden;
+}
+
+.annotation-editor-page > .annotation-error,
+.annotation-editor-page > .annotation-conflict,
+.annotation-editor-page > .compact-panel-tabs {
+  flex: none;
+}
+
+.studio-main:has(.annotation-editor-page) > .annotation-editor-page {
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 .annotation-editor-header {
+  flex: none;
   align-items: center;
   margin-bottom: 14px;
 }

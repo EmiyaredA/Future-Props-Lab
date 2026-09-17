@@ -21,6 +21,15 @@ from app.schemas.call_log import (
 )
 
 
+def _credential_fields(row: LlmCallLog) -> dict:
+    return {
+        "auth_kind": row.auth_kind,
+        "api_key_id": row.api_key_id,
+        "api_key_name": row.api_key_name,
+        "api_key_prefix": row.api_key_prefix,
+    }
+
+
 def _detail(row: LlmCallLog) -> CallLogOut:
     reproduction_supported, reproduction_reason = reproduction_support(row)
     return CallLogOut(
@@ -28,6 +37,7 @@ def _detail(row: LlmCallLog) -> CallLogOut:
         call_source=row.call_source,
         provider_kind=row.provider_kind,
         model=row.model,
+        **_credential_fields(row),
         trace_id=row.trace_id,
         request_payload=row.request_payload,
         response_payload=row.response_payload,
@@ -55,6 +65,7 @@ class CallLogService:
         call_source: str,
         provider_kind: str,
         model: str,
+        api_key_id: str = "",
         status: str,
         from_dt: datetime | None,
         to_dt: datetime | None,
@@ -66,6 +77,7 @@ class CallLogService:
             call_source=call_source,
             provider_kind=provider_kind,
             model=model,
+            api_key_id=api_key_id,
             status=status,
             from_dt=from_dt,
             to_dt=to_dt,
@@ -96,6 +108,7 @@ class CallLogService:
                     call_source=row.call_source,
                     provider_kind=row.provider_kind,
                     model=row.model,
+                    **_credential_fields(row),
                     trace_id=row.trace_id,
                     total_tokens=row.total_tokens,
                     latency_ms=row.latency_ms,

@@ -6,8 +6,9 @@ from fastapi.responses import FileResponse, StreamingResponse
 from pydantic import ValidationError
 
 from app.concurrency.operation_receipts import OperationError
-from app.deps import SessionDep, WorkspaceDep
+from app.deps import SessionDep, StudioAuth, WorkspaceDep
 from app.files import AssetError
+from app.llm.call_logs.credentials import snapshot_from_principal
 from app.llm.inference.assets import InferenceAssets
 from app.llm.inference.catalog import options
 from app.llm.inference.tasks import InferenceTasks
@@ -50,9 +51,15 @@ async def model_options(session: SessionDep, workspace_id: WorkspaceDep):
 
 
 @router.post("/text", response_model=InferenceTextOut)
-async def generate_text(body: InferenceTextIn, session: SessionDep, workspace_id: WorkspaceDep):
+async def generate_text(
+    body: InferenceTextIn,
+    session: SessionDep,
+    workspace_id: WorkspaceDep,
+    principal: StudioAuth,
+):
     args = await mapped(prepare(session, workspace_id, body))
-    async with aclosing(events(workspace_id, body, args)) as stream:
+    credential = await snapshot_from_principal(session, principal)
+    async with aclosing(events(workspace_id, body, args, credential=credential)) as stream:
         async for event in stream:
             if event.type == "done":
                 return event.result
@@ -78,11 +85,17 @@ async def generate_text(body: InferenceTextIn, session: SessionDep, workspace_id
         }
     },
 )
-async def stream_text(body: InferenceTextIn, session: SessionDep, workspace_id: WorkspaceDep):
+async def stream_text(
+    body: InferenceTextIn,
+    session: SessionDep,
+    workspace_id: WorkspaceDep,
+    principal: StudioAuth,
+):
     args = await mapped(prepare(session, workspace_id, body))
+    credential = await snapshot_from_principal(session, principal)
 
     async def stream():
-        async with aclosing(events(workspace_id, body, args)) as source:
+        async with aclosing(events(workspace_id, body, args, credential=credential)) as source:
             async for event in source:
                 yield "data: " + event.model_dump_json(exclude_none=True) + "\n\n"
 
@@ -113,11 +126,18 @@ async def delete_asset(asset_id: str, session: SessionDep, workspace_id: Workspa
 
 @router.post("/tasks", response_model=InferenceTaskOut)
 async def create_task(
-    body: InferenceTaskIn, request: Request, session: SessionDep, workspace_id: WorkspaceDep
+    body: InferenceTaskIn,
+    request: Request,
+    session: SessionDep,
+    workspace_id: WorkspaceDep,
+    principal: StudioAuth,
 ):
+    credential = await snapshot_from_principal(session, principal)
     return await mapped(
         InferenceTasks(session, workspace_id).create(
-            body, task_admission(request, session, "inference")
+            body,
+            task_admission(request, session, "inference"),
+            credential=credential,
         )
     )
 

@@ -12,16 +12,10 @@
 }
 .call-logs-page .stat-grid {
   box-shadow: none;
-  margin-bottom: 6px;
+  margin-bottom: 16px;
 }
 .call-logs-page .stat-card {
   min-height: 102px;
-}
-.call-log-stats-note {
-  margin: 0 0 16px;
-  font-size: 11px;
-  color: var(--faint);
-  text-align: right;
 }
 .call-log-card {
   padding: 0;
@@ -155,7 +149,8 @@
   background: var(--surface);
   min-width: 94px;
   width: 1%;
-  box-shadow: -10px 0 12px -12px color-mix(in srgb, var(--text) 28%, transparent);
+  box-shadow: -10px 0 12px -12px
+    color-mix(in srgb, var(--text) 28%, transparent);
 }
 .call-log-table thead .call-log-actions {
   z-index: 2;
@@ -372,9 +367,6 @@
   .call-logs-page .stat-card {
     min-height: 86px;
     padding: 14px;
-  }
-  .call-log-stats-note {
-    font-size: 10px;
   }
 }
 

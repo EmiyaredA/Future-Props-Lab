@@ -10,6 +10,7 @@ from sqlalchemy import select
 
 from app.core.credentials import decrypt_secret
 from app.core.db import SessionLocal
+from app.llm.call_logs.credentials import CredentialSnapshot
 from app.llm.providers import stream_text_completion
 from app.llm.providers.streaming import ChatMessageInput
 from app.models import LlmCallLog, ModelEntry, ModelProvider
@@ -60,9 +61,19 @@ class PreparedWriting:
     action: str
     instruction: str
     content: str
+    auth_kind: str | None = None
+    api_key_id: str | None = None
+    api_key_name: str | None = None
+    api_key_prefix: str | None = None
 
 
-async def prepare(notes: Notes, note_id: str, body: ThoughtAssistantIn) -> PreparedWriting:
+async def prepare(
+    notes: Notes,
+    note_id: str,
+    body: ThoughtAssistantIn,
+    *,
+    credential: CredentialSnapshot | None = None,
+) -> PreparedWriting:
     note = await notes.get(note_id)
     if note.revision != body.expected_revision:
         await notes.conflict(note_id, body.expected_revision)
@@ -101,6 +112,7 @@ async def prepare(notes: Notes, note_id: str, body: ThoughtAssistantIn) -> Prepa
         raise ThoughtError("内容过长，请选择较短的片段")
     if body.action == "custom" and not body.instruction.strip():
         raise ThoughtError("请输入写作要求")
+    snap = credential or CredentialSnapshot()
     prepared = PreparedWriting(
         notes.workspace_id,
         note_id,
@@ -112,6 +124,7 @@ async def prepare(notes: Notes, note_id: str, body: ThoughtAssistantIn) -> Prepa
         body.action,
         body.instruction,
         content,
+        **snap.as_kwargs(),
     )
     await notes.session.rollback()
     return prepared
@@ -187,6 +200,10 @@ async def writing_events(prepared: PreparedWriting):
                         latency_ms=round((time.monotonic() - started) * 1000),
                         status="success" if status == "success" else "error",
                         error_message=error,
+                        auth_kind=prepared.auth_kind,
+                        api_key_id=prepared.api_key_id,
+                        api_key_name=prepared.api_key_name,
+                        api_key_prefix=prepared.api_key_prefix,
                         **usage,
                     )
                 )

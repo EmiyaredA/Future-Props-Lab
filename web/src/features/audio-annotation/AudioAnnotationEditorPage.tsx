@@ -454,26 +454,38 @@ export function AudioAnnotationEditorPage({
                 />
               </label>
               <div className="annotation-edit-actions">
-                <button type="button" disabled={!selected} onClick={doSplit}>
-                  <Scissors aria-hidden /> 在此切分
+                <button
+                  type="button"
+                  aria-label="在此切分"
+                  title="在此切分"
+                  disabled={!selected}
+                  onClick={doSplit}
+                >
+                  <Scissors aria-hidden />
                 </button>
                 <button
                   type="button"
+                  aria-label="添加重叠片段"
+                  title="添加重叠片段"
                   disabled={!selected}
                   onClick={addOverlappingSegment}
                 >
-                  <Plus aria-hidden /> 添加重叠片段
+                  <Plus aria-hidden />
                 </button>
                 <button
                   type="button"
+                  aria-label="合并下一段"
+                  title="合并下一段"
                   disabled={!selected || !nextSegment}
                   onClick={doMerge}
                 >
-                  <Merge aria-hidden /> 合并下一段
+                  <Merge aria-hidden />
                 </button>
                 <button
                   type="button"
                   className="danger"
+                  aria-label="删除片段"
+                  title="删除片段"
                   disabled={!selected}
                   onClick={() => {
                     if (!selected) return;
@@ -489,7 +501,7 @@ export function AudioAnnotationEditorPage({
                     );
                   }}
                 >
-                  <Trash2 aria-hidden /> 删除片段
+                  <Trash2 aria-hidden />
                 </button>
               </div>
             </div>
@@ -624,9 +636,11 @@ export function AudioAnnotationEditorPage({
                           <i style={{ background: "#8b9189" }} />
                         )}
                       </span>
-                      {segmentSpeakers.length
-                        ? segmentSpeakers.map((item) => item.name).join("、")
-                        : "未指定"}
+                      <span className="annotation-segment-speaker-names">
+                        {segmentSpeakers.length
+                          ? segmentSpeakers.map((item) => item.name).join("、")
+                          : "未指定"}
+                      </span>
                     </span>
                     <span className="annotation-segment-emotion">
                       {segment.emotion || "未标注"}

@@ -166,29 +166,38 @@ export function ModelTestToolSelector({
         <p className="model-test-tools-unavailable">
           <CircleAlert aria-hidden /> 当前模型不支持工具调用
         </p>
-      ) : (
-        <>
+      ) : selected.length ? (
+        <div className="model-test-tools-selected">
           <div className="model-test-selected-tools">
-            {selected.length ? (
-              selected.map((tool) => (
-                <span className={tool.enabled ? "" : "disabled"} key={tool.id}>
-                  {tool.name}
-                  {!tool.enabled ? "（已停用）" : ""}
-                </span>
-              ))
-            ) : (
-              <p>尚未选择测试工具</p>
-            )}
+            {selected.map((tool) => (
+              <span className={tool.enabled ? "" : "disabled"} key={tool.id}>
+                {tool.name}
+                {!tool.enabled ? "（已停用）" : ""}
+              </span>
+            ))}
           </div>
           <button
             type="button"
-            className="model-test-tool-select-button"
+            className="model-test-tool-change-button"
             disabled={disabled}
             onClick={() => setOpen(true)}
           >
-            选择测试工具
+            更改选择
           </button>
-        </>
+        </div>
+      ) : (
+        <button
+          type="button"
+          className="model-test-tool-empty-trigger"
+          disabled={disabled}
+          onClick={() => setOpen(true)}
+        >
+          <Wrench aria-hidden />
+          <span>
+            <strong>选择测试工具</strong>
+            <small>为本次会话绑定可调用的模拟工具</small>
+          </span>
+        </button>
       )}
       {open ? (
         <div

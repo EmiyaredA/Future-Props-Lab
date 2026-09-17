@@ -33,9 +33,7 @@ export function DocsNavigation({ page }: { page: GuidePage }) {
             返回{context.section === "工具" ? "工具导航" : "应用"}
           </a>
           <strong>{context.title}</strong>
-          <small>
-            {context.section === "工具" ? "内置工具" : "应用"}文档
-          </small>
+          <small>{context.section === "工具" ? "内置工具" : "应用"}文档</small>
         </div>
       )}
       {sections.map((section, index) => {

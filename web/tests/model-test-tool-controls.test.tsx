@@ -63,7 +63,7 @@ test("selects an enabled tool and saves its ordered id", async () => {
       onSave={onSave}
     />,
   );
-  await user.click(screen.getByRole("button", { name: "选择测试工具" }));
+  await user.click(screen.getByRole("button", { name: /选择测试工具/ }));
   await user.click(
     await screen.findByRole("checkbox", { name: /get_weather/ }),
   );
@@ -99,7 +99,7 @@ test("disables selection for unsupported models and expands persisted steps", as
     </>,
   );
   expect(screen.getByText("当前模型不支持工具调用")).toBeInTheDocument();
-  expect(screen.queryByRole("button", { name: "选择测试工具" })).toBeNull();
+  expect(screen.queryByRole("button", { name: /选择测试工具/ })).toBeNull();
   await user.click(screen.getByRole("button", { name: /get_weather/ }));
   expect(screen.getByText(/"city": "上海"/)).toBeInTheDocument();
   expect(screen.getByText(/"weather": "晴"/)).toBeInTheDocument();

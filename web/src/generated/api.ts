@@ -5615,6 +5615,14 @@ export interface components {
         };
         /** CallLogListItem */
         CallLogListItem: {
+            /** Api Key Id */
+            api_key_id?: string | null;
+            /** Api Key Name */
+            api_key_name?: string | null;
+            /** Api Key Prefix */
+            api_key_prefix?: string | null;
+            /** Auth Kind */
+            auth_kind?: string | null;
             /** Call Source */
             call_source: string;
             /** Created At */
@@ -5647,6 +5655,14 @@ export interface components {
         };
         /** CallLogOut */
         CallLogOut: {
+            /** Api Key Id */
+            api_key_id?: string | null;
+            /** Api Key Name */
+            api_key_name?: string | null;
+            /** Api Key Prefix */
+            api_key_prefix?: string | null;
+            /** Auth Kind */
+            auth_kind?: string | null;
             /** Call Source */
             call_source: string;
             /** Completion Tokens */
@@ -5732,6 +5748,14 @@ export interface components {
         };
         /** CrossWorkspaceLogOut */
         CrossWorkspaceLogOut: {
+            /** Api Key Id */
+            api_key_id?: string | null;
+            /** Api Key Name */
+            api_key_name?: string | null;
+            /** Api Key Prefix */
+            api_key_prefix?: string | null;
+            /** Auth Kind */
+            auth_kind?: string | null;
             /** Call Source */
             call_source: string;
             /** Created At */
@@ -14954,6 +14978,7 @@ export interface operations {
                 call_source?: string;
                 provider_kind?: string;
                 model?: string;
+                api_key_id?: string;
                 status?: string;
                 from?: string | null;
                 to?: string | null;
@@ -19829,6 +19854,7 @@ export interface operations {
                 call_source?: string;
                 provider_kind?: string;
                 model?: string;
+                api_key_id?: string;
                 status?: string;
                 from?: string | null;
                 to?: string | null;

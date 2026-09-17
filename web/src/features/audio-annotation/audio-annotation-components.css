@@ -60,32 +60,46 @@
 .annotation-editor-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 360px;
-  align-items: start;
+  align-items: stretch;
+  flex: 1 1 0;
   gap: 14px;
+  min-height: 0;
 }
 
 .annotation-editor-main {
   min-width: 0;
-  display: grid;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
   gap: 14px;
 }
 
 .annotation-waveform-card,
-.annotation-segment-table-card,
+.annotation-segment-table-card {
+  overflow: hidden;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
 .annotation-inspector {
-  overflow: visible;
   border: 1px solid var(--border);
   background: var(--surface);
   box-shadow: var(--shadow);
 }
 
 .annotation-waveform-card {
+  display: flex;
+  flex: 0 1 auto;
+  flex-direction: column;
+  min-height: 0;
   padding: 0;
   overflow: hidden;
   container-type: inline-size;
 }
 
 .annotation-waveform-meta {
+  flex: none;
   min-height: 72px;
   padding: 13px 16px;
   gap: 28px;
@@ -195,8 +209,11 @@
 
 .annotation-waveform-shell {
   position: relative;
-  min-height: 260px;
+  flex: 0 1 auto;
+  min-height: 100px;
+  max-height: min(22vh, 140px);
   overflow-x: auto;
+  overflow-y: hidden;
   background: color-mix(in srgb, var(--surface-soft) 76%, transparent);
 }
 
@@ -259,6 +276,7 @@
 }
 
 .annotation-waveform-navigator {
+  flex: none;
   min-height: 46px;
   padding: 8px 14px;
   display: flex;
@@ -328,9 +346,11 @@
 }
 
 .annotation-transport {
-  min-height: 64px;
-  padding: 10px 14px;
-  gap: 10px;
+  flex: none;
+  flex-wrap: nowrap;
+  min-height: 56px;
+  padding: 8px 14px;
+  gap: 8px;
   border-top: 1px solid var(--border);
 }
 
@@ -396,21 +416,21 @@
 
 .annotation-edit-actions {
   margin-left: auto;
-  gap: 7px;
+  flex: none;
+  gap: 6px;
 }
 
 .annotation-edit-actions button {
-  min-height: 36px;
-  padding: 0 10px;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
+  width: 34px;
+  height: 34px;
+  min-height: 34px;
+  padding: 0;
+  display: inline-grid;
+  place-items: center;
   border: 1px solid var(--border);
   border-radius: 8px;
   background: var(--surface-soft);
   color: var(--text);
-  font-size: 11px;
-  white-space: nowrap;
 }
 
 .annotation-edit-actions button:hover:not(:disabled) {
@@ -427,36 +447,21 @@
 }
 
 .annotation-edit-actions svg {
-  width: 14px;
-}
-
-@container (max-width: 900px) {
-  .annotation-transport {
-    flex-wrap: wrap;
-  }
-  .annotation-edit-actions {
-    width: 100%;
-    margin-left: 0;
-    flex: 1 0 100%;
-  }
-  .annotation-edit-actions button {
-    flex: 1 1 0;
-    justify-content: center;
-  }
-}
-
-@container (max-width: 520px) {
-  .annotation-edit-actions button {
-    flex-basis: calc(50% - 4px);
-  }
+  width: 15px;
+  height: 15px;
 }
 
 .annotation-segment-table-card {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  min-height: 160px;
   padding: 0;
   overflow: hidden;
 }
 
 .annotation-segment-table-card > header {
+  flex: none;
   min-height: 57px;
   padding: 9px 12px;
   display: flex;

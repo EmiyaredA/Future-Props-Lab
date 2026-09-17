@@ -170,6 +170,7 @@ export type LogFilters = {
   callSource: string;
   providerKind: string;
   model: string;
+  apiKeyId: string;
   status: string;
   from: string;
   to: string;
@@ -186,6 +187,7 @@ export async function getLogs(filters: LogFilters): Promise<CallLogList> {
           call_source: filters.callSource || undefined,
           provider_kind: filters.providerKind || undefined,
           model: filters.model || undefined,
+          api_key_id: filters.apiKeyId || undefined,
           status: filters.status || undefined,
           from: filters.from || undefined,
           to: filters.to || undefined,

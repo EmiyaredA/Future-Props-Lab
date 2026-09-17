@@ -7,7 +7,9 @@ from fastapi import APIRouter, HTTPException, WebSocket
 from app.accounts.errors import AccountError
 from app.accounts.runtime_quotas import acquire, release
 from app.core.config import get_settings
+from app.core.db import SessionLocal
 from app.deps import SessionDep, StudioAuth, resolve_studio_websocket_principal
+from app.llm.call_logs.credentials import snapshot_from_principal
 from app.llm.realtime import list_realtime_models, run_realtime_model_test
 from app.schemas.realtime_voice import RealtimeVoiceOptionsOut
 
@@ -75,8 +77,13 @@ async def realtime_socket(websocket: WebSocket) -> None:
 
     websocket.send_json = projected_send
     try:
+        async with SessionLocal() as session:
+            credential = await snapshot_from_principal(session, principal)
         await run_realtime_model_test(
-            websocket, workspace_id=workspace_id, check_access=check_access
+            websocket,
+            workspace_id=workspace_id,
+            check_access=check_access,
+            credential=credential,
         )
     finally:
         await release(lease_id)

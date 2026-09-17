@@ -3,7 +3,11 @@ import { CustomSelect } from "@shared/ui/CustomSelect";
 import { CatalogMenu } from "@features/models/catalog/CatalogMenu";
 import type { CallLogItem } from "@features/models/api";
 import { providerLabels } from "./logOptions";
-import { formatNumber, sourceLabels } from "./modelCallLogPresentation";
+import {
+  formatNumber,
+  sourceLabels,
+  formatCredential,
+} from "./modelCallLogPresentation";
 export type LogRow = Omit<CallLogItem, "trace_id"> & { workspace_id?: string };
 export function LogTable({
   rows,
@@ -58,6 +62,7 @@ export function LogTable({
             </th>
             {all && <th>工作区</th>}
             <th>调用源</th>
+            <th>调用凭据</th>
             <th>模型</th>
             <th>接入协议</th>
             <th className="call-log-num">Token</th>
@@ -95,6 +100,7 @@ export function LogTable({
                   </td>
                 )}
                 <td>{sourceLabels[row.call_source] ?? row.call_source}</td>
+                <td title={formatCredential(row)}>{formatCredential(row)}</td>
                 <td className="call-log-model">
                   <strong title={row.model}>{row.model}</strong>
                 </td>

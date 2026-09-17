@@ -5,7 +5,8 @@ from typing import Annotated
 from fastapi import APIRouter, File, HTTPException, Query, Request, UploadFile
 from fastapi.responses import FileResponse
 
-from app.deps import SessionDep, WorkspaceDep
+from app.deps import SessionDep, StudioAuth, WorkspaceDep
+from app.llm.call_logs.credentials import snapshot_from_principal
 from app.llm.playground.generation import ModelTestGeneration, ModelTestGenerationError
 from app.llm.playground.generation_assets import (
     GenerationAssetError,
@@ -105,10 +106,12 @@ async def create_generation_task(
     session: SessionDep,
     workspace_id: WorkspaceDep,
     body: ModelTestGenerationCreateIn,
+    principal: StudioAuth,
 ) -> ModelTestGenerationTaskOut:
     try:
+        credential = await snapshot_from_principal(session, principal)
         result = await _generation(session, workspace_id).create(
-            body, admission=task_admission(request, session, "model")
+            body, admission=task_admission(request, session, "model"), credential=credential
         )
         return result
     except ModelTestGenerationError as exc:

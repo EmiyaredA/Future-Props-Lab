@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException, Query
 
-from app.deps import SessionDep, WorkspaceDep
+from app.deps import SessionDep, StudioAuth, WorkspaceDep
+from app.llm.call_logs.credentials import snapshot_from_principal
 from app.llm.catalog import ModelCatalogService
 from app.llm.catalog.defaults import update_defaults
 from app.llm.catalog.service import (
@@ -137,9 +138,10 @@ async def delete_model(
 
 
 @router.post("/model-entries/{model_id}/test", response_model=TestModelOut)
-async def run_model_test(session: SessionDep, model_id: str) -> TestModelOut:
+async def run_model_test(session: SessionDep, model_id: str, principal: StudioAuth) -> TestModelOut:
     try:
-        return await test_model(session, model_id)
+        credential = await snapshot_from_principal(session, principal)
+        return await test_model(session, model_id, credential=credential)
     except ResourceNotFoundError as exc:
         raise _not_found(exc) from None
     except DiagnosticCallError as exc:

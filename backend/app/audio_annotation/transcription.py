@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.audio_annotation.projects import MIN_SEGMENT_MS, AudioAnnotationError
 from app.core.credentials import decrypt_secret
 from app.files.incoming import IncomingFile
+from app.llm.call_logs.credentials import CredentialSnapshot
 from app.llm.providers.transcription import TranscriptionResult, transcribe_model_audio
 from app.llm.transcription import (
     max_transcription_input_bytes,
@@ -109,8 +110,10 @@ class AudioAnnotationTranscription:
         started: float,
         text: str,
         error_message: str | None,
+        credential: CredentialSnapshot | None = None,
     ) -> str:
         log_id = str(uuid4())
+        snap = credential or CredentialSnapshot()
         self.session.add(
             LlmCallLog(
                 id=log_id,
@@ -144,6 +147,7 @@ class AudioAnnotationTranscription:
                 latency_ms=max(0, round((time.perf_counter() - started) * 1000)),
                 status="error" if error_message else "success",
                 error_message=error_message,
+                **snap.as_kwargs(),
             )
         )
         await self.session.commit()
@@ -160,6 +164,7 @@ class AudioAnnotationTranscription:
         end_ms: int,
         language_tag: str | None,
         target_language_tag: str | None,
+        credential: CredentialSnapshot | None = None,
     ) -> AudioAnnotationSegmentTranscriptionOut:
         try:
             project = await self.session.get(AudioAnnotationProject, project_id)
@@ -239,6 +244,7 @@ class AudioAnnotationTranscription:
                     started=started,
                     text="",
                     error_message=message,
+                    credential=credential,
                 )
                 raise AudioAnnotationError(
                     message, code="segment_transcription_failed", status=502
@@ -261,6 +267,7 @@ class AudioAnnotationTranscription:
                 started=started,
                 text=text,
                 error_message=None,
+                credential=credential,
             )
             return AudioAnnotationSegmentTranscriptionOut(
                 text=text,

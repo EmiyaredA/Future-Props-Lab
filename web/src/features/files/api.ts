@@ -1,5 +1,10 @@
 import type { components } from "@generated/api";
-import { api, fetchApiDownload, fetchApiJson, unwrap } from "@platform/api/client";
+import {
+  api,
+  fetchApiDownload,
+  fetchApiJson,
+  unwrap,
+} from "@platform/api/client";
 
 export type ManagedFile = components["schemas"]["VisualAssetOut"];
 export type ManagedFolder = components["schemas"]["VisualAssetFolderOut"];
@@ -232,9 +237,7 @@ export type LibraryFolderImportResult = {
 };
 
 export async function exportLibraryFolderArchive(folderId?: string) {
-  const query = folderId
-    ? `?folder_id=${encodeURIComponent(folderId)}`
-    : "";
+  const query = folderId ? `?folder_id=${encodeURIComponent(folderId)}` : "";
   return fetchApiDownload(`/v1/file-library/folder-exports${query}`);
 }
 

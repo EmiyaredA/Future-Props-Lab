@@ -397,13 +397,14 @@
 }
 
 .test-tools-page {
-  padding: 22px 30px 40px;
+  padding: 12px 30px 36px;
 }
 .test-tools-heading {
-  padding-bottom: 14px;
+  margin-bottom: 12px;
+  padding-bottom: 0;
 }
 .test-tools-heading h1 {
-  margin-top: 4px;
+  margin: 0 0 4px;
   font-size: 24px;
 }
 .test-tool-button,
@@ -416,7 +417,7 @@
   font-size: 11px;
 }
 .test-tools-filters {
-  margin: 12px 0;
+  margin: 0 0 12px;
   gap: 8px;
 }
 .test-tools-filters label {
@@ -488,7 +489,7 @@
 }
 .test-tool-empty,
 .test-tool-loading {
-  min-height: 220px;
+  min-height: 180px;
   border-radius: 10px;
 }
 
@@ -497,7 +498,7 @@
 }
 .call-logs-page .stat-grid {
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  margin-bottom: 4px;
+  margin-bottom: 14px;
   border-radius: 10px;
 }
 .call-logs-page .stat-card {
@@ -593,7 +594,7 @@
     grid-row: 1;
   }
   .test-tools-page {
-    padding: 16px 14px 28px;
+    padding: 12px 14px 28px;
   }
   .test-tools-heading {
     flex-direction: column;

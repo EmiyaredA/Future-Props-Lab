@@ -83,6 +83,10 @@ class PreparedAssistantGeneration:
     messages: list[ChatMessageInput]
     request_payload: dict
     attachment_warnings: tuple[str, ...] = ()
+    auth_kind: str | None = None
+    api_key_id: str | None = None
+    api_key_name: str | None = None
+    api_key_prefix: str | None = None
 
 
 def asset_out(row: VisualAsset) -> VisualAssistantAssetOut:
@@ -558,6 +562,7 @@ class VisualAssistantConversations(VisualAssistantAttachmentMixin):
         content: str,
         asset_ids: list[str],
         content_parts: list[VisualAssistantContentPart],
+        credential=None,
     ) -> PreparedAssistantGeneration:
         project = await self._project(project_id)
         row = await self._row(project_id, conversation_id)
@@ -671,4 +676,5 @@ class VisualAssistantConversations(VisualAssistantAttachmentMixin):
                 "canvas": canvas_summary,
             },
             attachment_warnings=attachment_warnings,
+            **(credential.as_kwargs() if credential is not None else {}),
         )

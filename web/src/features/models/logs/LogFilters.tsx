@@ -7,12 +7,20 @@ import { useDrawerFocus } from "@shared/ui/useDrawerFocus";
 import { logProviderKindOptions } from "./logOptions";
 import { sourceLabels } from "./modelCallLogPresentation";
 
+type CredentialOption = { value: string; label: string };
+
 type ControlsProps = {
   filters: Filters;
   models: string[];
+  credentialOptions?: CredentialOption[];
   onChange: (filters: Filters) => void;
 };
-function QuickFilters({ filters, models, onChange }: ControlsProps) {
+function QuickFilters({
+  filters,
+  models,
+  credentialOptions = [],
+  onChange,
+}: ControlsProps) {
   const fields = [
     {
       key: "callSource" as const,
@@ -21,6 +29,11 @@ function QuickFilters({ filters, models, onChange }: ControlsProps) {
         value,
         label,
       })),
+    },
+    {
+      key: "apiKeyId" as const,
+      label: "调用凭据",
+      options: [{ value: "session", label: "网页会话" }, ...credentialOptions],
     },
     {
       key: "providerKind" as const,
@@ -63,6 +76,7 @@ function QuickFilters({ filters, models, onChange }: ControlsProps) {
 export function LogToolbar({
   filters,
   models,
+  credentialOptions,
   onChange,
   scope,
   options,
@@ -116,7 +130,12 @@ export function LogToolbar({
         </div>
       )}
       <div className="call-log-quick">
-        <QuickFilters filters={filters} models={models} onChange={onChange} />
+        <QuickFilters
+          filters={filters}
+          models={models}
+          credentialOptions={credentialOptions}
+          onChange={onChange}
+        />
       </div>
       <button className="btn call-log-filter-trigger" onClick={onOpen}>
         <SlidersHorizontal size={16} />
@@ -128,6 +147,7 @@ export function LogToolbar({
 export function LogFilterDrawer({
   filters,
   models,
+  credentialOptions,
   onChange,
   onClose,
   onReset,
@@ -158,7 +178,12 @@ export function LogFilterDrawer({
         </header>
         <div className="call-log-filter-body">
           <div className="call-log-drawer-quick">
-            <QuickFilters filters={draft} models={models} onChange={setDraft} />
+            <QuickFilters
+              filters={draft}
+              models={models}
+              credentialOptions={credentialOptions}
+              onChange={setDraft}
+            />
           </div>
           <fieldset>
             <legend>日期范围</legend>

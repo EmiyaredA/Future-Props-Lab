@@ -5,7 +5,9 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   useLogWorkspaceScope,
   useCrossWorkspaceLogQueries,
+  accountQueryKeys,
 } from "@features/accounts";
+import { listApiKeys } from "@features/accounts/api";
 import { useWorkspacePermission } from "@platform/auth/WorkspacePermissions";
 import {
   batchDeleteLogs,
@@ -16,7 +18,6 @@ import {
   type LogFilters,
 } from "@features/models/api";
 import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
-import { accountQueryKeys } from "@features/accounts";
 import { modelQueryKeys } from "@features/models/queryKeys";
 import { LogDetail } from "./ModelCallLogDetail";
 import {
@@ -26,8 +27,6 @@ import {
 } from "./modelCallLogPresentation";
 import { LogToolbar, LogFilterDrawer } from "./LogFilters";
 import { LogTable, LogPagination } from "./LogTable";
-
-import { InferenceTasks } from "../inference/InferenceTasks";
 
 type Scope = ReturnType<typeof useLogWorkspaceScope>;
 export function ModelCallLogsPage({
@@ -78,8 +77,6 @@ function LogsContent({
   canDelete: boolean;
 }) {
   const queryClient = useQueryClient();
-  const canReadContent = useWorkspacePermission("content.read");
-  const [showTasks, setShowTasks] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [detailId, setDetailId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<DeleteTarget>(null);
@@ -103,6 +100,18 @@ function LogsContent({
     queryFn: getLogStats,
     enabled: scope.local,
   });
+  const keys = useQuery({
+    queryKey: [...accountQueryKeys.root, "api-keys", currentWorkspaceId],
+    queryFn: listApiKeys,
+  });
+  const credentialOptions = useMemo(
+    () =>
+      (keys.data ?? []).map((key) => ({
+        value: key.id,
+        label: `${key.name} · ${key.key_prefix}…`,
+      })),
+    [keys.data],
+  );
   const cross = useCrossWorkspaceLogQueries(
     scope.ids,
     filters,
@@ -179,23 +188,8 @@ function LogsContent({
         <div>
           <h1>模型调用日志</h1>
           <p>查看模型调用的消息链、Token 用量、耗时与原始数据。</p>
-          {scope.local && canReadContent && (
-            <button
-              className="btn"
-              aria-expanded={showTasks}
-              onClick={() => setShowTasks(!showTasks)}
-            >
-              独立模型任务
-            </button>
-          )}
         </div>
       </header>
-      {showTasks && scope.local && canReadContent && (
-        <InferenceTasks
-          key={currentWorkspaceId}
-          workspaceId={currentWorkspaceId}
-        />
-      )}
       <div
         className="stat-grid"
         aria-label="所选工作区今日统计（UTC），不受列表筛选影响"
@@ -223,7 +217,6 @@ function LogsContent({
           </div>
         ))}
       </div>
-      <p className="call-log-stats-note">所选工作区 · 今日数据（UTC）</p>
       {stats.isError && (
         <LogError
           error={stats.error}
@@ -237,6 +230,7 @@ function LogsContent({
           resetVersion={resetVersion}
           filters={filters}
           models={models}
+          credentialOptions={credentialOptions}
           onChange={apply}
           scope={scope.scope}
           options={scope.options}
@@ -331,6 +325,7 @@ function LogsContent({
         <LogFilterDrawer
           filters={filters}
           models={models}
+          credentialOptions={credentialOptions}
           onChange={apply}
           onClose={() => setDrawer(false)}
           onReset={reset}

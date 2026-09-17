@@ -201,7 +201,9 @@ export function useSoundWorkspaceController({
   const references = selected ? audioReferences(document, selected.id) : [];
   const selectedFile = selected ? filesById.get(selected.fileId) : undefined;
   const asrModels = (catalog.data?.providers ?? []).flatMap((provider) =>
-    ["openai", "senseaudio_asr", "senseaudio_asr_pro"].includes(provider.kind) && provider.enabled
+    ["openai", "senseaudio_asr", "senseaudio_asr_pro"].includes(
+      provider.kind,
+    ) && provider.enabled
       ? provider.models.filter(
           (model) =>
             model.enabled &&

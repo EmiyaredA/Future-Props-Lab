@@ -46,8 +46,9 @@ export function preferredModeModel(
   const candidates = models.filter((model) => {
     if (mode === "speech")
       return (
-        ["openai", "senseaudio_asr", "senseaudio_asr_pro"].includes(model.providerKind) &&
-        model.capabilities.includes("speech_recognition")
+        ["openai", "senseaudio_asr", "senseaudio_asr_pro"].includes(
+          model.providerKind,
+        ) && model.capabilities.includes("speech_recognition")
       );
     if (mode === "realtime_voice")
       return (

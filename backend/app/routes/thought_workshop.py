@@ -8,6 +8,7 @@ from app.core.config import get_settings
 from app.deps import SessionDep, StudioAuth, WorkspaceDep
 from app.files.library import AssetError, AssetLibrary
 from app.files.project_snapshots import ProjectSnapshotError
+from app.llm.call_logs.credentials import snapshot_from_principal
 from app.schemas.thought_history import ThoughtHistoryDetail, ThoughtHistoryList
 from app.schemas.thought_knowledge import (
     KnowledgeBaseIn,
@@ -194,9 +195,16 @@ async def writing_models(session: SessionDep, workspace_id: WorkspaceDep):
     },
 )
 async def assistant(
-    note_id: str, body: ThoughtAssistantIn, session: SessionDep, workspace_id: WorkspaceDep
+    note_id: str,
+    body: ThoughtAssistantIn,
+    session: SessionDep,
+    workspace_id: WorkspaceDep,
+    principal: StudioAuth,
 ):
-    prepared = await call(prepare(Notes(session, workspace_id), note_id, body))
+    credential = await snapshot_from_principal(session, principal)
+    prepared = await call(
+        prepare(Notes(session, workspace_id), note_id, body, credential=credential)
+    )
     return StreamingResponse(
         writing_events(prepared),
         media_type="text/event-stream",

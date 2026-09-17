@@ -514,7 +514,9 @@
     padding-inline: 14px;
   }
   .mc-connection-detail .mc-model-table.mc-model-table--embedded th:first-child,
-  .mc-connection-detail .mc-model-table.mc-model-table--embedded td:first-child {
+  .mc-connection-detail
+    .mc-model-table.mc-model-table--embedded
+    td:first-child {
     padding-left: 14px;
   }
   .mc-connection-detail .mc-model-table.mc-model-table--embedded th:last-child,

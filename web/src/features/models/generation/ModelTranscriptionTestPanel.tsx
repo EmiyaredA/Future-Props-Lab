@@ -110,8 +110,9 @@ export function ModelTranscriptionTestPanel({
     () =>
       models.filter(
         (model) =>
-          ["openai", "senseaudio_asr", "senseaudio_asr_pro"].includes(model.providerKind) &&
-          model.capabilities.includes("speech_recognition"),
+          ["openai", "senseaudio_asr", "senseaudio_asr_pro"].includes(
+            model.providerKind,
+          ) && model.capabilities.includes("speech_recognition"),
       ),
     [models],
   );

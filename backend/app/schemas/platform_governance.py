@@ -181,6 +181,10 @@ class CrossWorkspaceLogOut(BaseModel):
     call_source: str
     provider_kind: str
     model: str
+    auth_kind: str | None = None
+    api_key_id: str | None = None
+    api_key_name: str | None = None
+    api_key_prefix: str | None = None
     status: str
     latency_ms: int
     total_tokens: int | None

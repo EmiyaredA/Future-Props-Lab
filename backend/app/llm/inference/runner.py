@@ -23,6 +23,7 @@ from app.llm.generation_runtime import (
 from app.llm.inference.assets import root
 from app.llm.inference.tasks import ACTIVE
 from app.llm.providers.transcription import transcribe_model_audio
+from app.llm.call_logs.credentials import snapshot_from_row
 from app.models import LlmCallLog, Workspace
 from app.models.model_inference import ModelInferenceAsset, ModelInferenceTask
 
@@ -31,6 +32,7 @@ def add_log(session, row):
     if row.log_id:
         return
     row.log_id = str(uuid4())
+    credential = snapshot_from_row(row)
     session.add(
         LlmCallLog(
             id=row.log_id,
@@ -44,6 +46,7 @@ def add_log(session, row):
             latency_ms=max(0, int((utc_now() - row.created_at).total_seconds() * 1000)),
             status="success" if row.status == "completed" else "error",
             error_message=row.error_message,
+            **credential.as_kwargs(),
         )
     )
 

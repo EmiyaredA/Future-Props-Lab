@@ -15,6 +15,7 @@ from app.core.time import iso_utc
 from app.files.incoming import IncomingFile
 from app.files.policy import ALLOWED_FILES, looks_like
 from app.files.storage import AssetStorage
+from app.llm.call_logs.credentials import CredentialSnapshot
 from app.llm.providers.senseaudio_asr import MAX_ASR_FILE_BYTES
 from app.llm.transcription import (
     TranscriptionParameterError,
@@ -220,6 +221,7 @@ class ModelTestTranscription:
         model_id: str,
         parameters: ModelTestTranscriptionParametersIn,
         admission: TaskAdmission | None = None,
+        credential: CredentialSnapshot | None = None,
     ) -> ModelTestTranscriptionTaskOut:
         try:
             filename = Path(upload.filename or "").name
@@ -264,6 +266,7 @@ class ModelTestTranscription:
                 source_asset_id=None,
                 final_path=final_path,
                 admission=admission,
+                credential=credential,
             )
         except Exception:
             temp_path.unlink(missing_ok=True)
@@ -273,7 +276,11 @@ class ModelTestTranscription:
             await upload.close()
 
     async def create_from_library(
-        self, body: ModelTestTranscriptionCreateIn, *, admission: TaskAdmission | None = None
+        self,
+        body: ModelTestTranscriptionCreateIn,
+        *,
+        admission: TaskAdmission | None = None,
+        credential: CredentialSnapshot | None = None,
     ) -> ModelTestTranscriptionTaskOut:
         model, provider = await self._model(body.model_id)
         try:
@@ -324,6 +331,7 @@ class ModelTestTranscription:
                 source_asset_id=source_asset_id,
                 final_path=final_path,
                 admission=admission,
+                credential=credential,
             )
         except Exception:
             temp_path.unlink(missing_ok=True)
@@ -350,8 +358,10 @@ class ModelTestTranscription:
         source_asset_id: str | None,
         final_path: Path,
         admission: TaskAdmission | None = None,
+        credential: CredentialSnapshot | None = None,
     ) -> ModelTestTranscriptionTaskOut:
         model_id, model_slug, provider_id, provider_name, provider_kind = snapshots
+        snap = credential or CredentialSnapshot()
         row = ModelTestTranscriptionTask(
             provider_id=provider_id,
             model_id=model_id,
@@ -366,6 +376,7 @@ class ModelTestTranscription:
             input_byte_size=byte_size,
             language=parameters.language,
             request_options=parameters.model_dump(mode="json"),
+            **snap.as_kwargs(),
         )
         try:
             self.session.add(row)

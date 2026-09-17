@@ -4,7 +4,8 @@ from fastapi import APIRouter, File, Form, HTTPException, Query, UploadFile
 
 from app.audio_annotation import AudioAnnotationError, AudioAnnotationProjects
 from app.audio_annotation.transcription import AudioAnnotationTranscription
-from app.deps import SessionDep
+from app.deps import SessionDep, StudioAuth
+from app.llm.call_logs.credentials import snapshot_from_principal
 from app.schemas.audio_annotation import (
     STABLE_ID_PATTERN,
     AudioAnnotationDocumentOut,
@@ -129,6 +130,7 @@ async def put_document(
 )
 async def transcribe_segment(
     session: SessionDep,
+    principal: StudioAuth,
     project_id: str,
     upload: Annotated[UploadFile, File()],
     model_id: Annotated[str, Form(min_length=1, max_length=36)],
@@ -139,6 +141,7 @@ async def transcribe_segment(
     target_language_tag: Annotated[str | None, Form(max_length=35)] = None,
 ) -> AudioAnnotationSegmentTranscriptionOut:
     try:
+        credential = await snapshot_from_principal(session, principal)
         return await AudioAnnotationTranscription(session).transcribe(
             project_id,
             upload=upload,
@@ -148,6 +151,7 @@ async def transcribe_segment(
             end_ms=end_ms,
             language_tag=language_tag,
             target_language_tag=target_language_tag,
+            credential=credential,
         )
     except AudioAnnotationError as exc:
         raise _error(exc) from None

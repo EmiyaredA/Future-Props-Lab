@@ -2376,6 +2376,50 @@
       },
       "CallLogListItem": {
         "properties": {
+          "api_key_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Api Key Id"
+          },
+          "api_key_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Api Key Name"
+          },
+          "api_key_prefix": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Api Key Prefix"
+          },
+          "auth_kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Auth Kind"
+          },
           "call_source": {
             "title": "Call Source",
             "type": "string"
@@ -2467,6 +2511,50 @@
       },
       "CallLogOut": {
         "properties": {
+          "api_key_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Api Key Id"
+          },
+          "api_key_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Api Key Name"
+          },
+          "api_key_prefix": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Api Key Prefix"
+          },
+          "auth_kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Auth Kind"
+          },
           "call_source": {
             "title": "Call Source",
             "type": "string"
@@ -2708,6 +2796,50 @@
       },
       "CrossWorkspaceLogOut": {
         "properties": {
+          "api_key_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Api Key Id"
+          },
+          "api_key_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Api Key Name"
+          },
+          "api_key_prefix": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Api Key Prefix"
+          },
+          "auth_kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Auth Kind"
+          },
           "call_source": {
             "title": "Call Source",
             "type": "string"
@@ -26626,7 +26758,7 @@
             "required": false,
             "schema": {
               "default": "",
-              "pattern": "^(|model_diagnostic|model_playground|visual_workshop_assistant|visual_workshop_generation|thought_workshop_assistant|audio_annotation)$",
+              "pattern": "^(|model_diagnostic|model_playground|model_inference|visual_workshop_assistant|visual_workshop_generation|thought_workshop_assistant|audio_annotation)$",
               "title": "Call Source",
               "type": "string"
             }
@@ -26650,6 +26782,17 @@
               "default": "",
               "maxLength": 160,
               "title": "Model",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "api_key_id",
+            "required": false,
+            "schema": {
+              "default": "",
+              "pattern": "^(|session|[0-9a-fA-F-]{36})$",
+              "title": "Api Key Id",
               "type": "string"
             }
           },
@@ -33720,7 +33863,7 @@
             "required": false,
             "schema": {
               "default": "",
-              "pattern": "^(|model_diagnostic|model_playground|visual_workshop_assistant|visual_workshop_generation|thought_workshop_assistant|audio_annotation)$",
+              "pattern": "^(|model_diagnostic|model_playground|model_inference|visual_workshop_assistant|visual_workshop_generation|thought_workshop_assistant|audio_annotation)$",
               "title": "Call Source",
               "type": "string"
             }
@@ -33744,6 +33887,17 @@
               "default": "",
               "maxLength": 160,
               "title": "Model",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "api_key_id",
+            "required": false,
+            "schema": {
+              "default": "",
+              "pattern": "^(|session|[0-9a-fA-F-]{36})$",
+              "title": "Api Key Id",
               "type": "string"
             }
           },

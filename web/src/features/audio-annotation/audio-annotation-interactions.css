@@ -28,22 +28,26 @@
 }
 
 .annotation-segment-table {
-  min-width: 850px;
-  max-height: 360px;
+  flex: 1 1 0;
+  width: 100%;
+  min-width: 0;
+  min-height: 160px;
   overflow: auto;
 }
 
 .annotation-segment-head,
 .annotation-segment-table > button {
-  min-height: 48px;
+  min-height: 46px;
   display: grid;
-  grid-template-columns: 54px 156px 112px 86px 128px minmax(170px, 1fr) 72px;
+  grid-template-columns:
+    48px 148px minmax(96px, 120px) 72px minmax(88px, 112px)
+    minmax(0, 1fr) 68px;
   align-items: center;
   text-align: left;
 }
 
 .annotation-segment-head {
-  min-height: 42px;
+  min-height: 40px;
   color: var(--muted);
   font-size: 11px;
   font-weight: 700;
@@ -51,7 +55,7 @@
 
 .annotation-segment-head span,
 .annotation-segment-table > button > span {
-  padding: 0 12px;
+  padding: 0 10px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -60,7 +64,7 @@
 .annotation-segment-table > button {
   width: 100%;
   border: 0;
-  border-top: 1px solid var(--border);
+  border-top: 1px solid color-mix(in srgb, var(--border) 88%, var(--text));
   background: transparent;
   color: var(--text);
   font-size: 12px;
@@ -84,6 +88,7 @@
   display: flex;
   align-items: center;
   gap: 7px;
+  min-width: 0;
 }
 
 .annotation-segment-table > button > span:nth-child(3) i {
@@ -99,6 +104,13 @@
   padding: 0;
 }
 
+.annotation-segment-speaker-names {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .annotation-speaker-dots i + i {
   margin-left: -3px;
   box-shadow: 0 0 0 1px var(--surface);
@@ -111,7 +123,7 @@
 .annotation-segment-table .draft,
 .annotation-segment-table .reviewed {
   justify-self: start;
-  margin-left: 12px;
+  margin-left: 10px;
   padding: 4px 7px;
   border-radius: 5px;
   font-size: 10px;
@@ -131,8 +143,16 @@
 
 .annotation-inspector {
   position: sticky;
-  top: 14px;
-  padding: 18px;
+  top: 0;
+  align-self: stretch;
+  width: 100%;
+  height: 100%;
+  max-height: none;
+  min-height: 0;
+  padding: 14px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .annotation-inspector > header {
@@ -142,9 +162,9 @@
 }
 
 .annotation-inspector > header h2 {
-  margin: 5px 0 15px;
+  margin: 4px 0 10px;
   color: var(--text-strong);
-  font-size: 19px;
+  font-size: 18px;
 }
 
 .annotation-inspector > header > span {
@@ -156,8 +176,8 @@
 
 .annotation-mini-wave {
   position: relative;
-  height: 74px;
-  margin-bottom: 18px;
+  height: 52px;
+  margin-bottom: 12px;
   display: grid;
   place-items: end start;
   overflow: hidden;
@@ -173,7 +193,7 @@
 .annotation-mini-wave::before {
   content: "";
   position: absolute;
-  inset: 17px 10px;
+  inset: 10px 10px 8px;
   opacity: 0.7;
   background: repeating-linear-gradient(
     90deg,
@@ -222,7 +242,7 @@
 
 .annotation-mini-wave > span {
   z-index: 1;
-  margin: 0 8px 7px;
+  margin: 0 8px 5px;
   padding: 2px 5px;
   border-radius: 4px;
   background: color-mix(in srgb, var(--surface) 80%, transparent);
@@ -234,13 +254,13 @@
 .annotation-segment-preview {
   position: absolute;
   z-index: 2;
-  top: 9px;
-  left: 9px;
-  min-height: 30px;
-  padding: 0 9px;
+  top: 6px;
+  left: 8px;
+  min-height: 26px;
+  padding: 0 8px;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   border: 1px solid
     color-mix(in srgb, var(--annotation-purple) 44%, transparent);
   border-radius: 7px;
@@ -330,7 +350,7 @@
 }
 
 .annotation-inspector-field {
-  margin-top: 16px;
+  margin-top: 14px;
 }
 
 .annotation-speaker-field {
@@ -427,7 +447,7 @@
 }
 
 .annotation-reviewed {
-  margin-top: 15px;
+  margin-top: 14px;
   padding: 0;
   display: inline-flex;
   align-items: center;
@@ -458,7 +478,7 @@
 
 .annotation-apply {
   width: 100%;
-  margin-top: 18px;
+  margin-top: 14px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -470,8 +490,8 @@
 }
 
 .annotation-inspector > footer {
-  margin-top: 16px;
-  padding-top: 13px;
+  margin-top: 14px;
+  padding-top: 12px;
   border-top: 1px solid var(--border);
   color: var(--faint);
   font-size: 9px;

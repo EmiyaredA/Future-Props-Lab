@@ -35,6 +35,7 @@ from app.llm.providers.realtime.contracts import RealtimeProviderUnavailableErro
 from app.llm.providers.realtime.senseaudio import SenseAudioRealtimeBridge
 from app.llm.realtime.catalog import RealtimeModelUnavailableError, resolve_realtime_model
 from app.llm.realtime.tool_calls import RealtimeToolExecutor, provider_tool_definitions
+from app.llm.call_logs.credentials import CredentialSnapshot
 from app.models import LlmCallLog
 
 PERMISSION_RECHECK_SECONDS = 5
@@ -66,6 +67,7 @@ async def _write_log(
     error_message: str | None = None,
     greeting_length: int = 0,
     client_configuration: dict[str, Any] | None = None,
+    credential: CredentialSnapshot | None = None,
 ) -> None:
     now = time.monotonic()
     usage = turn.usage if turn else {}
@@ -81,6 +83,7 @@ async def _write_log(
     total_duration_ms = (
         max(0, round((max(now, turn.first_audio_at) - turn.started_at) * 1000)) if turn else 0
     )
+    snap = credential or CredentialSnapshot()
     async with SessionLocal() as session:
         bind_workspace(session, workspace_id)
         session.add(
@@ -119,6 +122,7 @@ async def _write_log(
                 latency_ms=latency_ms,
                 status=status,
                 error_message=error_message,
+                **snap.as_kwargs(),
             )
         )
         await session.commit()
@@ -237,7 +241,11 @@ def _client_configuration(payload: dict[str, Any]) -> dict[str, Any]:
 
 
 async def run_realtime_model_test(
-    websocket: WebSocket, *, workspace_id: str, check_access=None
+    websocket: WebSocket,
+    *,
+    workspace_id: str,
+    check_access=None,
+    credential: CredentialSnapshot | None = None,
 ) -> None:
     trace_id = new_id()
     model: Any | None = None
@@ -448,6 +456,7 @@ async def run_realtime_model_test(
                         status="success",
                         greeting_length=len(greeting),
                         client_configuration=client_configuration,
+                        credential=credential,
                     )
                     logged_turns += 1
                     active_turn_id = None
@@ -465,6 +474,7 @@ async def run_realtime_model_test(
                         error_message=str(event.get("message") or "实时语音调用失败"),
                         greeting_length=len(greeting),
                         client_configuration=client_configuration,
+                        credential=credential,
                     )
                     logged_turns += 1
                     active_turn_id = None
@@ -509,6 +519,7 @@ async def run_realtime_model_test(
                 error_message="实时语音通话已结束。",
                 greeting_length=len(greeting),
                 client_configuration=client_configuration,
+                credential=credential,
             )
             logged_turns += 1
             active_turn_id = None
@@ -527,6 +538,7 @@ async def run_realtime_model_test(
                 error_message="实时语音连接已断开。",
                 greeting_length=len(greeting),
                 client_configuration=client_configuration,
+                credential=credential,
             )
             logged_turns += 1
             active_turn_id = None
@@ -545,6 +557,7 @@ async def run_realtime_model_test(
                 error_message=str(exc),
                 greeting_length=len(greeting),
                 client_configuration=client_configuration,
+                credential=credential,
             )
         await _safe_send(
             websocket,
@@ -569,6 +582,7 @@ async def run_realtime_model_test(
                 error_message="实时语音会话异常结束，请重新通话。",
                 greeting_length=len(greeting),
                 client_configuration=client_configuration,
+                credential=credential,
             )
         await _safe_send(
             websocket,

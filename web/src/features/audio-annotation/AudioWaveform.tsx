@@ -251,7 +251,7 @@ export const AudioWaveform = forwardRef<
     callbacks.current.onAudioReady(false);
     const instance = WaveSurfer.create({
       container: container.current,
-      height: 236,
+      height: 112,
       waveColor: "#6c746c",
       progressColor: "#ed7a52",
       cursorColor: "#ed7a52",
@@ -267,7 +267,7 @@ export const AudioWaveform = forwardRef<
     const regionPlugin = instance.registerPlugin(RegionsPlugin.create());
     instance.registerPlugin(
       TimelinePlugin.create({
-        height: 24,
+        height: 18,
         timeInterval: 5,
         primaryLabelInterval: 4,
         style: { fontSize: "10px", color: "#8b9189" },

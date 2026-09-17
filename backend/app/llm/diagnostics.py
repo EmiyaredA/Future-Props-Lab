@@ -8,6 +8,7 @@ from sqlalchemy.exc import OperationalError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.credentials import decrypt_secret
+from app.llm.call_logs.credentials import CredentialSnapshot
 from app.llm.catalog.service import ModelCatalogService, ResourceNotFoundError
 from app.llm.providers import invoke_diagnostic
 from app.models import LlmCallLog, ModelProvider
@@ -36,7 +37,9 @@ def _redact(value):
     return value
 
 
-async def test_model(session: AsyncSession, model_id: str) -> TestModelOut:
+async def test_model(
+    session: AsyncSession, model_id: str, credential: CredentialSnapshot | None = None
+) -> TestModelOut:
     catalog = ModelCatalogService(session)
     model = await catalog.get_model(model_id)
     provider = await session.get(ModelProvider, model.provider_id)
@@ -51,6 +54,7 @@ async def test_model(session: AsyncSession, model_id: str) -> TestModelOut:
             log_id="",
         )
     key = decrypt_secret(provider.api_key_ciphertext) if provider.api_key_ciphertext else ""
+    snap = credential or CredentialSnapshot()
     trace_id = str(uuid4())
     log = LlmCallLog(
         call_source="model_diagnostic",
@@ -64,6 +68,7 @@ async def test_model(session: AsyncSession, model_id: str) -> TestModelOut:
         },
         response_payload={},
         status="error",
+        **snap.as_kwargs(),
     )
     started = time.monotonic()
     try:

@@ -24,6 +24,7 @@ import {
 import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
 import { modelQueryKeys } from "@features/models/queryKeys";
 import { ModelTestToolWizard } from "./ModelTestToolWizard";
+import "@features/models/models.css";
 import "./model-test-tools.css";
 import "./model-test-tool-detail.css";
 
@@ -310,11 +311,8 @@ export function ModelTestToolsPage({
     <section className="test-tools-page">
       <header className="test-tools-heading">
         <div>
-          <span className="eyebrow">基模型能力</span>
           <h1>测试工具</h1>
-          <p>
-            创建供模型测试使用的模拟工具，验证工具选择、参数生成与结果处理。
-          </p>
+          <p>配置 Mock 工具，在模型测试中验证 tools 调用。</p>
         </div>
         <button
           className="test-tool-button primary"
@@ -400,7 +398,6 @@ export function ModelTestToolsPage({
             <div className="test-tool-empty">
               <FlaskConical aria-hidden />
               <h2>{normalized ? "没有匹配的测试工具" : "还没有测试工具"}</h2>
-              <p>创建一个确定性的 Mock 工具，开始验证模型的工具调用能力。</p>
               {!normalized ? (
                 <button
                   className="test-tool-button primary"

@@ -11,6 +11,10 @@ class CallLogOut(BaseModel):
     call_source: str
     provider_kind: str
     model: str
+    auth_kind: str | None = None
+    api_key_id: str | None = None
+    api_key_name: str | None = None
+    api_key_prefix: str | None = None
     trace_id: str
     request_payload: dict[str, Any]
     response_payload: dict[str, Any]
@@ -30,6 +34,10 @@ class CallLogListItem(BaseModel):
     call_source: str
     provider_kind: str
     model: str
+    auth_kind: str | None = None
+    api_key_id: str | None = None
+    api_key_name: str | None = None
+    api_key_prefix: str | None = None
     trace_id: str
     total_tokens: int | None
     latency_ms: int
@@ -56,12 +64,13 @@ class BatchDeleteIn(BaseModel):
 
 
 CALL_SOURCE_PATTERN = (
-    "^(|model_diagnostic|model_playground|visual_workshop_assistant|"
+    "^(|model_diagnostic|model_playground|model_inference|visual_workshop_assistant|"
     "visual_workshop_generation|thought_workshop_assistant|audio_annotation)$"
 )
 PROVIDER_KIND_PATTERN = (
     "^(|openai|anthropic|senseaudio_asr|senseaudio_asr_pro|senseaudio_realtime)$"
 )
+API_KEY_FILTER_PATTERN = r"^(|session|[0-9a-fA-F-]{36})$"
 
 
 def log_date(value: str | None, *, end: bool = False) -> datetime | None:
@@ -80,6 +89,7 @@ class CallLogQuery(BaseModel):
     call_source: str = Field("", pattern=CALL_SOURCE_PATTERN)
     provider_kind: str = Field("", pattern=PROVIDER_KIND_PATTERN)
     model: str = Field("", max_length=160)
+    api_key_id: str = Field("", pattern=API_KEY_FILTER_PATTERN)
     status: str = Field("", pattern="^(|success|error)$")
     from_: str | None = Field(None, alias="from")
     to: str | None = None
@@ -99,6 +109,7 @@ class CallLogQuery(BaseModel):
             call_source=self.call_source,
             provider_kind=self.provider_kind,
             model=self.model.strip(),
+            api_key_id=self.api_key_id.strip(),
             status=self.status,
             from_dt=log_date(self.from_),
             to_dt=log_date(self.to, end=True),

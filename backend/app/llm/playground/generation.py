@@ -9,6 +9,7 @@ from app.concurrency.revisions import RevisionConflictError
 from app.concurrency.task_admission import TaskAdmission
 from app.core.config import Settings, get_settings
 from app.core.time import iso_utc, utc_now
+from app.llm.call_logs.credentials import CredentialSnapshot
 from app.llm.playground.generation_assets import (
     GenerationAssetError,
     ModelTestGenerationAssets,
@@ -125,7 +126,11 @@ class ModelTestGeneration:
         )
 
     async def create(
-        self, body: ModelTestGenerationCreateIn, *, admission: TaskAdmission | None = None
+        self,
+        body: ModelTestGenerationCreateIn,
+        *,
+        admission: TaskAdmission | None = None,
+        credential: CredentialSnapshot | None = None,
     ) -> ModelTestGenerationTaskOut:
         model, provider = await self._model(body.model_id, body.kind)
         payload = body.model_dump(mode="json")
@@ -141,6 +146,7 @@ class ModelTestGeneration:
                     f"当前模型提示词最多支持 {prompt_limit} 个字符",
                     code="prompt_too_long",
                 )
+        snap = credential or CredentialSnapshot()
         row = ModelTestGenerationTask(
             provider_id=provider.id,
             model_id=model.id,
@@ -151,6 +157,7 @@ class ModelTestGeneration:
             request_payload=payload,
             status="queued",
             progress=0,
+            **snap.as_kwargs(),
         )
         self.session.add(row)
         await self.session.flush()

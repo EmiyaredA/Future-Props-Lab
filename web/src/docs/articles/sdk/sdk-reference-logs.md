@@ -51,6 +51,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 | `call_source` | query | string | 否 |
 | `provider_kind` | query | string | 否 |
 | `model` | query | string | 否 |
+| `api_key_id` | query | string | 否 |
 | `status` | query | string | 否 |
 | `from` | query | string / null | 否 |
 | `to` | query | string / null | 否 |

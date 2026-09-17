@@ -152,6 +152,7 @@ export type LogOverviewFilters = {
   callSource: string;
   providerKind: string;
   model: string;
+  apiKeyId: string;
   status: string;
   from: string;
   to: string;
@@ -171,6 +172,7 @@ export const fetchCrossWorkspaceLogs = async (
           call_source: filters.callSource,
           provider_kind: filters.providerKind,
           model: filters.model,
+          api_key_id: filters.apiKeyId || undefined,
           status: filters.status,
           from: filters.from || undefined,
           to: filters.to || undefined,

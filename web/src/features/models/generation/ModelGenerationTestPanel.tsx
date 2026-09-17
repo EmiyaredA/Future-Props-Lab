@@ -105,8 +105,9 @@ export function ModelGenerationTestPanel({
     video: models.some((model) => modelGenerationKind(model) === "video"),
     speech: models.some(
       (model) =>
-        ["openai", "senseaudio_asr", "senseaudio_asr_pro"].includes(model.providerKind) &&
-        model.capabilities?.includes("speech_recognition"),
+        ["openai", "senseaudio_asr", "senseaudio_asr_pro"].includes(
+          model.providerKind,
+        ) && model.capabilities?.includes("speech_recognition"),
     ),
     realtime_voice: models.some((model) =>
       model.capabilities?.includes("voice"),

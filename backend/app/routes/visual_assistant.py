@@ -9,6 +9,7 @@ from app.agents.harness.approval import (
     approval_broker,
 )
 from app.deps import SessionDep, StudioAuth
+from app.llm.call_logs.credentials import snapshot_from_principal
 from app.routes.model_capacity import spawned_task_admission
 from app.schemas.visual_workshop import (
     VisualAssistantApprovalIn,
@@ -124,6 +125,7 @@ async def stream_message(
     body: VisualAssistantSendIn,
 ) -> StreamingResponse:
     try:
+        credential = await snapshot_from_principal(session, principal)
         prepared = await VisualAssistantConversations(session).prepare_send(
             project_id,
             conversation_id,
@@ -132,6 +134,7 @@ async def stream_message(
             body.content,
             body.asset_ids,
             body.content_parts,
+            credential=credential,
         )
     except (
         AssistantNotFoundError,

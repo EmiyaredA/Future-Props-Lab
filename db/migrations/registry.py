@@ -63,6 +63,7 @@ from db.migrations.versions import (
     r0059_project_operations,
     r0060_model_inference,
     r0061_senseaudio_asr_pro_kind,
+    r0062_call_log_credential,
 )
 
 
@@ -278,5 +279,7 @@ MIGRATIONS += (
         foreign_keys_off=True,
     ),
 )
+
+MIGRATIONS += (Migration(r0062_call_log_credential.MIGRATION_ID, r0062_call_log_credential.SQL),)
 
 LATEST_MIGRATION_ID = MIGRATIONS[-1].migration_id

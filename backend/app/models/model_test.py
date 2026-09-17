@@ -124,6 +124,10 @@ class ModelTestGenerationTask(Base):
     result_filename: Mapped[str | None] = mapped_column(String(255))
     result_mime_type: Mapped[str | None] = mapped_column(String(120))
     result_byte_size: Mapped[int | None] = mapped_column(Integer)
+    auth_kind: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    api_key_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    api_key_name: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    api_key_prefix: Mapped[str | None] = mapped_column(String(16), nullable=True)
     log_id: Mapped[str | None] = mapped_column(
         String(36), ForeignKey("llm_call_logs.id", ondelete="SET NULL")
     )
@@ -195,6 +199,10 @@ class ModelTestTranscriptionTask(Base):
     result_segments: Mapped[list[dict]] = mapped_column(JSON, default=list)
     result_detail: Mapped[dict] = mapped_column(JSON, default=dict)
     error_message: Mapped[str | None] = mapped_column(Text)
+    auth_kind: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    api_key_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    api_key_name: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    api_key_prefix: Mapped[str | None] = mapped_column(String(16), nullable=True)
     log_id: Mapped[str | None] = mapped_column(
         String(36), ForeignKey("llm_call_logs.id", ondelete="SET NULL")
     )

@@ -11,9 +11,9 @@ class Governance:
     def __init__(self, client):
         self._client = client
 
-    def cross_logs(self, *, q: str | Unset = UNSET, call_source: str | Unset = UNSET, provider_kind: str | Unset = UNSET, model: str | Unset = UNSET, status: str | Unset = UNSET, from_: str | None | Unset = UNSET, to: str | None | Unset = UNSET, page: int | Unset = UNSET, page_size: int | Unset = UNSET, workspace_ids: list[str] | Unset = UNSET) -> models.CrossWorkspaceLogPage:
+    def cross_logs(self, *, q: str | Unset = UNSET, call_source: str | Unset = UNSET, provider_kind: str | Unset = UNSET, model: str | Unset = UNSET, api_key_id: str | Unset = UNSET, status: str | Unset = UNSET, from_: str | None | Unset = UNSET, to: str | None | Unset = UNSET, page: int | Unset = UNSET, page_size: int | Unset = UNSET, workspace_ids: list[str] | Unset = UNSET) -> models.CrossWorkspaceLogPage:
         'Cross Logs. GET /v1/account/cross-workspace-call-logs'
-        return self._client._call('GET', '/v1/account/cross-workspace-call-logs', parameters=[('q', 'query', q), ('call_source', 'query', call_source), ('provider_kind', 'query', provider_kind), ('model', 'query', model), ('status', 'query', status), ('from', 'query', from_), ('to', 'query', to), ('page', 'query', page), ('page_size', 'query', page_size), ('workspace_ids', 'query', workspace_ids)], response_type=models.CrossWorkspaceLogPage)
+        return self._client._call('GET', '/v1/account/cross-workspace-call-logs', parameters=[('q', 'query', q), ('call_source', 'query', call_source), ('provider_kind', 'query', provider_kind), ('model', 'query', model), ('api_key_id', 'query', api_key_id), ('status', 'query', status), ('from', 'query', from_), ('to', 'query', to), ('page', 'query', page), ('page_size', 'query', page_size), ('workspace_ids', 'query', workspace_ids)], response_type=models.CrossWorkspaceLogPage)
 
     def cross_log_stats(self, *, workspace_ids: list[str] | Unset = UNSET) -> models.CallLogStatsOut:
         'Cross Log Stats. GET /v1/account/cross-workspace-call-logs/stats'
@@ -79,9 +79,9 @@ class AsyncGovernance:
     def __init__(self, client):
         self._client = client
 
-    async def cross_logs(self, *, q: str | Unset = UNSET, call_source: str | Unset = UNSET, provider_kind: str | Unset = UNSET, model: str | Unset = UNSET, status: str | Unset = UNSET, from_: str | None | Unset = UNSET, to: str | None | Unset = UNSET, page: int | Unset = UNSET, page_size: int | Unset = UNSET, workspace_ids: list[str] | Unset = UNSET) -> models.CrossWorkspaceLogPage:
+    async def cross_logs(self, *, q: str | Unset = UNSET, call_source: str | Unset = UNSET, provider_kind: str | Unset = UNSET, model: str | Unset = UNSET, api_key_id: str | Unset = UNSET, status: str | Unset = UNSET, from_: str | None | Unset = UNSET, to: str | None | Unset = UNSET, page: int | Unset = UNSET, page_size: int | Unset = UNSET, workspace_ids: list[str] | Unset = UNSET) -> models.CrossWorkspaceLogPage:
         'Cross Logs. GET /v1/account/cross-workspace-call-logs'
-        return await self._client._call('GET', '/v1/account/cross-workspace-call-logs', parameters=[('q', 'query', q), ('call_source', 'query', call_source), ('provider_kind', 'query', provider_kind), ('model', 'query', model), ('status', 'query', status), ('from', 'query', from_), ('to', 'query', to), ('page', 'query', page), ('page_size', 'query', page_size), ('workspace_ids', 'query', workspace_ids)], response_type=models.CrossWorkspaceLogPage)
+        return await self._client._call('GET', '/v1/account/cross-workspace-call-logs', parameters=[('q', 'query', q), ('call_source', 'query', call_source), ('provider_kind', 'query', provider_kind), ('model', 'query', model), ('api_key_id', 'query', api_key_id), ('status', 'query', status), ('from', 'query', from_), ('to', 'query', to), ('page', 'query', page), ('page_size', 'query', page_size), ('workspace_ids', 'query', workspace_ids)], response_type=models.CrossWorkspaceLogPage)
 
     async def cross_log_stats(self, *, workspace_ids: list[str] | Unset = UNSET) -> models.CallLogStatsOut:
         'Cross Log Stats. GET /v1/account/cross-workspace-call-logs/stats'
