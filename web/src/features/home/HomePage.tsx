@@ -1,6 +1,7 @@
 import {
   AppWindow,
   ArrowRight,
+  Box,
   Compass,
   FlaskConical,
   History,
@@ -31,7 +32,7 @@ const destinations = [
     description: "配置模型服务、测试效果并查看调用记录。",
     action: "管理模型",
     path: "/model-service",
-    icon: Server,
+    icon: Box,
   },
 ];
 
@@ -76,8 +77,10 @@ export function HomePage({
           <p>把灵感、模型和工具，收拢到一个顺手的工作空间。</p>
         </div>
         <div className="home-orbit" aria-hidden="true">
+          <span className="home-orbit-glow" />
           <span className="home-orbit-ring home-orbit-ring--one" />
           <span className="home-orbit-ring home-orbit-ring--two" />
+          <span className="home-orbit-ring home-orbit-ring--three" />
           <span className="home-orbit-core" />
         </div>
       </header>
@@ -125,7 +128,9 @@ export function HomePage({
                 type="button"
                 onClick={() => onNavigate(item.path)}
               >
-                <Icon aria-hidden />
+                <span className="home-quick-icon">
+                  <Icon aria-hidden />
+                </span>
                 <span>
                   <strong>{item.title}</strong>
                   <small>{item.description}</small>

@@ -13,7 +13,7 @@ Studio 全局壳改为常驻一级图标轨（图标 + 下方短标签）加可�
 - 一级轨数据源在 `web/src/app/layout/StudioSidebar.tsx`：首页 / AI应用 / 文件 / 工具为叶子；集成中心与基模型带 children。
 - 二级栏仅在宽屏且当前一级分区有子页时显示；叶子页强制不挂空二级栏。偏好键 `future-props-sidebar-studio-secondary-collapsed`。
 - 窄屏（≤1200px）或二级收起时，分组入口走 `StudioCollapsedRail` portal flyout。
-- 顶栏在 `studio-global-header.css` 去掉胶囊边框、毛玻璃与外边距，贴主区顶边透明右对齐。
+- 顶栏在 `studio-global-header.css` 曾改为贴主区顶边透明右对齐；现已由 [Studio 三浮层 Chrome Panel](./2026-09-17-studio-floating-chrome-panels.md) 收成独立浮层 panel。
 - 选中态使用 `accent-soft` 软底，不再使用 inset 左边条与重阴影；色板仍消费 `theme.css` 暖米/珊瑚 token。
 
 相关视觉刷新见 [全局 UI 刷新](./2026-09-16-global-ui-refresh.md)；工坊侧栏折叠能力仍见 [紧凑化与侧栏状态](./2026-09-16-compact-ui-density.md)。
@@ -32,4 +32,4 @@ Studio 全局壳改为常驻一级图标轨（图标 + 下方短标签）加可�
 ## Verification
 
 - `npx vitest run tests/navigation.test.tsx`：Studio 双栏、二级折叠记忆、窄屏 flyout、集成中心子页用例通过；文档中心用例失败与本次壳层无关。
-- 目视：宽屏叶子页为 `76px | main`；基模型/集成中心为 `76px | 220px | main`；顶栏无胶囊描边。
+- 目视：宽屏叶子页为 `76px | main`；基模型/集成中心为左侧 panel 内嵌二级；顶栏为独立浮层 panel；三块 panel 固定占位，滚动仅发生在各自内部（主区 / 二级列表 / 轨条目）。

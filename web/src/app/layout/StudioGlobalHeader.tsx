@@ -7,7 +7,7 @@ import { AccountWorkspacePanel } from "@features/accounts";
 export function StudioGlobalHeader() {
   const session = useOptionalStudioSession();
   return (
-    <header className="studio-global-header">
+    <header className="studio-panel studio-global-header">
       <div className="studio-header-start">
         <div className="studio-header-theme">
           <span>外观</span>

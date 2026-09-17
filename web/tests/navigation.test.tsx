@@ -1,8 +1,7 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { vi } from "vitest";
 import { parsePage, parseRoute, pathFor } from "@app/routes";
-import { StudioGlobalHeader } from "@app/layout/StudioGlobalHeader";
-import { StudioSidebar } from "@app/layout/StudioSidebar";
+import { StudioShell, StudioSidebar } from "@app/layout/StudioSidebar";
 import { WorkshopShell } from "@app/layout/WorkshopShell";
 import { GALGAME_WORKSHOP_MODULE } from "@features/galgame-workshop/module";
 import { VIDEO_EDITOR_MODULE } from "@features/video-editor/module";
@@ -23,14 +22,20 @@ function openDocsSearch() {
 test("renders integrations after tools and before the base model group", () => {
   const navigate = vi.fn();
   render(
-    <>
-      <StudioSidebar page="model-service" navigate={navigate} />
-      <StudioGlobalHeader />
-    </>,
+    <StudioShell page="model-service" navigate={navigate}>
+      <div>内容</div>
+    </StudioShell>,
   );
   expect(
     document.querySelector(".studio-collapsed-rail__brand .brand-mark"),
   ).toBeTruthy();
+  expect(document.querySelector(".studio-shell .studio-stage")).not.toBeNull();
+  expect(
+    document.querySelectorAll(".studio-shell > .studio-panel").length,
+  ).toBe(1);
+  expect(
+    document.querySelectorAll(".studio-stage > .studio-panel").length,
+  ).toBe(2);
   const navigation = screen.getByRole("navigation", { name: "栏目导航" });
   const navigationButtons = within(navigation).getAllByRole("button");
   expect(navigationButtons[0]).toHaveAccessibleName("首页");
@@ -52,6 +57,9 @@ test("renders integrations after tools and before the base model group", () => {
   expect(
     screen.getByRole("navigation", { name: "基模型子菜单" }),
   ).toBeInTheDocument();
+  expect(
+    document.querySelector(".studio-sidebar.has-secondary .studio-secondary"),
+  ).not.toBeNull();
   expect(screen.getByRole("link", { name: "文档中心" })).toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: /模型测试/ }));
   expect(navigate).toHaveBeenCalledWith("model-test");
@@ -63,6 +71,23 @@ test("renders integrations after tools and before the base model group", () => {
   expect(
     screen.queryByRole("navigation", { name: "基模型子菜单" }),
   ).not.toBeInTheDocument();
+});
+
+test("keeps floating chrome panels as three shell blocks", () => {
+  const { container } = render(
+    <StudioShell page="home" navigate={vi.fn()}>
+      <div>首页内容</div>
+    </StudioShell>,
+  );
+  expect(container.querySelector(".studio-shell")).not.toBeNull();
+  expect(container.querySelector(".studio-sidebar.studio-panel")).not.toBeNull();
+  expect(
+    container.querySelector(".studio-stage > .studio-global-header.studio-panel"),
+  ).not.toBeNull();
+  expect(
+    container.querySelector(".studio-stage > .studio-main.studio-panel"),
+  ).not.toBeNull();
+  expect(container.querySelector(".studio-sidebar.has-secondary")).toBeNull();
 });
 
 test("uses home as the default and parses deep application routes", () => {
@@ -169,7 +194,7 @@ test("keeps brand mark above the secondary toggle in the primary rail", () => {
   expect(screen.getByRole("button", { name: "收起二级导航" })).toBeEnabled();
 });
 
-test("keeps brand and disables secondary toggle when the viewport forces the icon rail", () => {
+test("hides secondary toggle when the viewport forces the icon rail", () => {
   const originalMatchMedia = window.matchMedia;
   window.matchMedia = ((query: string) => ({
     matches: query.includes("max-width: 1200px"),
@@ -190,10 +215,26 @@ test("keeps brand and disables secondary toggle when the viewport forces the ico
   expect(container.querySelector(".studio-collapsed-rail__brand .brand-mark"))
     .not.toBeNull();
   expect(
-    screen.getByRole("button", { name: "窄屏下使用弹出菜单" }),
-  ).toBeDisabled();
+    screen.queryByRole("button", { name: "收起二级导航" }),
+  ).not.toBeInTheDocument();
+  expect(
+    screen.queryByRole("button", { name: "展开二级导航" }),
+  ).not.toBeInTheDocument();
 
   window.matchMedia = originalMatchMedia;
+});
+
+test("hides secondary toggle on leaf pages without secondary navigation", () => {
+  render(<StudioSidebar page="files" navigate={vi.fn()} />);
+  expect(
+    screen.queryByRole("button", { name: "收起二级导航" }),
+  ).not.toBeInTheDocument();
+  expect(
+    screen.queryByRole("button", { name: "展开二级导航" }),
+  ).not.toBeInTheDocument();
+  expect(
+    screen.queryByRole("button", { name: "当前分区无二级导航" }),
+  ).not.toBeInTheDocument();
 });
 
 test("opens base-model flyout from the primary rail when secondary is hidden", () => {

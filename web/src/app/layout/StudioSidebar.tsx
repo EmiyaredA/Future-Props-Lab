@@ -10,6 +10,7 @@ import { IntegrationIcon } from "@shared/ui/IntegrationIcon";
 import type { StudioPage } from "@app/routes";
 import { useOptionalStudioSession } from "@app/StudioSession";
 import { WorkspaceTrigger } from "@features/accounts/WorkspaceTrigger";
+import { StudioGlobalHeader } from "@app/layout/StudioGlobalHeader";
 
 const SECONDARY_STORAGE_KEY =
   "future-props-sidebar-studio-secondary-collapsed";
@@ -108,32 +109,6 @@ function LogsIcon() {
   );
 }
 
-function ApiIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden>
-      <path d="M8 7h8M8 12h8M8 17h5" />
-      <rect x="3" y="4" width="18" height="16" rx="2" />
-    </svg>
-  );
-}
-
-function McpIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden>
-      <circle cx="12" cy="12" r="3" />
-      <path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1" />
-    </svg>
-  );
-}
-
-function SkillIcon() {
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden>
-      <path d="M12 3 14.5 9.5 21 12l-6.5 2.5L12 21l-2.5-6.5L3 12l6.5-2.5L12 3Z" />
-    </svg>
-  );
-}
-
 type SecondaryItem = {
   id: string;
   label: string;
@@ -176,7 +151,7 @@ function StudioSecondaryPanel({
   items: SecondaryItem[];
 }) {
   return (
-    <aside className="studio-secondary" aria-label={`${title}导航`}>
+    <div className="studio-secondary" aria-label={`${title}导航`}>
       <div className="studio-secondary__header">
         <strong>{title}</strong>
       </div>
@@ -196,7 +171,7 @@ function StudioSecondaryPanel({
           </button>
         ))}
       </nav>
-    </aside>
+    </div>
   );
 }
 
@@ -407,37 +382,40 @@ function StudioChrome({
     };
   });
 
-  const chrome = (
-    <>
-      <aside className="studio-sidebar is-rail">
+  const canToggleSecondary = hasSecondary && !narrow;
+
+  const leftPanel = (
+    <aside
+      className={`studio-panel studio-sidebar${showSecondary ? " has-secondary" : ""}`}
+    >
+      <div className="studio-sidebar__rail">
         <StudioCollapsedRail
           labeled
           preferFlyout={preferFlyout}
           brand={<BrandMark size={32} />}
           entries={railEntries}
           routeKey={page}
-          secondaryToggle={{
-            collapsed: !showSecondary,
-            disabled: !hasSecondary || narrow,
-            label: narrow
-              ? "窄屏下使用弹出菜单"
-              : !hasSecondary
-                ? "当前分区无二级导航"
-                : showSecondary
-                  ? "收起二级导航"
-                  : "展开二级导航",
-            onToggle: toggleSecondary,
-          }}
+          secondaryToggle={
+            canToggleSecondary
+              ? {
+                  collapsed: secondaryCollapsed,
+                  label: secondaryCollapsed
+                    ? "展开二级导航"
+                    : "收起二级导航",
+                  onToggle: toggleSecondary,
+                }
+              : undefined
+          }
           footer={session ? <WorkspaceTrigger session={session} /> : null}
         />
-      </aside>
+      </div>
       {showSecondary ? (
         <StudioSecondaryPanel
           title={activeSection.label}
           items={secondaryItems}
         />
       ) : null}
-    </>
+    </aside>
   );
 
   if (children === undefined) {
@@ -446,15 +424,18 @@ function StudioChrome({
         className={`studio-shell${showSecondary ? " has-secondary" : ""}`}
         data-studio-chrome="sidebar-only"
       >
-        {chrome}
+        {leftPanel}
       </div>
     );
   }
 
   return (
     <div className={`studio-shell${showSecondary ? " has-secondary" : ""}`}>
-      {chrome}
-      <main className="studio-main">{children}</main>
+      {leftPanel}
+      <div className="studio-stage">
+        <StudioGlobalHeader />
+        <main className="studio-panel studio-main">{children}</main>
+      </div>
     </div>
   );
 }

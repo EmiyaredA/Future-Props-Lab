@@ -1,4 +1,3 @@
-import { StudioGlobalHeader } from "@app/layout/StudioGlobalHeader";
 import { isWorkshopPage, hasReadOnlyRoute } from "./routes";
 import { ReadOnlyRoutes } from "./ReadOnlyRoutes";
 import { workspaceAllows } from "@features/accounts/permissions";
@@ -290,7 +289,6 @@ export default function App() {
         page={isWorkshopPage(page) ? "apps" : (page as StudioPage)}
         navigate={navigate}
       >
-        <StudioGlobalHeader />
         <PageBoundary>
           {page === "model-call-logs" ? (
             <section className="readonly-page">
@@ -502,7 +500,6 @@ export default function App() {
 
   return (
     <StudioShell page={page} navigate={(next: StudioPage) => navigate(next)}>
-      <StudioGlobalHeader />
       <PageBoundary>
         {page === "home" ? (
           <HomePage onNavigate={navigatePath} />

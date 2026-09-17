@@ -1,7 +1,7 @@
 .studio-global-header {
-  position: sticky;
-  top: 0;
+  position: relative;
   z-index: 40;
+  flex: none;
   min-height: 48px;
   display: flex;
   justify-content: flex-end;
@@ -9,11 +9,6 @@
   gap: 12px;
   margin: 0;
   padding: 8px clamp(14px, 2vw, 24px);
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  box-shadow: none;
-  backdrop-filter: none;
 }
 .studio-header-start,
 .studio-header-theme,
@@ -48,16 +43,27 @@
   border: 1px solid transparent;
   border-radius: 999px;
   color: var(--muted);
+  transition:
+    background 0.18s ease,
+    border-color 0.18s ease,
+    color 0.18s ease,
+    box-shadow 0.18s ease;
 }
 .studio-docs-link:hover {
-  border-color: var(--border);
-  background: var(--surface-soft);
+  border-color: color-mix(in srgb, var(--border) 80%, transparent);
+  background: color-mix(in srgb, var(--surface) 80%, var(--surface-soft));
   color: var(--accent);
+  box-shadow: var(--shadow-lift);
 }
 .studio-global-header .account-menu-trigger {
   min-height: 32px;
   padding: 2px 8px;
   border-radius: 999px;
+  box-shadow: none;
+}
+.studio-global-header .account-menu-trigger:hover,
+.studio-global-header .account-menu-trigger[aria-expanded="true"] {
+  box-shadow: var(--shadow-lift);
 }
 @media (max-width: 767px) {
   .studio-global-header {
