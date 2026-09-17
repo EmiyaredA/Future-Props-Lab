@@ -1,5 +1,5 @@
 import type { components } from "@generated/api";
-import { api, unwrap } from "@platform/api/client";
+import { api, fetchApiDownload, fetchApiJson, unwrap } from "@platform/api/client";
 
 export type ManagedFile = components["schemas"]["VisualAssetOut"];
 export type ManagedFolder = components["schemas"]["VisualAssetFolderOut"];
@@ -223,4 +223,46 @@ export async function migrateStorageLayout(limit = 50) {
 
 export async function openLibraryFolder() {
   return unwrap(await api.POST("/v1/file-storage/open-folder"));
+}
+
+export type LibraryFolderImportResult = {
+  created_folders: number;
+  created_files: number;
+  skipped: Array<{ path: string; code: string; message: string }>;
+};
+
+export async function exportLibraryFolderArchive(folderId?: string) {
+  const query = folderId
+    ? `?folder_id=${encodeURIComponent(folderId)}`
+    : "";
+  return fetchApiDownload(`/v1/file-library/folder-exports${query}`);
+}
+
+export async function importLibraryFolderArchive(
+  archive: File,
+  parentFolderId?: string,
+) {
+  const form = new FormData();
+  form.set("archive", archive);
+  if (parentFolderId) form.set("parent_folder_id", parentFolderId);
+  return fetchApiJson<LibraryFolderImportResult>(
+    "/v1/file-library/folder-archive-imports",
+    { method: "POST", body: form },
+  );
+}
+
+export async function importLibraryFolderEntries(
+  entries: Array<{ file: File; relativePath: string }>,
+  parentFolderId?: string,
+) {
+  const form = new FormData();
+  for (const entry of entries) {
+    form.append("files", entry.file);
+    form.append("relative_paths", entry.relativePath);
+  }
+  if (parentFolderId) form.set("parent_folder_id", parentFolderId);
+  return fetchApiJson<LibraryFolderImportResult>(
+    "/v1/file-library/folder-entry-imports",
+    { method: "POST", body: form },
+  );
 }
