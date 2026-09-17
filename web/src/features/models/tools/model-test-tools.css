@@ -87,7 +87,7 @@
   display: grid;
   grid-template-columns: minmax(260px, 1fr) auto;
   gap: 14px;
-  margin: 20px 0;
+  margin: 0 0 16px;
 }
 
 .test-tools-filters label {
