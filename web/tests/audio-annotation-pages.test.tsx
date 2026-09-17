@@ -76,7 +76,7 @@ test("imports portable transcription JSON after explicitly selecting its audio",
     },
     recognition: {
       task_id: "transcription-1",
-      provider_kind: "senseaudio_asr",
+      provider_kind: "senseaudio_asr_pro",
       provider_name: "专业识别",
       model_slug: "pro-asr",
       language: "ja",

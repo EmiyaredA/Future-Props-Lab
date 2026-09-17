@@ -10,6 +10,7 @@ export function ProviderIcon({
     | "senseaudio_music"
     | "senseaudio_sfx"
     | "senseaudio_asr"
+    | "senseaudio_asr_pro"
     | "senseaudio_realtime";
   size?: number;
 }) {

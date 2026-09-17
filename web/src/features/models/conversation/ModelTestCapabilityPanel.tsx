@@ -40,7 +40,7 @@ export function ModelTestCapabilityPanel({
   }
   if (
     model &&
-    ["openai", "senseaudio_asr"].includes(model.providerKind) &&
+    ["openai", "senseaudio_asr", "senseaudio_asr_pro"].includes(model.providerKind) &&
     model.capabilities.includes("speech_recognition")
   ) {
     return (

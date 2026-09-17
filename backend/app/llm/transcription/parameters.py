@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from app.llm.providers.senseaudio_asr import is_pro_asr_endpoint
 from app.models import ModelEntry, ModelProvider
 from app.schemas.transcription import (
     ModelTestTranscriptionLanguageOptionOut,
@@ -67,8 +66,7 @@ class ParameterSupport:
 def parameter_support(model: ModelEntry, provider: ModelProvider) -> ParameterSupport:
     if provider.kind == "openai":
         return ParameterSupport()
-    custom_pro = is_pro_asr_endpoint(provider.base_url)
-    if custom_pro:
+    if provider.kind == "senseaudio_asr_pro":
         return ParameterSupport(
             custom_pro=True,
             word_timestamps=True,

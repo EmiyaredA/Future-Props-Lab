@@ -237,11 +237,27 @@ SAYFLOW_TEXT_CATALOG = (
         ),
     ),
     SeedProvider(
+        id="f0000000-0000-4000-8000-000000000006",
+        name="ASR API 专业语音识别",
+        kind="senseaudio_asr_pro",
+        base_url="http://180.184.148.131:30002/api/v2/asr/pro",
+        sort_order=5,
+        models=(
+            SeedModel(
+                id="f2000000-0000-4000-8000-000000000007",
+                slug="pro-asr",
+                label="专业语音识别",
+                description="支持说话人分段、句级时间戳与保真文本整理的专业语音识别模型",
+                capabilities=("speech_recognition",),
+            ),
+        ),
+    ),
+    SeedProvider(
         id="f0000000-0000-4000-8000-000000000007",
         name="SenseAudio 实时语音",
         kind="senseaudio_realtime",
         base_url="wss://api.senseaudio.cn/ws/v1/realtime/voice-dialog",
-        sort_order=5,
+        sort_order=6,
         models=(
             SeedModel(
                 id="f2000000-0000-4000-8000-000000000008",
@@ -257,7 +273,7 @@ SAYFLOW_TEXT_CATALOG = (
         name="SenseAudio 音乐生成",
         kind="senseaudio_music",
         base_url="https://api.senseaudio.cn/v1",
-        sort_order=6,
+        sort_order=7,
         models=(
             SeedModel(
                 id="f2000000-0000-4000-8000-000000000009",
@@ -273,7 +289,7 @@ SAYFLOW_TEXT_CATALOG = (
         name="SenseAudio 音效生成",
         kind="senseaudio_sfx",
         base_url="https://api.senseaudio.cn/v1",
-        sort_order=7,
+        sort_order=8,
         models=(
             SeedModel(
                 id="f2000000-0000-4000-8000-000000000010",

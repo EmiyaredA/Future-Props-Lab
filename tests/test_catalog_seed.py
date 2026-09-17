@@ -77,6 +77,7 @@ async def test_sayflow_text_catalog_seed_is_complete_and_idempotent(tmp_path: Pa
             ("SenseAudio 图片生成", "senseaudio_image"),
             ("SenseAudio 视频生成", "senseaudio_video"),
             ("SenseAudio 专业说话人识别", "senseaudio_asr"),
+            ("ASR API 专业语音识别", "senseaudio_asr_pro"),
             ("SenseAudio 实时语音", "senseaudio_realtime"),
             ("SenseAudio 音乐生成", "senseaudio_music"),
             ("SenseAudio 音效生成", "senseaudio_sfx"),
@@ -88,6 +89,7 @@ async def test_sayflow_text_catalog_seed_is_complete_and_idempotent(tmp_path: Pa
             "SenseAudio 图片生成": False,
             "SenseAudio 视频生成": False,
             "SenseAudio 专业说话人识别": False,
+            "ASR API 专业语音识别": False,
             "SenseAudio 实时语音": False,
             "SenseAudio 音乐生成": False,
             "SenseAudio 音效生成": False,
@@ -143,6 +145,17 @@ async def test_sayflow_text_catalog_seed_is_complete_and_idempotent(tmp_path: Pa
         } == {
             (
                 "senseaudio-asr-pro-1.5-260319",
+                ("speech_recognition",),
+                ("speech_recognition",),
+            )
+        }
+        assert {
+            (item.slug, tuple(item.capabilities), tuple(item.categories))
+            for item in models
+            if item.provider_id == "f0000000-0000-4000-8000-000000000006"
+        } == {
+            (
+                "pro-asr",
                 ("speech_recognition",),
                 ("speech_recognition",),
             )

@@ -207,10 +207,11 @@ def test_r0021_adds_senseaudio_asr_to_each_existing_workspace(tmp_path: Path) ->
     with connect_database(database_path) as connection:
         providers = connection.execute(
             """
-            SELECT workspace_id, id, base_url, api_key_ciphertext, enabled
+            SELECT workspace_id, id, kind, base_url, api_key_ciphertext, enabled
             FROM model_providers
-            WHERE kind = 'senseaudio_asr'
+            WHERE kind IN ('senseaudio_asr', 'senseaudio_asr_pro')
             ORDER BY CASE workspace_id WHEN 'default' THEN 0 ELSE 1 END,
+                     CASE kind WHEN 'senseaudio_asr' THEN 0 ELSE 1 END,
                      sort_order
             """
         ).fetchall()
@@ -220,8 +221,9 @@ def test_r0021_adds_senseaudio_asr_to_each_existing_workspace(tmp_path: Path) ->
                    entry.categories, entry.enabled
             FROM model_entries AS entry
             JOIN model_providers AS provider ON provider.id = entry.provider_id
-            WHERE provider.kind = 'senseaudio_asr'
+            WHERE provider.kind IN ('senseaudio_asr', 'senseaudio_asr_pro')
             ORDER BY CASE entry.workspace_id WHEN 'default' THEN 0 ELSE 1 END,
+                     CASE provider.kind WHEN 'senseaudio_asr' THEN 0 ELSE 1 END,
                      provider.sort_order
             """
         ).fetchall()
@@ -238,11 +240,23 @@ def test_r0021_adds_senseaudio_asr_to_each_existing_workspace(tmp_path: Path) ->
     assert len(providers) == 4
     assert len({row[1] for row in providers}) == 4
     assert all(len(row[1]) == 36 for row in providers)
-    assert [(row[0], row[2], row[3], row[4]) for row in providers] == [
-        ("default", "https://api.senseaudio.cn/v1", "", 0),
-        ("default", "http://180.184.148.131:30002/api/v2/asr/pro", "", 0),
-        (workspace_id, "https://api.senseaudio.cn/v1", "", 0),
-        (workspace_id, "http://180.184.148.131:30002/api/v2/asr/pro", "", 0),
+    assert [(row[0], row[2], row[3], row[4], row[5]) for row in providers] == [
+        ("default", "senseaudio_asr", "https://api.senseaudio.cn/v1", "", 0),
+        (
+            "default",
+            "senseaudio_asr_pro",
+            "http://180.184.148.131:30002/api/v2/asr/pro",
+            "",
+            0,
+        ),
+        (workspace_id, "senseaudio_asr", "https://api.senseaudio.cn/v1", "", 0),
+        (
+            workspace_id,
+            "senseaudio_asr_pro",
+            "http://180.184.148.131:30002/api/v2/asr/pro",
+            "",
+            0,
+        ),
     ]
     assert models == [
         (
@@ -274,8 +288,8 @@ def test_r0021_adds_senseaudio_asr_to_each_existing_workspace(tmp_path: Path) ->
             1,
         ),
     ]
-    assert revisions["default"] == default_revision + 4
-    assert revisions[workspace_id] == 7
+    assert revisions["default"] == default_revision + 5
+    assert revisions[workspace_id] == 8
     assert "transcript_segments" in metadata_columns
     assert "result_segments" in task_columns
     assert apply_migrations(database_path) == (
@@ -432,7 +446,7 @@ def test_r0025_clones_existing_asr_credentials_and_enabled_state(tmp_path: Path)
 
     assert cloned == (
         "ASR API 专业语音识别",
-        "senseaudio_asr",
+        "senseaudio_asr_pro",
         "http://180.184.148.131:30002/api/v2/asr/pro",
         "encrypted-asr-key",
         1,
@@ -440,7 +454,7 @@ def test_r0025_clones_existing_asr_credentials_and_enabled_state(tmp_path: Path)
         '["speech_recognition"]',
         '["speech_recognition"]',
     )
-    assert revision == before_revision + 3
+    assert revision == before_revision + 4
 
 
 def test_r0026_expands_transcription_storage_limit_and_preserves_tasks(tmp_path: Path) -> None:
@@ -861,14 +875,17 @@ def test_catalog_upgrade_does_not_recreate_deleted_default_provider(tmp_path: Pa
         ).fetchone() == (0,)
         assert connection.execute(
             "SELECT COUNT(*) FROM model_providers WHERE kind = 'senseaudio_asr'"
-        ).fetchone() == (2,)
+        ).fetchone() == (1,)
+        assert connection.execute(
+            "SELECT COUNT(*) FROM model_providers WHERE kind = 'senseaudio_asr_pro'"
+        ).fetchone() == (1,)
         assert connection.execute("SELECT COUNT(*) FROM model_entries").fetchone() == (5,)
         assert connection.execute(
             "SELECT COUNT(*) FROM model_providers WHERE kind = 'senseaudio_realtime'"
         ).fetchone() == (1,)
         assert connection.execute(
             "SELECT revision FROM model_catalog_state WHERE id = 'default'"
-        ).fetchone() == (8,)
+        ).fetchone() == (9,)
 
 
 def test_r0007_upgrade_adds_visual_tasks_and_preserves_provider_credentials(

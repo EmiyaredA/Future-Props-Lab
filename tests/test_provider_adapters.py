@@ -254,7 +254,7 @@ async def test_pro_asr_adapter_reuses_provider_and_normalizes_nested_result() ->
         )
 
     result = await transcribe_audio(
-        base_url="https://asr.example/#pro-asr",
+        base_url="https://asr.example/api/v2/asr/pro",
         api_key="asr-secret",
         model="senseaudio-asr-pro-1.5-260319",
         filename="meeting.wav",
@@ -265,6 +265,7 @@ async def test_pro_asr_adapter_reuses_provider_and_normalizes_nested_result() ->
         target_language="Japanese",
         enable_word_timestamps=True,
         enable_text_edit=False,
+        pro=True,
         transport=httpx.MockTransport(handler),
     )
 

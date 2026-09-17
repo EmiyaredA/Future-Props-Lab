@@ -8,6 +8,8 @@ import httpx
 from app.core.outbound_urls import require_safe_provider_base_url
 from app.llm.providers.senseaudio_asr import MAX_ASR_FILE_BYTES, transcribe_audio
 
+SENSEAUDIO_ASR_KINDS = frozenset({"senseaudio_asr", "senseaudio_asr_pro"})
+
 
 @dataclass(frozen=True)
 class TranscriptSegment:
@@ -52,7 +54,7 @@ async def transcribe_model_audio(
     """Normalize supported ASR providers to text plus optional diarized segments."""
     base_url = require_safe_provider_base_url(base_url)
     options = parameters or {}
-    if provider_kind == "senseaudio_asr":
+    if provider_kind in SENSEAUDIO_ASR_KINDS:
         result = await transcribe_audio(
             base_url=base_url,
             api_key=api_key,
@@ -76,6 +78,7 @@ async def transcribe_model_audio(
                 str(options["hotwords"]) if isinstance(options.get("hotwords"), str) else None
             ),
             abbreviations=options.get("abbreviations") is True,
+            pro=provider_kind == "senseaudio_asr_pro",
             transport=transport,
         )
         return TranscriptionResult(

@@ -437,7 +437,7 @@ test("exports and parses the portable transcription JSON format", () => {
     id: "transcription-1",
     provider_id: "provider-1",
     model_id: "model-1",
-    provider_kind: "senseaudio_asr",
+    provider_kind: "senseaudio_asr_pro",
     provider_name: "专业识别",
     model_slug: "pro-asr",
     language: "ja",

@@ -10815,7 +10815,7 @@ export interface components {
              * Provider Kind
              * @enum {string}
              */
-            provider_kind: "openai" | "senseaudio_asr";
+            provider_kind: "openai" | "senseaudio_asr" | "senseaudio_asr_pro";
             /** Provider Name */
             provider_name: string;
             /** Slug */
@@ -10988,7 +10988,7 @@ export interface components {
              * Provider Kind
              * @enum {string}
              */
-            provider_kind: "openai" | "senseaudio_asr";
+            provider_kind: "openai" | "senseaudio_asr" | "senseaudio_asr_pro";
             /** Provider Name */
             provider_name: string;
             result_detail: components["schemas"]["ModelTestTranscriptionResultDetailOut"];
@@ -11405,7 +11405,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "openai" | "anthropic" | "senseaudio_image" | "senseaudio_video" | "senseaudio_asr" | "senseaudio_realtime" | "senseaudio_music" | "senseaudio_sfx";
+            kind: "openai" | "anthropic" | "senseaudio_image" | "senseaudio_video" | "senseaudio_asr" | "senseaudio_asr_pro" | "senseaudio_realtime" | "senseaudio_music" | "senseaudio_sfx";
             /** Name */
             name: string;
             /** Supplier Id */
@@ -11433,7 +11433,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "openai" | "anthropic" | "senseaudio_image" | "senseaudio_video" | "senseaudio_asr" | "senseaudio_realtime" | "senseaudio_music" | "senseaudio_sfx";
+            kind: "openai" | "anthropic" | "senseaudio_image" | "senseaudio_video" | "senseaudio_asr" | "senseaudio_asr_pro" | "senseaudio_realtime" | "senseaudio_music" | "senseaudio_sfx";
             /** Managed Fields */
             managed_fields?: string[];
             /** Models */
@@ -11598,7 +11598,7 @@ export interface components {
              * Provider Kind
              * @enum {string}
              */
-            provider_kind: "openai" | "anthropic" | "senseaudio_image" | "senseaudio_video" | "senseaudio_asr" | "senseaudio_realtime" | "senseaudio_music" | "senseaudio_sfx";
+            provider_kind: "openai" | "anthropic" | "senseaudio_image" | "senseaudio_video" | "senseaudio_asr" | "senseaudio_asr_pro" | "senseaudio_realtime" | "senseaudio_music" | "senseaudio_sfx";
             /** Provider Name */
             provider_name: string;
             /** Slug */
@@ -12296,7 +12296,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "openai" | "anthropic" | "senseaudio_image" | "senseaudio_video" | "senseaudio_asr" | "senseaudio_realtime" | "senseaudio_music" | "senseaudio_sfx";
+            kind: "openai" | "anthropic" | "senseaudio_image" | "senseaudio_video" | "senseaudio_asr" | "senseaudio_asr_pro" | "senseaudio_realtime" | "senseaudio_music" | "senseaudio_sfx";
             /** Models */
             models?: components["schemas"]["TemplateModel"][];
             /** Name */
@@ -12332,7 +12332,7 @@ export interface components {
              * Kind
              * @enum {string}
              */
-            kind: "openai" | "anthropic" | "senseaudio_image" | "senseaudio_video" | "senseaudio_asr" | "senseaudio_realtime" | "senseaudio_music" | "senseaudio_sfx";
+            kind: "openai" | "anthropic" | "senseaudio_image" | "senseaudio_video" | "senseaudio_asr" | "senseaudio_asr_pro" | "senseaudio_realtime" | "senseaudio_music" | "senseaudio_sfx";
             /** Models */
             models?: components["schemas"]["TemplateModel"][];
             /** Name */

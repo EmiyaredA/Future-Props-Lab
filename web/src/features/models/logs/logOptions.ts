@@ -9,6 +9,7 @@ const LOG_PROVIDER_KINDS: ProviderKind[] = [
   "openai",
   "anthropic",
   "senseaudio_asr",
+  "senseaudio_asr_pro",
   "senseaudio_realtime",
 ];
 

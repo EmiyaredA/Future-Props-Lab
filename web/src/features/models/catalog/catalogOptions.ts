@@ -12,5 +12,8 @@ export function providerBaseUrlPlaceholder(kind: ProviderInput["kind"]) {
   if (kind === "senseaudio_realtime") {
     return "wss://api.senseaudio.cn/ws/v1/realtime/voice-dialog";
   }
+  if (kind === "senseaudio_asr_pro") {
+    return "https://asr.example/api/v2/asr/pro";
+  }
   return "https://api.senseaudio.cn/v1";
 }

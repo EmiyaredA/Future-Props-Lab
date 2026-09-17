@@ -165,7 +165,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 | `body.base_url` | 请求体 | string | 否 |
 | `body.enabled` | 请求体 | boolean | 否 |
 | `body.expected_catalog_revision` | 请求体 | integer | 是 |
-| `body.kind` | 请求体 | openai / anthropic / senseaudio_image / senseaudio_video / senseaudio_asr / senseaudio_realtime / senseaudio_music / senseaudio_sfx | 是 |
+| `body.kind` | 请求体 | openai / anthropic / senseaudio_image / senseaudio_video / senseaudio_asr / senseaudio_asr_pro / senseaudio_realtime / senseaudio_music / senseaudio_sfx | 是 |
 | `body.name` | 请求体 | string | 是 |
 | `body.supplier_id` | 请求体 | string / null | 否 |
 
@@ -232,7 +232,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 | `body.base_url` | 请求体 | string | 否 |
 | `body.enabled` | 请求体 | boolean | 否 |
 | `body.expected_catalog_revision` | 请求体 | integer | 是 |
-| `body.kind` | 请求体 | openai / anthropic / senseaudio_image / senseaudio_video / senseaudio_asr / senseaudio_realtime / senseaudio_music / senseaudio_sfx | 是 |
+| `body.kind` | 请求体 | openai / anthropic / senseaudio_image / senseaudio_video / senseaudio_asr / senseaudio_asr_pro / senseaudio_realtime / senseaudio_music / senseaudio_sfx | 是 |
 | `body.name` | 请求体 | string | 是 |
 | `body.supplier_id` | 请求体 | string / null | 否 |
 

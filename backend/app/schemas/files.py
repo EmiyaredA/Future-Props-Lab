@@ -179,6 +179,33 @@ class StorageLayoutMigrationOut(BaseModel):
     complete: bool
 
 
+LibraryFolderImportSkipCode = Literal[
+    "unsafe_relative_path",
+    "invalid_folder_name",
+    "folder_depth_exceeded",
+    "name_conflict",
+    "unsupported_file_type",
+    "file_too_large",
+    "file_type_mismatch",
+    "invalid_file_content",
+    "invalid_svg",
+    "copy_failed",
+    "not_found",
+]
+
+
+class LibraryFolderImportSkippedOut(BaseModel):
+    path: str = Field(min_length=1, max_length=1024)
+    code: LibraryFolderImportSkipCode | str
+    message: str = Field(min_length=1, max_length=500)
+
+
+class LibraryFolderImportOut(BaseModel):
+    created_folders: int = Field(ge=0)
+    created_files: int = Field(ge=0)
+    skipped: list[LibraryFolderImportSkippedOut]
+
+
 __all__ = [
     "VisualAssetFolderCreateIn",
     "VisualAssetFolderListOut",
@@ -193,6 +220,8 @@ __all__ = [
     "StorageLayoutIssueOut",
     "StorageLayoutMigrationOut",
     "StorageLayoutStatusOut",
+    "LibraryFolderImportOut",
+    "LibraryFolderImportSkippedOut",
 ]
 
 

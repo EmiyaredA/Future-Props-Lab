@@ -173,6 +173,7 @@ export function ModelForm({
     senseaudio_image: ["image_generation"],
     senseaudio_video: ["video_generation"],
     senseaudio_asr: ["speech_recognition"],
+    senseaudio_asr_pro: ["speech_recognition"],
     senseaudio_realtime: ["voice"],
     senseaudio_music: ["audio_generation"],
     senseaudio_sfx: ["audio_generation"],

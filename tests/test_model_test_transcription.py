@@ -33,7 +33,7 @@ from app.schemas.model_test import ModelTestTranscriptionParametersIn
     ("kind", "base_url", "slug", "expected"),
     [
         (
-            "senseaudio_asr",
+            "senseaudio_asr_pro",
             "http://180.184.148.131:30002/api/v2/asr/pro",
             "pro-asr",
             ("candidates", True, True, True, False, False, False, True),
@@ -94,7 +94,7 @@ def test_transcription_parameter_capability_matrix(
 def test_transcription_parameter_resolution_validates_model_combinations() -> None:
     custom_model = SimpleNamespace(slug="pro-asr")
     custom_provider = SimpleNamespace(
-        kind="senseaudio_asr",
+        kind="senseaudio_asr_pro",
         base_url="http://180.184.148.131:30002/api/v2/asr/pro",
     )
     resolved = resolve_parameters(
@@ -375,6 +375,7 @@ async def test_pro_asr_accepts_100_mb_model_limit(monkeypatch: pytest.MonkeyPatc
     async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
         provider, model = await _create_asr_model(
             client,
+            kind="senseaudio_asr_pro",
             base_url="https://asr.example/api/v2/asr/pro",
         )
         options = (await client.get("/v1/model-test/transcription-options")).json()

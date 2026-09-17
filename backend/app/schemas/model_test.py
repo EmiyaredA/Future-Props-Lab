@@ -324,7 +324,7 @@ class ModelTestTranscriptionTaskOut(BaseModel):
     id: str
     provider_id: str | None
     model_id: str | None
-    provider_kind: Literal["openai", "senseaudio_asr"]
+    provider_kind: Literal["openai", "senseaudio_asr", "senseaudio_asr_pro"]
     provider_name: str
     model_slug: str
     language: str
@@ -352,7 +352,7 @@ class ModelTestTranscriptionOptionOut(BaseModel):
     id: str
     provider_id: str
     provider_name: str
-    provider_kind: Literal["openai", "senseaudio_asr"]
+    provider_kind: Literal["openai", "senseaudio_asr", "senseaudio_asr_pro"]
     slug: str
     label: str
     description: str

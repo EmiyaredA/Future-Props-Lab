@@ -11,6 +11,8 @@ from app.llm.providers.senseaudio_asr import (
 from app.llm.transcription.parameters import parameter_capabilities
 from app.models import ModelEntry, ModelProvider
 
+SENSEAUDIO_ASR_KINDS = frozenset({"senseaudio_asr", "senseaudio_asr_pro"})
+
 _LANGUAGE_ALIASES = {
     "zh": ("zh", "chinese"),
     "en": ("en", "english"),
@@ -30,7 +32,7 @@ def model_supports_transcription(model: ModelEntry, provider: ModelProvider | No
     }
     return bool(
         provider is not None
-        and provider.kind in {"openai", "senseaudio_asr"}
+        and provider.kind in {"openai", *SENSEAUDIO_ASR_KINDS}
         and provider.enabled
         and model.enabled
         and "speech_recognition" in declared
@@ -38,8 +40,8 @@ def model_supports_transcription(model: ModelEntry, provider: ModelProvider | No
 
 
 def max_transcription_input_bytes(provider: ModelProvider) -> int:
-    if provider.kind == "senseaudio_asr":
-        return max_asr_file_bytes(provider.base_url)
+    if provider.kind in SENSEAUDIO_ASR_KINDS:
+        return max_asr_file_bytes(pro=provider.kind == "senseaudio_asr_pro")
     return MAX_ASR_FILE_BYTES
 
 

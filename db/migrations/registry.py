@@ -62,6 +62,7 @@ from db.migrations.versions import (
     r0058_presentation_media,
     r0059_project_operations,
     r0060_model_inference,
+    r0061_senseaudio_asr_pro_kind,
 )
 
 
@@ -269,5 +270,13 @@ MIGRATIONS += (Migration(r0059_project_operations.MIGRATION_ID, r0059_project_op
 
 
 MIGRATIONS += (Migration(r0060_model_inference.MIGRATION_ID, r0060_model_inference.SQL),)
+
+MIGRATIONS += (
+    Migration(
+        r0061_senseaudio_asr_pro_kind.MIGRATION_ID,
+        r0061_senseaudio_asr_pro_kind.SQL,
+        foreign_keys_off=True,
+    ),
+)
 
 LATEST_MIGRATION_ID = MIGRATIONS[-1].migration_id

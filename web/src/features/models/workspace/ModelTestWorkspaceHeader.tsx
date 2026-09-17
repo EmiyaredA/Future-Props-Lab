@@ -45,7 +45,6 @@ export function ModelTestWorkspaceHeader({
   return (
     <header className="model-test-workspace-header">
       <div className="model-test-workspace-title">
-        <span className="model-test-kicker">基模型 / PLAYGROUND</span>
         <h1>模型测试</h1>
         <p>统一验证对话、图像、视频、识别与实时语音能力。</p>
       </div>

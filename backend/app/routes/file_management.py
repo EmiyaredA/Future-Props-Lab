@@ -1,15 +1,19 @@
 from __future__ import annotations
 
+import shutil
 from typing import Annotated, Literal
 
 from fastapi import APIRouter, File, Form, HTTPException, Query, UploadFile
 from fastapi.responses import FileResponse
+from starlette.background import BackgroundTask
 
 from app.core.config import get_settings
 from app.deps import SessionDep, StudioAuth, WorkspaceDep
 from app.files import (
     AssetError,
     AssetStorage,
+    LibraryFolderArchive,
+    LibraryFolderArchiveError,
     ProjectFolderError,
     VisualAssets,
     download_filename,
@@ -17,6 +21,7 @@ from app.files import (
 )
 from app.files.layout_migration import LayoutMigrationBusyError, StorageLayoutMigration
 from app.schemas.files import (
+    LibraryFolderImportOut,
     StorageLayoutMigrationOut,
     StorageLayoutStatusOut,
     SvgPreviewIn,
@@ -38,11 +43,19 @@ def _assets(session: SessionDep, workspace_id: str) -> VisualAssets:
     return VisualAssets(session, get_settings(), workspace_id)
 
 
+def _library_archive(session: SessionDep, workspace_id: str) -> LibraryFolderArchive:
+    return LibraryFolderArchive(session, get_settings(), workspace_id)
+
+
 def asset_http_error(exc: AssetError) -> HTTPException:
     return HTTPException(
         exc.status,
         {"code": exc.code, "message": str(exc), **exc.detail},
     )
+
+
+def archive_http_error(exc: LibraryFolderArchiveError) -> HTTPException:
+    return HTTPException(exc.status, {"code": exc.code, "message": str(exc)})
 
 
 @router.get("/file-storage/layout", response_model=StorageLayoutStatusOut)
@@ -79,6 +92,57 @@ async def reveal_library_folder(
     except ProjectFolderError as exc:
         raise HTTPException(exc.status, {"code": exc.code, "message": str(exc)}) from None
     return ProjectFolderOpenOut()
+
+
+@router.get("/file-library/folder-exports", response_class=FileResponse)
+async def export_library_folder_archive(
+    session: SessionDep,
+    workspace_id: WorkspaceDep,
+    folder_id: str | None = Query(default=None),
+) -> FileResponse:
+    try:
+        exported = await _library_archive(session, workspace_id).export_subtree(folder_id)
+    except LibraryFolderArchiveError as exc:
+        raise archive_http_error(exc) from None
+    return FileResponse(
+        exported.path,
+        media_type="application/zip",
+        filename=exported.filename,
+        background=BackgroundTask(shutil.rmtree, exported.path.parent, ignore_errors=True),
+    )
+
+
+@router.post("/file-library/folder-archive-imports", response_model=LibraryFolderImportOut)
+async def import_library_folder_archive(
+    session: SessionDep,
+    workspace_id: WorkspaceDep,
+    archive: Annotated[UploadFile, File()],
+    parent_folder_id: Annotated[str | None, Form()] = None,
+) -> LibraryFolderImportOut:
+    try:
+        return await _library_archive(session, workspace_id).import_archive(
+            archive, parent_folder_id=parent_folder_id or None
+        )
+    except LibraryFolderArchiveError as exc:
+        raise archive_http_error(exc) from None
+
+
+@router.post("/file-library/folder-entry-imports", response_model=LibraryFolderImportOut)
+async def import_library_folder_entries(
+    session: SessionDep,
+    workspace_id: WorkspaceDep,
+    files: Annotated[list[UploadFile], File()],
+    relative_paths: Annotated[list[str], Form()],
+    parent_folder_id: Annotated[str | None, Form()] = None,
+) -> LibraryFolderImportOut:
+    try:
+        return await _library_archive(session, workspace_id).import_entries(
+            list(files),
+            list(relative_paths),
+            parent_folder_id=parent_folder_id or None,
+        )
+    except LibraryFolderArchiveError as exc:
+        raise archive_http_error(exc) from None
 
 
 @router.get("/file-folders", response_model=VisualAssetFolderListOut)

@@ -8,7 +8,6 @@ import {
   Server,
   Sparkles,
 } from "lucide-react";
-import { Badge } from "@shared/ui/badge";
 import { Button } from "@shared/ui/button";
 import "@features/home/home.css";
 
@@ -71,7 +70,6 @@ export function HomePage({
               <Sparkles aria-hidden />
               工作台
             </span>
-            <Badge variant="brand">FUTURE PROPS / WORKSPACE</Badge>
           </div>
           <h1>今天想从哪里开始？</h1>
           <p>把灵感、模型和工具，收拢到一个顺手的工作空间。</p>

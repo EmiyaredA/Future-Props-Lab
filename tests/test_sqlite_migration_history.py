@@ -85,6 +85,7 @@ def test_existing_r0001_database_upgrades_without_rewriting_history(tmp_path: Pa
             ("0058_presentation_media",),
             ("0059_project_operations",),
             ("0060_model_inference",),
+            ("r0061_senseaudio_asr_pro_kind",),
         ]
         assert connection.execute("SELECT COUNT(*) FROM model_test_conversations").fetchone() == (
             0,

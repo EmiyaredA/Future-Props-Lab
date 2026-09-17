@@ -59,7 +59,9 @@ CALL_SOURCE_PATTERN = (
     "^(|model_diagnostic|model_playground|visual_workshop_assistant|"
     "visual_workshop_generation|thought_workshop_assistant|audio_annotation)$"
 )
-PROVIDER_KIND_PATTERN = "^(|openai|anthropic|senseaudio_asr|senseaudio_realtime)$"
+PROVIDER_KIND_PATTERN = (
+    "^(|openai|anthropic|senseaudio_asr|senseaudio_asr_pro|senseaudio_realtime)$"
+)
 
 
 def log_date(value: str | None, *, end: bool = False) -> datetime | None:

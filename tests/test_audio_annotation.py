@@ -581,8 +581,8 @@ def test_transcription_language_supports_pro_aliases_and_auto_fallback() -> None
     provider = ModelProvider(
         id="provider",
         name="Pro ASR",
-        kind="senseaudio_asr",
-        base_url="https://asr.example/v1#pro-asr",
+        kind="senseaudio_asr_pro",
+        base_url="https://asr.example/api/v2/asr/pro",
         enabled=True,
     )
     model = ModelEntry(

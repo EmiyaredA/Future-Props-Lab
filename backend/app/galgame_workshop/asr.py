@@ -70,7 +70,7 @@ def _task_out(row: GalgameAssetTranscriptionTask) -> GalgameTranscriptionTaskOut
 def _model_supports_asr(model: ModelEntry, provider: ModelProvider | None) -> bool:
     return bool(
         provider is not None
-        and provider.kind in {"openai", "senseaudio_asr"}
+        and provider.kind in {"openai", "senseaudio_asr", "senseaudio_asr_pro"}
         and provider.enabled
         and model.enabled
         and (

@@ -13,6 +13,7 @@ ProviderKind = Literal[
     "senseaudio_image",
     "senseaudio_video",
     "senseaudio_asr",
+    "senseaudio_asr_pro",
     "senseaudio_realtime",
     "senseaudio_music",
     "senseaudio_sfx",

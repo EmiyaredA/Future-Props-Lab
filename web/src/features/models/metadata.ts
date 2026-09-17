@@ -23,6 +23,10 @@ export const providerMetadata = {
     label: "SenseAudio 语音识别",
     optionLabel: "SenseAudio 专业说话人识别",
   },
+  senseaudio_asr_pro: {
+    label: "SenseAudio ASR API",
+    optionLabel: "ASR API 专业语音识别",
+  },
   senseaudio_realtime: {
     label: "SenseAudio 实时语音",
     optionLabel: "SenseAudio 实时语音",

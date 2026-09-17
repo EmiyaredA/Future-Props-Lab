@@ -318,15 +318,6 @@
   border-top: 1px solid var(--border);
   background: color-mix(in srgb, var(--surface) 92%, var(--accent-soft));
 }
-.model-test-kicker {
-  display: block;
-  margin-bottom: 3px;
-  color: var(--accent);
-  font-size: 9px;
-  font-weight: 800;
-  letter-spacing: 0.13em;
-  text-transform: uppercase;
-}
 .model-test-workspace-title h1 {
   font-size: 18px;
   letter-spacing: -0.04em;
@@ -577,8 +568,7 @@
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
   }
-  .model-test-workspace-title p,
-  .model-test-kicker {
+  .model-test-workspace-title p {
     display: none;
   }
   .model-test-workspace-title h1 {

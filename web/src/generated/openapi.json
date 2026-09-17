@@ -16183,7 +16183,8 @@
           "provider_kind": {
             "enum": [
               "openai",
-              "senseaudio_asr"
+              "senseaudio_asr",
+              "senseaudio_asr_pro"
             ],
             "title": "Provider Kind",
             "type": "string"
@@ -16639,7 +16640,8 @@
           "provider_kind": {
             "enum": [
               "openai",
-              "senseaudio_asr"
+              "senseaudio_asr",
+              "senseaudio_asr_pro"
             ],
             "title": "Provider Kind",
             "type": "string"
@@ -17721,6 +17723,7 @@
               "senseaudio_image",
               "senseaudio_video",
               "senseaudio_asr",
+              "senseaudio_asr_pro",
               "senseaudio_realtime",
               "senseaudio_music",
               "senseaudio_sfx"
@@ -17800,6 +17803,7 @@
               "senseaudio_image",
               "senseaudio_video",
               "senseaudio_asr",
+              "senseaudio_asr_pro",
               "senseaudio_realtime",
               "senseaudio_music",
               "senseaudio_sfx"
@@ -18194,6 +18198,7 @@
               "senseaudio_image",
               "senseaudio_video",
               "senseaudio_asr",
+              "senseaudio_asr_pro",
               "senseaudio_realtime",
               "senseaudio_music",
               "senseaudio_sfx"
@@ -19871,6 +19876,7 @@
               "senseaudio_image",
               "senseaudio_video",
               "senseaudio_asr",
+              "senseaudio_asr_pro",
               "senseaudio_realtime",
               "senseaudio_music",
               "senseaudio_sfx"
@@ -19947,6 +19953,7 @@
               "senseaudio_image",
               "senseaudio_video",
               "senseaudio_asr",
+              "senseaudio_asr_pro",
               "senseaudio_realtime",
               "senseaudio_music",
               "senseaudio_sfx"
@@ -26494,7 +26501,7 @@
             "required": false,
             "schema": {
               "default": "",
-              "pattern": "^(|openai|anthropic|senseaudio_asr|senseaudio_realtime)$",
+              "pattern": "^(|openai|anthropic|senseaudio_asr|senseaudio_asr_pro|senseaudio_realtime)$",
               "title": "Provider Kind",
               "type": "string"
             }
@@ -33464,7 +33471,7 @@
             "required": false,
             "schema": {
               "default": "",
-              "pattern": "^(|openai|anthropic|senseaudio_asr|senseaudio_realtime)$",
+              "pattern": "^(|openai|anthropic|senseaudio_asr|senseaudio_asr_pro|senseaudio_realtime)$",
               "title": "Provider Kind",
               "type": "string"
             }

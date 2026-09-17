@@ -58,8 +58,8 @@ def transcription_task_out(
     path = (
         settings.workspace_model_test_path(row.workspace_id, "references") / row.input_storage_key
     )
-    custom_pro = row.model_slug == "pro-asr"
-    senseaudio = row.provider_kind == "senseaudio_asr"
+    custom_pro = row.provider_kind == "senseaudio_asr_pro" or row.model_slug == "pro-asr"
+    senseaudio = row.provider_kind in {"senseaudio_asr", "senseaudio_asr_pro"}
     stored_parameters = {
         "language": row.language,
         "target_language": None,
@@ -187,7 +187,7 @@ class ModelTestTranscription:
                 .where(
                     ModelProvider.enabled.is_(True),
                     ModelEntry.enabled.is_(True),
-                    ModelProvider.kind.in_(("openai", "senseaudio_asr")),
+                    ModelProvider.kind.in_(("openai", "senseaudio_asr", "senseaudio_asr_pro")),
                 )
                 .order_by(ModelProvider.sort_order, ModelEntry.sort_order)
             )

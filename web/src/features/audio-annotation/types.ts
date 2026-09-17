@@ -61,7 +61,7 @@ export type PortableTranscriptionFile = {
   };
   recognition: {
     task_id: string;
-    provider_kind: "openai" | "senseaudio_asr";
+    provider_kind: "openai" | "senseaudio_asr" | "senseaudio_asr_pro";
     provider_name: string;
     model_slug: string;
     language: string;

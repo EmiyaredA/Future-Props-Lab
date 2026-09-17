@@ -83,10 +83,12 @@ Principal 相符，防止切换工作区时授权到错误空间。`POST /agent/
 模型的 `capabilities` 描述实际输入和调用能力，`categories` 描述模型用途并允许多选；两者都只通过
 模型创建/更新 API 写入。类别字典参考 SiliconFlow 的 `type/sub_type` 语义，当前包含文本生成、
 其他通用模型、语音合成、语音识别、音乐生成、视频生成、图像生成和端到端语音模型。
-供应商类型额外包含 `senseaudio_asr`；内置但默认停用的 SenseAudio ASR Pro 1.5 与 ASR API
-专业语音识别共用这一适配类型，仍不复用图片或视频供应商的 API Key。历史 Workspace 升级时，
-ASR API 供应商会复制原 ASR 供应商的加密凭证与启用状态，仅把地址切换为
-`/api/v2/asr/pro`；新 Workspace 的两项 ASR 供应商都默认停用且不包含凭证。
+供应商类型额外包含 `senseaudio_asr`（云端说话人识别，`/v1/audio/transcriptions`）与
+`senseaudio_asr_pro`（ASR API 专业语音识别，`/api/v2/asr/pro`）；两者是独立协议类型，
+不共用适配分支，也不复用图片或视频供应商的 API Key。内置连接均默认停用。历史 Workspace 升级时，
+已按 Pro 地址（或以 `#pro-asr` fragment 标记）配置的连接会迁移为 `senseaudio_asr_pro`；
+若仍缺少 Pro 连接，则复制云端 ASR 的加密凭证与启用状态并写入 Pro 地址。新 Workspace 的两项
+ASR 供应商都默认停用且不包含凭证。
 
 端到端实时语音使用供应商类型 `senseaudio_realtime`、模型能力 `voice` 和既有类别
 `end_to_end_speech`。内置模型为 `senseaudio-realtime-1.0`，默认上游地址为

@@ -75,23 +75,18 @@ def _pro_milliseconds(value: object) -> int | None:
     return round(numeric)
 
 
-def _pro_endpoint(base_url: str) -> str | None:
+def _pro_request_url(base_url: str) -> str:
+    """Resolve the Pro ASR POST URL when kind is already known to be Pro."""
     raw = root_url(base_url)
     parsed = urlsplit(raw)
     path = parsed.path.rstrip("/")
     if path.endswith(PRO_ASR_PATH):
         return urlunsplit((parsed.scheme, parsed.netloc, path, "", ""))
-    if parsed.fragment == "pro-asr":
-        return urlunsplit((parsed.scheme, parsed.netloc, PRO_ASR_PATH, "", ""))
-    return None
+    return urlunsplit((parsed.scheme, parsed.netloc, PRO_ASR_PATH, "", ""))
 
 
-def is_pro_asr_endpoint(base_url: str) -> bool:
-    return _pro_endpoint(base_url) is not None
-
-
-def max_asr_file_bytes(base_url: str) -> int:
-    return MAX_PRO_ASR_FILE_BYTES if _pro_endpoint(base_url) else MAX_ASR_FILE_BYTES
+def max_asr_file_bytes(*, pro: bool = False) -> int:
+    return MAX_PRO_ASR_FILE_BYTES if pro else MAX_ASR_FILE_BYTES
 
 
 def _pro_language(language: str) -> str:
@@ -313,14 +308,14 @@ async def transcribe_audio(
     enable_punctuation: bool = True,
     hotwords: str | None = None,
     abbreviations: bool = False,
+    pro: bool = False,
     transport: httpx.AsyncBaseTransport | None = None,
 ) -> SenseAudioTranscription:
-    pro_endpoint = _pro_endpoint(base_url)
-    max_bytes = max_asr_file_bytes(base_url)
+    max_bytes = max_asr_file_bytes(pro=pro)
     if byte_size > max_bytes:
         max_mb = max_bytes // (1024 * 1024)
         raise SenseAudioAsrFileTooLarge(f"SenseAudio 语音识别仅支持不超过 {max_mb} MB 的音频")
-    if pro_endpoint:
+    if pro:
         data = {
             "language": _pro_language(language),
             "enable_word_timestamps": str(enable_word_timestamps).lower(),
@@ -329,7 +324,7 @@ async def transcribe_audio(
         }
         if target_language:
             data["target_lang"] = target_language
-        endpoint = pro_endpoint
+        endpoint = _pro_request_url(base_url)
     else:
         data = {
             "model": model,
@@ -359,7 +354,7 @@ async def transcribe_audio(
             files={"file": (filename, source, mime_type)},
         )
     payload = response_json(response)
-    result = payload.get("result") if pro_endpoint else payload
+    result = payload.get("result") if pro else payload
     if not isinstance(result, dict):
         raise SenseAudioProviderError("SenseAudio 语音识别响应缺少结果")
     text = result.get("text")
@@ -367,10 +362,10 @@ async def transcribe_audio(
         raise SenseAudioProviderError("SenseAudio 语音识别响应缺少文本")
     segments = (
         _normalize_pro_segments(result.get("utterances"))
-        if pro_endpoint
+        if pro
         else _normalize_segments(result.get("segments"))
     )
-    if pro_endpoint:
+    if pro:
         utterances = result.get("utterances")
         words = tuple(
             word

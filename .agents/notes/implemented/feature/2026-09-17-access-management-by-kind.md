@@ -19,6 +19,8 @@ Status: implemented
 
 - **收益**：侧栏即协议类型，无额外整理步骤；不再触发整理链路的参数无效错误。
 - **代价与已知上限**：自由命名供应商分组在工作区接入管理中不可见；模板/API 仍可带 `suppliers`，与侧栏脱钩。
+- **相关**：SenseAudio 云端 ASR 与 ASR API Pro 拆成独立 kind，见
+  [senseaudio-asr-protocol-split](../architecture/2026-09-17-senseaudio-asr-protocol-split.md)。
 
 ## Verification
 

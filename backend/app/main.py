@@ -19,6 +19,7 @@ from app.concurrency.revisions import RevisionConflictError
 from app.core.config import get_settings
 from app.core.db import SessionLocal, engine
 from app.files.layout_migration import reconcile_project_trash, reconcile_snapshot_imports
+from app.files.library_folder_archive import cleanup_library_folder_archive_staging
 from app.files.project_snapshots import cleanup_snapshot_staging
 from app.files.storage import AssetStorage
 from app.galgame_workshop.annotation_import_runner import GalgameAnnotationImportRunner
@@ -50,6 +51,7 @@ settings = get_settings()
 @asynccontextmanager
 async def lifespan(lifespan_app: FastAPI) -> AsyncIterator[None]:
     cleanup_snapshot_staging(settings)
+    cleanup_library_folder_archive_staging(settings)
     apply_migrations(settings.database_path)
     await reconcile_profile_avatars()
     async with SessionLocal() as session:
