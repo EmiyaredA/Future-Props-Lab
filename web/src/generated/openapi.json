@@ -965,6 +965,13 @@
       },
       "AudioAnnotationDocumentOut": {
         "properties": {
+          "custom_emotions": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Custom Emotions",
+            "type": "array"
+          },
           "project_id": {
             "title": "Project Id",
             "type": "string"
@@ -1010,6 +1017,14 @@
       },
       "AudioAnnotationDocumentPutIn": {
         "properties": {
+          "custom_emotions": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 64,
+            "title": "Custom Emotions",
+            "type": "array"
+          },
           "expected_revision": {
             "minimum": 0.0,
             "title": "Expected Revision",
@@ -1051,6 +1066,14 @@
             "minLength": 1,
             "title": "Asset Id",
             "type": "string"
+          },
+          "custom_emotions": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 64,
+            "title": "Custom Emotions",
+            "type": "array"
           },
           "schema_version": {
             "const": "1.0",
@@ -1296,6 +1319,14 @@
             "title": "Localized Texts",
             "type": "array"
           },
+          "speaker_emotions": {
+            "items": {
+              "$ref": "#/components/schemas/AudioAnnotationSpeakerEmotion"
+            },
+            "maxItems": 64,
+            "title": "Speaker Emotions",
+            "type": "array"
+          },
           "speaker_id": {
             "anyOf": [
               {
@@ -1435,6 +1466,27 @@
           "color"
         ],
         "title": "AudioAnnotationSpeaker",
+        "type": "object"
+      },
+      "AudioAnnotationSpeakerEmotion": {
+        "properties": {
+          "emotion": {
+            "maxLength": 40,
+            "minLength": 1,
+            "title": "Emotion",
+            "type": "string"
+          },
+          "speaker_id": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,63}$",
+            "title": "Speaker Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "speaker_id",
+          "emotion"
+        ],
+        "title": "AudioAnnotationSpeakerEmotion",
         "type": "object"
       },
       "AudioAnnotationTranscriptionJsonImportIn": {

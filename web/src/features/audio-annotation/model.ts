@@ -8,6 +8,10 @@ import type {
   AudioAnnotationTranscriptionOption,
   PortableTranscriptionFile,
 } from "@features/audio-annotation/types";
+import {
+  emotionKey,
+  normalizeEmotionLabel,
+} from "@features/audio-annotation/emotions";
 import type { components } from "@generated/api";
 
 export const MIN_SEGMENT_MS = 100;
@@ -43,6 +47,131 @@ export function speakerAssignment(speakerIds: string[]) {
     speaker_id: ids[0] ?? null,
     speaker_ids: ids,
   };
+}
+
+export type SpeakerEmotionEntry = {
+  speaker_id: string;
+  emotion: string;
+};
+
+export function segmentSpeakerEmotions(
+  segment: Pick<
+    AudioAnnotationSegment,
+    "emotion" | "speaker_emotions" | "speaker_id" | "speaker_ids"
+  >,
+): SpeakerEmotionEntry[] {
+  if (segment.speaker_emotions?.length) {
+    return segment.speaker_emotions
+      .filter((item) => item.speaker_id && item.emotion?.trim())
+      .map((item) => ({
+        speaker_id: item.speaker_id,
+        emotion: item.emotion.trim(),
+      }));
+  }
+  const emotion = segment.emotion?.trim();
+  if (!emotion) return [];
+  return segmentSpeakerIds(segment).map((speakerId) => ({
+    speaker_id: speakerId,
+    emotion,
+  }));
+}
+
+export function pruneSpeakerEmotions(
+  emotions: SpeakerEmotionEntry[] | undefined,
+  speakerIds: string[],
+): SpeakerEmotionEntry[] {
+  const allowed = new Set(speakerIds);
+  return (emotions ?? []).filter((item) => allowed.has(item.speaker_id));
+}
+
+export function syncLegacyEmotion(
+  speakerEmotions: SpeakerEmotionEntry[],
+): string | null {
+  const unique = [
+    ...new Set(speakerEmotions.map((item) => item.emotion).filter(Boolean)),
+  ];
+  return unique.length === 1 ? unique[0]! : null;
+}
+
+export function applySpeakerEmotions(
+  segment: Pick<
+    AudioAnnotationSegment,
+    "emotion" | "speaker_emotions" | "speaker_id" | "speaker_ids"
+  >,
+  targetSpeakerIds: string[],
+  emotion: string | null,
+): {
+  speaker_emotions: SpeakerEmotionEntry[];
+  emotion: string | null;
+} {
+  const allowed = new Set(segmentSpeakerIds(segment));
+  const targets = [...new Set(targetSpeakerIds.filter((id) => allowed.has(id)))];
+  const next = new Map(
+    segmentSpeakerEmotions(segment)
+      .filter((item) => allowed.has(item.speaker_id))
+      .map((item) => [item.speaker_id, item.emotion] as const),
+  );
+  const cleaned = emotion?.trim() || null;
+  for (const speakerId of targets) {
+    if (cleaned) next.set(speakerId, cleaned);
+    else next.delete(speakerId);
+  }
+  const speaker_emotions = [...next.entries()].map(([speaker_id, value]) => ({
+    speaker_id,
+    emotion: value,
+  }));
+  return {
+    speaker_emotions,
+    emotion: syncLegacyEmotion(speaker_emotions),
+  };
+}
+
+export function assignSegmentSpeakers(
+  segment: Pick<
+    AudioAnnotationSegment,
+    "emotion" | "speaker_emotions" | "speaker_id" | "speaker_ids"
+  >,
+  speakerIds: string[],
+) {
+  const assignment = speakerAssignment(speakerIds);
+  const speaker_emotions = pruneSpeakerEmotions(
+    segmentSpeakerEmotions(segment),
+    assignment.speaker_ids,
+  );
+  return {
+    ...assignment,
+    speaker_emotions,
+    emotion: syncLegacyEmotion(speaker_emotions),
+  };
+}
+
+export function renameEmotionInSegments(
+  segments: AudioAnnotationSegment[],
+  from: string,
+  to: string,
+): AudioAnnotationSegment[] {
+  const fromKey = emotionKey(from);
+  const nextLabel = normalizeEmotionLabel(to);
+  if (!nextLabel || fromKey === emotionKey(nextLabel)) return segments;
+  return segments.map((segment) => {
+    const emotions = segmentSpeakerEmotions(segment);
+    if (!emotions.some((item) => emotionKey(item.emotion) === fromKey)) {
+      if (segment.emotion && emotionKey(segment.emotion) === fromKey) {
+        return { ...segment, emotion: nextLabel };
+      }
+      return segment;
+    }
+    const speaker_emotions = emotions.map((item) =>
+      emotionKey(item.emotion) === fromKey
+        ? { ...item, emotion: nextLabel }
+        : item,
+    );
+    return {
+      ...segment,
+      speaker_emotions,
+      emotion: syncLegacyEmotion(speaker_emotions),
+    };
+  });
 }
 
 export function sameSegmentSpeakers(
@@ -457,6 +586,7 @@ export function duplicateSegmentForOverlap(
       id: createId(),
       ...speakerAssignment([]),
       emotion: null,
+      speaker_emotions: [],
       text: "",
       language: selected.language,
       localized_texts: [],
@@ -507,6 +637,8 @@ export function createSegment(
       start_ms: start,
       end_ms: end,
       ...speakerAssignment([]),
+      emotion: null,
+      speaker_emotions: [],
       text: "",
       language: null,
       localized_texts: [],
@@ -595,6 +727,7 @@ export function buildProjectFile(
       },
     },
     speakers: document.speakers,
+    custom_emotions: document.custom_emotions ?? [],
     segments: sortSegments(document.segments),
   };
 }
@@ -612,7 +745,12 @@ export function parseProjectFile(value: unknown): AnnotationProjectFile {
   ) {
     throw new Error("只支持录音标注项目 JSON 1.0");
   }
-  return candidate as AnnotationProjectFile;
+  return {
+    ...(candidate as AnnotationProjectFile),
+    custom_emotions: Array.isArray(candidate.custom_emotions)
+      ? candidate.custom_emotions
+      : [],
+  };
 }
 
 export function buildTranscriptionFile(

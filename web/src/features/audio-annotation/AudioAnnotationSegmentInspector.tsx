@@ -8,24 +8,40 @@ import {
   Scissors,
   Users,
 } from "lucide-react";
+import { AnnotationCollapsedSelect } from "./AnnotationCollapsedSelect";
 import { LanguageAnnotationEditor } from "./LanguageAnnotationEditor";
 import { AudioAnnotationEmotionField } from "./AudioAnnotationEmotionField";
 import {
   formatTimestamp,
   parseTimestamp,
+  assignSegmentSpeakers,
+  segmentSpeakerEmotions,
   segmentSpeakerIds,
   snapSegmentToNext,
   snapSegmentToPrevious,
-  speakerAssignment,
   updateSegmentBounds,
 } from "./model";
 import type { AnnotationSnapshot, AudioAnnotationDocument } from "./types";
 import type { AudioAnnotationEditorController } from "./useAudioAnnotationEditorController";
 
+function speakerTriggerLabel(
+  speakers: AudioAnnotationDocument["speakers"],
+  selectedIds: string[],
+) {
+  if (!selectedIds.length) return "未指定";
+  const names = selectedIds
+    .map((id) => speakers.find((speaker) => speaker.id === id)?.name)
+    .filter((name): name is string => Boolean(name));
+  if (!names.length) return "未指定";
+  if (names.length <= 2) return names.join("、");
+  return `${names.slice(0, 2).join("、")} 等 ${names.length} 人`;
+}
+
 function snapshot(document: AudioAnnotationDocument): AnnotationSnapshot {
   return {
     schema_version: "1.0",
     speakers: document.speakers,
+    custom_emotions: document.custom_emotions ?? [],
     segments: document.segments,
   };
 }
@@ -36,6 +52,7 @@ export function AudioAnnotationSegmentInspector({
   controller: AudioAnnotationEditorController;
 }) {
   const {
+    applySnapshot,
     canSnapToNext,
     canSnapToPrevious,
     document,
@@ -54,6 +71,7 @@ export function AudioAnnotationSegmentInspector({
     selectedIndex,
     setNotice,
     setSpeakerManager,
+    setEmotionManager,
     setUndoStack,
     snappedToNext,
     snappedToPrevious,
@@ -80,32 +98,33 @@ export function AudioAnnotationSegmentInspector({
             />
           </header>
           <div className="annotation-mini-wave">
-            <i />
-            <button
-              type="button"
-              className="annotation-segment-preview"
-              aria-label={
-                playing && previewingSegmentId === selected.id
-                  ? "暂停当前片段"
-                  : "播放当前片段"
-              }
-              onClick={toggleSelectedPreview}
-            >
-              {playing && previewingSegmentId === selected.id ? (
-                <Pause aria-hidden />
-              ) : (
-                <Play aria-hidden />
-              )}
+            <div className="annotation-mini-wave-meta">
+              <button
+                type="button"
+                className="annotation-segment-preview"
+                aria-label={
+                  playing && previewingSegmentId === selected.id
+                    ? "暂停当前片段"
+                    : "播放当前片段"
+                }
+                onClick={toggleSelectedPreview}
+              >
+                {playing && previewingSegmentId === selected.id ? (
+                  <Pause aria-hidden />
+                ) : (
+                  <Play aria-hidden />
+                )}
+                <span>
+                  {playing && previewingSegmentId === selected.id
+                    ? "暂停"
+                    : "试听片段"}
+                </span>
+              </button>
               <span>
-                {playing && previewingSegmentId === selected.id
-                  ? "暂停"
-                  : "试听片段"}
+                {formatTimestamp(selected.start_ms)} —{" "}
+                {formatTimestamp(selected.end_ms)}
               </span>
-            </button>
-            <span>
-              {formatTimestamp(selected.start_ms)} —{" "}
-              {formatTimestamp(selected.end_ms)}
-            </span>
+            </div>
           </div>
           <div className="annotation-time-fields">
             <label className="annotation-time-field">
@@ -207,69 +226,77 @@ export function AudioAnnotationSegmentInspector({
           <div className="annotation-inspector-field">
             <span>说话人（可多选）</span>
             <div className="annotation-speaker-field">
-              <div
-                className="annotation-speaker-options"
-                role="group"
-                aria-label="选择一个或多个说话人"
-              >
-                <button
-                  type="button"
-                  className={
-                    segmentSpeakerIds(selected).length ? "" : "selected"
-                  }
-                  aria-pressed={!segmentSpeakerIds(selected).length}
-                  onClick={() =>
+              <AnnotationCollapsedSelect
+                ariaLabel="选择一个或多个说话人"
+                emptyLabel="未指定"
+                multiple
+                options={[
+                  { value: "", label: "未指定", color: "#8b9189" },
+                  ...document.speakers.map((speaker) => ({
+                    value: speaker.id,
+                    label: speaker.name,
+                    color: speaker.color,
+                  })),
+                ]}
+                values={segmentSpeakerIds(selected)}
+                triggerLabel={speakerTriggerLabel(
+                  document.speakers,
+                  segmentSpeakerIds(selected),
+                )}
+                onToggle={(speakerId, selectedNext) => {
+                  if (!speakerId) {
                     updateSelected({
-                      ...speakerAssignment([]),
+                      ...assignSegmentSpeakers(selected, []),
                       status: "draft",
-                    })
+                    });
+                    return;
                   }
-                >
-                  <i style={{ background: "#8b9189" }} />
-                  未指定
-                </button>
-                {document.speakers.map((speaker) => {
                   const selectedSpeakerIds = segmentSpeakerIds(selected);
-                  const checked = selectedSpeakerIds.includes(speaker.id);
-                  return (
-                    <button
-                      type="button"
-                      key={speaker.id}
-                      className={checked ? "selected" : ""}
-                      aria-pressed={checked}
-                      onClick={() =>
-                        updateSelected({
-                          ...speakerAssignment(
-                            checked
-                              ? selectedSpeakerIds.filter(
-                                  (speakerId) => speakerId !== speaker.id,
-                                )
-                              : [...selectedSpeakerIds, speaker.id],
-                          ),
-                          status: "draft",
-                        })
-                      }
-                    >
-                      <i style={{ background: speaker.color }} />
-                      <span>{speaker.name}</span>
-                      {checked ? <Check aria-hidden /> : null}
-                    </button>
-                  );
-                })}
-              </div>
-              <button
-                type="button"
-                className="annotation-speaker-manage"
-                onClick={() => setSpeakerManager(true)}
-              >
-                <Users aria-hidden /> 管理
-              </button>
+                  updateSelected({
+                    ...assignSegmentSpeakers(
+                      selected,
+                      selectedNext
+                        ? [...selectedSpeakerIds, speakerId]
+                        : selectedSpeakerIds.filter((id) => id !== speakerId),
+                    ),
+                    status: "draft",
+                  });
+                }}
+                trailing={
+                  <button
+                    type="button"
+                    className="annotation-speaker-manage"
+                    onClick={() => setSpeakerManager(true)}
+                  >
+                    <Users aria-hidden /> 管理
+                  </button>
+                }
+              />
             </div>
           </div>
           <AudioAnnotationEmotionField
-            key={`${selected.id}-emotion`}
-            emotion={selected.emotion}
-            onChange={(emotion) => updateSelected({ emotion, status: "draft" })}
+            key={`${selected.id}-emotion-${segmentSpeakerIds(selected).join(",")}`}
+            speakers={document.speakers}
+            speakerIds={segmentSpeakerIds(selected)}
+            speakerEmotions={segmentSpeakerEmotions(selected)}
+            customEmotions={document.custom_emotions ?? []}
+            onChange={(next) => {
+              const { custom_emotions, ...segmentChanges } = next;
+              if (custom_emotions) {
+                applySnapshot({
+                  ...snapshot(document),
+                  custom_emotions,
+                  segments: document.segments.map((segment) =>
+                    segment.id === selected.id
+                      ? { ...segment, ...segmentChanges, status: "draft" }
+                      : segment,
+                  ),
+                });
+                return;
+              }
+              updateSelected({ ...segmentChanges, status: "draft" });
+            }}
+            onManage={() => setEmotionManager(true)}
           />
           <LanguageAnnotationEditor
             key={selected.id}

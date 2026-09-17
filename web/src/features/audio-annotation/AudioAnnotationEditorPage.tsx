@@ -28,6 +28,7 @@ import {
   languageColor,
   languageLabel,
   segmentSpeakerIds,
+  segmentSpeakerEmotions,
   segmentLanguageCodes,
   segmentDisplayText,
   PRIMARY_DISPLAY_LANGUAGE,
@@ -646,7 +647,24 @@ export function AudioAnnotationEditorPage({
                       </span>
                     </span>
                     <span className="annotation-segment-emotion">
-                      {segment.emotion || "未标注"}
+                      {(() => {
+                        const emotions = segmentSpeakerEmotions(segment);
+                        if (!emotions.length) return <em>未标注</em>;
+                        return emotions.map((item) => {
+                          const speaker = speakerById.get(item.speaker_id);
+                          return (
+                            <i key={item.speaker_id}>
+                              <b
+                                style={{
+                                  background: speaker?.color ?? "#8b9189",
+                                }}
+                                aria-hidden
+                              />
+                              {item.emotion}
+                            </i>
+                          );
+                        });
+                      })()}
                     </span>
                     <span className="annotation-language-badges">
                       {languageCodes.length ? (

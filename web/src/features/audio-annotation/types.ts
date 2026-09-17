@@ -19,7 +19,7 @@ export type AudioAnnotationSegmentTranscription =
 
 export type AnnotationSnapshot = Pick<
   AudioAnnotationDocument,
-  "schema_version" | "speakers" | "segments"
+  "schema_version" | "speakers" | "custom_emotions" | "segments"
 >;
 
 export type AnnotationProjectFile = AnnotationSnapshot & {

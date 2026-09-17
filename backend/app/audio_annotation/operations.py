@@ -49,6 +49,7 @@ def transform(current, body):
         segments.sort(key=lambda item: (item["start_ms"], item["end_ms"], item["id"]))
     return AudioAnnotationDocumentPutIn(
         speakers=data["speakers"],
+        custom_emotions=data.get("custom_emotions") or [],
         segments=data["segments"],
         expected_revision=body.expected_revision,
         schema_version=current.schema_version,

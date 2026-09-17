@@ -144,10 +144,6 @@
   .stat-grid {
     grid-template-columns: 1fr 1fr;
   }
-  .model-test-page {
-    height: calc(var(--visible-height, 100dvh) - 48px);
-    min-height: 0;
-  }
   .playground-grid {
     min-height: 0;
   }

@@ -14,6 +14,7 @@ import {
   mergeWithNext,
   sameSegmentSpeakers,
   segmentSpeakerIds,
+  segmentSpeakerEmotions,
   segmentLanguageCodes,
   segmentSearchableText,
   PRIMARY_DISPLAY_LANGUAGE,
@@ -37,6 +38,7 @@ function snapshot(document: AudioAnnotationDocument): AnnotationSnapshot {
   return {
     schema_version: "1.0",
     speakers: document.speakers,
+    custom_emotions: document.custom_emotions ?? [],
     segments: document.segments,
   };
 }
@@ -92,6 +94,7 @@ export function useAudioAnnotationEditorController({
   const [undoStack, setUndoStack] = useState<AnnotationSnapshot[]>([]);
   const [redoStack, setRedoStack] = useState<AnnotationSnapshot[]>([]);
   const [speakerManager, setSpeakerManager] = useState(false);
+  const [emotionManager, setEmotionManager] = useState(false);
   const [deleteSpeaker, setDeleteSpeaker] =
     useState<AudioAnnotationSpeaker | null>(null);
   const [deleteSpeakerReplacement, setDeleteSpeakerReplacement] =
@@ -296,7 +299,9 @@ export function useAudioAnnotationEditorController({
           .join(" ") || "未指定";
       return (
         !needle ||
-        `${speaker} ${segment.emotion ?? ""} ${segmentSearchableText(segment)} ${languages
+        `${speaker} ${segmentSpeakerEmotions(segment)
+          .map((item) => item.emotion)
+          .join(" ")} ${segmentSearchableText(segment)} ${languages
           .map(languageLabel)
           .join(" ")}`
           .toLocaleLowerCase("zh-CN")
@@ -492,6 +497,7 @@ export function useAudioAnnotationEditorController({
     doMerge,
     doSplit,
     document,
+    emotionManager,
     exportOpen,
     flushSave,
     focusSelectionMode,
@@ -529,6 +535,7 @@ export function useAudioAnnotationEditorController({
     setDeleteSpeaker,
     setDeleteSpeakerReplacement,
     setDirty,
+    setEmotionManager,
     setExportOpen,
     setFocusSelectionMode,
     setLanguageFilter,

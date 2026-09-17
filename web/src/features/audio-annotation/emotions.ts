@@ -33,6 +33,86 @@ export const EMOTION_PRESETS = [
   { value: "恐惧", tone: "fearful" },
 ] as const;
 
+export const MAX_CUSTOM_EMOTIONS = 64;
+export const MAX_EMOTION_LENGTH = 40;
+
+export type EmotionDuplicateOf = "preset" | "custom" | null;
+
+export function normalizeEmotionLabel(value: string): string | null {
+  const cleaned = value.trim();
+  if (!cleaned || cleaned.length > MAX_EMOTION_LENGTH) return null;
+  return cleaned;
+}
+
+export function emotionKey(value: string): string {
+  return value.trim().toLocaleLowerCase("zh-CN");
+}
+
+export function isPresetEmotion(value: string): boolean {
+  const key = emotionKey(value);
+  return EMOTION_PRESETS.some((preset) => emotionKey(preset.value) === key);
+}
+
+export function mergeCustomEmotion(
+  customEmotions: string[],
+  candidate: string,
+): {
+  emotions: string[];
+  added: boolean;
+  duplicateOf: EmotionDuplicateOf;
+  label: string | null;
+} {
+  const label = normalizeEmotionLabel(candidate);
+  if (!label) {
+    return {
+      emotions: customEmotions,
+      added: false,
+      duplicateOf: null,
+      label: null,
+    };
+  }
+  const key = emotionKey(label);
+  if (EMOTION_PRESETS.some((preset) => emotionKey(preset.value) === key)) {
+    return {
+      emotions: customEmotions,
+      added: false,
+      duplicateOf: "preset",
+      label,
+    };
+  }
+  if (customEmotions.some((item) => emotionKey(item) === key)) {
+    return {
+      emotions: customEmotions,
+      added: false,
+      duplicateOf: "custom",
+      label,
+    };
+  }
+  if (customEmotions.length >= MAX_CUSTOM_EMOTIONS) {
+    return {
+      emotions: customEmotions,
+      added: false,
+      duplicateOf: null,
+      label,
+    };
+  }
+  return {
+    emotions: [...customEmotions, label],
+    added: true,
+    duplicateOf: null,
+    label,
+  };
+}
+
+export function emotionDuplicateWarning(
+  duplicateOf: EmotionDuplicateOf,
+  label: string,
+): string {
+  if (duplicateOf === "preset") return `「${label}」已在预设中`;
+  if (duplicateOf === "custom") return `「${label}」已在词库中`;
+  return "";
+}
+
 export function normalizeImportedEmotion(value: unknown): string | null {
   if (value === undefined || value === null) return null;
   if (typeof value !== "string" || !value.trim() || value.trim().length > 40)

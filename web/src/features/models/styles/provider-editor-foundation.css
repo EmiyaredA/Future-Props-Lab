@@ -281,11 +281,19 @@
   font-weight: 650;
 }
 
-.model-test-page {
-  height: 100vh;
-  min-height: 650px;
+.studio-main:has(.model-test-page) {
   display: flex;
   flex-direction: column;
+  overflow: hidden;
+}
+
+.model-test-page {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  height: 100%;
+  max-height: 100%;
+  min-height: 0;
   overflow: hidden;
   background: var(--bg);
 }
@@ -328,6 +336,7 @@
   flex: 1;
   display: grid;
   grid-template-columns: 224px minmax(420px, 1fr) 296px;
+  overflow: hidden;
 }
 
 .conversation-panel,
@@ -384,6 +393,7 @@
 
 .conversation-list {
   min-height: 0;
+  flex: 1;
   padding: 8px;
   overflow-y: auto;
 }
@@ -482,7 +492,7 @@
 .chat-scroll {
   min-height: 0;
   flex: 1;
-  overflow-y: auto;
+  overflow: hidden;
   scroll-behavior: smooth;
 }
 

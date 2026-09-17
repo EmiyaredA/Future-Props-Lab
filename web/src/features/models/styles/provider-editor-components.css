@@ -493,6 +493,7 @@
 
 .settings-form {
   min-height: 0;
+  flex: 1;
   padding: 18px 16px 20px;
   overflow-y: auto;
 }

@@ -40,6 +40,19 @@ class AudioAnnotationLocalizedText(BaseModel):
         return value.lower()
 
 
+class AudioAnnotationSpeakerEmotion(BaseModel):
+    speaker_id: str = Field(pattern=STABLE_ID_PATTERN)
+    emotion: str = Field(min_length=1, max_length=40)
+
+    @field_validator("emotion")
+    @classmethod
+    def normalize_emotion(cls, value: str) -> str:
+        cleaned = value.strip()
+        if not cleaned:
+            raise ValueError("情绪不能为空")
+        return cleaned
+
+
 class AudioAnnotationSegment(BaseModel):
     id: str = Field(pattern=STABLE_ID_PATTERN)
     start_ms: int = Field(ge=0)
@@ -49,6 +62,9 @@ class AudioAnnotationSegment(BaseModel):
         default_factory=list, max_length=64
     )
     emotion: str | None = Field(default=None, max_length=40)
+    speaker_emotions: list[AudioAnnotationSpeakerEmotion] = Field(
+        default_factory=list, max_length=64
+    )
     text: str = Field(default="", max_length=20_000)
     language: str | None = Field(default=None, pattern=LANGUAGE_CODE_PATTERN, max_length=35)
     localized_texts: list[AudioAnnotationLocalizedText] = Field(default_factory=list, max_length=32)
@@ -76,6 +92,28 @@ class AudioAnnotationSegment(BaseModel):
             raise ValueError("主说话人必须是说话人列表的第一项")
         self.speaker_ids = speaker_ids
         self.speaker_id = speaker_ids[0] if speaker_ids else None
+
+        emotion_speaker_ids = [item.speaker_id for item in self.speaker_emotions]
+        if len(emotion_speaker_ids) != len(set(emotion_speaker_ids)):
+            raise ValueError("同一片段的说话人情绪不能重复")
+        if any(speaker_id not in speaker_ids for speaker_id in emotion_speaker_ids):
+            raise ValueError("说话人情绪必须绑定到该片段已选说话人")
+        if not self.speaker_emotions and self.emotion and speaker_ids:
+            self.speaker_emotions = [
+                AudioAnnotationSpeakerEmotion(speaker_id=speaker_id, emotion=self.emotion)
+                for speaker_id in speaker_ids
+            ]
+        if self.speaker_emotions:
+            unique_emotions = {item.emotion for item in self.speaker_emotions}
+            self.emotion = (
+                next(iter(unique_emotions)) if len(unique_emotions) == 1 else None
+            )
+        elif not speaker_ids:
+            # keep segment-level emotion when no speakers are assigned
+            pass
+        else:
+            self.emotion = None
+
         languages = [item.language for item in self.localized_texts]
         if len(languages) != len(set(languages)):
             raise ValueError("同一片段不能重复添加同一种语言")
@@ -130,19 +168,36 @@ class AudioAnnotationDocumentPutIn(BaseModel):
     expected_revision: int = Field(ge=0)
     schema_version: Literal["1.0"] = "1.0"
     speakers: list[AudioAnnotationSpeaker] = Field(default_factory=list, max_length=64)
+    custom_emotions: list[str] = Field(default_factory=list, max_length=64)
     segments: list[AudioAnnotationSegment] = Field(default_factory=list, max_length=5000)
+
+    @field_validator("custom_emotions")
+    @classmethod
+    def normalize_custom_emotions(cls, value: list[str]) -> list[str]:
+        cleaned: list[str] = []
+        for item in value:
+            label = item.strip()
+            if not label:
+                raise ValueError("自定义情绪不能为空")
+            if len(label) > 40:
+                raise ValueError("自定义情绪不能超过 40 个字符")
+            cleaned.append(label)
+        return cleaned
 
     @model_validator(mode="after")
     def identifiers_and_names_are_unique(self) -> AudioAnnotationDocumentPutIn:
         speaker_ids = [speaker.id for speaker in self.speakers]
         segment_ids = [segment.id for segment in self.segments]
         names = [speaker.name.casefold() for speaker in self.speakers]
+        emotion_keys = [emotion.casefold() for emotion in self.custom_emotions]
         if len(speaker_ids) != len(set(speaker_ids)):
             raise ValueError("说话人 ID 不能重复")
         if len(segment_ids) != len(set(segment_ids)):
             raise ValueError("片段 ID 不能重复")
         if len(names) != len(set(names)):
             raise ValueError("说话人名称不能重复")
+        if len(emotion_keys) != len(set(emotion_keys)):
+            raise ValueError("自定义情绪不能重复")
         return self
 
 
@@ -150,6 +205,7 @@ class AudioAnnotationDocumentOut(BaseModel):
     project_id: str
     schema_version: Literal["1.0"]
     speakers: list[AudioAnnotationSpeaker]
+    custom_emotions: list[str] = Field(default_factory=list)
     segments: list[AudioAnnotationSegment]
     revision: int
     updated_at: str
@@ -185,6 +241,7 @@ class AudioAnnotationImportIn(BaseModel):
     asset_id: str = Field(min_length=1, max_length=36)
     schema_version: Literal["1.0"] = "1.0"
     speakers: list[AudioAnnotationSpeaker] = Field(default_factory=list, max_length=64)
+    custom_emotions: list[str] = Field(default_factory=list, max_length=64)
     segments: list[AudioAnnotationSegment] = Field(default_factory=list, max_length=5000)
 
     @field_validator("title")
@@ -198,6 +255,7 @@ class AudioAnnotationImportIn(BaseModel):
             expected_revision=0,
             schema_version=self.schema_version,
             speakers=self.speakers,
+            custom_emotions=self.custom_emotions,
             segments=self.segments,
         )
         return self

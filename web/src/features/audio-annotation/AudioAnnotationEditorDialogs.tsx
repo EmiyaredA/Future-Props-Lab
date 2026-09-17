@@ -1,16 +1,19 @@
 import { X } from "lucide-react";
 import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
 import { CustomSelect } from "@shared/ui/CustomSelect";
+import { AudioAnnotationEmotionManager } from "./AudioAnnotationEmotionManager";
 import { AudioAnnotationExportDialog } from "./AudioAnnotationExportDialog";
 import { AudioAnnotationSpeakerManager } from "./AudioAnnotationSpeakerManager";
 import { AudioAnnotationTextImportDialog } from "./AudioAnnotationTextImportDialog";
 import { SegmentTranscriptionDialogs } from "./SegmentTranscriptionDialogs";
 import {
+  assignSegmentSpeakers,
   mergeImportedSpeakers,
   mergeWithNext,
+  renameEmotionInSegments,
   segmentSpeakerIds,
-  speakerAssignment,
 } from "./model";
+import { emotionKey } from "./emotions";
 import { prepareTextOnlyAnnotationImport } from "./annotationTextImport";
 import type { AnnotationSnapshot, AudioAnnotationDocument } from "./types";
 import type { AudioAnnotationEditorController } from "./useAudioAnnotationEditorController";
@@ -20,6 +23,7 @@ function snapshot(document: AudioAnnotationDocument): AnnotationSnapshot {
   return {
     schema_version: "1.0",
     speakers: document.speakers,
+    custom_emotions: document.custom_emotions ?? [],
     segments: document.segments,
   };
 }
@@ -38,6 +42,7 @@ export function AudioAnnotationEditorDialogs({
     deleteSpeaker,
     deleteSpeakerReplacement,
     document,
+    emotionManager,
     exportOpen,
     mutateSegments,
     onBack,
@@ -51,6 +56,7 @@ export function AudioAnnotationEditorDialogs({
     setDeleteSpeaker,
     setDeleteSpeakerReplacement,
     setDirty,
+    setEmotionManager,
     setExportOpen,
     setNotice,
     setPendingNavigation,
@@ -82,6 +88,30 @@ export function AudioAnnotationEditorDialogs({
         onDelete={(speaker) => {
           setDeleteSpeakerReplacement("unassigned");
           setDeleteSpeaker(speaker);
+        }}
+      />
+      <AudioAnnotationEmotionManager
+        open={emotionManager}
+        customEmotions={document.custom_emotions ?? []}
+        onClose={() => setEmotionManager(false)}
+        onChange={(custom_emotions) =>
+          applySnapshot({ ...snapshot(document), custom_emotions })
+        }
+        onRename={(from, to) => {
+          const current = document.custom_emotions ?? [];
+          if (
+            !current.some((item) => emotionKey(item) === emotionKey(from))
+          )
+            return false;
+          const custom_emotions = current.map((item) =>
+            emotionKey(item) === emotionKey(from) ? to : item,
+          );
+          applySnapshot({
+            ...snapshot(document),
+            custom_emotions,
+            segments: renameEmotionInSegments(document.segments, from, to),
+          });
+          return true;
         }}
       />
       {deleteSpeaker ? (
@@ -140,6 +170,7 @@ export function AudioAnnotationEditorDialogs({
                     speakers: document.speakers.filter(
                       (speaker) => speaker.id !== deleteSpeaker.id,
                     ),
+                    custom_emotions: document.custom_emotions ?? [],
                     segments: document.segments.map((segment) => {
                       const speakerIds = segmentSpeakerIds(segment);
                       if (!speakerIds.includes(deleteSpeaker.id))
@@ -150,7 +181,8 @@ export function AudioAnnotationEditorDialogs({
                           : [deleteSpeakerReplacement];
                       return {
                         ...segment,
-                        ...speakerAssignment(
+                        ...assignSegmentSpeakers(
+                          segment,
                           speakerIds.flatMap((speakerId) =>
                             speakerId === deleteSpeaker.id
                               ? replacement

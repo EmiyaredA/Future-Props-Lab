@@ -43,6 +43,7 @@ class AudioAnnotationDocument(Base):
     )
     schema_version: Mapped[str] = mapped_column(String(16), default="1.0")
     speakers: Mapped[list[dict]] = mapped_column(JSON, default=list)
+    custom_emotions: Mapped[list[str]] = mapped_column(JSON, default=list)
     segments: Mapped[list[dict]] = mapped_column(JSON, default=list)
     revision: Mapped[int] = mapped_column(Integer, default=0)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=utc_now, onupdate=utc_now)

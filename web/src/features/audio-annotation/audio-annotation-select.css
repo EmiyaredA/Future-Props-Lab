@@ -1,0 +1,208 @@
+.annotation-speaker-field {
+  align-items: flex-start;
+  gap: 7px;
+}
+
+.annotation-collapsed-select {
+  position: relative;
+  min-width: 0;
+  flex: 1;
+}
+
+.annotation-collapsed-select-row {
+  display: flex;
+  align-items: stretch;
+  gap: 7px;
+}
+
+.annotation-collapsed-select-trigger {
+  min-width: 0;
+  flex: 1;
+  min-height: 38px;
+  padding: 0 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-soft);
+  color: var(--text);
+  text-align: left;
+}
+
+.annotation-collapsed-select-trigger:hover {
+  border-color: var(--border-strong);
+  background: var(--surface-hover);
+}
+
+.annotation-collapsed-select-trigger:focus-visible,
+.annotation-speaker-manage:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.annotation-collapsed-select-summary {
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.annotation-collapsed-select-summary > i {
+  width: 9px;
+  height: 9px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--emotion-color, var(--faint));
+}
+
+.annotation-collapsed-select-summary > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.annotation-collapsed-select-trigger .select-chevron {
+  width: 14px;
+  height: 14px;
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: transform 0.16s ease;
+}
+
+.annotation-collapsed-select-trigger .select-chevron.open {
+  transform: rotate(180deg);
+}
+
+.annotation-collapsed-select-menu {
+  position: absolute;
+  z-index: 80;
+  top: calc(100% + 5px);
+  left: 0;
+  width: max(100%, 220px);
+  max-height: 280px;
+  padding: 5px;
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  box-shadow: 0 18px 48px color-mix(in srgb, var(--text) 18%, transparent);
+}
+
+.annotation-collapsed-select-menu button {
+  width: 100%;
+  min-height: 32px;
+  padding: 6px 8px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted);
+  text-align: left;
+  font-size: 11px;
+}
+
+.annotation-collapsed-select-menu button:hover,
+.annotation-collapsed-select-menu button.selected {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+
+.annotation-collapsed-select-menu button.selected {
+  color: var(--text-strong);
+  font-weight: 650;
+}
+
+.annotation-collapsed-select-menu button > i {
+  width: 9px;
+  height: 9px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--emotion-color, var(--faint));
+}
+
+.annotation-collapsed-select-menu button > span {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.annotation-collapsed-select-menu button > svg {
+  width: 12px;
+  height: 12px;
+  flex: none;
+}
+
+.annotation-collapsed-select-menu .calm,
+.annotation-collapsed-select-summary > i.calm {
+  --emotion-color: #61a5c2;
+}
+
+.annotation-collapsed-select-menu .happy,
+.annotation-collapsed-select-summary > i.happy {
+  --emotion-color: #e7a72f;
+}
+
+.annotation-collapsed-select-menu .sad,
+.annotation-collapsed-select-summary > i.sad {
+  --emotion-color: #7586e5;
+}
+
+.annotation-collapsed-select-menu .angry,
+.annotation-collapsed-select-summary > i.angry {
+  --emotion-color: #e2645a;
+}
+
+.annotation-collapsed-select-menu .surprised,
+.annotation-collapsed-select-summary > i.surprised {
+  --emotion-color: #b873d1;
+}
+
+.annotation-collapsed-select-menu .fearful,
+.annotation-collapsed-select-summary > i.fearful {
+  --emotion-color: #7f8d86;
+}
+
+.annotation-collapsed-select-menu .custom,
+.annotation-collapsed-select-summary > i.custom {
+  --emotion-color: #5b8def;
+}
+
+.annotation-speaker-field > .annotation-collapsed-select {
+  width: 100%;
+}
+
+.annotation-speaker-manage {
+  min-height: 38px;
+  padding: 0 9px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-soft);
+  color: var(--text);
+}
+
+.annotation-speaker-manage svg {
+  width: 14px;
+}
+
+.annotation-speaker-dot {
+  width: 10px;
+  height: 10px;
+  flex: none;
+  border-radius: 50%;
+}

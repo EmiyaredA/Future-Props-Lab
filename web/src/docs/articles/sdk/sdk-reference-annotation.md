@@ -200,6 +200,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 | --- | --- | --- | --- |
 | `body` | application/json | AudioAnnotationImportIn | 是 |
 | `body.asset_id` | 请求体 | string | 是 |
+| `body.custom_emotions` | 请求体 | array | 否 |
 | `body.schema_version` | 请求体 | string | 否 |
 | `body.segments` | 请求体 | array | 否 |
 | `body.speakers` | 请求体 | array | 否 |
@@ -341,6 +342,7 @@ SDK 不自动重试此操作；仅标明 request_id／requestId 的操作可按�
 | --- | --- | --- | --- |
 | `project_id` | path | string | 是 |
 | `body` | application/json | AudioAnnotationDocumentPutIn | 是 |
+| `body.custom_emotions` | 请求体 | array | 否 |
 | `body.expected_revision` | 请求体 | integer | 是 |
 | `body.schema_version` | 请求体 | string | 否 |
 | `body.segments` | 请求体 | array | 否 |

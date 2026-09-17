@@ -106,6 +106,7 @@ class AudioAnnotationProjects:
             project_id=row.project_id,
             schema_version=row.schema_version,
             speakers=row.speakers,
+            custom_emotions=row.custom_emotions or [],
             segments=row.segments,
             revision=row.revision,
             updated_at=iso_utc(row.updated_at),
@@ -188,6 +189,7 @@ class AudioAnnotationProjects:
             asset=asset,
             duration_ms=duration_ms,
             speakers=[],
+            custom_emotions=[],
             segments=[segment],
         )
 
@@ -200,6 +202,7 @@ class AudioAnnotationProjects:
             asset=asset,
             duration_ms=duration_ms,
             speakers=body.speakers,
+            custom_emotions=body.custom_emotions,
             segments=body.segments,
         )
 
@@ -211,6 +214,7 @@ class AudioAnnotationProjects:
         duration_ms: int,
         speakers: list[AudioAnnotationSpeaker],
         segments: list[AudioAnnotationSegment],
+        custom_emotions: list[str] | None = None,
         cleanup_path: Path | None = None,
     ) -> AudioAnnotationProjectOut:
         row = AudioAnnotationProject(
@@ -226,6 +230,7 @@ class AudioAnnotationProjects:
                     project_id=row.id,
                     schema_version="1.0",
                     speakers=[speaker.model_dump(mode="json") for speaker in speakers],
+                    custom_emotions=list(custom_emotions or []),
                     segments=[segment.model_dump(mode="json") for segment in segments],
                 )
             )
@@ -498,6 +503,7 @@ class AudioAnnotationProjects:
             .values(
                 schema_version=body.schema_version,
                 speakers=[speaker.model_dump(mode="json") for speaker in body.speakers],
+                custom_emotions=list(body.custom_emotions),
                 segments=[segment.model_dump(mode="json") for segment in body.segments],
                 revision=body.expected_revision + 1,
                 updated_at=utc_now(),

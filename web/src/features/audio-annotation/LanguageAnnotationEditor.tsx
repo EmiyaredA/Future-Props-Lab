@@ -214,34 +214,36 @@ export function LanguageAnnotationEditor({
         className="annotation-language-versions"
         aria-label="多语言说话内容"
       >
-        <div className="annotation-language-version-tabs" role="tablist">
-          <button
-            type="button"
-            role="tab"
-            aria-selected={activeVersion === PRIMARY_VERSION}
-            className={
-              segment.language
-                ? `language-${languageColor(segment.language)}`
-                : "language-neutral"
-            }
-            onClick={() => setActiveVersion(PRIMARY_VERSION)}
-          >
-            <i />
-            {segment.language ? languageLabel(segment.language) : "原文"}
-          </button>
-          {localizedTexts.map((item) => (
+        <div className="annotation-language-version-bar">
+          <div className="annotation-language-version-tabs" role="tablist">
             <button
               type="button"
               role="tab"
-              key={item.language}
-              aria-selected={activeVersion === item.language}
-              className={`language-${languageColor(item.language)}`}
-              onClick={() => setActiveVersion(item.language)}
+              aria-selected={activeVersion === PRIMARY_VERSION}
+              className={
+                segment.language
+                  ? `language-${languageColor(segment.language)}`
+                  : "language-neutral"
+              }
+              onClick={() => setActiveVersion(PRIMARY_VERSION)}
             >
               <i />
-              {languageLabel(item.language)}
+              {segment.language ? languageLabel(segment.language) : "原文"}
             </button>
-          ))}
+            {localizedTexts.map((item) => (
+              <button
+                type="button"
+                role="tab"
+                key={item.language}
+                aria-selected={activeVersion === item.language}
+                className={`language-${languageColor(item.language)}`}
+                onClick={() => setActiveVersion(item.language)}
+              >
+                <i />
+                {languageLabel(item.language)}
+              </button>
+            ))}
+          </div>
           <CustomSelect
             ariaLabel="添加语言版本"
             className="annotation-add-language"

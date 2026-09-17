@@ -41,6 +41,7 @@ export function AudioAnnotationExportDialog({
           buildProjectFile(project, {
             schema_version: "1.0",
             speakers: document.speakers,
+            custom_emotions: document.custom_emotions ?? [],
             segments: document.segments,
           }),
           null,

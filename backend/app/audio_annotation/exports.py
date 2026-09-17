@@ -59,6 +59,7 @@ async def export_document(session, project_id, expected_revision, format):
             },
         },
         "speakers": [item.model_dump() for item in document.speakers],
+        "custom_emotions": list(document.custom_emotions),
         "segments": [item.model_dump() for item in segments],
     }
     return (

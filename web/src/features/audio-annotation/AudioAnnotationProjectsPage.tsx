@@ -125,6 +125,7 @@ function ProjectDialog({
         ? importAudioAnnotationProject(finalTitle, selectedId, {
             schema_version: "1.0",
             speakers: imported.speakers,
+            custom_emotions: imported.custom_emotions ?? [],
             segments: imported.segments,
           })
         : createAudioAnnotationProject(finalTitle, selectedId);

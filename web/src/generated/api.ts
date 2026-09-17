@@ -5139,6 +5139,8 @@ export interface components {
         };
         /** AudioAnnotationDocumentOut */
         AudioAnnotationDocumentOut: {
+            /** Custom Emotions */
+            custom_emotions?: string[];
             /** Project Id */
             project_id: string;
             /** Revision */
@@ -5157,6 +5159,8 @@ export interface components {
         };
         /** AudioAnnotationDocumentPutIn */
         AudioAnnotationDocumentPutIn: {
+            /** Custom Emotions */
+            custom_emotions?: string[];
             /** Expected Revision */
             expected_revision: number;
             /**
@@ -5174,6 +5178,8 @@ export interface components {
         AudioAnnotationImportIn: {
             /** Asset Id */
             asset_id: string;
+            /** Custom Emotions */
+            custom_emotions?: string[];
             /**
              * Schema Version
              * @default 1.0
@@ -5261,6 +5267,8 @@ export interface components {
             language?: string | null;
             /** Localized Texts */
             localized_texts?: components["schemas"]["AudioAnnotationLocalizedText"][];
+            /** Speaker Emotions */
+            speaker_emotions?: components["schemas"]["AudioAnnotationSpeakerEmotion"][];
             /** Speaker Id */
             speaker_id?: string | null;
             /** Speaker Ids */
@@ -5304,6 +5312,13 @@ export interface components {
             id: string;
             /** Name */
             name: string;
+        };
+        /** AudioAnnotationSpeakerEmotion */
+        AudioAnnotationSpeakerEmotion: {
+            /** Emotion */
+            emotion: string;
+            /** Speaker Id */
+            speaker_id: string;
         };
         /** AudioAnnotationTranscriptionJsonImportIn */
         AudioAnnotationTranscriptionJsonImportIn: {

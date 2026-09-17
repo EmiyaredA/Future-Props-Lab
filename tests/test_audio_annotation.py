@@ -158,18 +158,65 @@ async def test_audio_annotation_project_document_waveform_and_asset_guard() -> N
         )
         assert saved.status_code == 200, saved.text
         assert saved.json()["revision"] == 1
+        assert saved.json()["custom_emotions"] == []
         assert saved.json()["segments"][0]["speaker_ids"] == ["speaker-host"]
         assert saved.json()["segments"][0]["emotion"] == "克制的兴奋"
+        assert saved.json()["segments"][0]["speaker_emotions"] == [
+            {"speaker_id": "speaker-host", "emotion": "克制的兴奋"}
+        ]
         assert saved.json()["segments"][0]["language"] == "ja"
         assert saved.json()["segments"][0]["localized_texts"] == [
             {"language": "zh", "text": "没问题。"},
             {"language": "en", "text": "Don't worry."},
         ]
 
-        invalid_emotion = await client.put(
+        with_vocab = await client.put(
             f"/v1/audio-annotation/projects/{project['id']}/document",
             json={
                 "expected_revision": saved.json()["revision"],
+                "schema_version": "1.0",
+                "speakers": [{"id": "speaker-host", "name": "主持人", "color": "#28B8A7"}],
+                "custom_emotions": [" 克制的兴奋 ", "咬牙切齿"],
+                "segments": [
+                    {
+                        "id": "segment-1",
+                        "start_ms": 0,
+                        "end_ms": 500,
+                        "speaker_id": "speaker-host",
+                        "emotion": "克制的兴奋",
+                        "text": "大丈夫。",
+                        "status": "reviewed",
+                    }
+                ],
+            },
+        )
+        assert with_vocab.status_code == 200, with_vocab.text
+        assert with_vocab.json()["custom_emotions"] == ["克制的兴奋", "咬牙切齿"]
+
+        duplicate_vocab = await client.put(
+            f"/v1/audio-annotation/projects/{project['id']}/document",
+            json={
+                "expected_revision": with_vocab.json()["revision"],
+                "schema_version": "1.0",
+                "speakers": [],
+                "custom_emotions": ["开心", "开心"],
+                "segments": [
+                    {
+                        "id": "segment-1",
+                        "start_ms": 0,
+                        "end_ms": 500,
+                        "text": "",
+                        "status": "draft",
+                    }
+                ],
+            },
+        )
+        assert duplicate_vocab.status_code == 422
+
+        invalid_emotion = await client.put(
+            f"/v1/audio-annotation/projects/{project['id']}/document",
+            json={
+                "expected_revision": with_vocab.json()["revision"],
                 "schema_version": "1.0",
                 "speakers": [],
                 "segments": [
@@ -186,6 +233,65 @@ async def test_audio_annotation_project_document_waveform_and_asset_guard() -> N
         )
         assert invalid_emotion.status_code == 422
 
+        per_speaker = await client.put(
+            f"/v1/audio-annotation/projects/{project['id']}/document",
+            json={
+                "expected_revision": with_vocab.json()["revision"],
+                "schema_version": "1.0",
+                "speakers": [
+                    {"id": "speaker-host", "name": "主持人", "color": "#28B8A7"},
+                    {"id": "speaker-guest", "name": "嘉宾", "color": "#4C8FE8"},
+                ],
+                "custom_emotions": ["克制的兴奋", "咬牙切齿"],
+                "segments": [
+                    {
+                        "id": "segment-1",
+                        "start_ms": 0,
+                        "end_ms": 500,
+                        "speaker_ids": ["speaker-host", "speaker-guest"],
+                        "speaker_emotions": [
+                            {"speaker_id": "speaker-host", "emotion": "开心"},
+                            {"speaker_id": "speaker-guest", "emotion": "平静"},
+                        ],
+                        "text": "大丈夫。",
+                        "language": "ja",
+                        "localized_texts": [],
+                        "status": "draft",
+                    }
+                ],
+            },
+        )
+        assert per_speaker.status_code == 200, per_speaker.text
+        assert per_speaker.json()["segments"][0]["emotion"] is None
+        assert per_speaker.json()["segments"][0]["speaker_emotions"] == [
+            {"speaker_id": "speaker-host", "emotion": "开心"},
+            {"speaker_id": "speaker-guest", "emotion": "平静"},
+        ]
+        assert per_speaker.json()["custom_emotions"] == ["克制的兴奋", "咬牙切齿"]
+
+        invalid_binding = await client.put(
+            f"/v1/audio-annotation/projects/{project['id']}/document",
+            json={
+                "expected_revision": per_speaker.json()["revision"],
+                "schema_version": "1.0",
+                "speakers": [{"id": "speaker-host", "name": "主持人", "color": "#28B8A7"}],
+                "segments": [
+                    {
+                        "id": "segment-1",
+                        "start_ms": 0,
+                        "end_ms": 500,
+                        "speaker_ids": ["speaker-host"],
+                        "speaker_emotions": [
+                            {"speaker_id": "missing", "emotion": "开心"},
+                        ],
+                        "text": "",
+                        "status": "draft",
+                    }
+                ],
+            },
+        )
+        assert invalid_binding.status_code == 422
+
         conflict = await client.put(
             f"/v1/audio-annotation/projects/{project['id']}/document",
             json={
@@ -196,12 +302,12 @@ async def test_audio_annotation_project_document_waveform_and_asset_guard() -> N
             },
         )
         assert conflict.status_code == 409
-        assert conflict.json()["current_revision"] == 1
+        assert conflict.json()["current_revision"] == 3
 
         overlapping = await client.put(
             f"/v1/audio-annotation/projects/{project['id']}/document",
             json={
-                "expected_revision": 1,
+                "expected_revision": 3,
                 "schema_version": "1.0",
                 "speakers": [
                     {"id": "speaker-a", "name": "说话人 A", "color": "#28B8A7"},
@@ -774,6 +880,7 @@ async def test_transcription_import_reuses_library_audio_and_handles_plain_text_
                 "speaker_id": None,
                 "speaker_ids": [],
                 "emotion": None,
+                "speaker_emotions": [],
                 "text": "只有完整转写。",
                 "language": None,
                 "localized_texts": [],

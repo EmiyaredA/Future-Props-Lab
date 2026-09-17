@@ -10,17 +10,13 @@
   font-weight: 500;
 }
 
-.annotation-emotion-options {
-  padding: 5px;
+.annotation-emotion-targets {
   display: flex;
   flex-wrap: wrap;
   gap: 5px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--surface-soft);
 }
 
-.annotation-emotion-options button {
+.annotation-emotion-targets > button {
   min-height: 28px;
   padding: 4px 7px;
   display: inline-flex;
@@ -28,63 +24,42 @@
   gap: 5px;
   border: 1px solid transparent;
   border-radius: 6px;
-  background: transparent;
+  background: var(--surface-soft);
   color: var(--muted);
   font-size: 11px;
 }
 
-.annotation-emotion-options button:hover {
+.annotation-emotion-targets > button:hover {
   border-color: var(--border-strong);
   background: var(--surface-hover);
   color: var(--text);
 }
 
-.annotation-emotion-options button.selected {
+.annotation-emotion-targets > button.selected {
   border-color: var(--accent-line);
   background: var(--accent-soft);
   color: var(--text-strong);
 }
 
-.annotation-emotion-options button:focus-visible,
-.annotation-emotion-custom input:focus-visible,
-.annotation-emotion-custom button:focus-visible {
-  outline: 2px solid var(--focus-ring);
-  outline-offset: 2px;
-}
-
-.annotation-emotion-options i {
+.annotation-emotion-targets > button > i {
   width: 8px;
   height: 8px;
+  flex: none;
   border-radius: 50%;
-  background: var(--emotion-color, var(--faint));
 }
 
-.annotation-emotion-options svg {
+.annotation-emotion-targets > button > svg {
   width: 12px;
+  height: 12px;
+  flex: none;
 }
 
-.annotation-emotion-options .calm {
-  --emotion-color: #61a5c2;
-}
-
-.annotation-emotion-options .happy {
-  --emotion-color: #e7a72f;
-}
-
-.annotation-emotion-options .sad {
-  --emotion-color: #7586e5;
-}
-
-.annotation-emotion-options .angry {
-  --emotion-color: #e2645a;
-}
-
-.annotation-emotion-options .surprised {
-  --emotion-color: #b873d1;
-}
-
-.annotation-emotion-options .fearful {
-  --emotion-color: #7f8d86;
+.annotation-emotion-empty {
+  margin: 0;
+  color: var(--faint);
+  font-size: 10px;
+  font-weight: 500;
+  line-height: 1.45;
 }
 
 .annotation-emotion-custom {
@@ -127,10 +102,100 @@
   color: var(--accent);
 }
 
-.annotation-emotion-custom button:disabled {
+.annotation-emotion-custom button:disabled,
+.annotation-emotion-custom input:disabled {
   opacity: 0.48;
 }
 
 .annotation-emotion-custom svg {
   width: 12px;
 }
+
+.annotation-emotion-custom input:focus-visible,
+.annotation-emotion-custom button:focus-visible,
+.annotation-emotion-targets > button:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.annotation-emotion-vocab-notice,
+.annotation-emotion-manager-notice {
+  margin: 0;
+  color: var(--warning, #b7791f);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.annotation-emotion-presets {
+  display: grid;
+  gap: 8px;
+  padding: 0 4px;
+}
+
+.annotation-emotion-presets > div {
+  display: grid;
+  gap: 2px;
+}
+
+.annotation-emotion-presets strong {
+  font-size: 13px;
+}
+
+.annotation-emotion-presets small {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.annotation-emotion-preset-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  max-height: 120px;
+  overflow: auto;
+}
+
+.annotation-emotion-preset-chips > span {
+  padding: 3px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface-soft);
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.annotation-emotion-list-mark {
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
+}
+
+.annotation-emotion-list-mark svg {
+  width: 14px;
+  height: 14px;
+}
+
+.annotation-emotion-manager-add {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  padding: 0 4px;
+}
+
+.annotation-emotion-manager-add input {
+  min-width: 0;
+  min-height: 38px;
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-soft);
+  color: var(--text);
+}
+
+.annotation-emotion-manager-add input:focus {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+

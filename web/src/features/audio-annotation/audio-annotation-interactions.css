@@ -117,7 +117,43 @@
 }
 
 .annotation-segment-emotion {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
   color: var(--muted);
+}
+
+.annotation-segment-emotion > em {
+  color: var(--faint);
+  font-size: 10px;
+  font-style: normal;
+}
+
+.annotation-segment-emotion > i {
+  flex: none;
+  padding: 3px 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: var(--surface-soft);
+  color: var(--text);
+  font-size: 9px;
+  font-style: normal;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.annotation-segment-emotion > i > b {
+  width: 7px;
+  height: 7px;
+  flex: none;
+  border-radius: 50%;
 }
 
 .annotation-segment-table .draft,
@@ -176,10 +212,8 @@
 
 .annotation-mini-wave {
   position: relative;
-  height: 52px;
+  height: 64px;
   margin-bottom: 12px;
-  display: grid;
-  place-items: end start;
   overflow: hidden;
   border: 1px solid var(--border);
   border-radius: 9px;
@@ -240,9 +274,17 @@
   );
 }
 
-.annotation-mini-wave > span {
+.annotation-mini-wave-meta {
+  position: relative;
   z-index: 1;
-  margin: 0 8px 5px;
+  max-width: calc(100% - 16px);
+  margin: 6px 8px;
+  display: grid;
+  gap: 6px;
+  justify-items: start;
+}
+
+.annotation-mini-wave-meta > span {
   padding: 2px 5px;
   border-radius: 4px;
   background: color-mix(in srgb, var(--surface) 80%, transparent);
@@ -252,10 +294,6 @@
 }
 
 .annotation-segment-preview {
-  position: absolute;
-  z-index: 2;
-  top: 6px;
-  left: 8px;
   min-height: 26px;
   padding: 0 8px;
   display: inline-flex;
@@ -351,99 +389,6 @@
 
 .annotation-inspector-field {
   margin-top: 14px;
-}
-
-.annotation-speaker-field {
-  align-items: flex-start;
-  gap: 7px;
-}
-
-.annotation-speaker-options {
-  min-width: 0;
-  flex: 1;
-  max-height: 132px;
-  padding: 5px;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 5px;
-  overflow-y: auto;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--surface-soft);
-}
-
-.annotation-speaker-options > button {
-  min-width: 0;
-  min-height: 28px;
-  padding: 4px 7px;
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  border: 1px solid transparent;
-  border-radius: 6px;
-  background: transparent;
-  color: var(--muted);
-  font-size: 11px;
-}
-
-.annotation-speaker-options > button:hover {
-  border-color: var(--border-strong);
-  background: var(--surface-hover);
-  color: var(--text);
-}
-
-.annotation-speaker-options > button.selected {
-  border-color: var(--accent-line);
-  background: var(--accent-soft);
-  color: var(--text-strong);
-}
-
-.annotation-speaker-options > button:focus-visible,
-.annotation-speaker-manage:focus-visible {
-  outline: 2px solid var(--focus-ring);
-  outline-offset: 2px;
-}
-
-.annotation-speaker-options > button > i {
-  width: 9px;
-  height: 9px;
-  flex: none;
-  border-radius: 50%;
-}
-
-.annotation-speaker-options > button > span {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.annotation-speaker-options > button > svg {
-  width: 12px;
-  height: 12px;
-  flex: none;
-}
-
-.annotation-speaker-field > button {
-  min-height: 38px;
-  padding: 0 9px;
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--surface-soft);
-  color: var(--text);
-}
-
-.annotation-speaker-field > button svg {
-  width: 14px;
-}
-
-.annotation-speaker-dot {
-  width: 10px;
-  height: 10px;
-  flex: none;
-  border-radius: 50%;
 }
 
 .annotation-reviewed {
