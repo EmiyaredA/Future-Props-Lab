@@ -59,7 +59,7 @@ export function LogTable({
             {all && <th>工作区</th>}
             <th>调用源</th>
             <th>模型</th>
-            <th>供应商</th>
+            <th>接入协议</th>
             <th className="call-log-num">Token</th>
             <th className="call-log-num">耗时</th>
             <th>状态</th>

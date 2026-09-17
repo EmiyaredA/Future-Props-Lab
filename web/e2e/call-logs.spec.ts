@@ -129,7 +129,7 @@ test("narrow layouts keep filtering reachable without page overflow", async ({
   await page.getByRole("button", { name: "筛选", exact: true }).click();
   const drawer = page.getByRole("dialog", { name: "日志筛选" });
   await expect(
-    drawer.getByRole("combobox", { name: "供应商筛选" }),
+    drawer.getByRole("combobox", { name: "接入协议筛选" }),
   ).toBeVisible();
   await drawer.getByRole("combobox", { name: "状态筛选" }).click();
   await page.getByRole("option", { name: "失败", exact: true }).click();

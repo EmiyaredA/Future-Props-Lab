@@ -12,7 +12,7 @@ class ModelSupplierIn(BaseModel):
     def nonempty_name(cls, value: str) -> str:
         value = value.strip()
         if not value:
-            raise ValueError("供应商名称不能为空")
+            raise ValueError("协议类型名称不能为空")
         return value
 
 

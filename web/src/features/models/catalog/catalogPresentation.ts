@@ -26,7 +26,7 @@ export function catalogRows(value: ModelCatalogValue): CatalogRow[] {
     provider.models.map((model) => ({
       model,
       provider,
-      supplierName: suppliers.get(provider.supplier_id ?? "") ?? "未分组",
+      supplierName: suppliers.get(provider.supplier_id ?? "") ?? "未归类",
     })),
   );
 }

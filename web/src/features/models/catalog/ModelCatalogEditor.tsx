@@ -180,7 +180,7 @@ export function ModelCatalogEditor(props: ModelCatalogEditorProps) {
       )}
       {view === "directory" ? (
         <>
-          <div className="mc-provider-strip" aria-label="供应商概览">
+          <div className="mc-provider-strip" aria-label="接入连接概览">
             {value.providers.slice(0, 6).map((provider) => (
               <button
                 type="button"
@@ -220,7 +220,7 @@ export function ModelCatalogEditor(props: ModelCatalogEditorProps) {
                   <Plus size={19} />
                 </span>
                 <span className="mc-provider-card-copy">
-                  <strong>添加供应商</strong>
+                  <strong>添加接入连接</strong>
                   <small>接入新的模型服务</small>
                 </span>
               </button>
@@ -255,13 +255,13 @@ export function ModelCatalogEditor(props: ModelCatalogEditorProps) {
               />
             </label>
             <CustomSelect
-              ariaLabel="筛选供应商"
+              ariaLabel="筛选协议类型"
               value={supplier}
               onChange={setSupplier}
               options={[
-                { value: "", label: "全部供应商" },
+                { value: "", label: "全部协议类型" },
                 ...value.suppliers.map((s) => ({ value: s.id, label: s.name })),
-                { value: "ungrouped", label: "未分组" },
+                { value: "ungrouped", label: "未归类" },
               ]}
             />
             <CustomSelect
@@ -315,6 +315,9 @@ export function ModelCatalogEditor(props: ModelCatalogEditorProps) {
               id: s.id,
               name: s.name,
             })
+          }
+          onOrganizeByProtocol={() =>
+            void perform(() => actions.organizeByProtocolKind())
           }
           onNewProvider={() => setModal({ kind: "provider", initial: null })}
           onEditProvider={(initial) => setModal({ kind: "provider", initial })}
@@ -386,7 +389,7 @@ export function ModelCatalogEditor(props: ModelCatalogEditorProps) {
       )}
       {modal?.kind === "delete" && (
         <CatalogDialog
-          title={`删除${{ supplier: "供应商", provider: "连接", model: "模型" }[modal.entity]}`}
+          title={`删除${{ supplier: "协议类型", provider: "连接", model: "模型" }[modal.entity]}`}
           label="确认删除"
           onRefresh={props.onRefresh}
           onClose={() => setModal(null)}
@@ -404,7 +407,7 @@ export function ModelCatalogEditor(props: ModelCatalogEditorProps) {
             {modal.entity === "provider"
               ? "该连接下的模型也会被删除，此操作无法撤销。"
               : modal.entity === "supplier"
-                ? "仅可删除空分组。请先将连接移至其他供应商或未分组。"
+                ? "仅可删除空分组。请先将连接移至其他协议类型或未归类。"
                 : "删除后无法撤销。"}
           </p>
         </CatalogDialog>

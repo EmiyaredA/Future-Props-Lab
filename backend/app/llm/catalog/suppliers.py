@@ -19,13 +19,13 @@ class ModelSupplierService(ModelCatalogService):
     async def _supplier(self, supplier_id: str) -> ModelSupplier:
         row = await get_supplier(self.session, self._workspace_id(), supplier_id)
         if row is None:
-            raise ResourceNotFoundError("供应商分组不存在")
+            raise ResourceNotFoundError("协议类型不存在")
         return row
 
     @staticmethod
     def _writable(row: ModelSupplier) -> None:
         if row.origin == "role_template":
-            raise ManagedSupplierError("该供应商由平台模板管理，请在管理中台修改")
+            raise ManagedSupplierError("该协议类型由平台模板管理，请在管理中台修改")
 
     async def create_supplier(self, body: ModelSupplierIn) -> tuple[int, ModelSupplierOut]:
         revision = await self._bump(body.expected_catalog_revision)
@@ -62,7 +62,7 @@ class ModelSupplierService(ModelCatalogService):
             select(func.count(ModelProvider.id)).where(ModelProvider.supplier_id == supplier_id)
         )
         if count:
-            raise CatalogResourceBusyError("供应商分组仍有接入连接，请先移出连接再删除")
+            raise CatalogResourceBusyError("协议类型仍有接入连接，请先移出连接再删除")
         await self.session.delete(row)
         await self.session.commit()
         return revision

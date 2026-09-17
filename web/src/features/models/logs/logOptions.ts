@@ -13,7 +13,7 @@ const LOG_PROVIDER_KINDS: ProviderKind[] = [
 ];
 
 export const logProviderKindOptions = [
-  { value: "", label: "全部供应商" },
+  { value: "", label: "全部接入协议" },
   ...LOG_PROVIDER_KINDS.map((value) => ({
     value,
     label: providerKindLabel[value],

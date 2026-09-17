@@ -9,6 +9,10 @@ import {
 import type { ModelInput } from "@features/models/api";
 import { CatalogDialog } from "./CatalogDialog";
 import {
+  findSupplierIdByName,
+  protocolTypeNameForKind,
+} from "./organizeByProtocol";
+import {
   canEditField,
   type CatalogModel,
   type CatalogProvider,
@@ -39,7 +43,7 @@ export function SupplierForm({
   const writable = canEditField(permissions, initial, "name");
   return (
     <CatalogDialog
-      title={initial ? "编辑供应商" : "添加供应商"}
+      title={initial ? "编辑协议类型" : "添加协议类型"}
       onClose={onClose}
       onRefresh={onRefresh}
       disabled={unavailable || !name.trim() || !writable}
@@ -50,20 +54,22 @@ export function SupplierForm({
       }
     >
       <label>
-        <span>供应商名称</span>
+        <span>协议类型名称</span>
         <input
           required
           maxLength={120}
           value={name}
           disabled={!writable}
           onChange={(event) => setName(event.target.value)}
-          placeholder="例如：SenseAudio"
+          placeholder="例如：OpenAI 兼容"
         />
       </label>
       <p className="mc-help">
-        供应商用于组织接入连接。地址和凭证在连接中分别配置。
+        协议类型用于把接入方式一致的连接归在一起；建议名称与「接入协议」一致。地址和凭证仍在连接中分别配置。
       </p>
-      {unavailable && <p role="alert">该供应商已被删除，请关闭后重新选择。</p>}
+      {unavailable && (
+        <p role="alert">该协议类型已被删除，请关闭后重新选择。</p>
+      )}
     </CatalogDialog>
   );
 }
@@ -79,6 +85,7 @@ export function ProviderForm({
   unavailable,
 }: Shared & { initial: CatalogProvider | null; copy?: CatalogProvider }) {
   const source = initial ?? copy;
+  const creating = !initial;
   const [name, setName] = useState(
     copy ? `${copy.name} 副本` : (initial?.name ?? ""),
   );
@@ -87,16 +94,32 @@ export function ProviderForm({
   );
   const [baseUrl, setBaseUrl] = useState(source?.base_url ?? "");
   const [apiKey, setApiKey] = useState("");
-  const [supplierId, setSupplierId] = useState(source?.supplier_id ?? "");
+  const [supplierId, setSupplierId] = useState(
+    source?.supplier_id ??
+      (creating
+        ? (findSupplierIdByName(
+            value.suppliers,
+            protocolTypeNameForKind(source?.kind ?? "openai"),
+          ) ?? "")
+        : ""),
+  );
+  const [supplierTouched, setSupplierTouched] = useState(
+    !!source?.supplier_id || !!copy,
+  );
   const [newSupplier, setNewSupplier] = useState(false);
   const editable = (field: string) => canEditField(permissions, initial, field);
-  const save = () => {
+  const save = async () => {
+    let resolvedSupplierId = supplierId || null;
+    if (creating && !resolvedSupplierId) {
+      const label = protocolTypeNameForKind(kind);
+      resolvedSupplierId = await actions.ensureProtocolType(label);
+    }
     const input: CatalogProviderInput = {
       name: name.trim(),
       kind,
       base_url: baseUrl.trim(),
       api_key: apiKey,
-      supplier_id: supplierId || null,
+      supplier_id: resolvedSupplierId,
       enabled: initial?.enabled ?? true,
     };
     return initial
@@ -131,16 +154,19 @@ export function ProviderForm({
           />
         </label>
         <label>
-          <span>所属供应商</span>
+          <span>所属协议类型</span>
           <CustomSelect
-            ariaLabel="所属供应商"
+            ariaLabel="所属协议类型"
             value={supplierId}
             disabled={!editable("supplier_id")}
             options={[
-              { value: "", label: "未分组" },
+              { value: "", label: creating ? "按接入协议自动归类" : "未归类" },
               ...value.suppliers.map((s) => ({ value: s.id, label: s.name })),
             ]}
-            onChange={setSupplierId}
+            onChange={(next) => {
+              setSupplierTouched(true);
+              setSupplierId(next);
+            }}
           />
         </label>
         {editable("supplier_id") && (
@@ -149,7 +175,7 @@ export function ProviderForm({
             className="mc-link"
             onClick={() => setNewSupplier(true)}
           >
-            ＋ 新建供应商
+            ＋ 新建协议类型
           </button>
         )}
         <label>
@@ -159,7 +185,18 @@ export function ProviderForm({
             value={kind}
             disabled={!editable("kind")}
             options={providerKindOptions}
-            onChange={(next) => setKind(next as typeof kind)}
+            onChange={(next) => {
+              const nextKind = next as typeof kind;
+              setKind(nextKind);
+              if (creating && !supplierTouched) {
+                setSupplierId(
+                  findSupplierIdByName(
+                    value.suppliers,
+                    protocolTypeNameForKind(nextKind),
+                  ) ?? "",
+                );
+              }
+            }}
           />
         </label>
         <label>
@@ -194,6 +231,11 @@ export function ProviderForm({
         {copy && (
           <p className="mc-help">
             仅复制连接配置，不复制密钥。创建后可添加或复制模型。
+          </p>
+        )}
+        {creating && !supplierId && (
+          <p className="mc-help">
+            未指定协议类型时，保存将按当前接入协议自动归入同名分组。
           </p>
         )}
         {unavailable && <p role="alert">该连接已被删除，请关闭后重新选择。</p>}

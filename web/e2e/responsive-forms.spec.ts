@@ -3,7 +3,7 @@ import { captureResponsive } from "./responsive-capture";
 
 for (const [path, label] of [
   ["/files", "新建文件夹"],
-  ["/model-service", "添加供应商"],
+  ["/model-service", "添加接入连接"],
   ["/model-test-tools", "新建测试工具"],
   ["/integrations/tool-apis", "新建工具 API"],
   ["/integrations/mcp", "添加 MCP"],

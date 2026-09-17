@@ -17,8 +17,19 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 8px;
   padding: 14px;
   border-bottom: 1px solid var(--border);
+}
+.mc-supplier-tree-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.mc-supplier-tree-actions .mc-link {
+  font-size: 12px;
+  white-space: nowrap;
 }
 .mc-supplier-tree h2 {
   margin: 0;

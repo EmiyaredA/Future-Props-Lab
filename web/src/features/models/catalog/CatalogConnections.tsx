@@ -21,6 +21,7 @@ export function CatalogConnections({
   onNewSupplier,
   onEditSupplier,
   onDeleteSupplier,
+  onOrganizeByProtocol,
   onNewProvider,
   onEditProvider,
   onCopyProvider,
@@ -35,6 +36,7 @@ export function CatalogConnections({
   onNewSupplier: () => void;
   onEditSupplier: (supplier: CatalogSupplier) => void;
   onDeleteSupplier: (supplier: CatalogSupplier) => void;
+  onOrganizeByProtocol?: () => void;
   onNewProvider: () => void;
   onEditProvider: (provider: CatalogProvider) => void;
   onCopyProvider: (provider: CatalogProvider) => void;
@@ -50,8 +52,11 @@ export function CatalogConnections({
     value.providers[0];
   const groups: CatalogSupplier[] = [
     ...value.suppliers,
-    { id: "", name: "未分组" },
+    { id: "", name: "未归类" },
   ];
+  const ungroupedCount = value.providers.filter(
+    (provider) => !provider.supplier_id,
+  ).length;
   const canAdd =
     selected &&
     permissions.canWrite &&
@@ -63,17 +68,30 @@ export function CatalogConnections({
     >
       <aside className="mc-supplier-tree">
         <header>
-          <h2>供应商</h2>
-          {permissions.canWrite && (
-            <button
-              className="mc-icon"
-              type="button"
-              aria-label="添加供应商"
-              onClick={onNewSupplier}
-            >
-              <Plus size={18} />
-            </button>
-          )}
+          <h2>协议类型</h2>
+          <div className="mc-supplier-tree-actions">
+            {permissions.canWrite &&
+              ungroupedCount > 0 &&
+              onOrganizeByProtocol && (
+                <button
+                  className="mc-link"
+                  type="button"
+                  onClick={onOrganizeByProtocol}
+                >
+                  按接入协议整理
+                </button>
+              )}
+            {permissions.canWrite && (
+              <button
+                className="mc-icon"
+                type="button"
+                aria-label="添加协议类型"
+                onClick={onNewSupplier}
+              >
+                <Plus size={18} />
+              </button>
+            )}
+          </div>
         </header>
         {groups.map((supplier) => {
           const connections = value.providers.filter(
@@ -114,7 +132,7 @@ export function CatalogConnections({
                       ...(canEditField(permissions, supplier, "name")
                         ? [
                             {
-                              label: "重命名供应商",
+                              label: "重命名协议类型",
                               onClick: () => onEditSupplier(supplier),
                             },
                           ]
@@ -122,7 +140,7 @@ export function CatalogConnections({
                       ...(canDeleteEntity(permissions, supplier)
                         ? [
                             {
-                              label: "删除供应商",
+                              label: "删除协议类型",
                               danger: true,
                               onClick: () => onDeleteSupplier(supplier),
                             },
@@ -187,13 +205,13 @@ export function CatalogConnections({
           onClick={() => setDetail(false)}
         >
           <ArrowLeft size={16} />
-          返回供应商列表
+          返回协议类型列表
         </button>
         {selected ? (
           <>
             <p className="mc-breadcrumb">
               {value.suppliers.find((s) => s.id === selected.supplier_id)
-                ?.name ?? "未分组"}{" "}
+                ?.name ?? "未归类"}{" "}
               / {selected.name}
             </p>
             <div className="mc-detail-heading">

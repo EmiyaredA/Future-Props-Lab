@@ -144,11 +144,11 @@ test("model directory and supplier connections work in both themes and small scr
       await expect(page.getByText("已配置 ···· 1234")).toBeVisible();
       await page.getByRole("button", { name: "编辑连接", exact: true }).click();
       const dialog = page.getByRole("dialog", { name: "编辑接入连接" });
-      await dialog.getByRole("combobox", { name: "所属供应商" }).click();
-      await page.getByRole("option", { name: "未分组", exact: true }).click();
+      await dialog.getByRole("combobox", { name: "所属协议类型" }).click();
+      await page.getByRole("option", { name: "未归类", exact: true }).click();
       await expect(
-        dialog.getByRole("combobox", { name: "所属供应商" }),
-      ).toContainText("未分组");
+        dialog.getByRole("combobox", { name: "所属协议类型" }),
+      ).toContainText("未归类");
       await page.keyboard.press("Escape");
       await expect(dialog).not.toBeVisible();
       await expect(
@@ -225,8 +225,8 @@ test("supplier, connection and model changes persist through the workspace API",
   const name = `目录验收-${Date.now()}`;
   await page.goto("/model-service");
   await page.getByRole("tab", { name: "接入管理", exact: true }).click();
-  await page.getByRole("button", { name: "添加供应商", exact: true }).click();
-  await page.getByRole("textbox", { name: "供应商名称" }).fill(name);
+  await page.getByRole("button", { name: "添加协议类型", exact: true }).click();
+  await page.getByRole("textbox", { name: "协议类型名称" }).fill(name);
   await page.getByRole("button", { name: "保存", exact: true }).click();
   await expect(page.getByRole("dialog")).toHaveCount(0);
   await page
@@ -234,7 +234,7 @@ test("supplier, connection and model changes persist through the workspace API",
     .first()
     .click();
   await page.getByRole("textbox", { name: "连接名称" }).fill(`${name}-连接`);
-  await page.getByRole("combobox", { name: "所属供应商" }).click();
+  await page.getByRole("combobox", { name: "所属协议类型" }).click();
   await page.getByRole("option", { name, exact: true }).click();
   await page.getByRole("button", { name: "保存", exact: true }).click();
   await expect(page.getByRole("dialog")).toHaveCount(0);
@@ -252,18 +252,18 @@ test("supplier, connection and model changes persist through the workspace API",
   await page.getByRole("button", { name: "保存", exact: true }).click();
   await expect(page.getByRole("dialog")).toHaveCount(0);
   await page.getByRole("button", { name: `${name} 操作`, exact: true }).click();
-  await page.getByRole("menuitem", { name: "删除供应商", exact: true }).click();
+  await page.getByRole("menuitem", { name: "删除协议类型", exact: true }).click();
   await page.getByRole("button", { name: "确认删除", exact: true }).click();
   await expect(page.getByRole("dialog").getByRole("alert")).toBeVisible();
   await page.getByRole("button", { name: "取消", exact: true }).click();
   await page.getByRole("tab", { name: "连接配置", exact: true }).click();
   await page.getByRole("button", { name: "编辑连接", exact: true }).click();
-  await page.getByRole("combobox", { name: "所属供应商" }).click();
-  await page.getByRole("option", { name: "未分组", exact: true }).click();
+  await page.getByRole("combobox", { name: "所属协议类型" }).click();
+  await page.getByRole("option", { name: "未归类", exact: true }).click();
   await page.getByRole("button", { name: "保存", exact: true }).click();
   await expect(page.getByRole("dialog")).toHaveCount(0);
   await page.getByRole("button", { name: `${name} 操作`, exact: true }).click();
-  await page.getByRole("menuitem", { name: "删除供应商", exact: true }).click();
+  await page.getByRole("menuitem", { name: "删除协议类型", exact: true }).click();
   await page.getByRole("button", { name: "确认删除", exact: true }).click();
   await expect(page.getByRole("dialog")).toHaveCount(0);
   await page.reload();

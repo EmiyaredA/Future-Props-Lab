@@ -24,7 +24,7 @@ function QuickFilters({ filters, models, onChange }: ControlsProps) {
     },
     {
       key: "providerKind" as const,
-      label: "供应商",
+      label: "接入协议",
       options: logProviderKindOptions.filter((x) => x.value),
     },
     {

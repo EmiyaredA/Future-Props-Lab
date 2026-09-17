@@ -8,6 +8,10 @@ import {
 } from "@features/models";
 import { getModelCategories } from "@features/models";
 import { modelQueryKeys } from "@features/models";
+import {
+  planOrganizeByProtocol,
+  protocolTypeNameForKind,
+} from "@features/models/catalog/organizeByProtocol";
 import { CustomSelect } from "@shared/ui/CustomSelect";
 import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
 import { accountQueryKeys } from "./queryKeys";
@@ -217,10 +221,46 @@ function TemplateEditor({
       })),
     deleteSupplier: (id) => {
       if ((draft.providers || []).some((p) => p.supplier_key === id))
-        throw new Error("请先移动此供应商下的连接");
+        throw new Error("请先移动此协议类型下的连接");
       setDraft((old) => ({
         ...old,
         suppliers: (old.suppliers || []).filter((s) => s.template_key !== id),
+      }));
+    },
+    ensureProtocolType: async (name) => {
+      const existing = (draft.suppliers || []).find(
+        (supplier) => supplier.name === name,
+      );
+      if (existing?.template_key) return existing.template_key;
+      const templateKey = crypto.randomUUID();
+      setDraft((old) => ({
+        ...old,
+        suppliers: [
+          ...(old.suppliers || []),
+          { name, template_key: templateKey },
+        ],
+      }));
+      return templateKey;
+    },
+    organizeByProtocolKind: () => {
+      const plan = planOrganizeByProtocol(catalog);
+      const suppliers = [...(draft.suppliers || [])];
+      for (const name of plan.groupsToCreate) {
+        if (!suppliers.some((supplier) => supplier.name === name)) {
+          suppliers.push({ name, template_key: crypto.randomUUID() });
+        }
+      }
+      setDraft((old) => ({
+        ...old,
+        suppliers,
+        providers: (old.providers || []).map((provider) => {
+          if (provider.supplier_key) return provider;
+          const label = protocolTypeNameForKind(provider.kind);
+          const supplier = suppliers.find((item) => item.name === label);
+          return supplier?.template_key
+            ? { ...provider, supplier_key: supplier.template_key }
+            : provider;
+        }),
       }));
     },
     createProvider: (input) =>
