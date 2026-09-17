@@ -11,8 +11,8 @@
   justify-content: space-between;
   gap: 16px;
   border-bottom: 1px solid var(--border);
-  margin-bottom: 24px;
-  padding-bottom: 12px;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
 }
 .mc-tabs {
   display: flex;
@@ -147,13 +147,21 @@
   font-size: 13px;
   overflow-wrap: anywhere;
 }
+.mc-connection-detail .mc-model-table-wrap {
+  margin: 0;
+  max-width: none;
+}
 .mc-connection-detail .mc-model-table.mc-model-table--embedded {
-  width: auto;
-  max-width: 100%;
+  width: 100%;
+  max-width: none;
   table-layout: auto;
   border: 0;
   border-radius: 0;
   background: transparent;
+}
+.mc-connection-detail .mc-model-table.mc-model-table--embedded th {
+  background: color-mix(in srgb, var(--surface-soft) 72%, var(--surface));
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
 }
 .mc-connection-detail .mc-model-table.mc-model-table--embedded th,
 .mc-connection-detail .mc-model-table.mc-model-table--embedded td {
@@ -163,16 +171,19 @@
 }
 .mc-connection-detail .mc-model-table.mc-model-table--embedded th:first-child,
 .mc-connection-detail .mc-model-table.mc-model-table--embedded td:first-child {
-  padding-left: 12px;
+  padding-left: 16px;
   padding-right: 16px;
 }
 .mc-connection-detail .mc-model-table.mc-model-table--embedded th:last-child,
 .mc-connection-detail .mc-model-table.mc-model-table--embedded td:last-child {
-  padding-right: 12px;
+  padding-right: 16px;
   border-radius: 0;
 }
 .mc-connection-detail .mc-model-table.mc-model-table--embedded th:first-child {
   border-radius: 0;
+}
+.mc-connection-detail .mc-model-table.mc-model-table--embedded td {
+  border-top-color: color-mix(in srgb, var(--border) 70%, transparent);
 }
 .mc-connection-detail .mc-model-table.mc-model-table--embedded .mc-model-name {
   max-width: 13rem;
@@ -493,17 +504,40 @@
     display: grid;
   }
   .mc-connection-detail {
-    padding: 14px 14px 0;
+    padding: 14px 0 0;
   }
+  .mc-connection-detail > .mc-mobile-back {
+    margin-inline: 14px;
+  }
+  .mc-detail-heading,
   .mc-detail-toolbar {
-    margin: 0 -14px;
-    padding: 0 14px;
+    padding-inline: 14px;
+  }
+  .mc-connection-detail .mc-model-table.mc-model-table--embedded th:first-child,
+  .mc-connection-detail .mc-model-table.mc-model-table--embedded td:first-child {
+    padding-left: 14px;
+  }
+  .mc-connection-detail .mc-model-table.mc-model-table--embedded th:last-child,
+  .mc-connection-detail .mc-model-table.mc-model-table--embedded td:last-child {
+    padding-right: 14px;
   }
   .mc-connection-detail .mc-model-table td {
     padding: 8px 0;
   }
+  .mc-connection-detail .mc-model-table.mc-model-table--embedded tr {
+    margin-inline: 14px;
+  }
+  .mc-config dl > div,
+  .mc-config-actions,
+  .mc-config details,
+  .mc-config .mc-help {
+    padding-inline: 14px;
+  }
   .mc-config dl > div {
     grid-template-columns: 1fr;
     gap: 8px;
+  }
+  .mc-connection-detail .mc-empty {
+    margin-inline: 14px;
   }
 }

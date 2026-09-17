@@ -300,7 +300,7 @@ export function CatalogConnections({
                 {permissions.canWrite && (
                   <div className="mc-config-actions">
                     <button
-                      className="btn"
+                      className="btn primary"
                       onClick={() => onEditProvider(selected)}
                     >
                       编辑连接

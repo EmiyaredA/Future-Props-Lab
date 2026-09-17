@@ -181,14 +181,18 @@
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 12px;
-  padding: 16px 16px 0;
+  padding: 16px 0 0;
   min-height: 450px;
+}
+.mc-connection-detail > .mc-mobile-back {
+  margin-inline: 16px;
 }
 .mc-detail-heading {
   display: flex;
   align-items: center;
   gap: 12px;
   margin-bottom: 12px;
+  padding-inline: 16px;
 }
 .mc-detail-heading h2 {
   font-size: 18px;
@@ -212,7 +216,7 @@
   justify-content: space-between;
   gap: 12px;
   flex-wrap: wrap;
-  margin: 0 -16px;
+  margin: 0;
   padding: 0 16px;
   border-bottom: 1px solid var(--border);
 }
@@ -231,24 +235,29 @@
   flex: none;
 }
 .mc-connection-detail .mc-config {
-  padding: 8px 0 16px;
+  padding: 0 0 16px;
 }
 .mc-connection-detail .mc-model-name .mc-provider-icon {
   display: none;
 }
 .mc-connection-detail .mc-empty {
-  padding: 24px 0 16px;
+  margin: 16px;
+  padding: 24px 16px;
 }
 .mc-config dl {
-  margin: 0 0 24px;
+  margin: 0;
 }
 .mc-config dl > div {
   display: grid;
   grid-template-columns: 110px minmax(0, 1fr);
   gap: 15px;
-  padding: 18px 0;
-  border-bottom: 1px solid var(--border);
+  align-items: baseline;
+  padding: 14px 16px;
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
   font-size: 13px;
+}
+.mc-config dl > div:last-child {
+  border-bottom: 0;
 }
 .mc-config dt {
   color: var(--muted);
@@ -256,16 +265,33 @@
 .mc-config dd {
   margin: 0;
   overflow-wrap: anywhere;
+  color: var(--text-strong);
+}
+.mc-config dd code {
+  font-size: 12px;
+  color: var(--text);
 }
 .mc-config-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 8px;
+  margin: 0;
+  padding: 14px 16px;
+  border-top: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+}
+.mc-config .mc-help {
+  margin: 0;
+  padding: 0 16px 4px;
 }
 .mc-config details {
   color: var(--muted);
   font-size: 12px;
-  margin-top: 25px;
+  margin: 0;
+  padding: 12px 16px 4px;
+  border-top: 1px solid color-mix(in srgb, var(--border) 55%, transparent);
+}
+.mc-config details p {
+  margin: 8px 0 0;
 }
 .mc-config summary {
   cursor: pointer;
