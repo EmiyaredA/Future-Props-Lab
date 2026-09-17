@@ -205,30 +205,6 @@ function StudioChrome({
   ];
   const infrastructureActive = infrastructurePages.includes(page);
 
-  const integrationItems: SecondaryItem[] = [
-    {
-      id: "integrations-tool-apis",
-      label: "工具 API",
-      icon: <ApiIcon />,
-      active: page === "integrations-tool-apis",
-      onSelect: () => navigate("integrations-tool-apis"),
-    },
-    {
-      id: "integrations-mcp",
-      label: "MCP",
-      icon: <McpIcon />,
-      active: page === "integrations-mcp",
-      onSelect: () => navigate("integrations-mcp"),
-    },
-    {
-      id: "integrations-skills",
-      label: "Skills",
-      icon: <SkillIcon />,
-      active: page === "integrations-skills",
-      onSelect: () => navigate("integrations-skills"),
-    },
-  ];
-
   const modelItems: SecondaryItem[] = [
     {
       id: "model-test",
@@ -303,7 +279,7 @@ function StudioChrome({
       shortLabel: "集成",
       icon: <IntegrationIcon />,
       active: integrationsActive,
-      children: integrationItems,
+      page: "integrations-tool-apis",
     },
     {
       id: "base-models",
@@ -377,7 +353,14 @@ function StudioChrome({
       icon: section.icon,
       active: section.active,
       onSelect: () => {
-        if (section.page) navigate(section.page);
+        if (!section.page) return;
+        if (
+          section.id === "integrations" &&
+          page.startsWith("integrations-")
+        ) {
+          return;
+        }
+        navigate(section.page);
       },
     };
   });

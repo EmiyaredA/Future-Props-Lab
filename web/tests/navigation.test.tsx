@@ -262,19 +262,20 @@ test("opens base-model flyout from the primary rail when secondary is hidden", (
   localStorage.removeItem("future-props-sidebar-studio-secondary-collapsed");
 });
 
-test("lists integration center children in the secondary panel", () => {
+test("treats integration center as a leaf without secondary navigation", () => {
   const navigate = vi.fn();
   render(
     <StudioSidebar page="integrations-mcp" navigate={navigate} />,
   );
-  const secondary = screen.getByRole("navigation", { name: "集成中心子菜单" });
-  expect(within(secondary).getByRole("button", { name: "工具 API" })).toBeInTheDocument();
-  expect(within(secondary).getByRole("button", { name: "MCP" })).toHaveAttribute(
+  expect(
+    screen.queryByRole("navigation", { name: "集成中心子菜单" }),
+  ).not.toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "集成中心" })).toHaveAttribute(
     "aria-current",
     "page",
   );
-  fireEvent.click(within(secondary).getByRole("button", { name: "Skills" }));
-  expect(navigate).toHaveBeenCalledWith("integrations-skills");
+  fireEvent.click(screen.getByRole("button", { name: "集成中心" }));
+  expect(navigate).not.toHaveBeenCalled();
 });
 
 test("renders the visual workshop brand and return card", () => {
