@@ -24,7 +24,8 @@ Status: implemented
 ## Consequences
 
 - **收益**：业务与开发入口都在 App 内可见；打包布局仍干净。
-- **代价与已知上限**：开发顶栏占用横向空间；窄屏只留图标。
+- **代价与已知上限**：开发顶栏占用横向空间；窄屏只留图标。视觉画布全屏页另有「新建窗口」
+  （见 [visual-canvas-new-window](2026-09-17-visual-canvas-new-window.md)），不依赖本顶栏。
 
 ## Verification
 

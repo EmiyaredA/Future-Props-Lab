@@ -1,5 +1,6 @@
 import type { ComponentProps } from "react";
 import {
+  AppWindow,
   ArrowLeft,
   FolderCog,
   FolderOpen,
@@ -9,7 +10,17 @@ import {
   Save,
 } from "lucide-react";
 import { CanvasViewControls } from "@features/visual-workshop/canvas/CanvasViewControls";
+import "@platform/desktop";
 import { ThemeToggle } from "@shared/ui/ThemeToggle";
+
+function openCurrentPageInNewWindow() {
+  const bridge = window.futurePropsDesktop;
+  if (bridge) {
+    void bridge.openNewWindow();
+    return;
+  }
+  window.open(window.location.href, "_blank", "noopener,noreferrer");
+}
 
 type CanvasScreenChromeProps = {
   projectTitle: string;
@@ -27,7 +38,7 @@ type CanvasScreenChromeProps = {
   onBlurTitle: () => void;
   onToggleAssistant: () => void;
   onToggleAssets: () => void;
-  onCreate: () => void;
+  onCreate: (event: React.MouseEvent<HTMLButtonElement>) => void;
 };
 
 export function CanvasScreenChrome({
@@ -93,6 +104,14 @@ export function CanvasScreenChrome({
           </span>
         </div>
         <div className="canvas-top-actions">
+          <button
+            type="button"
+            aria-label="新建窗口"
+            onClick={openCurrentPageInNewWindow}
+          >
+            <AppWindow aria-hidden />
+            新建窗口
+          </button>
           <ThemeToggle />
           <button
             className={
@@ -110,7 +129,12 @@ export function CanvasScreenChrome({
         </div>
       </header>
       <nav className="canvas-tool-dock" aria-label="画布工具">
-        <button aria-label="添加内容" title="添加内容" onClick={onCreate}>
+        <button
+          type="button"
+          aria-label="添加内容"
+          title="添加内容"
+          onClick={onCreate}
+        >
           <Plus aria-hidden />
         </button>
         <button

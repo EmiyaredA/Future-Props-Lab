@@ -24,7 +24,7 @@ Status: implemented
 ## Consequences
 
 - **收益**：可多窗并行或同项目对照，且不拆数据目录与后端。
-- **代价与已知上限**：切工作区仍全窗刷新；一窗未完成退出确认时需再次 `Cmd+Q` 重试；Visual canvas 等未接线的保存路径暂只靠 409。入口在 App 顶栏「新建窗口」（见 [desktop-chrome-in-app-header](2026-09-17-desktop-chrome-in-app-header.md)）。
+- **代价与已知上限**：切工作区仍全窗刷新；一窗未完成退出确认时需再次 `Cmd+Q` 重试；Visual canvas 等未接线的保存路径暂只靠 409。入口在 App 顶栏「新建窗口」（见 [desktop-chrome-in-app-header](2026-09-17-desktop-chrome-in-app-header.md)）；画布全屏页另有顶栏入口（见 [visual-canvas-new-window](2026-09-17-visual-canvas-new-window.md)）。
 
 ## Verification
 

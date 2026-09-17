@@ -103,6 +103,7 @@ function renderCanvas() {
 beforeEach(() => {
   vi.clearAllMocks();
   window.localStorage.clear();
+  delete window.futurePropsDesktop;
   Object.defineProperty(window, "PointerEvent", {
     configurable: true,
     value: MouseEvent,
@@ -1453,4 +1454,86 @@ test("exports a paused video frame and creates an unconnected image node", async
   expect(container.querySelector(".canvas-node.image.selected")).not.toBeNull();
   expect(download).toHaveBeenCalledOnce();
   expect(video.currentTime).toBe(3.25);
+});
+
+test("desktop canvas chrome opens a new window via the bridge", async () => {
+  const user = userEvent.setup();
+  const openNewWindow = vi.fn();
+  window.futurePropsDesktop = {
+    version: 1,
+    status: vi.fn(),
+    retry: vi.fn(),
+    openLogs: vi.fn(),
+    minimize: vi.fn(),
+    close: vi.fn(),
+    openNewWindow,
+    agentStatus: vi.fn(),
+    enableAgent: vi.fn(),
+    disableAgent: vi.fn(),
+    onQuitRequested: vi.fn(() => vi.fn()),
+  };
+  const open = vi.spyOn(window, "open").mockReturnValue(null);
+
+  renderCanvas();
+  expect(await screen.findByText("未命名项目")).toBeInTheDocument();
+  await user.click(screen.getByRole("button", { name: "新建窗口" }));
+
+  expect(openNewWindow).toHaveBeenCalledOnce();
+  expect(open).not.toHaveBeenCalled();
+});
+
+test("browser canvas chrome opens the current page in a new tab", async () => {
+  const user = userEvent.setup();
+  const open = vi.spyOn(window, "open").mockReturnValue(null);
+
+  renderCanvas();
+  expect(await screen.findByText("未命名项目")).toBeInTheDocument();
+  await user.click(screen.getByRole("button", { name: "新建窗口" }));
+
+  expect(open).toHaveBeenCalledWith(
+    window.location.href,
+    "_blank",
+    "noopener,noreferrer",
+  );
+});
+
+test("create menu opens to the right of the add button", async () => {
+  const user = userEvent.setup();
+  const { container } = renderCanvas();
+  expect(await screen.findByText("未命名项目")).toBeInTheDocument();
+
+  const surface = container.querySelector(".visual-canvas-surface")!;
+  Object.defineProperty(surface, "getBoundingClientRect", {
+    configurable: true,
+    value: () => ({
+      bottom: 720,
+      height: 720,
+      left: 0,
+      right: 1280,
+      top: 0,
+      width: 1280,
+      x: 0,
+      y: 0,
+      toJSON: () => undefined,
+    }),
+  });
+  const addButton = screen.getByRole("button", { name: "添加内容" });
+  Object.defineProperty(addButton, "getBoundingClientRect", {
+    configurable: true,
+    value: () => ({
+      bottom: 382,
+      height: 42,
+      left: 31,
+      right: 73,
+      top: 340,
+      width: 42,
+      x: 31,
+      y: 340,
+      toJSON: () => undefined,
+    }),
+  });
+
+  await user.click(addButton);
+  const menu = screen.getByRole("menu", { name: "添加画布内容" });
+  expect(menu).toHaveStyle({ left: "83px", top: "340px" });
 });

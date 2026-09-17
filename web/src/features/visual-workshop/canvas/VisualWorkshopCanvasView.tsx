@@ -230,10 +230,28 @@ export function VisualWorkshopCanvasView({
               renameMutation.mutate();
             else setEditingTitle(false);
           }}
-          onCreate={() => {
+          onCreate={(event) => {
+            const surfaceBounds = surface.current?.getBoundingClientRect();
+            const buttonBounds = event.currentTarget.getBoundingClientRect();
+            if (!surfaceBounds) return;
+            const menuWidth = 164;
+            const menuHeight = 246;
+            const gap = 10;
             setContextMenu({
-              left: 16,
-              top: 126,
+              left: Math.max(
+                8,
+                Math.min(
+                  buttonBounds.right - surfaceBounds.left + gap,
+                  surfaceBounds.width - menuWidth - 8,
+                ),
+              ),
+              top: Math.max(
+                8,
+                Math.min(
+                  buttonBounds.top - surfaceBounds.top,
+                  surfaceBounds.height - menuHeight - 8,
+                ),
+              ),
               worldX: (innerWidth / 2 - viewport.x) / viewport.zoom,
               worldY: (innerHeight / 2 - viewport.y) / viewport.zoom,
             });
@@ -573,8 +591,8 @@ export function VisualWorkshopCanvasView({
           onClose={() => setContextMenu(undefined)}
           onUpload={(point) => {
             uploadPosition.current = point;
-            setContextMenu(undefined);
             uploadInput.current?.click();
+            setContextMenu(undefined);
           }}
         />
       ) : null}
