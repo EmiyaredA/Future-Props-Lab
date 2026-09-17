@@ -64,6 +64,7 @@ export function AudioAnnotationEditorPage({
   speakerImportSource?: SpeakerImportSource;
 }) {
   const [mobilePanel, setMobilePanel] = useState("waveform");
+  const [regionFlashToken, setRegionFlashToken] = useState(0);
   const controller = useAudioAnnotationEditorController({
     projectId,
     workspaceId,
@@ -323,6 +324,7 @@ export function AudioAnnotationEditorPage({
               segments={document.segments}
               speakers={document.speakers}
               selectedId={selectedId}
+              flashToken={regionFlashToken}
               focusSelectionMode={focusSelectionMode}
               onSelect={(segmentId) => {
                 if (previewingSegmentId) waveformRef.current?.pause();
@@ -615,6 +617,7 @@ export function AudioAnnotationEditorPage({
                       if (previewingSegmentId) waveformRef.current?.pause();
                       setPreviewingSegmentId(null);
                       setSelectedId(segment.id);
+                      setRegionFlashToken((token) => token + 1);
                       waveformRef.current?.seekMs(segment.start_ms);
                     }}
                   >

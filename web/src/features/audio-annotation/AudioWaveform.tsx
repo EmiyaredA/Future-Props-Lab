@@ -72,6 +72,7 @@ export const AudioWaveform = forwardRef<
     segments: AudioAnnotationSegment[];
     speakers: AudioAnnotationSpeaker[];
     selectedId: string | null;
+    flashToken?: number;
     focusSelectionMode: boolean;
     onSelect: (segmentId: string) => void;
     onUpdate: (segmentId: string, startMs: number, endMs: number) => void;
@@ -92,6 +93,7 @@ export const AudioWaveform = forwardRef<
     segments,
     speakers,
     selectedId,
+    flashToken = 0,
     focusSelectionMode,
     onSelect,
     onUpdate,
@@ -508,6 +510,90 @@ export const AudioWaveform = forwardRef<
     renderedSpeakers,
     selectedId,
   ]);
+
+  // Flash only when the list bumps flashToken; selectedId is read from that same render.
+  // Omitting selectedId from deps avoids re-flashing when the waveform itself changes selection.
+  // Regions live in WaveSurfer's shadow root, so light-DOM CSS classes never apply — animate the
+  // element directly with the Web Animations API.
+  useEffect(() => {
+    if (!ready || !flashToken || !selectedId || !regions.current) return;
+    const targetId = selectedId;
+    let cancelled = false;
+    let animation: Animation | null = null;
+    let frame = 0;
+
+    const runFlash = () => {
+      if (cancelled || !regions.current) return;
+      const region = regions.current
+        .getRegions()
+        .find((item) => item.id === targetId);
+      const element = region?.element;
+      if (!element) return;
+      const baseBackground = element.style.backgroundColor || "transparent";
+      animation?.cancel();
+      animation = element.animate(
+        [
+          {
+            backgroundColor: baseBackground,
+            opacity: 1,
+            filter: "brightness(1)",
+            offset: 0,
+          },
+          {
+            backgroundColor: "rgba(255, 255, 255, 0.92)",
+            opacity: 1,
+            filter: "brightness(1.8)",
+            offset: 0.14,
+          },
+          {
+            backgroundColor: baseBackground,
+            opacity: 0.12,
+            filter: "brightness(0.6)",
+            offset: 0.28,
+          },
+          {
+            backgroundColor: "rgba(255, 255, 255, 0.92)",
+            opacity: 1,
+            filter: "brightness(1.8)",
+            offset: 0.42,
+          },
+          {
+            backgroundColor: baseBackground,
+            opacity: 0.12,
+            filter: "brightness(0.6)",
+            offset: 0.56,
+          },
+          {
+            backgroundColor: "rgba(255, 255, 255, 0.92)",
+            opacity: 1,
+            filter: "brightness(1.8)",
+            offset: 0.7,
+          },
+          {
+            backgroundColor: baseBackground,
+            opacity: 0.12,
+            filter: "brightness(0.6)",
+            offset: 0.84,
+          },
+          {
+            backgroundColor: baseBackground,
+            opacity: 1,
+            filter: "brightness(1)",
+            offset: 1,
+          },
+        ],
+        { duration: 1000, easing: "ease-in-out" },
+      );
+    };
+
+    // Wait until after the regions-sync effect has rebuilt DOM for a new selectedId.
+    frame = requestAnimationFrame(runFlash);
+    return () => {
+      cancelled = true;
+      cancelAnimationFrame(frame);
+      animation?.cancel();
+    };
+  }, [flashToken, ready]); // eslint-disable-line react-hooks/exhaustive-deps -- see above
 
   return (
     <div
