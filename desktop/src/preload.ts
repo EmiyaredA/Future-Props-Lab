@@ -41,9 +41,14 @@ contextBridge.exposeInMainWorld(
           },
         }
       : {}),
-    onQuitRequested: (callback: (approve: () => void) => void) => {
+    onQuitRequested: (
+      callback: (approve: () => void, cancel: () => void) => void,
+    ) => {
       const listener = () =>
-        callback(() => ipcRenderer.send("desktop:quit-approved"));
+        callback(
+          () => ipcRenderer.send("desktop:quit-approved"),
+          () => ipcRenderer.send("desktop:quit-cancelled"),
+        );
       ipcRenderer.on("desktop:quit-requested", listener);
       return () =>
         ipcRenderer.removeListener("desktop:quit-requested", listener);

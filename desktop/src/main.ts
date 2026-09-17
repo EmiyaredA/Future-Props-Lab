@@ -30,12 +30,15 @@ const dataDir =
       : defaultDataDir;
 app.setPath("userData", dataDir);
 app.setName("Future Props Lab");
-let mainWindow: BrowserWindow | undefined;
+
+const studioWindows = new Set<BrowserWindow>();
+let focusedStudio: BrowserWindow | undefined;
 let backend: Backend | undefined;
 let agent: AgentGateway | undefined;
 let starting = false;
 let quitting = false;
 let shutdownComplete = false;
+let quitPending: Set<number> | null = null;
 let state = { phase: "starting", message: "正在启动本地研究所…" };
 let gateway: DevelopmentGateway | undefined;
 const development = isDevelopment
@@ -64,6 +67,66 @@ function developmentWindowTitle(session: DevelopmentSession): string {
   return detail
     ? `${mode} · ${detail} — Future Props Lab`
     : `${mode} — Future Props Lab`;
+}
+
+function liveStudioWindows(): BrowserWindow[] {
+  return [...studioWindows].filter((win) => !win.isDestroyed());
+}
+
+function activeStudio(): BrowserWindow | undefined {
+  if (focusedStudio && !focusedStudio.isDestroyed()) return focusedStudio;
+  return liveStudioWindows()[0];
+}
+
+function showStudio(win = activeStudio()): void {
+  if (!win || win.isDestroyed()) return;
+  win.show();
+  win.focus();
+}
+
+function trackStudio(win: BrowserWindow): void {
+  studioWindows.add(win);
+  focusedStudio = win;
+  win.on("focus", () => {
+    focusedStudio = win;
+  });
+}
+
+function isTrustedStudioSender(event: {
+  sender: Electron.WebContents;
+  senderFrame: Electron.WebFrameMain | null;
+}): boolean {
+  const win = BrowserWindow.fromWebContents(event.sender);
+  return Boolean(
+    win &&
+    studioWindows.has(win) &&
+    !win.isDestroyed() &&
+    event.senderFrame === event.sender.mainFrame &&
+    event.senderFrame &&
+    trusted(event.senderFrame.url),
+  );
+}
+
+function studioPathForNewWindow(source?: BrowserWindow): string {
+  const current = source?.webContents.getURL();
+  if (current && pageOrigin() && isServiceUrl(current, pageOrigin())) {
+    try {
+      const url = new URL(current);
+      if (url.pathname && url.pathname !== "/docs.html")
+        return url.pathname + url.search + url.hash;
+    } catch {
+      /* fall through */
+    }
+  }
+  return "/";
+}
+
+async function openStudioWindow(pathname = "/"): Promise<BrowserWindow> {
+  const win = makeWindow(false);
+  if (state.phase === "ready" && pageOrigin())
+    await win.loadURL(pageOrigin() + pathname);
+  else await win.loadFile(recovery);
+  return win;
 }
 
 function installApplicationMenu() {
@@ -98,11 +161,17 @@ function installApplicationMenu() {
                 (development.state.pending.length > 0 &&
                   development.state.phase === "ready"),
               click: () => {
-                if (!mainWindow || mainWindow.webContents.isCrashed()) return;
-                mainWindow.webContents.send(
-                  "desktop:development-menu-action",
-                  development.state.phase === "error" ? "check" : "apply",
+                const targets = liveStudioWindows().filter(
+                  (win) => !win.webContents.isCrashed(),
                 );
+                if (!targets.length) return;
+                const action =
+                  development.state.phase === "error" ? "check" : "apply";
+                for (const win of targets)
+                  win.webContents.send(
+                    "desktop:development-menu-action",
+                    action,
+                  );
               },
             },
           ],
@@ -127,6 +196,19 @@ function installApplicationMenu() {
           },
         ],
       },
+      {
+        label: "文件",
+        submenu: [
+          {
+            label: "新建窗口",
+            accelerator: "CmdOrCtrl+N",
+            click: () => {
+              if (state.phase !== "ready" || quitting) return;
+              void openStudioWindow(studioPathForNewWindow(activeStudio()));
+            },
+          },
+        ],
+      },
       { role: "editMenu" },
       { role: "viewMenu" },
       ...developmentMenu,
@@ -147,6 +229,10 @@ function trusted(url: string): boolean {
     url === new URL(`file://${recovery}`).href ||
     Boolean(pageOrigin() && isServiceUrl(url, pageOrigin()))
   );
+}
+
+function loadRecoveryOnStudioWindows(): void {
+  for (const win of liveStudioWindows()) void win.loadFile(recovery);
 }
 
 function makeWindow(document = false): BrowserWindow {
@@ -200,17 +286,33 @@ function makeWindow(document = false): BrowserWindow {
   });
   win.webContents.on("will-prevent-unload", () => {
     quitting = false;
+    quitPending = null;
   });
   if (!document) {
+    trackStudio(win);
+    const contentsId = win.webContents.id;
     win.on("close", (event) => {
-      if (!quitting) {
-        event.preventDefault();
-        win.hide();
-      }
+      if (quitting) return;
+      const remaining = liveStudioWindows().filter((other) => other !== win);
+      if (remaining.length > 0) return;
+      event.preventDefault();
+      win.hide();
     });
     win.on("closed", () => {
-      mainWindow = undefined;
-      if (quitting) void shutdown();
+      studioWindows.delete(win);
+      if (focusedStudio === win) focusedStudio = liveStudioWindows()[0];
+      if (quitPending) {
+        quitPending.delete(contentsId);
+        if (quitPending.size === 0 && !quitting) {
+          quitPending = null;
+          quitting = true;
+          const remaining = liveStudioWindows();
+          if (!remaining.length) void shutdown();
+          else for (const open of remaining) open.close();
+          return;
+        }
+      }
+      if (quitting && liveStudioWindows().length === 0) void shutdown();
     });
     win.webContents.on("render-process-gone", () => {
       state = {
@@ -221,6 +323,22 @@ function makeWindow(document = false): BrowserWindow {
     });
   }
   return win;
+}
+
+function requestQuitApprovals(): void {
+  const windows = liveStudioWindows().filter(
+    (win) => state.phase === "ready" && !win.webContents.isCrashed(),
+  );
+  if (!windows.length) {
+    quitting = true;
+    void shutdown();
+    return;
+  }
+  quitPending = new Set(windows.map((win) => win.webContents.id));
+  for (const win of windows) {
+    win.show();
+    win.webContents.send("desktop:quit-requested");
+  }
 }
 
 async function start(navigate = true): Promise<boolean> {
@@ -248,7 +366,7 @@ async function start(navigate = true): Promise<boolean> {
             message: "后端已停止，请应用更新或重试",
           });
           development.send("backend-crashed");
-        } else void mainWindow?.loadFile(recovery);
+        } else loadRecoveryOnStudioWindows();
       },
       development ? 4 : undefined,
     );
@@ -262,7 +380,10 @@ async function start(navigate = true): Promise<boolean> {
         !process.env.FPL_DEV_RESTORE_PATH.startsWith("//")
           ? process.env.FPL_DEV_RESTORE_PATH
           : "/";
-      await mainWindow?.loadURL(pageOrigin() + restored);
+      const targets = liveStudioWindows();
+      await Promise.all(
+        targets.map((win) => win.loadURL(pageOrigin() + restored)),
+      );
     }
     return true;
   } catch (error) {
@@ -271,7 +392,7 @@ async function start(navigate = true): Promise<boolean> {
       phase: "failed",
       message: error instanceof Error ? error.message : "启动失败，请查看日志",
     };
-    if (navigate) await mainWindow?.loadFile(recovery);
+    if (navigate) loadRecoveryOnStudioWindows();
     return false;
   } finally {
     starting = false;
@@ -289,29 +410,24 @@ async function shutdown(): Promise<void> {
 if (!app.requestSingleInstanceLock()) app.quit();
 else {
   app.on("second-instance", () => {
-    mainWindow?.show();
-    mainWindow?.focus();
+    showStudio();
   });
   app.on("activate", () => {
-    mainWindow?.show();
-    mainWindow?.focus();
+    const existing = activeStudio();
+    if (existing) showStudio(existing);
+    else if (state.phase === "ready") void openStudioWindow();
+    else {
+      const win = makeWindow(false);
+      void win.loadFile(recovery);
+      if (state.phase === "ready") void start();
+    }
   });
   app.on("window-all-closed", () => undefined);
   app.on("before-quit", (event) => {
     if (shutdownComplete) return;
     event.preventDefault();
     if (quitting) return;
-    if (
-      mainWindow &&
-      state.phase === "ready" &&
-      !mainWindow.webContents.isCrashed()
-    ) {
-      mainWindow.show();
-      mainWindow.webContents.send("desktop:quit-requested");
-    } else {
-      quitting = true;
-      void shutdown();
-    }
+    requestQuitApprovals();
   });
   void app.whenReady().then(async () => {
     if (!app.isPackaged)
@@ -351,7 +467,7 @@ else {
             });
           }
           if (value.type === "restart") {
-            const current = mainWindow?.webContents.getURL();
+            const current = activeStudio()?.webContents.getURL();
             if (current && isServiceUrl(current, pageOrigin())) {
               const url = new URL(current);
               development.send("location", {
@@ -359,13 +475,16 @@ else {
               });
             }
             quitting = true;
-            void shutdown();
+            quitPending = null;
+            for (const win of liveStudioWindows()) win.close();
+            if (liveStudioWindows().length === 0) void shutdown();
           }
           if (value.type === "quit") app.quit();
         },
       );
       process.on("disconnect", () => {
         quitting = true;
+        quitPending = null;
         void shutdown();
       });
     }
@@ -422,14 +541,14 @@ else {
         ),
       });
     });
-    const actions: Record<string, () => unknown> = {
+    const actions: Record<string, (win: BrowserWindow) => unknown> = {
       status: () => state,
       retry: () => {
         if (state.phase === "failed") void start();
       },
       logs: () => shell.openPath(path.join(dataDir, "logs")),
-      minimize: () => mainWindow?.minimize(),
-      close: () => mainWindow?.close(),
+      minimize: (win) => win.minimize(),
+      close: (win) => win.close(),
       "agent-status": () => agent?.status(),
       "agent-enable": () => agent?.setEnabled(true),
       "agent-disable": () => agent?.setEnabled(false),
@@ -442,35 +561,38 @@ else {
       });
     for (const [name, action] of Object.entries(actions))
       ipcMain.handle(`desktop:${name}`, (event) => {
-        if (
-          event.sender !== mainWindow?.webContents ||
-          event.senderFrame !== event.sender.mainFrame ||
-          !trusted(event.senderFrame.url)
-        )
+        if (!isTrustedStudioSender(event))
           throw new Error("拒绝非应用页面请求");
-        return action();
+        const win = BrowserWindow.fromWebContents(event.sender);
+        if (!win) throw new Error("拒绝非应用页面请求");
+        return action(win);
       });
     ipcMain.on("desktop:quit-approved", (event) => {
-      if (
-        event.sender !== mainWindow?.webContents ||
-        event.senderFrame !== event.sender.mainFrame ||
-        !trusted(event.senderFrame.url)
-      )
-        return;
+      if (!isTrustedStudioSender(event) || !quitPending) return;
+      quitPending.delete(event.sender.id);
+      if (quitPending.size > 0) return;
+      quitPending = null;
       quitting = true;
-      mainWindow.close();
+      const windows = liveStudioWindows();
+      if (!windows.length) {
+        void shutdown();
+        return;
+      }
+      for (const win of windows) win.close();
+    });
+    ipcMain.on("desktop:quit-cancelled", (event) => {
+      if (!isTrustedStudioSender(event)) return;
+      quitting = false;
+      quitPending = null;
     });
     installApplicationMenu();
-    mainWindow = makeWindow();
+    const main = makeWindow(false);
     agent = new AgentGateway(
       dataDir,
       () => backend,
-      () => {
-        mainWindow?.show();
-        mainWindow?.focus();
-      },
+      () => showStudio(),
     );
-    await mainWindow.loadFile(recovery);
+    await main.loadFile(recovery);
     await start();
     development?.send("ready", {
       success: state.phase === "ready",

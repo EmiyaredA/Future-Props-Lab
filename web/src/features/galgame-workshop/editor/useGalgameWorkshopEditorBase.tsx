@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ApiError } from "@platform/api/client";
+import { publishResourceRevision } from "@platform/sync/resourceBroadcast";
 import {
   applyGalgamePortraitUpgrade,
   getGalgameStoryDocument,
@@ -356,6 +357,11 @@ export function useGalgameWorkshopEditorBase({
           revisionRef.current = updated.revision;
           client.setQueryData(STORY_KEY(projectId), updated);
           setSaveState("saved");
+          publishResourceRevision({
+            kind: "galgame-story",
+            id: projectId,
+            revision: updated.revision,
+          });
           void client.invalidateQueries({ queryKey: REPORT_KEY(projectId) });
           void client.invalidateQueries({ queryKey: PROJECT_KEY(projectId) });
           void client.invalidateQueries({

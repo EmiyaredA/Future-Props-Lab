@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ApiError } from "@platform/api/client";
+import { publishResourceRevision } from "@platform/sync/resourceBroadcast";
 import {
   createNote,
   noteInput,
@@ -69,6 +70,11 @@ export function useNoteDraft(initial: Note, onSaved: (note: Note) => void) {
       const next = await promise;
       saved.current = next;
       savedGeneration.current = sent;
+      publishResourceRevision({
+        kind: "thought-note",
+        id: initial.id,
+        revision: next.revision,
+      });
       if (alive.current) {
         callback.current(next);
         setSavedAt(next.updated_at);

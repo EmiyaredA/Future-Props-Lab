@@ -16,7 +16,9 @@ export type DesktopBridge = {
   agentStatus: () => Promise<{ enabled: boolean; connected: boolean }>;
   enableAgent: () => Promise<{ enabled: boolean; connected: boolean }>;
   disableAgent: () => Promise<{ enabled: boolean; connected: boolean }>;
-  onQuitRequested: (callback: (approve: () => void) => void) => () => void;
+  onQuitRequested: (
+    callback: (approve: () => void, cancel: () => void) => void,
+  ) => () => void;
   developmentStatus?: () => Promise<DesktopDevelopmentState | null>;
   applyDevelopmentUpdate?: () => Promise<void>;
   checkDevelopmentUpdate?: () => Promise<void>;

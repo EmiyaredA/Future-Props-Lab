@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ApiError } from "@platform/api/client";
+import { publishResourceRevision } from "@platform/sync/resourceBroadcast";
 import { createProject, saveProject } from "./api";
 import type { Draft, Project } from "./types";
 
@@ -98,6 +99,11 @@ export function usePresentationDraft(
           );
           saved.current = project;
           persisted.current = sent;
+          publishResourceRevision({
+            kind: "presentation-project",
+            id: initial.id,
+            revision: project.revision,
+          });
           if (alive.current) {
             callback.current(project);
             setState(generation.current === sent ? "saved" : "dirty");

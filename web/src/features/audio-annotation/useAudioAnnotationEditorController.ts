@@ -28,6 +28,7 @@ import type {
   AudioAnnotationSpeaker,
 } from "@features/audio-annotation/types";
 import type { AudioWaveformHandle } from "@features/audio-annotation/AudioWaveform";
+import { publishResourceRevision } from "@platform/sync/resourceBroadcast";
 import { ApiError } from "@platform/api/client";
 import { useSegmentTranscription } from "@features/audio-annotation/segmentTranscription";
 import { audioAnnotationQueryKeys } from "@features/audio-annotation/queryKeys";
@@ -172,6 +173,11 @@ export function useAudioAnnotationEditorController({
       );
       if (savedVersion === version.current) setDirty(false);
       setNotice("");
+      publishResourceRevision({
+        kind: "audio-annotation",
+        id: projectId,
+        revision: saved.revision,
+      });
       void queryClient.invalidateQueries({
         queryKey: audioAnnotationQueryKeys.project(projectId),
       });

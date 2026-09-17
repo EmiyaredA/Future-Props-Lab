@@ -29,6 +29,7 @@ import {
   switchWorkspace as switchAccountWorkspace,
 } from "@features/accounts/api";
 import { clearRetainedRealtimeVoiceState } from "@features/models/realtime/realtimeVoiceMemory";
+import { useResourceBroadcastSync } from "@app/useResourceBroadcastSync";
 
 type Status = "checking" | "signed-out" | "signed-in";
 
@@ -38,6 +39,7 @@ export function StudioAuthGate({ children }: { children: ReactNode }) {
   const identityRequest = useRef(0);
   const [status, setStatus] = useState<Status>("checking");
   const [me, setMe] = useState<AuthMe | null>(null);
+  useResourceBroadcastSync(queryClient, status === "signed-in");
   identityRef.current = me;
   const [registration, setRegistration] = useState(false);
   const [inviteCode, setInviteCode] = useState("");
