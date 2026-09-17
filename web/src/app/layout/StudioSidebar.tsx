@@ -250,8 +250,8 @@ function StudioChrome({
     },
     {
       id: "apps",
-      label: "AI应用",
-      shortLabel: "AI应用",
+      label: "应用",
+      shortLabel: "应用",
       icon: <AppsIcon />,
       active: page === "apps",
       page: "apps",

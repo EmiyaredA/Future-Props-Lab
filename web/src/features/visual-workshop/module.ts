@@ -16,7 +16,7 @@ const visualWorkshopModule = {
   shell: "visual-workshop",
   shellConfig: {
     subtitle: "Visual Workshop",
-    backSubtitle: "浏览全部 AI 应用",
+    backSubtitle: "浏览全部应用",
     navigation: [
       {
         page: "visual-workshop-projects",

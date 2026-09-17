@@ -30,11 +30,11 @@ export function DocsNavigation({ page }: { page: GuidePage }) {
         <div className="docs-context">
           <a href={pageHref(context.parent!)}>
             <ArrowLeft size={15} />
-            返回{context.section === "工具" ? "工具导航" : "AI 应用"}
+            返回{context.section === "工具" ? "工具导航" : "应用"}
           </a>
           <strong>{context.title}</strong>
           <small>
-            {context.section === "工具" ? "内置工具" : "AI 应用"}文档
+            {context.section === "工具" ? "内置工具" : "应用"}文档
           </small>
         </div>
       )}

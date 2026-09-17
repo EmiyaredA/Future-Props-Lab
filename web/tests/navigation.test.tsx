@@ -40,14 +40,14 @@ test("renders integrations after tools and before the base model group", () => {
   const navigation = screen.getByRole("navigation", { name: "栏目导航" });
   const navigationButtons = within(navigation).getAllByRole("button");
   expect(navigationButtons[0]).toHaveAccessibleName("首页");
-  expect(navigationButtons[1]).toHaveAccessibleName("AI应用");
+  expect(navigationButtons[1]).toHaveAccessibleName("应用");
   expect(navigationButtons[2]).toHaveAccessibleName("文件管理");
   expect(navigationButtons[3]).toHaveAccessibleName("工具导航");
   expect(navigationButtons[4]).toHaveAccessibleName("集成中心");
   expect(navigationButtons[5]).toHaveAccessibleName("基模型");
   fireEvent.click(screen.getByRole("button", { name: "首页" }));
   expect(navigate).toHaveBeenCalledWith("home");
-  fireEvent.click(screen.getByRole("button", { name: "AI应用" }));
+  fireEvent.click(screen.getByRole("button", { name: "应用" }));
   expect(navigate).toHaveBeenCalledWith("apps");
   fireEvent.click(screen.getByRole("button", { name: "文件管理" }));
   expect(navigate).toHaveBeenCalledWith("files");
@@ -303,7 +303,7 @@ test("renders the visual workshop brand and return card", () => {
     "src",
     "/brand/visual-workshop-mark.png",
   );
-  expect(screen.getByText("浏览全部 AI 应用")).toBeInTheDocument();
+  expect(screen.getByText("浏览全部应用")).toBeInTheDocument();
   expect(
     screen.getByRole("navigation", { name: "视觉创作工坊导航" }),
   ).toBeInTheDocument();

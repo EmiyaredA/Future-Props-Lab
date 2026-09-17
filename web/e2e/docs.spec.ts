@@ -112,7 +112,7 @@ test("uses a documentation navigation drawer on mobile", async ({ page }) => {
   await expect(directory).toHaveClass(/open/);
   await expect(directory).toHaveCSS("transform", "matrix(1, 0, 0, 1, 0, 0)");
   await expect(
-    directory.getByRole("link", { name: /返回.*AI 应用/ }),
+    directory.getByRole("link", { name: /返回.*应用/ }),
   ).toBeInViewport();
   await directory.getByRole("link", { name: "试玩与线路检查" }).click();
   await expect(directory).not.toHaveClass(/open/);

@@ -56,7 +56,7 @@ test("home is the default route and tools stay responsive", async ({
 
   const navItems = page.getByRole("navigation").getByRole("button");
   await expect(navItems.nth(0)).toContainText("首页");
-  await expect(navItems.nth(1)).toContainText("AI应用");
+  await expect(navItems.nth(1)).toContainText("应用");
   await expect(navItems.nth(2)).toContainText("文件管理");
   await expect(navItems.nth(3)).toContainText("工具导航");
   await expect(navItems.nth(4)).toContainText("集成中心");

@@ -429,7 +429,7 @@
   color: var(--faint);
 }
 
-.home-quick-grid button span {
+.home-quick-grid button > span:not(.home-quick-icon) {
   min-width: 0;
   display: flex;
   flex-direction: column;

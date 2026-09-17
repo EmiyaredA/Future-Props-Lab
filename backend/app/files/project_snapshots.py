@@ -255,7 +255,7 @@ def _extract_validated(
             raise ProjectSnapshotError("manifest.json 不是受支持的项目快照清单") from exc
         if manifest.application_id != expected_application:
             raise ProjectSnapshotError(
-                "项目快照属于其他 AI 应用", code="snapshot_application_mismatch"
+                "项目快照属于其他应用", code="snapshot_application_mismatch"
             )
         expected = {
             "manifest.json",

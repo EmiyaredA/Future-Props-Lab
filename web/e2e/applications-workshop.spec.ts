@@ -405,7 +405,7 @@ test("enters the visual workshop, persists projects, and supports deep navigatio
     "src",
     "/brand/visual-workshop-mark.png",
   );
-  await expect(page.getByText("浏览全部 AI 应用")).toBeVisible();
+  await expect(page.getByText("浏览全部应用")).toBeVisible();
   await expect(page.getByText("还没有创作项目")).toBeVisible();
 
   await page.getByRole("button", { name: /新建第一个项目/ }).click();

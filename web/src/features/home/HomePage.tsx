@@ -14,7 +14,7 @@ import "@features/home/home.css";
 
 const destinations = [
   {
-    title: "AI应用",
+    title: "应用",
     description: "进入完整的 AI 创作应用，完成更复杂的工作流。",
     action: "浏览应用",
     path: "/apps",

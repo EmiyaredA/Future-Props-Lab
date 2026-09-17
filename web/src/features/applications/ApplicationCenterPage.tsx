@@ -70,8 +70,8 @@ export function ApplicationCenterPage({
   return (
     <section className="page applications-page">
       <header className="applications-header">
-        <h1>AI应用</h1>
-        <p>发现面向完整工作流的 AI 应用</p>
+        <h1>应用</h1>
+        <p>发现面向完整工作流的应用</p>
       </header>
       <form
         className="applications-search"
@@ -80,7 +80,7 @@ export function ApplicationCenterPage({
       >
         <Search aria-hidden />
         <input
-          aria-label="搜索AI应用"
+          aria-label="搜索应用"
           placeholder="搜索应用名称、能力或关键词…"
           value={query}
           onChange={(event) => setQuery(event.target.value)}

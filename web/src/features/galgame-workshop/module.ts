@@ -18,7 +18,7 @@ const galgameWorkshopModule = {
   shellConfig: {
     className: "galgame-workshop-shell",
     subtitle: "Galgame Workshop",
-    backSubtitle: "浏览全部 AI 应用",
+    backSubtitle: "浏览全部应用",
     navigation: [
       {
         page: "galgame-workshop-projects",

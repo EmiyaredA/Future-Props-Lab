@@ -12,7 +12,7 @@ test("home keeps the three destinations equal and links model shortcuts", async 
   expect(
     screen.getByRole("heading", { name: "今天想从哪里开始？" }),
   ).toBeInTheDocument();
-  expect(screen.getByRole("button", { name: /AI应用/ })).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: /应用/ })).toBeInTheDocument();
   expect(screen.getByRole("button", { name: /工具导航/ })).toBeInTheDocument();
   expect(screen.getByRole("button", { name: /基模型/ })).toBeInTheDocument();
   expect(screen.queryByText("视觉创作工坊")).not.toBeInTheDocument();
@@ -42,7 +42,7 @@ test("application center filters and records recent application access", async (
       screen.getByRole("button", { name: `打开${name}` }).querySelector("img"),
     ).toHaveAttribute("src", `/brand/${asset}-mark.png`);
   }
-  expect(screen.queryByText("AI 应用")).not.toBeInTheDocument();
+  expect(screen.getByRole("heading", { name: "应用" })).toBeInTheDocument();
   await user.click(screen.getByRole("button", { name: "效率协作" }));
   expect(
     screen.getByRole("button", { name: "打开思绪工坊" }),
@@ -50,7 +50,7 @@ test("application center filters and records recent application access", async (
   await user.click(screen.getByRole("button", { name: "打开思绪工坊" }));
   expect(open).toHaveBeenCalledWith("/apps/thought-workshop");
   await user.click(screen.getByRole("button", { name: "全部应用" }));
-  await user.type(screen.getByRole("textbox", { name: "搜索AI应用" }), "视频");
+  await user.type(screen.getByRole("textbox", { name: "搜索应用" }), "视频");
   await user.click(screen.getByRole("button", { name: "打开视觉创作工坊" }));
   expect(open).toHaveBeenCalledWith("/apps/visual-workshop");
   expect(localStorage.getItem("future-props-recent-applications")).toContain(

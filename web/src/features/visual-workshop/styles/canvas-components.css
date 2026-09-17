@@ -123,17 +123,22 @@
   box-shadow: 0 12px 28px rgb(0 0 0 / 14%);
 }
 
-.canvas-upload-notice.is-pending,
-.canvas-upload-notice.is-info {
+.canvas-upload-notice.is-pending {
   background: color-mix(in srgb, var(--surface) 92%, transparent);
   color: var(--text);
   border: 1px solid var(--border);
 }
 
+.canvas-upload-notice.is-info {
+  background: color-mix(in srgb, var(--warning-soft) 88%, transparent);
+  color: var(--warning);
+  border: 1px solid color-mix(in srgb, var(--warning) 35%, transparent);
+}
+
 .canvas-upload-notice.is-success {
-  background: color-mix(in srgb, var(--accent-soft) 88%, transparent);
-  color: var(--accent);
-  border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
+  background: color-mix(in srgb, var(--ok-soft) 88%, transparent);
+  color: var(--ok);
+  border: 1px solid color-mix(in srgb, var(--ok) 35%, transparent);
 }
 
 .canvas-upload-notice.is-error {
