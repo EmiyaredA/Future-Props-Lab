@@ -10,7 +10,7 @@ Status: implemented
 
 在现有 `codex/ui-refresh` 视觉系统上增加“专业紧凑”密度层：桌面端将页面内边距、面板间距、列表行高、统计卡片、筛选器和弹窗 chrome 收紧到约 12–16px 的模块尺度，移动端通过 coarse pointer 规则保留至少 44px 的触控尺寸。模型日志表格、账号管理、应用中心、集成中心和编辑器公共面板按信息层级保留标题、状态、主操作与错误信息，减少重复留白；不改变业务文案、数据契约或编辑器操作。
 
-`ResponsiveSidebar` 新增 `collapsible`、`storageKey`、`defaultCollapsed` 和 `onCollapseChange` 可选能力。Studio 与各工坊默认使用展开模式，桌面端可切换到约 76px 的图标模式并按各自存储键记忆；图标模式保留 `aria-label`、`title`、键盘焦点和 pressed 状态。移动端继续使用抽屉导航，并将 Studio 全局顶栏置于抽屉之上，避免导航打开时遮挡主题切换。
+`ResponsiveSidebar` 新增 `collapsible`、`storageKey`、`defaultCollapsed` 和 `onCollapseChange` 可选能力。各工坊默认使用展开模式，桌面端可切换到约 76px 的图标模式并按各自存储键记忆；图标模式保留 `aria-label`、`title`、键盘焦点和 pressed 状态。Studio 全局壳已改为常驻一级轨 + 可选二级栏，不再走「展开全文侧栏」路径，详见 [Studio 双栏壳与极简顶栏](./2026-09-17-studio-dual-sidebar-chrome.md)。移动端继续使用抽屉导航，并将 Studio 全局顶栏置于抽屉之上，避免导航打开时遮挡主题切换。
 
 ## Alternatives considered
 
@@ -21,7 +21,7 @@ Status: implemented
 ## Consequences
 
 - Studio、账号管理、模型目录/日志、应用中心、集成中心和主要编辑器 chrome 获得一致的专业紧凑尺度；橙色仍是主操作色，现有浅色/深色 token 与状态对比不变。
-- 桌面侧栏折叠状态按 Studio/工坊隔离持久化，移动端抽屉行为和焦点回收逻辑保持不变。
+- 桌面侧栏折叠状态按工坊隔离持久化，Studio 二级栏偏好独立存储；移动端抽屉行为和焦点回收逻辑保持不变。
 - `prefers-reduced-motion` 下全局 app 动效会降为近似即时过渡；触控设备的核心按钮、选择器和导航入口不会被压缩到 44px 以下。
 
 ## Verification

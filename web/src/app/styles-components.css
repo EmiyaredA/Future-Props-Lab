@@ -383,23 +383,12 @@
 }
 
 @media (max-width: 1050px) {
-  .studio-shell:not(:has(> .responsive-sidebar-track)) {
-    grid-template-columns: 220px minmax(0, 1fr);
-  }
   .page {
     padding: 22px 20px;
   }
 }
 
 @media (max-width: 760px) {
-  .studio-shell:not(:has(> .responsive-sidebar-track)) {
-    display: block;
-  }
-  .studio-shell:not(:has(> .responsive-sidebar-track)) .studio-sidebar {
-    position: static;
-    width: 100%;
-    height: auto;
-  }
   .sidebar-footer {
     margin-top: 18px;
   }

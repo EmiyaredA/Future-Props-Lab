@@ -9,13 +9,14 @@ import {
   type ReactNode,
 } from "react";
 import { createPortal } from "react-dom";
-import { PanelLeftOpen } from "lucide-react";
+import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import "./studio-collapsed-rail.css";
 
 export type StudioRailLeaf = {
   kind: "leaf";
   id: string;
   label: string;
+  shortLabel?: string;
   icon: ReactNode;
   active?: boolean;
   onSelect: () => void;
@@ -33,8 +34,10 @@ export type StudioRailGroup = {
   kind: "group";
   id: string;
   label: string;
+  shortLabel?: string;
   icon: ReactNode;
   active?: boolean;
+  onSelect?: () => void;
   items: StudioRailGroupItem[];
 };
 
@@ -52,14 +55,25 @@ export function StudioCollapsedRail({
   brand,
   onExpand,
   expandDisabled = false,
+  labeled = false,
+  preferFlyout = true,
+  secondaryToggle,
   footer,
-  label = "折叠侧栏",
+  label = "主导航",
 }: {
   entries: StudioRailEntry[];
   routeKey: string;
   brand?: ReactNode;
   onExpand?: () => void;
   expandDisabled?: boolean;
+  labeled?: boolean;
+  preferFlyout?: boolean;
+  secondaryToggle?: {
+    collapsed: boolean;
+    disabled?: boolean;
+    label?: string;
+    onToggle: () => void;
+  };
   footer?: ReactNode;
   label?: string;
 }) {
@@ -115,6 +129,11 @@ export function StudioCollapsedRail({
   useEffect(() => {
     closeFlyout(false);
   }, [closeFlyout, routeKey]);
+
+  useEffect(() => {
+    if (preferFlyout) return;
+    closeFlyout(false);
+  }, [closeFlyout, preferFlyout]);
 
   useEffect(() => {
     if (!openGroup) return;
@@ -212,7 +231,10 @@ export function StudioCollapsedRail({
       disabled?: boolean;
     },
   ) => (
-    <span className="studio-rail-tooltip" data-tip={tip}>
+    <span
+      className={`studio-rail-tooltip${labeled ? " is-labeled" : ""}`}
+      data-tip={tip}
+    >
       <button
         type="button"
         className={`studio-rail-button${props.active ? " is-active" : ""}`}
@@ -228,6 +250,19 @@ export function StudioCollapsedRail({
         {content}
       </button>
     </span>
+  );
+
+  const entryContent = (entry: StudioRailEntry) => (
+    <>
+      <span className="studio-rail-button__icon" aria-hidden>
+        {entry.icon}
+      </span>
+      {labeled ? (
+        <span className="studio-rail-button__label">
+          {entry.shortLabel ?? entry.label}
+        </span>
+      ) : null}
+    </>
   );
 
   const flyout = openGroup ? (
@@ -277,14 +312,39 @@ export function StudioCollapsedRail({
   ) : null;
 
   const expandTip = expandDisabled ? "窄屏下保持图标栏" : "展开侧栏";
+  const secondaryTip =
+    secondaryToggle?.label ??
+    (secondaryToggle?.disabled
+      ? "当前分区无二级导航"
+      : secondaryToggle?.collapsed
+        ? "展开二级导航"
+        : "收起二级导航");
 
   return (
-    <div className="studio-collapsed-rail" aria-label={label}>
-      {brand || onExpand ? (
+    <div
+      className={`studio-collapsed-rail${labeled ? " is-labeled" : ""}`}
+      aria-label={label}
+    >
+      {brand || onExpand || secondaryToggle ? (
         <div className="studio-collapsed-rail__top">
           {brand ? (
             <div className="studio-collapsed-rail__brand">{brand}</div>
           ) : null}
+          {secondaryToggle
+            ? tipButton(
+                secondaryTip,
+                secondaryToggle.collapsed ? (
+                  <PanelLeftOpen size={18} />
+                ) : (
+                  <PanelLeftClose size={18} />
+                ),
+                {
+                  disabled: secondaryToggle.disabled,
+                  expanded: !secondaryToggle.collapsed,
+                  onClick: () => secondaryToggle.onToggle(),
+                },
+              )
+            : null}
           {onExpand
             ? tipButton(expandTip, <PanelLeftOpen size={18} />, {
                 disabled: expandDisabled,
@@ -297,26 +357,31 @@ export function StudioCollapsedRail({
         {entries.map((entry) =>
           entry.kind === "leaf" ? (
             <div key={entry.id}>
-              {tipButton(entry.label, entry.icon, {
+              {tipButton(entry.label, entryContent(entry), {
                 active: entry.active,
                 onClick: () => entry.onSelect(),
               })}
             </div>
           ) : (
             <div key={entry.id}>
-              {tipButton(`${entry.label}，点击展开菜单`, entry.icon, {
-                active: entry.active,
-                expanded: openGroupId === entry.id,
-                controls: `studio-rail-flyout-${entry.id}`,
-                hasPopup: true,
-                onClick: (event) =>
-                  showGroup(entry, event.currentTarget, event.detail === 0),
-                onKeyDown: (event) => {
-                  if (event.key !== "ArrowRight") return;
-                  event.preventDefault();
-                  showGroup(entry, event.currentTarget, true);
-                },
-              })}
+              {preferFlyout
+                ? tipButton(`${entry.label}，点击展开菜单`, entryContent(entry), {
+                    active: entry.active,
+                    expanded: openGroupId === entry.id,
+                    controls: `studio-rail-flyout-${entry.id}`,
+                    hasPopup: true,
+                    onClick: (event) =>
+                      showGroup(entry, event.currentTarget, event.detail === 0),
+                    onKeyDown: (event) => {
+                      if (event.key !== "ArrowRight") return;
+                      event.preventDefault();
+                      showGroup(entry, event.currentTarget, true);
+                    },
+                  })
+                : tipButton(entry.label, entryContent(entry), {
+                    active: entry.active,
+                    onClick: () => entry.onSelect?.(),
+                  })}
             </div>
           ),
         )}

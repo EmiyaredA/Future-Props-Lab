@@ -28,16 +28,17 @@ test("renders integrations after tools and before the base model group", () => {
       <StudioGlobalHeader />
     </>,
   );
-  expect(screen.getByText("未来道具研究所")).toBeInTheDocument();
-  const navigationButtons = within(screen.getByRole("navigation")).getAllByRole(
-    "button",
-  );
-  expect(navigationButtons[0]).toHaveTextContent("首页");
-  expect(navigationButtons[1]).toHaveTextContent("AI应用");
-  expect(navigationButtons[2]).toHaveTextContent("文件管理");
-  expect(navigationButtons[3]).toHaveTextContent("工具导航");
-  expect(navigationButtons[4]).toHaveTextContent("集成中心");
-  expect(navigationButtons[5]).toHaveTextContent("基模型");
+  expect(
+    document.querySelector(".studio-collapsed-rail__brand .brand-mark"),
+  ).toBeTruthy();
+  const navigation = screen.getByRole("navigation", { name: "栏目导航" });
+  const navigationButtons = within(navigation).getAllByRole("button");
+  expect(navigationButtons[0]).toHaveAccessibleName("首页");
+  expect(navigationButtons[1]).toHaveAccessibleName("AI应用");
+  expect(navigationButtons[2]).toHaveAccessibleName("文件管理");
+  expect(navigationButtons[3]).toHaveAccessibleName("工具导航");
+  expect(navigationButtons[4]).toHaveAccessibleName("集成中心");
+  expect(navigationButtons[5]).toHaveAccessibleName("基模型");
   fireEvent.click(screen.getByRole("button", { name: "首页" }));
   expect(navigate).toHaveBeenCalledWith("home");
   fireEvent.click(screen.getByRole("button", { name: "AI应用" }));
@@ -48,14 +49,9 @@ test("renders integrations after tools and before the base model group", () => {
   expect(navigate).toHaveBeenCalledWith("tools");
   fireEvent.click(screen.getByRole("button", { name: "集成中心" }));
   expect(navigate).toHaveBeenCalledWith("integrations-tool-apis");
-  expect(screen.getByRole("button", { name: "基模型" })).toHaveAttribute(
-    "aria-expanded",
-    "true",
-  );
-  expect(screen.getByRole("button", { name: "首页" })).toHaveAttribute(
-    "aria-label",
-    "首页",
-  );
+  expect(
+    screen.getByRole("navigation", { name: "基模型子菜单" }),
+  ).toBeInTheDocument();
   expect(screen.getByRole("link", { name: "文档中心" })).toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: /模型测试/ }));
   expect(navigate).toHaveBeenCalledWith("model-test");
@@ -63,9 +59,9 @@ test("renders integrations after tools and before the base model group", () => {
   expect(navigate).toHaveBeenCalledWith("model-test-tools");
   fireEvent.click(screen.getByRole("button", { name: /模型调用日志/ }));
   expect(navigate).toHaveBeenCalledWith("model-call-logs");
-  fireEvent.click(screen.getByRole("button", { name: "基模型" }));
+  fireEvent.click(screen.getByRole("button", { name: "收起二级导航" }));
   expect(
-    screen.queryByRole("group", { name: "基模型子菜单" }),
+    screen.queryByRole("navigation", { name: "基模型子菜单" }),
   ).not.toBeInTheDocument();
 });
 
@@ -137,30 +133,29 @@ test("keeps tool navigation active on the video frame exporter", () => {
   );
 });
 
-test("remembers the desktop sidebar collapse preference", () => {
-  localStorage.removeItem("future-props-sidebar-studio-collapsed");
-  const { unmount } = render(<StudioSidebar page="home" navigate={vi.fn()} />);
+test("remembers the desktop secondary sidebar collapse preference", () => {
+  localStorage.removeItem("future-props-sidebar-studio-secondary-collapsed");
+  const { unmount } = render(
+    <StudioSidebar page="model-service" navigate={vi.fn()} />,
+  );
 
-  expect(screen.getByRole("button", { name: "收起主导航" })).toHaveAttribute(
-    "aria-pressed",
-    "false",
-  );
-  fireEvent.click(screen.getByRole("button", { name: "收起主导航" }));
-  expect(localStorage.getItem("future-props-sidebar-studio-collapsed")).toBe(
-    "true",
-  );
-  expect(screen.getByRole("button", { name: "展开侧栏" })).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "收起二级导航" })).toBeEnabled();
+  fireEvent.click(screen.getByRole("button", { name: "收起二级导航" }));
+  expect(
+    localStorage.getItem("future-props-sidebar-studio-secondary-collapsed"),
+  ).toBe("true");
+  expect(screen.getByRole("button", { name: "展开二级导航" })).toBeInTheDocument();
 
   unmount();
-  render(<StudioSidebar page="home" navigate={vi.fn()} />);
-  expect(screen.getByRole("button", { name: "展开侧栏" })).toBeInTheDocument();
-  localStorage.removeItem("future-props-sidebar-studio-collapsed");
+  render(<StudioSidebar page="model-service" navigate={vi.fn()} />);
+  expect(screen.getByRole("button", { name: "展开二级导航" })).toBeInTheDocument();
+  localStorage.removeItem("future-props-sidebar-studio-secondary-collapsed");
 });
 
-test("keeps brand mark above the expand control in the collapsed rail", () => {
-  localStorage.setItem("future-props-sidebar-studio-collapsed", "true");
+test("keeps brand mark above the secondary toggle in the primary rail", () => {
+  localStorage.removeItem("future-props-sidebar-studio-secondary-collapsed");
   const { container } = render(
-    <StudioSidebar page="home" navigate={vi.fn()} />,
+    <StudioSidebar page="model-service" navigate={vi.fn()} />,
   );
   const top = container.querySelector(".studio-collapsed-rail__top");
   expect(top).not.toBeNull();
@@ -170,12 +165,11 @@ test("keeps brand mark above the expand control in the collapsed rail", () => {
   );
   expect(
     top?.querySelector(".studio-collapsed-rail__brand")?.nextElementSibling,
-  ).toHaveAttribute("data-tip", "展开侧栏");
-  expect(screen.getByRole("button", { name: "展开侧栏" })).toBeEnabled();
-  localStorage.removeItem("future-props-sidebar-studio-collapsed");
+  ).toHaveAttribute("data-tip", "收起二级导航");
+  expect(screen.getByRole("button", { name: "收起二级导航" })).toBeEnabled();
 });
 
-test("keeps brand and expand control when the viewport forces the icon rail", () => {
+test("keeps brand and disables secondary toggle when the viewport forces the icon rail", () => {
   const originalMatchMedia = window.matchMedia;
   window.matchMedia = ((query: string) => ({
     matches: query.includes("max-width: 1200px"),
@@ -191,19 +185,22 @@ test("keeps brand and expand control when the viewport forces the icon rail", ()
   })) as typeof window.matchMedia;
 
   const { container } = render(
-    <StudioSidebar page="home" navigate={vi.fn()} />,
+    <StudioSidebar page="model-service" navigate={vi.fn()} />,
   );
   expect(container.querySelector(".studio-collapsed-rail__brand .brand-mark"))
     .not.toBeNull();
   expect(
-    screen.getByRole("button", { name: "窄屏下保持图标栏" }),
+    screen.getByRole("button", { name: "窄屏下使用弹出菜单" }),
   ).toBeDisabled();
 
   window.matchMedia = originalMatchMedia;
 });
 
-test("opens base-model flyout from the collapsed rail", () => {
-  localStorage.setItem("future-props-sidebar-studio-collapsed", "true");
+test("opens base-model flyout from the primary rail when secondary is hidden", () => {
+  localStorage.setItem(
+    "future-props-sidebar-studio-secondary-collapsed",
+    "true",
+  );
   const navigate = vi.fn();
   render(<StudioSidebar page="home" navigate={navigate} />);
 
@@ -221,7 +218,22 @@ test("opens base-model flyout from the collapsed rail", () => {
   expect(
     screen.queryByRole("menu", { name: "基模型" }),
   ).not.toBeInTheDocument();
-  localStorage.removeItem("future-props-sidebar-studio-collapsed");
+  localStorage.removeItem("future-props-sidebar-studio-secondary-collapsed");
+});
+
+test("lists integration center children in the secondary panel", () => {
+  const navigate = vi.fn();
+  render(
+    <StudioSidebar page="integrations-mcp" navigate={navigate} />,
+  );
+  const secondary = screen.getByRole("navigation", { name: "集成中心子菜单" });
+  expect(within(secondary).getByRole("button", { name: "工具 API" })).toBeInTheDocument();
+  expect(within(secondary).getByRole("button", { name: "MCP" })).toHaveAttribute(
+    "aria-current",
+    "page",
+  );
+  fireEvent.click(within(secondary).getByRole("button", { name: "Skills" }));
+  expect(navigate).toHaveBeenCalledWith("integrations-skills");
 });
 
 test("renders the visual workshop brand and return card", () => {
