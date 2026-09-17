@@ -1,8 +1,10 @@
 .annotation-segment-table-card > header > .annotation-display-language {
+  flex: none;
   width: 142px;
 }
 
 .annotation-history {
+  flex: none;
   margin-left: auto;
   gap: 4px;
 }
