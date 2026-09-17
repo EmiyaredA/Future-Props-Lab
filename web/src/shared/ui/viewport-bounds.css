@@ -63,6 +63,9 @@
   .workshop-shell .workshop-page {
     padding: 24px 16px;
   }
+  .workshop-shell .workshop-page:has(> .workshop-app-chrome) {
+    padding-top: 0;
+  }
   .workshop-shell .workshop-app-chrome {
     flex-direction: column;
     align-items: stretch;

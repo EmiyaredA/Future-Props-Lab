@@ -37,6 +37,15 @@
   --accent-soft: var(--gal-a-soft);
   --accent-line: var(--gal-accent-line);
   --danger: var(--gal-danger);
+  --bg: var(--gal-bg);
+  --surface: var(--gal-surface);
+  --surface-soft: var(--gal-panel);
+  --surface-raised: var(--gal-surface);
+  --border: var(--gal-line);
+  --text: var(--gal-text);
+  --text-strong: var(--gal-text);
+  --muted: var(--gal-muted);
+  --workshop-chrome-bg: var(--gal-bg);
   color: var(--gal-text);
 }
 

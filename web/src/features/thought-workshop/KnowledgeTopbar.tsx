@@ -272,6 +272,8 @@ export function KnowledgeTopbar({
   noteMode,
   busy,
   projectTitle,
+  libraryTitle,
+  libraryDescription,
   currentLabel,
   currentId,
   documents,
@@ -289,6 +291,8 @@ export function KnowledgeTopbar({
   noteMode: boolean;
   busy: boolean;
   projectTitle?: string;
+  libraryTitle?: string;
+  libraryDescription?: string;
   currentLabel: string;
   currentId?: string;
   documents: NoteSummary[];
@@ -316,9 +320,10 @@ export function KnowledgeTopbar({
       parentId = parent.parent_id;
     }
   }
+  const libraryMode = !noteMode && !projectTitle && !!libraryTitle;
   return (
     <header
-      className={`knowledge-topbar${noteMode ? " is-note" : projectTitle ? " is-project" : ""}`}
+      className={`knowledge-topbar${noteMode ? " is-note" : projectTitle ? " is-project" : libraryMode ? " is-library" : ""}`}
     >
       {!noteMode ? (
         <button className="btn knowledge-mobile" onClick={onOpenDirectory}>
@@ -326,6 +331,12 @@ export function KnowledgeTopbar({
         </button>
       ) : null}
       <div className="knowledge-topbar-start">
+        {libraryMode ? (
+          <div className="knowledge-topbar-copy">
+            <h1>{libraryTitle}</h1>
+            {libraryDescription ? <p>{libraryDescription}</p> : null}
+          </div>
+        ) : null}
         {noteMode ? (
           <>
             <nav className="knowledge-breadcrumb" aria-label="文档路径">

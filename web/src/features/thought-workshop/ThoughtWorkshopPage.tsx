@@ -393,6 +393,20 @@ export function ThoughtWorkshopPage({
           noteMode={noteMode}
           busy={busy}
           projectTitle={project?.title}
+          libraryTitle={
+            !projectId && page !== "thought-workshop-legacy"
+              ? trash
+                ? "知识库回收站"
+                : "我的知识库"
+              : undefined
+          }
+          libraryDescription={
+            !projectId && page !== "thought-workshop-legacy"
+              ? trash
+                ? "恢复或彻底清理已删除的知识库。"
+                : "为想法建立一个空间，让知识有序生长。"
+              : undefined
+          }
           currentLabel={noteId ? note.data?.title || "文档" : "首页"}
           currentId={currentId}
           documents={directory.data?.documents || []}
@@ -433,11 +447,6 @@ export function ThoughtWorkshopPage({
         {!projectId && page !== "thought-workshop-legacy" ? (
           <section className="knowledge-library">
             <div className="knowledge-library-heading">
-              <div>
-                <span>YOUR KNOWLEDGE, CONNECTED</span>
-                <h1>{trash ? "知识库回收站" : "我的知识库"}</h1>
-                <p>为想法建立一个空间，让知识有序生长。</p>
-              </div>
               <label className="knowledge-search">
                 <Search size={17} />
                 <input

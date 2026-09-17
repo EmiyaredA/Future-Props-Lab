@@ -12,6 +12,10 @@
   padding: 18px clamp(16px, 2vw, 34px) 48px;
 }
 
+.workshop-page:has(> .workshop-app-chrome) {
+  padding-top: 0;
+}
+
 .workshop-page-header {
   margin-bottom: 10px;
   display: flex;
@@ -43,7 +47,7 @@
 }
 
 .workshop-projects-page {
-  padding-top: 12px;
+  padding-top: 0;
 }
 
 .workshop-primary {
