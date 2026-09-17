@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, type MutableRefObject } from "react";
 import {
   Clipboard,
   Focus,
@@ -18,6 +18,7 @@ export function CanvasContextMenu({
   onPaste,
   canPaste,
   onClose,
+  skipFocusRestoreRef,
 }: {
   position: { left: number; top: number; worldX: number; worldY: number };
   onCreate: (
@@ -29,6 +30,7 @@ export function CanvasContextMenu({
   onPaste: (point: Point) => unknown;
   canPaste: boolean;
   onClose: () => void;
+  skipFocusRestoreRef?: MutableRefObject<boolean>;
 }) {
   const menu = useRef<HTMLDivElement>(null);
   const close = useRef(onClose);
@@ -59,9 +61,15 @@ export function CanvasContextMenu({
     node.addEventListener("keydown", key);
     return () => {
       node.removeEventListener("keydown", key);
+      if (skipFocusRestoreRef?.current) {
+        skipFocusRestoreRef.current = false;
+        return;
+      }
+      const active = document.activeElement;
+      if (active instanceof HTMLInputElement && active.type === "file") return;
       previous?.focus();
     };
-  }, []);
+  }, [skipFocusRestoreRef]);
   const point = { x: position.worldX, y: position.worldY };
   return (
     <div

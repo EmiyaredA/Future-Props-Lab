@@ -1537,3 +1537,105 @@ test("create menu opens to the right of the add button", async () => {
   const menu = screen.getByRole("menu", { name: "添加画布内容" });
   expect(menu).toHaveStyle({ left: "83px", top: "340px" });
 });
+
+test("context menu upload creates a media node at the click point", async () => {
+  vi.mocked(uploadManagedFile).mockResolvedValue({
+    id: "asset-upload",
+    project_id: "project-1",
+    folder_id: null,
+    original_filename: "shot.png",
+    display_name: "shot",
+    media_kind: "image",
+    mime_type: "image/png",
+    byte_size: 4,
+    revision: 0,
+    created_at: "2026-08-03T08:00:00Z",
+    updated_at: "2026-08-03T08:00:00Z",
+    source: "project",
+    is_reference: false,
+    reference_id: null,
+  });
+  const user = userEvent.setup();
+  const { container } = renderCanvas();
+  expect(await screen.findByText("未命名项目")).toBeInTheDocument();
+
+  const surface = container.querySelector(".visual-canvas-surface")!;
+  Object.defineProperty(surface, "getBoundingClientRect", {
+    configurable: true,
+    value: () => ({
+      bottom: 720,
+      height: 720,
+      left: 0,
+      right: 1280,
+      top: 0,
+      width: 1280,
+      x: 0,
+      y: 0,
+      toJSON: () => undefined,
+    }),
+  });
+  fireEvent.contextMenu(surface, { clientX: 260, clientY: 220 });
+
+  const fileInput = container.querySelector<HTMLInputElement>(
+    'input[type="file"][multiple]',
+  )!;
+  const clickSpy = vi.spyOn(fileInput, "click");
+  await user.click(screen.getByRole("menuitem", { name: "上传" }));
+
+  expect(clickSpy).toHaveBeenCalledOnce();
+  expect(
+    screen.getByRole("menu", { name: "添加画布内容" }),
+  ).toBeInTheDocument();
+
+  const file = new File(["img"], "shot.png", { type: "image/png" });
+  await user.upload(fileInput, file);
+
+  expect(
+    screen.queryByRole("menu", { name: "添加画布内容" }),
+  ).not.toBeInTheDocument();
+  expect(
+    await screen.findByRole("status", { name: "上传状态" }),
+  ).toHaveTextContent(/正在上传|已上传并添加到画布/);
+
+  await waitFor(() =>
+    expect(uploadManagedFile).toHaveBeenCalledWith(file, "project-1"),
+  );
+  await waitFor(() =>
+    expect(putVisualCanvas).toHaveBeenCalledWith(
+      "project-1",
+      expect.arrayContaining([
+        expect.objectContaining({
+          kind: "image",
+          asset_id: "asset-upload",
+          title: "shot",
+          position: { x: 260, y: 220 },
+        }),
+      ]),
+      expect.any(Number),
+      [],
+    ),
+  );
+  expect(
+    await screen.findByRole("status", { name: "上传状态" }),
+  ).toHaveTextContent("已上传并添加到画布");
+});
+
+test("context menu upload surfaces API failures", async () => {
+  vi.mocked(uploadManagedFile).mockRejectedValueOnce(new Error("磁盘已满"));
+  const user = userEvent.setup();
+  const { container } = renderCanvas();
+  expect(await screen.findByText("未命名项目")).toBeInTheDocument();
+
+  const surface = container.querySelector(".visual-canvas-surface")!;
+  fireEvent.contextMenu(surface, { clientX: 200, clientY: 180 });
+  const fileInput = container.querySelector<HTMLInputElement>(
+    'input[type="file"][multiple]',
+  )!;
+  await user.click(screen.getByRole("menuitem", { name: "上传" }));
+  await user.upload(
+    fileInput,
+    new File(["img"], "shot.png", { type: "image/png" }),
+  );
+
+  expect(await screen.findByRole("alert")).toHaveTextContent("磁盘已满");
+});

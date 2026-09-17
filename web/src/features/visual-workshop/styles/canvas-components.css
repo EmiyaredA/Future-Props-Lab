@@ -111,6 +111,37 @@
   font-size: 10px;
 }
 
+.canvas-upload-notice {
+  position: absolute;
+  z-index: 20;
+  top: 76px;
+  right: 24px;
+  max-width: min(360px, calc(100% - 48px));
+  padding: 9px 11px;
+  border-radius: 8px;
+  font-size: 10px;
+  box-shadow: 0 12px 28px rgb(0 0 0 / 14%);
+}
+
+.canvas-upload-notice.is-pending,
+.canvas-upload-notice.is-info {
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+
+.canvas-upload-notice.is-success {
+  background: color-mix(in srgb, var(--accent-soft) 88%, transparent);
+  color: var(--accent);
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
+}
+
+.canvas-upload-notice.is-error {
+  background: var(--danger-soft);
+  color: var(--danger);
+  border: 1px solid color-mix(in srgb, var(--danger) 35%, transparent);
+}
+
 .canvas-tool-dock {
   position: absolute;
   z-index: 40;

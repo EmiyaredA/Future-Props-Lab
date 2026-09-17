@@ -115,6 +115,7 @@ export function VisualWorkshopCanvasView({
     linkGenerationTask,
     renameMutation,
     upload,
+    uploadNotice,
     setZoom,
     resetZoom,
     createNode,
@@ -143,6 +144,17 @@ export function VisualWorkshopCanvasView({
   const [previewNodeId, setPreviewNodeId] = useState<string>();
   const [connectionHoverTargetId, setConnectionHoverTargetId] =
     useState<string>();
+  const skipMenuFocusRestore = useRef(false);
+  const closeMenuAfterPicker = useCallback(() => {
+    if (!skipMenuFocusRestore.current) return;
+    setContextMenu(undefined);
+  }, [setContextMenu]);
+  useEffect(() => {
+    const input = uploadInput.current;
+    if (!input) return;
+    input.addEventListener("cancel", closeMenuAfterPicker);
+    return () => input.removeEventListener("cancel", closeMenuAfterPicker);
+  }, [closeMenuAfterPicker, uploadInput]);
   const { openComposition, selectionToolbar, compositionOverlay } =
     useImageGridComposition({
       projectId,
@@ -577,8 +589,9 @@ export function VisualWorkshopCanvasView({
         accept="image/*,video/*,audio/*"
         onChange={(event) => {
           const files = [...(event.target.files ?? [])];
-          if (files.length) upload.mutate(files);
           event.currentTarget.value = "";
+          if (skipMenuFocusRestore.current) setContextMenu(undefined);
+          if (files.length) upload.mutate(files);
         }}
       />
       {contextMenu ? (
@@ -588,11 +601,15 @@ export function VisualWorkshopCanvasView({
           onFit={fitView}
           onPaste={pasteNode}
           canPaste={!!clipboard.current}
-          onClose={() => setContextMenu(undefined)}
+          skipFocusRestoreRef={skipMenuFocusRestore}
+          onClose={() => {
+            skipMenuFocusRestore.current = false;
+            setContextMenu(undefined);
+          }}
           onUpload={(point) => {
             uploadPosition.current = point;
+            skipMenuFocusRestore.current = true;
             uploadInput.current?.click();
-            setContextMenu(undefined);
           }}
         />
       ) : null}
@@ -754,6 +771,15 @@ export function VisualWorkshopCanvasView({
       ) : null}
       {saveMessage ? (
         <div className="canvas-save-error">{saveMessage}</div>
+      ) : null}
+      {uploadNotice ? (
+        <div
+          className={`canvas-upload-notice is-${uploadNotice.tone}`}
+          role={uploadNotice.tone === "error" ? "alert" : "status"}
+          aria-label="上传状态"
+        >
+          {uploadNotice.message}
+        </div>
       ) : null}
     </div>
   );

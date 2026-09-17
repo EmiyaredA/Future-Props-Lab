@@ -10,7 +10,6 @@ import {
   invalidateFileScope,
   type AssetViewMode,
   type ManagedFile,
-  uploadManagedFile,
 } from "@features/files";
 import { visualWorkshopQueryKeys } from "@features/visual-workshop/queryKeys";
 import {
@@ -38,6 +37,7 @@ import {
 import { fitCanvasViewport } from "@features/visual-workshop/canvas/canvasFit";
 import { useCanvasPersistence } from "@features/visual-workshop/canvas/useCanvasPersistence";
 import { useCanvasPointerInteractions } from "@features/visual-workshop/canvas/useCanvasPointerInteractions";
+import { useCanvasUpload } from "@features/visual-workshop/canvas/useCanvasUpload";
 import { useCanvasKeyboardShortcuts } from "@features/visual-workshop/canvas/useCanvasKeyboardShortcuts";
 
 import { derivedImageNode } from "./derivedImageNode";
@@ -345,41 +345,6 @@ export function useVisualCanvasController({
       setEditingTitle(false);
     },
   });
-  const upload = useMutation({
-    mutationFn: async (files: File[]) => {
-      const created = [];
-      for (const file of files)
-        created.push(await uploadManagedFile(file, projectId));
-      return created;
-    },
-    onSuccess: (files) => {
-      const media = files.filter((file) =>
-        ["image", "video", "audio"].includes(file.media_kind),
-      );
-      if (!media.length) return;
-      replaceNodes(
-        (current) => [
-          ...current,
-          ...media.map(
-            (file, index) =>
-              ({
-                id: nextNodeId(file.media_kind as NodeKind),
-                kind: file.media_kind,
-                title: file.display_name,
-                position: {
-                  x: uploadPosition.current.x + index * 28,
-                  y: uploadPosition.current.y + index * 28,
-                },
-                asset_id: file.id,
-              }) as VisualCanvasNode,
-          ),
-        ],
-        true,
-      );
-      void invalidateFileScope(client, projectId);
-    },
-  });
-
   const setZoom = useCallback((zoom: number) => {
     const bounds = surface.current?.getBoundingClientRect();
     setViewport((current) =>
@@ -444,6 +409,14 @@ export function useVisualCanvasController({
       setMediaEditorTab("generate");
       setInspectedNodeId(nodeId);
     },
+  });
+  const { upload, uploadNotice } = useCanvasUpload({
+    projectId,
+    uploadPosition,
+    replaceNodes,
+    setSelectedId,
+    setInspectedNodeId,
+    setMediaEditorTab,
   });
   useEffect(() => {
     if (inspectedNodeId && inspectedNodeId !== selectedId)
@@ -749,6 +722,7 @@ export function useVisualCanvasController({
     linkGenerationTask,
     renameMutation,
     upload,
+    uploadNotice,
     setZoom,
     resetZoom,
     screenToWorld,

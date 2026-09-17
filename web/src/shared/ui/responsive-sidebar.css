@@ -8,15 +8,21 @@
 .responsive-desktop-toggle {
   width: 30px;
   height: 30px;
-  display: grid;
+  display: inline-grid;
   flex: none;
   place-items: center;
+  padding: 0;
   margin-left: auto;
+  line-height: 0;
   border: 1px solid var(--border);
   border-radius: 9px;
   background: color-mix(in srgb, var(--surface) 86%, transparent);
   color: var(--muted);
   box-shadow: 0 5px 14px color-mix(in srgb, var(--text) 8%, transparent);
+}
+.responsive-desktop-toggle svg {
+  display: block;
+  flex: none;
 }
 .responsive-desktop-toggle:hover {
   border-color: var(--accent-line);
