@@ -1022,6 +1022,57 @@ export interface paths {
         patch: operations["patch_file_folder_v1_file_folders__folder_id__patch"];
         trace?: never;
     };
+    "/v1/file-library/folder-archive-imports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Import Library Folder Archive */
+        post: operations["import_library_folder_archive_v1_file_library_folder_archive_imports_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/file-library/folder-entry-imports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Import Library Folder Entries */
+        post: operations["import_library_folder_entries_v1_file_library_folder_entry_imports_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/file-library/folder-exports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Export Library Folder Archive */
+        get: operations["export_library_folder_archive_v1_file_library_folder_exports_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/file-storage/layout": {
         parameters: {
             query?: never;
@@ -5436,6 +5487,22 @@ export interface components {
             /** File */
             file: string;
         };
+        /** Body_import_library_folder_archive_v1_file_library_folder_archive_imports_post */
+        Body_import_library_folder_archive_v1_file_library_folder_archive_imports_post: {
+            /** Archive */
+            archive: string;
+            /** Parent Folder Id */
+            parent_folder_id?: string | null;
+        };
+        /** Body_import_library_folder_entries_v1_file_library_folder_entry_imports_post */
+        Body_import_library_folder_entries_v1_file_library_folder_entry_imports_post: {
+            /** Files */
+            files: string[];
+            /** Parent Folder Id */
+            parent_folder_id?: string | null;
+            /** Relative Paths */
+            relative_paths: string[];
+        };
         /** Body_import_project_snapshot_v1_galgame_workshop_projects_snapshot_imports_post */
         Body_import_project_snapshot_v1_galgame_workshop_projects_snapshot_imports_post: {
             /** File */
@@ -9806,6 +9873,24 @@ export interface components {
              * @default 未命名文档
              */
             title: string;
+        };
+        /** LibraryFolderImportOut */
+        LibraryFolderImportOut: {
+            /** Created Files */
+            created_files: number;
+            /** Created Folders */
+            created_folders: number;
+            /** Skipped */
+            skipped: components["schemas"]["LibraryFolderImportSkippedOut"][];
+        };
+        /** LibraryFolderImportSkippedOut */
+        LibraryFolderImportSkippedOut: {
+            /** Code */
+            code: ("unsafe_relative_path" | "invalid_folder_name" | "folder_depth_exceeded" | "name_conflict" | "unsupported_file_type" | "file_too_large" | "file_type_mismatch" | "invalid_file_content" | "invalid_svg" | "copy_failed" | "not_found") | string;
+            /** Message */
+            message: string;
+            /** Path */
+            path: string;
         };
         /** LinkClipsOperation */
         LinkClipsOperation: {
@@ -16889,6 +16974,101 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["VisualAssetFolderOut"];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    import_library_folder_archive_v1_file_library_folder_archive_imports_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_import_library_folder_archive_v1_file_library_folder_archive_imports_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryFolderImportOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    import_library_folder_entries_v1_file_library_folder_entry_imports_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_import_library_folder_entries_v1_file_library_folder_entry_imports_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LibraryFolderImportOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    export_library_folder_archive_v1_file_library_folder_exports_get: {
+        parameters: {
+            query?: {
+                folder_id?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {

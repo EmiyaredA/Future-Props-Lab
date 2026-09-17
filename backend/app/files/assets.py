@@ -79,7 +79,12 @@ class VisualAssets(VisualAssetContext):
         parent = await self._validate_folder_scope(body.parent_id, project_id)
         if parent and await self._depth(parent) >= MAX_FOLDER_DEPTH:
             raise AssetError("文件夹最多支持五层", code="folder_depth_exceeded")
-        row = VisualAssetFolder(project_id=project_id, parent_id=body.parent_id, name=body.name)
+        row = VisualAssetFolder(
+            workspace_id=self.workspace_id,
+            project_id=project_id,
+            parent_id=body.parent_id,
+            name=body.name,
+        )
         self.session.add(row)
         try:
             await self.session.commit()

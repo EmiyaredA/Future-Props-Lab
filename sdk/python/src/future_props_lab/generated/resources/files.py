@@ -27,6 +27,18 @@ class Files:
         'Patch File Folder. PATCH /v1/file-folders/{folder_id}'
         return self._client._call('PATCH', '/v1/file-folders/{folder_id}', parameters=[('folder_id', 'path', folder_id)], body=body, media_type='application/json', response_type=models.VisualAssetFolderOut)
 
+    def import_library_folder_archive(self, *, body: models.Body_import_library_folder_archive_v1_file_library_folder_archive_imports_post | dict, files: dict | list | None = None) -> models.LibraryFolderImportOut:
+        'Import Library Folder Archive. POST /v1/file-library/folder-archive-imports'
+        return self._client._call('POST', '/v1/file-library/folder-archive-imports', parameters=[], body=body, media_type='multipart/form-data', files=files, response_type=models.LibraryFolderImportOut)
+
+    def import_library_folder_entries(self, *, body: models.Body_import_library_folder_entries_v1_file_library_folder_entry_imports_post | dict, files: dict | list | None = None) -> models.LibraryFolderImportOut:
+        'Import Library Folder Entries. POST /v1/file-library/folder-entry-imports'
+        return self._client._call('POST', '/v1/file-library/folder-entry-imports', parameters=[], body=body, media_type='multipart/form-data', files=files, response_type=models.LibraryFolderImportOut)
+
+    def export_library_folder_archive(self, *, folder_id: str | None | Unset = UNSET) -> Any:
+        'Export Library Folder Archive. GET /v1/file-library/folder-exports'
+        return self._client._call('GET', '/v1/file-library/folder-exports', parameters=[('folder_id', 'query', folder_id)], response_type=Any)
+
     def storage_layout_status(self) -> models.StorageLayoutStatusOut:
         'Storage Layout Status. GET /v1/file-storage/layout'
         return self._client._call('GET', '/v1/file-storage/layout', parameters=[], response_type=models.StorageLayoutStatusOut)
@@ -94,6 +106,18 @@ class AsyncFiles:
     async def patch_file_folder(self, *, folder_id: str, body: models.VisualAssetFolderPatchIn | dict) -> models.VisualAssetFolderOut:
         'Patch File Folder. PATCH /v1/file-folders/{folder_id}'
         return await self._client._call('PATCH', '/v1/file-folders/{folder_id}', parameters=[('folder_id', 'path', folder_id)], body=body, media_type='application/json', response_type=models.VisualAssetFolderOut)
+
+    async def import_library_folder_archive(self, *, body: models.Body_import_library_folder_archive_v1_file_library_folder_archive_imports_post | dict, files: dict | list | None = None) -> models.LibraryFolderImportOut:
+        'Import Library Folder Archive. POST /v1/file-library/folder-archive-imports'
+        return await self._client._call('POST', '/v1/file-library/folder-archive-imports', parameters=[], body=body, media_type='multipart/form-data', files=files, response_type=models.LibraryFolderImportOut)
+
+    async def import_library_folder_entries(self, *, body: models.Body_import_library_folder_entries_v1_file_library_folder_entry_imports_post | dict, files: dict | list | None = None) -> models.LibraryFolderImportOut:
+        'Import Library Folder Entries. POST /v1/file-library/folder-entry-imports'
+        return await self._client._call('POST', '/v1/file-library/folder-entry-imports', parameters=[], body=body, media_type='multipart/form-data', files=files, response_type=models.LibraryFolderImportOut)
+
+    async def export_library_folder_archive(self, *, folder_id: str | None | Unset = UNSET) -> Any:
+        'Export Library Folder Archive. GET /v1/file-library/folder-exports'
+        return await self._client._call('GET', '/v1/file-library/folder-exports', parameters=[('folder_id', 'query', folder_id)], response_type=Any)
 
     async def storage_layout_status(self) -> models.StorageLayoutStatusOut:
         'Storage Layout Status. GET /v1/file-storage/layout'

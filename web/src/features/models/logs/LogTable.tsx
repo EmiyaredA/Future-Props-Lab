@@ -62,7 +62,7 @@ export function LogTable({
             <th>接入协议</th>
             <th className="call-log-num">Token</th>
             <th className="call-log-num">耗时</th>
-            <th>状态</th>
+            <th className="call-log-status">状态</th>
             {local && <th className="call-log-actions">操作</th>}
           </tr>
         </thead>
@@ -107,8 +107,10 @@ export function LogTable({
                 <td className="call-log-num">
                   {formatNumber(row.latency_ms)} ms
                 </td>
-                <td>
-                  <span className={`status ${row.status}`}>
+                <td className="call-log-status">
+                  <span
+                    className={`status ${row.status === "success" ? "success" : "error"}`}
+                  >
                     {row.status === "success" ? "成功" : "失败"}
                   </span>
                 </td>

@@ -316,6 +316,15 @@ class Body_import_legacy_story_v1_galgame_workshop_projects__project_id__story_i
     expected_revision: int = Field(default=..., alias='expectedRevision', ge=0.0)
     file: str = Field(default=..., alias='file')
 
+class Body_import_library_folder_archive_v1_file_library_folder_archive_imports_post(WireModel):
+    archive: str = Field(default=..., alias='archive')
+    parent_folder_id: str | None = Field(default=None, alias='parent_folder_id')
+
+class Body_import_library_folder_entries_v1_file_library_folder_entry_imports_post(WireModel):
+    files: list[str] = Field(default=..., alias='files')
+    parent_folder_id: str | None = Field(default=None, alias='parent_folder_id')
+    relative_paths: list[str] = Field(default=..., alias='relative_paths')
+
 class Body_import_project_snapshot_v1_galgame_workshop_projects_snapshot_imports_post(WireModel):
     file: str = Field(default=..., alias='file')
 
@@ -2055,6 +2064,16 @@ class KnowledgeNoteCreate(WireModel):
     expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
     parent_id: str | None = Field(default=None, alias='parent_id')
     title: str = Field(default='未命名文档', alias='title', min_length=1, max_length=240)
+
+class LibraryFolderImportOut(WireModel):
+    created_files: int = Field(default=..., alias='created_files', ge=0.0)
+    created_folders: int = Field(default=..., alias='created_folders', ge=0.0)
+    skipped: list[LibraryFolderImportSkippedOut] = Field(default=..., alias='skipped')
+
+class LibraryFolderImportSkippedOut(WireModel):
+    code: Literal['unsafe_relative_path', 'invalid_folder_name', 'folder_depth_exceeded', 'name_conflict', 'unsupported_file_type', 'file_too_large', 'file_type_mismatch', 'invalid_file_content', 'invalid_svg', 'copy_failed', 'not_found'] | str = Field(default=..., alias='code')
+    message: str = Field(default=..., alias='message', min_length=1, max_length=500)
+    path: str = Field(default=..., alias='path', min_length=1, max_length=1024)
 
 class LinkClipsOperation(WireModel):
     clip_ids: list[str] = Field(default=..., alias='clipIds', min_length=2)
@@ -4132,6 +4151,8 @@ Body_attachments_v1_thought_workshop_attachments_post.model_rebuild()
 Body_batch_upload_project_assets_v1_galgame_workshop_projects__project_id__assets_batch_post.model_rebuild()
 Body_create_skill_v1_integrations_skills_post.model_rebuild()
 Body_import_legacy_story_v1_galgame_workshop_projects__project_id__story_import_post.model_rebuild()
+Body_import_library_folder_archive_v1_file_library_folder_archive_imports_post.model_rebuild()
+Body_import_library_folder_entries_v1_file_library_folder_entry_imports_post.model_rebuild()
 Body_import_project_snapshot_v1_galgame_workshop_projects_snapshot_imports_post.model_rebuild()
 Body_import_project_snapshot_v1_video_editor_projects_snapshot_imports_post.model_rebuild()
 Body_import_project_snapshot_v1_visual_workshop_projects_snapshot_imports_post.model_rebuild()
@@ -4377,6 +4398,8 @@ KnowledgeBaseIn.model_rebuild()
 KnowledgeBaseOut.model_rebuild()
 KnowledgeBasePut.model_rebuild()
 KnowledgeNoteCreate.model_rebuild()
+LibraryFolderImportOut.model_rebuild()
+LibraryFolderImportSkippedOut.model_rebuild()
 LinkClipsOperation.model_rebuild()
 LogWorkspaceOut.model_rebuild()
 LoginIn.model_rebuild()

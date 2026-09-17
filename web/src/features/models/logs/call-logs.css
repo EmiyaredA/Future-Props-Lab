@@ -143,14 +143,22 @@
   width: 40px;
   padding-right: 4px;
 }
+.call-log-table .call-log-status {
+  white-space: nowrap;
+  min-width: 72px;
+  width: 1%;
+}
 .call-log-table .call-log-actions {
   position: sticky;
   right: 0;
+  z-index: 1;
   background: var(--surface);
   min-width: 94px;
+  width: 1%;
+  box-shadow: -10px 0 12px -12px color-mix(in srgb, var(--text) 28%, transparent);
 }
-.call-log-table th.call-log-actions {
-  background: var(--surface-soft);
+.call-log-table thead .call-log-actions {
+  z-index: 2;
 }
 .call-log-actions > div {
   display: flex;
@@ -193,10 +201,15 @@
   background: var(--danger-soft);
 }
 .call-logs-page .status {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border: 1px solid currentColor;
   padding: 3px 9px;
   font-weight: 500;
   font-size: 11px;
+  line-height: 1.2;
+  white-space: nowrap;
 }
 .call-log-pagination {
   display: flex;

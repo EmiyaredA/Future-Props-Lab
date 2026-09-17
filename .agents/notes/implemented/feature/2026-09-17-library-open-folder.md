@@ -22,7 +22,7 @@ Status: implemented
 ## Consequences
 
 - **收益**：用户可用系统文件管理器查看库根目录；契约与三个工坊 open-folder 对齐。
-- **代价与已知上限**：空库或从未写入时目录可能不存在；只读成员无 `content.write` 时按钮会失败。
+- **代价与已知上限**：空库或从未写入时目录可能不存在；只读成员无 `content.write` 时按钮会失败。逻辑文件夹树的可读 ZIP 导入导出见 [library-folder-import-export](2026-09-17-library-folder-import-export.md)，不由此按钮提供。
 
 ## Verification
 

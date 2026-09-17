@@ -441,6 +441,13 @@
     "verification": "named-operation-contract"
   },
   {
+    "http": "GET /v1/file-library/folder-exports",
+    "sdk": "client.files.export_library_folder_archive",
+    "document": "/docs.html?page=sdk-reference-files#export-library-folder-archive",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
     "http": "GET /v1/file-storage/layout",
     "sdk": "client.files.storage_layout_status",
     "document": "/docs.html?page=sdk-reference-files#storage-layout-status",
@@ -486,6 +493,20 @@
     "http": "POST /v1/file-folders",
     "sdk": "client.files.create_file_folder",
     "document": "/docs.html?page=sdk-reference-files#create-file-folder",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/file-library/folder-archive-imports",
+    "sdk": "client.files.import_library_folder_archive",
+    "document": "/docs.html?page=sdk-reference-files#import-library-folder-archive",
+    "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
+    "verification": "named-operation-contract"
+  },
+  {
+    "http": "POST /v1/file-library/folder-entry-imports",
+    "sdk": "client.files.import_library_folder_entries",
+    "document": "/docs.html?page=sdk-reference-files#import-library-folder-entries",
     "contract_test": "tests/test_python_sdk.py::test_every_named_operation_reaches_declared_http_route",
     "verification": "named-operation-contract"
   },

@@ -255,6 +255,10 @@
     "method": "list_file_folders",
     "resource": "files"
   },
+  "GET /v1/file-library/folder-exports": {
+    "method": "export_library_folder_archive",
+    "resource": "files"
+  },
   "GET /v1/file-storage/layout": {
     "method": "storage_layout_status",
     "resource": "files"
@@ -933,6 +937,14 @@
   },
   "POST /v1/file-folders": {
     "method": "create_file_folder",
+    "resource": "files"
+  },
+  "POST /v1/file-library/folder-archive-imports": {
+    "method": "import_library_folder_archive",
+    "resource": "files"
+  },
+  "POST /v1/file-library/folder-entry-imports": {
+    "method": "import_library_folder_entries",
     "resource": "files"
   },
   "POST /v1/file-storage/layout/migrate": {

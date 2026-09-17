@@ -1905,6 +1905,67 @@
         "title": "Body_import_legacy_story_v1_galgame_workshop_projects__project_id__story_import_post",
         "type": "object"
       },
+      "Body_import_library_folder_archive_v1_file_library_folder_archive_imports_post": {
+        "properties": {
+          "archive": {
+            "contentMediaType": "application/octet-stream",
+            "title": "Archive",
+            "type": "string"
+          },
+          "parent_folder_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Folder Id"
+          }
+        },
+        "required": [
+          "archive"
+        ],
+        "title": "Body_import_library_folder_archive_v1_file_library_folder_archive_imports_post",
+        "type": "object"
+      },
+      "Body_import_library_folder_entries_v1_file_library_folder_entry_imports_post": {
+        "properties": {
+          "files": {
+            "items": {
+              "contentMediaType": "application/octet-stream",
+              "type": "string"
+            },
+            "title": "Files",
+            "type": "array"
+          },
+          "parent_folder_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Folder Id"
+          },
+          "relative_paths": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Relative Paths",
+            "type": "array"
+          }
+        },
+        "required": [
+          "files",
+          "relative_paths"
+        ],
+        "title": "Body_import_library_folder_entries_v1_file_library_folder_entry_imports_post",
+        "type": "object"
+      },
       "Body_import_project_snapshot_v1_galgame_workshop_projects_snapshot_imports_post": {
         "properties": {
           "file": {
@@ -13550,6 +13611,81 @@
           "expected_revision"
         ],
         "title": "KnowledgeNoteCreate",
+        "type": "object"
+      },
+      "LibraryFolderImportOut": {
+        "properties": {
+          "created_files": {
+            "minimum": 0.0,
+            "title": "Created Files",
+            "type": "integer"
+          },
+          "created_folders": {
+            "minimum": 0.0,
+            "title": "Created Folders",
+            "type": "integer"
+          },
+          "skipped": {
+            "items": {
+              "$ref": "#/components/schemas/LibraryFolderImportSkippedOut"
+            },
+            "title": "Skipped",
+            "type": "array"
+          }
+        },
+        "required": [
+          "created_folders",
+          "created_files",
+          "skipped"
+        ],
+        "title": "LibraryFolderImportOut",
+        "type": "object"
+      },
+      "LibraryFolderImportSkippedOut": {
+        "properties": {
+          "code": {
+            "anyOf": [
+              {
+                "enum": [
+                  "unsafe_relative_path",
+                  "invalid_folder_name",
+                  "folder_depth_exceeded",
+                  "name_conflict",
+                  "unsupported_file_type",
+                  "file_too_large",
+                  "file_type_mismatch",
+                  "invalid_file_content",
+                  "invalid_svg",
+                  "copy_failed",
+                  "not_found"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Code"
+          },
+          "message": {
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Message",
+            "type": "string"
+          },
+          "path": {
+            "maxLength": 1024,
+            "minLength": 1,
+            "title": "Path",
+            "type": "string"
+          }
+        },
+        "required": [
+          "path",
+          "code",
+          "message"
+        ],
+        "title": "LibraryFolderImportSkippedOut",
         "type": "object"
       },
       "LinkClipsOperation": {
@@ -29452,6 +29588,130 @@
           }
         },
         "summary": "Patch File Folder",
+        "tags": [
+          "file-management"
+        ]
+      }
+    },
+    "/v1/file-library/folder-archive-imports": {
+      "post": {
+        "operationId": "import_library_folder_archive_v1_file_library_folder_archive_imports_post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_import_library_folder_archive_v1_file_library_folder_archive_imports_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LibraryFolderImportOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Import Library Folder Archive",
+        "tags": [
+          "file-management"
+        ]
+      }
+    },
+    "/v1/file-library/folder-entry-imports": {
+      "post": {
+        "operationId": "import_library_folder_entries_v1_file_library_folder_entry_imports_post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_import_library_folder_entries_v1_file_library_folder_entry_imports_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LibraryFolderImportOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Import Library Folder Entries",
+        "tags": [
+          "file-management"
+        ]
+      }
+    },
+    "/v1/file-library/folder-exports": {
+      "get": {
+        "operationId": "export_library_folder_archive_v1_file_library_folder_exports_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "folder_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Folder Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Export Library Folder Archive",
         "tags": [
           "file-management"
         ]
