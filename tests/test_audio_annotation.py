@@ -191,7 +191,10 @@ async def test_audio_annotation_project_document_waveform_and_asset_guard() -> N
             },
         )
         assert with_vocab.status_code == 200, with_vocab.text
-        assert with_vocab.json()["custom_emotions"] == ["克制的兴奋", "咬牙切齿"]
+        assert with_vocab.json()["custom_emotions"] == [
+            {"name": "克制的兴奋", "color": "#28B8A7"},
+            {"name": "咬牙切齿", "color": "#4C8FE8"},
+        ]
 
         duplicate_vocab = await client.put(
             f"/v1/audio-annotation/projects/{project['id']}/document",
@@ -267,7 +270,10 @@ async def test_audio_annotation_project_document_waveform_and_asset_guard() -> N
             {"speaker_id": "speaker-host", "emotion": "开心"},
             {"speaker_id": "speaker-guest", "emotion": "平静"},
         ]
-        assert per_speaker.json()["custom_emotions"] == ["克制的兴奋", "咬牙切齿"]
+        assert per_speaker.json()["custom_emotions"] == [
+            {"name": "克制的兴奋", "color": "#28B8A7"},
+            {"name": "咬牙切齿", "color": "#4C8FE8"},
+        ]
 
         invalid_binding = await client.put(
             f"/v1/audio-annotation/projects/{project['id']}/document",

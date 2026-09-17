@@ -22,6 +22,7 @@ from app.models import (
     VisualAsset,
 )
 from app.schemas.audio_annotation import (
+    AudioAnnotationCustomEmotion,
     AudioAnnotationDocumentOut,
     AudioAnnotationDocumentPutIn,
     AudioAnnotationImportIn,
@@ -214,7 +215,7 @@ class AudioAnnotationProjects:
         duration_ms: int,
         speakers: list[AudioAnnotationSpeaker],
         segments: list[AudioAnnotationSegment],
-        custom_emotions: list[str] | None = None,
+        custom_emotions: list[AudioAnnotationCustomEmotion] | None = None,
         cleanup_path: Path | None = None,
     ) -> AudioAnnotationProjectOut:
         row = AudioAnnotationProject(
@@ -230,7 +231,10 @@ class AudioAnnotationProjects:
                     project_id=row.id,
                     schema_version="1.0",
                     speakers=[speaker.model_dump(mode="json") for speaker in speakers],
-                    custom_emotions=list(custom_emotions or []),
+                    custom_emotions=[
+                        emotion.model_dump(mode="json")
+                        for emotion in (custom_emotions or [])
+                    ],
                     segments=[segment.model_dump(mode="json") for segment in segments],
                 )
             )
@@ -503,7 +507,9 @@ class AudioAnnotationProjects:
             .values(
                 schema_version=body.schema_version,
                 speakers=[speaker.model_dump(mode="json") for speaker in body.speakers],
-                custom_emotions=list(body.custom_emotions),
+                custom_emotions=[
+                    emotion.model_dump(mode="json") for emotion in body.custom_emotions
+                ],
                 segments=[segment.model_dump(mode="json") for segment in body.segments],
                 revision=body.expected_revision + 1,
                 updated_at=utc_now(),

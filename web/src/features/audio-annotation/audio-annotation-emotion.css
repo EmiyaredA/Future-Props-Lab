@@ -118,84 +118,136 @@
   outline-offset: 2px;
 }
 
-.annotation-emotion-vocab-notice,
-.annotation-emotion-manager-notice {
+.annotation-emotion-vocab-notice {
   margin: 0;
   color: var(--warning, #b7791f);
   font-size: 12px;
   line-height: 1.4;
 }
 
-.annotation-emotion-presets {
-  display: grid;
-  gap: 8px;
-  padding: 0 4px;
-}
-
-.annotation-emotion-presets > div {
-  display: grid;
-  gap: 2px;
-}
-
-.annotation-emotion-presets strong {
-  font-size: 13px;
-}
-
-.annotation-emotion-presets small {
+.annotation-emotion-manager-notice {
+  display: block;
+  margin: 12px 0 0;
   color: var(--muted);
-  font-size: 12px;
+  font-size: 11px;
+  line-height: 1.5;
 }
 
-.annotation-emotion-preset-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  max-height: 120px;
+.annotation-emotion-preset-list {
+  display: grid;
+  gap: 4px;
+  max-height: 132px;
   overflow: auto;
 }
 
-.annotation-emotion-preset-chips > span {
-  padding: 3px 8px;
-  border-radius: 999px;
+.annotation-emotion-preset-row {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr);
+  align-items: center;
+  gap: 6px;
+}
+
+.annotation-emotion-preset-row > i {
+  width: 24px;
+  height: 24px;
+  flex: none;
+  border-radius: 6px;
+  background: var(--emotion-color, var(--faint));
+}
+
+.annotation-emotion-preset-row > span {
+  min-height: 28px;
+  padding: 0 8px;
+  display: flex;
+  align-items: center;
   border: 1px solid var(--border);
+  border-radius: 7px;
   background: var(--surface-soft);
-  color: var(--muted);
+  color: var(--text);
   font-size: 12px;
 }
 
-.annotation-emotion-list-mark {
-  width: 28px;
-  height: 28px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--muted);
+.annotation-emotion-preset-row > i.calm {
+  --emotion-color: #61a5c2;
 }
 
-.annotation-emotion-list-mark svg {
-  width: 14px;
-  height: 14px;
+.annotation-emotion-preset-row > i.happy {
+  --emotion-color: #e7a72f;
+}
+
+.annotation-emotion-preset-row > i.sad {
+  --emotion-color: #7586e5;
+}
+
+.annotation-emotion-preset-row > i.angry {
+  --emotion-color: #e2645a;
+}
+
+.annotation-emotion-preset-row > i.surprised {
+  --emotion-color: #b873d1;
+}
+
+.annotation-emotion-preset-row > i.fearful {
+  --emotion-color: #7f8d86;
+}
+
+.annotation-emotion-list > div {
+  grid-template-columns: 32px minmax(0, 1fr) 32px;
+  gap: 6px;
+}
+
+.annotation-emotion-list input {
+  min-height: 32px;
+}
+
+.annotation-emotion-list > div > button {
+  width: 32px;
+  height: 32px;
+}
+
+.annotation-speaker-list.annotation-emotion-list > p {
+  margin: 0;
+  padding: 4px 0;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.annotation-modal > footer.annotation-emotion-manager-footer {
+  margin-top: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
 }
 
 .annotation-emotion-manager-add {
+  flex: 1 1 220px;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 8px;
-  padding: 0 4px;
+  grid-template-columns: 32px minmax(0, 1fr) auto;
+  gap: 6px;
+  align-items: center;
+  min-width: 0;
 }
 
 .annotation-emotion-manager-add input {
   min-width: 0;
-  min-height: 38px;
-  padding: 0 10px;
+  min-height: 32px;
+  padding: 0 9px;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: 7px;
+  outline: 0;
   background: var(--surface-soft);
   color: var(--text);
+  font-size: 12px;
 }
 
 .annotation-emotion-manager-add input:focus {
-  outline: 2px solid var(--focus-ring);
-  outline-offset: 2px;
+  border-color: var(--accent);
+}
+
+.annotation-emotion-manager-add > .btn {
+  min-height: 32px;
+  white-space: nowrap;
 }
 

@@ -30,6 +30,61 @@ class AudioAnnotationSpeaker(BaseModel):
         return cleaned
 
 
+AUDIO_ANNOTATION_EMOTION_COLORS = (
+    "#28B8A7",
+    "#4C8FE8",
+    "#9B62D0",
+    "#E7A72F",
+    "#ED7A52",
+    "#D85E9D",
+    "#7586E5",
+    "#46B978",
+)
+
+
+class AudioAnnotationCustomEmotion(BaseModel):
+    name: str = Field(min_length=1, max_length=40)
+    color: str = Field(pattern=HEX_COLOR_PATTERN)
+
+    @field_validator("name")
+    @classmethod
+    def name_is_not_blank(cls, value: str) -> str:
+        cleaned = value.strip()
+        if not cleaned:
+            raise ValueError("自定义情绪不能为空")
+        return cleaned
+
+
+def normalize_custom_emotion_items(value: object) -> list[AudioAnnotationCustomEmotion]:
+    if not isinstance(value, list):
+        raise ValueError("自定义情绪必须是列表")
+    cleaned: list[AudioAnnotationCustomEmotion] = []
+    for index, item in enumerate(value):
+        if isinstance(item, str):
+            label = item.strip()
+            if not label:
+                raise ValueError("自定义情绪不能为空")
+            if len(label) > 40:
+                raise ValueError("自定义情绪不能超过 40 个字符")
+            cleaned.append(
+                AudioAnnotationCustomEmotion(
+                    name=label,
+                    color=AUDIO_ANNOTATION_EMOTION_COLORS[
+                        index % len(AUDIO_ANNOTATION_EMOTION_COLORS)
+                    ],
+                )
+            )
+            continue
+        if isinstance(item, AudioAnnotationCustomEmotion):
+            cleaned.append(item)
+            continue
+        if isinstance(item, dict):
+            cleaned.append(AudioAnnotationCustomEmotion.model_validate(item))
+            continue
+        raise ValueError("自定义情绪必须是名称或带颜色的对象")
+    return cleaned
+
+
 class AudioAnnotationLocalizedText(BaseModel):
     language: str = Field(pattern=LANGUAGE_CODE_PATTERN, max_length=35)
     text: str = Field(default="", max_length=20_000)
@@ -168,28 +223,22 @@ class AudioAnnotationDocumentPutIn(BaseModel):
     expected_revision: int = Field(ge=0)
     schema_version: Literal["1.0"] = "1.0"
     speakers: list[AudioAnnotationSpeaker] = Field(default_factory=list, max_length=64)
-    custom_emotions: list[str] = Field(default_factory=list, max_length=64)
+    custom_emotions: list[AudioAnnotationCustomEmotion] = Field(
+        default_factory=list, max_length=64
+    )
     segments: list[AudioAnnotationSegment] = Field(default_factory=list, max_length=5000)
 
-    @field_validator("custom_emotions")
+    @field_validator("custom_emotions", mode="before")
     @classmethod
-    def normalize_custom_emotions(cls, value: list[str]) -> list[str]:
-        cleaned: list[str] = []
-        for item in value:
-            label = item.strip()
-            if not label:
-                raise ValueError("自定义情绪不能为空")
-            if len(label) > 40:
-                raise ValueError("自定义情绪不能超过 40 个字符")
-            cleaned.append(label)
-        return cleaned
+    def normalize_custom_emotions(cls, value: object) -> list[AudioAnnotationCustomEmotion]:
+        return normalize_custom_emotion_items(value)
 
     @model_validator(mode="after")
     def identifiers_and_names_are_unique(self) -> AudioAnnotationDocumentPutIn:
         speaker_ids = [speaker.id for speaker in self.speakers]
         segment_ids = [segment.id for segment in self.segments]
         names = [speaker.name.casefold() for speaker in self.speakers]
-        emotion_keys = [emotion.casefold() for emotion in self.custom_emotions]
+        emotion_keys = [emotion.name.casefold() for emotion in self.custom_emotions]
         if len(speaker_ids) != len(set(speaker_ids)):
             raise ValueError("说话人 ID 不能重复")
         if len(segment_ids) != len(set(segment_ids)):
@@ -205,10 +254,15 @@ class AudioAnnotationDocumentOut(BaseModel):
     project_id: str
     schema_version: Literal["1.0"]
     speakers: list[AudioAnnotationSpeaker]
-    custom_emotions: list[str] = Field(default_factory=list)
+    custom_emotions: list[AudioAnnotationCustomEmotion] = Field(default_factory=list)
     segments: list[AudioAnnotationSegment]
     revision: int
     updated_at: str
+
+    @field_validator("custom_emotions", mode="before")
+    @classmethod
+    def normalize_custom_emotions(cls, value: object) -> list[AudioAnnotationCustomEmotion]:
+        return normalize_custom_emotion_items(value)
 
 
 class AudioAnnotationWaveformPutIn(BaseModel):
@@ -241,8 +295,15 @@ class AudioAnnotationImportIn(BaseModel):
     asset_id: str = Field(min_length=1, max_length=36)
     schema_version: Literal["1.0"] = "1.0"
     speakers: list[AudioAnnotationSpeaker] = Field(default_factory=list, max_length=64)
-    custom_emotions: list[str] = Field(default_factory=list, max_length=64)
+    custom_emotions: list[AudioAnnotationCustomEmotion] = Field(
+        default_factory=list, max_length=64
+    )
     segments: list[AudioAnnotationSegment] = Field(default_factory=list, max_length=5000)
+
+    @field_validator("custom_emotions", mode="before")
+    @classmethod
+    def normalize_custom_emotions(cls, value: object) -> list[AudioAnnotationCustomEmotion]:
+        return normalize_custom_emotion_items(value)
 
     @field_validator("title")
     @classmethod

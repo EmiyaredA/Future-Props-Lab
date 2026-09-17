@@ -963,11 +963,32 @@
         "title": "ApiKeyOut",
         "type": "object"
       },
+      "AudioAnnotationCustomEmotion": {
+        "properties": {
+          "color": {
+            "pattern": "^#[0-9A-Fa-f]{6}$",
+            "title": "Color",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 40,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "color"
+        ],
+        "title": "AudioAnnotationCustomEmotion",
+        "type": "object"
+      },
       "AudioAnnotationDocumentOut": {
         "properties": {
           "custom_emotions": {
             "items": {
-              "type": "string"
+              "$ref": "#/components/schemas/AudioAnnotationCustomEmotion"
             },
             "title": "Custom Emotions",
             "type": "array"
@@ -1019,7 +1040,7 @@
         "properties": {
           "custom_emotions": {
             "items": {
-              "type": "string"
+              "$ref": "#/components/schemas/AudioAnnotationCustomEmotion"
             },
             "maxItems": 64,
             "title": "Custom Emotions",
@@ -1069,7 +1090,7 @@
           },
           "custom_emotions": {
             "items": {
-              "type": "string"
+              "$ref": "#/components/schemas/AudioAnnotationCustomEmotion"
             },
             "maxItems": 64,
             "title": "Custom Emotions",

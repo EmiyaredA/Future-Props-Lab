@@ -100,11 +100,13 @@ export function AudioAnnotationEditorDialogs({
         onRename={(from, to) => {
           const current = document.custom_emotions ?? [];
           if (
-            !current.some((item) => emotionKey(item) === emotionKey(from))
+            !current.some((item) => emotionKey(item.name) === emotionKey(from))
           )
             return false;
           const custom_emotions = current.map((item) =>
-            emotionKey(item) === emotionKey(from) ? to : item,
+            emotionKey(item.name) === emotionKey(from)
+              ? { ...item, name: to }
+              : item,
           );
           applySnapshot({
             ...snapshot(document),

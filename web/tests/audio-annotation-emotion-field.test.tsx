@@ -2,6 +2,7 @@ import { useState } from "react";
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { AudioAnnotationEmotionField } from "@features/audio-annotation/AudioAnnotationEmotionField";
+import type { CustomEmotionEntry } from "@features/audio-annotation/emotions";
 import type { SpeakerEmotionEntry } from "@features/audio-annotation/model";
 
 const speakers = [
@@ -14,7 +15,7 @@ function EmotionHarness({
   initialCustomEmotions = [],
 }: {
   initialEmotions?: SpeakerEmotionEntry[];
-  initialCustomEmotions?: string[];
+  initialCustomEmotions?: CustomEmotionEntry[];
 }) {
   const [emotions, setEmotions] = useState(initialEmotions);
   const [customEmotions, setCustomEmotions] = useState(initialCustomEmotions);
@@ -37,7 +38,9 @@ function EmotionHarness({
           ? emotions.map((item) => `${item.speaker_id}:${item.emotion}`).join("|")
           : "未标注"}
       </output>
-      <output aria-label="自定义词库">{customEmotions.join("|") || "空"}</output>
+      <output aria-label="自定义词库">
+        {customEmotions.map((item) => item.name).join("|") || "空"}
+      </output>
       <output aria-label="管理状态">{managerOpen ? "open" : "closed"}</output>
     </>
   );
@@ -80,7 +83,11 @@ test("binds emotion to selected speakers and supports select-all", async () => {
 
 test("warns when quick-add duplicates preset or custom vocabulary", async () => {
   const user = userEvent.setup();
-  render(<EmotionHarness initialCustomEmotions={["克制的兴奋"]} />);
+  render(
+    <EmotionHarness
+      initialCustomEmotions={[{ name: "克制的兴奋", color: "#28B8A7" }]}
+    />,
+  );
 
   await user.type(screen.getByRole("textbox", { name: "自定义情绪" }), "开心");
   await user.click(screen.getByRole("button", { name: "使用" }));

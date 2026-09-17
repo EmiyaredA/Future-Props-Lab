@@ -8,7 +8,7 @@ Status: implemented
 
 ## Decision
 
-标注文档顶层增加 `custom_emotions: string[]`（最多 64，每项 1–40 字符，按 casefold / `zh-CN` locale 键去重），与 `speakers`/`segments` 一并 CAS 保存与导出。内置 `EMOTION_PRESETS` 只读；侧栏「管理」维护自定义词库，自定义「使用」在写入 `speaker_emotions` 的同时尝试入库，与预设或词库冲突时不重复写入并给出内联警告。重命名自定义项时同步改写片段中同键情绪文案；删除仅移出词库，已标注值保留。
+标注文档顶层增加 `custom_emotions`（最初为 `string[]`，后演进为带颜色的对象列表，见 [audio-annotation-custom-emotion-colors](./2026-09-17-audio-annotation-custom-emotion-colors.md)；最多 64，名称 1–40 字符，按 casefold / `zh-CN` locale 键去重），与 `speakers`/`segments` 一并 CAS 保存与导出。内置 `EMOTION_PRESETS` 只读；侧栏「管理」维护自定义词库，自定义「使用」在写入 `speaker_emotions` 的同时尝试入库，与预设或词库冲突时不重复写入并给出内联警告。重命名自定义项时同步改写片段中同键情绪文案；删除仅移出词库，已标注值保留。
 
 相关：按说话人绑定情绪见 [audio-annotation-speaker-emotions](./2026-09-17-audio-annotation-speaker-emotions.md)。
 

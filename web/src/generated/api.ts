@@ -5137,10 +5137,17 @@ export interface components {
             /** Scopes */
             scopes: string[];
         };
+        /** AudioAnnotationCustomEmotion */
+        AudioAnnotationCustomEmotion: {
+            /** Color */
+            color: string;
+            /** Name */
+            name: string;
+        };
         /** AudioAnnotationDocumentOut */
         AudioAnnotationDocumentOut: {
             /** Custom Emotions */
-            custom_emotions?: string[];
+            custom_emotions?: components["schemas"]["AudioAnnotationCustomEmotion"][];
             /** Project Id */
             project_id: string;
             /** Revision */
@@ -5160,7 +5167,7 @@ export interface components {
         /** AudioAnnotationDocumentPutIn */
         AudioAnnotationDocumentPutIn: {
             /** Custom Emotions */
-            custom_emotions?: string[];
+            custom_emotions?: components["schemas"]["AudioAnnotationCustomEmotion"][];
             /** Expected Revision */
             expected_revision: number;
             /**
@@ -5179,7 +5186,7 @@ export interface components {
             /** Asset Id */
             asset_id: string;
             /** Custom Emotions */
-            custom_emotions?: string[];
+            custom_emotions?: components["schemas"]["AudioAnnotationCustomEmotion"][];
             /**
              * Schema Version
              * @default 1.0

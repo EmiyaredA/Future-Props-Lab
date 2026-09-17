@@ -4,10 +4,12 @@ import { AnnotationCollapsedSelect } from "./AnnotationCollapsedSelect";
 import {
   EMOTION_PRESETS,
   MAX_CUSTOM_EMOTIONS,
+  type CustomEmotionEntry,
   emotionDuplicateWarning,
   emotionKey,
   isPresetEmotion,
   mergeCustomEmotion,
+  normalizeCustomEmotions,
 } from "./emotions";
 import {
   applySpeakerEmotions,
@@ -26,14 +28,15 @@ export function AudioAnnotationEmotionField({
   speakers: AudioAnnotationSpeaker[];
   speakerEmotions: SpeakerEmotionEntry[];
   speakerIds: string[];
-  customEmotions: string[];
+  customEmotions: CustomEmotionEntry[];
   onChange: (next: {
     speaker_emotions: SpeakerEmotionEntry[];
     emotion: string | null;
-    custom_emotions?: string[];
+    custom_emotions?: CustomEmotionEntry[];
   }) => void;
   onManage: () => void;
 }) {
+  const vocab = normalizeCustomEmotions(customEmotions);
   const boundSpeakers = speakers.filter((speaker) =>
     speakerIds.includes(speaker.id),
   );
@@ -64,7 +67,7 @@ export function AudioAnnotationEmotionField({
 
   const applyEmotion = (
     emotion: string | null,
-    nextCustomEmotions?: string[],
+    nextCustomEmotions?: CustomEmotionEntry[],
   ) => {
     if (!canEdit) return;
     onChange({
@@ -87,14 +90,14 @@ export function AudioAnnotationEmotionField({
     label: preset.value,
     tone: preset.tone,
   }));
-  const customOptions = customEmotions.map((emotion) => ({
-    value: emotion,
-    label: emotion,
-    tone: "custom",
+  const customOptions = vocab.map((emotion) => ({
+    value: emotion.name,
+    label: emotion.name,
+    color: emotion.color,
   }));
   const knownKeys = new Set([
     ...presets.map((item) => emotionKey(item.value)),
-    ...customEmotions.map((item) => emotionKey(item)),
+    ...vocab.map((item) => emotionKey(item.name)),
   ]);
   const options = [
     { value: "", label: "未标注" },
@@ -196,7 +199,7 @@ export function AudioAnnotationEmotionField({
           event.preventDefault();
           const next = customValue.trim();
           if (!next || !canEdit) return;
-          const merged = mergeCustomEmotion(customEmotions, next);
+          const merged = mergeCustomEmotion(vocab, next);
           if (merged.duplicateOf) {
             applyEmotion(next);
             setVocabNotice(

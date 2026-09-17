@@ -10,6 +10,7 @@ import type {
 } from "@features/audio-annotation/types";
 import {
   emotionKey,
+  normalizeCustomEmotions,
   normalizeEmotionLabel,
 } from "@features/audio-annotation/emotions";
 import type { components } from "@generated/api";
@@ -727,7 +728,7 @@ export function buildProjectFile(
       },
     },
     speakers: document.speakers,
-    custom_emotions: document.custom_emotions ?? [],
+    custom_emotions: normalizeCustomEmotions(document.custom_emotions),
     segments: sortSegments(document.segments),
   };
 }
@@ -747,9 +748,7 @@ export function parseProjectFile(value: unknown): AnnotationProjectFile {
   }
   return {
     ...(candidate as AnnotationProjectFile),
-    custom_emotions: Array.isArray(candidate.custom_emotions)
-      ? candidate.custom_emotions
-      : [],
+    custom_emotions: normalizeCustomEmotions(candidate.custom_emotions),
   };
 }
 

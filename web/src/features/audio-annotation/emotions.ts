@@ -33,8 +33,24 @@ export const EMOTION_PRESETS = [
   { value: "恐惧", tone: "fearful" },
 ] as const;
 
+export const EMOTION_COLORS = [
+  "#28B8A7",
+  "#4C8FE8",
+  "#9B62D0",
+  "#E7A72F",
+  "#ED7A52",
+  "#D85E9D",
+  "#7586E5",
+  "#46B978",
+] as const;
+
 export const MAX_CUSTOM_EMOTIONS = 64;
 export const MAX_EMOTION_LENGTH = 40;
+
+export type CustomEmotionEntry = {
+  name: string;
+  color: string;
+};
 
 export type EmotionDuplicateOf = "preset" | "custom" | null;
 
@@ -53,11 +69,44 @@ export function isPresetEmotion(value: string): boolean {
   return EMOTION_PRESETS.some((preset) => emotionKey(preset.value) === key);
 }
 
+export function normalizeCustomEmotions(
+  value: unknown,
+): CustomEmotionEntry[] {
+  if (!Array.isArray(value)) return [];
+  const cleaned: CustomEmotionEntry[] = [];
+  for (const [index, item] of value.entries()) {
+    if (typeof item === "string") {
+      const name = normalizeEmotionLabel(item);
+      if (!name) continue;
+      cleaned.push({
+        name,
+        color: EMOTION_COLORS[index % EMOTION_COLORS.length]!,
+      });
+      continue;
+    }
+    if (!item || typeof item !== "object") continue;
+    const record = item as { name?: unknown; color?: unknown };
+    const name =
+      typeof record.name === "string"
+        ? normalizeEmotionLabel(record.name)
+        : null;
+    if (!name) continue;
+    const color =
+      typeof record.color === "string" &&
+      /^#[0-9A-Fa-f]{6}$/.test(record.color)
+        ? record.color.toUpperCase()
+        : EMOTION_COLORS[index % EMOTION_COLORS.length]!;
+    cleaned.push({ name, color });
+  }
+  return cleaned;
+}
+
 export function mergeCustomEmotion(
-  customEmotions: string[],
+  customEmotions: CustomEmotionEntry[],
   candidate: string,
+  color?: string,
 ): {
-  emotions: string[];
+  emotions: CustomEmotionEntry[];
   added: boolean;
   duplicateOf: EmotionDuplicateOf;
   label: string | null;
@@ -80,7 +129,7 @@ export function mergeCustomEmotion(
       label,
     };
   }
-  if (customEmotions.some((item) => emotionKey(item) === key)) {
+  if (customEmotions.some((item) => emotionKey(item.name) === key)) {
     return {
       emotions: customEmotions,
       added: false,
@@ -97,7 +146,16 @@ export function mergeCustomEmotion(
     };
   }
   return {
-    emotions: [...customEmotions, label],
+    emotions: [
+      ...customEmotions,
+      {
+        name: label,
+        color:
+          color && /^#[0-9A-Fa-f]{6}$/.test(color)
+            ? color.toUpperCase()
+            : EMOTION_COLORS[customEmotions.length % EMOTION_COLORS.length]!,
+      },
+    ],
     added: true,
     duplicateOf: null,
     label,

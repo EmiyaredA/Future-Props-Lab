@@ -162,8 +162,12 @@ class ApiKeyOut(WireModel):
     revoked_at: datetime | None = Field(default=..., alias='revoked_at')
     scopes: list[str] = Field(default=..., alias='scopes')
 
+class AudioAnnotationCustomEmotion(WireModel):
+    color: str = Field(default=..., alias='color')
+    name: str = Field(default=..., alias='name', min_length=1, max_length=40)
+
 class AudioAnnotationDocumentOut(WireModel):
-    custom_emotions: list[str] | None = Field(default=None, alias='custom_emotions')
+    custom_emotions: list[AudioAnnotationCustomEmotion] | None = Field(default=None, alias='custom_emotions')
     project_id: str = Field(default=..., alias='project_id')
     revision: int = Field(default=..., alias='revision')
     schema_version: Literal['1.0'] = Field(default=..., alias='schema_version')
@@ -172,7 +176,7 @@ class AudioAnnotationDocumentOut(WireModel):
     updated_at: str = Field(default=..., alias='updated_at')
 
 class AudioAnnotationDocumentPutIn(WireModel):
-    custom_emotions: list[str] | None = Field(default=None, alias='custom_emotions', max_length=64)
+    custom_emotions: list[AudioAnnotationCustomEmotion] | None = Field(default=None, alias='custom_emotions', max_length=64)
     expected_revision: int = Field(default=..., alias='expected_revision', ge=0.0)
     schema_version: Literal['1.0'] = Field(default='1.0', alias='schema_version')
     segments: list[AudioAnnotationSegment] | None = Field(default=None, alias='segments', max_length=5000)
@@ -180,7 +184,7 @@ class AudioAnnotationDocumentPutIn(WireModel):
 
 class AudioAnnotationImportIn(WireModel):
     asset_id: str = Field(default=..., alias='asset_id', min_length=1, max_length=36)
-    custom_emotions: list[str] | None = Field(default=None, alias='custom_emotions', max_length=64)
+    custom_emotions: list[AudioAnnotationCustomEmotion] | None = Field(default=None, alias='custom_emotions', max_length=64)
     schema_version: Literal['1.0'] = Field(default='1.0', alias='schema_version')
     segments: list[AudioAnnotationSegment] | None = Field(default=None, alias='segments', max_length=5000)
     speakers: list[AudioAnnotationSpeaker] | None = Field(default=None, alias='speakers', max_length=64)
@@ -4147,6 +4151,7 @@ AnnotationSplitOperation.model_rebuild()
 ApiKeyCreateIn.model_rebuild()
 ApiKeyCreatedOut.model_rebuild()
 ApiKeyOut.model_rebuild()
+AudioAnnotationCustomEmotion.model_rebuild()
 AudioAnnotationDocumentOut.model_rebuild()
 AudioAnnotationDocumentPutIn.model_rebuild()
 AudioAnnotationImportIn.model_rebuild()
