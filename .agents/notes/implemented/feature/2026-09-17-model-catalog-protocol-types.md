@@ -12,6 +12,8 @@ Status: implemented
 
 持久化与 wire 契约本轮保持 `model_suppliers` / `supplier_id` / SDK `create_supplier` 不变；UI「协议类型」映射到该资源。接入管理提供「按接入协议整理」：为未归类连接按 `kind` 展示名查找或创建同名协议类型组，再串行 `PATCH` 写入 `supplier_id`。新建连接在未选手动归属时，按当前 `kind` 展示名 `ensure` 同名协议类型后再创建。
 
+> 后续翻转：工作区接入管理侧栏改为直接按 `kind` 呈现，废弃整理按钮与自由协议类型 CRUD。见 [接入管理侧栏按 kind 呈现](./2026-09-17-access-management-by-kind.md)。本篇仍保留命名与 wire 不变的决策记录。
+
 ## Alternatives considered
 
 - **改称「接入方式」或「渠道」** — 「接入方式」贴原话但与表单字段「接入协议」更易撞车；中文网关里「渠道」几乎总是指具体连接（Key + Base URL），不适合当分组名。
@@ -21,10 +23,10 @@ Status: implemented
 ## Consequences
 
 - **收益**：侧栏、表单、筛选与产品说明和「按接入协议归类」的意图一致；整理入口可把历史未归类连接迁入同名协议类型组。
-- **代价与已知上限**：代码与 API 仍叫 supplier，文档与 SDK 参考方法名未改；自由命名的协议类型不必等于 `kind` 标签，同名匹配是约定而非强制。
+- **代价与已知上限**：代码与 API 仍叫 supplier，文档与 SDK 参考方法名未改；自由命名的协议类型不必等于 `kind` 标签，同名匹配是约定而非强制。侧栏呈现已由后续 Note 翻转。
 
 ## Verification
 
-- 组件测试覆盖目录文案、「按接入协议整理」编排与新建连接默认归类。
+- 组件测试曾覆盖目录文案、「按接入协议整理」编排与新建连接默认归类；后续已改为按 `kind` 呈现的断言。
 - `npm run verify-notes` 校验本 Note。
 - 相关 catalog / call-logs 文案断言同步更新。

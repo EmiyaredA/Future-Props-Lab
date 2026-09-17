@@ -2,10 +2,14 @@ import { useMemo, useState } from "react";
 import { CheckCircle2, Plus, Search, Server } from "lucide-react";
 import { CustomSelect } from "@shared/ui/CustomSelect";
 import { ProviderIcon } from "@shared/ui/ProviderIcon";
-import { capabilityLabel, modelCapabilities } from "./catalogOptions";
+import {
+  capabilityLabel,
+  modelCapabilities,
+  providerKindOptions,
+} from "./catalogOptions";
 import { CatalogModelTable } from "./CatalogModelTable";
 import { CatalogConnections } from "./CatalogConnections";
-import { ModelForm, ProviderForm, SupplierForm } from "./CatalogForms";
+import { ModelForm, ProviderForm } from "./CatalogForms";
 import { CatalogDialog } from "./CatalogDialog";
 import { navigateCatalogTabs } from "./catalogKeyboard";
 import {
@@ -17,14 +21,13 @@ import {
 import type {
   CatalogModel,
   CatalogProvider,
-  CatalogSupplier,
   ModelCatalogEditorProps,
 } from "./catalogTypes";
+import "@features/models/models.css";
 import "./model-catalog.css";
 import "./catalog-dialogs.css";
 
 type Modal =
-  | { kind: "supplier"; initial: CatalogSupplier | null }
   | {
       kind: "provider";
       initial: CatalogProvider | null;
@@ -38,7 +41,7 @@ type Modal =
     }
   | {
       kind: "delete";
-      entity: "supplier" | "provider" | "model";
+      entity: "provider" | "model";
       id: string;
       name: string;
     }
@@ -50,7 +53,7 @@ export function ModelCatalogEditor(props: ModelCatalogEditorProps) {
   const [view, setView] = useState<"directory" | "connections">("directory");
   const [tab, setTab] = useState<CatalogTab>("all");
   const [search, setSearch] = useState("");
-  const [supplier, setSupplier] = useState("");
+  const [protocol, setProtocol] = useState("");
   const [capability, setCapability] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [modal, setModal] = useState<Modal>(null);
@@ -62,7 +65,7 @@ export function ModelCatalogEditor(props: ModelCatalogEditorProps) {
   const filtered = filterCatalogRows(rows, categories, {
     tab,
     search,
-    supplier,
+    protocol,
     capability,
   });
   const activePermissions = {
@@ -256,12 +259,14 @@ export function ModelCatalogEditor(props: ModelCatalogEditorProps) {
             </label>
             <CustomSelect
               ariaLabel="筛选协议类型"
-              value={supplier}
-              onChange={setSupplier}
+              value={protocol}
+              onChange={setProtocol}
               options={[
                 { value: "", label: "全部协议类型" },
-                ...value.suppliers.map((s) => ({ value: s.id, label: s.name })),
-                { value: "ungrouped", label: "未归类" },
+                ...providerKindOptions.map((option) => ({
+                  value: option.value,
+                  label: option.label,
+                })),
               ]}
             />
             <CustomSelect
@@ -306,19 +311,6 @@ export function ModelCatalogEditor(props: ModelCatalogEditorProps) {
           advancedInfo={advancedInfo}
           selectedId={selectedId}
           onSelect={setSelectedId}
-          onNewSupplier={() => setModal({ kind: "supplier", initial: null })}
-          onEditSupplier={(initial) => setModal({ kind: "supplier", initial })}
-          onDeleteSupplier={(s) =>
-            setModal({
-              kind: "delete",
-              entity: "supplier",
-              id: s.id,
-              name: s.name,
-            })
-          }
-          onOrganizeByProtocol={() =>
-            void perform(() => actions.organizeByProtocolKind())
-          }
           onNewProvider={() => setModal({ kind: "provider", initial: null })}
           onEditProvider={(initial) => setModal({ kind: "provider", initial })}
           onCopyProvider={(copy) =>
@@ -344,19 +336,6 @@ export function ModelCatalogEditor(props: ModelCatalogEditorProps) {
             true,
           )}
         </CatalogConnections>
-      )}
-      {modal?.kind === "supplier" && (
-        <SupplierForm
-          {...shared}
-          initial={
-            value.suppliers.find((s) => s.id === modal.initial?.id) ??
-            modal.initial
-          }
-          unavailable={
-            !!modal.initial &&
-            !value.suppliers.some((s) => s.id === modal.initial?.id)
-          }
-        />
       )}
       {modal?.kind === "provider" && (
         <ProviderForm
@@ -389,14 +368,12 @@ export function ModelCatalogEditor(props: ModelCatalogEditorProps) {
       )}
       {modal?.kind === "delete" && (
         <CatalogDialog
-          title={`删除${{ supplier: "协议类型", provider: "连接", model: "模型" }[modal.entity]}`}
+          title={`删除${{ provider: "连接", model: "模型" }[modal.entity]}`}
           label="确认删除"
           onRefresh={props.onRefresh}
           onClose={() => setModal(null)}
           disabled={!permissions.canWrite}
           onSave={() => {
-            if (modal.entity === "supplier")
-              return actions.deleteSupplier(modal.id);
             if (modal.entity === "provider")
               return actions.deleteProvider(modal.id);
             return actions.deleteModel(modal.id);
@@ -406,9 +383,7 @@ export function ModelCatalogEditor(props: ModelCatalogEditorProps) {
           <p className="mc-help">
             {modal.entity === "provider"
               ? "该连接下的模型也会被删除，此操作无法撤销。"
-              : modal.entity === "supplier"
-                ? "仅可删除空分组。请先将连接移至其他协议类型或未归类。"
-                : "删除后无法撤销。"}
+              : "删除后无法撤销。"}
           </p>
         </CatalogDialog>
       )}

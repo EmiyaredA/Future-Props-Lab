@@ -73,13 +73,13 @@ Principal 相符，防止切换工作区时授权到错误空间。`POST /agent/
 - `POST /v1/model-entries/{model_id}/test`
 
 目录写入必须携带最后读取的 `expected_catalog_revision`。冲突返回 `409 revision_conflict` 和服务器当前快照。
-目录响应包含 `suppliers` 和 `providers`；Provider 表示接入连接，`supplier_id` 为可空的协议类型归属，
-`kind` 表示接入协议/适配类型。界面将 `suppliers` 展示为「协议类型」，把接入方式一致的连接归在一起；
-历史连接保留 ID、凭证与模型引用，初始归入界面的“未归类”。创建协议类型分组只接受名称，连接地址和密钥仍由连接独立维护。
+目录响应包含 `suppliers` 和 `providers`；Provider 表示接入连接，`supplier_id` 为可空的可选归属字段（API 资源名暂为 `model-suppliers`），
+`kind` 表示接入协议/适配类型。界面接入管理侧栏按 `kind` 展示为「协议类型」分组；目录筛选协议类型也按 `kind`。
+历史连接保留 ID、凭证与模型引用。创建连接时地址和密钥由连接独立维护；`supplier_id` 可省略或为 `null`。
 更新连接时省略 `supplier_id` 保留归属，显式 `null` 解除归属；启停接口同样保留归属。
-非空分组删除返回 `409 resource_busy`，不会级联删除连接或模型；跨工作区 ID 返回 404。
+非空 `model-suppliers` 分组删除返回 `409 resource_busy`，不会级联删除连接或模型；跨工作区 ID 返回 404。
 分组输出 `origin`、`template_key`、`managed_fields`，平台模板管理的分组不允许在工作区重命名或删除。
-模板字段权限由服务端判断，客户端不能通过提交来源字段解锁。协议类型写入与连接、模型共用目录 CAS。
+模板字段权限由服务端判断，客户端不能通过提交来源字段解锁。协议类型（`kind`）与连接、模型共用目录 CAS。
 模型的 `capabilities` 描述实际输入和调用能力，`categories` 描述模型用途并允许多选；两者都只通过
 模型创建/更新 API 写入。类别字典参考 SiliconFlow 的 `type/sub_type` 语义，当前包含文本生成、
 其他通用模型、语音合成、语音识别、音乐生成、视频生成、图像生成和端到端语音模型。

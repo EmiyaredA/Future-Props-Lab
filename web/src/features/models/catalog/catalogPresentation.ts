@@ -1,4 +1,5 @@
 import type { ModelCategory } from "@features/models/api";
+import { providerKindLabel } from "@features/models/metadata";
 import type {
   CatalogModel,
   CatalogProvider,
@@ -16,17 +17,14 @@ export type CatalogTab = (typeof catalogTabs)[number]["id"];
 export type CatalogRow = {
   model: CatalogModel;
   provider: CatalogProvider;
-  supplierName: string;
+  protocolLabel: string;
 };
 export function catalogRows(value: ModelCatalogValue): CatalogRow[] {
-  const suppliers = new Map(
-    value.suppliers.map((supplier) => [supplier.id, supplier.name]),
-  );
   return value.providers.flatMap((provider) =>
     provider.models.map((model) => ({
       model,
       provider,
-      supplierName: suppliers.get(provider.supplier_id ?? "") ?? "未归类",
+      protocolLabel: providerKindLabel[provider.kind] ?? provider.kind,
     })),
   );
 }
@@ -36,7 +34,7 @@ export function filterCatalogRows(
   filters: {
     tab: CatalogTab;
     search: string;
-    supplier: string;
+    protocol: string;
     capability: string;
   },
 ) {
@@ -52,8 +50,7 @@ export function filterCatalogRows(
         )) &&
       (!search ||
         `${model.label} ${model.slug}`.toLocaleLowerCase().includes(search)) &&
-      (!filters.supplier ||
-        (provider.supplier_id ?? "ungrouped") === filters.supplier) &&
+      (!filters.protocol || provider.kind === filters.protocol) &&
       (!filters.capability ||
         model.capabilities.some(
           (capability) => capability === filters.capability,

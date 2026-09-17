@@ -9,15 +9,10 @@ import {
 import type { ModelInput } from "@features/models/api";
 import { CatalogDialog } from "./CatalogDialog";
 import {
-  findSupplierIdByName,
-  protocolTypeNameForKind,
-} from "./organizeByProtocol";
-import {
   canEditField,
   type CatalogModel,
   type CatalogProvider,
   type CatalogProviderInput,
-  type CatalogSupplier,
   type ModelCatalogEditorProps,
 } from "./catalogTypes";
 
@@ -26,58 +21,9 @@ type Shared = Pick<
   "value" | "actions" | "permissions" | "categories" | "onRefresh"
 > & { onClose: () => void; unavailable?: boolean };
 
-export function SupplierForm({
-  initial,
-  actions,
-  permissions,
-  onClose,
-  onRefresh,
-  unavailable,
-}: Pick<
-  Shared,
-  "actions" | "permissions" | "onClose" | "unavailable" | "onRefresh"
-> & {
-  initial: CatalogSupplier | null;
-}) {
-  const [name, setName] = useState(initial?.name ?? "");
-  const writable = canEditField(permissions, initial, "name");
-  return (
-    <CatalogDialog
-      title={initial ? "编辑协议类型" : "添加协议类型"}
-      onClose={onClose}
-      onRefresh={onRefresh}
-      disabled={unavailable || !name.trim() || !writable}
-      onSave={() =>
-        initial
-          ? actions.updateSupplier(initial.id, { name: name.trim() })
-          : actions.createSupplier({ name: name.trim() })
-      }
-    >
-      <label>
-        <span>协议类型名称</span>
-        <input
-          required
-          maxLength={120}
-          value={name}
-          disabled={!writable}
-          onChange={(event) => setName(event.target.value)}
-          placeholder="例如：OpenAI 兼容"
-        />
-      </label>
-      <p className="mc-help">
-        协议类型用于把接入方式一致的连接归在一起；建议名称与「接入协议」一致。地址和凭证仍在连接中分别配置。
-      </p>
-      {unavailable && (
-        <p role="alert">该协议类型已被删除，请关闭后重新选择。</p>
-      )}
-    </CatalogDialog>
-  );
-}
-
 export function ProviderForm({
   initial,
   copy,
-  value,
   actions,
   permissions,
   onClose,
@@ -85,7 +31,6 @@ export function ProviderForm({
   unavailable,
 }: Shared & { initial: CatalogProvider | null; copy?: CatalogProvider }) {
   const source = initial ?? copy;
-  const creating = !initial;
   const [name, setName] = useState(
     copy ? `${copy.name} 副本` : (initial?.name ?? ""),
   );
@@ -94,32 +39,14 @@ export function ProviderForm({
   );
   const [baseUrl, setBaseUrl] = useState(source?.base_url ?? "");
   const [apiKey, setApiKey] = useState("");
-  const [supplierId, setSupplierId] = useState(
-    source?.supplier_id ??
-      (creating
-        ? (findSupplierIdByName(
-            value.suppliers,
-            protocolTypeNameForKind(source?.kind ?? "openai"),
-          ) ?? "")
-        : ""),
-  );
-  const [supplierTouched, setSupplierTouched] = useState(
-    !!source?.supplier_id || !!copy,
-  );
-  const [newSupplier, setNewSupplier] = useState(false);
   const editable = (field: string) => canEditField(permissions, initial, field);
-  const save = async () => {
-    let resolvedSupplierId = supplierId || null;
-    if (creating && !resolvedSupplierId) {
-      const label = protocolTypeNameForKind(kind);
-      resolvedSupplierId = await actions.ensureProtocolType(label);
-    }
+  const save = () => {
     const input: CatalogProviderInput = {
       name: name.trim(),
       kind,
       base_url: baseUrl.trim(),
       api_key: apiKey,
-      supplier_id: resolvedSupplierId,
+      supplier_id: initial?.supplier_id ?? null,
       enabled: initial?.enabled ?? true,
     };
     return initial
@@ -127,128 +54,72 @@ export function ProviderForm({
       : actions.createProvider(input);
   };
   return (
-    <>
-      <CatalogDialog
-        title={
-          copy ? "复制为自建连接" : initial ? "编辑接入连接" : "添加接入连接"
-        }
-        onClose={onClose}
-        onRefresh={onRefresh}
-        onSave={save}
-        disabled={
-          unavailable ||
-          !permissions.canWrite ||
-          !name.trim() ||
-          (!!supplierId && !value.suppliers.some((s) => s.id === supplierId))
-        }
-      >
-        <label>
-          <span>连接名称</span>
-          <input
-            value={name}
-            required
-            maxLength={120}
-            disabled={!editable("name")}
-            onChange={(event) => setName(event.target.value)}
-            placeholder="例如：通用模型网关"
-          />
-        </label>
-        <label>
-          <span>所属协议类型</span>
-          <CustomSelect
-            ariaLabel="所属协议类型"
-            value={supplierId}
-            disabled={!editable("supplier_id")}
-            options={[
-              { value: "", label: creating ? "按接入协议自动归类" : "未归类" },
-              ...value.suppliers.map((s) => ({ value: s.id, label: s.name })),
-            ]}
-            onChange={(next) => {
-              setSupplierTouched(true);
-              setSupplierId(next);
-            }}
-          />
-        </label>
-        {editable("supplier_id") && (
-          <button
-            type="button"
-            className="mc-link"
-            onClick={() => setNewSupplier(true)}
-          >
-            ＋ 新建协议类型
-          </button>
-        )}
-        <label>
-          <span>接入协议</span>
-          <CustomSelect
-            ariaLabel="接入协议"
-            value={kind}
-            disabled={!editable("kind")}
-            options={providerKindOptions}
-            onChange={(next) => {
-              const nextKind = next as typeof kind;
-              setKind(nextKind);
-              if (creating && !supplierTouched) {
-                setSupplierId(
-                  findSupplierIdByName(
-                    value.suppliers,
-                    protocolTypeNameForKind(nextKind),
-                  ) ?? "",
-                );
-              }
-            }}
-          />
-        </label>
-        <label>
-          <span>服务地址</span>
-          <input
-            type="url"
-            aria-label="服务地址"
-            maxLength={512}
-            value={baseUrl}
-            disabled={!editable("base_url")}
-            placeholder={providerBaseUrlPlaceholder(kind)}
-            onChange={(event) => setBaseUrl(event.target.value)}
-          />
-          <small>留空使用该协议的默认地址。</small>
-        </label>
-        <label>
-          <span>API Key</span>
-          <input
-            type="password"
-            autoComplete="new-password"
-            value={apiKey}
-            disabled={!editable("api_key")}
-            placeholder={
-              initial?.has_api_key ? "已配置，留空保留" : "输入 API Key"
-            }
-            onChange={(event) => setApiKey(event.target.value)}
-          />
-        </label>
-        {initial?.origin === "role_template" && (
-          <p className="mc-help">平台模板管理的字段在当前工作区只读。</p>
-        )}
-        {copy && (
-          <p className="mc-help">
-            仅复制连接配置，不复制密钥。创建后可添加或复制模型。
-          </p>
-        )}
-        {creating && !supplierId && (
-          <p className="mc-help">
-            未指定协议类型时，保存将按当前接入协议自动归入同名分组。
-          </p>
-        )}
-        {unavailable && <p role="alert">该连接已被删除，请关闭后重新选择。</p>}
-      </CatalogDialog>
-      {newSupplier && (
-        <SupplierForm
-          initial={null}
-          actions={actions}
-          permissions={permissions}
-          onClose={() => setNewSupplier(false)}
+    <CatalogDialog
+      title={
+        copy ? "复制为自建连接" : initial ? "编辑接入连接" : "添加接入连接"
+      }
+      onClose={onClose}
+      onRefresh={onRefresh}
+      onSave={save}
+      disabled={unavailable || !permissions.canWrite || !name.trim()}
+    >
+      <label>
+        <span>连接名称</span>
+        <input
+          value={name}
+          required
+          maxLength={120}
+          disabled={!editable("name")}
+          onChange={(event) => setName(event.target.value)}
+          placeholder="例如：通用模型网关"
         />
+      </label>
+      <label>
+        <span>接入协议</span>
+        <CustomSelect
+          ariaLabel="接入协议"
+          value={kind}
+          disabled={!editable("kind")}
+          options={providerKindOptions}
+          onChange={(next) => setKind(next as typeof kind)}
+        />
+      </label>
+      <label>
+        <span>服务地址</span>
+        <input
+          type="url"
+          aria-label="服务地址"
+          maxLength={512}
+          value={baseUrl}
+          disabled={!editable("base_url")}
+          placeholder={providerBaseUrlPlaceholder(kind)}
+          onChange={(event) => setBaseUrl(event.target.value)}
+        />
+        <small>留空使用该协议的默认地址。</small>
+      </label>
+      <label>
+        <span>API Key</span>
+        <input
+          type="password"
+          autoComplete="new-password"
+          value={apiKey}
+          disabled={!editable("api_key")}
+          placeholder={
+            initial?.has_api_key ? "已配置，留空保留" : "输入 API Key"
+          }
+          onChange={(event) => setApiKey(event.target.value)}
+        />
+      </label>
+      {initial?.origin === "role_template" && (
+        <p className="mc-help">平台模板管理的字段在当前工作区只读。</p>
       )}
-    </>
+      {copy && (
+        <p className="mc-help">
+          仅复制连接配置，不复制密钥。创建后可添加或复制模型。
+        </p>
+      )}
+      {unavailable && <p role="alert">该连接已被删除，请关闭后重新选择。</p>}
+    </CatalogDialog>
   );
 }
 

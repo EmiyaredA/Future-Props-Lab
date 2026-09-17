@@ -221,7 +221,7 @@
 }
 
 .mc-connections {
-  grid-template-columns: 224px minmax(0, 1fr);
+  grid-template-columns: 288px minmax(0, 1fr);
   gap: 10px;
 }
 .mc-supplier-tree,
@@ -234,10 +234,9 @@
   min-height: 44px;
   padding-inline: 13px 10px;
 }
-.mc-supplier-heading > button,
-.mc-connection-list > button {
-  min-height: 36px;
-  font-size: 11px;
+.mc-connection-item {
+  min-height: 56px;
+  padding: 8px;
 }
 .mc-connection-detail {
   min-width: 0;

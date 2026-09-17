@@ -1,14 +1,19 @@
 import { useState, type ReactNode } from "react";
-import { ChevronDown, ChevronRight, ArrowLeft, Plus } from "lucide-react";
+import {
+  ArrowLeft,
+  CheckCircle2,
+  ChevronDown,
+  ChevronRight,
+  Plus,
+  Server,
+} from "lucide-react";
 import { ProviderIcon } from "@shared/ui/ProviderIcon";
-import { providerKindLabel } from "./catalogOptions";
-import { CatalogMenu } from "./CatalogMenu";
+import { providerKindLabel, providerKindOptions } from "./catalogOptions";
 import { navigateCatalogTabs } from "./catalogKeyboard";
 import {
   canDeleteEntity,
   canEditField,
   type CatalogProvider,
-  type CatalogSupplier,
   type ModelCatalogEditorProps,
 } from "./catalogTypes";
 
@@ -18,10 +23,6 @@ export function CatalogConnections({
   advancedInfo,
   selectedId,
   onSelect,
-  onNewSupplier,
-  onEditSupplier,
-  onDeleteSupplier,
-  onOrganizeByProtocol,
   onNewProvider,
   onEditProvider,
   onCopyProvider,
@@ -33,10 +34,6 @@ export function CatalogConnections({
   selectedId: string | null;
   onSelect: (id: string) => void;
   children: ReactNode;
-  onNewSupplier: () => void;
-  onEditSupplier: (supplier: CatalogSupplier) => void;
-  onDeleteSupplier: (supplier: CatalogSupplier) => void;
-  onOrganizeByProtocol?: () => void;
   onNewProvider: () => void;
   onEditProvider: (provider: CatalogProvider) => void;
   onCopyProvider: (provider: CatalogProvider) => void;
@@ -50,13 +47,19 @@ export function CatalogConnections({
   const selected =
     value.providers.find((provider) => provider.id === selectedId) ??
     value.providers[0];
-  const groups: CatalogSupplier[] = [
-    ...value.suppliers,
-    { id: "", name: "未归类" },
+  const knownKinds = providerKindOptions.map((option) => option.value);
+  const presentKinds = [
+    ...knownKinds.filter((kind) =>
+      value.providers.some((provider) => provider.kind === kind),
+    ),
+    ...[
+      ...new Set(
+        value.providers
+          .map((provider) => provider.kind)
+          .filter((kind) => !knownKinds.includes(kind)),
+      ),
+    ],
   ];
-  const ungroupedCount = value.providers.filter(
-    (provider) => !provider.supplier_id,
-  ).length;
   const canAdd =
     selected &&
     permissions.canWrite &&
@@ -69,134 +72,106 @@ export function CatalogConnections({
       <aside className="mc-supplier-tree">
         <header>
           <h2>协议类型</h2>
-          <div className="mc-supplier-tree-actions">
-            {permissions.canWrite &&
-              ungroupedCount > 0 &&
-              onOrganizeByProtocol && (
-                <button
-                  className="mc-link"
-                  type="button"
-                  onClick={onOrganizeByProtocol}
-                >
-                  按接入协议整理
-                </button>
-              )}
-            {permissions.canWrite && (
-              <button
-                className="mc-icon"
-                type="button"
-                aria-label="添加协议类型"
-                onClick={onNewSupplier}
-              >
-                <Plus size={18} />
-              </button>
-            )}
-          </div>
         </header>
-        {groups.map((supplier) => {
-          const connections = value.providers.filter(
-            (provider) => (provider.supplier_id ?? "") === supplier.id,
-          );
-          if (!supplier.id && !connections.length && value.suppliers.length)
-            return null;
-          const expanded = !collapsed.includes(supplier.id);
-          return (
-            <section key={supplier.id} className="mc-supplier-group">
-              <div className="mc-supplier-heading">
-                <button
-                  type="button"
-                  aria-expanded={expanded}
-                  onClick={() =>
-                    setCollapsed((items) =>
-                      expanded
-                        ? [...items, supplier.id]
-                        : items.filter((id) => id !== supplier.id),
-                    )
-                  }
-                >
-                  {expanded ? (
-                    <ChevronDown size={16} />
-                  ) : (
-                    <ChevronRight size={16} />
-                  )}
-                  <strong>{supplier.name}</strong>
-                  {supplier.origin === "role_template" && (
-                    <small>平台模板</small>
-                  )}
-                  <small>{connections.length} 个连接</small>
-                </button>
-                {supplier.id && permissions.canWrite && (
-                  <CatalogMenu
-                    label={`${supplier.name} 操作`}
-                    items={[
-                      ...(canEditField(permissions, supplier, "name")
-                        ? [
-                            {
-                              label: "重命名协议类型",
-                              onClick: () => onEditSupplier(supplier),
-                            },
-                          ]
-                        : []),
-                      ...(canDeleteEntity(permissions, supplier)
-                        ? [
-                            {
-                              label: "删除协议类型",
-                              danger: true,
-                              onClick: () => onDeleteSupplier(supplier),
-                            },
-                          ]
-                        : []),
-                    ]}
-                  />
-                )}
-              </div>
-              {expanded && (
-                <div className="mc-connection-list">
-                  {connections.map((provider) => (
-                    <button
-                      type="button"
-                      key={provider.id}
-                      aria-current={
-                        provider.id === selected?.id ? "true" : undefined
-                      }
-                      onClick={() => {
-                        onSelect(provider.id);
-                        setDetail(true);
-                        setTab("models");
-                      }}
-                    >
-                      <span
-                        className={`mc-status ${provider.enabled ? "is-enabled" : ""}`}
-                      >
-                        <i />
-                      </span>
-                      <span>
-                        <strong>{provider.name}</strong>
-                        <small>
-                          {provider.models.length} 个模型
-                          {provider.origin === "role_template"
-                            ? " · 平台模板"
-                            : ""}
-                        </small>
-                      </span>
-                    </button>
-                  ))}
-                  {!connections.length && <p className="mc-help">暂无连接</p>}
+        <div className="mc-supplier-tree-body">
+          {presentKinds.map((kind) => {
+            const connections = value.providers.filter(
+              (provider) => provider.kind === kind,
+            );
+            const expanded = !collapsed.includes(kind);
+            const label = providerKindLabel[kind] ?? kind;
+            return (
+              <section key={kind} className="mc-supplier-group">
+                <div className="mc-supplier-heading">
+                  <button
+                    type="button"
+                    aria-expanded={expanded}
+                    aria-label={`${label}，${connections.length} 个连接`}
+                    onClick={() =>
+                      setCollapsed((items) =>
+                        expanded
+                          ? [...items, kind]
+                          : items.filter((id) => id !== kind),
+                      )
+                    }
+                  >
+                    {expanded ? (
+                      <ChevronDown size={15} />
+                    ) : (
+                      <ChevronRight size={15} />
+                    )}
+                    <span className="mc-kind-icon">
+                      <ProviderIcon kind={kind} size={16} />
+                    </span>
+                    <span className="mc-kind-copy">
+                      <strong>{label}</strong>
+                      <small>{connections.length} 个连接</small>
+                    </span>
+                  </button>
                 </div>
-              )}
-            </section>
-          );
-        })}
-        {permissions.canWrite && (
-          <button
-            type="button"
-            className="btn mc-add-connection"
-            onClick={onNewProvider}
-          >
-            <Plus size={16} />
-            添加连接
-          </button>
-        )}
+                {expanded && (
+                  <div className="mc-connection-list">
+                    {connections.map((provider) => (
+                      <button
+                        type="button"
+                        className="mc-connection-item"
+                        key={provider.id}
+                        aria-current={
+                          provider.id === selected?.id ? "true" : undefined
+                        }
+                        onClick={() => {
+                          onSelect(provider.id);
+                          setDetail(true);
+                          setTab("models");
+                        }}
+                      >
+                        <span className="mc-provider-card-icon">
+                          <ProviderIcon kind={provider.kind} size={18} />
+                        </span>
+                        <span className="mc-connection-item-copy">
+                          <strong>{provider.name}</strong>
+                          <small>
+                            模型数 {provider.models.length}
+                            {provider.origin === "role_template"
+                              ? " · 平台模板"
+                              : ""}
+                          </small>
+                        </span>
+                        <span
+                          className={`mc-provider-health${
+                            provider.enabled ? " is-healthy" : ""
+                          }`}
+                        >
+                          {provider.enabled ? (
+                            <CheckCircle2 size={13} />
+                          ) : (
+                            <Server size={13} />
+                          )}
+                          {provider.enabled ? "正常" : "停用"}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </section>
+            );
+          })}
+          {permissions.canWrite && (
+            <button
+              type="button"
+              className="mc-provider-card is-add mc-add-connection"
+              onClick={onNewProvider}
+            >
+              <span className="mc-provider-card-icon">
+                <Plus size={18} />
+              </span>
+              <span className="mc-provider-card-copy">
+                <strong>添加接入连接</strong>
+                <small>接入新的模型服务</small>
+              </span>
+            </button>
+          )}
+        </div>
       </aside>
       <section className="mc-connection-detail">
         <button
@@ -210,9 +185,7 @@ export function CatalogConnections({
         {selected ? (
           <>
             <p className="mc-breadcrumb">
-              {value.suppliers.find((s) => s.id === selected.supplier_id)
-                ?.name ?? "未归类"}{" "}
-              / {selected.name}
+              {providerKindLabel[selected.kind]} / {selected.name}
             </p>
             <div className="mc-detail-heading">
               <span className="mc-provider-icon">
@@ -223,10 +196,16 @@ export function CatalogConnections({
                 <div className="mc-detail-meta">
                   <span>{providerKindLabel[selected.kind]}</span>
                   <span
-                    className={`mc-status ${selected.enabled ? "is-enabled" : ""}`}
+                    className={`mc-provider-health${
+                      selected.enabled ? " is-healthy" : ""
+                    }`}
                   >
-                    <i />
-                    {selected.enabled ? "已启用" : "连接已停用"}
+                    {selected.enabled ? (
+                      <CheckCircle2 size={13} />
+                    ) : (
+                      <Server size={13} />
+                    )}
+                    {selected.enabled ? "正常" : "停用"}
                   </span>
                   {selected.origin === "role_template" && (
                     <span className="mc-origin">平台模板</span>

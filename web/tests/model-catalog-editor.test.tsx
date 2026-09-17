@@ -12,7 +12,6 @@ import {
   filterCatalogRows,
   modelTestMode,
 } from "@features/models/catalog/catalogPresentation";
-import { planOrganizeByProtocol } from "@features/models/catalog/organizeByProtocol";
 import type { ModelCategory } from "@features/models/api";
 
 const categories: ModelCategory[] = [
@@ -110,8 +109,6 @@ function actions(): ModelCatalogActions {
     createSupplier: vi.fn(),
     updateSupplier: vi.fn(),
     deleteSupplier: vi.fn(),
-    ensureProtocolType: vi.fn(async (name) => `ensured-${name}`),
-    organizeByProtocolKind: vi.fn(),
     createProvider: vi.fn(),
     updateProvider: vi.fn(),
     deleteProvider: vi.fn(),
@@ -138,21 +135,12 @@ function renderEditor(data = value(), callbacks = actions(), canWrite = true) {
 }
 
 describe("model directory", () => {
-  test("plans protocol-type groups for ungrouped connections by kind labels", () => {
-    const plan = planOrganizeByProtocol(value());
-    expect(plan.groupsToCreate).toEqual(["SenseAudio 音乐"]);
-    expect(plan.assignments.map((item) => item.provider.id)).toEqual(["p3"]);
-    expect(planOrganizeByProtocol(value()).groupsToCreate).toEqual([
-      "SenseAudio 音乐",
-    ]);
-  });
-
   test("separates image understanding from generation and keeps model identity across filters", () => {
     const rows = catalogRows(value());
     const filtered = filterCatalogRows(rows, categories, {
       tab: "image",
       search: "",
-      supplier: "",
+      protocol: "",
       capability: "",
     });
     expect(filtered.map((row) => row.model.id)).toEqual(["m2", "m3"]);
@@ -160,14 +148,14 @@ describe("model directory", () => {
       filterCatalogRows(rows, categories, {
         tab: "all",
         search: "VL",
-        supplier: "s1",
+        protocol: "openai",
         capability: "vision",
       }).map((row) => row.model.id),
     ).toEqual(["m1"]);
     expect(modelTestMode(rows[3].model, rows[3].provider)).toBeNull();
   });
 
-  test("starts in the directory, filters suppliers and distinguishes connection status", async () => {
+  test("starts in the directory, filters by protocol kind and distinguishes connection status", async () => {
     const user = userEvent.setup();
     renderEditor();
     expect(screen.getByRole("tab", { name: "模型目录" })).toHaveAttribute(
@@ -182,7 +170,9 @@ describe("model directory", () => {
     expect(screen.queryByText("视觉对话")).not.toBeInTheDocument();
     expect(screen.getAllByText("多用途")).toHaveLength(2);
     await user.click(screen.getByRole("combobox", { name: "筛选协议类型" }));
-    await user.click(screen.getByRole("option", { name: "自建服务" }));
+    await user.click(
+      screen.getByRole("option", { name: "SenseAudio 图片生成" }),
+    );
     expect(screen.getAllByText("多用途")).toHaveLength(1);
     expect(screen.getByText("1 个模型")).toBeInTheDocument();
     await user.type(
@@ -202,10 +192,9 @@ describe("model directory", () => {
       screen.queryByRole("button", { name: "视觉对话 操作" }),
     ).not.toBeInTheDocument();
     await user.click(screen.getByRole("tab", { name: "接入管理" }));
-    expect(screen.getByRole("button", { name: /SenseAudio/ })).toHaveAttribute(
-      "aria-expanded",
-      "true",
-    );
+    expect(
+      screen.getByRole("button", { name: /OpenAI 兼容/ }),
+    ).toHaveAttribute("aria-expanded", "true");
     expect(
       screen.queryByRole("button", { name: "添加协议类型" }),
     ).not.toBeInTheDocument();
@@ -214,7 +203,23 @@ describe("model directory", () => {
     ).not.toBeInTheDocument();
   });
 
-  test("shows source fields only in connection configuration and supports regrouping", async () => {
+  test("connection tree groups by access protocol kind", async () => {
+    const user = userEvent.setup();
+    renderEditor();
+    await user.click(screen.getByRole("tab", { name: "接入管理" }));
+    expect(
+      screen.getByRole("button", { name: /OpenAI 兼容/ }),
+    ).toHaveAttribute("aria-expanded", "true");
+    expect(
+      screen.getByRole("button", { name: /SenseAudio 图片/ }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /SenseAudio 音乐/ }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("OpenAI 兼容 / 通用网关")).toBeInTheDocument();
+  });
+
+  test("shows source fields only in connection configuration", async () => {
     const user = userEvent.setup();
     const { callbacks } = renderEditor();
     await user.click(screen.getByRole("tab", { name: "接入管理" }));
@@ -223,27 +228,22 @@ describe("model directory", () => {
     expect(screen.getByText("已配置 ···· 1234")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "编辑连接" }));
     const dialog = screen.getByRole("dialog", { name: "编辑接入连接" });
-    await user.click(
-      within(dialog).getByRole("combobox", { name: "所属协议类型" }),
+    expect(
+      within(dialog).queryByRole("combobox", { name: "所属协议类型" }),
+    ).not.toBeInTheDocument();
+    await user.clear(within(dialog).getByRole("textbox", { name: "连接名称" }));
+    await user.type(
+      within(dialog).getByRole("textbox", { name: "连接名称" }),
+      "改名网关",
     );
-    await user.click(screen.getByRole("option", { name: "未归类" }));
     await user.click(within(dialog).getByRole("button", { name: "保存" }));
     expect(callbacks.updateProvider).toHaveBeenCalledWith(
       "p1",
-      expect.objectContaining({ supplier_id: null, api_key: "" }),
+      expect.objectContaining({ name: "改名网关", api_key: "" }),
     );
   });
 
-  test("organizes ungrouped connections by access protocol labels", async () => {
-    const user = userEvent.setup();
-    const { callbacks } = renderEditor();
-    await user.click(screen.getByRole("tab", { name: "接入管理" }));
-    expect(screen.getByText("未归类")).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "按接入协议整理" }));
-    expect(callbacks.organizeByProtocolKind).toHaveBeenCalled();
-  });
-
-  test("new connections ensure a protocol type matching the selected kind", async () => {
+  test("new connections save with null supplier_id", async () => {
     const user = userEvent.setup();
     const { callbacks } = renderEditor();
     await user.click(screen.getByRole("tab", { name: "接入管理" }));
@@ -255,13 +255,12 @@ describe("model directory", () => {
     );
     await user.click(within(dialog).getByRole("button", { name: "保存" }));
     await waitFor(() =>
-      expect(callbacks.ensureProtocolType).toHaveBeenCalledWith("OpenAI 兼容"),
-    );
-    expect(callbacks.createProvider).toHaveBeenCalledWith(
-      expect.objectContaining({
-        name: "新网关",
-        supplier_id: "ensured-OpenAI 兼容",
-      }),
+      expect(callbacks.createProvider).toHaveBeenCalledWith(
+        expect.objectContaining({
+          name: "新网关",
+          supplier_id: null,
+        }),
+      ),
     );
   });
 
@@ -358,10 +357,22 @@ describe("model directory", () => {
           permissions={{ canWrite: true }}
           actions={{
             ...callbacks,
-            createSupplier: (input) =>
+            createProvider: (input) =>
               setData((old) => ({
                 ...old,
-                suppliers: [...old.suppliers, { id: "new", name: input.name }],
+                providers: [
+                  ...old.providers,
+                  {
+                    id: "new",
+                    name: input.name,
+                    kind: input.kind,
+                    base_url: input.base_url,
+                    enabled: true,
+                    has_api_key: false,
+                    api_key_hint: "",
+                    models: [],
+                  },
+                ],
               })),
           }}
         />
@@ -369,14 +380,14 @@ describe("model directory", () => {
     }
     render(<Draft />);
     await user.click(screen.getByRole("tab", { name: "接入管理" }));
-    await user.click(screen.getByRole("button", { name: "添加协议类型" }));
+    await user.click(screen.getAllByRole("button", { name: "添加连接" })[0]);
     await user.type(
-      screen.getByRole("textbox", { name: "协议类型名称" }),
-      "模板草稿协议类型",
+      screen.getByRole("textbox", { name: "连接名称" }),
+      "模板草稿连接",
     );
     await user.click(screen.getByRole("button", { name: "保存" }));
-    expect(await screen.findByText("模板草稿协议类型")).toBeInTheDocument();
-    expect(callbacks.createSupplier).not.toHaveBeenCalled();
+    expect(await screen.findByText("模板草稿连接")).toBeInTheDocument();
+    expect(callbacks.createProvider).not.toHaveBeenCalled();
   });
 });
 
@@ -394,8 +405,6 @@ test("keyboard navigation switches tabs and restores row focus after Escape", as
   const trigger = screen.getByRole("button", { name: "视觉对话 操作" });
   await user.click(trigger);
   expect(screen.getByRole("menuitem", { name: "编辑" })).toHaveFocus();
-  await user.keyboard("{End}");
-  expect(screen.getByRole("menuitem", { name: "删除" })).toHaveFocus();
   await user.keyboard("{Escape}");
   expect(trigger).toHaveFocus();
   expect(screen.queryByRole("menu")).not.toBeInTheDocument();

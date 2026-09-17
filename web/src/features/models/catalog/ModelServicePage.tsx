@@ -17,10 +17,6 @@ import {
 import { modelQueryKeys } from "@features/models/queryKeys";
 import { ModelCatalogEditor } from "./ModelCatalogEditor";
 import { createSupplier, deleteSupplier, updateSupplier } from "./supplierApi";
-import {
-  planOrganizeByProtocol,
-  providerUpdateInput,
-} from "./organizeByProtocol";
 import type {
   ModelCatalogActions,
   ModelCatalogEditorProps,
@@ -72,60 +68,6 @@ export function ModelServicePage({
       throw cause;
     }
   };
-  const ensureProtocolType = async (name: string): Promise<string> => {
-    const existing = (catalog.data?.suppliers ?? []).find(
-      (supplier) => supplier.name === name,
-    );
-    if (existing) return existing.id;
-    const created = await mutate((revision) =>
-      createSupplier({ name }, revision),
-    );
-    return created.supplier.id;
-  };
-  const organizeByProtocolKind = async () => {
-    if (!canWrite || !catalog.data) throw new Error("当前没有修改配置的权限");
-    const plan = planOrganizeByProtocol({
-      ...catalog.data,
-      suppliers: catalog.data.suppliers ?? [],
-    });
-    if (!plan.assignments.length) return;
-    let revision = catalog.data.revision;
-    const suppliers = [...(catalog.data.suppliers ?? [])];
-    try {
-      for (const name of plan.groupsToCreate) {
-        const created = await createSupplier({ name }, revision);
-        revision = created.revision;
-        suppliers.push(created.supplier);
-      }
-      for (const { provider, supplierName } of plan.assignments) {
-        const supplier = suppliers.find((item) => item.name === supplierName);
-        if (!supplier || provider.supplier_id === supplier.id) continue;
-        const updated = await updateProvider(
-          provider.id,
-          providerUpdateInput(provider, supplier.id),
-          revision,
-        );
-        revision = updated.revision;
-      }
-      await queryClient.invalidateQueries({ queryKey: modelQueryKeys.catalog });
-    } catch (cause) {
-      await queryClient.invalidateQueries({ queryKey: modelQueryKeys.catalog });
-      if (
-        cause instanceof ApiError &&
-        cause.problem.code === "revision_conflict" &&
-        cause.problem.current
-      ) {
-        queryClient.setQueryData(
-          modelQueryKeys.catalog,
-          cause.problem.current as Catalog,
-        );
-        throw new Error(
-          "目录已被其他操作更新，已载入最新目录。请重新执行按接入协议整理。",
-        );
-      }
-      throw cause;
-    }
-  };
   const run = async (operation: (revision: number) => Promise<unknown>) => {
     await mutate(operation);
   };
@@ -135,8 +77,6 @@ export function ModelServicePage({
     updateSupplier: (id, input) =>
       run((revision) => updateSupplier(id, input, revision)),
     deleteSupplier: (id) => run((revision) => deleteSupplier(id, revision)),
-    ensureProtocolType,
-    organizeByProtocolKind,
     createProvider: (input) =>
       run((revision) => createProvider(input, revision)),
     updateProvider: (id, input) =>
@@ -173,7 +113,7 @@ export function ModelServicePage({
       <header className="page-header">
         <div>
           <h1>模型服务</h1>
-          <p>按用途发现模型，按协议类型管理接入连接。</p>
+          <p>按用途发现模型，按协议类型浏览接入连接。</p>
         </div>
         {catalog.data && (
           <WorkspaceDefaults catalog={catalog.data} canWrite={canWrite} />

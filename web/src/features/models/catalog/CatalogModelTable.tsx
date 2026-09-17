@@ -1,6 +1,6 @@
 import { Play } from "lucide-react";
 import { ProviderIcon } from "@shared/ui/ProviderIcon";
-import { capabilityLabel, providerKindLabel } from "./catalogOptions";
+import { capabilityLabel } from "./catalogOptions";
 import {
   canDeleteEntity,
   canEditField,
@@ -55,7 +55,7 @@ export function CatalogModelTable({
       </thead>
       <tbody>
         {rows.map((row) => {
-          const { model, provider, supplierName } = row;
+          const { model, provider, protocolLabel } = row;
           const name = model.label || model.slug;
           const supported = modelTestMode(model, provider);
           const available = model.enabled && provider.enabled;
@@ -103,9 +103,7 @@ export function CatalogModelTable({
               {!hideSource && (
                 <td data-label="接入来源">
                   <strong className="mc-source">{provider.name}</strong>
-                  <small>
-                    {supplierName} · {providerKindLabel[provider.kind]}
-                  </small>
+                  <small>{protocolLabel}</small>
                 </td>
               )}
               <td data-label="状态">

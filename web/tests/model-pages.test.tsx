@@ -467,7 +467,7 @@ function readBlobText(blob: Blob) {
 
 test("shows provider catalog categories without the redundant diagnostics entry", async () => {
   const { container } = renderWithQuery(<ModelServicePage />);
-  expect(await screen.findByText("主模型网关")).toBeInTheDocument();
+  expect((await screen.findAllByText("主模型网关")).length).toBeGreaterThan(0);
   expect(await screen.findByText("Model X")).toBeInTheDocument();
   expect(container.querySelector(".model-glyph")).toBeNull();
   expect(screen.getByText("支持能力")).toBeInTheDocument();
@@ -488,7 +488,7 @@ test("does not repeat a capability that is already shown as a category", async (
 test("offers the SenseAudio speaker recognition provider and ASR capability", async () => {
   const user = userEvent.setup();
   renderWithQuery(<ModelServicePage />);
-  await screen.findByText("主模型网关");
+  await screen.findAllByText("主模型网关");
 
   await user.click(screen.getByRole("tab", { name: "接入管理" }));
   await user.click(screen.getAllByRole("button", { name: "添加连接" })[0]);
