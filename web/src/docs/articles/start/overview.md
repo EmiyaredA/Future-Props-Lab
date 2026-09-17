@@ -42,7 +42,7 @@
 ## 推荐阅读顺序 {#reading-path}
 
 1. **认识平台**：[能力边界](/docs.html?page=platform) → [空间、项目与素材](/docs.html?page=concepts)。
-2. **准备环境**：[首次登录](/docs.html?page=quickstart) → [供应商配置](/docs.html?page=providers) → [连接测试](/docs.html?page=models-diagnostics)。
+2. **准备环境**：[首次登录](/docs.html?page=quickstart) → [协议类型与认证配置](/docs.html?page=providers) → [连接测试](/docs.html?page=models-diagnostics)。
 3. **验证模型**：[模式选择](/docs.html?page=test-overview) → [文本对话](/docs.html?page=test-chat) → [调用日志](/docs.html?page=logs-overview)。
 4. **完成创作**：[选择应用](/docs.html?page=apps-overview)，进入对应工坊的快速开始。
 5. **整理交付**：[素材复用](/docs.html?page=files-references) → [项目快照](/docs.html?page=project-snapshots)。
