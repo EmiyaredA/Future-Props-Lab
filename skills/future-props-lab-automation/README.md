@@ -1,6 +1,6 @@
 # future-props-lab-automation — Future Props Lab 官方自动化 Skill 包
 
-真源目录：[`sdk/python/future-props-lab-automation/`](.)。教 Agent 用 **`fpl` CLI** 与 **Python SDK** 操作本机 App / HTTP API。
+真源目录：[`skills/future-props-lab-automation/`](.)。教 Agent 用 **`fpl` CLI** 与 **Python SDK** 操作本机 App / HTTP API。
 
 ## 边界
 
@@ -12,9 +12,8 @@
 
 | 方式 | 怎么做 | 说明 |
 |------|--------|------|
-| **整体** | 将本目录拷到 Agent skills 根，或依赖本仓 `.cursor/skills/future-props-lab-automation` 软链 | 发现总 skill，再按路由读 `skills/` |
-| **单个叶子** | 拷贝 `skills/<分类>/<skill-name>/` 到 `~/.cursor/skills/<skill-name>/`（或项目 `.cursor/skills/`） | 目录名必须等于 frontmatter `name`；叶子已内联前置，可独立使用 |
-| **本仓库开发** | 软链已指向本目录 | Cursor 递归发现全部嵌套 `SKILL.md` |
+| **整体** | 将本目录拷到 Agent skills 根 | 发现总 skill，再按路由读包内 `skills/` |
+| **单个叶子** | 拷贝包内 `skills/<分类>/<skill-name>/` 到 Agent skills 根下的 `<skill-name>/` | 目录名必须等于 frontmatter `name`；叶子已内联前置，可独立使用 |
 
 ```bash
 # 单装示例
