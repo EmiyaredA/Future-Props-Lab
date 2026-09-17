@@ -33,6 +33,9 @@
   --text-secondary: var(--gal-muted);
   --text-tertiary: var(--gal-faint);
   --accent: var(--gal-accent);
+  --accent-hover: var(--gal-accent-hover);
+  --accent-soft: var(--gal-a-soft);
+  --accent-line: var(--gal-accent-line);
   --danger: var(--gal-danger);
   color: var(--gal-text);
 }

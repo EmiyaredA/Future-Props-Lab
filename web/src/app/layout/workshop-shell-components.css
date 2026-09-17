@@ -13,11 +13,11 @@
 }
 
 .workshop-page-header {
-  margin-bottom: 22px;
+  margin-bottom: 10px;
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: space-between;
-  gap: 20px;
+  gap: 16px;
 }
 
 .workshop-page-header > div > span {
@@ -28,16 +28,18 @@
 }
 
 .workshop-page-header h1 {
-  margin: 6px 0 7px;
+  margin: 0 0 2px;
   color: var(--text-strong);
-  font-size: 28px;
+  font-size: 20px;
   letter-spacing: -0.04em;
+  line-height: 1.25;
 }
 
 .workshop-page-header p {
   margin: 0;
   color: var(--muted);
-  font-size: 13px;
+  font-size: 12px;
+  line-height: 1.4;
 }
 
 .workshop-projects-page {
@@ -45,17 +47,18 @@
 }
 
 .workshop-primary {
-  min-height: 40px;
-  padding: 0 16px;
+  min-height: 32px;
+  padding: 0 12px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 7px;
+  gap: 6px;
   border: 1px solid var(--accent);
-  border-radius: 9px;
+  border-radius: 8px;
   background: var(--accent);
   color: white;
   font-weight: 700;
+  font-size: 13px;
 }
 
 .workshop-primary:hover {
@@ -64,7 +67,8 @@
 }
 
 .workshop-primary svg {
-  width: 16px;
+  width: 14px;
+  height: 14px;
 }
 
 .workshop-page-header-actions {
@@ -74,17 +78,18 @@
 }
 
 .workshop-secondary {
-  min-height: 40px;
-  padding: 0 15px;
+  min-height: 32px;
+  padding: 0 12px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 7px;
+  gap: 6px;
   border: 1px solid var(--border);
-  border-radius: 9px;
+  border-radius: 8px;
   background: var(--surface-raised, var(--bg));
   color: var(--text-strong);
   font-weight: 700;
+  font-size: 13px;
 }
 
 .workshop-secondary:hover:not(:disabled) {
@@ -94,7 +99,8 @@
 }
 
 .workshop-secondary svg {
-  width: 16px;
+  width: 14px;
+  height: 14px;
 }
 
 .project-snapshot-file-input {

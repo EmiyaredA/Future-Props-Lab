@@ -34,10 +34,6 @@
 }
 
 @media (max-width: 700px) {
-  .annotation-projects-header {
-    flex-direction: column;
-    gap: 16px;
-  }
   .annotation-project-actions {
     flex-wrap: wrap;
   }

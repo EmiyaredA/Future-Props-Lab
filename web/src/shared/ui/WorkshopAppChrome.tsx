@@ -8,12 +8,14 @@ export function WorkshopAppChrome({
   description,
   actions,
   className = "",
+  showThemeToggle = true,
 }: {
   eyebrow?: ReactNode;
   title: ReactNode;
   description?: ReactNode;
   actions?: ReactNode;
   className?: string;
+  showThemeToggle?: boolean;
 }) {
   return (
     <header
@@ -28,10 +30,12 @@ export function WorkshopAppChrome({
       </div>
       <div className="workshop-app-chrome__actions">
         {actions}
-        <div className="workshop-app-chrome__theme">
-          <span>外观</span>
-          <ThemeToggle />
-        </div>
+        {showThemeToggle ? (
+          <div className="workshop-app-chrome__theme">
+            <span>外观</span>
+            <ThemeToggle />
+          </div>
+        ) : null}
       </div>
     </header>
   );

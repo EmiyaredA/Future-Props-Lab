@@ -18,6 +18,7 @@ import { WorkspaceTrigger } from "./WorkspaceTrigger";
 import { WorkspaceManagementDialog } from "./WorkspaceManagementDialog";
 import { WorkspaceInvitationsDialog } from "./WorkspaceInvitationsDialog";
 import type { WorkspaceManagementTab } from "./useAccountWorkspacePanel";
+import { avatarSrc } from "./avatarSrc";
 import "./account-dialog.css";
 import "./workspace-management.css";
 
@@ -301,7 +302,13 @@ export function AccountWorkspacePanel({
                         <div className="account-settings-identity">
                           <span className="account-identity-avatar">
                             {me.user.avatar_url ? (
-                              <img src={me.user.avatar_url} alt="" />
+                              <img
+                                src={avatarSrc(
+                                  me.user.avatar_url,
+                                  me.user.revision,
+                                )}
+                                alt=""
+                              />
                             ) : (
                               me.user.display_name.slice(0, 1)
                             )}

@@ -7,7 +7,13 @@
   min-width: 0;
 }
 
-.annotation-projects-header,
+.annotation-projects-page {
+  --accent: var(--annotation-purple);
+  --accent-hover: #8548bb;
+  --accent-soft: color-mix(in srgb, var(--annotation-purple) 14%, transparent);
+  --accent-line: color-mix(in srgb, var(--annotation-purple) 42%, var(--border));
+}
+
 .annotation-editor-header {
   display: flex;
   align-items: flex-start;
@@ -16,7 +22,6 @@
   margin-bottom: 22px;
 }
 
-.annotation-projects-header h1,
 .annotation-editor-header h1 {
   margin: 8px 0 6px;
   color: var(--text-strong);
@@ -24,10 +29,24 @@
   letter-spacing: -0.04em;
 }
 
-.annotation-projects-header p,
 .annotation-editor-header p {
   margin: 0;
   color: var(--muted);
+}
+
+.annotation-projects-page .workshop-app-chrome__eyebrow {
+  letter-spacing: 0;
+  font-weight: 600;
+}
+
+.annotation-projects-page .workshop-app-chrome__eyebrow .annotation-back {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.annotation-projects-page .workshop-app-chrome__eyebrow .annotation-back:hover {
+  color: var(--accent);
 }
 
 .annotation-back {

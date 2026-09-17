@@ -1,4 +1,5 @@
 import { QueryFeedback } from "@shared/ui/QueryFeedback";
+import { WorkshopAppChrome } from "@shared/ui/WorkshopAppChrome";
 import { useEffect, useMemo, useRef, useState, type ChangeEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -36,6 +37,7 @@ import type {
 } from "@features/audio-annotation/types";
 import { audioAnnotationQueryKeys } from "@features/audio-annotation/queryKeys";
 import { ConfirmDialog } from "@shared/ui/ConfirmDialog";
+import "@app/layout/workshop-shell.css";
 import "@features/audio-annotation/audio-annotation.css";
 import "./audio-annotation-compact.css";
 
@@ -359,42 +361,45 @@ export function AudioAnnotationProjectsPage({
 
   return (
     <section className="page annotation-projects-page">
-      <header className="annotation-projects-header">
-        <div>
+      <WorkshopAppChrome
+        showThemeToggle={false}
+        eyebrow={
           <button type="button" className="annotation-back" onClick={onBack}>
             <ArrowLeft aria-hidden /> 返回工具导航
           </button>
-          <h1>录音分段标注</h1>
-          <p>管理 Workspace 中的录音切分、说话人和逐段文本。</p>
-        </div>
-        <div className="annotation-project-actions">
-          <input
-            ref={importInput}
-            hidden
-            type="file"
-            accept="application/json,.json"
-            aria-label="导入项目 JSON"
-            onChange={(event) => void readImport(event)}
-          />
-          <button
-            type="button"
-            className="btn"
-            onClick={() => importInput.current?.click()}
-          >
-            <FileJson aria-hidden /> 导入项目
-          </button>
-          <button
-            type="button"
-            className="btn primary"
-            onClick={() => {
-              setImported(null);
-              setDialogOpen(true);
-            }}
-          >
-            <Plus aria-hidden /> 新建任务
-          </button>
-        </div>
-      </header>
+        }
+        title="录音分段标注"
+        description="管理 Workspace 中的录音切分、说话人和逐段文本。"
+        actions={
+          <div className="annotation-project-actions">
+            <input
+              ref={importInput}
+              hidden
+              type="file"
+              accept="application/json,.json"
+              aria-label="导入项目 JSON"
+              onChange={(event) => void readImport(event)}
+            />
+            <button
+              type="button"
+              className="workshop-secondary"
+              onClick={() => importInput.current?.click()}
+            >
+              <FileJson aria-hidden /> 导入项目
+            </button>
+            <button
+              type="button"
+              className="workshop-primary"
+              onClick={() => {
+                setImported(null);
+                setDialogOpen(true);
+              }}
+            >
+              <Plus aria-hidden /> 新建任务
+            </button>
+          </div>
+        }
+      />
 
       <div className="annotation-project-summary">
         <span>

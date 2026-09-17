@@ -2,30 +2,14 @@
   max-width: 1320px;
   margin-inline: auto;
 }
-.ve-tasks-page .workshop-app-chrome {
-  align-items: center;
-  gap: 24px;
-  margin-bottom: 28px;
-}
 .ve-tasks-eyebrow {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 7px;
-  margin-bottom: 0;
-  color: var(--accent);
-  font-size: 12px;
-  font-weight: 650;
-  letter-spacing: 0.08em;
+  gap: 6px;
 }
 .ve-tasks-eyebrow svg {
-  width: 16px;
-  height: 16px;
-}
-.ve-tasks-page .workshop-app-chrome h1 {
-  margin-bottom: 8px;
-}
-.ve-tasks-page .workshop-app-chrome p {
-  margin: 0;
+  width: 12px;
+  height: 12px;
 }
 .ve-tasks-header-actions {
   display: flex;
@@ -451,12 +435,6 @@
   line-height: 1.7;
 }
 @media (max-width: 760px) {
-  .ve-tasks-page .workshop-app-chrome {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    align-items: center;
-    gap: 12px;
-  }
   .ve-tasks-header-actions {
     gap: 8px;
   }

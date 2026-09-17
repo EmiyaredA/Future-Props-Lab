@@ -2,6 +2,7 @@ import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { ChevronDown, LogOut, Settings, ShieldCheck } from "lucide-react";
 import type { AccountSessionContext } from "./api";
+import { avatarSrc } from "./avatarSrc";
 import "./account-navigation.css";
 
 export function AccountActionMenu({
@@ -153,7 +154,7 @@ export function AccountMenu({ session }: { session: AccountSessionContext }) {
   const avatar = (
     <span className="account-identity-avatar">
       {me.user.avatar_url ? (
-        <img src={me.user.avatar_url} alt="" />
+        <img src={avatarSrc(me.user.avatar_url, me.user.revision)} alt="" />
       ) : (
         me.user.display_name.slice(0, 1)
       )}

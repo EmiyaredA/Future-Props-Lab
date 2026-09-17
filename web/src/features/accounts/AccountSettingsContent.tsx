@@ -1,5 +1,6 @@
 import { deleteAccountSession, deleteAvatar, revokeOtherSessions } from "./api";
 import { formatAccountDate as shortDate } from "./formatAccountDate";
+import { avatarSrc } from "./avatarSrc";
 import type { useAccountWorkspacePanel } from "./useAccountWorkspacePanel";
 import { auditLabels } from "./auditLabels";
 import { useRef } from "react";
@@ -35,6 +36,7 @@ export function AccountSettingsContent({
     sessions,
     securityEvents,
   } = state;
+  const profileAvatar = avatarSrc(me.user.avatar_url, me.user.revision);
   return (
     <>
       {tab === "profile" ? (
@@ -49,8 +51,8 @@ export function AccountSettingsContent({
           <div className="account-profile-row account-profile-avatar-row">
             <span className="account-profile-label">头像</span>
             <div className="account-profile-avatar-editor">
-              {me.user.avatar_url ? (
-                <img src={me.user.avatar_url} alt="当前头像" />
+              {profileAvatar ? (
+                <img src={profileAvatar} alt="当前头像" />
               ) : (
                 <span className="account-identity-avatar">
                   {me.user.display_name.slice(0, 1)}
@@ -73,7 +75,11 @@ export function AccountSettingsContent({
                     aria-label="上传头像文件"
                     type="file"
                     accept="image/png,image/jpeg,image/webp"
-                    onChange={(e) => void uploadAvatar(e.target.files?.[0])}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      e.target.value = "";
+                      void uploadAvatar(file);
+                    }}
                   />
                   {me.user.avatar_url ? (
                     <button
