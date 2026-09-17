@@ -424,10 +424,12 @@ export function AssetBrowser({
             hidden
             multiple
             type="file"
-            // @ts-expect-error webkitdirectory is widely supported for folder import
-            webkitdirectory=""
             aria-label="选择要导入的本地文件夹"
             disabled={archiveTransfer.isPending}
+            {...({ webkitdirectory: "", directory: "" } as Record<
+              string,
+              string
+            >)}
             onChange={(event) => {
               importFolderEntries(event.target.files);
               event.target.value = "";
