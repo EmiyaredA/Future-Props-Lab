@@ -1,10 +1,10 @@
 from sqlalchemy import func, select
 
 from app.capabilities.identity.errors import AccountError
+from app.console.models import Workspace
 from app.llm.call_logs.query import log_conditions, today_stats
 from app.llm.models import LlmCallLog
 from app.llm.schemas.call_log import CrossWorkspaceLogQuery
-from app.models import Workspace
 from app.runtime.db import SessionLocal
 from app.runtime.time import iso_utc
 

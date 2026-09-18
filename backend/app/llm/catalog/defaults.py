@@ -2,9 +2,9 @@
 
 from sqlalchemy import select
 
+from app.console.models.platform_governance import PlatformSetting
 from app.llm.catalog.service import ModelCatalogService
 from app.llm.models import ModelEntry, ModelProvider
-from app.models.platform_governance import PlatformSetting
 
 
 async def update_defaults(session, workspace_id, body):

@@ -177,15 +177,15 @@ def _resolve_web_module(source: Path, specifier: str) -> Path | None:
 
 
 def test_workspace_models_are_registered_for_tenant_scoping() -> None:
-    from app.models import (
-        Base,
+    from app.console.models import (
         ManagementApiKey,
+        ModelTemplateSyncItem,
+        RuntimeAdmission,
         SecurityAuditEvent,
         WorkspaceInvitation,
         WorkspaceMembership,
     )
-    from app.models.model_templates import ModelTemplateSyncItem
-    from app.models.runtime_admission import RuntimeAdmission
+    from app.models import Base
     from app.orm import TENANT_MODELS
 
     account_governance_models = {
@@ -443,6 +443,11 @@ def test_backend_production_packages_have_no_dependency_cycles() -> None:
                         and target == "runtime"
                         and module == "app.runtime.orm_base"
                     ):
+                        continue
+                    # Console ORM used to live under top-level models/. Business packages may
+                    # import those shapes without forming a console↔llm/demo cycle; console
+                    # governance already depends on llm for template/log use cases.
+                    if target == "console" and module.startswith("app.console.models"):
                         continue
                     graph[package].add(target)
 
@@ -822,6 +827,7 @@ def test_documented_core_directories_exist() -> None:
         "backend/app/console",
         "backend/app/console/file_library",
         "backend/app/console/governance",
+        "backend/app/console/models",
         "backend/app/console/routes",
         "backend/app/console/schemas",
         "backend/app/apps",

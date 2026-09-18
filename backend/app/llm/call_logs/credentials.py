@@ -7,7 +7,7 @@ from typing import Protocol
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.accounts import ManagementApiKey
+from app.console.models.accounts import ManagementApiKey
 from app.runtime.db import SessionLocal
 
 SESSION_AUTH = "session"

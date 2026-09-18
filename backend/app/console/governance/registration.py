@@ -16,9 +16,9 @@ from app.console.governance.governance_transactions import (
 )
 from app.console.governance.provisioning import create_account
 from app.console.governance.service import add_audit_event, complete_login
-from app.models import User
-from app.models.platform_governance import RegistrationInviteCode as Invite
-from app.models.platform_governance import RegistrationRedemption
+from app.console.models import User
+from app.console.models.platform_governance import RegistrationInviteCode as Invite
+from app.console.models.platform_governance import RegistrationRedemption
 from app.runtime.credentials import decrypt_secret, encrypt_secret
 from app.runtime.time import utc_now
 

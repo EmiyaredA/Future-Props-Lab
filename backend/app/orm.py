@@ -52,6 +52,21 @@ from app.apps.visual_workshop.models import (
     VisualGenerationTask,
     VisualWorkshopProject,
 )
+from app.console.models import (
+    AuthSession,
+    ManagementApiKey,
+    ModelTemplateSyncItem,
+    ModelTemplateSyncJob,
+    PlatformSetting,
+    RegistrationInviteCode,
+    RegistrationRedemption,
+    RuntimeAdmission,
+    SecurityAuditEvent,
+    User,
+    Workspace,
+    WorkspaceInvitation,
+    WorkspaceMembership,
+)
 from app.integrations.models import (
     IntegrationCheck,
     McpDiscoveredTool,
@@ -154,6 +169,19 @@ _ = (
     GalgameStorySnapshot,
     McpDiscoveredTool,
     SkillVersion,
+    AuthSession,
+    ManagementApiKey,
+    ModelTemplateSyncItem,
+    ModelTemplateSyncJob,
+    PlatformSetting,
+    RegistrationInviteCode,
+    RegistrationRedemption,
+    RuntimeAdmission,
+    SecurityAuditEvent,
+    User,
+    Workspace,
+    WorkspaceInvitation,
+    WorkspaceMembership,
 )
 
 TENANT_MODELS = (

@@ -12,9 +12,9 @@ from app.capabilities.identity.passwords import (
 from app.console.governance.governance_transactions import begin_governance, require_platform_admin
 from app.console.governance.model_templates import initialize_from_template
 from app.console.governance.service import AccountError, add_audit_event
+from app.console.models import User, Workspace, WorkspaceMembership
+from app.console.models.workspace import DEFAULT_WORKSPACE_ID
 from app.llm.catalog.seed import ensure_workspace_model_catalog
-from app.models import User, Workspace, WorkspaceMembership
-from app.models.workspace import DEFAULT_WORKSPACE_ID
 from app.orm import bind_workspace
 
 

@@ -3,7 +3,7 @@
 from sqlalchemy import select, text
 
 from app.console.governance.provisioning import create_account
-from app.models import User
+from app.console.models import User
 
 
 class DesktopAlreadyInitialized(Exception):

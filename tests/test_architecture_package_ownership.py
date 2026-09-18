@@ -187,3 +187,18 @@ def test_asset_store_owns_media_routes_and_schemas() -> None:
     assert (BACKEND_APP / "capabilities" / "asset_store" / "schemas" / "video_frames.py").is_file()
     assert not (BACKEND_APP / "schemas" / "image_crop.py").exists()
     assert not (BACKEND_APP / "schemas" / "video_frames.py").exists()
+
+
+def test_console_owns_models() -> None:
+    for name in (
+        "accounts.py",
+        "workspace.py",
+        "platform_governance.py",
+        "model_templates.py",
+        "runtime_admission.py",
+    ):
+        assert (BACKEND_APP / "console" / "models" / name).is_file()
+        assert not (BACKEND_APP / "models" / name).exists()
+    assert (BACKEND_APP / "models" / "files.py").is_file()
+    assert (BACKEND_APP / "models" / "defaults.py").is_file()
+    assert (BACKEND_APP / "models" / "project_operations.py").is_file()

@@ -18,7 +18,7 @@ Status: implemented
 ## Consequences
 
 - **收益**：顶层 routes 无业务协议；asset_store 自持媒体契约。
-- **代价与已知上限**：共享 `schemas/files` 与 console ORM 仍在顶层。
+- **代价与已知上限**：共享 `schemas/files` 与 `VisualAsset*` 仍在顶层；console ORM 已收拢（见 `2026-09-18-console-orm-vertical-slice.md`）。
 
 ## Verification
 

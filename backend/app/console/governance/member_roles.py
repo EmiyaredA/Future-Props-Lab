@@ -8,7 +8,7 @@ from app.console.governance.governance_transactions import (
     revoke_workspace_keys,
 )
 from app.console.governance.service import AccountError, add_audit_event
-from app.models import WorkspaceMembership
+from app.console.models import WorkspaceMembership
 
 
 def require_member_assignment(principal: StudioPrincipal, user_id: str, current: str, desired: str):

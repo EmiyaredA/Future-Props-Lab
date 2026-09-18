@@ -13,7 +13,7 @@ from app.console.governance.governance_transactions import (
 )
 from app.console.governance.member_roles import require_member_assignment
 from app.console.governance.service import AccountError, add_audit_event
-from app.models import (
+from app.console.models import (
     AuthSession,
     User,
     Workspace,

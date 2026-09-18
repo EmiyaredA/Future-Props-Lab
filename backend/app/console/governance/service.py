@@ -26,7 +26,7 @@ from app.console.governance.governance_transactions import (
     cas,
     revoke_account_credentials,
 )
-from app.models import (
+from app.console.models import (
     AuthSession,
     ManagementApiKey,
     SecurityAuditEvent,

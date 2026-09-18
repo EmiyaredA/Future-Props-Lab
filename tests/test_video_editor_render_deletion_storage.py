@@ -13,9 +13,11 @@ from app.apps.video_editor.models import (
     VideoEditorTask,
     VideoEditorTimeline,
 )
+from app.console.models import (
+    Workspace,
+)
 from app.models import (
     VisualAsset,
-    Workspace,
 )
 from app.runtime.config import get_settings
 from app.runtime.db import SessionLocal

@@ -24,7 +24,7 @@ from app.llm.providers.transcription import (
 )
 from app.main import app
 from app.llm.models import ModelTestTranscriptionTask
-from app.models import Workspace
+from app.console.models import Workspace
 from app.orm import bind_workspace
 from app.runtime.db import SessionLocal
 from app.llm.schemas.model_test import ModelTestTranscriptionParametersIn

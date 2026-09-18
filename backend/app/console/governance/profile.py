@@ -13,7 +13,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.console.governance.service import AccountError, add_audit_event
-from app.models import User
+from app.console.models import User
 from app.runtime.config import get_settings
 from app.runtime.time import utc_now
 

@@ -14,7 +14,7 @@ from app.apps.galgame_workshop.story.story_migrations import (
 )
 from app.main import app
 from app.apps.galgame_workshop.models import GalgameStoryDocument, GalgameWorkshopProject
-from app.models import Workspace
+from app.console.models import Workspace
 from app.orm import bind_workspace
 from app.runtime.db import SessionLocal
 

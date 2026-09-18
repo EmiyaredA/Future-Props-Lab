@@ -10,7 +10,7 @@ from app.capabilities.identity.principal import StudioPrincipal
 from app.console.governance.runtime_quotas import acquire, attach, recover_admissions, release
 from app.main import app
 from app.llm.models import ModelTestGenerationTask
-from app.models.runtime_admission import RuntimeAdmission
+from app.console.models.runtime_admission import RuntimeAdmission
 from app.runtime.db import SessionLocal
 from test_workspace_governance import client_account
 

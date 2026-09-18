@@ -4,7 +4,7 @@ from dataclasses import replace
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.platform_governance import PlatformSetting
+from app.console.models.platform_governance import PlatformSetting
 
 CAPABILITIES = (
     "logs.cross_workspace",

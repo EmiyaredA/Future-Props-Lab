@@ -15,10 +15,10 @@ from app.console.governance.model_templates import (
 )
 from app.console.governance.platform_policy import read_setting
 from app.console.governance.service import add_audit_event
+from app.console.models import User, Workspace, WorkspaceMembership
+from app.console.models.model_templates import ModelTemplateSyncItem as Item
+from app.console.models.model_templates import ModelTemplateSyncJob as Job
 from app.llm.models import ModelSupplier
-from app.models import User, Workspace, WorkspaceMembership
-from app.models.model_templates import ModelTemplateSyncItem as Item
-from app.models.model_templates import ModelTemplateSyncJob as Job
 from app.runtime.db import SessionLocal
 from app.runtime.polling_runner import PollingTaskRunner
 from app.runtime.time import utc_now

@@ -12,7 +12,7 @@ from app.main import app
 from app.llm.models import (
     ModelProvider,
 )
-from app.models import (
+from app.console.models import (
     AuthSession,
     ManagementApiKey,
     SecurityAuditEvent,

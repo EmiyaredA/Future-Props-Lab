@@ -18,7 +18,7 @@ Status: implemented
 ## Consequences
 
 - **收益**：console 协议自持；跨路由 auth helper 有单一入口；顶层 routes 缩至 capabilities 残留。
-- **代价与已知上限**：console ORM 与 `models/files` VisualAsset* 仍在顶层；共享 `schemas/files` 等未迁。媒体协议已收拢（见 `2026-09-18-capabilities-media-routes-vertical-slice.md`）。
+- **代价与已知上限**：`models/files` VisualAsset* 仍在顶层；共享 `schemas/files` 等未迁。媒体协议已收拢（见 `2026-09-18-capabilities-media-routes-vertical-slice.md`）；console ORM 已收拢（见 `2026-09-18-console-orm-vertical-slice.md`）。
 
 ## Verification
 

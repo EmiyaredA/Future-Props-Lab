@@ -6,7 +6,7 @@ from datetime import UTC, datetime
 
 import httpx
 
-from app.models.platform_governance import PlatformSetting
+from app.console.models.platform_governance import PlatformSetting
 from app.runtime.db import SessionLocal
 
 MOCK_BASE_URL = "https://fpl-mock.invalid/v1"

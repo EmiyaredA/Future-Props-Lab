@@ -11,7 +11,7 @@ from app.console.governance.governance_transactions import (
     revoke_account_credentials,
 )
 from app.console.governance.service import AccountError, add_audit_event, reset_password
-from app.models import User
+from app.console.models import User
 
 
 async def account_page(

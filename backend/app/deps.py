@@ -21,7 +21,7 @@ from app.capabilities.identity.security import (
 )
 from app.console.governance.platform_policy import apply_policy
 from app.console.governance.workspaces import active_membership, owner_membership, resolve_access
-from app.models import AuthSession, ManagementApiKey, User, Workspace
+from app.console.models import AuthSession, ManagementApiKey, User, Workspace
 from app.orm import bind_workspace
 from app.runtime.config import get_settings
 from app.runtime.db import get_session

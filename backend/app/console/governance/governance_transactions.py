@@ -9,7 +9,7 @@ from app.capabilities.identity.errors import AccountError
 from app.capabilities.identity.permissions import role_scopes
 from app.capabilities.identity.principal import StudioPrincipal
 from app.console.governance.platform_policy import apply_policy
-from app.models import AuthSession, ManagementApiKey, User, WorkspaceMembership
+from app.console.models import AuthSession, ManagementApiKey, User, WorkspaceMembership
 from app.runtime.time import utc_now
 
 

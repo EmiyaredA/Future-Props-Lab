@@ -15,7 +15,7 @@ from app.apps.thought_workshop.schemas.history import (
     ThoughtHistorySnapshot,
     ThoughtHistorySummary,
 )
-from app.models.accounts import User
+from app.console.models.accounts import User
 
 CONTENT_FIELDS = ("title", "document", "schema_version", "tags")
 
