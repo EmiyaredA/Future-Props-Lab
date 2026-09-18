@@ -5,8 +5,8 @@ from datetime import datetime
 from sqlalchemy import JSON, DateTime, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.models.defaults import utc_now
 from app.runtime.orm_base import Base
+from app.runtime.time import utc_now
 
 
 class ProjectOperationReceipt(Base):

@@ -12,6 +12,7 @@ from sqlalchemy import delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.capabilities.asset_store.incoming import IncomingFile
+from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.asset_store.storage import AssetStorage
 from app.llm.models import ModelTestGenerationAsset, ModelTestGenerationTask
 from app.llm.schemas.model_test import (
@@ -21,7 +22,6 @@ from app.llm.schemas.model_test import (
     ModelTestGenerationAssetListOut,
     ModelTestGenerationAssetOut,
 )
-from app.capabilities.asset_store.models import VisualAsset
 from app.runtime.config import Settings, get_settings
 from app.runtime.time import iso_utc, utc_now
 

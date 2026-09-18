@@ -184,7 +184,7 @@ def test_workspace_models_are_registered_for_tenant_scoping() -> None:
         WorkspaceInvitation,
         WorkspaceMembership,
     )
-    from app.models import Base
+    from app.runtime.orm_base import Base
     from app.orm import TENANT_MODELS
 
     account_governance_models = {
@@ -402,15 +402,30 @@ def test_backend_avoids_generic_abstract_layer_directories() -> None:
     assert not violations, "请按具体能力命名后端目录：\n" + "\n".join(violations)
 
 
-def test_models_only_depend_on_runtime_orm_base() -> None:
-    violations = [
-        f"{_relative(path)} imports {module}"
-        for path in _python_files(BACKEND_APP / "models")
-        for module in _python_imports(path)
-        if _matches_module(module, "app.runtime") and module != "app.runtime.orm_base"
+def test_orm_models_only_depend_on_allowed_runtime_primitives() -> None:
+    allowed = {
+        "app.runtime.orm_base",
+        "app.runtime.ids",
+        "app.runtime.time",
+    }
+    roots = [
+        BACKEND_APP / "runtime" / "project_operations.py",
+        BACKEND_APP / "capabilities" / "asset_store" / "models.py",
+        BACKEND_APP / "integrations" / "models.py",
+        BACKEND_APP / "tool_navigation" / "models.py",
+        *(BACKEND_APP / "apps").glob("*/models.py"),
+        *((BACKEND_APP / "console" / "models").glob("*.py") if (BACKEND_APP / "console" / "models").is_dir() else []),
+        *((BACKEND_APP / "llm" / "models").rglob("*.py") if (BACKEND_APP / "llm" / "models").is_dir() else []),
     ]
-    assert not violations, "ORM 模型只能依赖 runtime.orm_base，不得依赖其他 runtime 模块：\n" + (
-        "\n".join(violations)
+    violations: list[str] = []
+    for path in roots:
+        if not path.is_file() or path.name == "__init__.py":
+            continue
+        for module in _python_imports(path):
+            if _matches_module(module, "app.runtime") and module not in allowed:
+                violations.append(f"{_relative(path)} imports {module}")
+    assert not violations, "ORM 模型只能依赖 runtime.orm_base / ids / time：\n" + "\n".join(
+        violations
     )
 
 
@@ -434,13 +449,6 @@ def test_backend_production_packages_have_no_dependency_cycles() -> None:
                 if len(parts) >= 2 and parts[0] == "app" and parts[1] in packages:
                     target = parts[1]
                     if target == package:
-                        continue
-                    # Base lives in runtime.orm_base by design; that edge is not a package cycle.
-                    if (
-                        package == "models"
-                        and target == "runtime"
-                        and module == "app.runtime.orm_base"
-                    ):
                         continue
                     # Console ORM used to live under top-level models/. Business packages may
                     # import those shapes without forming a console↔llm/demo cycle; console
@@ -838,8 +846,6 @@ def test_documented_core_directories_exist() -> None:
         "backend/app/llm",
         "backend/app/integrations",
         "backend/app/demo_runtime",
-        "backend/app/models",
-        "backend/app/schemas",
         "backend/app/tool_navigation",
         "db/migrations/versions",
         "docs/architecture",

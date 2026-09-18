@@ -11,9 +11,9 @@ from sqlalchemy import select
 from app.apps.thought_workshop.notes import Notes, ThoughtError
 from app.apps.thought_workshop.schemas.workshop import ThoughtAssistantIn, ThoughtModelOut
 from app.llm.call_logs.credentials import CredentialSnapshot
+from app.llm.models import LlmCallLog, ModelEntry, ModelProvider
 from app.llm.providers import stream_text_completion
 from app.llm.providers.streaming import ChatMessageInput
-from app.llm.models import LlmCallLog, ModelEntry, ModelProvider
 from app.runtime.credentials import decrypt_secret
 from app.runtime.db import SessionLocal
 

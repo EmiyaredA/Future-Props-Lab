@@ -26,9 +26,9 @@ from app.apps.video_editor.schemas import (
 )
 from app.capabilities.asset_store.incoming import IncomingFile
 from app.capabilities.asset_store.library import AssetLibrary
+from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.asset_store.policy import VIDEO_EDITABLE_EXTENSIONS
 from app.capabilities.asset_store.storage import AssetStorage
-from app.capabilities.asset_store.models import VisualAsset
 from app.runtime.config import Settings, get_settings
 from app.runtime.revisions import RevisionConflictError
 from app.runtime.time import iso_utc, utc_now

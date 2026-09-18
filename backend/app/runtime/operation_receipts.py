@@ -3,7 +3,7 @@
 import hashlib
 import json
 
-from app.models.project_operations import ProjectOperationReceipt
+from app.runtime.project_operations import ProjectOperationReceipt
 
 
 class OperationError(Exception):

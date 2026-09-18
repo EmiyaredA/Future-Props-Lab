@@ -6,6 +6,7 @@ from fastapi.responses import FileResponse, StreamingResponse
 from pydantic import ValidationError
 
 from app.capabilities.asset_store import AssetError
+from app.capabilities.asset_store.schemas.files import VisualAssetOut
 from app.capabilities.transcription import TranscriptionParameterError
 from app.deps import SessionDep, StudioAuth, WorkspaceDep
 from app.llm.call_logs.credentials import snapshot_from_principal
@@ -27,7 +28,6 @@ from app.llm.schemas.model_inference import (
     InferenceTextOut,
 )
 from app.runtime.operation_receipts import OperationError
-from app.capabilities.asset_store.schemas.files import VisualAssetOut
 
 router = APIRouter(prefix="/model-inference", tags=["model-inference"])
 

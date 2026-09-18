@@ -15,8 +15,9 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.models.defaults import new_id, utc_now
+from app.runtime.ids import new_id
 from app.runtime.orm_base import Base
+from app.runtime.time import utc_now
 
 
 class GalgameWorkshopProject(Base):

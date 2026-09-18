@@ -27,9 +27,9 @@ from app.apps.galgame_workshop.video.video_export_planning import (
 from app.apps.galgame_workshop.video.video_lip_sync import prepare_audio_envelopes
 from app.capabilities.asset_store.digests import sha256_file
 from app.capabilities.asset_store.library import AssetLibrary
+from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.asset_store.storage import AssetStorage
 from app.capabilities.media_rendering.render_engine import RenderCancelled, render_plan
-from app.capabilities.asset_store.models import VisualAsset
 from app.orm import bind_workspace, require_workspace_id
 from app.runtime.config import Settings, get_settings
 from app.runtime.db import SessionLocal

@@ -10,12 +10,12 @@ from app.apps.visual_workshop.schemas.workshop import (
     VisualWorkshopProjectOut,
     VisualWorkshopProjectPatchIn,
 )
+from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.asset_store.project_transactions import (
     creating_project_layout,
     deleting_project_layout,
 )
 from app.capabilities.asset_store.storage import TARGET_STORAGE_VERSION, AssetStorage
-from app.capabilities.asset_store.models import VisualAsset
 from app.runtime.config import get_settings
 from app.runtime.operation_receipts import forget
 from app.runtime.project_records import (

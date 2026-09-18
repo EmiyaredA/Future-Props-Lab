@@ -26,11 +26,11 @@ from app.apps.thought_workshop.schemas.workshop import (
     ThoughtNotePut,
     ThoughtNoteSummary,
 )
-from app.capabilities.asset_store.policy import ATTACHMENT_EXTENSIONS
-from app.models.defaults import utc_now
 from app.capabilities.asset_store.models import VisualAsset
+from app.capabilities.asset_store.policy import ATTACHMENT_EXTENSIONS
 from app.runtime.operation_receipts import forget
 from app.runtime.revisions import RevisionConflictError
+from app.runtime.time import utc_now
 
 
 def note_out(row: ThoughtNote) -> ThoughtNoteOut:

@@ -13,8 +13,8 @@ from app.apps.thought_workshop.markdown_conversion import markdown, parse_markdo
 from app.apps.thought_workshop.notes import Notes, note_out
 from app.apps.thought_workshop.schemas.conversion import ThoughtMarkdownOut
 from app.apps.thought_workshop.schemas.document import file_ids
-from app.capabilities.asset_store.storage import AssetStorage
 from app.capabilities.asset_store.models import VisualAsset
+from app.capabilities.asset_store.storage import AssetStorage
 from app.runtime.config import get_settings
 from app.runtime.revisions import RevisionConflictError
 

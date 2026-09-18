@@ -32,9 +32,6 @@ from app.capabilities.asset_store import (
     VisualAssets,
     open_project_folder,
 )
-from app.deps import SessionDep, StudioAuth, WorkspaceDep
-from app.runtime.config import get_settings
-from app.runtime.operation_receipts import OperationError
 from app.capabilities.asset_store.schemas.files import (
     VisualAssetImportIn,
     VisualAssetListOut,
@@ -43,6 +40,9 @@ from app.capabilities.asset_store.schemas.files import (
     VisualAssetReferencePatchIn,
 )
 from app.capabilities.asset_store.schemas.project_snapshots import ProjectFolderOpenOut
+from app.deps import SessionDep, StudioAuth, WorkspaceDep
+from app.runtime.config import get_settings
+from app.runtime.operation_receipts import OperationError
 
 router = APIRouter(prefix="/visual-workshop/projects", tags=["visual-workshop"])
 

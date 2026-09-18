@@ -30,9 +30,9 @@ from app.apps.galgame_workshop.schemas import (
     GalgameProjectAssetPatchIn,
 )
 from app.capabilities.asset_store import AssetError, AssetLibrary, IncomingFile
+from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.asset_store.policy import GALGAME_EXTENSIONS
 from app.capabilities.asset_store.storage import AssetStorage
-from app.capabilities.asset_store.models import VisualAsset
 from app.runtime.config import Settings
 from app.runtime.revisions import RevisionConflictError
 

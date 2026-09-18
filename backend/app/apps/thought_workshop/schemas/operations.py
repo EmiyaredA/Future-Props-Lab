@@ -2,7 +2,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.schemas.project_operations import OperationBatch
+from app.runtime.operation_batches import OperationBatch
 
 
 class ThoughtContentOperation(BaseModel):

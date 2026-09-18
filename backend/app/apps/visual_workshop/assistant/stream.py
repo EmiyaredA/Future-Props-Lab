@@ -26,10 +26,10 @@ from app.apps.visual_workshop.models import (
     VisualAssistantMessage,
 )
 from app.capabilities.agents.harness import AgentEvent, AgentHarness, AgentMessage, RunStatus
-from app.llm.providers.agent import HttpAgentAdapter
 from app.llm.models import (
     LlmCallLog,
 )
+from app.llm.providers.agent import HttpAgentAdapter
 from app.orm import bind_workspace
 from app.runtime.credentials import decrypt_secret
 from app.runtime.db import SessionLocal

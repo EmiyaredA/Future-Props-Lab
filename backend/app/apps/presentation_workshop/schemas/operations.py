@@ -2,7 +2,7 @@ from typing import Literal
 
 from pydantic import Field
 
-from app.schemas.project_operations import EntityOperation, OperationBatch
+from app.runtime.operation_batches import EntityOperation, OperationBatch
 
 
 class PresentationEntityOperation(EntityOperation):

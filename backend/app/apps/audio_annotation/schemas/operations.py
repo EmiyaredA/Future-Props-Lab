@@ -2,7 +2,7 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.schemas.project_operations import EntityOperation, OperationBatch, OperationId
+from app.runtime.operation_batches import EntityOperation, OperationBatch, OperationId
 
 
 class AnnotationEntityOperation(EntityOperation):

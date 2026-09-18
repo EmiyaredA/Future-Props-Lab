@@ -9,6 +9,7 @@ from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.capabilities.asset_store.incoming import IncomingFile
+from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.asset_store.policy import ALLOWED_FILES, looks_like
 from app.capabilities.asset_store.storage import AssetStorage
 from app.capabilities.transcription import (
@@ -32,7 +33,6 @@ from app.llm.schemas.model_test import (
     ModelTestTranscriptionTaskListOut,
     ModelTestTranscriptionTaskOut,
 )
-from app.capabilities.asset_store.models import VisualAsset
 from app.runtime.config import Settings, get_settings
 from app.runtime.revisions import RevisionConflictError
 from app.runtime.task_admission import TaskAdmission

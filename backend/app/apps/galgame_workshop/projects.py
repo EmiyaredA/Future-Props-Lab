@@ -16,12 +16,12 @@ from app.apps.galgame_workshop.schemas import (
     GalgameWorkshopProjectPatchIn,
 )
 from app.apps.galgame_workshop.story.story import default_story_document
+from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.asset_store.project_transactions import (
     creating_project_layout,
     deleting_project_layout,
 )
 from app.capabilities.asset_store.storage import TARGET_STORAGE_VERSION, AssetStorage
-from app.capabilities.asset_store.models import VisualAsset
 from app.runtime.config import get_settings
 from app.runtime.operation_receipts import forget
 from app.runtime.project_records import (

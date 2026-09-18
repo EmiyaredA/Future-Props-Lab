@@ -33,13 +33,13 @@ from app.apps.visual_workshop.schemas.workshop import (
     VisualAssistantModelOptionListOut,
     VisualAssistantModelOptionOut,
 )
+from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.asset_store.storage import AssetStorage
-from app.llm.providers import ChatMessageInput
 from app.llm.models import (
     ModelEntry,
     ModelProvider,
 )
-from app.capabilities.asset_store.models import VisualAsset
+from app.llm.providers import ChatMessageInput
 from app.runtime.config import Settings, get_settings
 from app.runtime.revisions import RevisionConflictError
 from app.runtime.time import iso_utc, utc_now

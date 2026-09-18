@@ -13,9 +13,8 @@ from app.apps.presentation_workshop.schemas.document import (
     PresentationProjectSummary,
 )
 from app.capabilities.asset_store import AssetStorage
-from app.capabilities.asset_store.svg import normalize_svg
-from app.models.defaults import utc_now
 from app.capabilities.asset_store.models import VisualAsset
+from app.capabilities.asset_store.svg import normalize_svg
 from app.runtime.config import get_settings
 from app.runtime.operation_receipts import forget
 from app.runtime.project_records import (
@@ -23,6 +22,7 @@ from app.runtime.project_records import (
     load_workspace_project,
     patch_revisioned_project,
 )
+from app.runtime.time import utc_now
 
 
 class PresentationError(Exception):

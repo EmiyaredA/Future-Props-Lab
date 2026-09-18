@@ -13,12 +13,12 @@ from app.apps.visual_workshop.schemas.workshop import (
     VisualAssistantContentPart,
     VisualAssistantTextPart,
 )
-from app.capabilities.asset_store.policy import download_filename
-from app.llm.providers import ImageInput
 from app.capabilities.asset_store.models import (
     VisualAsset,
     VisualProjectAssetReference,
 )
+from app.capabilities.asset_store.policy import download_filename
+from app.llm.providers import ImageInput
 
 MAX_IMAGE_BYTES = 8 * 1024 * 1024
 MAX_ATTACHMENTS = 5

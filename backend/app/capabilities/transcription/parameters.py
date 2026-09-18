@@ -2,13 +2,13 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from app.orm import CATALOG_MODELS
 from app.capabilities.transcription.schemas import (
     ModelTestTranscriptionLanguageOptionOut,
     ModelTestTranscriptionParameterCapabilitiesOut,
     ModelTestTranscriptionParametersIn,
     ModelTestTranscriptionParametersOut,
 )
+from app.orm import CATALOG_MODELS
 
 ModelEntry = CATALOG_MODELS["entry"]
 ModelProvider = CATALOG_MODELS["provider"]

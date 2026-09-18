@@ -12,8 +12,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.apps.video_editor.errors import VideoEditorNotFoundError
 from app.apps.video_editor.segment_exports import VideoEditorSegmentExports
 from app.capabilities.asset_store.library import AssetError
-from app.capabilities.asset_store.storage import AssetStorage
 from app.capabilities.asset_store.models import VisualAsset
+from app.capabilities.asset_store.storage import AssetStorage
 from app.runtime.config import Settings
 
 

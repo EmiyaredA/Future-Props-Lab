@@ -94,8 +94,8 @@ from app.llm.models import (
     ModelTestTranscriptionTask,
 )
 from app.llm.models.model_inference import ModelInferenceAsset, ModelInferenceTask
-from app.models.project_operations import ProjectOperationReceipt
 from app.runtime.orm_base import Base
+from app.runtime.project_operations import ProjectOperationReceipt
 from app.tool_navigation.models import (
     ToolNavigationItem,
 )

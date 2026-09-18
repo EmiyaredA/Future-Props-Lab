@@ -14,6 +14,7 @@ from app.apps.visual_workshop.models import (
     VisualGenerationBatch,
     VisualGenerationTask,
 )
+from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.asset_store.storage import TARGET_STORAGE_VERSION, AssetStorage
 from app.capabilities.media_rendering.image_grid import render_image_grid
 from app.llm.generation_runtime import (
@@ -31,7 +32,6 @@ from app.llm.generation_runtime import (
     upload_temporary_reference,
 )
 from app.llm.providers.temporary_media import TemporaryMediaError
-from app.capabilities.asset_store.models import VisualAsset
 from app.orm import bind_workspace
 from app.runtime.config import Settings, get_settings
 from app.runtime.db import SessionLocal

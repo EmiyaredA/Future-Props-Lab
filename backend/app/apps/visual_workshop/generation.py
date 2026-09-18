@@ -32,16 +32,16 @@ from app.apps.visual_workshop.schemas.workshop import (
     VideoGenerationTaskCreateIn,
 )
 from app.capabilities.asset_store import download_filename
-from app.capabilities.asset_store.storage import AssetStorage
-from app.llm.providers.senseaudio_image import IMAGE_MODEL_SIZES
-from app.llm.models import (
-    ModelEntry,
-    ModelProvider,
-)
 from app.capabilities.asset_store.models import (
     VisualAsset,
     VisualProjectAssetReference,
 )
+from app.capabilities.asset_store.storage import AssetStorage
+from app.llm.models import (
+    ModelEntry,
+    ModelProvider,
+)
+from app.llm.providers.senseaudio_image import IMAGE_MODEL_SIZES
 from app.runtime.config import Settings, get_settings
 from app.runtime.task_admission import TaskAdmission
 from app.runtime.time import iso_utc, utc_now

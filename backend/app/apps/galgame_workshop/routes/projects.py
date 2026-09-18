@@ -26,9 +26,9 @@ from app.capabilities.asset_store import (
     ProjectSnapshotError,
     open_project_folder,
 )
+from app.capabilities.asset_store.schemas.project_snapshots import ProjectFolderOpenOut
 from app.deps import SessionDep, StudioAuth, WorkspaceDep
 from app.runtime.config import get_settings
-from app.capabilities.asset_store.schemas.project_snapshots import ProjectFolderOpenOut
 
 router = APIRouter()
 

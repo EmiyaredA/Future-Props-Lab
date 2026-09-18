@@ -5,6 +5,7 @@ from app.capabilities.transcription import (
     parameter_capabilities,
     resolve_parameters,
 )
+from app.capabilities.transcription.schemas import ModelTestTranscriptionParametersIn
 from app.llm.models import ModelEntry, ModelProvider
 from app.llm.providers.senseaudio_image import IMAGE_MODEL_SIZES
 from app.llm.schemas.generation_tasks import (
@@ -14,7 +15,6 @@ from app.llm.schemas.generation_tasks import (
 )
 from app.llm.schemas.model_inference import InferenceModelOut, InferenceOptionsOut, InferenceTextIn
 from app.runtime.operation_receipts import OperationError
-from app.capabilities.transcription.schemas import ModelTestTranscriptionParametersIn
 
 GENERATION_KINDS = {
     "senseaudio_image": "image",

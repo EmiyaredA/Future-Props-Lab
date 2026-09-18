@@ -11,12 +11,12 @@ from app.apps.video_editor.schemas import (
     VideoEditorProjectOut,
     VideoEditorProjectPatchIn,
 )
+from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.asset_store.project_transactions import (
     creating_project_layout,
     deleting_project_layout,
 )
 from app.capabilities.asset_store.storage import TARGET_STORAGE_VERSION, AssetStorage
-from app.capabilities.asset_store.models import VisualAsset
 from app.runtime.config import get_settings
 from app.runtime.project_records import (
     delete_revisioned_project,

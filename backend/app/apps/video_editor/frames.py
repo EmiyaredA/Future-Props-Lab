@@ -10,12 +10,12 @@ from app.apps.video_editor.errors import VideoEditorNotFoundError, VideoEditorVa
 from app.apps.video_editor.models import VideoEditorTimeline
 from app.apps.video_editor.projects import VideoEditorProjects
 from app.apps.video_editor.schemas import VideoEditorTimelineDocument
+from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.asset_store.storage import AssetStorage
 from app.capabilities.media_rendering.contracts import RenderCaptureFrame, RenderPlan
 from app.capabilities.media_rendering.evaluator import timeline_duration_us
 from app.capabilities.media_rendering.frame_renderer import render_plan_frame
 from app.capabilities.media_rendering.text_layer import TEXT_RENDER_VERSION, render_text_layer
-from app.capabilities.asset_store.models import VisualAsset
 from app.runtime.config import get_settings
 from app.runtime.revisions import RevisionConflictError
 

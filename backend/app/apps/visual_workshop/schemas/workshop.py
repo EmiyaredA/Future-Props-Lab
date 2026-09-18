@@ -15,6 +15,7 @@ from app.capabilities.asset_store.schemas.files import (
     VisualAssetReferenceCreateIn,
     VisualAssetReferencePatchIn,
 )
+from app.capabilities.asset_store.schemas.project_snapshots import ProjectSnapshotImportWarning
 from app.llm.schemas.generation_tasks import (
     AudioGenerationTaskCreateIn,
     GenerationTaskCreateIn,
@@ -22,7 +23,6 @@ from app.llm.schemas.generation_tasks import (
     ImageGenerationTaskCreateIn,
     VideoGenerationTaskCreateIn,
 )
-from app.capabilities.asset_store.schemas.project_snapshots import ProjectSnapshotImportWarning
 
 __all__ = [
     "AudioGenerationTaskCreateIn",

@@ -32,10 +32,10 @@ from app.apps.thought_workshop.schemas.document import file_ids
 from app.apps.thought_workshop.schemas.workshop import ThoughtImportOut, ThoughtNoteIn
 from app.capabilities.asset_store.incoming import IncomingFile
 from app.capabilities.asset_store.library import AssetLibrary
+from app.capabilities.asset_store.models import VisualAsset
 from app.capabilities.asset_store.policy import ATTACHMENT_EXTENSIONS
 from app.capabilities.asset_store.project_snapshots import _validate_member
 from app.capabilities.asset_store.storage import AssetStorage
-from app.capabilities.asset_store.models import VisualAsset
 from app.runtime.config import Settings
 
 FORMAT = "thought-workshop-backup"

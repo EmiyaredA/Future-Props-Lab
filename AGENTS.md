@@ -44,8 +44,8 @@
   治理与库级文件用例归属 `console/`（含自有 models/routes/schemas）；已垂直切片的产品 App 归属 `apps/`（目前
   `presentation_workshop`、`audio_annotation`、`thought_workshop`、`video_editor`、`visual_workshop`、
   `galgame_workshop` 已迁入）；`llm/` 拥有目录/供应商/测试台/推理与自身 models/schemas/routes；
-  `integrations/`、`tool_navigation/`、`demo_runtime/` 各自拥有 models/schemas/routes（demo 无独立 ORM）；
-  `models/`、`schemas/` 仅保留尚未迁出的共享残留（project_operations、defaults ID/时间工厂）。
+  `integrations/`、`tool_navigation/`、`demo_runtime/` 各自拥有 models/schemas/routes（demo 无独立 ORM）。
+  顶层不再保留 `models/`、`schemas/`、`routes/` 横向包。
 - 路由模块不得直接导入 SQLAlchemy、ORM 模型或 `db.migrations`，不得自行持有查询、写入和
   事务规则。它们只校验请求、调用功能模块并把领域结果或错误映射为协议响应；`apps/*/routes/`、
   `llm/routes/`、`console/routes/`、`capabilities/*/routes/` 与各业务包 `routes.py` 遵守同一边界。
@@ -90,9 +90,10 @@
   只提供任务存取、素材组装/落盘和调用日志钩子。`submitting` 中断必须安全失败，禁止自动重提。
 - 确定性时间线画面与视频渲染由 `backend/app/capabilities/media_rendering/` 统一拥有；Galgame 直接导出不得
   依赖 `video_editor/` 实现，只有显式的视频编辑器交接用例可以跨功能调用。
-- ORM 的 ID/时间默认工厂由 `models/` 自有模块维护，`models` 只能依赖 `runtime.orm_base`；生产 Python 包
-  不得形成强依赖环。Workspace 项目记录的加载、CAS 更新和删除原语可复用
-  `runtime/project_records.py`，但事务、默认文档、快照和领域规则必须留在所属功能包。
+- ORM 的 ID/时间默认工厂由 `runtime/ids.py` 与 `runtime/time.py` 维护；各包 ORM 模型只依赖
+  `runtime.orm_base` 与上述工厂。生产 Python 包不得形成强依赖环。Workspace 项目记录的加载、CAS
+  更新和删除原语可复用 `runtime/project_records.py`，但事务、默认文档、快照和领域规则必须留在所属功能包。
+  编辑批处理回执与传输形状归属 `runtime/project_operations.py`、`runtime/operation_batches.py`。
 - Story 总校验保持纯函数分层：身份/角色、素材、国际化、时间轴、流程与表现层规则归属
   `apps/galgame_workshop/schemas/story_validation.py`；Pydantic Story 入口只负责迁移适配和统一调用。
 - 鉴权原语归属 `capabilities/identity/`；账号、Session、审计、Management API Key 与 Workspace 治理归属

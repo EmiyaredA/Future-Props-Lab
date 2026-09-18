@@ -16,7 +16,7 @@ from app.apps.thought_workshop.schemas.workshop import (
     ThoughtNoteIn,
     ThoughtNoteSummary,
 )
-from app.models.defaults import utc_now
+from app.runtime.time import utc_now
 
 
 class Directory(KnowledgeBases):

@@ -14,9 +14,9 @@ from app.apps.thought_workshop.schemas.knowledge import (
     KnowledgeBaseOut,
     KnowledgeBasePut,
 )
-from app.models.defaults import utc_now
 from app.capabilities.asset_store.models import VisualAsset
 from app.runtime.revisions import RevisionConflictError
+from app.runtime.time import utc_now
 
 
 class KnowledgeBases:
