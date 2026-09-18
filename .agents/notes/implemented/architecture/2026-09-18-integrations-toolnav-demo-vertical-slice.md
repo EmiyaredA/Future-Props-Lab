@@ -18,7 +18,7 @@ llm 垂直收拢后，`integrations`、`tool_navigation`、`demo_runtime` 仍把
 ## Consequences
 
 - **收益**：三个 BUSINESS 包均可自持契约；顶层 models/routes/schemas 继续缩小。
-- **代价与已知上限**：console 协议仍在顶层 `routes/`；`VisualAsset*` 仍留 `models/files`。
+- **代价与已知上限**：console 协议已收拢（见 `2026-09-18-console-routes-vertical-slice.md`）；`VisualAsset*` 仍留 `models/files`；console ORM 仍暂留顶层 `models/`。
 
 ## Verification
 

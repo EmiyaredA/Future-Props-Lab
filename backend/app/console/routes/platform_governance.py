@@ -22,11 +22,9 @@ from app.console.governance.registration import (
     register,
     reveal_invite,
 )
-from app.deps import SessionDep, client_ip, require_recent_reauthentication
-from app.routes.accounts import _browser_auth, _login_out, _platform_auth, _set_cookies
-from app.schemas.accounts import AuthMeOut
-from app.llm.schemas.call_log import CallLogStatsOut, CrossWorkspaceLogQuery
-from app.schemas.platform_governance import (
+from app.console.routes.auth import _browser_auth, _login_out, _platform_auth, _set_cookies
+from app.console.schemas.accounts import AuthMeOut
+from app.console.schemas.platform_governance import (
     CertificationIn,
     CertificationOut,
     CrossWorkspaceLogPage,
@@ -48,6 +46,8 @@ from app.schemas.platform_governance import (
     RuntimeQuotasOut,
     SecretOut,
 )
+from app.deps import SessionDep, client_ip, require_recent_reauthentication
+from app.llm.schemas.call_log import CallLogStatsOut, CrossWorkspaceLogQuery
 
 router = APIRouter(tags=["platform-governance"])
 POLICY_FIELDS = tuple(PermissionPolicy.model_fields["admin"].annotation.model_fields)

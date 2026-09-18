@@ -6,7 +6,7 @@ import zipfile
 import pytest
 from tests import test_desktop_agent as agent_tests
 
-from app.schemas.desktop_agent import DesktopOpenIn
+from app.console.schemas.desktop_agent import DesktopOpenIn
 
 pytestmark = pytest.mark.real_auth
 

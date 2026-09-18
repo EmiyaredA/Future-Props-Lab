@@ -16,12 +16,7 @@ from app.console.governance.workspaces import (
     remove_member,
     switch_workspace,
 )
-from app.deps import (
-    SessionDep,
-    authenticate_studio_request,
-    client_ip,
-)
-from app.schemas.accounts import (
+from app.console.schemas.accounts import (
     WorkspaceInvitationActionIn,
     WorkspaceInvitationCreateIn,
     WorkspaceInvitationListOut,
@@ -35,6 +30,11 @@ from app.schemas.accounts import (
     WorkspaceOut,
     WorkspacePatchIn,
     WorkspaceSwitchIn,
+)
+from app.deps import (
+    SessionDep,
+    authenticate_studio_request,
+    client_ip,
 )
 
 router = APIRouter(prefix="/account/workspaces", tags=["account-workspaces"])

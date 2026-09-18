@@ -7,11 +7,11 @@ from app.console.governance.public_workspace import (
     public_story,
 )
 from app.console.governance.service import AccountError
-from app.deps import PublicStudioAuth, SessionDep
-from app.schemas.public_workspace import (
+from app.console.schemas.public_workspace import (
     PublicGalgameStoryOut,
     PublicWorkspaceProjectionOut,
 )
+from app.deps import PublicStudioAuth, SessionDep
 
 router = APIRouter(prefix="/public-workspace", tags=["public-workspace"])
 

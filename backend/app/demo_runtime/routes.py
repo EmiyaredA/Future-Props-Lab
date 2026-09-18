@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException, Query, Request, Response
 
 from app.console.governance import demo_services as governance
+from app.console.routes.auth import _browser_auth, _platform_auth
 from app.demo_runtime.runtime import completion, completion_sse, tool_reply
 from app.demo_runtime.schemas import (
     DemoActionIn,
@@ -13,7 +14,6 @@ from app.demo_runtime.schemas import (
 )
 from app.deps import SessionDep, StudioAuth, client_ip
 from app.llm.routes.model_capacity import ModelCapacity
-from app.routes.accounts import _browser_auth, _platform_auth
 
 router = APIRouter(tags=["demo-services"])
 call_router = APIRouter(prefix="/demo-services", tags=["demo-calls"], dependencies=[ModelCapacity])

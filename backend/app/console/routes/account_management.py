@@ -11,10 +11,9 @@ from app.console.governance.management import (
 from app.console.governance.provisioning import create_managed_account, create_workspace
 from app.console.governance.service import AccountError
 from app.console.governance.workspaces import list_workspaces, require_workspace_governance
-from app.deps import SessionDep, client_ip
-from app.routes.accounts import _account_out, _audit_response, _browser_auth, _platform_auth
-from app.routes.workspaces import _workspace_out
-from app.schemas.accounts import (
+from app.console.routes.auth import _account_out, _audit_response, _browser_auth, _platform_auth
+from app.console.routes.workspaces import _workspace_out
+from app.console.schemas.accounts import (
     AccountCreatedOut,
     AccountCreateIn,
     AccountListOut,
@@ -28,6 +27,7 @@ from app.schemas.accounts import (
     WorkspaceListOut,
     WorkspaceOut,
 )
+from app.deps import SessionDep, client_ip
 
 router = APIRouter(tags=["account-management"])
 

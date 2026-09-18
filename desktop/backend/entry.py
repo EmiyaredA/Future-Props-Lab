@@ -80,8 +80,8 @@ def launch() -> None:
     configure_desktop(prepare_configuration(args.data_dir, loaded))
     import uvicorn
 
+    from app.console.routes.desktop_agent import configure_agent
     from app.main import app
-    from app.routes.desktop_agent import configure_agent
     from app.runtime.desktop import attach_desktop
 
     attach_desktop(

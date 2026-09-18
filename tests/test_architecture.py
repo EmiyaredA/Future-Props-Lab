@@ -72,6 +72,7 @@ ROOT_PROBE_PATHS = {"/health", "/ready"}
 def _backend_route_files() -> list[Path]:
     roots = [
         BACKEND_APP / "routes",
+        BACKEND_APP / "console" / "routes",
         BACKEND_APP / "llm" / "routes",
         *(BACKEND_APP / "apps").glob("*/routes"),
     ]
@@ -276,7 +277,7 @@ def test_backend_routes_do_not_own_persistence() -> None:
 
 
 def test_management_api_key_mutations_require_browser_session_auth() -> None:
-    path = BACKEND_APP / "routes" / "accounts.py"
+    path = BACKEND_APP / "console" / "routes" / "accounts.py"
     tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
     handlers = {
         node.name: node
@@ -301,6 +302,7 @@ def test_business_modules_do_not_depend_on_fastapi_upload_file() -> None:
     violations: list[str] = []
     route_roots = [
         BACKEND_APP / "routes",
+        BACKEND_APP / "console" / "routes",
         BACKEND_APP / "llm" / "routes",
         *(BACKEND_APP / "apps").glob("*/routes"),
     ]
@@ -564,10 +566,10 @@ def test_capabilities_do_not_depend_on_business_packages() -> None:
         f"{_relative(path)} imports {module}"
         for path in _python_files(BACKEND_APP / "capabilities")
         for module in _python_imports(path)
-        for package in (*BUSINESS_BACKEND_PACKAGES, "apps")
+        for package in (*BUSINESS_BACKEND_PACKAGES, "apps", "console")
         if _matches_module(module, f"app.{package}")
     ]
-    assert not violations, "capabilities 不得依赖业务包或 apps：\n" + "\n".join(violations)
+    assert not violations, "capabilities 不得依赖业务包、apps 或 console：\n" + "\n".join(violations)
 
 
 def test_console_does_not_depend_on_apps() -> None:
@@ -578,148 +580,6 @@ def test_console_does_not_depend_on_apps() -> None:
         if _matches_module(module, "app.apps")
     ]
     assert not violations, "console 不得依赖 apps：\n" + "\n".join(violations)
-
-
-def test_presentation_workshop_lives_under_apps() -> None:
-    assert (BACKEND_APP / "apps" / "presentation_workshop" / "models.py").is_file()
-    assert (BACKEND_APP / "apps" / "presentation_workshop" / "routes" / "__init__.py").is_file()
-    assert not (BACKEND_APP / "presentation_workshop").exists()
-    assert not (BACKEND_APP / "models" / "presentation_workshop.py").exists()
-    assert not (BACKEND_APP / "routes" / "presentation_workshop.py").exists()
-    assert not (BACKEND_APP / "schemas" / "presentation_workshop.py").exists()
-    assert not (BACKEND_APP / "schemas" / "presentation_operations.py").exists()
-
-
-def test_audio_annotation_lives_under_apps() -> None:
-    assert (BACKEND_APP / "apps" / "audio_annotation" / "models.py").is_file()
-    assert (BACKEND_APP / "apps" / "audio_annotation" / "routes" / "__init__.py").is_file()
-    assert not (BACKEND_APP / "audio_annotation").exists()
-    assert not (BACKEND_APP / "models" / "audio_annotation.py").exists()
-    assert not (BACKEND_APP / "routes" / "audio_annotation.py").exists()
-    assert not (BACKEND_APP / "routes" / "annotation_exports.py").exists()
-    assert not (BACKEND_APP / "schemas" / "audio_annotation.py").exists()
-    assert not (BACKEND_APP / "schemas" / "annotation_operations.py").exists()
-
-
-def test_thought_workshop_lives_under_apps() -> None:
-    assert (BACKEND_APP / "apps" / "thought_workshop" / "models.py").is_file()
-    assert (BACKEND_APP / "apps" / "thought_workshop" / "routes" / "__init__.py").is_file()
-    assert (BACKEND_APP / "apps" / "thought_workshop" / "routes" / "conversion.py").is_file()
-    assert not (BACKEND_APP / "thought_workshop").exists()
-    assert not (BACKEND_APP / "models" / "thought_workshop.py").exists()
-    assert not (BACKEND_APP / "routes" / "thought_workshop.py").exists()
-    assert not (BACKEND_APP / "routes" / "thought_conversion.py").exists()
-    for schema_name in (
-        "thought_workshop.py",
-        "thought_document.py",
-        "thought_history.py",
-        "thought_knowledge.py",
-        "thought_link_preview.py",
-        "thought_operations.py",
-        "thought_conversion.py",
-    ):
-        assert not (BACKEND_APP / "schemas" / schema_name).exists()
-
-
-def test_video_editor_lives_under_apps() -> None:
-    assert (BACKEND_APP / "apps" / "video_editor" / "models.py").is_file()
-    assert (BACKEND_APP / "apps" / "video_editor" / "routes" / "__init__.py").is_file()
-    assert not (BACKEND_APP / "video_editor").exists()
-    assert not (BACKEND_APP / "models" / "video_editor.py").exists()
-    assert not (BACKEND_APP / "routes" / "video_editor.py").exists()
-    assert not (BACKEND_APP / "schemas" / "video_editor").exists()
-
-
-def test_visual_workshop_lives_under_apps() -> None:
-    assert (BACKEND_APP / "apps" / "visual_workshop" / "models.py").is_file()
-    assert (BACKEND_APP / "apps" / "visual_workshop" / "routes" / "__init__.py").is_file()
-    assert (BACKEND_APP / "apps" / "visual_workshop" / "routes" / "assistant.py").is_file()
-    assert (BACKEND_APP / "apps" / "visual_workshop" / "routes" / "generation.py").is_file()
-    assert not (BACKEND_APP / "visual_workshop").exists()
-    assert not (BACKEND_APP / "models" / "visual_workshop.py").exists()
-    assert not (BACKEND_APP / "routes" / "visual_workshop.py").exists()
-    assert not (BACKEND_APP / "routes" / "visual_assistant.py").exists()
-    assert not (BACKEND_APP / "routes" / "visual_generation.py").exists()
-    for schema_name in (
-        "visual_workshop.py",
-        "visual_operations.py",
-        "visual_generation.py",
-        "visual_assistant.py",
-    ):
-        assert not (BACKEND_APP / "schemas" / schema_name).exists()
-
-
-def test_galgame_workshop_lives_under_apps() -> None:
-    assert (BACKEND_APP / "apps" / "galgame_workshop" / "models.py").is_file()
-    assert (BACKEND_APP / "apps" / "galgame_workshop" / "routes" / "__init__.py").is_file()
-    assert (BACKEND_APP / "apps" / "galgame_workshop" / "story").is_dir()
-    assert (BACKEND_APP / "apps" / "galgame_workshop" / "assets").is_dir()
-    assert (BACKEND_APP / "apps" / "galgame_workshop" / "video").is_dir()
-    assert not (BACKEND_APP / "galgame_workshop").exists()
-    assert not (BACKEND_APP / "models" / "galgame_workshop.py").exists()
-    assert not (BACKEND_APP / "routes" / "galgame_workshop").exists()
-    assert not (BACKEND_APP / "schemas" / "galgame_workshop").exists()
-    assert not (BACKEND_APP / "schemas" / "galgame_operations.py").exists()
-    assert not (BACKEND_APP / "routes" / "workshop_operations.py").exists()
-
-
-def test_llm_owns_models_schemas_and_routes() -> None:
-    assert (BACKEND_APP / "llm" / "models" / "model_service.py").is_file()
-    assert (BACKEND_APP / "llm" / "schemas" / "model_service.py").is_file()
-    assert (BACKEND_APP / "llm" / "schemas" / "generation_tasks.py").is_file()
-    assert (BACKEND_APP / "llm" / "schemas" / "realtime_voice.py").is_file()
-    assert (BACKEND_APP / "llm" / "routes" / "models" / "catalog.py").is_file()
-    assert (BACKEND_APP / "llm" / "routes" / "model_inference.py").is_file()
-    for name in (
-        "model_service.py",
-        "model_supplier.py",
-        "model_test.py",
-        "model_test_tools.py",
-        "model_inference.py",
-        "call_log.py",
-    ):
-        assert not (BACKEND_APP / "models" / name).exists()
-    for name in (
-        "model_service.py",
-        "model_supplier.py",
-        "model_test.py",
-        "model_test_tools.py",
-        "model_inference.py",
-        "model_templates.py",
-        "call_log.py",
-        "generation_tasks.py",
-    ):
-        assert not (BACKEND_APP / "schemas" / name).exists()
-    assert not (BACKEND_APP / "schemas" / "realtime_voice.py").exists()
-    assert not (BACKEND_APP / "routes" / "models").exists()
-    assert not (BACKEND_APP / "routes" / "model_inference.py").exists()
-    assert not (BACKEND_APP / "routes" / "model_templates.py").exists()
-    assert not (BACKEND_APP / "routes" / "model_capacity.py").exists()
-
-
-def test_integrations_owns_models_schemas_and_routes() -> None:
-    assert (BACKEND_APP / "integrations" / "models.py").is_file()
-    assert (BACKEND_APP / "integrations" / "schemas.py").is_file()
-    assert (BACKEND_APP / "integrations" / "routes.py").is_file()
-    assert not (BACKEND_APP / "models" / "integrations.py").exists()
-    assert not (BACKEND_APP / "schemas" / "integrations.py").exists()
-    assert not (BACKEND_APP / "routes" / "integrations.py").exists()
-
-
-def test_tool_navigation_owns_models_schemas_and_routes() -> None:
-    assert (BACKEND_APP / "tool_navigation" / "models.py").is_file()
-    assert (BACKEND_APP / "tool_navigation" / "schemas.py").is_file()
-    assert (BACKEND_APP / "tool_navigation" / "routes.py").is_file()
-    assert not (BACKEND_APP / "models" / "tool_navigation.py").exists()
-    assert not (BACKEND_APP / "schemas" / "tool_navigation.py").exists()
-    assert not (BACKEND_APP / "routes" / "tool_navigation.py").exists()
-
-
-def test_demo_runtime_owns_schemas_and_routes() -> None:
-    assert (BACKEND_APP / "demo_runtime" / "schemas.py").is_file()
-    assert (BACKEND_APP / "demo_runtime" / "routes.py").is_file()
-    assert not (BACKEND_APP / "schemas" / "demo_runtime.py").exists()
-    assert not (BACKEND_APP / "routes" / "demo_runtime.py").exists()
 
 
 def test_runtime_assembly_entrypoints_exist() -> None:
@@ -756,6 +616,12 @@ def test_backend_business_packages_have_no_function_local_app_imports() -> None:
             if relative.name == "models.py":
                 return True
             return len(relative.parts) >= 3 and relative.parts[2] in {"routes", "schemas"}
+        if root == "console":
+            return len(relative.parts) >= 2 and relative.parts[1] in {"routes", "schemas"}
+        if root == "llm":
+            return len(relative.parts) >= 2 and relative.parts[1] in {"routes", "schemas"}
+        if root in {"integrations", "tool_navigation", "demo_runtime"}:
+            return relative.name in {"routes.py", "schemas.py", "models.py"}
         return False
 
     violations: list[str] = []
@@ -954,6 +820,8 @@ def test_documented_core_directories_exist() -> None:
         "backend/app/console",
         "backend/app/console/file_library",
         "backend/app/console/governance",
+        "backend/app/console/routes",
+        "backend/app/console/schemas",
         "backend/app/apps",
         "backend/app/apps/presentation_workshop",
         "backend/app/apps/audio_annotation",

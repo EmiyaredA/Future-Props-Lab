@@ -5,8 +5,8 @@ from app.console.governance.desktop_setup import (
     setup_account,
     setup_required,
 )
+from app.console.schemas.desktop import DesktopSetupIn, DesktopSetupOut
 from app.deps import SessionDep
-from app.schemas.desktop import DesktopSetupIn, DesktopSetupOut
 
 
 def require_desktop(request: Request) -> None:

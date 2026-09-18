@@ -4,6 +4,7 @@ from sqlalchemy import select, text, update
 
 from app.capabilities.identity.errors import AccountError
 from app.console.governance.platform_policy import read_setting
+from app.console.schemas.platform_governance import RuntimeQuotas
 from app.models import (
     AuthSession,
     ManagementApiKey,
@@ -14,7 +15,6 @@ from app.models.runtime_admission import RuntimeAdmission as Admission
 from app.orm import RUNTIME_QUOTA_TASK_MODELS
 from app.runtime.db import SessionLocal
 from app.runtime.time import utc_now
-from app.schemas.platform_governance import RuntimeQuotas
 
 TASK_MODELS = {
     **RUNTIME_QUOTA_TASK_MODELS,

@@ -19,15 +19,15 @@ Future-Props-Lab/
 │   ├── orm.py         # mapper 聚合与 Workspace 租户登记
 │   ├── runtime/       # 配置、数据库、CAS/轮询原语与 ORM Base（无业务语义）
 │   ├── capabilities/  # 有契约的共享能力：identity、asset_store、agents、media_rendering、transcription
-│   ├── console/       # Studio 治理与库级文件用例：governance、file_library
+│   ├── console/       # Studio 治理、库级文件用例；自有 routes/schemas（ORM 仍暂留顶层 models）
 │   ├── apps/          # 已垂直切片的产品 App（presentation / audio / thought / video / visual / galgame）
 │   ├── llm/           # 模型目录、供应商适配、共享生成/实时运行时、测试工作台、调用日志及自有 models/schemas/routes
 │   ├── tool_navigation/ # 工具收藏与最近使用；自有 models/schemas/routes
 │   ├── integrations/ # Workspace 工具 API、MCP、Skill；自有 models/schemas/routes
 │   ├── demo_runtime/  # 固定演示 Mock 运行时；自有 schemas/routes
 │   ├── models/        # 尚未迁出的持久化形状（files、账号、治理、model_templates 等）及其 ID/时间工厂
-│   ├── routes/        # 尚未迁入 App/llm/业务包的 `/v1` HTTP/SSE 协议边界（主要为 console）
-│   └── schemas/       # 尚未迁入 App/llm/业务包的 Pydantic 契约
+│   ├── routes/        # 尚未迁入 capabilities 的 `/v1` 协议残留（image_crop / video_frames）
+│   └── schemas/       # 尚未迁出的共享 Pydantic 契约（files、project_*、transcription 等）
 ├── db/migrations/
 │   ├── versions/      # 只追加、不可改写的 SQLite migration
 │   ├── registry.py    # 有序 migration 注册表与最新版本
@@ -81,7 +81,7 @@ Future-Props-Lab/
   App 顶栏（`layout/DesktopAppChrome.tsx`），系统菜单栏不放这些自定义项；窗口标题仍可显示开发状态摘要。
   `src/agent.ts` 拥有本地 Unix Socket 转发及连接描述，`backend/cli_entry.py` 仅启动独立 SDK CLI。
   `console/governance/desktop_agent.py` 拥有短期配对，`desktop_ui.py` 校验打开资源的归属，Agent 操作白名单
-  在 `console/governance/desktop_agent_operations.json`；`routes/desktop_agent.py` 只承担 `/v1/desktop` 协议边界。
+  在 `console/governance/desktop_agent_operations.json`；`console/routes/desktop_agent.py` 只承担 `/v1/desktop` 协议边界。
   `sdk/python/src/future_props_lab/desktop.py` 负责发现和配对，`cli.py` 提供 `fpl` 命令。
   `app/DesktopAgentHost.tsx` 负责授权通知、外部更新提示及受保护导航，账号设置拥有接入开关。
   `console/governance/desktop_setup.py` 复用账号开通用例；`runtime/desktop.py` 只负责桌面凭据和静态托管。
