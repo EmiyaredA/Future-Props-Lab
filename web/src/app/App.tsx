@@ -369,7 +369,6 @@ export default function App() {
         <VisualWorkshopCanvasPage
           projectId={route.projectId}
           onBack={() => navigate("visual-workshop-projects")}
-          onAssets={() => navigate("visual-workshop-assets", route.projectId)}
         />
       </PageBoundary>
     );

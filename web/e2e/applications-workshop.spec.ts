@@ -438,10 +438,7 @@ test("enters the visual workshop, persists projects, and supports deep navigatio
   await expect(page.getByRole("button", { name: "添加素材" })).toBeVisible();
   await expect(page.getByText("文件管理中还没有文件")).toBeVisible();
   await expect(page.getByRole("tab", { name: "跨项目" })).toBeVisible();
-  await page.getByRole("button", { name: "管理素材" }).click();
-  await expect(page).toHaveURL(
-    /\/apps\/visual-workshop\/projects\/e2e-project\/assets$/,
-  );
+  await page.goto("/apps/visual-workshop/projects/e2e-project/assets");
   await expect(page.getByRole("heading", { name: "项目素材库" })).toBeVisible();
   await expect(page.getByRole("tab", { name: "总文件" })).toBeVisible();
   await expect(page.getByRole("tab", { name: "跨项目" })).toBeVisible();

@@ -100,5 +100,5 @@ export function useCanvasUpload({
     const timer = window.setTimeout(() => setUploadNotice(null), 3200);
     return () => window.clearTimeout(timer);
   }, [uploadNotice]);
-  return { upload, uploadNotice };
+  return { upload, uploadNotice, setUploadNotice };
 }

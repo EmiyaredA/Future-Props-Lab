@@ -2,7 +2,6 @@ import type { ComponentProps } from "react";
 import {
   AppWindow,
   ArrowLeft,
-  FolderCog,
   FolderOpen,
   MessageSquareText,
   Pencil,
@@ -31,7 +30,6 @@ type CanvasScreenChromeProps = {
   assetsOpen: boolean;
   controls: ComponentProps<typeof CanvasViewControls>;
   onBack: () => void;
-  onAssets: () => void;
   onStartTitleEditing: () => void;
   onTitleChange: (title: string) => void;
   onSubmitTitle: () => void;
@@ -50,7 +48,6 @@ export function CanvasScreenChrome({
   assetsOpen,
   controls,
   onBack,
-  onAssets,
   onStartTitleEditing,
   onTitleChange,
   onSubmitTitle,
@@ -144,9 +141,6 @@ export function CanvasScreenChrome({
           onClick={onToggleAssets}
         >
           <FolderOpen aria-hidden />
-        </button>
-        <button aria-label="管理素材" title="管理素材" onClick={onAssets}>
-          <FolderCog aria-hidden />
         </button>
       </nav>
       <CanvasViewControls {...controls} />

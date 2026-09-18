@@ -555,3 +555,58 @@ test("keeps the compact drawer layout and its upload menu entry", async () => {
     screen.getByRole("menuitem", { name: "上传文件" }),
   ).toBeInTheDocument();
 });
+
+test("only enables canvas drag for media when onAssetDragStart is provided", async () => {
+  const onAssetDragStart = vi.fn();
+  vi.mocked(getFiles).mockResolvedValue({
+    items: [
+      {
+        ...libraryFile,
+        id: "image-drag",
+        display_name: "可拖图",
+        original_filename: "drag.png",
+        media_kind: "image",
+        mime_type: "image/png",
+        project_id: "project-1",
+        source: "project",
+      },
+      {
+        ...libraryFile,
+        id: "font-drag",
+        display_name: "字体",
+        original_filename: "font.ttf",
+        media_kind: "font",
+        mime_type: "font/ttf",
+        project_id: "project-1",
+        source: "project",
+      },
+    ],
+  });
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+  });
+  render(
+    <QueryClientProvider client={client}>
+      <AssetBrowser
+        projectId="project-1"
+        compact
+        onAssetDragStart={onAssetDragStart}
+      />
+    </QueryClientProvider>,
+  );
+
+  expect(await screen.findByText("可拖图")).toBeInTheDocument();
+  const imageButton = screen.getByRole("button", {
+    name: "预览或拖到画布：可拖图",
+  });
+  expect(imageButton).toHaveAttribute("draggable", "true");
+  expect(imageButton.closest(".file-asset-item")).toHaveClass(
+    "is-canvas-draggable",
+  );
+
+  const fontButton = screen.getByRole("button", { name: "预览 字体" });
+  expect(fontButton).toHaveAttribute("draggable", "false");
+  expect(fontButton.closest(".file-asset-item")).not.toHaveClass(
+    "is-canvas-draggable",
+  );
+});

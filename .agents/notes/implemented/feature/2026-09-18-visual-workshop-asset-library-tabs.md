@@ -25,7 +25,7 @@ Status: implemented
 ## Consequences
 
 - **收益**：Tab 文案与数据源一致；公共库引用与跨项目复制不再混用同一标签。
-- **代价与已知上限**：跨项目 Tab 需要额外加载项目列表；侧栏三 Tab 字号略缩以适应 336px 宽度。生成侧仍有「其他项目 / 公共库」子切换，与素材库三 Tab 并存。总文件写能力见 [总文件 Tab 可管理公共库](2026-09-18-library-tab-manage.md)；多源上传与上传前改名见 [总文件多源上传与上传前改名](2026-09-18-library-multi-source-upload.md)。
+- **代价与已知上限**：跨项目 Tab 需要额外加载项目列表；侧栏三 Tab 字号略缩以适应 336px 宽度。生成侧仍有「其他项目 / 公共库」子切换，与素材库三 Tab 并存。总文件写能力见 [总文件 Tab 可管理公共库](2026-09-18-library-tab-manage.md)；多源上传与上传前改名见 [总文件多源上传与上传前改名](2026-09-18-library-multi-source-upload.md)。画布落点建节点见 [视觉工坊画布素材拖放建节点](2026-09-18-visual-canvas-asset-drag-drop.md)。
 
 ## Verification
 

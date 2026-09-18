@@ -38,6 +38,7 @@ import { fitCanvasViewport } from "@features/visual-workshop/canvas/canvasFit";
 import { useCanvasPersistence } from "@features/visual-workshop/canvas/useCanvasPersistence";
 import { useCanvasPointerInteractions } from "@features/visual-workshop/canvas/useCanvasPointerInteractions";
 import { useCanvasUpload } from "@features/visual-workshop/canvas/useCanvasUpload";
+import { useCanvasAssetDrop } from "@features/visual-workshop/canvas/useCanvasAssetDrop";
 import { useCanvasKeyboardShortcuts } from "@features/visual-workshop/canvas/useCanvasKeyboardShortcuts";
 
 import { derivedImageNode } from "./derivedImageNode";
@@ -67,7 +68,6 @@ export function zoomViewportAt(
 export function useVisualCanvasController({
   projectId,
   onBack,
-  onAssets,
 }: VisualWorkshopCanvasPageProps) {
   const client = useQueryClient();
   const surface = useRef<HTMLDivElement>(null);
@@ -412,7 +412,7 @@ export function useVisualCanvasController({
       setInspectedNodeId(nodeId);
     },
   });
-  const { upload, uploadNotice } = useCanvasUpload({
+  const { upload, uploadNotice, setUploadNotice } = useCanvasUpload({
     projectId,
     uploadPosition,
     replaceNodes,
@@ -465,6 +465,37 @@ export function useVisualCanvasController({
     },
     [nodesRef, replaceNodes, setSelectedId],
   );
+  const createMediaNodeFromAsset = useCallback(
+    (
+      asset: {
+        id: string;
+        media_kind: "image" | "video" | "audio";
+        display_name: string;
+      },
+      position: { x: number; y: number },
+    ) => {
+      const node = {
+        id: nextNodeId(asset.media_kind),
+        kind: asset.media_kind,
+        title: asset.display_name,
+        position,
+        asset_id: asset.id,
+      } as VisualCanvasNode;
+      replaceNodes((current) => [...current, node], true);
+      setSelectedId(node.id);
+      setInspectedNodeId(node.id);
+      setMediaEditorTab("content");
+      setContextMenu(undefined);
+      return node;
+    },
+    [replaceNodes, setSelectedId],
+  );
+  const { onAssetDragOver, onAssetDrop } = useCanvasAssetDrop({
+    projectId,
+    screenToWorld,
+    createMediaNodeFromAsset,
+    setUploadNotice,
+  });
   const removeNodes = useCallback(
     (ids: string[]) => {
       const removing = new Set(ids);
@@ -649,7 +680,6 @@ export function useVisualCanvasController({
     client,
     projectId,
     onBack,
-    onAssets,
     surface,
     uploadInput,
     pan,
@@ -729,6 +759,9 @@ export function useVisualCanvasController({
     resetZoom,
     screenToWorld,
     createNode,
+    createMediaNodeFromAsset,
+    onAssetDragOver,
+    onAssetDrop,
     addDerivedImageNode,
     addCapturedFrameNode: addDerivedImageNode,
     removeNode,

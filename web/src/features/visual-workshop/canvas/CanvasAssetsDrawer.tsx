@@ -1,11 +1,45 @@
+import type { DragEvent } from "react";
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { CircleQuestionMark, Grid2X2, List, X } from "lucide-react";
 import { AssetBrowser, type AssetViewMode } from "@features/files";
+import type { ManagedFile } from "@features/files";
 import { getVisualWorkshopProjects } from "@features/visual-workshop/api";
 import { visualWorkshopQueryKeys } from "@features/visual-workshop/queryKeys";
+import {
+  isCanvasMediaKind,
+  setCanvasAssetDragData,
+  type CanvasAssetImportMode,
+} from "./canvasAssetDrag";
 
 export type CanvasAssetTab = "project" | "cross" | "library";
+
+function assetDragStartHandler(
+  importMode: CanvasAssetImportMode,
+  browseProjectId?: string,
+) {
+  return (event: DragEvent<HTMLElement>, file: ManagedFile) => {
+    if (!isCanvasMediaKind(file.media_kind)) {
+      event.preventDefault();
+      return;
+    }
+    const sourceProjectId =
+      importMode === "cross-project"
+        ? browseProjectId || file.project_id || undefined
+        : undefined;
+    if (importMode === "cross-project" && !sourceProjectId) {
+      event.preventDefault();
+      return;
+    }
+    setCanvasAssetDragData(event.dataTransfer, {
+      assetId: file.id,
+      mediaKind: file.media_kind,
+      displayName: file.display_name,
+      importMode,
+      sourceProjectId,
+    });
+  };
+}
 
 export function CanvasAssetsDrawer({
   projectId,
@@ -34,6 +68,18 @@ export function CanvasAssetsDrawer({
         (project) => project.id !== projectId,
       ) ?? [],
     [mediaSourceProjects.data, projectId],
+  );
+  const projectDragStart = useMemo(
+    () => assetDragStartHandler("none"),
+    [],
+  );
+  const crossDragStart = useMemo(
+    () => assetDragStartHandler("cross-project", crossSourceProjectId),
+    [crossSourceProjectId],
+  );
+  const libraryDragStart = useMemo(
+    () => assetDragStartHandler("library"),
+    [],
   );
 
   return (
@@ -107,6 +153,7 @@ export function CanvasAssetsDrawer({
           projectId={projectId}
           viewMode={assetView}
           onViewModeChange={onAssetViewChange}
+          onAssetDragStart={projectDragStart}
         />
       ) : assetTab === "cross" ? (
         <AssetBrowser
@@ -120,6 +167,7 @@ export function CanvasAssetsDrawer({
           viewMode={assetView}
           onViewModeChange={onAssetViewChange}
           onImported={() => onAssetTabChange("project")}
+          onAssetDragStart={crossDragStart}
         />
       ) : (
         <AssetBrowser
@@ -131,6 +179,7 @@ export function CanvasAssetsDrawer({
           viewMode={assetView}
           onViewModeChange={onAssetViewChange}
           onImported={() => onAssetTabChange("project")}
+          onAssetDragStart={libraryDragStart}
         />
       )}
     </aside>

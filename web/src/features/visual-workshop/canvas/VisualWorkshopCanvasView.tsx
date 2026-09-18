@@ -51,7 +51,6 @@ export function VisualWorkshopCanvasView({
     client,
     projectId,
     onBack,
-    onAssets,
     surface,
     uploadInput,
     pan,
@@ -116,6 +115,8 @@ export function VisualWorkshopCanvasView({
     setZoom,
     resetZoom,
     createNode,
+    onAssetDragOver,
+    onAssetDrop,
     addCapturedFrameNode,
     addDerivedImageNode,
     removeNode,
@@ -219,6 +220,10 @@ export function VisualWorkshopCanvasView({
         onPointerUp={stopSurfaceInteraction}
         onPointerCancel={stopSurfaceInteraction}
         onContextMenu={openContextMenu}
+        onDragOver={onAssetDragOver}
+        onDrop={(event) => {
+          void onAssetDrop(event);
+        }}
       >
         <CanvasScreenChrome
           projectTitle={projectQuery.data.title}
@@ -228,7 +233,6 @@ export function VisualWorkshopCanvasView({
           assistantOpen={assistantOpen}
           assetsOpen={assetsOpen}
           onBack={onBack}
-          onAssets={onAssets}
           onStartTitleEditing={() => setEditingTitle(true)}
           onTitleChange={setTitle}
           onSubmitTitle={() => {

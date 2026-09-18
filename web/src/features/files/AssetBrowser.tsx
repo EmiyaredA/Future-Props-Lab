@@ -2,6 +2,7 @@ import { FileEmptyState } from "./FileEmptyState";
 import { AssetBrowserEditorDialog } from "./AssetBrowserEditorDialog";
 import { useDrawerFocus } from "@shared/ui/useDrawerFocus";
 import { createPortal } from "react-dom";
+import type { DragEvent } from "react";
 import {
   AlertCircle,
   ArrowDownAZ,
@@ -22,7 +23,11 @@ import {
   X,
 } from "lucide-react";
 import { CustomSelect } from "@shared/ui/CustomSelect";
-import { importFile, importManagedFiles } from "@features/files/api";
+import {
+  importFile,
+  importManagedFiles,
+  type ManagedFile,
+} from "@features/files/api";
 import { invalidateFileScope } from "@features/files/queryKeys";
 import {
   ACCEPT,
@@ -56,6 +61,8 @@ export type {
   AssetBrowserSourceProject,
 } from "@features/files/useAssetBrowserController";
 
+const CANVAS_MEDIA_KINDS = new Set(["image", "video", "audio"]);
+
 export function AssetBrowser({
   projectId,
   compact = false,
@@ -67,6 +74,7 @@ export function AssetBrowser({
   viewMode,
   onViewModeChange,
   onImported,
+  onAssetDragStart,
 }: {
   projectId?: string;
   compact?: boolean;
@@ -78,6 +86,10 @@ export function AssetBrowser({
   viewMode?: AssetViewMode;
   onViewModeChange?: (view: AssetViewMode) => void;
   onImported?: () => void;
+  onAssetDragStart?: (
+    event: DragEvent<HTMLElement>,
+    file: ManagedFile,
+  ) => void;
 }) {
   const {
     client,
@@ -772,13 +784,35 @@ export function AssetBrowser({
             const itemKey = `${file.reference_id ?? "asset"}-${file.id}`;
             const menuKey = `file-${itemKey}`;
             const displayName = fileDisplayName(file);
+            const canDragToCanvas =
+              Boolean(onAssetDragStart) &&
+              CANVAS_MEDIA_KINDS.has(file.media_kind);
             return (
-              <article className="file-asset-item" key={itemKey}>
+              <article
+                className={`file-asset-item${canDragToCanvas ? " is-canvas-draggable" : ""}`}
+                key={itemKey}
+              >
                 <button
                   type="button"
                   className="file-item-main"
-                  aria-label={`预览 ${displayName}`}
-                  title={`预览 ${displayName}`}
+                  draggable={canDragToCanvas}
+                  aria-label={
+                    canDragToCanvas
+                      ? `预览或拖到画布：${displayName}`
+                      : `预览 ${displayName}`
+                  }
+                  title={
+                    canDragToCanvas
+                      ? `拖到画布可添加节点 · 点击预览 ${displayName}`
+                      : `预览 ${displayName}`
+                  }
+                  onDragStart={
+                    canDragToCanvas
+                      ? (event) => {
+                          onAssetDragStart?.(event, file);
+                        }
+                      : undefined
+                  }
                   onClick={() => setPreviewFile(file)}
                 >
                   <span className={`file-item-preview ${file.media_kind}`}>

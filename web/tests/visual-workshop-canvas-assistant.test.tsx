@@ -125,7 +125,6 @@ function renderCanvas() {
       <VisualWorkshopCanvasPage
         projectId="project-1"
         onBack={vi.fn()}
-        onAssets={vi.fn()}
       />
     </QueryClientProvider>,
   );
