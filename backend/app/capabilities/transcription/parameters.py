@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from app.orm import CATALOG_MODELS
-from app.schemas.transcription import (
+from app.capabilities.transcription.schemas import (
     ModelTestTranscriptionLanguageOptionOut,
     ModelTestTranscriptionParameterCapabilitiesOut,
     ModelTestTranscriptionParametersIn,

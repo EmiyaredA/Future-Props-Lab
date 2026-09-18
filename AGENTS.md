@@ -45,7 +45,7 @@
   `presentation_workshop`、`audio_annotation`、`thought_workshop`、`video_editor`、`visual_workshop`、
   `galgame_workshop` 已迁入）；`llm/` 拥有目录/供应商/测试台/推理与自身 models/schemas/routes；
   `integrations/`、`tool_navigation/`、`demo_runtime/` 各自拥有 models/schemas/routes（demo 无独立 ORM）；
-  `models/`、`schemas/` 仅保留尚未迁出的共享残留（project_operations、transcription、defaults ID/时间工厂）。
+  `models/`、`schemas/` 仅保留尚未迁出的共享残留（project_operations、defaults ID/时间工厂）。
 - 路由模块不得直接导入 SQLAlchemy、ORM 模型或 `db.migrations`，不得自行持有查询、写入和
   事务规则。它们只校验请求、调用功能模块并把领域结果或错误映射为协议响应；`apps/*/routes/`、
   `llm/routes/`、`console/routes/`、`capabilities/*/routes/` 与各业务包 `routes.py` 遵守同一边界。

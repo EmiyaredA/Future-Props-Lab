@@ -5,10 +5,10 @@ from typing import Annotated, Literal
 from pydantic import BaseModel, Field, model_validator
 
 from app.llm.schemas.model_test_tools import ModelTestToolCallOut, ModelTestToolSummaryOut
-from app.schemas.transcription import (
+from app.capabilities.transcription.schemas import (
     ModelTestTranscriptionLanguageOptionOut as ModelTestTranscriptionLanguageOptionOut,
 )
-from app.schemas.transcription import (
+from app.capabilities.transcription.schemas import (
     ModelTestTranscriptionParameterCapabilitiesOut,
     ModelTestTranscriptionParametersIn,
     ModelTestTranscriptionParametersOut,

@@ -26,7 +26,7 @@ Future-Props-Lab/
 │   ├── integrations/ # Workspace 工具 API、MCP、Skill；自有 models/schemas/routes
 │   ├── demo_runtime/  # 固定演示 Mock 运行时；自有 schemas/routes
 │   ├── models/        # 共享残留：project_operations、defaults（ID/时间工厂）
-│   └── schemas/       # 尚未迁出的共享 Pydantic 契约（project_operations、transcription）
+│   └── schemas/       # 尚未迁出的共享 Pydantic 契约（project_operations）
 ├── db/migrations/
 │   ├── versions/      # 只追加、不可改写的 SQLite migration
 │   ├── registry.py    # 有序 migration 注册表与最新版本

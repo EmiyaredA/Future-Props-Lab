@@ -23,7 +23,7 @@ from app.llm.call_logs.credentials import CredentialSnapshot
 from app.llm.providers.transcription import TranscriptionResult, transcribe_model_audio
 from app.llm.models import LlmCallLog, ModelEntry, ModelProvider
 from app.runtime.credentials import decrypt_secret
-from app.schemas.transcription import ModelTestTranscriptionParametersIn
+from app.capabilities.transcription.schemas import ModelTestTranscriptionParametersIn
 
 _WAV_MIME_TYPES = {"audio/wav", "audio/x-wav", "application/octet-stream"}
 _MAX_TEXT_LENGTH = 20_000

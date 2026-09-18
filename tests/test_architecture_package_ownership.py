@@ -211,3 +211,8 @@ def test_asset_store_owns_files_models_and_schemas() -> None:
     assert not (BACKEND_APP / "models" / "files.py").exists()
     assert not (BACKEND_APP / "schemas" / "files.py").exists()
     assert not (BACKEND_APP / "schemas" / "project_snapshots.py").exists()
+
+
+def test_transcription_owns_schemas() -> None:
+    assert (BACKEND_APP / "capabilities" / "transcription" / "schemas.py").is_file()
+    assert not (BACKEND_APP / "schemas" / "transcription.py").exists()
